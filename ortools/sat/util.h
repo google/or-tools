@@ -32,6 +32,15 @@
 namespace operations_research {
 namespace sat {
 
+// Returns a in [0, m) such that a * x = 1 modulo m.
+// If gcd(x, m) != 1, there is no inverse, and it returns 0.
+//
+// This DCHECK that x is in [0, m).
+// This is integer overflow safe.
+//
+// Note(user): I didn't find this in a easily usable standard library.
+int64_t ModularInverse(int64_t x, int64_t m);
+
 // The model "singleton" random engine used in the solver.
 //
 // In test, we usually set use_absl_random() so that the sequence is changed at

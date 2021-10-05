@@ -22,6 +22,52 @@
 namespace operations_research {
 namespace sat {
 
+namespace {
+// This will be optimized into one division. I tested that in other places:
+//
+// Note that I am not 100% sure we need the indirection for the optimization
+// to kick in though, but this seemed safer given our weird r[i ^ 1] inputs.
+void QuotientAndRemainder(int64_t a, int64_t b, int64_t& q, int64_t& r) {
+  q = a / b;
+  r = a % b;
+}
+}  // namespace
+
+// Using the extended Euclidian algo, we find a and b such that a x + b m = gcd.
+// https://en.wikipedia.org/wiki/Extended_Euclidean_algorithm
+int64_t ModularInverse(int64_t x, int64_t m) {
+  DCHECK_GE(x, 0);
+  DCHECK_LT(x, m);
+
+  int64_t r[2] = {m, x};
+  int64_t t[2] = {0, 1};
+  int64_t q;
+
+  // We only keep the last two terms of the sequences with the "^1" trick:
+  //
+  // q = r[i-2] / r[i-1]
+  // r[i] = r[i-2] % r[i-1]
+  // t[i] = t[i-2] - t[i-1] * q
+  //
+  // We always have:
+  // - gcd(r[i], r[i - 1]) = gcd(r[i - 1], r[i - 2])
+  // - x * t[i] + m * t[i - 1] = r[i]
+  int i = 0;
+  for (; r[i ^ 1] != 0; i ^= 1) {
+    QuotientAndRemainder(r[i], r[i ^ 1], q, r[i]);
+    t[i] -= t[i ^ 1] * q;
+  }
+
+  // If the gcd is not one, there is no inverse, we returns 0.
+  if (r[i] != 1) return 0;
+
+  // Correct the result so that it is in [0, m). Note that abs(t[i]) is known to
+  // be less than or equal to x / 2, and we have thorough unit-tests.
+  if (t[i] < 0) t[i] += m;
+
+  return t[i];
+}
+
 int MoveOneUnprocessedLiteralLast(const std::set<LiteralIndex>& processed,
                                   int relevant_prefix_size,
                                   std::vector<Literal>* literals) {

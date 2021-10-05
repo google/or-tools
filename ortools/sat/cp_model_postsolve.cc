@@ -219,6 +219,38 @@ void PostsolveIntMax(const ConstraintProto& ct, std::vector<Domain>* domains) {
   CHECK(!(*domains)[target_var].IsEmpty());
 }
 
+namespace {
+
+int64_t EvaluateLinearExpression(const LinearExpressionProto& expr,
+                                 const std::vector<Domain>& domains) {
+  int64_t value = expr.offset();
+  for (int i = 0; i < expr.vars_size(); ++i) {
+    const int ref = expr.vars(i);
+    const int64_t increment =
+        domains[PositiveRef(expr.vars(i))].FixedValue() * expr.coeffs(i);
+    value += RefIsPositive(ref) ? increment : -increment;
+  }
+  return value;
+}
+
+}  // namespace
+
+// Compute the max of each expression, and assign it to the target expr (which
+// must be of the form +ref or -ref);
+// We only support post-solving the case were the target is unassigned,
+// but everything else is fixed.
+void PostsolveLinMax(const ConstraintProto& ct, std::vector<Domain>* domains) {
+  int64_t max_value = std::numeric_limits<int64_t>::min();
+  for (const LinearExpressionProto& expr : ct.lin_max().exprs()) {
+    max_value = std::max(max_value, EvaluateLinearExpression(expr, *domains));
+  }
+  const int target_ref = GetSingleRefFromExpression(ct.lin_max().target());
+  const int target_var = PositiveRef(target_ref);
+  (*domains)[target_var] = (*domains)[target_var].IntersectionWith(
+      Domain(RefIsPositive(target_ref) ? max_value : -max_value));
+  CHECK(!(*domains)[target_var].IsEmpty());
+}
+
 // We only support 3 cases in the presolve currently.
 void PostsolveElement(const ConstraintProto& ct, std::vector<Domain>* domains) {
   const int index_ref = ct.element().index();
@@ -357,6 +389,9 @@ void PostsolveResponse(const int64_t num_variables_in_original_model,
         break;
       case ConstraintProto::kIntMax:
         PostsolveIntMax(ct, &domains);
+        break;
+      case ConstraintProto::kLinMax:
+        PostsolveLinMax(ct, &domains);
         break;
       case ConstraintProto::kElement:
         PostsolveElement(ct, &domains);

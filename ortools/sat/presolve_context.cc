@@ -147,6 +147,13 @@ int64_t PresolveContext::MaxOf(const LinearExpressionProto& expr) const {
   return result;
 }
 
+bool PresolveContext::IsFixed(const LinearExpressionProto& expr) const {
+  for (int i = 0; i < expr.vars_size(); ++i) {
+    if (expr.coeffs(i) != 0 && !IsFixed(expr.vars(i))) return false;
+  }
+  return true;
+}
+
 Domain PresolveContext::DomainSuperSetOf(
     const LinearExpressionProto& expr) const {
   Domain result(expr.offset());

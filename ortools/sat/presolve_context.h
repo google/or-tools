@@ -118,6 +118,7 @@ class PresolveContext {
   // should be such that this cannot happen (tested at validation).
   int64_t MinOf(const LinearExpressionProto& expr) const;
   int64_t MaxOf(const LinearExpressionProto& expr) const;
+  bool IsFixed(const LinearExpressionProto& expr) const;
 
   // Return a super-set of the domain of the linear expression.
   Domain DomainSuperSetOf(const LinearExpressionProto& expr) const;

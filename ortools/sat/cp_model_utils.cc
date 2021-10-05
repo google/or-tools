@@ -575,5 +575,37 @@ int64_t ComputeInnerObjective(const CpObjectiveProto& objective,
   return objective_value;
 }
 
+bool ExpressionContainsSingleRef(const LinearExpressionProto& expr) {
+  return expr.offset() == 0 && expr.vars_size() == 1 &&
+         std::abs(expr.coeffs(0)) == 1;
+}
+
+bool ExpressionIsAffine(const LinearExpressionProto& expr) {
+  return expr.vars_size() <= 1;
+}
+
+// Returns the reference the expression can be reduced to. It will DCHECK that
+// ExpressionContainsSingleRef(expr) is true.
+int GetSingleRefFromExpression(const LinearExpressionProto& expr) {
+  DCHECK(ExpressionContainsSingleRef(expr));
+  return expr.coeffs(0) == 1 ? expr.vars(0) : NegatedRef(expr.vars(0));
+}
+
+void AddLinearExpressionToLinearConstraint(const LinearExpressionProto& expr,
+                                           int64_t coefficient,
+                                           LinearConstraintProto* linear) {
+  for (int i = 0; i < expr.vars_size(); ++i) {
+    linear->add_vars(expr.vars(i));
+    linear->add_coeffs(expr.coeffs(i) * coefficient);
+  }
+  DCHECK(!linear->domain().empty());
+  const int64_t shift = coefficient * expr.offset();
+  if (shift != 0) {
+    for (int64_t& d : *linear->mutable_domain()) {
+      d -= shift;
+    }
+  }
+}
+
 }  // namespace sat
 }  // namespace operations_research

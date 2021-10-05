@@ -136,6 +136,7 @@ class CpModelPresolver {
                                             int64_t* offset);
   bool CanonicalizeLinearExpression(const ConstraintProto& ct,
                                     LinearExpressionProto* exp);
+  bool CanonicalizeLinMax(ConstraintProto* ct);
 
   // For the linear constraints, we have more than one function.
   bool CanonicalizeLinear(ConstraintProto* ct);
@@ -143,7 +144,10 @@ class CpModelPresolver {
   bool RemoveSingletonInLinear(ConstraintProto* ct);
   bool PresolveSmallLinear(ConstraintProto* ct);
   bool PresolveLinearOnBooleans(ConstraintProto* ct);
-  void PresolveLinearEqualityModuloTwo(ConstraintProto* ct);
+  bool AddVarAffineRepresentativeFromLinearEquality(int target_index,
+                                                    ConstraintProto* ct);
+  bool PresolveLinearEqualityWithModulo(ConstraintProto* ct);
+
   bool DetectAndProcessOneSidedLinearConstraint(int c, ConstraintProto* ct);
 
   // Scheduling helpers.
