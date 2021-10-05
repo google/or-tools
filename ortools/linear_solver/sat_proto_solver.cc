@@ -254,6 +254,17 @@ absl::StatusOr<MPSolutionResponse> SatSolveProto(
         std::move(*post_solved_solution.mutable_variable_value());
   }
 
+  // Copy and postsolve any additional solutions.
+  //
+  // TODO(user): Remove the postsolve hack of copying to a response.
+  for (int i = 0; i < cp_response.additional_solutions().size(); ++i) {
+    sat::CpSolverResponse temp;
+    *temp.mutable_solution() = cp_response.additional_solutions(i).values();
+    MPSolution post_solved_solution = post_solve(temp);
+    *(response.add_additional_solutions()->mutable_variable_value()) =
+        std::move(*post_solved_solution.mutable_variable_value());
+  }
+
   return response;
 }
 
