@@ -55,7 +55,7 @@ if(SCIP_FOUND AND NOT TARGET SCIP::SCIP)
 
   if(APPLE)
     set(SCIP_ARCH darwin.x86_64.gnu.opt)
-    set_property(TARGET SCIP::SCIP TARGET_PROPERTY IMPORTED_LOCATION
+    set_property(TARGET SCIP::SCIP PROPERTY IMPORTED_LOCATION
       -force_load
       ${SCIP_ROOT}/lib/libscip.a
       ${SCIP_ROOT}/lib/libscipopt.a
@@ -64,14 +64,14 @@ if(SCIP_FOUND AND NOT TARGET SCIP::SCIP)
       )
   elseif(UNIX)
     set(SCIP_ARCH linux.x86_64.gnu.opt)
-    set_property(TARGET SCIP::SCIP TARGET_PROPERTY IMPORTED_LOCATION
+    set_property(TARGET SCIP::SCIP PROPERTY IMPORTED_LOCATION
       ${SCIP_ROOT}/lib/libscip.a
       ${SCIP_ROOT}/lib/libscipopt.a
       ${SCIP_ROOT}/lib/libsoplex.a
       ${SCIP_ROOT}/lib/libsoplex.${SCIP_ARCH}.a
       )
   elseif(MSVC)
-    set_property(TARGET SCIP::SCIP TARGET_PROPERTY IMPORTED_LOCATION
+    set_property(TARGET SCIP::SCIP PROPERTY IMPORTED_LOCATION
       ${SCIP_ROOT}/lib/scip.lib
       ${SCIP_ROOT}/lib/soplex.lib
       ignore:4006
