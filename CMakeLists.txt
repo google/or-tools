@@ -138,17 +138,6 @@ message(STATUS "Build .Net examples: ${BUILD_DOTNET_EXAMPLES}")
 #option(BUILD_DOC "Build doxygen" OFF)
 #message(STATUS "Build doxygen: ${BUILD_DOC}")
 
-if(BUILD_JAVA)
-  option(SKIP_GPG "Disable GPG sign" ON)
-  message(STATUS "Java disable gpg:sign: ${SKIP_GPG}")
-
-  option(UNIVERSAL_JAVA_PACKAGE "Build a Java multi OS Package" OFF)
-  message(STATUS "Java multiple os package: ${UNIVERSAL_JAVA_PACKAGE}")
-
-  set(GPG_ARGS "<arg>--pinentry-mode</arg><arg>loopback</arg>" CACHE STRING "Extra options for GPG")
-  message(STATUS "GPG options: ${GPG_ARGS}")
-endif()
-
 # By default all dependencies are NOT built (i.e. BUILD_DEPS=OFF),
 # BUT if building any wrappers (Python, Java or .Net) then BUILD_DEPS=ON.
 if(BUILD_PYTHON OR BUILD_JAVA OR BUILD_DOTNET)
@@ -212,6 +201,22 @@ message(STATUS "CPLEX support: ${USE_CPLEX}")
 
 option(USE_XPRESS "Use the XPRESS solver" OFF)
 message(STATUS "XPRESS support: ${USE_XPRESS}")
+
+if(BUILD_JAVA)
+  option(SKIP_GPG "Disable GPG sign" ON)
+  message(STATUS "Java disable gpg:sign: ${SKIP_GPG}")
+
+  option(UNIVERSAL_JAVA_PACKAGE "Build a Java multi OS Package" OFF)
+  message(STATUS "Java multiple os package: ${UNIVERSAL_JAVA_PACKAGE}")
+
+  set(GPG_ARGS "<arg>--pinentry-mode</arg><arg>loopback</arg>" CACHE STRING "Extra options for GPG")
+  message(STATUS "Java GPG options: ${GPG_ARGS}")
+endif()
+
+if(BUILD_PYTHON)
+  option(FETCH_PYTHON_DEPS "Install python required modules if not available" ${BUILD_DEPS})
+  message(STATUS "Python fetch dependencies: ${FETCH_PYTHON_DEPS}")
+endif()
 
 # Build Needed dependencies
 add_subdirectory(cmake/dependencies dependencies)

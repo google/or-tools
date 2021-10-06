@@ -39,11 +39,15 @@ function(search_python_module MODULE_NAME PACKAGE_NAME)
   if(${_RESULT} STREQUAL "0")
     message(STATUS "Found python module: ${MODULE_NAME} (found version \"${MODULE_VERSION}\")")
   else()
-    message(WARNING "Can't find python module \"${MODULE_NAME}\", install it using pip...")
-    execute_process(
-      COMMAND ${Python3_EXECUTABLE} -m pip install --user ${PACKAGE_NAME}
-      OUTPUT_STRIP_TRAILING_WHITESPACE
-      )
+    if(FETCH_PYTHON_DEPS)
+      message(WARNING "Can't find python module \"${MODULE_NAME}\", install it using pip...")
+      execute_process(
+        COMMAND ${Python3_EXECUTABLE} -m pip install --user ${PACKAGE_NAME}
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+    else()
+      message(FATAL "Can't find python module \"${MODULE_NAME}\", please install it using your system package manager.")
+    endif()
   endif()
 endfunction()
 
@@ -59,7 +63,7 @@ function(search_python_internal_module MODULE_NAME)
   if(${_RESULT} STREQUAL "0")
     message(STATUS "Found python internal module: ${MODULE_NAME}")
   else()
-    message(FATAL_ERROR "Can't find python internal module \"${MODULE_NAME}\", please install it using your system package manager")
+    message(FATAL_ERROR "Can't find python internal module \"${MODULE_NAME}\", please install it using your system package manager.")
   endif()
 endfunction()
 
