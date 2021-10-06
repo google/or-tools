@@ -246,8 +246,8 @@ save_python_$1_manylinux_$2: $(addprefix save_python_$1_manylinux_cp, $(addsuffi
 clean_python_$1_manylinux_$2: $(addprefix clean_python_$1_manylinux_cp, $(addsuffix _$2, ${PYTHON_VERSIONS}))
 endef
 
-$(foreach stage,${PYTHON_STAGES},$(eval $(call manylinux_merge,amd64,${stage})))
-$(foreach stage,${PYTHON_STAGES},$(eval $(call manylinux_merge,arm64v8,${stage})))
+$(foreach stage,${PYTHON_STAGES} export,$(eval $(call manylinux_merge,amd64,${stage})))
+$(foreach stage,${PYTHON_STAGES} export,$(eval $(call manylinux_merge,arm64v8,${stage})))
 
 ## ALPINE ##
 export/python/alpine: | export/python
