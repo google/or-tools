@@ -246,7 +246,8 @@ save_python_$1_manylinux_$2: $(addprefix save_python_$1_manylinux_cp, $(addsuffi
 clean_python_$1_manylinux_$2: $(addprefix clean_python_$1_manylinux_cp, $(addsuffix _$2, ${PYTHON_VERSIONS}))
 endef
 
-$(foreach stage,${PYTHON_STAGES},$(eval $(call manylinux_merge,$1,${stage})))
+$(foreach stage,${PYTHON_STAGES},$(eval $(call manylinux_merge,amd64,${stage})))
+$(foreach stage,${PYTHON_STAGES},$(eval $(call manylinux_merge,arm64v8,${stage})))
 
 ## ALPINE ##
 export/python/alpine: | export/python
@@ -260,7 +261,6 @@ define alpine_loop =
 python_$1_alpine_$2: python/$1/alpine.Dockerfile | export/python/alpine
 	@docker image rm -f ${IMAGE}:$$@ 2>/dev/null
 	${DOCKER_BUILD_CMD} \
- -v `pwd`/export:/export \
  --tag ${IMAGE}:$$@ \
  --build-arg GIT_BRANCH=${OR_TOOLS_BRANCH} \
  --build-arg GIT_SHA1=${OR_TOOLS_SHA1} \
