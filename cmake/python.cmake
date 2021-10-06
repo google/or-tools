@@ -46,7 +46,7 @@ function(search_python_module MODULE_NAME PACKAGE_NAME)
         OUTPUT_STRIP_TRAILING_WHITESPACE
         )
     else()
-      message(FATAL "Can't find python module \"${MODULE_NAME}\", please install it using your system package manager.")
+      message(FATAL_ERROR "Can't find python module \"${MODULE_NAME}\", please install it using your system package manager.")
     endif()
   endif()
 endfunction()
