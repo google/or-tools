@@ -118,10 +118,18 @@ cmake -S. -Bbuild -LH
 
 | CMake Option | Default Value | Note |
 |-|-|-|
+| `CMAKE_BUILD_TYPE` | Release | see CMake documentation [here](https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html) |
+| `BUILD_CXX` | ON | Build C++ |
+| `BUILD_PYTHON` | OFF | Build Python wrapper and package |
+| `BUILD_JAVA` | OFF | Build Java wrapper and packages |
+| `BUILD_DOTNET` | OFF | Build .Net wrapper and packages |
+| `BUILD_FLATZINC` | ON\* | Build the flatzinc library<br>**Forced** to OFF if `BUILD_CXX=OFF` |
+| `BUILD_GLOP` | OFF\* | Build the standalone Glop library<br>**Forced** to OFF if `BUILD_CXX=ON`, otherwise default to ON |
+| | | |
 | `BUILD_DEPS`  | OFF* | Default to ON if `BUILD_JAVA=ON` or `BUILD_PYTHON=ON` or `BUILD_DOTNET=ON` |
-| `BUILD_ZLIB`  | OFF* | Static build the zlib library<br>**Forced** to ON if `BUILD_JAVA=ON` or `BUILD_PYTHON=ON` or `BUILD_DOTNET=ON` |
-| `BUILD_absl`  | OFF* | Static build the abseil-cpp libraries<br>**Forced** to ON if `BUILD_JAVA=ON` or `BUILD_PYTHON=ON` or `BUILD_DOTNET=ON` |
-| `BUILD_Protobuf`  | OFF* | Static build the protobuf libraries<br>**Forced** to ON if `BUILD_JAVA=ON` or `BUILD_PYTHON=ON` or `BUILD_DOTNET=ON` |
+| `BUILD_ZLIB`  | OFF* | Static build the zlib library<br>**Forced** to ON if `BUILD_DEPS=ON` |
+| `BUILD_absl`  | OFF* | Static build the abseil-cpp libraries<br>**Forced** to ON if `BUILD_DEPS=ON` |
+| `BUILD_Protobuf`  | OFF* | Static build the protobuf libraries<br>**Forced** to ON if `BUILD_DEPS=ON` |
 | `USE_SCIP`  | ON\* | Enable SCIP support<br>**Forced** to OFF if `BUILD_CXX=OFF` |
 | `BUILD_SCIP`  | OFF\* | Static build the SCIP libraries<br>**Forced** to ON if `USE_SCIP=ON` **and** `BUILD_DEPS=ON` |
 | `USE_COINOR`  | ON\* | Enable Coin-OR support<br>**Forced** to OFF if `BUILD_CXX=OFF` |
@@ -132,14 +140,6 @@ cmake -S. -Bbuild -LH
 | `BUILD_Cbc`  | OFF\* | Static build the Cbc library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON` |
 | `USE_CPLEX`  | OFF | Enable CPLEX support |
 | `USE_XPRESS`  | OFF | Enable XPRESS support |
-| | | |
-| `CMAKE_BUILD_TYPE` | Release | see CMake documentation [here](https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html) |
-| `BUILD_CXX` | ON | Build C++ |
-| `BUILD_PYTHON` | OFF | Build Python wrapper and package |
-| `BUILD_JAVA` | OFF | Build Java wrapper and packages |
-| `BUILD_DOTNET` | OFF | Build .Net wrapper and packages |
-| `BUILD_FLATZINC` | ON\* | Build the flatzinc library<br>**Forced** to OFF if `BUILD_CXX=OFF` |
-| `BUILD_GLOP` | OFF\* | Build the standalone Glop library<br>**Forced** to OFF if `BUILD_CXX=ON`, otherwise default to ON |
 | | | |
 | `BUILD_SAMPLES`  | OFF\* | Build all samples<br>Default to ON if `BUILD_DEPS=ON` |
 | `BUILD_CXX_SAMPLES`  | ON\* | Build all C++ samples<br>**Forced** to OFF if `BUILD_CXX=OFF` or `BUILD_SAMPLE=OFF` |
