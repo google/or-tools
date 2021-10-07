@@ -78,6 +78,7 @@ help:
 	@echo -e "\t\t${BOLD}debian-10${RESET} (buster)"
 	@echo -e "\t\t${BOLD}fedora-34${RESET} (latest)"
 	@echo -e "\t\t${BOLD}fedora-33${RESET}"
+	@echo -e "\t\t${BOLD}opensuse-leap${RESET} (latest)"
 	@echo -e "\t\t${BOLD}ubuntu-21.04${RESET} (rolling)"
 	@echo -e "\t\t${BOLD}ubuntu-20.04${RESET} (Ubuntu 20.04 LTS, latest)"
 	@echo -e "\t\t${BOLD}ubuntu-18.04${RESET} (Ubuntu 18.04 LTS)"
@@ -355,6 +356,7 @@ DISTROS = \
  centos-7 centos-8 \
  debian-10 debian-11 \
  fedora-33 fedora-34 \
+ opensuse-leap \
  ubuntu-16.04 ubuntu-18.04 ubuntu-20.04 ubuntu-21.04
 STAGES = env devel third_party build
 
