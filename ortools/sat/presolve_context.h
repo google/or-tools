@@ -211,26 +211,49 @@ class PresolveContext {
   // TODO(user): Also regroup cte and -cte?
   void ExploitFixedDomain(int var);
 
+  // A "canonical domain" always have a MinOf() equal to zero.
+  // If needed we introduce a new variable with such canonical domain and
+  // add the relation X = Y + offset.
+  //
+  // This is useful in some corner case to avoid overflow.
+  //
+  // TODO(user): When we can always get rid of affine relation, it might be good
+  // to do a final pass to canonicalize all domains in a model after presolve.
+  void CanonicalizeVariable(int ref);
+
+  // Given the relation (X * coeff % mod = rhs % mod), this creates a new
+  // variable so that X = mod * Y + cte.
+  //
+  // This assumes mod > 1 and coeff % mod != 0 (CHECKed).
+  //
+  // Note that the new variable will have a canonical domain (i.e. min == 0).
+  // We also do not create anything if this fixes the given variable.
+  // Returns false if the model is infeasible.
+  bool CanonicalizeAffineVariable(int ref, int64_t coeff, int64_t mod,
+                                  int64_t rhs);
+
   // Adds the relation (ref_x = coeff * ref_y + offset) to the repository.
+  // Returns false if we detect infeasability because of this.
+  //
   // Once the relation is added, it doesn't need to be enforced by a constraint
   // in the model proto, since we will propagate such relation directly and add
   // them to the proto at the end of the presolve.
   //
-  // Returns true if the relation was added.
-  // In some rare case, like if x = 3*z and y = 5*t are already added, we
-  // currently cannot add x = 2 * y and we will return false in these case. So
-  // when this returns false, the relation needs to be enforced by a separate
-  // constraint.
+  // Note that this should always add a relation, even though it might need to
+  // create a new representative for both ref_x and ref_y in some cases. Like if
+  // x = 3z and y = 5t are already added, if we add x = 2y, we have 3z = 10t and
+  // can only resolve this by creating a new variable r such that z = 10r and t
+  // = 3r.
   //
-  // If the relation was added, both variables will be marked to appear in the
-  // special kAffineRelationConstraint. This will allow to identify when a
-  // variable is no longer needed (only appear there and is not a
-  // representative).
-  bool StoreAffineRelation(int ref_x, int ref_y, int64_t coeff, int64_t offset);
+  // All involved variables will be marked to appear in the special
+  // kAffineRelationConstraint. This will allow to identify when a variable is
+  // no longer needed (only appear there and is not a representative).
+  bool StoreAffineRelation(int ref_x, int ref_y, int64_t coeff, int64_t offset,
+                           bool debug_no_recursion = false);
 
   // Adds the fact that ref_a == ref_b using StoreAffineRelation() above.
-  // This should never fail, so the relation will always be added.
-  void StoreBooleanEqualityRelation(int ref_a, int ref_b);
+  // Returns false if this makes the problem infeasible.
+  bool StoreBooleanEqualityRelation(int ref_a, int ref_b);
 
   // Stores/Get the relation target_ref = abs(ref); The first function returns
   // false if it already exist and the second false if it is not present.

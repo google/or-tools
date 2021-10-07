@@ -59,7 +59,7 @@ void ScaleConstraint(const std::vector<double>& var_scaling,
   }
 }
 
-void ApplyVarScaling(const std::vector<double> var_scaling,
+void ApplyVarScaling(const std::vector<double>& var_scaling,
                      MPModelProto* mp_model) {
   const int num_variables = mp_model->variable_size();
   for (int i = 0; i < num_variables; ++i) {
@@ -71,6 +71,8 @@ void ApplyVarScaling(const std::vector<double> var_scaling,
     mp_model->mutable_variable(i)->set_lower_bound(old_lb * scaling);
     mp_model->mutable_variable(i)->set_upper_bound(old_ub * scaling);
     mp_model->mutable_variable(i)->set_objective_coefficient(old_obj / scaling);
+
+    // TODO(user): Make bounds of integer variable integer.
   }
   for (MPConstraintProto& mp_constraint : *mp_model->mutable_constraint()) {
     ScaleConstraint(var_scaling, &mp_constraint);
@@ -178,6 +180,44 @@ double GetIntegralityMultiplier(const MPModelProto& mp_model,
 }
 
 }  // namespace
+
+bool MakeBoundsOfIntegerVariablesInteger(const SatParameters& params,
+                                         MPModelProto* mp_model,
+                                         SolverLogger* logger) {
+  const int num_variables = mp_model->variable_size();
+  const double tolerance = params.mip_wanted_precision();
+  int64_t num_changes = 0;
+  for (int i = 0; i < num_variables; ++i) {
+    const MPVariableProto& mp_var = mp_model->variable(i);
+    if (!mp_var.is_integer()) continue;
+
+    const double lb = mp_var.lower_bound();
+    const double new_lb = std::isfinite(lb) ? std::ceil(lb - tolerance) : lb;
+    if (lb != new_lb) {
+      ++num_changes;
+      mp_model->mutable_variable(i)->set_lower_bound(new_lb);
+    }
+
+    const double ub = mp_var.upper_bound();
+    const double new_ub = std::isfinite(ub) ? std::floor(ub + tolerance) : ub;
+    if (ub != new_ub) {
+      ++num_changes;
+      mp_model->mutable_variable(i)->set_upper_bound(new_ub);
+    }
+
+    if (new_ub < new_lb) {
+      SOLVER_LOG(logger, "Empty domain for integer variable #", i, ": [", lb,
+                 ",", ub, "]");
+      return false;
+    }
+  }
+
+  if (num_changes > 0) {
+    SOLVER_LOG(logger, "Changed ", num_changes,
+               " bounds of integer variables to integer values");
+  }
+  return true;
+}
 
 void RemoveNearZeroTerms(const SatParameters& params, MPModelProto* mp_model,
                          SolverLogger* logger) {

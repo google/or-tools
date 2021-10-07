@@ -120,18 +120,10 @@ message ElementConstraintProto {
 // >= 0) but can also be referred by other constraints using this "interval"
 // concept.
 message IntervalConstraintProto {
-  int32 start = 1;
-  int32 end = 2;
-  int32 size = 3;
+  int32 start = 1 [deprecated = true];
+  int32 end = 2 [deprecated = true];
+  int32 size = 3 [deprecated = true];
 
-  // EXPERIMENTAL: This will become the new way to specify an interval.
-  // Depending on the parameters, the presolve will convert the old way to the
-  // new way. Do not forget to add an associated linear constraint if you use
-  // this directly.
-  //
-  // If any of this field is set, then all must be set and the ones above will
-  // be ignored.
-  //
   // IMPORTANT: For now, this constraint do not enforce any relations on the
   // view, and a linear constraint must be added together with this to enforce
   // enforcement => start_view + size_view == end_view. An enforcement =>

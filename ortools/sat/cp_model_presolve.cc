@@ -1227,23 +1227,9 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
                               .MultiplicationBy(constant_factor))) {
         return false;
       }
-    } else {
-      if (!context_->StoreAffineRelation(old_target, new_target,
-                                         constant_factor, 0)) {
-        // We cannot store the affine relation because the old target seems
-        // to already be in affine relation with another variable. This is rare
-        // and we need to add a new constraint in that case.
-        ConstraintProto* new_ct = context_->working_model->add_constraints();
-        LinearConstraintProto* lin = new_ct->mutable_linear();
-        lin->add_vars(old_target);
-        lin->add_coeffs(1);
-        lin->add_vars(new_target);
-        lin->add_coeffs(-constant_factor);
-        lin->add_domain(0);
-        lin->add_domain(0);
-        context_->UpdateNewConstraintsVariableUsage();
-      }
     }
+    return context_->StoreAffineRelation(old_target, new_target,
+                                         constant_factor, 0);
   }
 
   // Restrict the target domain if possible.
@@ -1768,69 +1754,19 @@ bool CpModelPresolver::AddVarAffineRepresentativeFromLinearEquality(
   }
 
   // If we take the constraint % gcd, we have
-  // target_var * reduced_coeff = reduced_rhs
+  // ref * coeff % gcd = rhs % gcd
   CHECK_GT(gcd, 1);
-  int target_var = ct->linear().vars(target_index);
-  int64_t reduced_coeff = ct->linear().coeffs(target_index);
-  if (!RefIsPositive(target_var)) {
-    target_var = NegatedRef(target_var);
-    reduced_coeff = -reduced_coeff;
-  }
-  reduced_coeff %= gcd;
-  if (reduced_coeff < 0) reduced_coeff += gcd;
-  int64_t reduced_rhs = ct->linear().domain(0) % gcd;
-  if (reduced_rhs < 0) reduced_rhs += gcd;
+  const int ref = ct->linear().vars(target_index);
+  const int64_t coeff = ct->linear().coeffs(target_index);
+  const int64_t rhs = ct->linear().domain(0);
 
   // This should have been processed before by just dividing the whole
   // constraint by the gcd.
-  if (reduced_coeff == 0) return false;
+  if (coeff % gcd == 0) return false;
 
-  // From target_var * reduced_coeff = reduced_rhs modulo gcd.
-  // We deduce that target_var = reduced_rhs * inverse + X * gcd;
-  CHECK_NE(reduced_coeff, 0);
-  const int64_t inverse = ModularInverse(reduced_coeff, gcd);
-  CHECK_NE(inverse, 0);
-
-  // We abort if we have an overflow here.
-  const int64_t p = CapProd(inverse, reduced_rhs);
-  if (p == std::numeric_limits<int64_t>::max()) return false;
-  const int64_t offset = p % gcd;
-
-  // We have target_var = gcd * X + offset !
-  // Lets create a new integer variable and add the affine relation.
-  const Domain new_domain = context_->DomainOf(target_var)
-                                .AdditionWith(Domain(-offset))
-                                .InverseMultiplicationBy(gcd);
-  if (new_domain.IsEmpty()) {
-    return context_->NotifyThatModelIsUnsat();
+  if (!context_->CanonicalizeAffineVariable(ref, coeff, gcd, rhs)) {
+    return false;
   }
-  if (new_domain.IsFixed()) {
-    if (!context_->IntersectDomainWith(
-            target_var, new_domain.ContinuousMultiplicationBy(gcd).AdditionWith(
-                            Domain(offset)))) {
-      return false;
-    }
-    context_->UpdateRuleStats(
-        "linear: fixed variable due to affine representative.");
-
-    // This will remove the now fixed variable and divide the rest by gcd.
-    return CanonicalizeLinear(ct);
-  }
-
-  VLOG(2) << "In linear with " << num_variables << " terms, deduced "
-          << "(" << reduced_coeff << " * target ≡ " << reduced_rhs << " mod "
-          << gcd << ") => (target = " << gcd << " * X + " << offset
-          << "), target ∊ " << context_->DomainOf(target_var) << ", X ∊ "
-          << new_domain;
-
-  // A potential problem with this and also the same code in
-  // TryToSimplifyDomain() is that it messes up the natural variable order
-  // chosen by the modeler. We try to correct that when mapping variables at the
-  // end of the presolve.
-  const int new_var = context_->NewIntVar(new_domain);
-  CHECK(context_->StoreAffineRelation(target_var, new_var, gcd, offset));
-  context_->UpdateRuleStats("linear: canonicalize affine domain");
-  context_->UpdateNewConstraintsVariableUsage();
 
   // We use the new variable in the constraint.
   // Note that we will divide everything by the gcd too.
@@ -2074,24 +2010,27 @@ bool CpModelPresolver::PresolveSmallLinear(ConstraintProto* ct) {
       const int v2 = arg.vars(1);
       const int64_t coeff1 = arg.coeffs(0);
       const int64_t coeff2 = arg.coeffs(1);
-      bool added = false;
       if (coeff1 == 1) {
-        added = context_->StoreAffineRelation(v1, v2, -coeff2, rhs_max);
+        context_->StoreAffineRelation(v1, v2, -coeff2, rhs_max);
+        return RemoveConstraint(ct);
       } else if (coeff2 == 1) {
-        added = context_->StoreAffineRelation(v2, v1, -coeff1, rhs_max);
+        context_->StoreAffineRelation(v2, v1, -coeff1, rhs_max);
+        return RemoveConstraint(ct);
       } else if (coeff1 == -1) {
-        added = context_->StoreAffineRelation(v1, v2, coeff2, -rhs_max);
+        context_->StoreAffineRelation(v1, v2, coeff2, -rhs_max);
+        return RemoveConstraint(ct);
       } else if (coeff2 == -1) {
-        added = context_->StoreAffineRelation(v2, v1, coeff1, -rhs_max);
+        context_->StoreAffineRelation(v2, v1, coeff1, -rhs_max);
+        return RemoveConstraint(ct);
       } else {
         // In this case, we can solve the diophantine equation, and write
         // both x and y in term of a new affine representative z.
         //
         // Note that PresolveLinearEqualityWithModularInverse() will have the
-        // same effect.
+        // same effect, so this shouldn't appear as we call that rule before
+        // this one.
         context_->UpdateRuleStats("TODO linear: ax + by = cte");
       }
-      if (added) return RemoveConstraint(ct);
     }
   }
 
@@ -6841,22 +6780,8 @@ void CpModelPresolver::TryToSimplifyDomain(int var) {
   }
   if (gcd == 1) return;
 
-  int new_var_index;
-  {
-    std::vector<int64_t> scaled_values;
-    scaled_values.reserve(domain.NumIntervals());
-    for (const ClosedInterval i : domain) {
-      DCHECK_EQ(i.start, i.end);
-      const int64_t shifted_value = i.start - var_min;
-      scaled_values.push_back(shifted_value / gcd);
-    }
-    new_var_index = context_->NewIntVar(Domain::FromValues(scaled_values));
-  }
-  if (context_->ModelIsUnsat()) return;
-
-  CHECK(context_->StoreAffineRelation(var, new_var_index, gcd, var_min));
-  context_->UpdateRuleStats("variables: canonicalize affine domain");
-  context_->UpdateNewConstraintsVariableUsage();
+  // This does all the work since var * 1 % gcd = var_min % gcd.
+  context_->CanonicalizeAffineVariable(var, 1, gcd, var_min);
 }
 
 // Adds all affine relations to our model for the variables that are still used.

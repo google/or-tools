@@ -447,9 +447,9 @@ namespace Google.OrTools.Sat
             LinearArgumentProto args = new LinearArgumentProto();
             foreach (IntVar var in vars)
             {
-                args.Exprs.Add(GetLinearExpressionProto(var, /*negate=*/false));
+                args.Exprs.Add(GetLinearExpressionProto(var));
             }
-            args.Target = GetLinearExpressionProto(target, /*negate=*/false);
+            args.Target = GetLinearExpressionProto(target);
             ct.Proto.LinMax = args;
             return ct;
         }
@@ -460,9 +460,9 @@ namespace Google.OrTools.Sat
             LinearArgumentProto args = new LinearArgumentProto();
             foreach (LinearExpr expr in exprs)
             {
-                args.Exprs.Add(GetLinearExpressionProto(expr, /*negate=*/false));
+                args.Exprs.Add(GetLinearExpressionProto(expr));
             }
-            args.Target = GetLinearExpressionProto(target, /*negate=*/false);
+            args.Target = GetLinearExpressionProto(target);
             ct.Proto.LinMax = args;
             return ct;
         }
@@ -482,9 +482,9 @@ namespace Google.OrTools.Sat
         {
             Constraint ct = new Constraint(model_);
             LinearArgumentProto args = new LinearArgumentProto();
-            args.Exprs.Add(GetLinearExpressionProto(expr, /*negate=*/false));
+            args.Exprs.Add(GetLinearExpressionProto(expr));
             args.Exprs.Add(GetLinearExpressionProto(expr, /*negate=*/true));
-            args.Target = GetLinearExpressionProto(target, /*negate=*/false);
+            args.Target = GetLinearExpressionProto(target);
             ct.Proto.LinMax = args;
             return ct;
         }
@@ -527,9 +527,9 @@ namespace Google.OrTools.Sat
             LinearExpr endExpr = GetLinearExpr(end);
             Add(startExpr + durationExpr == endExpr);
 
-            LinearExpressionProto startProto = GetLinearExpressionProto(startExpr, /*negate=*/false);
-            LinearExpressionProto durationProto = GetLinearExpressionProto(durationExpr, /*negate=*/false);
-            LinearExpressionProto endProto = GetLinearExpressionProto(endExpr, /*negate=*/false);
+            LinearExpressionProto startProto = GetLinearExpressionProto(startExpr);
+            LinearExpressionProto durationProto = GetLinearExpressionProto(durationExpr);
+            LinearExpressionProto endProto = GetLinearExpressionProto(endExpr);
             return new IntervalVar(model_, startProto, durationProto, endProto, name);
         }
 
@@ -539,9 +539,9 @@ namespace Google.OrTools.Sat
             LinearExpr durationExpr = GetLinearExpr(duration);
             LinearExpr endExpr = LinearExpr.Sum(new LinearExpr[] { startExpr, durationExpr });
 
-            LinearExpressionProto startProto = GetLinearExpressionProto(startExpr, /*negate=*/false);
-            LinearExpressionProto durationProto = GetLinearExpressionProto(durationExpr, /*negate=*/false);
-            LinearExpressionProto endProto = GetLinearExpressionProto(endExpr, /*negate=*/false);
+            LinearExpressionProto startProto = GetLinearExpressionProto(startExpr);
+            LinearExpressionProto durationProto = GetLinearExpressionProto(durationExpr);
+            LinearExpressionProto endProto = GetLinearExpressionProto(endExpr);
             return new IntervalVar(model_, startProto, durationProto, endProto, name);
         }
 
@@ -552,9 +552,9 @@ namespace Google.OrTools.Sat
             LinearExpr endExpr = GetLinearExpr(end);
             Add(startExpr + durationExpr == endExpr).OnlyEnforceIf(is_present);
 
-            LinearExpressionProto startProto = GetLinearExpressionProto(startExpr, /*negate=*/false);
-            LinearExpressionProto durationProto = GetLinearExpressionProto(durationExpr, /*negate=*/false);
-            LinearExpressionProto endProto = GetLinearExpressionProto(endExpr, /*negate=*/false);
+            LinearExpressionProto startProto = GetLinearExpressionProto(startExpr);
+            LinearExpressionProto durationProto = GetLinearExpressionProto(durationExpr);
+            LinearExpressionProto endProto = GetLinearExpressionProto(endExpr);
             return new IntervalVar(model_, startProto, durationProto, endProto, is_present.GetIndex(), name);
         }
 
@@ -564,9 +564,9 @@ namespace Google.OrTools.Sat
             LinearExpr durationExpr = GetLinearExpr(duration);
             LinearExpr endExpr = LinearExpr.Sum(new LinearExpr[] { startExpr, durationExpr });
 
-            LinearExpressionProto startProto = GetLinearExpressionProto(startExpr, /*negate=*/false);
-            LinearExpressionProto durationProto = GetLinearExpressionProto(durationExpr, /*negate=*/false);
-            LinearExpressionProto endProto = GetLinearExpressionProto(endExpr, /*negate=*/false);
+            LinearExpressionProto startProto = GetLinearExpressionProto(startExpr);
+            LinearExpressionProto durationProto = GetLinearExpressionProto(durationExpr);
+            LinearExpressionProto endProto = GetLinearExpressionProto(endExpr);
             return new IntervalVar(model_, startProto, durationProto, endProto, is_present.GetIndex(), name);
         }
 
@@ -817,7 +817,7 @@ namespace Google.OrTools.Sat
             throw new ArgumentException("Cannot convert argument to LinearExpr");
         }
 
-        private LinearExpressionProto GetLinearExpressionProto(LinearExpr expr, bool negate)
+        private LinearExpressionProto GetLinearExpressionProto(LinearExpr expr, bool negate = false)
         {
             Dictionary<IntVar, long> dict = new Dictionary<IntVar, long>();
             long constant = LinearExpr.GetVarValueMap(expr, 1L, dict);

@@ -123,18 +123,38 @@ absl::StatusOr<MPSolutionResponse> SatSolveProto(
   MPModelProto* const mp_model = request.mutable_model();
   std::vector<std::unique_ptr<glop::Preprocessor>> for_postsolve;
   if (!params.enumerate_all_solutions()) {
-    const auto status =
+    const glop::ProblemStatus status =
         ApplyMipPresolveSteps(glop_params, mp_model, &for_postsolve, &logger);
-    if (status == MPSolverResponseStatus::MPSOLVER_INFEASIBLE) {
-      if (params.log_search_progress()) {
-        // This is needed for our benchmark scripts.
-        sat::CpSolverResponse cp_response;
-        cp_response.set_status(sat::CpSolverStatus::INFEASIBLE);
-        LOG(INFO) << CpSolverResponseStats(cp_response);
-      }
-      response.set_status(MPSolverResponseStatus::MPSOLVER_INFEASIBLE);
-      response.set_status_str("Problem proven infeasible during MIP presolve");
-      return response;
+    switch (status) {
+      case glop::ProblemStatus::INIT:
+        // Continue with the solve.
+        break;
+      case glop::ProblemStatus::PRIMAL_INFEASIBLE:
+        if (params.log_search_progress()) {
+          // This is needed for our benchmark scripts.
+          sat::CpSolverResponse cp_response;
+          cp_response.set_status(sat::CpSolverStatus::INFEASIBLE);
+          LOG(INFO) << CpSolverResponseStats(cp_response);
+        }
+        response.set_status(MPSolverResponseStatus::MPSOLVER_INFEASIBLE);
+        response.set_status_str(
+            "Problem proven infeasible during MIP presolve");
+        return response;
+      default:
+        // TODO(user): We put the INFEASIBLE_OR_UNBOUNBED case here since there
+        // is no return status that exactly matches it.
+        if (params.log_search_progress()) {
+          // This is needed for our benchmark scripts.
+          sat::CpSolverResponse cp_response;
+          cp_response.set_status(sat::CpSolverStatus::UNKNOWN);
+          LOG(INFO) << CpSolverResponseStats(cp_response);
+        }
+        response.set_status(MPSolverResponseStatus::MPSOLVER_UNKNOWN_STATUS);
+        if (status == glop::ProblemStatus::INFEASIBLE_OR_UNBOUNDED) {
+          response.set_status_str(
+              "Problem proven infeasible or unbounded during MIP presolve");
+        }
+        return response;
     }
   }
 

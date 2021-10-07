@@ -707,32 +707,97 @@ void PresolveContext::RemoveVariableFromAffineRelation(int var) {
   }
 }
 
+void PresolveContext::CanonicalizeVariable(int ref) {
+  const int var = GetAffineRelation(ref).representative;
+  const int64_t min = MinOf(var);
+  if (min == 0 || IsFixed(var)) return;  // Nothing to do.
+
+  const int new_var = NewIntVar(DomainOf(var).AdditionWith(Domain(-min)));
+  CHECK(StoreAffineRelation(var, new_var, 1, min, /*debug_no_recursion=*/true));
+  UpdateRuleStats("variables: canonicalize domain");
+  UpdateNewConstraintsVariableUsage();
+}
+
+bool PresolveContext::CanonicalizeAffineVariable(int ref, int64_t coeff,
+                                                 int64_t mod, int64_t rhs) {
+  CHECK_GT(mod, 1);
+  CHECK_NE(coeff % mod, 0);
+  int var = ref;
+  if (!RefIsPositive(var)) {
+    var = NegatedRef(ref);
+    coeff = -coeff;
+    rhs = -rhs;
+  }
+
+  coeff %= mod;
+  if (coeff < 0) coeff += mod;
+
+  rhs %= mod;
+  if (rhs < 0) rhs += mod;
+
+  // From var * coeff % mod = rhs
+  // We deduce that var = rhs * inverse + X * mod;
+  const int64_t inverse = ModularInverse(coeff, mod);
+  CHECK_NE(inverse, 0);
+
+  // We make the operation in 128 bits to be sure not to have any overflow here.
+  const absl::int128 p = absl::int128{inverse} * absl::int128{rhs};
+  const int64_t offset = static_cast<int64_t>(p % absl::int128{mod});
+
+  // We have var = mod * X + offset !
+  // Lets create a new integer variable and add the affine relation.
+  const Domain new_domain =
+      DomainOf(var).AdditionWith(Domain(-offset)).InverseMultiplicationBy(mod);
+  if (new_domain.IsEmpty()) {
+    return NotifyThatModelIsUnsat();
+  }
+  if (new_domain.IsFixed()) {
+    UpdateRuleStats("variables: fixed value due to affine relation");
+    return IntersectDomainWith(
+        var, new_domain.ContinuousMultiplicationBy(mod).AdditionWith(
+                 Domain(offset)));
+  }
+
+  // We make sure the new variable has a domain starting at zero to minimize
+  // future overflow issues. If it end up Boolean, it is also nice to be able to
+  // use it as such.
+  //
+  // A potential problem with this is that it messes up the natural variable
+  // order chosen by the modeler. We try to correct that when mapping variables
+  // at the end of the presolve.
+  const int64_t min_value = new_domain.Min();
+  const int new_var = NewIntVar(new_domain.AdditionWith(Domain(-min_value)));
+  CHECK(StoreAffineRelation(var, new_var, mod, offset + mod * min_value,
+                            /*debug_no_recursion=*/true));
+  UpdateRuleStats("variables: canonicalize affine domain");
+  UpdateNewConstraintsVariableUsage();
+  return true;
+}
+
 bool PresolveContext::StoreAffineRelation(int ref_x, int ref_y, int64_t coeff,
-                                          int64_t offset) {
+                                          int64_t offset,
+                                          bool debug_no_recursion) {
   CHECK_NE(coeff, 0);
   if (is_unsat_) return false;
 
   // TODO(user): I am not 100% sure why, but sometimes the representative is
   // fixed but that is not propagated to ref_x or ref_y and this causes issues.
-  if (!PropagateAffineRelation(ref_x)) return true;
-  if (!PropagateAffineRelation(ref_y)) return true;
+  if (!PropagateAffineRelation(ref_x)) return false;
+  if (!PropagateAffineRelation(ref_y)) return false;
 
   if (IsFixed(ref_x)) {
-    const int64_t lhs = DomainOf(ref_x).Min() - offset;
+    const int64_t lhs = DomainOf(ref_x).FixedValue() - offset;
     if (lhs % std::abs(coeff) != 0) {
-      is_unsat_ = true;
-      return true;
+      return NotifyThatModelIsUnsat();
     }
-    static_cast<void>(IntersectDomainWith(ref_y, Domain(lhs / coeff)));
     UpdateRuleStats("affine: fixed");
-    return true;
+    return IntersectDomainWith(ref_y, Domain(lhs / coeff));
   }
 
   if (IsFixed(ref_y)) {
-    const int64_t value_x = DomainOf(ref_y).Min() * coeff + offset;
-    static_cast<void>(IntersectDomainWith(ref_x, Domain(value_x)));
+    const int64_t value_x = DomainOf(ref_y).FixedValue() * coeff + offset;
     UpdateRuleStats("affine: fixed");
-    return true;
+    return IntersectDomainWith(ref_x, Domain(value_x));
   }
 
   // If both are already in the same class, we need to make sure the relations
@@ -741,90 +806,150 @@ bool PresolveContext::StoreAffineRelation(int ref_x, int ref_y, int64_t coeff,
   const AffineRelation::Relation ry = GetAffineRelation(ref_y);
   if (rx.representative == ry.representative) {
     // x = rx.coeff * rep + rx.offset;
-    // y = ry.coeff * rep + ry.offset_y;
+    // y = ry.coeff * rep + ry.offset;
     // And x == coeff * ry.coeff * rep + (coeff * ry.offset + offset).
     //
     // So we get the relation a * rep == b with a and b defined here:
     const int64_t a = coeff * ry.coeff - rx.coeff;
     const int64_t b = coeff * ry.offset + offset - rx.offset;
     if (a == 0) {
-      if (b != 0) is_unsat_ = true;
+      if (b != 0) return NotifyThatModelIsUnsat();
       return true;
     }
     if (b % a != 0) {
-      is_unsat_ = true;
-      return true;
+      return NotifyThatModelIsUnsat();
     }
     UpdateRuleStats("affine: unique solution");
     const int64_t unique_value = -b / a;
     if (!IntersectDomainWith(rx.representative, Domain(unique_value))) {
-      return true;
+      return false;
     }
     if (!IntersectDomainWith(ref_x,
                              Domain(unique_value * rx.coeff + rx.offset))) {
-      return true;
+      return false;
     }
     if (!IntersectDomainWith(ref_y,
                              Domain(unique_value * ry.coeff + ry.offset))) {
-      return true;
+      return false;
     }
     return true;
   }
 
-  const int x = PositiveRef(ref_x);
-  const int y = PositiveRef(ref_y);
-  const int64_t c =
-      RefIsPositive(ref_x) == RefIsPositive(ref_y) ? coeff : -coeff;
-  const int64_t o = RefIsPositive(ref_x) ? offset : -offset;
+  // ref_x = coeff * ref_y + offset;
+  // rx.coeff * rep_x + rx.offset =
+  //    coeff * (ry.coeff * rep_y + ry.offset) + offset
+  //
+  // We have a * rep_x + b * rep_y == o
+  int64_t a = rx.coeff;
+  int64_t b = coeff * ry.coeff;
+  int64_t o = coeff * ry.offset + offset - rx.offset;
+  CHECK_NE(a, 0);
+  CHECK_NE(b, 0);
+  {
+    const int64_t gcd = MathUtil::GCD64(std::abs(a), std::abs(b));
+    if (gcd != 1) {
+      a /= gcd;
+      b /= gcd;
+      if (o % gcd != 0) return NotifyThatModelIsUnsat();
+      o /= gcd;
+    }
+  }
+
+  // In this (rare) case, we need to canonicalize one of the variable that will
+  // become the representative for both.
+  if (std::abs(a) > 1 && std::abs(b) > 1) {
+    UpdateRuleStats("affine: created common representative");
+    if (!CanonicalizeAffineVariable(rx.representative, a, std::abs(b),
+                                    offset)) {
+      return false;
+    }
+
+    // Re-add the relation now that a will resolve to a multiple of b.
+    return StoreAffineRelation(ref_x, ref_y, coeff, offset,
+                               /*debug_no_recursion=*/true);
+  }
+
+  // Canonicalize to x = c * y + o
+  int x, y;
+  int64_t c;
+  bool negate = false;
+  if (std::abs(a) == 1) {
+    x = rx.representative;
+    y = ry.representative;
+    c = b;
+    negate = a < 0;
+  } else {
+    CHECK_EQ(std::abs(b), 1);
+    x = ry.representative;
+    y = rx.representative;
+    c = a;
+    negate = b < 0;
+  }
+  if (negate) {
+    c = -c;
+    o = -o;
+  }
+  CHECK(RefIsPositive(x));
+  CHECK(RefIsPositive(y));
+
+  // Lets propagate domains first.
+  if (!IntersectDomainWith(
+          y, DomainOf(x).AdditionWith(Domain(-o)).InverseMultiplicationBy(c))) {
+    return false;
+  }
+  if (!IntersectDomainWith(
+          x,
+          DomainOf(y).ContinuousMultiplicationBy(c).AdditionWith(Domain(o)))) {
+    return false;
+  }
+
+  // To avoid corner cases where replacing x by y in a linear expression
+  // can cause overflow, we might want to canonicalize y first to avoid
+  // cases like x = c * [large_value, ...] - large_value.
+  //
+  // TODO(user): we can do better for overflow by not always choosing the
+  // min at zero, do the best things if it becomes needed.
+  if (std::abs(o) > std::max(std::abs(MinOf(x)), std::abs(MaxOf(x)))) {
+    // Both these function recursively call StoreAffineRelation() but shouldn't
+    // be able to cascade (CHECKED).
+    CHECK(!debug_no_recursion);
+    CanonicalizeVariable(y);
+    return StoreAffineRelation(x, y, c, o, /*debug_no_recursion=*/true);
+  }
 
   // TODO(user): can we force the rep and remove GetAffineRelation()?
-  bool added = AddRelation(x, y, c, o, &affine_relations_);
+  CHECK(AddRelation(x, y, c, o, &affine_relations_));
   if ((c == 1 || c == -1) && o == 0) {
-    added |= AddRelation(x, y, c, o, &var_equiv_relations_);
-  }
-  if (added) {
-    UpdateRuleStats("affine: new relation");
-
-    // Lets propagate again the new relation. We might as well do it as early
-    // as possible and not all call site do it.
-    if (!PropagateAffineRelation(ref_x)) return true;
-    if (!PropagateAffineRelation(ref_y)) return true;
-
-    // These maps should only contains representative, so only need to remap
-    // either x or y.
-    const int rep = GetAffineRelation(x).representative;
-
-    // The domain didn't change, but this notification allows to re-process any
-    // constraint containing these variables. Note that we do not need to
-    // retrigger a propagation of the constraint containing a variable whose
-    // representative didn't change.
-    if (x != rep) modified_domains.Set(x);
-    if (y != rep) modified_domains.Set(y);
-
-    var_to_constraints_[x].insert(kAffineRelationConstraint);
-    var_to_constraints_[y].insert(kAffineRelationConstraint);
-    return true;
+    CHECK(AddRelation(x, y, c, o, &var_equiv_relations_));
   }
 
-  // TODO(user): We can always create a new variable and make it a
-  // representative of both.
-  UpdateRuleStats("affine: incompatible relation");
-  if (VLOG_IS_ON(1)) {
-    LOG(INFO) << "Cannot add relation " << DomainOf(ref_x) << " = " << coeff
-              << " * " << DomainOf(ref_y) << " + " << offset
-              << " because of incompatibilities with existing relation: ";
-    for (const int ref : {ref_x, ref_y}) {
-      const auto r = GetAffineRelation(ref);
-      LOG(INFO) << DomainOf(ref) << " =  " << r.coeff << " * "
-                << DomainOf(r.representative) << " + " << r.offset;
-    }
-  }
+  UpdateRuleStats("affine: new relation");
 
-  return false;
+  // Lets propagate again the new relation. We might as well do it as early
+  // as possible and not all call site do it.
+  //
+  // TODO(user): I am not sure this is needed given the propagation above.
+  if (!PropagateAffineRelation(ref_x)) return false;
+  if (!PropagateAffineRelation(ref_y)) return false;
+
+  // These maps should only contains representative, so only need to remap
+  // either x or y.
+  const int rep = GetAffineRelation(x).representative;
+
+  // The domain didn't change, but this notification allows to re-process any
+  // constraint containing these variables. Note that we do not need to
+  // retrigger a propagation of the constraint containing a variable whose
+  // representative didn't change.
+  if (x != rep) modified_domains.Set(x);
+  if (y != rep) modified_domains.Set(y);
+
+  var_to_constraints_[x].insert(kAffineRelationConstraint);
+  var_to_constraints_[y].insert(kAffineRelationConstraint);
+  return true;
 }
 
-void PresolveContext::StoreBooleanEqualityRelation(int ref_a, int ref_b) {
-  if (is_unsat_) return;
+bool PresolveContext::StoreBooleanEqualityRelation(int ref_a, int ref_b) {
+  if (is_unsat_) return false;
 
   CHECK(!VariableWasRemoved(ref_a));
   CHECK(!VariableWasRemoved(ref_b));
@@ -833,20 +958,17 @@ void PresolveContext::StoreBooleanEqualityRelation(int ref_a, int ref_b) {
   CHECK(CanBeUsedAsLiteral(ref_a));
   CHECK(CanBeUsedAsLiteral(ref_b));
 
-  if (ref_a == ref_b) return;
-  if (ref_a == NegatedRef(ref_b)) {
-    is_unsat_ = true;
-    return;
-  }
+  if (ref_a == ref_b) return true;
+  if (ref_a == NegatedRef(ref_b)) return IntersectDomainWith(ref_a, Domain(0));
+
   const int var_a = PositiveRef(ref_a);
   const int var_b = PositiveRef(ref_b);
   if (RefIsPositive(ref_a) == RefIsPositive(ref_b)) {
     // a = b
-    CHECK(StoreAffineRelation(var_a, var_b, /*coeff=*/1, /*offset=*/0));
-  } else {
-    // a = 1 - b
-    CHECK(StoreAffineRelation(var_a, var_b, /*coeff=*/-1, /*offset=*/1));
+    return StoreAffineRelation(var_a, var_b, /*coeff=*/1, /*offset=*/0);
   }
+  // a = 1 - b
+  return StoreAffineRelation(var_a, var_b, /*coeff=*/-1, /*offset=*/1);
 }
 
 bool PresolveContext::StoreAbsRelation(int target_ref, int ref) {
@@ -1039,11 +1161,11 @@ void PresolveContext::CanonicalizeDomainOfSizeTwo(int var) {
   if (GetAffineRelation(var).representative != PositiveRef(min_literal)) {
     UpdateRuleStats("variables with 2 values: new affine relation");
     if (RefIsPositive(max_literal)) {
-      CHECK(StoreAffineRelation(var, PositiveRef(max_literal),
-                                var_max - var_min, var_min));
+      (void)StoreAffineRelation(var, PositiveRef(max_literal),
+                                var_max - var_min, var_min);
     } else {
-      CHECK(StoreAffineRelation(var, PositiveRef(max_literal),
-                                var_min - var_max, var_max));
+      (void)StoreAffineRelation(var, PositiveRef(max_literal),
+                                var_min - var_max, var_max);
     }
   }
 }
