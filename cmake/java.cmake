@@ -244,7 +244,12 @@ function(add_java_sample FILE_NAME)
   set(SAMPLE_PATH ${PROJECT_BINARY_DIR}/java/${COMPONENT_NAME}/${SAMPLE_NAME})
   file(MAKE_DIRECTORY ${SAMPLE_PATH}/${JAVA_PACKAGE_PATH})
 
-  file(COPY ${FILE_NAME} DESTINATION ${SAMPLE_PATH}/${JAVA_PACKAGE_PATH})
+  add_custom_command(
+    OUTPUT ${SAMPLE_PATH}/${JAVA_PACKAGE_PATH}/${SAMPLE_NAME}.java
+    COMMAND ${CMAKE_COMMAND} -E copy ${FILE_NAME} ${SAMPLE_PATH}/${JAVA_PACKAGE_PATH}
+    MAIN_DEPENDENCY ${FILE_NAME}
+    VERBATIM
+  )
 
   string(TOLOWER ${SAMPLE_NAME} JAVA_SAMPLE_PROJECT)
   set(JAVA_MAIN_CLASS
@@ -254,8 +259,10 @@ function(add_java_sample FILE_NAME)
     ${SAMPLE_PATH}/pom.xml
     @ONLY)
 
-  add_custom_target(java_sample_${SAMPLE_NAME} ALL
-    DEPENDS ${SAMPLE_PATH}/pom.xml
+  add_custom_target(java_${COMPONENT_NAME}_${SAMPLE_NAME} ALL
+    DEPENDS
+      ${SAMPLE_PATH}/pom.xml
+      ${SAMPLE_PATH}/${JAVA_PACKAGE_PATH}/${SAMPLE_NAME}.java
     COMMAND ${MAVEN_EXECUTABLE} compile -B
     BYPRODUCTS
       ${SAMPLE_PATH}/target
@@ -286,7 +293,12 @@ function(add_java_example FILE_NAME)
   set(EXAMPLE_PATH ${PROJECT_BINARY_DIR}/java/${COMPONENT_NAME}/${EXAMPLE_NAME})
   file(MAKE_DIRECTORY ${EXAMPLE_PATH}/${JAVA_PACKAGE_PATH})
 
-  file(COPY ${FILE_NAME} DESTINATION ${EXAMPLE_PATH}/${JAVA_PACKAGE_PATH})
+  add_custom_command(
+    OUTPUT ${EXAMPLE_PATH}/${JAVA_PACKAGE_PATH}/${EXAMPLE_NAME}.java
+    COMMAND ${CMAKE_COMMAND} -E copy ${FILE_NAME} ${EXAMPLE_PATH}/${JAVA_PACKAGE_PATH}
+    MAIN_DEPENDENCY ${FILE_NAME}
+    VERBATIM
+  )
 
   string(TOLOWER ${EXAMPLE_NAME} JAVA_SAMPLE_PROJECT)
   set(JAVA_MAIN_CLASS
@@ -297,7 +309,9 @@ function(add_java_example FILE_NAME)
     @ONLY)
 
   add_custom_target(java_example_${EXAMPLE_NAME} ALL
-    DEPENDS ${EXAMPLE_PATH}/pom.xml
+    DEPENDS
+      ${EXAMPLE_PATH}/pom.xml
+      ${EXAMPLE_PATH}/${JAVA_PACKAGE_PATH}/${EXAMPLE_NAME}.java
     COMMAND ${MAVEN_EXECUTABLE} compile -B
     BYPRODUCTS
       ${EXAMPLE_PATH}/target
@@ -328,7 +342,12 @@ function(add_java_test FILE_NAME)
   set(TEST_PATH ${PROJECT_BINARY_DIR}/java/${COMPONENT_NAME}/${TEST_NAME})
   file(MAKE_DIRECTORY ${TEST_PATH}/${JAVA_TEST_PATH})
 
-  file(COPY ${FILE_NAME} DESTINATION ${TEST_PATH}/${JAVA_TEST_PATH})
+  add_custom_command(
+    OUTPUT ${TEST_PATH}/${JAVA_TEST_PATH}/${TEST_NAME}.java
+    COMMAND ${CMAKE_COMMAND} -E copy ${FILE_NAME} ${TEST_PATH}/${JAVA_TEST_PATH}
+    MAIN_DEPENDENCY ${FILE_NAME}
+    VERBATIM
+  )
 
   string(TOLOWER ${TEST_NAME} JAVA_TEST_PROJECT)
   configure_file(
@@ -337,7 +356,9 @@ function(add_java_test FILE_NAME)
     @ONLY)
 
   add_custom_target(java_test_${TEST_NAME} ALL
-    DEPENDS ${TEST_PATH}/pom.xml
+    DEPENDS
+      ${TEST_PATH}/pom.xml
+      ${TEST_PATH}/${JAVA_TEST_PATH}/${TEST_NAME}.java
     COMMAND ${MAVEN_EXECUTABLE} compile -B
     BYPRODUCTS
       ${TEST_PATH}/target
