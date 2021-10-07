@@ -10,15 +10,22 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
 // [START program]
+// From Taha 'Introduction to Operations Research', example 6.4-2.
+// [START import]
 using System;
 using Google.OrTools.Graph;
+// [END import]
 
 public class SimpleMaxFlowProgram
 {
     static void Main()
     {
+        // [START solver]
+        // Instantiate a SimpleMaxFlow solver.
+        MaxFlow maxFlow = new MaxFlow();
+        // [END solver]
+
         // [START data]
         // Define three parallel arrays: start_nodes, end_nodes, and the capacities
         // between each pair. For instance, the arc from node 0 to node 1 has a
@@ -31,9 +38,6 @@ public class SimpleMaxFlowProgram
         // [END data]
 
         // [START constraints]
-        // Instantiate a SimpleMaxFlow solver.
-        MaxFlow maxFlow = new MaxFlow();
-
         // Add each arc.
         for (int i = 0; i < startNodes.Length; ++i)
         {
@@ -45,11 +49,11 @@ public class SimpleMaxFlowProgram
 
         // [START solve]
         // Find the maximum flow between node 0 and node 4.
-        MaxFlow.Status solveStatus = maxFlow.Solve(0, 4);
+        MaxFlow.Status status = maxFlow.Solve(0, 4);
         // [END solve]
 
         // [START print_solution]
-        if (solveStatus == MaxFlow.Status.OPTIMAL)
+        if (status == MaxFlow.Status.OPTIMAL)
         {
             Console.WriteLine("Max. flow: " + maxFlow.OptimalFlow());
             Console.WriteLine("");
@@ -63,7 +67,7 @@ public class SimpleMaxFlowProgram
         }
         else
         {
-            Console.WriteLine("Solving the max flow problem failed. Solver status: " + solveStatus);
+            Console.WriteLine("Solving the max flow problem failed. Solver status: " + status);
         }
         // [END print_solution]
     }
