@@ -10,16 +10,22 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
-// """From Bradley, Hax, and Magnanti, 'Applied Mathematical Programming', figure 8.1."""
 // [START program]
+// From Bradley, Hax, and Magnanti, 'Applied Mathematical Programming', figure 8.1.
+// [START import]
 using System;
 using Google.OrTools.Graph;
+// [END import]
 
 public class SimpleMinCostFlowProgram
 {
     static void Main()
     {
+        // [START solver]
+        // Instantiate a SimpleMinCostFlow solver.
+        MinCostFlow minCostFlow = new MinCostFlow();
+        // [END solver]
+
         // [START data]
         // Define four parallel arrays: sources, destinations, capacities, and unit costs
         // between each pair. For instance, the arc from node 0 to node 1 has a
@@ -36,9 +42,6 @@ public class SimpleMinCostFlowProgram
         // [END data]
 
         // [START constraints]
-        // Instantiate a SimpleMinCostFlow solver.
-        MinCostFlow minCostFlow = new MinCostFlow();
-
         // Add each arc.
         for (int i = 0; i < startNodes.Length; ++i)
         {
@@ -53,16 +56,15 @@ public class SimpleMinCostFlowProgram
         {
             minCostFlow.SetNodeSupply(i, supplies[i]);
         }
-
         // [END constraints]
 
         // [START solve]
         // Find the min cost flow.
-        MinCostFlow.Status solveStatus = minCostFlow.Solve();
+        MinCostFlow.Status status = minCostFlow.Solve();
         // [END solve]
 
         // [START print_solution]
-        if (solveStatus == MinCostFlow.Status.OPTIMAL)
+        if (status == MinCostFlow.Status.OPTIMAL)
         {
             Console.WriteLine("Minimum cost: " + minCostFlow.OptimalCost());
             Console.WriteLine("");
@@ -78,7 +80,7 @@ public class SimpleMinCostFlowProgram
         }
         else
         {
-            Console.WriteLine("Solving the min cost flow problem failed. Solver status: " + solveStatus);
+            Console.WriteLine("Solving the min cost flow problem failed. Solver status: " + status);
         }
         // [END print_solution]
     }
