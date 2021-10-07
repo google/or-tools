@@ -47,8 +47,8 @@ ABSL_FLAG(std::string, params_file, "",
           "Solver specific parameters file. "
           "If this flag is set, the --params flag is ignored.");
 ABSL_FLAG(std::string, params, "", "Solver specific parameters");
-ABSL_FLAG(int64_t, time_limit_ms, 0,
-          "If strictly positive, specifies a limit in ms on the solving "
+ABSL_FLAG(double, time_limit_seconds, 0.0,
+          "If strictly positive, specifies a limit in s on the solving "
           "time. Otherwise, no time limit will be imposed.");
 
 ABSL_FLAG(std::string, output_csv, "",
@@ -183,18 +183,23 @@ bool Run() {
   const MPSolverResponseStatus status =
       solver.LoadModelFromProtoWithUniqueNamesOrDie(request_proto.model(),
                                                     &error_message);
-  if (request_proto.has_solver_time_limit_seconds()) {
-    solver.set_time_limit(static_cast<int64_t>(
-        1000.0 * request_proto.solver_time_limit_seconds()));
-  }
   // Note, the underlying MPSolver treats time limit equal to 0 as no limit.
-  if (absl::GetFlag(FLAGS_time_limit_ms) >= 0) {
-    solver.set_time_limit(absl::GetFlag(FLAGS_time_limit_ms));
-  }
   if (status != MPSOLVER_MODEL_IS_VALID) {
     LOG(ERROR) << MPSolverResponseStatus_Name(status) << ": " << error_message;
     return false;
   }
+
+  // Time limits.
+  if (absl::GetFlag(FLAGS_time_limit_seconds) > 0.0) {
+    // Overwrite the request time limit.
+    request_proto.set_solver_time_limit_seconds(
+        absl::GetFlag(FLAGS_time_limit_seconds));
+  }
+  if (request_proto.has_solver_time_limit_seconds()) {
+    solver.SetTimeLimit(
+        absl::Seconds(request_proto.solver_time_limit_seconds()));
+  }
+
   absl::PrintF("%-12s: %d x %d\n", "Dimension", solver.NumConstraints(),
                solver.NumVariables());
 
