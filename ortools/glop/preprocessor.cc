@@ -63,6 +63,14 @@ Preprocessor::~Preprocessor() {}
 
 bool MainLpPreprocessor::Run(LinearProgram* lp) {
   RETURN_VALUE_IF_NULL(lp, false);
+
+  default_logger_.EnableLogging(parameters_.log_search_progress() ||
+                                VLOG_IS_ON(1));
+  default_logger_.SetLogToStdOut(parameters_.log_to_stdout());
+
+  SOLVER_LOG(logger_, "");
+  SOLVER_LOG(logger_, "Starting presolve...");
+
   initial_num_rows_ = lp->num_constraints();
   initial_num_cols_ = lp->num_variables();
   initial_num_entries_ = lp->num_entries();
@@ -88,9 +96,7 @@ bool MainLpPreprocessor::Run(LinearProgram* lp) {
       // which has exactly the same meaning for these particular preprocessors.
       if (preprocessors_.size() == old_stack_size) {
         // We use i here because the last pass did nothing.
-        if (parameters_.log_search_progress() || VLOG_IS_ON(1)) {
-          LOG(INFO) << "Reached fixed point after presolve pass #" << i;
-        }
+        SOLVER_LOG(logger_, "Reached fixed point after presolve pass #", i);
         break;
       }
     }
@@ -146,23 +152,22 @@ void MainLpPreprocessor::RunAndPushIfRelevant(
     return;
   }
 
-  const bool log_info = parameters_.log_search_progress() || VLOG_IS_ON(1);
   if (preprocessor->Run(lp)) {
     const EntryIndex new_num_entries = lp->num_entries();
     const double preprocess_time = time_limit->GetElapsedTime() - start_time;
-    if (log_info) {
-      LOG(INFO) << absl::StrFormat(
-          "%s(%fs): %d(%d) rows, %d(%d) columns, %d(%d) entries.", name,
-          preprocess_time, lp->num_constraints().value(),
-          (lp->num_constraints() - initial_num_rows_).value(),
-          lp->num_variables().value(),
-          (lp->num_variables() - initial_num_cols_).value(),
-          // static_cast<int64_t> is needed because the Android port uses
-          // int32_t.
-          static_cast<int64_t>(new_num_entries.value()),
-          static_cast<int64_t>(new_num_entries.value() -
-                               initial_num_entries_.value()));
-    }
+    SOLVER_LOG(logger_,
+               absl::StrFormat(
+                   "%-45s: %d(%d) rows, %d(%d) columns, %d(%d) entries. (%fs)",
+                   name, lp->num_constraints().value(),
+                   (lp->num_constraints() - initial_num_rows_).value(),
+                   lp->num_variables().value(),
+                   (lp->num_variables() - initial_num_cols_).value(),
+                   // static_cast<int64_t> is needed because the Android port
+                   // uses int32_t.
+                   static_cast<int64_t>(new_num_entries.value()),
+                   static_cast<int64_t>(new_num_entries.value() -
+                                        initial_num_entries_.value()),
+                   preprocess_time));
     status_ = preprocessor->status();
     preprocessors_.push_back(std::move(preprocessor));
     return;
@@ -170,9 +175,9 @@ void MainLpPreprocessor::RunAndPushIfRelevant(
     // Even if a preprocessor returns false (i.e. no need for postsolve), it
     // can detect an issue with the problem.
     status_ = preprocessor->status();
-    if (status_ != ProblemStatus::INIT && log_info) {
-      LOG(INFO) << name << " detected that the problem is "
-                << GetProblemStatusString(status_);
+    if (status_ != ProblemStatus::INIT) {
+      SOLVER_LOG(logger_, name, " detected that the problem is ",
+                 GetProblemStatusString(status_));
     }
   }
 }
@@ -1902,6 +1907,10 @@ bool UnconstrainedVariablePreprocessor::Run(LinearProgram* lp) {
     if (rc_ub.Sum() <= low_tolerance) {
       can_be_removed = true;
       target_bound = col_ub;
+      if (in_mip_context_ && lp->IsVariableInteger(col)) {
+        target_bound = std::floor(target_bound + high_tolerance);
+      }
+
       rc_is_away_from_zero = rc_ub.Sum() <= -high_tolerance;
       can_be_removed = !may_have_participated_ub_[col];
     }
@@ -1911,6 +1920,10 @@ bool UnconstrainedVariablePreprocessor::Run(LinearProgram* lp) {
       if (!can_be_removed || !IsFinite(target_bound)) {
         can_be_removed = true;
         target_bound = col_lb;
+        if (in_mip_context_ && lp->IsVariableInteger(col)) {
+          target_bound = std::ceil(target_bound - high_tolerance);
+        }
+
         rc_is_away_from_zero = rc_lb.Sum() >= high_tolerance;
         can_be_removed = !may_have_participated_lb_[col];
       }

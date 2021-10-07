@@ -20,6 +20,7 @@
 #include "ortools/glop/preprocessor.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
+#include "ortools/util/logging.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -240,6 +241,8 @@ class LPSolver {
   // modified. It also allows for a nicer Solve() API with a const
   // LinearProgram& input.
   LinearProgram current_linear_program_;
+
+  SolverLogger logger_;
 
   // The revised simplex solver.
   std::unique_ptr<RevisedSimplex> revised_simplex_;

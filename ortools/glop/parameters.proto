@@ -22,7 +22,7 @@ syntax = "proto2";
 
 package operations_research.glop;
 
-// next id = 66
+// next id = 67
 message GlopParameters {
 
   // Supported algorithms for scaling:
@@ -440,6 +440,9 @@ message GlopParameters {
   // messages can also be turned on by displaying logs at level 1 for the
   // relevant files.
   optional bool log_search_progress = 61 [default = false];
+
+  // If true, logs will be displayed to stdout instead of using Google log info.
+  optional bool log_to_stdout = 66 [default = true];
 
   // If the starting basis contains FREE variable with bounds, we will move
   // any such variable to their closer bounds if the distance is smaller than
