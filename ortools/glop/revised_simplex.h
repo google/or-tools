@@ -304,7 +304,7 @@ class RevisedSimplex {
   std::string SimpleVariableInfo(ColIndex col) const;
 
   // Displays a short string with the current iteration and objective value.
-  void DisplayIterationInfo();
+  void DisplayIterationInfo(bool primal);
 
   // Displays the error bounds of the current solution.
   void DisplayErrors();

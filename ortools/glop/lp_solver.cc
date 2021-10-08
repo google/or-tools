@@ -129,6 +129,8 @@ const GlopParameters& LPSolver::GetParameters() const { return parameters_; }
 
 GlopParameters* LPSolver::GetMutableParameters() { return &parameters_; }
 
+SolverLogger& LPSolver::GetSolverLogger() { return logger_; }
+
 ProblemStatus LPSolver::Solve(const LinearProgram& lp) {
   std::unique_ptr<TimeLimit> time_limit =
       TimeLimit::FromParameters(parameters_);
@@ -183,8 +185,12 @@ ProblemStatus LPSolver::SolveWithTimeLimit(const LinearProgram& lp,
   }
 
   // Setup the logger.
-  logger_.EnableLogging(parameters_.log_search_progress() || VLOG_IS_ON(1));
+  logger_.EnableLogging(parameters_.log_search_progress());
   logger_.SetLogToStdOut(parameters_.log_to_stdout());
+  if (!parameters_.log_search_progress() && VLOG_IS_ON(1)) {
+    logger_.EnableLogging(true);
+    logger_.SetLogToStdOut(false);
+  }
 
   // Make an internal copy of the problem for the preprocessing.
   if (logger_.LoggingIsEnabled()) {

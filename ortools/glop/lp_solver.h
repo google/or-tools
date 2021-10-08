@@ -150,6 +150,13 @@ class LPSolver {
   // TODO(user): Improve the correlation with the running time.
   double DeterministicTime() const;
 
+  // Returns the SolverLogger used during solves.
+  //
+  // Please note that EnableLogging() and SetLogToStdOut() are reset at the
+  // beginning of each solve based on parameters so setting them will have no
+  // effect.
+  SolverLogger& GetSolverLogger();
+
  private:
   // Resizes all the solution vectors to the given sizes.
   // This is used in case of error to make sure all the getter functions will

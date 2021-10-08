@@ -64,8 +64,7 @@ Preprocessor::~Preprocessor() {}
 bool MainLpPreprocessor::Run(LinearProgram* lp) {
   RETURN_VALUE_IF_NULL(lp, false);
 
-  default_logger_.EnableLogging(parameters_.log_search_progress() ||
-                                VLOG_IS_ON(1));
+  default_logger_.EnableLogging(parameters_.log_search_progress());
   default_logger_.SetLogToStdOut(parameters_.log_to_stdout());
 
   SOLVER_LOG(logger_, "");
