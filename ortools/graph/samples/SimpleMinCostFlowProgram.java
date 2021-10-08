@@ -75,7 +75,8 @@ public class SimpleMinCostFlowProgram {
             + minCostFlow.getFlow(i) + "  / " + minCostFlow.getCapacity(i) + "       " + cost);
       }
     } else {
-      System.out.println("Solving the min cost flow problem failed. Solver status: " + status);
+      System.out.println("Solving the min cost flow problem failed.");
+      System.out.println("Solver status: " + status);
     }
     // [END print_solution]
   }
