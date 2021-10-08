@@ -2004,6 +2004,7 @@ bool CpModelPresolver::PresolveSmallLinear(ConstraintProto* ct) {
           imply2->mutable_linear()->add_domain(value2);
           context_->UpdateRuleStats(
               "linear: implied ax + by = cte has only one solution");
+          context_->UpdateNewConstraintsVariableUsage();
           return RemoveConstraint(ct);
         }
       }
