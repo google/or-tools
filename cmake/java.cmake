@@ -227,6 +227,9 @@ if(BUILD_TESTING)
     WORKING_DIRECTORY ${TEST_PATH})
 endif()
 
+###################
+##  Java Sample  ##
+###################
 # add_java_sample()
 # CMake function to generate and build java sample.
 # Parameters:
@@ -278,6 +281,9 @@ function(add_java_sample FILE_NAME)
   message(STATUS "Configuring sample ${FILE_NAME}: ...DONE")
 endfunction()
 
+####################
+##  Java Example  ##
+####################
 # add_java_example()
 # CMake function to generate and build java example.
 # Parameters:
@@ -327,6 +333,9 @@ function(add_java_example FILE_NAME)
   message(STATUS "Configuring example ${FILE_NAME}: ...DONE")
 endfunction()
 
+#################
+##  Java Test  ##
+#################
 # add_java_test()
 # CMake function to generate and build java test.
 # Parameters:
