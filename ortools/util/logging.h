@@ -50,6 +50,12 @@ class SolverLogger {
   void AddInfoLoggingCallback(
       std::function<void(const std::string& message)> callback);
 
+  // Removes all callbacks registered via AddInfoLoggingCallback().
+  void ClearInfoLoggingCallbacks();
+
+  // Returns the number of registered callbacks.
+  int NumInfoLoggingCallbacks() const { return info_callbacks_.size(); }
+
   // Logs a given information message and dispatch it to all callbacks.
   void LogInfo(const char* source_filename, int source_line,
                const std::string& message);
