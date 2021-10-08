@@ -267,7 +267,7 @@ function(add_java_sample FILE_NAME)
     BYPRODUCTS
       ${SAMPLE_PATH}/target
     WORKING_DIRECTORY ${SAMPLE_PATH})
-  add_dependencies(java_sample_${SAMPLE_NAME} java_package)
+  add_dependencies(java_${COMPONENT_NAME}_${SAMPLE_NAME} java_package)
 
   if(BUILD_TESTING)
     add_test(
