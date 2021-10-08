@@ -1934,6 +1934,82 @@ bool CpModelPresolver::PresolveSmallLinear(ConstraintProto* ct) {
     return RemoveConstraint(ct);
   }
 
+  // Detect affine relation.
+  //
+  // TODO(user): it might be better to first add only the affine relation with
+  // a coefficient of magnitude 1, and later the one with larger coeffs.
+  const LinearConstraintProto& arg = ct->linear();
+  if (arg.vars_size() == 2) {
+    const int var1 = arg.vars(0);
+    const int var2 = arg.vars(1);
+    const int64_t coeff1 = arg.coeffs(0);
+    const int64_t coeff2 = arg.coeffs(1);
+
+    if (arg.domain_size() == 2 && arg.domain(0) == arg.domain(1)) {
+      // coeff1 * v1 + coeff2 * v2 == rhs.
+      const int64_t rhs = arg.domain(0);
+      if (ct->enforcement_literal().empty()) {
+        bool added = false;
+        if (coeff1 == 1) {
+          added = context_->StoreAffineRelation(var1, var2, -coeff2, rhs);
+        } else if (coeff2 == 1) {
+          added = context_->StoreAffineRelation(var2, var1, -coeff1, rhs);
+        } else if (coeff1 == -1) {
+          added = context_->StoreAffineRelation(var1, var2, coeff2, -rhs);
+        } else if (coeff2 == -1) {
+          added = context_->StoreAffineRelation(var2, var1, coeff1, -rhs);
+        } else {
+          // In this case, we can solve the diophantine equation, and write
+          // both x and y in term of a new affine representative z.
+          //
+          // Note that PresolveLinearEqualityWithModularInverse() will have the
+          // same effect.
+          //
+          // We can also decide to fully expand the equality if the variables
+          // are fully encoded.
+          context_->UpdateRuleStats("TODO linear: ax + by = cte");
+        }
+        if (added) return RemoveConstraint(ct);
+      } else {
+        // We look ahead to detect solutions to ax + by == cte.
+        std::vector<std::pair<int64_t, int64_t>> compatible_values;
+        for (const int64_t value1 : context_->DomainOf(var1).Values()) {
+          const int64_t value2 = (rhs - coeff1 * value1) / coeff2;
+          if (coeff1 * value1 + coeff2 * value2 != rhs ||
+              !context_->DomainContains(var2, value2)) {
+            continue;
+          }
+          compatible_values.push_back({value1, value2});
+          if (compatible_values.size() > 1) break;
+        }
+        if (compatible_values.empty()) {
+          context_->UpdateRuleStats(
+              "linear: implied ax + by = cte has no solutions");
+          return MarkConstraintAsFalse(ct);
+        }
+        if (compatible_values.size() == 1) {
+          const auto [value1, value2] = compatible_values.front();
+          ConstraintProto* imply1 = context_->working_model->add_constraints();
+          *imply1->mutable_enforcement_literal() = ct->enforcement_literal();
+          imply1->mutable_linear()->add_vars(var1);
+          imply1->mutable_linear()->add_coeffs(1);
+          imply1->mutable_linear()->add_domain(value1);
+          imply1->mutable_linear()->add_domain(value1);
+
+          ConstraintProto* imply2 = context_->working_model->add_constraints();
+          *imply2->mutable_enforcement_literal() = ct->enforcement_literal();
+          imply2->mutable_linear()->add_vars(var2);
+          imply2->mutable_linear()->add_coeffs(1);
+          imply2->mutable_linear()->add_domain(value2);
+          imply2->mutable_linear()->add_domain(value2);
+          context_->UpdateRuleStats(
+              "linear: implied ax + by = cte has only one solution");
+          return RemoveConstraint(ct);
+        }
+      }
+    }
+  }
+
   // Detect encoding.
   if (HasEnforcementLiteral(*ct)) {
     if (ct->enforcement_literal_size() != 1 || ct->linear().vars_size() != 1 ||
@@ -1994,44 +2070,6 @@ bool CpModelPresolver::PresolveSmallLinear(ConstraintProto* ct) {
       return true;
     }
     return RemoveConstraint(ct);
-  }
-
-  // Detect affine relation.
-  //
-  // TODO(user): it might be better to first add only the affine relation with
-  // a coefficient of magnitude 1, and later the one with larger coeffs.
-  const LinearConstraintProto& arg = ct->linear();
-  if (arg.vars_size() == 2) {
-    const Domain rhs = ReadDomainFromProto(ct->linear());
-    const int64_t rhs_min = rhs.Min();
-    const int64_t rhs_max = rhs.Max();
-    if (rhs_min == rhs_max) {
-      const int v1 = arg.vars(0);
-      const int v2 = arg.vars(1);
-      const int64_t coeff1 = arg.coeffs(0);
-      const int64_t coeff2 = arg.coeffs(1);
-      if (coeff1 == 1) {
-        context_->StoreAffineRelation(v1, v2, -coeff2, rhs_max);
-        return RemoveConstraint(ct);
-      } else if (coeff2 == 1) {
-        context_->StoreAffineRelation(v2, v1, -coeff1, rhs_max);
-        return RemoveConstraint(ct);
-      } else if (coeff1 == -1) {
-        context_->StoreAffineRelation(v1, v2, coeff2, -rhs_max);
-        return RemoveConstraint(ct);
-      } else if (coeff2 == -1) {
-        context_->StoreAffineRelation(v2, v1, coeff1, -rhs_max);
-        return RemoveConstraint(ct);
-      } else {
-        // In this case, we can solve the diophantine equation, and write
-        // both x and y in term of a new affine representative z.
-        //
-        // Note that PresolveLinearEqualityWithModularInverse() will have the
-        // same effect, so this shouldn't appear as we call that rule before
-        // this one.
-        context_->UpdateRuleStats("TODO linear: ax + by = cte");
-      }
-    }
   }
 
   return false;

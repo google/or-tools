@@ -1304,6 +1304,17 @@ bool PresolveContext::HasVarValueEncoding(int ref, int64_t value,
   return false;
 }
 
+bool PresolveContext::IsFullyEncoded(int ref) const {
+  // TODO(user): If the domain was shrunk, we can have a false positive.
+  // Still it means that the number of values removed is greater than the number
+  // of values not encoded.
+  const int var = PositiveRef(ref);
+  const int64_t size = domains[var].Size();
+  if (size <= 2) return true;
+  const auto& it = encoding_.find(var);
+  return it == encoding_.end() ? false : size <= it->second.size();
+}
+
 int PresolveContext::GetOrCreateVarValueEncoding(int ref, int64_t value) {
   CHECK(!VariableWasRemoved(ref));
   if (!CanonicalizeEncoding(&ref, &value)) return GetOrCreateConstantVar(0);

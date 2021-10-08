@@ -322,6 +322,9 @@ class PresolveContext {
   // It assigns the corresponding to `literal` if non null.
   bool HasVarValueEncoding(int ref, int64_t value, int* literal = nullptr);
 
+  // Returns true if the variable is fully encoded.
+  bool IsFullyEncoded(int ref) const;
+
   // Stores the fact that literal implies var == value.
   // It returns true if that information is new.
   bool StoreLiteralImpliesVarEqValue(int literal, int var, int64_t value);

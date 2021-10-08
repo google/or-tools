@@ -1460,9 +1460,16 @@ void ExpandPositiveTable(ConstraintProto* ct, PresolveContext* context) {
 void ExpandAllDiff(bool expand_non_permutations, ConstraintProto* ct,
                    PresolveContext* context) {
   AllDifferentConstraintProto& proto = *ct->mutable_all_diff();
-  if (proto.vars_size() <= 2) return;
+  if (proto.vars_size() <= 1) return;
 
   const int num_vars = proto.vars_size();
+
+  int num_fully_encoded = 0;
+  for (int i = 0; i < num_vars; ++i) {
+    if (context->IsFullyEncoded(proto.vars(i))) {
+      num_fully_encoded++;
+    }
+  }
 
   Domain union_of_domains = context->DomainOf(proto.vars(0));
   for (int i = 1; i < num_vars; ++i) {
@@ -1474,8 +1481,11 @@ void ExpandAllDiff(bool expand_non_permutations, ConstraintProto* ct,
   const bool has_small_domains =
       (union_of_domains.Size() <= 2 * proto.vars_size()) ||
       (union_of_domains.Size() <= 32);
+  const bool all_fully_encoded_and_domain_small_enough =
+      num_fully_encoded == num_vars && union_of_domains.Size() < 256;
 
-  if (!is_a_permutation && !has_small_domains && !expand_non_permutations) {
+  if (!is_a_permutation && !has_small_domains && !expand_non_permutations &&
+      !all_fully_encoded_and_domain_small_enough) {
     return;
   }
 
@@ -1530,11 +1540,66 @@ void ExpandAllDiff(bool expand_non_permutations, ConstraintProto* ct,
     at_most_or_equal_one->add_domain(ub);
   }
   if (is_a_permutation) {
-    context->UpdateRuleStats("alldiff: permutation expanded");
+    context->UpdateRuleStats("all_diff: permutation expanded");
   } else {
-    context->UpdateRuleStats("alldiff: expanded");
+    context->UpdateRuleStats("all_diff: expanded");
   }
   ct->Clear();
+}
+
+// Replaces an constraint literal => ax + by != cte by a set of clauses.
+// This is performed if the domains are small enough, and the variables are
+// fully encoded.
+//
+// We do it during the expansion as we want to the first pass of the presolve to
+// be complete.
+void ExpandLinear(ConstraintProto* ct, PresolveContext* context) {
+  const LinearConstraintProto& arg = ct->linear();
+  if (arg.vars_size() != 2) return;
+
+  const int64_t max_domain_size_for_encoding =
+      context->params().max_domain_size_when_encoding_eq_neq_constraints();
+  const int var1 = arg.vars(0);
+  const int var2 = arg.vars(1);
+  const int64_t size1 = context->DomainOf(PositiveRef(var1)).Size();
+  const int64_t size2 = context->DomainOf(PositiveRef(var2)).Size();
+  if (size1 > max_domain_size_for_encoding ||
+      size2 > max_domain_size_for_encoding || !context->IsFullyEncoded(var1) ||
+      !context->IsFullyEncoded(var2) || size1 == 1 || size2 == 1) {
+    return;
+  }
+
+  const int64_t coeff1 = arg.coeffs(0);
+  const int64_t coeff2 = arg.coeffs(1);
+
+  const Domain reachable_domain =
+      context->DomainOf(var1).MultiplicationBy(coeff1).AdditionWith(
+          context->DomainOf(var2).MultiplicationBy(coeff2));
+
+  const Domain complement =
+      reachable_domain.IntersectionWith(ReadDomainFromProto(arg).Complement());
+
+  if (complement.Size() == 1) {
+    // coeff1 * v1 + coeff2 * v2 != rhs.
+    const int64_t rhs = complement.Min();
+    for (const int64_t value1 : context->DomainOf(var1).Values()) {
+      const int64_t value2 = (rhs - coeff1 * value1) / coeff2;
+      if (coeff1 * value1 + coeff2 * value2 != rhs) continue;
+      if (!context->DomainContains(var2, value2)) continue;
+
+      const int lit1 = context->GetOrCreateVarValueEncoding(var1, value1);
+      const int lit2 = context->GetOrCreateVarValueEncoding(var2, value2);
+      auto* bool_or =
+          context->working_model->add_constraints()->mutable_bool_or();
+      bool_or->add_literals(NegatedRef(lit1));
+      bool_or->add_literals(NegatedRef(lit2));
+      for (const int lit : ct->enforcement_literal()) {
+        bool_or->add_literals(NegatedRef(lit));
+      }
+    }
+    context->UpdateRuleStats("linear: expand small ax + by != cte");
+    ct->Clear();
+  }
 }
 
 }  // namespace
@@ -1553,6 +1618,7 @@ void ExpandCpModel(PresolveContext* context) {
   // Clear the precedence cache.
   context->ClearPrecedenceCache();
 
+  // First pass: we look at constraints that may fully encode variables.
   for (int i = 0; i < context->working_model->constraints_size(); ++i) {
     ConstraintProto* const ct = context->working_model->mutable_constraints(i);
     bool skip = false;
@@ -1594,14 +1660,44 @@ void ExpandCpModel(PresolveContext* context) {
           ExpandPositiveTable(ct, context);
         }
         break;
+      default:
+        skip = true;
+        break;
+    }
+    if (skip) continue;  // Nothing was done for this constraint.
+
+    // Update variable-constraint graph.
+    context->UpdateNewConstraintsVariableUsage();
+    if (ct->constraint_case() == ConstraintProto::CONSTRAINT_NOT_SET) {
+      context->UpdateConstraintVariableUsage(i);
+    }
+
+    // Early exit if the model is unsat.
+    if (context->ModelIsUnsat()) {
+      SOLVER_LOG(context->logger(), "UNSAT after expansion of ",
+                 ProtobufShortDebugString(*ct));
+      return;
+    }
+  }
+
+  // Second pass. We may decide to expand constraints if all their variables
+  // are fully encoded.
+  for (int i = 0; i < context->working_model->constraints_size(); ++i) {
+    ConstraintProto* const ct = context->working_model->mutable_constraints(i);
+    bool skip = false;
+    switch (ct->constraint_case()) {
       case ConstraintProto::ConstraintCase::kAllDiff:
         ExpandAllDiff(context->params().expand_alldiff_constraints(), ct,
                       context);
+        break;
+      case ConstraintProto::ConstraintCase::kLinear:
+        ExpandLinear(ct, context);
         break;
       default:
         skip = true;
         break;
     }
+
     if (skip) continue;  // Nothing was done for this constraint.
 
     // Update variable-constraint graph.
