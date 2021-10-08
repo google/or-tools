@@ -314,7 +314,7 @@ function(add_dotnet_sample FILE_NAME)
     ${DOTNET_SAMPLE_PATH}/${SAMPLE_NAME}.csproj
     @ONLY)
 
-  add_custom_target(dotnet_sample_${SAMPLE_NAME} ALL
+  add_custom_target(dotnet_${COMPONENT_NAME}_${SAMPLE_NAME} ALL
     DEPENDS
       ${DOTNET_SAMPLE_PATH}/${SAMPLE_NAME}.csproj
       ${DOTNET_SAMPLE_PATH}/${SAMPLE_NAME}.cs
@@ -324,7 +324,7 @@ function(add_dotnet_sample FILE_NAME)
       ${DOTNET_SAMPLE_PATH}/bin
       ${DOTNET_SAMPLE_PATH}/obj
     WORKING_DIRECTORY ${DOTNET_SAMPLE_PATH})
-  add_dependencies(dotnet_sample_${SAMPLE_NAME} dotnet_package)
+  add_dependencies(dotnet_${COMPONENT_NAME}_${SAMPLE_NAME} dotnet_package)
 
   if(BUILD_TESTING)
     add_test(
