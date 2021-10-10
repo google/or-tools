@@ -52,7 +52,6 @@ void SimpleSatProgram() {
 
 int main() {
   operations_research::sat::SimpleSatProgram();
-
   return EXIT_SUCCESS;
 }
 // [END program]
