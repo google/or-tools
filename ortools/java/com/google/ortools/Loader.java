@@ -13,7 +13,6 @@
 
 package com.google.ortools;
 
-import com.sun.jna.Platform;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -31,7 +30,24 @@ import java.util.Objects;
 
 /** Load native libraries needed for using ortools-java.*/
 public class Loader {
-  private static final String RESOURCE_PATH = "ortools-" + Platform.RESOURCE_PREFIX + "/";
+  private static final String RESOURCE_PREFIX;
+  static {
+    String librarySuffix = System.mapLibraryName("test").split("\\.")[1];
+    switch (librarySuffix) {
+      case "dll":
+        RESOURCE_PREFIX = "win32-x86-64";
+        break;
+      case "so":
+        RESOURCE_PREFIX = "linux-x86-64";
+        break;
+      case "dylib":
+        RESOURCE_PREFIX = "darwin-x86-64";
+        break;
+      default:
+        throw new UnsupportedOperationException(String.format("Unknown library suffix %s!", librarySuffix));
+    }
+  }
+  private static final String RESOURCE_PATH = "ortools-" + RESOURCE_PREFIX + "/";
 
   /** Try to locate the native libraries directory.*/
   private static URI getNativeResourceURI() throws IOException {
