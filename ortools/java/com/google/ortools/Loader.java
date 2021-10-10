@@ -25,24 +25,25 @@ import java.util.Objects;
  */
 public class Loader {
   private static final String RESOURCE_PREFIX;
+  private static final String RESOURCE_SUFFIX;
   private static final String[] FILES_TO_EXTRACT;
   static {
-    String librarySuffix = System.mapLibraryName("test").split("test\\.")[1];
-    switch (librarySuffix) {
+    RESOURCE_SUFFIX = System.mapLibraryName("test").split("test\\.")[1];
+    switch (RESOURCE_SUFFIX) {
       case "dll":
         RESOURCE_PREFIX = "win32-x86-64";
-        FILES_TO_EXTRACT = new String[]{"jniortools.dll"};
+        FILES_TO_EXTRACT = new String[]{"jniortools"};
         break;
       case "so":
         RESOURCE_PREFIX = "linux-x86-64";
-        FILES_TO_EXTRACT = new String[]{"libjniortools.so", "libortools.so"};
+        FILES_TO_EXTRACT = new String[]{"libjniortools", "libortools"};
         break;
       case "dylib":
         RESOURCE_PREFIX = "darwin-x86-64";
-        FILES_TO_EXTRACT = new String[]{"libjniortools.dylib", "libortools.dylib"};
+        FILES_TO_EXTRACT = new String[]{"libjniortools", "libortools"};
         break;
       default:
-        throw new UnsupportedOperationException(String.format("Unknown library suffix %s!", librarySuffix));
+        throw new UnsupportedOperationException(String.format("Unknown library suffix %s!", RESOURCE_SUFFIX));
     }
   }
 
@@ -56,7 +57,7 @@ public class Loader {
 
     ClassLoader loader = Loader.class.getClassLoader();
     for (String file : FILES_TO_EXTRACT) {
-      String fullPath = "ortools-" + RESOURCE_PREFIX + "/" + file;
+      String fullPath = String.format("ortools-%s/%s.%s", RESOURCE_PREFIX, file, RESOURCE_SUFFIX);
       URL url = Objects.requireNonNull(
               loader.getResource(fullPath),
               String.format("Resource %s was not found in ClassLoader %s", fullPath, loader)
