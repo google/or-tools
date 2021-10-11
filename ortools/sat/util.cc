@@ -17,6 +17,7 @@
 #include <cmath>
 #include <cstdint>
 
+#include "absl/numeric/int128.h"
 #include "ortools/base/stl_util.h"
 
 namespace operations_research {
@@ -66,6 +67,77 @@ int64_t ModularInverse(int64_t x, int64_t m) {
   if (t[i] < 0) t[i] += m;
 
   return t[i];
+}
+
+int64_t PositiveMod(int64_t x, int64_t m) {
+  const int64_t r = x % m;
+  return r < 0 ? r + m : r;
+}
+
+int64_t ProductWithModularInverse(int64_t coeff, int64_t mod, int64_t rhs) {
+  DCHECK_NE(coeff, 0);
+  DCHECK_NE(mod, 0);
+
+  mod = std::abs(mod);
+  if (rhs == 0 || mod == 1) return 0;
+  DCHECK_EQ(std::gcd(std::abs(coeff), mod), 1);
+
+  // Make both in [0, mod).
+  coeff = PositiveMod(coeff, mod);
+  rhs = PositiveMod(rhs, mod);
+
+  // From X * coeff % mod = rhs
+  // We deduce that X % mod = rhs * inverse % mod
+  const int64_t inverse = ModularInverse(coeff, mod);
+  CHECK_NE(inverse, 0);
+
+  // We make the operation in 128 bits to be sure not to have any overflow here.
+  const absl::int128 p = absl::int128{inverse} * absl::int128{rhs};
+  return static_cast<int64_t>(p % absl::int128{mod});
+}
+
+bool SolveDiophantineEquationOfSizeTwo(int64_t& a, int64_t& b, int64_t& cte,
+                                       int64_t& x0, int64_t& y0) {
+  CHECK_NE(a, 0);
+  CHECK_NE(b, 0);
+  CHECK_NE(a, std::numeric_limits<int64_t>::min());
+  CHECK_NE(b, std::numeric_limits<int64_t>::min());
+
+  const int64_t gcd = std::gcd(std::abs(a), std::abs(b));
+  if (cte % gcd != 0) return false;
+  a /= gcd;
+  b /= gcd;
+  cte /= gcd;
+
+  // The simple case where (0, 0) is a solution.
+  if (cte == 0) {
+    x0 = y0 = 0;
+    return true;
+  }
+
+  // We solve a * X + b * Y = cte
+  // We take a valid x0 in [0, b) by considering the equation mod b.
+  x0 = ProductWithModularInverse(a, b, cte);
+
+  // We choose x0 of the same sign as cte.
+  if (cte < 0 && x0 != 0) x0 -= std::abs(b);
+
+  // By plugging X = x0 + b * Z
+  // We have a * (x0 + b * Z) + b * Y = cte
+  // so a * b * Z + b * Y = cte - a * x0;
+  // and y0 = (cte - a * x0) / b (with an exact division by construction).
+  const absl::int128 t = absl::int128{cte} - absl::int128{a} * absl::int128{x0};
+  DCHECK_EQ(t % absl::int128{b}, absl::int128{0});
+
+  // Overflow-wise, there is two cases for cte > 0:
+  // - a * x0 <= cte, in this case y0 will not overflow (<= cte).
+  // - a * x0 > cte, in this case y0 will be in (-a, 0].
+  const absl::int128 r = t / absl::int128{b};
+  DCHECK_LE(r, absl::int128{std::numeric_limits<int64_t>::max()});
+  DCHECK_GE(r, absl::int128{std::numeric_limits<int64_t>::min()});
+
+  y0 = static_cast<int64_t>(r);
+  return true;
 }
 
 int MoveOneUnprocessedLiteralLast(const std::set<LiteralIndex>& processed,

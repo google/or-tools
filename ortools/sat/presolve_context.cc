@@ -728,23 +728,10 @@ bool PresolveContext::CanonicalizeAffineVariable(int ref, int64_t coeff,
     coeff = -coeff;
     rhs = -rhs;
   }
-
-  coeff %= mod;
-  if (coeff < 0) coeff += mod;
-
-  rhs %= mod;
-  if (rhs < 0) rhs += mod;
-
   // From var * coeff % mod = rhs
-  // We deduce that var = rhs * inverse + X * mod;
-  const int64_t inverse = ModularInverse(coeff, mod);
-  CHECK_NE(inverse, 0);
+  // We have var = mod * X + offset.
+  const int64_t offset = ProductWithModularInverse(coeff, mod, rhs);
 
-  // We make the operation in 128 bits to be sure not to have any overflow here.
-  const absl::int128 p = absl::int128{inverse} * absl::int128{rhs};
-  const int64_t offset = static_cast<int64_t>(p % absl::int128{mod});
-
-  // We have var = mod * X + offset !
   // Lets create a new integer variable and add the affine relation.
   const Domain new_domain =
       DomainOf(var).AdditionWith(Domain(-offset)).InverseMultiplicationBy(mod);
@@ -1305,9 +1292,6 @@ bool PresolveContext::HasVarValueEncoding(int ref, int64_t value,
 }
 
 bool PresolveContext::IsFullyEncoded(int ref) const {
-  // TODO(user): If the domain was shrunk, we can have a false positive.
-  // Still it means that the number of values removed is greater than the number
-  // of values not encoded.
   const int var = PositiveRef(ref);
   const int64_t size = domains[var].Size();
   if (size <= 2) return true;

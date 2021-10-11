@@ -1523,6 +1523,15 @@ void QuickSolveWithHint(const CpModelProto& model_proto, Model* model) {
 
   // Temporarily change the parameters.
   auto* parameters = model->GetOrCreate<SatParameters>();
+
+  // If the model was loaded with "optimize_with_core" then the objective
+  // variable is not linked to its linear expression. Because of that, we can
+  // return a solution that does not satisfy the objective domain.
+  //
+  // TODO(user): This is fixable, but then do we need the hint when optimizing
+  // with core?
+  if (parameters->optimize_with_core()) return;
+
   const SatParameters saved_params = *parameters;
   parameters->set_max_number_of_conflicts(parameters->hint_conflict_limit());
   parameters->set_search_branching(SatParameters::HINT_SEARCH);

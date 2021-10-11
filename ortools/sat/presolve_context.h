@@ -322,7 +322,11 @@ class PresolveContext {
   // It assigns the corresponding to `literal` if non null.
   bool HasVarValueEncoding(int ref, int64_t value, int* literal = nullptr);
 
-  // Returns true if the variable is fully encoded.
+  // Returns true if we have literal <=> var = value for all values of var.
+  //
+  // TODO(user): If the domain was shrunk, we can have a false positive.
+  // Still it means that the number of values removed is greater than the number
+  // of values not encoded.
   bool IsFullyEncoded(int ref) const;
 
   // Stores the fact that literal implies var == value.
