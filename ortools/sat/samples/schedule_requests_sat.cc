@@ -201,7 +201,7 @@ void ScheduleRequestsSat() {
       LOG(INFO) << "";
     }
     LOG(INFO) << "Number of shift requests met = " << response.objective_value()
-              << " out of " << num_nurses * min_shifts_per_nurse << ")";
+              << " (out of " << num_nurses * min_shifts_per_nurse << ")";
   } else {
     LOG(INFO) << "No optimal solution found !";
   }
