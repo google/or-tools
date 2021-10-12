@@ -158,8 +158,6 @@ void NurseSat() {
 
   // [START solve]
   const CpSolverResponse response = SolveCpModel(cp_model.Build(), &model);
-  LOG(INFO) << "Number of solutions found: " << num_solutions;
-  CHECK_EQ(num_solutions, kSolutionLimit);
   // [END solve]
 
   // Statistics.

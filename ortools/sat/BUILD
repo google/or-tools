@@ -1161,6 +1161,7 @@ cc_library(
         "@com_google_absl//absl/random",
         "@com_google_absl//absl/random:bit_gen_ref",
         "@com_google_protobuf//:protobuf",
+        "@com_google_absl//absl/numeric:int128",
     ],
 )
 

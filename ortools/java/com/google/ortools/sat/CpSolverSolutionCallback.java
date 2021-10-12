@@ -37,10 +37,13 @@ package com.google.ortools.sat;
  * <p>{@code long objectiveValue()} to get the best objective value found so far.
  */
 public class CpSolverSolutionCallback extends SolutionCallback {
-  /** Returns the value of the variable in the current solution. */
-  public long value(IntVar var) {
-    int index = var.getIndex();
-    return solutionIntegerValue(index);
+  /** Returns the value of the linear expression in the current solution. */
+  public long value(LinearExpr expr) {
+    long result = expr.getOffset();
+    for (int i = 0; i < expr.numElements(); ++i) {
+      result += solutionIntegerValue(expr.getVariable(i).getIndex()) * expr.getCoefficient(i);
+    }
+    return result;
   }
 
   /** Returns the Boolean value of the literal in the current solution. */

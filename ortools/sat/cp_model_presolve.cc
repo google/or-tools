@@ -1972,23 +1972,39 @@ bool CpModelPresolver::PresolveSmallLinear(ConstraintProto* ct) {
         if (added) return RemoveConstraint(ct);
       } else {
         // We look ahead to detect solutions to ax + by == cte.
-        std::vector<std::pair<int64_t, int64_t>> compatible_values;
-        for (const int64_t value1 : context_->DomainOf(var1).Values()) {
-          const int64_t value2 = (rhs - coeff1 * value1) / coeff2;
-          if (coeff1 * value1 + coeff2 * value2 != rhs ||
-              !context_->DomainContains(var2, value2)) {
-            continue;
-          }
-          compatible_values.push_back({value1, value2});
-          if (compatible_values.size() > 1) break;
-        }
-        if (compatible_values.empty()) {
+        int64_t a = coeff1;
+        int64_t b = coeff2;
+        int64_t cte = rhs;
+        int64_t x0 = 0;
+        int64_t y0 = 0;
+        if (!SolveDiophantineEquationOfSizeTwo(a, b, cte, x0, y0)) {
           context_->UpdateRuleStats(
               "linear: implied ax + by = cte has no solutions");
           return MarkConstraintAsFalse(ct);
         }
-        if (compatible_values.size() == 1) {
-          const auto [value1, value2] = compatible_values.front();
+        const Domain reduced_domain =
+            context_->DomainOf(var1)
+                .AdditionWith(Domain(-x0))
+                .InverseMultiplicationBy(b)
+                .IntersectionWith(context_->DomainOf(var2)
+                                      .AdditionWith(Domain(-y0))
+                                      .InverseMultiplicationBy(-a));
+
+        if (reduced_domain.IsEmpty()) {  // no solution
+          context_->UpdateRuleStats(
+              "linear: implied ax + by = cte has no solutions");
+          return MarkConstraintAsFalse(ct);
+        }
+
+        if (reduced_domain.Size() == 1) {
+          const int64_t z = reduced_domain.FixedValue();
+          const int64_t value1 = x0 + b * z;
+          const int64_t value2 = y0 - a * z;
+
+          DCHECK(context_->DomainContains(var1, value1));
+          DCHECK(context_->DomainContains(var2, value2));
+          DCHECK_EQ(coeff1 * value1 + coeff2 * value2, rhs);
+
           ConstraintProto* imply1 = context_->working_model->add_constraints();
           *imply1->mutable_enforcement_literal() = ct->enforcement_literal();
           imply1->mutable_linear()->add_vars(var1);
