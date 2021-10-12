@@ -26,55 +26,6 @@ import com.google.ortools.sat.LinearExpr;
 // [END import]
 
 public class NursesSat {
-  static class VarArraySolutionPrinterWithLimit extends CpSolverSolutionCallback {
-    public VarArraySolutionPrinterWithLimit(ContiguousSet<Integer> allNursesIn,
-        ContiguousSet<Integer> allDaysIn, ContiguousSet<Integer> allShiftsIn, IntVar[][][] shiftsIn,
-        int limit) {
-      solutionCount = 0;
-      allNurses = allNursesIn;
-      allDays = allDaysIn;
-      allShifts = allShiftsIn;
-      shifts = shiftsIn;
-      solutionLimit = limit;
-    }
-
-    @Override
-    public void onSolutionCallback() {
-      System.out.printf("Solution #%d:%n", solutionCount);
-      for (int d : allDays) {
-        System.out.printf("Day %d%n", d);
-        for (int n : allNurses) {
-          boolean isWorking = false;
-          for (int s : allShifts) {
-            if (value(shifts[n][d][s]) == 1L) {
-              isWorking = true;
-              System.out.printf("  Nurse %d work shift %d%n", n, s);
-            }
-          }
-          if (!isWorking) {
-            System.out.printf("  Nurse %d does not work%n", n);
-          }
-        }
-      }
-      solutionCount++;
-      if (solutionCount >= solutionLimit) {
-        System.out.printf("Stop search after %d solutions%n", solutionLimit);
-        stopSearch();
-      }
-    }
-
-    public int getSolutionCount() {
-      return solutionCount;
-    }
-
-    private int solutionCount;
-    private ContiguousSet<Integer> allNurses;
-    private ContiguousSet<Integer> allDays;
-    private ContiguousSet<Integer> allShifts;
-    private final IntVar[][][] shifts;
-    private final int solutionLimit;
-  }
-
   public static void main(String[] args) throws Exception {
     Loader.loadNativeLibraries();
     // [START data]
@@ -168,6 +119,55 @@ public class NursesSat {
     // Display the first five solutions.
     // [START solution_printer]
     final int solutionLimit = 5;
+    class VarArraySolutionPrinterWithLimit extends CpSolverSolutionCallback {
+      public VarArraySolutionPrinterWithLimit(ContiguousSet<Integer> allNursesIn,
+          ContiguousSet<Integer> allDaysIn, ContiguousSet<Integer> allShiftsIn,
+          IntVar[][][] shiftsIn, int limit) {
+        solutionCount = 0;
+        allNurses = allNursesIn;
+        allDays = allDaysIn;
+        allShifts = allShiftsIn;
+        shifts = shiftsIn;
+        solutionLimit = limit;
+      }
+
+      @Override
+      public void onSolutionCallback() {
+        System.out.printf("Solution #%d:%n", solutionCount);
+        for (int d : allDays) {
+          System.out.printf("Day %d%n", d);
+          for (int n : allNurses) {
+            boolean isWorking = false;
+            for (int s : allShifts) {
+              if (value(shifts[n][d][s]) == 1L) {
+                isWorking = true;
+                System.out.printf("  Nurse %d work shift %d%n", n, s);
+              }
+            }
+            if (!isWorking) {
+              System.out.printf("  Nurse %d does not work%n", n);
+            }
+          }
+        }
+        solutionCount++;
+        if (solutionCount >= solutionLimit) {
+          System.out.printf("Stop search after %d solutions%n", solutionLimit);
+          stopSearch();
+        }
+      }
+
+      public int getSolutionCount() {
+        return solutionCount;
+      }
+
+      private int solutionCount;
+      private ContiguousSet<Integer> allNurses;
+      private ContiguousSet<Integer> allDays;
+      private ContiguousSet<Integer> allShifts;
+      private final IntVar[][][] shifts;
+      private final int solutionLimit;
+    }
+
     VarArraySolutionPrinterWithLimit cb =
         new VarArraySolutionPrinterWithLimit(allNurses, allDays, allShifts, shifts, solutionLimit);
     // [END solution_printer]
