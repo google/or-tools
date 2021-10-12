@@ -115,9 +115,8 @@ public class NursesSat {
     // [START solution_printer]
     final int solutionLimit = 5;
     class VarArraySolutionPrinterWithLimit extends CpSolverSolutionCallback {
-      public VarArraySolutionPrinterWithLimit(int[] allNurses,
-          int[] allDays, int[] allShifts,
-          IntVar[][][] shifts, int limit) {
+      public VarArraySolutionPrinterWithLimit(
+          int[] allNurses, int[] allDays, int[] allShifts, IntVar[][][] shifts, int limit) {
         solutionCount = 0;
         this.allNurses = allNurses;
         this.allDays = allDays;
