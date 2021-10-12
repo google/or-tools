@@ -13,9 +13,6 @@
 // [START program]
 package com.google.ortools.sat.samples;
 // [START import]
-import com.google.common.collect.ContiguousSet;
-import com.google.common.collect.DiscreteDomain;
-import com.google.common.collect.Range;
 import com.google.ortools.Loader;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
@@ -31,6 +28,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.IntStream;
 // [END import]
 
 public class MinimalJobshopSat {
@@ -57,8 +55,7 @@ public class MinimalJobshopSat {
         numMachines = Math.max(numMachines, 1 + task.machine);
       }
     }
-    final ContiguousSet<Integer> allMachines =
-        ContiguousSet.create(Range.closedOpen(0, numMachines), DiscreteDomain.integers());
+    final int[] allMachines = IntStream.range(0, numMachines).toArray();
 
     // Computes horizon dynamically as the sum of all durations.
     int horizon = 0;

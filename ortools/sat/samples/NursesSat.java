@@ -13,9 +13,6 @@
 // [START program]
 package com.google.ortools.sat.samples;
 // [START import]
-import com.google.common.collect.ContiguousSet;
-import com.google.common.collect.DiscreteDomain;
-import com.google.common.collect.Range;
 import com.google.ortools.Loader;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
@@ -23,6 +20,7 @@ import com.google.ortools.sat.CpSolverSolutionCallback;
 import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.LinearExpr;
+import java.util.stream.IntStream;
 // [END import]
 
 public class NursesSat {
@@ -33,12 +31,9 @@ public class NursesSat {
     final int numDays = 3;
     final int numShifts = 3;
 
-    ContiguousSet<Integer> allNurses =
-        ContiguousSet.create(Range.closedOpen(0, numNurses), DiscreteDomain.integers());
-    ContiguousSet<Integer> allDays =
-        ContiguousSet.create(Range.closedOpen(0, numDays), DiscreteDomain.integers());
-    ContiguousSet<Integer> allShifts =
-        ContiguousSet.create(Range.closedOpen(0, numShifts), DiscreteDomain.integers());
+    final int[] allNurses = IntStream.range(0, numNurses).toArray();
+    final int[] allDays = IntStream.range(0, numDays).toArray();
+    final int[] allShifts = IntStream.range(0, numShifts).toArray();
     // [END data]
 
     // Creates the model.
@@ -120,14 +115,14 @@ public class NursesSat {
     // [START solution_printer]
     final int solutionLimit = 5;
     class VarArraySolutionPrinterWithLimit extends CpSolverSolutionCallback {
-      public VarArraySolutionPrinterWithLimit(ContiguousSet<Integer> allNursesIn,
-          ContiguousSet<Integer> allDaysIn, ContiguousSet<Integer> allShiftsIn,
-          IntVar[][][] shiftsIn, int limit) {
+      public VarArraySolutionPrinterWithLimit(int[] allNurses,
+          int[] allDays, int[] allShifts,
+          IntVar[][][] shifts, int limit) {
         solutionCount = 0;
-        allNurses = allNursesIn;
-        allDays = allDaysIn;
-        allShifts = allShiftsIn;
-        shifts = shiftsIn;
+        this.allNurses = allNurses;
+        this.allDays = allDays;
+        this.allShifts = allShifts;
+        this.shifts = shifts;
         solutionLimit = limit;
       }
 
@@ -161,9 +156,9 @@ public class NursesSat {
       }
 
       private int solutionCount;
-      private ContiguousSet<Integer> allNurses;
-      private ContiguousSet<Integer> allDays;
-      private ContiguousSet<Integer> allShifts;
+      private final int[] allNurses;
+      private final int[] allDays;
+      private final int[] allShifts;
       private final IntVar[][][] shifts;
       private final int solutionLimit;
     }

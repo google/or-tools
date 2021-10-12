@@ -13,9 +13,6 @@
 // [START program]
 package com.google.ortools.sat.samples;
 // [START import]
-import com.google.common.collect.ContiguousSet;
-import com.google.common.collect.DiscreteDomain;
-import com.google.common.collect.Range;
 import com.google.ortools.Loader;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
@@ -23,6 +20,7 @@ import com.google.ortools.sat.CpSolverSolutionCallback;
 import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.LinearExpr;
+import java.util.stream.IntStream;
 // [END import]
 
 public class ScheduleRequestsSat {
@@ -33,12 +31,9 @@ public class ScheduleRequestsSat {
     final int numDays = 7;
     final int numShifts = 3;
 
-    final ContiguousSet<Integer> allNurses =
-        ContiguousSet.create(Range.closedOpen(0, numNurses), DiscreteDomain.integers());
-    final ContiguousSet<Integer> allDays =
-        ContiguousSet.create(Range.closedOpen(0, numDays), DiscreteDomain.integers());
-    final ContiguousSet<Integer> allShifts =
-        ContiguousSet.create(Range.closedOpen(0, numShifts), DiscreteDomain.integers());
+    final int[] allNurses = IntStream.range(0, numNurses).toArray();
+    final int[] allDays = IntStream.range(0, numDays).toArray();
+    final int[] allShifts = IntStream.range(0, numShifts).toArray();
 
     final int[][][] shiftRequests = new int[][][] {
         {
