@@ -175,12 +175,15 @@ public class NursesSat {
     // Creates a solver and solves the model.
     // [START solve]
     CpSolverStatus status = solver.solve(model, cb);
+    System.out.println(cb.getSolutionCount() + " solutions found.");
     // [END solve]
 
     // Statistics.
     // [START statistics]
     System.out.println("Statistics");
-    System.out.println(cb.getSolutionCount() + " solutions found.");
+    System.out.printf("  conflicts: %d%n", solver.numConflicts());
+    System.out.printf("  branches : %d%n", solver.numBranches());
+    System.out.printf("  wall time: %f s%n", solver.wallTime());
     // [END statistics]
   }
 
