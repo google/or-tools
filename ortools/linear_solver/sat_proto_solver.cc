@@ -53,7 +53,7 @@ MPSolverResponseStatus ToMPSolverResponseStatus(sat::CpSolverStatus status,
     case sat::CpSolverStatus::MODEL_INVALID:
       return MPSOLVER_MODEL_INVALID;
     case sat::CpSolverStatus::FEASIBLE:
-      return has_objective ? MPSOLVER_FEASIBLE : MPSOLVER_OPTIMAL;
+      return MPSOLVER_FEASIBLE;
     case sat::CpSolverStatus::INFEASIBLE:
       return MPSOLVER_INFEASIBLE;
     case sat::CpSolverStatus::OPTIMAL:
@@ -63,6 +63,21 @@ MPSolverResponseStatus ToMPSolverResponseStatus(sat::CpSolverStatus status,
   }
   return MPSOLVER_ABNORMAL;
 }
+
+MPSolutionResponse InfeasibleResponse(const SolverLogger& logger,
+                                      std::string message) {
+  // This is needed for our benchmark scripts.
+  MPSolutionResponse response;
+  if (logger.LoggingIsEnabled()) {
+    sat::CpSolverResponse cp_response;
+    cp_response.set_status(sat::CpSolverStatus::INFEASIBLE);
+    LOG(INFO) << CpSolverResponseStats(cp_response);
+  }
+  response.set_status(MPSolverResponseStatus::MPSOLVER_INFEASIBLE);
+  response.set_status_str(message);
+  return response;
+}
+
 }  // namespace
 
 absl::StatusOr<MPSolutionResponse> SatSolveProto(
@@ -71,6 +86,7 @@ absl::StatusOr<MPSolutionResponse> SatSolveProto(
     std::function<void(const MPSolution&)> solution_callback) {
   sat::SatParameters params;
   params.set_log_search_progress(request.enable_internal_solver_output());
+  // Set it now so that it can be overwritten by the solver specific parameters.
   if (request.has_solver_specific_parameters()) {
     // See EncodeSatParametersAsString() documentation.
     if (kProtoLiteSatParameters) {
@@ -105,6 +121,7 @@ absl::StatusOr<MPSolutionResponse> SatSolveProto(
   logger.EnableLogging(params.log_search_progress());
   logger.SetLogToStdOut(params.log_to_stdout());
 
+  // Model validation and delta handling.
   MPSolutionResponse response;
   if (!ExtractValidMPModelInPlaceOrPopulateResponseStatus(&request,
                                                           &response)) {
@@ -117,10 +134,16 @@ absl::StatusOr<MPSolutionResponse> SatSolveProto(
     return response;
   }
 
+  // This good to do before any presolve.
+  MPModelProto* const mp_model = request.mutable_model();
+  if (!sat::MakeBoundsOfIntegerVariablesInteger(params, mp_model, &logger)) {
+    return InfeasibleResponse(logger,
+                              "An integer variable has an empty domain");
+  }
+
   // Note(user): the LP presolvers API is a bit weird and keep a reference to
   // the given GlopParameters, so we need to make sure it outlive them.
   const glop::GlopParameters glop_params;
-  MPModelProto* const mp_model = request.mutable_model();
   std::vector<std::unique_ptr<glop::Preprocessor>> for_postsolve;
   if (!params.enumerate_all_solutions()) {
     const glop::ProblemStatus status =
@@ -130,16 +153,8 @@ absl::StatusOr<MPSolutionResponse> SatSolveProto(
         // Continue with the solve.
         break;
       case glop::ProblemStatus::PRIMAL_INFEASIBLE:
-        if (params.log_search_progress()) {
-          // This is needed for our benchmark scripts.
-          sat::CpSolverResponse cp_response;
-          cp_response.set_status(sat::CpSolverStatus::INFEASIBLE);
-          LOG(INFO) << CpSolverResponseStats(cp_response);
-        }
-        response.set_status(MPSolverResponseStatus::MPSOLVER_INFEASIBLE);
-        response.set_status_str(
-            "Problem proven infeasible during MIP presolve");
-        return response;
+        return InfeasibleResponse(
+            logger, "Problem proven infeasible during MIP presolve");
       default:
         // TODO(user): We put the INFEASIBLE_OR_UNBOUNBED case here since there
         // is no return status that exactly matches it.
@@ -168,6 +183,10 @@ absl::StatusOr<MPSolutionResponse> SatSolveProto(
   std::vector<double> var_scaling(num_variables, 1.0);
   if (params.mip_automatically_scale_variables()) {
     var_scaling = sat::DetectImpliedIntegers(mp_model, &logger);
+    if (!sat::MakeBoundsOfIntegerVariablesInteger(params, mp_model, &logger)) {
+      return InfeasibleResponse(
+          logger, "A detected integer variable has an empty domain");
+    }
   }
   if (params.mip_var_scaling() != 1.0) {
     const std::vector<double> other_scaling = sat::ScaleContinuousVariables(
