@@ -128,7 +128,7 @@ void MinimalJobshopSat() {
       int64_t start;
       int64_t duration;
 
-      bool operator<(const AssignedTaskType& rhs) {
+      bool operator<(const AssignedTaskType& rhs) const {
         return std::tie(this->start, this->duration) <
                std::tie(rhs.start, rhs.duration);
       }
