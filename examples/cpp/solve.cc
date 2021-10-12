@@ -16,10 +16,10 @@
 //
 // Examples.
 //
-// 1. To run SCIP for 10 minutes, dumping available information use:
+// 1. To run SCIP for 90 seconds, dumping available information use:
 //
 // solve --solver=scip \
-//       --time_limit_seconds=600s \
+//       --time_limit=90s \
 //       --logtostderr \
 //       --linear_solver_enable_verbose_output \
 //       --input=/tmp/foo.mps \
@@ -32,7 +32,7 @@
 //    CP-SAT parameters:
 //
 // solve --solver=sat \
-//       --params="max_time_in_seconds: 600, num_search_workers:8"
+//       --params="max_time_in_seconds:600, num_search_workers:8"
 //       --logtostderr \
 //       --input=/tmp/foo.mps \
 //       2>/tmp/foo.err
@@ -83,8 +83,8 @@ ABSL_FLAG(std::string, params_file, "",
           "If this flag is set, the --params flag is ignored.");
 ABSL_FLAG(std::string, params, "", "Solver specific parameters");
 ABSL_FLAG(absl::Duration, time_limit, absl::ZeroDuration(),
-          "If strictly positive, specifies a limit in s on the solving "
-          "time. Otherwise, no time limit will be imposed.");
+          "If strictly positive, specifies a limit on the solving time. "
+          "Otherwise, no time limit will be imposed.");
 ABSL_FLAG(std::string, output_csv, "",
           "If non-empty, write the returned solution in csv format with "
           "each line formed by a variable name and its value.");
