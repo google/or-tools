@@ -33,14 +33,14 @@ public class ScheduleRequestsSat {
     final int numDays = 7;
     final int numShifts = 3;
 
-    ContiguousSet<Integer> allNurses =
+    final ContiguousSet<Integer> allNurses =
         ContiguousSet.create(Range.closedOpen(0, numNurses), DiscreteDomain.integers());
-    ContiguousSet<Integer> allDays =
+    final ContiguousSet<Integer> allDays =
         ContiguousSet.create(Range.closedOpen(0, numDays), DiscreteDomain.integers());
-    ContiguousSet<Integer> allShifts =
+    final ContiguousSet<Integer> allShifts =
         ContiguousSet.create(Range.closedOpen(0, numShifts), DiscreteDomain.integers());
 
-    int[][][] shiftRequests = new int[][][] {
+    final int[][][] shiftRequests = new int[][][] {
         {
             {0, 0, 1},
             {0, 0, 0},
@@ -203,6 +203,9 @@ public class ScheduleRequestsSat {
     // Statistics.
     // [START statistics]
     System.out.println("Statistics");
+    System.out.printf("  conflicts: %d%n", solver.numConflicts());
+    System.out.printf("  branches : %d%n", solver.numBranches());
+    System.out.printf("  wall time: %f s%n", solver.wallTime());
     // [END statistics]
   }
 
