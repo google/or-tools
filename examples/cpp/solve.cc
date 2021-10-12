@@ -13,6 +13,41 @@
 
 // Command line interface to the MPSolver class.
 // See linear_solver.h and kUsageStr below.
+//
+// Examples.
+//
+// 1. To run SCIP for 10 minutes, dumping available information use:
+//
+// solve --solver=scip \
+//       --time_limit_seconds=600s \
+//       --logtostderr \
+//       --linear_solver_enable_verbose_output \
+//       --input=/tmp/foo.mps \
+//       --dump_model=/tmp/foo.model \
+//       --dump_request=/tmp/foo.request \
+//       --dump_response=/tmp/foo.response \
+//       >/tmp/foo.out 2>/tmp/foo.err
+//
+// 2. To run CP_SAT for 10 minutes with 8 workers, you can use
+//    CP-SAT parameters:
+//
+// solve --solver=sat \
+//       --params="max_time_in_seconds: 600, num_search_workers:8"
+//       --logtostderr \
+//       --input=/tmp/foo.mps \
+//       2>/tmp/foo.err
+//
+//     or use the solve binary flags:
+//
+// solve --solver=sat \
+//       --time_limit=10m \
+//       --num_threads=8 \
+//       --logtostderr \
+//       --input=/tmp/foo.mps \
+//       --dump_model=/tmp/foo.model \
+//       --dump_request=/tmp/foo.request \
+//       --dump_response=/tmp/foo.response \
+//       2>/tmp/foo.err
 
 #include <cstdio>
 #include <string>
@@ -22,6 +57,7 @@
 #include "absl/flags/usage.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_format.h"
+#include "absl/time/time.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/file.h"
 #include "ortools/base/integral_types.h"
@@ -40,17 +76,15 @@ ABSL_FLAG(std::string, input, "", "REQUIRED: Input file name.");
 ABSL_FLAG(std::string, solver, "glop",
           "The solver to use: bop, cbc, clp, glop, glpk_lp, glpk_mip, "
           "gurobi_lp, gurobi_mip, scip, knapsack, sat.");
-
 ABSL_FLAG(int, num_threads, 1,
           "Number of threads to use by the underlying solver.");
 ABSL_FLAG(std::string, params_file, "",
           "Solver specific parameters file. "
           "If this flag is set, the --params flag is ignored.");
 ABSL_FLAG(std::string, params, "", "Solver specific parameters");
-ABSL_FLAG(double, time_limit_seconds, 0.0,
+ABSL_FLAG(absl::Duration, time_limit, absl::ZeroDuration(),
           "If strictly positive, specifies a limit in s on the solving "
           "time. Otherwise, no time limit will be imposed.");
-
 ABSL_FLAG(std::string, output_csv, "",
           "If non-empty, write the returned solution in csv format with "
           "each line formed by a variable name and its value.");
@@ -61,7 +95,6 @@ ABSL_FLAG(std::string, dump_format, "text",
           "'text', 'binary', 'json' which correspond to text proto format "
           "binary proto format, and json. If 'binary' or 'json' are used, "
           "we append '.bin' and '.json' to file names.");
-
 ABSL_FLAG(bool, dump_gzip, false,
           "Whether to gzip dumped protos. Appends .gz to their name.");
 ABSL_FLAG(std::string, dump_model, "",
@@ -70,7 +103,6 @@ ABSL_FLAG(std::string, dump_request, "",
           "If non-empty, dumps MPModelRequest there.");
 ABSL_FLAG(std::string, dump_response, "",
           "If non-empty, dumps MPSolutionResponse there.");
-
 ABSL_FLAG(std::string, sol_file, "",
           "If non-empty, output the best solution in Miplib .sol format.");
 
@@ -120,10 +152,7 @@ MPModelRequest ReadMipModel(const std::string& input) {
 
 // Returns false if an error was encountered.
 // More details should be available in the logs.
-bool Run() {
-  // Create the solver and set its parameters.
-  const MPSolver::OptimizationProblemType type =
-      MPSolver::ParseSolverTypeOrDie(absl::GetFlag(FLAGS_solver));
+bool Run(MPSolver::OptimizationProblemType type) {
   MPModelRequest request_proto = ReadMipModel(absl::GetFlag(FLAGS_input));
 
   printf("%-12s: '%s'\n", "File", absl::GetFlag(FLAGS_input).c_str());
@@ -190,10 +219,11 @@ bool Run() {
   }
 
   // Time limits.
-  if (absl::GetFlag(FLAGS_time_limit_seconds) > 0.0) {
+  if (absl::GetFlag(FLAGS_time_limit) > absl::ZeroDuration()) {
+    LOG(INFO) << "Setting a time limit of " << absl::GetFlag(FLAGS_time_limit);
     // Overwrite the request time limit.
     request_proto.set_solver_time_limit_seconds(
-        absl::GetFlag(FLAGS_time_limit_seconds));
+        absl::ToDoubleSeconds(absl::GetFlag(FLAGS_time_limit)));
   }
   if (request_proto.has_solver_time_limit_seconds()) {
     solver.SetTimeLimit(
@@ -300,12 +330,14 @@ int main(int argc, char** argv) {
   absl::ParseCommandLine(argc, argv);
   QCHECK(!absl::GetFlag(FLAGS_input).empty()) << "--input is required";
 
-  if (!operations_research::Run()) {
+  operations_research::MPSolver::OptimizationProblemType type;
+  CHECK(operations_research::MPSolver::ParseSolverType(
+      absl::GetFlag(FLAGS_solver), &type))
+      << "Unsupported --solver: " << absl::GetFlag(FLAGS_solver);
+
+  if (!operations_research::Run(type)) {
     // If the solver is SAT and we encountered an error, display it in a format
     // interpretable by our scripts.
-    const operations_research::MPSolver::OptimizationProblemType type =
-        operations_research::MPSolver::ParseSolverTypeOrDie(
-            absl::GetFlag(FLAGS_solver));
     if (type == operations_research::MPSolver::SAT_INTEGER_PROGRAMMING) {
       operations_research::sat::CpSolverResponse response;
       response.set_status(
