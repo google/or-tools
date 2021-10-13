@@ -287,12 +287,6 @@ struct DebugSolution
 
 // A value and a literal.
 struct ValueLiteralPair {
-  bool operator==(const ValueLiteralPair& o) const {
-    return value == o.value && literal == o.literal;
-  }
-
-  IntegerValue value = IntegerValue(0);
-  Literal literal = Literal(kNoLiteralIndex);
   struct CompareByLiteral {
     bool operator()(const ValueLiteralPair& a,
                     const ValueLiteralPair& b) const {
@@ -306,7 +300,15 @@ struct ValueLiteralPair {
              (a.value == b.value && a.literal < b.literal);
     }
   };
+
+  bool operator==(const ValueLiteralPair& o) const {
+    return value == o.value && literal == o.literal;
+  }
+
   std::string DebugString() const;
+
+  IntegerValue value = IntegerValue(0);
+  Literal literal = Literal(kNoLiteralIndex);
 };
 
 std::ostream& operator<<(std::ostream& os, const ValueLiteralPair& p);

@@ -1124,8 +1124,8 @@ void LoadIntProdConstraint(const ConstraintProto& ct, Model* m) {
       mapping->Integers(ct.int_prod().vars());
   CHECK_EQ(vars.size(), 2) << "General int_prod not supported yet.";
   if (VLOG_IS_ON(1)) {
-    if (DetectLinearEncodingOfProducts(vars[0], vars[1], m,
-                                       /*product_encoding=*/nullptr)) {
+    std::vector<ValueLiteralPair> encoding;
+    if (DetectLinearEncodingOfProducts(vars[0], vars[1], m, &encoding)) {
       VLOG(1) << "Product " << ct.DebugString() << " can be linearized";
     }
   }

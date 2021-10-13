@@ -4095,7 +4095,6 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
 
   CumulativeConstraintProto* proto = ct->mutable_cumulative();
   bool changed = false;
-  int num_fixed_demands = 0;
   const int64_t capacity_max = context_->MaxOf(proto->capacity());
 
   // Checks the capacity of the constraint.
@@ -4125,9 +4124,6 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
       if (demand_max == 0) {
         num_zero_demand_removed++;
         continue;
-      }
-      if (context_->IsFixed(demand_ref)) {
-        num_fixed_demands++;
       }
 
       if (context_->SizeMax(proto->intervals(i)) == 0) {
@@ -4360,12 +4356,16 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
     }
   }
 
-  if (num_fixed_demands == proto->intervals_size() &&
-      context_->IsFixed(proto->capacity())) {
+  if (context_->IsFixed(proto->capacity())) {
     int64_t gcd = 0;
     for (int i = 0; i < ct->cumulative().demands_size(); ++i) {
-      const int64_t demand = context_->MinOf(ct->cumulative().demands(i));
-      gcd = MathUtil::GCD64(gcd, demand);
+      const int demand_ref = ct->cumulative().demands(i);
+      if (!context_->IsFixed(demand_ref)) {
+        // Abort if the demand is not fixed.
+        gcd = 1;
+        break;
+      }
+      gcd = MathUtil::GCD64(gcd, context_->MinOf(demand_ref));
       if (gcd == 1) break;
     }
     if (gcd > 1) {
@@ -4391,8 +4391,6 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
        *(ct->mutable_cumulative()->mutable_energies())) {
     changed |= CanonicalizeLinearExpression(*ct, &exp);
   }
-
-  if (HasEnforcementLiteral(*ct)) return changed;
 
   const int num_intervals = proto->intervals_size();
   const int capacity_ref = proto->capacity();

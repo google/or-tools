@@ -1226,7 +1226,11 @@ class ConstraintChecker {
         const int64_t demand = Value(ct.cumulative().demands(i));
         for (int64_t t = start; t < start + duration; ++t) {
           usage[t] += demand;
-          if (usage[t] > capacity) return false;
+          if (usage[t] > capacity) {
+            VLOG(1) << "time: " << t << " usage: " << usage[t]
+                    << " capa: " << capacity;
+            return false;
+          }
         }
         if (!ct.cumulative().energies().empty()) {
           const LinearExpressionProto& energy_expr =
@@ -1236,6 +1240,7 @@ class ConstraintChecker {
             energy += Value(energy_expr.vars(j)) * energy_expr.coeffs(j);
           }
           if (duration * demand != energy) {
+            VLOG(1) << "duration * demand is not equal to energy";
             return false;
           }
         }
