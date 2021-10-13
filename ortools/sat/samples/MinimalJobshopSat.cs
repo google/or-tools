@@ -10,6 +10,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 // [START program]
 // [START import]
 using System;
@@ -128,7 +129,7 @@ public class ScheduleRequestsSat
                 allTasks[key] = Tuple.Create(start, end, interval);
                 if (!machineToIntervals.ContainsKey(task.machine))
                 {
-                  machineToIntervals.Add(task.machine, new List<IntervalVar>());
+                    machineToIntervals.Add(task.machine, new List<IntervalVar>());
                 }
                 machineToIntervals[task.machine].Add(interval);
             }
@@ -193,7 +194,7 @@ public class ScheduleRequestsSat
                     int start = (int)solver.Value(allTasks[key].Item1);
                     if (!assignedJobs.ContainsKey(task.machine))
                     {
-                      assignedJobs.Add(task.machine, new List<AssignedTask>());
+                        assignedJobs.Add(task.machine, new List<AssignedTask>());
                     }
                     assignedJobs[task.machine].Add(new AssignedTask(jobID, taskID, start, task.duration));
                 }

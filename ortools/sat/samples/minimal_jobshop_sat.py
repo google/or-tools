@@ -18,6 +18,7 @@ import collections
 from ortools.sat.python import cp_model
 # [END import]
 
+
 def main():
     """Minimal jobshop problem."""
     # Data.
@@ -102,11 +103,11 @@ def main():
             for task_id, task in enumerate(job):
                 machine = task[0]
                 assigned_jobs[machine].append(
-                    assigned_task_type(
-                        start=solver.Value(all_tasks[job_id, task_id].start),
-                        job=job_id,
-                        index=task_id,
-                        duration=task[1]))
+                    assigned_task_type(start=solver.Value(
+                        all_tasks[job_id, task_id].start),
+                                       job=job_id,
+                                       index=task_id,
+                                       duration=task[1]))
 
         # Create per machine output lines.
         output = ''
@@ -117,7 +118,8 @@ def main():
             sol_line = '           '
 
             for assigned_task in assigned_jobs[machine]:
-                name = 'job_%i_task_%i' % (assigned_task.job, assigned_task.index)
+                name = 'job_%i_task_%i' % (assigned_task.job,
+                                           assigned_task.index)
                 # Add spaces to output to align columns.
                 sol_line_tasks += '%-15s' % name
 

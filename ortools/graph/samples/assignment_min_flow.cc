@@ -10,6 +10,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 // [START program]
 // [START import]
 #include <cstdint>
@@ -29,27 +30,21 @@ void AssignmentMinFlow() {
   // Define four parallel arrays: sources, destinations, capacities,
   // and unit costs between each pair. For instance, the arc from node 0
   // to node 1 has a capacity of 15.
-  std::vector<int64_t> start_nodes = {
-    0, 0, 0, 0,
-    1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4,
-    5, 6, 7, 8};
-  std::vector<int64_t> end_nodes = {
-    1, 2, 3, 4,
-    5, 6, 7, 8, 5, 6, 7, 8, 5, 6, 7, 8, 5, 6, 7, 8,
-    9, 9, 9, 9};
-  std::vector<int64_t> capacities = {
-    1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1};
-  std::vector<int64_t> unit_costs = {
-    0, 0, 0, 0,
-    90, 76, 75, 70, 35, 85, 55, 65, 125, 95, 90, 105, 45, 110, 95, 115,
-    0, 0, 0, 0};
+  std::vector<int64_t> start_nodes = {0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2,
+                                      3, 3, 3, 3, 4, 4, 4, 4, 5, 6, 7, 8};
+  std::vector<int64_t> end_nodes = {1, 2, 3, 4, 5, 6, 7, 8, 5, 6, 7, 8,
+                                    5, 6, 7, 8, 5, 6, 7, 8, 9, 9, 9, 9};
+  std::vector<int64_t> capacities = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+  std::vector<int64_t> unit_costs = {0,  0,   0,  0,   90,  76, 75, 70,
+                                     35, 85,  55, 65,  125, 95, 90, 105,
+                                     45, 110, 95, 115, 0,   0,  0,  0};
 
   int64_t source = 0;
   int64_t sink = 9;
+  int64_t tasks = 4;
   // Define an array of supplies at each node.
-  std::vector<int64_t> supplies = {4, 0, 0, 0, 0, 0, 0, 0, 0, -4};
+  std::vector<int64_t> supplies = {tasks, 0, 0, 0, 0, 0, 0, 0, 0, -tasks};
   // [END data]
 
   // [START constraints]
@@ -78,8 +73,8 @@ void AssignmentMinFlow() {
     for (std::size_t i = 0; i < min_cost_flow.NumArcs(); ++i) {
       // Can ignore arcs leading out of source or into sink.
       if (min_cost_flow.Tail(i) != source && min_cost_flow.Head(i) != sink) {
-        // Arcs in the solution have a flow value of 1. Their start and end nodes
-        // give an assignment of worker to task.
+        // Arcs in the solution have a flow value of 1. Their start and end
+        // nodes give an assignment of worker to task.
         if (min_cost_flow.Flow(i) > 0) {
           LOG(INFO) << "Worker " << min_cost_flow.Tail(i)
                     << " assigned to task " << min_cost_flow.Head(i)

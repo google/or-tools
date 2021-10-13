@@ -10,13 +10,15 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 // [START program]
 package com.google.ortools.sat.samples;
 // [START import]
+import static java.lang.Math.max;
+
 import com.google.ortools.Loader;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
-import com.google.ortools.sat.CpSolverSolutionCallback;
 import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.IntervalVar;
@@ -31,12 +33,14 @@ import java.util.Map;
 import java.util.stream.IntStream;
 // [END import]
 
+/** Minimal Jobshop problem. */
 public class MinimalJobshopSat {
-  public static void main(String[] args) throws Exception {
+  public static void main(String[] args) {
     Loader.loadNativeLibraries();
     // [START data]
     class Task {
-      int machine, duration;
+      int machine;
+      int duration;
       Task(int machine, int duration) {
         this.machine = machine;
         this.duration = duration;
@@ -52,7 +56,7 @@ public class MinimalJobshopSat {
     int numMachines = 1;
     for (List<Task> job : allJobs) {
       for (Task task : job) {
-        numMachines = Math.max(numMachines, 1 + task.machine);
+        numMachines = max(numMachines, 1 + task.machine);
       }
     }
     final int[] allMachines = IntStream.range(0, numMachines).toArray();
@@ -94,9 +98,7 @@ public class MinimalJobshopSat {
 
         List<Integer> key = Arrays.asList(jobID, taskID);
         allTasks.put(key, taskType);
-        if (!machineToIntervals.containsKey(task.machine)) {
-          machineToIntervals.put(task.machine, new ArrayList<>());
-        }
+        machineToIntervals.computeIfAbsent(task.machine, (Integer k) -> new ArrayList<>());
         machineToIntervals.get(task.machine).add(taskType.interval);
       }
     }
@@ -106,7 +108,7 @@ public class MinimalJobshopSat {
     // Create and add disjunctive constraints.
     for (int machine : allMachines) {
       List<IntervalVar> list = machineToIntervals.get(machine);
-      model.addNoOverlap(list.toArray(new IntervalVar[list.size()]));
+      model.addNoOverlap(list.toArray(new IntervalVar[0]));
     }
 
     // Precedences inside a job.
@@ -129,7 +131,7 @@ public class MinimalJobshopSat {
       List<Integer> key = Arrays.asList(jobID, job.size() - 1);
       ends.add(allTasks.get(key).end);
     }
-    model.addMaxEquality(objVar, ends.toArray(new IntVar[ends.size()]));
+    model.addMaxEquality(objVar, ends.toArray(new IntVar[0]));
     model.minimize(objVar);
     // [END objective]
 
@@ -142,7 +144,10 @@ public class MinimalJobshopSat {
     // [START print_solution]
     if (status == CpSolverStatus.OPTIMAL || status == CpSolverStatus.FEASIBLE) {
       class AssignedTask {
-        int jobID, taskID, start, duration;
+        int jobID;
+        int taskID;
+        int start;
+        int duration;
         // Ctor
         AssignedTask(int jobID, int taskID, int start, int duration) {
           this.jobID = jobID;
@@ -151,12 +156,14 @@ public class MinimalJobshopSat {
           this.duration = duration;
         }
       }
-      class sortTasks implements Comparator<AssignedTask> {
+      class SortTasks implements Comparator<AssignedTask> {
+        @Override
         public int compare(AssignedTask a, AssignedTask b) {
-          if (a.start != b.start)
+          if (a.start != b.start) {
             return a.start - b.start;
-          else
+          } else {
             return a.duration - b.duration;
+          }
         }
       }
       System.out.println("Solution:");
@@ -169,9 +176,7 @@ public class MinimalJobshopSat {
           List<Integer> key = Arrays.asList(jobID, taskID);
           AssignedTask assignedTask = new AssignedTask(
               jobID, taskID, (int) solver.value(allTasks.get(key).start), task.duration);
-          if (!assignedJobs.containsKey(task.machine)) {
-            assignedJobs.put(task.machine, new ArrayList<>());
-          }
+          assignedJobs.computeIfAbsent(task.machine, (Integer k) -> new ArrayList<>());
           assignedJobs.get(task.machine).add(assignedTask);
         }
       }
@@ -180,7 +185,7 @@ public class MinimalJobshopSat {
       String output = "";
       for (int machine : allMachines) {
         // Sort by starting time.
-        Collections.sort(assignedJobs.get(machine), new sortTasks());
+        Collections.sort(assignedJobs.get(machine), new SortTasks());
         String solLineTasks = "Machine " + machine + ": ";
         String solLine = "           ";
 

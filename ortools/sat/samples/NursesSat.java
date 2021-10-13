@@ -10,6 +10,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 // [START program]
 package com.google.ortools.sat.samples;
 // [START import]
@@ -23,8 +24,9 @@ import com.google.ortools.sat.LinearExpr;
 import java.util.stream.IntStream;
 // [END import]
 
+/** Nurses problem. */
 public class NursesSat {
-  public static void main(String[] args) throws Exception {
+  public static void main(String[] args) {
     Loader.loadNativeLibraries();
     // [START data]
     final int numNurses = 4;
@@ -169,6 +171,7 @@ public class NursesSat {
     // Creates a solver and solves the model.
     // [START solve]
     CpSolverStatus status = solver.solve(model, cb);
+    System.out.println("Status: " + status);
     System.out.println(cb.getSolutionCount() + " solutions found.");
     // [END solve]
 

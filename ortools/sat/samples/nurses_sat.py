@@ -17,6 +17,7 @@
 from ortools.sat.python import cp_model
 # [END import]
 
+
 def main():
     # Data.
     # [START data]
@@ -40,7 +41,8 @@ def main():
     for n in all_nurses:
         for d in all_days:
             for s in all_shifts:
-                shifts[(n, d, s)] = model.NewBoolVar('shift_n%id%is%i' % (n, d, s))
+                shifts[(n, d,
+                        s)] = model.NewBoolVar('shift_n%id%is%i' % (n, d, s))
     # [END variables]
 
     # Each shift is assigned to exactly one nurse in the schedule period.
@@ -116,7 +118,6 @@ def main():
 
         def solution_count(self):
             return self._solution_count
-
 
     # Display the first five solutions.
     solution_limit = 5
