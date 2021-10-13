@@ -1062,6 +1062,7 @@ void LoadBaseModel(const CpModelProto& model_proto, Model* model) {
   }
 
   ExtractEncoding(model_proto, model);
+  ExtractElementEncoding(model_proto, model);
   PropagateEncodingFromEquivalenceRelations(model_proto, model);
 
   // Check the model is still feasible before continuing.
@@ -1069,9 +1070,6 @@ void LoadBaseModel(const CpModelProto& model_proto, Model* model) {
 
   // Fully encode variables as needed by the search strategy.
   AddFullEncodingFromSearchBranching(model_proto, model);
-
-  // Force some variables to be fully encoded.
-  MaybeFullyEncodeMoreVariables(model_proto, model);
 
   // Load the constraints.
   std::set<std::string> unsupported_types;

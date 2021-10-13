@@ -203,6 +203,32 @@ void ImpliedBounds::ProcessIntegerTrail(Literal first_decision) {
   }
 }
 
+void ImpliedBounds::AddElementEncoding(
+    IntegerVariable var, const std::vector<ValueLiteralPair>& encoding) {
+  const auto& it = var_to_element_encodings_.find(var);
+  if (it == var_to_element_encodings_.end()) {
+    element_encoded_variables_.push_back(var);
+    var_to_element_encodings_[var].push_back(encoding);
+  } else {
+    it->second.push_back(encoding);
+  }
+}
+
+const std::vector<std::vector<ValueLiteralPair>>&
+ImpliedBounds::GetElementEncodings(IntegerVariable var) {
+  const auto& it = var_to_element_encodings_.find(var);
+  if (it == var_to_element_encodings_.end()) {
+    return empty_element_encoding_;
+  } else {
+    return it->second;
+  }
+}
+
+const std::vector<IntegerVariable>& ImpliedBounds::GetElementEncodedVariables()
+    const {
+  return element_encoded_variables_;
+}
+
 bool ImpliedBounds::EnqueueNewDeductions() {
   CHECK_EQ(sat_solver_->CurrentDecisionLevel(), 0);
   for (const IntegerVariable var :
@@ -215,6 +241,103 @@ bool ImpliedBounds::EnqueueNewDeductions() {
   }
   new_level_zero_bounds_.SparseClearAll();
   return sat_solver_->FinishPropagation();
+}
+
+bool DetectLinearEncodingOfProducts(
+    IntegerVariable left_var, IntegerVariable right_var, Model* model,
+    std::vector<ValueLiteralPair>* product_encoding) {
+  CHECK(product_encoding != nullptr);
+  ImpliedBounds* implied_bounds = model->GetOrCreate<ImpliedBounds>();
+  IntegerEncoder* integer_encoder = model->GetOrCreate<IntegerEncoder>();
+
+  // Fill in the encodings for the left variable, and sort them.
+  std::vector<std::vector<ValueLiteralPair>> left_encodings =
+      implied_bounds->GetElementEncodings(left_var);
+  if (integer_encoder->VariableIsFullyEncoded(left_var)) {
+    left_encodings.push_back(integer_encoder->FullDomainEncoding(left_var));
+  }
+  for (auto& encoding : left_encodings) {
+    std::sort(encoding.begin(), encoding.end(),
+              ValueLiteralPair::CompareByLiteral());
+  }
+
+  // Fill in the encodings for the right variable, and sort them.
+  std::vector<std::vector<ValueLiteralPair>> right_encodings =
+      implied_bounds->GetElementEncodings(right_var);
+  if (integer_encoder->VariableIsFullyEncoded(right_var)) {
+    right_encodings.push_back(integer_encoder->FullDomainEncoding(right_var));
+  }
+  for (auto& encoding : right_encodings) {
+    std::sort(encoding.begin(), encoding.end(),
+              ValueLiteralPair::CompareByLiteral());
+  }
+
+  if (left_encodings.empty() || right_encodings.empty()) return false;
+
+  // If the encodings have exactly the same literals, we are done.
+  const auto match_encodings = [product_encoding](
+                                   const std::vector<ValueLiteralPair>& left,
+                                   const std::vector<ValueLiteralPair>& right) {
+    if (left.size() != right.size()) return false;
+    for (int i = 0; i < left.size(); ++i) {
+      if (left[i].literal != right[i].literal) return false;
+    }
+    product_encoding->clear();
+    for (int i = 0; i < left.size(); ++i) {
+      product_encoding->push_back(
+          {left[i].value * right[i].value, left[i].literal});
+    }
+    return true;
+  };
+
+  // If one of the variable has an encoding of size two, it is likely that its
+  // encoding was stored as (lit, not(lit)). We need to do extra work in this
+  // case.
+  const auto reconcile_encodings =
+      [product_encoding](
+          const std::vector<ValueLiteralPair>& size_two_encoding,
+          const std::vector<ValueLiteralPair>& general_encoding) {
+        if (size_two_encoding.size() != 2) return false;
+        if (size_two_encoding[0].literal !=
+            size_two_encoding[1].literal.Negated()) {
+          return false;
+        }
+        Literal lit0 = size_two_encoding[0].literal;
+        IntegerValue value0 = size_two_encoding[0].value;
+        Literal lit1 = size_two_encoding[1].literal;
+        IntegerValue value1 = size_two_encoding[1].value;
+        for (const ValueLiteralPair e : general_encoding) {
+          if (e.literal == lit1) {
+            std::swap(lit0, lit1);
+            std::swap(value0, value1);
+          }
+          if (e.literal == lit0) {
+            if (product_encoding != nullptr) {
+              product_encoding->clear();
+              for (const ValueLiteralPair& f : general_encoding) {
+                if (f.literal == lit0) {
+                  product_encoding->push_back({value0 * f.value, f.literal});
+                } else {
+                  product_encoding->push_back({value1 * f.value, f.literal});
+                }
+              }
+            }
+            return true;
+          }
+        }
+        return false;
+      };
+
+  for (const std::vector<ValueLiteralPair>& left : left_encodings) {
+    for (const std::vector<ValueLiteralPair>& right : right_encodings) {
+      if (match_encodings(left, right) || reconcile_encodings(left, right) ||
+          reconcile_encodings(right, left)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
 
 }  // namespace sat

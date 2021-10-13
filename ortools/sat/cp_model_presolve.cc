@@ -1853,30 +1853,30 @@ bool CpModelPresolver::PresolveLinearEqualityWithModulo(ConstraintProto* ct) {
   return false;
 }
 
-bool CpModelPresolver::PresolveSmallLinear(ConstraintProto* ct) {
-  if (ct->constraint_case() != ConstraintProto::ConstraintCase::kLinear ||
-      context_->ModelIsUnsat()) {
-    return false;
-  }
+bool CpModelPresolver::PresolveLinearOfSizeOne(ConstraintProto* ct) {
+  DCHECK_EQ(ct->linear().vars().size(), 1);
 
-  // Empty constraint?
-  if (ct->linear().vars().empty()) {
-    context_->UpdateRuleStats("linear: empty");
+  // Size one constraint with no enforcement?
+  if (!HasEnforcementLiteral(*ct)) {
+    const int64_t coeff = RefIsPositive(ct->linear().vars(0))
+                              ? ct->linear().coeffs(0)
+                              : -ct->linear().coeffs(0);
+    context_->UpdateRuleStats("linear1: without enforcement");
+    const int var = PositiveRef(ct->linear().vars(0));
     const Domain rhs = ReadDomainFromProto(ct->linear());
-    if (rhs.Contains(0)) {
-      return RemoveConstraint(ct);
-    } else {
-      return MarkConstraintAsFalse(ct);
+    if (!context_->IntersectDomainWith(var,
+                                       rhs.InverseMultiplicationBy(coeff))) {
+      return false;
     }
+    return RemoveConstraint(ct);
   }
 
   // This is just an implication, lets convert it right away.
-  if (ct->linear().vars_size() == 1 && ct->enforcement_literal_size() > 0 &&
-      context_->CanBeUsedAsLiteral(ct->linear().vars(0))) {
+  if (context_->CanBeUsedAsLiteral(ct->linear().vars(0))) {
     const Domain rhs = ReadDomainFromProto(ct->linear());
     const bool zero_ok = rhs.Contains(0);
     const bool one_ok = rhs.Contains(ct->linear().coeffs(0));
-    context_->UpdateRuleStats("linear: is boolean implication");
+    context_->UpdateRuleStats("linear1: is boolean implication");
     if (!zero_ok && !one_ok) {
       return MarkConstraintAsFalse(ct);
     }
@@ -1898,11 +1898,10 @@ bool CpModelPresolver::PresolveSmallLinear(ConstraintProto* ct) {
   // If the constraint is literal => x in domain and x = abs(abs_arg), we can
   // replace x by abs_arg and hopefully remove the variable x later.
   int abs_arg;
-  if (ct->linear().vars_size() == 1 && ct->enforcement_literal_size() > 0 &&
-      ct->linear().coeffs(0) == 1 &&
+  if (ct->linear().coeffs(0) == 1 &&
       context_->GetAbsRelation(ct->linear().vars(0), &abs_arg)) {
     // TODO(user): Deal with coeff = -1, here or during canonicalization.
-    context_->UpdateRuleStats("linear: remove abs from abs(x) in domain");
+    context_->UpdateRuleStats("linear1: remove abs from abs(x) in domain");
     const Domain implied_abs_target_domain =
         ReadDomainFromProto(ct->linear())
             .IntersectionWith({0, std::numeric_limits<int64_t>::max()})
@@ -1923,9 +1922,7 @@ bool CpModelPresolver::PresolveSmallLinear(ConstraintProto* ct) {
 
     ConstraintProto* new_ct = context_->working_model->add_constraints();
     new_ct->set_name(ct->name());
-    for (const int literal : ct->enforcement_literal()) {
-      new_ct->add_enforcement_literal(literal);
-    }
+    *new_ct->mutable_enforcement_literal() = ct->enforcement_literal();
     auto* arg = new_ct->mutable_linear();
     arg->add_vars(abs_arg);
     arg->add_coeffs(1);
@@ -1934,159 +1931,242 @@ bool CpModelPresolver::PresolveSmallLinear(ConstraintProto* ct) {
     return RemoveConstraint(ct);
   }
 
-  // Detect affine relation.
-  //
-  // TODO(user): it might be better to first add only the affine relation with
-  // a coefficient of magnitude 1, and later the one with larger coeffs.
-  const LinearConstraintProto& arg = ct->linear();
-  if (arg.vars_size() == 2) {
-    const int var1 = arg.vars(0);
-    const int var2 = arg.vars(1);
-    const int64_t coeff1 = arg.coeffs(0);
-    const int64_t coeff2 = arg.coeffs(1);
-
-    if (arg.domain_size() == 2 && arg.domain(0) == arg.domain(1)) {
-      // coeff1 * v1 + coeff2 * v2 == rhs.
-      const int64_t rhs = arg.domain(0);
-      if (ct->enforcement_literal().empty()) {
-        bool added = false;
-        if (coeff1 == 1) {
-          added = context_->StoreAffineRelation(var1, var2, -coeff2, rhs);
-        } else if (coeff2 == 1) {
-          added = context_->StoreAffineRelation(var2, var1, -coeff1, rhs);
-        } else if (coeff1 == -1) {
-          added = context_->StoreAffineRelation(var1, var2, coeff2, -rhs);
-        } else if (coeff2 == -1) {
-          added = context_->StoreAffineRelation(var2, var1, coeff1, -rhs);
-        } else {
-          // In this case, we can solve the diophantine equation, and write
-          // both x and y in term of a new affine representative z.
-          //
-          // Note that PresolveLinearEqualityWithModularInverse() will have the
-          // same effect.
-          //
-          // We can also decide to fully expand the equality if the variables
-          // are fully encoded.
-          context_->UpdateRuleStats("TODO linear: ax + by = cte");
-        }
-        if (added) return RemoveConstraint(ct);
-      } else {
-        // We look ahead to detect solutions to ax + by == cte.
-        int64_t a = coeff1;
-        int64_t b = coeff2;
-        int64_t cte = rhs;
-        int64_t x0 = 0;
-        int64_t y0 = 0;
-        if (!SolveDiophantineEquationOfSizeTwo(a, b, cte, x0, y0)) {
-          context_->UpdateRuleStats(
-              "linear: implied ax + by = cte has no solutions");
-          return MarkConstraintAsFalse(ct);
-        }
-        const Domain reduced_domain =
-            context_->DomainOf(var1)
-                .AdditionWith(Domain(-x0))
-                .InverseMultiplicationBy(b)
-                .IntersectionWith(context_->DomainOf(var2)
-                                      .AdditionWith(Domain(-y0))
-                                      .InverseMultiplicationBy(-a));
-
-        if (reduced_domain.IsEmpty()) {  // no solution
-          context_->UpdateRuleStats(
-              "linear: implied ax + by = cte has no solutions");
-          return MarkConstraintAsFalse(ct);
-        }
-
-        if (reduced_domain.Size() == 1) {
-          const int64_t z = reduced_domain.FixedValue();
-          const int64_t value1 = x0 + b * z;
-          const int64_t value2 = y0 - a * z;
-
-          DCHECK(context_->DomainContains(var1, value1));
-          DCHECK(context_->DomainContains(var2, value2));
-          DCHECK_EQ(coeff1 * value1 + coeff2 * value2, rhs);
-
-          ConstraintProto* imply1 = context_->working_model->add_constraints();
-          *imply1->mutable_enforcement_literal() = ct->enforcement_literal();
-          imply1->mutable_linear()->add_vars(var1);
-          imply1->mutable_linear()->add_coeffs(1);
-          imply1->mutable_linear()->add_domain(value1);
-          imply1->mutable_linear()->add_domain(value1);
-
-          ConstraintProto* imply2 = context_->working_model->add_constraints();
-          *imply2->mutable_enforcement_literal() = ct->enforcement_literal();
-          imply2->mutable_linear()->add_vars(var2);
-          imply2->mutable_linear()->add_coeffs(1);
-          imply2->mutable_linear()->add_domain(value2);
-          imply2->mutable_linear()->add_domain(value2);
-          context_->UpdateRuleStats(
-              "linear: implied ax + by = cte has only one solution");
-          context_->UpdateNewConstraintsVariableUsage();
-          return RemoveConstraint(ct);
-        }
-      }
-    }
-  }
-
   // Detect encoding.
-  if (HasEnforcementLiteral(*ct)) {
-    if (ct->enforcement_literal_size() != 1 || ct->linear().vars_size() != 1 ||
-        (ct->linear().coeffs(0) != 1 && ct->linear().coeffs(0) == -1)) {
-      return false;
-    }
-
-    // Currently, we only use encoding during expansion, so when it is done,
-    // there is no need to updates the maps.
-    if (context_->ModelIsExpanded()) return false;
-
-    const int literal = ct->enforcement_literal(0);
-    const LinearConstraintProto& linear = ct->linear();
-    const int ref = linear.vars(0);
-    const int var = PositiveRef(ref);
-    const int64_t coeff =
-        RefIsPositive(ref) ? ct->linear().coeffs(0) : -ct->linear().coeffs(0);
-
-    if (linear.domain_size() == 2 && linear.domain(0) == linear.domain(1)) {
-      const int64_t value = RefIsPositive(ref) ? linear.domain(0) * coeff
-                                               : -linear.domain(0) * coeff;
-      if (!context_->DomainOf(var).Contains(value)) {
-        if (!context_->SetLiteralToFalse(literal)) return false;
-      } else if (context_->StoreLiteralImpliesVarEqValue(literal, var, value)) {
-        // The domain is not actually modified, but we want to rescan the
-        // constraints linked to this variable. See TODO below.
-        context_->modified_domains.Set(var);
-      }
-    } else {
-      const Domain complement = context_->DomainOf(ref).IntersectionWith(
-          ReadDomainFromProto(linear).Complement());
-      if (complement.Size() != 1) return false;
-      const int64_t value = RefIsPositive(ref) ? complement.Min() * coeff
-                                               : -complement.Min() * coeff;
-      if (context_->StoreLiteralImpliesVarNEqValue(literal, var, value)) {
-        // The domain is not actually modified, but we want to rescan the
-        // constraints linked to this variable. See TODO below.
-        context_->modified_domains.Set(var);
-      }
-    }
-
-    // TODO(user): if we have l1 <=> x == value && l2 => x == value, we
-    //     could rewrite the second constraint into l2 => l1.
-    context_->UpdateNewConstraintsVariableUsage();
+  if (ct->enforcement_literal_size() != 1 ||
+      (ct->linear().coeffs(0) != 1 && ct->linear().coeffs(0) == -1)) {
     return false;
   }
 
-  // Size one constraint?
-  if (ct->linear().vars().size() == 1) {
-    const int64_t coeff = RefIsPositive(ct->linear().vars(0))
-                              ? ct->linear().coeffs(0)
-                              : -ct->linear().coeffs(0);
-    context_->UpdateRuleStats("linear: size one");
-    const int var = PositiveRef(ct->linear().vars(0));
-    const Domain rhs = ReadDomainFromProto(ct->linear());
-    if (!context_->IntersectDomainWith(var,
-                                       rhs.InverseMultiplicationBy(coeff))) {
-      return true;
+  // Currently, we only use encoding during expansion, so when it is done,
+  // there is no need to updates the maps.
+  if (context_->ModelIsExpanded()) return false;
+
+  const int literal = ct->enforcement_literal(0);
+  const LinearConstraintProto& linear = ct->linear();
+  const int ref = linear.vars(0);
+  const int var = PositiveRef(ref);
+  const int64_t coeff =
+      RefIsPositive(ref) ? ct->linear().coeffs(0) : -ct->linear().coeffs(0);
+
+  if (linear.domain_size() == 2 && linear.domain(0) == linear.domain(1)) {
+    const int64_t value = RefIsPositive(ref) ? linear.domain(0) * coeff
+                                             : -linear.domain(0) * coeff;
+    if (!context_->DomainOf(var).Contains(value)) {
+      if (!context_->SetLiteralToFalse(literal)) return false;
+    } else if (context_->StoreLiteralImpliesVarEqValue(literal, var, value)) {
+      // The domain is not actually modified, but we want to rescan the
+      // constraints linked to this variable. See TODO below.
+      context_->modified_domains.Set(var);
     }
-    return RemoveConstraint(ct);
+  } else {
+    const Domain complement = context_->DomainOf(ref).IntersectionWith(
+        ReadDomainFromProto(linear).Complement());
+    if (complement.Size() != 1) return false;
+    const int64_t value = RefIsPositive(ref) ? complement.Min() * coeff
+                                             : -complement.Min() * coeff;
+    if (context_->StoreLiteralImpliesVarNEqValue(literal, var, value)) {
+      // The domain is not actually modified, but we want to rescan the
+      // constraints linked to this variable. See TODO below.
+      context_->modified_domains.Set(var);
+    }
+  }
+
+  // TODO(user): if we have l1 <=> x == value && l2 => x == value, we
+  //     could rewrite the second constraint into l2 => l1.
+  context_->UpdateNewConstraintsVariableUsage();
+  return false;
+}
+
+bool CpModelPresolver::PresolveLinearOfSizeTwo(ConstraintProto* ct) {
+  DCHECK_EQ(ct->linear().vars().size(), 2);
+
+  const LinearConstraintProto& arg = ct->linear();
+  const int var1 = arg.vars(0);
+  const int var2 = arg.vars(1);
+  const int64_t coeff1 = arg.coeffs(0);
+  const int64_t coeff2 = arg.coeffs(1);
+
+  // If it is not an equality, we only presolve the constraint if one of
+  // the variable is Boolean. Note that if both are Boolean, then a similar
+  // reduction is done by PresolveLinearOnBooleans(). If we have an equality,
+  // then the code below will do something stronger than this.
+  //
+  // TODO(user): We should probably instead generalize the code of
+  // ExtractEnforcementLiteralFromLinearConstraint(), or just temporary
+  // propagate domain of enforced linear constraints, to detect Boolean that
+  // must be true or false. This way we can do the same for longer constraints.
+  const bool is_equality =
+      arg.domain_size() == 2 && arg.domain(0) == arg.domain(1);
+  if (!is_equality) {
+    int lit, var;
+    int64_t value_on_true, coeff;
+    if (context_->CanBeUsedAsLiteral(var1)) {
+      lit = var1;
+      value_on_true = coeff1;
+      var = var2;
+      coeff = coeff2;
+    } else if (context_->CanBeUsedAsLiteral(var2)) {
+      lit = var2;
+      value_on_true = coeff2;
+      var = var1;
+      coeff = coeff1;
+    } else {
+      return false;
+    }
+
+    const Domain rhs = ReadDomainFromProto(ct->linear());
+    const Domain rhs_if_true =
+        rhs.AdditionWith(Domain(-value_on_true)).InverseMultiplicationBy(coeff);
+    const Domain rhs_if_false = rhs.InverseMultiplicationBy(coeff);
+    const bool implied_false =
+        context_->DomainOf(var).IntersectionWith(rhs_if_true).IsEmpty();
+    const bool implied_true =
+        context_->DomainOf(var).IntersectionWith(rhs_if_false).IsEmpty();
+    if (implied_true && implied_false) {
+      context_->UpdateRuleStats("linear2: infeasible.");
+      return MarkConstraintAsFalse(ct);
+    } else if (implied_true) {
+      context_->UpdateRuleStats("linear2: Boolean with one feasible value.");
+
+      // => true.
+      ConstraintProto* new_ct = context_->working_model->add_constraints();
+      *new_ct->mutable_enforcement_literal() = ct->enforcement_literal();
+      new_ct->mutable_bool_and()->add_literals(lit);
+      context_->UpdateNewConstraintsVariableUsage();
+
+      // Rewrite to => var in rhs_if_true.
+      ct->mutable_linear()->Clear();
+      ct->mutable_linear()->add_vars(var);
+      ct->mutable_linear()->add_coeffs(1);
+      FillDomainInProto(rhs_if_true, ct->mutable_linear());
+      return PresolveLinearOfSizeOne(ct) || true;
+    } else if (implied_false) {
+      context_->UpdateRuleStats("linear2: Boolean with one feasible value.");
+
+      // => false.
+      ConstraintProto* new_ct = context_->working_model->add_constraints();
+      *new_ct->mutable_enforcement_literal() = ct->enforcement_literal();
+      new_ct->mutable_bool_and()->add_literals(NegatedRef(lit));
+      context_->UpdateNewConstraintsVariableUsage();
+
+      // Rewrite to => var in rhs_if_false.
+      ct->mutable_linear()->Clear();
+      ct->mutable_linear()->add_vars(var);
+      ct->mutable_linear()->add_coeffs(1);
+      FillDomainInProto(rhs_if_false, ct->mutable_linear());
+      return PresolveLinearOfSizeOne(ct) || true;
+    } else {
+      // TODO(user): We can expand this into two linear1 constraints, I am not
+      // 100% sure it is always good, so for now we don't do it. Note that the
+      // effect of doing it or not is not really visible on the bench. Some
+      // problem are better with it some better without.
+      context_->UpdateRuleStats("TODOD linear2: contains a Boolean.");
+      return false;
+    }
+  }
+
+  // We have: enforcement => (coeff1 * v1 + coeff2 * v2 == rhs).
+  const int64_t rhs = arg.domain(0);
+  if (ct->enforcement_literal().empty()) {
+    // Detect affine relation.
+    //
+    // TODO(user): it might be better to first add only the affine relation with
+    // a coefficient of magnitude 1, and later the one with larger coeffs.
+    bool added = false;
+    if (coeff1 == 1) {
+      added = context_->StoreAffineRelation(var1, var2, -coeff2, rhs);
+    } else if (coeff2 == 1) {
+      added = context_->StoreAffineRelation(var2, var1, -coeff1, rhs);
+    } else if (coeff1 == -1) {
+      added = context_->StoreAffineRelation(var1, var2, coeff2, -rhs);
+    } else if (coeff2 == -1) {
+      added = context_->StoreAffineRelation(var2, var1, coeff1, -rhs);
+    } else {
+      // In this case, we can solve the diophantine equation, and write
+      // both x and y in term of a new affine representative z.
+      //
+      // Note that PresolveLinearEqualityWithModularInverse() will have the
+      // same effect.
+      //
+      // We can also decide to fully expand the equality if the variables
+      // are fully encoded.
+      context_->UpdateRuleStats("TODO linear2: ax + by = cte");
+    }
+    if (added) return RemoveConstraint(ct);
+  } else {
+    // We look ahead to detect solutions to ax + by == cte.
+    int64_t a = coeff1;
+    int64_t b = coeff2;
+    int64_t cte = rhs;
+    int64_t x0 = 0;
+    int64_t y0 = 0;
+    if (!SolveDiophantineEquationOfSizeTwo(a, b, cte, x0, y0)) {
+      context_->UpdateRuleStats(
+          "linear2: implied ax + by = cte has no solutions");
+      return MarkConstraintAsFalse(ct);
+    }
+    const Domain reduced_domain =
+        context_->DomainOf(var1)
+            .AdditionWith(Domain(-x0))
+            .InverseMultiplicationBy(b)
+            .IntersectionWith(context_->DomainOf(var2)
+                                  .AdditionWith(Domain(-y0))
+                                  .InverseMultiplicationBy(-a));
+
+    if (reduced_domain.IsEmpty()) {  // no solution
+      context_->UpdateRuleStats(
+          "linear2: implied ax + by = cte has no solutions");
+      return MarkConstraintAsFalse(ct);
+    }
+
+    if (reduced_domain.Size() == 1) {
+      const int64_t z = reduced_domain.FixedValue();
+      const int64_t value1 = x0 + b * z;
+      const int64_t value2 = y0 - a * z;
+
+      DCHECK(context_->DomainContains(var1, value1));
+      DCHECK(context_->DomainContains(var2, value2));
+      DCHECK_EQ(coeff1 * value1 + coeff2 * value2, rhs);
+
+      ConstraintProto* imply1 = context_->working_model->add_constraints();
+      *imply1->mutable_enforcement_literal() = ct->enforcement_literal();
+      imply1->mutable_linear()->add_vars(var1);
+      imply1->mutable_linear()->add_coeffs(1);
+      imply1->mutable_linear()->add_domain(value1);
+      imply1->mutable_linear()->add_domain(value1);
+
+      ConstraintProto* imply2 = context_->working_model->add_constraints();
+      *imply2->mutable_enforcement_literal() = ct->enforcement_literal();
+      imply2->mutable_linear()->add_vars(var2);
+      imply2->mutable_linear()->add_coeffs(1);
+      imply2->mutable_linear()->add_domain(value2);
+      imply2->mutable_linear()->add_domain(value2);
+      context_->UpdateRuleStats(
+          "linear2: implied ax + by = cte has only one solution");
+      context_->UpdateNewConstraintsVariableUsage();
+      return RemoveConstraint(ct);
+    }
+  }
+
+  return false;
+}
+
+bool CpModelPresolver::PresolveSmallLinear(ConstraintProto* ct) {
+  if (ct->constraint_case() != ConstraintProto::kLinear) return false;
+  if (context_->ModelIsUnsat()) return false;
+
+  if (ct->linear().vars().empty()) {
+    context_->UpdateRuleStats("linear: empty");
+    const Domain rhs = ReadDomainFromProto(ct->linear());
+    if (rhs.Contains(0)) {
+      return RemoveConstraint(ct);
+    } else {
+      return MarkConstraintAsFalse(ct);
+    }
+  } else if (ct->linear().vars().size() == 1) {
+    return PresolveLinearOfSizeOne(ct);
+  } else if (ct->linear().vars().size() == 2) {
+    return PresolveLinearOfSizeTwo(ct);
   }
 
   return false;
