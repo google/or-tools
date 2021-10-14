@@ -77,7 +77,7 @@ void MinimalJobshopSat() {
                                  .WithName(std::string("interval") + suffix);
 
       TaskID key = std::make_tuple(job_id, task_id);
-      all_tasks[key] = {.start = start, .end = end, .interval = interval};
+      all_tasks.emplace(key, TaskType{/*.start=*/start, /*.end=*/end, /*.interval=*/interval});
       machine_to_intervals[machine].push_back(interval);
     }
   }
@@ -127,8 +127,6 @@ void MinimalJobshopSat() {
       int task_id;
       int64_t start;
       int64_t duration;
-      AssignedTaskType(int job_id, int task_id, int64_t start, int64_t duration):
-      job_id(job_id), task_id(task_id), start(start), duration(duration) {}
 
       bool operator<(const AssignedTaskType& rhs) const {
         return std::tie(this->start, this->duration) <
@@ -144,11 +142,11 @@ void MinimalJobshopSat() {
         TaskID key = std::make_tuple(job_id, task_id);
         int64_t start = SolutionIntegerValue(response, all_tasks[key].start);
         assigned_jobs[machine].push_back(
-            AssignedTaskType(
+            AssignedTaskType{
               /*.job_id=*/job_id,
               /*.task_id=*/task_id,
               /*.start=*/start,
-              /*.duration=*/duration));
+              /*.duration=*/duration});
       }
     }
 
