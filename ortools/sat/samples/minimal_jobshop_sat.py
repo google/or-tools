@@ -89,12 +89,12 @@ def main():
     # [END objective]
 
     # Creates the solver and solve.
-    # [START solver]
+    # [START solve]
     solver = cp_model.CpSolver()
     status = solver.Solve(model)
-    # [END solver]
+    # [END solve]
 
-    # [START solution_printing]
+    # [START print_solution]
     if status == cp_model.OPTIMAL:
         print('Solution:')
         # Create one list of assigned tasks per machine.
@@ -139,7 +139,7 @@ def main():
         print(output)
     else:
         print('No optimal solution found !')
-    # [END solution_printing]
+    # [END print_solution]
 
     # Statistics.
     # [START statistics]
