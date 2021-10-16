@@ -180,6 +180,8 @@ class LinearExpr(object):
     @classmethod
     def Sum(cls, expressions):
         """Creates the expression sum(expressions)."""
+        if len(expressions) == 1:
+            return expressions[0]
         return _SumArray(expressions)
 
     @classmethod
@@ -187,6 +189,8 @@ class LinearExpr(object):
         """Creates the expression sum(expressions[i] * coefficients[i])."""
         if LinearExpr.IsEmptyOrAllNull(coefficients):
             return 0
+        elif len(expressions) == 1:
+            return expressions[0] * coefficients[0]
         else:
             return _ScalProd(expressions, coefficients)
 
@@ -204,6 +208,29 @@ class LinearExpr(object):
             if c != 0:
                 return False
         return True
+
+    @classmethod
+    def RebuildFromLinearExpressionProto(cls, model, proto):
+        """Recreate a LinearExpr from a LinearExpressionProto."""
+        offset = proto.offset
+        num_elements = len(proto.vars)
+        if num_elements == 0:
+            return offset
+        elif num_elements == 1:
+            return IntVar(model, proto.vars[0], None) * proto.coeffs[0] + offset
+        else:
+            variables = []
+            coeffs = []
+            all_ones = True
+            for index, coeff in zip(proto.vars(), proto.coeffs()):
+                variables.append(IntVar(model, index, None))
+                coeffs.append(coeff)
+                if coeff != 1:
+                    all_ones = False
+            if all_ones:
+                return _SumArray(variables, offset)
+            else:
+                return _ScalProd(variables, coeffs, offset)
 
     def GetVarValueMap(self):
         """Scans the expression, and return a list of (var_coef_map, constant)."""
@@ -241,14 +268,20 @@ class LinearExpr(object):
             'calling abs() on a linear expression is not supported, '
             'please use CpModel.AddAbsEquality')
 
-    def __add__(self, expr):
-        return _SumArray([self, expr])
-
-    def __radd__(self, arg):
+    def __add__(self, arg):
+        if isinstance(arg, numbers.Integral) and arg == 0:
+            return self
         return _SumArray([self, arg])
 
-    def __sub__(self, expr):
-        return _SumArray([self, -expr])
+    def __radd__(self, arg):
+        if isinstance(arg, numbers.Integral) and arg == 0:
+            return self
+        return _SumArray([self, arg])
+
+    def __sub__(self, arg):
+        if isinstance(arg, numbers.Integral) and arg == 0:
+            return self
+        return _SumArray([self, -arg])
 
     def __rsub__(self, arg):
         return _SumArray([-self, arg])
@@ -410,9 +443,9 @@ class _ProductCst(LinearExpr):
 class _SumArray(LinearExpr):
     """Represents the sum of a list of LinearExpr and a constant."""
 
-    def __init__(self, expressions):
+    def __init__(self, expressions, constant=0):
         self.__expressions = []
-        self.__constant = 0
+        self.__constant = constant
         for x in expressions:
             if isinstance(x, numbers.Integral):
                 cp_model_helper.AssertIsInt64(x)
@@ -443,10 +476,10 @@ class _SumArray(LinearExpr):
 class _ScalProd(LinearExpr):
     """Represents the scalar product of expressions with constants and a constant."""
 
-    def __init__(self, expressions, coefficients):
+    def __init__(self, expressions, coefficients, constant=0):
         self.__expressions = []
         self.__coefficients = []
-        self.__constant = 0
+        self.__constant = constant
         if len(expressions) != len(coefficients):
             raise TypeError(
                 'In the LinearExpr.ScalProd method, the expression array and the '
@@ -802,6 +835,18 @@ class IntervalVar(object):
 
     def Name(self):
         return self.__ct.name
+
+    def StartExpr(self):
+        return LinearExpr.RebuildFromLinearExpressionProto(
+            self.__model, self.__ct.interval.start_view)
+
+    def SizeExpr(self):
+        return LinearExpr.RebuildFromLinearExpressionProto(
+            self.__model, self.__ct.interval.size_view)
+
+    def EndExpr(self):
+        return LinearExpr.RebuildFromLinearExpressionProto(
+            self.__model, self.__ct.interval.end_view)
 
 
 def ObjectIsATrueLiteral(literal):
