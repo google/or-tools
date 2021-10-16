@@ -16,11 +16,9 @@ package com.google.ortools.graph.samples;
 // [START import]
 import com.google.ortools.Loader;
 import com.google.ortools.graph.MaxFlow;
-import java.util.ArrayList;
-import java.util.List;
 // [END import]
 
-/** Minimal MaxFlow program.*/
+/** Minimal MaxFlow program. */
 public final class SimpleMaxFlowProgram {
   public static void main(String[] args) throws Exception {
     Loader.loadNativeLibraries();
@@ -44,8 +42,9 @@ public final class SimpleMaxFlowProgram {
     // Add each arc.
     for (int i = 0; i < startNodes.length; ++i) {
       int arc = maxFlow.addArcWithCapacity(startNodes[i], endNodes[i], capacities[i]);
-      if (arc != i)
+      if (arc != i) {
         throw new Exception("Internal error");
+      }
     }
     // [END constraints]
 
@@ -57,7 +56,7 @@ public final class SimpleMaxFlowProgram {
     // [START print_solution]
     if (status == MaxFlow.Status.OPTIMAL) {
       System.out.println("Max. flow: " + maxFlow.getOptimalFlow());
-      System.out.println("");
+      System.out.println();
       System.out.println("  Arc     Flow / Capacity");
       for (int i = 0; i < maxFlow.getNumArcs(); ++i) {
         System.out.println(maxFlow.getTail(i) + " -> " + maxFlow.getHead(i) + "    "

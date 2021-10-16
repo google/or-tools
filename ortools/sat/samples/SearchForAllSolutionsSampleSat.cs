@@ -78,7 +78,7 @@ public class SearchForAllSolutionsSampleSat
         solver.Solve(model, cb);
         // [END solve]
 
-        Console.WriteLine(String.Format("Number of solutions found: {0}", cb.SolutionCount()));
+        Console.WriteLine($"Number of solutions found: {cb.SolutionCount()}");
     }
 }
 // [END program]

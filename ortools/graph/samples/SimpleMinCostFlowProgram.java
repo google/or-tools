@@ -16,11 +16,10 @@ package com.google.ortools.graph.samples;
 // [START import]
 import com.google.ortools.Loader;
 import com.google.ortools.graph.MinCostFlow;
-import java.util.ArrayList;
-import java.util.List;
+import com.google.ortools.graph.MinCostFlowBase;
 // [END import]
 
-/** Minimal MinCostFlow program.*/
+/** Minimal MinCostFlow program. */
 public class SimpleMinCostFlowProgram {
   public static void main(String[] args) throws Exception {
     Loader.loadNativeLibraries();
@@ -49,8 +48,9 @@ public class SimpleMinCostFlowProgram {
     for (int i = 0; i < startNodes.length; ++i) {
       int arc = minCostFlow.addArcWithCapacityAndUnitCost(
           startNodes[i], endNodes[i], capacities[i], unitCosts[i]);
-      if (arc != i)
+      if (arc != i) {
         throw new Exception("Internal error");
+      }
     }
 
     // Add node supplies.
@@ -61,13 +61,13 @@ public class SimpleMinCostFlowProgram {
 
     // [START solve]
     // Find the min cost flow.
-    MinCostFlow.Status status = minCostFlow.solve();
+    MinCostFlowBase.Status status = minCostFlow.solve();
     // [END solve]
 
     // [START print_solution]
     if (status == MinCostFlow.Status.OPTIMAL) {
       System.out.println("Minimum cost: " + minCostFlow.getOptimalCost());
-      System.out.println("");
+      System.out.println();
       System.out.println(" Edge   Flow / Capacity  Cost");
       for (int i = 0; i < minCostFlow.getNumArcs(); ++i) {
         long cost = minCostFlow.getFlow(i) * minCostFlow.getUnitCost(i);

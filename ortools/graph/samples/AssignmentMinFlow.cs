@@ -10,6 +10,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 // [START program]
 // [START import]
 using System;
@@ -28,27 +29,16 @@ public class AssignmentMinFlow
         // [START data]
         // Define four parallel arrays: sources, destinations, capacities, and unit costs
         // between each pair.
-        int[] startNodes = {
-          0, 0, 0, 0,
-          1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4,
-          5, 6, 7, 8};
-        int[] endNodes = {
-          1, 2, 3, 4,
-          5, 6, 7, 8, 5, 6, 7, 8, 5, 6, 7, 8, 5, 6, 7, 8,
-          9, 9, 9, 9};
-        int[] capacities = {
-          1, 1, 1, 1,
-          1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-          1, 1, 1, 1};
-        int[] unitCosts = {
-          0, 0, 0, 0,
-          90, 76, 75, 70, 35, 85, 55, 65, 125, 95, 90, 105, 45, 110, 95, 115,
-          0, 0, 0, 0};
+        int[] startNodes = { 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 6, 7, 8 };
+        int[] endNodes = { 1, 2, 3, 4, 5, 6, 7, 8, 5, 6, 7, 8, 5, 6, 7, 8, 5, 6, 7, 8, 9, 9, 9, 9 };
+        int[] capacities = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+        int[] unitCosts = { 0,   0,  0,  0,   90, 76,  75, 70,  35, 85, 55, 65,
+                            125, 95, 90, 105, 45, 110, 95, 115, 0,  0,  0,  0 };
 
         int source = 0;
         int sink = 9;
         // Define an array of supplies at each node.
-        int[] supplies = {4, 0, 0, 0, 0, 0, 0, 0, 0, -4};
+        int[] supplies = { 4, 0, 0, 0, 0, 0, 0, 0, 0, -4 };
         // [END data]
 
         // [START constraints]
@@ -80,16 +70,17 @@ public class AssignmentMinFlow
             Console.WriteLine("");
             for (int i = 0; i < minCostFlow.NumArcs(); ++i)
             {
-              // Can ignore arcs leading out of source or into sink.
-              if (minCostFlow.Tail(i) != source && minCostFlow.Head(i) != sink) {
-                // Arcs in the solution have a flow value of 1. Their start and end nodes
-                // give an assignment of worker to task.
-                if (minCostFlow.Flow(i) > 0) {
-                  Console.WriteLine("Worker " + minCostFlow.Tail(i) +
-                      " assigned to task " + minCostFlow.Head(i) +
-                      " Cost: " + minCostFlow.UnitCost(i));
+                // Can ignore arcs leading out of source or into sink.
+                if (minCostFlow.Tail(i) != source && minCostFlow.Head(i) != sink)
+                {
+                    // Arcs in the solution have a flow value of 1. Their start and end nodes
+                    // give an assignment of worker to task.
+                    if (minCostFlow.Flow(i) > 0)
+                    {
+                        Console.WriteLine("Worker " + minCostFlow.Tail(i) + " assigned to task " + minCostFlow.Head(i) +
+                                          " Cost: " + minCostFlow.UnitCost(i));
+                    }
                 }
-              }
             }
         }
         else

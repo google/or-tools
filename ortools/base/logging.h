@@ -38,6 +38,7 @@
 
 #define QCHECK CHECK
 #define QCHECK_EQ CHECK_EQ
+#define QCHECK_GE CHECK_GE
 #define ABSL_DIE_IF_NULL CHECK_NOTNULL
 #define CHECK_OK(x) CHECK((x).ok())
 #define QCHECK_OK CHECK_OK

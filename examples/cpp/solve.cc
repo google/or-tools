@@ -82,9 +82,10 @@ ABSL_FLAG(std::string, params_file, "",
           "Solver specific parameters file. "
           "If this flag is set, the --params flag is ignored.");
 ABSL_FLAG(std::string, params, "", "Solver specific parameters");
-ABSL_FLAG(absl::Duration, time_limit, absl::ZeroDuration(),
-          "If strictly positive, specifies a limit on the solving time. "
-          "Otherwise, no time limit will be imposed.");
+ABSL_FLAG(absl::Duration, time_limit, absl::InfiniteDuration(),
+          "It specifies a limit on the solving time. The duration must be must "
+          "be positive. It default to an infinite duration meaning that no "
+          "time limit will be imposed.");
 ABSL_FLAG(std::string, output_csv, "",
           "If non-empty, write the returned solution in csv format with "
           "each line formed by a variable name and its value.");
@@ -219,7 +220,7 @@ bool Run(MPSolver::OptimizationProblemType type) {
   }
 
   // Time limits.
-  if (absl::GetFlag(FLAGS_time_limit) > absl::ZeroDuration()) {
+  if (absl::GetFlag(FLAGS_time_limit) != absl::InfiniteDuration()) {
     LOG(INFO) << "Setting a time limit of " << absl::GetFlag(FLAGS_time_limit);
     // Overwrite the request time limit.
     request_proto.set_solver_time_limit_seconds(
@@ -329,6 +330,8 @@ int main(int argc, char** argv) {
   google::InitGoogleLogging(kUsageStr);
   absl::ParseCommandLine(argc, argv);
   QCHECK(!absl::GetFlag(FLAGS_input).empty()) << "--input is required";
+  QCHECK_GE(absl::GetFlag(FLAGS_time_limit), absl::ZeroDuration())
+      << "--time_limit must be given a positive duration";
 
   operations_research::MPSolver::OptimizationProblemType type;
   CHECK(operations_research::MPSolver::ParseSolverType(

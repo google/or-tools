@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # [START program]
+"""Linear assignment example."""
 # [START import]
 from ortools.graph import pywrapgraph
 # [END import]
@@ -29,9 +30,8 @@ def main():
     start_nodes = [0, 0, 0, 0] + [
         1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4
     ] + [5, 6, 7, 8]
-    end_nodes = [1, 2, 3, 4] + [
-        5, 6, 7, 8, 5, 6, 7, 8, 5, 6, 7, 8, 5, 6, 7, 8
-    ] + [9, 9, 9, 9]
+    end_nodes = [1, 2, 3, 4] + [5, 6, 7, 8, 5, 6, 7, 8, 5, 6, 7, 8, 5, 6, 7, 8
+                               ] + [9, 9, 9, 9]
     capacities = [1, 1, 1, 1] + [
         1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
     ] + [1, 1, 1, 1]
@@ -42,15 +42,15 @@ def main():
     source = 0
     sink = 9
     tasks = 4
-    supplies = [4, 0, 0, 0, 0, 0, 0, 0, 0, -4]
+    supplies = [tasks, 0, 0, 0, 0, 0, 0, 0, 0, -tasks]
     # [END data]
 
     # [START constraints]
     # Add each arc.
     for i in range(len(start_nodes)):
         min_cost_flow.AddArcWithCapacityAndUnitCost(start_nodes[i],
-                                                    end_nodes[i],
-                                                    capacities[i], costs[i])
+                                                    end_nodes[i], capacities[i],
+                                                    costs[i])
     # Add node supplies.
     for i in range(len(supplies)):
         min_cost_flow.SetNodeSupply(i, supplies[i])

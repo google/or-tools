@@ -179,8 +179,7 @@ void Solve(const std::vector<int64_t>& durations,
 
     int64_t objective = 0;
     for (int i = 0; i < num_tasks; ++i) {
-      const int64_t end = SolutionIntegerMin(r, task_ends[i]);
-      CHECK_EQ(end, SolutionIntegerMax(r, task_ends[i]));
+      const int64_t end = SolutionIntegerValue(r, task_ends[i]);
       objective +=
           weights[i] * std::max<int64_t>(int64_t{0}, end - due_dates[i]);
     }
@@ -190,27 +189,21 @@ void Solve(const std::vector<int64_t>& durations,
     std::vector<int> sorted_tasks(num_tasks);
     std::iota(sorted_tasks.begin(), sorted_tasks.end(), 0);
     std::sort(sorted_tasks.begin(), sorted_tasks.end(), [&](int v1, int v2) {
-      CHECK_EQ(SolutionIntegerMin(r, task_starts[v1]),
-               SolutionIntegerMax(r, task_starts[v1]));
-      CHECK_EQ(SolutionIntegerMin(r, task_starts[v2]),
-               SolutionIntegerMax(r, task_starts[v2]));
-      return SolutionIntegerMin(r, task_starts[v1]) <
-             SolutionIntegerMin(r, task_starts[v2]);
+      return SolutionIntegerValue(r, task_starts[v1]) <
+             SolutionIntegerValue(r, task_starts[v2]);
     });
     std::string solution = "0";
     int end = 0;
     for (const int i : sorted_tasks) {
       const int64_t cost =
-          weights[i] * SolutionIntegerMin(r, tardiness_vars[i]);
+          weights[i] * SolutionIntegerValue(r, tardiness_vars[i]);
       absl::StrAppend(&solution, "| #", i, " ");
       if (cost > 0) {
         // Display the cost in red.
         absl::StrAppend(&solution, "\033[1;31m(+", cost, ") \033[0m");
       }
-      absl::StrAppend(&solution, "|", SolutionIntegerMin(r, task_ends[i]));
-      CHECK_EQ(end, SolutionIntegerMin(r, task_starts[i]));
+      absl::StrAppend(&solution, "|", SolutionIntegerValue(r, task_ends[i]));
       end += durations[i];
-      CHECK_EQ(end, SolutionIntegerMin(r, task_ends[i]));
     }
     LOG(INFO) << "solution: " << solution;
   }));
