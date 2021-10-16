@@ -434,5 +434,18 @@ namespace Google.OrTools.Tests
             Assert.NotEmpty(log);
             Assert.Contains("OPTIMAL", log);
         }
+
+        [Fact]
+        public void TestInterval()
+        {
+            Console.WriteLine("TestInterval test");
+            CpModel model = new CpModel();
+            IntVar v = model.NewIntVar(-10, 10, "v");
+            IntervalVar i = model.NewFixedSizeIntervalVar(v, 3, "i");
+            Console.WriteLine("Start = " + i.StartExpr().ToString() + "/" + i.StartExpr().ShortString());
+            Console.WriteLine("Size = " + i.SizeExpr().ToString() + "/" + i.SizeExpr().ShortString());
+            Console.WriteLine("End = " + i.EndExpr().ToString() + "/" + i.EndExpr().ShortString());
+            Console.WriteLine("Interval = " + i.ToString());
+        }
     }
 } // namespace Google.OrTools.Tests

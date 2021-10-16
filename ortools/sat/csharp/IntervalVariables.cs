@@ -56,6 +56,21 @@ namespace Google.OrTools.Sat
             return index_;
         }
 
+        public LinearExpr StartExpr()
+        {
+            return LinearExpr.RebuildLinearExprFromLinearExpressionProto(interval_.StartView, model_);
+        }
+
+        public LinearExpr SizeExpr()
+        {
+            return LinearExpr.RebuildLinearExprFromLinearExpressionProto(interval_.SizeView, model_);
+        }
+        
+        public LinearExpr EndExpr()
+        {
+            return LinearExpr.RebuildLinearExprFromLinearExpressionProto(interval_.EndView, model_);
+        }
+        
         public IntervalConstraintProto Proto
         {
             get {

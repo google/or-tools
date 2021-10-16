@@ -114,11 +114,19 @@ namespace Google.OrTools.Sat
 
         public static LinearExpr operator +(LinearExpr a, long v)
         {
+            if (v == 0)
+            {
+                return a;
+            }
             return new SumArray(a, v);
         }
 
         public static LinearExpr operator +(long v, LinearExpr a)
         {
+            if (v == 0)
+            {
+                return a;
+            }
             return new SumArray(a, v);
         }
 
@@ -129,11 +137,19 @@ namespace Google.OrTools.Sat
 
         public static LinearExpr operator -(LinearExpr a, long v)
         {
+            if (v == 0)
+            {
+                return a;
+            }
             return new SumArray(a, -v);
         }
 
         public static LinearExpr operator -(long v, LinearExpr a)
         {
+            if (v == 0)
+            {
+                return Prod(a, -1);
+            }
             return new SumArray(Prod(a, -1), v);
         }
 
@@ -355,6 +371,37 @@ namespace Google.OrTools.Sat
             }
             return constant;
         }
+
+        public static LinearExpr RebuildLinearExprFromLinearExpressionProto(LinearExpressionProto proto,
+                                                                            CpModelProto model)
+        {
+            int numElements = proto.Vars.Count;
+            long offset = proto.Offset;
+            if (numElements == 0)
+            {
+                return new ConstantExpr(offset);
+            }
+            else 
+            if (numElements == 1) 
+            {
+                IntVar var = new IntVar(model, proto.Vars[0]);
+                long coeff = proto.Coeffs[0];
+                return LinearExpr.Affine(var, coeff, offset);
+            }
+            else
+            {
+                LinearExpr[] exprs = new LinearExpr[numElements];
+                for (int i = 0; i < numElements; ++i)
+                {
+                    IntVar var = new IntVar(model, proto.Vars[i]);
+                    long coeff = proto.Coeffs[i];
+                    exprs[i] = Prod(var, coeff);
+                }
+                SumArray sum = new SumArray(exprs);
+                sum.Offset = sum.Offset + offset;
+                return sum;
+            }
+        }
     }
 
     public class ProductCst : LinearExpr
@@ -421,6 +468,7 @@ namespace Google.OrTools.Sat
             }
             offset_ = 0L;
         }
+
         public SumArray(IEnumerable<IntVar> vars, IEnumerable<long> coeffs)
         {
             List<IntVar> tmp_vars = new List<IntVar>();
@@ -493,6 +541,9 @@ namespace Google.OrTools.Sat
             get {
                 return offset_;
             }
+            set {
+                offset_ = value;
+            }
         }
 
         public override string ShortString()
@@ -513,6 +564,10 @@ namespace Google.OrTools.Sat
                 }
 
                 result += expr.ShortString();
+            }
+            if (offset_ != 0) 
+            {
+                result += String.Format(" + {0}", offset_);
             }
             return result;
         }
@@ -535,6 +590,16 @@ namespace Google.OrTools.Sat
             }
         }
 
+        public override string ShortString()
+        {
+            return String.Format("{0}", value_);
+        }
+
+        public override string ToString()
+        {
+            return String.Format("ConstantExpr({0})", value_);
+        }        
+
         private long value_;
     }
 
@@ -548,6 +613,14 @@ namespace Google.OrTools.Sat
             var_.Name = name;
             var_.Domain.Add(domain.FlattenedIntervals());
             model.Variables.Add(var_);
+            negation_ = null;
+        }
+
+       public IntVar(CpModelProto model, int index)
+        {
+            model_ = model;
+            index_ = index;
+            var_ = model.Variables[index];
             negation_ = null;
         }
 
