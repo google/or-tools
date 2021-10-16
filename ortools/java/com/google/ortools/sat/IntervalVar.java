@@ -67,6 +67,22 @@ public final class IntervalVar {
     return modelBuilder.getConstraints(constraintIndex).getName();
   }
 
+  /** Returns the start expression. */
+  public LinearExpr getStartExpr() {
+    return LinearExpr.rebuildFromLinearExpressionProto(
+        intervalBuilder.getStartView(), modelBuilder);
+  }
+
+  /** Returns the size expression. */
+  public LinearExpr getSizeExpr() {
+    return LinearExpr.rebuildFromLinearExpressionProto(intervalBuilder.getSizeView(), modelBuilder);
+  }
+
+  /** Returns the size expression. */
+  public LinearExpr getEndExpr() {
+    return LinearExpr.rebuildFromLinearExpressionProto(intervalBuilder.getEndView(), modelBuilder);
+  }
+
   private final CpModelProto.Builder modelBuilder;
   private final int constraintIndex;
   private final IntervalConstraintProto.Builder intervalBuilder;
