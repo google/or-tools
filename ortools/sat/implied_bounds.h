@@ -121,6 +121,19 @@ class ImpliedBounds {
                                                 : empty_var_to_value_;
   }
 
+  // Register the fact that var = sum literal * value with sum literal == 1.
+  // Note that we call this an "element" encoding because a value can appear
+  // more than once.
+  void AddElementEncoding(IntegerVariable var,
+                          const std::vector<ValueLiteralPair>& encoding);
+
+  // Returns an empty vector if there is no such encoding.
+  const std::vector<std::vector<ValueLiteralPair>>& GetElementEncodings(
+      IntegerVariable var);
+
+  // Get an unsorted set of variables appearing in element encodings.
+  const std::vector<IntegerVariable>& GetElementEncodedVariables() const;
+
   // Adds to the integer trail all the new level-zero deduction made here.
   // This can only be called at decision level zero. Returns false iff the model
   // is infeasible.
@@ -170,6 +183,12 @@ class ImpliedBounds {
       literal_to_var_to_value_;
   const absl::flat_hash_map<IntegerVariable, IntegerValue> empty_var_to_value_;
 
+  absl::flat_hash_map<IntegerVariable,
+                      std::vector<std::vector<ValueLiteralPair>>>
+      var_to_element_encodings_;
+  const std::vector<std::vector<ValueLiteralPair>> empty_element_encoding_;
+  std::vector<IntegerVariable> element_encoded_variables_;
+
   // TODO(user): Ideally, this should go away if we manage to push level-zero
   // fact at a positive level directly.
   absl::StrongVector<IntegerVariable, IntegerValue> level_zero_lower_bounds_;
@@ -179,6 +198,16 @@ class ImpliedBounds {
   int64_t num_deductions_ = 0;
   int64_t num_enqueued_in_var_to_bounds_ = 0;
 };
+
+// Looks at value encodings and detects if the product of two variables can be
+// linearized.
+//
+// In the returned encoding, note that all the literals will be unique and in
+// exactly one relation, and that the values can be duplicated. This is what we
+// call an "element" encoding.
+bool DetectLinearEncodingOfProducts(
+    IntegerVariable left_var, IntegerVariable right_var, Model* model,
+    std::vector<ValueLiteralPair>* product_encoding);
 
 }  // namespace sat
 }  // namespace operations_research

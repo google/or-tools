@@ -1293,6 +1293,7 @@ cc_library(
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_mapping",
+        ":cp_model_presolve",
         ":cp_model_utils",
         ":linear_programming_constraint",
         ":model",

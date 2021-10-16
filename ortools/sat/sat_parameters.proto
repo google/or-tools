@@ -935,8 +935,6 @@ message SatParameters {
 
   // LNS parameters.
   optional bool use_lns_only = 101 [default = false];
-  optional bool lns_focus_on_decision_variables = 105 [default = false];
-  optional bool lns_expand_intervals_in_constraint_graph = 184 [default = true];
 
   // Size of the top-n different solutions kept by the solver.
   // Currently this only impact the "base" solution chosen for a LNS fragment.

@@ -1016,7 +1016,7 @@ void RegisterObjectiveBoundsImport(
 
     if (!propagate) return true;
 
-    VLOG(2) << "'" << name << "' imports objective bounds: external ["
+    VLOG(3) << "'" << name << "' imports objective bounds: external ["
             << objective->ScaleIntegerObjective(external_lb) << ", "
             << objective->ScaleIntegerObjective(external_ub) << "], current ["
             << objective->ScaleIntegerObjective(current_lb) << ", "
@@ -1062,6 +1062,7 @@ void LoadBaseModel(const CpModelProto& model_proto, Model* model) {
   }
 
   ExtractEncoding(model_proto, model);
+  ExtractElementEncoding(model_proto, model);
   PropagateEncodingFromEquivalenceRelations(model_proto, model);
 
   // Check the model is still feasible before continuing.
@@ -1069,9 +1070,6 @@ void LoadBaseModel(const CpModelProto& model_proto, Model* model) {
 
   // Fully encode variables as needed by the search strategy.
   AddFullEncodingFromSearchBranching(model_proto, model);
-
-  // Force some variables to be fully encoded.
-  MaybeFullyEncodeMoreVariables(model_proto, model);
 
   // Load the constraints.
   std::set<std::string> unsupported_types;
@@ -2453,6 +2451,8 @@ class LnsSolver : public SubSolver {
       data.status = local_response.status();
       data.deterministic_time = local_time_limit->GetElapsedDeterministicTime();
 
+      bool new_solution = false;
+      bool display_lns_info = false;
       if (generator_->IsRelaxationGenerator()) {
         bool has_feasible_solution = false;
         if (local_response.status() == CpSolverStatus::OPTIMAL ||
@@ -2535,6 +2535,28 @@ class LnsSolver : public SubSolver {
           }
         }
 
+        // Special case if we solved a part of the full problem!
+        //
+        // TODO(user): This do not seem to work if they are symmetries loaded
+        // into SAT. For now we just disable this if there is any symmetry.
+        // See for instance spot5_1401.fzn. Be smarter about that:
+        // - If there are connected compo in the inital model, we should only
+        //   compute generator that do not cross component? or are component
+        //   interchange useful? probably not.
+        // - It should be fine if all our generator are fully or not at
+        //   all included in the variable we are fixing. So we can relax the
+        //   test here. Try on z26.mps or spot5_1401.fzn.
+        if (local_response.status() == CpSolverStatus::OPTIMAL &&
+            !shared_->model_proto->has_symmetry() && !solution.empty() &&
+            neighborhood.is_simple &&
+            !neighborhood.variables_that_can_be_fixed_to_local_optimum
+                 .empty()) {
+          display_lns_info = true;
+          shared_->bounds->FixVariablesFromPartialSolution(
+              solution,
+              neighborhood.variables_that_can_be_fixed_to_local_optimum);
+        }
+
         // Finish to fill the SolveData now that the local solve is done.
         data.new_objective = data.base_objective;
         if (local_response.status() == CpSolverStatus::OPTIMAL ||
@@ -2550,17 +2572,7 @@ class LnsSolver : public SubSolver {
           const std::vector<int64_t> base_solution(
               base_response.solution().begin(), base_response.solution().end());
           if (solution != base_solution) {
-            VLOG(2)
-                << "LNS new solution: "
-                << ScaleObjectiveValue(
-                       shared_->model_proto->objective(),
-                       ComputeInnerObjective(shared_->model_proto->objective(),
-                                             base_response))
-                << " -> "
-                << ScaleObjectiveValue(
-                       shared_->model_proto->objective(),
-                       ComputeInnerObjective(shared_->model_proto->objective(),
-                                             local_response));
+            new_solution = true;
             shared_->response->NewSolution(local_response, /*model=*/nullptr);
           }
         }
@@ -2575,16 +2587,35 @@ class LnsSolver : public SubSolver {
 
       generator_->AddSolveData(data);
 
-      // The total number of call when this was called is the same as task_id.
-      const int64_t total_num_calls = task_id;
-      VLOG(2) << name() << ": [difficulty: " << data.difficulty
-              << ", id: " << task_id
-              << ", deterministic_time: " << data.deterministic_time << " / "
-              << data.deterministic_limit
-              << ", status: " << ProtoEnumToString<CpSolverStatus>(data.status)
-              << ", num calls: " << generator_->num_calls()
-              << ", UCB1 Score: " << generator_->GetUCBScore(total_num_calls)
-              << ", p: " << fully_solved_proportion << "]";
+      if (VLOG_IS_ON(2) || display_lns_info) {
+        auto* logger = shared_->global_model->GetOrCreate<SolverLogger>();
+        std::string s = absl::StrCat("              LNS ", name(), ":");
+        if (new_solution) {
+          const double base_obj = ScaleObjectiveValue(
+              shared_->model_proto->objective(),
+              ComputeInnerObjective(shared_->model_proto->objective(),
+                                    base_response));
+          const double new_obj = ScaleObjectiveValue(
+              shared_->model_proto->objective(),
+              ComputeInnerObjective(shared_->model_proto->objective(),
+                                    local_response));
+          absl::StrAppend(&s, " [new_sol:", base_obj, " -> ", new_obj, "]");
+        }
+        if (neighborhood.is_simple) {
+          absl::StrAppend(
+              &s, " [", "relaxed:", neighborhood.num_relaxed_variables,
+              " in_obj:", neighborhood.num_relaxed_variables_in_objective,
+              " compo:",
+              neighborhood.variables_that_can_be_fixed_to_local_optimum.size(),
+              "]");
+        }
+        SOLVER_LOG(logger, s, " [d:", data.difficulty, ", id:", task_id,
+                   ", dtime:", data.deterministic_time, "/",
+                   data.deterministic_limit,
+                   ", status:", ProtoEnumToString<CpSolverStatus>(data.status),
+                   ", #calls:", generator_->num_calls(),
+                   ", p:", fully_solved_proportion, "]");
+      }
     };
   }
 

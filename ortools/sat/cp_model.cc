@@ -414,6 +414,10 @@ std::ostream& operator<<(std::ostream& os, const IntervalVar& var) {
   return os;
 }
 
+void CpModelBuilder::SetName(const std::string& name) {
+  cp_model_.set_name(name);
+}
+
 int CpModelBuilder::IndexFromConstant(int64_t value) {
   if (!gtl::ContainsKey(constant_to_index_map_, value)) {
     const int index = cp_model_.variables_size();

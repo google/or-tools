@@ -625,6 +625,9 @@ class CumulativeConstraint : public Constraint {
  */
 class CpModelBuilder {
  public:
+  /// Sets the name of the model.
+  void SetName(const std::string& name);
+
   /// Creates an integer variable with the given domain.
   IntVar NewIntVar(const Domain& domain);
 

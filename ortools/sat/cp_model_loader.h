@@ -66,6 +66,11 @@ void LoadBooleanSymmetries(const CpModelProto& model_proto, Model* m);
 // as already loaded.
 void ExtractEncoding(const CpModelProto& model_proto, Model* m);
 
+// Extract element encodings from exactly_one constraints and
+//    lit => var == value constraints.
+// This function must be called after ExtractEncoding() has been called.
+void ExtractElementEncoding(const CpModelProto& model_proto, Model* m);
+
 // Process all affine relations of the form a*X + b*Y == cte. For each
 // literals associated to (X >= bound) or (X == value) associate it to its
 // corresponding relation on Y. Also do the other side.
@@ -74,16 +79,6 @@ void ExtractEncoding(const CpModelProto& model_proto, Model* m);
 // removed in the presolve.
 void PropagateEncodingFromEquivalenceRelations(const CpModelProto& model_proto,
                                                Model* m);
-
-// Inspects the model and use some heuristic to decide which variable, if any,
-// should be fully encoded. Note that some constraints like the element or table
-// constraints require some of their variables to be fully encoded.
-//
-// TODO(user): This function exists so that we fully encode first all the
-// variable that needs to be fully encoded so that at loading time we can adapt
-// the algorithm used. Howeve it needs to duplicate the logic that decide what
-// needs to be fully encoded. Try to come up with a more robust design.
-void MaybeFullyEncodeMoreVariables(const CpModelProto& model_proto, Model* m);
 
 // Inspect the search strategy stored in the model, and adds a full encoding to
 // variables appearing in a SELECT_MEDIAN_VALUE search strategy if the search

@@ -143,6 +143,8 @@ class CpModelPresolver {
   bool PropagateDomainsInLinear(int c, ConstraintProto* ct);
   bool RemoveSingletonInLinear(ConstraintProto* ct);
   bool PresolveSmallLinear(ConstraintProto* ct);
+  bool PresolveLinearOfSizeOne(ConstraintProto* ct);
+  bool PresolveLinearOfSizeTwo(ConstraintProto* ct);
   bool PresolveLinearOnBooleans(ConstraintProto* ct);
   bool AddVarAffineRepresentativeFromLinearEquality(int target_index,
                                                     ConstraintProto* ct);

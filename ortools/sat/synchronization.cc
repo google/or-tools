@@ -125,11 +125,17 @@ std::string ProgressMessage(const std::string& event_or_solution_count,
 std::string SatProgressMessage(const std::string& event_or_solution_count,
                                double time_in_seconds,
                                const std::string& solution_info) {
-  return absl::StrFormat("#%-5s %6.2fs  %s", event_or_solution_count,
+  return absl::StrFormat("#%-5s %6.2fs %s", event_or_solution_count,
                          time_in_seconds, solution_info);
 }
 
 }  // namespace
+
+void SharedResponseManager::LogMessage(std::string message) {
+  absl::MutexLock mutex_lock(&mutex_);
+  SOLVER_LOG(logger_,
+             absl::StrFormat("#Model %6.2fs %s", wall_timer_.Get(), message));
+}
 
 void SharedResponseManager::InitializeObjective(const CpModelProto& cp_model) {
   if (cp_model.has_objective()) {
@@ -742,6 +748,42 @@ void SharedBoundsManager::ReportPotentialNewBounds(
   if (num_improvements > 0) {
     VLOG(2) << worker_name << " exports " << num_improvements
             << " modifications";
+  }
+}
+
+// TODO(user): Because we look at the non-synchronized and up to date bounds,
+// this break determinism if two solution for the same subpart comes at the same
+// time.
+void SharedBoundsManager::FixVariablesFromPartialSolution(
+    const std::vector<int64_t>& solution,
+    const std::vector<int>& variables_to_fix) {
+  absl::MutexLock mutex_lock(&mutex_);
+
+  // Abort if incompatible. Note that we only check the position that we are
+  // about to fix. This should be enough. Otherwise we might never accept any
+  // solution because the base LNS solution was not the same in some of the
+  // variables that we fixed here.
+  for (const int var : variables_to_fix) {
+    const int64_t value = solution[var];
+    if (value < lower_bounds_[var] || value > upper_bounds_[var]) {
+      VLOG(1) << "Incompatibility in FixVariablesFromPartialSolution() "
+              << "var: " << var << " value: " << value << " bounds: ["
+              << lower_bounds_[var] << "," << upper_bounds_[var] << "]";
+      return;
+    }
+  }
+
+  // Fix the variables.
+  for (const int var : variables_to_fix) {
+    const int64_t old_lb = lower_bounds_[var];
+    const int64_t old_ub = upper_bounds_[var];
+    const bool changed_lb = solution[var] > old_lb;
+    const bool changed_ub = solution[var] < old_ub;
+    if (!changed_lb && !changed_ub) continue;
+
+    lower_bounds_[var] = solution[var];
+    upper_bounds_[var] = solution[var];
+    changed_variables_since_last_synchronize_.Set(var);
   }
 }
 

@@ -1,8 +1,16 @@
+// Copyright 2010-2021 Google LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 // [START program]
 // Nurse scheduling problem with shift requests.
 // [START import]
@@ -63,7 +71,7 @@ void MinimalJobshopSat() {
 
   using TaskID = std::tuple<int, int>;  // (job_id, task_id)
   std::map<TaskID, TaskType> all_tasks;
-  std::map<int, std::vector<IntervalVar>> machine_to_intervals;
+  std::map<int64_t, std::vector<IntervalVar>> machine_to_intervals;
   for (int job_id = 0; job_id < jobs_data.size(); ++job_id) {
     const auto& job = jobs_data[job_id];
     for (int task_id = 0; task_id < job.size(); ++task_id) {
@@ -77,7 +85,9 @@ void MinimalJobshopSat() {
                                  .WithName(std::string("interval") + suffix);
 
       TaskID key = std::make_tuple(job_id, task_id);
-      all_tasks[key] = {.start = start, .end = end, .interval = interval};
+      all_tasks.emplace(key, TaskType{/*.start=*/start,
+                                      /*.end=*/end,
+                                      /*.interval=*/interval});
       machine_to_intervals[machine].push_back(interval);
     }
   }
@@ -134,17 +144,18 @@ void MinimalJobshopSat() {
       }
     };
 
-    std::map<int, std::vector<AssignedTaskType>> assigned_jobs;
+    std::map<int64_t, std::vector<AssignedTaskType>> assigned_jobs;
     for (int job_id = 0; job_id < jobs_data.size(); ++job_id) {
       const auto& job = jobs_data[job_id];
       for (int task_id = 0; task_id < job.size(); ++task_id) {
         const auto [machine, duration] = job[task_id];
         TaskID key = std::make_tuple(job_id, task_id);
         int64_t start = SolutionIntegerValue(response, all_tasks[key].start);
-        assigned_jobs[machine].push_back({.job_id = job_id,
-                                          .task_id = task_id,
-                                          .start = start,
-                                          .duration = duration});
+        assigned_jobs[machine].push_back(
+            AssignedTaskType{/*.job_id=*/job_id,
+                             /*.task_id=*/task_id,
+                             /*.start=*/start,
+                             /*.duration=*/duration});
       }
     }
 

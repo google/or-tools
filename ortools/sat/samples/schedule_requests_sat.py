@@ -17,6 +17,7 @@
 from ortools.sat.python import cp_model
 # [END import]
 
+
 def main():
     # This program tries to find an optimal assignment of nurses to shifts
     # (3 shifts per day, for 7 days), subject to some constraints (see below).
@@ -114,7 +115,8 @@ def main():
                         if shift_requests[n][d][s] == 1:
                             print('Nurse', n, 'works shift', s, '(requested).')
                         else:
-                            print('Nurse', n, 'works shift', s, '(not requested).')
+                            print('Nurse', n, 'works shift', s,
+                                  '(not requested).')
             print()
         print(f'Number of shift requests met = {solver.ObjectiveValue()}',
               f'(out of {num_nurses * min_shifts_per_nurse})')

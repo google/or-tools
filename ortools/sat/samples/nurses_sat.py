@@ -17,6 +17,7 @@
 from ortools.sat.python import cp_model
 # [END import]
 
+
 def main():
     # Data.
     # [START data]
@@ -83,6 +84,7 @@ def main():
     solver.parameters.linearization_level = 0
     # Enumerate all solutions.
     solver.parameters.enumerate_all_solutions = True
+
     # [END parameters]
 
     # [START solution_printer]
@@ -117,7 +119,6 @@ def main():
 
         def solution_count(self):
             return self._solution_count
-
 
     # Display the first five solutions.
     solution_limit = 5

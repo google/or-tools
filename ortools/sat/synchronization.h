@@ -327,6 +327,8 @@ class SharedResponseManager {
   // Display improvement stats.
   void DisplayImprovementStatistics();
 
+  void LogMessage(std::string message);
+
   // This is here for the few codepath that needs to modify the returned
   // response directly. Note that this do not work in parallel.
   //
@@ -419,6 +421,16 @@ class SharedBoundsManager {
                                 const std::vector<int>& variables,
                                 const std::vector<int64_t>& new_lower_bounds,
                                 const std::vector<int64_t>& new_upper_bounds);
+
+  // If we solved a small independent component of the full problem, then we can
+  // in most situation fix the solution on this subspace.
+  //
+  // Note that because there can be more than one optimal solution on an
+  // independent subproblem, it is important to do that in a locked fashion, and
+  // reject future incompatible fixing.
+  void FixVariablesFromPartialSolution(
+      const std::vector<int64_t>& solution,
+      const std::vector<int>& variables_to_fix);
 
   // Returns a new id to be used in GetChangedBounds(). This is just an ever
   // increasing sequence starting from zero. Note that the class is not designed

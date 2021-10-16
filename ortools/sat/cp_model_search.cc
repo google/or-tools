@@ -20,6 +20,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/strings/str_format.h"
 #include "ortools/sat/cp_model_utils.h"
+#include "ortools/sat/integer.h"
 #include "ortools/sat/util.h"
 
 namespace operations_research {
@@ -109,9 +110,10 @@ BooleanOrIntegerLiteral CpModelView::MedianValue(int var) const {
     const IntegerVariable variable = mapping_.Integer(var);
     CHECK_NE(variable, kNoIntegerVariable);
     CHECK(integer_encoder_.VariableIsFullyEncoded(variable));
-    std::vector<IntegerEncoder::ValueLiteralPair> encoding =
+    std::vector<ValueLiteralPair> encoding =
         integer_encoder_.RawDomainEncoding(variable);
-    std::sort(encoding.begin(), encoding.end());
+    std::sort(encoding.begin(), encoding.end(),
+              ValueLiteralPair::CompareByValue());
     std::vector<Literal> unassigned_sorted_literals;
     for (const auto& p : encoding) {
       if (!boolean_assignment_.LiteralIsAssigned(p.literal)) {

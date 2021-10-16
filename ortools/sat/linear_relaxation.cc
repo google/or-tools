@@ -28,6 +28,7 @@
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_expr.h"
+// #include "ortools/sat/intervals.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/sat_base.h"
@@ -174,9 +175,9 @@ void AppendRelaxationForEqualityEncoding(IntegerVariable var,
 
   std::vector<Literal> at_most_one_ct;
   absl::flat_hash_set<IntegerValue> encoded_values;
-  std::vector<IntegerEncoder::ValueLiteralPair> encoding;
+  std::vector<ValueLiteralPair> encoding;
   {
-    const std::vector<IntegerEncoder::ValueLiteralPair>& initial_encoding =
+    const std::vector<ValueLiteralPair>& initial_encoding =
         encoder->PartialDomainEncoding(var);
     if (initial_encoding.empty()) return;
     for (const auto value_literal : initial_encoding) {
@@ -1422,30 +1423,13 @@ void TryToAddCutGenerators(const ConstraintProto& ct, int linearization_level,
 void AppendElementEncodingRelaxation(const CpModelProto& model_proto, Model* m,
                                      LinearRelaxation* relaxation) {
   auto* implied_bounds = m->GetOrCreate<ImpliedBounds>();
-  auto* mapping = m->GetOrCreate<CpModelMapping>();
 
   int num_exactly_one_elements = 0;
-  for (const ConstraintProto& ct : model_proto.constraints()) {
-    if (ct.constraint_case() != ConstraintProto::kExactlyOne) continue;
 
-    // Project the implied values onto each integer variable.
-    absl::flat_hash_map<IntegerVariable,
-                        std::vector<std::pair<Literal, IntegerValue>>>
-        var_to_literal_value_list;
-    for (const int l : ct.exactly_one().literals()) {
-      const Literal literal = mapping->Literal(l);
-      for (const auto& var_value : implied_bounds->GetImpliedValues(literal)) {
-        var_to_literal_value_list[var_value.first].push_back(
-            std::make_pair(literal, var_value.second));
-      }
-    }
-
-    // Search for variable fully covered by the literals of the exactly_one.
-    for (const auto& [var, literal_value_list] : var_to_literal_value_list) {
-      if (literal_value_list.size() < ct.exactly_one().literals_size()) {
-        continue;
-      }
-
+  for (const IntegerVariable var :
+       implied_bounds->GetElementEncodedVariables()) {
+    for (const std::vector<ValueLiteralPair>& literal_value_list :
+         implied_bounds->GetElementEncodings(var)) {
       // We only want to deal with the case with duplicate values, because
       // otherwise, the target will be fully encoded, and this is already
       // covered by another function.
@@ -1453,15 +1437,15 @@ void AppendElementEncodingRelaxation(const CpModelProto& model_proto, Model* m,
       {
         absl::flat_hash_set<IntegerValue> values;
         for (const auto& literal_value : literal_value_list) {
-          min_value = std::min(min_value, literal_value.second);
-          values.insert(literal_value.second);
+          min_value = std::min(min_value, literal_value.value);
+          values.insert(literal_value.value);
         }
-        if (values.size() == ct.exactly_one().literals_size()) continue;
+        if (values.size() == literal_value_list.size()) continue;
       }
 
       LinearConstraintBuilder linear_encoding(m, -min_value, -min_value);
       linear_encoding.AddTerm(var, IntegerValue(-1));
-      for (const auto& [literal, value] : literal_value_list) {
+      for (const auto& [value, literal] : literal_value_list) {
         const IntegerValue delta_min = value - min_value;
         if (delta_min != 0) {
           // If the term has no view, we abort.

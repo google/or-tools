@@ -19,6 +19,7 @@
 #include <queue>
 #include <type_traits>
 
+#include "absl/strings/str_cat.h"
 #include "ortools/base/iterator_adaptors.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/util/time_limit.h"
@@ -62,6 +63,16 @@ IntegerValue AffineExpression::Max(IntegerTrail* integer_trail) const {
 bool AffineExpression::IsFixed(IntegerTrail* integer_trail) const {
   if (var == kNoIntegerVariable || coeff == 0) return true;
   return integer_trail->IsFixed(var);
+}
+
+std::string ValueLiteralPair::DebugString() const {
+  return absl::StrCat("(literal = ", literal.DebugString(),
+                      ", value = ", value.value(), ")");
+}
+
+std::ostream& operator<<(std::ostream& os, const ValueLiteralPair& p) {
+  os << p.DebugString();
+  return os;
 }
 
 void IntegerEncoder::FullyEncodeVariable(IntegerVariable var) {
@@ -129,14 +140,14 @@ bool IntegerEncoder::VariableIsFullyEncoded(IntegerVariable var) const {
   return is_fully_encoded_[index];
 }
 
-std::vector<IntegerEncoder::ValueLiteralPair>
-IntegerEncoder::FullDomainEncoding(IntegerVariable var) const {
+std::vector<ValueLiteralPair> IntegerEncoder::FullDomainEncoding(
+    IntegerVariable var) const {
   CHECK(VariableIsFullyEncoded(var));
   return PartialDomainEncoding(var);
 }
 
-std::vector<IntegerEncoder::ValueLiteralPair>
-IntegerEncoder::PartialDomainEncoding(IntegerVariable var) const {
+std::vector<ValueLiteralPair> IntegerEncoder::PartialDomainEncoding(
+    IntegerVariable var) const {
   CHECK_EQ(sat_solver_->CurrentDecisionLevel(), 0);
   const PositiveOnlyIndex index = GetPositiveOnlyIndex(var);
   if (index >= equality_by_var_.size()) return {};
@@ -155,9 +166,9 @@ IntegerEncoder::PartialDomainEncoding(IntegerVariable var) const {
     ref[new_size++] = pair;
   }
   ref.resize(new_size);
-  std::sort(ref.begin(), ref.end());
+  std::sort(ref.begin(), ref.end(), ValueLiteralPair::CompareByValue());
 
-  std::vector<IntegerEncoder::ValueLiteralPair> result = ref;
+  std::vector<ValueLiteralPair> result = ref;
   if (!VariableIsPositive(var)) {
     std::reverse(result.begin(), result.end());
     for (ValueLiteralPair& ref : result) ref.value = -ref.value;
@@ -165,7 +176,7 @@ IntegerEncoder::PartialDomainEncoding(IntegerVariable var) const {
   return result;
 }
 
-std::vector<IntegerEncoder::ValueLiteralPair> IntegerEncoder::RawDomainEncoding(
+std::vector<ValueLiteralPair> IntegerEncoder::RawDomainEncoding(
     IntegerVariable var) const {
   CHECK(VariableIsPositive(var));
   const PositiveOnlyIndex index = GetPositiveOnlyIndex(var);
@@ -395,7 +406,7 @@ void IntegerEncoder::AssociateToIntegerEqualValue(Literal literal,
     is_fully_encoded_.resize(index.value() + 1);
   }
   equality_by_var_[index].push_back(
-      ValueLiteralPair(VariableIsPositive(var) ? value : -value, literal));
+      {VariableIsPositive(var) ? value : -value, literal});
 
   // Fix literal for constant domain.
   if (value == domain.Min() && value == domain.Max()) {
@@ -710,8 +721,7 @@ bool IntegerTrail::UpdateInitialDomain(IntegerVariable var, Domain domain) {
   // Set to false excluded literals.
   int i = 0;
   int num_fixed = 0;
-  for (const IntegerEncoder::ValueLiteralPair pair :
-       encoder_->PartialDomainEncoding(var)) {
+  for (const ValueLiteralPair pair : encoder_->PartialDomainEncoding(var)) {
     while (i < domain.NumIntervals() && pair.value > domain[i].end) ++i;
     if (i == domain.NumIntervals() || pair.value < domain[i].start) {
       ++num_fixed;
