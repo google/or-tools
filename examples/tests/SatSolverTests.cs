@@ -442,10 +442,9 @@ namespace Google.OrTools.Tests
             CpModel model = new CpModel();
             IntVar v = model.NewIntVar(-10, 10, "v");
             IntervalVar i = model.NewFixedSizeIntervalVar(v, 3, "i");
-            Console.WriteLine("Start = " + i.StartExpr().ToString() + "/" + i.StartExpr().ShortString());
-            Console.WriteLine("Size = " + i.SizeExpr().ToString() + "/" + i.SizeExpr().ShortString());
-            Console.WriteLine("End = " + i.EndExpr().ToString() + "/" + i.EndExpr().ShortString());
-            Console.WriteLine("Interval = " + i.ToString());
+            Assert.Equal("v", i.StartExpr().ShortString());
+            Assert.Equal("3", i.SizeExpr().ShortString());
+            Assert.Equal("(v + 3)", i.EndExpr().ShortString());
         }
     }
 } // namespace Google.OrTools.Tests

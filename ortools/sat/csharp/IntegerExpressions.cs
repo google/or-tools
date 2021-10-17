@@ -379,7 +379,7 @@ namespace Google.OrTools.Sat
             long offset = proto.Offset;
             if (numElements == 0)
             {
-                return new ConstantExpr(offset);
+                return LinearExpr.Constant(offset);
             }
             else 
             if (numElements == 1) 
