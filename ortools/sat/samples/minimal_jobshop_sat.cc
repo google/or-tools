@@ -129,7 +129,7 @@ void MinimalJobshopSat() {
   // [END solve]
 
   // [START print_solution]
-  if (response.status() == CpSolverStatus::OPTIMAL) {
+  if (response.status() == CpSolverStatus::OPTIMAL || response.status() == CpSolverStatus::FEASIBLE) {
     LOG(INFO) << "Solution:";
     // create one list of assigned tasks per machine.
     struct AssignedTaskType {
@@ -188,7 +188,7 @@ void MinimalJobshopSat() {
     LOG(INFO) << "Optimal Schedule Length: " << response.objective_value();
     LOG(INFO) << "\n" << output;
   } else {
-    LOG(INFO) << "No optimal solution found !";
+    LOG(INFO) << "No solution found.";
   }
   // [END print_solution]
 

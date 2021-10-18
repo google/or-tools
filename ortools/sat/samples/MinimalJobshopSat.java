@@ -205,7 +205,7 @@ public class MinimalJobshopSat {
       System.out.printf("Optimal Schedule Length: %f%n", solver.objectiveValue());
       System.out.printf(output);
     } else {
-      System.out.println("No optimal solution found !");
+      System.out.println("No solution found.");
     }
     // [END print_solution]
 
