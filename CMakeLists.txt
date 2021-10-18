@@ -222,6 +222,8 @@ endif()
 add_subdirectory(cmake/dependencies dependencies)
 list(APPEND CMAKE_PREFIX_PATH ${CMAKE_CURRENT_BINARY_DIR}/dependencies/install)
 
+# Disable CTest targets
+set_property(GLOBAL PROPERTY CTEST_TARGETS_ADDED 1)
 include(CTest)
 
 # Basic type
