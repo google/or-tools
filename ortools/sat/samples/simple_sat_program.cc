@@ -12,7 +12,9 @@
 // limitations under the License.
 
 // [START program]
+// [START import]
 #include "ortools/sat/cp_model.h"
+// [END import]
 
 namespace operations_research {
 namespace sat {
@@ -39,12 +41,16 @@ void SimpleSatProgram() {
   LOG(INFO) << CpSolverResponseStats(response);
   // [END solve]
 
-  if (response.status() == CpSolverStatus::OPTIMAL) {
+  // [START print_solution]
+  if (response.status() == CpSolverStatus::OPTIMAL || response.status() == CpSolverStatus::FEASIBLE) {
     // Get the value of x in the solution.
     LOG(INFO) << "x = " << SolutionIntegerValue(response, x);
     LOG(INFO) << "y = " << SolutionIntegerValue(response, y);
     LOG(INFO) << "z = " << SolutionIntegerValue(response, z);
+  } else {
+    LOG(INFO) << "No solution found.";
   }
+  // [END print_solution]
 }
 
 }  // namespace sat

@@ -12,6 +12,7 @@
 // limitations under the License.
 
 // [START program]
+// [START import]
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
@@ -19,6 +20,7 @@ import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.IntVar;
+// [END import]
 
 /** Minimal CP-SAT example to showcase calling the solver. */
 public class SimpleSatProgram {
@@ -49,11 +51,15 @@ public class SimpleSatProgram {
     CpSolverStatus status = solver.solve(model);
     // [END solve]
 
-    if (status == CpSolverStatus.OPTIMAL) {
+    // [START print_solution]
+    if (status == CpSolverStatus.OPTIMAL || status == CpSolverStatus.FEASIBLE) {
       System.out.println("x = " + solver.value(x));
       System.out.println("y = " + solver.value(y));
       System.out.println("z = " + solver.value(z));
+    } else {
+      System.out.println("No solution found.");
     }
+    // [END print_solution]
   }
 }
 // [END program]

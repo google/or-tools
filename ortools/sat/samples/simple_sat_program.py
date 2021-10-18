@@ -11,10 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Simple solve."""
 
 # [START program]
+"""Simple solve."""
+# [START import]
 from ortools.sat.python import cp_model
+# [END import]
 
 
 def SimpleSatProgram():
@@ -43,10 +45,14 @@ def SimpleSatProgram():
     status = solver.Solve(model)
     # [END solve]
 
-    if status == cp_model.OPTIMAL:
+    # [START print_solution]
+    if status == cp_model.OPTIMAL || status == cp_model.FEASIBLE:
         print('x = %i' % solver.Value(x))
         print('y = %i' % solver.Value(y))
         print('z = %i' % solver.Value(z))
+    else:
+        print('No solution found.')
+    # [END print_solution]
 
 
 SimpleSatProgram()
