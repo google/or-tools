@@ -29,7 +29,7 @@ public class CpSatExample
 
         // Creates the variables.
         // [START variables]
-        int varUpperBound = new int[]{50, 45, 37}.Max();
+        int varUpperBound = new int[] { 50, 45, 37 }.Max();
 
         IntVar x = model.NewIntVar(0, varUpperBound, "x");
         IntVar y = model.NewIntVar(0, varUpperBound, "y");
@@ -38,13 +38,13 @@ public class CpSatExample
 
         // Creates the constraints.
         // [START constraints]
-        model.Add(2*x + 7*y + 3*z <= 50);
-        model.Add(3*x - 5*y + 7*z <= 45);
-        model.Add(5*x + 2*y - 6*z <= 37);
+        model.Add(2 * x + 7 * y + 3 * z <= 50);
+        model.Add(3 * x - 5 * y + 7 * z <= 45);
+        model.Add(5 * x + 2 * y - 6 * z <= 37);
         // [END constraints]
 
         // [START objective]
-        model.Maximize(2*x + 2*y + 3*z);
+        model.Maximize(2 * x + 2 * y + 3 * z);
         // [END objective]
 
         // Creates a solver and solves the model.

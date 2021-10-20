@@ -152,11 +152,10 @@ void MinimalJobshopSat() {
         TaskID key = std::make_tuple(job_id, task_id);
         int64_t start = SolutionIntegerValue(response, all_tasks[key].start);
         assigned_jobs[machine].push_back(
-            AssignedTaskType{
-              /*.job_id=*/job_id,
-              /*.task_id=*/task_id,
-              /*.start=*/start,
-              /*.duration=*/duration});
+            AssignedTaskType{/*.job_id=*/job_id,
+                             /*.task_id=*/task_id,
+                             /*.start=*/start,
+                             /*.duration=*/duration});
       }
     }
 

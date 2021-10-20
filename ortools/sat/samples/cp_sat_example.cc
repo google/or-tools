@@ -14,6 +14,7 @@
 // [START program]
 // [START import]
 #include <algorithm>
+
 #include "ortools/sat/cp_model.h"
 // [END import]
 
@@ -34,13 +35,13 @@ void CpSatExample() {
   // [END variables]
 
   // [START constraints]
-  cp_model.AddLessOrEqual(LinearExpr::ScalProd({x, y, z},{2, 7, 3}), 50);
-  cp_model.AddLessOrEqual(LinearExpr::ScalProd({x, y, z},{3, -5, 7}), 45);
-  cp_model.AddLessOrEqual(LinearExpr::ScalProd({x, y, z},{5, 2, -6}), 37);
+  cp_model.AddLessOrEqual(LinearExpr::ScalProd({x, y, z}, {2, 7, 3}), 50);
+  cp_model.AddLessOrEqual(LinearExpr::ScalProd({x, y, z}, {3, -5, 7}), 45);
+  cp_model.AddLessOrEqual(LinearExpr::ScalProd({x, y, z}, {5, 2, -6}), 37);
   // [END constraints]
 
   // [START objective]
-  cp_model.Maximize(LinearExpr::ScalProd({x, y, z},{2, 2, 3}));
+  cp_model.Maximize(LinearExpr::ScalProd({x, y, z}, {2, 2, 3}));
   // [END objective]
 
   // Solving part.
@@ -49,9 +50,11 @@ void CpSatExample() {
   // [END solve]
 
   // [START print_solution]
-  if (response.status() == CpSolverStatus::OPTIMAL || response.status() == CpSolverStatus::FEASIBLE) {
+  if (response.status() == CpSolverStatus::OPTIMAL ||
+      response.status() == CpSolverStatus::FEASIBLE) {
     // Get the value of x in the solution.
-    LOG(INFO) << "Maximum of objective function: " << response.objective_value();
+    LOG(INFO) << "Maximum of objective function: "
+              << response.objective_value();
     LOG(INFO) << "x = " << SolutionIntegerValue(response, x);
     LOG(INFO) << "y = " << SolutionIntegerValue(response, y);
     LOG(INFO) << "z = " << SolutionIntegerValue(response, z);

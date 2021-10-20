@@ -14,6 +14,8 @@ code_sample_cc(name = "copy_model_sample_sat")
 
 code_sample_cc(name = "cp_is_fun_sat")
 
+code_sample_cc(name = "cp_sat_example")
+
 code_sample_cc(name = "earliness_tardiness_cost_sample_sat")
 
 code_sample_cc(name = "interval_sample_sat")
