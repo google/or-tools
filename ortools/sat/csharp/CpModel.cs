@@ -608,9 +608,11 @@ namespace Google.OrTools.Sat
             }
             foreach (D demand in demands)
             {
-                cumul.Demands.Add(GetOrCreateIndex(demand));
+                LinearExpr demandExpr = GetLinearExpr(demand);
+                cumul.Demands.Add(GetLinearExpressionProto(demandExpr));
             }
-            cumul.Capacity = GetOrCreateIndex(capacity);
+            LinearExpr capacityExpr = GetLinearExpr(capacity);
+            cumul.Capacity = GetLinearExpressionProto(capacityExpr);
             ct.Proto.Cumulative = cumul;
             return ct;
         }
