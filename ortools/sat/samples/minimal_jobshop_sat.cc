@@ -129,7 +129,8 @@ void MinimalJobshopSat() {
   // [END solve]
 
   // [START print_solution]
-  if (response.status() == CpSolverStatus::OPTIMAL || response.status() == CpSolverStatus::FEASIBLE) {
+  if (response.status() == CpSolverStatus::OPTIMAL ||
+      response.status() == CpSolverStatus::FEASIBLE) {
     LOG(INFO) << "Solution:";
     // create one list of assigned tasks per machine.
     struct AssignedTaskType {
