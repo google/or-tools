@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 # [START program]
 """Simple solve."""
 # [START import]
@@ -36,13 +35,13 @@ def main():
 
     # Creates the constraints.
     # [START constraints]
-    model.Add(2*x + 7*y + 3*z <= 50)
-    model.Add(3*x - 5*y + 7*z <= 45)
-    model.Add(5*x + 2*y - 6*z <= 37)
+    model.Add(2 * x + 7 * y + 3 * z <= 50)
+    model.Add(3 * x - 5 * y + 7 * z <= 45)
+    model.Add(5 * x + 2 * y - 6 * z <= 37)
     # [END constraints]
 
     # [START objective]
-    model.Maximize(2*x + 2*y + 3*z)
+    model.Maximize(2 * x + 2 * y + 3 * z)
     # [END objective]
 
     # Creates a solver and solves the model.
@@ -64,6 +63,7 @@ def main():
     # Statistics.
     # [START statistics]
     print('\nStatistics')
+    print(f'  status   : {solver.StatusName(status)}')
     print(f'  conflicts: {solver.NumConflicts()}')
     print(f'  branches : {solver.NumBranches()}')
     print(f'  wall time: {solver.WallTime()} s')

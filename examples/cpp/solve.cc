@@ -327,6 +327,7 @@ bool Run(MPSolver::OptimizationProblemType type) {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
+  absl::SetFlag(&FLAGS_logtostderr, true);
   google::InitGoogleLogging(kUsageStr);
   absl::ParseCommandLine(argc, argv);
   QCHECK(!absl::GetFlag(FLAGS_input).empty()) << "--input is required";
