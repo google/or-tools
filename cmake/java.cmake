@@ -213,13 +213,13 @@ if(BUILD_TESTING)
     ${TEST_PATH}/pom.xml
     @ONLY)
 
-  add_custom_target(java_test_Test ALL
+  add_custom_target(java_tests_Test ALL
     DEPENDS ${TEST_PATH}/pom.xml
     COMMAND ${MAVEN_EXECUTABLE} compile -B
     BYPRODUCTS
       ${TEST_PATH}/target
     WORKING_DIRECTORY ${TEST_PATH})
-  add_dependencies(java_test_Test java_package)
+  add_dependencies(java_tests_Test java_package)
 
   add_test(
     NAME java_tests_Test
@@ -314,7 +314,7 @@ function(add_java_example FILE_NAME)
     ${EXAMPLE_PATH}/pom.xml
     @ONLY)
 
-  add_custom_target(java_example_${EXAMPLE_NAME} ALL
+  add_custom_target(java_${COMPONENT_NAME}_${EXAMPLE_NAME} ALL
     DEPENDS
       ${EXAMPLE_PATH}/pom.xml
       ${EXAMPLE_PATH}/${JAVA_PACKAGE_PATH}/${EXAMPLE_NAME}.java
@@ -322,7 +322,7 @@ function(add_java_example FILE_NAME)
     BYPRODUCTS
       ${EXAMPLE_PATH}/target
     WORKING_DIRECTORY ${EXAMPLE_PATH})
-  add_dependencies(java_example_${EXAMPLE_NAME} java_package)
+  add_dependencies(java_${COMPONENT_NAME}_${EXAMPLE_NAME} java_package)
 
   if(BUILD_TESTING)
     add_test(
@@ -364,7 +364,7 @@ function(add_java_test FILE_NAME)
     ${TEST_PATH}/pom.xml
     @ONLY)
 
-  add_custom_target(java_test_${TEST_NAME} ALL
+  add_custom_target(java_${COMPONENT_NAME}_${TEST_NAME} ALL
     DEPENDS
       ${TEST_PATH}/pom.xml
       ${TEST_PATH}/${JAVA_TEST_PATH}/${TEST_NAME}.java
@@ -372,7 +372,7 @@ function(add_java_test FILE_NAME)
     BYPRODUCTS
       ${TEST_PATH}/target
     WORKING_DIRECTORY ${TEST_PATH})
-  add_dependencies(java_test_${TEST_NAME} java_package)
+  add_dependencies(java_${COMPONENT_NAME}_${TEST_NAME} java_package)
 
   if(BUILD_TESTING)
     add_test(

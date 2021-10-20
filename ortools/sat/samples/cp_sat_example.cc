@@ -13,27 +13,36 @@
 
 // [START program]
 // [START import]
+#include <algorithm>
+
 #include "ortools/sat/cp_model.h"
 // [END import]
 
 namespace operations_research {
 namespace sat {
 
-void SimpleSatProgram() {
+void CpSatExample() {
   // [START model]
   CpModelBuilder cp_model;
   // [END model]
 
   // [START variables]
-  const Domain domain(0, 2);
+  int64_t var_upper_bound = std::max({50, 45, 37});
+  const Domain domain(0, var_upper_bound);
   const IntVar x = cp_model.NewIntVar(domain).WithName("x");
   const IntVar y = cp_model.NewIntVar(domain).WithName("y");
   const IntVar z = cp_model.NewIntVar(domain).WithName("z");
   // [END variables]
 
   // [START constraints]
-  cp_model.AddNotEqual(x, y);
+  cp_model.AddLessOrEqual(LinearExpr::ScalProd({x, y, z}, {2, 7, 3}), 50);
+  cp_model.AddLessOrEqual(LinearExpr::ScalProd({x, y, z}, {3, -5, 7}), 45);
+  cp_model.AddLessOrEqual(LinearExpr::ScalProd({x, y, z}, {5, 2, -6}), 37);
   // [END constraints]
+
+  // [START objective]
+  cp_model.Maximize(LinearExpr::ScalProd({x, y, z}, {2, 2, 3}));
+  // [END objective]
 
   // Solving part.
   // [START solve]
@@ -41,8 +50,11 @@ void SimpleSatProgram() {
   // [END solve]
 
   // [START print_solution]
-  if (response.status() == CpSolverStatus::OPTIMAL || response.status() == CpSolverStatus::FEASIBLE) {
+  if (response.status() == CpSolverStatus::OPTIMAL ||
+      response.status() == CpSolverStatus::FEASIBLE) {
     // Get the value of x in the solution.
+    LOG(INFO) << "Maximum of objective function: "
+              << response.objective_value();
     LOG(INFO) << "x = " << SolutionIntegerValue(response, x);
     LOG(INFO) << "y = " << SolutionIntegerValue(response, y);
     LOG(INFO) << "z = " << SolutionIntegerValue(response, z);
@@ -50,13 +62,19 @@ void SimpleSatProgram() {
     LOG(INFO) << "No solution found.";
   }
   // [END print_solution]
+
+  // Statistics.
+  // [START statistics]
+  LOG(INFO) << "Statistics";
+  LOG(INFO) << CpSolverResponseStats(response);
+  // [END statistics]
 }
 
 }  // namespace sat
 }  // namespace operations_research
 
 int main() {
-  operations_research::sat::SimpleSatProgram();
+  operations_research::sat::CpSatExample();
   return EXIT_SUCCESS;
 }
 // [END program]

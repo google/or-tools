@@ -14,10 +14,11 @@
 // [START program]
 // [START import]
 using System;
+using System.Linq;
 using Google.OrTools.Sat;
 // [END import]
 
-public class SimpleSatProgram
+public class CpSatExample
 {
     static void Main()
     {
@@ -28,17 +29,23 @@ public class SimpleSatProgram
 
         // Creates the variables.
         // [START variables]
-        int num_vals = 3;
+        int varUpperBound = new int[] { 50, 45, 37 }.Max();
 
-        IntVar x = model.NewIntVar(0, num_vals - 1, "x");
-        IntVar y = model.NewIntVar(0, num_vals - 1, "y");
-        IntVar z = model.NewIntVar(0, num_vals - 1, "z");
+        IntVar x = model.NewIntVar(0, varUpperBound, "x");
+        IntVar y = model.NewIntVar(0, varUpperBound, "y");
+        IntVar z = model.NewIntVar(0, varUpperBound, "z");
         // [END variables]
 
         // Creates the constraints.
         // [START constraints]
-        model.Add(x != y);
+        model.Add(2 * x + 7 * y + 3 * z <= 50);
+        model.Add(3 * x - 5 * y + 7 * z <= 45);
+        model.Add(5 * x + 2 * y - 6 * z <= 37);
         // [END constraints]
+
+        // [START objective]
+        model.Maximize(2 * x + 2 * y + 3 * z);
+        // [END objective]
 
         // Creates a solver and solves the model.
         // [START solve]
@@ -49,6 +56,7 @@ public class SimpleSatProgram
         // [START print_solution]
         if (status == CpSolverStatus.Optimal || status == CpSolverStatus.Feasible)
         {
+            Console.WriteLine($"Maximum of objective function: {solver.ObjectiveValue}");
             Console.WriteLine("x = " + solver.Value(x));
             Console.WriteLine("y = " + solver.Value(y));
             Console.WriteLine("z = " + solver.Value(z));
@@ -58,6 +66,13 @@ public class SimpleSatProgram
             Console.WriteLine("No solution found.");
         }
         // [END print_solution]
+
+        // [START statistics]
+        Console.WriteLine("Statistics");
+        Console.WriteLine($"  conflicts: {solver.NumConflicts()}");
+        Console.WriteLine($"  branches : {solver.NumBranches()}");
+        Console.WriteLine($"  wall time: {solver.WallTime()}s");
+        // [END statistics]
     }
 }
 // [END program]

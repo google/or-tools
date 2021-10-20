@@ -95,7 +95,7 @@ def main():
     # [END solve]
 
     # [START print_solution]
-    if status == cp_model.OPTIMAL:
+    if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
         print('Solution:')
         # Create one list of assigned tasks per machine.
         assigned_jobs = collections.defaultdict(list)
@@ -138,7 +138,7 @@ def main():
         print(f'Optimal Schedule Length: {solver.ObjectiveValue()}')
         print(output)
     else:
-        print('No optimal solution found !')
+        print('No solution found.')
     # [END print_solution]
 
     # Statistics.

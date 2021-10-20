@@ -261,7 +261,7 @@ function(add_dotnet_test FILE_NAME)
     ${DOTNET_TEST_PATH}/${TEST_NAME}.csproj
     @ONLY)
 
-  add_custom_target(dotnet_test_${TEST_NAME} ALL
+  add_custom_target(dotnet_${COMPONENT_NAME}_${TEST_NAME} ALL
     DEPENDS
       ${DOTNET_TEST_PATH}/${TEST_NAME}.csproj
       ${DOTNET_TEST_PATH}/${TEST_NAME}.cs
@@ -270,7 +270,7 @@ function(add_dotnet_test FILE_NAME)
       ${DOTNET_TEST_PATH}/bin
       ${DOTNET_TEST_PATH}/obj
     WORKING_DIRECTORY ${DOTNET_TEST_PATH})
-  add_dependencies(dotnet_test_${TEST_NAME} dotnet_package)
+  add_dependencies(dotnet_${COMPONENT_NAME}_${TEST_NAME} dotnet_package)
 
   if(BUILD_TESTING)
     add_test(
@@ -368,7 +368,7 @@ function(add_dotnet_example FILE_NAME)
     ${DOTNET_EXAMPLE_PATH}/${EXAMPLE_NAME}.csproj
     @ONLY)
 
-  add_custom_target(dotnet_example_${EXAMPLE_NAME} ALL
+  add_custom_target(dotnet_${COMPONENT_NAME}_${EXAMPLE_NAME} ALL
     DEPENDS
       ${DOTNET_EXAMPLE_PATH}/${EXAMPLE_NAME}.csproj
       ${DOTNET_EXAMPLE_PATH}/${EXAMPLE_NAME}.cs
@@ -378,7 +378,7 @@ function(add_dotnet_example FILE_NAME)
       ${DOTNET_EXAMPLE_PATH}/bin
       ${DOTNET_EXAMPLE_PATH}/obj
     WORKING_DIRECTORY ${DOTNET_EXAMPLE_PATH})
-  add_dependencies(dotnet_example_${EXAMPLE_NAME} dotnet_package)
+  add_dependencies(dotnet_${COMPONENT_NAME}_${EXAMPLE_NAME} dotnet_package)
 
   if(BUILD_TESTING)
     add_test(

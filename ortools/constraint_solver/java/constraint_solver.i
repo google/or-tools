@@ -718,6 +718,9 @@ import java.util.function.LongConsumer;
 // Used to wrap Closure (std::function<void()>)
 // see https://docs.oracle.com/javase/8/docs/api/java/lang/Runnable.html
 import java.lang.Runnable;
+
+// Used to keep alive java references to objects passed to the C++ layer.
+import java.util.HashSet;
 %}
 // note: SWIG does not support multiple %typemap(javacode) Type, so we have to
 // define all Solver tweak here (ed and not in the macro DEFINE_CALLBACK_*)
@@ -801,7 +804,66 @@ import java.lang.Runnable;
     }
     return array;
   }
+
+  // Ensure that the GC doesn't collect any DecisionBuilder set from Java
+  // as the underlying C++ class stores a shallow copy
+  private HashSet<DecisionBuilder> keepAliveDecisionBuilders;
+  public void keepAliveDecisionBuilder(DecisionBuilder db) {
+    if (keepAliveDecisionBuilders == null) {
+      keepAliveDecisionBuilders = new HashSet<DecisionBuilder>();
+    }
+    keepAliveDecisionBuilders.add(db);
+  }
+  public void keepAliveDecisionBuilder(DecisionBuilder[] dbs) {
+    for (DecisionBuilder db : dbs) {
+      keepAliveDecisionBuilder(db);
+    }
+  }
 %}
+
+// Do not keep a reference of the decision builder in the java instance as it
+// is not stored inside the c++ layer.
+%typemap (javacode) SearchMonitor %{
+  public void keepAliveDecisionBuilder(DecisionBuilder db) {}
+%}
+
+%typemap(javaimports) DefaultPhaseParameters %{
+// Used to keep alive java references to objects passed to the C++ layer.
+import java.util.HashSet;
+%}
+
+%typemap(javacode) DefaultPhaseParameters %{
+  // Ensure that the GC doesn't collect any DecisionBuilder set from Java
+  // as the underlying C++ class stores a shallow copy
+  private HashSet<DecisionBuilder> keepAliveDecisionBuilders;
+  public void keepAliveDecisionBuilder(DecisionBuilder db) {
+    if (keepAliveDecisionBuilders == null) {
+      keepAliveDecisionBuilders = new HashSet<DecisionBuilder>();
+    }
+    keepAliveDecisionBuilders.add(db);
+  }
+%}
+
+// Do not keep a reference of the decision builder in the java instance as it
+// is not stored inside the c++ layer.
+%typemap (javacode) SearchLimit  %{
+  public void keepAliveDecisionBuilder(DecisionBuilder db) {}
+%}
+
+// Do not keep a reference of the decision builder in the java instance as it
+// is not stored inside the c++ layer.
+%typemap (javacode) OptimizeVar %{
+  public void keepAliveDecisionBuilder(DecisionBuilder db) {}
+%}
+
+%typemap(javain, 
+         post="      keepAliveDecisionBuilder($javainput);"
+         ) DecisionBuilder* "DecisionBuilder.getCPtr($javainput)"
+
+%typemap(javain, 
+         post="      keepAliveDecisionBuilder($javainput);"
+         ) const std::vector<DecisionBuilder*>& dbs "$javainput"         
+
 %ignore Solver::SearchLogParameters;
 %ignore Solver::ActiveSearch;
 %ignore Solver::SetSearchContext;
@@ -1056,7 +1118,6 @@ import java.lang.Runnable;
 %rename (tryDecisions) Solver::Try;
 %rename (updateLimits) Solver::UpdateLimits;
 %rename (wallTime) Solver::wall_time;
-
 
 // BaseIntExpr
 %unignore BaseIntExpr;
