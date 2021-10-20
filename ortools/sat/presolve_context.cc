@@ -21,6 +21,7 @@
 #include "ortools/base/map_util.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/port/proto_utils.h"
+#include "ortools/sat/cp_model.pb.h"
 #include "ortools/util/saturated_arithmetic.h"
 
 namespace operations_research {
@@ -176,18 +177,23 @@ int PresolveContext::LiteralForExpressionMax(
   return RefIsPositive(ref) == (expr.coeffs(0) > 0) ? ref : NegatedRef(ref);
 }
 
+bool PresolveContext::ExpressionIsSingleVariable(
+    const LinearExpressionProto& expr) const {
+  return expr.offset() == 0 && expr.vars_size() == 1 && expr.coeffs(0) == 1;
+}
+
 // Note that we only support converted intervals.
 bool PresolveContext::IntervalIsConstant(int ct_ref) const {
   const ConstraintProto& proto = working_model->constraints(ct_ref);
   if (!proto.enforcement_literal().empty()) return false;
-  if (!proto.interval().has_start_view()) return false;
-  for (const int var : proto.interval().start_view().vars()) {
+  if (!proto.interval().has_start()) return false;
+  for (const int var : proto.interval().start().vars()) {
     if (!IsFixed(var)) return false;
   }
-  for (const int var : proto.interval().size_view().vars()) {
+  for (const int var : proto.interval().size().vars()) {
     if (!IsFixed(var)) return false;
   }
-  for (const int var : proto.interval().end_view().vars()) {
+  for (const int var : proto.interval().end().vars()) {
     if (!IsFixed(var)) return false;
   }
   return true;
@@ -222,42 +228,36 @@ std::string PresolveContext::IntervalDebugString(int ct_ref) const {
 int64_t PresolveContext::StartMin(int ct_ref) const {
   const IntervalConstraintProto& interval =
       working_model->constraints(ct_ref).interval();
-  if (interval.has_start_view()) return MinOf(interval.start_view());
   return MinOf(interval.start());
 }
 
 int64_t PresolveContext::StartMax(int ct_ref) const {
   const IntervalConstraintProto& interval =
       working_model->constraints(ct_ref).interval();
-  if (interval.has_start_view()) return MaxOf(interval.start_view());
   return MaxOf(interval.start());
 }
 
 int64_t PresolveContext::EndMin(int ct_ref) const {
   const IntervalConstraintProto& interval =
       working_model->constraints(ct_ref).interval();
-  if (interval.has_end_view()) return MinOf(interval.end_view());
   return MinOf(interval.end());
 }
 
 int64_t PresolveContext::EndMax(int ct_ref) const {
   const IntervalConstraintProto& interval =
       working_model->constraints(ct_ref).interval();
-  if (interval.has_end_view()) return MaxOf(interval.end_view());
   return MaxOf(interval.end());
 }
 
 int64_t PresolveContext::SizeMin(int ct_ref) const {
   const IntervalConstraintProto& interval =
       working_model->constraints(ct_ref).interval();
-  if (interval.has_size_view()) return MinOf(interval.size_view());
   return MinOf(interval.size());
 }
 
 int64_t PresolveContext::SizeMax(int ct_ref) const {
   const IntervalConstraintProto& interval =
       working_model->constraints(ct_ref).interval();
-  if (interval.has_size_view()) return MaxOf(interval.size_view());
   return MaxOf(interval.size());
 }
 

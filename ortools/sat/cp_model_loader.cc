@@ -30,6 +30,7 @@
 #include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/vlog_is_on.h"
 #include "ortools/sat/all_different.h"
 #include "ortools/sat/circuit.h"
 #include "ortools/sat/cp_constraints.h"
@@ -241,32 +242,18 @@ void LoadVariables(const CpModelProto& model_proto,
       // TODO(user): Fix the constant variable situation. An optional interval
       // with constant start/end or size cannot share the same constant
       // variable if it is used in non-optional situation.
-      if (ct.interval().has_start_view()) {
-        mapping->intervals_[c] = intervals_repository->CreateInterval(
-            mapping->LoadAffineView(ct.interval().start_view()),
-            mapping->LoadAffineView(ct.interval().end_view()),
-            mapping->LoadAffineView(ct.interval().size_view()),
-            enforcement_literal.Index(),
-            /*add_linear_relation=*/false);
-      } else {
-        mapping->intervals_[c] = m->Add(NewOptionalInterval(
-            mapping->Integer(ct.interval().start()),
-            mapping->Integer(ct.interval().end()),
-            mapping->Integer(ct.interval().size()), enforcement_literal));
-      }
+      mapping->intervals_[c] = intervals_repository->CreateInterval(
+          mapping->LoadAffineView(ct.interval().start()),
+          mapping->LoadAffineView(ct.interval().end()),
+          mapping->LoadAffineView(ct.interval().size()),
+          enforcement_literal.Index(),
+          /*add_linear_relation=*/false);
     } else {
-      if (ct.interval().has_start_view()) {
-        mapping->intervals_[c] = intervals_repository->CreateInterval(
-            mapping->LoadAffineView(ct.interval().start_view()),
-            mapping->LoadAffineView(ct.interval().end_view()),
-            mapping->LoadAffineView(ct.interval().size_view()), kNoLiteralIndex,
-            /*add_linear_relation=*/false);
-      } else {
-        mapping->intervals_[c] =
-            m->Add(NewInterval(mapping->Integer(ct.interval().start()),
-                               mapping->Integer(ct.interval().end()),
-                               mapping->Integer(ct.interval().size())));
-      }
+      mapping->intervals_[c] = intervals_repository->CreateInterval(
+          mapping->LoadAffineView(ct.interval().start()),
+          mapping->LoadAffineView(ct.interval().end()),
+          mapping->LoadAffineView(ct.interval().size()), kNoLiteralIndex,
+          /*add_linear_relation=*/false);
     }
     mapping->already_loaded_ct_.insert(&ct);
   }
@@ -607,7 +594,9 @@ void ExtractElementEncoding(const CpModelProto& model_proto, Model* m) {
 
   // Scan all exactly_one constraints and look for literal => var == value to
   // detect element encodings.
-  for (const ConstraintProto& ct : model_proto.constraints()) {
+  for (int c = 0; c < model_proto.constraints_size(); ++c) {
+    const ConstraintProto& ct = model_proto.constraints(c);
+
     if (ct.constraint_case() != ConstraintProto::kExactlyOne) continue;
 
     // Project the implied values onto each integer variable.
@@ -621,15 +610,32 @@ void ExtractElementEncoding(const CpModelProto& model_proto, Model* m) {
       }
     }
 
+    // VLOG info.
+    std::vector<IntegerVariable> encoded_variables;
+    std::string encoded_variables_str;
+
     // Search for variable fully covered by the literals of the exactly_one.
     for (const auto& [var, literal_value_list] : var_to_value_literal_list) {
       if (literal_value_list.size() < ct.exactly_one().literals_size()) {
+        LOG(INFO) << "X" << var.value() << " has " << literal_value_list.size()
+                  << " implied values, and a domain of size"
+                  << m->GetOrCreate<IntegerTrail>()
+                         ->InitialVariableDomain(var)
+                         .Size();
         continue;
       }
 
       // We use the order of literals of the exactly_one.
-      implied_bounds->AddElementEncoding(var, literal_value_list);
-      num_element_encoded++;
+      implied_bounds->AddElementEncoding(var, literal_value_list, c);
+      if (VLOG_IS_ON(1)) {
+        encoded_variables.push_back(var);
+        absl::StrAppend(&encoded_variables_str, " X", var.value());
+        num_element_encoded++;
+      }
+    }
+    if (encoded_variables.size() > 1 && VLOG_IS_ON(1)) {
+      VLOG(1) << "exactly_one(" << c << ") encodes " << encoded_variables.size()
+              << " variables at the same time: " << encoded_variables_str;
     }
   }
 
@@ -1124,8 +1130,8 @@ void LoadIntProdConstraint(const ConstraintProto& ct, Model* m) {
       mapping->Integers(ct.int_prod().vars());
   CHECK_EQ(vars.size(), 2) << "General int_prod not supported yet.";
   if (VLOG_IS_ON(1)) {
-    std::vector<ValueLiteralPair> encoding;
-    if (DetectLinearEncodingOfProducts(vars[0], vars[1], m, &encoding)) {
+    LinearConstraintBuilder builder(m);
+    if (DetectLinearEncodingOfProducts(vars[0], vars[1], m, &builder)) {
       VLOG(1) << "Product " << ct.DebugString() << " can be linearized";
     }
   }
@@ -1204,11 +1210,11 @@ void LoadCumulativeConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
   const std::vector<IntervalVariable> intervals =
       mapping->Intervals(ct.cumulative().intervals());
-  const AffineExpression capacity(mapping->Integer(ct.cumulative().capacity()));
+  const AffineExpression capacity =
+      mapping->LoadAffineView(ct.cumulative().capacity());
   std::vector<AffineExpression> demands;
-  for (const IntegerVariable var :
-       mapping->Integers(ct.cumulative().demands())) {
-    demands.push_back(AffineExpression(var));
+  for (const LinearExpressionProto& demand_expr : ct.cumulative().demands()) {
+    demands.push_back(mapping->LoadAffineView(demand_expr));
   }
   m->Add(Cumulative(intervals, demands, capacity));
 }

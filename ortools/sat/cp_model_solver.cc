@@ -208,19 +208,18 @@ std::string CpModelStats(const CpModelProto& model_proto) {
       return proto.domain_size() == 2 && proto.domain(0) == proto.domain(1);
     };
 
-    auto interval_has_fixed_size = [&model_proto, &variable_is_fixed](int c) {
-      const IntervalConstraintProto& proto =
-          model_proto.constraints(c).interval();
-      if (proto.has_size_view()) {
-        for (const int ref : proto.size_view().vars()) {
-          if (!variable_is_fixed(ref)) {
-            return false;
+    auto expression_is_fixed =
+        [&variable_is_fixed](const LinearExpressionProto& expr) {
+          for (const int ref : expr.vars()) {
+            if (!variable_is_fixed(ref)) {
+              return false;
+            }
           }
-        }
-        return true;
-      } else {
-        return variable_is_fixed(proto.size());
-      }
+          return true;
+        };
+
+    auto interval_has_fixed_size = [&model_proto, &expression_is_fixed](int c) {
+      return expression_is_fixed(model_proto.constraints(c).interval().size());
     };
 
     auto constraint_is_optional = [&model_proto](int i) {
@@ -284,7 +283,7 @@ std::string CpModelStats(const CpModelProto& model_proto) {
         if (!interval_has_fixed_size(interval)) {
           cumulative_num_variable_sizes++;
         }
-        if (!variable_is_fixed(ct.cumulative().demands(i))) {
+        if (!expression_is_fixed(ct.cumulative().demands(i))) {
           cumulative_num_variable_demands++;
         }
       }

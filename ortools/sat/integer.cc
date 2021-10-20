@@ -65,6 +65,11 @@ bool AffineExpression::IsFixed(IntegerTrail* integer_trail) const {
   return integer_trail->IsFixed(var);
 }
 
+IntegerValue AffineExpression::Value(IntegerTrail* integer_trail) const {
+  DCHECK(IsFixed(integer_trail));
+  return Max(integer_trail);
+}
+
 std::string ValueLiteralPair::DebugString() const {
   return absl::StrCat("(literal = ", literal.DebugString(),
                       ", value = ", value.value(), ")");

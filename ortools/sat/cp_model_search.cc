@@ -447,6 +447,10 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     SatParameters new_params = base_params;
     new_params.set_optimize_with_lb_tree_search(true);
     new_params.set_linearization_level(2);
+
+    // We do not want to change the objective_var lb from outside as it gives
+    // better result to only use locally derived reason in that algo.
+    new_params.set_share_objective_bounds(false);
     strategies["lb_tree_search"] = new_params;
   }
 

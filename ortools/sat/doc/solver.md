@@ -700,7 +700,7 @@ public class SearchForAllSolutionsSampleSat
         // And solve.
         solver.Solve(model, cb);
 
-        Console.WriteLine(String.Format("Number of solutions found: {0}", cb.SolutionCount()));
+        Console.WriteLine($"Number of solutions found: {cb.SolutionCount()}");
     }
 }
 ```

@@ -763,6 +763,7 @@ cc_library(
     hdrs = ["implied_bounds.h"],
     deps = [
         ":integer",
+        ":linear_constraint",
         ":model",
         ":sat_base",
         "//ortools/base",

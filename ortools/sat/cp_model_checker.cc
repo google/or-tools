@@ -241,11 +241,7 @@ int64_t IntervalSizeMin(const CpModelProto& model, int interval_index) {
             model.constraints(interval_index).constraint_case());
   const IntervalConstraintProto& proto =
       model.constraints(interval_index).interval();
-  if (proto.has_size_view()) {
-    return MinOfExpression(model, proto.size_view());
-  } else {
-    return MinOfRef(model, proto.size());
-  }
+  return MinOfExpression(model, proto.size());
 }
 
 int64_t IntervalSizeMax(const CpModelProto& model, int interval_index) {
@@ -253,11 +249,7 @@ int64_t IntervalSizeMax(const CpModelProto& model, int interval_index) {
             model.constraints(interval_index).constraint_case());
   const IntervalConstraintProto& proto =
       model.constraints(interval_index).interval();
-  if (proto.has_size_view()) {
-    return MaxOfExpression(model, proto.size_view());
-  } else {
-    return MaxOfRef(model, proto.size());
-  }
+  return MaxOfExpression(model, proto.size());
 }
 
 Domain DomainOfRef(const CpModelProto& model, int ref) {
@@ -491,77 +483,35 @@ std::string ValidateIntervalConstraint(const CpModelProto& model,
   LinearExpressionProto for_overflow_validation;
 
   const IntervalConstraintProto& arg = ct.interval();
-  int num_view = 0;
-  if (arg.has_start_view()) {
-    ++num_view;
-    if (arg.start_view().vars_size() > 1) {
-      return "Interval with a start expression containing more than one "
-             "variable are currently not supported.";
-    }
-    RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, arg.start_view()));
-    AppendToOverflowValidator(arg.start_view(), &for_overflow_validation);
-  } else {
-    for_overflow_validation.add_vars(arg.start());
-    for_overflow_validation.add_coeffs(1);
+  if (arg.start().vars_size() > 1) {
+    return "Interval with a start expression containing more than one "
+           "variable are currently not supported.";
   }
-  if (arg.has_size_view()) {
-    ++num_view;
-    if (arg.size_view().vars_size() > 1) {
-      return "Interval with a size expression containing more than one "
-             "variable are currently not supported.";
-    }
-    RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, arg.size_view()));
-    if (ct.enforcement_literal().empty() &&
-        MinOfExpression(model, arg.size_view()) < 0) {
-      return absl::StrCat(
-          "The size of an performed interval must be >= 0 in constraint: ",
-          ProtobufDebugString(ct));
-    }
-    AppendToOverflowValidator(arg.size_view(), &for_overflow_validation);
-  } else {
-    if (ct.enforcement_literal().empty()) {
-      const std::string domain_error =
-          ValidateDomainIsPositive(model, arg.size(), "size");
-      if (!domain_error.empty()) {
-        return absl::StrCat(domain_error,
-                            " in constraint: ", ProtobufDebugString(ct));
-      }
-    }
-
-    for_overflow_validation.add_vars(arg.size());
-    for_overflow_validation.add_coeffs(1);
+  RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, arg.start()));
+  AppendToOverflowValidator(arg.start(), &for_overflow_validation);
+  if (arg.size().vars_size() > 1) {
+    return "Interval with a size expression containing more than one "
+           "variable are currently not supported.";
   }
-  if (arg.has_end_view()) {
-    ++num_view;
-    if (arg.end_view().vars_size() > 1) {
-      return "Interval with a end expression containing more than one "
-             "variable are currently not supported.";
-    }
-    RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, arg.end_view()));
-    AppendToOverflowValidator(arg.end_view(), &for_overflow_validation);
-  } else {
-    for_overflow_validation.add_vars(arg.end());
-    for_overflow_validation.add_coeffs(1);
+  RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, arg.size()));
+  if (ct.enforcement_literal().empty() &&
+      MinOfExpression(model, arg.size()) < 0) {
+    return absl::StrCat(
+        "The size of an performed interval must be >= 0 in constraint: ",
+        ProtobufDebugString(ct));
   }
+  AppendToOverflowValidator(arg.size(), &for_overflow_validation);
+  if (arg.end().vars_size() > 1) {
+    return "Interval with a end expression containing more than one "
+           "variable are currently not supported.";
+  }
+  RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, arg.end()));
+  AppendToOverflowValidator(arg.end(), &for_overflow_validation);
 
   if (PossibleIntegerOverflow(model, for_overflow_validation,
                               for_overflow_validation.offset())) {
     return absl::StrCat("Possible overflow in interval: ",
                         ProtobufShortDebugString(ct.interval()));
-  }
-
-  if (num_view != 0 && num_view != 3) {
-    return absl::StrCat(
-        "Interval must use either the var or the view representation, but not "
-        "both: ",
-        ProtobufShortDebugString(ct));
-  }
-
-  if (num_view > 0 && (arg.start() != 0 || arg.end() != 0 || arg.size() != 0)) {
-    return absl::StrCat(
-        "Interval must use either the var or the view representation, but not "
-        "both: ",
-        ProtobufShortDebugString(ct));
   }
 
   return "";
@@ -574,70 +524,32 @@ std::string ValidateCumulativeConstraint(const CpModelProto& model,
                         ProtobufShortDebugString(ct));
   }
 
-  if (ct.cumulative().energies_size() != 0 &&
-      ct.cumulative().energies_size() != ct.cumulative().intervals_size()) {
-    return absl::StrCat("energies_size() != intervals_size() in constraint: ",
-                        ProtobufShortDebugString(ct));
-  }
-
-  for (const int demand_ref : ct.cumulative().demands()) {
-    const std::string domain_error =
-        ValidateDomainIsPositive(model, demand_ref, "demand");
-    if (!domain_error.empty()) {
-      return absl::StrCat(domain_error,
-                          " in constraint: ", ProtobufDebugString(ct));
+  for (const LinearExpressionProto& demand_expr : ct.cumulative().demands()) {
+    if (MinOfExpression(model, demand_expr) < 0) {
+      return absl::StrCat(
+          "Demand ", demand_expr.DebugString(),
+          " must be positive in constraint: ", ProtobufDebugString(ct));
     }
+    if (demand_expr.vars_size() > 1) {
+      return absl::StrCat("Demand ", demand_expr.DebugString(),
+                          " must be affine or constant in constraint: ",
+                          ProtobufDebugString(ct));
+    }
+  }
+  if (ct.cumulative().capacity().vars_size() > 1) {
+    return absl::StrCat(
+        "capacity ", ct.cumulative().capacity().DebugString(),
+        " must be affine or constant in constraint: ", ProtobufDebugString(ct));
   }
 
   int64_t sum_max_demands = 0;
-  for (const int demand_ref : ct.cumulative().demands()) {
-    const int64_t demand_max = MaxOfRef(model, demand_ref);
+  for (const LinearExpressionProto& demand_expr : ct.cumulative().demands()) {
+    const int64_t demand_max = MaxOfExpression(model, demand_expr);
     DCHECK_GE(demand_max, 0);
     sum_max_demands = CapAdd(sum_max_demands, demand_max);
     if (sum_max_demands == std::numeric_limits<int64_t>::max()) {
       return "The sum of max demands do not fit on an int64_t in constraint: " +
              ProtobufDebugString(ct);
-    }
-  }
-
-  int64_t sum_max_energies = 0;
-  for (int i = 0; i < ct.cumulative().intervals_size(); ++i) {
-    const int64_t demand_max = MaxOfRef(model, ct.cumulative().demands(i));
-    const int64_t size_max =
-        IntervalSizeMax(model, ct.cumulative().intervals(i));
-    sum_max_energies = CapAdd(sum_max_energies, CapProd(size_max, demand_max));
-    if (sum_max_energies == std::numeric_limits<int64_t>::max()) {
-      return "The sum of max energies (size * demand) do not fit on an int64_t "
-             "in constraint: " +
-             ProtobufDebugString(ct);
-    }
-  }
-
-  for (int i = 0; i < ct.cumulative().energies_size(); ++i) {
-    const LinearExpressionProto& expr = ct.cumulative().energies(i);
-    const std::string error = ValidateLinearExpression(model, expr);
-    if (!error.empty()) {
-      return absl::StrCat(error, "in energy expression of constraint: ",
-                          ProtobufShortDebugString(ct));
-    }
-
-    // The following check is quite loose, but it will catch gross mistakes like
-    // having an empty expression (= 0) with a non zero demand and non null
-    // interval.
-    const int interval = ct.cumulative().intervals(i);
-    const int64_t size_min = IntervalSizeMin(model, interval);
-    const int64_t size_max = IntervalSizeMax(model, interval);
-    const Domain product =
-        DomainOfRef(model, ct.cumulative().demands(i))
-            .ContinuousMultiplicationBy({size_min, size_max});
-    const int64_t energy_min = MinOfExpression(model, expr);
-    const int64_t energy_max = MaxOfExpression(model, expr);
-    if (product.IntersectionWith({energy_min, energy_max}).IsEmpty()) {
-      return absl::StrCat(
-          "The energy expression (with index ", i,
-          ") is not compatible with the product of the size of the interval, "
-          "and the demand in constraint: ",
-          ProtobufShortDebugString(ct));
     }
   }
 
@@ -1111,20 +1023,15 @@ class ConstraintChecker {
   }
 
   int64_t IntervalStart(const IntervalConstraintProto& interval) const {
-    return interval.has_start_view()
-               ? LinearExpressionValue(interval.start_view())
-               : Value(interval.start());
+    return LinearExpressionValue(interval.start());
   }
 
   int64_t IntervalSize(const IntervalConstraintProto& interval) const {
-    return interval.has_size_view()
-               ? LinearExpressionValue(interval.size_view())
-               : Value(interval.size());
+    return LinearExpressionValue(interval.size());
   }
 
   int64_t IntervalEnd(const IntervalConstraintProto& interval) const {
-    return interval.has_end_view() ? LinearExpressionValue(interval.end_view())
-                                   : Value(interval.end());
+    return LinearExpressionValue(interval.end());
   }
 
   bool IntervalConstraintIsFeasible(const ConstraintProto& ct) {
@@ -1212,7 +1119,7 @@ class ConstraintChecker {
   bool CumulativeConstraintIsFeasible(const CpModelProto& model,
                                       const ConstraintProto& ct) {
     // TODO(user): Improve complexity for large durations.
-    const int64_t capacity = Value(ct.cumulative().capacity());
+    const int64_t capacity = LinearExpressionValue(ct.cumulative().capacity());
     const int num_intervals = ct.cumulative().intervals_size();
     absl::flat_hash_map<int64_t, int64_t> usage;
     for (int i = 0; i < num_intervals; ++i) {
@@ -1223,24 +1130,13 @@ class ConstraintChecker {
             interval_constraint.interval();
         const int64_t start = IntervalStart(interval);
         const int64_t duration = IntervalSize(interval);
-        const int64_t demand = Value(ct.cumulative().demands(i));
+        const int64_t demand =
+            LinearExpressionValue(ct.cumulative().demands(i));
         for (int64_t t = start; t < start + duration; ++t) {
           usage[t] += demand;
           if (usage[t] > capacity) {
             VLOG(1) << "time: " << t << " usage: " << usage[t]
                     << " capa: " << capacity;
-            return false;
-          }
-        }
-        if (!ct.cumulative().energies().empty()) {
-          const LinearExpressionProto& energy_expr =
-              ct.cumulative().energies(i);
-          int64_t energy = energy_expr.offset();
-          for (int j = 0; j < energy_expr.vars_size(); ++j) {
-            energy += Value(energy_expr.vars(j)) * energy_expr.coeffs(j);
-          }
-          if (duration * demand != energy) {
-            VLOG(1) << "duration * demand is not equal to energy";
             return false;
           }
         }
@@ -1530,7 +1426,7 @@ bool SolutionIsFeasible(const CpModelProto& model,
         break;
       case ConstraintProto::ConstraintCase::kInterval:
         if (!checker.IntervalConstraintIsFeasible(ct)) {
-          if (ct.interval().has_start_view()) {
+          if (ct.interval().has_start()) {
             // Tricky: For simplified presolve, we require that a separate
             // constraint is added to the model to enforce the "interval".
             // This indicates that such a constraint was not added to the model.

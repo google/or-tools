@@ -2060,7 +2060,7 @@ bool CpModelPresolver::PresolveLinearOfSizeTwo(ConstraintProto* ct) {
       // 100% sure it is always good, so for now we don't do it. Note that the
       // effect of doing it or not is not really visible on the bench. Some
       // problem are better with it some better without.
-      context_->UpdateRuleStats("TODOD linear2: contains a Boolean.");
+      context_->UpdateRuleStats("TODO linear2: contains a Boolean.");
       return false;
     }
   }
@@ -3002,37 +3002,9 @@ bool CpModelPresolver::PresolveLinearOnBooleans(ConstraintProto* ct) {
   return RemoveConstraint(ct);
 }
 
-void CpModelPresolver::AddLinearConstraintFromInterval(
-    const ConstraintProto& ct) {
-  const int start = ct.interval().start();
-  const int end = ct.interval().end();
-  const int size = ct.interval().size();
-  ConstraintProto* new_ct = context_->working_model->add_constraints();
-  *(new_ct->mutable_enforcement_literal()) = ct.enforcement_literal();
-  new_ct->mutable_linear()->add_domain(0);
-  new_ct->mutable_linear()->add_domain(0);
-  new_ct->mutable_linear()->add_vars(start);
-  new_ct->mutable_linear()->add_coeffs(1);
-  new_ct->mutable_linear()->add_vars(size);
-  new_ct->mutable_linear()->add_coeffs(1);
-  new_ct->mutable_linear()->add_vars(end);
-  new_ct->mutable_linear()->add_coeffs(-1);
-  CanonicalizeLinear(new_ct);
-
-  if (context_->MinOf(size) < 0) {
-    CHECK(!ct.enforcement_literal().empty());
-    ConstraintProto* positive = context_->working_model->add_constraints();
-    *(positive->mutable_enforcement_literal()) = ct.enforcement_literal();
-    positive->mutable_linear()->add_domain(0);
-    positive->mutable_linear()->add_domain(context_->MaxOf(size));
-    positive->mutable_linear()->add_vars(size);
-    positive->mutable_linear()->add_coeffs(1);
-  }
-  context_->UpdateNewConstraintsVariableUsage();
-}
-
 bool CpModelPresolver::PresolveInterval(int c, ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
+  IntervalConstraintProto* interval = ct->mutable_interval();
 
   // If the size is < 0, then the interval cannot be performed.
   if (!ct->enforcement_literal().empty() && context_->SizeMax(c) < 0) {
@@ -3040,85 +3012,22 @@ bool CpModelPresolver::PresolveInterval(int c, ConstraintProto* ct) {
     return MarkConstraintAsFalse(ct);
   }
 
-  if (ct->enforcement_literal().empty() && !ct->interval().has_start_view()) {
-    bool changed = false;
-    const int start = ct->interval().start();
-    const int end = ct->interval().end();
-    const int size = ct->interval().size();
-    const Domain start_domain = context_->DomainOf(start);
-    const Domain end_domain = context_->DomainOf(end);
-    const Domain size_domain = context_->DomainOf(size);
+  bool changed = false;
+  if (ct->enforcement_literal().empty()) {
     // Size can't be negative.
-    if (!context_->IntersectDomainWith(size, Domain(0, context_->MaxOf(size)),
-                                       &changed)) {
-      return false;
-    }
     if (!context_->IntersectDomainWith(
-            end, start_domain.AdditionWith(size_domain), &changed)) {
+            interval->size(), Domain(0, std::numeric_limits<int64_t>::max()),
+            &changed)) {
       return false;
     }
-    if (!context_->IntersectDomainWith(
-            start, end_domain.AdditionWith(size_domain.Negation()), &changed)) {
-      return false;
-    }
-    if (!context_->IntersectDomainWith(
-            size, end_domain.AdditionWith(start_domain.Negation()), &changed)) {
-      return false;
-    }
-    if (changed) {
-      context_->UpdateRuleStats("interval: reduced domains");
-    }
+    context_->UpdateRuleStats(
+        "interval: performed intervals must have a positive size");
   }
 
-  if (context_->IntervalUsage(c) == 0) {
-    if (!ct->interval().has_start_view()) {
-      AddLinearConstraintFromInterval(*ct);
-    }
-    context_->UpdateRuleStats("interval: unused, converted to linear");
-    return RemoveConstraint(ct);
-  }
-
-  // TODO(user): Note that the conversion is not perfect for optional intervals.
-  // because for a fixed size optional interval with a different start and end
-  // variable, because of the optionality we will not be able to detect the
-  // affine relation between start and end. So we will no remove a variable like
-  // we do for non-optional fixed size intervals.
-  if (context_->params().convert_intervals()) {
-    bool changed = false;
-    IntervalConstraintProto* interval = ct->mutable_interval();
-    if (!ct->interval().has_start_view()) {
-      changed = true;
-
-      // Add a linear constraint. Our new format require a separate linear
-      // constraint which allow us to reuse all the propagation code.
-      AddLinearConstraintFromInterval(*ct);
-
-      // Fill the view fields.
-      interval->mutable_start_view()->add_vars(interval->start());
-      interval->mutable_start_view()->add_coeffs(1);
-      interval->mutable_start_view()->set_offset(0);
-      interval->mutable_size_view()->add_vars(interval->size());
-      interval->mutable_size_view()->add_coeffs(1);
-      interval->mutable_size_view()->set_offset(0);
-      interval->mutable_end_view()->add_vars(interval->end());
-      interval->mutable_end_view()->add_coeffs(1);
-      interval->mutable_end_view()->set_offset(0);
-
-      // Set the old fields to their default. Not really needed.
-      interval->set_start(0);
-      interval->set_size(0);
-      interval->set_end(0);
-    }
-
-    changed |=
-        CanonicalizeLinearExpression(*ct, interval->mutable_start_view());
-    changed |= CanonicalizeLinearExpression(*ct, interval->mutable_size_view());
-    changed |= CanonicalizeLinearExpression(*ct, interval->mutable_end_view());
-    return changed;
-  }
-
-  // This never change the constraint-variable graph.
-  return false;
+  changed |= CanonicalizeLinearExpression(*ct, interval->mutable_start());
+  changed |= CanonicalizeLinearExpression(*ct, interval->mutable_size());
+  changed |= CanonicalizeLinearExpression(*ct, interval->mutable_end());
+  return changed;
 }
 
 // TODO(user): avoid code duplication between expand and presolve.
@@ -3943,9 +3852,9 @@ bool CpModelPresolver::PresolveNoOverlap(ConstraintProto* ct) {
       proto->add_intervals(context_->working_model->constraints_size());
       IntervalConstraintProto* new_interval =
           context_->working_model->add_constraints()->mutable_interval();
-      new_interval->mutable_start_view()->set_offset(new_start);
-      new_interval->mutable_size_view()->set_offset(new_end - new_start);
-      new_interval->mutable_end_view()->set_offset(new_end);
+      new_interval->mutable_start()->set_offset(new_start);
+      new_interval->mutable_size()->set_offset(new_end - new_start);
+      new_interval->mutable_end()->set_offset(new_end);
     }
 
     // Cleanup the original proto.
@@ -4095,11 +4004,25 @@ bool CpModelPresolver::PresolveNoOverlap2D(int c, ConstraintProto* ct) {
   return new_size < initial_num_boxes;
 }
 
+namespace {
+LinearExpressionProto ConstantExpressionProto(int64_t value) {
+  LinearExpressionProto expr;
+  expr.set_offset(value);
+  return expr;
+}
+}  // namespace
+
 bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
 
   CumulativeConstraintProto* proto = ct->mutable_cumulative();
-  bool changed = false;
+
+  bool changed = CanonicalizeLinearExpression(*ct, proto->mutable_capacity());
+  for (LinearExpressionProto& exp :
+       *(ct->mutable_cumulative()->mutable_demands())) {
+    changed |= CanonicalizeLinearExpression(*ct, &exp);
+  }
+
   const int64_t capacity_max = context_->MaxOf(proto->capacity());
 
   // Checks the capacity of the constraint.
@@ -4124,8 +4047,8 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
     for (int i = 0; i < proto->intervals_size(); ++i) {
       if (context_->ConstraintIsInactive(proto->intervals(i))) continue;
 
-      const int demand_ref = proto->demands(i);
-      const int64_t demand_max = context_->MaxOf(demand_ref);
+      const LinearExpressionProto& demand_expr = proto->demands(i);
+      const int64_t demand_max = context_->MaxOf(demand_expr);
       if (demand_max == 0) {
         num_zero_demand_removed++;
         continue;
@@ -4137,7 +4060,7 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
         continue;
       }
 
-      if (context_->MinOf(demand_ref) > capacity_max) {
+      if (context_->MinOf(demand_expr) > capacity_max) {
         if (context_->ConstraintIsOptional(proto->intervals(i))) {
           ConstraintProto* interval_ct =
               context_->working_model->mutable_constraints(proto->intervals(i));
@@ -4155,22 +4078,16 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
       }
 
       proto->set_intervals(new_size, proto->intervals(i));
-      proto->set_demands(new_size, proto->demands(i));
-      if (!proto->energies().empty()) {
-        *proto->mutable_energies(new_size) = proto->energies(i);
-      }
+      *proto->mutable_demands(new_size) = proto->demands(i);
       new_size++;
     }
 
     if (new_size < proto->intervals_size()) {
       changed = true;
       proto->mutable_intervals()->Truncate(new_size);
-      proto->mutable_demands()->Truncate(new_size);
-      if (!proto->energies().empty()) {
-        proto->mutable_energies()->erase(
-            proto->mutable_energies()->begin() + new_size,
-            proto->mutable_energies()->end());
-      }
+      proto->mutable_demands()->erase(
+          proto->mutable_demands()->begin() + new_size,
+          proto->mutable_demands()->end());
     }
 
     if (num_zero_demand_removed > 0) {
@@ -4191,10 +4108,10 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
   {
     for (int i = 0; i < proto->demands_size(); ++i) {
       const int interval = proto->intervals(i);
-      const int demand_ref = proto->demands(i);
+      const LinearExpressionProto& demand_expr = proto->demands(i);
       if (context_->ConstraintIsOptional(interval)) continue;
       bool domain_changed = false;
-      if (!context_->IntersectDomainWith(demand_ref, {0, capacity_max},
+      if (!context_->IntersectDomainWith(demand_expr, {0, capacity_max},
                                          &domain_changed)) {
         return true;
       }
@@ -4228,9 +4145,9 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
             context_->working_model->add_constraints()->mutable_cumulative();
         for (const int i : component) {
           new_cumulative->add_intervals(proto->intervals(i));
-          new_cumulative->add_demands(proto->demands(i));
+          *new_cumulative->add_demands() = proto->demands(i);
         }
-        new_cumulative->set_capacity(proto->capacity());
+        *new_cumulative->mutable_capacity() = proto->capacity();
       }
       context_->UpdateNewConstraintsVariableUsage();
       context_->UpdateRuleStats("cumulative: split into disjoint components");
@@ -4306,14 +4223,16 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
       if (num_diff == 0) continue;
 
       proto->set_intervals(new_size, proto->intervals(i));
-      proto->set_demands(new_size, proto->demands(i));
+      *proto->mutable_demands(new_size) = proto->demands(i);
       new_size++;
     }
 
     if (new_size < proto->intervals_size()) {
       changed = true;
       proto->mutable_intervals()->Truncate(new_size);
-      proto->mutable_demands()->Truncate(new_size);
+      proto->mutable_demands()->erase(
+          proto->mutable_demands()->begin() + new_size,
+          proto->mutable_demands()->end());
       context_->UpdateRuleStats(
           "cumulative: remove never conflicting intervals.");
     }
@@ -4331,31 +4250,31 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
       const ConstraintProto& interval_ct =
           context_->working_model->constraints(proto->intervals(i));
 
-      const int demand_ref = proto->demands(i);
-      sum_of_max_demands += context_->MaxOf(demand_ref);
+      const LinearExpressionProto& demand_expr = proto->demands(i);
+      sum_of_max_demands += context_->MaxOf(demand_expr);
 
       if (interval_ct.enforcement_literal().empty()) {
-        max_of_performed_demand_mins =
-            std::max(max_of_performed_demand_mins, context_->MinOf(demand_ref));
+        max_of_performed_demand_mins = std::max(max_of_performed_demand_mins,
+                                                context_->MinOf(demand_expr));
       }
     }
 
-    const int capacity_ref = proto->capacity();
-    if (max_of_performed_demand_mins > context_->MinOf(capacity_ref)) {
+    const LinearExpressionProto& capacity_expr = proto->capacity();
+    if (max_of_performed_demand_mins > context_->MinOf(capacity_expr)) {
       context_->UpdateRuleStats("cumulative: propagate min capacity.");
       if (!context_->IntersectDomainWith(
-              capacity_ref, Domain(max_of_performed_demand_mins,
-                                   std::numeric_limits<int64_t>::max()))) {
+              capacity_expr, Domain(max_of_performed_demand_mins,
+                                    std::numeric_limits<int64_t>::max()))) {
         return true;
       }
     }
 
-    if (max_of_performed_demand_mins > context_->MaxOf(capacity_ref)) {
+    if (max_of_performed_demand_mins > context_->MaxOf(capacity_expr)) {
       context_->UpdateRuleStats("cumulative: cannot fit performed demands");
       return context_->NotifyThatModelIsUnsat();
     }
 
-    if (sum_of_max_demands <= context_->MinOf(capacity_ref)) {
+    if (sum_of_max_demands <= context_->MinOf(capacity_expr)) {
       context_->UpdateRuleStats("cumulative: capacity exceeds sum of demands");
       return RemoveConstraint(ct);
     }
@@ -4364,49 +4283,39 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
   if (context_->IsFixed(proto->capacity())) {
     int64_t gcd = 0;
     for (int i = 0; i < ct->cumulative().demands_size(); ++i) {
-      const int demand_ref = ct->cumulative().demands(i);
-      if (!context_->IsFixed(demand_ref)) {
+      const LinearExpressionProto& demand_expr = ct->cumulative().demands(i);
+      if (!context_->IsFixed(demand_expr)) {
         // Abort if the demand is not fixed.
         gcd = 1;
         break;
       }
-      gcd = MathUtil::GCD64(gcd, context_->MinOf(demand_ref));
+      gcd = MathUtil::GCD64(gcd, context_->MinOf(demand_expr));
       if (gcd == 1) break;
     }
     if (gcd > 1) {
       changed = true;
       for (int i = 0; i < ct->cumulative().demands_size(); ++i) {
         const int64_t demand = context_->MinOf(ct->cumulative().demands(i));
-        proto->set_demands(i, context_->GetOrCreateConstantVar(demand / gcd));
+        *proto->mutable_demands(i) = ConstantExpressionProto(demand / gcd);
       }
 
-      // In this case, since the demands are fixed, the energy is linear and
-      // we don't need any user provided formula.
-      ct->mutable_cumulative()->clear_energies();
-
       const int64_t old_capacity = context_->MinOf(proto->capacity());
-      proto->set_capacity(context_->GetOrCreateConstantVar(old_capacity / gcd));
+      *proto->mutable_capacity() = ConstantExpressionProto(old_capacity / gcd);
       context_->UpdateRuleStats(
           "cumulative: divide demands and capacity by gcd");
     }
   }
 
-  // Canonicalize energy linear expressions.
-  for (LinearExpressionProto& exp :
-       *(ct->mutable_cumulative()->mutable_energies())) {
-    changed |= CanonicalizeLinearExpression(*ct, &exp);
-  }
-
   const int num_intervals = proto->intervals_size();
-  const int capacity_ref = proto->capacity();
+  const LinearExpressionProto& capacity_expr = proto->capacity();
 
-  bool with_start_view = false;
   std::vector<int> start_refs(num_intervals, -1);
 
   int num_duration_one = 0;
   int num_greater_half_capacity = 0;
 
   bool has_optional_interval = false;
+  bool all_starts_are_variables = true;
   for (int i = 0; i < num_intervals; ++i) {
     const int index = proto->intervals(i);
     // TODO(user): adapt in the presence of optional intervals.
@@ -4414,9 +4323,13 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
     const ConstraintProto& ct =
         context_->working_model->constraints(proto->intervals(i));
     const IntervalConstraintProto& interval = ct.interval();
-    if (interval.has_start_view()) with_start_view = true;
-    start_refs[i] = interval.start();
-    const int demand_ref = proto->demands(i);
+    if (!context_->ExpressionIsSingleVariable(interval.start())) {
+      all_starts_are_variables = false;
+    } else {
+      start_refs[i] = interval.start().vars(0);
+    }
+
+    const LinearExpressionProto& demand_expr = proto->demands(i);
     if (context_->SizeMin(index) == 1 && context_->SizeMax(index) == 1) {
       num_duration_one++;
     }
@@ -4425,8 +4338,8 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
       // the no-overlap and the cumulative constraint.
       return changed;
     }
-    const int64_t demand_min = context_->MinOf(demand_ref);
-    const int64_t demand_max = context_->MaxOf(demand_ref);
+    const int64_t demand_min = context_->MinOf(demand_expr);
+    const int64_t demand_max = context_->MaxOf(demand_expr);
     if (demand_min > capacity_max / 2) {
       num_greater_half_capacity++;
     }
@@ -4446,7 +4359,7 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
         context_->UpdateRuleStats(
             "cumulative: demand_max exceeds capacity max.");
         if (!context_->IntersectDomainWith(
-                demand_ref,
+                demand_expr,
                 Domain(std::numeric_limits<int64_t>::min(), capacity_max))) {
           return true;
         }
@@ -4461,7 +4374,7 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
   }
   if (num_greater_half_capacity == num_intervals) {
     if (num_duration_one == num_intervals && !has_optional_interval &&
-        !with_start_view) {
+        all_starts_are_variables) {
       context_->UpdateRuleStats("cumulative: convert to all_different");
       ConstraintProto* new_ct = context_->working_model->add_constraints();
       auto* arg = new_ct->mutable_all_diff();
@@ -4470,28 +4383,24 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
       return RemoveConstraint(ct);
     } else {
       context_->UpdateRuleStats("cumulative: convert to no_overlap");
-
       // Before we remove the cumulative, add constraints to enforce that the
       // capacity is greater than the demand of any performed intervals.
       for (int i = 0; i < proto->demands_size(); ++i) {
-        const int demand_ref = proto->demands(i);
-        const int64_t demand_max = context_->MaxOf(demand_ref);
-        if (demand_max > context_->MinOf(capacity_ref)) {
+        const LinearExpressionProto& demand_expr = proto->demands(i);
+        const int64_t demand_max = context_->MaxOf(demand_expr);
+        if (demand_max > context_->MinOf(capacity_expr)) {
           ConstraintProto* capacity_gt =
               context_->working_model->add_constraints();
-          for (const int literal :
-               context_->working_model->constraints(proto->intervals(i))
-                   .enforcement_literal()) {
-            capacity_gt->add_enforcement_literal(literal);
-          }
-          capacity_gt->mutable_linear()->add_vars(capacity_ref);
-          capacity_gt->mutable_linear()->add_coeffs(1);
-          capacity_gt->mutable_linear()->add_vars(demand_ref);
-          capacity_gt->mutable_linear()->add_coeffs(-1);
+          *capacity_gt->mutable_enforcement_literal() =
+              context_->working_model->constraints(proto->intervals(i))
+                  .enforcement_literal();
           capacity_gt->mutable_linear()->add_domain(0);
           capacity_gt->mutable_linear()->add_domain(
               std::numeric_limits<int64_t>::max());
-          context_->UpdateNewConstraintsVariableUsage();
+          AddLinearExpressionToLinearConstraint(capacity_expr, 1,
+                                                capacity_gt->mutable_linear());
+          AddLinearExpressionToLinearConstraint(demand_expr, -1,
+                                                capacity_gt->mutable_linear());
         }
       }
 

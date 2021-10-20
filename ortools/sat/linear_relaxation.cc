@@ -28,7 +28,6 @@
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_expr.h"
-// #include "ortools/sat/intervals.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/sat_base.h"
@@ -688,42 +687,8 @@ void AppendRoutesRelaxation(const ConstraintProto& ct, Model* model,
   relaxation->linear_constraints.push_back(zero_node_balance_lc.Build());
 }
 
-void AppendIntervalRelaxation(const ConstraintProto& ct, Model* model,
-                              LinearRelaxation* relaxation) {
-  // If the interval is using views, then the linear equation is already
-  // present in the model.
-  if (ct.interval().has_start_view()) return;
-
-  auto* mapping = model->GetOrCreate<CpModelMapping>();
-  const IntegerVariable start = mapping->Integer(ct.interval().start());
-  const IntegerVariable size = mapping->Integer(ct.interval().size());
-  const IntegerVariable end = mapping->Integer(ct.interval().end());
-  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-  const bool size_is_fixed = integer_trail->IsFixed(size);
-  const IntegerValue rhs =
-      size_is_fixed ? -integer_trail->LowerBound(size) : IntegerValue(0);
-  LinearConstraintBuilder lc(model, rhs, rhs);
-  lc.AddTerm(start, IntegerValue(1));
-  if (!size_is_fixed) {
-    lc.AddTerm(size, IntegerValue(1));
-  }
-  lc.AddTerm(end, IntegerValue(-1));
-  if (HasEnforcementLiteral(ct)) {
-    LinearConstraint tmp_lc = lc.Build();
-    LinearExpression expr;
-    expr.coeffs = tmp_lc.coeffs;
-    expr.vars = tmp_lc.vars;
-    AppendEnforcedLinearExpression(mapping->Literals(ct.enforcement_literal()),
-                                   expr, tmp_lc.ub, tmp_lc.ub, *model,
-                                   relaxation);
-  } else {
-    relaxation->linear_constraints.push_back(lc.Build());
-  }
-}
-
-// TODO(user): Use affine demand.
 void AddCumulativeRelaxation(const std::vector<IntervalVariable>& intervals,
-                             const std::vector<IntegerVariable>& demands,
+                             const std::vector<AffineExpression>& demands,
                              const std::vector<LinearExpression>& energies,
                              IntegerValue capacity_upper_bound, Model* model,
                              LinearRelaxation* relaxation) {
@@ -791,7 +756,8 @@ void AddCumulativeRelaxation(const std::vector<IntervalVariable>& intervals,
     if (!helper->IsOptional(i)) {
       if (demand_is_fixed) {
         lc.AddTerm(helper->Sizes()[i], demand_lower_bound);
-      } else if (!helper->SizeIsFixed(i) && !energies.empty()) {
+      } else if (!helper->SizeIsFixed(i) &&
+                 (!energies[i].vars.empty() || energies[i].offset != -1)) {
         // We prefer the energy additional info instead of the McCormick
         // relaxation.
         lc.AddLinearExpression(energies[i]);
@@ -809,6 +775,33 @@ void AddCumulativeRelaxation(const std::vector<IntervalVariable>& intervals,
   relaxation->linear_constraints.push_back(lc.Build());
 }
 
+LinearExpression NotLinearizedEnergy() {
+  LinearExpression result;
+  result.offset = -1;
+  return result;
+}
+
+void FillEnergies(const std::vector<AffineExpression>& demands,
+                  const std::vector<AffineExpression>& sizes, Model* model,
+                  std::vector<LinearExpression>* energies) {
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  for (int i = 0; i < demands.size(); ++i) {
+    LinearConstraintBuilder builder(model);
+    if (DetectLinearEncodingOfProducts(demands[i], sizes[i], model, &builder)) {
+      VLOG(3) << "linearized energy: "
+              << builder.BuildExpression().DebugString();
+      energies->push_back(builder.BuildExpression());
+    } else {
+      VLOG(2) << "Product is not linearizable: demands "
+              << demands[i].DebugString() << " with var domain "
+              << integer_trail->InitialVariableDomain(demands[i].var)
+              << ", size = " << sizes[i].DebugString() << " with var domain "
+              << integer_trail->InitialVariableDomain(sizes[i].var);
+      energies->push_back(NotLinearizedEnergy());
+    }
+  }
+}
+
 void AppendCumulativeRelaxation(const CpModelProto& model_proto,
                                 const ConstraintProto& ct, Model* model,
                                 LinearRelaxation* relaxation) {
@@ -816,21 +809,24 @@ void AppendCumulativeRelaxation(const CpModelProto& model_proto,
   if (HasEnforcementLiteral(ct)) return;
 
   auto* mapping = model->GetOrCreate<CpModelMapping>();
-  const std::vector<IntegerVariable> demands =
-      mapping->Integers(ct.cumulative().demands());
   std::vector<IntervalVariable> intervals =
       mapping->Intervals(ct.cumulative().intervals());
   const IntegerValue capacity_upper_bound =
       model->GetOrCreate<IntegerTrail>()->UpperBound(
-          mapping->Integer(ct.cumulative().capacity()));
-  std::vector<LinearExpression> energies;
-  energies.reserve(ct.cumulative().energies_size());
-  for (int i = 0; i < ct.cumulative().energies_size(); ++i) {
-    // Note: Cut generator requires all expressions to contain only positive
-    // vars.
-    energies.push_back(mapping->GetExprFromProto(ct.cumulative().energies(i)));
-  }
+          mapping->LoadAffineView(ct.cumulative().capacity()));
 
+  // Scan energies.
+  IntervalsRepository* intervals_repository =
+      model->GetOrCreate<IntervalsRepository>();
+
+  std::vector<LinearExpression> energies;
+  std::vector<AffineExpression> demands;
+  std::vector<AffineExpression> sizes;
+  for (int i = 0; i < demands.size(); ++i) {
+    demands.push_back(mapping->LoadAffineView(ct.cumulative().demands(i)));
+    sizes.push_back(intervals_repository->Size(intervals[i]));
+  }
+  FillEnergies(demands, sizes, model, &energies);
   AddCumulativeRelaxation(intervals, demands, energies, capacity_upper_bound,
                           model, relaxation);
 }
@@ -1118,12 +1114,6 @@ void TryToLinearizeConstraint(const CpModelProto& model_proto,
       AppendRoutesRelaxation(ct, model, relaxation);
       break;
     }
-    case ConstraintProto::ConstraintCase::kInterval: {
-      if (linearization_level > 1) {
-        AppendIntervalRelaxation(ct, model, relaxation);
-      }
-      break;
-    }
     case ConstraintProto::ConstraintCase::kNoOverlap: {
       if (linearization_level > 1) {
         AppendNoOverlapRelaxation(model_proto, ct, model, relaxation);
@@ -1251,18 +1241,23 @@ void AddCumulativeCutGenerator(const ConstraintProto& ct, Model* m,
   if (HasEnforcementLiteral(ct)) return;
   auto* mapping = m->GetOrCreate<CpModelMapping>();
 
-  const std::vector<IntegerVariable> demands =
-      mapping->Integers(ct.cumulative().demands());
   const std::vector<IntervalVariable> intervals =
       mapping->Intervals(ct.cumulative().intervals());
-  const IntegerVariable capacity = mapping->Integer(ct.cumulative().capacity());
+  const AffineExpression capacity =
+      mapping->LoadAffineView(ct.cumulative().capacity());
+
+  // Scan energies.
+  IntervalsRepository* intervals_repository =
+      m->GetOrCreate<IntervalsRepository>();
+
   std::vector<LinearExpression> energies;
-  energies.reserve(ct.cumulative().energies_size());
-  for (int i = 0; i < ct.cumulative().energies_size(); ++i) {
-    // Note: Cut generator requires all expressions to contain only positive
-    // vars.
-    energies.push_back(mapping->GetExprFromProto(ct.cumulative().energies(i)));
+  std::vector<AffineExpression> demands;
+  std::vector<AffineExpression> sizes;
+  for (int i = 0; i < intervals.size(); ++i) {
+    demands.push_back(mapping->LoadAffineView(ct.cumulative().demands(i)));
+    sizes.push_back(intervals_repository->Size(intervals[i]));
   }
+  FillEnergies(demands, sizes, m, &energies);
 
   relaxation->cut_generators.push_back(
       CreateCumulativeTimeTableCutGenerator(intervals, capacity, demands, m));
@@ -1428,7 +1423,7 @@ void AppendElementEncodingRelaxation(const CpModelProto& model_proto, Model* m,
 
   for (const IntegerVariable var :
        implied_bounds->GetElementEncodedVariables()) {
-    for (const std::vector<ValueLiteralPair>& literal_value_list :
+    for (const auto& [index, literal_value_list] :
          implied_bounds->GetElementEncodings(var)) {
       // We only want to deal with the case with duplicate values, because
       // otherwise, the target will be fully encoded, and this is already

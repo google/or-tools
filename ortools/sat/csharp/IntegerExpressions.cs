@@ -381,8 +381,7 @@ namespace Google.OrTools.Sat
             {
                 return LinearExpr.Constant(offset);
             }
-            else 
-            if (numElements == 1) 
+            else if (numElements == 1)
             {
                 IntVar var = new IntVar(model, proto.Vars[0]);
                 long coeff = proto.Coeffs[0];
@@ -565,7 +564,7 @@ namespace Google.OrTools.Sat
 
                 result += expr.ShortString();
             }
-            if (offset_ != 0) 
+            if (offset_ != 0)
             {
                 result += String.Format(" + {0}", offset_);
             }
@@ -598,7 +597,7 @@ namespace Google.OrTools.Sat
         public override string ToString()
         {
             return String.Format("ConstantExpr({0})", value_);
-        }        
+        }
 
         private long value_;
     }
@@ -616,7 +615,7 @@ namespace Google.OrTools.Sat
             negation_ = null;
         }
 
-       public IntVar(CpModelProto model, int index)
+        public IntVar(CpModelProto model, int index)
         {
             model_ = model;
             index_ = index;

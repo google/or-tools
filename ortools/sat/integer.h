@@ -247,6 +247,7 @@ struct AffineExpression {
   // Getters on the bounds of the affine expression.
   IntegerValue Min(IntegerTrail* integer_trail) const;
   IntegerValue Max(IntegerTrail* integer_trail) const;
+  IntegerValue Value(IntegerTrail* integer_trail) const;
   bool IsFixed(IntegerTrail* integer_trail) const;
 
   // Returns the affine expression value under a given LP solution.

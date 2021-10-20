@@ -347,20 +347,10 @@ CumulativeConstraint::CumulativeConstraint(ConstraintProto* proto,
                                            CpModelBuilder* builder)
     : Constraint(proto), builder_(builder) {}
 
-void CumulativeConstraint::AddDemand(IntervalVar interval, IntVar demand) {
+void CumulativeConstraint::AddDemand(IntervalVar interval, LinearExpr demand) {
   proto_->mutable_cumulative()->add_intervals(interval.index_);
-  proto_->mutable_cumulative()->add_demands(
-      builder_->GetOrCreateIntegerIndex(demand.index_));
-}
-
-void CumulativeConstraint::AddDemandWithEnergy(IntervalVar interval,
-                                               IntVar demand,
-                                               const LinearExpr& energy) {
-  proto_->mutable_cumulative()->add_intervals(interval.index_);
-  proto_->mutable_cumulative()->add_demands(
-      builder_->GetOrCreateIntegerIndex(demand.index_));
-  *proto_->mutable_cumulative()->add_energies() =
-      builder_->LinearExprToProto(energy);
+  *proto_->mutable_cumulative()->add_demands() =
+      builder_->LinearExprToProto(demand);
 }
 
 IntervalVar::IntervalVar() : cp_model_(nullptr), index_() {}
@@ -374,15 +364,15 @@ IntervalVar IntervalVar::WithName(const std::string& name) {
 }
 
 LinearExpr IntervalVar::StartExpr() const {
-  return CpModelBuilder::LinearExprFromProto(Proto().start_view(), cp_model_);
+  return CpModelBuilder::LinearExprFromProto(Proto().start(), cp_model_);
 }
 
 LinearExpr IntervalVar::SizeExpr() const {
-  return CpModelBuilder::LinearExprFromProto(Proto().size_view(), cp_model_);
+  return CpModelBuilder::LinearExprFromProto(Proto().size(), cp_model_);
 }
 
 LinearExpr IntervalVar::EndExpr() const {
-  return CpModelBuilder::LinearExprFromProto(Proto().end_view(), cp_model_);
+  return CpModelBuilder::LinearExprFromProto(Proto().end(), cp_model_);
 }
 
 BoolVar IntervalVar::PresenceBoolVar() const {
@@ -502,9 +492,9 @@ IntervalVar CpModelBuilder::NewOptionalIntervalVar(const LinearExpr& start,
   ConstraintProto* const ct = cp_model_.add_constraints();
   ct->add_enforcement_literal(presence.index_);
   IntervalConstraintProto* const interval = ct->mutable_interval();
-  *interval->mutable_start_view() = LinearExprToProto(start);
-  *interval->mutable_size_view() = LinearExprToProto(size);
-  *interval->mutable_end_view() = LinearExprToProto(end);
+  *interval->mutable_start() = LinearExprToProto(start);
+  *interval->mutable_size() = LinearExprToProto(size);
+  *interval->mutable_end() = LinearExprToProto(end);
   return IntervalVar(index, &cp_model_);
 }
 
@@ -514,11 +504,10 @@ IntervalVar CpModelBuilder::NewOptionalFixedSizeIntervalVar(
   ConstraintProto* const ct = cp_model_.add_constraints();
   ct->add_enforcement_literal(presence.index_);
   IntervalConstraintProto* const interval = ct->mutable_interval();
-  *interval->mutable_start_view() = LinearExprToProto(start);
-  interval->mutable_size_view()->set_offset(size);
-  *interval->mutable_end_view() = LinearExprToProto(start);
-  interval->mutable_end_view()->set_offset(interval->end_view().offset() +
-                                           size);
+  *interval->mutable_start() = LinearExprToProto(start);
+  interval->mutable_size()->set_offset(size);
+  *interval->mutable_end() = LinearExprToProto(start);
+  interval->mutable_end()->set_offset(interval->end().offset() + size);
   return IntervalVar(index, &cp_model_);
 }
 
@@ -856,10 +845,10 @@ NoOverlap2DConstraint CpModelBuilder::AddNoOverlap2D() {
   return NoOverlap2DConstraint(cp_model_.add_constraints());
 }
 
-CumulativeConstraint CpModelBuilder::AddCumulative(IntVar capacity) {
+CumulativeConstraint CpModelBuilder::AddCumulative(LinearExpr capacity) {
   ConstraintProto* const proto = cp_model_.add_constraints();
-  proto->mutable_cumulative()->set_capacity(
-      GetOrCreateIntegerIndex(capacity.index_));
+  *proto->mutable_cumulative()->mutable_capacity() =
+      LinearExprToProto(capacity);
   return CumulativeConstraint(proto, this);
 }
 

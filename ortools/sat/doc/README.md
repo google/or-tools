@@ -66,10 +66,12 @@ def SimpleSatProgram():
   solver = cp_model.CpSolver()
   status = solver.Solve(model)
 
-  if status == cp_model.OPTIMAL:
+  if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
     print('x = %i' % solver.Value(x))
     print('y = %i' % solver.Value(y))
     print('z = %i' % solver.Value(z))
+  else:
+    print('No solution found.')
 
 
 SimpleSatProgram()
@@ -103,13 +105,15 @@ void SimpleSatProgram() {
 
   // Solving part.
   const CpSolverResponse response = Solve(cp_model.Build());
-  LOG(INFO) << CpSolverResponseStats(response);
 
-  if (response.status() == CpSolverStatus::OPTIMAL) {
+  if (response.status() == CpSolverStatus::OPTIMAL ||
+      response.status() == CpSolverStatus::FEASIBLE) {
     // Get the value of x in the solution.
     LOG(INFO) << "x = " << SolutionIntegerValue(response, x);
     LOG(INFO) << "y = " << SolutionIntegerValue(response, y);
     LOG(INFO) << "z = " << SolutionIntegerValue(response, z);
+  } else {
+    LOG(INFO) << "No solution found.";
   }
 }
 
@@ -157,10 +161,12 @@ public class SimpleSatProgram {
     CpSolver solver = new CpSolver();
     CpSolverStatus status = solver.solve(model);
 
-    if (status == CpSolverStatus.OPTIMAL) {
+    if (status == CpSolverStatus.OPTIMAL || status == CpSolverStatus.FEASIBLE) {
       System.out.println("x = " + solver.value(x));
       System.out.println("y = " + solver.value(y));
       System.out.println("z = " + solver.value(z));
+    } else {
+      System.out.println("No solution found.");
     }
   }
 }
@@ -197,11 +203,15 @@ public class SimpleSatProgram
         CpSolver solver = new CpSolver();
         CpSolverStatus status = solver.Solve(model);
 
-        if (status == CpSolverStatus.Optimal)
+        if (status == CpSolverStatus.Optimal || status == CpSolverStatus.Feasible)
         {
             Console.WriteLine("x = " + solver.Value(x));
             Console.WriteLine("y = " + solver.Value(y));
             Console.WriteLine("z = " + solver.Value(z));
+        }
+        else
+        {
+            Console.WriteLine("No solution found.");
         }
     }
 }

@@ -24,6 +24,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/util/bitset.h"
@@ -125,11 +126,12 @@ class ImpliedBounds {
   // Note that we call this an "element" encoding because a value can appear
   // more than once.
   void AddElementEncoding(IntegerVariable var,
-                          const std::vector<ValueLiteralPair>& encoding);
+                          const std::vector<ValueLiteralPair>& encoding,
+                          int exactly_one_index);
 
-  // Returns an empty vector if there is no such encoding.
-  const std::vector<std::vector<ValueLiteralPair>>& GetElementEncodings(
-      IntegerVariable var);
+  // Returns an empty map if there is no such encoding.
+  const absl::flat_hash_map<int, std::vector<ValueLiteralPair>>&
+  GetElementEncodings(IntegerVariable var);
 
   // Get an unsorted set of variables appearing in element encodings.
   const std::vector<IntegerVariable>& GetElementEncodedVariables() const;
@@ -184,9 +186,10 @@ class ImpliedBounds {
   const absl::flat_hash_map<IntegerVariable, IntegerValue> empty_var_to_value_;
 
   absl::flat_hash_map<IntegerVariable,
-                      std::vector<std::vector<ValueLiteralPair>>>
-      var_to_element_encodings_;
-  const std::vector<std::vector<ValueLiteralPair>> empty_element_encoding_;
+                      absl::flat_hash_map<int, std::vector<ValueLiteralPair>>>
+      var_to_index_to_element_encodings_;
+  const absl::flat_hash_map<int, std::vector<ValueLiteralPair>>
+      empty_element_encoding_;
   std::vector<IntegerVariable> element_encoded_variables_;
 
   // TODO(user): Ideally, this should go away if we manage to push level-zero
@@ -205,9 +208,11 @@ class ImpliedBounds {
 // In the returned encoding, note that all the literals will be unique and in
 // exactly one relation, and that the values can be duplicated. This is what we
 // call an "element" encoding.
-bool DetectLinearEncodingOfProducts(
-    IntegerVariable left_var, IntegerVariable right_var, Model* model,
-    std::vector<ValueLiteralPair>* product_encoding);
+//
+// The expressions will also be canonical.
+bool DetectLinearEncodingOfProducts(const AffineExpression& left,
+                                    const AffineExpression& right, Model* model,
+                                    LinearConstraintBuilder* builder);
 
 }  // namespace sat
 }  // namespace operations_research

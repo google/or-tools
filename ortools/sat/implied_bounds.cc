@@ -14,8 +14,10 @@
 #include "ortools/sat/implied_bounds.h"
 
 #include <algorithm>
+#include <limits>
 
 #include "ortools/sat/integer.h"
+#include "ortools/sat/linear_constraint.h"
 
 namespace operations_research {
 namespace sat {
@@ -204,20 +206,15 @@ void ImpliedBounds::ProcessIntegerTrail(Literal first_decision) {
 }
 
 void ImpliedBounds::AddElementEncoding(
-    IntegerVariable var, const std::vector<ValueLiteralPair>& encoding) {
-  const auto& it = var_to_element_encodings_.find(var);
-  if (it == var_to_element_encodings_.end()) {
-    element_encoded_variables_.push_back(var);
-    var_to_element_encodings_[var].push_back(encoding);
-  } else {
-    it->second.push_back(encoding);
-  }
+    IntegerVariable var, const std::vector<ValueLiteralPair>& encoding,
+    int exactly_one_index) {
+  var_to_index_to_element_encodings_[var][exactly_one_index] = encoding;
 }
 
-const std::vector<std::vector<ValueLiteralPair>>&
+const absl::flat_hash_map<int, std::vector<ValueLiteralPair>>&
 ImpliedBounds::GetElementEncodings(IntegerVariable var) {
-  const auto& it = var_to_element_encodings_.find(var);
-  if (it == var_to_element_encodings_.end()) {
+  const auto& it = var_to_index_to_element_encodings_.find(var);
+  if (it == var_to_index_to_element_encodings_.end()) {
     return empty_element_encoding_;
   } else {
     return it->second;
@@ -243,118 +240,139 @@ bool ImpliedBounds::EnqueueNewDeductions() {
   return sat_solver_->FinishPropagation();
 }
 
-bool DetectLinearEncodingOfProducts(
-    IntegerVariable left_var, IntegerVariable right_var, Model* model,
-    std::vector<ValueLiteralPair>* product_encoding) {
-  CHECK(product_encoding != nullptr);
+// If a variable has a size of 2, it is most likely reduced to an affine
+// expression pointing to a variable with domain [0,1] or [-1,0].
+// If the original variable has been removed from the model, then there are no
+// implied values from any exactly_one constraint to its domain.
+bool TryToReconcileEncodings(const AffineExpression& size2,
+                             const AffineExpression& gen,
+                             const std::vector<ValueLiteralPair>& encoding,
+                             Model* model, LinearConstraintBuilder* builder) {
+  // Literal lit0 = size2.var;
+  // IntegerValue value0 = size_two_encoding[0].value;
+  // Literal lit1 = Megatedsize_two_encoding[1].literal;
+  // IntegerValue value1 = size_two_encoding[1].value;
+  // for (const ValueLiteralPair e : general_encoding) {
+  //   if (e.literal == lit1) {
+  //     std::swap(lit0, lit1);
+  //     std::swap(value0, value1);
+  //   }
+  //   if (e.literal == lit0) {
+  //     if (product_encoding != nullptr) {
+  //       product_encoding->clear();
+  //       for (const ValueLiteralPair& f : general_encoding) {
+  //         if (f.literal == lit0) {
+  //           product_encoding->push_back({value0 * f.value, f.literal});
+  //         } else {
+  //           product_encoding->push_back({value1 * f.value, f.literal});
+  //         }
+  //       }
+  //     }
+  //     return true;
+  //   }
+  // }
+  return false;
+}
+
+bool DetectLinearEncodingOfProducts(const AffineExpression& left,
+                                    const AffineExpression& right, Model* model,
+                                    LinearConstraintBuilder* builder) {
+  CHECK(builder != nullptr);
+  builder->Clear();
+
+  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
   ImpliedBounds* implied_bounds = model->GetOrCreate<ImpliedBounds>();
-  IntegerEncoder* integer_encoder = model->GetOrCreate<IntegerEncoder>();
 
-  // Fill in the encodings for the left variable, and sort them.
-  std::vector<std::vector<ValueLiteralPair>> left_encodings =
-      implied_bounds->GetElementEncodings(left_var);
-  if (integer_encoder->VariableIsFullyEncoded(left_var)) {
-    left_encodings.push_back(integer_encoder->FullDomainEncoding(left_var));
-  }
-  for (auto& encoding : left_encodings) {
-    std::sort(encoding.begin(), encoding.end(),
-              ValueLiteralPair::CompareByLiteral());
-  }
-
-  // Fill in the encodings for the right variable, and sort them.
-  std::vector<std::vector<ValueLiteralPair>> right_encodings =
-      implied_bounds->GetElementEncodings(right_var);
-  if (integer_encoder->VariableIsFullyEncoded(right_var)) {
-    right_encodings.push_back(integer_encoder->FullDomainEncoding(right_var));
-  }
-  for (auto& encoding : right_encodings) {
-    std::sort(encoding.begin(), encoding.end(),
-              ValueLiteralPair::CompareByLiteral());
-  }
-
-  if (left_encodings.empty() || right_encodings.empty()) return false;
-
-  // If the encodings have exactly the same literals, we are done.
-  const auto match_encodings = [product_encoding](
-                                   const std::vector<ValueLiteralPair>& left,
-                                   const std::vector<ValueLiteralPair>& right) {
-    if (left.size() != right.size()) return false;
-    for (int i = 0; i < left.size(); ++i) {
-      if (left[i].literal != right[i].literal) return false;
-    }
-    product_encoding->clear();
-    for (int i = 0; i < left.size(); ++i) {
-      product_encoding->push_back(
-          {left[i].value * right[i].value, left[i].literal});
-    }
+  if (left.IsFixed(integer_trail)) {
+    const IntegerValue value = left.Value(integer_trail);
+    builder->AddTerm(right, value);
     return true;
-  };
+  }
 
-  // If one of the variable has an encoding of size two, it is likely that its
-  // encoding was stored as (lit, not(lit)). We need to do extra work in this
-  // case.
-  const auto reconcile_encodings =
-      [product_encoding](
-          const std::vector<ValueLiteralPair>& size_two_encoding,
-          const std::vector<ValueLiteralPair>& general_encoding) {
-        if (size_two_encoding.size() != 2) return false;
-        if (size_two_encoding[0].literal !=
-            size_two_encoding[1].literal.Negated()) {
-          return false;
-        }
-        Literal lit0 = size_two_encoding[0].literal;
-        IntegerValue value0 = size_two_encoding[0].value;
-        Literal lit1 = size_two_encoding[1].literal;
-        IntegerValue value1 = size_two_encoding[1].value;
-        for (const ValueLiteralPair e : general_encoding) {
-          if (e.literal == lit1) {
-            std::swap(lit0, lit1);
-            std::swap(value0, value1);
-          }
-          if (e.literal == lit0) {
-            if (product_encoding != nullptr) {
-              product_encoding->clear();
-              for (const ValueLiteralPair& f : general_encoding) {
-                if (f.literal == lit0) {
-                  product_encoding->push_back({value0 * f.value, f.literal});
-                } else {
-                  product_encoding->push_back({value1 * f.value, f.literal});
-                }
-              }
-            }
-            return true;
-          }
-        }
-        return false;
-      };
+  if (right.IsFixed(integer_trail)) {
+    const IntegerValue value = right.Value(integer_trail);
+    builder->AddTerm(left, value);
+    return true;
+  }
 
-  for (const std::vector<ValueLiteralPair>& left : left_encodings) {
-    for (const std::vector<ValueLiteralPair>& right : right_encodings) {
-      if (match_encodings(left, right) || reconcile_encodings(left, right) ||
-          reconcile_encodings(right, left)) {
-        return true;
+  // Fill in the encodings for the left variable.
+  const absl::flat_hash_map<int, std::vector<ValueLiteralPair>>&
+      left_encodings = implied_bounds->GetElementEncodings(left.var);
+
+  // Fill in the encodings for the right variable.
+  const absl::flat_hash_map<int, std::vector<ValueLiteralPair>>&
+      right_encodings = implied_bounds->GetElementEncodings(right.var);
+
+  std::vector<int> compatible_keys;
+  for (const auto& [index, encoding] : left_encodings) {
+    if (right_encodings.contains(index)) {
+      compatible_keys.push_back(index);
+    }
+  }
+
+  if (compatible_keys.empty()) {
+    if (integer_trail->InitialVariableDomain(left.var).Size() == 2) {
+      for (const auto& [index, right_encoding] : right_encodings) {
+        if (TryToReconcileEncodings(left, right, right_encoding, model,
+                                    builder)) {
+          return true;
+        }
       }
     }
-  }
-
-  auto encoding_str = [](const std::vector<ValueLiteralPair>& e) {
-    std::string result = "[";
-    for (const auto& f : e) {
-      absl::StrAppend(&result, "(literal=", f.literal.DebugString(),
-                      ", value=", f.value.value(), ") ");
+    if (integer_trail->InitialVariableDomain(right.var).Size() == 2) {
+      for (const auto& [index, left_encoding] : left_encodings) {
+        if (TryToReconcileEncodings(right, left, left_encoding, model,
+                                    builder)) {
+          return true;
+        }
+      }
     }
-    absl::StrAppend(&result, "]");
-    return result;
-  };
-
-  for (const auto& e : left_encodings) {
-    LOG(INFO) << encoding_str(e);
-  }
-  for (const auto& e : right_encodings) {
-    LOG(INFO) << encoding_str(e);
+    return false;
   }
 
-  return false;
+  if (compatible_keys.size() > 1) {
+    VLOG(1) << "More than one exactly_one involved in the encoding of the two "
+               "variables";
+  }
+
+  // Select the compatible encoding with the minimum index.
+  const int min_index =
+      *std::min_element(compatible_keys.begin(), compatible_keys.end());
+  // By construction, encodings follow the order of literals in the exactly_one
+  // constraint.
+  const std::vector<ValueLiteralPair>& left_encoding =
+      left_encodings.at(min_index);
+  const std::vector<ValueLiteralPair>& right_encoding =
+      right_encodings.at(min_index);
+  DCHECK_EQ(left_encoding.size(), right_encoding.size());
+
+  // Compute the min energy.
+  IntegerValue min_energy = kMaxIntegerValue;
+  for (int i = 0; i < left_encoding.size(); ++i) {
+    const IntegerValue left_value = left_encoding[i].value;
+    const IntegerValue right_value = right_encoding[i].value;
+    const IntegerValue energy = (left.coeff * left_value + left.constant) *
+                                (right.coeff * right_value + right.constant);
+    min_energy = std::min(min_energy, energy);
+  }
+
+  // Build the linear formulation of the energy.
+  for (int i = 0; i < left_encoding.size(); ++i) {
+    const IntegerValue left_value = left_encoding[i].value;
+    const IntegerValue right_value = right_encoding[i].value;
+    const IntegerValue energy = (left.coeff * left_value + left.constant) *
+                                (right.coeff * right_value + right.constant);
+    if (energy == min_energy) continue;
+    DCHECK_GT(energy, min_energy);
+    const Literal lit = left_encoding[i].literal;
+    DCHECK_EQ(lit, right_encoding[i].literal);
+
+    if (!builder->AddLiteralTerm(lit, energy - min_energy)) {
+      return false;
+    }
+  }
+  builder->AddConstant(min_energy);
+  return true;
 }
 
 }  // namespace sat

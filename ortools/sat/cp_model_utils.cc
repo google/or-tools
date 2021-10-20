@@ -128,31 +128,18 @@ IndexReferences GetReferencesUsedByConstraint(const ConstraintProto& ct) {
       AddIndices(ct.automaton().vars(), &output.variables);
       break;
     case ConstraintProto::ConstraintCase::kInterval:
-      if (ct.interval().has_start_view()) {
-        AddIndices(ct.interval().start_view().vars(), &output.variables);
-      } else {
-        output.variables.push_back(ct.interval().start());
-      }
-      if (ct.interval().has_size_view()) {
-        AddIndices(ct.interval().size_view().vars(), &output.variables);
-      } else {
-        output.variables.push_back(ct.interval().size());
-      }
-      if (ct.interval().has_end_view()) {
-        AddIndices(ct.interval().end_view().vars(), &output.variables);
-      } else {
-        output.variables.push_back(ct.interval().end());
-      }
+      AddIndices(ct.interval().start().vars(), &output.variables);
+      AddIndices(ct.interval().size().vars(), &output.variables);
+      AddIndices(ct.interval().end().vars(), &output.variables);
       break;
     case ConstraintProto::ConstraintCase::kNoOverlap:
       break;
     case ConstraintProto::ConstraintCase::kNoOverlap2D:
       break;
     case ConstraintProto::ConstraintCase::kCumulative:
-      output.variables.push_back(ct.cumulative().capacity());
-      AddIndices(ct.cumulative().demands(), &output.variables);
-      for (const LinearExpressionProto& lin : ct.cumulative().energies()) {
-        AddIndices(lin.vars(), &output.variables);
+      AddIndices(ct.cumulative().capacity().vars(), &output.variables);
+      for (const LinearExpressionProto& demand : ct.cumulative().demands()) {
+        AddIndices(demand.vars(), &output.variables);
       }
       break;
     case ConstraintProto::ConstraintCase::CONSTRAINT_NOT_SET:
@@ -319,32 +306,19 @@ void ApplyToAllVariableIndices(const std::function<void(int*)>& f,
       APPLY_TO_REPEATED_FIELD(automaton, vars);
       break;
     case ConstraintProto::ConstraintCase::kInterval:
-      if (ct->interval().has_start_view()) {
-        APPLY_TO_REPEATED_FIELD(interval, start_view()->mutable_vars);
-      } else {
-        APPLY_TO_SINGULAR_FIELD(interval, start);
-      }
-      if (ct->interval().has_size_view()) {
-        APPLY_TO_REPEATED_FIELD(interval, size_view()->mutable_vars);
-      } else {
-        APPLY_TO_SINGULAR_FIELD(interval, size);
-      }
-      if (ct->interval().has_end_view()) {
-        APPLY_TO_REPEATED_FIELD(interval, end_view()->mutable_vars);
-      } else {
-        APPLY_TO_SINGULAR_FIELD(interval, end);
-      }
+      APPLY_TO_REPEATED_FIELD(interval, start()->mutable_vars);
+      APPLY_TO_REPEATED_FIELD(interval, size()->mutable_vars);
+      APPLY_TO_REPEATED_FIELD(interval, end()->mutable_vars);
       break;
     case ConstraintProto::ConstraintCase::kNoOverlap:
       break;
     case ConstraintProto::ConstraintCase::kNoOverlap2D:
       break;
     case ConstraintProto::ConstraintCase::kCumulative:
-      APPLY_TO_SINGULAR_FIELD(cumulative, capacity);
-      APPLY_TO_REPEATED_FIELD(cumulative, demands);
-      for (int i = 0; i < ct->cumulative().energies_size(); ++i) {
+      APPLY_TO_REPEATED_FIELD(cumulative, capacity()->mutable_vars);
+      for (int i = 0; i < ct->cumulative().demands_size(); ++i) {
         for (int& r :
-             *ct->mutable_cumulative()->mutable_energies(i)->mutable_vars()) {
+             *ct->mutable_cumulative()->mutable_demands(i)->mutable_vars()) {
           f(&r);
         }
       }

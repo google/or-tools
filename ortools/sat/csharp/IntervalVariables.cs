@@ -24,9 +24,9 @@ namespace Google.OrTools.Sat
             model_ = model;
             index_ = model.Constraints.Count;
             interval_ = new IntervalConstraintProto();
-            interval_.StartView = start;
-            interval_.SizeView = size;
-            interval_.EndView = end;
+            interval_.Start = start;
+            interval_.Size = size;
+            interval_.End = end;
 
             ConstraintProto ct = new ConstraintProto();
             ct.Interval = interval_;
@@ -41,9 +41,9 @@ namespace Google.OrTools.Sat
             model_ = model;
             index_ = model.Constraints.Count;
             interval_ = new IntervalConstraintProto();
-            interval_.StartView = start;
-            interval_.SizeView = size;
-            interval_.EndView = end;
+            interval_.Start = start;
+            interval_.Size = size;
+            interval_.End = end;
 
             ConstraintProto ct = new ConstraintProto();
             ct.Interval = interval_;
@@ -58,19 +58,19 @@ namespace Google.OrTools.Sat
 
         public LinearExpr StartExpr()
         {
-            return LinearExpr.RebuildLinearExprFromLinearExpressionProto(interval_.StartView, model_);
+            return LinearExpr.RebuildLinearExprFromLinearExpressionProto(interval_.Start, model_);
         }
 
         public LinearExpr SizeExpr()
         {
-            return LinearExpr.RebuildLinearExprFromLinearExpressionProto(interval_.SizeView, model_);
+            return LinearExpr.RebuildLinearExprFromLinearExpressionProto(interval_.Size, model_);
         }
-        
+
         public LinearExpr EndExpr()
         {
-            return LinearExpr.RebuildLinearExprFromLinearExpressionProto(interval_.EndView, model_);
+            return LinearExpr.RebuildLinearExprFromLinearExpressionProto(interval_.End, model_);
         }
-        
+
         public IntervalConstraintProto Proto
         {
             get {

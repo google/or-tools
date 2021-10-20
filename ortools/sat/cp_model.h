@@ -598,15 +598,7 @@ class NoOverlap2DConstraint : public Constraint {
 class CumulativeConstraint : public Constraint {
  public:
   /// Adds a pair (interval, demand) to the constraint.
-  void AddDemand(IntervalVar interval, IntVar demand);
-
-  /// Adds a demand with a linear expression representing the energy.
-  /// The constraint will check that:
-  ///     energy == size(interval) * demand
-  /// This extra information is redundant, and helps the linear relaxation of
-  /// the problem.
-  void AddDemandWithEnergy(IntervalVar interval, IntVar demand,
-                           const LinearExpr& energy);
+  void AddDemand(IntervalVar interval, LinearExpr demand);
 
  private:
   friend class CpModelBuilder;
@@ -874,7 +866,7 @@ class CpModelBuilder {
    * It ensures that for any integer point, the sum of the demands of the
    * intervals containing that point does not exceed the capacity.
    */
-  CumulativeConstraint AddCumulative(IntVar capacity);
+  CumulativeConstraint AddCumulative(LinearExpr capacity);
 
   /// Adds a linear minimization objective.
   void Minimize(const LinearExpr& expr);

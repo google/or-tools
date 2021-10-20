@@ -28,9 +28,9 @@ public final class IntervalVar {
     ConstraintProto.Builder ct = modelBuilder.addConstraintsBuilder();
     ct.setName(name);
     this.intervalBuilder = ct.getIntervalBuilder();
-    this.intervalBuilder.setStartView(startBuilder);
-    this.intervalBuilder.setSizeView(sizeBuilder);
-    this.intervalBuilder.setEndView(endBuilder);
+    this.intervalBuilder.setStart(startBuilder);
+    this.intervalBuilder.setSize(sizeBuilder);
+    this.intervalBuilder.setEnd(endBuilder);
   }
 
   IntervalVar(CpModelProto.Builder builder, LinearExpressionProto.Builder startBuilder,
@@ -42,9 +42,9 @@ public final class IntervalVar {
     ct.setName(name);
     ct.addEnforcementLiteral(isPresentIndex);
     this.intervalBuilder = ct.getIntervalBuilder();
-    this.intervalBuilder.setStartView(startBuilder);
-    this.intervalBuilder.setSizeView(sizeBuilder);
-    this.intervalBuilder.setEndView(endBuilder);
+    this.intervalBuilder.setStart(startBuilder);
+    this.intervalBuilder.setSize(sizeBuilder);
+    this.intervalBuilder.setEnd(endBuilder);
   }
 
   @Override
@@ -69,18 +69,17 @@ public final class IntervalVar {
 
   /** Returns the start expression. */
   public LinearExpr getStartExpr() {
-    return LinearExpr.rebuildFromLinearExpressionProto(
-        intervalBuilder.getStartView(), modelBuilder);
+    return LinearExpr.rebuildFromLinearExpressionProto(intervalBuilder.getStart(), modelBuilder);
   }
 
   /** Returns the size expression. */
   public LinearExpr getSizeExpr() {
-    return LinearExpr.rebuildFromLinearExpressionProto(intervalBuilder.getSizeView(), modelBuilder);
+    return LinearExpr.rebuildFromLinearExpressionProto(intervalBuilder.getSize(), modelBuilder);
   }
 
   /** Returns the size expression. */
   public LinearExpr getEndExpr() {
-    return LinearExpr.rebuildFromLinearExpressionProto(intervalBuilder.getEndView(), modelBuilder);
+    return LinearExpr.rebuildFromLinearExpressionProto(intervalBuilder.getEnd(), modelBuilder);
   }
 
   private final CpModelProto.Builder modelBuilder;

@@ -45,11 +45,6 @@ LbTreeSearch::LbTreeSearch(Model* model)
                         model->GetOrCreate<SearchHeuristics>()->fixed_search});
 }
 
-bool LbTreeSearch::NodeImprovesLowerBound(const Node& node) {
-  return node.objective_lb >
-         integer_trail_->LevelZeroLowerBound(objective_var_);
-}
-
 SatSolver::Status LbTreeSearch::Search(
     const std::function<void()>& feasible_solution_observer) {
   if (!sat_solver_->RestoreSolverToAssumptionLevel()) {
@@ -70,8 +65,45 @@ SatSolver::Status LbTreeSearch::Search(
   const int kNumRestart = 10;
 
   while (!time_limit_->LimitReached() && !shared_response_->ProblemIsSolved()) {
+    // This is the current bound we try to improve. We cache it here to avoid
+    // getting the lock many times and it is also easier to follow the code if
+    // this is assumed constant for one iteration.
+    current_objective_lb_ = shared_response_->GetInnerObjectiveLowerBound();
+
+    // Propagate upward in the tree the new objective lb.
+    if (!current_branch_.empty()) {
+      for (int n = current_branch_.size() - 1; n > 0; --n) {
+        const int child_index = current_branch_[n];
+        const int parent_index = current_branch_[n - 1];
+        const Node& child = nodes_[child_index];
+        Node& parent = nodes_[parent_index];
+        if (parent.true_child == child_index) {
+          if (child.objective_lb == parent.true_objective) break;
+          parent.UpdateTrueObjective(child.objective_lb);
+
+        } else {
+          CHECK_EQ(parent.false_child, child_index);
+          if (child.objective_lb == parent.false_objective) break;
+          parent.UpdateFalseObjective(child.objective_lb);
+        }
+      }
+
+      // If we reached the root, update global shared objective lb.
+      if (nodes_[current_branch_[0]].objective_lb > current_objective_lb_) {
+        shared_response_->UpdateInnerObjectiveBounds(
+            absl::StrCat("lb_tree_search #nodes:", nodes_.size()),
+            nodes_[current_branch_[0]].objective_lb,
+            integer_trail_->UpperBound(objective_var_));
+        current_objective_lb_ = nodes_[current_branch_[0]].objective_lb;
+      }
+    }
+
     // Each time we are back here, we bump the activities of the variable that
     // are part of the objective lower bound reason.
+    //
+    // Note that this is why we prefer not to increase the lower zero lower
+    // bound of objective_var_ with the tree root lower bound, so we can exploit
+    // reason for objective increase more.
     //
     // TODO(user): This is slightly different than bumping each time we
     // push a decision that result in an LB increase, I am not sure why.
@@ -140,10 +172,6 @@ SatSolver::Status LbTreeSearch::Search(
       ++num_restart;
     }
 
-    if (!search_helper_->BeforeTakingDecision()) {
-      return sat_solver_->UnsatStatus();
-    }
-
     // Backtrack if needed.
     //
     // Our algorithm stop exploring a branch as soon as its objective lower
@@ -152,21 +180,11 @@ SatSolver::Status LbTreeSearch::Search(
     //
     // TODO(user): If we remember how far we can backjump for both true/false
     // branch, we could be more efficient.
-    while (current_branch_.size() > sat_solver_->CurrentDecisionLevel() + 1 ||
-           (current_branch_.size() > 1 &&
-            NodeImprovesLowerBound(nodes_[current_branch_.back()]))) {
-      const int child = current_branch_.back();
+    while (
+        current_branch_.size() > sat_solver_->CurrentDecisionLevel() + 1 ||
+        (current_branch_.size() > 1 &&
+         nodes_[current_branch_.back()].objective_lb > current_objective_lb_)) {
       current_branch_.pop_back();
-
-      // By construction, we never backtrack over the root node here.
-      CHECK(!current_branch_.empty());
-      Node& node = nodes_[current_branch_.back()];
-      if (node.true_child == child) {
-        node.UpdateTrueObjective(nodes_[child].objective_lb);
-      } else {
-        CHECK_EQ(node.false_child, child);
-        node.UpdateFalseObjective(nodes_[child].objective_lb);
-      }
     }
 
     // Backtrack the solver.
@@ -176,33 +194,20 @@ SatSolver::Status LbTreeSearch::Search(
       return sat_solver_->UnsatStatus();
     }
 
-    // If we are back to the root node, update the global objective LB.
-    if (sat_solver_->CurrentDecisionLevel() == 0 && !current_branch_.empty()) {
-      if (NodeImprovesLowerBound(nodes_[current_branch_[0]])) {
-        shared_response_->UpdateInnerObjectiveBounds(
-            absl::StrCat("lb_tree_search #nodes:", nodes_.size()),
-            nodes_[current_branch_[0]].objective_lb,
-            integer_trail_->UpperBound(objective_var_));
-        if (!integer_trail_->Enqueue(
-                IntegerLiteral::GreaterOrEqual(
-                    objective_var_, nodes_[current_branch_[0]].objective_lb),
-                {}, {})) {
-          return SatSolver::INFEASIBLE;
-        }
-        if (!sat_solver_->FinishPropagation()) {
-          return sat_solver_->UnsatStatus();
-        }
-      }
+    // This will import other workers bound if we are back to level zero.
+    if (!search_helper_->BeforeTakingDecision()) {
+      return sat_solver_->UnsatStatus();
     }
 
-    // Follow the branch with lowest objective.
+    // Dive: Follow the branch with lowest objective.
+    // Note that we do not creates new nodes here.
     while (current_branch_.size() == sat_solver_->CurrentDecisionLevel() + 1) {
+      // Note that node.objective_lb could be worse than the current best
+      // bound.
       Node& node = nodes_[current_branch_.back()];
-      node.objective_lb = std::max(node.objective_lb,
-                                   integer_trail_->LowerBound(objective_var_));
-      node.UpdateTrueObjective(node.objective_lb);
-      node.UpdateFalseObjective(node.objective_lb);
-      if (NodeImprovesLowerBound(node)) break;
+      node.UpdateTrueObjective(integer_trail_->LowerBound(objective_var_));
+      node.UpdateFalseObjective(integer_trail_->LowerBound(objective_var_));
+      if (node.objective_lb > current_objective_lb_) break;
 
       // This will be set to the next index.
       int n;
@@ -234,7 +239,7 @@ SatSolver::Status LbTreeSearch::Search(
             nodes_[parent].false_child = n;
             nodes_[parent].UpdateFalseObjective(new_lb);
           }
-          if (NodeImprovesLowerBound(nodes_[parent])) break;
+          if (nodes_[parent].objective_lb > current_objective_lb_) break;
         }
       } else {
         // If both lower bound are the same, we pick a random sub-branch.
@@ -243,13 +248,9 @@ SatSolver::Status LbTreeSearch::Search(
           choose_true = absl::Bernoulli(*random_, 0.5);
         }
         if (choose_true) {
-          DCHECK_EQ(node.true_objective,
-                    integer_trail_->LevelZeroLowerBound(objective_var_));
           n = node.true_child;
           search_helper_->TakeDecision(node.literal);
         } else {
-          DCHECK_EQ(node.false_objective,
-                    integer_trail_->LevelZeroLowerBound(objective_var_));
           n = node.false_child;
           search_helper_->TakeDecision(node.literal.Negated());
         }
@@ -264,16 +265,15 @@ SatSolver::Status LbTreeSearch::Search(
           break;
         }
 
+        // Update the proper field and abort the dive if we crossed the
+        // threshold.
+        const IntegerValue lb = integer_trail_->LowerBound(objective_var_);
         if (choose_true) {
-          node.UpdateTrueObjective(integer_trail_->LowerBound(objective_var_));
+          node.UpdateTrueObjective(lb);
         } else {
-          node.UpdateFalseObjective(integer_trail_->LowerBound(objective_var_));
+          node.UpdateFalseObjective(lb);
         }
-        if (NodeImprovesLowerBound(node)) break;
-        if (integer_trail_->LowerBound(objective_var_) >
-            integer_trail_->LevelZeroLowerBound(objective_var_)) {
-          break;
-        }
+        if (lb > current_objective_lb_) break;
       }
 
       if (n < nodes_.size()) {
@@ -283,10 +283,8 @@ SatSolver::Status LbTreeSearch::Search(
       }
     }
 
-    // If conflict or the objective lower bound increased, we will backtrack.
-    if (current_branch_.size() != sat_solver_->CurrentDecisionLevel() ||
-        (!current_branch_.empty() &&
-         NodeImprovesLowerBound(nodes_[current_branch_.back()]))) {
+    // If a conflict occurred, we will backtrack.
+    if (current_branch_.size() != sat_solver_->CurrentDecisionLevel()) {
       continue;
     }
 
@@ -303,8 +301,7 @@ SatSolver::Status LbTreeSearch::Search(
     // Another difference is that if the search is done and we have a feasible
     // solution, we will not report it because of this test (except if we are
     // at the optimal).
-    if (integer_trail_->LowerBound(objective_var_) >
-        integer_trail_->LevelZeroLowerBound(objective_var_)) {
+    if (integer_trail_->LowerBound(objective_var_) > current_objective_lb_) {
       continue;
     }
 

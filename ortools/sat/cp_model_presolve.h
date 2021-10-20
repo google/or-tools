@@ -152,9 +152,6 @@ class CpModelPresolver {
 
   bool DetectAndProcessOneSidedLinearConstraint(int c, ConstraintProto* ct);
 
-  // Scheduling helpers.
-  void AddLinearConstraintFromInterval(const ConstraintProto& ct);
-
   // SetPPC is short for set packing, partitioning and covering constraints.
   // These are sum of booleans <=, = and >= 1 respectively.
   bool ProcessSetPPC();

@@ -311,34 +311,26 @@ std::vector<int> NeighborhoodGeneratorHelper::GetActiveIntervals(
     // We filter out fixed intervals. Because of presolve, if there is an
     // enforcement literal, it cannot be fixed.
     if (interval_ct.enforcement_literal().empty()) {
-      if (interval_ct.interval().has_start_view()) {
-        bool is_constant = true;
-        for (const int v : interval_ct.interval().start_view().vars()) {
-          if (!IsConstant(v)) {
-            is_constant = false;
-            break;
-          }
-        }
-        for (const int v : interval_ct.interval().size_view().vars()) {
-          if (!IsConstant(v)) {
-            is_constant = false;
-            break;
-          }
-        }
-        for (const int v : interval_ct.interval().end_view().vars()) {
-          if (!IsConstant(v)) {
-            is_constant = false;
-            break;
-          }
-        }
-        if (is_constant) continue;
-      } else {
-        if (IsConstant(PositiveRef(interval_ct.interval().start())) &&
-            IsConstant(PositiveRef(interval_ct.interval().size())) &&
-            IsConstant(PositiveRef(interval_ct.interval().end()))) {
-          continue;
+      bool is_constant = true;
+      for (const int v : interval_ct.interval().start().vars()) {
+        if (!IsConstant(v)) {
+          is_constant = false;
+          break;
         }
       }
+      for (const int v : interval_ct.interval().size().vars()) {
+        if (!IsConstant(v)) {
+          is_constant = false;
+          break;
+        }
+      }
+      for (const int v : interval_ct.interval().end().vars()) {
+        if (!IsConstant(v)) {
+          is_constant = false;
+          break;
+        }
+      }
+      if (is_constant) continue;
     }
 
     active_intervals.push_back(i);
@@ -822,11 +814,6 @@ Neighborhood ConstraintGraphNeighborhoodGenerator::Generate(
   std::vector<bool> added_constraints(num_model_constraints, false);
   std::vector<int> next_constraints;
 
-  // Start by a random constraint.
-  next_constraints.push_back(
-      absl::Uniform<int>(random, 0, num_model_constraints));
-  added_constraints[next_constraints.back()] = true;
-
   std::vector<int> random_variables;
   {
     absl::ReaderMutexLock graph_lock(&helper_.graph_mutex_);
@@ -834,6 +821,14 @@ Neighborhood ConstraintGraphNeighborhoodGenerator::Generate(
         helper_.ActiveVariablesWhileHoldingLock().size();
     const int target_size = std::ceil(difficulty * num_active_vars);
     CHECK_GT(target_size, 0);
+
+    // Start by a random constraint.
+    const int num_active_constraints = helper_.ConstraintToVar().size();
+    if (num_active_constraints != 0) {
+      next_constraints.push_back(
+          absl::Uniform<int>(random, 0, num_active_constraints));
+      added_constraints[next_constraints.back()] = true;
+    }
 
     while (relaxed_variables.size() < target_size) {
       // Stop if we have a full connected component.
@@ -847,7 +842,7 @@ Neighborhood ConstraintGraphNeighborhoodGenerator::Generate(
 
       // Add all the variable of this constraint and increase the set of next
       // possible constraints.
-      CHECK_LT(constraint_index, num_model_constraints);
+      CHECK_LT(constraint_index, num_active_constraints);
       random_variables = helper_.ConstraintToVar()[constraint_index];
       std::shuffle(random_variables.begin(), random_variables.end(), random);
       for (const int var : random_variables) {
@@ -870,30 +865,6 @@ Neighborhood ConstraintGraphNeighborhoodGenerator::Generate(
 }
 
 namespace {
-
-LinearExpressionProto GetStart(const IntervalConstraintProto& interval) {
-  if (interval.has_start_view()) return interval.start_view();
-  LinearExpressionProto result;
-  result.add_vars(interval.start());
-  result.add_coeffs(1);
-  return result;
-}
-
-LinearExpressionProto GetSize(const IntervalConstraintProto& interval) {
-  if (interval.has_size_view()) return interval.size_view();
-  LinearExpressionProto result;
-  result.add_vars(interval.size());
-  result.add_coeffs(1);
-  return result;
-}
-
-LinearExpressionProto GetEnd(const IntervalConstraintProto& interval) {
-  if (interval.has_end_view()) return interval.end_view();
-  LinearExpressionProto result;
-  result.add_vars(interval.end());
-  result.add_coeffs(1);
-  return result;
-}
 
 int64_t GetLinearExpressionValue(const LinearExpressionProto& expr,
                                  const CpSolverResponse& initial_solution) {
@@ -928,10 +899,10 @@ void AddPrecedenceConstraints(const absl::Span<const int> intervals,
     const ConstraintProto& interval_ct = helper.ModelProto().constraints(i);
 
     // TODO(user): we ignore size zero for now.
-    const LinearExpressionProto size_var = GetSize(interval_ct.interval());
+    const LinearExpressionProto& size_var = interval_ct.interval().size();
     if (GetLinearExpressionValue(size_var, initial_solution) == 0) continue;
 
-    const LinearExpressionProto start_var = GetStart(interval_ct.interval());
+    const LinearExpressionProto& start_var = interval_ct.interval().start();
     const int64_t start_value =
         GetLinearExpressionValue(start_var, initial_solution);
 
@@ -941,18 +912,21 @@ void AddPrecedenceConstraints(const absl::Span<const int> intervals,
 
   // Add precedence between the remaining intervals, forcing their order.
   for (int i = 0; i + 1 < start_interval_pairs.size(); ++i) {
-    const LinearExpressionProto before_start =
-        GetStart(helper.ModelProto()
-                     .constraints(start_interval_pairs[i].second)
-                     .interval());
-    const LinearExpressionProto before_end =
-        GetEnd(helper.ModelProto()
-                   .constraints(start_interval_pairs[i].second)
-                   .interval());
-    const LinearExpressionProto after_start =
-        GetStart(helper.ModelProto()
-                     .constraints(start_interval_pairs[i + 1].second)
-                     .interval());
+    const LinearExpressionProto& before_start =
+        helper.ModelProto()
+            .constraints(start_interval_pairs[i].second)
+            .interval()
+            .start();
+    const LinearExpressionProto& before_end =
+        helper.ModelProto()
+            .constraints(start_interval_pairs[i].second)
+            .interval()
+            .end();
+    const LinearExpressionProto& after_start =
+        helper.ModelProto()
+            .constraints(start_interval_pairs[i + 1].second)
+            .interval()
+            .start();
 
     // If the end was smaller we keep it that way, otherwise we just order the
     // start variables.
@@ -1080,7 +1054,7 @@ Neighborhood SchedulingTimeWindowNeighborhoodGenerator::Generate(
 
   for (const int i : active_intervals) {
     const ConstraintProto& interval_ct = helper_.ModelProto().constraints(i);
-    const LinearExpressionProto start_var = GetStart(interval_ct.interval());
+    const LinearExpressionProto& start_var = interval_ct.interval().start();
     const int64_t start_value =
         GetLinearExpressionValue(start_var, initial_solution);
     start_interval_pairs.push_back({start_value, i});

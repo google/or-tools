@@ -120,21 +120,17 @@ message ElementConstraintProto {
 // >= 0) but can also be referred by other constraints using this "interval"
 // concept.
 message IntervalConstraintProto {
-  int32 start = 1 [deprecated = true];
-  int32 end = 2 [deprecated = true];
-  int32 size = 3 [deprecated = true];
-
   // IMPORTANT: For now, this constraint do not enforce any relations on the
   // view, and a linear constraint must be added together with this to enforce
-  // enforcement => start_view + size_view == end_view. An enforcement =>
-  // size_view >=0 might also be needed.
+  // enforcement => start + size == end. An enforcement => size >=0 might also
+  // be needed.
   //
   // IMPORTANT: For now, we just support affine relation. We could easily
   // create an intermediate variable to support full linear expression, but this
   // isn't done currently.
-  LinearExpressionProto start_view = 4;
-  LinearExpressionProto end_view = 5;
-  LinearExpressionProto size_view = 6;
+  LinearExpressionProto start = 4;
+  LinearExpressionProto end = 5;
+  LinearExpressionProto size = 6;
 }
 
 // All the intervals (index of IntervalConstraintProto) must be disjoint. More
@@ -160,20 +156,10 @@ message NoOverlap2DConstraintProto {
 // a capacity. Note that intervals are interpreted as [start, end) and as
 // such intervals like [2,3) and [3,4) do not overlap for the point of view of
 // this constraint. Moreover, intervals of size zero are ignored.
-//
-// TODO(user,user): Switch to linear expression for demands and capacity.
 message CumulativeConstraintProto {
-  int32 capacity = 1;
+  LinearExpressionProto capacity = 1;
   repeated int32 intervals = 2;
-  repeated int32 demands = 3;  // Same size as intervals.
-
-  // EXPERIMENTAL: This optional field adds a redundant and more precise
-  // representation of the energy of a task (instead of the traditional demand *
-  // duration. This is only used by the linear relaxation, and it is only useful
-  // if both demand and durations are variable, and if the additional linear
-  // equation if more precise than the linear relaxation (McCormick equation) of
-  // the product demand * duration.
-  repeated LinearExpressionProto energies = 4;
+  repeated LinearExpressionProto demands = 3;  // Same size as intervals.
 }
 
 // Maintain a reservoir level within bounds. The water level starts at 0, and at

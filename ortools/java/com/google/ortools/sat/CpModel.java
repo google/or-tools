@@ -901,56 +901,66 @@ public final class CpModel {
    * present)) <= capacity}.
    *
    * @param intervals the list of intervals
-   * @param demands the list of demands for each interval. Each demand must be a positive integer
-   *     variable.
-   * @param capacity the maximum capacity of the cumulative constraint. It must be a positive
-   *     integer variable.
+   * @param demands the list of demands for each interval. Each demand must be a positive affine
+   *     expression.
+   * @param capacity the maximum capacity of the cumulative constraint. It must be a positive affine
+   *     expression.
    * @return an instance of the Constraint class
    */
-  public Constraint addCumulative(IntervalVar[] intervals, IntVar[] demands, IntVar capacity) {
+  public Constraint addCumulative(
+      IntervalVar[] intervals, LinearExpr[] demands, LinearExpr capacity) {
+    Constraint ct = new Constraint(modelBuilder);
+    CumulativeConstraintProto.Builder cumul = ct.getBuilder().getCumulativeBuilder();
+    for (IntervalVar interval : intervals) {
+      cumul.addIntervals(interval.getIndex());
+    }
+    for (LinearExpr d : demands) {
+      cumul.addDemands(getLinearExpressionProtoBuilderFromLinearExpr(d, false));
+    }
+    cumul.setCapacity(getLinearExpressionProtoBuilderFromLinearExpr(capacity, false));
+    return ct;
+  }
+
+  /**
+   * Adds {@code Cumulative(intervals, demands, capacity)} fixed capacity.
+   *
+   * @see #addCumulative(IntervalVar[], LinearExpr[], LinearExpr) AddCumulative
+   */
+  public Constraint addCumulative(IntervalVar[] intervals, LinearExpr[] demands, long capacity) {
+    Constraint ct = new Constraint(modelBuilder);
+    CumulativeConstraintProto.Builder cumul = ct.getBuilder().getCumulativeBuilder();
+    for (IntervalVar interval : intervals) {
+      cumul.addIntervals(interval.getIndex());
+    }
+    for (LinearExpr d : demands) {
+      cumul.addDemands(getLinearExpressionProtoBuilderFromLinearExpr(d, false));
+    }
+    cumul.getCapacityBuilder().setOffset(capacity);
+    return ct;
+  }
+
+  /**
+   * Adds {@code Cumulative(intervals, demands, capacity)} with integer variable demands.
+   *
+   * @see #addCumulative(IntervalVar[], LinearExpr[], LinearExpr) AddCumulative
+   */
+  public Constraint addCumulative(IntervalVar[] intervals, IntVar[] demands, LinearExpr capacity) {
     Constraint ct = new Constraint(modelBuilder);
     CumulativeConstraintProto.Builder cumul = ct.getBuilder().getCumulativeBuilder();
     for (IntervalVar interval : intervals) {
       cumul.addIntervals(interval.getIndex());
     }
     for (IntVar var : demands) {
-      cumul.addDemands(var.getIndex());
+      cumul.addDemandsBuilder().addVars(var.getIndex()).addCoeffs(1);
     }
-    cumul.setCapacity(capacity.getIndex());
+    cumul.setCapacity(getLinearExpressionProtoBuilderFromLinearExpr(capacity, false));
     return ct;
-  }
-
-  /**
-   * Adds {@code Cumulative(intervals, demands, capacity)} with fixed demands.
-   *
-   * @see #addCumulative(IntervalVar[], IntVar[], IntVar) AddCumulative
-   */
-  public Constraint addCumulative(IntervalVar[] intervals, long[] demands, IntVar capacity) {
-    Constraint ct = new Constraint(modelBuilder);
-    CumulativeConstraintProto.Builder cumul = ct.getBuilder().getCumulativeBuilder();
-    for (IntervalVar interval : intervals) {
-      cumul.addIntervals(interval.getIndex());
-    }
-    for (long d : demands) {
-      cumul.addDemands(indexFromConstant(d));
-    }
-    cumul.setCapacity(capacity.getIndex());
-    return ct;
-  }
-
-  /**
-   * Adds {@code Cumulative(intervals, demands, capacity)} with fixed demands.
-   *
-   * @see #addCumulative(IntervalVar[], IntVar[], IntVar) AddCumulative
-   */
-  public Constraint addCumulative(IntervalVar[] intervals, int[] demands, IntVar capacity) {
-    return addCumulative(intervals, toLongArray(demands), capacity);
   }
 
   /**
    * Adds {@code Cumulative(intervals, demands, capacity)} with fixed capacity.
    *
-   * @see #addCumulative(IntervalVar[], IntVar[], IntVar) AddCumulative
+   * @see #addCumulative(IntervalVar[], LinearExpr[], LinearExpr) AddCumulative
    */
   public Constraint addCumulative(IntervalVar[] intervals, IntVar[] demands, long capacity) {
     Constraint ct = new Constraint(modelBuilder);
@@ -959,10 +969,37 @@ public final class CpModel {
       cumul.addIntervals(interval.getIndex());
     }
     for (IntVar var : demands) {
-      cumul.addDemands(var.getIndex());
+      cumul.addDemandsBuilder().addVars(var.getIndex()).addCoeffs(1);
     }
-    cumul.setCapacity(indexFromConstant(capacity));
+    cumul.getCapacityBuilder().setOffset(capacity);
     return ct;
+  }
+
+  /**
+   * Adds {@code Cumulative(intervals, demands, capacity)} with fixed demands.
+   *
+   * @see #addCumulative(IntervalVar[], LinearExpr[], LinearExpr) AddCumulative
+   */
+  public Constraint addCumulative(IntervalVar[] intervals, long[] demands, LinearExpr capacity) {
+    Constraint ct = new Constraint(modelBuilder);
+    CumulativeConstraintProto.Builder cumul = ct.getBuilder().getCumulativeBuilder();
+    for (IntervalVar interval : intervals) {
+      cumul.addIntervals(interval.getIndex());
+    }
+    for (long d : demands) {
+      cumul.addDemandsBuilder().setOffset(d);
+    }
+    cumul.setCapacity(getLinearExpressionProtoBuilderFromLinearExpr(capacity, false));
+    return ct;
+  }
+
+  /**
+   * Adds {@code Cumulative(intervals, demands, capacity)} with fixed demands.
+   *
+   * @see #addCumulative(IntervalVar[], IntVar[], IntVar) AddCumulative
+   */
+  public Constraint addCumulative(IntervalVar[] intervals, int[] demands, LinearExpr capacity) {
+    return addCumulative(intervals, toLongArray(demands), capacity);
   }
 
   /**
@@ -977,9 +1014,9 @@ public final class CpModel {
       cumul.addIntervals(interval.getIndex());
     }
     for (long d : demands) {
-      cumul.addDemands(indexFromConstant(d));
+      cumul.addDemandsBuilder().setOffset(d);
     }
-    cumul.setCapacity(indexFromConstant(capacity));
+    cumul.getCapacityBuilder().setOffset(capacity);
     return ct;
   }
 
