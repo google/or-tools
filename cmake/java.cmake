@@ -132,19 +132,34 @@ configure_file(
   ${JAVA_NATIVE_PROJECT_PATH}/pom.xml
   @ONLY)
 
-add_custom_target(java_native_package
-  DEPENDS
-  ${JAVA_NATIVE_PROJECT_PATH}/pom.xml
-  COMMAND ${CMAKE_COMMAND} -E copy
-    $<TARGET_FILE:jniortools>
-    $<$<NOT:$<PLATFORM_ID:Windows>>:$<TARGET_SONAME_FILE:${PROJECT_NAME}>>
-    ${JAVA_RESOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
-  COMMAND ${MAVEN_EXECUTABLE} compile -B
-  COMMAND ${MAVEN_EXECUTABLE} package -B
-  COMMAND ${MAVEN_EXECUTABLE} install -B $<$<BOOL:${SKIP_GPG}>:-Dgpg.skip=true>
-  BYPRODUCTS
-    ${JAVA_NATIVE_PROJECT_PATH}/target
-  WORKING_DIRECTORY ${JAVA_NATIVE_PROJECT_PATH})
+if(BUILD_FAT_JAR)
+    add_custom_target(java_native_package
+      DEPENDS
+      ${JAVA_NATIVE_PROJECT_PATH}/pom.xml
+      COMMAND ${CMAKE_COMMAND} -E copy
+        $<TARGET_FILE:jniortools>
+        $<$<NOT:$<PLATFORM_ID:Windows>>:$<TARGET_SONAME_FILE:${PROJECT_NAME}>>
+        ${JAVA_RESOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
+      COMMAND ${MAVEN_EXECUTABLE} compile -B
+      COMMAND ${MAVEN_EXECUTABLE} package -B
+      BYPRODUCTS
+        ${JAVA_NATIVE_PROJECT_PATH}/target
+      WORKING_DIRECTORY ${JAVA_NATIVE_PROJECT_PATH})
+else()
+    add_custom_target(java_native_package
+      DEPENDS
+      ${JAVA_NATIVE_PROJECT_PATH}/pom.xml
+      COMMAND ${CMAKE_COMMAND} -E copy
+        $<TARGET_FILE:jniortools>
+        $<$<NOT:$<PLATFORM_ID:Windows>>:$<TARGET_SONAME_FILE:${PROJECT_NAME}>>
+        ${JAVA_RESOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
+      COMMAND ${MAVEN_EXECUTABLE} compile -B
+      COMMAND ${MAVEN_EXECUTABLE} package -B
+      COMMAND ${MAVEN_EXECUTABLE} install -B $<$<BOOL:${SKIP_GPG}>:-Dgpg.skip=true>
+      BYPRODUCTS
+        ${JAVA_NATIVE_PROJECT_PATH}/target
+      WORKING_DIRECTORY ${JAVA_NATIVE_PROJECT_PATH})
+endif()
 
 ##########################
 ##  Java Maven Package  ##
@@ -190,7 +205,7 @@ add_custom_target(java_package ALL
   ${JAVA_PROJECT_PATH}/pom.xml
   ${JAVA_SRCS}
   COMMAND ${MAVEN_EXECUTABLE} compile -B
-  COMMAND ${MAVEN_EXECUTABLE} package -B
+  COMMAND ${MAVEN_EXECUTABLE} package -B $<$<BOOL:${BUILD_FAT_JAR}>:-Dfatjar=true>
   COMMAND ${MAVEN_EXECUTABLE} install -B $<$<BOOL:${SKIP_GPG}>:-Dgpg.skip=true>
   BYPRODUCTS
     ${JAVA_PROJECT_PATH}/target

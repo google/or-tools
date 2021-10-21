@@ -139,6 +139,9 @@ message(STATUS "Build .Net examples: ${BUILD_DOTNET_EXAMPLES}")
 #message(STATUS "Build doxygen: ${BUILD_DOC}")
 
 if(BUILD_JAVA)
+  option(BUILD_FAT_JAR "Create single .jar with all dependencies (including native binaries)" OFF)
+  message(STATUS "Java build single fat .jar: ${BUILD_FAT_JAR}")
+
   option(SKIP_GPG "Disable GPG sign" ON)
   message(STATUS "Java disable gpg:sign: ${SKIP_GPG}")
 

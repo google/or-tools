@@ -155,6 +155,7 @@ cmake -S. -Bbuild -LH
 | | | |
 | `SKIP_GPG`  | OFF | Disable GPG sign<br>Only available if `BUILD_JAVA=ON` |
 | `UNIVERSAL_JAVA_PACKAGE`  | OFF | Build a multi platform package (i.e. `ortools-java` will depends on all native packages)<br>Only available if `BUILD_JAVA=ON` |
+| `BUILD_FAT_JAR`  | OFF | Build and install a single `.jar` Maven package that includes all maven dependencies, including the native package<br>Only available if `BUILD_JAVA=ON` |
 | | | |
 
 <a name="integration"></a>
