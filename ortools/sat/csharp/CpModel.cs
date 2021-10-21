@@ -415,29 +415,55 @@ namespace Google.OrTools.Sat
             return ct;
         }
 
-        public Constraint AddMinEquality(IntVar target, IEnumerable<IntVar> vars)
+        public Constraint AddMinEquality(LinearExpr target, IEnumerable<IntVar> vars)
         {
             Constraint ct = new Constraint(model_);
-            IntegerArgumentProto args = new IntegerArgumentProto();
+            LinearArgumentProto args = new LinearArgumentProto();
             foreach (IntVar var in vars)
             {
-                args.Vars.Add(var.Index);
+                args.Exprs.Add(GetLinearExpressionProto(var, /*negate=*/true));
             }
-            args.Target = target.Index;
-            ct.Proto.IntMin = args;
+            args.Target = GetLinearExpressionProto(target, /*negate=*/true);
+            ct.Proto.LinMax = args;
+            return ct;
+        }
+
+        public Constraint AddLinMinEquality(LinearExpr target, IEnumerable<LinearExpr> exprs)
+        {
+            Constraint ct = new Constraint(model_);
+            LinearArgumentProto args = new LinearArgumentProto();
+            foreach (LinearExpr expr in exprs)
+            {
+                args.Exprs.Add(GetLinearExpressionProto(expr, /*negate=*/true));
+            }
+            args.Target = GetLinearExpressionProto(target, /*negate=*/true);
+            ct.Proto.LinMax = args;
             return ct;
         }
 
         public Constraint AddMaxEquality(IntVar target, IEnumerable<IntVar> vars)
         {
             Constraint ct = new Constraint(model_);
-            IntegerArgumentProto args = new IntegerArgumentProto();
+            LinearArgumentProto args = new LinearArgumentProto();
             foreach (IntVar var in vars)
             {
-                args.Vars.Add(var.Index);
+                args.Exprs.Add(GetLinearExpressionProto(var));
             }
-            args.Target = target.Index;
-            ct.Proto.IntMax = args;
+            args.Target = GetLinearExpressionProto(target);
+            ct.Proto.LinMax = args;
+            return ct;
+        }
+
+        public Constraint AddLinMaxEquality(LinearExpr target, IEnumerable<LinearExpr> exprs)
+        {
+            Constraint ct = new Constraint(model_);
+            LinearArgumentProto args = new LinearArgumentProto();
+            foreach (LinearExpr expr in exprs)
+            {
+                args.Exprs.Add(GetLinearExpressionProto(expr));
+            }
+            args.Target = GetLinearExpressionProto(target);
+            ct.Proto.LinMax = args;
             return ct;
         }
 
@@ -452,14 +478,14 @@ namespace Google.OrTools.Sat
             return ct;
         }
 
-        public Constraint AddAbsEquality(IntVar target, IntVar var)
+        public Constraint AddAbsEquality(LinearExpr target, LinearExpr expr)
         {
             Constraint ct = new Constraint(model_);
-            IntegerArgumentProto args = new IntegerArgumentProto();
-            args.Vars.Add(var.Index);
-            args.Vars.Add(-var.Index - 1);
-            args.Target = target.Index;
-            ct.Proto.IntMax = args;
+            LinearArgumentProto args = new LinearArgumentProto();
+            args.Exprs.Add(GetLinearExpressionProto(expr));
+            args.Exprs.Add(GetLinearExpressionProto(expr, /*negate=*/true));
+            args.Target = GetLinearExpressionProto(target);
+            ct.Proto.LinMax = args;
             return ct;
         }
 
@@ -582,9 +608,11 @@ namespace Google.OrTools.Sat
             }
             foreach (D demand in demands)
             {
-                cumul.Demands.Add(GetOrCreateIndex(demand));
+                LinearExpr demandExpr = GetLinearExpr(demand);
+                cumul.Demands.Add(GetLinearExpressionProto(demandExpr));
             }
-            cumul.Capacity = GetOrCreateIndex(capacity);
+            LinearExpr capacityExpr = GetLinearExpr(capacity);
+            cumul.Capacity = GetLinearExpressionProto(capacityExpr);
             ct.Proto.Cumulative = cumul;
             return ct;
         }
@@ -791,17 +819,18 @@ namespace Google.OrTools.Sat
             throw new ArgumentException("Cannot convert argument to LinearExpr");
         }
 
-        private LinearExpressionProto GetLinearExpressionProto(LinearExpr expr)
+        private LinearExpressionProto GetLinearExpressionProto(LinearExpr expr, bool negate = false)
         {
             Dictionary<IntVar, long> dict = new Dictionary<IntVar, long>();
             long constant = LinearExpr.GetVarValueMap(expr, 1L, dict);
+            long mult = negate ? -1 : 1;
             LinearExpressionProto linear = new LinearExpressionProto();
             foreach (KeyValuePair<IntVar, long> term in dict)
             {
                 linear.Vars.Add(term.Key.Index);
-                linear.Coeffs.Add(term.Value);
+                linear.Coeffs.Add(term.Value * mult);
             }
-            linear.Offset = constant;
+            linear.Offset = constant * mult;
             return linear;
         }
 

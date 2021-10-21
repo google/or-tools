@@ -12,46 +12,56 @@
 // limitations under the License.
 
 // [START program]
+// Cryptarithmetic puzzle
+//
+// First attempt to solve equation CP + IS + FUN = TRUE
+// where each letter represents a unique digit.
+//
+// This problem has 72 different solutions in base 10.
+// [START import]
 using System;
 using Google.OrTools.Sat;
-
-// [START solution_printing]
-public class VarArraySolutionPrinter : CpSolverSolutionCallback
-{
-    public VarArraySolutionPrinter(IntVar[] variables)
-    {
-        variables_ = variables;
-    }
-
-    public override void OnSolutionCallback()
-    {
-        {
-            foreach (IntVar v in variables_)
-            {
-                Console.Write(String.Format("  {0}={1}", v.ShortString(), Value(v)));
-            }
-            Console.WriteLine();
-            solution_count_++;
-        }
-    }
-
-    public int SolutionCount()
-    {
-        return solution_count_;
-    }
-
-    private int solution_count_;
-    private IntVar[] variables_;
-}
-// [END solution_printing]
+// [END import]
 
 public class CpIsFunSat
 {
+    // [START solution_printer]
+    public class VarArraySolutionPrinter : CpSolverSolutionCallback
+    {
+        public VarArraySolutionPrinter(IntVar[] variables)
+        {
+            variables_ = variables;
+        }
+
+        public override void OnSolutionCallback()
+        {
+            {
+                foreach (IntVar v in variables_)
+                {
+                    Console.Write(String.Format("  {0}={1}", v.ShortString(), Value(v)));
+                }
+                Console.WriteLine();
+                solution_count_++;
+            }
+        }
+
+        public int SolutionCount()
+        {
+            return solution_count_;
+        }
+
+        private int solution_count_;
+        private IntVar[] variables_;
+    }
+    // [END solution_printer]
+
     // Solve the CP+IS+FUN==TRUE cryptarithm.
     static void Main()
     {
         // Constraint programming engine
+        // [START model]
         CpModel model = new CpModel();
+        // [START model]
 
         // [START variables]
         int kBase = 10;
@@ -90,11 +100,13 @@ public class CpIsFunSat
         solver.Solve(model, cb);
         // [END solve]
 
+        // [START statistics]
         Console.WriteLine("Statistics");
-        Console.WriteLine($"  - conflicts : {solver.NumConflicts()}");
-        Console.WriteLine($"  - branches  : {solver.NumBranches()}");
-        Console.WriteLine($"  - wall time : {solver.WallTime()} s");
-        Console.WriteLine($"  - number of solutions found: {cb.SolutionCount()}");
+        Console.WriteLine($"  conflicts : {solver.NumConflicts()}");
+        Console.WriteLine($"  branches  : {solver.NumBranches()}");
+        Console.WriteLine($"  wall time : {solver.WallTime()} s");
+        Console.WriteLine($"  number of solutions found: {cb.SolutionCount()}");
+        // [END statistics]
     }
 }
 // [END program]

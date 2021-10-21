@@ -20,6 +20,7 @@
 #include "ortools/glop/preprocessor.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
+#include "ortools/util/logging.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -149,6 +150,13 @@ class LPSolver {
   // TODO(user): Improve the correlation with the running time.
   double DeterministicTime() const;
 
+  // Returns the SolverLogger used during solves.
+  //
+  // Please note that EnableLogging() and SetLogToStdOut() are reset at the
+  // beginning of each solve based on parameters so setting them will have no
+  // effect.
+  SolverLogger& GetSolverLogger();
+
  private:
   // Resizes all the solution vectors to the given sizes.
   // This is used in case of error to make sure all the getter functions will
@@ -240,6 +248,8 @@ class LPSolver {
   // modified. It also allows for a nicer Solve() API with a const
   // LinearProgram& input.
   LinearProgram current_linear_program_;
+
+  SolverLogger logger_;
 
   // The revised simplex solver.
   std::unique_ptr<RevisedSimplex> revised_simplex_;

@@ -74,7 +74,6 @@ bool AppendFullEncodingRelaxation(IntegerVariable var, const Model& model,
 
 namespace {
 
-// TODO(user): Not super efficient.
 std::pair<IntegerValue, IntegerValue> GetMinAndMaxNotEncoded(
     IntegerVariable var,
     const absl::flat_hash_set<IntegerValue>& encoded_values,
@@ -95,16 +94,11 @@ std::pair<IntegerValue, IntegerValue> GetMinAndMaxNotEncoded(
   }
 
   IntegerValue max = kMinIntegerValue;
-  const auto& domain = (*domains)[var];
-  for (int i = domain.NumIntervals() - 1; i >= 0; --i) {
-    const ClosedInterval interval = domain[i];
-    for (IntegerValue v(interval.end); v >= interval.start; --v) {
-      if (!encoded_values.contains(v)) {
-        max = v;
-        break;
-      }
+  for (const int64_t v : (*domains)[NegationOf(var)].Values()) {
+    if (!encoded_values.contains(IntegerValue(-v))) {
+      max = IntegerValue(-v);
+      break;
     }
-    if (max != kMinIntegerValue) break;
   }
 
   return {min, max};
@@ -170,59 +164,89 @@ void CollectAffineExpressionWithSingleVariable(
 
 }  // namespace
 
-void AppendPartialEncodingRelaxation(IntegerVariable var, const Model& model,
-                                     LinearRelaxation* relaxation) {
+void AppendRelaxationForEqualityEncoding(IntegerVariable var,
+                                         const Model& model,
+                                         LinearRelaxation* relaxation,
+                                         int* num_tight, int* num_loose) {
   const auto* encoder = model.Get<IntegerEncoder>();
   const auto* integer_trail = model.Get<IntegerTrail>();
   if (encoder == nullptr || integer_trail == nullptr) return;
 
-  const std::vector<IntegerEncoder::ValueLiteralPair>& encoding =
-      encoder->PartialDomainEncoding(var);
-  if (encoding.empty()) return;
-
   std::vector<Literal> at_most_one_ct;
   absl::flat_hash_set<IntegerValue> encoded_values;
-  for (const auto value_literal : encoding) {
-    const Literal literal = value_literal.literal;
+  std::vector<ValueLiteralPair> encoding;
+  {
+    const std::vector<ValueLiteralPair>& initial_encoding =
+        encoder->PartialDomainEncoding(var);
+    if (initial_encoding.empty()) return;
+    for (const auto value_literal : initial_encoding) {
+      const Literal literal = value_literal.literal;
 
-    // Note that we skip pairs that do not have an Integer view.
-    if (encoder->GetLiteralView(literal) == kNoIntegerVariable &&
-        encoder->GetLiteralView(literal.Negated()) == kNoIntegerVariable) {
-      continue;
+      // Note that we skip pairs that do not have an Integer view.
+      if (encoder->GetLiteralView(literal) == kNoIntegerVariable &&
+          encoder->GetLiteralView(literal.Negated()) == kNoIntegerVariable) {
+        continue;
+      }
+
+      encoding.push_back(value_literal);
+      at_most_one_ct.push_back(literal);
+      encoded_values.insert(value_literal.value);
     }
-
-    at_most_one_ct.push_back(literal);
-    encoded_values.insert(value_literal.value);
   }
   if (encoded_values.empty()) return;
 
-  // TODO(user): The PartialDomainEncoding() function automatically exclude
-  // values that are no longer in the initial domain, so we could be a bit
-  // tighter here. That said, this is supposed to be called just after the
-  // presolve, so it shouldn't really matter.
-  const auto pair = GetMinAndMaxNotEncoded(var, encoded_values, model);
-  if (pair.first == kMaxIntegerValue) {
-    // TODO(user): try to remove the duplication with
-    // AppendFullEncodingRelaxation()? actually I am not sure we need the other
-    // function since this one is just more general.
-    LinearConstraintBuilder exactly_one_ct(&model, IntegerValue(1),
-                                           IntegerValue(1));
-    LinearConstraintBuilder encoding_ct(&model, IntegerValue(0),
-                                        IntegerValue(0));
+  // TODO(user): PartialDomainEncoding() filter pair corresponding to literal
+  // set to false, however the initial variable Domain is not always updated. As
+  // a result, these min/max can be larger than in reality. Try to fix this even
+  // if in practice this is a rare occurence, as the presolve should have
+  // propagated most of what we can.
+  const auto [min_not_encoded, max_not_encoded] =
+      GetMinAndMaxNotEncoded(var, encoded_values, model);
+
+  // This means that there are no non-encoded value and we have a full encoding.
+  // We substract the minimum value to reduce its size.
+  if (min_not_encoded == kMaxIntegerValue) {
+    const IntegerValue rhs = encoding[0].value;
+    LinearConstraintBuilder at_least_one(&model, IntegerValue(1),
+                                         kMaxIntegerValue);
+    LinearConstraintBuilder encoding_ct(&model, rhs, rhs);
     encoding_ct.AddTerm(var, IntegerValue(1));
     for (const auto value_literal : encoding) {
       const Literal lit = value_literal.literal;
-      CHECK(exactly_one_ct.AddLiteralTerm(lit, IntegerValue(1)));
-      CHECK(
-          encoding_ct.AddLiteralTerm(lit, IntegerValue(-value_literal.value)));
+      CHECK(at_least_one.AddLiteralTerm(lit, IntegerValue(1)));
+
+      const IntegerValue delta = value_literal.value - rhs;
+      if (delta != IntegerValue(0)) {
+        CHECK_GE(delta, IntegerValue(0));
+        CHECK(encoding_ct.AddLiteralTerm(lit, -delta));
+      }
     }
-    relaxation->linear_constraints.push_back(exactly_one_ct.Build());
+
+    relaxation->linear_constraints.push_back(at_least_one.Build());
     relaxation->linear_constraints.push_back(encoding_ct.Build());
+    relaxation->at_most_ones.push_back(at_most_one_ct);
+    ++*num_tight;
     return;
   }
 
-  // min + sum li * (xi - min) <= var.
-  const IntegerValue d_min = pair.first;
+  // In this special case, the two constraints below can be merged into an
+  // equality: var = rhs + sum l_i * (value_i - rhs).
+  if (min_not_encoded == max_not_encoded) {
+    const IntegerValue rhs = min_not_encoded;
+    LinearConstraintBuilder encoding_ct(&model, rhs, rhs);
+    encoding_ct.AddTerm(var, IntegerValue(1));
+    for (const auto value_literal : encoding) {
+      CHECK(encoding_ct.AddLiteralTerm(value_literal.literal,
+                                       rhs - value_literal.value));
+    }
+    relaxation->at_most_ones.push_back(at_most_one_ct);
+    relaxation->linear_constraints.push_back(encoding_ct.Build());
+    ++*num_tight;
+    return;
+  }
+
+  // min + sum l_i * (value_i - min) <= var.
+  const IntegerValue d_min = min_not_encoded;
   LinearConstraintBuilder lower_bound_ct(&model, d_min, kMaxIntegerValue);
   lower_bound_ct.AddTerm(var, IntegerValue(1));
   for (const auto value_literal : encoding) {
@@ -230,8 +254,8 @@ void AppendPartialEncodingRelaxation(IntegerVariable var, const Model& model,
                                         d_min - value_literal.value));
   }
 
-  // var <= max + sum li * (xi - max).
-  const IntegerValue d_max = pair.second;
+  // var <= max + sum l_i * (value_i - max).
+  const IntegerValue d_max = max_not_encoded;
   LinearConstraintBuilder upper_bound_ct(&model, kMinIntegerValue, d_max);
   upper_bound_ct.AddTerm(var, IntegerValue(1));
   for (const auto value_literal : encoding) {
@@ -243,6 +267,7 @@ void AppendPartialEncodingRelaxation(IntegerVariable var, const Model& model,
   relaxation->at_most_ones.push_back(at_most_one_ct);
   relaxation->linear_constraints.push_back(lower_bound_ct.Build());
   relaxation->linear_constraints.push_back(upper_bound_ct.Build());
+  ++*num_loose;
 }
 
 void AppendPartialGreaterThanEncodingRelaxation(IntegerVariable var,
@@ -662,42 +687,8 @@ void AppendRoutesRelaxation(const ConstraintProto& ct, Model* model,
   relaxation->linear_constraints.push_back(zero_node_balance_lc.Build());
 }
 
-void AppendIntervalRelaxation(const ConstraintProto& ct, Model* model,
-                              LinearRelaxation* relaxation) {
-  // If the interval is using views, then the linear equation is already
-  // present in the model.
-  if (ct.interval().has_start_view()) return;
-
-  auto* mapping = model->GetOrCreate<CpModelMapping>();
-  const IntegerVariable start = mapping->Integer(ct.interval().start());
-  const IntegerVariable size = mapping->Integer(ct.interval().size());
-  const IntegerVariable end = mapping->Integer(ct.interval().end());
-  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-  const bool size_is_fixed = integer_trail->IsFixed(size);
-  const IntegerValue rhs =
-      size_is_fixed ? -integer_trail->LowerBound(size) : IntegerValue(0);
-  LinearConstraintBuilder lc(model, rhs, rhs);
-  lc.AddTerm(start, IntegerValue(1));
-  if (!size_is_fixed) {
-    lc.AddTerm(size, IntegerValue(1));
-  }
-  lc.AddTerm(end, IntegerValue(-1));
-  if (HasEnforcementLiteral(ct)) {
-    LinearConstraint tmp_lc = lc.Build();
-    LinearExpression expr;
-    expr.coeffs = tmp_lc.coeffs;
-    expr.vars = tmp_lc.vars;
-    AppendEnforcedLinearExpression(mapping->Literals(ct.enforcement_literal()),
-                                   expr, tmp_lc.ub, tmp_lc.ub, *model,
-                                   relaxation);
-  } else {
-    relaxation->linear_constraints.push_back(lc.Build());
-  }
-}
-
-// TODO(user): Use affine demand.
 void AddCumulativeRelaxation(const std::vector<IntervalVariable>& intervals,
-                             const std::vector<IntegerVariable>& demands,
+                             const std::vector<AffineExpression>& demands,
                              const std::vector<LinearExpression>& energies,
                              IntegerValue capacity_upper_bound, Model* model,
                              LinearRelaxation* relaxation) {
@@ -765,7 +756,8 @@ void AddCumulativeRelaxation(const std::vector<IntervalVariable>& intervals,
     if (!helper->IsOptional(i)) {
       if (demand_is_fixed) {
         lc.AddTerm(helper->Sizes()[i], demand_lower_bound);
-      } else if (!helper->SizeIsFixed(i) && !energies.empty()) {
+      } else if (!helper->SizeIsFixed(i) &&
+                 (!energies[i].vars.empty() || energies[i].offset != -1)) {
         // We prefer the energy additional info instead of the McCormick
         // relaxation.
         lc.AddLinearExpression(energies[i]);
@@ -783,6 +775,33 @@ void AddCumulativeRelaxation(const std::vector<IntervalVariable>& intervals,
   relaxation->linear_constraints.push_back(lc.Build());
 }
 
+LinearExpression NotLinearizedEnergy() {
+  LinearExpression result;
+  result.offset = -1;
+  return result;
+}
+
+void FillEnergies(const std::vector<AffineExpression>& demands,
+                  const std::vector<AffineExpression>& sizes, Model* model,
+                  std::vector<LinearExpression>* energies) {
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  for (int i = 0; i < demands.size(); ++i) {
+    LinearConstraintBuilder builder(model);
+    if (DetectLinearEncodingOfProducts(demands[i], sizes[i], model, &builder)) {
+      VLOG(3) << "linearized energy: "
+              << builder.BuildExpression().DebugString();
+      energies->push_back(builder.BuildExpression());
+    } else {
+      VLOG(2) << "Product is not linearizable: demands "
+              << demands[i].DebugString() << " with var domain "
+              << integer_trail->InitialVariableDomain(demands[i].var)
+              << ", size = " << sizes[i].DebugString() << " with var domain "
+              << integer_trail->InitialVariableDomain(sizes[i].var);
+      energies->push_back(NotLinearizedEnergy());
+    }
+  }
+}
+
 void AppendCumulativeRelaxation(const CpModelProto& model_proto,
                                 const ConstraintProto& ct, Model* model,
                                 LinearRelaxation* relaxation) {
@@ -790,21 +809,24 @@ void AppendCumulativeRelaxation(const CpModelProto& model_proto,
   if (HasEnforcementLiteral(ct)) return;
 
   auto* mapping = model->GetOrCreate<CpModelMapping>();
-  const std::vector<IntegerVariable> demands =
-      mapping->Integers(ct.cumulative().demands());
   std::vector<IntervalVariable> intervals =
       mapping->Intervals(ct.cumulative().intervals());
   const IntegerValue capacity_upper_bound =
       model->GetOrCreate<IntegerTrail>()->UpperBound(
-          mapping->Integer(ct.cumulative().capacity()));
-  std::vector<LinearExpression> energies;
-  energies.reserve(ct.cumulative().energies_size());
-  for (int i = 0; i < ct.cumulative().energies_size(); ++i) {
-    // Note: Cut generator requires all expressions to contain only positive
-    // vars.
-    energies.push_back(mapping->GetExprFromProto(ct.cumulative().energies(i)));
-  }
+          mapping->LoadAffineView(ct.cumulative().capacity()));
 
+  // Scan energies.
+  IntervalsRepository* intervals_repository =
+      model->GetOrCreate<IntervalsRepository>();
+
+  std::vector<LinearExpression> energies;
+  std::vector<AffineExpression> demands;
+  std::vector<AffineExpression> sizes;
+  for (int i = 0; i < demands.size(); ++i) {
+    demands.push_back(mapping->LoadAffineView(ct.cumulative().demands(i)));
+    sizes.push_back(intervals_repository->Size(intervals[i]));
+  }
+  FillEnergies(demands, sizes, model, &energies);
   AddCumulativeRelaxation(intervals, demands, energies, capacity_upper_bound,
                           model, relaxation);
 }
@@ -1092,12 +1114,6 @@ void TryToLinearizeConstraint(const CpModelProto& model_proto,
       AppendRoutesRelaxation(ct, model, relaxation);
       break;
     }
-    case ConstraintProto::ConstraintCase::kInterval: {
-      if (linearization_level > 1) {
-        AppendIntervalRelaxation(ct, model, relaxation);
-      }
-      break;
-    }
     case ConstraintProto::ConstraintCase::kNoOverlap: {
       if (linearization_level > 1) {
         AppendNoOverlapRelaxation(model_proto, ct, model, relaxation);
@@ -1225,18 +1241,23 @@ void AddCumulativeCutGenerator(const ConstraintProto& ct, Model* m,
   if (HasEnforcementLiteral(ct)) return;
   auto* mapping = m->GetOrCreate<CpModelMapping>();
 
-  const std::vector<IntegerVariable> demands =
-      mapping->Integers(ct.cumulative().demands());
   const std::vector<IntervalVariable> intervals =
       mapping->Intervals(ct.cumulative().intervals());
-  const IntegerVariable capacity = mapping->Integer(ct.cumulative().capacity());
+  const AffineExpression capacity =
+      mapping->LoadAffineView(ct.cumulative().capacity());
+
+  // Scan energies.
+  IntervalsRepository* intervals_repository =
+      m->GetOrCreate<IntervalsRepository>();
+
   std::vector<LinearExpression> energies;
-  energies.reserve(ct.cumulative().energies_size());
-  for (int i = 0; i < ct.cumulative().energies_size(); ++i) {
-    // Note: Cut generator requires all expressions to contain only positive
-    // vars.
-    energies.push_back(mapping->GetExprFromProto(ct.cumulative().energies(i)));
+  std::vector<AffineExpression> demands;
+  std::vector<AffineExpression> sizes;
+  for (int i = 0; i < intervals.size(); ++i) {
+    demands.push_back(mapping->LoadAffineView(ct.cumulative().demands(i)));
+    sizes.push_back(intervals_repository->Size(intervals[i]));
   }
+  FillEnergies(demands, sizes, m, &energies);
 
   relaxation->cut_generators.push_back(
       CreateCumulativeTimeTableCutGenerator(intervals, capacity, demands, m));
@@ -1390,59 +1411,55 @@ void TryToAddCutGenerators(const ConstraintProto& ct, int linearization_level,
 // value_i, then we can add a strong linear relaxation: var = sum l_i * value_i.
 //
 // This codes detect this and add the corresponding linear equations.
+//
+// TODO(user): We can do something similar with just an at most one, however
+// it is harder to detect that if all literal are false then none of the implied
+// value can be taken.
 void AppendElementEncodingRelaxation(const CpModelProto& model_proto, Model* m,
                                      LinearRelaxation* relaxation) {
   auto* implied_bounds = m->GetOrCreate<ImpliedBounds>();
-  auto* mapping = m->GetOrCreate<CpModelMapping>();
 
-  for (const ConstraintProto& ct : model_proto.constraints()) {
-    if (ct.constraint_case() != ConstraintProto::ConstraintCase::kExactlyOne) {
-      continue;
-    }
+  int num_exactly_one_elements = 0;
 
-    // Project the implied values onto each integer variable.
-    absl::flat_hash_map<IntegerVariable,
-                        std::vector<std::pair<Literal, IntegerValue>>>
-        var_to_literal_value_list;
-    for (const int l : ct.exactly_one().literals()) {
-      const Literal literal = mapping->Literal(l);
-      for (const auto& var_value : implied_bounds->GetImpliedValues(literal)) {
-        var_to_literal_value_list[var_value.first].push_back(
-            std::make_pair(literal, var_value.second));
-      }
-    }
-
-    // Search for variable fully covered by the literals of the exactly_one.
-    for (const auto& var_encoding : var_to_literal_value_list) {
-      if (var_encoding.second.size() < ct.exactly_one().literals_size()) {
-        continue;
-      }
-
+  for (const IntegerVariable var :
+       implied_bounds->GetElementEncodedVariables()) {
+    for (const auto& [index, literal_value_list] :
+         implied_bounds->GetElementEncodings(var)) {
       // We only want to deal with the case with duplicate values, because
       // otherwise, the target will be fully encoded, and this is already
       // covered by another function.
       IntegerValue min_value = kMaxIntegerValue;
       {
         absl::flat_hash_set<IntegerValue> values;
-        for (const auto& literal_value : var_encoding.second) {
-          min_value = std::min(min_value, literal_value.second);
-          values.insert(literal_value.second);
+        for (const auto& literal_value : literal_value_list) {
+          min_value = std::min(min_value, literal_value.value);
+          values.insert(literal_value.value);
         }
-        if (values.size() == ct.exactly_one().literals_size()) continue;
+        if (values.size() == literal_value_list.size()) continue;
       }
 
       LinearConstraintBuilder linear_encoding(m, -min_value, -min_value);
-      linear_encoding.AddTerm(var_encoding.first, IntegerValue(-1));
-      for (const auto& literal_value : var_encoding.second) {
-        const IntegerValue delta_min = literal_value.second - min_value;
+      linear_encoding.AddTerm(var, IntegerValue(-1));
+      for (const auto& [value, literal] : literal_value_list) {
+        const IntegerValue delta_min = value - min_value;
         if (delta_min != 0) {
-          if (!linear_encoding.AddLiteralTerm(literal_value.first, delta_min)) {
+          // If the term has no view, we abort.
+          if (!linear_encoding.AddLiteralTerm(literal, delta_min)) {
             return;
           }
         }
       }
+      ++num_exactly_one_elements;
       relaxation->linear_constraints.push_back(linear_encoding.Build());
     }
+  }
+
+  if (num_exactly_one_elements != 0) {
+    auto* logger = m->GetOrCreate<SolverLogger>();
+    SOLVER_LOG(logger,
+               "[ElementLinearRelaxation]"
+               " #from_exactly_one:",
+               num_exactly_one_elements);
   }
 }
 
@@ -1455,7 +1472,6 @@ void ComputeLinearRelaxation(const CpModelProto& model_proto,
   absl::flat_hash_set<int> used_integer_variable;
 
   auto* mapping = m->GetOrCreate<CpModelMapping>();
-  auto* encoder = m->GetOrCreate<IntegerEncoder>();
   for (const auto& ct : model_proto.constraints()) {
     TryToLinearizeConstraint(model_proto, ct, linearization_level, m,
                              relaxation);
@@ -1463,29 +1479,24 @@ void ComputeLinearRelaxation(const CpModelProto& model_proto,
   }
 
   // Linearize the encoding of variable that are fully encoded.
-  int num_full_encoding_relaxations = 0;
-  int num_partial_encoding_relaxations = 0;
+  int num_loose_equality_encoding_relaxations = 0;
+  int num_tight_equality_encoding_relaxations = 0;
+  int num_inequality_encoding_relaxations = 0;
   for (int i = 0; i < model_proto.variables_size(); ++i) {
     if (mapping->IsBoolean(i)) continue;
 
     const IntegerVariable var = mapping->Integer(i);
     if (m->Get(IsFixed(var))) continue;
 
-    // TODO(user): This different encoding for the partial variable might be
-    // better (less LP constraints), but we do need more investigation to
-    // decide.
-    if (/* DISABLES CODE */ (false)) {
-      AppendPartialEncodingRelaxation(var, *m, relaxation);
-      continue;
-    }
+    // We first try to linerize the values encoding.
+    AppendRelaxationForEqualityEncoding(
+        var, *m, relaxation, &num_tight_equality_encoding_relaxations,
+        &num_loose_equality_encoding_relaxations);
 
-    if (encoder->VariableIsFullyEncoded(var)) {
-      if (AppendFullEncodingRelaxation(var, *m, relaxation)) {
-        ++num_full_encoding_relaxations;
-        continue;
-      }
-    }
-
+    // The we try to linearize the inequality encoding. Note that on some
+    // problem like pizza27i.mps.gz, adding both equality and inequality
+    // encoding is a must.
+    //
     // Even if the variable is fully encoded, sometimes not all its associated
     // literal have a view (if they are not part of the original model for
     // instance).
@@ -1495,17 +1506,38 @@ void ComputeLinearRelaxation(const CpModelProto& model_proto,
     const int old = relaxation->linear_constraints.size();
     AppendPartialGreaterThanEncodingRelaxation(var, *m, relaxation);
     if (relaxation->linear_constraints.size() > old) {
-      ++num_partial_encoding_relaxations;
+      ++num_inequality_encoding_relaxations;
     }
   }
 
-  // TODO(user): This is really similar to the AppendFullEncodingRelaxation()
-  // above. Investigate if we can merge the code.
+  // TODO(user): This is similar to AppendRelaxationForEqualityEncoding() above.
+  // Investigate if we can merge the code.
   if (linearization_level >= 2) {
     AppendElementEncodingRelaxation(model_proto, m, relaxation);
   }
 
   if (!m->GetOrCreate<SatSolver>()->FinishPropagation()) return;
+
+  // We display the stats before linearizing the at most ones.
+  auto* logger = m->GetOrCreate<SolverLogger>();
+  if (num_tight_equality_encoding_relaxations != 0 ||
+      num_loose_equality_encoding_relaxations != 0 ||
+      num_inequality_encoding_relaxations != 0) {
+    SOLVER_LOG(logger,
+               "[EncodingLinearRelaxation]"
+               " #tight_equality:",
+               num_tight_equality_encoding_relaxations,
+               " #loose_equality:", num_loose_equality_encoding_relaxations,
+               " #inequality:", num_inequality_encoding_relaxations);
+  }
+  if (!relaxation->linear_constraints.empty() ||
+      !relaxation->at_most_ones.empty()) {
+    SOLVER_LOG(logger,
+               "[LinearRelaxationBeforeCliqueExpansion]"
+               " #linear:",
+               relaxation->linear_constraints.size(),
+               " #at_most_ones:", relaxation->at_most_ones.size());
+  }
 
   // Linearize the at most one constraints. Note that we transform them
   // into maximum "at most one" first and we removes redundant ones.
@@ -1536,12 +1568,14 @@ void ComputeLinearRelaxation(const CpModelProto& model_proto,
           [](const LinearConstraint& lc) { return lc.vars.size() <= 1; }),
       relaxation->linear_constraints.end());
 
-  VLOG(3) << "num_full_encoding_relaxations: " << num_full_encoding_relaxations;
-  VLOG(3) << "num_partial_encoding_relaxations: "
-          << num_partial_encoding_relaxations;
-  VLOG(3) << relaxation->linear_constraints.size()
-          << " constraints in the LP relaxation.";
-  VLOG(3) << relaxation->cut_generators.size() << " cuts generators.";
+  if (!relaxation->linear_constraints.empty() ||
+      !relaxation->cut_generators.empty()) {
+    SOLVER_LOG(logger,
+               "[FinalLinearRelaxation]"
+               " #linear:",
+               relaxation->linear_constraints.size(),
+               " #cut_generators:", relaxation->cut_generators.size());
+  }
 }
 
 }  // namespace sat

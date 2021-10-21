@@ -807,7 +807,8 @@ bool PositiveDivisionPropagator::Propagate() {
   // We start from num / denom <= max_div.
   // num < (max_div + 1) * denom
   // num + 1 <= (max_div + 1) * max_denom.
-  const IntegerValue new_max_num = (max_div + 1) * max_denom - 1;
+  const IntegerValue new_max_num =
+      IntegerValue(CapAdd(CapProd(max_div.value() + 1, max_denom.value()), -1));
   if (max_num > new_max_num) {
     if (!integer_trail_->Enqueue(
             IntegerLiteral::LowerOrEqual(num_, new_max_num), {},
@@ -820,7 +821,8 @@ bool PositiveDivisionPropagator::Propagate() {
   // We start from num / denom >= min_div.
   // num >= min_div * denom.
   // num >= min_div * min_denom.
-  const IntegerValue new_min_num = min_denom * min_div;
+  const IntegerValue new_min_num =
+      IntegerValue(CapProd(min_denom.value(), min_div.value()));
   if (min_num < new_min_num) {
     if (!integer_trail_->Enqueue(
             IntegerLiteral::GreaterOrEqual(num_, new_min_num), {},

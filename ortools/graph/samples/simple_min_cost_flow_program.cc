@@ -20,8 +20,13 @@
 // [END import]
 
 namespace operations_research {
-
+// MinCostFlow simple interface example.
 void SimpleMinCostFlowProgram() {
+  // [START solver]
+  // Instantiate a SimpleMinCostFlow solver.
+  SimpleMinCostFlow min_cost_flow;
+  // [END solver]
+
   // [START data]
   // Define four parallel arrays: sources, destinations, capacities,
   // and unit costs between each pair. For instance, the arc from node 0
@@ -36,9 +41,6 @@ void SimpleMinCostFlowProgram() {
   // [END data]
 
   // [START constraints]
-  // Instantiate a SimpleMinCostFlow solver.
-  SimpleMinCostFlow min_cost_flow;
-
   // Add each arc.
   for (int i = 0; i < start_nodes.size(); ++i) {
     int arc = min_cost_flow.AddArcWithCapacityAndUnitCost(
@@ -54,11 +56,11 @@ void SimpleMinCostFlowProgram() {
 
   // [START solve]
   // Find the min cost flow.
-  int solve_status = min_cost_flow.Solve();
+  int status = min_cost_flow.Solve();
   // [END solve]
 
   // [START print_solution]
-  if (solve_status == MinCostFlow::OPTIMAL) {
+  if (status == MinCostFlow::OPTIMAL) {
     LOG(INFO) << "Minimum cost flow: " << min_cost_flow.OptimalCost();
     LOG(INFO) << "";
     LOG(INFO) << " Arc   Flow / Capacity  Cost";
@@ -70,7 +72,7 @@ void SimpleMinCostFlowProgram() {
     }
   } else {
     LOG(INFO) << "Solving the min cost flow problem failed. Solver status: "
-              << solve_status;
+              << status;
   }
   // [END print_solution]
 }

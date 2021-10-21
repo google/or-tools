@@ -110,10 +110,13 @@ class MainLpPreprocessor : public Preprocessor {
 
   bool Run(LinearProgram* lp) final;
   void RecoverSolution(ProblemSolution* solution) const override;
+
   // Like RecoverSolution but destroys data structures as it goes to reduce peak
   // RAM use. After calling this the MainLpPreprocessor object may no longer be
   // used.
   void DestructiveRecoverSolution(ProblemSolution* solution);
+
+  void SetLogger(SolverLogger* logger) { logger_ = logger; }
 
  private:
   // Runs the given preprocessor and push it on preprocessors_ for the postsolve
@@ -124,6 +127,10 @@ class MainLpPreprocessor : public Preprocessor {
 
   // Stack of preprocessors currently applied to the lp that needs postsolve.
   std::vector<std::unique_ptr<Preprocessor>> preprocessors_;
+
+  // Helpers for logging during presolve.
+  SolverLogger default_logger_;
+  SolverLogger* logger_ = &default_logger_;
 
   // Initial dimension of the lp given to Run(), for displaying purpose.
   EntryIndex initial_num_entries_;

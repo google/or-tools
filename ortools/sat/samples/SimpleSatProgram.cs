@@ -12,8 +12,10 @@
 // limitations under the License.
 
 // [START program]
+// [START import]
 using System;
 using Google.OrTools.Sat;
+// [END import]
 
 public class SimpleSatProgram
 {
@@ -44,12 +46,18 @@ public class SimpleSatProgram
         CpSolverStatus status = solver.Solve(model);
         // [END solve]
 
-        if (status == CpSolverStatus.Optimal)
+        // [START print_solution]
+        if (status == CpSolverStatus.Optimal || status == CpSolverStatus.Feasible)
         {
             Console.WriteLine("x = " + solver.Value(x));
             Console.WriteLine("y = " + solver.Value(y));
             Console.WriteLine("z = " + solver.Value(z));
         }
+        else
+        {
+            Console.WriteLine("No solution found.");
+        }
+        // [END print_solution]
     }
 }
 // [END program]

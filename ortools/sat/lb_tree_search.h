@@ -57,17 +57,15 @@ class LbTreeSearch {
           false_objective(lb) {}
 
     // Invariant: the objective bounds only increase.
-    void UpdateObjective() {
+    void UpdateTrueObjective(IntegerValue v) {
+      true_objective = std::max(true_objective, v);
       objective_lb =
           std::max(objective_lb, std::min(true_objective, false_objective));
     }
-    void UpdateTrueObjective(IntegerValue v) {
-      true_objective = std::max(true_objective, v);
-      UpdateObjective();
-    }
     void UpdateFalseObjective(IntegerValue v) {
       false_objective = std::max(false_objective, v);
-      UpdateObjective();
+      objective_lb =
+          std::max(objective_lb, std::min(true_objective, false_objective));
     }
 
     // The decision for the true and false branch under this node.
@@ -100,9 +98,7 @@ class LbTreeSearch {
     int false_level = std::numeric_limits<int32_t>::max();
   };
 
-  // Returns true if this node objective lb is greater than the root level
-  // objective lower bound.
-  bool NodeImprovesLowerBound(const LbTreeSearch::Node& node);
+  IntegerValue current_objective_lb_;
 
   // Model singleton class used here.
   TimeLimit* time_limit_;

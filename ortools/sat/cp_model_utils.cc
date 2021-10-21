@@ -128,31 +128,18 @@ IndexReferences GetReferencesUsedByConstraint(const ConstraintProto& ct) {
       AddIndices(ct.automaton().vars(), &output.variables);
       break;
     case ConstraintProto::ConstraintCase::kInterval:
-      if (ct.interval().has_start_view()) {
-        AddIndices(ct.interval().start_view().vars(), &output.variables);
-      } else {
-        output.variables.push_back(ct.interval().start());
-      }
-      if (ct.interval().has_size_view()) {
-        AddIndices(ct.interval().size_view().vars(), &output.variables);
-      } else {
-        output.variables.push_back(ct.interval().size());
-      }
-      if (ct.interval().has_end_view()) {
-        AddIndices(ct.interval().end_view().vars(), &output.variables);
-      } else {
-        output.variables.push_back(ct.interval().end());
-      }
+      AddIndices(ct.interval().start().vars(), &output.variables);
+      AddIndices(ct.interval().size().vars(), &output.variables);
+      AddIndices(ct.interval().end().vars(), &output.variables);
       break;
     case ConstraintProto::ConstraintCase::kNoOverlap:
       break;
     case ConstraintProto::ConstraintCase::kNoOverlap2D:
       break;
     case ConstraintProto::ConstraintCase::kCumulative:
-      output.variables.push_back(ct.cumulative().capacity());
-      AddIndices(ct.cumulative().demands(), &output.variables);
-      for (const LinearExpressionProto& lin : ct.cumulative().energies()) {
-        AddIndices(lin.vars(), &output.variables);
+      AddIndices(ct.cumulative().capacity().vars(), &output.variables);
+      for (const LinearExpressionProto& demand : ct.cumulative().demands()) {
+        AddIndices(demand.vars(), &output.variables);
       }
       break;
     case ConstraintProto::ConstraintCase::CONSTRAINT_NOT_SET:
@@ -319,32 +306,19 @@ void ApplyToAllVariableIndices(const std::function<void(int*)>& f,
       APPLY_TO_REPEATED_FIELD(automaton, vars);
       break;
     case ConstraintProto::ConstraintCase::kInterval:
-      if (ct->interval().has_start_view()) {
-        APPLY_TO_REPEATED_FIELD(interval, start_view()->mutable_vars);
-      } else {
-        APPLY_TO_SINGULAR_FIELD(interval, start);
-      }
-      if (ct->interval().has_size_view()) {
-        APPLY_TO_REPEATED_FIELD(interval, size_view()->mutable_vars);
-      } else {
-        APPLY_TO_SINGULAR_FIELD(interval, size);
-      }
-      if (ct->interval().has_end_view()) {
-        APPLY_TO_REPEATED_FIELD(interval, end_view()->mutable_vars);
-      } else {
-        APPLY_TO_SINGULAR_FIELD(interval, end);
-      }
+      APPLY_TO_REPEATED_FIELD(interval, start()->mutable_vars);
+      APPLY_TO_REPEATED_FIELD(interval, size()->mutable_vars);
+      APPLY_TO_REPEATED_FIELD(interval, end()->mutable_vars);
       break;
     case ConstraintProto::ConstraintCase::kNoOverlap:
       break;
     case ConstraintProto::ConstraintCase::kNoOverlap2D:
       break;
     case ConstraintProto::ConstraintCase::kCumulative:
-      APPLY_TO_SINGULAR_FIELD(cumulative, capacity);
-      APPLY_TO_REPEATED_FIELD(cumulative, demands);
-      for (int i = 0; i < ct->cumulative().energies_size(); ++i) {
+      APPLY_TO_REPEATED_FIELD(cumulative, capacity()->mutable_vars);
+      for (int i = 0; i < ct->cumulative().demands_size(); ++i) {
         for (int& r :
-             *ct->mutable_cumulative()->mutable_energies(i)->mutable_vars()) {
+             *ct->mutable_cumulative()->mutable_demands(i)->mutable_vars()) {
           f(&r);
         }
       }
@@ -565,17 +539,46 @@ std::vector<int> UsedIntervals(const ConstraintProto& ct) {
 int64_t ComputeInnerObjective(const CpObjectiveProto& objective,
                               const CpSolverResponse& response) {
   int64_t objective_value = 0;
-  auto& repeated_field_values = response.solution().empty()
-                                    ? response.solution_lower_bounds()
-                                    : response.solution();
   for (int i = 0; i < objective.vars_size(); ++i) {
     int64_t coeff = objective.coeffs(i);
     const int ref = objective.vars(i);
     const int var = PositiveRef(ref);
     if (!RefIsPositive(ref)) coeff = -coeff;
-    objective_value += coeff * repeated_field_values[var];
+    objective_value += coeff * response.solution()[var];
   }
   return objective_value;
+}
+
+bool ExpressionContainsSingleRef(const LinearExpressionProto& expr) {
+  return expr.offset() == 0 && expr.vars_size() == 1 &&
+         std::abs(expr.coeffs(0)) == 1;
+}
+
+bool ExpressionIsAffine(const LinearExpressionProto& expr) {
+  return expr.vars_size() <= 1;
+}
+
+// Returns the reference the expression can be reduced to. It will DCHECK that
+// ExpressionContainsSingleRef(expr) is true.
+int GetSingleRefFromExpression(const LinearExpressionProto& expr) {
+  DCHECK(ExpressionContainsSingleRef(expr));
+  return expr.coeffs(0) == 1 ? expr.vars(0) : NegatedRef(expr.vars(0));
+}
+
+void AddLinearExpressionToLinearConstraint(const LinearExpressionProto& expr,
+                                           int64_t coefficient,
+                                           LinearConstraintProto* linear) {
+  for (int i = 0; i < expr.vars_size(); ++i) {
+    linear->add_vars(expr.vars(i));
+    linear->add_coeffs(expr.coeffs(i) * coefficient);
+  }
+  DCHECK(!linear->domain().empty());
+  const int64_t shift = coefficient * expr.offset();
+  if (shift != 0) {
+    for (int64_t& d : *linear->mutable_domain()) {
+      d -= shift;
+    }
+  }
 }
 
 }  // namespace sat

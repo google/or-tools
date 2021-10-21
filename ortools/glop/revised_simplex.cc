@@ -138,10 +138,17 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
   Cleanup update_deterministic_time_on_return(
       [this, time_limit]() { AdvanceDeterministicTime(time_limit); });
 
+  default_logger_.EnableLogging(parameters_.log_search_progress());
+  default_logger_.SetLogToStdOut(parameters_.log_to_stdout());
+  SOLVER_LOG(logger_, "");
+
   // Initialization. Note That Initialize() must be called first since it
   // analyzes the current solver state.
   const double start_time = time_limit->GetElapsedTime();
   GLOP_RETURN_IF_ERROR(Initialize(lp));
+  if (logger_->LoggingIsEnabled()) {
+    DisplayBasicVariableStatistics();
+  }
 
   dual_infeasibility_improvement_direction_.clear();
   update_row_.Invalidate();
@@ -163,10 +170,9 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
   // previous state info, but we will double-check everything.
   solution_state_has_been_set_externally_ = true;
 
-  if (VLOG_IS_ON(1)) {
+  if (VLOG_IS_ON(2)) {
     ComputeNumberOfEmptyRows();
     ComputeNumberOfEmptyColumns();
-    DisplayBasicVariableStatistics();
     DisplayProblem();
   }
   if (absl::GetFlag(FLAGS_simplex_stop_after_first_basis)) {
@@ -175,19 +181,10 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
   }
 
   const bool use_dual = parameters_.use_dual_simplex();
-  const bool log_info = parameters_.log_search_progress() || VLOG_IS_ON(1);
-  if (log_info) {
-    LOG(INFO) << "------ " << (use_dual ? "Dual simplex." : "Primal simplex.");
-    LOG(INFO) << "The matrix has " << compact_matrix_.num_rows() << " rows, "
-              << compact_matrix_.num_cols() << " columns, "
-              << compact_matrix_.num_entries() << " entries.";
-    LOG(INFO) << "Initial number of super-basic variables: "
-              << ComputeNumberOfSuperBasicVariables();
-  }
 
   // TODO(user): Avoid doing the first phase checks when we know from the
   // incremental solve that the solution is already dual or primal feasible.
-  if (log_info) LOG(INFO) << "------ First phase: feasibility.";
+  SOLVER_LOG(logger_, "");
   primal_edge_norms_.SetPricingRule(parameters_.feasibility_rule());
   if (use_dual) {
     if (parameters_.perturb_costs_in_dual_simplex()) {
@@ -198,7 +195,6 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
       variables_info_.MakeBoxedVariableRelevant(false);
       GLOP_RETURN_IF_ERROR(
           DualMinimize(phase_ == Phase::FEASIBILITY, time_limit));
-      DisplayIterationInfo();
 
       if (problem_status_ != ProblemStatus::DUAL_INFEASIBLE) {
         // Note(user): In most cases, the matrix will already be refactorized
@@ -232,7 +228,7 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
           reduced_costs_.ComputeMaximumDualInfeasibilityOnNonBoxedVariables();
       if (initial_infeasibility <
           reduced_costs_.GetDualFeasibilityTolerance()) {
-        if (log_info) LOG(INFO) << "Initial basis is dual feasible.";
+        SOLVER_LOG(logger_, "Initial basis is dual feasible.");
         problem_status_ = ProblemStatus::DUAL_FEASIBLE;
         MakeBoxedVariableDualFeasible(
             variables_info_.GetNonBasicBoxedVariables(),
@@ -250,7 +246,6 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
         // Optimize.
         DisplayErrors();
         GLOP_RETURN_IF_ERROR(DualMinimize(false, time_limit));
-        DisplayIterationInfo();
 
         // Restore original problem and recompute variable values. Note that we
         // need the reduced cost on the fixed positions here.
@@ -273,7 +268,7 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
               reduced_costs_.GetDualFeasibilityTolerance() + 1e-6) {
             problem_status_ = ProblemStatus::DUAL_FEASIBLE;
           } else {
-            if (log_info) LOG(INFO) << "Infeasible after first phase.";
+            SOLVER_LOG(logger_, "Infeasible after first phase.");
             problem_status_ = ProblemStatus::DUAL_INFEASIBLE;
           }
         }
@@ -281,7 +276,6 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
     }
   } else {
     GLOP_RETURN_IF_ERROR(PrimalMinimize(time_limit));
-    DisplayIterationInfo();
 
     // After the primal phase I, we need to restore the objective.
     if (problem_status_ != ProblemStatus::PRIMAL_INFEASIBLE) {
@@ -297,8 +291,6 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
   primal_edge_norms_.SetPricingRule(parameters_.optimization_rule());
   num_feasibility_iterations_ = num_iterations_;
 
-  if (log_info) LOG(INFO) << "------ Second phase: optimization.";
-
   // Because of shifts or perturbations, we may need to re-run a dual simplex
   // after the primal simplex finished, or the opposite.
   //
@@ -311,6 +303,7 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
   // which means the status returned can be PRIMAL_FEASIBLE or DUAL_FEASIBLE
   // (i.e., these statuses are not necesserily a consequence of hitting a time
   // limit).
+  SOLVER_LOG(logger_, "");
   for (int num_optims = 0;
        // We want to enter the loop when both num_optims and num_iterations_ are
        // *equal* to the corresponding limits (to return a meaningful status
@@ -356,7 +349,6 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
     variable_values_.RecomputeBasicVariableValues();
     reduced_costs_.ClearAndRemoveCostShifts();
 
-    DisplayIterationInfo();
     DisplayErrors();
 
     // TODO(user): We should also confirm the PRIMAL_UNBOUNDED or DUAL_UNBOUNDED
@@ -368,14 +360,83 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
     // TODO(user): There is another issue on infeas/qual.mps. I think we should
     // just check the dual ray, not really the current solution dual
     // feasibility.
+    if (problem_status_ == ProblemStatus::PRIMAL_UNBOUNDED) {
+      const Fractional tolerance = parameters_.solution_feasibility_tolerance();
+      if (reduced_costs_.ComputeMaximumDualResidual() > tolerance ||
+          variable_values_.ComputeMaximumPrimalResidual() > tolerance ||
+          variable_values_.ComputeMaximumPrimalInfeasibility() > tolerance) {
+        SOLVER_LOG(logger_,
+                   "PRIMAL_UNBOUNDED was reported, but the residual and/or "
+                   "dual infeasibility is above the tolerance");
+        if (parameters_.change_status_to_imprecise()) {
+          problem_status_ = ProblemStatus::IMPRECISE;
+        }
+        break;
+      }
+
+      // All of our tolerance are okay, but the dual ray might be fishy. This
+      // happens on l30.mps and on L1_sixm250obs.mps.gz. If the ray do not
+      // seems good enough, we might actually just be at the optimal and have
+      // trouble going down to our relatively low default tolerances.
+      //
+      // The difference bettween optimal and unbounded can be thin. Say you
+      // have a free variable with no constraint and a cost of epsilon,
+      // depending on epsilon and your tolerance, this will either cause the
+      // problem to be unbounded, or can be ignored.
+      //
+      // Here, we compute what is the cost gain if we move from the current
+      // value with the ray up to the bonds + tolerance. If this gain is < 1,
+      // it is hard to claim we are really unbounded. This is a quick
+      // heuristic to error on the side of optimality rather than
+      // unboundedness.
+      double max_magnitude = 0.0;
+      double min_distance = kInfinity;
+      const DenseRow& lower_bounds = variables_info_.GetVariableLowerBounds();
+      const DenseRow& upper_bounds = variables_info_.GetVariableUpperBounds();
+      double cost_delta = 0.0;
+      for (ColIndex col(0); col < num_cols_; ++col) {
+        cost_delta += solution_primal_ray_[col] * objective_[col];
+        if (solution_primal_ray_[col] > 0 && upper_bounds[col] != kInfinity) {
+          const Fractional value = variable_values_.Get(col);
+          const Fractional distance = (upper_bounds[col] - value + tolerance) /
+                                      solution_primal_ray_[col];
+          min_distance = std::min(distance, min_distance);
+          max_magnitude = std::max(solution_primal_ray_[col], max_magnitude);
+        }
+        if (solution_primal_ray_[col] < 0 && lower_bounds[col] != -kInfinity) {
+          const Fractional value = variable_values_.Get(col);
+          const Fractional distance = (value - lower_bounds[col] + tolerance) /
+                                      -solution_primal_ray_[col];
+          min_distance = std::min(distance, min_distance);
+          max_magnitude = std::max(-solution_primal_ray_[col], max_magnitude);
+        }
+      }
+      SOLVER_LOG(logger_, "Primal unbounded ray: max blocking magnitude = ",
+                 max_magnitude, ", min distance to bound + ", tolerance, " = ",
+                 min_distance, ", ray cost delta = ", cost_delta);
+      if (min_distance * std::abs(cost_delta) < 1 &&
+          reduced_costs_.ComputeMaximumDualInfeasibility() <= tolerance) {
+        SOLVER_LOG(logger_,
+                   "PRIMAL_UNBOUNDED was reported, but the tolerance are good "
+                   "and the unbounded ray is not great.");
+        SOLVER_LOG(logger_,
+                   "The difference between unbounded and optimal can depends "
+                   "on a slight change of tolerance, trying to see if we are "
+                   "at OPTIMAL after postsolve.");
+        problem_status_ = ProblemStatus::OPTIMAL;
+      }
+      break;
+    }
     if (problem_status_ == ProblemStatus::DUAL_UNBOUNDED) {
       const Fractional tolerance = parameters_.solution_feasibility_tolerance();
       if (reduced_costs_.ComputeMaximumDualResidual() > tolerance ||
           variable_values_.ComputeMaximumPrimalResidual() > tolerance ||
           reduced_costs_.ComputeMaximumDualInfeasibility() > tolerance) {
-        if (log_info) {
-          LOG(INFO) << "DUAL_UNBOUNDED was reported, but the residual and/or "
-                    << "dual infeasibility is above the tolerance";
+        SOLVER_LOG(logger_,
+                   "DUAL_UNBOUNDED was reported, but the residual and/or "
+                   "dual infeasibility is above the tolerance");
+        if (parameters_.change_status_to_imprecise()) {
+          problem_status_ = ProblemStatus::IMPRECISE;
         }
       }
       break;
@@ -392,11 +453,10 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
           reduced_costs_.ComputeMaximumDualResidual();
       if (primal_residual > solution_tolerance ||
           dual_residual > solution_tolerance) {
-        if (log_info) {
-          LOG(INFO) << "OPTIMAL was reported, yet one of the residuals is "
-                       "above the solution feasibility tolerance after the "
-                       "shift/perturbation are removed.";
-        }
+        SOLVER_LOG(logger_,
+                   "OPTIMAL was reported, yet one of the residuals is "
+                   "above the solution feasibility tolerance after the "
+                   "shift/perturbation are removed.");
         if (parameters_.change_status_to_imprecise()) {
           problem_status_ = ProblemStatus::IMPRECISE;
         }
@@ -416,35 +476,34 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
             reduced_costs_.ComputeMaximumDualInfeasibility();
         if (primal_infeasibility > primal_tolerance &&
             dual_infeasibility > dual_tolerance) {
-          if (log_info) {
-            LOG(INFO) << "OPTIMAL was reported, yet both of the infeasibility "
-                         "are above the tolerance after the "
-                         "shift/perturbation are removed.";
-          }
+          SOLVER_LOG(logger_,
+                     "OPTIMAL was reported, yet both of the infeasibility "
+                     "are above the tolerance after the "
+                     "shift/perturbation are removed.");
           if (parameters_.change_status_to_imprecise()) {
             problem_status_ = ProblemStatus::IMPRECISE;
           }
         } else if (primal_infeasibility > primal_tolerance) {
           if (num_optims == parameters_.max_number_of_reoptimizations()) {
-            if (log_info) {
-              LOG(INFO) << "The primal infeasibility is still higher than the "
-                           "requested internal tolerance, but the maximum "
-                           "number of optimization is reached.";
-            }
+            SOLVER_LOG(logger_,
+                       "The primal infeasibility is still higher than the "
+                       "requested internal tolerance, but the maximum "
+                       "number of optimization is reached.");
             break;
           }
-          if (log_info) LOG(INFO) << "Re-optimizing with dual simplex ... ";
+          SOLVER_LOG(logger_, "");
+          SOLVER_LOG(logger_, "Re-optimizing with dual simplex ... ");
           problem_status_ = ProblemStatus::DUAL_FEASIBLE;
         } else if (dual_infeasibility > dual_tolerance) {
           if (num_optims == parameters_.max_number_of_reoptimizations()) {
-            if (log_info) {
-              LOG(INFO) << "The dual infeasibility is still higher than the "
-                           "requested internal tolerance, but the maximum "
-                           "number of optimization is reached.";
-            }
+            SOLVER_LOG(logger_,
+                       "The dual infeasibility is still higher than the "
+                       "requested internal tolerance, but the maximum "
+                       "number of optimization is reached.");
             break;
           }
-          if (log_info) LOG(INFO) << "Re-optimizing with primal simplex ... ";
+          SOLVER_LOG(logger_, "");
+          SOLVER_LOG(logger_, "Re-optimizing with primal simplex ... ");
           problem_status_ = ProblemStatus::PRIMAL_FEASIBLE;
         }
       }
@@ -485,19 +544,19 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
   if (!variable_starting_values_.empty()) {
     const int num_super_basic = ComputeNumberOfSuperBasicVariables();
     if (num_super_basic > 0) {
-      if (log_info) {
-        LOG(INFO) << "Num super-basic variables left after optimize phase: "
-                  << num_super_basic;
-      }
+      SOLVER_LOG(logger_,
+                 "Num super-basic variables left after optimize phase: ",
+                 num_super_basic);
       if (parameters_.push_to_vertex()) {
         if (problem_status_ == ProblemStatus::OPTIMAL) {
-          if (log_info) LOG(INFO) << "------ Third phase: push.";
+          SOLVER_LOG(logger_, "");
           phase_ = Phase::PUSH;
           GLOP_RETURN_IF_ERROR(PrimalPush(time_limit));
           // TODO(user): We should re-check for feasibility at this point and
           // apply clean-up as needed.
-        } else if (log_info) {
-          LOG(INFO) << "Skipping push phase because optimize didn't succeed.";
+        } else {
+          SOLVER_LOG(logger_,
+                     "Skipping push phase because optimize didn't succeed.");
         }
       }
     }
@@ -1117,13 +1176,13 @@ Status RevisedSimplex::CreateInitialBasis() {
     }
 
     if (num_fixed_variables == 0) {
-      VLOG(1) << "Crash is set to " << parameters_.initial_basis()
-              << " but there is no equality rows to remove from initial all "
-                 "slack basis.";
+      SOLVER_LOG(logger_, "Crash is set to ", parameters_.initial_basis(),
+                 " but there is no equality rows to remove from initial all "
+                 "slack basis. Starting from there.");
     } else {
       // Then complete the basis with an advanced initial basis algorithm.
-      VLOG(1) << "Trying to remove " << num_fixed_variables
-              << " fixed variables from the initial basis.";
+      SOLVER_LOG(logger_, "Trying to remove ", num_fixed_variables,
+                 " fixed variables from the initial basis.");
       InitialBasis initial_basis(compact_matrix_, objective_, lower_bounds,
                                  upper_bounds, variables_info_.GetTypeRow());
 
@@ -1149,7 +1208,9 @@ Status RevisedSimplex::CreateInitialBasis() {
         if (status.ok()) {
           return status;
         } else {
-          VLOG(1) << "Reverting to all slack basis.";
+          SOLVER_LOG(
+              logger_,
+              "Advanced basis algo failed, Reverting to all slack basis.");
 
           for (RowIndex row(0); row < num_rows_; ++row) {
             basis[row] = SlackColIndex(row);
@@ -1191,7 +1252,7 @@ Status RevisedSimplex::InitializeFirstBasis(const RowToColMapping& basis) {
     const std::string error_message =
         absl::StrCat("The matrix condition number upper bound is too high: ",
                      condition_number_ub);
-    VLOG(1) << error_message;
+    SOLVER_LOG(logger_, error_message);
     return Status(Status::ERROR_LU, error_message);
   }
 
@@ -1204,13 +1265,14 @@ Status RevisedSimplex::InitializeFirstBasis(const RowToColMapping& basis) {
   variable_values_.ResetAllNonBasicVariableValues(variable_starting_values_);
   variable_values_.RecomputeBasicVariableValues();
 
-  if (VLOG_IS_ON(1)) {
+  if (logger_->LoggingIsEnabled()) {
     // TODO(user): Maybe return an error status if this is too high. Note
     // however that if we want to do that, we need to reset variables_info_ to a
     // consistent state.
     const Fractional tolerance = parameters_.primal_feasibility_tolerance();
     if (variable_values_.ComputeMaximumPrimalResidual() > tolerance) {
-      VLOG(1) << absl::StrCat(
+      SOLVER_LOG(
+          logger_,
           "The primal residual of the initial basis is above the tolerance, ",
           variable_values_.ComputeMaximumPrimalResidual(), " vs. ", tolerance);
     }
@@ -1284,7 +1346,7 @@ Status RevisedSimplex::Initialize(const LinearProgram& lp) {
   // Computes the variable name as soon as possible for logging.
   // TODO(user): do we really need to store them? we could just compute them
   // on the fly since we do not need the speed.
-  if (VLOG_IS_ON(1)) {
+  if (VLOG_IS_ON(2)) {
     SetVariableNames();
   }
 
@@ -1370,7 +1432,6 @@ Status RevisedSimplex::Initialize(const LinearProgram& lp) {
 
   // If we couldn't perform a "quick" warm start above, we can at least try to
   // reuse the variable statuses.
-  const bool log_info = parameters_.log_search_progress() || VLOG_IS_ON(1);
   if (solve_from_scratch && !solution_state_.IsEmpty()) {
     basis_factorization_.Clear();
     reduced_costs_.ClearAndRemoveCostShifts();
@@ -1388,11 +1449,9 @@ Status RevisedSimplex::Initialize(const LinearProgram& lp) {
     for (const ColIndex col : variables_info_.GetIsBasicBitRow()) {
       candidates.push_back(col);
     }
-    if (log_info) {
-      LOG(INFO) << "The warm-start state contains " << candidates.size()
-                << " candidates for the basis (num_rows = " << num_rows_
-                << ").";
-    }
+    SOLVER_LOG(logger_, "The warm-start state contains ", candidates.size(),
+               " candidates for the basis (num_rows = ", num_rows_.value(),
+               ").");
 
     // Optimization: Try to factorize it right away if we have the correct
     // number of element. Ideally the other path below would no require a
@@ -1418,30 +1477,29 @@ Status RevisedSimplex::Initialize(const LinearProgram& lp) {
       const int num_snapped = variables_info_.SnapFreeVariablesToBound(
           parameters_.crossover_bound_snapping_distance(),
           variable_starting_values_);
-      if (log_info) {
-        LOG(INFO) << "The initial basis did not use " << num_super_basic
-                  << " BASIC columns from the initial state and used "
-                  << (num_rows_ - (candidates.size() - num_super_basic))
-                  << " slack variables that were not marked BASIC.";
+      if (logger_->LoggingIsEnabled()) {
+        SOLVER_LOG(logger_, "The initial basis did not use ",
+                   " BASIC columns from the initial state and used ",
+                   (num_rows_ - (candidates.size() - num_super_basic)).value(),
+                   " slack variables that were not marked BASIC.");
         if (num_snapped > 0) {
-          LOG(INFO) << num_snapped
-                    << " of the FREE variables where moved to their bound.";
+          SOLVER_LOG(logger_, num_snapped,
+                     " of the FREE variables where moved to their bound.");
         }
       }
 
       if (InitializeFirstBasis(basis_).ok()) {
         solve_from_scratch = false;
       } else {
-        if (log_info) {
-          LOG(INFO) << "RevisedSimplex is not using the warm start "
-                       "basis because it is not factorizable.";
-        }
+        SOLVER_LOG(logger_,
+                   "RevisedSimplex is not using the warm start "
+                   "basis because it is not factorizable.");
       }
     }
   }
 
   if (solve_from_scratch) {
-    if (log_info) LOG(INFO) << "Solve from scratch.";
+    SOLVER_LOG(logger_, "Starting basis: create from scratch.");
     basis_factorization_.Clear();
     reduced_costs_.ClearAndRemoveCostShifts();
     primal_edge_norms_.Clear();
@@ -1449,7 +1507,7 @@ Status RevisedSimplex::Initialize(const LinearProgram& lp) {
     dual_pricing_vector_.clear();
     GLOP_RETURN_IF_ERROR(CreateInitialBasis());
   } else {
-    if (log_info) LOG(INFO) << "Incremental solve.";
+    SOLVER_LOG(logger_, "Starting basis: incremental solve.");
   }
   DCHECK(BasisIsConsistent());
   return Status::OK();
@@ -1490,13 +1548,19 @@ void RevisedSimplex::DisplayBasicVariableStatistics() {
     }
   }
 
-  VLOG(1) << "Basis size: " << num_rows_;
-  VLOG(1) << "Number of basic infeasible variables: "
-          << num_infeasible_variables;
-  VLOG(1) << "Number of basic slack variables: " << num_slack_variables;
-  VLOG(1) << "Number of basic variables at bound: " << num_variables_at_bound;
-  VLOG(1) << "Number of basic fixed variables: " << num_fixed_variables;
-  VLOG(1) << "Number of basic free variables: " << num_free_variables;
+  SOLVER_LOG(logger_, "The matrix with slacks has ",
+             compact_matrix_.num_rows().value(), " rows, ",
+             compact_matrix_.num_cols().value(), " columns, ",
+             compact_matrix_.num_entries().value(), " entries.");
+  SOLVER_LOG(logger_, "Number of basic infeasible variables: ",
+             num_infeasible_variables);
+  SOLVER_LOG(logger_, "Number of basic slack variables: ", num_slack_variables);
+  SOLVER_LOG(logger_,
+             "Number of basic variables at bound: ", num_variables_at_bound);
+  SOLVER_LOG(logger_, "Number of basic fixed variables: ", num_fixed_variables);
+  SOLVER_LOG(logger_, "Number of basic free variables: ", num_free_variables);
+  SOLVER_LOG(logger_, "Number of super-basic variables: ",
+             ComputeNumberOfSuperBasicVariables());
 }
 
 void RevisedSimplex::SaveState() {
@@ -1516,7 +1580,7 @@ RowIndex RevisedSimplex::ComputeNumberOfEmptyRows() {
   for (RowIndex row(0); row < num_rows_; ++row) {
     if (!contains_data[row]) {
       ++num_empty_rows;
-      VLOG(1) << "Row " << row << " is empty.";
+      VLOG(2) << "Row " << row << " is empty.";
     }
   }
   return num_empty_rows;
@@ -2608,7 +2672,6 @@ Status RevisedSimplex::PrimalMinimize(TimeLimit* time_limit) {
   Cleanup update_deterministic_time_on_return(
       [this, time_limit]() { AdvanceDeterministicTime(time_limit); });
   num_consecutive_degenerate_iterations_ = 0;
-  DisplayIterationInfo();
   bool refactorize = false;
 
   // At this point, we are not sure the prices are always up to date, so
@@ -2637,7 +2700,7 @@ Status RevisedSimplex::PrimalMinimize(TimeLimit* time_limit) {
 
     if (basis_factorization_.IsRefactorized()) {
       CorrectErrorsOnVariableValues();
-      DisplayIterationInfo();
+      DisplayIterationInfo(/*primal=*/true);
 
       if (phase_ == Phase::FEASIBILITY) {
         // Since the variable values may have been recomputed, we need to
@@ -2964,16 +3027,17 @@ Status RevisedSimplex::DualMinimize(bool feasibility_phase,
         if (phase_ == Phase::OPTIMIZATION &&
             dual_objective_limit_ != kInfinity &&
             ComputeObjectiveValue() > dual_objective_limit_) {
-          VLOG(1) << "Stopping the dual simplex because"
-                  << " the objective limit " << dual_objective_limit_
-                  << " has been reached.";
+          SOLVER_LOG(logger_,
+                     "Stopping the dual simplex because"
+                     " the objective limit ",
+                     dual_objective_limit_, " has been reached.");
           problem_status_ = ProblemStatus::DUAL_FEASIBLE;
           objective_limit_reached_ = true;
           return Status::OK();
         }
       }
 
-      DisplayIterationInfo();
+      DisplayIterationInfo(/*primal=*/false);
     } else {
       // Updates from the previous iteration that can be skipped if we
       // recompute everything (see other case above).
@@ -3181,8 +3245,6 @@ Status RevisedSimplex::PrimalPush(TimeLimit* time_limit) {
   GLOP_RETURN_ERROR_IF_NULL(time_limit);
   Cleanup update_deterministic_time_on_return(
       [this, time_limit]() { AdvanceDeterministicTime(time_limit); });
-
-  DisplayIterationInfo();
   bool refactorize = false;
 
   // We clear all the quantities that we don't update so they will be recomputed
@@ -3209,7 +3271,7 @@ Status RevisedSimplex::PrimalPush(TimeLimit* time_limit) {
     GLOP_RETURN_IF_ERROR(RefactorizeBasisIfNeeded(&refactorize));
     if (basis_factorization_.IsRefactorized()) {
       CorrectErrorsOnVariableValues();
-      DisplayIterationInfo();
+      DisplayIterationInfo(/*primal=*/true);
     }
 
     // TODO(user): Select at random like in Polish().
@@ -3343,10 +3405,9 @@ Status RevisedSimplex::PrimalPush(TimeLimit* time_limit) {
     ++num_iterations_;
   }
 
-  if (!super_basic_cols.empty() > 0 &&
-      (parameters_.log_search_progress() || VLOG_IS_ON(1))) {
-    LOG(INFO) << "Push terminated early with " << super_basic_cols.size()
-              << " super-basic variables remaining.";
+  if (!super_basic_cols.empty() > 0) {
+    SOLVER_LOG(logger_, "Push terminated early with ", super_basic_cols.size(),
+               " super-basic variables remaining.");
   }
 
   // TODO(user): What status should be returned if the time limit is hit?
@@ -3416,9 +3477,9 @@ void RevisedSimplex::PropagateParameters() {
   update_row_.SetParameters(parameters_);
 }
 
-void RevisedSimplex::DisplayIterationInfo() {
-  const bool log = parameters_.log_search_progress() || VLOG_IS_ON(1);
-  if (!log) return;
+void RevisedSimplex::DisplayIterationInfo(bool primal) {
+  if (!logger_->LoggingIsEnabled()) return;
+  const std::string first_word = primal ? "Primal " : "Dual ";
 
   switch (phase_) {
     case Phase::FEASIBILITY: {
@@ -3440,8 +3501,8 @@ void RevisedSimplex::DisplayIterationInfo() {
         name = "sum_primal_infeasibilities";
       }
 
-      LOG(INFO) << "Feasibility phase, iteration # " << iter << ", " << name
-                << " = " << absl::StrFormat("%.15E", objective);
+      SOLVER_LOG(logger_, first_word, "feasibility phase, iteration # ", iter,
+                 ", ", name, " = ", absl::StrFormat("%.15E", objective));
       break;
     }
     case Phase::OPTIMIZATION: {
@@ -3452,31 +3513,32 @@ void RevisedSimplex::DisplayIterationInfo() {
       // primal-feasible, we are at the optimal and hence the two objectives
       // are the same.
       const Fractional objective = ComputeInitialProblemObjectiveValue();
-      LOG(INFO) << "Optimization phase, iteration # " << iter
-                << ", objective = " << absl::StrFormat("%.15E", objective);
+      SOLVER_LOG(logger_, first_word, "optimization phase, iteration # ", iter,
+                 ", objective = ", absl::StrFormat("%.15E", objective));
       break;
     }
     case Phase::PUSH: {
       const int64_t iter = num_iterations_ - num_feasibility_iterations_ -
                            num_optimization_iterations_;
-      LOG(INFO) << "Push phase, iteration # " << iter
-                << ", remaining_variables_to_push = "
-                << ComputeNumberOfSuperBasicVariables();
+      SOLVER_LOG(logger_, first_word, "push phase, iteration # ", iter,
+                 ", remaining_variables_to_push = ",
+                 ComputeNumberOfSuperBasicVariables());
     }
   }
 }
 
 void RevisedSimplex::DisplayErrors() {
-  if (parameters_.log_search_progress() || VLOG_IS_ON(1)) {
-    LOG(INFO) << "Primal infeasibility (bounds) = "
-              << variable_values_.ComputeMaximumPrimalInfeasibility();
-    LOG(INFO) << "Primal residual |A.x - b| = "
-              << variable_values_.ComputeMaximumPrimalResidual();
-    LOG(INFO) << "Dual infeasibility (reduced costs) = "
-              << reduced_costs_.ComputeMaximumDualInfeasibility();
-    LOG(INFO) << "Dual residual |c_B - y.B| = "
-              << reduced_costs_.ComputeMaximumDualResidual();
-  }
+  if (!logger_->LoggingIsEnabled()) return;
+  SOLVER_LOG(logger_,
+             "Current status: ", GetProblemStatusString(problem_status_));
+  SOLVER_LOG(logger_, "Primal infeasibility (bounds) = ",
+             variable_values_.ComputeMaximumPrimalInfeasibility());
+  SOLVER_LOG(logger_, "Primal residual |A.x - b| = ",
+             variable_values_.ComputeMaximumPrimalResidual());
+  SOLVER_LOG(logger_, "Dual infeasibility (reduced costs) = ",
+             reduced_costs_.ComputeMaximumDualInfeasibility());
+  SOLVER_LOG(logger_, "Dual residual |c_B - y.B| = ",
+             reduced_costs_.ComputeMaximumDualResidual());
 }
 
 namespace {

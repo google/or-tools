@@ -30,6 +30,13 @@ public final class IntVar implements Literal, LinearExpr {
     this.negation_ = null;
   }
 
+  IntVar(CpModelProto.Builder builder, int index) {
+    this.modelBuilder = builder;
+    this.variableIndex = index;
+    this.varBuilder = modelBuilder.getVariablesBuilder(index);
+    this.negation_ = null;
+  }
+
   @Override
   public String toString() {
     return varBuilder.toString();

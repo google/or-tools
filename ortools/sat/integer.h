@@ -247,6 +247,7 @@ struct AffineExpression {
   // Getters on the bounds of the affine expression.
   IntegerValue Min(IntegerTrail* integer_trail) const;
   IntegerValue Max(IntegerTrail* integer_trail) const;
+  IntegerValue Value(IntegerTrail* integer_trail) const;
   bool IsFixed(IntegerTrail* integer_trail) const;
 
   // Returns the affine expression value under a given LP solution.
@@ -284,6 +285,34 @@ struct DebugSolution
     : public absl::StrongVector<IntegerVariable, IntegerValue> {
   explicit DebugSolution(Model* model) {}
 };
+
+// A value and a literal.
+struct ValueLiteralPair {
+  struct CompareByLiteral {
+    bool operator()(const ValueLiteralPair& a,
+                    const ValueLiteralPair& b) const {
+      return a.literal < b.literal;
+    }
+  };
+  struct CompareByValue {
+    bool operator()(const ValueLiteralPair& a,
+                    const ValueLiteralPair& b) const {
+      return (a.value < b.value) ||
+             (a.value == b.value && a.literal < b.literal);
+    }
+  };
+
+  bool operator==(const ValueLiteralPair& o) const {
+    return value == o.value && literal == o.literal;
+  }
+
+  std::string DebugString() const;
+
+  IntegerValue value = IntegerValue(0);
+  Literal literal = Literal(kNoLiteralIndex);
+};
+
+std::ostream& operator<<(std::ostream& os, const ValueLiteralPair& p);
 
 // Each integer variable x will be associated with a set of literals encoding
 // (x >= v) for some values of v. This class maintains the relationship between
@@ -343,17 +372,6 @@ class IntegerEncoder {
   //
   // Performance note: This function is not particularly fast, however it should
   // only be required during domain creation.
-  struct ValueLiteralPair {
-    ValueLiteralPair() {}
-    ValueLiteralPair(IntegerValue v, Literal l) : value(v), literal(l) {}
-
-    bool operator==(const ValueLiteralPair& o) const {
-      return value == o.value && literal == o.literal;
-    }
-    bool operator<(const ValueLiteralPair& o) const { return value < o.value; }
-    IntegerValue value;
-    Literal literal;
-  };
   std::vector<ValueLiteralPair> FullDomainEncoding(IntegerVariable var) const;
 
   // Same as FullDomainEncoding() but only returns the list of value that are
@@ -1641,8 +1659,8 @@ inline std::function<void(Model*)> ImpliesInInterval(Literal in_interval,
 // in the domain of var (if not already done), and wire everything correctly.
 // This also returns the full encoding, see the FullDomainEncoding() method of
 // the IntegerEncoder class.
-inline std::function<std::vector<IntegerEncoder::ValueLiteralPair>(Model*)>
-FullyEncodeVariable(IntegerVariable var) {
+inline std::function<std::vector<ValueLiteralPair>(Model*)> FullyEncodeVariable(
+    IntegerVariable var) {
   return [=](Model* model) {
     IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
     if (!encoder->VariableIsFullyEncoded(var)) {

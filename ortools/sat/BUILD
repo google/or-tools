@@ -763,6 +763,7 @@ cc_library(
     hdrs = ["implied_bounds.h"],
     deps = [
         ":integer",
+        ":linear_constraint",
         ":model",
         ":sat_base",
         "//ortools/base",
@@ -1161,6 +1162,7 @@ cc_library(
         "@com_google_absl//absl/random",
         "@com_google_absl//absl/random:bit_gen_ref",
         "@com_google_protobuf//:protobuf",
+        "@com_google_absl//absl/numeric:int128",
     ],
 )
 
@@ -1292,6 +1294,7 @@ cc_library(
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_mapping",
+        ":cp_model_presolve",
         ":cp_model_utils",
         ":linear_programming_constraint",
         ":model",

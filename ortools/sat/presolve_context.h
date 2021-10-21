@@ -118,14 +118,18 @@ class PresolveContext {
   // should be such that this cannot happen (tested at validation).
   int64_t MinOf(const LinearExpressionProto& expr) const;
   int64_t MaxOf(const LinearExpressionProto& expr) const;
+  bool IsFixed(const LinearExpressionProto& expr) const;
 
   // Return a super-set of the domain of the linear expression.
   Domain DomainSuperSetOf(const LinearExpressionProto& expr) const;
 
-  // Returns true iff the expr is of the for a * literal + b.
+  // Returns true iff the expr is of the form a * literal + b.
   // The other function can be used to get the liteal that achieve MaxOf().
   bool ExpressionIsAffineBoolean(const LinearExpressionProto& expr) const;
   int LiteralForExpressionMax(const LinearExpressionProto& expr) const;
+
+  // Returns true iff the expr is of the form 1 * var + 0.
+  bool ExpressionIsSingleVariable(const LinearExpressionProto& expr) const;
 
   // This function takes a positive variable reference.
   bool DomainOfVarIsIncludedIn(int var, const Domain& domain) {
@@ -210,26 +214,49 @@ class PresolveContext {
   // TODO(user): Also regroup cte and -cte?
   void ExploitFixedDomain(int var);
 
+  // A "canonical domain" always have a MinOf() equal to zero.
+  // If needed we introduce a new variable with such canonical domain and
+  // add the relation X = Y + offset.
+  //
+  // This is useful in some corner case to avoid overflow.
+  //
+  // TODO(user): When we can always get rid of affine relation, it might be good
+  // to do a final pass to canonicalize all domains in a model after presolve.
+  void CanonicalizeVariable(int ref);
+
+  // Given the relation (X * coeff % mod = rhs % mod), this creates a new
+  // variable so that X = mod * Y + cte.
+  //
+  // This assumes mod > 1 and coeff % mod != 0 (CHECKed).
+  //
+  // Note that the new variable will have a canonical domain (i.e. min == 0).
+  // We also do not create anything if this fixes the given variable.
+  // Returns false if the model is infeasible.
+  bool CanonicalizeAffineVariable(int ref, int64_t coeff, int64_t mod,
+                                  int64_t rhs);
+
   // Adds the relation (ref_x = coeff * ref_y + offset) to the repository.
+  // Returns false if we detect infeasability because of this.
+  //
   // Once the relation is added, it doesn't need to be enforced by a constraint
   // in the model proto, since we will propagate such relation directly and add
   // them to the proto at the end of the presolve.
   //
-  // Returns true if the relation was added.
-  // In some rare case, like if x = 3*z and y = 5*t are already added, we
-  // currently cannot add x = 2 * y and we will return false in these case. So
-  // when this returns false, the relation needs to be enforced by a separate
-  // constraint.
+  // Note that this should always add a relation, even though it might need to
+  // create a new representative for both ref_x and ref_y in some cases. Like if
+  // x = 3z and y = 5t are already added, if we add x = 2y, we have 3z = 10t and
+  // can only resolve this by creating a new variable r such that z = 10r and t
+  // = 3r.
   //
-  // If the relation was added, both variables will be marked to appear in the
-  // special kAffineRelationConstraint. This will allow to identify when a
-  // variable is no longer needed (only appear there and is not a
-  // representative).
-  bool StoreAffineRelation(int ref_x, int ref_y, int64_t coeff, int64_t offset);
+  // All involved variables will be marked to appear in the special
+  // kAffineRelationConstraint. This will allow to identify when a variable is
+  // no longer needed (only appear there and is not a representative).
+  bool StoreAffineRelation(int ref_x, int ref_y, int64_t coeff, int64_t offset,
+                           bool debug_no_recursion = false);
 
   // Adds the fact that ref_a == ref_b using StoreAffineRelation() above.
-  // This should never fail, so the relation will always be added.
-  void StoreBooleanEqualityRelation(int ref_a, int ref_b);
+  // Returns false if this makes the problem infeasible.
+  bool StoreBooleanEqualityRelation(int ref_a, int ref_b);
 
   // Stores/Get the relation target_ref = abs(ref); The first function returns
   // false if it already exist and the second false if it is not present.
@@ -297,6 +324,13 @@ class PresolveContext {
   // Returns true if a literal attached to ref == var exists.
   // It assigns the corresponding to `literal` if non null.
   bool HasVarValueEncoding(int ref, int64_t value, int* literal = nullptr);
+
+  // Returns true if we have literal <=> var = value for all values of var.
+  //
+  // TODO(user): If the domain was shrunk, we can have a false positive.
+  // Still it means that the number of values removed is greater than the number
+  // of values not encoded.
+  bool IsFullyEncoded(int ref) const;
 
   // Stores the fact that literal implies var == value.
   // It returns true if that information is new.
@@ -477,10 +511,6 @@ class PresolveContext {
   // class of size at least 2.
   bool VariableIsNotRepresentativeOfEquivalenceClass(int var) const;
 
-  // Process encoding_remap_queue_ and updates the encoding maps. This could
-  // lead to UNSAT being detected, in which case it will return false.
-  bool RemapEncodingMaps();
-
   // Makes sure we only insert encoding about the current representative.
   //
   // Returns false if ref cannot take the given value (it might not have been
@@ -545,10 +575,6 @@ class PresolveContext {
   // same fixed value, then we can detect it using this and add a new
   // equivalence relation. See ExploitFixedDomain().
   absl::flat_hash_map<int64_t, SavedVariable> constant_to_ref_;
-
-  // When a "representative" gets a new representative, it should be enqueued
-  // here so that we can lazily update the *encoding_ maps below.
-  std::deque<int> encoding_remap_queue_;
 
   // Contains variables with some encoded value: encoding_[i][v] points
   // to the literal attached to the value v of the variable i.

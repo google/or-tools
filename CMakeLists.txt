@@ -216,10 +216,28 @@ message(STATUS "CPLEX support: ${USE_CPLEX}")
 option(USE_XPRESS "Use the XPRESS solver" OFF)
 message(STATUS "XPRESS support: ${USE_XPRESS}")
 
+if(BUILD_JAVA)
+  option(SKIP_GPG "Disable GPG sign" ON)
+  message(STATUS "Java disable gpg:sign: ${SKIP_GPG}")
+
+  option(UNIVERSAL_JAVA_PACKAGE "Build a Java multi OS Package" OFF)
+  message(STATUS "Java multiple os package: ${UNIVERSAL_JAVA_PACKAGE}")
+
+  set(GPG_ARGS "<arg>--pinentry-mode</arg><arg>loopback</arg>" CACHE STRING "Extra options for GPG")
+  message(STATUS "Java GPG options: ${GPG_ARGS}")
+endif()
+
+if(BUILD_PYTHON)
+  option(FETCH_PYTHON_DEPS "Install python required modules if not available" ${BUILD_DEPS})
+  message(STATUS "Python fetch dependencies: ${FETCH_PYTHON_DEPS}")
+endif()
+
 # Build Needed dependencies
 add_subdirectory(cmake/dependencies dependencies)
 list(APPEND CMAKE_PREFIX_PATH ${CMAKE_CURRENT_BINARY_DIR}/dependencies/install)
 
+# Disable CTest targets
+set_property(GLOBAL PROPERTY CTEST_TARGETS_ADDED 1)
 include(CTest)
 
 # Basic type

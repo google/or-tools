@@ -136,21 +136,35 @@ class CpModelPresolver {
                                             int64_t* offset);
   bool CanonicalizeLinearExpression(const ConstraintProto& ct,
                                     LinearExpressionProto* exp);
+  bool CanonicalizeLinMax(ConstraintProto* ct);
 
   // For the linear constraints, we have more than one function.
   bool CanonicalizeLinear(ConstraintProto* ct);
   bool PropagateDomainsInLinear(int c, ConstraintProto* ct);
   bool RemoveSingletonInLinear(ConstraintProto* ct);
   bool PresolveSmallLinear(ConstraintProto* ct);
+  bool PresolveLinearOfSizeOne(ConstraintProto* ct);
+  bool PresolveLinearOfSizeTwo(ConstraintProto* ct);
   bool PresolveLinearOnBooleans(ConstraintProto* ct);
-  void PresolveLinearEqualityModuloTwo(ConstraintProto* ct);
+  bool AddVarAffineRepresentativeFromLinearEquality(int target_index,
+                                                    ConstraintProto* ct);
+  bool PresolveLinearEqualityWithModulo(ConstraintProto* ct);
 
-  // Scheduling helpers.
-  void AddLinearConstraintFromInterval(const ConstraintProto& ct);
+  bool DetectAndProcessOneSidedLinearConstraint(int c, ConstraintProto* ct);
 
   // SetPPC is short for set packing, partitioning and covering constraints.
   // These are sum of booleans <=, = and >= 1 respectively.
   bool ProcessSetPPC();
+
+  // This detects and converts constraints of the form:
+  // "X = sum Boolean * value", with "sum Boolean <= 1".
+  //
+  // Note that it is not super fast, so it shouldn't be called too often.
+  void ExtractEncodingFromLinear();
+  bool ProcessEncodingFromLinear(int linear_encoding_ct_index,
+                                 const ConstraintProto& at_most_or_exactly_one,
+                                 int64_t* num_unique_terms,
+                                 int64_t* num_multiple_terms);
 
   // Removes dominated constraints or fixes some variables for given pair of
   // setppc constraints. This assumes that literals in constraint c1 is subset
@@ -164,7 +178,8 @@ class CpModelPresolver {
   // Extracts AtMostOne constraint from Linear constraint.
   void ExtractAtMostOneFromLinear(ConstraintProto* ct);
 
-  void DivideLinearByGcd(ConstraintProto* ct);
+  // Returns true if the constraint changed.
+  bool DivideLinearByGcd(ConstraintProto* ct);
 
   void ExtractEnforcementLiteralFromLinearConstraint(int ct_index,
                                                      ConstraintProto* ct);

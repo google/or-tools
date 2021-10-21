@@ -20,9 +20,13 @@
 // [END import]
 
 namespace operations_research {
-
 // MaxFlow simple interface example.
 void SimpleMaxFlowProgram() {
+  // [START solver]
+  // Instantiate a SimpleMaxFlow solver.
+  SimpleMaxFlow max_flow;
+  // [END solver]
+
   // [START data]
   // Define three parallel arrays: start_nodes, end_nodes, and the capacities
   // between each pair. For instance, the arc from node 0 to node 1 has a
@@ -33,9 +37,6 @@ void SimpleMaxFlowProgram() {
   // [END data]
 
   // [START constraints]
-  // Instantiate a SimpleMaxFlow solver.
-  SimpleMaxFlow max_flow;
-
   // Add each arc.
   for (int i = 0; i < start_nodes.size(); ++i) {
     max_flow.AddArcWithCapacity(start_nodes[i], end_nodes[i], capacities[i]);
@@ -44,11 +45,11 @@ void SimpleMaxFlowProgram() {
 
   // [START solve]
   // Find the maximum flow between node 0 and node 4.
-  int solve_status = max_flow.Solve(0, 4);
+  int status = max_flow.Solve(0, 4);
   // [END solve]
 
   // [START print_solution]
-  if (solve_status == MaxFlow::OPTIMAL) {
+  if (status == MaxFlow::OPTIMAL) {
     LOG(INFO) << "Max flow: " << max_flow.OptimalFlow();
     LOG(INFO) << "";
     LOG(INFO) << "  Arc    Flow / Capacity";
@@ -58,7 +59,7 @@ void SimpleMaxFlowProgram() {
     }
   } else {
     LOG(INFO) << "Solving the max flow problem failed. Solver status: "
-              << solve_status;
+              << status;
   }
   // [END print_solution]
 }

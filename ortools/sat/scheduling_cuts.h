@@ -40,13 +40,15 @@ namespace sat {
 //    min_demand * min_size * presence_literal
 // amount of total energy.
 //
-// If an interval is performed, it contributes either min_demand * size or
-// demand * min_size. We choose the most violated formulation.
+// If an interval is performed, we use the linear energy formulation (if
+// defined, that is if different from a constant -1), or the McCormick
+// relaxation of the product size * demand if not defined.
 //
 // The maximum energy is capacity * span of intervals at level 0.
 CutGenerator CreateCumulativeEnergyCutGenerator(
     const std::vector<IntervalVariable>& intervals,
-    const IntegerVariable capacity, const std::vector<IntegerVariable>& demands,
+    const AffineExpression& capacity,
+    const std::vector<AffineExpression>& demands,
     const std::vector<LinearExpression>& energies, Model* model);
 
 // For a given set of intervals and demands, we first compute the mandatory part
@@ -62,22 +64,24 @@ CutGenerator CreateCumulativeEnergyCutGenerator(
 //   + sum(presence_literal * min_of_demand) <= capacity.
 CutGenerator CreateCumulativeTimeTableCutGenerator(
     const std::vector<IntervalVariable>& intervals,
-    const IntegerVariable capacity, const std::vector<IntegerVariable>& demands,
-    Model* model);
+    const AffineExpression& capacity,
+    const std::vector<AffineExpression>& demands, Model* model);
 
 // Completion time cuts for the cumulative constraint. It is a simple relaxation
 // where we replace a cumulative task with demand k and duration d by a
 // no_overlap task with duration d * k / capacity_max.
 CutGenerator CreateCumulativeCompletionTimeCutGenerator(
     const std::vector<IntervalVariable>& intervals,
-    const IntegerVariable capacity, const std::vector<IntegerVariable>& demands,
+    const AffineExpression& capacity,
+    const std::vector<AffineExpression>& demands,
     const std::vector<LinearExpression>& energies, Model* model);
 
 // For a given set of intervals in a cumulative constraint, we detect violated
 // mandatory precedences and create a cut for these.
 CutGenerator CreateCumulativePrecedenceCutGenerator(
-    const std::vector<IntervalVariable>& intervals, IntegerVariable capacity,
-    const std::vector<IntegerVariable>& demands, Model* model);
+    const std::vector<IntervalVariable>& intervals,
+    const AffineExpression& capacity,
+    const std::vector<AffineExpression>& demands, Model* model);
 
 // Completion time cuts for the no_overlap_2d constraint. It actually generates
 // the completion time cumulative cuts in both axis.

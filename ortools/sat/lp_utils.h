@@ -54,6 +54,12 @@ int FindRationalFactor(double x, int limit = 1e4, double tolerance = 1e-6);
 std::vector<double> ScaleContinuousVariables(double scaling, double max_bound,
                                              MPModelProto* mp_model);
 
+// This simple step helps and should be done first. Returns false if the model
+// is trivially infeasible because of crossing bounds.
+bool MakeBoundsOfIntegerVariablesInteger(const SatParameters& params,
+                                         MPModelProto* mp_model,
+                                         SolverLogger* logger);
+
 // To satisfy our scaling requirements, any terms that is almost zero can just
 // be set to zero. We need to do that before operations like
 // DetectImpliedIntegers(), becauses really low coefficients can cause issues

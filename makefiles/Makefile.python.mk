@@ -602,6 +602,7 @@ test_python_algorithms_samples: \
 
 .PHONY: test_python_constraint_solver_samples # Run all Python CP Samples (located in ortools/constraint_solver/samples)
 test_python_constraint_solver_samples: \
+ rpy_nqueens_cp \
  rpy_simple_cp_program \
  rpy_simple_routing_program \
  rpy_tsp \
@@ -662,6 +663,7 @@ test_python_sat_samples: \
  rpy_literal_sample_sat \
  rpy_minimal_jobshop_sat \
  rpy_no_overlap_sample_sat \
+ rpy_nqueens_sat \
  rpy_nurses_sat \
  rpy_optional_interval_sample_sat \
  rpy_rabbits_and_pheasants_sat \
@@ -856,7 +858,6 @@ test_python_python: \
  rpy_linear_assignment_api \
  rpy_linear_programming \
  rpy_magic_sequence_distribute \
- rpy_nqueens_sat \
  rpy_pyflow_example \
  rpy_reallocate_sat \
  rpy_rcpsp_sat \

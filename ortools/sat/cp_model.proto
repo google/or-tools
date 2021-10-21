@@ -120,29 +120,17 @@ message ElementConstraintProto {
 // >= 0) but can also be referred by other constraints using this "interval"
 // concept.
 message IntervalConstraintProto {
-  int32 start = 1;
-  int32 end = 2;
-  int32 size = 3;
-
-  // EXPERIMENTAL: This will become the new way to specify an interval.
-  // Depending on the parameters, the presolve will convert the old way to the
-  // new way. Do not forget to add an associated linear constraint if you use
-  // this directly.
-  //
-  // If any of this field is set, then all must be set and the ones above will
-  // be ignored.
-  //
   // IMPORTANT: For now, this constraint do not enforce any relations on the
   // view, and a linear constraint must be added together with this to enforce
-  // enforcement => start_view + size_view == end_view. An enforcement =>
-  // size_view >=0 might also be needed.
+  // enforcement => start + size == end. An enforcement => size >=0 might also
+  // be needed.
   //
   // IMPORTANT: For now, we just support affine relation. We could easily
   // create an intermediate variable to support full linear expression, but this
   // isn't done currently.
-  LinearExpressionProto start_view = 4;
-  LinearExpressionProto end_view = 5;
-  LinearExpressionProto size_view = 6;
+  LinearExpressionProto start = 4;
+  LinearExpressionProto end = 5;
+  LinearExpressionProto size = 6;
 }
 
 // All the intervals (index of IntervalConstraintProto) must be disjoint. More
@@ -168,20 +156,10 @@ message NoOverlap2DConstraintProto {
 // a capacity. Note that intervals are interpreted as [start, end) and as
 // such intervals like [2,3) and [3,4) do not overlap for the point of view of
 // this constraint. Moreover, intervals of size zero are ignored.
-//
-// TODO(user,user): Switch to linear expression for demands and capacity.
 message CumulativeConstraintProto {
-  int32 capacity = 1;
+  LinearExpressionProto capacity = 1;
   repeated int32 intervals = 2;
-  repeated int32 demands = 3;  // Same size as intervals.
-
-  // EXPERIMENTAL: This optional field adds a redundant and more precise
-  // representation of the energy of a task (instead of the traditional demand *
-  // duration. This is only used by the linear relaxation, and it is only useful
-  // if both demand and durations are variable, and if the additional linear
-  // equation if more precise than the linear relaxation (McCormick equation) of
-  // the product demand * duration.
-  repeated LinearExpressionProto energies = 4;
+  repeated LinearExpressionProto demands = 3;  // Same size as intervals.
 }
 
 // Maintain a reservoir level within bounds. The water level starts at 0, and at
@@ -377,25 +355,21 @@ message ConstraintProto {
     // is the same as the sign of vars[0].
     IntegerArgumentProto int_mod = 8;
 
-    // The int_max constraint forces the target to equal the maximum of all
-    // variables.
+    // The deprecated int_max constraint forces the target to equal the maximum
+    // of all variables.
     //
     // The lin_max constraint forces the target to equal the maximum of all
     // linear expressions.
-    //
-    // TODO(user): Remove int_max in favor of lin_max.
-    IntegerArgumentProto int_max = 9;
+    IntegerArgumentProto int_max = 9 [deprecated = true];
     LinearArgumentProto lin_max = 27;
 
-    // The int_min constraint forces the target to equal the minimum of all
-    // variables.
+    // The deprecated int_min constraint forces the target to equal the minimum
+    // of all variables.
     //
-    // The lin_min constraint forces the target to equal the minimum of all
-    // linear expressions.
-    //
-    // TODO(user): Remove int_min in favor of lin_min.
-    IntegerArgumentProto int_min = 10;
-    LinearArgumentProto lin_min = 28;
+    // The deprecated lin_min constraint forces the target to equal the minimum
+    // of all linear expressions.
+    IntegerArgumentProto int_min = 10 [deprecated = true];
+    LinearArgumentProto lin_min = 28 [deprecated = true];
 
     // The int_prod constraint forces the target to equal the product of all
     // variables. By convention, because we can just remove term equal to one,
@@ -621,9 +595,8 @@ message CpModelProto {
   // Advanced Usage: if not all variables appears and the parameter
   // "instantiate_all_variables" is set to false, then the solver will not try
   // to instantiate the variables that do not appear. Thus, at the end of the
-  // search, not all variables may be fixed and this is why we have the
-  // solution_lower_bounds and solution_upper_bounds fields in the
-  // CpSolverResponse.
+  // search, not all variables may be fixed. Currently, we will set them to
+  // their lower bound in the solution.
   repeated DecisionStrategyProto search_strategy = 5;
 
   // Solution hint.
@@ -691,11 +664,17 @@ enum CpSolverStatus {
   OPTIMAL = 4;
 }
 
+// Just a message used to store dense solution.
+// This is used by the additional_solutions field.
+message CpSolverSolution {
+  repeated int64 values = 1;
+}
+
 // The response returned by a solver trying to solve a CpModelProto.
 //
 // TODO(user): support returning multiple solutions. Look at the Stubby
 // streaming API as we probably wants to get them as they are found.
-// Next id: 27
+// Next id: 28
 message CpSolverResponse {
   // The status of the solve.
   CpSolverStatus status = 1;
@@ -717,15 +696,13 @@ message CpSolverResponse {
   // maximization problem.
   double best_objective_bound = 4;
 
-  // Advanced usage.
+  // If the parameter fill_additional_solutions_in_response is set, then we
+  // copy all the solutions from our internal solution pool here.
   //
-  // If the problem has some variables that are not fixed at the end of the
-  // search (because of a particular search strategy in the CpModelProto) then
-  // this will be used instead of filling the solution above. The two fields
-  // will then contains the lower and upper bounds of each variable as they were
-  // when the best "solution" was found.
-  repeated int64 solution_lower_bounds = 18;
-  repeated int64 solution_upper_bounds = 19;
+  // Note that the one returned in the solution field will likely appear here
+  // too. Do not rely on the solutions order as it depends on our internal
+  // representation (after postsolve).
+  repeated CpSolverSolution additional_solutions = 27;
 
   // Advanced usage.
   //
@@ -761,13 +738,6 @@ message CpSolverResponse {
   //
   // TODO(user): Allows for returning multiple core at once.
   repeated int32 sufficient_assumptions_for_infeasibility = 23;
-
-  // This will be true iff the solver was asked to find all solutions to a
-  // satisfiability problem (or all optimal solutions to an optimization
-  // problem), and it was successful in doing so.
-  //
-  // TODO(user): Remove as we also use the OPTIMAL vs FEASIBLE status for that.
-  bool all_solutions_were_found = 5;
 
   // Some statistics about the solve.
   int64 num_booleans = 10;

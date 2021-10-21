@@ -552,75 +552,95 @@ void ExpandIntProd(ConstraintProto* ct, PresolveContext* context) {
 }
 
 void ExpandInverse(ConstraintProto* ct, PresolveContext* context) {
-  const int size = ct->inverse().f_direct().size();
-  CHECK_EQ(size, ct->inverse().f_inverse().size());
+  const auto& f_direct = ct->inverse().f_direct();
+  const auto& f_inverse = ct->inverse().f_inverse();
+  const int n = f_direct.size();
+  CHECK_EQ(n, f_inverse.size());
 
-  // Make sure the domains are included in [0, size - 1).
+  // Make sure the domains are included in [0, n - 1).
+  // Note that if a variable and its negation appear, the domains will be set to
+  // zero here.
   //
   // TODO(user): Add support for UNSAT at expansion. This should create empty
   // domain if UNSAT, so it should still work correctly.
-  for (const int ref : ct->inverse().f_direct()) {
-    if (!context->IntersectDomainWith(ref, Domain(0, size - 1))) {
+  absl::flat_hash_set<int> used_variables;
+  for (const int ref : f_direct) {
+    used_variables.insert(PositiveRef(ref));
+    if (!context->IntersectDomainWith(ref, Domain(0, n - 1))) {
       VLOG(1) << "Empty domain for a variable in ExpandInverse()";
       return;
     }
   }
-  for (const int ref : ct->inverse().f_inverse()) {
-    if (!context->IntersectDomainWith(ref, Domain(0, size - 1))) {
+  for (const int ref : f_inverse) {
+    used_variables.insert(PositiveRef(ref));
+    if (!context->IntersectDomainWith(ref, Domain(0, n - 1))) {
       VLOG(1) << "Empty domain for a variable in ExpandInverse()";
       return;
+    }
+  }
+
+  // If we have duplicate variables, we make sure the domain are reduced
+  // as the loop below might not detect incompatibilities.
+  if (used_variables.size() != 2 * n) {
+    for (int i = 0; i < n; ++i) {
+      for (int j = 0; j < n; ++j) {
+        // Note that if we don't have the same sign, both domain are at zero.
+        if (PositiveRef(f_direct[i]) != PositiveRef(f_inverse[j])) continue;
+
+        // We can't have i or j as value if i != j.
+        if (i == j) continue;
+        if (!context->IntersectDomainWith(
+                f_direct[i], Domain::FromValues({i, j}).Complement())) {
+          return;
+        }
+      }
     }
   }
 
   // Reduce the domains of each variable by checking that the inverse value
   // exists.
   std::vector<int64_t> possible_values;
+
   // Propagate from one vector to its counterpart.
-  // Note this reaches the fixpoint as there is a one to one mapping between
-  // (variable-value) pairs in each vector.
-  const auto filter_inverse_domain = [context, size, &possible_values](
-                                         const auto& direct,
-                                         const auto& inverse) {
-    // Propagate for the inverse vector to the direct vector.
-    for (int i = 0; i < size; ++i) {
-      possible_values.clear();
-      const Domain domain = context->DomainOf(direct[i]);
-      bool removed_value = false;
-      for (const int64_t j : domain.Values()) {
-        if (context->DomainOf(inverse[j]).Contains(i)) {
-          possible_values.push_back(j);
-        } else {
-          removed_value = true;
+  const auto filter_inverse_domain =
+      [context, n, &possible_values](const auto& direct, const auto& inverse) {
+        // Propagate from the inverse vector to the direct vector.
+        for (int i = 0; i < n; ++i) {
+          possible_values.clear();
+          const Domain domain = context->DomainOf(direct[i]);
+          bool removed_value = false;
+          for (const int64_t j : domain.Values()) {
+            if (context->DomainOf(inverse[j]).Contains(i)) {
+              possible_values.push_back(j);
+            } else {
+              removed_value = true;
+            }
+          }
+          if (removed_value) {
+            if (!context->IntersectDomainWith(
+                    direct[i], Domain::FromValues(possible_values))) {
+              VLOG(1) << "Empty domain for a variable in ExpandInverse()";
+              return false;
+            }
+          }
         }
-      }
-      if (removed_value) {
-        if (!context->IntersectDomainWith(
-                direct[i], Domain::FromValues(possible_values))) {
-          VLOG(1) << "Empty domain for a variable in ExpandInverse()";
-          return false;
-        }
-      }
-    }
-    return true;
-  };
+        return true;
+      };
 
-  if (!filter_inverse_domain(ct->inverse().f_direct(),
-                             ct->inverse().f_inverse())) {
-    return;
-  }
-
-  if (!filter_inverse_domain(ct->inverse().f_inverse(),
-                             ct->inverse().f_direct())) {
-    return;
-  }
+  // Note that this should reach the fixed point in one pass.
+  // However, if we have duplicate variable, I am not sure.
+  if (!filter_inverse_domain(f_direct, f_inverse)) return;
+  if (!filter_inverse_domain(f_inverse, f_direct)) return;
 
   // Expand the inverse constraint by associating literal to var == value
   // and sharing them between the direct and inverse variables.
-  for (int i = 0; i < size; ++i) {
-    const int f_i = ct->inverse().f_direct(i);
+  //
+  // Note that this is only correct because the domain are tight now.
+  for (int i = 0; i < n; ++i) {
+    const int f_i = f_direct[i];
     for (const int64_t j : context->DomainOf(f_i).Values()) {
       // We have f[i] == j <=> r[j] == i;
-      const int r_j = ct->inverse().f_inverse(j);
+      const int r_j = f_inverse[j];
       int r_j_i;
       if (context->HasVarValueEncoding(r_j, i, &r_j_i)) {
         context->InsertVarValueEncoding(r_j_i, f_i, j);
@@ -1457,27 +1477,48 @@ void ExpandPositiveTable(ConstraintProto* ct, PresolveContext* context) {
   ct->Clear();
 }
 
-void ExpandAllDiff(bool expand_non_permutations, ConstraintProto* ct,
+bool AllDiffShouldBeExpanded(const Domain& union_of_domains,
+                             ConstraintProto* ct, PresolveContext* context) {
+  const AllDifferentConstraintProto& proto = *ct->mutable_all_diff();
+  const int num_vars = proto.vars_size();
+  int num_fully_encoded = 0;
+  for (int i = 0; i < num_vars; ++i) {
+    if (context->IsFullyEncoded(proto.vars(i))) {
+      num_fully_encoded++;
+    }
+  }
+
+  if ((union_of_domains.Size() <= 2 * proto.vars_size()) ||
+      (union_of_domains.Size() <= 32)) {
+    // Small domains.
+    return true;
+  }
+
+  if (num_fully_encoded == num_vars && union_of_domains.Size() < 256) {
+    // All variables fully encoded, and domains are small enough.
+    return true;
+  }
+  return false;
+}
+
+void ExpandAllDiff(bool force_alldiff_expansion, ConstraintProto* ct,
                    PresolveContext* context) {
   AllDifferentConstraintProto& proto = *ct->mutable_all_diff();
-  if (proto.vars_size() <= 2) return;
+  if (proto.vars_size() <= 1) return;
 
   const int num_vars = proto.vars_size();
-
   Domain union_of_domains = context->DomainOf(proto.vars(0));
   for (int i = 1; i < num_vars; ++i) {
     union_of_domains =
         union_of_domains.UnionWith(context->DomainOf(proto.vars(i)));
   }
 
-  const bool is_a_permutation = proto.vars_size() == union_of_domains.Size();
-  const bool has_small_domains =
-      (union_of_domains.Size() <= 2 * proto.vars_size()) ||
-      (union_of_domains.Size() <= 32);
-
-  if (!is_a_permutation && !has_small_domains && !expand_non_permutations) {
+  if (!AllDiffShouldBeExpanded(union_of_domains, ct, context) &&
+      !force_alldiff_expansion) {
     return;
   }
+
+  const bool is_a_permutation = num_vars == union_of_domains.Size();
 
   // Collect all possible variables that can take each value, and add one linear
   // equation per value stating that this value can be assigned at most once, or
@@ -1530,10 +1571,102 @@ void ExpandAllDiff(bool expand_non_permutations, ConstraintProto* ct,
     at_most_or_equal_one->add_domain(ub);
   }
   if (is_a_permutation) {
-    context->UpdateRuleStats("alldiff: permutation expanded");
+    context->UpdateRuleStats("all_diff: permutation expanded");
   } else {
-    context->UpdateRuleStats("alldiff: expanded");
+    context->UpdateRuleStats("all_diff: expanded");
   }
+  ct->Clear();
+}
+
+// Replaces a constraint literal => ax + by != cte by a set of clauses.
+// This is performed if the domains are small enough, and the variables are
+// fully encoded.
+//
+// We do it during the expansion as we want the first pass of the presolve to be
+// complete.
+void ExpandSomeLinearOfSizeTwo(ConstraintProto* ct, PresolveContext* context) {
+  const LinearConstraintProto& arg = ct->linear();
+  if (arg.vars_size() != 2) return;
+
+  const int var1 = arg.vars(0);
+  const int var2 = arg.vars(1);
+  if (context->IsFixed(var1) || context->IsFixed(var2)) return;
+
+  const int64_t coeff1 = arg.coeffs(0);
+  const int64_t coeff2 = arg.coeffs(1);
+
+  const Domain reachable_rhs_superset =
+      context->DomainOf(var1).MultiplicationBy(coeff1).AdditionWith(
+          context->DomainOf(var2).MultiplicationBy(coeff2));
+
+  const Domain infeasible_reachable_values =
+      reachable_rhs_superset.IntersectionWith(
+          ReadDomainFromProto(arg).Complement());
+
+  // We only deal with != cte constraints.
+  if (infeasible_reachable_values.Size() != 1) return;
+
+  // coeff1 * v1 + coeff2 * v2 != cte.
+  int64_t a = coeff1;
+  int64_t b = coeff2;
+  int64_t cte = infeasible_reachable_values.FixedValue();
+  int64_t x0 = 0;
+  int64_t y0 = 0;
+  if (!SolveDiophantineEquationOfSizeTwo(a, b, cte, x0, y0)) {
+    // no solution.
+    context->UpdateRuleStats("linear: expand always feasible ax + by != cte");
+    ct->Clear();
+    return;
+  }
+  const Domain reduced_domain =
+      context->DomainOf(var1)
+          .AdditionWith(Domain(-x0))
+          .InverseMultiplicationBy(b)
+          .IntersectionWith(context->DomainOf(var2)
+                                .AdditionWith(Domain(-y0))
+                                .InverseMultiplicationBy(-a));
+
+  if (reduced_domain.Size() > 16) return;
+
+  // Check if all the needed values are encoded.
+  // TODO(user): Do we force encoding for very small domains? Current
+  // experiments says no, but revisit later.
+  const int64_t size1 = context->DomainOf(var1).Size();
+  const int64_t size2 = context->DomainOf(var2).Size();
+  for (const int64_t z : reduced_domain.Values()) {
+    const int64_t value1 = x0 + b * z;
+    const int64_t value2 = y0 - a * z;
+    DCHECK(context->DomainContains(var1, value1)) << "value1 = " << value1;
+    DCHECK(context->DomainContains(var2, value2)) << "value2 = " << value2;
+    DCHECK_EQ(coeff1 * value1 + coeff2 * value2,
+              infeasible_reachable_values.FixedValue());
+    // TODO(user, fdid): Presolve if one or two variables are Boolean.
+    if (!context->HasVarValueEncoding(var1, value1, nullptr) || size1 == 2) {
+      return;
+    }
+    if (!context->HasVarValueEncoding(var2, value2, nullptr) || size2 == 2) {
+      return;
+    }
+  }
+
+  // All encoding literals already exist and the number of clauses to create
+  // is small enough. We can encode the constraint using just clauses.
+  for (const int64_t z : reduced_domain.Values()) {
+    const int64_t value1 = x0 + b * z;
+    const int64_t value2 = y0 - a * z;
+    // We cannot have both lit1 and lit2 true.
+    const int lit1 = context->GetOrCreateVarValueEncoding(var1, value1);
+    const int lit2 = context->GetOrCreateVarValueEncoding(var2, value2);
+    auto* bool_or =
+        context->working_model->add_constraints()->mutable_bool_or();
+    bool_or->add_literals(NegatedRef(lit1));
+    bool_or->add_literals(NegatedRef(lit2));
+    for (const int lit : ct->enforcement_literal()) {
+      bool_or->add_literals(NegatedRef(lit));
+    }
+  }
+
+  context->UpdateRuleStats("linear: expand small ax + by != cte");
   ct->Clear();
 }
 
@@ -1553,14 +1686,13 @@ void ExpandCpModel(PresolveContext* context) {
   // Clear the precedence cache.
   context->ClearPrecedenceCache();
 
+  // First pass: we look at constraints that may fully encode variables.
   for (int i = 0; i < context->working_model->constraints_size(); ++i) {
     ConstraintProto* const ct = context->working_model->mutable_constraints(i);
     bool skip = false;
     switch (ct->constraint_case()) {
       case ConstraintProto::ConstraintCase::kReservoir:
-        if (context->params().expand_reservoir_constraints()) {
-          ExpandReservoir(ct, context);
-        }
+        ExpandReservoir(ct, context);
         break;
       case ConstraintProto::ConstraintCase::kIntMod:
         ExpandIntMod(ct, context);
@@ -1575,33 +1707,59 @@ void ExpandCpModel(PresolveContext* context) {
         ExpandLinMin(ct, context);
         break;
       case ConstraintProto::ConstraintCase::kElement:
-        if (context->params().expand_element_constraints()) {
-          ExpandElement(ct, context);
-        }
+        ExpandElement(ct, context);
         break;
       case ConstraintProto::ConstraintCase::kInverse:
         ExpandInverse(ct, context);
         break;
       case ConstraintProto::ConstraintCase::kAutomaton:
-        if (context->params().expand_automaton_constraints()) {
-          ExpandAutomaton(ct, context);
-        }
+        ExpandAutomaton(ct, context);
         break;
       case ConstraintProto::ConstraintCase::kTable:
         if (ct->table().negated()) {
           ExpandNegativeTable(ct, context);
-        } else if (context->params().expand_table_constraints()) {
+        } else {
           ExpandPositiveTable(ct, context);
         }
-        break;
-      case ConstraintProto::ConstraintCase::kAllDiff:
-        ExpandAllDiff(context->params().expand_alldiff_constraints(), ct,
-                      context);
         break;
       default:
         skip = true;
         break;
     }
+    if (skip) continue;  // Nothing was done for this constraint.
+
+    // Update variable-constraint graph.
+    context->UpdateNewConstraintsVariableUsage();
+    if (ct->constraint_case() == ConstraintProto::CONSTRAINT_NOT_SET) {
+      context->UpdateConstraintVariableUsage(i);
+    }
+
+    // Early exit if the model is unsat.
+    if (context->ModelIsUnsat()) {
+      SOLVER_LOG(context->logger(), "UNSAT after expansion of ",
+                 ProtobufShortDebugString(*ct));
+      return;
+    }
+  }
+
+  // Second pass. We may decide to expand constraints if all their variables
+  // are fully encoded.
+  for (int i = 0; i < context->working_model->constraints_size(); ++i) {
+    ConstraintProto* const ct = context->working_model->mutable_constraints(i);
+    bool skip = false;
+    switch (ct->constraint_case()) {
+      case ConstraintProto::ConstraintCase::kAllDiff:
+        ExpandAllDiff(context->params().expand_alldiff_constraints(), ct,
+                      context);
+        break;
+      case ConstraintProto::ConstraintCase::kLinear:
+        ExpandSomeLinearOfSizeTwo(ct, context);
+        break;
+      default:
+        skip = true;
+        break;
+    }
+
     if (skip) continue;  // Nothing was done for this constraint.
 
     // Update variable-constraint graph.

@@ -45,8 +45,7 @@ void LinearConstraintBuilder::AddTerm(AffineExpression expr,
       terms_.push_back({NegationOf(expr.var), -coeff * expr.coeff});
     }
   }
-  if (lb_ > kMinIntegerValue) lb_ -= coeff * expr.constant;
-  if (ub_ < kMaxIntegerValue) ub_ -= coeff * expr.constant;
+  offset_ += coeff * expr.constant;
 }
 
 void LinearConstraintBuilder::AddLinearExpression(
@@ -64,8 +63,7 @@ void LinearConstraintBuilder::AddLinearExpression(const LinearExpression& expr,
       terms_.push_back({NegationOf(expr.vars[i]), -expr.coeffs[i] * coeff});
     }
   }
-  if (lb_ > kMinIntegerValue) lb_ -= expr.offset * coeff;
-  if (ub_ < kMaxIntegerValue) ub_ -= expr.offset * coeff;
+  offset_ += expr.offset * coeff;
 }
 
 void LinearConstraintBuilder::AddQuadraticLowerBound(
@@ -86,8 +84,7 @@ void LinearConstraintBuilder::AddQuadraticLowerBound(
 }
 
 void LinearConstraintBuilder::AddConstant(IntegerValue value) {
-  if (lb_ > kMinIntegerValue) lb_ -= value;
-  if (ub_ < kMaxIntegerValue) ub_ -= value;
+  offset_ += value;
 }
 
 ABSL_MUST_USE_RESULT bool LinearConstraintBuilder::AddLiteralTerm(
@@ -113,49 +110,29 @@ ABSL_MUST_USE_RESULT bool LinearConstraintBuilder::AddLiteralTerm(
   }
   if (has_opposite_view) {
     AddTerm(encoder_.GetLiteralView(lit.Negated()), -coeff);
-    if (lb_ > kMinIntegerValue) lb_ -= coeff;
-    if (ub_ < kMaxIntegerValue) ub_ -= coeff;
+    offset_ += coeff;
     return true;
   }
   return false;
 }
 
-void CleanTermsAndFillConstraint(
-    std::vector<std::pair<IntegerVariable, IntegerValue>>* terms,
-    LinearConstraint* constraint) {
-  constraint->vars.clear();
-  constraint->coeffs.clear();
-
-  // Sort and add coeff of duplicate variables. Note that a variable and
-  // its negation will appear one after another in the natural order.
-  std::sort(terms->begin(), terms->end());
-  IntegerVariable previous_var = kNoIntegerVariable;
-  IntegerValue current_coeff(0);
-  for (const std::pair<IntegerVariable, IntegerValue> entry : *terms) {
-    if (previous_var == entry.first) {
-      current_coeff += entry.second;
-    } else if (previous_var == NegationOf(entry.first)) {
-      current_coeff -= entry.second;
-    } else {
-      if (current_coeff != 0) {
-        constraint->vars.push_back(previous_var);
-        constraint->coeffs.push_back(current_coeff);
-      }
-      previous_var = entry.first;
-      current_coeff = entry.second;
-    }
-  }
-  if (current_coeff != 0) {
-    constraint->vars.push_back(previous_var);
-    constraint->coeffs.push_back(current_coeff);
-  }
+LinearConstraint LinearConstraintBuilder::Build() {
+  return BuildConstraint(lb_, ub_);
 }
 
-LinearConstraint LinearConstraintBuilder::Build() {
+LinearConstraint LinearConstraintBuilder::BuildConstraint(IntegerValue lb,
+                                                          IntegerValue ub) {
   LinearConstraint result;
-  result.lb = lb_;
-  result.ub = ub_;
+  result.lb = lb > kMinIntegerValue ? lb - offset_ : lb;
+  result.ub = ub < kMaxIntegerValue ? ub - offset_ : ub;
   CleanTermsAndFillConstraint(&terms_, &result);
+  return result;
+}
+
+LinearExpression LinearConstraintBuilder::BuildExpression() {
+  LinearExpression result;
+  CleanTermsAndFillConstraint(&terms_, &result);
+  result.offset = offset_;
   return result;
 }
 
