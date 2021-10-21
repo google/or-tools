@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// [START program]
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
@@ -20,7 +21,7 @@ import com.google.ortools.sat.CpSolverSolutionCallback;
 import com.google.ortools.sat.IntVar;
 
 /** Code sample that solves a model and displays a small number of solutions. */
-public class StopAfterNSolutionsSampleSat {
+public final class StopAfterNSolutionsSampleSat {
   static class VarArraySolutionPrinterWithLimit extends CpSolverSolutionCallback {
     public VarArraySolutionPrinterWithLimit(IntVar[] variables, int limit) {
       variableArray = variables;
@@ -74,4 +75,7 @@ public class StopAfterNSolutionsSampleSat {
       throw new RuntimeException("Did not stop the search correctly.");
     }
   }
+
+  private StopAfterNSolutionsSampleSat() {}
 }
+// [END program]

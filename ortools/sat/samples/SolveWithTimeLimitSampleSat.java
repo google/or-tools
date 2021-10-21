@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// [START program]
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
@@ -20,7 +21,7 @@ import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.IntVar;
 
 /** Solves a problem with a time limit. */
-public class SolveWithTimeLimitSampleSat {
+public final class SolveWithTimeLimitSampleSat {
   public static void main(String[] args) throws Exception {
     Loader.loadNativeLibraries();
     // Create the model.
@@ -45,4 +46,7 @@ public class SolveWithTimeLimitSampleSat {
       System.out.println("z = " + solver.value(z));
     }
   }
+
+  private SolveWithTimeLimitSampleSat() {}
 }
+// [END program]
