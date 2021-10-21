@@ -1692,9 +1692,7 @@ void ExpandCpModel(PresolveContext* context) {
     bool skip = false;
     switch (ct->constraint_case()) {
       case ConstraintProto::ConstraintCase::kReservoir:
-        if (context->params().expand_reservoir_constraints()) {
-          ExpandReservoir(ct, context);
-        }
+        ExpandReservoir(ct, context);
         break;
       case ConstraintProto::ConstraintCase::kIntMod:
         ExpandIntMod(ct, context);
@@ -1709,17 +1707,13 @@ void ExpandCpModel(PresolveContext* context) {
         ExpandLinMin(ct, context);
         break;
       case ConstraintProto::ConstraintCase::kElement:
-        if (context->params().expand_element_constraints()) {
-          ExpandElement(ct, context);
-        }
+        ExpandElement(ct, context);
         break;
       case ConstraintProto::ConstraintCase::kInverse:
         ExpandInverse(ct, context);
         break;
       case ConstraintProto::ConstraintCase::kAutomaton:
-        if (context->params().expand_automaton_constraints()) {
-          ExpandAutomaton(ct, context);
-        }
+        ExpandAutomaton(ct, context);
         break;
       case ConstraintProto::ConstraintCase::kTable:
         if (ct->table().negated()) {

@@ -105,16 +105,10 @@ void LoadIntMaxConstraint(const ConstraintProto& ct, Model* m);
 void LoadNoOverlapConstraint(const ConstraintProto& ct, Model* m);
 void LoadNoOverlap2dConstraint(const ConstraintProto& ct, Model* m);
 void LoadCumulativeConstraint(const ConstraintProto& ct, Model* m);
-void LoadReservoirConstraint(const ConstraintProto& ct, Model* m);
-void LoadElementConstraintBounds(const ConstraintProto& ct, Model* m);
-void LoadElementConstraintAC(const ConstraintProto& ct, Model* m);
-void LoadElementConstraint(const ConstraintProto& ct, Model* m);
 void LoadTableConstraint(const ConstraintProto& ct, Model* m);
-void LoadAutomatonConstraint(const ConstraintProto& ct, Model* m);
 void LoadCircuitConstraint(const ConstraintProto& ct, Model* m);
 void LoadRoutesConstraint(const ConstraintProto& ct, Model* m);
 void LoadCircuitCoveringConstraint(const ConstraintProto& ct, Model* m);
-void LoadInverseConstraint(const ConstraintProto& ct, Model* m);
 
 }  // namespace sat
 }  // namespace operations_research

@@ -49,23 +49,6 @@ std::function<void(Model*)> LiteralTableConstraint(
     const std::vector<std::vector<Literal>>& literal_tuples,
     const std::vector<Literal>& line_literals);
 
-// Given an automaton defined by a set of 3-tuples:
-//     (state, transition_with_value_as_label, next_state)
-// this accepts the sequences of vars.size() variables that are recognized by
-// this automaton. That is:
-//   - We start from the initial state.
-//   - For each variable, we move along the transition labeled by this variable
-//     value. Moreover, the variable must take a value that correspond to a
-//     feasible transition.
-//   - We only accept sequences that ends in one of the final states.
-//
-// We CHECK that there is only one possible transition for a state/value pair.
-// See the test for some examples.
-std::function<void(Model*)> TransitionConstraint(
-    const std::vector<IntegerVariable>& vars,
-    const std::vector<std::vector<int64_t>>& automaton, int64_t initial_state,
-    const std::vector<int64_t>& final_states);
-
 }  // namespace sat
 }  // namespace operations_research
 
