@@ -27,20 +27,6 @@
 namespace operations_research {
 namespace sat {
 
-// Enforces that the given tuple of variables is equal to one of the given
-// tuples. All the tuples must have the same size as var.size(), this is
-// Checked.
-void AddTableConstraint(absl::Span<const IntegerVariable> vars,
-                        std::vector<std::vector<int64_t>> tuples, Model* model);
-
-// Enforces that none of the given tuple appear.
-//
-// TODO(user): we could propagate more than what we currently do which is simply
-// adding one clause per tuples.
-void AddNegatedTableConstraint(absl::Span<const IntegerVariable> vars,
-                               std::vector<std::vector<int64_t>> tuples,
-                               Model* model);
-
 // Enforces that exactly one literal in line_literals is true, and that
 // all literals in the corresponding line of the literal_tuples matrix are true.
 // This constraint assumes that exactly one literal per column of the

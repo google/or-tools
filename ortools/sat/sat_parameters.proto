@@ -463,10 +463,6 @@ message SatParameters {
   optional bool cp_model_use_sat_presolve = 93 [default = true];
   optional bool use_sat_inprocessing = 163 [default = false];
 
-  // If true, the positive table constraints are expanded.
-  // Note that currently, negative table constraints are always expanded.
-  optional bool expand_table_constraints = 158 [default = true];
-
   // If true, expand all_different constraints that are not permutations.
   // Permutations (#Variables = #Values) are always expanded.
   optional bool expand_alldiff_constraints = 170 [default = false];

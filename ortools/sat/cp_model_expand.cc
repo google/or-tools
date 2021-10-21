@@ -1718,7 +1718,7 @@ void ExpandCpModel(PresolveContext* context) {
       case ConstraintProto::ConstraintCase::kTable:
         if (ct->table().negated()) {
           ExpandNegativeTable(ct, context);
-        } else if (context->params().expand_table_constraints()) {
+        } else {
           ExpandPositiveTable(ct, context);
         }
         break;

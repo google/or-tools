@@ -1219,59 +1219,6 @@ void LoadCumulativeConstraint(const ConstraintProto& ct, Model* m) {
   m->Add(Cumulative(intervals, demands, capacity));
 }
 
-void LoadTableConstraint(const ConstraintProto& ct, Model* m) {
-  auto* mapping = m->GetOrCreate<CpModelMapping>();
-  const std::vector<IntegerVariable> vars =
-      mapping->Integers(ct.table().vars());
-  const std::vector<int64_t> values = ValuesFromProto(ct.table().values());
-  const int num_vars = vars.size();
-  const int num_tuples = values.size() / num_vars;
-  std::vector<std::vector<int64_t>> tuples(num_tuples);
-  int count = 0;
-  for (int i = 0; i < num_tuples; ++i) {
-    for (int j = 0; j < num_vars; ++j) {
-      tuples[i].push_back(values[count++]);
-    }
-  }
-  if (ct.table().negated()) {
-    AddNegatedTableConstraint(vars, std::move(tuples), m);
-  } else {
-    AddTableConstraint(vars, std::move(tuples), m);
-  }
-}
-
-// From vector of n IntegerVariables, returns an n x n matrix of Literal
-// such that matrix[i][j] is the Literal corresponding to vars[i] == j.
-std::vector<std::vector<Literal>> GetSquareMatrixFromIntegerVariables(
-    const std::vector<IntegerVariable>& vars, Model* m) {
-  const int n = vars.size();
-  const Literal kTrueLiteral =
-      m->GetOrCreate<IntegerEncoder>()->GetTrueLiteral();
-  const Literal kFalseLiteral =
-      m->GetOrCreate<IntegerEncoder>()->GetFalseLiteral();
-  std::vector<std::vector<Literal>> matrix(
-      n, std::vector<Literal>(n, kFalseLiteral));
-  for (int i = 0; i < n; i++) {
-    for (int j = 0; j < n; j++) {
-      if (m->Get(IsFixed(vars[i]))) {
-        const int value = m->Get(Value(vars[i]));
-        DCHECK_LE(0, value);
-        DCHECK_LT(value, n);
-        matrix[i][value] = kTrueLiteral;
-      } else {
-        const auto encoding = m->Add(FullyEncodeVariable(vars[i]));
-        for (const auto& entry : encoding) {
-          const int value = entry.value.value();
-          DCHECK_LE(0, value);
-          DCHECK_LT(value, n);
-          matrix[i][value] = entry.literal;
-        }
-      }
-    }
-  }
-  return matrix;
-}
-
 void LoadCircuitConstraint(const ConstraintProto& ct, Model* m) {
   const auto& circuit = ct.circuit();
   if (circuit.tails().empty()) return;
@@ -1348,9 +1295,6 @@ bool LoadConstraint(const ConstraintProto& ct, Model* m) {
       return true;
     case ConstraintProto::ConstraintProto::kCumulative:
       LoadCumulativeConstraint(ct, m);
-      return true;
-    case ConstraintProto::ConstraintProto::kTable:
-      LoadTableConstraint(ct, m);
       return true;
     case ConstraintProto::ConstraintProto::kCircuit:
       LoadCircuitConstraint(ct, m);
