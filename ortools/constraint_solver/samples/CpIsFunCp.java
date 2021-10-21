@@ -23,9 +23,7 @@ package com.google.ortools.constraintsolver.samples;
 import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
-import com.google.ortools.constraintsolver.IntExpr;
 import com.google.ortools.constraintsolver.Solver;
-import com.google.ortools.constraintsolver.main;
 // [END import]
 
 /** Cryptarithmetic puzzle. */

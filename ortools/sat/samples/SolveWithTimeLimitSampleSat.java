@@ -22,7 +22,7 @@ import com.google.ortools.sat.IntVar;
 
 /** Solves a problem with a time limit. */
 public final class SolveWithTimeLimitSampleSat {
-  public static void main(String[] args) throws Exception {
+  public static void main(String[] args) {
     Loader.loadNativeLibraries();
     // Create the model.
     CpModel model = new CpModel();
@@ -46,7 +46,6 @@ public final class SolveWithTimeLimitSampleSat {
       System.out.println("z = " + solver.value(z));
     }
   }
-
   private SolveWithTimeLimitSampleSat() {}
 }
 // [END program]

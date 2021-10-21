@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # [START program]
-"""
-Cryptarithmetic puzzle
+"""Cryptarithmetic puzzle.
 
 First attempt to solve equation CP + IS + FUN = TRUE
 where each letter represents a unique digit.
@@ -22,7 +21,6 @@ This problem has 72 different solutions in base 10.
 """
 # [START import]
 from ortools.constraint_solver import pywrapcp
-from os import abort
 # [END import]
 
 
@@ -33,11 +31,11 @@ def main():
     # [END solver]
 
     # [START variables]
-    kBase = 10
+    base = 10
 
     # Decision variables.
-    digits = list(range(0, kBase))
-    digits_without_zero = list(range(1, kBase))
+    digits = list(range(0, base))
+    digits_without_zero = list(range(1, base))
     c = solver.IntVar(digits_without_zero, 'C')
     p = solver.IntVar(digits, 'P')
     i = solver.IntVar(digits_without_zero, 'I')
@@ -53,7 +51,7 @@ def main():
     letters = [c, p, i, s, f, u, n, t, r, e]
 
     # Verify that we have enough digits.
-    assert kBase >= len(letters)
+    assert base >= len(letters)
     # [END variables]
 
     # Define constraints.
@@ -61,22 +59,21 @@ def main():
     solver.Add(solver.AllDifferent(letters))
 
     # CP + IS + FUN = TRUE
-    solver.Add(p + s + n + kBase * (c + i + u) + kBase * kBase * f == e +
-               kBase * u + kBase * kBase * r + kBase * kBase * kBase * t)
+    solver.Add(p + s + n + base * (c + i + u) + base * base * f == e +
+               base * u + base * base * r + base * base * base * t)
     # [END constraints]
 
     # [START solve]
     solution_count = 0
-    db = solver.Phase(letters, solver.INT_VAR_DEFAULT,
-                      solver.INT_VALUE_DEFAULT)
+    db = solver.Phase(letters, solver.INT_VAR_DEFAULT, solver.INT_VALUE_DEFAULT)
     solver.NewSearch(db)
     while solver.NextSolution():
         print(letters)
         # Is CP + IS + FUN = TRUE?
-        assert (kBase * c.Value() + p.Value() + kBase * i.Value() + s.Value() +
-                kBase * kBase * f.Value() + kBase * u.Value() +
-                n.Value() == kBase * kBase * kBase * t.Value() +
-                kBase * kBase * r.Value() + kBase * u.Value() + e.Value())
+        assert (base * c.Value() + p.Value() + base * i.Value() + s.Value() +
+                base * base * f.Value() + base * u.Value() +
+                n.Value() == base * base * base * t.Value() +
+                base * base * r.Value() + base * u.Value() + e.Value())
         solution_count += 1
     solver.EndSearch()
     print(f'Number of solutions found: {solution_count}')

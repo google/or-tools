@@ -50,7 +50,7 @@ public final class StopAfterNSolutionsSampleSat {
     private final int solutionLimit;
   }
 
-  public static void main(String[] args) throws Exception {
+  public static void main(String[] args) {
     Loader.loadNativeLibraries();
     // Create the model.
     CpModel model = new CpModel();
@@ -75,7 +75,6 @@ public final class StopAfterNSolutionsSampleSat {
       throw new RuntimeException("Did not stop the search correctly.");
     }
   }
-
   private StopAfterNSolutionsSampleSat() {}
 }
 // [END program]

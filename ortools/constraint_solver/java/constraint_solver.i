@@ -856,13 +856,13 @@ import java.util.HashSet;
   public void keepAliveDecisionBuilder(DecisionBuilder db) {}
 %}
 
-%typemap(javain, 
+%typemap(javain,
          post="      keepAliveDecisionBuilder($javainput);"
          ) DecisionBuilder* "DecisionBuilder.getCPtr($javainput)"
 
-%typemap(javain, 
+%typemap(javain,
          post="      keepAliveDecisionBuilder($javainput);"
-         ) const std::vector<DecisionBuilder*>& dbs "$javainput"         
+         ) const std::vector<DecisionBuilder*>& dbs "$javainput"
 
 %ignore Solver::SearchLogParameters;
 %ignore Solver::ActiveSearch;
