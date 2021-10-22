@@ -84,7 +84,7 @@ compile few of them using the options below (see [CMake Options](#cmake-options)
   * COIN-OR Cbc (`BUILD_Cbc`),<br>
   note: You can disable the support of COIN-OR solvers (i.e. Cbc and Clp solver)
   by using `-DUSE_COINOR=OFF` (`ON` by default).
-  
+
 OR-Tools can also optionally (disabled by default) be compiled with support for the following third-party proprietary
 solvers:
 
@@ -99,10 +99,13 @@ test it on public CI and support can be broken.**
 ## CMake Options
 
 There are several options that can be passed to CMake to modify how the code is built.<br>
-For all of these options and parameters you have to use `-D<Parameter_name>=<value>`.<br>
-All CMake options are passed at configure time, i.e., by running 
-`cmake -S. -B{your chosen build directory}  -DOPTION1=VALUE1 -DOPTION1=VALUE2 ...` before running
-`cmake --build {your chosen build directory}`<br>
+For all of these options and parameters you have to use `-D<Parameter_name>=<value>`.
+
+All CMake options are passed at configure time, i.e., by running <br>
+`cmake -S. -B{your chosen build directory}  -DFOO=BAR -DBAZ=QUX -DQUUX=QUUZ ...` <br>
+before running `cmake --build {your chosen build directory}`<br>
+
+[comment]: <> (https://en.wikipedia.org/wiki/Metasyntactic_variable)
 
 For example, to generate build files including dependencies in a new subdirectory called 'build', run:
 ```sh
