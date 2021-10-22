@@ -203,6 +203,9 @@ option(USE_XPRESS "Use the XPRESS solver" OFF)
 message(STATUS "XPRESS support: ${USE_XPRESS}")
 
 if(BUILD_JAVA)
+  option(BUILD_FAT_JAR "Create single .jar with all dependencies (including native binaries)" OFF)
+  message(STATUS "Java build single fat .jar: ${BUILD_FAT_JAR}")
+
   option(SKIP_GPG "Disable GPG sign" ON)
   message(STATUS "Java disable gpg:sign: ${SKIP_GPG}")
 
