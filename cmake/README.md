@@ -94,6 +94,22 @@ solvers:
 **warning: Since these solvers require license and are proprietary, we can't
 test it on public CI and support can be broken.**
 
+### Enabling CPLEX Support
+
+To enable CPLEX support, configure with `-DUSE_CPLEX=ON` and `-DCPLEX_ROOT=/absolute/path/to/CPLEX/root/dir`,
+replacing `/absolute/path/to/CPLEX/root/dir` with the path to your CPLEX installation.
+`CPLEX_ROOT` can also be defined as an environment variable rather than an option at configure time.
+
+For ease of migration from legacy `make third_party` builds, CMake will also read the CPLEX installation path from the
+`UNIX_CPLEX_DIR` environment variable, if defined.
+
+### Enabling XPRESS Support
+
+To enable XPRESS support, configure with `-DUSE_XPRESS=ON` and `-DXPRESS_ROOT=/absolute/path/to/XPRESS/root/dir`,
+replacing `/absolute/path/to/XPRESS/root/dir` with the path to your XPRESS
+installation. `XPRESS_ROOT` can also be defined as an environment variable rather than an option at configure time.
+
+
 <a name="options"></a>
 
 ## CMake Options
