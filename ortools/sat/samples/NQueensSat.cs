@@ -88,13 +88,13 @@ public class NQueensSat
         IntVar[] diag2 = new IntVar[BoardSize];
         for (int i = 0; i < BoardSize; ++i)
         {
-          IntVar tmp1 = model.NewIntVar(0, BoardSize * 2, $"x{i}");
-          model.Add(LinearExpr.Sum(new IntVar[]{queens[i], model.NewConstant(i)}) == tmp1);
-          diag1[i] = tmp1;
+            IntVar tmp1 = model.NewIntVar(0, BoardSize * 2, $"x{i}");
+            model.Add(LinearExpr.Affine(queens[i], /*coeff=*/1, /*offset=*/i) == tmp1);
+            diag1[i] = tmp1;
 
-          IntVar tmp2 = model.NewIntVar(-BoardSize, BoardSize, $"x{i}");
-          model.Add(LinearExpr.Sum(new IntVar[]{queens[i], model.NewConstant(-i)}) == tmp2);
-          diag2[i] = tmp2;
+            IntVar tmp2 = model.NewIntVar(-BoardSize, BoardSize, $"x{i}");
+            model.Add(LinearExpr.Affine(queens[i], /*coeff=*/1, /*offset=*/-i) == tmp2);
+            diag2[i] = tmp2;
         }
 
         model.AddAllDifferent(diag1);

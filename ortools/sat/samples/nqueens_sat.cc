@@ -35,8 +35,9 @@ void NQueensSat(const int board_size) {
   std::vector<IntVar> queens;
   queens.reserve(board_size);
   Domain range(0, board_size - 1);
-  for (int i=0; i < board_size; ++i) {
-    queens.push_back(cp_model.NewIntVar(range).WithName("x" + std::to_string(i)));
+  for (int i = 0; i < board_size; ++i) {
+    queens.push_back(
+        cp_model.NewIntVar(range).WithName("x" + std::to_string(i)));
   }
   // [END variables]
 
@@ -45,19 +46,21 @@ void NQueensSat(const int board_size) {
   // The following sets the constraint that all queens are in different rows.
   cp_model.AddAllDifferent(queens);
 
-  // All columns must be different because the indices of queens are all different.
-  // No two queens can be on the same diagonal.
+  // All columns must be different because the indices of queens are all
+  // different. No two queens can be on the same diagonal.
   std::vector<IntVar> diag_1;
   diag_1.reserve(board_size);
   std::vector<IntVar> diag_2;
   diag_2.reserve(board_size);
-  for (int i=0; i < board_size; ++i) {
-    IntVar tmp_1 = cp_model.NewIntVar(Domain(0, board_size * 2)).WithName("x" + std::to_string(i));
-    cp_model.AddEquality(LinearExpr::Sum({queens[i], cp_model.NewConstant(i)}), tmp_1);
+  for (int i = 0; i < board_size; ++i) {
+    IntVar tmp_1 = cp_model.NewIntVar(Domain(0, board_size * 2))
+                       .WithName("x" + std::to_string(i));
+    cp_model.AddEquality(queens[i].AddConstant(i), tmp_1);
     diag_1.push_back(tmp_1);
 
-    IntVar tmp_2 = cp_model.NewIntVar(Domain(-board_size, board_size)).WithName("x" + std::to_string(i));
-    cp_model.AddEquality(LinearExpr::Sum({queens[i], cp_model.NewConstant(-i)}), tmp_2);
+    IntVar tmp_2 = cp_model.NewIntVar(Domain(-board_size, board_size))
+                       .WithName("x" + std::to_string(i));
+    cp_model.AddEquality(queens[i].AddConstant(-i), tmp_2);
     diag_2.push_back(tmp_2);
   }
   cp_model.AddAllDifferent(diag_1);
@@ -69,16 +72,16 @@ void NQueensSat(const int board_size) {
   Model model;
   model.Add(NewFeasibleSolutionObserver([&](const CpSolverResponse& response) {
     LOG(INFO) << "Solution " << num_solutions;
-    for (int i=0; i < board_size; ++i) {
+    for (int i = 0; i < board_size; ++i) {
       std::stringstream ss;
-      for (int j=0; j < board_size; ++j) {
+      for (int j = 0; j < board_size; ++j) {
         if (SolutionIntegerValue(response, queens[j]) == i) {
           // There is a queen in column j, row i.
           ss << "Q";
         } else {
           ss << "_";
         }
-        if (j != board_size-1) ss << " ";
+        if (j != board_size - 1) ss << " ";
       }
       LOG(INFO) << ss.str();
     }

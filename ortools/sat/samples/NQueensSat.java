@@ -41,8 +41,9 @@ public final class NQueensSat {
           } else {
             System.out.print("_");
           }
-          if (j != queens.length - 1)
+          if (j != queens.length - 1) {
             System.out.print(" ");
+          }
         }
         System.out.println();
       }
@@ -58,7 +59,7 @@ public final class NQueensSat {
   }
   // [END solution_printer]
 
-  public static void main(String[] args) throws Exception {
+  public static void main(String[] args) {
     Loader.loadNativeLibraries();
     // Create the model.
     // [START model]
@@ -82,13 +83,12 @@ public final class NQueensSat {
     // No two queens can be on the same diagonal.
     IntVar[] diag1 = new IntVar[boardSize];
     IntVar[] diag2 = new IntVar[boardSize];
-    for (int i = 0; i < boardSize; ++i)
-    {
+    for (int i = 0; i < boardSize; ++i) {
       diag1[i] = model.newIntVar(0, boardSize * 2, "x" + i);
-      model.addEquality(LinearExpr.sum(new IntVar[]{queens[i], model.newConstant(i)}), diag1[i]);
+      model.addEquality(LinearExpr.affine(queens[i], /*coefficient=*/1, /*offset=*/i), diag1[i]);
 
       diag2[i] = model.newIntVar(-boardSize, boardSize, "x" + i);
-      model.addEquality(LinearExpr.sum(new IntVar[]{queens[i], model.newConstant(-i)}), diag2[i]);
+      model.addEquality(LinearExpr.affine(queens[i], /*coefficient=*/1, /*offset=*/-i), diag2[i]);
     }
     model.addAllDifferent(diag1);
     model.addAllDifferent(diag2);

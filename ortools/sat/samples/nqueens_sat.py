@@ -14,8 +14,8 @@
 # [START program]
 """OR-Tools solution to the N-queens problem."""
 # [START import]
-import time
 import sys
+import time
 from ortools.sat.python import cp_model
 # [END import]
 
@@ -35,8 +35,8 @@ class NQueenSolutionPrinter(cp_model.CpSolverSolutionCallback):
 
     def on_solution_callback(self):
         current_time = time.time()
-        print('Solution %i, time = %f s' % (self.__solution_count,
-                                            current_time - self.__start_time))
+        print('Solution %i, time = %f s' %
+              (self.__solution_count, current_time - self.__start_time))
         self.__solution_count += 1
 
         all_queens = range(len(self.__queens))
@@ -93,7 +93,7 @@ def main(board_size):
     solver = cp_model.CpSolver()
     solution_printer = NQueenSolutionPrinter(queens)
     solver.parameters.enumerate_all_solutions = True
-    status = solver.Solve(model, solution_printer)
+    solver.Solve(model, solution_printer)
     # [END solve]
 
     # Statistics.
@@ -108,8 +108,8 @@ def main(board_size):
 
 if __name__ == '__main__':
     # By default, solve the 8x8 problem.
-    board_size = 8
+    size = 8
     if len(sys.argv) > 1:
-        board_size = int(sys.argv[1])
-    main(board_size)
+        size = int(sys.argv[1])
+    main(size)
 # [END program]
