@@ -482,7 +482,7 @@ Domain Domain::PositiveModuloBySuperset(const Domain& modulo) const {
   if (IsEmpty()) return Domain();
   CHECK_GT(modulo.Min(), 0);
   const int64_t max_mod = modulo.Max() - 1;
-  const int64_t max = std::min(Max(), max_mod);
+  const int64_t max = Max() > 0 ? std::min(Max(), max_mod) : 0;
   const int64_t min = Min() < 0 ? std::max(Min(), -max_mod) : 0;
   return Domain(min, max);
 }
