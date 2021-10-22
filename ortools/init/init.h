@@ -18,7 +18,9 @@
 #include <vector>
 
 #include "absl/flags/flag.h"
+#include "absl/strings/str_cat.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/version.h"
 #include "ortools/gurobi/environment.h"
 #include "ortools/sat/cp_model_solver.h"
 
@@ -121,6 +123,39 @@ class CppBridge {
    */
   static bool LoadGurobiSharedLibrary(const std::string& full_library_path) {
     return LoadGurobiDynamicLibrary({full_library_path}).ok();
+  }
+};
+
+class OrToolsVersion {
+ public:
+  /**
+   * Returns the major version of OR-Tools.
+   */
+  static int MajorNumber() {
+    return ::operations_research::OrToolsMajorVersion();
+  }
+
+  /**
+   * Returns the minor version of OR-Tools.
+   */
+  static int MinorNumber() {
+    return ::operations_research::OrToolsMinorVersion();
+  }
+
+  /**
+   * Returns the patch version of OR-Tools.
+   */
+  static int PatchNumber() {
+    return ::operations_research::OrToolsPatchVersion();
+  }
+
+  /**
+   * Returns the string version of OR-Tools.
+   */
+  static std::string VersionString() {
+    return absl::StrCat(::operations_research::OrToolsMajorVersion(), ".",
+                        ::operations_research::OrToolsMinorVersion(), ".",
+                        ::operations_research::OrToolsPatchVersion(), ".");
   }
 };
 

@@ -39,8 +39,9 @@ cc_library(
         "vlog_is_on.h",
     ],
     copts = [
-        "-DOR_TOOLS_MAJOR=8",
+        "-DOR_TOOLS_MAJOR=9",
         "-DOR_TOOLS_MINOR=1",
+        "-DOR_TOOLS_PATCH=9999",
     ],
     defines = select({
         "on_windows": ["OR_TOOLS_EXPORTS"],

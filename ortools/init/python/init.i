@@ -39,6 +39,12 @@
 %unignore operations_research::CppBridge::SetFlags;
 %unignore operations_research::CppBridge::LoadGurobiSharedLibrary;
 
+%unignore operations_research::OrToolsVersion;
+%unignore operations_research::OrToolsVersion::MajorNumber;
+%unignore operations_research::OrToolsVersion::MinorNumber;
+%unignore operations_research::OrToolsVersion::PatchNumber;
+%unignore operations_research::OrToolsVersion::VersionString;
+
 %include "ortools/init/init.h"
 
 %unignoreall
