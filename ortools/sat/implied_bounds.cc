@@ -278,31 +278,25 @@ bool TryToReconcileEncodings(
         // Compute the minimum energy.
         IntegerValue min_energy = kMaxIntegerValue;
         for (const ValueLiteralPair& f : general_encoding) {
-          if (f.literal == lit0) {
-            min_energy = std::min(value0 * f.value, min_energy);
-          } else {
-            min_energy = std::min(value1 * f.value, min_energy);
-          }
+          const IntegerValue energy =
+              f.literal == lit0 ? (size2.coeff * value0 + size2.constant) *
+                                      (gen.coeff * f.value + gen.constant)
+                                : (size2.coeff * value1 + size2.constant) *
+                                      (gen.coeff * f.value + gen.constant);
+          min_energy = std::min(energy, min_energy);
         }
         builder->AddConstant(min_energy);
 
         // Build the energy expression.
         for (const ValueLiteralPair& f : general_encoding) {
-          if (f.literal == lit0) {
-            const IntegerValue energy = value0 * f.value;
-            DCHECK_GE(energy, min_energy);
-            if (energy > min_energy) {
-              if (!builder->AddLiteralTerm(f.literal, energy - min_energy)) {
-                return false;
-              }
-            }
-          } else {
-            const IntegerValue energy = value1 * f.value;
-            DCHECK_GE(energy, min_energy);
-            if (energy > min_energy) {
-              if (!builder->AddLiteralTerm(f.literal, energy - min_energy)) {
-                return false;
-              }
+          const IntegerValue energy =
+              f.literal == lit0 ? (size2.coeff * value0 + size2.constant) *
+                                      (gen.coeff * f.value + gen.constant)
+                                : (size2.coeff * value1 + size2.constant) *
+                                      (gen.coeff * f.value + gen.constant);
+          if (energy > min_energy) {
+            if (!builder->AddLiteralTerm(f.literal, energy - min_energy)) {
+              return false;
             }
           }
         }
