@@ -1155,14 +1155,6 @@ void LoadIntDivConstraint(const ConstraintProto& ct, Model* m) {
   }
 }
 
-void LoadIntMinConstraint(const ConstraintProto& ct, Model* m) {
-  auto* mapping = m->GetOrCreate<CpModelMapping>();
-  const IntegerVariable min = mapping->Integer(ct.int_min().target());
-  const std::vector<IntegerVariable> vars =
-      mapping->Integers(ct.int_min().vars());
-  m->Add(IsEqualToMinOf(min, vars));
-}
-
 void LoadLinMaxConstraint(const ConstraintProto& ct, Model* m) {
   if (ct.lin_max().exprs().empty()) {
     m->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
@@ -1179,14 +1171,6 @@ void LoadLinMaxConstraint(const ConstraintProto& ct, Model* m) {
   }
   // TODO(user): Consider replacing the min propagator by max.
   m->Add(IsEqualToMinOf(NegationOf(max), negated_exprs));
-}
-
-void LoadIntMaxConstraint(const ConstraintProto& ct, Model* m) {
-  auto* mapping = m->GetOrCreate<CpModelMapping>();
-  const IntegerVariable max = mapping->Integer(ct.int_max().target());
-  const std::vector<IntegerVariable> vars =
-      mapping->Integers(ct.int_max().vars());
-  m->Add(IsEqualToMaxOf(max, vars));
 }
 
 void LoadNoOverlapConstraint(const ConstraintProto& ct, Model* m) {
@@ -1275,14 +1259,8 @@ bool LoadConstraint(const ConstraintProto& ct, Model* m) {
     case ConstraintProto::ConstraintProto::kIntDiv:
       LoadIntDivConstraint(ct, m);
       return true;
-    case ConstraintProto::ConstraintProto::kIntMin:
-      LoadIntMinConstraint(ct, m);
-      return true;
     case ConstraintProto::ConstraintProto::kLinMax:
       LoadLinMaxConstraint(ct, m);
-      return true;
-    case ConstraintProto::ConstraintProto::kIntMax:
-      LoadIntMaxConstraint(ct, m);
       return true;
     case ConstraintProto::ConstraintProto::kInterval:
       // Already dealt with.

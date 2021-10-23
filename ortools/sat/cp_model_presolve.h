@@ -95,20 +95,16 @@ class CpModelPresolver {
   // the current code. This way we shouldn't keep doing computation on an
   // inconsistent state.
   // TODO(user): Make these public and unit test.
-  bool ConvertIntMax(ConstraintProto* ct);
   bool PresolveAllDiff(ConstraintProto* ct);
   bool PresolveAutomaton(ConstraintProto* ct);
   bool PresolveElement(ConstraintProto* ct);
   bool PresolveIntAbs(ConstraintProto* ct);
   bool PresolveIntDiv(ConstraintProto* ct);
-  bool PresolveIntMax(ConstraintProto* ct);
-  bool PresolveIntMin(ConstraintProto* ct);
   bool PresolveIntMod(ConstraintProto* ct);
   bool PresolveIntProd(ConstraintProto* ct);
   bool PresolveInterval(int c, ConstraintProto* ct);
   bool PresolveInverse(ConstraintProto* ct);
   bool PresolveLinMax(ConstraintProto* ct);
-  bool PresolveLinMin(ConstraintProto* ct);
   bool PresolveTable(ConstraintProto* ct);
 
   bool PresolveCumulative(ConstraintProto* ct);

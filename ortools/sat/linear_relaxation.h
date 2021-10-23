@@ -113,14 +113,6 @@ void AppendAtMostOneRelaxation(const ConstraintProto& ct, Model* model,
 void AppendExactlyOneRelaxation(const ConstraintProto& ct, Model* model,
                                 LinearRelaxation* relaxation);
 
-void AppendIntMaxRelaxation(const ConstraintProto& ct,
-                            bool encode_other_direction, Model* model,
-                            LinearRelaxation* relaxation);
-
-void AppendIntMinRelaxation(const ConstraintProto& ct,
-                            bool encode_other_direction, Model* model,
-                            LinearRelaxation* relaxation);
-
 // Appends linear constraints to the relaxation. This also handles the
 // relaxation of linear constraints with enforcement literals.
 // A linear constraint lb <= ax <= ub with enforcement literals {ei} is relaxed

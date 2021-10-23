@@ -550,218 +550,6 @@ bool CpModelPresolver::PresolveExactlyOne(ConstraintProto* ct) {
   return changed;
 }
 
-bool CpModelPresolver::PresolveIntMax(ConstraintProto* ct) {
-  if (context_->ModelIsUnsat()) return false;
-  if (ct->int_max().vars().empty()) {
-    context_->UpdateRuleStats("int_max: no variables!");
-    return MarkConstraintAsFalse(ct);
-  }
-  const int target_ref = ct->int_max().target();
-
-  // Pass 1, compute the infered min of the target, and remove duplicates.
-  int64_t infered_min = std::numeric_limits<int64_t>::min();
-  int64_t infered_max = std::numeric_limits<int64_t>::min();
-  bool contains_target_ref = false;
-  bool contains_negated_target_ref = false;
-  std::set<int> used_ref;
-  int new_size = 0;
-  for (const int ref : ct->int_max().vars()) {
-    if (ref == target_ref) contains_target_ref = true;
-    if (gtl::ContainsKey(used_ref, ref)) continue;
-    if (gtl::ContainsKey(used_ref, NegatedRef(ref)) ||
-        ref == NegatedRef(target_ref)) {
-      infered_min = std::max(infered_min, int64_t{0});
-    }
-    if (ref == NegatedRef(target_ref)) {
-      // x must be non-negative.
-      // It can be positive if they are other terms, otherwise it must be zero.
-      // TODO(user): more presolve in this case?
-      contains_negated_target_ref = true;
-      context_->UpdateRuleStats("int_max: x = max(-x, ...)");
-      if (!context_->IntersectDomainWith(
-              target_ref, {0, std::numeric_limits<int64_t>::max()})) {
-        return false;
-      }
-    }
-    used_ref.insert(ref);
-    ct->mutable_int_max()->set_vars(new_size++, ref);
-    infered_min = std::max(infered_min, context_->MinOf(ref));
-    infered_max = std::max(infered_max, context_->MaxOf(ref));
-  }
-  if (new_size < ct->int_max().vars_size()) {
-    context_->UpdateRuleStats("int_max: removed dup");
-  }
-  ct->mutable_int_max()->mutable_vars()->Truncate(new_size);
-
-  if (contains_target_ref) {
-    context_->UpdateRuleStats("int_max: x = max(x, ...)");
-    for (const int ref : ct->int_max().vars()) {
-      if (ref == target_ref) continue;
-      ConstraintProto* new_ct = context_->working_model->add_constraints();
-      *new_ct->mutable_enforcement_literal() = ct->enforcement_literal();
-      auto* arg = new_ct->mutable_linear();
-      arg->add_vars(target_ref);
-      arg->add_coeffs(1);
-      arg->add_vars(ref);
-      arg->add_coeffs(-1);
-      arg->add_domain(0);
-      arg->add_domain(std::numeric_limits<int64_t>::max());
-    }
-    return RemoveConstraint(ct);
-  }
-
-  // Compute the infered target_domain.
-  Domain infered_domain;
-  for (const int ref : ct->int_max().vars()) {
-    infered_domain = infered_domain.UnionWith(
-        context_->DomainOf(ref).IntersectionWith({infered_min, infered_max}));
-  }
-
-  // Update the target domain.
-  bool domain_reduced = false;
-  if (!HasEnforcementLiteral(*ct)) {
-    if (!context_->IntersectDomainWith(target_ref, infered_domain,
-                                       &domain_reduced)) {
-      return true;
-    }
-  }
-
-  // If the target is only used here and if
-  // infered_domain ∩ [kint64min, target_ub] ⊂ target_domain
-  // then the constraint is really max(...) <= target_ub and we can simplify it.
-  //
-  // This is not as easy if x = max(-x, ...) so we skip this case.
-  if (context_->VariableIsUniqueAndRemovable(target_ref) &&
-      !contains_negated_target_ref) {
-    const Domain& target_domain = context_->DomainOf(target_ref);
-    if (infered_domain
-            .IntersectionWith(Domain(std::numeric_limits<int64_t>::min(),
-                                     target_domain.Max()))
-            .IsIncludedIn(target_domain)) {
-      if (infered_domain.Max() <= target_domain.Max()) {
-        // The constraint is always satisfiable.
-        context_->UpdateRuleStats("int_max: always true");
-      } else if (ct->enforcement_literal().empty()) {
-        // The constraint just restrict the upper bound of its variable.
-        for (const int ref : ct->int_max().vars()) {
-          context_->UpdateRuleStats("int_max: lower than constant");
-          if (!context_->IntersectDomainWith(
-                  ref, Domain(std::numeric_limits<int64_t>::min(),
-                              target_domain.Max()))) {
-            return false;
-          }
-        }
-      } else {
-        // We simply transform this into n reified constraints
-        // enforcement => [var_i <= target_domain.Max()].
-        context_->UpdateRuleStats("int_max: reified lower than constant");
-        for (const int ref : ct->int_max().vars()) {
-          ConstraintProto* new_ct = context_->working_model->add_constraints();
-          *(new_ct->mutable_enforcement_literal()) = ct->enforcement_literal();
-          ct->mutable_linear()->add_vars(ref);
-          ct->mutable_linear()->add_coeffs(1);
-          ct->mutable_linear()->add_domain(std::numeric_limits<int64_t>::min());
-          ct->mutable_linear()->add_domain(target_domain.Max());
-        }
-      }
-
-      // In all cases we delete the original constraint.
-      context_->MarkVariableAsRemoved(target_ref);
-      *(context_->mapping_model->add_constraints()) = *ct;
-      return RemoveConstraint(ct);
-    }
-  }
-
-  // Pass 2, update the argument domains. Filter them eventually.
-  new_size = 0;
-  const int size = ct->int_max().vars_size();
-  const int64_t target_max = context_->MaxOf(target_ref);
-  for (const int ref : ct->int_max().vars()) {
-    if (!HasEnforcementLiteral(*ct)) {
-      if (!context_->IntersectDomainWith(
-              ref, Domain(std::numeric_limits<int64_t>::min(), target_max),
-              &domain_reduced)) {
-        return true;
-      }
-    }
-    if (context_->MaxOf(ref) >= infered_min) {
-      ct->mutable_int_max()->set_vars(new_size++, ref);
-    }
-  }
-  if (domain_reduced) {
-    context_->UpdateRuleStats("int_max: reduced domains");
-  }
-
-  bool modified = false;
-  if (new_size < size) {
-    context_->UpdateRuleStats("int_max: removed variables");
-    ct->mutable_int_max()->mutable_vars()->Truncate(new_size);
-    modified = true;
-  }
-
-  if (new_size == 0) {
-    context_->UpdateRuleStats("int_max: no variables!");
-    return MarkConstraintAsFalse(ct);
-  }
-  if (new_size == 1) {
-    // Convert to an equality. Note that we create a new constraint otherwise it
-    // might not be processed again.
-    context_->UpdateRuleStats("int_max: converted to equality");
-    ConstraintProto* new_ct = context_->working_model->add_constraints();
-    *new_ct = *ct;  // copy name and potential reification.
-    auto* arg = new_ct->mutable_linear();
-    arg->add_vars(target_ref);
-    arg->add_coeffs(1);
-    arg->add_vars(ct->int_max().vars(0));
-    arg->add_coeffs(-1);
-    arg->add_domain(0);
-    arg->add_domain(0);
-    context_->UpdateNewConstraintsVariableUsage();
-    return RemoveConstraint(ct);
-  }
-
-  // TODO(user): Just port all the presolve above to the lin max presolve, so
-  // we can just convert it and not do anything else.
-  if (ct->constraint_case() == ConstraintProto::kIntMax) {
-    const bool convert_result = ConvertIntMax(ct);
-    return modified || convert_result;
-  }
-
-  return modified;
-}
-
-// Convert to lin_max and presolve lin_max.
-bool CpModelPresolver::PresolveLinMin(ConstraintProto* ct) {
-  if (context_->ModelIsUnsat()) return false;
-  const auto copy = ct->lin_min();
-  SetToNegatedLinearExpression(copy.target(),
-                               ct->mutable_lin_max()->mutable_target());
-  for (const LinearExpressionProto& expr : copy.exprs()) {
-    LinearExpressionProto* const new_expr = ct->mutable_lin_max()->add_exprs();
-    SetToNegatedLinearExpression(expr, new_expr);
-  }
-  return PresolveLinMax(ct);
-}
-
-// We convert it to a "linear" max which allows to replace affine relation and
-// remove the need to keep them in the model.
-//
-// TODO(user): Move to expand. We also need to convert all the int_max presolve
-// (like the absolute value) that we don't have yet in the lin_max format.
-bool CpModelPresolver::ConvertIntMax(ConstraintProto* ct) {
-  if (context_->ModelIsUnsat()) return false;
-  const auto copy = ct->int_max();
-  ct->mutable_lin_max()->mutable_target()->add_vars(copy.target());
-  ct->mutable_lin_max()->mutable_target()->add_coeffs(1);
-  for (const int ref : copy.vars()) {
-    LinearExpressionProto* expr = ct->mutable_lin_max()->add_exprs();
-    expr->add_vars(ref);
-    expr->add_coeffs(1);
-  }
-  context_->UpdateRuleStats("int_max: converted to lin_max");
-  return PresolveLinMax(ct);
-}
-
 bool CpModelPresolver::CanonicalizeLinMax(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
 
@@ -777,7 +565,6 @@ bool CpModelPresolver::CanonicalizeLinMax(ConstraintProto* ct) {
   return changed;
 }
 
-// TODO(user): Add all the missing presolve from PresolveIntMax().
 bool CpModelPresolver::PresolveLinMax(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
 
@@ -1116,17 +903,6 @@ bool CpModelPresolver::PresolveIntAbs(ConstraintProto* ct) {
   }
 
   return false;
-}
-
-bool CpModelPresolver::PresolveIntMin(ConstraintProto* ct) {
-  if (context_->ModelIsUnsat()) return false;
-
-  const auto copy = ct->int_min();
-  ct->mutable_int_max()->set_target(NegatedRef(copy.target()));
-  for (const int ref : copy.vars()) {
-    ct->mutable_int_max()->add_vars(NegatedRef(ref));
-  }
-  return PresolveIntMax(ct);
 }
 
 bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
@@ -5742,10 +5518,6 @@ bool CpModelPresolver::PresolveOneConstraint(int c) {
       return PresolveExactlyOne(ct);
     case ConstraintProto::ConstraintCase::kBoolXor:
       return PresolveBoolXor(ct);
-    case ConstraintProto::ConstraintCase::kIntMax:
-      return PresolveIntMax(ct);
-    case ConstraintProto::ConstraintCase::kIntMin:
-      return PresolveIntMin(ct);
     case ConstraintProto::ConstraintCase::kLinMax:
       if (CanonicalizeLinMax(ct)) {
         context_->UpdateConstraintVariableUsage(c);
@@ -5755,8 +5527,6 @@ bool CpModelPresolver::PresolveOneConstraint(int c) {
       } else {
         return PresolveLinMax(ct);
       }
-    case ConstraintProto::ConstraintCase::kLinMin:
-      return PresolveLinMin(ct);
     case ConstraintProto::ConstraintCase::kIntProd:
       return PresolveIntProd(ct);
     case ConstraintProto::ConstraintCase::kIntDiv:

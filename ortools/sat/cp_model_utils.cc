@@ -67,25 +67,10 @@ IndexReferences GetReferencesUsedByConstraint(const ConstraintProto& ct) {
       output.variables.push_back(ct.int_mod().target());
       AddIndices(ct.int_mod().vars(), &output.variables);
       break;
-    case ConstraintProto::ConstraintCase::kIntMax:
-      output.variables.push_back(ct.int_max().target());
-      AddIndices(ct.int_max().vars(), &output.variables);
-      break;
     case ConstraintProto::ConstraintCase::kLinMax: {
       AddIndices(ct.lin_max().target().vars(), &output.variables);
       for (int i = 0; i < ct.lin_max().exprs_size(); ++i) {
         AddIndices(ct.lin_max().exprs(i).vars(), &output.variables);
-      }
-      break;
-    }
-    case ConstraintProto::ConstraintCase::kIntMin:
-      output.variables.push_back(ct.int_min().target());
-      AddIndices(ct.int_min().vars(), &output.variables);
-      break;
-    case ConstraintProto::ConstraintCase::kLinMin: {
-      AddIndices(ct.lin_min().target().vars(), &output.variables);
-      for (int i = 0; i < ct.lin_min().exprs_size(); ++i) {
-        AddIndices(ct.lin_min().exprs(i).vars(), &output.variables);
       }
       break;
     }
@@ -183,13 +168,7 @@ void ApplyToAllLiteralIndices(const std::function<void(int*)>& f,
       break;
     case ConstraintProto::ConstraintCase::kIntMod:
       break;
-    case ConstraintProto::ConstraintCase::kIntMax:
-      break;
     case ConstraintProto::ConstraintCase::kLinMax:
-      break;
-    case ConstraintProto::ConstraintCase::kIntMin:
-      break;
-    case ConstraintProto::ConstraintCase::kLinMin:
       break;
     case ConstraintProto::ConstraintCase::kIntProd:
       break;
@@ -250,24 +229,10 @@ void ApplyToAllVariableIndices(const std::function<void(int*)>& f,
       APPLY_TO_SINGULAR_FIELD(int_mod, target);
       APPLY_TO_REPEATED_FIELD(int_mod, vars);
       break;
-    case ConstraintProto::ConstraintCase::kIntMax:
-      APPLY_TO_SINGULAR_FIELD(int_max, target);
-      APPLY_TO_REPEATED_FIELD(int_max, vars);
-      break;
     case ConstraintProto::ConstraintCase::kLinMax:
       APPLY_TO_REPEATED_FIELD(lin_max, target()->mutable_vars);
       for (int i = 0; i < ct->lin_max().exprs_size(); ++i) {
         APPLY_TO_REPEATED_FIELD(lin_max, exprs(i)->mutable_vars);
-      }
-      break;
-    case ConstraintProto::ConstraintCase::kIntMin:
-      APPLY_TO_SINGULAR_FIELD(int_min, target);
-      APPLY_TO_REPEATED_FIELD(int_min, vars);
-      break;
-    case ConstraintProto::ConstraintCase::kLinMin:
-      APPLY_TO_REPEATED_FIELD(lin_min, target()->mutable_vars);
-      for (int i = 0; i < ct->lin_min().exprs_size(); ++i) {
-        APPLY_TO_REPEATED_FIELD(lin_min, exprs(i)->mutable_vars);
       }
       break;
     case ConstraintProto::ConstraintCase::kIntProd:
@@ -345,13 +310,7 @@ void ApplyToAllIntervalIndices(const std::function<void(int*)>& f,
       break;
     case ConstraintProto::ConstraintCase::kIntMod:
       break;
-    case ConstraintProto::ConstraintCase::kIntMax:
-      break;
     case ConstraintProto::ConstraintCase::kLinMax:
-      break;
-    case ConstraintProto::ConstraintCase::kIntMin:
-      break;
-    case ConstraintProto::ConstraintCase::kLinMin:
       break;
     case ConstraintProto::ConstraintCase::kIntProd:
       break;
@@ -412,14 +371,8 @@ std::string ConstraintCaseName(
       return "kIntDiv";
     case ConstraintProto::ConstraintCase::kIntMod:
       return "kIntMod";
-    case ConstraintProto::ConstraintCase::kIntMax:
-      return "kIntMax";
     case ConstraintProto::ConstraintCase::kLinMax:
       return "kLinMax";
-    case ConstraintProto::ConstraintCase::kIntMin:
-      return "kIntMin";
-    case ConstraintProto::ConstraintCase::kLinMin:
-      return "kLinMin";
     case ConstraintProto::ConstraintCase::kIntProd:
       return "kIntProd";
     case ConstraintProto::ConstraintCase::kLinear:
@@ -487,13 +440,7 @@ std::vector<int> UsedIntervals(const ConstraintProto& ct) {
       break;
     case ConstraintProto::ConstraintCase::kIntMod:
       break;
-    case ConstraintProto::ConstraintCase::kIntMax:
-      break;
     case ConstraintProto::ConstraintCase::kLinMax:
-      break;
-    case ConstraintProto::ConstraintCase::kIntMin:
-      break;
-    case ConstraintProto::ConstraintCase::kLinMin:
       break;
     case ConstraintProto::ConstraintCase::kIntProd:
       break;

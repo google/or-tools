@@ -120,14 +120,6 @@ bool LinMaxContainsOnlyOneVarInExpressions(const ConstraintProto& ct) {
   return true;
 }
 
-bool IntMaxIsIntAbs(const ConstraintProto& ct) {
-  if (ct.constraint_case() != ConstraintProto::ConstraintCase::kIntMax ||
-      ct.int_max().vars_size() != 2) {
-    return false;
-  }
-  return ct.int_max().vars(0) == NegatedRef(ct.int_max().vars(1));
-}
-
 // Collect all the affines expressions in a LinMax constraint.
 // It checks that these are indeed affine expressions, and that they all share
 // the same variable.
@@ -517,82 +509,6 @@ std::vector<Literal> CreateAlternativeLiteralsWithView(
   return literals;
 }
 
-namespace {
-
-void AddIntMaxLowerRelaxation(IntegerVariable target,
-                              const std::vector<IntegerVariable>& vars,
-                              Model* model, LinearRelaxation* relaxation) {
-  // Case X = max(X_1, X_2, ..., X_N)
-  // Part 1: Encode X >= max(X_1, X_2, ..., X_N)
-  for (const IntegerVariable var : vars) {
-    // This deal with the corner case X = max(X, Y, Z, ..) !
-    // Note that this can be presolved into X >= Y, X >= Z, ...
-    if (target == var) continue;
-    LinearConstraintBuilder lc(model, kMinIntegerValue, IntegerValue(0));
-    lc.AddTerm(var, IntegerValue(1));
-    lc.AddTerm(target, IntegerValue(-1));
-    relaxation->linear_constraints.push_back(lc.Build());
-  }
-}
-
-void AddIntAbsUpperRelaxation(IntegerVariable target, IntegerVariable var,
-                              Model* model, LinearRelaxation* relaxation) {
-  LinearExpression target_expr;
-  target_expr.vars.push_back(target);
-  target_expr.coeffs.push_back(IntegerValue(1));
-  const std::vector<std::pair<IntegerValue, IntegerValue>> affines = {
-      {IntegerValue(1), IntegerValue(0)}, {IntegerValue(-1), IntegerValue(0)}};
-  relaxation->linear_constraints.push_back(
-      BuildMaxAffineUpConstraint(target_expr, var, affines, model));
-}
-
-void AddIntMaxUpperRelaxation(IntegerVariable target,
-                              const std::vector<IntegerVariable>& vars,
-                              Model* model, LinearRelaxation* relaxation) {
-  // For each X_i, we encode l_i => X <= X_i. And at least one of the l_i is
-  // true. Note that the correct y_i will be chosen because of the first part in
-  // linearlization (X >= X_i).
-  GenericLiteralWatcher* watcher = model->GetOrCreate<GenericLiteralWatcher>();
-  std::vector<Literal> literals =
-      CreateAlternativeLiteralsWithView(vars.size(), model, relaxation);
-  for (int i = 0; i < vars.size(); ++i) {
-    // TODO(user): Only lower bound is needed, experiment.
-    //
-    // TODO(user): It makes more sense to use ConditionalLowerOrEqual()
-    // here since only the lower bounding is needed, but that degrades perf on
-    // the road*.fzn problem. Understand why.
-    AppendEnforcedUpperBound(literals[i], target, vars[i], model, relaxation);
-    IntegerSumLE* upper_bound_constraint = new IntegerSumLE(
-        {literals[i]}, {target, vars[i]}, {IntegerValue(1), IntegerValue(-1)},
-        IntegerValue(0), model);
-    upper_bound_constraint->RegisterWith(watcher);
-    model->TakeOwnership(upper_bound_constraint);
-  }
-}
-
-}  // namespace
-
-// Adds linearization of int max constraints. This can also be used to linearize
-// int min with negated variables.
-void AppendIntMaxRelaxation(const ConstraintProto& ct, int linearization_level,
-                            Model* model, LinearRelaxation* relaxation) {
-  if (HasEnforcementLiteral(ct)) return;
-
-  auto* mapping = model->GetOrCreate<CpModelMapping>();
-  const IntegerVariable target = mapping->Integer(ct.int_max().target());
-  const std::vector<IntegerVariable> vars =
-      mapping->Integers(ct.int_max().vars());
-
-  AddIntMaxLowerRelaxation(target, vars, model, relaxation);
-  if (IntMaxIsIntAbs(ct)) {
-    // TODO(user): consider support for int_abs encoded using int_min.
-    AddIntAbsUpperRelaxation(target, PositiveVariable(vars[0]), model,
-                             relaxation);
-  } else if (linearization_level > 1) {
-    AddIntMaxUpperRelaxation(target, vars, model, relaxation);
-  }
-}
-
 void AppendCircuitRelaxation(const ConstraintProto& ct, Model* model,
                              LinearRelaxation* relaxation) {
   if (HasEnforcementLiteral(ct)) return;
@@ -903,22 +819,6 @@ void AddMaxAffineCutGenerator(const ConstraintProto& ct, Model* model,
       target_expr, var, affines, "AffineMax", model));
 }
 
-void AddIntAbsCutGenerator(const ConstraintProto& ct, Model* model,
-                           LinearRelaxation* relaxation) {
-  auto* mapping = model->GetOrCreate<CpModelMapping>();
-  const IntegerVariable var =
-      PositiveVariable(mapping->Integer(ct.int_max().vars(0)));
-
-  LinearExpression target_expr;
-  target_expr.vars.push_back(mapping->Integer(ct.int_max().target()));
-  target_expr.coeffs.push_back(IntegerValue(1));
-  const std::vector<std::pair<IntegerValue, IntegerValue>> affines = {
-      {IntegerValue(1), IntegerValue(0)}, {IntegerValue(-1), IntegerValue(0)}};
-
-  relaxation->cut_generators.push_back(
-      CreateMaxAffineCutGenerator(target_expr, var, affines, "IntAbs", model));
-}
-
 // Part 2: Encode upper bound on X.
 //
 // Add linking constraint to the CP solver
@@ -1087,10 +987,6 @@ void TryToLinearizeConstraint(const CpModelProto& model_proto,
     }
     case ConstraintProto::ConstraintCase::kExactlyOne: {
       AppendExactlyOneRelaxation(ct, model, relaxation);
-      break;
-    }
-    case ConstraintProto::ConstraintCase::kIntMax: {
-      AppendIntMaxRelaxation(ct, linearization_level, model, relaxation);
       break;
     }
     case ConstraintProto::ConstraintCase::kLinMax: {
@@ -1383,12 +1279,6 @@ void TryToAddCutGenerators(const ConstraintProto& ct, int linearization_level,
     case ConstraintProto::ConstraintCase::kNoOverlap2D: {
       if (linearization_level > 1) {
         AddNoOverlap2dCutGenerator(ct, m, relaxation);
-      }
-      break;
-    }
-    case ConstraintProto::ConstraintCase::kIntMax: {
-      if (linearization_level > 1 && IntMaxIsIntAbs(ct)) {
-        AddIntAbsCutGenerator(ct, m, relaxation);
       }
       break;
     }

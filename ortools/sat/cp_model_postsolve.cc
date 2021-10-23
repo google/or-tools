@@ -188,37 +188,6 @@ void PostsolveLinear(const ConstraintProto& ct,
   DCHECK(initial_rhs.Contains(fixed_activity));
 }
 
-// We assign any non fixed lhs variables to their minimum value. Then we assign
-// the target to the max. This should always be feasible.
-//
-// Note(user): Our heuristic is not feasible if x = max(-x, ...) but we made
-// sure we don't output such int_max here. Alternatively we could probably fix
-// the code here.
-void PostsolveIntMax(const ConstraintProto& ct, std::vector<Domain>* domains) {
-  int64_t m = std::numeric_limits<int64_t>::min();
-  for (const int ref : ct.int_max().vars()) {
-    const int var = PositiveRef(ref);
-    if (!(*domains)[var].IsFixed()) {
-      // Assign to minimum value.
-      const int64_t value =
-          RefIsPositive(ref) ? (*domains)[var].Min() : (*domains)[var].Max();
-      (*domains)[var] = Domain(value);
-    }
-
-    const int64_t value = (*domains)[var].FixedValue();
-    m = std::max(m, RefIsPositive(ref) ? value : -value);
-  }
-  const int target_ref = ct.int_max().target();
-  const int target_var = PositiveRef(target_ref);
-  if (RefIsPositive(target_ref)) {
-    (*domains)[target_var] = (*domains)[target_var].IntersectionWith(Domain(m));
-  } else {
-    (*domains)[target_var] =
-        (*domains)[target_var].IntersectionWith(Domain(-m));
-  }
-  CHECK(!(*domains)[target_var].IsEmpty());
-}
-
 namespace {
 
 int64_t EvaluateLinearExpression(const LinearExpressionProto& expr,
@@ -386,9 +355,6 @@ void PostsolveResponse(const int64_t num_variables_in_original_model,
         break;
       case ConstraintProto::kLinear:
         PostsolveLinear(ct, prefer_lower_value, &domains);
-        break;
-      case ConstraintProto::kIntMax:
-        PostsolveIntMax(ct, &domains);
         break;
       case ConstraintProto::kLinMax:
         PostsolveLinMax(ct, &domains);

@@ -44,7 +44,6 @@ The Python interface to the CP-SAT solver is implemented using two classes.
 
 ```python
 """Simple solve."""
-
 from ortools.sat.python import cp_model
 
 
@@ -141,7 +140,7 @@ import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.IntVar;
 
 /** Minimal CP-SAT example to showcase calling the solver. */
-public class SimpleSatProgram {
+public final class SimpleSatProgram {
   public static void main(String[] args) throws Exception {
     Loader.loadNativeLibraries();
     // Create the model.
@@ -169,6 +168,8 @@ public class SimpleSatProgram {
       System.out.println("No solution found.");
     }
   }
+
+  private SimpleSatProgram() {}
 }
 ```
 

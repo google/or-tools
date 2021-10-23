@@ -240,37 +240,76 @@ bool ImpliedBounds::EnqueueNewDeductions() {
   return sat_solver_->FinishPropagation();
 }
 
+std::string EncodingStr(const std::vector<ValueLiteralPair>& enc) {
+  std::string result;
+  for (const ValueLiteralPair& term : enc) {
+    absl::StrAppend(&result, term.literal.DebugString(), ":",
+                    term.value.value(), " ");
+  }
+  return result;
+}
+
 // If a variable has a size of 2, it is most likely reduced to an affine
 // expression pointing to a variable with domain [0,1] or [-1,0].
 // If the original variable has been removed from the model, then there are no
 // implied values from any exactly_one constraint to its domain.
-bool TryToReconcileEncodings(const AffineExpression& size2,
-                             const AffineExpression& gen,
-                             const std::vector<ValueLiteralPair>& encoding,
-                             Model* model, LinearConstraintBuilder* builder) {
-  // Literal lit0 = size2.var;
-  // IntegerValue value0 = size_two_encoding[0].value;
-  // Literal lit1 = Megatedsize_two_encoding[1].literal;
-  // IntegerValue value1 = size_two_encoding[1].value;
-  // for (const ValueLiteralPair e : general_encoding) {
-  //   if (e.literal == lit1) {
-  //     std::swap(lit0, lit1);
-  //     std::swap(value0, value1);
-  //   }
-  //   if (e.literal == lit0) {
-  //     if (product_encoding != nullptr) {
-  //       product_encoding->clear();
-  //       for (const ValueLiteralPair& f : general_encoding) {
-  //         if (f.literal == lit0) {
-  //           product_encoding->push_back({value0 * f.value, f.literal});
-  //         } else {
-  //           product_encoding->push_back({value1 * f.value, f.literal});
-  //         }
-  //       }
-  //     }
-  //     return true;
-  //   }
-  // }
+bool TryToReconcileEncodings(
+    const AffineExpression& size2, const AffineExpression& gen,
+    const std::vector<ValueLiteralPair>& general_encoding, Model* model,
+    LinearConstraintBuilder* builder) {
+  IntegerEncoder* integer_encoder = model->GetOrCreate<IntegerEncoder>();
+  IntegerVariable binary = size2.var;
+  if (integer_encoder->VariableIsFullyEncoded(binary)) {
+    const std::vector<ValueLiteralPair>& size2_enc =
+        integer_encoder->FullDomainEncoding(binary);
+    CHECK_EQ(2, size2_enc.size());
+    Literal lit0 = size2_enc[0].literal;
+    IntegerValue value0 = size2_enc[0].value;
+    Literal lit1 = size2_enc[1].literal;
+    IntegerValue value1 = size2_enc[1].value;
+    for (const ValueLiteralPair& e : general_encoding) {
+      if (e.literal == lit1) {
+        std::swap(lit0, lit1);
+        std::swap(value0, value1);
+      }
+      if (e.literal == lit0) {
+        builder->Clear();
+
+        // Compute the minimum energy.
+        IntegerValue min_energy = kMaxIntegerValue;
+        for (const ValueLiteralPair& f : general_encoding) {
+          if (f.literal == lit0) {
+            min_energy = std::min(value0 * f.value, min_energy);
+          } else {
+            min_energy = std::min(value1 * f.value, min_energy);
+          }
+        }
+        builder->AddConstant(min_energy);
+
+        // Build the energy expression.
+        for (const ValueLiteralPair& f : general_encoding) {
+          if (f.literal == lit0) {
+            const IntegerValue energy = value0 * f.value;
+            DCHECK_GE(energy, min_energy);
+            if (energy > min_energy) {
+              if (!builder->AddLiteralTerm(f.literal, energy - min_energy)) {
+                return false;
+              }
+            }
+          } else {
+            const IntegerValue energy = value1 * f.value;
+            DCHECK_GE(energy, min_energy);
+            if (energy > min_energy) {
+              if (!builder->AddLiteralTerm(f.literal, energy - min_energy)) {
+                return false;
+              }
+            }
+          }
+        }
+        return true;
+      }
+    }
+  }
   return false;
 }
 

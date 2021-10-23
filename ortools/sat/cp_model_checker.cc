@@ -784,15 +784,6 @@ std::string ValidateCpModel(const CpModelProto& model) {
         }
         break;
       }
-      case ConstraintProto::ConstraintCase::kLinMin: {
-        RETURN_IF_NOT_EMPTY(
-            ValidateLinearExpression(model, ct.lin_min().target()));
-        for (int i = 0; i < ct.lin_min().exprs_size(); ++i) {
-          RETURN_IF_NOT_EMPTY(
-              ValidateLinearExpression(model, ct.lin_min().exprs(i)));
-        }
-        break;
-      }
       case ConstraintProto::ConstraintCase::kIntProd:
         RETURN_IF_NOT_EMPTY(ValidateIntProdConstraint(model, ct));
         break;
@@ -947,15 +938,6 @@ class ConstraintChecker {
     return DomainInProtoContains(ct.linear(), sum);
   }
 
-  bool IntMaxConstraintIsFeasible(const ConstraintProto& ct) {
-    const int64_t max = Value(ct.int_max().target());
-    int64_t actual_max = std::numeric_limits<int64_t>::min();
-    for (int i = 0; i < ct.int_max().vars_size(); ++i) {
-      actual_max = std::max(actual_max, Value(ct.int_max().vars(i)));
-    }
-    return max == actual_max;
-  }
-
   int64_t LinearExpressionValue(const LinearExpressionProto& expr) const {
     int64_t sum = expr.offset();
     const int num_variables = expr.vars_size();
@@ -992,25 +974,6 @@ class ConstraintChecker {
   bool IntModConstraintIsFeasible(const ConstraintProto& ct) {
     return Value(ct.int_mod().target()) ==
            Value(ct.int_mod().vars(0)) % Value(ct.int_mod().vars(1));
-  }
-
-  bool IntMinConstraintIsFeasible(const ConstraintProto& ct) {
-    const int64_t min = Value(ct.int_min().target());
-    int64_t actual_min = std::numeric_limits<int64_t>::max();
-    for (int i = 0; i < ct.int_min().vars_size(); ++i) {
-      actual_min = std::min(actual_min, Value(ct.int_min().vars(i)));
-    }
-    return min == actual_min;
-  }
-
-  bool LinMinConstraintIsFeasible(const ConstraintProto& ct) {
-    const int64_t min = LinearExpressionValue(ct.lin_min().target());
-    int64_t actual_min = std::numeric_limits<int64_t>::max();
-    for (int i = 0; i < ct.lin_min().exprs_size(); ++i) {
-      const int64_t expr_value = LinearExpressionValue(ct.lin_min().exprs(i));
-      actual_min = std::min(actual_min, expr_value);
-    }
-    return min == actual_min;
   }
 
   bool AllDiffConstraintIsFeasible(const ConstraintProto& ct) {
@@ -1408,15 +1371,6 @@ bool SolutionIsFeasible(const CpModelProto& model,
         break;
       case ConstraintProto::ConstraintCase::kIntMod:
         is_feasible = checker.IntModConstraintIsFeasible(ct);
-        break;
-      case ConstraintProto::ConstraintCase::kIntMin:
-        is_feasible = checker.IntMinConstraintIsFeasible(ct);
-        break;
-      case ConstraintProto::ConstraintCase::kLinMin:
-        is_feasible = checker.LinMinConstraintIsFeasible(ct);
-        break;
-      case ConstraintProto::ConstraintCase::kIntMax:
-        is_feasible = checker.IntMaxConstraintIsFeasible(ct);
         break;
       case ConstraintProto::ConstraintCase::kLinMax:
         is_feasible = checker.LinMaxConstraintIsFeasible(ct);

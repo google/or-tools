@@ -20,7 +20,6 @@
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
-#include "absl/strings/str_join.h"
 #include "absl/synchronization/mutex.h"
 #include "ortools/graph/connected_components.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -169,28 +168,47 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
   }
 
   // Compute the constraint <-> variable graph.
+  //
+  // TODO(user): Remove duplicate constraints?
   const auto& constraints = simplied_model_proto_.constraints();
   var_to_constraint_.assign(model_proto_.variables_size(), {});
   constraint_to_var_.assign(constraints.size(), {});
+  int reduced_ct_index = 0;
   for (int ct_index = 0; ct_index < constraints.size(); ++ct_index) {
+    // We remove the interval constraints since we should have an equivalent
+    // linear constraint somewhere else.
+    if (constraints[ct_index].constraint_case() == ConstraintProto::kInterval) {
+      continue;
+    }
+
     for (const int var : UsedVariables(constraints[ct_index])) {
-      DCHECK(RefIsPositive(var));
       if (IsConstant(var)) continue;
-      var_to_constraint_[var].push_back(ct_index);
-      constraint_to_var_[ct_index].push_back(var);
+      constraint_to_var_[reduced_ct_index].push_back(var);
     }
 
     // We replace intervals by their underlying integer variables. Note that
     // this is needed for a correct decomposition into independent part.
     for (const int interval : UsedIntervals(constraints[ct_index])) {
       for (const int var : UsedVariables(constraints[interval])) {
-        DCHECK(RefIsPositive(var));
         if (IsConstant(var)) continue;
-        var_to_constraint_[var].push_back(ct_index);
-        constraint_to_var_[ct_index].push_back(var);
+        constraint_to_var_[reduced_ct_index].push_back(var);
       }
     }
+
+    // We remove constraint of size 0 and 1 since they are not useful for LNS
+    // based on this graph.
+    if (constraint_to_var_[reduced_ct_index].size() <= 1) {
+      constraint_to_var_[reduced_ct_index].clear();
+      continue;
+    }
+
+    // Keep this constraint.
+    for (const int var : constraint_to_var_[reduced_ct_index]) {
+      var_to_constraint_[var].push_back(reduced_ct_index);
+    }
+    ++reduced_ct_index;
   }
+  constraint_to_var_.resize(reduced_ct_index);
 
   // We mark as active all non-constant variables.
   // Non-active variable will never be fixed in standard LNS fragment.
@@ -1383,10 +1401,7 @@ WeightedRandomRelaxationNeighborhoodGenerator::
       case ConstraintProto::kIntProd:
       case ConstraintProto::kIntDiv:
       case ConstraintProto::kIntMod:
-      case ConstraintProto::kIntMax:
       case ConstraintProto::kLinMax:
-      case ConstraintProto::kIntMin:
-      case ConstraintProto::kLinMin:
       case ConstraintProto::kNoOverlap:
       case ConstraintProto::kNoOverlap2D:
         constraint_weights_.push_back(2.0);

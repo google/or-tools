@@ -1133,23 +1133,6 @@ void ExpandNegativeTable(ConstraintProto* ct, PresolveContext* context) {
   ct->Clear();
 }
 
-void ExpandLinMin(ConstraintProto* ct, PresolveContext* context) {
-  ConstraintProto* const lin_max = context->working_model->add_constraints();
-  for (int i = 0; i < ct->enforcement_literal_size(); ++i) {
-    lin_max->add_enforcement_literal(ct->enforcement_literal(i));
-  }
-
-  // Target
-  SetToNegatedLinearExpression(ct->lin_min().target(),
-                               lin_max->mutable_lin_max()->mutable_target());
-
-  for (int i = 0; i < ct->lin_min().exprs_size(); ++i) {
-    LinearExpressionProto* const expr = lin_max->mutable_lin_max()->add_exprs();
-    SetToNegatedLinearExpression(ct->lin_min().exprs(i), expr);
-  }
-  ct->Clear();
-}
-
 // Add the implications and clauses to link one variable of a table to the
 // literals controlling if the tuples are possible or not. The parallel vectors
 // (tuple_literals, values) contains all valid projected tuples. The
@@ -1702,9 +1685,6 @@ void ExpandCpModel(PresolveContext* context) {
         break;
       case ConstraintProto::ConstraintCase::kIntProd:
         ExpandIntProd(ct, context);
-        break;
-      case ConstraintProto::ConstraintCase::kLinMin:
-        ExpandLinMin(ct, context);
         break;
       case ConstraintProto::ConstraintCase::kElement:
         ExpandElement(ct, context);
