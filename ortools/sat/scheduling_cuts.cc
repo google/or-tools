@@ -965,14 +965,14 @@ CutGenerator CreateCumulativeCompletionTimeCutGenerator(
               event.y_start_min = IntegerValue(0);
               event.y_end_max = IntegerValue(capacity_max);
               event.energy_min = size_min * demand_min;
-              if (EnergyIsDefined(energies[index])) {
-                const IntegerValue linearized_energy =
-                    LinExprLowerBound(energies[index], *integer_trail);
-                if (linearized_energy > event.energy_min) {
-                  event.energy_min = linearized_energy;
-                  event.use_energy = true;
-                }
-              }
+              // if (EnergyIsDefined(energies[index])) {
+              //   const IntegerValue linearized_energy =
+              //       LinExprLowerBound(energies[index], *integer_trail);
+              //   if (linearized_energy > event.energy_min) {
+              //     event.energy_min = linearized_energy;
+              //     event.use_energy = true;
+              //   }
+              // }
               events.push_back(event);
             }
           }
