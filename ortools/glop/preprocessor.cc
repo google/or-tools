@@ -1809,6 +1809,7 @@ void UnconstrainedVariablePreprocessor::RemoveZeroCostUnconstrainedVariable(
     rhs_[row] = is_constraint_upper_bound_relevant
                     ? lp->constraint_upper_bounds()[row]
                     : lp->constraint_lower_bounds()[row];
+    DCHECK(IsFinite(rhs_[row]));
 
     // TODO(user): Here, we may render the row free, so subsequent columns
     // processed by the columns loop in Run() have more chance to be removed.
@@ -1952,16 +1953,20 @@ bool UnconstrainedVariablePreprocessor::Run(LinearProgram* lp) {
         // choose proper variable values during the call to RecoverSolution()
         // that make all the constraints satisfiable. Unfortunately, this is not
         // so easy to do in the general case, so we only deal with a simpler
-        // case when the cost of the variable is zero, and the constraints do
-        // not block it in one direction.
+        // case when the cost of the variable is zero, and none of the
+        // constraints (even the deleted one) block the variable moving to its
+        // infinite target_bound.
         //
         // TODO(user): deal with the more generic case.
         if (col_cost != 0.0) continue;
+
+        const double sign_correction = (target_bound == kInfinity) ? 1.0 : -1.0;
         bool skip = false;
         for (const SparseColumn::Entry e : column) {
           // Note that it is important to check the rows that are already
           // deleted here, otherwise the post-solve will not work.
-          if (IsConstraintBlockingVariable(*lp, e.coefficient(), e.row())) {
+          if (IsConstraintBlockingVariable(
+                  *lp, sign_correction * e.coefficient(), e.row())) {
             skip = true;
             break;
           }

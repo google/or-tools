@@ -118,6 +118,19 @@ class LPSolver {
     return constraint_statuses_;
   }
 
+  // Accessors to information related to unboundedness. A primal ray is returned
+  // for primal unbounded problems and a dual ray is returned for dual unbounded
+  // problems. constraints_dual_ray corresponds to dual multiplier for
+  // constraints and variable_bounds_dual_ray corresponds to dual multipliers
+  // for variable bounds (cf. reduced_costs).
+  const DenseRow& primal_ray() const { return primal_ray_; }
+  const DenseColumn& constraints_dual_ray() const {
+    return constraints_dual_ray_;
+  }
+  const DenseRow& variable_bounds_dual_ray() const {
+    return variable_bounds_dual_ray_;
+  }
+
   // Returns the primal maximum infeasibility of the solution.
   // This indicates by how much the variable and constraint bounds are violated.
   Fractional GetMaximumPrimalInfeasibility() const;
@@ -263,6 +276,9 @@ class LPSolver {
   DenseColumn dual_values_;
   VariableStatusRow variable_statuses_;
   ConstraintStatusColumn constraint_statuses_;
+  DenseRow primal_ray_;
+  DenseColumn constraints_dual_ray_;
+  DenseRow variable_bounds_dual_ray_;
 
   // Quantities computed from the solution and the linear program.
   DenseRow reduced_costs_;

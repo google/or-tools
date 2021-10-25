@@ -230,10 +230,8 @@ ProblemStatus LPSolver::SolveWithTimeLimit(const LinearProgram& lp,
   if (!time_limit->LimitReached()) {
     RunRevisedSimplexIfNeeded(&solution, time_limit);
   }
-
   if (postsolve_is_needed) preprocessor.DestructiveRecoverSolution(&solution);
   const ProblemStatus status = LoadAndVerifySolution(lp, solution);
-
   // LOG some statistics that can be parsed by our benchmark script.
   if (logger_.LoggingIsEnabled()) {
     SOLVER_LOG(&logger_, "status: ", GetProblemStatusString(status));
@@ -324,6 +322,7 @@ ProblemStatus LPSolver::LoadAndVerifySolution(const LinearProgram& lp,
   dual_values_ = solution.dual_values;
   variable_statuses_ = solution.variable_statuses;
   constraint_statuses_ = solution.constraint_statuses;
+
   ProblemStatus status = solution.status;
 
   // Objective before eventually moving the primal/dual values inside their
@@ -593,13 +592,40 @@ void LPSolver::RunRevisedSimplexIfNeeded(ProblemSolution* solution,
       solution->variable_statuses[col] =
           revised_simplex_->GetVariableStatus(col);
     }
-
     const RowIndex num_rows = revised_simplex_->GetProblemNumRows();
     DCHECK_EQ(solution->dual_values.size(), num_rows);
     for (RowIndex row(0); row < num_rows; ++row) {
       solution->dual_values[row] = revised_simplex_->GetDualValue(row);
       solution->constraint_statuses[row] =
           revised_simplex_->GetConstraintStatus(row);
+    }
+    if (!parameters_.use_preprocessing() && !parameters_.use_scaling()) {
+      if (solution->status == ProblemStatus::PRIMAL_UNBOUNDED) {
+        primal_ray_ = revised_simplex_->GetPrimalRay();
+        // Make sure we do not copy the slacks added by revised_simplex_.
+        primal_ray_.resize(num_cols);
+      } else if (solution->status == ProblemStatus::DUAL_UNBOUNDED) {
+        constraints_dual_ray_ = revised_simplex_->GetDualRay();
+        variable_bounds_dual_ray_ =
+            revised_simplex_->GetDualRayRowCombination();
+        // Make sure we do not copy the slacks added by revised_simplex_.
+        variable_bounds_dual_ray_.resize(num_cols);
+        // Revised simplex's GetDualRay is always such that GetDualRay.rhs < 0,
+        // which is a cost improving direction for the dual if the primal is a
+        // maximization problem (i.e. when the dual is a minimization problem).
+        // Hence, we change the sign of constraints_dual_ray_ for min problems.
+        //
+        // Revised simplex's GetDualRayRowCombination = A^T GetDualRay and
+        // we must have variable_bounds_dual_ray_ = - A^T constraints_dual_ray_.
+        // Then we need to change the sign of variable_bounds_dual_ray_, but for
+        // min problems this change is implicit because of the sign change of
+        // constraints_dual_ray_ described above.
+        if (current_linear_program_.IsMaximizationProblem()) {
+          ChangeSign(&variable_bounds_dual_ray_);
+        } else {
+          ChangeSign(&constraints_dual_ray_);
+        }
+      }
     }
   } else {
     SOLVER_LOG(&logger_, "Error during the revised simplex algorithm.");
