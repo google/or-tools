@@ -280,30 +280,29 @@ bool TryToReconcileEncodings(
   Literal lit1 = size2_enc[1].literal;
   IntegerValue value1 =
       size2_enc[1].value * size2_affine.coeff + size2_affine.constant;
-  for (const auto& [unused_value, candidate_literal] : affine_var_encoding) {
+  for (const auto& [unused, candidate_literal] : affine_var_encoding) {
     if (candidate_literal == lit1) {
       std::swap(lit0, lit1);
       std::swap(value0, value1);
     }
     if (candidate_literal != lit0) continue;
 
-    builder->Clear();
-
     // Compute the minimum energy.
     IntegerValue min_energy = kMaxIntegerValue;
     for (const auto& [value, literal] : affine_var_encoding) {
-      const IntegerValue energy =
-          literal == lit0 ? value0 * (affine.coeff * value + affine.constant)
-                          : value1 * (affine.coeff * value + affine.constant);
+      const IntegerValue energy = literal == lit0
+                                      ? value0 * affine.ValueAt(value)
+                                      : value1 * affine.ValueAt(value);
       min_energy = std::min(energy, min_energy);
     }
-    builder->AddConstant(min_energy);
 
     // Build the energy expression.
+    builder->Clear();
+    builder->AddConstant(min_energy);
     for (const auto& [value, literal] : affine_var_encoding) {
-      const IntegerValue energy =
-          literal == lit0 ? value0 * (affine.coeff * value + affine.constant)
-                          : value1 * (affine.coeff * value + affine.constant);
+      const IntegerValue energy = literal == lit0
+                                      ? value0 * affine.ValueAt(value)
+                                      : value1 * affine.ValueAt(value);
       if (energy > min_energy) {
         if (!builder->AddLiteralTerm(literal, energy - min_energy)) {
           return false;
@@ -325,14 +324,14 @@ bool DetectLinearEncodingOfProducts(const AffineExpression& left,
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
   ImpliedBounds* implied_bounds = model->GetOrCreate<ImpliedBounds>();
 
-  if (left.IsFixed(integer_trail)) {
-    const IntegerValue value = left.Value(integer_trail);
+  if (integer_trail->IsFixed(left)) {
+    const IntegerValue value = integer_trail->LowerBound(left);
     builder->AddTerm(right, value);
     return true;
   }
 
-  if (right.IsFixed(integer_trail)) {
-    const IntegerValue value = right.Value(integer_trail);
+  if (integer_trail->IsFixed(right)) {
+    const IntegerValue value = integer_trail->LowerBound(right);
     builder->AddTerm(left, value);
     return true;
   }
@@ -391,19 +390,15 @@ bool DetectLinearEncodingOfProducts(const AffineExpression& left,
   // Compute the min energy.
   IntegerValue min_energy = kMaxIntegerValue;
   for (int i = 0; i < left_encoding.size(); ++i) {
-    const IntegerValue left_value = left_encoding[i].value;
-    const IntegerValue right_value = right_encoding[i].value;
-    const IntegerValue energy = (left.coeff * left_value + left.constant) *
-                                (right.coeff * right_value + right.constant);
+    const IntegerValue energy = left.ValueAt(left_encoding[i].value) *
+                                right.ValueAt(right_encoding[i].value);
     min_energy = std::min(min_energy, energy);
   }
 
   // Build the linear formulation of the energy.
   for (int i = 0; i < left_encoding.size(); ++i) {
-    const IntegerValue left_value = left_encoding[i].value;
-    const IntegerValue right_value = right_encoding[i].value;
-    const IntegerValue energy = (left.coeff * left_value + left.constant) *
-                                (right.coeff * right_value + right.constant);
+    const IntegerValue energy = left.ValueAt(left_encoding[i].value) *
+                                right.ValueAt(right_encoding[i].value);
     if (energy == min_energy) continue;
     DCHECK_GT(energy, min_energy);
     const Literal lit = left_encoding[i].literal;

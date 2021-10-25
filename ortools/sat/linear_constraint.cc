@@ -69,13 +69,13 @@ void LinearConstraintBuilder::AddLinearExpression(const LinearExpression& expr,
 void LinearConstraintBuilder::AddQuadraticLowerBound(
     AffineExpression left, AffineExpression right,
     IntegerTrail* integer_trail) {
-  if (left.IsFixed(integer_trail)) {
-    AddTerm(right, left.Min(integer_trail));
-  } else if (right.IsFixed(integer_trail)) {
-    AddTerm(left, right.Min(integer_trail));
+  if (integer_trail->IsFixed(left)) {
+    AddTerm(right, integer_trail->LowerBound(left));
+  } else if (integer_trail->IsFixed(right)) {
+    AddTerm(left, integer_trail->LowerBound(right));
   } else {
-    const IntegerValue left_min = left.Min(integer_trail);
-    const IntegerValue right_min = right.Min(integer_trail);
+    const IntegerValue left_min = integer_trail->LowerBound(left);
+    const IntegerValue right_min = integer_trail->LowerBound(right);
     AddTerm(left, right_min);
     AddTerm(right, left_min);
     // Substract the energy counted twice.

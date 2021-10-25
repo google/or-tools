@@ -361,11 +361,11 @@ CutGenerator CreateCumulativeEnergyCutGenerator(
 
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
   for (const AffineExpression& demand_expr : demands) {
-    if (!demand_expr.IsFixed(integer_trail)) {
+    if (!integer_trail->IsFixed(demand_expr)) {
       result.vars.push_back(demand_expr.var);
     }
   }
-  if (!capacity.IsFixed(integer_trail)) {
+  if (!integer_trail->IsFixed(capacity)) {
     result.vars.push_back(capacity.var);
   }
   AddIntegerVariableFromIntervals(helper, model, &result.vars);
@@ -425,11 +425,11 @@ CutGenerator CreateCumulativeTimeTableCutGenerator(
 
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
   for (const AffineExpression& demand_expr : demands) {
-    if (!demand_expr.IsFixed(integer_trail)) {
+    if (!integer_trail->IsFixed(demand_expr)) {
       result.vars.push_back(demand_expr.var);
     }
   }
-  if (!capacity.IsFixed(integer_trail)) {
+  if (!integer_trail->IsFixed(capacity)) {
     result.vars.push_back(capacity.var);
   }
   AddIntegerVariableFromIntervals(helper, model, &result.vars);
@@ -606,11 +606,11 @@ CutGenerator CreateCumulativePrecedenceCutGenerator(
 
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
   for (const AffineExpression& demand_expr : demands) {
-    if (!demand_expr.IsFixed(integer_trail)) {
+    if (!integer_trail->IsFixed(demand_expr)) {
       result.vars.push_back(demand_expr.var);
     }
   }
-  if (!capacity.IsFixed(integer_trail)) {
+  if (!integer_trail->IsFixed(capacity)) {
     result.vars.push_back(capacity.var);
   }
   AddIntegerVariableFromIntervals(helper, model, &result.vars);
@@ -925,11 +925,11 @@ CutGenerator CreateCumulativeCompletionTimeCutGenerator(
 
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
   for (const AffineExpression& demand_expr : demands) {
-    if (!demand_expr.IsFixed(integer_trail)) {
+    if (!integer_trail->IsFixed(demand_expr)) {
       result.vars.push_back(demand_expr.var);
     }
   }
-  if (!capacity.IsFixed(integer_trail)) {
+  if (!integer_trail->IsFixed(capacity)) {
     result.vars.push_back(capacity.var);
   }
   AddIntegerVariableFromIntervals(helper, model, &result.vars);

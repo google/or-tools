@@ -36,40 +36,6 @@ std::vector<IntegerVariable> NegationOf(
   return result;
 }
 
-IntegerValue AffineExpression::Min(IntegerTrail* integer_trail) const {
-  IntegerValue result = constant;
-  if (var != kNoIntegerVariable) {
-    if (coeff > 0) {
-      result += coeff * integer_trail->LowerBound(var);
-    } else {
-      result += coeff * integer_trail->UpperBound(var);
-    }
-  }
-  return result;
-}
-
-IntegerValue AffineExpression::Max(IntegerTrail* integer_trail) const {
-  IntegerValue result = constant;
-  if (var != kNoIntegerVariable) {
-    if (coeff > 0) {
-      result += coeff * integer_trail->UpperBound(var);
-    } else {
-      result += coeff * integer_trail->LowerBound(var);
-    }
-  }
-  return result;
-}
-
-bool AffineExpression::IsFixed(IntegerTrail* integer_trail) const {
-  if (var == kNoIntegerVariable || coeff == 0) return true;
-  return integer_trail->IsFixed(var);
-}
-
-IntegerValue AffineExpression::Value(IntegerTrail* integer_trail) const {
-  DCHECK(IsFixed(integer_trail));
-  return Max(integer_trail);
-}
-
 std::string ValueLiteralPair::DebugString() const {
   return absl::StrCat("(literal = ", literal.DebugString(),
                       ", value = ", value.value(), ")");
@@ -1038,6 +1004,25 @@ std::string IntegerTrail::DebugString() {
   }
   result += "}";
   return result;
+}
+
+bool IntegerTrail::UnsafeEnqueue(
+    IntegerLiteral i_lit, absl::Span<const Literal> literal_reason,
+    absl::Span<const IntegerLiteral> integer_reason) {
+  if (i_lit.IsTrueLiteral()) return true;
+
+  std::vector<IntegerLiteral> cleaned_reason;
+  for (const IntegerLiteral lit : integer_reason) {
+    DCHECK(!lit.IsFalseLiteral());
+    if (lit.IsTrueLiteral()) continue;
+    cleaned_reason.push_back(lit);
+  }
+
+  if (i_lit.IsFalseLiteral()) {
+    return ReportConflict(literal_reason, cleaned_reason);
+  } else {
+    return Enqueue(i_lit, literal_reason, cleaned_reason);
+  }
 }
 
 bool IntegerTrail::Enqueue(IntegerLiteral i_lit,

@@ -871,9 +871,9 @@ void PositiveDivisionPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   watcher->NotifyThatPropagatorMayNotReachFixedPointInOnePass(id);
 }
 
-FixedDivisionPropagator::FixedDivisionPropagator(IntegerVariable a,
+FixedDivisionPropagator::FixedDivisionPropagator(AffineExpression a,
                                                  IntegerValue b,
-                                                 IntegerVariable c,
+                                                 AffineExpression c,
                                                  IntegerTrail* integer_trail)
     : a_(a), b_(b), c_(c), integer_trail_(integer_trail) {}
 
@@ -887,8 +887,9 @@ bool FixedDivisionPropagator::Propagate() {
 
   if (max_a / b_ < max_c) {
     max_c = max_a / b_;
-    if (!integer_trail_->Enqueue(IntegerLiteral::LowerOrEqual(c_, max_c), {},
-                                 {integer_trail_->UpperBoundAsLiteral(a_)})) {
+    if (!integer_trail_->UnsafeEnqueue(
+            c_.LowerOrEqual(max_c), {},
+            {integer_trail_->UpperBoundAsLiteral(a_)})) {
       return false;
     }
   } else if (max_a / b_ > max_c) {
@@ -896,17 +897,18 @@ bool FixedDivisionPropagator::Propagate() {
         max_c >= 0 ? max_c * b_ + b_ - 1
                    : IntegerValue(CapProd(max_c.value(), b_.value()));
     CHECK_LT(new_max_a, max_a);
-    if (!integer_trail_->Enqueue(IntegerLiteral::LowerOrEqual(a_, new_max_a),
-                                 {},
-                                 {integer_trail_->UpperBoundAsLiteral(c_)})) {
+    if (!integer_trail_->UnsafeEnqueue(
+            a_.LowerOrEqual(new_max_a), {},
+            {integer_trail_->UpperBoundAsLiteral(c_)})) {
       return false;
     }
   }
 
   if (min_a / b_ > min_c) {
     min_c = min_a / b_;
-    if (!integer_trail_->Enqueue(IntegerLiteral::GreaterOrEqual(c_, min_c), {},
-                                 {integer_trail_->LowerBoundAsLiteral(a_)})) {
+    if (!integer_trail_->UnsafeEnqueue(
+            c_.GreaterOrEqual(min_c), {},
+            {integer_trail_->LowerBoundAsLiteral(a_)})) {
       return false;
     }
   } else if (min_a / b_ < min_c) {
@@ -914,9 +916,9 @@ bool FixedDivisionPropagator::Propagate() {
         min_c > 0 ? IntegerValue(CapProd(min_c.value(), b_.value()))
                   : min_c * b_ - b_ + 1;
     CHECK_GT(new_min_a, min_a);
-    if (!integer_trail_->Enqueue(IntegerLiteral::GreaterOrEqual(a_, new_min_a),
-                                 {},
-                                 {integer_trail_->LowerBoundAsLiteral(c_)})) {
+    if (!integer_trail_->UnsafeEnqueue(
+            a_.GreaterOrEqual(new_min_a), {},
+            {integer_trail_->LowerBoundAsLiteral(c_)})) {
       return false;
     }
   }
@@ -926,8 +928,8 @@ bool FixedDivisionPropagator::Propagate() {
 
 void FixedDivisionPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
-  watcher->WatchIntegerVariable(a_, id);
-  watcher->WatchIntegerVariable(c_, id);
+  watcher->WatchAffineExpression(a_, id);
+  watcher->WatchAffineExpression(c_, id);
 }
 
 std::function<void(Model*)> IsOneOf(IntegerVariable var,

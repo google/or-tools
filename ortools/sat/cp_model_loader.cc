@@ -1147,6 +1147,8 @@ void LoadIntDivConstraint(const ConstraintProto& ct, Model* m) {
     const IntegerValue denom(m->Get(Value(vars[1])));
     if (denom == 1) {
       m->Add(Equality(vars[0], div));
+    } else if (denom == -1) {
+      m->Add(Equality(NegationOf(vars[0]), div));
     } else {
       m->Add(FixedDivisionConstraint(vars[0], denom, div));
     }

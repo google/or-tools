@@ -256,16 +256,16 @@ class PositiveDivisionPropagator : public PropagatorInterface {
 // cases, and we only propagates the bounds. cst_b must be > 0.
 class FixedDivisionPropagator : public PropagatorInterface {
  public:
-  FixedDivisionPropagator(IntegerVariable a, IntegerValue b, IntegerVariable c,
-                          IntegerTrail* integer_trail);
+  FixedDivisionPropagator(AffineExpression a, IntegerValue b,
+                          AffineExpression c, IntegerTrail* integer_trail);
 
   bool Propagate() final;
   void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
-  const IntegerVariable a_;
+  const AffineExpression a_;
   const IntegerValue b_;
-  const IntegerVariable c_;
+  const AffineExpression c_;
   IntegerTrail* integer_trail_;
 
   DISALLOW_COPY_AND_ASSIGN(FixedDivisionPropagator);
@@ -821,15 +821,14 @@ inline std::function<void(Model*)> DivisionConstraint(IntegerVariable num,
 }
 
 // Adds the constraint: a / b = c where b is a constant.
-inline std::function<void(Model*)> FixedDivisionConstraint(IntegerVariable a,
+inline std::function<void(Model*)> FixedDivisionConstraint(AffineExpression a,
                                                            IntegerValue b,
-                                                           IntegerVariable c) {
+                                                           AffineExpression c) {
   return [=](Model* model) {
     IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
     FixedDivisionPropagator* constraint =
-        b > 0
-            ? new FixedDivisionPropagator(a, b, c, integer_trail)
-            : new FixedDivisionPropagator(NegationOf(a), -b, c, integer_trail);
+        b > 0 ? new FixedDivisionPropagator(a, b, c, integer_trail)
+              : new FixedDivisionPropagator(a.Negated(), -b, c, integer_trail);
     constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(constraint);
   };
