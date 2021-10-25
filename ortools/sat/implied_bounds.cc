@@ -253,57 +253,66 @@ std::string EncodingStr(const std::vector<ValueLiteralPair>& enc) {
 // expression pointing to a variable with domain [0,1] or [-1,0].
 // If the original variable has been removed from the model, then there are no
 // implied values from any exactly_one constraint to its domain.
+// If we are lucky, one of the literal of the exactly_one constraints, and its
+// negation are used to encode the Boolean variable of the affine.
+//
+// This may fail if exactly_one(l0, l1, l2, l3); l0 and l1 imply x = 0,
+// l2 and l3 imply x = 1. In that case, one must look at the binary
+// implications to find the missing link.
+//
+// TODO(user): Consider removing this once we are more complete in our implied
+// bounds repository. Because if we can reconcile an encoding, then any of the
+// literal in the at most one should imply a value on the boolean view use in
+// the size2 affine.
 bool TryToReconcileEncodings(
-    const AffineExpression& size2, const AffineExpression& gen,
-    const std::vector<ValueLiteralPair>& general_encoding, Model* model,
+    const AffineExpression& size2_affine, const AffineExpression& affine,
+    const std::vector<ValueLiteralPair>& affine_var_encoding, Model* model,
     LinearConstraintBuilder* builder) {
   IntegerEncoder* integer_encoder = model->GetOrCreate<IntegerEncoder>();
-  IntegerVariable binary = size2.var;
-  if (integer_encoder->VariableIsFullyEncoded(binary)) {
-    const std::vector<ValueLiteralPair>& size2_enc =
-        integer_encoder->FullDomainEncoding(binary);
-    CHECK_EQ(2, size2_enc.size());
-    Literal lit0 = size2_enc[0].literal;
-    IntegerValue value0 = size2_enc[0].value;
-    Literal lit1 = size2_enc[1].literal;
-    IntegerValue value1 = size2_enc[1].value;
-    for (const ValueLiteralPair& e : general_encoding) {
-      if (e.literal == lit1) {
-        std::swap(lit0, lit1);
-        std::swap(value0, value1);
-      }
-      if (e.literal == lit0) {
-        builder->Clear();
+  IntegerVariable binary = size2_affine.var;
+  if (!integer_encoder->VariableIsFullyEncoded(binary)) return false;
+  const std::vector<ValueLiteralPair>& size2_enc =
+      integer_encoder->FullDomainEncoding(binary);
+  CHECK_EQ(2, size2_enc.size());
+  Literal lit0 = size2_enc[0].literal;
+  IntegerValue value0 =
+      size2_enc[0].value * size2_affine.coeff + size2_affine.constant;
+  Literal lit1 = size2_enc[1].literal;
+  IntegerValue value1 =
+      size2_enc[1].value * size2_affine.coeff + size2_affine.constant;
+  for (const auto& [unused_value, candidate_literal] : affine_var_encoding) {
+    if (candidate_literal == lit1) {
+      std::swap(lit0, lit1);
+      std::swap(value0, value1);
+    }
+    if (candidate_literal != lit0) continue;
 
-        // Compute the minimum energy.
-        IntegerValue min_energy = kMaxIntegerValue;
-        for (const ValueLiteralPair& f : general_encoding) {
-          const IntegerValue energy =
-              f.literal == lit0 ? (size2.coeff * value0 + size2.constant) *
-                                      (gen.coeff * f.value + gen.constant)
-                                : (size2.coeff * value1 + size2.constant) *
-                                      (gen.coeff * f.value + gen.constant);
-          min_energy = std::min(energy, min_energy);
-        }
-        builder->AddConstant(min_energy);
+    builder->Clear();
 
-        // Build the energy expression.
-        for (const ValueLiteralPair& f : general_encoding) {
-          const IntegerValue energy =
-              f.literal == lit0 ? (size2.coeff * value0 + size2.constant) *
-                                      (gen.coeff * f.value + gen.constant)
-                                : (size2.coeff * value1 + size2.constant) *
-                                      (gen.coeff * f.value + gen.constant);
-          if (energy > min_energy) {
-            if (!builder->AddLiteralTerm(f.literal, energy - min_energy)) {
-              return false;
-            }
-          }
+    // Compute the minimum energy.
+    IntegerValue min_energy = kMaxIntegerValue;
+    for (const auto& [value, literal] : affine_var_encoding) {
+      const IntegerValue energy =
+          literal == lit0 ? value0 * (affine.coeff * value + affine.constant)
+                          : value1 * (affine.coeff * value + affine.constant);
+      min_energy = std::min(energy, min_energy);
+    }
+    builder->AddConstant(min_energy);
+
+    // Build the energy expression.
+    for (const auto& [value, literal] : affine_var_encoding) {
+      const IntegerValue energy =
+          literal == lit0 ? value0 * (affine.coeff * value + affine.constant)
+                          : value1 * (affine.coeff * value + affine.constant);
+      if (energy > min_energy) {
+        if (!builder->AddLiteralTerm(literal, energy - min_energy)) {
+          return false;
         }
-        return true;
       }
     }
+    return true;
   }
+
   return false;
 }
 
