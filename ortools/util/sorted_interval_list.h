@@ -359,7 +359,8 @@ class Domain {
    *
    * We check that modulo is strictly positive.
    * The sign of the modulo depends on the sign of e.
-   * For now we just intersect with the min/max possible value.
+   * We compute the exact min/max if the modulo is fixed, otherwise we will
+   * just return a superset.
    */
   Domain PositiveModuloBySuperset(const Domain& modulo) const;
 
