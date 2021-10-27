@@ -325,13 +325,13 @@ bool DetectLinearEncodingOfProducts(const AffineExpression& left,
   ImpliedBounds* implied_bounds = model->GetOrCreate<ImpliedBounds>();
 
   if (integer_trail->IsFixed(left)) {
-    const IntegerValue value = integer_trail->LowerBound(left);
+    const IntegerValue value = integer_trail->FixedValue(left);
     builder->AddTerm(right, value);
     return true;
   }
 
   if (integer_trail->IsFixed(right)) {
-    const IntegerValue value = integer_trail->LowerBound(right);
+    const IntegerValue value = integer_trail->FixedValue(right);
     builder->AddTerm(left, value);
     return true;
   }

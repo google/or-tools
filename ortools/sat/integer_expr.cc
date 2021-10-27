@@ -611,7 +611,7 @@ void LinMinPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
 }
 
 PositiveProductPropagator::PositiveProductPropagator(
-    IntegerVariable a, IntegerVariable b, IntegerVariable p,
+    AffineExpression a, AffineExpression b, AffineExpression p,
     IntegerTrail* integer_trail)
     : a_(a), b_(b), p_(p), integer_trail_(integer_trail) {
   // Note that we assume this is true at level zero, and so we never include
@@ -628,7 +628,7 @@ bool PositiveProductPropagator::Propagate() {
   const IntegerValue max_b = integer_trail_->UpperBound(b_);
   const IntegerValue new_max(CapProd(max_a.value(), max_b.value()));
   if (new_max < integer_trail_->UpperBound(p_)) {
-    if (!integer_trail_->Enqueue(IntegerLiteral::LowerOrEqual(p_, new_max), {},
+    if (!integer_trail_->Enqueue(p_.LowerOrEqual(new_max), {},
                                  {integer_trail_->UpperBoundAsLiteral(a_),
                                   integer_trail_->UpperBoundAsLiteral(b_)})) {
       return false;
@@ -639,8 +639,7 @@ bool PositiveProductPropagator::Propagate() {
   const IntegerValue min_b = integer_trail_->LowerBound(b_);
   const IntegerValue new_min(CapProd(min_a.value(), min_b.value()));
   if (new_min > integer_trail_->LowerBound(p_)) {
-    if (!integer_trail_->Enqueue(IntegerLiteral::GreaterOrEqual(p_, new_min),
-                                 {},
+    if (!integer_trail_->Enqueue(p_.GreaterOrEqual(new_min), {},
                                  {integer_trail_->LowerBoundAsLiteral(a_),
                                   integer_trail_->LowerBoundAsLiteral(b_)})) {
       return false;
@@ -648,25 +647,24 @@ bool PositiveProductPropagator::Propagate() {
   }
 
   for (int i = 0; i < 2; ++i) {
-    const IntegerVariable a = i == 0 ? a_ : b_;
-    const IntegerVariable b = i == 0 ? b_ : a_;
+    const AffineExpression a = i == 0 ? a_ : b_;
+    const AffineExpression b = i == 0 ? b_ : a_;
     const IntegerValue max_a = integer_trail_->UpperBound(a);
     const IntegerValue min_b = integer_trail_->LowerBound(b);
     const IntegerValue min_p = integer_trail_->LowerBound(p_);
     const IntegerValue max_p = integer_trail_->UpperBound(p_);
     const IntegerValue prod(CapProd(max_a.value(), min_b.value()));
     if (prod > max_p) {
-      if (!integer_trail_->Enqueue(
-              IntegerLiteral::LowerOrEqual(a, FloorRatio(max_p, min_b)), {},
-              {integer_trail_->LowerBoundAsLiteral(b),
-               integer_trail_->UpperBoundAsLiteral(p_)})) {
+      if (!integer_trail_->Enqueue(a.LowerOrEqual(FloorRatio(max_p, min_b)), {},
+                                   {integer_trail_->LowerBoundAsLiteral(b),
+                                    integer_trail_->UpperBoundAsLiteral(p_)})) {
         return false;
       }
     } else if (prod < min_p) {
-      if (!integer_trail_->Enqueue(
-              IntegerLiteral::GreaterOrEqual(b, CeilRatio(min_p, max_a)), {},
-              {integer_trail_->UpperBoundAsLiteral(a),
-               integer_trail_->LowerBoundAsLiteral(p_)})) {
+      if (!integer_trail_->Enqueue(b.GreaterOrEqual(CeilRatio(min_p, max_a)),
+                                   {},
+                                   {integer_trail_->UpperBoundAsLiteral(a),
+                                    integer_trail_->LowerBoundAsLiteral(p_)})) {
         return false;
       }
     }
@@ -677,9 +675,9 @@ bool PositiveProductPropagator::Propagate() {
 
 void PositiveProductPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
-  watcher->WatchIntegerVariable(a_, id);
-  watcher->WatchIntegerVariable(b_, id);
-  watcher->WatchIntegerVariable(p_, id);
+  watcher->WatchAffineExpression(a_, id);
+  watcher->WatchAffineExpression(b_, id);
+  watcher->WatchAffineExpression(p_, id);
   watcher->NotifyThatPropagatorMayNotReachFixedPointInOnePass(id);
 }
 
@@ -707,7 +705,7 @@ IntegerValue CeilSquareRoot(IntegerValue a) {
 
 }  // namespace
 
-SquarePropagator::SquarePropagator(IntegerVariable x, IntegerVariable s,
+SquarePropagator::SquarePropagator(AffineExpression x, AffineExpression s,
                                    IntegerTrail* integer_trail)
     : x_(x), s_(s), integer_trail_(integer_trail) {
   CHECK_GE(integer_trail->LevelZeroLowerBound(x), 0);
@@ -720,17 +718,15 @@ bool SquarePropagator::Propagate() {
   const IntegerValue min_s = integer_trail_->LowerBound(s_);
   const IntegerValue min_x_square(CapProd(min_x.value(), min_x.value()));
   if (min_x_square > min_s) {
-    if (!integer_trail_->Enqueue(
-            IntegerLiteral::GreaterOrEqual(s_, min_x_square), {},
-            {IntegerLiteral::GreaterOrEqual(x_, min_x)})) {
+    if (!integer_trail_->Enqueue(s_.GreaterOrEqual(min_x_square), {},
+                                 {x_.GreaterOrEqual(min_x)})) {
       return false;
     }
   } else if (min_x_square < min_s) {
     const IntegerValue new_min = CeilSquareRoot(min_s);
-    if (!integer_trail_->Enqueue(IntegerLiteral::GreaterOrEqual(x_, new_min),
-                                 {},
-                                 {IntegerLiteral::GreaterOrEqual(
-                                     s_, (new_min - 1) * (new_min - 1) + 1)})) {
+    if (!integer_trail_->Enqueue(
+            x_.GreaterOrEqual(new_min), {},
+            {s_.GreaterOrEqual((new_min - 1) * (new_min - 1) + 1)})) {
       return false;
     }
   }
@@ -739,19 +735,17 @@ bool SquarePropagator::Propagate() {
   const IntegerValue max_s = integer_trail_->UpperBound(s_);
   const IntegerValue max_x_square(CapProd(max_x.value(), max_x.value()));
   if (max_x_square < max_s) {
-    if (!integer_trail_->Enqueue(IntegerLiteral::LowerOrEqual(s_, max_x_square),
-                                 {},
-                                 {IntegerLiteral::LowerOrEqual(x_, max_x)})) {
+    if (!integer_trail_->Enqueue(s_.LowerOrEqual(max_x_square), {},
+                                 {x_.LowerOrEqual(max_x)})) {
       return false;
     }
   } else if (max_x_square > max_s) {
     const IntegerValue new_max = FloorSquareRoot(max_s);
     if (!integer_trail_->Enqueue(
-            IntegerLiteral::LowerOrEqual(x_, new_max), {},
-            {IntegerLiteral::LowerOrEqual(
-                s_, IntegerValue(
-                        CapProd(new_max.value() + 1, new_max.value() + 1)) -
-                        1)})) {
+            x_.LowerOrEqual(new_max), {},
+            {s_.LowerOrEqual(IntegerValue(CapProd(new_max.value() + 1,
+                                                  new_max.value() + 1)) -
+                             1)})) {
       return false;
     }
   }
@@ -761,45 +755,108 @@ bool SquarePropagator::Propagate() {
 
 void SquarePropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
-  watcher->WatchIntegerVariable(x_, id);
-  watcher->WatchIntegerVariable(s_, id);
+  watcher->WatchAffineExpression(x_, id);
+  watcher->WatchAffineExpression(s_, id);
   watcher->NotifyThatPropagatorMayNotReachFixedPointInOnePass(id);
 }
 
-PositiveDivisionPropagator::PositiveDivisionPropagator(
-    IntegerVariable num, IntegerVariable denom, IntegerVariable div,
-    IntegerTrail* integer_trail)
-    : num_(num), denom_(denom), div_(div), integer_trail_(integer_trail) {
-  // TODO(user): support these cases.
-  CHECK_GE(integer_trail->LevelZeroLowerBound(num), 0);
+DivisionPropagator::DivisionPropagator(AffineExpression num,
+                                       AffineExpression denom,
+                                       AffineExpression div,
+                                       IntegerTrail* integer_trail)
+    : num_(num),
+      denom_(denom),
+      div_(div),
+      negated_num_(num.Negated()),
+      negated_div_(div.Negated()),
+      integer_trail_(integer_trail) {
   // The denominator can never be zero.
   CHECK_GT(integer_trail->LevelZeroLowerBound(denom), 0);
 }
 
-bool PositiveDivisionPropagator::Propagate() {
+bool DivisionPropagator::Propagate() {
+  if (!PropagateSigns()) return false;
+
+  if (integer_trail_->UpperBound(num_) >= 0 &&
+      integer_trail_->UpperBound(div_) >= 0 &&
+      !PropagateUpperBounds(num_, denom_, div_)) {
+    return false;
+  }
+
+  if (integer_trail_->UpperBound(negated_num_) >= 0 &&
+      integer_trail_->UpperBound(negated_div_) >= 0 &&
+      !PropagateUpperBounds(negated_num_, denom_, negated_div_)) {
+    return false;
+  }
+
+  if (integer_trail_->LowerBound(num_) >= 0 &&
+      integer_trail_->LowerBound(div_) >= 0) {
+    return PropagatePositiveDomains(num_, denom_, div_);
+  }
+
+  if (integer_trail_->UpperBound(num_) <= 0 &&
+      integer_trail_->UpperBound(div_) <= 0) {
+    return PropagatePositiveDomains(negated_num_, denom_, negated_div_);
+  }
+
+  return true;
+}
+
+bool DivisionPropagator::PropagateSigns() {
   const IntegerValue min_num = integer_trail_->LowerBound(num_);
   const IntegerValue max_num = integer_trail_->UpperBound(num_);
-  const IntegerValue min_denom = integer_trail_->LowerBound(denom_);
-  const IntegerValue max_denom = integer_trail_->UpperBound(denom_);
   const IntegerValue min_div = integer_trail_->LowerBound(div_);
   const IntegerValue max_div = integer_trail_->UpperBound(div_);
 
-  const IntegerValue new_max_div = max_num / min_denom;
-  if (max_div > new_max_div) {
-    if (!integer_trail_->Enqueue(
-            IntegerLiteral::LowerOrEqual(div_, new_max_div), {},
-            {integer_trail_->UpperBoundAsLiteral(num_),
-             integer_trail_->LowerBoundAsLiteral(denom_)})) {
+  // If num >= 0, as denom > 0, then div must be >= 0.
+  if (min_num >= 0 && min_div < 0) {
+    if (!integer_trail_->UnsafeEnqueue(div_.GreaterOrEqual(0), {},
+                                       {num_.GreaterOrEqual(0)})) {
       return false;
     }
   }
 
-  const IntegerValue new_min_div = min_num / max_denom;
-  if (min_div < new_min_div) {
-    if (!integer_trail_->Enqueue(
-            IntegerLiteral::GreaterOrEqual(div_, new_min_div), {},
-            {integer_trail_->LowerBoundAsLiteral(num_),
-             integer_trail_->UpperBoundAsLiteral(denom_)})) {
+  // If div > 0, as denom > 0, then num must be > 0.
+  if (min_num <= 0 && min_div > 0) {
+    if (!integer_trail_->UnsafeEnqueue(num_.GreaterOrEqual(1), {},
+                                       {div_.GreaterOrEqual(1)})) {
+      return false;
+    }
+  }
+
+  // If num <= 0, as denom > 0, then div must be <= 0.
+  if (max_num <= 0 && max_div > 0) {
+    if (!integer_trail_->UnsafeEnqueue(div_.LowerOrEqual(0), {},
+                                       {num_.LowerOrEqual(0)})) {
+      return false;
+    }
+  }
+
+  // If div < 0, as denom > 0, then num must be < 0.
+  if (max_num >= 0 && max_div < 0) {
+    if (!integer_trail_->UnsafeEnqueue(num_.LowerOrEqual(-1), {},
+                                       {div_.LowerOrEqual(-1)})) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+bool DivisionPropagator::PropagateUpperBounds(AffineExpression num,
+                                              AffineExpression denom,
+                                              AffineExpression div) {
+  const IntegerValue max_num = integer_trail_->UpperBound(num);
+  const IntegerValue min_denom = integer_trail_->LowerBound(denom);
+  const IntegerValue max_denom = integer_trail_->UpperBound(denom);
+  const IntegerValue max_div = integer_trail_->UpperBound(div);
+
+  const IntegerValue new_max_div = max_num / min_denom;
+  if (max_div > new_max_div) {
+    if (!integer_trail_->UnsafeEnqueue(
+            div.LowerOrEqual(new_max_div), {},
+            {integer_trail_->UpperBoundAsLiteral(num),
+             integer_trail_->LowerBoundAsLiteral(denom)})) {
       return false;
     }
   }
@@ -810,10 +867,33 @@ bool PositiveDivisionPropagator::Propagate() {
   const IntegerValue new_max_num =
       IntegerValue(CapAdd(CapProd(max_div.value() + 1, max_denom.value()), -1));
   if (max_num > new_max_num) {
-    if (!integer_trail_->Enqueue(
-            IntegerLiteral::LowerOrEqual(num_, new_max_num), {},
-            {integer_trail_->UpperBoundAsLiteral(denom_),
-             integer_trail_->UpperBoundAsLiteral(div_)})) {
+    if (!integer_trail_->UnsafeEnqueue(
+            num.LowerOrEqual(new_max_num), {},
+            {integer_trail_->UpperBoundAsLiteral(denom),
+             integer_trail_->UpperBoundAsLiteral(div)})) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+bool DivisionPropagator::PropagatePositiveDomains(AffineExpression num,
+                                                  AffineExpression denom,
+                                                  AffineExpression div) {
+  const IntegerValue min_num = integer_trail_->LowerBound(num);
+  const IntegerValue max_num = integer_trail_->UpperBound(num);
+  const IntegerValue min_denom = integer_trail_->LowerBound(denom);
+  const IntegerValue max_denom = integer_trail_->UpperBound(denom);
+  const IntegerValue min_div = integer_trail_->LowerBound(div);
+  const IntegerValue max_div = integer_trail_->UpperBound(div);
+
+  const IntegerValue new_min_div = min_num / max_denom;
+  if (min_div < new_min_div) {
+    if (!integer_trail_->UnsafeEnqueue(
+            div.GreaterOrEqual(new_min_div), {},
+            {integer_trail_->LowerBoundAsLiteral(num),
+             integer_trail_->UpperBoundAsLiteral(denom)})) {
       return false;
     }
   }
@@ -824,10 +904,10 @@ bool PositiveDivisionPropagator::Propagate() {
   const IntegerValue new_min_num =
       IntegerValue(CapProd(min_denom.value(), min_div.value()));
   if (min_num < new_min_num) {
-    if (!integer_trail_->Enqueue(
-            IntegerLiteral::GreaterOrEqual(num_, new_min_num), {},
-            {integer_trail_->LowerBoundAsLiteral(denom_),
-             integer_trail_->LowerBoundAsLiteral(div_)})) {
+    if (!integer_trail_->UnsafeEnqueue(
+            num.GreaterOrEqual(new_min_num), {},
+            {integer_trail_->LowerBoundAsLiteral(denom),
+             integer_trail_->LowerBoundAsLiteral(div)})) {
       return false;
     }
   }
@@ -839,10 +919,10 @@ bool PositiveDivisionPropagator::Propagate() {
   if (min_div > 0) {
     const IntegerValue new_max_denom = max_num / min_div;
     if (max_denom > new_max_denom) {
-      if (!integer_trail_->Enqueue(
-              IntegerLiteral::LowerOrEqual(denom_, new_max_denom), {},
-              {integer_trail_->UpperBoundAsLiteral(num_),
-               integer_trail_->LowerBoundAsLiteral(div_)})) {
+      if (!integer_trail_->UnsafeEnqueue(
+              denom.LowerOrEqual(new_max_denom), {},
+              {integer_trail_->UpperBoundAsLiteral(num), num.GreaterOrEqual(0),
+               integer_trail_->LowerBoundAsLiteral(div)})) {
         return false;
       }
     }
@@ -852,10 +932,11 @@ bool PositiveDivisionPropagator::Propagate() {
   //               >= CeilRatio(min_num + 1, max_div +).
   const IntegerValue new_min_denom = CeilRatio(min_num + 1, max_div + 1);
   if (min_denom < new_min_denom) {
-    if (!integer_trail_->Enqueue(
-            IntegerLiteral::GreaterOrEqual(denom_, new_min_denom), {},
-            {integer_trail_->LowerBoundAsLiteral(num_),
-             integer_trail_->UpperBoundAsLiteral(div_)})) {
+    if (!integer_trail_->UnsafeEnqueue(
+            denom.GreaterOrEqual(new_min_denom), {},
+            {integer_trail_->LowerBoundAsLiteral(num),
+             integer_trail_->UpperBoundAsLiteral(div),
+             div.GreaterOrEqual(0)})) {
       return false;
     }
   }
@@ -863,11 +944,11 @@ bool PositiveDivisionPropagator::Propagate() {
   return true;
 }
 
-void PositiveDivisionPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
+void DivisionPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
-  watcher->WatchIntegerVariable(num_, id);
-  watcher->WatchIntegerVariable(denom_, id);
-  watcher->WatchIntegerVariable(div_, id);
+  watcher->WatchAffineExpression(num_, id);
+  watcher->WatchAffineExpression(denom_, id);
+  watcher->WatchAffineExpression(div_, id);
   watcher->NotifyThatPropagatorMayNotReachFixedPointInOnePass(id);
 }
 

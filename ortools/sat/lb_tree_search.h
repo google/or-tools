@@ -49,6 +49,7 @@ class LbTreeSearch {
 
  private:
   // Code a binary tree.
+  DEFINE_INT_TYPE(NodeIndex, int);
   struct Node {
     Node(Literal l, IntegerValue lb)
         : literal(l),
@@ -57,6 +58,11 @@ class LbTreeSearch {
           false_objective(lb) {}
 
     // Invariant: the objective bounds only increase.
+    void UpdateObjective(IntegerValue v) {
+      objective_lb = std::max(objective_lb, v);
+      true_objective = std::max(true_objective, v);
+      false_objective = std::max(false_objective, v);
+    }
     void UpdateTrueObjective(IntegerValue v) {
       true_objective = std::max(true_objective, v);
       objective_lb =
@@ -74,31 +80,24 @@ class LbTreeSearch {
     // The objective lower bound at this node.
     IntegerValue objective_lb;
 
-    // The objective lower bound in both branches.
-    // This is only updated when we backtrack over this node.
+    // The objective lower bound in both branches. This should be the same
+    // (after a sync) as the objective_lb of the corresponding child node when
+    // that node is instantiated.
     IntegerValue true_objective;
     IntegerValue false_objective;
 
     // Points to adjacent nodes in the tree. Large if no connection.
-    int true_child = std::numeric_limits<int32_t>::max();
-    int false_child = std::numeric_limits<int32_t>::max();
-
-    // Instead of storing the full reason for an objective LB increase in one
-    // the branches (which can lead to a quadratic memory usage), we stores the
-    // level of the highest decision needed, not counting this node literal.
-    // Basically, the reason for true_objective without {literal} only includes
-    // literal with levels in [0, true_level].
-    //
-    // This allows us to slighlty reduce the size of the overall tree. If both
-    // branches have a low enough level, then we can backjump in the search tree
-    // and skip all the nodes in-between by connecting directly the correct
-    // ancestor to this node. Note that when we do that, the level of the nodes
-    // in the sub-branch change, but this still work.
-    int true_level = std::numeric_limits<int32_t>::max();
-    int false_level = std::numeric_limits<int32_t>::max();
+    NodeIndex true_child = NodeIndex(std::numeric_limits<int32_t>::max());
+    NodeIndex false_child = NodeIndex(std::numeric_limits<int32_t>::max());
   };
 
-  IntegerValue current_objective_lb_;
+  // Updates the objective of the node in the current branch at level n from
+  // the one at level n - 1.
+  void UpdateObjectiveFromParent(int level);
+
+  // Updates the objective of the node in the current branch at level n - 1 from
+  // the one at level n.
+  void UpdateParentObjective(int level);
 
   // Model singleton class used here.
   TimeLimit* time_limit_;
@@ -110,11 +109,14 @@ class LbTreeSearch {
   IntegerSearchHelper* search_helper_;
   IntegerVariable objective_var_;
 
+  // We temporarily cache the shared_response_ objective lb here.
+  IntegerValue current_objective_lb_;
+
   // Memory for all the nodes.
-  std::vector<Node> nodes_;
+  absl::StrongVector<NodeIndex, Node> nodes_;
 
   // The list of nodes in the current branch, in order from the root.
-  std::vector<int> current_branch_;
+  std::vector<NodeIndex> current_branch_;
 
   // Our heuristic used to explore the tree. See code for detail.
   std::function<BooleanOrIntegerLiteral()> search_heuristic_;

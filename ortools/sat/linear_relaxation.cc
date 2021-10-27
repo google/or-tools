@@ -729,7 +729,7 @@ void AppendCumulativeRelaxation(const CpModelProto& model_proto,
       mapping->Intervals(ct.cumulative().intervals());
   const IntegerValue capacity_upper_bound =
       model->GetOrCreate<IntegerTrail>()->UpperBound(
-          mapping->LoadAffineView(ct.cumulative().capacity()));
+          mapping->Affine(ct.cumulative().capacity()));
 
   // Scan energies.
   IntervalsRepository* intervals_repository =
@@ -739,7 +739,7 @@ void AppendCumulativeRelaxation(const CpModelProto& model_proto,
   std::vector<AffineExpression> demands;
   std::vector<AffineExpression> sizes;
   for (int i = 0; i < demands.size(); ++i) {
-    demands.push_back(mapping->LoadAffineView(ct.cumulative().demands(i)));
+    demands.push_back(mapping->Affine(ct.cumulative().demands(i)));
     sizes.push_back(intervals_repository->Size(intervals[i]));
   }
   FillEnergies(demands, sizes, model, &energies);
@@ -1139,8 +1139,7 @@ void AddCumulativeCutGenerator(const ConstraintProto& ct, Model* m,
 
   const std::vector<IntervalVariable> intervals =
       mapping->Intervals(ct.cumulative().intervals());
-  const AffineExpression capacity =
-      mapping->LoadAffineView(ct.cumulative().capacity());
+  const AffineExpression capacity = mapping->Affine(ct.cumulative().capacity());
 
   // Scan energies.
   IntervalsRepository* intervals_repository =
@@ -1150,7 +1149,7 @@ void AddCumulativeCutGenerator(const ConstraintProto& ct, Model* m,
   std::vector<AffineExpression> demands;
   std::vector<AffineExpression> sizes;
   for (int i = 0; i < intervals.size(); ++i) {
-    demands.push_back(mapping->LoadAffineView(ct.cumulative().demands(i)));
+    demands.push_back(mapping->Affine(ct.cumulative().demands(i)));
     sizes.push_back(intervals_repository->Size(intervals[i]));
   }
   FillEnergies(demands, sizes, m, &energies);

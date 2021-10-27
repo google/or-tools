@@ -70,9 +70,9 @@ void LinearConstraintBuilder::AddQuadraticLowerBound(
     AffineExpression left, AffineExpression right,
     IntegerTrail* integer_trail) {
   if (integer_trail->IsFixed(left)) {
-    AddTerm(right, integer_trail->LowerBound(left));
+    AddTerm(right, integer_trail->FixedValue(left));
   } else if (integer_trail->IsFixed(right)) {
-    AddTerm(left, integer_trail->LowerBound(right));
+    AddTerm(left, integer_trail->FixedValue(right));
   } else {
     const IntegerValue left_min = integer_trail->LowerBound(left);
     const IntegerValue right_min = integer_trail->LowerBound(right);

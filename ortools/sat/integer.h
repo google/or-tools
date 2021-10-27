@@ -243,6 +243,11 @@ struct AffineExpression {
   IntegerLiteral GreaterOrEqual(IntegerValue bound) const;
   IntegerLiteral LowerOrEqual(IntegerValue bound) const;
 
+  // It is safe to call these with non-typed constants.
+  // This simplify the code when we need GreaterOrEqual(0) for instance.
+  IntegerLiteral GreaterOrEqual(int64_t bound) const;
+  IntegerLiteral LowerOrEqual(int64_t bound) const;
+
   AffineExpression Negated() const {
     if (var == kNoIntegerVariable) return AffineExpression(-constant);
     return AffineExpression(NegationOf(var), coeff, -constant);
@@ -717,10 +722,14 @@ class IntegerTrail : public SatPropagator {
   // Checks if the variable is fixed.
   bool IsFixed(IntegerVariable i) const;
 
+  // Checks that the variable is fixed and returns its value.
+  IntegerValue FixedValue(IntegerVariable i) const;
+
   // Same as above for an affine expression.
   IntegerValue LowerBound(AffineExpression expr) const;
   IntegerValue UpperBound(AffineExpression expr) const;
   bool IsFixed(AffineExpression expr) const;
+  IntegerValue FixedValue(AffineExpression expr) const;
 
   // Returns the integer literal that represent the current lower/upper bound of
   // the given integer variable.
@@ -728,7 +737,7 @@ class IntegerTrail : public SatPropagator {
   IntegerLiteral UpperBoundAsLiteral(IntegerVariable i) const;
 
   // Returns the integer literal that represent the current lower/upper bound of
-  // the given integer variable. In case the expression is constant, it returns
+  // the given affine expression. In case the expression is constant, it returns
   // IntegerLiteral::TrueLiteral().
   IntegerLiteral LowerBoundAsLiteral(AffineExpression expr) const;
   IntegerLiteral UpperBoundAsLiteral(AffineExpression expr) const;
@@ -741,8 +750,15 @@ class IntegerTrail : public SatPropagator {
   IntegerValue LevelZeroLowerBound(IntegerVariable var) const;
   IntegerValue LevelZeroUpperBound(IntegerVariable var) const;
 
+  // Returns globally valid lower/upper bound on the given affine expression.
+  IntegerValue LevelZeroLowerBound(AffineExpression exp) const;
+  IntegerValue LevelZeroUpperBound(AffineExpression exp) const;
+
   // Returns true if the variable is fixed at level 0.
   bool IsFixedAtLevelZero(IntegerVariable var) const;
+
+  // Returns true if the affine expression is fixed at level 0.
+  bool IsFixedAtLevelZero(AffineExpression expr) const;
 
   // Advanced usage.
   // Returns the current lower bound assuming the literal is true.
@@ -1397,6 +1413,10 @@ inline IntegerLiteral AffineExpression::GreaterOrEqual(
                                         CeilRatio(bound - constant, coeff));
 }
 
+inline IntegerLiteral AffineExpression::GreaterOrEqual(int64_t bound) const {
+  return GreaterOrEqual(IntegerValue(bound));
+}
+
 // var * coeff + constant <= bound.
 inline IntegerLiteral AffineExpression::LowerOrEqual(IntegerValue bound) const {
   if (var == kNoIntegerVariable) {
@@ -1405,6 +1425,10 @@ inline IntegerLiteral AffineExpression::LowerOrEqual(IntegerValue bound) const {
   }
   DCHECK_GT(coeff, 0);
   return IntegerLiteral::LowerOrEqual(var, FloorRatio(bound - constant, coeff));
+}
+
+inline IntegerLiteral AffineExpression::LowerOrEqual(int64_t bound) const {
+  return LowerOrEqual(IntegerValue(bound));
 }
 
 inline IntegerValue IntegerTrail::LowerBound(IntegerVariable i) const {
@@ -1419,9 +1443,9 @@ inline bool IntegerTrail::IsFixed(IntegerVariable i) const {
   return vars_[i].current_bound == -vars_[NegationOf(i)].current_bound;
 }
 
-inline IntegerValue IntegerTrail::LowerBound(AffineExpression expr) const {
-  if (expr.var == kNoIntegerVariable) return expr.constant;
-  return LowerBound(expr.var) * expr.coeff + expr.constant;
+inline IntegerValue IntegerTrail::FixedValue(IntegerVariable i) const {
+  DCHECK(IsFixed(i));
+  return vars_[i].current_bound;
 }
 
 inline IntegerValue IntegerTrail::ConditionalLowerBound(
@@ -1439,6 +1463,21 @@ inline IntegerValue IntegerTrail::ConditionalLowerBound(
   return ConditionalLowerBound(l, expr.var) * expr.coeff + expr.constant;
 }
 
+inline IntegerLiteral IntegerTrail::LowerBoundAsLiteral(
+    IntegerVariable i) const {
+  return IntegerLiteral::GreaterOrEqual(i, LowerBound(i));
+}
+
+inline IntegerLiteral IntegerTrail::UpperBoundAsLiteral(
+    IntegerVariable i) const {
+  return IntegerLiteral::LowerOrEqual(i, UpperBound(i));
+}
+
+inline IntegerValue IntegerTrail::LowerBound(AffineExpression expr) const {
+  if (expr.var == kNoIntegerVariable) return expr.constant;
+  return LowerBound(expr.var) * expr.coeff + expr.constant;
+}
+
 inline IntegerValue IntegerTrail::UpperBound(AffineExpression expr) const {
   if (expr.var == kNoIntegerVariable) return expr.constant;
   return UpperBound(expr.var) * expr.coeff + expr.constant;
@@ -1449,14 +1488,9 @@ inline bool IntegerTrail::IsFixed(AffineExpression expr) const {
   return IsFixed(expr.var);
 }
 
-inline IntegerLiteral IntegerTrail::LowerBoundAsLiteral(
-    IntegerVariable i) const {
-  return IntegerLiteral::GreaterOrEqual(i, LowerBound(i));
-}
-
-inline IntegerLiteral IntegerTrail::UpperBoundAsLiteral(
-    IntegerVariable i) const {
-  return IntegerLiteral::LowerOrEqual(i, UpperBound(i));
+inline IntegerValue IntegerTrail::FixedValue(AffineExpression expr) const {
+  if (expr.var == kNoIntegerVariable) return expr.constant;
+  return FixedValue(expr.var) * expr.coeff + expr.constant;
 }
 
 inline IntegerLiteral IntegerTrail::LowerBoundAsLiteral(
@@ -1494,6 +1528,23 @@ inline IntegerValue IntegerTrail::LevelZeroUpperBound(
 inline bool IntegerTrail::IsFixedAtLevelZero(IntegerVariable var) const {
   return integer_trail_[var.value()].bound ==
          -integer_trail_[NegationOf(var).value()].bound;
+}
+
+inline IntegerValue IntegerTrail::LevelZeroLowerBound(
+    AffineExpression expr) const {
+  if (expr.var == kNoIntegerVariable) return expr.constant;
+  return expr.ValueAt(LevelZeroLowerBound(expr.var));
+}
+
+inline IntegerValue IntegerTrail::LevelZeroUpperBound(
+    AffineExpression expr) const {
+  if (expr.var == kNoIntegerVariable) return expr.constant;
+  return expr.ValueAt(LevelZeroUpperBound(expr.var));
+}
+
+inline bool IntegerTrail::IsFixedAtLevelZero(AffineExpression expr) const {
+  if (expr.var == kNoIntegerVariable) return true;
+  return IsFixedAtLevelZero(expr.var);
 }
 
 inline void GenericLiteralWatcher::WatchLiteral(Literal l, int id,

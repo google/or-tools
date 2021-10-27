@@ -215,41 +215,57 @@ class LinMinPropagator : public PropagatorInterface {
 // TODO(user): Deal with overflow.
 class PositiveProductPropagator : public PropagatorInterface {
  public:
-  PositiveProductPropagator(IntegerVariable a, IntegerVariable b,
-                            IntegerVariable p, IntegerTrail* integer_trail);
+  PositiveProductPropagator(AffineExpression a, AffineExpression b,
+                            AffineExpression p, IntegerTrail* integer_trail);
 
   bool Propagate() final;
   void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
-  const IntegerVariable a_;
-  const IntegerVariable b_;
-  const IntegerVariable p_;
+  const AffineExpression a_;
+  const AffineExpression b_;
+  const AffineExpression p_;
   IntegerTrail* integer_trail_;
 
   DISALLOW_COPY_AND_ASSIGN(PositiveProductPropagator);
 };
 
 // Propagates num / denom = div. Basic version, we don't extract any special
-// cases, and we only propagates the bounds. It expects num, div to be >= 0,
-// and denom to be > 0.
+// cases, and we only propagates the bounds. It expects denom to be > 0.
 //
 // TODO(user): Deal with overflow.
-class PositiveDivisionPropagator : public PropagatorInterface {
+class DivisionPropagator : public PropagatorInterface {
  public:
-  PositiveDivisionPropagator(IntegerVariable num, IntegerVariable denom,
-                             IntegerVariable div, IntegerTrail* integer_trail);
+  DivisionPropagator(AffineExpression num, AffineExpression denom,
+                     AffineExpression div, IntegerTrail* integer_trail);
 
   bool Propagate() final;
   void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
-  const IntegerVariable num_;
-  const IntegerVariable denom_;
-  const IntegerVariable div_;
+  // Propagates the fact that the signs of each domain, if fixed, are
+  // compatible.
+  bool PropagateSigns();
+
+  // If both num and div >= 0, we can propagate their upper bounds.
+  bool PropagateUpperBounds(AffineExpression num, AffineExpression denom,
+                            AffineExpression div);
+
+  // When the sign of all 3 expressions are fixed, we can do morel propagation.
+  //
+  // By using negated expressions, we can make sure the domains of num, denom,
+  // and div are positive.
+  bool PropagatePositiveDomains(AffineExpression num, AffineExpression denom,
+                                AffineExpression div);
+
+  const AffineExpression num_;
+  const AffineExpression denom_;
+  const AffineExpression div_;
+  const AffineExpression negated_num_;
+  const AffineExpression negated_div_;
   IntegerTrail* integer_trail_;
 
-  DISALLOW_COPY_AND_ASSIGN(PositiveDivisionPropagator);
+  DISALLOW_COPY_AND_ASSIGN(DivisionPropagator);
 };
 
 // Propagates var_a / cst_b = var_c. Basic version, we don't extract any special
@@ -275,15 +291,15 @@ class FixedDivisionPropagator : public PropagatorInterface {
 // TODO(user): Only works for x nonnegative.
 class SquarePropagator : public PropagatorInterface {
  public:
-  SquarePropagator(IntegerVariable x, IntegerVariable s,
+  SquarePropagator(AffineExpression x, AffineExpression s,
                    IntegerTrail* integer_trail);
 
   bool Propagate() final;
   void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
-  const IntegerVariable x_;
-  const IntegerVariable s_;
+  const AffineExpression x_;
+  const AffineExpression s_;
   IntegerTrail* integer_trail_;
 
   DISALLOW_COPY_AND_ASSIGN(SquarePropagator);
@@ -559,6 +575,7 @@ inline void LoadLinearConstraint(const LinearConstraint& cst, Model* model) {
 
   // TODO(user): Remove the conversion!
   std::vector<int64_t> converted_coeffs;
+
   for (const IntegerValue v : cst.coeffs) converted_coeffs.push_back(v.value());
   if (cst.ub < kMaxIntegerValue) {
     model->Add(
@@ -767,39 +784,39 @@ void RegisterAndTransferOwnership(Model* model, T* ct) {
   model->TakeOwnership(ct);
 }
 // Adds the constraint: a * b = p.
-inline std::function<void(Model*)> ProductConstraint(IntegerVariable a,
-                                                     IntegerVariable b,
-                                                     IntegerVariable p) {
+inline std::function<void(Model*)> ProductConstraint(AffineExpression a,
+                                                     AffineExpression b,
+                                                     AffineExpression p) {
   return [=](Model* model) {
     IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
     if (a == b) {
-      if (model->Get(LowerBound(a)) >= 0) {
+      if (integer_trail->LowerBound(a) >= 0) {
         RegisterAndTransferOwnership(model,
                                      new SquarePropagator(a, p, integer_trail));
-      } else if (model->Get(UpperBound(a)) <= 0) {
+      } else if (integer_trail->UpperBound(a) <= 0) {
         RegisterAndTransferOwnership(
-            model, new SquarePropagator(NegationOf(a), p, integer_trail));
+            model, new SquarePropagator(a.Negated(), p, integer_trail));
       } else {
         LOG(FATAL) << "Not supported";
       }
-    } else if (model->Get(LowerBound(a)) >= 0 &&
-               model->Get(LowerBound(b)) >= 0) {
+    } else if (integer_trail->LowerBound(a) >= 0 &&
+               integer_trail->LowerBound(b) >= 0) {
       RegisterAndTransferOwnership(
           model, new PositiveProductPropagator(a, b, p, integer_trail));
-    } else if (model->Get(LowerBound(a)) >= 0 &&
-               model->Get(UpperBound(b)) <= 0) {
+    } else if (integer_trail->LowerBound(a) >= 0 &&
+               integer_trail->UpperBound(b) <= 0) {
       RegisterAndTransferOwnership(
-          model, new PositiveProductPropagator(a, NegationOf(b), NegationOf(p),
+          model, new PositiveProductPropagator(a, b.Negated(), p.Negated(),
                                                integer_trail));
-    } else if (model->Get(UpperBound(a)) <= 0 &&
-               model->Get(LowerBound(b)) >= 0) {
+    } else if (integer_trail->UpperBound(a) <= 0 &&
+               integer_trail->LowerBound(b) >= 0) {
       RegisterAndTransferOwnership(
-          model, new PositiveProductPropagator(NegationOf(a), b, NegationOf(p),
+          model, new PositiveProductPropagator(a.Negated(), b, p.Negated(),
                                                integer_trail));
-    } else if (model->Get(UpperBound(a)) <= 0 &&
-               model->Get(UpperBound(b)) <= 0) {
+    } else if (integer_trail->UpperBound(a) <= 0 &&
+               integer_trail->UpperBound(b) <= 0) {
       RegisterAndTransferOwnership(
-          model, new PositiveProductPropagator(NegationOf(a), NegationOf(b), p,
+          model, new PositiveProductPropagator(a.Negated(), b.Negated(), p,
                                                integer_trail));
     } else {
       LOG(FATAL) << "Not supported";
@@ -807,14 +824,20 @@ inline std::function<void(Model*)> ProductConstraint(IntegerVariable a,
   };
 }
 
-// Adds the constraint: num / denom = div.
-inline std::function<void(Model*)> DivisionConstraint(IntegerVariable num,
-                                                      IntegerVariable denom,
-                                                      IntegerVariable div) {
+// Adds the constraint: num / denom = div. (denom > 0).
+inline std::function<void(Model*)> DivisionConstraint(AffineExpression num,
+                                                      AffineExpression denom,
+                                                      AffineExpression div) {
   return [=](Model* model) {
     IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-    PositiveDivisionPropagator* constraint =
-        new PositiveDivisionPropagator(num, denom, div, integer_trail);
+    DivisionPropagator* constraint;
+    if (integer_trail->UpperBound(denom) < 0) {
+      constraint = new DivisionPropagator(num.Negated(), denom.Negated(), div,
+                                          integer_trail);
+
+    } else {
+      constraint = new DivisionPropagator(num, denom, div, integer_trail);
+    }
     constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(constraint);
   };

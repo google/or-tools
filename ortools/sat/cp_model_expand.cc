@@ -147,97 +147,6 @@ void ExpandReservoir(ConstraintProto* ct, PresolveContext* context) {
   context->UpdateRuleStats("reservoir: expanded");
 }
 
-// a_ref spans across 0, b_ref does not.
-void ExpandIntDivWithOneAcrossZero(int a_ref, int b_ref, int div_ref,
-                                   PresolveContext* context) {
-  DCHECK_LT(context->MinOf(a_ref), 0);
-  DCHECK_GT(context->MaxOf(a_ref), 0);
-  DCHECK_GT(context->MinOf(b_ref), 0);
-
-  // Split the domain of a in two, controlled by a new literal.
-  const int a_is_positive = context->NewBoolVar();
-  context->AddImplyInDomain(a_is_positive, a_ref,
-                            {0, std::numeric_limits<int64_t>::max()});
-  context->AddImplyInDomain(NegatedRef(a_is_positive), a_ref,
-                            {std::numeric_limits<int64_t>::min(), -1});
-  const int pos_a_ref = context->NewIntVar({0, context->MaxOf(a_ref)});
-  AddXEqualYOrXEqualZero(a_is_positive, pos_a_ref, a_ref, context);
-
-  const int neg_a_ref = context->NewIntVar({context->MinOf(a_ref), 0});
-  AddXEqualYOrXEqualZero(NegatedRef(a_is_positive), neg_a_ref, a_ref, context);
-
-  // Create div with the positive part of a_ref.
-  const int pos_a_div = context->NewIntVar({0, context->MaxOf(div_ref)});
-  IntegerArgumentProto* pos_div =
-      context->working_model->add_constraints()->mutable_int_div();
-  pos_div->set_target(pos_a_div);
-  pos_div->add_vars(pos_a_ref);
-  pos_div->add_vars(b_ref);
-
-  // Create div with the negative part of a_ref.
-  const int neg_a_div = context->NewIntVar({context->MinOf(div_ref), 0});
-  IntegerArgumentProto* neg_div =
-      context->working_model->add_constraints()->mutable_int_div();
-  neg_div->set_target(NegatedRef(neg_a_div));
-  neg_div->add_vars(NegatedRef(neg_a_ref));
-  neg_div->add_vars(b_ref);
-
-  // Link back to the original div.
-  LinearConstraintProto* lin =
-      context->working_model->add_constraints()->mutable_linear();
-  lin->add_vars(div_ref);
-  lin->add_coeffs(-1);
-  lin->add_vars(pos_a_div);
-  lin->add_coeffs(1);
-  lin->add_vars(neg_a_div);
-  lin->add_coeffs(1);
-  lin->add_domain(0);
-  lin->add_domain(0);
-}
-
-// This is not an "expansion" per say, but just a mandatory presolve step to
-// satisfy preconditions assumed by the rest of the code.
-void ExpandIntDiv(ConstraintProto* ct, PresolveContext* context) {
-  const int numerator = ct->int_div().vars(0);
-  const int divisor = ct->int_div().vars(1);
-  const int target = ct->int_div().target();
-  if (!context->IntersectDomainWith(divisor, Domain(0).Complement())) {
-    return (void)context->NotifyThatModelIsUnsat();
-  }
-
-  // The checker ensures that the domain of the divisor cannot span across 0,
-  // nor take the value 0.
-  DCHECK(context->MinOf(divisor) > 0 || context->MaxOf(divisor) < 0);
-  if (context->MinOf(numerator) < 0 && context->MaxOf(numerator) > 0) {
-    if (context->MinOf(divisor) > 0) {
-      ExpandIntDivWithOneAcrossZero(numerator, divisor, target, context);
-    } else {
-      ExpandIntDivWithOneAcrossZero(NegatedRef(numerator), NegatedRef(divisor),
-                                    target, context);
-    }
-    ct->Clear();
-    context->UpdateRuleStats(
-        "int_div: expanded division with numerator spanning across zero");
-    return;
-  }
-
-  // Change the sign of the divisor if negative (by simply negating the target).
-  if (context->MinOf(divisor) < 0) {
-    ct->mutable_int_div()->set_target(NegatedRef(target));
-    ct->mutable_int_div()->set_vars(1, NegatedRef(divisor));
-    context->UpdateRuleStats("int_div: inverse the sign of the divisor");
-  }
-
-  // Change the sign of the numerator if negative (by simply negating the
-  // target). It is okay to negate the target twice.
-  // At this stage, the domain of the numerator cannot span across 0.
-  if (context->MinOf(numerator) < 0) {
-    ct->mutable_int_div()->set_target(NegatedRef(target));
-    ct->mutable_int_div()->set_vars(0, NegatedRef(numerator));
-    context->UpdateRuleStats("int_div: inverse the sign of the numerator");
-  }
-}
-
 void ExpandIntMod(ConstraintProto* ct, PresolveContext* context) {
   const IntegerArgumentProto& int_mod = ct->int_mod();
   const int var = int_mod.vars(0);
@@ -1679,9 +1588,6 @@ void ExpandCpModel(PresolveContext* context) {
         break;
       case ConstraintProto::ConstraintCase::kIntMod:
         ExpandIntMod(ct, context);
-        break;
-      case ConstraintProto::ConstraintCase::kIntDiv:
-        ExpandIntDiv(ct, context);
         break;
       case ConstraintProto::ConstraintCase::kIntProd:
         ExpandIntProd(ct, context);

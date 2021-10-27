@@ -243,16 +243,15 @@ void LoadVariables(const CpModelProto& model_proto,
       // with constant start/end or size cannot share the same constant
       // variable if it is used in non-optional situation.
       mapping->intervals_[c] = intervals_repository->CreateInterval(
-          mapping->LoadAffineView(ct.interval().start()),
-          mapping->LoadAffineView(ct.interval().end()),
-          mapping->LoadAffineView(ct.interval().size()),
-          enforcement_literal.Index(),
+          mapping->Affine(ct.interval().start()),
+          mapping->Affine(ct.interval().end()),
+          mapping->Affine(ct.interval().size()), enforcement_literal.Index(),
           /*add_linear_relation=*/false);
     } else {
       mapping->intervals_[c] = intervals_repository->CreateInterval(
-          mapping->LoadAffineView(ct.interval().start()),
-          mapping->LoadAffineView(ct.interval().end()),
-          mapping->LoadAffineView(ct.interval().size()), kNoLiteralIndex,
+          mapping->Affine(ct.interval().start()),
+          mapping->Affine(ct.interval().end()),
+          mapping->Affine(ct.interval().size()), kNoLiteralIndex,
           /*add_linear_relation=*/false);
     }
     mapping->already_loaded_ct_.insert(&ct);
@@ -617,11 +616,11 @@ void ExtractElementEncoding(const CpModelProto& model_proto, Model* m) {
     // Search for variable fully covered by the literals of the exactly_one.
     for (const auto& [var, literal_value_list] : var_to_value_literal_list) {
       if (literal_value_list.size() < ct.exactly_one().literals_size()) {
-        LOG(INFO) << "X" << var.value() << " has " << literal_value_list.size()
-                  << " implied values, and a domain of size"
-                  << m->GetOrCreate<IntegerTrail>()
-                         ->InitialVariableDomain(var)
-                         .Size();
+        VLOG(2) << "X" << var.value() << " has " << literal_value_list.size()
+                << " implied values, and a domain of size "
+                << m->GetOrCreate<IntegerTrail>()
+                       ->InitialVariableDomain(var)
+                       .Size();
         continue;
       }
 
@@ -1196,11 +1195,10 @@ void LoadCumulativeConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
   const std::vector<IntervalVariable> intervals =
       mapping->Intervals(ct.cumulative().intervals());
-  const AffineExpression capacity =
-      mapping->LoadAffineView(ct.cumulative().capacity());
+  const AffineExpression capacity = mapping->Affine(ct.cumulative().capacity());
   std::vector<AffineExpression> demands;
   for (const LinearExpressionProto& demand_expr : ct.cumulative().demands()) {
-    demands.push_back(mapping->LoadAffineView(demand_expr));
+    demands.push_back(mapping->Affine(demand_expr));
   }
   m->Add(Cumulative(intervals, demands, capacity));
 }

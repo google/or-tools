@@ -348,6 +348,20 @@ GenerateCumulativeEnergyCuts(const std::string& cut_name,
   };
 }
 
+void AppendVariablesToCumulativeCut(
+    const AffineExpression& capacity,
+    const std::vector<AffineExpression>& demands, IntegerTrail* integer_trail,
+    CutGenerator* result) {
+  for (const AffineExpression& demand_expr : demands) {
+    if (!integer_trail->IsFixed(demand_expr)) {
+      result->vars.push_back(demand_expr.var);
+    }
+  }
+  if (!integer_trail->IsFixed(capacity)) {
+    result->vars.push_back(capacity.var);
+  }
+}
+
 CutGenerator CreateCumulativeEnergyCutGenerator(
     const std::vector<IntervalVariable>& intervals,
     const AffineExpression& capacity,
@@ -360,14 +374,7 @@ CutGenerator CreateCumulativeEnergyCutGenerator(
   model->TakeOwnership(helper);
 
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-  for (const AffineExpression& demand_expr : demands) {
-    if (!integer_trail->IsFixed(demand_expr)) {
-      result.vars.push_back(demand_expr.var);
-    }
-  }
-  if (!integer_trail->IsFixed(capacity)) {
-    result.vars.push_back(capacity.var);
-  }
+  AppendVariablesToCumulativeCut(capacity, demands, integer_trail, &result);
   AddIntegerVariableFromIntervals(helper, model, &result.vars);
   for (const LinearExpression& energy : energies) {
     result.vars.insert(result.vars.end(), energy.vars.begin(),
@@ -424,14 +431,8 @@ CutGenerator CreateCumulativeTimeTableCutGenerator(
   model->TakeOwnership(helper);
 
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-  for (const AffineExpression& demand_expr : demands) {
-    if (!integer_trail->IsFixed(demand_expr)) {
-      result.vars.push_back(demand_expr.var);
-    }
-  }
-  if (!integer_trail->IsFixed(capacity)) {
-    result.vars.push_back(capacity.var);
-  }
+  AppendVariablesToCumulativeCut(capacity, demands, integer_trail, &result);
+
   AddIntegerVariableFromIntervals(helper, model, &result.vars);
   gtl::STLSortAndRemoveDuplicates(&result.vars);
 
@@ -605,14 +606,8 @@ CutGenerator CreateCumulativePrecedenceCutGenerator(
   model->TakeOwnership(helper);
 
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-  for (const AffineExpression& demand_expr : demands) {
-    if (!integer_trail->IsFixed(demand_expr)) {
-      result.vars.push_back(demand_expr.var);
-    }
-  }
-  if (!integer_trail->IsFixed(capacity)) {
-    result.vars.push_back(capacity.var);
-  }
+  AppendVariablesToCumulativeCut(capacity, demands, integer_trail, &result);
+
   AddIntegerVariableFromIntervals(helper, model, &result.vars);
   gtl::STLSortAndRemoveDuplicates(&result.vars);
 
@@ -924,14 +919,8 @@ CutGenerator CreateCumulativeCompletionTimeCutGenerator(
   model->TakeOwnership(helper);
 
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-  for (const AffineExpression& demand_expr : demands) {
-    if (!integer_trail->IsFixed(demand_expr)) {
-      result.vars.push_back(demand_expr.var);
-    }
-  }
-  if (!integer_trail->IsFixed(capacity)) {
-    result.vars.push_back(capacity.var);
-  }
+  AppendVariablesToCumulativeCut(capacity, demands, integer_trail, &result);
+
   AddIntegerVariableFromIntervals(helper, model, &result.vars);
   gtl::STLSortAndRemoveDuplicates(&result.vars);
 
