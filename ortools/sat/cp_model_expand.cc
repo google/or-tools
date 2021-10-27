@@ -149,8 +149,10 @@ void ExpandReservoir(ConstraintProto* ct, PresolveContext* context) {
 
 void ExpandIntMod(ConstraintProto* ct, PresolveContext* context) {
   const IntegerArgumentProto& int_mod = ct->int_mod();
-  const int var = int_mod.vars(0);
   const int mod_var = int_mod.vars(1);
+  if (context->IsFixed(mod_var)) return;
+
+  const int var = int_mod.vars(0);
   const int target_var = int_mod.target();
 
   // We reduce the domain of target_var to avoid later overflow.
@@ -177,49 +179,36 @@ void ExpandIntMod(ConstraintProto* ct, PresolveContext* context) {
   div_proto->add_vars(var);
   div_proto->add_vars(mod_var);
 
-  if (context->IsFixed(mod_var)) {
-    // var - div_var * mod = target.
-    LinearConstraintProto* const lin =
-        new_enforced_constraint()->mutable_linear();
-    lin->add_vars(int_mod.vars(0));
-    lin->add_coeffs(1);
-    lin->add_vars(div_var);
-    lin->add_coeffs(-context->MinOf(mod_var));
-    lin->add_vars(target_var);
-    lin->add_coeffs(-1);
-    lin->add_domain(0);
-    lin->add_domain(0);
-  } else {
-    // Create prod_var = div_var * mod.
-    const Domain prod_domain =
-        context->DomainOf(div_var)
-            .ContinuousMultiplicationBy(context->DomainOf(mod_var))
-            .IntersectionWith(context->DomainOf(var).AdditionWith(
-                context->DomainOf(target_var).Negation()));
-    const int prod_var = context->NewIntVar(prod_domain);
-    IntegerArgumentProto* const int_prod =
-        new_enforced_constraint()->mutable_int_prod();
-    int_prod->set_target(prod_var);
-    int_prod->add_vars(div_var);
-    int_prod->add_vars(mod_var);
+  // Create prod_var = div_var * mod.
+  const Domain prod_domain =
+      context->DomainOf(div_var)
+          .ContinuousMultiplicationBy(context->DomainOf(mod_var))
+          .IntersectionWith(context->DomainOf(var).AdditionWith(
+              context->DomainOf(target_var).Negation()));
+  const int prod_var = context->NewIntVar(prod_domain);
+  IntegerArgumentProto* const int_prod =
+      new_enforced_constraint()->mutable_int_prod();
+  int_prod->set_target(prod_var);
+  int_prod->add_vars(div_var);
+  int_prod->add_vars(mod_var);
 
-    // var - prod_var = target.
-    LinearConstraintProto* const lin =
-        new_enforced_constraint()->mutable_linear();
-    lin->add_vars(var);
-    lin->add_coeffs(1);
-    lin->add_vars(prod_var);
-    lin->add_coeffs(-1);
-    lin->add_vars(target_var);
-    lin->add_coeffs(-1);
-    lin->add_domain(0);
-    lin->add_domain(0);
-  }
+  // var - prod_var = target.
+  LinearConstraintProto* const lin =
+      new_enforced_constraint()->mutable_linear();
+  lin->add_vars(var);
+  lin->add_coeffs(1);
+  lin->add_vars(prod_var);
+  lin->add_coeffs(-1);
+  lin->add_vars(target_var);
+  lin->add_coeffs(-1);
+  lin->add_domain(0);
+  lin->add_domain(0);
 
   ct->Clear();
   context->UpdateRuleStats("int_mod: expanded");
 }
 
+// TODO(user): Move this into the presolve instead?
 void ExpandIntProdWithBoolean(int bool_ref, int int_ref, int product_ref,
                               PresolveContext* context) {
   ConstraintProto* const one = context->working_model->add_constraints();
@@ -237,174 +226,6 @@ void ExpandIntProdWithBoolean(int bool_ref, int int_ref, int product_ref,
   zero->mutable_linear()->add_coeffs(1);
   zero->mutable_linear()->add_domain(0);
   zero->mutable_linear()->add_domain(0);
-}
-
-// a_ref spans across 0, b_ref does not.
-void ExpandIntProdWithOneAcrossZero(int a_ref, int b_ref, int product_ref,
-                                    PresolveContext* context) {
-  DCHECK_LT(context->MinOf(a_ref), 0);
-  DCHECK_GT(context->MaxOf(a_ref), 0);
-  DCHECK(context->MinOf(b_ref) >= 0 || context->MaxOf(b_ref) <= 0);
-
-  // Split the domain of a in two, controlled by a new literal.
-  const int a_is_positive = context->NewBoolVar();
-  context->AddImplyInDomain(a_is_positive, a_ref,
-                            {0, std::numeric_limits<int64_t>::max()});
-  context->AddImplyInDomain(NegatedRef(a_is_positive), a_ref,
-                            {std::numeric_limits<int64_t>::min(), -1});
-  const int pos_a_ref = context->NewIntVar({0, context->MaxOf(a_ref)});
-  AddXEqualYOrXEqualZero(a_is_positive, pos_a_ref, a_ref, context);
-
-  const int neg_a_ref = context->NewIntVar({context->MinOf(a_ref), 0});
-  AddXEqualYOrXEqualZero(NegatedRef(a_is_positive), neg_a_ref, a_ref, context);
-
-  // Create product with the positive part ofa_ref.
-  const bool b_is_positive = context->MinOf(b_ref) >= 0;
-  const Domain pos_a_product_domain =
-      b_is_positive ? Domain({0, context->MaxOf(product_ref)})
-                    : Domain({context->MinOf(product_ref), 0});
-  const int pos_a_product = context->NewIntVar(pos_a_product_domain);
-  IntegerArgumentProto* pos_product =
-      context->working_model->add_constraints()->mutable_int_prod();
-  pos_product->set_target(pos_a_product);
-  pos_product->add_vars(pos_a_ref);
-  pos_product->add_vars(b_ref);
-
-  // Create product with the negative part of a_ref.
-  const Domain neg_a_product_domain =
-      b_is_positive ? Domain({context->MinOf(product_ref), 0})
-                    : Domain({0, context->MaxOf(product_ref)});
-  const int neg_a_product = context->NewIntVar(neg_a_product_domain);
-  IntegerArgumentProto* neg_product =
-      context->working_model->add_constraints()->mutable_int_prod();
-  neg_product->set_target(neg_a_product);
-  neg_product->add_vars(neg_a_ref);
-  neg_product->add_vars(b_ref);
-
-  // Link back to the original product.
-  LinearConstraintProto* lin =
-      context->working_model->add_constraints()->mutable_linear();
-  lin->add_vars(product_ref);
-  lin->add_coeffs(-1);
-  lin->add_vars(pos_a_product);
-  lin->add_coeffs(1);
-  lin->add_vars(neg_a_product);
-  lin->add_coeffs(1);
-  lin->add_domain(0);
-  lin->add_domain(0);
-}
-
-void ExpandPositiveIntProdWithTwoAcrossZero(int a_ref, int b_ref,
-                                            int product_ref,
-                                            PresolveContext* context) {
-  const int terms_are_positive = context->NewBoolVar();
-
-  const Domain product_domain = context->DomainOf(product_ref);
-
-  const int64_t max_of_a = context->MaxOf(a_ref);
-  const int64_t max_of_b = context->MaxOf(b_ref);
-  const Domain positive_vars_domain =
-      Domain(0, CapProd(max_of_a, max_of_b)).IntersectionWith(product_domain);
-  int both_positive_product_ref = std::numeric_limits<int>::min();
-  if (!positive_vars_domain.IsEmpty()) {
-    const int pos_a_ref = context->NewIntVar({0, max_of_a});
-    AddXEqualYOrXEqualZero(terms_are_positive, pos_a_ref, a_ref, context);
-    const int pos_b_ref = context->NewIntVar({0, max_of_b});
-    AddXEqualYOrXEqualZero(terms_are_positive, pos_b_ref, b_ref, context);
-
-    // We add 0 to the domain in case this product is not selected.
-    both_positive_product_ref =
-        context->NewIntVar(positive_vars_domain.UnionWith(Domain(0)));
-    IntegerArgumentProto* pos_product =
-        context->working_model->add_constraints()->mutable_int_prod();
-    pos_product->set_target(both_positive_product_ref);
-    pos_product->add_vars(pos_a_ref);
-    pos_product->add_vars(pos_b_ref);
-  }
-
-  const int64_t min_of_a = context->MinOf(a_ref);
-  const int64_t min_of_b = context->MinOf(b_ref);
-  const Domain negative_vars_domain =
-      Domain(0, CapProd(min_of_a, min_of_b)).IntersectionWith(product_domain);
-  int both_negative_product_ref = std::numeric_limits<int>::min();
-  if (!negative_vars_domain.IsEmpty()) {
-    const int neg_a_ref = context->NewIntVar({min_of_a, 0});
-    AddXEqualYOrXEqualZero(NegatedRef(terms_are_positive), neg_a_ref, a_ref,
-                           context);
-    const int neg_b_ref = context->NewIntVar({min_of_b, 0});
-    AddXEqualYOrXEqualZero(NegatedRef(terms_are_positive), neg_b_ref, b_ref,
-                           context);
-    // We add 0 to the domain in case this product is not selected.
-    both_negative_product_ref =
-        context->NewIntVar(negative_vars_domain.UnionWith(Domain(0)));
-    IntegerArgumentProto* neg_product =
-        context->working_model->add_constraints()->mutable_int_prod();
-    neg_product->set_target(both_negative_product_ref);
-    neg_product->add_vars(neg_a_ref);
-    neg_product->add_vars(neg_b_ref);
-  }
-
-  // Link back to the original product.
-  LinearConstraintProto* lin =
-      context->working_model->add_constraints()->mutable_linear();
-  lin->add_vars(product_ref);
-  lin->add_coeffs(-1);
-  if (both_positive_product_ref != std::numeric_limits<int>::min()) {
-    lin->add_vars(both_positive_product_ref);
-    lin->add_coeffs(1);
-  }
-  if (both_negative_product_ref != std::numeric_limits<int>::min()) {
-    lin->add_vars(both_negative_product_ref);
-    lin->add_coeffs(1);
-  }
-  lin->add_domain(0);
-  lin->add_domain(0);
-}
-
-void ExpandIntProdWithTwoAcrossZero(int a_ref, int b_ref, int product_ref,
-                                    PresolveContext* context) {
-  if (context->MinOf(product_ref) >= 0) {
-    ExpandPositiveIntProdWithTwoAcrossZero(a_ref, b_ref, product_ref, context);
-    return;
-  } else if (context->MaxOf(product_ref) <= 0) {
-    ExpandPositiveIntProdWithTwoAcrossZero(a_ref, NegatedRef(b_ref),
-                                           NegatedRef(product_ref), context);
-    return;
-  }
-  // Split a_ref domain in two, controlled by a new literal.
-  const int a_is_positive = context->NewBoolVar();
-  context->AddImplyInDomain(a_is_positive, a_ref,
-                            {0, std::numeric_limits<int64_t>::max()});
-  context->AddImplyInDomain(NegatedRef(a_is_positive), a_ref,
-                            {std::numeric_limits<int64_t>::min(), -1});
-  const int64_t min_of_a = context->MinOf(a_ref);
-  const int64_t max_of_a = context->MaxOf(a_ref);
-
-  const int pos_a_ref = context->NewIntVar({0, max_of_a});
-  AddXEqualYOrXEqualZero(a_is_positive, pos_a_ref, a_ref, context);
-
-  const int neg_a_ref = context->NewIntVar({min_of_a, 0});
-  AddXEqualYOrXEqualZero(NegatedRef(a_is_positive), neg_a_ref, a_ref, context);
-
-  // Create product with two sub parts of a_ref.
-  const int pos_product_ref =
-      context->NewIntVar(context->DomainOf(product_ref));
-  ExpandIntProdWithOneAcrossZero(b_ref, pos_a_ref, pos_product_ref, context);
-  const int neg_product_ref =
-      context->NewIntVar(context->DomainOf(product_ref));
-  ExpandIntProdWithOneAcrossZero(b_ref, neg_a_ref, neg_product_ref, context);
-
-  // Link back to the original product.
-  LinearConstraintProto* lin =
-      context->working_model->add_constraints()->mutable_linear();
-  lin->add_vars(product_ref);
-  lin->add_coeffs(-1);
-  lin->add_vars(pos_product_ref);
-  lin->add_coeffs(1);
-  lin->add_vars(neg_product_ref);
-  lin->add_coeffs(1);
-  lin->add_domain(0);
-  lin->add_domain(0);
 }
 
 void ExpandIntProd(ConstraintProto* ct, PresolveContext* context) {
@@ -430,32 +251,6 @@ void ExpandIntProd(ConstraintProto* ct, PresolveContext* context) {
     ExpandIntProdWithBoolean(b, a, p, context);
     ct->Clear();
     context->UpdateRuleStats("int_prod: expanded product with Boolean var");
-    return;
-  }
-
-  const bool a_span_across_zero =
-      context->MinOf(a) < 0 && context->MaxOf(a) > 0;
-  const bool b_span_across_zero =
-      context->MinOf(b) < 0 && context->MaxOf(b) > 0;
-  if (a_span_across_zero && !b_span_across_zero) {
-    ExpandIntProdWithOneAcrossZero(a, b, p, context);
-    ct->Clear();
-    context->UpdateRuleStats(
-        "int_prod: expanded product with general integer variables");
-    return;
-  }
-  if (!a_span_across_zero && b_span_across_zero) {
-    ExpandIntProdWithOneAcrossZero(b, a, p, context);
-    ct->Clear();
-    context->UpdateRuleStats(
-        "int_prod: expanded product with general integer variables");
-    return;
-  }
-  if (a_span_across_zero && b_span_across_zero) {
-    ExpandIntProdWithTwoAcrossZero(a, b, p, context);
-    ct->Clear();
-    context->UpdateRuleStats(
-        "int_prod: expanded product with general integer variables");
     return;
   }
 }

@@ -1156,6 +1156,18 @@ void LoadIntDivConstraint(const ConstraintProto& ct, Model* m) {
   }
 }
 
+void LoadIntModConstraint(const ConstraintProto& ct, Model* m) {
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
+  auto* integer_trail = m->GetOrCreate<IntegerTrail>();
+
+  const IntegerVariable target = mapping->Integer(ct.int_mod().target());
+  const std::vector<IntegerVariable> vars =
+      mapping->Integers(ct.int_mod().vars());
+  CHECK(integer_trail->IsFixed(vars[1]));
+  const IntegerValue fixed_modulo = integer_trail->FixedValue(vars[1]);
+  m->Add(FixedModuloConstraint(vars[0], fixed_modulo, target));
+}
+
 void LoadLinMaxConstraint(const ConstraintProto& ct, Model* m) {
   if (ct.lin_max().exprs().empty()) {
     m->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
@@ -1258,6 +1270,9 @@ bool LoadConstraint(const ConstraintProto& ct, Model* m) {
       return true;
     case ConstraintProto::ConstraintProto::kIntDiv:
       LoadIntDivConstraint(ct, m);
+      return true;
+    case ConstraintProto::ConstraintProto::kIntMod:
+      LoadIntModConstraint(ct, m);
       return true;
     case ConstraintProto::ConstraintProto::kLinMax:
       LoadLinMaxConstraint(ct, m);

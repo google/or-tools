@@ -231,7 +231,6 @@ SatSolver::Status LbTreeSearch::Search(
       if (node.objective_lb > current_objective_lb_) {
         break;
       }
-      CHECK_EQ(node.objective_lb, current_objective_lb_);
 
       // This will be set to the next node index.
       NodeIndex n;

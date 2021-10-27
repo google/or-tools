@@ -208,26 +208,39 @@ class LinMinPropagator : public PropagatorInterface {
   int rev_unique_candidate_ = 0;
 };
 
-// Propagates a * b = c. Basic version, we don't extract any special cases, and
-// we only propagates the bounds.
+// Propagates a * b = p.
 //
-// TODO(user): For now this only works on variables that are non-negative.
-// TODO(user): Deal with overflow.
-class PositiveProductPropagator : public PropagatorInterface {
+// The bounds [min, max] of a and b will be propagated perfectly, but not
+// the bounds on p as this require more complex arithmetics.
+class ProductPropagator : public PropagatorInterface {
  public:
-  PositiveProductPropagator(AffineExpression a, AffineExpression b,
-                            AffineExpression p, IntegerTrail* integer_trail);
+  ProductPropagator(AffineExpression a, AffineExpression b, AffineExpression p,
+                    IntegerTrail* integer_trail);
 
   bool Propagate() final;
   void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
-  const AffineExpression a_;
-  const AffineExpression b_;
-  const AffineExpression p_;
+  // Maybe replace a_, b_ or c_ by their negation to simplify the cases.
+  bool CanonicalizeCases();
+
+  // Special case when all are >= 0.
+  // We use faster code and better reasons than the generic code.
+  bool PropagateWhenAllNonNegative();
+
+  // Internal helper, see code for more details.
+  bool PropagateMaxOnPositiveProduct(AffineExpression a, AffineExpression b,
+                                     IntegerValue min_p, IntegerValue max_p);
+
+  // Note that we might negate any two terms in CanonicalizeCases() during
+  // each propagation. This is fine.
+  AffineExpression a_;
+  AffineExpression b_;
+  AffineExpression p_;
+
   IntegerTrail* integer_trail_;
 
-  DISALLOW_COPY_AND_ASSIGN(PositiveProductPropagator);
+  DISALLOW_COPY_AND_ASSIGN(ProductPropagator);
 };
 
 // Propagates num / denom = div. Basic version, we don't extract any special
@@ -282,9 +295,40 @@ class FixedDivisionPropagator : public PropagatorInterface {
   const AffineExpression a_;
   const IntegerValue b_;
   const AffineExpression c_;
+
   IntegerTrail* integer_trail_;
 
   DISALLOW_COPY_AND_ASSIGN(FixedDivisionPropagator);
+};
+
+// Propagates var_a % cst_b = var_c. Basic version, we don't extract any special
+// cases, and we only propagates the bounds. cst_b must be > 0.
+class FixedModuloPropagator : public PropagatorInterface {
+ public:
+  FixedModuloPropagator(AffineExpression expr, IntegerValue mod,
+                        AffineExpression target, IntegerTrail* integer_trail);
+
+  bool Propagate() final;
+  void RegisterWith(GenericLiteralWatcher* watcher);
+
+ private:
+  // Propagates sign and basic bounds.
+  bool PropagateSignsAndTargetRange();
+
+  // Propagates on the positive domains.
+  bool PropagatePositiveDomains(AffineExpression expr, AffineExpression target);
+
+  // Propagates outer bounds.
+  bool PropagateOuterBounds();
+
+  const AffineExpression expr_;
+  const IntegerValue mod_;
+  const AffineExpression target_;
+  const AffineExpression negated_expr_;
+  const AffineExpression negated_target_;
+  IntegerTrail* integer_trail_;
+
+  DISALLOW_COPY_AND_ASSIGN(FixedModuloPropagator);
 };
 
 // Propagates x * x = s.
@@ -793,34 +837,16 @@ inline std::function<void(Model*)> ProductConstraint(AffineExpression a,
       if (integer_trail->LowerBound(a) >= 0) {
         RegisterAndTransferOwnership(model,
                                      new SquarePropagator(a, p, integer_trail));
-      } else if (integer_trail->UpperBound(a) <= 0) {
+        return;
+      }
+      if (integer_trail->UpperBound(a) <= 0) {
         RegisterAndTransferOwnership(
             model, new SquarePropagator(a.Negated(), p, integer_trail));
-      } else {
-        LOG(FATAL) << "Not supported";
+        return;
       }
-    } else if (integer_trail->LowerBound(a) >= 0 &&
-               integer_trail->LowerBound(b) >= 0) {
-      RegisterAndTransferOwnership(
-          model, new PositiveProductPropagator(a, b, p, integer_trail));
-    } else if (integer_trail->LowerBound(a) >= 0 &&
-               integer_trail->UpperBound(b) <= 0) {
-      RegisterAndTransferOwnership(
-          model, new PositiveProductPropagator(a, b.Negated(), p.Negated(),
-                                               integer_trail));
-    } else if (integer_trail->UpperBound(a) <= 0 &&
-               integer_trail->LowerBound(b) >= 0) {
-      RegisterAndTransferOwnership(
-          model, new PositiveProductPropagator(a.Negated(), b, p.Negated(),
-                                               integer_trail));
-    } else if (integer_trail->UpperBound(a) <= 0 &&
-               integer_trail->UpperBound(b) <= 0) {
-      RegisterAndTransferOwnership(
-          model, new PositiveProductPropagator(a.Negated(), b.Negated(), p,
-                                               integer_trail));
-    } else {
-      LOG(FATAL) << "Not supported";
     }
+    RegisterAndTransferOwnership(model,
+                                 new ProductPropagator(a, b, p, integer_trail));
   };
 }
 
@@ -852,6 +878,19 @@ inline std::function<void(Model*)> FixedDivisionConstraint(AffineExpression a,
     FixedDivisionPropagator* constraint =
         b > 0 ? new FixedDivisionPropagator(a, b, c, integer_trail)
               : new FixedDivisionPropagator(a.Negated(), -b, c, integer_trail);
+    constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
+    model->TakeOwnership(constraint);
+  };
+}
+
+// Adds the constraint: a % b = c where b is a constant.
+inline std::function<void(Model*)> FixedModuloConstraint(AffineExpression a,
+                                                         IntegerValue b,
+                                                         AffineExpression c) {
+  return [=](Model* model) {
+    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+    FixedModuloPropagator* constraint =
+        new FixedModuloPropagator(a, b, c, integer_trail);
     constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(constraint);
   };
