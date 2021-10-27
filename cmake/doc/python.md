@@ -1,13 +1,13 @@
 | Linux | macOS | Windows |
 |-------|-------|---------|
-| [![Status][python_linux_svg]][python_linux_link] | [![Status][python_osx_svg]][python_osx_link] | [![Status][python_win_svg]][python_win_link] |
+| [![Status][linux_python_svg]][linux_python_link] | [![Status][macos_python_svg]][macos_python_link] | [![Status][windows_python_svg]][windows_python_link] |
 
-[python_linux_svg]: https://github.com/google/or-tools/workflows/Python%20Linux%20CI/badge.svg?branch=master
-[python_linux_link]: https://github.com/google/or-tools/actions?query=workflow%3A"Python+Linux+CI"
-[python_osx_svg]: https://github.com/google/or-tools/workflows/Python%20MacOS%20CI/badge.svg?branch=master
-[python_osx_link]: https://github.com/google/or-tools/actions?query=workflow%3A"Python+MacOS+CI"
-[python_win_svg]: https://github.com/google/or-tools/workflows/Python%20Windows%20CI/badge.svg?branch=master
-[python_win_link]: https://github.com/google/or-tools/actions?query=workflow%3A"Python+Windows+CI"
+[linux_python_svg]: https://github.com/google/or-tools/actions/workflows/cmake_linux_python.yml/badge.svg?branch=master
+[linux_python_link]: https://github.com/google/or-tools/actions/workflows/cmake_linux_python.yml
+[macos_python_svg]: https://github.com/google/or-tools/actions/workflows/cmake_macos_python.yml/badge.svg?branch=master
+[macos_python_link]: https://github.com/google/or-tools/actions/workflows/cmake_macos_python.yml
+[windows_python_svg]: https://github.com/google/or-tools/actions/workflows/cmake_windows_python.yml/badge.svg?branch=master
+[windows_python_link]: https://github.com/google/or-tools/actions/workflows/cmake_windows_python.yml
 
 # Introduction 
 To be compliant with [PEP513](https://www.python.org/dev/peps/pep-0513/#the-manylinux1-policy) a python package should embbed all its C++ shared libraries.

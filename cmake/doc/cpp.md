@@ -1,14 +1,13 @@
 | Linux | macOS | Windows |
 |-------|-------|---------|
-| [![Status][cpp_linux_svg]][cpp_linux_link] | [![Status][cpp_osx_svg]][cpp_osx_link] | [![Status][cpp_win_svg]][cpp_win_link] |
+| [![Status][linux_cpp_svg]][linux_cpp_link] | [![Status][macos_cpp_svg]][macos_cpp_link] | [![Status][windows_cpp_svg]][windows_cpp_link] |
 
-
-[cpp_linux_svg]: https://github.com/google/or-tools/workflows/C++%20Linux%20CI/badge.svg
-[cpp_linux_link]: https://github.com/google/or-tools/actions?query=workflow%3A"C%2B%2B+Linux+CI"
-[cpp_osx_svg]: https://github.com/google/or-tools/workflows/C++%20MacOS%20CI/badge.svg
-[cpp_osx_link]: https://github.com/google/or-tools/actions?query=workflow%3A"C%2B%2B+MacOS+CI"
-[cpp_win_svg]: https://github.com/google/or-tools/workflows/C++%20Windows%20CI/badge.svg
-[cpp_win_link]: https://github.com/google/or-tools/actions?query=workflow%3A"C%2B%2B+Windows+CI"
+[linux_cpp_svg]: https://github.com/google/or-tools/actions/workflows/cmake_linux_cpp.yml/badge.svg?branch=master
+[linux_cpp_link]: https://github.com/google/or-tools/actions/workflows/cmake_linux_cpp.yml
+[macos_cpp_svg]: https://github.com/google/or-tools/actions/workflows/cmake_macos_cpp.yml/badge.svg?branch=master
+[macos_cpp_link]: https://github.com/google/or-tools/actions/workflows/cmake_macos_cpp.yml
+[windows_cpp_svg]: https://github.com/google/or-tools/actions/workflows/cmake_windows_cpp.yml/badge.svg?branch=master
+[windows_cpp_link]: https://github.com/google/or-tools/actions/workflows/cmake_windows_cpp.yml
 
 # Introduction
 For building OR-Tools as a CMake standalone project, you can read the following instructions.

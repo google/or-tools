@@ -1,13 +1,13 @@
 | Linux | macOS | Windows |
 |-------|-------|---------|
-| [![Status][java_linux_svg]][java_linux_link] | [![Status][java_osx_svg]][java_osx_link] | [![Status][java_win_svg]][java_win_link] |
+| [![Status][linux_java_svg]][linux_java_link] | [![Status][macos_java_svg]][macos_java_link] | [![Status][windows_java_svg]][windows_java_link] |
 
-[java_linux_svg]: https://github.com/google/or-tools/workflows/Java%20Linux%20CI/badge.svg?branch=master
-[java_linux_link]: https://github.com/google/or-tools/actions?query=workflow%3A"Java+Linux+CI"
-[java_osx_svg]: https://github.com/google/or-tools/workflows/Java%20MacOS%20CI/badge.svg?branch=master
-[java_osx_link]: https://github.com/google/or-tools/actions?query=workflow%3A"Java+MacOS+CI"
-[java_win_svg]: https://github.com/google/or-tools/workflows/Java%20Windows%20CI/badge.svg?branch=master
-[java_win_link]: https://github.com/google/or-tools/actions?query=workflow%3A"Java+Windows+CI"
+[linux_java_svg]: https://github.com/google/or-tools/actions/workflows/cmake_linux_java.yml/badge.svg?branch=master
+[linux_java_link]: https://github.com/google/or-tools/actions/workflows/cmake_linux_java.yml
+[macos_java_svg]: https://github.com/google/or-tools/actions/workflows/cmake_macos_java.yml/badge.svg?branch=master
+[macos_java_link]: https://github.com/google/or-tools/actions/workflows/cmake_macos_java.yml
+[windows_java_svg]: https://github.com/google/or-tools/actions/workflows/cmake_windows_java.yml/badge.svg?branch=master
+[windows_java_link]: https://github.com/google/or-tools/actions/workflows/cmake_windows_java.yml
 
 # Introduction
 
