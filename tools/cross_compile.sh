@@ -2,6 +2,7 @@
 set -eo pipefail
 
 function extract() {
+  echo "Extracting ${1}..."
   case $1 in
     *.tar.bz2)   tar xjf "$1"    ;;
     *.tar.xz)    tar xJf "$1"    ;;
@@ -19,8 +20,9 @@ function unpack() {
   local -r RELATIVE_DIR=$2
   local -r DESTINATION="${ARCHIVE_DIR}/${RELATIVE_DIR}"
   if [[  ! -d "${DESTINATION}" ]] ; then
+    echo "Downloading ${URL}..."
     local -r ARCHIVE_NAME=$(basename "${URL}")
-    [[ -f "${ARCHIVE_NAME}" ]] || wget "${URL}"
+    test -f "${ARCHIVE_NAME}" || wget --no-verbose "${URL}"
     extract "${ARCHIVE_NAME}"
     rm -f "${ARCHIVE_NAME}"
   fi
@@ -139,6 +141,7 @@ QEMU_ARGS+=( -E LD_LIBRARY_PATH=/lib )
 }
 
 function expand_codescape_config() {
+  # ref: https://codescape.mips.com/components/toolchain/2020.06-01/downloads.html
   # ref: https://codescape.mips.com/components/toolchain/2019.02-04/downloads.html
   #local -r DATE=2020.06-01
   local -r DATE=2019.02-04
@@ -174,7 +177,7 @@ function expand_codescape_config() {
   # note: This is manadatory to use a file in order to have the CMake variable
   # 'CMAKE_CROSSCOMPILING' set to TRUE.
   # ref: https://cmake.org/cmake/help/latest/manual/cmake-toolchains.7.html#cross-compiling-for-linux
-  cat >"$TOOLCHAIN_FILE" <<EOL
+  cat >"${TOOLCHAIN_FILE}" <<EOL
 set(CMAKE_SYSTEM_NAME Linux)
 set(CMAKE_SYSTEM_PROCESSOR ${TARGET})
 
@@ -182,8 +185,12 @@ set(CMAKE_SYSROOT ${SYSROOT_DIR})
 set(CMAKE_STAGING_PREFIX ${STAGING_DIR})
 
 set(tools ${GCC_DIR})
+
+#set(CMAKE_C_COMPILER \${tools}/bin/mips-mti-linux-gnu-gcc)
 set(CMAKE_C_COMPILER \${tools}/bin/mips-img-linux-gnu-gcc)
 set(CMAKE_C_COMPILER_ARG "${MIPS_FLAGS}")
+
+#set(CMAKE_CXX_COMPILER \${tools}/bin/mips-mti-linux-gnu-g++)
 set(CMAKE_CXX_COMPILER \${tools}/bin/mips-img-linux-gnu-g++)
 set(CMAKE_CXX_FLAGS "${MIPS_FLAGS}")
 set(CMAKE_CXX_FLAGS "${MIPS_FLAGS} -L${SYSROOT_DIR}/usr/lib64")
@@ -196,8 +203,9 @@ set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
 EOL
 
 CMAKE_ADDITIONAL_ARGS+=( -DCMAKE_TOOLCHAIN_FILE="${TOOLCHAIN_FILE}" )
+QEMU_ARGS+=( -L "${SYSROOT_DIR}/${FLAVOUR}" )
+#local -r LIBC_DIR=${GCC_DIR}/mips-mti-linux-gnu/lib/${FLAVOUR}/lib64
 local -r LIBC_DIR=${GCC_DIR}/mips-img-linux-gnu/lib/${FLAVOUR}/lib64
-QEMU_ARGS+=( -L "${SYSROOT_DIR}" )
 QEMU_ARGS+=( -E LD_PRELOAD="${LIBC_DIR}/libstdc++.so.6:${LIBC_DIR}/libgcc_s.so.1" )
 }
 
@@ -213,6 +221,7 @@ function build() {
 function run_test() {
   assert_defined QEMU_ARCH
   if [[ "${QEMU_ARCH}" == "DISABLED" ]]; then
+    >&2 echo "QEMU is disabled for ${TARGET}"
     return
   fi
   install_qemu
