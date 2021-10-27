@@ -392,8 +392,7 @@ void CreateMachines(
       // Source to nodes.
       circuit.AddArc(0, i + 1, cp_model.NewBoolVar());
       // Node to sink.
-      const BoolVar sink_literal = cp_model.NewBoolVar();
-      circuit.AddArc(i + 1, 0, sink_literal);
+      circuit.AddArc(i + 1, 0, cp_model.NewBoolVar());
 
       // Used to constrain the size of the tail interval.
       std::vector<BoolVar> literals;
@@ -430,8 +429,8 @@ void CreateMachines(
           }
 
           // Make sure the interval follow the circuit in time.
-          // Note that we use the start + delay as this is more precise than
-          // the non-propagated end.
+          // Note that we use the start + duration + transition  as this is more
+          // precise than the non-propagated end.
           cp_model
               .AddLessOrEqual(tail.interval.StartExpr().AddConstant(
                                   tail.fixed_duration + transition),

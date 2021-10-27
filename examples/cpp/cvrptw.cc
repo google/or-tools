@@ -17,7 +17,7 @@
 // http://en.wikipedia.org/wiki/Vehicle_routing_problem.
 // The variant which is tackled by this model includes a capacity dimension,
 // time windows and optional orders, with a penalty cost if orders are not
-// performed. For the sake of simplicty, orders are randomly located and
+// performed. For the sake of simplicity, orders are randomly located and
 // distances are computed using the Manhattan distance. Distances are assumed
 // to be in meters and times in seconds.
 
@@ -49,11 +49,10 @@ using operations_research::RoutingNodeIndex;
 using operations_research::RoutingSearchParameters;
 using operations_research::ServiceTimePlusTransition;
 
-ABSL_FLAG(int, vrp_orders, 100, "Nodes in the problem.");
-ABSL_FLAG(int, vrp_vehicles, 20,
-          "Size of Traveling Salesman Problem instance.");
+ABSL_FLAG(int, vrp_orders, 100, "Number of nodes in the problem");
+ABSL_FLAG(int, vrp_vehicles, 20, "Number of vehicles in the problem");
 ABSL_FLAG(bool, vrp_use_deterministic_random_seed, false,
-          "Use deterministic random seeds.");
+          "Use deterministic random seeds");
 ABSL_FLAG(bool, vrp_use_same_vehicle_costs, false,
           "Use same vehicle costs in the routing model");
 ABSL_FLAG(std::string, routing_search_parameters, "",
