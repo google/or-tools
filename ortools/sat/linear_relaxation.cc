@@ -738,7 +738,7 @@ void AppendCumulativeRelaxation(const CpModelProto& model_proto,
   std::vector<LinearExpression> energies;
   std::vector<AffineExpression> demands;
   std::vector<AffineExpression> sizes;
-  for (int i = 0; i < demands.size(); ++i) {
+  for (int i = 0; i < ct.cumulative().demands_size(); ++i) {
     demands.push_back(mapping->Affine(ct.cumulative().demands(i)));
     sizes.push_back(intervals_repository->Size(intervals[i]));
   }
