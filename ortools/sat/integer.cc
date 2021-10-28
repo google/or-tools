@@ -1006,9 +1006,8 @@ std::string IntegerTrail::DebugString() {
   return result;
 }
 
-bool IntegerTrail::UnsafeEnqueue(
-    IntegerLiteral i_lit, absl::Span<const Literal> literal_reason,
-    absl::Span<const IntegerLiteral> integer_reason) {
+bool IntegerTrail::SafeEnqueue(
+    IntegerLiteral i_lit, absl::Span<const IntegerLiteral> integer_reason) {
   if (i_lit.IsTrueLiteral()) return true;
 
   std::vector<IntegerLiteral> cleaned_reason;
@@ -1019,9 +1018,9 @@ bool IntegerTrail::UnsafeEnqueue(
   }
 
   if (i_lit.IsFalseLiteral()) {
-    return ReportConflict(literal_reason, cleaned_reason);
+    return ReportConflict({}, cleaned_reason);
   } else {
-    return Enqueue(i_lit, literal_reason, cleaned_reason);
+    return Enqueue(i_lit, {}, cleaned_reason);
   }
 }
 

@@ -301,8 +301,8 @@ class FixedDivisionPropagator : public PropagatorInterface {
   DISALLOW_COPY_AND_ASSIGN(FixedDivisionPropagator);
 };
 
-// Propagates var_a % cst_b = var_c. Basic version, we don't extract any special
-// cases, and we only propagates the bounds. cst_b must be > 0.
+// Propagates target == expr % mod. Basic version, we don't extract any special
+// cases, and we only propagates the bounds. mod must be > 0.
 class FixedModuloPropagator : public PropagatorInterface {
  public:
   FixedModuloPropagator(AffineExpression expr, IntegerValue mod,
@@ -312,13 +312,9 @@ class FixedModuloPropagator : public PropagatorInterface {
   void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
-  // Propagates sign and basic bounds.
   bool PropagateSignsAndTargetRange();
-
-  // Propagates on the positive domains.
-  bool PropagatePositiveDomains(AffineExpression expr, AffineExpression target);
-
-  // Propagates outer bounds.
+  bool PropagateBoundsWhenExprIsPositive(AffineExpression expr,
+                                         AffineExpression target);
   bool PropagateOuterBounds();
 
   const AffineExpression expr_;

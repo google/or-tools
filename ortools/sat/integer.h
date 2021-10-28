@@ -828,14 +828,14 @@ class IntegerTrail : public SatPropagator {
   // Enqueue new information about a variable bound. It has the same behavior
   // as the Enqueue() method, except that it accepts true and false integer
   // literals, both for i_lit, and for the integer reason.
+  //
   // This method will do nothing if i_lit is a true literal. It will report a
   // conflict if i_lit is a false literal, and enqueue i_lit normally otherwise.
   // Furthemore, it will check that the integer reason does not contain any
   // false literals, and will remove true literals before calling
   // ReportConflict() or Enqueue().
-  ABSL_MUST_USE_RESULT bool UnsafeEnqueue(
-      IntegerLiteral i_lit, absl::Span<const Literal> literal_reason,
-      absl::Span<const IntegerLiteral> integer_reason);
+  ABSL_MUST_USE_RESULT bool SafeEnqueue(
+      IntegerLiteral i_lit, absl::Span<const IntegerLiteral> integer_reason);
 
   // Pushes the given integer literal assuming that the Boolean literal is true.
   // This can do a few things:
