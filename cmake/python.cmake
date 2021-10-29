@@ -155,6 +155,13 @@ file(GENERATE
   OUTPUT ${PROJECT_BINARY_DIR}/python/$<CONFIG>/setup.py
   INPUT ${PROJECT_BINARY_DIR}/python/setup.py.in)
 
+add_custom_command(
+  OUTPUT python/setup.py
+  DEPENDS ${PROJECT_BINARY_DIR}/python/$<CONFIG>/setup.py
+  COMMAND ${CMAKE_COMMAND} -E copy ./$<CONFIG>/setup.py setup.py
+  WORKING_DIRECTORY python
+)
+
 configure_file(
   ${PROJECT_SOURCE_DIR}/tools/README.pypi.txt
   ${PROJECT_BINARY_DIR}/python/README.txt
@@ -164,10 +171,10 @@ configure_file(
 search_python_module(setuptools setuptools)
 search_python_module(wheel wheel)
 
-# Main Target
-add_custom_target(python_package ALL
-  COMMAND ${CMAKE_COMMAND} -E copy ./$<CONFIG>/setup.py setup.py
+add_custom_command(
+  OUTPUT python/dist
   COMMAND ${CMAKE_COMMAND} -E remove_directory dist
+  #COMMAND ${CMAKE_COMMAND} -E make_directory dist
   COMMAND ${CMAKE_COMMAND} -E make_directory ${PYTHON_PROJECT}/.libs
   # Don't need to copy static lib on windows.
   COMMAND ${CMAKE_COMMAND} -E $<IF:$<STREQUAL:$<TARGET_PROPERTY:${PYTHON_PROJECT},TYPE>,SHARED_LIBRARY>,copy,true>
@@ -183,15 +190,25 @@ add_custom_target(python_package ALL
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:sorted_interval_list> ${PYTHON_PROJECT}/util
   #COMMAND ${Python3_EXECUTABLE} setup.py bdist_egg bdist_wheel
   COMMAND ${Python3_EXECUTABLE} setup.py bdist_wheel
+  MAIN_DEPENDENCY
+    ortools # can't use TARGET alias here
+  DEPENDS
+    python/setup.py
+    Py${PROJECT_NAME}_proto
   BYPRODUCTS
-    python/${PYTHON_PROJECT}
-    python/build
-    python/dist
-    python/${PYTHON_PROJECT}.egg-info
-  WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/python
+   python/${PYTHON_PROJECT}
+   python/build
+   python/${PYTHON_PROJECT}.egg-info
+  WORKING_DIRECTORY python
   COMMAND_EXPAND_LISTS
   )
-add_dependencies(python_package ortools::ortools Py${PROJECT_NAME}_proto)
+
+# Main Target
+add_custom_target(python_package ALL
+  DEPENDS
+    python/dist
+  WORKING_DIRECTORY python
+)
 
 # Install rules
 configure_file(
