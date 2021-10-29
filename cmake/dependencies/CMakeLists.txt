@@ -50,7 +50,7 @@ if(BUILD_ZLIB)
     zlib
     GIT_REPOSITORY "https://github.com/madler/ZLIB.git"
     GIT_TAG "v1.2.11"
-    PATCH_COMMAND git apply "${CMAKE_CURRENT_LIST_DIR}/../../patches/ZLIB.patch")
+    PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/ZLIB.patch")
   FetchContent_MakeAvailable(zlib)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
   message(CHECK_PASS "fetched")
@@ -67,7 +67,7 @@ if(BUILD_absl)
     absl
     GIT_REPOSITORY "https://github.com/abseil/abseil-cpp.git"
     GIT_TAG "20210324.2"
-    PATCH_COMMAND git apply "${CMAKE_CURRENT_LIST_DIR}/../../patches/abseil-cpp-20210324.2.patch")
+    PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/abseil-cpp-20210324.2.patch")
   FetchContent_MakeAvailable(absl)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
   message(CHECK_PASS "fetched")
@@ -118,7 +118,7 @@ if(BUILD_Protobuf)
       GIT_REPOSITORY "https://github.com/protocolbuffers/protobuf.git"
       GIT_TAG "v3.18.0"
       GIT_SUBMODULES ""
-      PATCH_COMMAND git apply "${CMAKE_CURRENT_LIST_DIR}/../../patches/protobuf-v3.18.0.patch"
+      PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/protobuf-v3.18.0.patch"
       SOURCE_SUBDIR cmake)
     FetchContent_MakeAvailable(protobuf)
   else()
