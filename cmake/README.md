@@ -65,9 +65,9 @@ CMake as a standalone project or it can be incorporated into an existing CMake
 
 ## Dependencies
 
-OR-Tools depends on severals mandatory libraries. You can compile them all at
+OR-Tools depends on several mandatory libraries. You can compile them all at
 configure time using the option `-DBUILD_DEPS=ON` (`OFF` by default) or you can
-compile few of them using the options below.
+compile few of them using the options below (see [CMake Options](#cmake-options) below).
 
 * ZLIB (`BUILD_ZLIB`),
 * Google Abseil-cpp (`BUILD_absl`),
@@ -85,8 +85,8 @@ compile few of them using the options below.
   note: You can disable the support of COIN-OR solvers (i.e. Cbc and Clp solver)
   by using `-DUSE_COINOR=OFF` (`ON` by default).
 
-OR-Tools also have few (ed compile time) optional solvers support (disabled by
-default):
+OR-Tools can also optionally (disabled by default) be compiled with support for the following third-party proprietary
+solvers:
 
 * CPLEX (`USE_CPLEX`),
 * XPRESS (`USE_XPRESS`)
@@ -99,7 +99,13 @@ test it on public CI and support can be broken.**
 ## CMake Options
 
 There are several options that can be passed to CMake to modify how the code is built.<br>
-For all of these options and parameters you have to use `-D<Parameter_name>=<value>`.<br>
+For all of these options and parameters you have to use `-D<Parameter_name>=<value>`.
+
+All CMake options are passed at configure time, i.e., by running <br>
+`cmake -S. -B{your chosen build directory}  -DFOO=BAR -DBAZ=QUX -DQUUX=QUUZ ...` <br>
+before running `cmake --build {your chosen build directory}`<br>
+
+[comment]: <> (https://en.wikipedia.org/wiki/Metasyntactic_variable)
 
 For example, to generate build files including dependencies in a new subdirectory called 'build', run:
 ```sh
