@@ -102,10 +102,8 @@ There are several options that can be passed to CMake to modify how the code is 
 For all of these options and parameters you have to use `-D<Parameter_name>=<value>`.
 
 All CMake options are passed at configure time, i.e., by running <br>
-`cmake -S. -B{your chosen build directory}  -DFOO=BAR -DBAZ=QUX -DQUUX=QUUZ ...` <br>
-before running `cmake --build {your chosen build directory}`<br>
-
-[comment]: <> (https://en.wikipedia.org/wiki/Metasyntactic_variable)
+`cmake -S. -B<your_chosen_build_directory>  -DOPTION_ONE=ON -DOPTION_TWO=OFF ...` <br>
+before running `cmake --build <your_chosen_build_directory>`<br>
 
 For example, to generate build files including dependencies in a new subdirectory called 'build', run:
 ```sh
