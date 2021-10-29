@@ -1,3 +1,4 @@
+import ortools
 from ortools.linear_solver import pywraplp
 from ortools.linear_solver import linear_solver_pb2
 from ortools.constraint_solver import pywrapcp
@@ -28,6 +29,7 @@ def cpsolver():
     print('Test cpsolver...DONE')
 
 def main():
+    print(ortools.__version__)
     lpsolver()
     cpsolver()
 
