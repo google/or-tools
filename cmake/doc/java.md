@@ -11,8 +11,10 @@
 
 # Introduction
 
+First, verify you have the `JAVA_HOME` environment variable set otherwise CMake and Maven won't be able to find your Java SDK.
 
-# Build the Binary Package
+## Build the Binary Package
+
 To build the java maven packages, simply run:
 ```sh
 cmake -S. -Bbuild -DBUILD_JAVA=ON
@@ -21,28 +23,34 @@ cmake --build build --target java_package -v
 note: Since `java_package` is in target `all`, you can also ommit the
 `--target` option.
 
-# Testing
+## Testing
+
 To list tests:
+
 ```sh
 cd build
 ctest -N
 ```
 
 To only run Java tests:
+
 ```sh
 cd build
 ctest -R "java_.*"
 ```
 
-# Technical Notes
+## Technical Notes
+
 First you should take a look at the [ortools/java/README.md](../../ortools/java/README.md) to understand the layout.  
 Here I will only focus on the CMake/SWIG tips and tricks.
 
-## Build directory layout
+### Build directory layout
+
 Since Java use the directory layout and we want to use the [CMAKE_BINARY_DIR](https://cmake.org/cmake/help/latest/variable/CMAKE_BINARY_DIR.html) 
 to generate the Java binary package.  
 
 We want this layout:
+
 ```shell
 <CMAKE_BINARY_DIR>/java
 ├── ortools-linux-x86-64
@@ -75,16 +83,20 @@ We want this layout:
 ```
 src: `tree build/java --prune -U -P "*.java|*.xml|*.so*" -I "target"`
 
-## Managing SWIG generated files
+### Managing SWIG generated files
+
 You can use `CMAKE_SWIG_DIR` to change the output directory for the `.java` file e.g.:
+
 ```cmake
 set(CMAKE_SWIG_OUTDIR ${CMAKE_CURRENT_BINARY_DIR}/..)
 ```
 And you can use `CMAKE_LIBRARY_OUTPUT_DIRECTORY` to change the output directory for the `.so` file e.g.:
+
 ```cmake
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/..)
 ```
 [optional]You can use `SWIG_OUTFILE_DIR` to change the output directory for the `.cxx` file e.g.:
+
 ```cmake
 set(SWIG_OUTFILE_DIR ${CMAKE_CURRENT_BINARY_DIR}/..)
 ```
