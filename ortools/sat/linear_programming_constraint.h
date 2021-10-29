@@ -145,6 +145,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // The main objective variable should be equal to the linear sum of
   // the arguments passed to SetObjectiveCoefficient().
   void SetMainObjectiveVariable(IntegerVariable ivar) { objective_cp_ = ivar; }
+  IntegerVariable ObjectiveVariable() const { return objective_cp_; }
 
   // Register a new cut generator with this constraint.
   void AddCutGenerator(CutGenerator generator);
@@ -223,6 +224,12 @@ class LinearProgrammingConstraint : public PropagatorInterface,
 
   // Returns some statistics about this LP.
   std::string Statistics() const;
+
+  // Important: this is only temporarily valid.
+  IntegerSumLE* LatestOptimalConstraintOrNull() const {
+    if (optimal_constraints_.empty()) return nullptr;
+    return optimal_constraints_.back().get();
+  }
 
  private:
   // Helper methods for branching. Returns true if branching on the given

@@ -19,6 +19,7 @@
 
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_search.h"
+#include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/synchronization.h"
@@ -52,37 +53,29 @@ class LbTreeSearch {
   DEFINE_INT_TYPE(NodeIndex, int);
   struct Node {
     Node(Literal l, IntegerValue lb)
-        : literal(l),
-          objective_lb(lb),
-          true_objective(lb),
-          false_objective(lb) {}
+        : literal(l), true_objective(lb), false_objective(lb) {}
+
+    // The objective lower bound at this node.
+    IntegerValue MinObjective() const {
+      return std::min(true_objective, false_objective);
+    }
 
     // Invariant: the objective bounds only increase.
     void UpdateObjective(IntegerValue v) {
-      objective_lb = std::max(objective_lb, v);
       true_objective = std::max(true_objective, v);
       false_objective = std::max(false_objective, v);
     }
     void UpdateTrueObjective(IntegerValue v) {
       true_objective = std::max(true_objective, v);
-      objective_lb =
-          std::max(objective_lb, std::min(true_objective, false_objective));
     }
     void UpdateFalseObjective(IntegerValue v) {
       false_objective = std::max(false_objective, v);
-      objective_lb =
-          std::max(objective_lb, std::min(true_objective, false_objective));
     }
 
     // The decision for the true and false branch under this node.
     /*const*/ Literal literal;
 
-    // The objective lower bound at this node.
-    IntegerValue objective_lb;
-
-    // The objective lower bound in both branches. This should be the same
-    // (after a sync) as the objective_lb of the corresponding child node when
-    // that node is instantiated.
+    // The objective lower bound in both branches.
     IntegerValue true_objective;
     IntegerValue false_objective;
 
@@ -90,6 +83,10 @@ class LbTreeSearch {
     NodeIndex true_child = NodeIndex(std::numeric_limits<int32_t>::max());
     NodeIndex false_child = NodeIndex(std::numeric_limits<int32_t>::max());
   };
+
+  // Display the current tree, this is mainly here to investigate ideas to
+  // improve the code.
+  void DebugDisplayTree(NodeIndex root) const;
 
   // Updates the objective of the node in the current branch at level n from
   // the one at level n - 1.
@@ -103,11 +100,16 @@ class LbTreeSearch {
   TimeLimit* time_limit_;
   ModelRandomGenerator* random_;
   SatSolver* sat_solver_;
+  IntegerEncoder* integer_encoder_;
   IntegerTrail* integer_trail_;
   SharedResponseManager* shared_response_;
   SatDecisionPolicy* sat_decision_;
   IntegerSearchHelper* search_helper_;
   IntegerVariable objective_var_;
+
+  // This can stay null. Otherwise it will be the lp constraint with
+  // objective_var_ as objective.
+  LinearProgrammingConstraint* lp_constraint_ = nullptr;
 
   // We temporarily cache the shared_response_ objective lb here.
   IntegerValue current_objective_lb_;
@@ -120,6 +122,8 @@ class LbTreeSearch {
 
   // Our heuristic used to explore the tree. See code for detail.
   std::function<BooleanOrIntegerLiteral()> search_heuristic_;
+
+  int64_t num_rc_detected_ = 0;
 };
 
 }  // namespace sat

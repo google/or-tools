@@ -24,6 +24,7 @@ LbTreeSearch::LbTreeSearch(Model* model)
     : time_limit_(model->GetOrCreate<TimeLimit>()),
       random_(model->GetOrCreate<ModelRandomGenerator>()),
       sat_solver_(model->GetOrCreate<SatSolver>()),
+      integer_encoder_(model->GetOrCreate<IntegerEncoder>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
       shared_response_(model->GetOrCreate<SharedResponseManager>()),
       sat_decision_(model->GetOrCreate<SatDecisionPolicy>()),
@@ -36,6 +37,16 @@ LbTreeSearch::LbTreeSearch(Model* model)
   const ObjectiveDefinition* objective = model->Get<ObjectiveDefinition>();
   CHECK(objective != nullptr);
   objective_var_ = objective->objective_var;
+
+  // Identify an LP with the same objective variable.
+  //
+  // TODO(user): if we have many independent LP, this will find nothing.
+  for (LinearProgrammingConstraint* lp :
+       *model->GetOrCreate<LinearProgrammingConstraintCollection>()) {
+    if (lp->ObjectiveVariable() == objective_var_) {
+      lp_constraint_ = lp;
+    }
+  }
 
   // We use the normal SAT search but we will bump the variable activity
   // slightly differently. In addition to the conflicts, we also bump it each
@@ -54,10 +65,10 @@ void LbTreeSearch::UpdateParentObjective(int level) {
   const NodeIndex child_index = current_branch_[level];
   const Node& child = nodes_[child_index];
   if (parent.true_child == child_index) {
-    parent.UpdateTrueObjective(child.objective_lb);
+    parent.UpdateTrueObjective(child.MinObjective());
   } else {
     CHECK_EQ(parent.false_child, child_index);
-    parent.UpdateFalseObjective(child.objective_lb);
+    parent.UpdateFalseObjective(child.MinObjective());
   }
 }
 
@@ -67,6 +78,7 @@ void LbTreeSearch::UpdateObjectiveFromParent(int level) {
   if (level == 0) return;
   const NodeIndex parent_index = current_branch_[level - 1];
   const Node& parent = nodes_[parent_index];
+  CHECK_GE(parent.MinObjective(), current_objective_lb_);
   const NodeIndex child_index = current_branch_[level];
   Node& child = nodes_[child_index];
   if (parent.true_child == child_index) {
@@ -75,6 +87,46 @@ void LbTreeSearch::UpdateObjectiveFromParent(int level) {
     CHECK_EQ(parent.false_child, child_index);
     child.UpdateObjective(parent.false_objective);
   }
+}
+
+void LbTreeSearch::DebugDisplayTree(NodeIndex root) const {
+  int num_nodes = 0;
+  const IntegerValue root_lb = nodes_[root].MinObjective();
+  const auto shifted_lb = [root_lb](IntegerValue lb) {
+    return std::max<int64_t>(0, (lb - root_lb).value());
+  };
+
+  absl::StrongVector<NodeIndex, int> level(nodes_.size(), 0);
+  std::vector<NodeIndex> to_explore = {root};
+  while (!to_explore.empty()) {
+    NodeIndex n = to_explore.back();
+    to_explore.pop_back();
+
+    ++num_nodes;
+    const Node& node = nodes_[n];
+
+    std::string s(level[n], ' ');
+    absl::StrAppend(&s, "#", n.value());
+
+    if (node.true_child < nodes_.size()) {
+      absl::StrAppend(&s, " [t:#", node.true_child.value(), " ",
+                      shifted_lb(node.true_objective), "]");
+      to_explore.push_back(node.true_child);
+      level[node.true_child] = level[n] + 1;
+    } else {
+      absl::StrAppend(&s, " [t:## ", shifted_lb(node.true_objective), "]");
+    }
+    if (node.false_child < nodes_.size()) {
+      absl::StrAppend(&s, " [f:#", node.false_child.value(), " ",
+                      shifted_lb(node.false_objective), "]");
+      to_explore.push_back(node.false_child);
+      level[node.false_child] = level[n] + 1;
+    } else {
+      absl::StrAppend(&s, " [f:## ", shifted_lb(node.false_objective), "]");
+    }
+    LOG(INFO) << s;
+  }
+  LOG(INFO) << "num_nodes: " << num_nodes;
 }
 
 SatSolver::Status LbTreeSearch::Search(
@@ -148,17 +200,20 @@ SatSolver::Status LbTreeSearch::Search(
       for (int level = current_branch_.size(); --level > 0;) {
         UpdateParentObjective(level);
       }
+      nodes_[current_branch_[0]].UpdateObjective(current_objective_lb_);
       for (int level = 1; level < current_branch_.size(); ++level) {
         UpdateObjectiveFromParent(level);
       }
 
       // If the root lb increased, update global shared objective lb.
-      if (nodes_[current_branch_[0]].objective_lb > current_objective_lb_) {
+      const IntegerValue bound = nodes_[current_branch_[0]].MinObjective();
+      if (bound > current_objective_lb_) {
         shared_response_->UpdateInnerObjectiveBounds(
-            absl::StrCat("lb_tree_search #nodes:", nodes_.size()),
-            nodes_[current_branch_[0]].objective_lb,
-            integer_trail_->LevelZeroUpperBound(objective_var_));
-        current_objective_lb_ = nodes_[current_branch_[0]].objective_lb;
+            absl::StrCat("lb_tree_search #nodes:", nodes_.size(),
+                         " #rc:", num_rc_detected_),
+            bound, integer_trail_->LevelZeroUpperBound(objective_var_));
+        current_objective_lb_ = bound;
+        if (VLOG_IS_ON(2)) DebugDisplayTree(current_branch_[0]);
       }
     }
 
@@ -199,10 +254,10 @@ SatSolver::Status LbTreeSearch::Search(
     //
     // TODO(user): If we remember how far we can backjump for both true/false
     // branch, we could be more efficient.
-    while (
-        current_branch_.size() > sat_solver_->CurrentDecisionLevel() + 1 ||
-        (current_branch_.size() > 1 &&
-         nodes_[current_branch_.back()].objective_lb > current_objective_lb_)) {
+    while (current_branch_.size() > sat_solver_->CurrentDecisionLevel() + 1 ||
+           (current_branch_.size() > 1 &&
+            nodes_[current_branch_.back()].MinObjective() >
+                current_objective_lb_)) {
       current_branch_.pop_back();
     }
 
@@ -221,16 +276,15 @@ SatSolver::Status LbTreeSearch::Search(
     // Dive: Follow the branch with lowest objective.
     // Note that we do not creates new nodes here.
     while (current_branch_.size() == sat_solver_->CurrentDecisionLevel() + 1) {
-      // Note that node.objective_lb could be worse than the current best
-      // bound.
       const int level = current_branch_.size() - 1;
       CHECK_EQ(level, sat_solver_->CurrentDecisionLevel());
       Node& node = nodes_[current_branch_[level]];
-      node.UpdateObjective(integer_trail_->LowerBound(objective_var_));
-      UpdateObjectiveFromParent(level);
-      if (node.objective_lb > current_objective_lb_) {
+      node.UpdateObjective(std::max(
+          current_objective_lb_, integer_trail_->LowerBound(objective_var_)));
+      if (node.MinObjective() > current_objective_lb_) {
         break;
       }
+      CHECK_EQ(node.MinObjective(), current_objective_lb_) << level;
 
       // This will be set to the next node index.
       NodeIndex n;
@@ -261,7 +315,7 @@ SatSolver::Status LbTreeSearch::Search(
             nodes_[parent].false_child = n;
             nodes_[parent].UpdateFalseObjective(new_lb);
           }
-          if (nodes_[parent].objective_lb > current_objective_lb_) break;
+          if (nodes_[parent].MinObjective() > current_objective_lb_) break;
         }
       } else {
         // If both lower bound are the same, we pick a random sub-branch.
@@ -342,19 +396,65 @@ SatSolver::Status LbTreeSearch::Search(
     // Note that the decision will be pushed to the solver on the next loop.
     const NodeIndex n(nodes_.size());
     nodes_.emplace_back(Literal(decision),
-                        integer_trail_->LowerBound(objective_var_));
+                        std::max(current_objective_lb_,
+                                 integer_trail_->LowerBound(objective_var_)));
     if (!current_branch_.empty()) {
       const NodeIndex parent = current_branch_.back();
       if (sat_solver_->Assignment().LiteralIsTrue(nodes_[parent].literal)) {
         nodes_[parent].true_child = n;
-        nodes_[parent].UpdateTrueObjective(nodes_.back().objective_lb);
+        nodes_[parent].UpdateTrueObjective(nodes_.back().MinObjective());
       } else {
         CHECK(sat_solver_->Assignment().LiteralIsFalse(nodes_[parent].literal));
         nodes_[parent].false_child = n;
-        nodes_[parent].UpdateFalseObjective(nodes_.back().objective_lb);
+        nodes_[parent].UpdateFalseObjective(nodes_.back().MinObjective());
       }
     }
     current_branch_.push_back(n);
+
+    // Looking at the reduced costs, we can already have a bound for one of the
+    // branch. Increasing the corresponding objective can save some branches,
+    // and also allow for a more incremental LP solving since we do less back
+    // and forth.
+    //
+    // TODO(user): The code to recover that is a bit convoluted.
+    // TODO(user): Incorporate this in the heuristic so we choose more Boolean
+    // inside these LP explanations?
+    if (lp_constraint_ != nullptr) {
+      IntegerSumLE* last_rc = lp_constraint_->LatestOptimalConstraintOrNull();
+      if (last_rc != nullptr) {
+        const IntegerVariable pos_view =
+            integer_encoder_->GetLiteralView(Literal(decision));
+        if (pos_view != kNoIntegerVariable) {
+          const std::pair<IntegerValue, IntegerValue> bounds =
+              last_rc->ConditionalLb(pos_view, objective_var_);
+          Node& node = nodes_[n];
+          if (bounds.first > node.false_objective) {
+            ++num_rc_detected_;
+            node.UpdateFalseObjective(bounds.first);
+          }
+          if (bounds.second > node.true_objective) {
+            ++num_rc_detected_;
+            node.UpdateTrueObjective(bounds.second);
+          }
+        }
+
+        const IntegerVariable neg_view =
+            integer_encoder_->GetLiteralView(Literal(decision).Negated());
+        if (neg_view != kNoIntegerVariable) {
+          const std::pair<IntegerValue, IntegerValue> bounds =
+              last_rc->ConditionalLb(neg_view, objective_var_);
+          Node& node = nodes_[n];
+          if (bounds.first > node.true_objective) {
+            ++num_rc_detected_;
+            node.UpdateTrueObjective(bounds.second);
+          }
+          if (bounds.second > node.false_objective) {
+            ++num_rc_detected_;
+            node.UpdateFalseObjective(bounds.second);
+          }
+        }
+      }
+    }
   }
 
   return SatSolver::LIMIT_REACHED;

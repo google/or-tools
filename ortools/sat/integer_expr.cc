@@ -76,6 +76,53 @@ void IntegerSumLE::FillIntegerReason() {
   }
 }
 
+std::pair<IntegerValue, IntegerValue> IntegerSumLE::ConditionalLb(
+    IntegerVariable bool_view, IntegerVariable target_var) const {
+  if (integer_trail_->LowerBound(bool_view) != 0 &&
+      integer_trail_->UpperBound(bool_view) != 1) {
+    return {kMinIntegerValue, kMinIntegerValue};
+  }
+
+  // Recall that all our coefficient are positive.
+  bool bool_view_present = false;
+  bool bool_view_present_positively = false;
+  IntegerValue view_coeff;
+
+  bool target_var_present_negatively = false;
+  IntegerValue target_coeff;
+
+  // Compute the implied_lb excluding  "- target_coeff * target".
+  IntegerValue implied_lb(-upper_bound_);
+  for (int i = 0; i < vars_.size(); ++i) {
+    const IntegerVariable var = vars_[i];
+    const IntegerValue coeff = coeffs_[i];
+    if (var == NegationOf(target_var)) {
+      target_coeff = coeff;
+      target_var_present_negatively = true;
+      continue;
+    }
+
+    const IntegerValue lb = integer_trail_->LowerBound(var);
+    implied_lb += coeff * lb;
+    if (PositiveVariable(var) == PositiveVariable(bool_view)) {
+      view_coeff = coeff;
+      bool_view_present = true;
+      bool_view_present_positively = (var == bool_view);
+    }
+  }
+  if (!bool_view_present || !target_var_present_negatively) {
+    return {kMinIntegerValue, kMinIntegerValue};
+  }
+
+  if (bool_view_present_positively) {
+    return {CeilRatio(implied_lb, target_coeff),
+            CeilRatio(implied_lb + view_coeff, target_coeff)};
+  } else {
+    return {CeilRatio(implied_lb + view_coeff, target_coeff),
+            CeilRatio(implied_lb, target_coeff)};
+  }
+}
+
 bool IntegerSumLE::Propagate() {
   // Reified case: If any of the enforcement_literals are false, we ignore the
   // constraint.
@@ -719,7 +766,7 @@ bool ProductPropagator::PropagateMaxOnPositiveProduct(AffineExpression a,
                                                       IntegerValue min_p,
                                                       IntegerValue max_p) {
   const IntegerValue max_a = integer_trail_->UpperBound(a);
-  DCHECK_GT(max_a, 0);
+  if (max_a <= 0) return true;
   DCHECK_GT(min_p, 0);
 
   if (max_a >= min_p) {
@@ -844,8 +891,6 @@ bool ProductPropagator::Propagate() {
     const AffineExpression b = i == 0 ? b_ : a_;
     const IntegerValue max_b = integer_trail_->UpperBound(b);
     const IntegerValue min_b = integer_trail_->LowerBound(b);
-    const IntegerValue max_a = integer_trail_->UpperBound(a);
-    const IntegerValue min_a = integer_trail_->LowerBound(a);
 
     // If the domain of b contain zero, we can't propagate anything on a.
     // Because of CanonicalizeCases(), we just deal with min_b > 0 here.
@@ -855,11 +900,15 @@ bool ProductPropagator::Propagate() {
     if (min_b < 0 && max_b > 0) {
       CHECK_GT(min_p, 0);  // Because zero is not possible.
 
-      // This should be done on the next Propagate() call.
-      if (min_a >= 0 || max_a <= 0) continue;
-
-      PropagateMaxOnPositiveProduct(a, b, min_p, max_p);
-      PropagateMaxOnPositiveProduct(a.Negated(), b.Negated(), min_p, max_p);
+      // If a is not across zero, we will deal with this on the next
+      // Propagate() call.
+      if (!PropagateMaxOnPositiveProduct(a, b, min_p, max_p)) {
+        return false;
+      }
+      if (!PropagateMaxOnPositiveProduct(a.Negated(), b.Negated(), min_p,
+                                         max_p)) {
+        return false;
+      }
       continue;
     }
 

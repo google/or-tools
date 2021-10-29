@@ -75,6 +75,18 @@ void AppendPartialGreaterThanEncodingRelaxation(IntegerVariable var,
 std::vector<Literal> CreateAlternativeLiteralsWithView(
     int num_literals, Model* model, LinearRelaxation* relaxation);
 
+void AppendBoolOrRelaxation(const ConstraintProto& ct, Model* model,
+                            LinearRelaxation* relaxation);
+
+void AppendBoolAndRelaxation(const ConstraintProto& ct, Model* model,
+                             LinearRelaxation* relaxation);
+
+void AppendAtMostOneRelaxation(const ConstraintProto& ct, Model* model,
+                               LinearRelaxation* relaxation);
+
+void AppendExactlyOneRelaxation(const ConstraintProto& ct, Model* model,
+                                LinearRelaxation* relaxation);
+
 // Adds linearization of int max constraints. Returns a vector of z vars such
 // that: z_vars[l] == 1 <=> target = exprs[l].
 //
@@ -96,22 +108,15 @@ std::vector<Literal> CreateAlternativeLiteralsWithView(
 // TODO(user): Support linear expression as target.
 void AppendLinMaxRelaxationPart1(const ConstraintProto& ct, Model* model,
                                  LinearRelaxation* relaxation);
+
 void AppendLinMaxRelaxationPart2(
     IntegerVariable target, const std::vector<Literal>& alternative_literals,
     const std::vector<LinearExpression>& exprs, Model* model,
     LinearRelaxation* relaxation);
 
-void AppendBoolOrRelaxation(const ConstraintProto& ct, Model* model,
-                            LinearRelaxation* relaxation);
-
-void AppendBoolAndRelaxation(const ConstraintProto& ct, Model* model,
-                             LinearRelaxation* relaxation);
-
-void AppendAtMostOneRelaxation(const ConstraintProto& ct, Model* model,
+// Note: This only works if all affine expressions share the same variable.
+void AppendMaxAffineRelaxation(const ConstraintProto& ct, Model* model,
                                LinearRelaxation* relaxation);
-
-void AppendExactlyOneRelaxation(const ConstraintProto& ct, Model* model,
-                                LinearRelaxation* relaxation);
 
 // Appends linear constraints to the relaxation. This also handles the
 // relaxation of linear constraints with enforcement literals.
@@ -132,9 +137,6 @@ void AppendCircuitRelaxation(const ConstraintProto& ct, Model* model,
 void AppendRoutesRelaxation(const ConstraintProto& ct, Model* model,
                             LinearRelaxation* relaxation);
 
-void AppendIntervalRelaxation(const ConstraintProto& ct, Model* model,
-                              LinearRelaxation* relaxation);
-
 // Adds linearization of no overlap constraints.
 // It adds an energetic equation linking the duration of all potential tasks to
 // the actual span of the no overlap constraint.
@@ -149,24 +151,21 @@ void AppendCumulativeRelaxation(const CpModelProto& model_proto,
                                 const ConstraintProto& ct, Model* model,
                                 LinearRelaxation* relaxation);
 
-// Adds linearization of different types of constraints.
-void TryToLinearizeConstraint(const CpModelProto& model_proto,
-                              const ConstraintProto& ct,
-                              int linearization_level, Model* model,
-                              LinearRelaxation* relaxation);
-
 // Cut generators.
+void AddIntProdCutGenerator(const ConstraintProto& ct, int linearization_level,
+                            Model* m, LinearRelaxation* relaxation);
+
+void AddAllDiffCutGenerator(const ConstraintProto& ct, Model* m,
+                            LinearRelaxation* relaxation);
+
+void AddLinMaxCutGenerator(const ConstraintProto& ct, Model* m,
+                           LinearRelaxation* relaxation);
+
 void AddCircuitCutGenerator(const ConstraintProto& ct, Model* m,
                             LinearRelaxation* relaxation);
 
 void AddRoutesCutGenerator(const ConstraintProto& ct, Model* m,
                            LinearRelaxation* relaxation);
-
-void AddIntProdCutGenerator(const ConstraintProto& ct, Model* m,
-                            LinearRelaxation* relaxation);
-
-void AddAllDiffCutGenerator(const ConstraintProto& ct, Model* m,
-                            LinearRelaxation* relaxation);
 
 void AddCumulativeCutGenerator(const ConstraintProto& ct, Model* m,
                                LinearRelaxation* relaxation);
@@ -177,18 +176,13 @@ void AddNoOverlapCutGenerator(const ConstraintProto& ct, Model* m,
 void AddNoOverlap2dCutGenerator(const ConstraintProto& ct, Model* m,
                                 LinearRelaxation* relaxation);
 
-void AddLinMaxCutGenerator(const ConstraintProto& ct, Model* m,
-                           LinearRelaxation* relaxation);
+// Adds linearization of different types of constraints.
+void TryToLinearizeConstraint(const CpModelProto& model_proto,
+                              const ConstraintProto& ct,
+                              int linearization_level, Model* model,
+                              LinearRelaxation* relaxation);
 
-// Note: This only work if all affine expressions share the same variable.
-void AppendMaxAffineRelaxation(const ConstraintProto& ct, Model* model,
-                               LinearRelaxation* relaxation);
-
-// Scan the model and add cut generators.
-void TryToAddCutGenerators(const ConstraintProto& ct, int linearization_level,
-                           Model* m, LinearRelaxation* relaxation);
-
-// Builds the linear relaxaton of a CpModelProto and stores it in the
+// Builds the linear relaxation of a CpModelProto and stores it in the
 // LinearRelaxation container.
 void ComputeLinearRelaxation(const CpModelProto& model_proto,
                              int linearization_level, Model* m,

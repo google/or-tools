@@ -1099,27 +1099,7 @@ void LoadAllDiffConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
   const std::vector<IntegerVariable> vars =
       mapping->Integers(ct.all_diff().vars());
-  // If all variables are fully encoded and domains are not too large, use
-  // arc-consistent reasoning. Otherwise, use bounds-consistent reasoning.
-  IntegerTrail* integer_trail = m->GetOrCreate<IntegerTrail>();
-  IntegerEncoder* encoder = m->GetOrCreate<IntegerEncoder>();
-  int num_fully_encoded = 0;
-  int64_t max_domain_size = 0;
-  for (const IntegerVariable variable : vars) {
-    if (encoder->VariableIsFullyEncoded(variable)) num_fully_encoded++;
-
-    IntegerValue lb = integer_trail->LowerBound(variable);
-    IntegerValue ub = integer_trail->UpperBound(variable);
-    const int64_t domain_size = ub.value() - lb.value() + 1;
-    max_domain_size = std::max(max_domain_size, domain_size);
-  }
-
-  if (num_fully_encoded == vars.size() && max_domain_size < 1024) {
-    m->Add(AllDifferentBinary(vars));
-    m->Add(AllDifferentAC(vars));
-  } else {
-    m->Add(AllDifferentOnBounds(vars));
-  }
+  m->Add(AllDifferentOnBounds(vars));
 }
 
 void LoadIntProdConstraint(const ConstraintProto& ct, Model* m) {

@@ -953,14 +953,17 @@ void AppendLinearConstraintRelaxation(const ConstraintProto& ct,
                                  rhs_domain_max, *model, relaxation);
 }
 
-// Add a linear relaxation of the CP constraint to the set of linear
-// constraints. The highest linearization_level is, the more types of constraint
-// we encode. This method should be called only for linearization_level > 0.
-//
-// Note: IntProd is linearized dynamically using the cut generators.
+// Add a static and a dynamic linear relaxation of the CP constraint to the set
+// of linear constraints. The highest linearization_level is, the more types of
+// constraint we encode. This method should be called only for
+// linearization_level > 0. The static part is just called a relaxation and is
+// called at the root node of the search. The dynamic part is implemented
+// through a set of linear cut generators that will be called throughout the
+// search.
 //
 // TODO(user): In full generality, we could encode all the constraint as an LP.
 // TODO(user): Add unit tests for this method.
+// TODO(user): Remove and merge with model loading.
 void TryToLinearizeConstraint(const CpModelProto& model_proto,
                               const ConstraintProto& ct,
                               int linearization_level, Model* model,
@@ -989,10 +992,31 @@ void TryToLinearizeConstraint(const CpModelProto& model_proto,
       AppendExactlyOneRelaxation(ct, model, relaxation);
       break;
     }
+    case ConstraintProto::ConstraintCase::kIntProd: {
+      // No relaxation, just a cut generator .
+      AddIntProdCutGenerator(ct, linearization_level, model, relaxation);
+      break;
+    }
     case ConstraintProto::ConstraintCase::kLinMax: {
       AppendLinMaxRelaxationPart1(ct, model, relaxation);
-      if (LinMaxContainsOnlyOneVarInExpressions(ct)) {
+      const bool is_affine_max = LinMaxContainsOnlyOneVarInExpressions(ct);
+      if (is_affine_max) {
         AppendMaxAffineRelaxation(ct, model, relaxation);
+      }
+
+      // Add cut generators.
+      if (linearization_level > 1) {
+        if (is_affine_max) {
+          AddMaxAffineCutGenerator(ct, model, relaxation);
+        } else {
+          AddLinMaxCutGenerator(ct, model, relaxation);
+        }
+      }
+      break;
+    }
+    case ConstraintProto::ConstraintCase::kAllDiff: {
+      if (linearization_level > 1) {
+        AddAllDiffCutGenerator(ct, model, relaxation);
       }
       break;
     }
@@ -1004,21 +1028,35 @@ void TryToLinearizeConstraint(const CpModelProto& model_proto,
     }
     case ConstraintProto::ConstraintCase::kCircuit: {
       AppendCircuitRelaxation(ct, model, relaxation);
+      if (linearization_level > 1) {
+        AddCircuitCutGenerator(ct, model, relaxation);
+      }
       break;
     }
     case ConstraintProto::ConstraintCase::kRoutes: {
       AppendRoutesRelaxation(ct, model, relaxation);
+      if (linearization_level > 1) {
+        AddRoutesCutGenerator(ct, model, relaxation);
+      }
       break;
     }
     case ConstraintProto::ConstraintCase::kNoOverlap: {
       if (linearization_level > 1) {
         AppendNoOverlapRelaxation(model_proto, ct, model, relaxation);
+        AddNoOverlapCutGenerator(ct, model, relaxation);
       }
       break;
     }
     case ConstraintProto::ConstraintCase::kCumulative: {
       if (linearization_level > 1) {
         AppendCumulativeRelaxation(model_proto, ct, model, relaxation);
+        AddCumulativeCutGenerator(ct, model, relaxation);
+      }
+      break;
+    }
+    case ConstraintProto::ConstraintCase::kNoOverlap2D: {
+      if (linearization_level > 1) {
+        AddNoOverlap2dCutGenerator(ct, model, relaxation);
       }
       break;
     }
@@ -1237,65 +1275,6 @@ void AddLinMaxCutGenerator(const ConstraintProto& ct, Model* m,
       CreateLinMaxCutGenerator(target, exprs, z_vars, m));
 }
 
-// TODO(user): Remove and merge with model loading.
-void TryToAddCutGenerators(const ConstraintProto& ct, int linearization_level,
-                           Model* m, LinearRelaxation* relaxation) {
-  switch (ct.constraint_case()) {
-    case ConstraintProto::ConstraintCase::kCircuit: {
-      if (linearization_level > 1) {
-        AddCircuitCutGenerator(ct, m, relaxation);
-      }
-      break;
-    }
-    case ConstraintProto::ConstraintCase::kRoutes: {
-      if (linearization_level > 1) {
-        AddRoutesCutGenerator(ct, m, relaxation);
-      }
-      break;
-    }
-    case ConstraintProto::ConstraintCase::kIntProd: {
-      AddIntProdCutGenerator(ct, linearization_level, m, relaxation);
-      break;
-    }
-    case ConstraintProto::ConstraintCase::kAllDiff: {
-      if (linearization_level > 1) {
-        AddAllDiffCutGenerator(ct, m, relaxation);
-      }
-      break;
-    }
-    case ConstraintProto::ConstraintCase::kCumulative: {
-      if (linearization_level > 1) {
-        AddCumulativeCutGenerator(ct, m, relaxation);
-      }
-      break;
-    }
-    case ConstraintProto::ConstraintCase::kNoOverlap: {
-      if (linearization_level > 1) {
-        AddNoOverlapCutGenerator(ct, m, relaxation);
-      }
-      break;
-    }
-    case ConstraintProto::ConstraintCase::kNoOverlap2D: {
-      if (linearization_level > 1) {
-        AddNoOverlap2dCutGenerator(ct, m, relaxation);
-      }
-      break;
-    }
-    case ConstraintProto::ConstraintCase::kLinMax: {
-      if (linearization_level > 1) {
-        if (LinMaxContainsOnlyOneVarInExpressions(ct)) {
-          AddMaxAffineCutGenerator(ct, m, relaxation);
-        } else {
-          AddLinMaxCutGenerator(ct, m, relaxation);
-        }
-      }
-      break;
-    }
-    default: {
-    }
-  }
-}
-
 // If we have an exactly one between literals l_i, and each l_i => var ==
 // value_i, then we can add a strong linear relaxation: var = sum l_i * value_i.
 //
@@ -1364,7 +1343,6 @@ void ComputeLinearRelaxation(const CpModelProto& model_proto,
   for (const auto& ct : model_proto.constraints()) {
     TryToLinearizeConstraint(model_proto, ct, linearization_level, m,
                              relaxation);
-    TryToAddCutGenerators(ct, linearization_level, m, relaxation);
   }
 
   // Linearize the encoding of variable that are fully encoded.
