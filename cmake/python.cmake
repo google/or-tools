@@ -215,6 +215,7 @@ if(BUILD_TESTING)
   endif()
   # make a virtualenv to install our python package in it
   add_custom_command(TARGET python_package POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E remove_directory ${VENV_DIR}
     COMMAND ${VENV_EXECUTABLE} ${VENV_DIR}
     # Must not call it in a folder containing the setup.py otherwise pip call it
     # (i.e. "python setup.py bdist") while we want to consume the wheel package
