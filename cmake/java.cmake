@@ -140,7 +140,7 @@ add_custom_target(java_native_package
     $<$<NOT:$<PLATFORM_ID:Windows>>:$<TARGET_SONAME_FILE:${PROJECT_NAME}>>
     ${JAVA_RESOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
   COMMAND ${MAVEN_EXECUTABLE} compile -B
-  COMMAND ${MAVEN_EXECUTABLE} package -B
+  COMMAND ${MAVEN_EXECUTABLE} package -B $<$<BOOL:${BUILD_FAT_JAR}>:-Dfatjar=true>
   COMMAND ${MAVEN_EXECUTABLE} install -B $<$<BOOL:${SKIP_GPG}>:-Dgpg.skip=true>
   BYPRODUCTS
     ${JAVA_NATIVE_PROJECT_PATH}/target
@@ -190,7 +190,7 @@ add_custom_target(java_package ALL
   ${JAVA_PROJECT_PATH}/pom.xml
   ${JAVA_SRCS}
   COMMAND ${MAVEN_EXECUTABLE} compile -B
-  COMMAND ${MAVEN_EXECUTABLE} package -B
+  COMMAND ${MAVEN_EXECUTABLE} package -B $<$<BOOL:${BUILD_FAT_JAR}>:-Dfatjar=true>
   COMMAND ${MAVEN_EXECUTABLE} install -B $<$<BOOL:${SKIP_GPG}>:-Dgpg.skip=true>
   BYPRODUCTS
     ${JAVA_PROJECT_PATH}/target
