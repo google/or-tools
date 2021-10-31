@@ -201,8 +201,6 @@ class IntVar {
   friend class ReservoirConstraint;
   friend int64_t SolutionIntegerValue(const CpSolverResponse& r,
                                       const LinearExpr& expr);
-  friend int64_t SolutionIntegerMin(const CpSolverResponse& r, IntVar x);
-  friend int64_t SolutionIntegerMax(const CpSolverResponse& r, IntVar x);
 
   IntVar(int index, CpModelProto* cp_model);
 
@@ -593,11 +591,14 @@ class NoOverlap2DConstraint : public Constraint {
  *
  * This constraint allows adding fixed or variables demands to the cumulative
  * constraint incrementally.
+ *
+ * One cannot mix the AddDemand() and AddDemandWithEnergy() APIs in the same
+ * cumulative API. Either always supply energy info, or never.
  */
 class CumulativeConstraint : public Constraint {
  public:
   /// Adds a pair (interval, demand) to the constraint.
-  void AddDemand(IntervalVar interval, IntVar demand);
+  void AddDemand(IntervalVar interval, LinearExpr demand);
 
  private:
   friend class CpModelBuilder;
@@ -616,6 +617,9 @@ class CumulativeConstraint : public Constraint {
  */
 class CpModelBuilder {
  public:
+  /// Sets the name of the model.
+  void SetName(const std::string& name);
+
   /// Creates an integer variable with the given domain.
   IntVar NewIntVar(const Domain& domain);
 
@@ -818,14 +822,16 @@ class CpModelBuilder {
       absl::Span<const int> final_states);
 
   /// Adds target == min(vars).
-  Constraint AddMinEquality(IntVar target, absl::Span<const IntVar> vars);
+  Constraint AddMinEquality(const LinearExpr& target,
+                            absl::Span<const IntVar> vars);
 
   /// Adds target == min(exprs).
   Constraint AddLinMinEquality(const LinearExpr& target,
                                absl::Span<const LinearExpr> exprs);
 
   /// Adds target == max(vars).
-  Constraint AddMaxEquality(IntVar target, absl::Span<const IntVar> vars);
+  Constraint AddMaxEquality(const LinearExpr& target,
+                            absl::Span<const IntVar> vars);
 
   /// Adds target == max(exprs).
   Constraint AddLinMaxEquality(const LinearExpr& target,
@@ -835,8 +841,8 @@ class CpModelBuilder {
   Constraint AddDivisionEquality(IntVar target, IntVar numerator,
                                  IntVar denominator);
 
-  /// Adds target == abs(var).
-  Constraint AddAbsEquality(IntVar target, IntVar var);
+  /// Adds target == abs(expr).
+  Constraint AddAbsEquality(const LinearExpr& target, const LinearExpr& expr);
 
   /// Adds target = var % mod.
   Constraint AddModuloEquality(IntVar target, IntVar var, IntVar mod);
@@ -860,7 +866,7 @@ class CpModelBuilder {
    * It ensures that for any integer point, the sum of the demands of the
    * intervals containing that point does not exceed the capacity.
    */
-  CumulativeConstraint AddCumulative(IntVar capacity);
+  CumulativeConstraint AddCumulative(LinearExpr capacity);
 
   /// Adds a linear minimization objective.
   void Minimize(const LinearExpr& expr);
@@ -929,8 +935,8 @@ class CpModelBuilder {
   friend class IntervalVar;
 
   // Fills the 'expr_proto' with the linear expression represented by 'expr'.
-  void LinearExprToProto(const LinearExpr& expr,
-                         LinearExpressionProto* expr_proto);
+  LinearExpressionProto LinearExprToProto(const LinearExpr& expr,
+                                          bool negate = false);
 
   // Rebuilds a LinearExpr from a LinearExpressionProto.
   // This method is a member of CpModelBuilder because it needs to be friend
@@ -958,12 +964,6 @@ class CpModelBuilder {
 
 /// Evaluates the value of an linear expression in a solver response.
 int64_t SolutionIntegerValue(const CpSolverResponse& r, const LinearExpr& expr);
-
-/// Returns the min of an integer variable in a solution.
-int64_t SolutionIntegerMin(const CpSolverResponse& r, IntVar x);
-
-/// Returns the max of an integer variable in a solution.
-int64_t SolutionIntegerMax(const CpSolverResponse& r, IntVar x);
 
 /// Evaluates the value of a Boolean literal in a solver response.
 bool SolutionBooleanValue(const CpSolverResponse& r, BoolVar x);

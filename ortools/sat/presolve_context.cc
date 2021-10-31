@@ -21,6 +21,7 @@
 #include "ortools/base/map_util.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/port/proto_utils.h"
+#include "ortools/sat/cp_model.pb.h"
 #include "ortools/util/saturated_arithmetic.h"
 
 namespace operations_research {
@@ -147,6 +148,13 @@ int64_t PresolveContext::MaxOf(const LinearExpressionProto& expr) const {
   return result;
 }
 
+bool PresolveContext::IsFixed(const LinearExpressionProto& expr) const {
+  for (int i = 0; i < expr.vars_size(); ++i) {
+    if (expr.coeffs(i) != 0 && !IsFixed(expr.vars(i))) return false;
+  }
+  return true;
+}
+
 Domain PresolveContext::DomainSuperSetOf(
     const LinearExpressionProto& expr) const {
   Domain result(expr.offset());
@@ -169,18 +177,23 @@ int PresolveContext::LiteralForExpressionMax(
   return RefIsPositive(ref) == (expr.coeffs(0) > 0) ? ref : NegatedRef(ref);
 }
 
+bool PresolveContext::ExpressionIsSingleVariable(
+    const LinearExpressionProto& expr) const {
+  return expr.offset() == 0 && expr.vars_size() == 1 && expr.coeffs(0) == 1;
+}
+
 // Note that we only support converted intervals.
 bool PresolveContext::IntervalIsConstant(int ct_ref) const {
   const ConstraintProto& proto = working_model->constraints(ct_ref);
   if (!proto.enforcement_literal().empty()) return false;
-  if (!proto.interval().has_start_view()) return false;
-  for (const int var : proto.interval().start_view().vars()) {
+  if (!proto.interval().has_start()) return false;
+  for (const int var : proto.interval().start().vars()) {
     if (!IsFixed(var)) return false;
   }
-  for (const int var : proto.interval().size_view().vars()) {
+  for (const int var : proto.interval().size().vars()) {
     if (!IsFixed(var)) return false;
   }
-  for (const int var : proto.interval().end_view().vars()) {
+  for (const int var : proto.interval().end().vars()) {
     if (!IsFixed(var)) return false;
   }
   return true;
@@ -215,42 +228,36 @@ std::string PresolveContext::IntervalDebugString(int ct_ref) const {
 int64_t PresolveContext::StartMin(int ct_ref) const {
   const IntervalConstraintProto& interval =
       working_model->constraints(ct_ref).interval();
-  if (interval.has_start_view()) return MinOf(interval.start_view());
   return MinOf(interval.start());
 }
 
 int64_t PresolveContext::StartMax(int ct_ref) const {
   const IntervalConstraintProto& interval =
       working_model->constraints(ct_ref).interval();
-  if (interval.has_start_view()) return MaxOf(interval.start_view());
   return MaxOf(interval.start());
 }
 
 int64_t PresolveContext::EndMin(int ct_ref) const {
   const IntervalConstraintProto& interval =
       working_model->constraints(ct_ref).interval();
-  if (interval.has_end_view()) return MinOf(interval.end_view());
   return MinOf(interval.end());
 }
 
 int64_t PresolveContext::EndMax(int ct_ref) const {
   const IntervalConstraintProto& interval =
       working_model->constraints(ct_ref).interval();
-  if (interval.has_end_view()) return MaxOf(interval.end_view());
   return MaxOf(interval.end());
 }
 
 int64_t PresolveContext::SizeMin(int ct_ref) const {
   const IntervalConstraintProto& interval =
       working_model->constraints(ct_ref).interval();
-  if (interval.has_size_view()) return MinOf(interval.size_view());
   return MinOf(interval.size());
 }
 
 int64_t PresolveContext::SizeMax(int ct_ref) const {
   const IntervalConstraintProto& interval =
       working_model->constraints(ct_ref).interval();
-  if (interval.has_size_view()) return MaxOf(interval.size_view());
   return MaxOf(interval.size());
 }
 
@@ -700,32 +707,84 @@ void PresolveContext::RemoveVariableFromAffineRelation(int var) {
   }
 }
 
+void PresolveContext::CanonicalizeVariable(int ref) {
+  const int var = GetAffineRelation(ref).representative;
+  const int64_t min = MinOf(var);
+  if (min == 0 || IsFixed(var)) return;  // Nothing to do.
+
+  const int new_var = NewIntVar(DomainOf(var).AdditionWith(Domain(-min)));
+  CHECK(StoreAffineRelation(var, new_var, 1, min, /*debug_no_recursion=*/true));
+  UpdateRuleStats("variables: canonicalize domain");
+  UpdateNewConstraintsVariableUsage();
+}
+
+bool PresolveContext::CanonicalizeAffineVariable(int ref, int64_t coeff,
+                                                 int64_t mod, int64_t rhs) {
+  CHECK_GT(mod, 1);
+  CHECK_NE(coeff % mod, 0);
+  int var = ref;
+  if (!RefIsPositive(var)) {
+    var = NegatedRef(ref);
+    coeff = -coeff;
+    rhs = -rhs;
+  }
+  // From var * coeff % mod = rhs
+  // We have var = mod * X + offset.
+  const int64_t offset = ProductWithModularInverse(coeff, mod, rhs);
+
+  // Lets create a new integer variable and add the affine relation.
+  const Domain new_domain =
+      DomainOf(var).AdditionWith(Domain(-offset)).InverseMultiplicationBy(mod);
+  if (new_domain.IsEmpty()) {
+    return NotifyThatModelIsUnsat();
+  }
+  if (new_domain.IsFixed()) {
+    UpdateRuleStats("variables: fixed value due to affine relation");
+    return IntersectDomainWith(
+        var, new_domain.ContinuousMultiplicationBy(mod).AdditionWith(
+                 Domain(offset)));
+  }
+
+  // We make sure the new variable has a domain starting at zero to minimize
+  // future overflow issues. If it end up Boolean, it is also nice to be able to
+  // use it as such.
+  //
+  // A potential problem with this is that it messes up the natural variable
+  // order chosen by the modeler. We try to correct that when mapping variables
+  // at the end of the presolve.
+  const int64_t min_value = new_domain.Min();
+  const int new_var = NewIntVar(new_domain.AdditionWith(Domain(-min_value)));
+  CHECK(StoreAffineRelation(var, new_var, mod, offset + mod * min_value,
+                            /*debug_no_recursion=*/true));
+  UpdateRuleStats("variables: canonicalize affine domain");
+  UpdateNewConstraintsVariableUsage();
+  return true;
+}
+
 bool PresolveContext::StoreAffineRelation(int ref_x, int ref_y, int64_t coeff,
-                                          int64_t offset) {
+                                          int64_t offset,
+                                          bool debug_no_recursion) {
   CHECK_NE(coeff, 0);
   if (is_unsat_) return false;
 
   // TODO(user): I am not 100% sure why, but sometimes the representative is
   // fixed but that is not propagated to ref_x or ref_y and this causes issues.
-  if (!PropagateAffineRelation(ref_x)) return true;
-  if (!PropagateAffineRelation(ref_y)) return true;
+  if (!PropagateAffineRelation(ref_x)) return false;
+  if (!PropagateAffineRelation(ref_y)) return false;
 
   if (IsFixed(ref_x)) {
-    const int64_t lhs = DomainOf(ref_x).Min() - offset;
+    const int64_t lhs = DomainOf(ref_x).FixedValue() - offset;
     if (lhs % std::abs(coeff) != 0) {
-      is_unsat_ = true;
-      return true;
+      return NotifyThatModelIsUnsat();
     }
-    static_cast<void>(IntersectDomainWith(ref_y, Domain(lhs / coeff)));
     UpdateRuleStats("affine: fixed");
-    return true;
+    return IntersectDomainWith(ref_y, Domain(lhs / coeff));
   }
 
   if (IsFixed(ref_y)) {
-    const int64_t value_x = DomainOf(ref_y).Min() * coeff + offset;
-    static_cast<void>(IntersectDomainWith(ref_x, Domain(value_x)));
+    const int64_t value_x = DomainOf(ref_y).FixedValue() * coeff + offset;
     UpdateRuleStats("affine: fixed");
-    return true;
+    return IntersectDomainWith(ref_x, Domain(value_x));
   }
 
   // If both are already in the same class, we need to make sure the relations
@@ -734,90 +793,150 @@ bool PresolveContext::StoreAffineRelation(int ref_x, int ref_y, int64_t coeff,
   const AffineRelation::Relation ry = GetAffineRelation(ref_y);
   if (rx.representative == ry.representative) {
     // x = rx.coeff * rep + rx.offset;
-    // y = ry.coeff * rep + ry.offset_y;
+    // y = ry.coeff * rep + ry.offset;
     // And x == coeff * ry.coeff * rep + (coeff * ry.offset + offset).
     //
     // So we get the relation a * rep == b with a and b defined here:
     const int64_t a = coeff * ry.coeff - rx.coeff;
     const int64_t b = coeff * ry.offset + offset - rx.offset;
     if (a == 0) {
-      if (b != 0) is_unsat_ = true;
+      if (b != 0) return NotifyThatModelIsUnsat();
       return true;
     }
     if (b % a != 0) {
-      is_unsat_ = true;
-      return true;
+      return NotifyThatModelIsUnsat();
     }
     UpdateRuleStats("affine: unique solution");
     const int64_t unique_value = -b / a;
     if (!IntersectDomainWith(rx.representative, Domain(unique_value))) {
-      return true;
+      return false;
     }
     if (!IntersectDomainWith(ref_x,
                              Domain(unique_value * rx.coeff + rx.offset))) {
-      return true;
+      return false;
     }
     if (!IntersectDomainWith(ref_y,
                              Domain(unique_value * ry.coeff + ry.offset))) {
-      return true;
+      return false;
     }
     return true;
   }
 
-  const int x = PositiveRef(ref_x);
-  const int y = PositiveRef(ref_y);
-  const int64_t c =
-      RefIsPositive(ref_x) == RefIsPositive(ref_y) ? coeff : -coeff;
-  const int64_t o = RefIsPositive(ref_x) ? offset : -offset;
+  // ref_x = coeff * ref_y + offset;
+  // rx.coeff * rep_x + rx.offset =
+  //    coeff * (ry.coeff * rep_y + ry.offset) + offset
+  //
+  // We have a * rep_x + b * rep_y == o
+  int64_t a = rx.coeff;
+  int64_t b = coeff * ry.coeff;
+  int64_t o = coeff * ry.offset + offset - rx.offset;
+  CHECK_NE(a, 0);
+  CHECK_NE(b, 0);
+  {
+    const int64_t gcd = MathUtil::GCD64(std::abs(a), std::abs(b));
+    if (gcd != 1) {
+      a /= gcd;
+      b /= gcd;
+      if (o % gcd != 0) return NotifyThatModelIsUnsat();
+      o /= gcd;
+    }
+  }
+
+  // In this (rare) case, we need to canonicalize one of the variable that will
+  // become the representative for both.
+  if (std::abs(a) > 1 && std::abs(b) > 1) {
+    UpdateRuleStats("affine: created common representative");
+    if (!CanonicalizeAffineVariable(rx.representative, a, std::abs(b),
+                                    offset)) {
+      return false;
+    }
+
+    // Re-add the relation now that a will resolve to a multiple of b.
+    return StoreAffineRelation(ref_x, ref_y, coeff, offset,
+                               /*debug_no_recursion=*/true);
+  }
+
+  // Canonicalize to x = c * y + o
+  int x, y;
+  int64_t c;
+  bool negate = false;
+  if (std::abs(a) == 1) {
+    x = rx.representative;
+    y = ry.representative;
+    c = b;
+    negate = a < 0;
+  } else {
+    CHECK_EQ(std::abs(b), 1);
+    x = ry.representative;
+    y = rx.representative;
+    c = a;
+    negate = b < 0;
+  }
+  if (negate) {
+    c = -c;
+    o = -o;
+  }
+  CHECK(RefIsPositive(x));
+  CHECK(RefIsPositive(y));
+
+  // Lets propagate domains first.
+  if (!IntersectDomainWith(
+          y, DomainOf(x).AdditionWith(Domain(-o)).InverseMultiplicationBy(c))) {
+    return false;
+  }
+  if (!IntersectDomainWith(
+          x,
+          DomainOf(y).ContinuousMultiplicationBy(c).AdditionWith(Domain(o)))) {
+    return false;
+  }
+
+  // To avoid corner cases where replacing x by y in a linear expression
+  // can cause overflow, we might want to canonicalize y first to avoid
+  // cases like x = c * [large_value, ...] - large_value.
+  //
+  // TODO(user): we can do better for overflow by not always choosing the
+  // min at zero, do the best things if it becomes needed.
+  if (std::abs(o) > std::max(std::abs(MinOf(x)), std::abs(MaxOf(x)))) {
+    // Both these function recursively call StoreAffineRelation() but shouldn't
+    // be able to cascade (CHECKED).
+    CHECK(!debug_no_recursion);
+    CanonicalizeVariable(y);
+    return StoreAffineRelation(x, y, c, o, /*debug_no_recursion=*/true);
+  }
 
   // TODO(user): can we force the rep and remove GetAffineRelation()?
-  bool added = AddRelation(x, y, c, o, &affine_relations_);
+  CHECK(AddRelation(x, y, c, o, &affine_relations_));
   if ((c == 1 || c == -1) && o == 0) {
-    added |= AddRelation(x, y, c, o, &var_equiv_relations_);
-  }
-  if (added) {
-    UpdateRuleStats("affine: new relation");
-
-    // Lets propagate again the new relation. We might as well do it as early
-    // as possible and not all call site do it.
-    if (!PropagateAffineRelation(ref_x)) return true;
-    if (!PropagateAffineRelation(ref_y)) return true;
-
-    // These maps should only contains representative, so only need to remap
-    // either x or y.
-    const int rep = GetAffineRelation(x).representative;
-    if (x != rep) encoding_remap_queue_.push_back(x);
-    if (y != rep) encoding_remap_queue_.push_back(y);
-
-    // The domain didn't change, but this notification allows to re-process any
-    // constraint containing these variables. Note that we do not need to
-    // retrigger a propagation of the constraint containing a variable whose
-    // representative didn't change.
-    if (x != rep) modified_domains.Set(x);
-    if (y != rep) modified_domains.Set(y);
-
-    var_to_constraints_[x].insert(kAffineRelationConstraint);
-    var_to_constraints_[y].insert(kAffineRelationConstraint);
-    return true;
+    CHECK(AddRelation(x, y, c, o, &var_equiv_relations_));
   }
 
-  UpdateRuleStats("affine: incompatible relation");
-  if (VLOG_IS_ON(1)) {
-    LOG(INFO) << "Cannot add relation " << DomainOf(ref_x) << " = " << coeff
-              << " * " << DomainOf(ref_y) << " + " << offset
-              << " because of incompatibilities with existing relation: ";
-    for (const int ref : {ref_x, ref_y}) {
-      const auto r = GetAffineRelation(ref);
-      LOG(INFO) << DomainOf(ref) << " =  " << r.coeff << " * "
-                << DomainOf(r.representative) << " + " << r.offset;
-    }
-  }
+  UpdateRuleStats("affine: new relation");
 
-  return false;
+  // Lets propagate again the new relation. We might as well do it as early
+  // as possible and not all call site do it.
+  //
+  // TODO(user): I am not sure this is needed given the propagation above.
+  if (!PropagateAffineRelation(ref_x)) return false;
+  if (!PropagateAffineRelation(ref_y)) return false;
+
+  // These maps should only contains representative, so only need to remap
+  // either x or y.
+  const int rep = GetAffineRelation(x).representative;
+
+  // The domain didn't change, but this notification allows to re-process any
+  // constraint containing these variables. Note that we do not need to
+  // retrigger a propagation of the constraint containing a variable whose
+  // representative didn't change.
+  if (x != rep) modified_domains.Set(x);
+  if (y != rep) modified_domains.Set(y);
+
+  var_to_constraints_[x].insert(kAffineRelationConstraint);
+  var_to_constraints_[y].insert(kAffineRelationConstraint);
+  return true;
 }
 
-void PresolveContext::StoreBooleanEqualityRelation(int ref_a, int ref_b) {
-  if (is_unsat_) return;
+bool PresolveContext::StoreBooleanEqualityRelation(int ref_a, int ref_b) {
+  if (is_unsat_) return false;
 
   CHECK(!VariableWasRemoved(ref_a));
   CHECK(!VariableWasRemoved(ref_b));
@@ -826,20 +945,17 @@ void PresolveContext::StoreBooleanEqualityRelation(int ref_a, int ref_b) {
   CHECK(CanBeUsedAsLiteral(ref_a));
   CHECK(CanBeUsedAsLiteral(ref_b));
 
-  if (ref_a == ref_b) return;
-  if (ref_a == NegatedRef(ref_b)) {
-    is_unsat_ = true;
-    return;
-  }
+  if (ref_a == ref_b) return true;
+  if (ref_a == NegatedRef(ref_b)) return IntersectDomainWith(ref_a, Domain(0));
+
   const int var_a = PositiveRef(ref_a);
   const int var_b = PositiveRef(ref_b);
   if (RefIsPositive(ref_a) == RefIsPositive(ref_b)) {
     // a = b
-    CHECK(StoreAffineRelation(var_a, var_b, /*coeff=*/1, /*offset=*/0));
-  } else {
-    // a = 1 - b
-    CHECK(StoreAffineRelation(var_a, var_b, /*coeff=*/-1, /*offset=*/1));
+    return StoreAffineRelation(var_a, var_b, /*coeff=*/1, /*offset=*/0);
   }
+  // a = 1 - b
+  return StoreAffineRelation(var_a, var_b, /*coeff=*/-1, /*offset=*/1);
 }
 
 bool PresolveContext::StoreAbsRelation(int target_ref, int ref) {
@@ -955,89 +1071,6 @@ void PresolveContext::InitializeNewDomains() {
   var_to_lb_only_constraints.resize(domains.size());
 }
 
-bool PresolveContext::RemapEncodingMaps() {
-  // TODO(user): for now, while the code works most of the time, it triggers
-  // weird side effect that causes some issues in some LNS presolve...
-  // We should continue the investigation before activating it.
-  //
-  // Note also that because all our encoding constraints are present in the
-  // model, they will be remapped, and the new mapping re-added again. So while
-  // the current code might not be efficient, it should eventually reach the
-  // same effect.
-  encoding_remap_queue_.clear();
-
-  // Note that InsertVarValueEncodingInternal() will potentially add new entry
-  // to the encoding_ map, but for a different variables. So this code relies on
-  // the fact that the var_map shouldn't change content nor address of the
-  // "var_map" below while we iterate on them.
-  for (const int var : encoding_remap_queue_) {
-    CHECK(RefIsPositive(var));
-    const AffineRelation::Relation r = GetAffineRelation(var);
-    if (r.representative == var) return true;
-    int num_remapping = 0;
-
-    // Encoding.
-    {
-      const absl::flat_hash_map<int64_t, SavedLiteral>& var_map =
-          encoding_[var];
-      for (const auto& entry : var_map) {
-        const int lit = entry.second.Get(this);
-        if (removed_variables_.contains(PositiveRef(lit))) continue;
-        if ((entry.first - r.offset) % r.coeff != 0) continue;
-        const int64_t rep_value = (entry.first - r.offset) / r.coeff;
-        ++num_remapping;
-        InsertVarValueEncodingInternal(lit, r.representative, rep_value,
-                                       /*add_constraints=*/false);
-        if (is_unsat_) return false;
-      }
-      encoding_.erase(var);
-    }
-
-    // Eq half encoding.
-    {
-      const absl::flat_hash_map<int64_t, absl::flat_hash_set<int>>& var_map =
-          eq_half_encoding_[var];
-      for (const auto& entry : var_map) {
-        if ((entry.first - r.offset) % r.coeff != 0) continue;
-        const int64_t rep_value = (entry.first - r.offset) / r.coeff;
-        for (int literal : entry.second) {
-          ++num_remapping;
-          InsertHalfVarValueEncoding(GetLiteralRepresentative(literal),
-                                     r.representative, rep_value,
-                                     /*imply_eq=*/true);
-          if (is_unsat_) return false;
-        }
-      }
-      eq_half_encoding_.erase(var);
-    }
-
-    // Neq half encoding.
-    {
-      const absl::flat_hash_map<int64_t, absl::flat_hash_set<int>>& var_map =
-          neq_half_encoding_[var];
-      for (const auto& entry : var_map) {
-        if ((entry.first - r.offset) % r.coeff != 0) continue;
-        const int64_t rep_value = (entry.first - r.offset) / r.coeff;
-        for (int literal : entry.second) {
-          ++num_remapping;
-          InsertHalfVarValueEncoding(GetLiteralRepresentative(literal),
-                                     r.representative, rep_value,
-                                     /*imply_eq=*/false);
-          if (is_unsat_) return false;
-        }
-      }
-      neq_half_encoding_.erase(var);
-    }
-
-    if (num_remapping > 0) {
-      VLOG(1) << "Remapped " << num_remapping << " encodings due to " << var
-              << " -> " << r.representative << ".";
-    }
-  }
-  encoding_remap_queue_.clear();
-  return !is_unsat_;
-}
-
 void PresolveContext::CanonicalizeDomainOfSizeTwo(int var) {
   CHECK(RefIsPositive(var));
   CHECK_EQ(DomainOf(var).Size(), 2);
@@ -1115,11 +1148,11 @@ void PresolveContext::CanonicalizeDomainOfSizeTwo(int var) {
   if (GetAffineRelation(var).representative != PositiveRef(min_literal)) {
     UpdateRuleStats("variables with 2 values: new affine relation");
     if (RefIsPositive(max_literal)) {
-      CHECK(StoreAffineRelation(var, PositiveRef(max_literal),
-                                var_max - var_min, var_min));
+      (void)StoreAffineRelation(var, PositiveRef(max_literal),
+                                var_max - var_min, var_min);
     } else {
-      CHECK(StoreAffineRelation(var, PositiveRef(max_literal),
-                                var_min - var_max, var_max));
+      (void)StoreAffineRelation(var, PositiveRef(max_literal),
+                                var_min - var_max, var_max);
     }
   }
 }
@@ -1221,7 +1254,6 @@ bool PresolveContext::CanonicalizeEncoding(int* ref, int64_t* value) {
 
 bool PresolveContext::InsertVarValueEncoding(int literal, int ref,
                                              int64_t value) {
-  if (!RemapEncodingMaps()) return false;
   if (!CanonicalizeEncoding(&ref, &value)) {
     return SetLiteralToFalse(literal);
   }
@@ -1232,7 +1264,6 @@ bool PresolveContext::InsertVarValueEncoding(int literal, int ref,
 
 bool PresolveContext::StoreLiteralImpliesVarEqValue(int literal, int var,
                                                     int64_t value) {
-  if (!RemapEncodingMaps()) return false;
   if (!CanonicalizeEncoding(&var, &value)) return false;
   literal = GetLiteralRepresentative(literal);
   return InsertHalfVarValueEncoding(literal, var, value, /*imply_eq=*/true);
@@ -1240,7 +1271,6 @@ bool PresolveContext::StoreLiteralImpliesVarEqValue(int literal, int var,
 
 bool PresolveContext::StoreLiteralImpliesVarNEqValue(int literal, int var,
                                                      int64_t value) {
-  if (!RemapEncodingMaps()) return false;
   if (!CanonicalizeEncoding(&var, &value)) return false;
   literal = GetLiteralRepresentative(literal);
   return InsertHalfVarValueEncoding(literal, var, value, /*imply_eq=*/false);
@@ -1249,7 +1279,6 @@ bool PresolveContext::StoreLiteralImpliesVarNEqValue(int literal, int var,
 bool PresolveContext::HasVarValueEncoding(int ref, int64_t value,
                                           int* literal) {
   CHECK(!VariableWasRemoved(ref));
-  if (!RemapEncodingMaps()) return false;
   if (!CanonicalizeEncoding(&ref, &value)) return false;
   const absl::flat_hash_map<int64_t, SavedLiteral>& var_map = encoding_[ref];
   const auto it = var_map.find(value);
@@ -1262,14 +1291,16 @@ bool PresolveContext::HasVarValueEncoding(int ref, int64_t value,
   return false;
 }
 
-int PresolveContext::GetOrCreateVarValueEncoding(int ref, int64_t value) {
-  // TODO(user): Remove this precondition. For now it is needed because
-  // we might remove encoding literal without updating the encoding map.
-  // This is related to RemapEncodingMaps() which is currently disabled.
-  CHECK(!ModelIsExpanded());
+bool PresolveContext::IsFullyEncoded(int ref) const {
+  const int var = PositiveRef(ref);
+  const int64_t size = domains[var].Size();
+  if (size <= 2) return true;
+  const auto& it = encoding_.find(var);
+  return it == encoding_.end() ? false : size <= it->second.size();
+}
 
+int PresolveContext::GetOrCreateVarValueEncoding(int ref, int64_t value) {
   CHECK(!VariableWasRemoved(ref));
-  if (!RemapEncodingMaps()) return GetOrCreateConstantVar(0);
   if (!CanonicalizeEncoding(&ref, &value)) return GetOrCreateConstantVar(0);
 
   // Positive after CanonicalizeEncoding().
@@ -1284,7 +1315,14 @@ int PresolveContext::GetOrCreateVarValueEncoding(int ref, int64_t value) {
   absl::flat_hash_map<int64_t, SavedLiteral>& var_map = encoding_[var];
   auto it = var_map.find(value);
   if (it != var_map.end()) {
-    return it->second.Get(this);
+    const int lit = it->second.Get(this);
+    if (VariableWasRemoved(lit)) {
+      // If the variable was already removed, for now we create a new one.
+      // This should be rare hopefully.
+      var_map.erase(value);
+    } else {
+      return lit;
+    }
   }
 
   // Special case for fixed domains.
@@ -1302,11 +1340,17 @@ int PresolveContext::GetOrCreateVarValueEncoding(int ref, int64_t value) {
     const int64_t other_value = value == var_min ? var_max : var_min;
     auto other_it = var_map.find(other_value);
     if (other_it != var_map.end()) {
-      // Update the encoding map. The domain could have been reduced to size
-      // two after the creation of the first literal.
       const int literal = NegatedRef(other_it->second.Get(this));
-      var_map[value] = SavedLiteral(literal);
-      return literal;
+      if (VariableWasRemoved(literal)) {
+        // If the variable was already removed, for now we create a new one.
+        // This should be rare hopefully.
+        var_map.erase(other_value);
+      } else {
+        // Update the encoding map. The domain could have been reduced to size
+        // two after the creation of the first literal.
+        var_map[value] = SavedLiteral(literal);
+        return literal;
+      }
     }
 
     if (var_min == 0 && var_max == 1) {

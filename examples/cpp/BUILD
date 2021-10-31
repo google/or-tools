@@ -240,6 +240,8 @@ cc_binary(
         "//ortools/base:file",
         "@com_google_absl//absl/strings",
         "//ortools/base:timer",
+        "//ortools/scheduling:jobshop_scheduling_cc_proto",
+        "//ortools/scheduling:jobshop_scheduling_parser",
         "//ortools/sat:cp_model",
         "//ortools/sat:cp_model_solver",
         "//ortools/sat:disjunctive",
@@ -249,8 +251,6 @@ cc_binary(
         "//ortools/sat:optimization",
         "//ortools/sat:precedences",
         "//ortools/sat:sat_solver",
-        "//ortools/scheduling:jobshop_scheduling_cc_proto",
-        "//ortools/scheduling:jobshop_scheduling_parser",
     ],
 )
 
@@ -465,6 +465,7 @@ cc_binary(
     name = "solve",
     srcs = ["solve.cc"],
     deps = [
+        "@com_google_absl//absl/time",
         "//ortools/base",
         "//ortools/linear_solver",
         "//ortools/linear_solver:linear_solver_cc_proto",

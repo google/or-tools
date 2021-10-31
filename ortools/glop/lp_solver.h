@@ -20,6 +20,7 @@
 #include "ortools/glop/preprocessor.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
+#include "ortools/util/logging.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -117,6 +118,19 @@ class LPSolver {
     return constraint_statuses_;
   }
 
+  // Accessors to information related to unboundedness. A primal ray is returned
+  // for primal unbounded problems and a dual ray is returned for dual unbounded
+  // problems. constraints_dual_ray corresponds to dual multiplier for
+  // constraints and variable_bounds_dual_ray corresponds to dual multipliers
+  // for variable bounds (cf. reduced_costs).
+  const DenseRow& primal_ray() const { return primal_ray_; }
+  const DenseColumn& constraints_dual_ray() const {
+    return constraints_dual_ray_;
+  }
+  const DenseRow& variable_bounds_dual_ray() const {
+    return variable_bounds_dual_ray_;
+  }
+
   // Returns the primal maximum infeasibility of the solution.
   // This indicates by how much the variable and constraint bounds are violated.
   Fractional GetMaximumPrimalInfeasibility() const;
@@ -148,6 +162,13 @@ class LPSolver {
   //
   // TODO(user): Improve the correlation with the running time.
   double DeterministicTime() const;
+
+  // Returns the SolverLogger used during solves.
+  //
+  // Please note that EnableLogging() and SetLogToStdOut() are reset at the
+  // beginning of each solve based on parameters so setting them will have no
+  // effect.
+  SolverLogger& GetSolverLogger();
 
  private:
   // Resizes all the solution vectors to the given sizes.
@@ -241,6 +262,8 @@ class LPSolver {
   // LinearProgram& input.
   LinearProgram current_linear_program_;
 
+  SolverLogger logger_;
+
   // The revised simplex solver.
   std::unique_ptr<RevisedSimplex> revised_simplex_;
 
@@ -253,6 +276,9 @@ class LPSolver {
   DenseColumn dual_values_;
   VariableStatusRow variable_statuses_;
   ConstraintStatusColumn constraint_statuses_;
+  DenseRow primal_ray_;
+  DenseColumn constraints_dual_ray_;
+  DenseRow variable_bounds_dual_ray_;
 
   // Quantities computed from the solution and the linear program.
   DenseRow reduced_costs_;

@@ -806,7 +806,7 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
 
   bool at_least_one_added = false;
 
-  // Try cover appraoch to find cut.
+  // Try cover approach to find cut.
   {
     if (cover_cut_helper_.TrySimpleKnapsack(cut_, tmp_lp_values_, tmp_var_lbs_,
                                             tmp_var_ubs_)) {

@@ -286,8 +286,6 @@ void SatInterface::ExtractObjective() { NonIncrementalChange(); }
 
 void SatInterface::SetParameters(const MPSolverParameters& param) {
   parameters_.set_num_search_workers(num_threads_);
-  parameters_.set_linearization_level(2);
-  parameters_.set_log_search_progress(!quiet_);
   SetCommonParameters(param);
 }
 

@@ -5,7 +5,7 @@ on: [push, pull_request]
 jobs:
   # Only macos runner provide virtualisation with vagrant/virtualbox installed.
   FreeBSD:
-    runs-on: macos-latest
+    runs-on: macos-10.15
     continue-on-error: ${{ matrix.allow_failure }}
     strategy:
       fail-fast: false

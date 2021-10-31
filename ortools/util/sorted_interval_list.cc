@@ -478,13 +478,38 @@ Domain Domain::InverseMultiplicationBy(const int64_t coeff) const {
   return result;
 }
 
+namespace {
+Domain ModuloHelper(int64_t min, int64_t max, const Domain& modulo) {
+  DCHECK_GT(min, 0);
+  DCHECK_GT(modulo.Min(), 0);
+  const int64_t max_mod = modulo.Max() - 1;
+
+  // The min/max are exact if the modulo is fixed. Note that we could return the
+  // exact domain with a potential hole but we currently don't.
+  if (modulo.Min() == modulo.Max()) {
+    const int64_t size = max - min;
+    const int64_t v1 = min % modulo.Max();
+    if (v1 + size > max_mod) return Domain(0, max_mod);
+    return Domain(v1, v1 + size);
+  }
+
+  // TODO(user): This is a superset.
+  return Domain(0, std::min(max, max_mod));
+}
+}  // namespace
+
 Domain Domain::PositiveModuloBySuperset(const Domain& modulo) const {
   if (IsEmpty()) return Domain();
   CHECK_GT(modulo.Min(), 0);
   const int64_t max_mod = modulo.Max() - 1;
-  const int64_t max = std::min(Max(), max_mod);
-  const int64_t min = Min() < 0 ? std::max(Min(), -max_mod) : 0;
-  return Domain(min, max);
+  if (Max() >= 0 && Min() <= 0) {
+    return Domain(std::max(Min(), -max_mod), std::min(Max(), max_mod));
+  }
+  if (Min() > 0) {
+    return ModuloHelper(Min(), Max(), modulo);
+  }
+  DCHECK_LT(Max(), 0);
+  return ModuloHelper(-Max(), -Min(), modulo).Negation();
 }
 
 Domain Domain::PositiveDivisionBySuperset(const Domain& divisor) const {

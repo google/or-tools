@@ -180,6 +180,8 @@ class LinearExpr(object):
     @classmethod
     def Sum(cls, expressions):
         """Creates the expression sum(expressions)."""
+        if len(expressions) == 1:
+            return expressions[0]
         return _SumArray(expressions)
 
     @classmethod
@@ -187,6 +189,8 @@ class LinearExpr(object):
         """Creates the expression sum(expressions[i] * coefficients[i])."""
         if LinearExpr.IsEmptyOrAllNull(coefficients):
             return 0
+        elif len(expressions) == 1:
+            return expressions[0] * coefficients[0]
         else:
             return _ScalProd(expressions, coefficients)
 
@@ -204,6 +208,29 @@ class LinearExpr(object):
             if c != 0:
                 return False
         return True
+
+    @classmethod
+    def RebuildFromLinearExpressionProto(cls, model, proto):
+        """Recreate a LinearExpr from a LinearExpressionProto."""
+        offset = proto.offset
+        num_elements = len(proto.vars)
+        if num_elements == 0:
+            return offset
+        elif num_elements == 1:
+            return IntVar(model, proto.vars[0], None) * proto.coeffs[0] + offset
+        else:
+            variables = []
+            coeffs = []
+            all_ones = True
+            for index, coeff in zip(proto.vars(), proto.coeffs()):
+                variables.append(IntVar(model, index, None))
+                coeffs.append(coeff)
+                if coeff != 1:
+                    all_ones = False
+            if all_ones:
+                return _SumArray(variables, offset)
+            else:
+                return _ScalProd(variables, coeffs, offset)
 
     def GetVarValueMap(self):
         """Scans the expression, and return a list of (var_coef_map, constant)."""
@@ -241,14 +268,20 @@ class LinearExpr(object):
             'calling abs() on a linear expression is not supported, '
             'please use CpModel.AddAbsEquality')
 
-    def __add__(self, expr):
-        return _SumArray([self, expr])
-
-    def __radd__(self, arg):
+    def __add__(self, arg):
+        if isinstance(arg, numbers.Integral) and arg == 0:
+            return self
         return _SumArray([self, arg])
 
-    def __sub__(self, expr):
-        return _SumArray([self, -expr])
+    def __radd__(self, arg):
+        if isinstance(arg, numbers.Integral) and arg == 0:
+            return self
+        return _SumArray([self, arg])
+
+    def __sub__(self, arg):
+        if isinstance(arg, numbers.Integral) and arg == 0:
+            return self
+        return _SumArray([self, -arg])
 
     def __rsub__(self, arg):
         return _SumArray([-self, arg])
@@ -410,9 +443,9 @@ class _ProductCst(LinearExpr):
 class _SumArray(LinearExpr):
     """Represents the sum of a list of LinearExpr and a constant."""
 
-    def __init__(self, expressions):
+    def __init__(self, expressions, constant=0):
         self.__expressions = []
-        self.__constant = 0
+        self.__constant = constant
         for x in expressions:
             if isinstance(x, numbers.Integral):
                 cp_model_helper.AssertIsInt64(x)
@@ -443,10 +476,10 @@ class _SumArray(LinearExpr):
 class _ScalProd(LinearExpr):
     """Represents the scalar product of expressions with constants and a constant."""
 
-    def __init__(self, expressions, coefficients):
+    def __init__(self, expressions, coefficients, constant=0):
         self.__expressions = []
         self.__coefficients = []
-        self.__constant = 0
+        self.__constant = constant
         if len(expressions) != len(coefficients):
             raise TypeError(
                 'In the LinearExpr.ScalProd method, the expression array and the '
@@ -747,27 +780,25 @@ class IntervalVar(object):
   intervals into the schedule.
   """
 
-    def __init__(self, model, start_view, size_view, end_view, is_present_index,
-                 name):
+    def __init__(self, model, start, size, end, is_present_index, name):
         self.__model = model
         # As with the IntVar::__init__ method, we hack the __init__ method to
         # support two use cases:
         #   case 1: called when creating a new interval variable.
-        #      {start|size|end}_index are indices of integer variables
-        #      is_present_index is either None or the index of a Boolean literal.
-        #      name is a string
+        #      {start|size|end} are linear expressions, is_present_index is either
+        #      None or the index of a Boolean literal. name is a string
         #   case 2: called when querying an existing interval variable.
         #      start_index is an int, all parameters after are None.
-        if (size_view is None and end_view is None and
-                is_present_index is None and name is None):
-            self.__index = start_view
-            self.__ct = model.constraints[start_view]
+        if (size is None and end is None and is_present_index is None and
+                name is None):
+            self.__index = start
+            self.__ct = model.constraints[start]
         else:
             self.__index = len(model.constraints)
             self.__ct = self.__model.constraints.add()
-            self.__ct.interval.start_view.CopyFrom(start_view)
-            self.__ct.interval.size_view.CopyFrom(size_view)
-            self.__ct.interval.end_view.CopyFrom(end_view)
+            self.__ct.interval.start.CopyFrom(start)
+            self.__ct.interval.size.CopyFrom(size)
+            self.__ct.interval.end.CopyFrom(end)
             if is_present_index is not None:
                 self.__ct.enforcement_literal.append(is_present_index)
             if name:
@@ -788,20 +819,30 @@ class IntervalVar(object):
         interval = self.__ct.interval
         if self.__ct.enforcement_literal:
             return '%s(start = %s, size = %s, end = %s, is_present = %s)' % (
-                self.__ct.name, ShortExprName(self.__model,
-                                              interval.start_view),
-                ShortExprName(self.__model, interval.size_view),
-                ShortExprName(self.__model, interval.end_view),
+                self.__ct.name, ShortExprName(self.__model, interval.start),
+                ShortExprName(self.__model, interval.size),
+                ShortExprName(self.__model, interval.end),
                 ShortName(self.__model, self.__ct.enforcement_literal[0]))
         else:
             return '%s(start = %s, size = %s, end = %s)' % (
-                self.__ct.name, ShortExprName(self.__model,
-                                              interval.start_view),
-                ShortExprName(self.__model, interval.size_view),
-                ShortExprName(self.__model, interval.end_view))
+                self.__ct.name, ShortExprName(self.__model, interval.start),
+                ShortExprName(self.__model, interval.size),
+                ShortExprName(self.__model, interval.end))
 
     def Name(self):
         return self.__ct.name
+
+    def StartExpr(self):
+        return LinearExpr.RebuildFromLinearExpressionProto(
+            self.__model, self.__ct.interval.start)
+
+    def SizeExpr(self):
+        return LinearExpr.RebuildFromLinearExpressionProto(
+            self.__model, self.__ct.interval.size)
+
+    def EndExpr(self):
+        return LinearExpr.RebuildFromLinearExpressionProto(
+            self.__model, self.__ct.interval.end)
 
 
 def ObjectIsATrueLiteral(literal):
@@ -1354,29 +1395,34 @@ class CpModel(object):
         return ct
 
     def AddBoolXOr(self, literals):
-        """Adds `XOr(literals) == true`."""
+        """Adds `XOr(literals) == true`.
+        
+        In contrast to AddBoolOr and AddBoolAnd, it does not support
+        .OnlyEnforceIf().
+        """
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
         model_ct.bool_xor.literals.extend(
             [self.GetOrMakeBooleanIndex(x) for x in literals])
         return ct
 
-    def AddMinEquality(self, target, variables):
+    def AddMinEquality(self, target, exprs):
         """Adds `target == Min(variables)`."""
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
-        model_ct.int_min.vars.extend(
-            [self.GetOrMakeIndex(x) for x in variables])
-        model_ct.int_min.target = self.GetOrMakeIndex(target)
+        model_ct.lin_max.exprs.extend(
+            [self.ParseLinearExpression(x, True) for x in exprs])
+        model_ct.lin_max.target.CopyFrom(
+            self.ParseLinearExpression(target, True))
         return ct
 
-    def AddMaxEquality(self, target, variables):
+    def AddMaxEquality(self, target, exprs):
         """Adds `target == Max(variables)`."""
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
-        model_ct.int_max.vars.extend(
-            [self.GetOrMakeIndex(x) for x in variables])
-        model_ct.int_max.target = self.GetOrMakeIndex(target)
+        model_ct.lin_max.exprs.extend(
+            [self.ParseLinearExpression(x) for x in exprs])
+        model_ct.lin_max.target.CopyFrom(self.ParseLinearExpression(target))
         return ct
 
     def AddDivisionEquality(self, target, num, denom):
@@ -1389,13 +1435,13 @@ class CpModel(object):
         model_ct.int_div.target = self.GetOrMakeIndex(target)
         return ct
 
-    def AddAbsEquality(self, target, var):
+    def AddAbsEquality(self, target, expr):
         """Adds `target == Abs(var)`."""
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
-        index = self.GetOrMakeIndex(var)
-        model_ct.int_max.vars.extend([index, -index - 1])
-        model_ct.int_max.target = self.GetOrMakeIndex(target)
+        model_ct.lin_max.exprs.append(self.ParseLinearExpression(expr))
+        model_ct.lin_max.exprs.append(self.ParseLinearExpression(expr, True))
+        model_ct.lin_max.target.CopyFrom(self.ParseLinearExpression(target))
         return ct
 
     def AddModuloEquality(self, target, var, mod):
@@ -1448,19 +1494,19 @@ class CpModel(object):
 
         self.Add(start + size == end)
 
-        start_view = self.ParseLinearExpression(start)
-        size_view = self.ParseLinearExpression(size)
-        end_view = self.ParseLinearExpression(end)
-        if len(start_view.vars) > 1:
+        start_expr = self.ParseLinearExpression(start)
+        size_expr = self.ParseLinearExpression(size)
+        end_expr = self.ParseLinearExpression(end)
+        if len(start_expr.vars) > 1:
             raise TypeError(
                 'cp_model.NewIntervalVar: start must be affine or constant.')
-        if len(size_view.vars) > 1:
+        if len(size_expr.vars) > 1:
             raise TypeError(
                 'cp_model.NewIntervalVar: size must be affine or constant.')
-        if len(end_view.vars) > 1:
+        if len(end_expr.vars) > 1:
             raise TypeError(
                 'cp_model.NewIntervalVar: end must be affine or constant.')
-        return IntervalVar(self.__model, start_view, size_view, end_view, None,
+        return IntervalVar(self.__model, start_expr, size_expr, end_expr, None,
                            name)
 
     def NewFixedSizeIntervalVar(self, start, size, name):
@@ -1479,13 +1525,13 @@ class CpModel(object):
       An `IntervalVar` object.
     """
         cp_model_helper.AssertIsInt64(size)
-        start_view = self.ParseLinearExpression(start)
-        size_view = self.ParseLinearExpression(size)
-        end_view = self.ParseLinearExpression(start + size)
-        if len(start_view.vars) > 1:
+        start_expr = self.ParseLinearExpression(start)
+        size_expr = self.ParseLinearExpression(size)
+        end_expr = self.ParseLinearExpression(start + size)
+        if len(start_expr.vars) > 1:
             raise TypeError(
                 'cp_model.NewIntervalVar: start must be affine or constant.')
-        return IntervalVar(self.__model, start_view, size_view, end_view, None,
+        return IntervalVar(self.__model, start_expr, size_expr, end_expr, None,
                            name)
 
     def NewOptionalIntervalVar(self, start, size, end, is_present, name):
@@ -1517,19 +1563,19 @@ class CpModel(object):
 
         # Creates the IntervalConstraintProto object.
         is_present_index = self.GetOrMakeBooleanIndex(is_present)
-        start_view = self.ParseLinearExpression(start)
-        size_view = self.ParseLinearExpression(size)
-        end_view = self.ParseLinearExpression(end)
-        if len(start_view.vars) > 1:
+        start_expr = self.ParseLinearExpression(start)
+        size_expr = self.ParseLinearExpression(size)
+        end_expr = self.ParseLinearExpression(end)
+        if len(start_expr.vars) > 1:
             raise TypeError(
                 'cp_model.NewIntervalVar: start must be affine or constant.')
-        if len(size_view.vars) > 1:
+        if len(size_expr.vars) > 1:
             raise TypeError(
                 'cp_model.NewIntervalVar: size must be affine or constant.')
-        if len(end_view.vars) > 1:
+        if len(end_expr.vars) > 1:
             raise TypeError(
                 'cp_model.NewIntervalVar: end must be affine or constant.')
-        return IntervalVar(self.__model, start_view, size_view, end_view,
+        return IntervalVar(self.__model, start_expr, size_expr, end_expr,
                            is_present_index, name)
 
     def NewOptionalFixedSizeIntervalVar(self, start, size, is_present, name):
@@ -1550,14 +1596,14 @@ class CpModel(object):
       An `IntervalVar` object.
     """
         cp_model_helper.AssertIsInt64(size)
-        start_view = self.ParseLinearExpression(start)
-        size_view = self.ParseLinearExpression(size)
-        end_view = self.ParseLinearExpression(start + size)
-        if len(start_view.vars) > 1:
+        start_expr = self.ParseLinearExpression(start)
+        size_expr = self.ParseLinearExpression(size)
+        end_expr = self.ParseLinearExpression(start + size)
+        if len(start_expr.vars) > 1:
             raise TypeError(
                 'cp_model.NewIntervalVar: start must be affine or constant.')
         is_present_index = self.GetOrMakeBooleanIndex(is_present)
-        return IntervalVar(self.__model, start_view, size_view, end_view,
+        return IntervalVar(self.__model, start_expr, size_expr, end_expr,
                            is_present_index, name)
 
     def AddNoOverlap(self, interval_vars):
@@ -1620,45 +1666,14 @@ class CpModel(object):
     Returns:
       An instance of the `Constraint` class.
     """
-        return self.AddCumulativeWithEnergy(intervals, demands, [], capacity)
-
-    def AddCumulativeWithEnergy(self, intervals, demands, energies, capacity):
-        """Adds Cumulative(intervals, demands, energies, capacity).
-
-    This constraint enforces that:
-
-        for all t:
-          sum(demands[i]
-            if (start(intervals[t]) <= t < end(intervals[t])) and
-            (t is present)) <= capacity
-
-    The constraint assumes that:
-
-        for all t:
-          energies[t] == size(intervals[t]) * demands[t]
-
-    Args:
-      intervals: The list of intervals.
-      demands: The list of demands for each interval. Each demand must be >= 0.
-        Each demand can be an integer value, or an integer variable.
-      energies: The list of linear expressions representing the energy of each
-        task. This information is optional, and if given must be compatible with
-        the demand and the size of each task (energy = size * demand).
-      capacity: The maximum capacity of the cumulative constraint. It must be a
-        positive integer value or variable.
-
-    Returns:
-      An instance of the `Constraint` class.
-    """
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
         model_ct.cumulative.intervals.extend(
             [self.GetIntervalIndex(x) for x in intervals])
-        model_ct.cumulative.demands.extend(
-            [self.GetOrMakeIndex(x) for x in demands])
-        for e in energies:
-            model_ct.cumulative.energies.append(self.ParseLinearExpression(e))
-        model_ct.cumulative.capacity = self.GetOrMakeIndex(capacity)
+        for d in demands:
+            model_ct.cumulative.demands.append(self.ParseLinearExpression(d))
+        model_ct.cumulative.capacity.CopyFrom(
+            self.ParseLinearExpression(capacity))
         return ct
 
     # Support for deep copy.
@@ -1766,26 +1781,27 @@ class CpModel(object):
         else:
             return self.__model.variables[-var_index - 1]
 
-    def ParseLinearExpression(self, linear_expr):
+    def ParseLinearExpression(self, linear_expr, negate=False):
         """Returns a LinearExpressionProto built from a LinearExpr instance."""
         result = cp_model_pb2.LinearExpressionProto()
+        mult = -1 if negate else 1
         if isinstance(linear_expr, numbers.Integral):
-            result.offset = linear_expr
+            result.offset = linear_expr * mult
             return result
 
         if isinstance(linear_expr, IntVar):
             result.vars.append(self.GetOrMakeIndex(linear_expr))
-            result.coeffs.append(1)
+            result.coeffs.append(mult)
             return result
 
         coeffs_map, constant = linear_expr.GetVarValueMap()
-        result.offset = constant
+        result.offset = constant * mult
         for t in coeffs_map.items():
             if not isinstance(t[0], IntVar):
                 raise TypeError('Wrong argument' + str(t))
             cp_model_helper.AssertIsInt64(t[1])
             result.vars.append(t[0].Index())
-            result.coeffs.append(t[1])
+            result.coeffs.append(t[1] * mult)
         return result
 
     def _SetObjective(self, obj, minimize):

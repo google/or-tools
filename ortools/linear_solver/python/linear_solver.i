@@ -99,7 +99,10 @@ from ortools.linear_solver.linear_solver_natural_api import VariableExpr
   bool LoadSolutionFromProto(
       const operations_research::MPSolutionResponse& response,
       double tolerance = operations_research::MPSolverParameters::kDefaultPrimalTolerance) {
-    return $self->LoadSolutionFromProto(response, tolerance).ok();
+    const absl::Status status =
+        $self->LoadSolutionFromProto(response, tolerance);
+    LOG_IF(ERROR, !status.ok()) << "LoadSolutionFromProto() failed: " << status;
+    return status.ok();
   }
 
   std::string ExportModelAsLpFormat(bool obfuscated) {

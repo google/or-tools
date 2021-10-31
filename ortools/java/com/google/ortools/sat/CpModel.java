@@ -24,6 +24,7 @@ import com.google.ortools.sat.DecisionStrategyProto;
 import com.google.ortools.sat.ElementConstraintProto;
 import com.google.ortools.sat.IntegerArgumentProto;
 import com.google.ortools.sat.InverseConstraintProto;
+import com.google.ortools.sat.LinearArgumentProto;
 import com.google.ortools.sat.LinearConstraintProto;
 import com.google.ortools.sat.LinearExpressionProto;
 import com.google.ortools.sat.NoOverlap2DConstraintProto;
@@ -645,23 +646,45 @@ public final class CpModel {
   }
 
   /** Adds {@code target == Min(vars)}. */
-  public Constraint addMinEquality(IntVar target, IntVar[] vars) {
+  public Constraint addMinEquality(LinearExpr target, IntVar[] vars) {
     Constraint ct = new Constraint(modelBuilder);
-    IntegerArgumentProto.Builder intMin =
-        ct.getBuilder().getIntMinBuilder().setTarget(target.getIndex());
+    LinearArgumentProto.Builder linMax = ct.getBuilder().getLinMaxBuilder();
+    linMax.setTarget(getLinearExpressionProtoBuilderFromLinearExpr(target, /*negate=*/true));
     for (IntVar var : vars) {
-      intMin.addVars(var.getIndex());
+      linMax.addExprs(getLinearExpressionProtoBuilderFromLinearExpr(var, /*negate=*/true));
+    }
+    return ct;
+  }
+
+  /** Adds {@code target == Min(exprs)}. */
+  public Constraint addLinMinEquality(LinearExpr target, LinearExpr[] exprs) {
+    Constraint ct = new Constraint(modelBuilder);
+    LinearArgumentProto.Builder linMax = ct.getBuilder().getLinMaxBuilder();
+    linMax.setTarget(getLinearExpressionProtoBuilderFromLinearExpr(target, /*negate=*/true));
+    for (LinearExpr expr : exprs) {
+      linMax.addExprs(getLinearExpressionProtoBuilderFromLinearExpr(expr, /*negate=*/true));
     }
     return ct;
   }
 
   /** Adds {@code target == Max(vars)}. */
-  public Constraint addMaxEquality(IntVar target, IntVar[] vars) {
+  public Constraint addMaxEquality(LinearExpr target, IntVar[] vars) {
     Constraint ct = new Constraint(modelBuilder);
-    IntegerArgumentProto.Builder intMax =
-        ct.getBuilder().getIntMaxBuilder().setTarget(target.getIndex());
+    LinearArgumentProto.Builder linMax = ct.getBuilder().getLinMaxBuilder();
+    linMax.setTarget(getLinearExpressionProtoBuilderFromLinearExpr(target, /*negate=*/false));
     for (IntVar var : vars) {
-      intMax.addVars(var.getIndex());
+      linMax.addExprs(getLinearExpressionProtoBuilderFromLinearExpr(var, /*negate=*/false));
+    }
+    return ct;
+  }
+
+  /** Adds {@code target == Max(exprs)}. */
+  public Constraint addLinMaxEquality(LinearExpr target, LinearExpr[] exprs) {
+    Constraint ct = new Constraint(modelBuilder);
+    LinearArgumentProto.Builder linMax = ct.getBuilder().getLinMaxBuilder();
+    linMax.setTarget(getLinearExpressionProtoBuilderFromLinearExpr(target, /*negate=*/false));
+    for (LinearExpr expr : exprs) {
+      linMax.addExprs(getLinearExpressionProtoBuilderFromLinearExpr(expr, /*negate=*/false));
     }
     return ct;
   }
@@ -677,14 +700,13 @@ public final class CpModel {
     return ct;
   }
 
-  /** Adds {@code target == Abs(var)}. */
-  public Constraint addAbsEquality(IntVar target, IntVar var) {
+  /** Adds {@code target == Abs(expr)}. */
+  public Constraint addAbsEquality(LinearExpr target, LinearExpr expr) {
     Constraint ct = new Constraint(modelBuilder);
-    ct.getBuilder()
-        .getIntMaxBuilder()
-        .setTarget(target.getIndex())
-        .addVars(var.getIndex())
-        .addVars(-var.getIndex() - 1);
+    LinearArgumentProto.Builder linMax = ct.getBuilder().getLinMaxBuilder();
+    linMax.setTarget(getLinearExpressionProtoBuilderFromLinearExpr(target, /*negate=*/false));
+    linMax.addExprs(getLinearExpressionProtoBuilderFromLinearExpr(expr, /*negate=*/false));
+    linMax.addExprs(getLinearExpressionProtoBuilderFromLinearExpr(expr, /*negate=*/true));
     return ct;
   }
 
@@ -740,9 +762,10 @@ public final class CpModel {
   public IntervalVar newIntervalVar(
       LinearExpr start, LinearExpr size, LinearExpr end, String name) {
     addEquality(new Sum(start, size), end);
-    return new IntervalVar(modelBuilder, getLinearExpressionProtoBuilderFromLinearExpr(start),
-        getLinearExpressionProtoBuilderFromLinearExpr(size),
-        getLinearExpressionProtoBuilderFromLinearExpr(end), name);
+    return new IntervalVar(modelBuilder,
+        getLinearExpressionProtoBuilderFromLinearExpr(start, /*negate=*/false),
+        getLinearExpressionProtoBuilderFromLinearExpr(size, /*negate=*/false),
+        getLinearExpressionProtoBuilderFromLinearExpr(end, /*negate=*/false), name);
   }
 
   /**
@@ -757,9 +780,11 @@ public final class CpModel {
    * @return An IntervalVar object
    */
   public IntervalVar newFixedSizeIntervalVar(LinearExpr start, long size, String name) {
-    return new IntervalVar(modelBuilder, getLinearExpressionProtoBuilderFromLinearExpr(start),
+    return new IntervalVar(modelBuilder,
+        getLinearExpressionProtoBuilderFromLinearExpr(start, /*negate=*/false),
         getLinearExpressionProtoBuilderFromLong(size),
-        getLinearExpressionProtoBuilderFromLinearExpr(new Sum(start, size)), name);
+        getLinearExpressionProtoBuilderFromLinearExpr(new Sum(start, size), /*negate=*/false),
+        name);
   }
 
   /** Creates a fixed interval from its start and its size. */
@@ -790,9 +815,11 @@ public final class CpModel {
   public IntervalVar newOptionalIntervalVar(
       LinearExpr start, LinearExpr size, LinearExpr end, Literal isPresent, String name) {
     addEquality(new Sum(start, size), end).onlyEnforceIf(isPresent);
-    return new IntervalVar(modelBuilder, getLinearExpressionProtoBuilderFromLinearExpr(start),
-        getLinearExpressionProtoBuilderFromLinearExpr(size),
-        getLinearExpressionProtoBuilderFromLinearExpr(end), isPresent.getIndex(), name);
+    return new IntervalVar(modelBuilder,
+        getLinearExpressionProtoBuilderFromLinearExpr(start, /*negate=*/false),
+        getLinearExpressionProtoBuilderFromLinearExpr(size, /*negate=*/false),
+        getLinearExpressionProtoBuilderFromLinearExpr(end, /*negate=*/false), isPresent.getIndex(),
+        name);
   }
 
   /**
@@ -810,10 +837,11 @@ public final class CpModel {
    */
   public IntervalVar newOptionalFixedSizeIntervalVar(
       LinearExpr start, long size, Literal isPresent, String name) {
-    return new IntervalVar(modelBuilder, getLinearExpressionProtoBuilderFromLinearExpr(start),
+    return new IntervalVar(modelBuilder,
+        getLinearExpressionProtoBuilderFromLinearExpr(start, /*negate=*/false),
         getLinearExpressionProtoBuilderFromLong(size),
-        getLinearExpressionProtoBuilderFromLinearExpr(new Sum(start, size)), isPresent.getIndex(),
-        name);
+        getLinearExpressionProtoBuilderFromLinearExpr(new Sum(start, size), /*negate=*/false),
+        isPresent.getIndex(), name);
   }
 
   /** Creates an optional fixed interval from start and size, and an isPresent literal. */
@@ -873,56 +901,66 @@ public final class CpModel {
    * present)) <= capacity}.
    *
    * @param intervals the list of intervals
-   * @param demands the list of demands for each interval. Each demand must be a positive integer
-   *     variable.
-   * @param capacity the maximum capacity of the cumulative constraint. It must be a positive
-   *     integer variable.
+   * @param demands the list of demands for each interval. Each demand must be a positive affine
+   *     expression.
+   * @param capacity the maximum capacity of the cumulative constraint. It must be a positive affine
+   *     expression.
    * @return an instance of the Constraint class
    */
-  public Constraint addCumulative(IntervalVar[] intervals, IntVar[] demands, IntVar capacity) {
+  public Constraint addCumulative(
+      IntervalVar[] intervals, LinearExpr[] demands, LinearExpr capacity) {
+    Constraint ct = new Constraint(modelBuilder);
+    CumulativeConstraintProto.Builder cumul = ct.getBuilder().getCumulativeBuilder();
+    for (IntervalVar interval : intervals) {
+      cumul.addIntervals(interval.getIndex());
+    }
+    for (LinearExpr d : demands) {
+      cumul.addDemands(getLinearExpressionProtoBuilderFromLinearExpr(d, false));
+    }
+    cumul.setCapacity(getLinearExpressionProtoBuilderFromLinearExpr(capacity, false));
+    return ct;
+  }
+
+  /**
+   * Adds {@code Cumulative(intervals, demands, capacity)} fixed capacity.
+   *
+   * @see #addCumulative(IntervalVar[], LinearExpr[], LinearExpr) AddCumulative
+   */
+  public Constraint addCumulative(IntervalVar[] intervals, LinearExpr[] demands, long capacity) {
+    Constraint ct = new Constraint(modelBuilder);
+    CumulativeConstraintProto.Builder cumul = ct.getBuilder().getCumulativeBuilder();
+    for (IntervalVar interval : intervals) {
+      cumul.addIntervals(interval.getIndex());
+    }
+    for (LinearExpr d : demands) {
+      cumul.addDemands(getLinearExpressionProtoBuilderFromLinearExpr(d, false));
+    }
+    cumul.getCapacityBuilder().setOffset(capacity);
+    return ct;
+  }
+
+  /**
+   * Adds {@code Cumulative(intervals, demands, capacity)} with integer variable demands.
+   *
+   * @see #addCumulative(IntervalVar[], LinearExpr[], LinearExpr) AddCumulative
+   */
+  public Constraint addCumulative(IntervalVar[] intervals, IntVar[] demands, LinearExpr capacity) {
     Constraint ct = new Constraint(modelBuilder);
     CumulativeConstraintProto.Builder cumul = ct.getBuilder().getCumulativeBuilder();
     for (IntervalVar interval : intervals) {
       cumul.addIntervals(interval.getIndex());
     }
     for (IntVar var : demands) {
-      cumul.addDemands(var.getIndex());
+      cumul.addDemandsBuilder().addVars(var.getIndex()).addCoeffs(1);
     }
-    cumul.setCapacity(capacity.getIndex());
+    cumul.setCapacity(getLinearExpressionProtoBuilderFromLinearExpr(capacity, false));
     return ct;
-  }
-
-  /**
-   * Adds {@code Cumulative(intervals, demands, capacity)} with fixed demands.
-   *
-   * @see #addCumulative(IntervalVar[], IntVar[], IntVar) AddCumulative
-   */
-  public Constraint addCumulative(IntervalVar[] intervals, long[] demands, IntVar capacity) {
-    Constraint ct = new Constraint(modelBuilder);
-    CumulativeConstraintProto.Builder cumul = ct.getBuilder().getCumulativeBuilder();
-    for (IntervalVar interval : intervals) {
-      cumul.addIntervals(interval.getIndex());
-    }
-    for (long d : demands) {
-      cumul.addDemands(indexFromConstant(d));
-    }
-    cumul.setCapacity(capacity.getIndex());
-    return ct;
-  }
-
-  /**
-   * Adds {@code Cumulative(intervals, demands, capacity)} with fixed demands.
-   *
-   * @see #addCumulative(IntervalVar[], IntVar[], IntVar) AddCumulative
-   */
-  public Constraint addCumulative(IntervalVar[] intervals, int[] demands, IntVar capacity) {
-    return addCumulative(intervals, toLongArray(demands), capacity);
   }
 
   /**
    * Adds {@code Cumulative(intervals, demands, capacity)} with fixed capacity.
    *
-   * @see #addCumulative(IntervalVar[], IntVar[], IntVar) AddCumulative
+   * @see #addCumulative(IntervalVar[], LinearExpr[], LinearExpr) AddCumulative
    */
   public Constraint addCumulative(IntervalVar[] intervals, IntVar[] demands, long capacity) {
     Constraint ct = new Constraint(modelBuilder);
@@ -931,10 +969,37 @@ public final class CpModel {
       cumul.addIntervals(interval.getIndex());
     }
     for (IntVar var : demands) {
-      cumul.addDemands(var.getIndex());
+      cumul.addDemandsBuilder().addVars(var.getIndex()).addCoeffs(1);
     }
-    cumul.setCapacity(indexFromConstant(capacity));
+    cumul.getCapacityBuilder().setOffset(capacity);
     return ct;
+  }
+
+  /**
+   * Adds {@code Cumulative(intervals, demands, capacity)} with fixed demands.
+   *
+   * @see #addCumulative(IntervalVar[], LinearExpr[], LinearExpr) AddCumulative
+   */
+  public Constraint addCumulative(IntervalVar[] intervals, long[] demands, LinearExpr capacity) {
+    Constraint ct = new Constraint(modelBuilder);
+    CumulativeConstraintProto.Builder cumul = ct.getBuilder().getCumulativeBuilder();
+    for (IntervalVar interval : intervals) {
+      cumul.addIntervals(interval.getIndex());
+    }
+    for (long d : demands) {
+      cumul.addDemandsBuilder().setOffset(d);
+    }
+    cumul.setCapacity(getLinearExpressionProtoBuilderFromLinearExpr(capacity, false));
+    return ct;
+  }
+
+  /**
+   * Adds {@code Cumulative(intervals, demands, capacity)} with fixed demands.
+   *
+   * @see #addCumulative(IntervalVar[], IntVar[], IntVar) AddCumulative
+   */
+  public Constraint addCumulative(IntervalVar[] intervals, int[] demands, LinearExpr capacity) {
+    return addCumulative(intervals, toLongArray(demands), capacity);
   }
 
   /**
@@ -949,9 +1014,9 @@ public final class CpModel {
       cumul.addIntervals(interval.getIndex());
     }
     for (long d : demands) {
-      cumul.addDemands(indexFromConstant(d));
+      cumul.addDemandsBuilder().setOffset(d);
     }
-    cumul.setCapacity(indexFromConstant(capacity));
+    cumul.getCapacityBuilder().setOffset(capacity);
     return ct;
   }
 
@@ -1063,14 +1128,16 @@ public final class CpModel {
     return constVar.getIndex();
   }
 
-  LinearExpressionProto.Builder getLinearExpressionProtoBuilderFromLinearExpr(LinearExpr expr) {
+  LinearExpressionProto.Builder getLinearExpressionProtoBuilderFromLinearExpr(
+      LinearExpr expr, boolean negate) {
     LinearExpressionProto.Builder builder = LinearExpressionProto.newBuilder();
     final int numVariables = expr.numElements();
+    final long mult = negate ? -1 : 1;
     for (int i = 0; i < numVariables; ++i) {
       builder.addVars(expr.getVariable(i).getIndex());
-      builder.addCoeffs(expr.getCoefficient(i));
+      builder.addCoeffs(expr.getCoefficient(i) * mult);
     }
-    builder.setOffset(expr.getOffset());
+    builder.setOffset(expr.getOffset() * mult);
     return builder;
   }
 

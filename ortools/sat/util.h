@@ -32,6 +32,51 @@
 namespace operations_research {
 namespace sat {
 
+// Returns a in [0, m) such that a * x = 1 modulo m.
+// If gcd(x, m) != 1, there is no inverse, and it returns 0.
+//
+// This DCHECK that x is in [0, m).
+// This is integer overflow safe.
+//
+// Note(user): I didn't find this in a easily usable standard library.
+int64_t ModularInverse(int64_t x, int64_t m);
+
+// Just returns x % m but with a result always in [0, m).
+int64_t PositiveMod(int64_t x, int64_t m);
+
+// If we know that X * coeff % mod = rhs % mod, this returns c such that
+// PositiveMod(X, mod) = c.
+//
+// This requires coeff != 0, mod !=0 and gcd(coeff, mod) == 1.
+// The result will be in [0, mod) but there is no other condition on the sign or
+// magnitude of a and b.
+//
+// This is overflow safe, and when rhs == 0 or abs(mod) == 1, it returns 0.
+int64_t ProductWithModularInverse(int64_t coeff, int64_t mod, int64_t rhs);
+
+// Returns true if the equation a * X + b * Y = cte has some integer solutions.
+// For now, we check that a and b are different from 0 and from int64_t min.
+//
+// There is actually always a solution if cte % gcd(|a|, |b|) == 0. And because
+// a, b and cte fit on an int64_t, if there is a solution, there is one with X
+// and Y fitting on an int64_t.
+//
+// We will divide everything by gcd(a, b) first, so it is why we take reference
+// and the equation can change.
+//
+// If there are solutions, we return one of them (x0, y0).
+// From any such solution, the set of all solutions is given for Z integer by:
+// X = x0 + b * Z;
+// Y = y0 - a * Z;
+//
+// Given a domain for X and Y, it is possible to compute the "exact" domain of Z
+// with our Domain functions. Note however that this will only compute solution
+// where both x-x0 and y-y0 do fit on an int64_t:
+// DomainOf(x).SubtractionWith(x0).InverseMultiplicationBy(b).IntersectionWith(
+//     DomainOf(y).SubtractionWith(y0).InverseMultiplicationBy(-a))
+bool SolveDiophantineEquationOfSizeTwo(int64_t& a, int64_t& b, int64_t& cte,
+                                       int64_t& x0, int64_t& y0);
+
 // The model "singleton" random engine used in the solver.
 //
 // In test, we usually set use_absl_random() so that the sequence is changed at

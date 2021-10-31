@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# [START program]
 """Code sample that solves a model and displays a small number of solutions."""
 
 from ortools.sat.python import cp_model
@@ -61,3 +62,4 @@ def StopAfterNSolutionsSampleSat():
 
 
 StopAfterNSolutionsSampleSat()
+# [END program]

@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// [START program]
 #include <atomic>
 
 #include "ortools/sat/cp_model.h"
@@ -66,3 +67,4 @@ int main() {
 
   return EXIT_SUCCESS;
 }
+// [END program]

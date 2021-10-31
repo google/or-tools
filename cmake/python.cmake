@@ -27,8 +27,8 @@ find_package(Python3 REQUIRED COMPONENTS Interpreter Development.Module)
 list(APPEND CMAKE_SWIG_FLAGS "-py3" "-DPY3")
 
 # Find if python module MODULE_NAME is available,
-# if not install it to the Python 3 user install directory.
-function(search_python_module MODULE_NAME)
+# if not install it (PACKAGE_NAME) to the Python3 user install directory.
+function(search_python_module MODULE_NAME PACKAGE_NAME)
   execute_process(
     COMMAND ${Python3_EXECUTABLE} -c "import ${MODULE_NAME}; print(${MODULE_NAME}.__version__)"
     RESULT_VARIABLE _RESULT
@@ -39,11 +39,15 @@ function(search_python_module MODULE_NAME)
   if(${_RESULT} STREQUAL "0")
     message(STATUS "Found python module: ${MODULE_NAME} (found version \"${MODULE_VERSION}\")")
   else()
-    message(WARNING "Can't find python module \"${MODULE_NAME}\", install it using pip...")
-    execute_process(
-      COMMAND ${Python3_EXECUTABLE} -m pip install --user ${MODULE_NAME}
-      OUTPUT_STRIP_TRAILING_WHITESPACE
-      )
+    if(FETCH_PYTHON_DEPS)
+      message(WARNING "Can't find python module \"${MODULE_NAME}\", install it using pip...")
+      execute_process(
+        COMMAND ${Python3_EXECUTABLE} -m pip install --user ${PACKAGE_NAME}
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+    else()
+      message(FATAL_ERROR "Can't find python module \"${MODULE_NAME}\", please install it using your system package manager.")
+    endif()
   endif()
 endfunction()
 
@@ -59,12 +63,12 @@ function(search_python_internal_module MODULE_NAME)
   if(${_RESULT} STREQUAL "0")
     message(STATUS "Found python internal module: ${MODULE_NAME}")
   else()
-    message(FATAL_ERROR "Can't find python internal module \"${MODULE_NAME}\", please install it using your system package manger")
+    message(FATAL_ERROR "Can't find python internal module \"${MODULE_NAME}\", please install it using your system package manager.")
   endif()
 endfunction()
 
 # Generate Protobuf py sources with mypy support
-search_python_module(mypy-protobuf)
+search_python_module(mypy_protobuf mypy-protobuf)
 set(PROTO_PYS)
 file(GLOB_RECURSE proto_py_files RELATIVE ${PROJECT_SOURCE_DIR}
   "ortools/constraint_solver/*.proto"
@@ -120,17 +124,17 @@ set(PYTHON_PATH ${PROJECT_BINARY_DIR}/python/${PYTHON_PROJECT})
 message(STATUS "Python project build path: ${PYTHON_PATH}")
 
 #file(MAKE_DIRECTORY python/${PROJECT_NAME})
-file(COPY ortools/__init__.py DESTINATION ${PYTHON_PATH})
-file(COPY ortools/__init__.py DESTINATION ${PYTHON_PATH}/init)
-file(COPY ortools/__init__.py DESTINATION ${PYTHON_PATH}/algorithms)
-file(COPY ortools/__init__.py DESTINATION ${PYTHON_PATH}/graph)
-file(COPY ortools/__init__.py DESTINATION ${PYTHON_PATH}/linear_solver)
-file(COPY ortools/__init__.py DESTINATION ${PYTHON_PATH}/constraint_solver)
-file(COPY ortools/__init__.py DESTINATION ${PYTHON_PATH}/packing)
-file(COPY ortools/__init__.py DESTINATION ${PYTHON_PATH}/sat)
-file(COPY ortools/__init__.py DESTINATION ${PYTHON_PATH}/sat/python)
-file(COPY ortools/__init__.py DESTINATION ${PYTHON_PATH}/scheduling)
-file(COPY ortools/__init__.py DESTINATION ${PYTHON_PATH}/util)
+file(GENERATE OUTPUT ${PYTHON_PATH}/__init__.py CONTENT "__version__ = \"${PROJECT_VERSION}\"\n")
+file(GENERATE OUTPUT ${PYTHON_PATH}/init/__init__.py CONTENT "")
+file(GENERATE OUTPUT ${PYTHON_PATH}/algorithms/__init__.py CONTENT "")
+file(GENERATE OUTPUT ${PYTHON_PATH}/graph/__init__.py CONTENT "")
+file(GENERATE OUTPUT ${PYTHON_PATH}/linear_solver/__init__.py CONTENT "")
+file(GENERATE OUTPUT ${PYTHON_PATH}/constraint_solver/__init__.py CONTENT "")
+file(GENERATE OUTPUT ${PYTHON_PATH}/packing/__init__.py CONTENT "")
+file(GENERATE OUTPUT ${PYTHON_PATH}/sat/__init__.py CONTENT "")
+file(GENERATE OUTPUT ${PYTHON_PATH}/sat/python/__init__.py CONTENT "")
+file(GENERATE OUTPUT ${PYTHON_PATH}/scheduling/__init__.py CONTENT "")
+file(GENERATE OUTPUT ${PYTHON_PATH}/util/__init__.py CONTENT "")
 
 file(COPY
     ortools/linear_solver/linear_solver_natural_api.py
@@ -151,19 +155,26 @@ file(GENERATE
   OUTPUT ${PROJECT_BINARY_DIR}/python/$<CONFIG>/setup.py
   INPUT ${PROJECT_BINARY_DIR}/python/setup.py.in)
 
+add_custom_command(
+  OUTPUT python/setup.py
+  DEPENDS ${PROJECT_BINARY_DIR}/python/$<CONFIG>/setup.py
+  COMMAND ${CMAKE_COMMAND} -E copy ./$<CONFIG>/setup.py setup.py
+  WORKING_DIRECTORY python
+)
+
 configure_file(
   ${PROJECT_SOURCE_DIR}/tools/README.pypi.txt
   ${PROJECT_BINARY_DIR}/python/README.txt
   COPYONLY)
 
 # Look for python module wheel
-search_python_module(setuptools)
-search_python_module(wheel)
+search_python_module(setuptools setuptools)
+search_python_module(wheel wheel)
 
-# Main Target
-add_custom_target(python_package ALL
-  COMMAND ${CMAKE_COMMAND} -E copy ./$<CONFIG>/setup.py setup.py
+add_custom_command(
+  OUTPUT python/dist
   COMMAND ${CMAKE_COMMAND} -E remove_directory dist
+  #COMMAND ${CMAKE_COMMAND} -E make_directory dist
   COMMAND ${CMAKE_COMMAND} -E make_directory ${PYTHON_PROJECT}/.libs
   # Don't need to copy static lib on windows.
   COMMAND ${CMAKE_COMMAND} -E $<IF:$<STREQUAL:$<TARGET_PROPERTY:${PYTHON_PROJECT},TYPE>,SHARED_LIBRARY>,copy,true>
@@ -179,15 +190,25 @@ add_custom_target(python_package ALL
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:sorted_interval_list> ${PYTHON_PROJECT}/util
   #COMMAND ${Python3_EXECUTABLE} setup.py bdist_egg bdist_wheel
   COMMAND ${Python3_EXECUTABLE} setup.py bdist_wheel
+  MAIN_DEPENDENCY
+    ortools # can't use TARGET alias here
+  DEPENDS
+    python/setup.py
+    Py${PROJECT_NAME}_proto
   BYPRODUCTS
-    python/${PYTHON_PROJECT}
-    python/build
-    python/dist
-    python/${PYTHON_PROJECT}.egg-info
-  WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/python
+   python/${PYTHON_PROJECT}
+   python/build
+   python/${PYTHON_PROJECT}.egg-info
+  WORKING_DIRECTORY python
   COMMAND_EXPAND_LISTS
   )
-add_dependencies(python_package ortools::ortools Py${PROJECT_NAME}_proto)
+
+# Main Target
+add_custom_target(python_package ALL
+  DEPENDS
+    python/dist
+  WORKING_DIRECTORY python
+)
 
 # Install rules
 configure_file(
@@ -199,7 +220,7 @@ install(SCRIPT ${PROJECT_BINARY_DIR}/python/python-install.cmake)
 # Test
 if(BUILD_TESTING)
   # Look for python module venv
-  search_python_module(absl-py)
+  search_python_module(absl absl-py)
   search_python_internal_module(venv)
   # Testing using a vitual environment
   set(VENV_EXECUTABLE ${Python3_EXECUTABLE} -m venv)
@@ -211,6 +232,7 @@ if(BUILD_TESTING)
   endif()
   # make a virtualenv to install our python package in it
   add_custom_command(TARGET python_package POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E remove_directory ${VENV_DIR}
     COMMAND ${VENV_EXECUTABLE} ${VENV_DIR}
     # Must not call it in a folder containing the setup.py otherwise pip call it
     # (i.e. "python setup.py bdist") while we want to consume the wheel package

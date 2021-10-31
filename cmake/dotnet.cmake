@@ -248,7 +248,12 @@ function(add_dotnet_test FILE_NAME)
   message(STATUS "build path: ${DOTNET_TEST_PATH}")
   file(MAKE_DIRECTORY ${DOTNET_TEST_PATH})
 
-  file(COPY ${FILE_NAME} DESTINATION ${DOTNET_TEST_PATH})
+  add_custom_command(
+    OUTPUT ${DOTNET_TEST_PATH}/${TEST_NAME}.cs
+    COMMAND ${CMAKE_COMMAND} -E copy ${FILE_NAME} ${DOTNET_TEST_PATH}
+    MAIN_DEPENDENCY ${FILE_NAME}
+    VERBATIM
+  )
 
   set(DOTNET_PACKAGES_DIR "${PROJECT_BINARY_DIR}/dotnet/packages")
   configure_file(
@@ -256,14 +261,16 @@ function(add_dotnet_test FILE_NAME)
     ${DOTNET_TEST_PATH}/${TEST_NAME}.csproj
     @ONLY)
 
-  add_custom_target(dotnet_test_${TEST_NAME} ALL
-    DEPENDS ${DOTNET_TEST_PATH}/${TEST_NAME}.csproj
+  add_custom_target(dotnet_${COMPONENT_NAME}_${TEST_NAME} ALL
+    DEPENDS
+      ${DOTNET_TEST_PATH}/${TEST_NAME}.csproj
+      ${DOTNET_TEST_PATH}/${TEST_NAME}.cs
     COMMAND ${DOTNET_EXECUTABLE} build -c Release
     BYPRODUCTS
       ${DOTNET_TEST_PATH}/bin
       ${DOTNET_TEST_PATH}/obj
     WORKING_DIRECTORY ${DOTNET_TEST_PATH})
-  add_dependencies(dotnet_test_${TEST_NAME} dotnet_package)
+  add_dependencies(dotnet_${COMPONENT_NAME}_${TEST_NAME} dotnet_package)
 
   if(BUILD_TESTING)
     add_test(
@@ -294,7 +301,12 @@ function(add_dotnet_sample FILE_NAME)
   message(STATUS "build path: ${DOTNET_SAMPLE_PATH}")
   file(MAKE_DIRECTORY ${DOTNET_SAMPLE_PATH})
 
-  file(COPY ${FILE_NAME} DESTINATION ${DOTNET_SAMPLE_PATH})
+  add_custom_command(
+    OUTPUT ${DOTNET_SAMPLE_PATH}/${SAMPLE_NAME}.cs
+    COMMAND ${CMAKE_COMMAND} -E copy ${FILE_NAME} ${DOTNET_SAMPLE_PATH}
+    MAIN_DEPENDENCY ${FILE_NAME}
+    VERBATIM
+  )
 
   set(DOTNET_PACKAGES_DIR "${PROJECT_BINARY_DIR}/dotnet/packages")
   configure_file(
@@ -302,15 +314,17 @@ function(add_dotnet_sample FILE_NAME)
     ${DOTNET_SAMPLE_PATH}/${SAMPLE_NAME}.csproj
     @ONLY)
 
-  add_custom_target(dotnet_sample_${SAMPLE_NAME} ALL
-    DEPENDS ${DOTNET_SAMPLE_PATH}/${SAMPLE_NAME}.csproj
+  add_custom_target(dotnet_${COMPONENT_NAME}_${SAMPLE_NAME} ALL
+    DEPENDS
+      ${DOTNET_SAMPLE_PATH}/${SAMPLE_NAME}.csproj
+      ${DOTNET_SAMPLE_PATH}/${SAMPLE_NAME}.cs
     COMMAND ${DOTNET_EXECUTABLE} build -c Release
     COMMAND ${DOTNET_EXECUTABLE} pack -c Release
     BYPRODUCTS
       ${DOTNET_SAMPLE_PATH}/bin
       ${DOTNET_SAMPLE_PATH}/obj
     WORKING_DIRECTORY ${DOTNET_SAMPLE_PATH})
-  add_dependencies(dotnet_sample_${SAMPLE_NAME} dotnet_package)
+  add_dependencies(dotnet_${COMPONENT_NAME}_${SAMPLE_NAME} dotnet_package)
 
   if(BUILD_TESTING)
     add_test(
@@ -340,7 +354,12 @@ function(add_dotnet_example FILE_NAME)
   message(STATUS "build path: ${DOTNET_EXAMPLE_PATH}")
   file(MAKE_DIRECTORY ${DOTNET_EXAMPLE_PATH})
 
-  file(COPY ${FILE_NAME} DESTINATION ${DOTNET_EXAMPLE_PATH})
+  add_custom_command(
+    OUTPUT ${DOTNET_EXAMPLE_PATH}/${EXAMPLE_NAME}.cs
+    COMMAND ${CMAKE_COMMAND} -E copy ${FILE_NAME} ${DOTNET_EXAMPLE_PATH}
+    MAIN_DEPENDENCY ${FILE_NAME}
+    VERBATIM
+  )
 
   set(DOTNET_PACKAGES_DIR "${PROJECT_BINARY_DIR}/dotnet/packages")
   set(SAMPLE_NAME ${EXAMPLE_NAME})
@@ -349,15 +368,17 @@ function(add_dotnet_example FILE_NAME)
     ${DOTNET_EXAMPLE_PATH}/${EXAMPLE_NAME}.csproj
     @ONLY)
 
-  add_custom_target(dotnet_example_${EXAMPLE_NAME} ALL
-    DEPENDS ${DOTNET_EXAMPLE_PATH}/${EXAMPLE_NAME}.csproj
+  add_custom_target(dotnet_${COMPONENT_NAME}_${EXAMPLE_NAME} ALL
+    DEPENDS
+      ${DOTNET_EXAMPLE_PATH}/${EXAMPLE_NAME}.csproj
+      ${DOTNET_EXAMPLE_PATH}/${EXAMPLE_NAME}.cs
     COMMAND ${DOTNET_EXECUTABLE} build -c Release
     COMMAND ${DOTNET_EXECUTABLE} pack -c Release
     BYPRODUCTS
       ${DOTNET_EXAMPLE_PATH}/bin
       ${DOTNET_EXAMPLE_PATH}/obj
     WORKING_DIRECTORY ${DOTNET_EXAMPLE_PATH})
-  add_dependencies(dotnet_example_${EXAMPLE_NAME} dotnet_package)
+  add_dependencies(dotnet_${COMPONENT_NAME}_${EXAMPLE_NAME} dotnet_package)
 
   if(BUILD_TESTING)
     add_test(

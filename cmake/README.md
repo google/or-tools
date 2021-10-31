@@ -65,9 +65,9 @@ CMake as a standalone project or it can be incorporated into an existing CMake
 
 ## Dependencies
 
-OR-Tools depends on severals mandatory libraries. You can compile them all at
+OR-Tools depends on several mandatory libraries. You can compile them all at
 configure time using the option `-DBUILD_DEPS=ON` (`OFF` by default) or you can
-compile few of them using the options below.
+compile few of them using the options below (see [CMake Options](#cmake-options) below).
 
 * ZLIB (`BUILD_ZLIB`),
 * Google Abseil-cpp (`BUILD_absl`),
@@ -85,8 +85,8 @@ compile few of them using the options below.
   note: You can disable the support of COIN-OR solvers (i.e. Cbc and Clp solver)
   by using `-DUSE_COINOR=OFF` (`ON` by default).
 
-OR-Tools also have few (ed compile time) optional solvers support (disabled by
-default):
+OR-Tools can also optionally (disabled by default) be compiled with support for the following third-party proprietary
+solvers:
 
 * CPLEX (`USE_CPLEX`),
 * XPRESS (`USE_XPRESS`)
@@ -94,12 +94,32 @@ default):
 **warning: Since these solvers require license and are proprietary, we can't
 test it on public CI and support can be broken.**
 
+### Enabling CPLEX Support
+
+To enable CPLEX support, configure with `-DUSE_CPLEX=ON` and `-DCPLEX_ROOT=/absolute/path/to/CPLEX/root/dir`,
+replacing `/absolute/path/to/CPLEX/root/dir` with the path to your CPLEX installation.
+`CPLEX_ROOT` can also be defined as an environment variable rather than an option at configure time.
+
+For ease of migration from legacy `make third_party` builds, CMake will also read the CPLEX installation path from the
+`UNIX_CPLEX_DIR` environment variable, if defined.
+
+### Enabling XPRESS Support
+
+To enable XPRESS support, configure with `-DUSE_XPRESS=ON` and `-DXPRESS_ROOT=/absolute/path/to/XPRESS/root/dir`,
+replacing `/absolute/path/to/XPRESS/root/dir` with the path to your XPRESS
+installation. `XPRESS_ROOT` can also be defined as an environment variable rather than an option at configure time.
+
+
 <a name="options"></a>
 
 ## CMake Options
 
 There are several options that can be passed to CMake to modify how the code is built.<br>
-For all of these options and parameters you have to use `-D<Parameter_name>=<value>`.<br>
+For all of these options and parameters you have to use `-D<Parameter_name>=<value>`.
+
+All CMake options are passed at configure time, i.e., by running <br>
+`cmake -S. -B<your_chosen_build_directory>  -DOPTION_ONE=ON -DOPTION_TWO=OFF ...` <br>
+before running `cmake --build <your_chosen_build_directory>`<br>
 
 For example, to generate build files including dependencies in a new subdirectory called 'build', run:
 ```sh
@@ -118,10 +138,18 @@ cmake -S. -Bbuild -LH
 
 | CMake Option | Default Value | Note |
 |-|-|-|
+| `CMAKE_BUILD_TYPE` | Release | see CMake documentation [here](https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html) |
+| `BUILD_CXX` | ON | Build C++ |
+| `BUILD_PYTHON` | OFF | Build Python wrapper and package |
+| `BUILD_JAVA` | OFF | Build Java wrapper and packages |
+| `BUILD_DOTNET` | OFF | Build .Net wrapper and packages |
+| `BUILD_FLATZINC` | ON\* | Build the flatzinc library<br>**Forced** to OFF if `BUILD_CXX=OFF` |
+| `BUILD_GLOP` | OFF\* | Build the standalone Glop library<br>**Forced** to OFF if `BUILD_CXX=ON`, otherwise default to ON |
+| | | |
 | `BUILD_DEPS`  | OFF* | Default to ON if `BUILD_JAVA=ON` or `BUILD_PYTHON=ON` or `BUILD_DOTNET=ON` |
-| `BUILD_ZLIB`  | OFF* | Static build the zlib library<br>**Forced** to ON if `BUILD_JAVA=ON` or `BUILD_PYTHON=ON` or `BUILD_DOTNET=ON` |
-| `BUILD_absl`  | OFF* | Static build the abseil-cpp libraries<br>**Forced** to ON if `BUILD_JAVA=ON` or `BUILD_PYTHON=ON` or `BUILD_DOTNET=ON` |
-| `BUILD_Protobuf`  | OFF* | Static build the protobuf libraries<br>**Forced** to ON if `BUILD_JAVA=ON` or `BUILD_PYTHON=ON` or `BUILD_DOTNET=ON` |
+| `BUILD_ZLIB`  | OFF* | Static build the zlib library<br>**Forced** to ON if `BUILD_DEPS=ON` |
+| `BUILD_absl`  | OFF* | Static build the abseil-cpp libraries<br>**Forced** to ON if `BUILD_DEPS=ON` |
+| `BUILD_Protobuf`  | OFF* | Static build the protobuf libraries<br>**Forced** to ON if `BUILD_DEPS=ON` |
 | `USE_SCIP`  | ON\* | Enable SCIP support<br>**Forced** to OFF if `BUILD_CXX=OFF` |
 | `BUILD_SCIP`  | OFF\* | Static build the SCIP libraries<br>**Forced** to ON if `USE_SCIP=ON` **and** `BUILD_DEPS=ON` |
 | `USE_COINOR`  | ON\* | Enable Coin-OR support<br>**Forced** to OFF if `BUILD_CXX=OFF` |
@@ -132,14 +160,6 @@ cmake -S. -Bbuild -LH
 | `BUILD_Cbc`  | OFF\* | Static build the Cbc library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON` |
 | `USE_CPLEX`  | OFF | Enable CPLEX support |
 | `USE_XPRESS`  | OFF | Enable XPRESS support |
-| | | |
-| `CMAKE_BUILD_TYPE` | Release | see CMake documentation [here](https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html) |
-| `BUILD_CXX` | ON | Build C++ |
-| `BUILD_PYTHON` | OFF | Build Python wrapper and package |
-| `BUILD_JAVA` | OFF | Build Java wrapper and packages |
-| `BUILD_DOTNET` | OFF | Build .Net wrapper and packages |
-| `BUILD_FLATZINC` | ON\* | Build the flatzinc library<br>**Forced** to OFF if `BUILD_CXX=OFF` |
-| `BUILD_GLOP` | OFF\* | Build the standalone Glop library<br>**Forced** to OFF if `BUILD_CXX=ON`, otherwise default to ON |
 | | | |
 | `BUILD_SAMPLES`  | OFF\* | Build all samples<br>Default to ON if `BUILD_DEPS=ON` |
 | `BUILD_CXX_SAMPLES`  | ON\* | Build all C++ samples<br>**Forced** to OFF if `BUILD_CXX=OFF` or `BUILD_SAMPLE=OFF` |
@@ -155,6 +175,9 @@ cmake -S. -Bbuild -LH
 | | | |
 | `SKIP_GPG`  | OFF | Disable GPG sign<br>Only available if `BUILD_JAVA=ON` |
 | `UNIVERSAL_JAVA_PACKAGE`  | OFF | Build a multi platform package (i.e. `ortools-java` will depends on all native packages)<br>Only available if `BUILD_JAVA=ON` |
+| `BUILD_FAT_JAR`  | OFF | Build a `ortools-java` .jar that includes all of its own Maven dependencies, including the native package<br>Only available if `BUILD_JAVA=ON` |
+| | | |
+| `FETCH_PYTHON_DEPS`  | BUILD_DEPS | Fetch python modules needed to build ortools package<br>Only available if `BUILD_PYTHON=ON` |
 | | | |
 
 <a name="integration"></a>

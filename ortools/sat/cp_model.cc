@@ -347,10 +347,10 @@ CumulativeConstraint::CumulativeConstraint(ConstraintProto* proto,
                                            CpModelBuilder* builder)
     : Constraint(proto), builder_(builder) {}
 
-void CumulativeConstraint::AddDemand(IntervalVar interval, IntVar demand) {
+void CumulativeConstraint::AddDemand(IntervalVar interval, LinearExpr demand) {
   proto_->mutable_cumulative()->add_intervals(interval.index_);
-  proto_->mutable_cumulative()->add_demands(
-      builder_->GetOrCreateIntegerIndex(demand.index_));
+  *proto_->mutable_cumulative()->add_demands() =
+      builder_->LinearExprToProto(demand);
 }
 
 IntervalVar::IntervalVar() : cp_model_(nullptr), index_() {}
@@ -364,15 +364,15 @@ IntervalVar IntervalVar::WithName(const std::string& name) {
 }
 
 LinearExpr IntervalVar::StartExpr() const {
-  return CpModelBuilder::LinearExprFromProto(Proto().start_view(), cp_model_);
+  return CpModelBuilder::LinearExprFromProto(Proto().start(), cp_model_);
 }
 
 LinearExpr IntervalVar::SizeExpr() const {
-  return CpModelBuilder::LinearExprFromProto(Proto().size_view(), cp_model_);
+  return CpModelBuilder::LinearExprFromProto(Proto().size(), cp_model_);
 }
 
 LinearExpr IntervalVar::EndExpr() const {
-  return CpModelBuilder::LinearExprFromProto(Proto().end_view(), cp_model_);
+  return CpModelBuilder::LinearExprFromProto(Proto().end(), cp_model_);
 }
 
 BoolVar IntervalVar::PresenceBoolVar() const {
@@ -402,6 +402,10 @@ std::string IntervalVar::DebugString() const {
 std::ostream& operator<<(std::ostream& os, const IntervalVar& var) {
   os << var.DebugString();
   return os;
+}
+
+void CpModelBuilder::SetName(const std::string& name) {
+  cp_model_.set_name(name);
 }
 
 int CpModelBuilder::IndexFromConstant(int64_t value) {
@@ -488,9 +492,9 @@ IntervalVar CpModelBuilder::NewOptionalIntervalVar(const LinearExpr& start,
   ConstraintProto* const ct = cp_model_.add_constraints();
   ct->add_enforcement_literal(presence.index_);
   IntervalConstraintProto* const interval = ct->mutable_interval();
-  LinearExprToProto(start, interval->mutable_start_view());
-  LinearExprToProto(size, interval->mutable_size_view());
-  LinearExprToProto(end, interval->mutable_end_view());
+  *interval->mutable_start() = LinearExprToProto(start);
+  *interval->mutable_size() = LinearExprToProto(size);
+  *interval->mutable_end() = LinearExprToProto(end);
   return IntervalVar(index, &cp_model_);
 }
 
@@ -500,11 +504,10 @@ IntervalVar CpModelBuilder::NewOptionalFixedSizeIntervalVar(
   ConstraintProto* const ct = cp_model_.add_constraints();
   ct->add_enforcement_literal(presence.index_);
   IntervalConstraintProto* const interval = ct->mutable_interval();
-  LinearExprToProto(start, interval->mutable_start_view());
-  interval->mutable_size_view()->set_offset(size);
-  LinearExprToProto(start, interval->mutable_end_view());
-  interval->mutable_end_view()->set_offset(interval->end_view().offset() +
-                                           size);
+  *interval->mutable_start() = LinearExprToProto(start);
+  interval->mutable_size()->set_offset(size);
+  *interval->mutable_end() = LinearExprToProto(start);
+  interval->mutable_end()->set_offset(interval->end().offset() + size);
   return IntervalVar(index, &cp_model_);
 }
 
@@ -722,25 +725,18 @@ AutomatonConstraint CpModelBuilder::AddAutomaton(
   return AutomatonConstraint(proto);
 }
 
-Constraint CpModelBuilder::AddMinEquality(IntVar target,
-                                          absl::Span<const IntVar> vars) {
-  ConstraintProto* const proto = cp_model_.add_constraints();
-  proto->mutable_int_min()->set_target(GetOrCreateIntegerIndex(target.index_));
-  for (const IntVar& var : vars) {
-    proto->mutable_int_min()->add_vars(GetOrCreateIntegerIndex(var.index_));
-  }
-  return Constraint(proto);
-}
-
-void CpModelBuilder::LinearExprToProto(const LinearExpr& expr,
-                                       LinearExpressionProto* expr_proto) {
+LinearExpressionProto CpModelBuilder::LinearExprToProto(const LinearExpr& expr,
+                                                        bool negate) {
+  LinearExpressionProto expr_proto;
+  const int64_t mult = negate ? -1 : 1;
   for (const IntVar var : expr.variables()) {
-    expr_proto->add_vars(GetOrCreateIntegerIndex(var.index_));
+    expr_proto.add_vars(GetOrCreateIntegerIndex(var.index_));
   }
   for (const int64_t coeff : expr.coefficients()) {
-    expr_proto->add_coeffs(coeff);
+    expr_proto.add_coeffs(coeff * mult);
   }
-  expr_proto->set_offset(expr.constant());
+  expr_proto.set_offset(expr.constant() * mult);
+  return expr_proto;
 }
 
 LinearExpr CpModelBuilder::LinearExprFromProto(
@@ -753,36 +749,48 @@ LinearExpr CpModelBuilder::LinearExprFromProto(
   return result;
 }
 
-Constraint CpModelBuilder::AddLinMinEquality(
-    const LinearExpr& target, absl::Span<const LinearExpr> exprs) {
-  ConstraintProto* const proto = cp_model_.add_constraints();
-  LinearExprToProto(target, proto->mutable_lin_min()->mutable_target());
-  for (const LinearExpr& expr : exprs) {
-    LinearExpressionProto* expr_proto = proto->mutable_lin_min()->add_exprs();
-    LinearExprToProto(expr, expr_proto);
+Constraint CpModelBuilder::AddMinEquality(const LinearExpr& target,
+                                          absl::Span<const IntVar> vars) {
+  ConstraintProto* ct = cp_model_.add_constraints();
+  *ct->mutable_lin_max()->mutable_target() =
+      LinearExprToProto(target, /*negate=*/true);
+  for (const IntVar& var : vars) {
+    *ct->mutable_lin_max()->add_exprs() =
+        LinearExprToProto(var, /*negate=*/true);
   }
-  return Constraint(proto);
+  return Constraint(ct);
 }
 
-Constraint CpModelBuilder::AddMaxEquality(IntVar target,
-                                          absl::Span<const IntVar> vars) {
-  ConstraintProto* const proto = cp_model_.add_constraints();
-  proto->mutable_int_max()->set_target(GetOrCreateIntegerIndex(target.index_));
-  for (const IntVar& var : vars) {
-    proto->mutable_int_max()->add_vars(GetOrCreateIntegerIndex(var.index_));
+Constraint CpModelBuilder::AddLinMinEquality(
+    const LinearExpr& target, absl::Span<const LinearExpr> exprs) {
+  ConstraintProto* ct = cp_model_.add_constraints();
+  *ct->mutable_lin_max()->mutable_target() =
+      LinearExprToProto(target, /*negate=*/true);
+  for (const LinearExpr& expr : exprs) {
+    *ct->mutable_lin_max()->add_exprs() =
+        LinearExprToProto(expr, /*negate=*/true);
   }
-  return Constraint(proto);
+  return Constraint(ct);
+}
+
+Constraint CpModelBuilder::AddMaxEquality(const LinearExpr& target,
+                                          absl::Span<const IntVar> vars) {
+  ConstraintProto* ct = cp_model_.add_constraints();
+  *ct->mutable_lin_max()->mutable_target() = LinearExprToProto(target);
+  for (const IntVar& var : vars) {
+    *ct->mutable_lin_max()->add_exprs() = LinearExprToProto(var);
+  }
+  return Constraint(ct);
 }
 
 Constraint CpModelBuilder::AddLinMaxEquality(
     const LinearExpr& target, absl::Span<const LinearExpr> exprs) {
-  ConstraintProto* const proto = cp_model_.add_constraints();
-  LinearExprToProto(target, proto->mutable_lin_max()->mutable_target());
+  ConstraintProto* ct = cp_model_.add_constraints();
+  *ct->mutable_lin_max()->mutable_target() = LinearExprToProto(target);
   for (const LinearExpr& expr : exprs) {
-    LinearExpressionProto* expr_proto = proto->mutable_lin_max()->add_exprs();
-    LinearExprToProto(expr, expr_proto);
+    *ct->mutable_lin_max()->add_exprs() = LinearExprToProto(expr);
   }
-  return Constraint(proto);
+  return Constraint(ct);
 }
 
 Constraint CpModelBuilder::AddDivisionEquality(IntVar target, IntVar numerator,
@@ -795,12 +803,13 @@ Constraint CpModelBuilder::AddDivisionEquality(IntVar target, IntVar numerator,
   return Constraint(proto);
 }
 
-Constraint CpModelBuilder::AddAbsEquality(IntVar target, IntVar var) {
+Constraint CpModelBuilder::AddAbsEquality(const LinearExpr& target,
+                                          const LinearExpr& expr) {
   ConstraintProto* const proto = cp_model_.add_constraints();
-  proto->mutable_int_max()->set_target(GetOrCreateIntegerIndex(target.index_));
-  proto->mutable_int_max()->add_vars(GetOrCreateIntegerIndex(var.index_));
-  proto->mutable_int_max()->add_vars(
-      NegatedRef(GetOrCreateIntegerIndex(var.index_)));
+  *proto->mutable_lin_max()->mutable_target() = LinearExprToProto(target);
+  *proto->mutable_lin_max()->add_exprs() = LinearExprToProto(expr);
+  *proto->mutable_lin_max()->add_exprs() =
+      LinearExprToProto(expr, /*negate=*/true);
   return Constraint(proto);
 }
 
@@ -836,10 +845,10 @@ NoOverlap2DConstraint CpModelBuilder::AddNoOverlap2D() {
   return NoOverlap2DConstraint(cp_model_.add_constraints());
 }
 
-CumulativeConstraint CpModelBuilder::AddCumulative(IntVar capacity) {
+CumulativeConstraint CpModelBuilder::AddCumulative(LinearExpr capacity) {
   ConstraintProto* const proto = cp_model_.add_constraints();
-  proto->mutable_cumulative()->set_capacity(
-      GetOrCreateIntegerIndex(capacity.index_));
+  *proto->mutable_cumulative()->mutable_capacity() =
+      LinearExprToProto(capacity);
   return CumulativeConstraint(proto, this);
 }
 
@@ -975,22 +984,6 @@ int64_t SolutionIntegerValue(const CpSolverResponse& r,
     result += r.solution(variables[i].index_) * coefficients[i];
   }
   return result;
-}
-
-int64_t SolutionIntegerMin(const CpSolverResponse& r, IntVar x) {
-  if (r.solution_size() > 0) {
-    return r.solution(x.index_);
-  } else {
-    return r.solution_lower_bounds(x.index_);
-  }
-}
-
-int64_t SolutionIntegerMax(const CpSolverResponse& r, IntVar x) {
-  if (r.solution_size() > 0) {
-    return r.solution(x.index_);
-  } else {
-    return r.solution_upper_bounds(x.index_);
-  }
 }
 
 bool SolutionBooleanValue(const CpSolverResponse& r, BoolVar x) {

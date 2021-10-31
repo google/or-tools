@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Copyright 2010-2021 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -10,12 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# [START program]
 """OR-Tools solution to the N-queens problem."""
-import time
+# [START import]
 import sys
+import time
 from ortools.sat.python import cp_model
+# [END import]
 
 
+# [START solution_printer]
 class NQueenSolutionPrinter(cp_model.CpSolverSolutionCallback):
     """Print intermediate solutions."""
 
@@ -30,8 +35,8 @@ class NQueenSolutionPrinter(cp_model.CpSolverSolutionCallback):
 
     def on_solution_callback(self):
         current_time = time.time()
-        print('Solution %i, time = %f s' % (self.__solution_count,
-                                            current_time - self.__start_time))
+        print('Solution %i, time = %f s' %
+              (self.__solution_count, current_time - self.__start_time))
         self.__solution_count += 1
 
         all_queens = range(len(self.__queens))
@@ -44,18 +49,25 @@ class NQueenSolutionPrinter(cp_model.CpSolverSolutionCallback):
                     print('_', end=' ')
             print()
         print()
+# [END solution_printer]
 
 
 def main(board_size):
     # Creates the solver.
+    # [START model]
     model = cp_model.CpModel()
+    # [END model]
+
     # Creates the variables.
+    # [START variables]
     # The array index is the column, and the value is the row.
     queens = [
         model.NewIntVar(0, board_size - 1, 'x%i' % i) for i in range(board_size)
     ]
-    # Creates the constraints.
+    # [END variables]
 
+    # Creates the constraints.
+    # [START constraints]
     # All rows must be different.
     model.AddAllDifferent(queens)
 
@@ -74,25 +86,30 @@ def main(board_size):
         model.Add(q2 == queens[i] - i)
     model.AddAllDifferent(diag1)
     model.AddAllDifferent(diag2)
+    # [END constraints]
 
-    ### Solve model.
+    # Solve the model.
+    # [START solve]
     solver = cp_model.CpSolver()
     solution_printer = NQueenSolutionPrinter(queens)
     solver.parameters.enumerate_all_solutions = True
-    status = solver.Solve(model, solution_printer)
+    solver.Solve(model, solution_printer)
+    # [END solve]
 
-    print()
-    print('Statistics')
-    print('  - conflicts       : %i' % solver.NumConflicts())
-    print('  - branches        : %i' % solver.NumBranches())
-    print('  - wall time       : %f s' % solver.WallTime())
-    print('  - solutions found : %i' % solution_printer.solution_count())
+    # Statistics.
+    # [START statistics]
+    print('\nStatistics')
+    print(f'  conflicts      : {solver.NumConflicts()}')
+    print(f'  branches       : {solver.NumBranches()}')
+    print(f'  wall time      : {solver.WallTime()} s')
+    print(f'  solutions found: {solution_printer.solution_count()}')
+    # [END statistics]
 
-
-# By default, solve the 8x8 problem.
-board_size = 8
 
 if __name__ == '__main__':
+    # By default, solve the 8x8 problem.
+    size = 8
     if len(sys.argv) > 1:
-        board_size = int(sys.argv[1])
-    main(board_size)
+        size = int(sys.argv[1])
+    main(size)
+# [END program]

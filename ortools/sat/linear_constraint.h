@@ -144,20 +144,33 @@ IntegerValue GetCoefficientOfPositiveVar(const IntegerVariable var,
 // Allow to build a LinearConstraint while making sure there is no duplicate
 // variables. Note that we do not simplify literal/variable that are currently
 // fixed here.
+//
+// All the functions manipulate a linear expression with an offset. The final
+// constraint bounds will include this offset.
+//
+// TODO(user): Rename to LinearExpressionBuilder?
 class LinearConstraintBuilder {
  public:
   // We support "sticky" kMinIntegerValue for lb and kMaxIntegerValue for ub
   // for one-sided constraints.
   //
-  // Assumes that the 'model' has IntegerEncoder.
+  // Assumes that the 'model' has IntegerEncoder. The bounds can either be
+  // specified at construction or during the Build() call.
+  explicit LinearConstraintBuilder(const Model* model)
+      : encoder_(*model->Get<IntegerEncoder>()), lb_(0), ub_(0) {}
   LinearConstraintBuilder(const Model* model, IntegerValue lb, IntegerValue ub)
       : encoder_(*model->Get<IntegerEncoder>()), lb_(lb), ub_(ub) {}
 
-  // Adds var * coeff to the constraint.
+  // Adds the corresponding term to the current linear expression.
+  void AddConstant(IntegerValue value);
   void AddTerm(IntegerVariable var, IntegerValue coeff);
   void AddTerm(AffineExpression expr, IntegerValue coeff);
   void AddLinearExpression(const LinearExpression& expr);
   void AddLinearExpression(const LinearExpression& expr, IntegerValue coeff);
+
+  // Add literal * coeff to the constaint. Returns false and do nothing if the
+  // given literal didn't have an integer view.
+  ABSL_MUST_USE_RESULT bool AddLiteralTerm(Literal lit, IntegerValue coeff);
 
   // Add an under linearization of the product of two affine expressions.
   // If at least one of them is fixed, then we add the exact product (which is
@@ -174,26 +187,34 @@ class LinearConstraintBuilder {
   void AddQuadraticLowerBound(AffineExpression left, AffineExpression right,
                               IntegerTrail* integer_trail);
 
-  // Add value as a constant term to the linear equation.
-  void AddConstant(IntegerValue value);
+  // Clears all added terms and constants. Keeps the original bounds.
+  void Clear() {
+    offset_ = IntegerValue(0);
+    terms_.clear();
+  }
 
-  // Add literal * coeff to the constaint. Returns false and do nothing if the
-  // given literal didn't have an integer view.
-  ABSL_MUST_USE_RESULT bool AddLiteralTerm(Literal lit, IntegerValue coeff);
-
-  // Builds and return the corresponding constraint in a canonical form.
+  // Builds and returns the corresponding constraint in a canonical form.
   // All the IntegerVariable will be positive and appear in increasing index
   // order.
   //
+  // The bounds can be changed here or taken at construction.
+  //
   // TODO(user): this doesn't invalidate the builder object, but if one wants
   // to do a lot of dynamic editing to the constraint, then then underlying
-  // algorithm needs to be optimized of that.
+  // algorithm needs to be optimized for that.
   LinearConstraint Build();
+  LinearConstraint BuildConstraint(IntegerValue lb, IntegerValue ub);
+
+  // Returns the linear expression part of the constraint only, without the
+  // bounds.
+  LinearExpression BuildExpression();
 
  private:
   const IntegerEncoder& encoder_;
-  IntegerValue lb_;
-  IntegerValue ub_;
+  const IntegerValue lb_;
+  const IntegerValue ub_;
+
+  IntegerValue offset_ = IntegerValue(0);
 
   // Initially we push all AddTerm() here, and during Build() we merge terms
   // on the same variable.
@@ -230,12 +251,6 @@ void MakeAllCoefficientsPositive(LinearConstraint* constraint);
 // Makes all variables "positive" by transforming a variable to its negation.
 void MakeAllVariablesPositive(LinearConstraint* constraint);
 
-// Sorts and merges duplicate IntegerVariable in the given "terms".
-// Fills the given LinearConstraint with the result.
-void CleanTermsAndFillConstraint(
-    std::vector<std::pair<IntegerVariable, IntegerValue>>* terms,
-    LinearConstraint* constraint);
-
 // Sorts the terms and makes all IntegerVariable positive. This assumes that a
 // variable or its negation only appear once.
 //
@@ -244,6 +259,42 @@ void CanonicalizeConstraint(LinearConstraint* ct);
 
 // Returns false if duplicate variables are found in ct.
 bool NoDuplicateVariable(const LinearConstraint& ct);
+
+// Sorts and merges duplicate IntegerVariable in the given "terms".
+// Fills the given LinearConstraint or LinearExpression with the result.
+//
+// TODO(user): This actually only sort the terms, we don't clean them.
+template <class ClassWithVarsAndCoeffs>
+void CleanTermsAndFillConstraint(
+    std::vector<std::pair<IntegerVariable, IntegerValue>>* terms,
+    ClassWithVarsAndCoeffs* output) {
+  output->vars.clear();
+  output->coeffs.clear();
+
+  // Sort and add coeff of duplicate variables. Note that a variable and
+  // its negation will appear one after another in the natural order.
+  std::sort(terms->begin(), terms->end());
+  IntegerVariable previous_var = kNoIntegerVariable;
+  IntegerValue current_coeff(0);
+  for (const std::pair<IntegerVariable, IntegerValue> entry : *terms) {
+    if (previous_var == entry.first) {
+      current_coeff += entry.second;
+    } else if (previous_var == NegationOf(entry.first)) {
+      current_coeff -= entry.second;
+    } else {
+      if (current_coeff != 0) {
+        output->vars.push_back(previous_var);
+        output->coeffs.push_back(current_coeff);
+      }
+      previous_var = entry.first;
+      current_coeff = entry.second;
+    }
+  }
+  if (current_coeff != 0) {
+    output->vars.push_back(previous_var);
+    output->coeffs.push_back(current_coeff);
+  }
+}
 
 }  // namespace sat
 }  // namespace operations_research

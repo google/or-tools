@@ -135,8 +135,8 @@ import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.IntVar;
 
 /** Solves a problem with a time limit. */
-public class SolveWithTimeLimitSampleSat {
-  public static void main(String[] args) throws Exception {
+public final class SolveWithTimeLimitSampleSat {
+  public static void main(String[] args) {
     Loader.loadNativeLibraries();
     // Create the model.
     CpModel model = new CpModel();
@@ -160,6 +160,8 @@ public class SolveWithTimeLimitSampleSat {
       System.out.println("z = " + solver.value(z));
     }
   }
+
+  private SolveWithTimeLimitSampleSat() {}
 }
 ```
 
@@ -700,7 +702,7 @@ public class SearchForAllSolutionsSampleSat
         // And solve.
         solver.Solve(model, cb);
 
-        Console.WriteLine(String.Format("Number of solutions found: {0}", cb.SolutionCount()));
+        Console.WriteLine($"Number of solutions found: {cb.SolutionCount()}");
     }
 }
 ```
@@ -775,7 +777,6 @@ Stopping search is done by registering an atomic bool on the model-owned time
 limit, and setting that bool to true.
 
 ```cpp
-
 #include <atomic>
 
 #include "ortools/sat/cp_model.h"
@@ -848,7 +849,7 @@ import com.google.ortools.sat.CpSolverSolutionCallback;
 import com.google.ortools.sat.IntVar;
 
 /** Code sample that solves a model and displays a small number of solutions. */
-public class StopAfterNSolutionsSampleSat {
+public final class StopAfterNSolutionsSampleSat {
   static class VarArraySolutionPrinterWithLimit extends CpSolverSolutionCallback {
     public VarArraySolutionPrinterWithLimit(IntVar[] variables, int limit) {
       variableArray = variables;
@@ -877,7 +878,7 @@ public class StopAfterNSolutionsSampleSat {
     private final int solutionLimit;
   }
 
-  public static void main(String[] args) throws Exception {
+  public static void main(String[] args) {
     Loader.loadNativeLibraries();
     // Create the model.
     CpModel model = new CpModel();
@@ -902,6 +903,8 @@ public class StopAfterNSolutionsSampleSat {
       throw new RuntimeException("Did not stop the search correctly.");
     }
   }
+
+  private StopAfterNSolutionsSampleSat() {}
 }
 ```
 
@@ -911,7 +914,6 @@ Stopping search is performed by calling StopSearch() inside of
 CpSolverSolutionCallback.OnSolutionCallback().
 
 ```cs
-
 using System;
 using Google.OrTools.Sat;
 

@@ -91,13 +91,17 @@ void AddIntegerVariableFromIntervals(SchedulingConstraintHelper* helper,
   gtl::STLSortAndRemoveDuplicates(vars);
 }
 
+bool EnergyIsDefined(const LinearExpression& energy) {
+  return !energy.vars.empty() || energy.offset >= 0;
+}
+
 }  // namespace
 
 std::function<bool(const absl::StrongVector<IntegerVariable, double>&,
                    LinearConstraintManager*)>
 GenerateCumulativeEnergyCuts(const std::string& cut_name,
                              SchedulingConstraintHelper* helper,
-                             const std::vector<IntegerVariable>& demands,
+                             const std::vector<AffineExpression>& demands,
                              const std::vector<LinearExpression>& energies,
                              AffineExpression capacity, Model* model) {
   Trail* trail = model->GetOrCreate<Trail>();
@@ -184,23 +188,14 @@ GenerateCumulativeEnergyCuts(const std::string& cut_name,
         const int t = residual_intervals[i2];
         intervals_not_visited.erase(t);
         if (helper->IsPresent(t)) {
-          if (demand_is_fixed(t)) {
-            if (helper->SizeIsFixed(t)) {
-              energy_lp += ToDouble(helper->SizeMin(t) * demand_min(t));
-            } else {
-              energy_lp += ToDouble(demand_min(t)) *
-                           helper->Sizes()[t].LpValue(lp_values);
-            }
-          } else if (helper->SizeIsFixed(t)) {
-            DCHECK(!demands.empty());
-            energy_lp += lp_values[demands[t]] * ToDouble(helper->SizeMin(t));
-          } else if (!energies.empty()) {
+          if (EnergyIsDefined(energies[t])) {
             energy_lp += energies[t].LpValue(lp_values);
           } else {  // demand and size are not fixed.
             DCHECK(!demands.empty());
             energy_lp +=
                 ToDouble(demand_min(t)) * helper->Sizes()[t].LpValue(lp_values);
-            energy_lp += lp_values[demands[t]] * ToDouble(helper->SizeMin(t));
+            energy_lp +=
+                demands[t].LpValue(lp_values) * ToDouble(helper->SizeMin(t));
             energy_lp -= ToDouble(demand_min(t) * helper->SizeMin(t));
           }
         } else {
@@ -251,7 +246,7 @@ GenerateCumulativeEnergyCuts(const std::string& cut_name,
             } else {
               DCHECK(!demands.empty());
               forced_contrib_lp +=
-                  lp_values[demands[t]] * ToDouble(min_overlap);
+                  demands[t].LpValue(lp_values) * ToDouble(min_overlap);
             }
           } else {
             forced_contrib_lp += GetLiteralLpValue(helper->PresenceLiteral(t),
@@ -289,9 +284,7 @@ GenerateCumulativeEnergyCuts(const std::string& cut_name,
       for (int i2 = 0; i2 <= end_index_of_max_violation; ++i2) {
         const int t = residual_intervals[i2];
         if (helper->IsPresent(t)) {
-          if (demand_is_fixed(t)) {
-            cut.AddTerm(helper->Sizes()[t], demand_min(t));
-          } else if (!helper->SizeIsFixed(t) && !energies.empty()) {
+          if (EnergyIsDefined(energies[t])) {
             // We favor the energy info instead of the McCormick relaxation.
             cut.AddLinearExpression(energies[t]);
             use_energy = true;
@@ -355,9 +348,24 @@ GenerateCumulativeEnergyCuts(const std::string& cut_name,
   };
 }
 
+void AppendVariablesToCumulativeCut(
+    const AffineExpression& capacity,
+    const std::vector<AffineExpression>& demands, IntegerTrail* integer_trail,
+    CutGenerator* result) {
+  for (const AffineExpression& demand_expr : demands) {
+    if (!integer_trail->IsFixed(demand_expr)) {
+      result->vars.push_back(demand_expr.var);
+    }
+  }
+  if (!integer_trail->IsFixed(capacity)) {
+    result->vars.push_back(capacity.var);
+  }
+}
+
 CutGenerator CreateCumulativeEnergyCutGenerator(
     const std::vector<IntervalVariable>& intervals,
-    const IntegerVariable capacity, const std::vector<IntegerVariable>& demands,
+    const AffineExpression& capacity,
+    const std::vector<AffineExpression>& demands,
     const std::vector<LinearExpression>& energies, Model* model) {
   CutGenerator result;
 
@@ -365,8 +373,8 @@ CutGenerator CreateCumulativeEnergyCutGenerator(
       new SchedulingConstraintHelper(intervals, model);
   model->TakeOwnership(helper);
 
-  result.vars = demands;
-  result.vars.push_back(capacity);
+  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+  AppendVariablesToCumulativeCut(capacity, demands, integer_trail, &result);
   AddIntegerVariableFromIntervals(helper, model, &result.vars);
   for (const LinearExpression& energy : energies) {
     result.vars.insert(result.vars.end(), energy.vars.begin(),
@@ -392,40 +400,50 @@ CutGenerator CreateNoOverlapEnergyCutGenerator(
   model->TakeOwnership(helper);
 
   AddIntegerVariableFromIntervals(helper, model, &result.vars);
+  gtl::STLSortAndRemoveDuplicates(&result.vars);
+
+  std::vector<LinearExpression> sizes;
+  sizes.reserve(intervals.size());
+  for (int i = 0; i < intervals.size(); ++i) {
+    LinearConstraintBuilder builder(model);
+    builder.AddTerm(helper->Sizes()[i], IntegerValue(1));
+    sizes.push_back(builder.BuildExpression());
+  }
 
   // TODO(user): Do not create the cut generator if all intervals are
   // performed with a fixed size as it will not propagate more than
   // the overload checker.
   result.generate_cuts = GenerateCumulativeEnergyCuts(
       "NoOverlapEnergy", helper,
-      /*demands=*/{}, /*energies=*/{},
+      /*demands=*/{}, /*energies=*/sizes,
       /*capacity=*/AffineExpression(IntegerValue(1)), model);
   return result;
 }
 
 CutGenerator CreateCumulativeTimeTableCutGenerator(
     const std::vector<IntervalVariable>& intervals,
-    const IntegerVariable capacity, const std::vector<IntegerVariable>& demands,
-    Model* model) {
+    const AffineExpression& capacity,
+    const std::vector<AffineExpression>& demands, Model* model) {
   CutGenerator result;
 
   SchedulingConstraintHelper* helper =
       new SchedulingConstraintHelper(intervals, model);
   model->TakeOwnership(helper);
 
-  result.vars = demands;
-  result.vars.push_back(capacity);
+  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+  AppendVariablesToCumulativeCut(capacity, demands, integer_trail, &result);
+
   AddIntegerVariableFromIntervals(helper, model, &result.vars);
+  gtl::STLSortAndRemoveDuplicates(&result.vars);
 
   struct Event {
     int interval_index;
     IntegerValue time;
     bool positive;
-    IntegerVariable demand;
+    AffineExpression demand;
   };
 
   Trail* trail = model->GetOrCreate<Trail>();
-  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
 
   result.generate_cuts =
       [helper, capacity, demands, trail, integer_trail, model](
@@ -578,20 +596,22 @@ void GeneratePrecedenceCuts(
 }
 
 CutGenerator CreateCumulativePrecedenceCutGenerator(
-    const std::vector<IntervalVariable>& intervals, IntegerVariable capacity,
-    const std::vector<IntegerVariable>& demands, Model* model) {
+    const std::vector<IntervalVariable>& intervals,
+    const AffineExpression& capacity,
+    const std::vector<AffineExpression>& demands, Model* model) {
   CutGenerator result;
 
   SchedulingConstraintHelper* helper =
       new SchedulingConstraintHelper(intervals, model);
   model->TakeOwnership(helper);
 
-  result.vars = demands;
-  result.vars.push_back(capacity);
+  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+  AppendVariablesToCumulativeCut(capacity, demands, integer_trail, &result);
+
   AddIntegerVariableFromIntervals(helper, model, &result.vars);
+  gtl::STLSortAndRemoveDuplicates(&result.vars);
 
   Trail* trail = model->GetOrCreate<Trail>();
-  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
 
   result.generate_cuts =
       [trail, integer_trail, helper, demands, capacity, model](
@@ -750,7 +770,8 @@ void GenerateCompletionTimeCuts(
     if (use_lifting) {
       for (int before = 0; before < start; ++before) {
         if (events[before].x_start_min + events[before].x_size_min >
-            sequence_start_min) {
+            sequence_start_min) {  // Build the vector of energies as the vector
+                                   // of sizes.
           CtEvent event = events[before];  // Copy.
           event.lifted = true;
           const IntegerValue old_size_min = event.x_size_min;
@@ -888,7 +909,8 @@ CutGenerator CreateNoOverlapCompletionTimeCutGenerator(
 
 CutGenerator CreateCumulativeCompletionTimeCutGenerator(
     const std::vector<IntervalVariable>& intervals,
-    const IntegerVariable capacity, const std::vector<IntegerVariable>& demands,
+    const AffineExpression& capacity,
+    const std::vector<AffineExpression>& demands,
     const std::vector<LinearExpression>& energies, Model* model) {
   CutGenerator result;
 
@@ -896,12 +918,13 @@ CutGenerator CreateCumulativeCompletionTimeCutGenerator(
       new SchedulingConstraintHelper(intervals, model);
   model->TakeOwnership(helper);
 
-  result.vars = demands;
-  result.vars.push_back(capacity);
+  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+  AppendVariablesToCumulativeCut(capacity, demands, integer_trail, &result);
+
   AddIntegerVariableFromIntervals(helper, model, &result.vars);
+  gtl::STLSortAndRemoveDuplicates(&result.vars);
 
   Trail* trail = model->GetOrCreate<Trail>();
-  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
 
   result.generate_cuts =
       [trail, integer_trail, helper, demands, energies, capacity, model](
@@ -919,14 +942,10 @@ CutGenerator CreateCumulativeCompletionTimeCutGenerator(
             if (helper->SizeMin(index) > 0 &&
                 integer_trail->LowerBound(demands[index]) > 0) {
               const AffineExpression end_expr = helper->Ends()[index];
-              IntegerValue energy_min =
-                  energies.empty()
-                      ? IntegerValue(0)
-                      : LinExprLowerBound(energies[index], *integer_trail);
-
               const IntegerValue size_min = helper->SizeMin(index);
               const IntegerValue demand_min =
                   integer_trail->LowerBound(demands[index]);
+
               CtEvent event;
               event.x_start_min = helper->StartMin(index);
               event.x_size_min = size_min;
@@ -934,11 +953,16 @@ CutGenerator CreateCumulativeCompletionTimeCutGenerator(
               event.x_lp_end = end_expr.LpValue(lp_values);
               event.y_start_min = IntegerValue(0);
               event.y_end_max = IntegerValue(capacity_max);
-              if (energy_min > size_min * demand_min) {
-                event.energy_min = energy_min;
-                event.use_energy = true;
-              } else {
-                event.energy_min = size_min * demand_min;
+              event.energy_min = size_min * demand_min;
+              // TODO(user): Investigate and re-enable a correct version.
+              if (/*DISABLES_CODE*/ (false) &&
+                  EnergyIsDefined(energies[index])) {
+                const IntegerValue linearized_energy =
+                    LinExprLowerBound(energies[index], *integer_trail);
+                if (linearized_energy > event.energy_min) {
+                  event.energy_min = linearized_energy;
+                  event.use_energy = true;
+                }
               }
               events.push_back(event);
             }

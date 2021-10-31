@@ -218,15 +218,15 @@ class SimpleMaxFlow {
   // This works only if Solve() returned OPTIMAL.
   void GetSinkSideMinCut(std::vector<NodeIndex>* result);
 
-  // Creates the protocol buffer representation of the problem used by the last
-  // Solve() call. This is mainly useful for debugging.
-  FlowModel CreateFlowModelOfLastSolve();
-
   // Change the capacity of an arc.
+  //
   // WARNING: This looks like it enables incremental solves, but as of 2018-02,
   // the next Solve() will restart from scratch anyway.
   // TODO(user): Support incrementality in the max flow implementation.
   void SetArcCapacity(ArcIndex arc, FlowQuantity capacity);
+
+  // Creates the protocol buffer representation of the current problem.
+  FlowModelProto CreateFlowModelProto(NodeIndex source, NodeIndex sink) const;
 
  private:
   NodeIndex num_nodes_;
@@ -423,7 +423,7 @@ class GenericMaxFlow : public MaxFlowStatusClass {
   }
 
   // Returns the protocol buffer representation of the current problem.
-  FlowModel CreateFlowModel();
+  FlowModelProto CreateFlowModel();
 
  protected:
   // Returns true if arc is admissible.

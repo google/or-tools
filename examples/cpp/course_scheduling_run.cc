@@ -26,6 +26,7 @@
 #include "examples/cpp/course_scheduling.h"
 #include "examples/cpp/course_scheduling.pb.h"
 #include "ortools/base/commandlineflags.h"
+#include "ortools/base/file.h"
 #include "ortools/base/timer.h"
 
 ABSL_FLAG(std::string, input, "",

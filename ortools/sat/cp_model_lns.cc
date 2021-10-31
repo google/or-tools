@@ -20,12 +20,15 @@
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
+#include "absl/strings/str_join.h"
 #include "absl/synchronization/mutex.h"
+#include "ortools/graph/connected_components.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/linear_programming_constraint.h"
+#include "ortools/sat/presolve_context.h"
 #include "ortools/sat/rins.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/util/saturated_arithmetic.h"
@@ -124,70 +127,158 @@ void NeighborhoodGeneratorHelper::InitializeHelperData() {
     }
     type_to_constraints_[type].push_back(c);
   }
+
+  const int num_variables = model_proto_.variables().size();
+  is_in_objective_.resize(num_variables, false);
+  if (model_proto_.has_objective()) {
+    for (const int ref : model_proto_.objective().vars()) {
+      is_in_objective_[PositiveRef(ref)] = true;
+    }
+  }
 }
 
+// Recompute all the data when new variables have been fixed. Note that this
+// shouldn't be called if there is no change as it is in O(problem size).
 void NeighborhoodGeneratorHelper::RecomputeHelperData() {
-  // Recompute all the data in case new variables have been fixed.
-  //
-  // TODO(user): Ideally we should ignore trivially true/false constraint, but
-  // this will duplicate already existing code :-( we should probably still do
-  // at least enforcement literal and clauses? We could maybe run a light
-  // presolve?
   absl::MutexLock graph_lock(&graph_mutex_);
   absl::ReaderMutexLock domain_lock(&domain_mutex_);
 
+  // Do basic presolving to have a more precise graph.
+  // Here we just remove trivially true constraints.
+  //
+  // Note(user): We do that each time a new variable is fixed. It might be too
+  // much, but on the miplib and in 1200s, we do that only about 1k time on the
+  // worst case problem.
+  //
+  // TODO(user): Change API to avoid a few copy?
+  // TODO(user): We could keep the context in the class.
+  // TODO(user): We can also start from the previous simplified model instead.
+  {
+    Model local_model;
+    CpModelProto mapping_proto;
+    simplied_model_proto_.Clear();
+    *simplied_model_proto_.mutable_variables() =
+        model_proto_with_only_variables_.variables();
+    PresolveContext context(&local_model, &simplied_model_proto_,
+                            &mapping_proto);
+    ModelCopy copier(&context);
+
+    // TODO(user): Not sure what to do if the model is UNSAT.
+    // This  shouldn't matter as it should be dealt with elsewhere.
+    copier.ImportAndSimplifyConstraints(model_proto_, {});
+  }
+
+  // Compute the constraint <-> variable graph.
+  //
+  // TODO(user): Remove duplicate constraints?
+  const auto& constraints = simplied_model_proto_.constraints();
   var_to_constraint_.assign(model_proto_.variables_size(), {});
-  constraint_to_var_.assign(model_proto_.constraints_size(), {});
+  constraint_to_var_.assign(constraints.size(), {});
+  int reduced_ct_index = 0;
+  for (int ct_index = 0; ct_index < constraints.size(); ++ct_index) {
+    // We remove the interval constraints since we should have an equivalent
+    // linear constraint somewhere else.
+    if (constraints[ct_index].constraint_case() == ConstraintProto::kInterval) {
+      continue;
+    }
 
-  for (int ct_index = 0; ct_index < model_proto_.constraints_size();
-       ++ct_index) {
-    for (const int var : UsedVariables(model_proto_.constraints(ct_index))) {
-      DCHECK(RefIsPositive(var));
+    for (const int var : UsedVariables(constraints[ct_index])) {
       if (IsConstant(var)) continue;
-      var_to_constraint_[var].push_back(ct_index);
-      constraint_to_var_[ct_index].push_back(var);
+      constraint_to_var_[reduced_ct_index].push_back(var);
     }
 
-    // We replace intervals by their underlying integer variables.
-    if (parameters_.lns_expand_intervals_in_constraint_graph()) {
-      for (const int interval :
-           UsedIntervals(model_proto_.constraints(ct_index))) {
-        for (const int var :
-             UsedVariables(model_proto_.constraints(interval))) {
-          DCHECK(RefIsPositive(var));
-          if (IsConstant(var)) continue;
-          var_to_constraint_[var].push_back(ct_index);
-          constraint_to_var_[ct_index].push_back(var);
-        }
+    // We replace intervals by their underlying integer variables. Note that
+    // this is needed for a correct decomposition into independent part.
+    for (const int interval : UsedIntervals(constraints[ct_index])) {
+      for (const int var : UsedVariables(constraints[interval])) {
+        if (IsConstant(var)) continue;
+        constraint_to_var_[reduced_ct_index].push_back(var);
       }
     }
-  }
 
+    // We remove constraint of size 0 and 1 since they are not useful for LNS
+    // based on this graph.
+    if (constraint_to_var_[reduced_ct_index].size() <= 1) {
+      constraint_to_var_[reduced_ct_index].clear();
+      continue;
+    }
+
+    // Keep this constraint.
+    for (const int var : constraint_to_var_[reduced_ct_index]) {
+      var_to_constraint_[var].push_back(reduced_ct_index);
+    }
+    ++reduced_ct_index;
+  }
+  constraint_to_var_.resize(reduced_ct_index);
+
+  // We mark as active all non-constant variables.
+  // Non-active variable will never be fixed in standard LNS fragment.
   active_variables_.clear();
-  active_variables_set_.assign(model_proto_.variables_size(), false);
-
-  if (parameters_.lns_focus_on_decision_variables()) {
-    for (const auto& search_strategy : model_proto_.search_strategy()) {
-      for (const int var : search_strategy.variables()) {
-        const int pos_var = PositiveRef(var);
-        if (!active_variables_set_[pos_var] && !IsConstant(pos_var)) {
-          active_variables_set_[pos_var] = true;
-          active_variables_.push_back(pos_var);
-        }
-      }
-    }
-
-    // Revert to no focus if active_variables_ is empty().
-    if (!active_variables_.empty()) return;
-  }
-
-  // Add all non-constant variables.
-  for (int i = 0; i < model_proto_.variables_size(); ++i) {
+  const int num_variables = model_proto_.variables_size();
+  active_variables_set_.assign(num_variables, false);
+  for (int i = 0; i < num_variables; ++i) {
     if (!IsConstant(i)) {
       active_variables_.push_back(i);
       active_variables_set_[i] = true;
     }
   }
+
+  // Compute connected components.
+  // Note that fixed variable are just ignored.
+  DenseConnectedComponentsFinder union_find;
+  union_find.SetNumberOfNodes(num_variables);
+  for (const std::vector<int>& var_in_constraint : constraint_to_var_) {
+    if (var_in_constraint.size() <= 1) continue;
+    for (int i = 1; i < var_in_constraint.size(); ++i) {
+      union_find.AddEdge(var_in_constraint[0], var_in_constraint[i]);
+    }
+  }
+
+  // Compute all components involving non-fixed variables.
+  //
+  // TODO(user): If a component has no objective, we can fix it to any feasible
+  // solution. This will automatically be done by LNS fragment covering such
+  // component though.
+  components_.clear();
+  var_to_component_index_.assign(num_variables, -1);
+  for (int var = 0; var < num_variables; ++var) {
+    if (IsConstant(var)) continue;
+    const int root = union_find.FindRoot(var);
+    CHECK_LT(root, var_to_component_index_.size());
+    int& index = var_to_component_index_[root];
+    if (index == -1) {
+      index = components_.size();
+      components_.push_back({});
+    }
+    var_to_component_index_[var] = index;
+    components_[index].push_back(var);
+  }
+
+  // Display information about the reduced problem.
+  //
+  // TODO(user): Exploit connected component while generating fragments.
+  // TODO(user): Do not generate fragment not touching the objective.
+  std::vector<int> component_sizes;
+  for (const std::vector<int>& component : components_) {
+    component_sizes.push_back(component.size());
+  }
+  std::sort(component_sizes.begin(), component_sizes.end(),
+            std::greater<int>());
+  std::string compo_message;
+  if (component_sizes.size() > 1) {
+    if (component_sizes.size() <= 10) {
+      compo_message =
+          absl::StrCat(" compo:", absl::StrJoin(component_sizes, ","));
+    } else {
+      component_sizes.resize(10);
+      compo_message =
+          absl::StrCat(" compo:", absl::StrJoin(component_sizes, ","), ",...");
+    }
+  }
+  shared_response_->LogMessage(
+      absl::StrCat("var:", active_variables_.size(), "/", num_variables,
+                   " constraints:", simplied_model_proto_.constraints().size(),
+                   "/", model_proto_.constraints().size(), compo_message));
 }
 
 bool NeighborhoodGeneratorHelper::IsActive(int var) const {
@@ -198,34 +289,6 @@ bool NeighborhoodGeneratorHelper::IsConstant(int var) const {
   return model_proto_with_only_variables_.variables(var).domain_size() == 2 &&
          model_proto_with_only_variables_.variables(var).domain(0) ==
              model_proto_with_only_variables_.variables(var).domain(1);
-}
-
-bool NeighborhoodGeneratorHelper::CopyAndFixVariables(
-    const CpModelProto& source_model,
-    const absl::flat_hash_set<int>& fixed_variables_set,
-    const CpSolverResponse& initial_solution,
-    CpModelProto* output_model) const {
-  output_model->mutable_variables()->Clear();
-  output_model->mutable_variables()->Reserve(source_model.variables_size());
-  for (int i = 0; i < source_model.variables_size(); ++i) {
-    IntegerVariableProto* var_proto = output_model->add_variables();
-    const IntegerVariableProto& source_var_proto = source_model.variables(i);
-    // We only copy the variable names in debug mode.
-    if (DEBUG_MODE && !source_var_proto.name().empty()) {
-      var_proto->set_name(source_var_proto.name());
-    }
-    if (fixed_variables_set.contains(i)) {
-      const int64_t value = initial_solution.solution(i);
-      if (!DomainInProtoContains(source_model.variables(i), value)) {
-        return false;
-      }
-      var_proto->add_domain(value);
-      var_proto->add_domain(value);
-    } else {
-      *var_proto->mutable_domain() = source_var_proto.domain();
-    }
-  }
-  return true;
 }
 
 Neighborhood NeighborhoodGeneratorHelper::FullNeighborhood() const {
@@ -267,34 +330,26 @@ std::vector<int> NeighborhoodGeneratorHelper::GetActiveIntervals(
     // We filter out fixed intervals. Because of presolve, if there is an
     // enforcement literal, it cannot be fixed.
     if (interval_ct.enforcement_literal().empty()) {
-      if (interval_ct.interval().has_start_view()) {
-        bool is_constant = true;
-        for (const int v : interval_ct.interval().start_view().vars()) {
-          if (!IsConstant(v)) {
-            is_constant = false;
-            break;
-          }
-        }
-        for (const int v : interval_ct.interval().size_view().vars()) {
-          if (!IsConstant(v)) {
-            is_constant = false;
-            break;
-          }
-        }
-        for (const int v : interval_ct.interval().end_view().vars()) {
-          if (!IsConstant(v)) {
-            is_constant = false;
-            break;
-          }
-        }
-        if (is_constant) continue;
-      } else {
-        if (IsConstant(PositiveRef(interval_ct.interval().start())) &&
-            IsConstant(PositiveRef(interval_ct.interval().size())) &&
-            IsConstant(PositiveRef(interval_ct.interval().end()))) {
-          continue;
+      bool is_constant = true;
+      for (const int v : interval_ct.interval().start().vars()) {
+        if (!IsConstant(v)) {
+          is_constant = false;
+          break;
         }
       }
+      for (const int v : interval_ct.interval().size().vars()) {
+        if (!IsConstant(v)) {
+          is_constant = false;
+          break;
+        }
+      }
+      for (const int v : interval_ct.interval().end().vars()) {
+        if (!IsConstant(v)) {
+          is_constant = false;
+          break;
+        }
+      }
+      if (is_constant) continue;
     }
 
     active_intervals.push_back(i);
@@ -388,26 +443,97 @@ std::vector<std::vector<int>> NeighborhoodGeneratorHelper::GetRoutingPaths(
 }
 
 Neighborhood NeighborhoodGeneratorHelper::FixGivenVariables(
-    const CpSolverResponse& initial_solution,
+    const CpSolverResponse& base_solution,
     const absl::flat_hash_set<int>& variables_to_fix) const {
   Neighborhood neighborhood;
 
-  bool copy_is_successful = true;
+  // Fill in neighborhood.delta all variable domains.
   {
     absl::ReaderMutexLock domain_lock(&domain_mutex_);
-    copy_is_successful =
-        CopyAndFixVariables(model_proto_with_only_variables_, variables_to_fix,
-                            initial_solution, &neighborhood.delta);
+
+    const int num_variables =
+        model_proto_with_only_variables_.variables().size();
+    neighborhood.delta.mutable_variables()->Reserve(num_variables);
+    for (int i = 0; i < num_variables; ++i) {
+      const IntegerVariableProto& current_var =
+          model_proto_with_only_variables_.variables(i);
+      IntegerVariableProto* new_var = neighborhood.delta.add_variables();
+
+      // We only copy the name in debug mode.
+      if (DEBUG_MODE) new_var->set_name(current_var.name());
+
+      const Domain domain = ReadDomainFromProto(current_var);
+      const int64_t base_value = base_solution.solution(i);
+
+      // It seems better to always start from a feasible point, so if the base
+      // solution is no longer valid under the new up to date bound, we make
+      // sure to relax the domain so that it is.
+      if (!domain.Contains(base_value)) {
+        // TODO(user): this can happen when variables_to_fix.contains(i). But we
+        // should probably never consider as "active" such variable in the first
+        // place.
+        //
+        // TODO(user): This might lead to incompatibility when the base solution
+        // is not compatible with variable we fixed in a connected component! so
+        // maybe it is not great to do that. Initial investigation didn't see
+        // a big change. More work needed.
+        FillDomainInProto(domain.UnionWith(Domain(base_solution.solution(i))),
+                          new_var);
+      } else if (variables_to_fix.contains(i)) {
+        new_var->add_domain(base_value);
+        new_var->add_domain(base_value);
+      } else {
+        FillDomainInProto(domain, new_var);
+      }
+    }
   }
 
-  if (!copy_is_successful) {
-    return NoNeighborhood();
+  // Fill some statistic fields and detect if we cover a full component.
+  //
+  // TODO(user): If there is just one component, we can skip some computation.
+  {
+    absl::ReaderMutexLock graph_lock(&graph_mutex_);
+    std::vector<int> count(components_.size(), 0);
+    const int num_variables = neighborhood.delta.variables().size();
+    for (int var = 0; var < num_variables; ++var) {
+      const auto& domain = neighborhood.delta.variables(var).domain();
+      if (domain.size() != 2 || domain[0] != domain[1]) {
+        ++neighborhood.num_relaxed_variables;
+        if (is_in_objective_[var]) {
+          ++neighborhood.num_relaxed_variables_in_objective;
+        }
+        const int c = var_to_component_index_[var];
+        if (c != -1) count[c]++;
+      }
+    }
+
+    for (int i = 0; i < components_.size(); ++i) {
+      if (count[i] == components_[i].size()) {
+        neighborhood.variables_that_can_be_fixed_to_local_optimum.insert(
+            neighborhood.variables_that_can_be_fixed_to_local_optimum.end(),
+            components_[i].begin(), components_[i].end());
+      }
+    }
   }
 
-  AddSolutionHinting(initial_solution, &neighborhood.delta);
+  // If the objective domain might cut the optimal solution, we cannot exploit
+  // the connected components. We compute this outside the mutex to avoid
+  // any deadlock risk.
+  //
+  // TODO(user): We could handle some complex domain (size > 2).
+  if (model_proto_.has_objective() &&
+      (model_proto_.objective().domain().size() != 2 ||
+       shared_response_->GetInnerObjectiveLowerBound() <
+           model_proto_.objective().domain(0))) {
+    neighborhood.variables_that_can_be_fixed_to_local_optimum.clear();
+  }
+
+  AddSolutionHinting(base_solution, &neighborhood.delta);
 
   neighborhood.is_generated = true;
   neighborhood.is_reduced = !variables_to_fix.empty();
+  neighborhood.is_simple = true;
+
   // TODO(user): force better objective? Note that this is already done when the
   // hint above is successfully loaded (i.e. if it passes the presolve
   // correctly) since the solver will try to find better solution than the
@@ -586,37 +712,29 @@ Neighborhood RelaxRandomVariablesGenerator::Generate(
 Neighborhood RelaxRandomConstraintsGenerator::Generate(
     const CpSolverResponse& initial_solution, double difficulty,
     absl::BitGenRef random) {
-  std::vector<int> active_constraints;
-  for (int ct = 0; ct < helper_.ModelProto().constraints_size(); ++ct) {
-    if (helper_.ModelProto().constraints(ct).constraint_case() ==
-        ConstraintProto::CONSTRAINT_NOT_SET) {
-      continue;
-    }
-    active_constraints.push_back(ct);
-  }
-
-  if (active_constraints.empty() ||
-      helper_.DifficultyMeansFullNeighborhood(difficulty)) {
+  if (helper_.DifficultyMeansFullNeighborhood(difficulty)) {
     return helper_.FullNeighborhood();
   }
 
-  std::shuffle(active_constraints.begin(), active_constraints.end(), random);
-
-  const int num_model_vars = helper_.ModelProto().variables_size();
-  const int num_model_constraints = helper_.ModelProto().constraints_size();
-
-  std::vector<bool> visited_variables_set(num_model_vars, false);
   std::vector<int> relaxed_variables;
-
   {
     absl::ReaderMutexLock graph_lock(&helper_.graph_mutex_);
+    const int num_active_constraints = helper_.ConstraintToVar().size();
+    std::vector<int> active_constraints(num_active_constraints);
+    for (int c = 0; c < num_active_constraints; ++c) {
+      active_constraints[c] = c;
+    }
+    std::shuffle(active_constraints.begin(), active_constraints.end(), random);
+
+    const int num_model_vars = helper_.ModelProto().variables_size();
+    std::vector<bool> visited_variables_set(num_model_vars, false);
+
     const int num_active_vars =
         helper_.ActiveVariablesWhileHoldingLock().size();
     const int target_size = std::ceil(difficulty * num_active_vars);
     CHECK_GT(target_size, 0);
 
     for (const int constraint_index : active_constraints) {
-      CHECK_LT(constraint_index, num_model_constraints);
       for (const int var : helper_.ConstraintToVar()[constraint_index]) {
         if (visited_variables_set[var]) continue;
         visited_variables_set[var] = true;
@@ -628,6 +746,7 @@ Neighborhood RelaxRandomConstraintsGenerator::Generate(
       if (relaxed_variables.size() == target_size) break;
     }
   }
+
   return helper_.RelaxGivenVariables(initial_solution, relaxed_variables);
 }
 
@@ -714,11 +833,6 @@ Neighborhood ConstraintGraphNeighborhoodGenerator::Generate(
   std::vector<bool> added_constraints(num_model_constraints, false);
   std::vector<int> next_constraints;
 
-  // Start by a random constraint.
-  next_constraints.push_back(
-      absl::Uniform<int>(random, 0, num_model_constraints));
-  added_constraints[next_constraints.back()] = true;
-
   std::vector<int> random_variables;
   {
     absl::ReaderMutexLock graph_lock(&helper_.graph_mutex_);
@@ -726,6 +840,14 @@ Neighborhood ConstraintGraphNeighborhoodGenerator::Generate(
         helper_.ActiveVariablesWhileHoldingLock().size();
     const int target_size = std::ceil(difficulty * num_active_vars);
     CHECK_GT(target_size, 0);
+
+    // Start by a random constraint.
+    const int num_active_constraints = helper_.ConstraintToVar().size();
+    if (num_active_constraints != 0) {
+      next_constraints.push_back(
+          absl::Uniform<int>(random, 0, num_active_constraints));
+      added_constraints[next_constraints.back()] = true;
+    }
 
     while (relaxed_variables.size() < target_size) {
       // Stop if we have a full connected component.
@@ -739,7 +861,7 @@ Neighborhood ConstraintGraphNeighborhoodGenerator::Generate(
 
       // Add all the variable of this constraint and increase the set of next
       // possible constraints.
-      CHECK_LT(constraint_index, num_model_constraints);
+      CHECK_LT(constraint_index, num_active_constraints);
       random_variables = helper_.ConstraintToVar()[constraint_index];
       std::shuffle(random_variables.begin(), random_variables.end(), random);
       for (const int var : random_variables) {
@@ -762,30 +884,6 @@ Neighborhood ConstraintGraphNeighborhoodGenerator::Generate(
 }
 
 namespace {
-
-LinearExpressionProto GetStart(const IntervalConstraintProto& interval) {
-  if (interval.has_start_view()) return interval.start_view();
-  LinearExpressionProto result;
-  result.add_vars(interval.start());
-  result.add_coeffs(1);
-  return result;
-}
-
-LinearExpressionProto GetSize(const IntervalConstraintProto& interval) {
-  if (interval.has_size_view()) return interval.size_view();
-  LinearExpressionProto result;
-  result.add_vars(interval.size());
-  result.add_coeffs(1);
-  return result;
-}
-
-LinearExpressionProto GetEnd(const IntervalConstraintProto& interval) {
-  if (interval.has_end_view()) return interval.end_view();
-  LinearExpressionProto result;
-  result.add_vars(interval.end());
-  result.add_coeffs(1);
-  return result;
-}
 
 int64_t GetLinearExpressionValue(const LinearExpressionProto& expr,
                                  const CpSolverResponse& initial_solution) {
@@ -820,10 +918,10 @@ void AddPrecedenceConstraints(const absl::Span<const int> intervals,
     const ConstraintProto& interval_ct = helper.ModelProto().constraints(i);
 
     // TODO(user): we ignore size zero for now.
-    const LinearExpressionProto size_var = GetSize(interval_ct.interval());
+    const LinearExpressionProto& size_var = interval_ct.interval().size();
     if (GetLinearExpressionValue(size_var, initial_solution) == 0) continue;
 
-    const LinearExpressionProto start_var = GetStart(interval_ct.interval());
+    const LinearExpressionProto& start_var = interval_ct.interval().start();
     const int64_t start_value =
         GetLinearExpressionValue(start_var, initial_solution);
 
@@ -833,18 +931,21 @@ void AddPrecedenceConstraints(const absl::Span<const int> intervals,
 
   // Add precedence between the remaining intervals, forcing their order.
   for (int i = 0; i + 1 < start_interval_pairs.size(); ++i) {
-    const LinearExpressionProto before_start =
-        GetStart(helper.ModelProto()
-                     .constraints(start_interval_pairs[i].second)
-                     .interval());
-    const LinearExpressionProto before_end =
-        GetEnd(helper.ModelProto()
-                   .constraints(start_interval_pairs[i].second)
-                   .interval());
-    const LinearExpressionProto after_start =
-        GetStart(helper.ModelProto()
-                     .constraints(start_interval_pairs[i + 1].second)
-                     .interval());
+    const LinearExpressionProto& before_start =
+        helper.ModelProto()
+            .constraints(start_interval_pairs[i].second)
+            .interval()
+            .start();
+    const LinearExpressionProto& before_end =
+        helper.ModelProto()
+            .constraints(start_interval_pairs[i].second)
+            .interval()
+            .end();
+    const LinearExpressionProto& after_start =
+        helper.ModelProto()
+            .constraints(start_interval_pairs[i + 1].second)
+            .interval()
+            .start();
 
     // If the end was smaller we keep it that way, otherwise we just order the
     // start variables.
@@ -972,7 +1073,7 @@ Neighborhood SchedulingTimeWindowNeighborhoodGenerator::Generate(
 
   for (const int i : active_intervals) {
     const ConstraintProto& interval_ct = helper_.ModelProto().constraints(i);
-    const LinearExpressionProto start_var = GetStart(interval_ct.interval());
+    const LinearExpressionProto& start_var = interval_ct.interval().start();
     const int64_t start_value =
         GetLinearExpressionValue(start_var, initial_solution);
     start_interval_pairs.push_back({start_value, i});
@@ -1301,10 +1402,7 @@ WeightedRandomRelaxationNeighborhoodGenerator::
       case ConstraintProto::kIntProd:
       case ConstraintProto::kIntDiv:
       case ConstraintProto::kIntMod:
-      case ConstraintProto::kIntMax:
       case ConstraintProto::kLinMax:
-      case ConstraintProto::kIntMin:
-      case ConstraintProto::kLinMin:
       case ConstraintProto::kNoOverlap:
       case ConstraintProto::kNoOverlap2D:
         constraint_weights_.push_back(2.0);

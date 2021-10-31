@@ -75,7 +75,7 @@ public class Loader {
   /**
    * Extract and load the native libraries needed for using ortools-java.
    */
-  public synchronized static void loadNativeLibraries() {
+  public static synchronized void loadNativeLibraries() {
     if (!loaded) {
       try {
         // Extract natives

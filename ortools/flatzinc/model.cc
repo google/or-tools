@@ -694,18 +694,39 @@ int64_t Argument::ValueAt(int pos) const {
     case DOMAIN_LIST: {
       CHECK_GE(pos, 0);
       CHECK_LT(pos, domains.size());
-      CHECK(domains[pos].HasOneValue());
       return domains[pos].Value();
     }
     case VAR_REF_ARRAY: {
       CHECK_GE(pos, 0);
       CHECK_LT(pos, variables.size());
-      CHECK(variables[pos]->domain.HasOneValue());
       return variables[pos]->domain.Value();
     }
     default: {
       LOG(FATAL) << "Should not be here";
       return 0;
+    }
+  }
+}
+
+bool Argument::HasOneValueAt(int pos) const {
+  switch (type) {
+    case INT_LIST:
+      CHECK_GE(pos, 0);
+      CHECK_LT(pos, values.size());
+      return true;
+    case DOMAIN_LIST: {
+      CHECK_GE(pos, 0);
+      CHECK_LT(pos, domains.size());
+      return domains[pos].HasOneValue();
+    }
+    case VAR_REF_ARRAY: {
+      CHECK_GE(pos, 0);
+      CHECK_LT(pos, variables.size());
+      return variables[pos]->domain.HasOneValue();
+    }
+    default: {
+      LOG(FATAL) << "Should not be here";
+      return false;
     }
   }
 }
@@ -716,6 +737,23 @@ Variable* Argument::Var() const {
 
 Variable* Argument::VarAt(int pos) const {
   return type == VAR_REF_ARRAY ? variables[pos] : nullptr;
+}
+
+int Argument::Size() const {
+  switch (type) {
+    case INT_LIST:
+      return values.size();
+    case DOMAIN_LIST: {
+      return domains.size();
+    }
+    case VAR_REF_ARRAY: {
+      return variables.size();
+    }
+    default: {
+      LOG(FATAL) << "Should not be here";
+      return 0;
+    }
+  }
 }
 
 // ----- Variable -----

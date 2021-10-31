@@ -464,7 +464,10 @@ void DetectAndAddSymmetryToProto(const SatParameters& params,
   std::vector<std::unique_ptr<SparsePermutation>> generators;
   FindCpModelSymmetries(params, *proto, &generators,
                         /*deterministic_limit=*/1.0, logger);
-  if (generators.empty()) return;
+  if (generators.empty()) {
+    proto->clear_symmetry();
+    return;
+  }
 
   for (const std::unique_ptr<SparsePermutation>& perm : generators) {
     SparsePermutationProto* perm_proto = symmetry->add_permutations();

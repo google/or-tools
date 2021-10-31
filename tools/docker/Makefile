@@ -5,7 +5,7 @@ RESET=\e[0m
 
 help:
 	@echo -e "${BOLD}SYNOPSIS${RESET}"
-	@echo -e "\tmake <target> [NOCACHE=1]"
+	@echo -e "\tmake <TARGET> [NOCACHE=1]"
 	@echo
 	@echo -e "${BOLD}DESCRIPTION${RESET}"
 	@echo -e "\tTools to generate various deliveries for linux distros"
@@ -24,19 +24,27 @@ help:
 	@echo -e "\t${BOLD}python_<platform>_<step>${RESET}: Build all python 'ortools' wheel packages (3.6+) for a specific platform."
 	@echo -e "\t${BOLD}python_<target>_<step>${RESET}: Build python 'ortools' wheel packages (3.6+) for a specific target."
 	@echo -e "\t${BOLD}save_python_<target>${RESET}: Save python 'ortools' image."
-	@echo -e "\t${BOLD}sh_python_<target>${RESET}: Run a container using the python 'ortools' image."
 	@echo -e "\t${BOLD}clean_python_<target>${RESET}: Clean manylinux2014 and alpine python 'ortools' wheel packages."
+	@echo -e "\t${BOLD}sh_python_<target>${RESET}: Run a container using the python 'ortools' image."
 	@echo
 	@echo -e "\t${BOLD}<platform>${RESET}:"
 	@echo -e "\t\t${BOLD}amd64${RESET}"
 	@echo -e "\t\t${BOLD}arm64v8${RESET}"
 	@echo
-	@echo -e "\t${BOLD}<target>${RESET}: ${BOLD}<platform>_<distro>${RESET}"
+	@echo -e "\t${BOLD}<target>${RESET}:"
+	@echo -e "\t\t${BOLD}<platform>_<distro>${RESET}"
+	@echo -e "\t\t${BOLD}<platform>_manylinux_cp<version>${RESET}"
 	@echo
 	@echo -e "\t${BOLD}<distro>${RESET}:"
 	@echo -e "\t\t${BOLD}alpine${RESET} (latest)"
-	@echo -e "\t\t${BOLD}manylinux${RESET} (latest)"
-	@echo -e "\te.g. 'make python_arm64v8_manylinux_export'"
+	@echo -e "\t\t${BOLD}manylinux${RESET} (manylinux2014)"
+	@echo
+	@echo -e "\t${BOLD}<version>${RESET}:"
+	@echo -e "\t\t${BOLD}36${RESET} Python3.6"
+	@echo -e "\t\t${BOLD}37${RESET} Python3.7"
+	@echo -e "\t\t${BOLD}38${RESET} Python3.8"
+	@echo -e "\t\t${BOLD}39${RESET} Python3.9"
+	@echo -e "\t\t${BOLD}310${RESET} Python3.10"
 	@echo
 	@echo -e "\t${BOLD}<step>${RESET}:"
 	@echo -e "\t\t${BOLD}env${RESET}"
@@ -44,6 +52,8 @@ help:
 	@echo -e "\t\t${BOLD}build${RESET}"
 	@echo -e "\t\t${BOLD}test${RESET}"
 	@echo -e "\t\t${BOLD}export${RESET}"
+	@echo -e "\te.g. 'make python_amd64_manylinux_cp39_export'"
+	@echo -e "\te.g. 'make python_arm64v8_alpine_export'"
 	@echo
 	@echo
 	@echo -e "\t${BOLD}amd64_<stage>${RESET}: Build <stage> docker images for ALL DISTROS."
@@ -68,6 +78,7 @@ help:
 	@echo -e "\t\t${BOLD}debian-10${RESET} (buster)"
 	@echo -e "\t\t${BOLD}fedora-34${RESET} (latest)"
 	@echo -e "\t\t${BOLD}fedora-33${RESET}"
+	@echo -e "\t\t${BOLD}opensuse-leap${RESET} (latest)"
 	@echo -e "\t\t${BOLD}ubuntu-21.04${RESET} (rolling)"
 	@echo -e "\t\t${BOLD}ubuntu-20.04${RESET} (Ubuntu 20.04 LTS, latest)"
 	@echo -e "\t\t${BOLD}ubuntu-18.04${RESET} (Ubuntu 18.04 LTS)"
@@ -108,13 +119,13 @@ OR_TOOLS_BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
 OR_TOOLS_SHA1 := $(shell git rev-parse --verify HEAD)
 include ../../Version.txt
 OR_TOOLS_PATCH := $(shell git rev-list --count HEAD)
-OR_TOOLS_VERSION := $(OR_TOOLS_MAJOR).$(OR_TOOLS_MINOR).$(OR_TOOLS_PATCH)
+OR_TOOLS_VERSION := ${OR_TOOLS_MAJOR}.${OR_TOOLS_MINOR}.${OR_TOOLS_PATCH}
 ifdef PRE_RELEASE
-OR_TOOLS_VERSION := $(OR_TOOLS_VERSION)-beta
+OR_TOOLS_VERSION := ${OR_TOOLS_VERSION}-rc
 endif
-$(info branch: $(OR_TOOLS_BRANCH))
-$(info SHA1: $(OR_TOOLS_SHA1))
-$(info version: $(OR_TOOLS_VERSION))
+$(info branch: ${OR_TOOLS_BRANCH})
+$(info SHA1: ${OR_TOOLS_SHA1})
+$(info version: ${OR_TOOLS_VERSION})
 
 # Docker image name prefix.
 IMAGE := or-tools/docker
@@ -140,6 +151,9 @@ test_delivery: test_archives
 # $* stem
 # $< first prerequist
 # $@ target name
+PYTHON_PLATFORMS = amd64 arm64v8
+PYTHON_DISTROS = manylinux alpine
+PYTHON_STAGES = env devel build test
 
 export:
 	-mkdir $@
@@ -147,129 +161,187 @@ export:
 export/python: | export
 	-mkdir $@
 
-export/python/%/build-manylinux.sh: python/build-manylinux.sh | export/python
-	-mkdir -p export/python/$*
+cache:
+	-mkdir $@
+
+cache/python: | cache
+	-mkdir $@
+
+## MANYLINUX ##
+PYTHON_VERSIONS = 36 37 38 39 310
+
+export/python/manylinux: | export/python
+	-mkdir -p $@
+
+export/python/manylinux/build-manylinux.sh: python/build-manylinux.sh | export/python/manylinux
 	cp $< $@
 
-# Currently supported distro
-PYTHON_DISTROS = alpine manylinux
-PYTHON_STAGES = env devel build test
+define manylinux_inner =
+#$$(info manylinux_inner:PLATFORM: '$1')
+#$$(info manylinux_inner:VERSION: '$2')
+#$$(info manylinux_inner:STAGE: '$3')
 
-## AMD64
-PYTHON_AMD_DISTROS = $(addprefix amd64_, $(PYTHON_DISTROS))
-define make-python-stage-target =
-python_targets_$1 = $(addprefix python_, $(addsuffix _$1, $(PYTHON_AMD_DISTROS)))
-.PHONY: python_amd64_$1
-python_amd64_$1: $(python_targets_$1)
-.PHONY: $(python_targets_$1)
-$$(python_targets_$1): python_amd64_%_$1: python/amd64/%.Dockerfile export/python/%/build-manylinux.sh
-	@docker image rm -f ${IMAGE}:python_amd64_$$*_$1 2>/dev/null
+.PHONY: python_$1_manylinux_cp$2_$3
+python_$1_manylinux_cp$2_$3: python/$1/manylinux.Dockerfile export/python/manylinux/build-manylinux.sh
+	@docker image rm -f ${IMAGE}:$$@ 2>/dev/null
 	${DOCKER_BUILD_CMD} \
- --tag ${IMAGE}:python_amd64_$$*_$1 \
- --build-arg SRC_GIT_BRANCH=$(OR_TOOLS_BRANCH) \
- --build-arg SRC_GIT_SHA1=$(OR_TOOLS_SHA1) \
- --target=$1 \
+ --tag ${IMAGE}:$$@ \
+ --build-arg GIT_BRANCH=${OR_TOOLS_BRANCH} \
+ --build-arg GIT_SHA1=${OR_TOOLS_SHA1} \
+ --build-arg PYTHON_VERSION=$2 \
+ --target=$3 \
  -f $$< \
- export/python/$$*
+ export/python/manylinux
 
-save_python_targets_$1 = $(addprefix save_python_, $(addsuffix _$1, $(PYTHON_AMD_DISTROS)))
-.PHONY: $(save_python_targets_$1)
-$$(save_python_targets_$1): save_python_amd64_%_$1: cache/python/amd64/%/docker_$1.tar
-cache/python/amd64/%/docker_$1.tar: python_amd64_%_$1
+.PHONY: save_python_$1_manylinux_cp$2_$3
+save_python_$1_manylinux_cp$2_$3: cache/python/docker_$1_manylinux_cp$2_$3.tar
+cache/python/docker_$1_manylinux_cp$2_$3.tar: python_$1_manylinux_cp$2_$3
 	@rm -f $$@
-	mkdir -p cache/python/amd64/$$*
-	docker save ${IMAGE}:python_amd64_$$*_$1 -o $$@
+	mkdir -p cache/python/
+	docker save ${IMAGE}:$$< -o $$@
 
-sh_python_targets_$1 = $(addprefix sh_python_, $(addsuffix _$1, $(PYTHON_AMD_DISTROS)))
-.PHONY: $(sh_python_targets_$1)
-$$(sh_python_targets_$1): sh_python_amd64_%_$1: python_amd64_%_$1 | export
+.PHONY: clean_python_$1_manylinux_cp$2_$3
+clean_python_$1_manylinux_cp$2_$3: python/$1/manylinux.Dockerfile export/python/manylinux/build-manylinux.sh
+	docker image rm -f ${IMAGE}:python_$1_manylinux_cp$2_$3 2>/dev/null
+	rm -f cache/python/docker_$1_manylinux_cp$2_$3.tar
+
+# Debug purpose
+.PHONY: sh_python_$1_manylinux_cp$2_$3
+sh_python_$1_manylinux_cp$2_$3: python_$1_manylinux_cp$2_$3
 	${DOCKER_RUN_CMD} \
  -v `pwd`/export:/export \
  -it \
- --name ortools_python_amd64_$$*_$1 \
- ${IMAGE}:python_amd64_$$*_$1
-
-clean_python_targets_$1 = $(addprefix clean_python_, $(addsuffix _$1, $(PYTHON_AMD_DISTROS)))
-.PHONY: clean_python_amd64_$1
-clean_python_amd64_$1: $(clean_python_targets_$1)
-.PHONY: $(clean_python_targets_$1)
-$$(clean_python_targets_$1): clean_python_amd64_%_$1:
-	docker image rm -f ${IMAGE}:python_amd64_$$*_$1 2>/dev/null
-	rm -f cache/python/amd64/$$*/docker_$1.tar
+ --name ortools_$$< \
+ ${IMAGE}:$$<
 endef
 
-$(foreach stage,$(PYTHON_STAGES),$(eval $(call make-python-stage-target,$(stage))))
+define manylinux_outer =
+#$$(info manylinux_outer:PLATFORM: '$1')
+#$$(info manylinux_outer:VERSION: '$2')
 
-# "python_amd64_<distro>_export" step
-python_targets_export = $(addprefix python_, $(addsuffix _export, $(PYTHON_AMD_DISTROS)))
+$$(foreach stage,${PYTHON_STAGES},$$(eval $$(call manylinux_inner,$1,$2,$${stage})))
+
+.PHONY: python_$1_manylinux_cp$2_export
+python_$1_manylinux_cp$2_export: python_$1_manylinux_cp$2_build
+	${DOCKER_RUN_CMD} \
+ -v `pwd`/export:/export \
+ -it \
+ --name ortools_$$< \
+ ${IMAGE}:$$< \
+ "cp build*/python/dist/*.whl /export/python"
+endef
+
+$(foreach version,${PYTHON_VERSIONS},$(eval $(call manylinux_outer,amd64,${version})))
+$(foreach version,${PYTHON_VERSIONS},$(eval $(call manylinux_outer,arm64v8,${version})))
+
+# Merge
+define manylinux_merge =
+#$$(info manylinux_merge:PLATFORM: '$1')
+#$$(info manylinux_merge:STAGE: '$2')
+
+.PHONY: python_$1_manylinux_$2
+python_$1_manylinux_$2: $(addprefix python_$1_manylinux_cp, $(addsuffix _$2, ${PYTHON_VERSIONS}))
+.PHONY: save_python_$1_manylinux_$2
+save_python_$1_manylinux_$2: $(addprefix save_python_$1_manylinux_cp, $(addsuffix _$2, ${PYTHON_VERSIONS}))
+.PHONY: clean_python_$1_manylinux_$2
+clean_python_$1_manylinux_$2: $(addprefix clean_python_$1_manylinux_cp, $(addsuffix _$2, ${PYTHON_VERSIONS}))
+endef
+
+$(foreach stage,${PYTHON_STAGES} export,$(eval $(call manylinux_merge,amd64,${stage})))
+$(foreach stage,${PYTHON_STAGES} export,$(eval $(call manylinux_merge,arm64v8,${stage})))
+
+## ALPINE ##
+export/python/alpine: | export/python
+	-mkdir -p $@
+
+define alpine_loop =
+#$$(info alpine_loop:PLATFORM: '$1')
+#$$(info alpine_loop:STAGE: '$2')
+
+.PHONY: python_$1_alpine_$2
+python_$1_alpine_$2: python/$1/alpine.Dockerfile | export/python/alpine
+	@docker image rm -f ${IMAGE}:$$@ 2>/dev/null
+	${DOCKER_BUILD_CMD} \
+ --tag ${IMAGE}:$$@ \
+ --build-arg GIT_BRANCH=${OR_TOOLS_BRANCH} \
+ --build-arg GIT_SHA1=${OR_TOOLS_SHA1} \
+ --target=$2 \
+ -f $$< \
+ export/python/alpine
+
+.PHONY: save_python_$1_alpine_$2
+save_python_$1_alpine_$2: cache/python/docker_$1_alpine_$2.tar
+cache/python/docker_$1_alpine_$2.tar: python_$1_alpine_$2 | cache/python
+	@rm -f $$@
+	docker save ${IMAGE}:$$< -o $$@
+
+.PHONY: clean_python_$1_alpine_$2
+clean_python_$1_alpine_$2: python/$1/alpine.Dockerfile | export/python/alpine
+	docker image rm -f ${IMAGE}:python_$1_alpine_$2 2>/dev/null
+	rm -f cache/python/docker_$1_alpine_$2.tar
+
+# Debug purpose
+.PHONY: sh_python_$1_alpine_$2
+sh_python_$1_alpine_$2: python_$1_alpine_$2
+	${DOCKER_RUN_CMD} \
+ -v `pwd`/export:/export \
+ -it \
+ --name ortools_$$< \
+ ${IMAGE}:$$<
+endef
+
+$(foreach stage,${PYTHON_STAGES},$(eval $(call alpine_loop,amd64,${stage})))
+$(foreach stage,${PYTHON_STAGES},$(eval $(call alpine_loop,arm64v8,${stage})))
+
+alpine_export_targets =  $(addprefix python_, $(addsuffix _alpine_export, ${PYTHON_PLATFORMS}))
+.PHONY: ${alpine_export_targets}
+${alpine_export_targets}: python_%_alpine_export: python_%_alpine_build | export
+	${DOCKER_RUN_CMD} \
+ -v `pwd`/export:/export \
+ -it \
+ --name ortools_$$< \
+ ${IMAGE}:$$< \
+ "cp build*/python/dist/*.whl /export/python"
+
+## MERGE DISTRO ##
+define distro_merge =
+#$$(info distro_merge:PLATFORM: '$1')
+#$$(info distro_merge:STAGE: '$2')
+
+.PHONY: python_$1_$2
+python_$1_$2: $(addprefix python_$1_, $(addsuffix _$2, ${PYTHON_DISTROS}))
+.PHONY: save_python_$1_$2
+save_python_$1_$2: $(addprefix save_python_$1_, $(addsuffix _$2, ${PYTHON_DISTROS}))
+.PHONY: clean_python_$1_$2
+clean_python_$1_$2: $(addprefix clean_python_$1_, $(addsuffix _$2, ${PYTHON_DISTROS}))
+endef
+
+$(foreach stage,${PYTHON_STAGES} export,$(eval $(call distro_merge,amd64,${stage})))
+$(foreach stage,${PYTHON_STAGES} export,$(eval $(call distro_merge,arm64v8,${stage})))
+
+## MERGE PLATFORM ##
+define platform_merge =
+#$$(info platform_merge:STAGE: '$1')
+
+.PHONY: python_$1
+python_$1: $(addprefix python_, $(addsuffix _$1, ${PYTHON_PLATFORMS}))
+.PHONY: save_python_$1
+save_python_$1: $(addprefix save_python_, $(addsuffix _$1, ${PYTHON_PLATFORMS}))
+.PHONY: clean_python_$1
+clean_python_$1: $(addprefix clean_python_, $(addsuffix _$1, ${PYTHON_PLATFORMS}))
+endef
+
+$(foreach stage,${PYTHON_STAGES} export,$(eval $(call platform_merge,${stage})))
+
+# Alias
 .PHONY: python_amd64
-python_amd64: $(python_targets_export)
-.PHONY: $(python_targets_export)
-$(python_targets_export): python_amd64_%_export: python_amd64_%_build | export
-	${DOCKER_RUN_CMD} \
- -v `pwd`/export:/export \
- -it ${IMAGE}:python_amd64_$*_build \
- "cp build*/python/dist/*.whl /export/python"
+python_amd64: python_amd64_export
 
-## ARM64v8
-PYTHON_ARM_DISTROS = $(addprefix arm64v8_, $(PYTHON_DISTROS))
-define make-python-arm-stage-target =
-python_targets_$1 = $(addprefix python_, $(addsuffix _$1, $(PYTHON_ARM_DISTROS)))
-.PHONY: python_arm64v8_$1
-python_arm64v8_$1: $(python_targets_$1)
-.PHONY: $(python_targets_$1)
-$$(python_targets_$1): python_arm64v8_%_$1: python/arm64v8/%.Dockerfile export/python/%/build-manylinux.sh
-	@docker image rm -f ${IMAGE}:python_arm64v8_$$*_$1 2>/dev/null
-	${DOCKER_BUILD_CMD} \
- --tag ${IMAGE}:python_arm64v8_$$*_$1 \
- --build-arg SRC_GIT_BRANCH=$(OR_TOOLS_BRANCH) \
- --build-arg SRC_GIT_SHA1=$(OR_TOOLS_SHA1) \
- --target=$1 \
- -f $$< \
- export/python/$$*
-
-save_python_targets_$1 = $(addprefix save_python_, $(addsuffix _$1, $(PYTHON_ARM_DISTROS)))
-.PHONY: $(save_python_targets_$1)
-$$(save_python_targets_$1): save_python_arm64v8_%_$1: cache/python/arm64v8/%/docker_$1.tar
-cache/python/arm64v8/%/docker_$1.tar: python_arm64v8_%_$1
-	@rm -f $$@
-	mkdir -p cache/python/arm64v8/$$*
-	docker save ${IMAGE}:python_arm64v8_$$*_$1 -o $$@
-
-sh_python_targets_$1 = $(addprefix sh_python_, $(addsuffix _$1, $(PYTHON_ARM_DISTROS)))
-.PHONY: $(sh_python_targets_$1)
-$$(sh_python_targets_$1): sh_python_arm64v8_%_$1: python_arm64v8_%_$1 | export
-	${DOCKER_RUN_CMD} \
- -v `pwd`/export:/export \
- -it \
- --name ortools_python_arm64v8_$$*_$1 \
- ${IMAGE}:python_arm64v8_$$*_$1
-
-clean_python_targets_$1 = $(addprefix clean_python_, $(addsuffix _$1, $(PYTHON_ARM_DISTROS)))
-.PHONY: clean_python_arm64v8_$1
-clean_python_arm64v8_$1: $(clean_python_targets_$1)
-.PHONY: $(clean_python_targets_$1)
-$$(clean_python_targets_$1): clean_python_arm64v8_%_$1:
-	docker image rm -f ${IMAGE}:python_arm64v8_$$*_$1 2>/dev/null
-	rm -f cache/python/arm64v8/$$*/docker_$1.tar
-endef
-
-$(foreach stage,$(PYTHON_STAGES),$(eval $(call make-python-arm-stage-target,$(stage))))
-
-# "python_arm64v8_<distro>_export" step
-python_arm_targets_export = $(addprefix python_, $(addsuffix _export, $(PYTHON_ARM_DISTROS)))
 .PHONY: python_arm64v8
-python_arm64v8: $(python_arm_targets_export)
-.PHONY: $(python_arm_targets_export)
-$(python_arm_targets_export): python_arm64v8_%_export: python_arm64v8_%_build | export
-	${DOCKER_RUN_CMD} \
- -v `pwd`/export:/export \
- -it ${IMAGE}:python_arm64v8_$*_build \
- "cp build*/python/dist/*.whl /export/python"
+python_arm64v8: python_arm64v8_export
 
-## MERGE ##
 .PHONY: python
-python: python_amd64 python_arm64v8
+python: python_export
 
 #################
 ###  ARCHIVES  ##
@@ -284,6 +356,7 @@ DISTROS = \
  centos-7 centos-8 \
  debian-10 debian-11 \
  fedora-33 fedora-34 \
+ opensuse-leap \
  ubuntu-16.04 ubuntu-18.04 ubuntu-20.04 ubuntu-21.04
 STAGES = env devel third_party build
 

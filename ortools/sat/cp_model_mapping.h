@@ -91,7 +91,7 @@ class CpModelMapping {
   // TODO(user): We could "easily" create an intermediate variable for more
   // complex linear expression. We could also identify duplicate expressions to
   // not create two identical integer variable.
-  AffineExpression LoadAffineView(const LinearExpressionProto& exp) const {
+  AffineExpression Affine(const LinearExpressionProto& exp) const {
     CHECK_LE(exp.vars().size(), 1);
     if (exp.vars().empty()) {
       return AffineExpression(IntegerValue(exp.offset()));

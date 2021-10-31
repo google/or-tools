@@ -1510,7 +1510,10 @@ bool LinearProgram::BoundsOfIntegerConstraintsAreInteger(
         integer_constraint = false;
         break;
       }
-      if (!IsIntegerWithinTolerance(var.coefficient(), tolerance)) {
+
+      // To match what the IntegerBoundsPreprocessor is doing, we require all
+      // coefficient to be EXACTLY integer here.
+      if (std::round(var.coefficient()) != var.coefficient()) {
         integer_constraint = false;
         break;
       }

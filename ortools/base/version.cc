@@ -17,5 +17,6 @@ namespace operations_research {
 
 int OrToolsMajorVersion() { return OR_TOOLS_MAJOR; }
 int OrToolsMinorVersion() { return OR_TOOLS_MINOR; }
+int OrToolsPatchVersion() { return OR_TOOLS_PATCH; }
 
 }  // namespace operations_research

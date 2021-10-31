@@ -24,6 +24,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/util/bitset.h"
@@ -121,6 +122,20 @@ class ImpliedBounds {
                                                 : empty_var_to_value_;
   }
 
+  // Register the fact that var = sum literal * value with sum literal == 1.
+  // Note that we call this an "element" encoding because a value can appear
+  // more than once.
+  void AddElementEncoding(IntegerVariable var,
+                          const std::vector<ValueLiteralPair>& encoding,
+                          int exactly_one_index);
+
+  // Returns an empty map if there is no such encoding.
+  const absl::flat_hash_map<int, std::vector<ValueLiteralPair>>&
+  GetElementEncodings(IntegerVariable var);
+
+  // Get an unsorted set of variables appearing in element encodings.
+  const std::vector<IntegerVariable>& GetElementEncodedVariables() const;
+
   // Adds to the integer trail all the new level-zero deduction made here.
   // This can only be called at decision level zero. Returns false iff the model
   // is infeasible.
@@ -170,6 +185,13 @@ class ImpliedBounds {
       literal_to_var_to_value_;
   const absl::flat_hash_map<IntegerVariable, IntegerValue> empty_var_to_value_;
 
+  absl::flat_hash_map<IntegerVariable,
+                      absl::flat_hash_map<int, std::vector<ValueLiteralPair>>>
+      var_to_index_to_element_encodings_;
+  const absl::flat_hash_map<int, std::vector<ValueLiteralPair>>
+      empty_element_encoding_;
+  std::vector<IntegerVariable> element_encoded_variables_;
+
   // TODO(user): Ideally, this should go away if we manage to push level-zero
   // fact at a positive level directly.
   absl::StrongVector<IntegerVariable, IntegerValue> level_zero_lower_bounds_;
@@ -179,6 +201,18 @@ class ImpliedBounds {
   int64_t num_deductions_ = 0;
   int64_t num_enqueued_in_var_to_bounds_ = 0;
 };
+
+// Looks at value encodings and detects if the product of two variables can be
+// linearized.
+//
+// In the returned encoding, note that all the literals will be unique and in
+// exactly one relation, and that the values can be duplicated. This is what we
+// call an "element" encoding.
+//
+// The expressions will also be canonical.
+bool DetectLinearEncodingOfProducts(const AffineExpression& left,
+                                    const AffineExpression& right, Model* model,
+                                    LinearConstraintBuilder* builder);
 
 }  // namespace sat
 }  // namespace operations_research

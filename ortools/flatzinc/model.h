@@ -201,6 +201,10 @@ struct Argument {
   // Returns the variable at position pos inside the argument if the type is
   // VAR_REF_ARRAY or nullptr otherwise.
   Variable* VarAt(int pos) const;
+  // Returns true is the pos-th argument is fixed.
+  bool HasOneValueAt(int pos) const;
+  // Returns the number of object in the argument.
+  int Size() const;
 
   Type type;
   std::vector<int64_t> values;

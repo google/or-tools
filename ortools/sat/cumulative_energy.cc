@@ -57,14 +57,10 @@ void AddCumulativeOverloadChecker(const std::vector<AffineExpression>& demands,
       energies.emplace_back(demand.constant * size.constant);
     } else if (demand.var == kNoIntegerVariable) {
       CHECK_GE(demand.constant, 0);
-      energies.push_back(size);
-      energies.back().coeff *= demand.constant;
-      energies.back().constant *= demand.constant;
+      energies.push_back(size.MultipliedBy(demand.constant));
     } else if (size.var == kNoIntegerVariable) {
       CHECK_GE(size.constant, 0);
-      energies.push_back(demand);
-      energies.back().coeff *= size.constant;
-      energies.back().constant *= size.constant;
+      energies.push_back(demand.MultipliedBy(size.constant));
     } else {
       // The case where both demand and size are variable should be rare.
       //

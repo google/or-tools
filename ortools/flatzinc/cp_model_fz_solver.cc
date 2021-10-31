@@ -76,6 +76,9 @@ struct CpModelProtoWithMapping {
   // Convert a flatzinc argument to a variable or a list of variable.
   // Note that we always encode a constant argument with a constant variable.
   int LookupVar(const fz::Argument& argument);
+  LinearExpressionProto LookupExpr(const fz::Argument& argument, bool negate);
+  LinearExpressionProto LookupExprAt(const fz::Argument& argument, int pos,
+                                     bool negate);
   std::vector<int> LookupVars(const fz::Argument& argument);
   std::vector<VarOrValue> LookupVarsOrValues(const fz::Argument& argument);
 
@@ -142,6 +145,32 @@ int CpModelProtoWithMapping::LookupVar(const fz::Argument& argument) {
   if (argument.HasOneValue()) return LookupConstant(argument.Value());
   CHECK_EQ(argument.type, fz::Argument::VAR_REF);
   return fz_var_to_index[argument.Var()];
+}
+
+LinearExpressionProto CpModelProtoWithMapping::LookupExpr(
+    const fz::Argument& argument, bool negate) {
+  LinearExpressionProto expr;
+  if (argument.HasOneValue()) {
+    const int64_t value = argument.Value();
+    expr.set_offset(negate ? -value : value);
+  } else {
+    expr.add_vars(LookupVar(argument));
+    expr.add_coeffs(negate ? -1 : 1);
+  }
+  return expr;
+}
+
+LinearExpressionProto CpModelProtoWithMapping::LookupExprAt(
+    const fz::Argument& argument, int pos, bool negate) {
+  LinearExpressionProto expr;
+  if (argument.HasOneValueAt(pos)) {
+    const int64_t value = argument.ValueAt(pos);
+    expr.set_offset(negate ? -value : value);
+  } else {
+    expr.add_vars(fz_var_to_index[argument.VarAt(pos)]);
+    expr.add_coeffs(negate ? -1 : 1);
+  }
+  return expr;
 }
 
 std::vector<int> CpModelProtoWithMapping::LookupVars(
@@ -211,12 +240,12 @@ int CpModelProtoWithMapping::GetOrCreateOptionalInterval(int start_var,
     }
 
     auto* interval = AddEnforcedConstraint(opt_var)->mutable_interval();
-    interval->mutable_start_view()->add_vars(start_var);
-    interval->mutable_start_view()->add_coeffs(1);
-    interval->mutable_size_view()->set_offset(size.value);
-    interval->mutable_end_view()->add_vars(start_var);
-    interval->mutable_end_view()->add_coeffs(1);
-    interval->mutable_end_view()->set_offset(size.value);
+    interval->mutable_start()->add_vars(start_var);
+    interval->mutable_start()->add_coeffs(1);
+    interval->mutable_size()->set_offset(size.value);
+    interval->mutable_end()->add_vars(start_var);
+    interval->mutable_end()->add_coeffs(1);
+    interval->mutable_end()->set_offset(size.value);
 
     return interval_index;
   } else {  // Size is variable.
@@ -236,12 +265,12 @@ int CpModelProtoWithMapping::GetOrCreateOptionalInterval(int start_var,
 
     // Create the interval.
     auto* interval = AddEnforcedConstraint(opt_var)->mutable_interval();
-    interval->mutable_start_view()->add_vars(start_var);
-    interval->mutable_start_view()->add_coeffs(1);
-    interval->mutable_size_view()->add_vars(size.var);
-    interval->mutable_size_view()->add_coeffs(1);
-    interval->mutable_end_view()->add_vars(end_var);
-    interval->mutable_end_view()->add_coeffs(1);
+    interval->mutable_start()->add_vars(start_var);
+    interval->mutable_start()->add_coeffs(1);
+    interval->mutable_size()->add_vars(size.var);
+    interval->mutable_size()->add_coeffs(1);
+    interval->mutable_end()->add_vars(end_var);
+    interval->mutable_end()->add_coeffs(1);
 
     // Add the linear constraint (after the interval constraint as we have
     // stored its index).
@@ -485,33 +514,37 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
       LOG(FATAL) << "Wrong format";
     }
   } else if (fz_ct.type == "int_min") {
-    auto* arg = ct->mutable_int_min();
-    arg->set_target(LookupVar(fz_ct.arguments[2]));
-    arg->add_vars(LookupVar(fz_ct.arguments[0]));
-    arg->add_vars(LookupVar(fz_ct.arguments[1]));
+    auto* arg = ct->mutable_lin_max();
+    *arg->add_exprs() = LookupExpr(fz_ct.arguments[0], /*negate=*/true);
+    *arg->add_exprs() = LookupExpr(fz_ct.arguments[1], /*negate=*/true);
+    *arg->mutable_target() = LookupExpr(fz_ct.arguments[2], /*negate=*/true);
   } else if (fz_ct.type == "array_int_minimum" || fz_ct.type == "minimum_int") {
-    auto* arg = ct->mutable_int_min();
-    arg->set_target(LookupVar(fz_ct.arguments[0]));
-    for (const int var : LookupVars(fz_ct.arguments[1])) arg->add_vars(var);
+    auto* arg = ct->mutable_lin_max();
+    *arg->mutable_target() = LookupExpr(fz_ct.arguments[0], /*negate=*/true);
+    for (int i = 0; i < fz_ct.arguments[1].Size(); ++i) {
+      *arg->add_exprs() = LookupExprAt(fz_ct.arguments[1], i, /*negate=*/true);
+    }
   } else if (fz_ct.type == "int_max") {
-    auto* arg = ct->mutable_int_max();
-    arg->set_target(LookupVar(fz_ct.arguments[2]));
-    arg->add_vars(LookupVar(fz_ct.arguments[0]));
-    arg->add_vars(LookupVar(fz_ct.arguments[1]));
+    auto* arg = ct->mutable_lin_max();
+    *arg->add_exprs() = LookupExpr(fz_ct.arguments[0], /*negate=*/false);
+    *arg->add_exprs() = LookupExpr(fz_ct.arguments[1], /*negate=*/false);
+    *arg->mutable_target() = LookupExpr(fz_ct.arguments[2], /*negate=*/false);
   } else if (fz_ct.type == "array_int_maximum" || fz_ct.type == "maximum_int") {
-    auto* arg = ct->mutable_int_max();
-    arg->set_target(LookupVar(fz_ct.arguments[0]));
-    for (const int var : LookupVars(fz_ct.arguments[1])) arg->add_vars(var);
+    auto* arg = ct->mutable_lin_max();
+    *arg->mutable_target() = LookupExpr(fz_ct.arguments[0], /*negate=*/false);
+    for (int i = 0; i < fz_ct.arguments[1].Size(); ++i) {
+      *arg->add_exprs() = LookupExprAt(fz_ct.arguments[1], i, /*negate=*/false);
+    }
   } else if (fz_ct.type == "int_times") {
     auto* arg = ct->mutable_int_prod();
     arg->set_target(LookupVar(fz_ct.arguments[2]));
     arg->add_vars(LookupVar(fz_ct.arguments[0]));
     arg->add_vars(LookupVar(fz_ct.arguments[1]));
   } else if (fz_ct.type == "int_abs") {
-    auto* arg = ct->mutable_int_max();
-    arg->set_target(LookupVar(fz_ct.arguments[1]));
-    arg->add_vars(LookupVar(fz_ct.arguments[0]));
-    arg->add_vars(-LookupVar(fz_ct.arguments[0]) - 1);
+    auto* arg = ct->mutable_lin_max();
+    *arg->add_exprs() = LookupExpr(fz_ct.arguments[0], /*negate=*/false);
+    *arg->add_exprs() = LookupExpr(fz_ct.arguments[0], /*negate=*/true);
+    *arg->mutable_target() = LookupExpr(fz_ct.arguments[1], /*negate=*/false);
   } else if (fz_ct.type == "int_plus") {
     auto* arg = ct->mutable_linear();
     FillDomainInProto(Domain(0, 0), arg);
@@ -758,25 +791,37 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
     const std::vector<int> starts = LookupVars(fz_ct.arguments[0]);
     const std::vector<VarOrValue> sizes =
         LookupVarsOrValues(fz_ct.arguments[1]);
-    const std::vector<int> demands = LookupVars(fz_ct.arguments[2]);
-    const int capacity = LookupVar(fz_ct.arguments[3]);
+    const std::vector<VarOrValue> demands =
+        LookupVarsOrValues(fz_ct.arguments[2]);
 
     auto* arg = ct->mutable_cumulative();
-    arg->set_capacity(capacity);
+    if (fz_ct.arguments[3].HasOneValue()) {
+      arg->mutable_capacity()->set_offset(fz_ct.arguments[3].Value());
+    } else {
+      arg->mutable_capacity()->add_vars(LookupVar(fz_ct.arguments[3]));
+      arg->mutable_capacity()->add_coeffs(1);
+    }
     for (int i = 0; i < starts.size(); ++i) {
       // Special case for a 0-1 demand, we mark the interval as optional
       // instead and fix the demand to 1.
-      if (proto.variables(demands[i]).domain().size() == 2 &&
-          proto.variables(demands[i]).domain(0) == 0 &&
-          proto.variables(demands[i]).domain(1) == 1 &&
-          proto.variables(capacity).domain(1) == 1) {
+      if (demands[i].var != kNoVar &&
+          proto.variables(demands[i].var).domain().size() == 2 &&
+          proto.variables(demands[i].var).domain(0) == 0 &&
+          proto.variables(demands[i].var).domain(1) == 1 &&
+          fz_ct.arguments[3].HasOneValue() && fz_ct.arguments[3].Value() == 1) {
         arg->add_intervals(
-            GetOrCreateOptionalInterval(starts[i], sizes[i], demands[i]));
-        arg->add_demands(LookupConstant(1));
+            GetOrCreateOptionalInterval(starts[i], sizes[i], demands[i].var));
+        arg->add_demands()->set_offset(1);
       } else {
         arg->add_intervals(
             GetOrCreateOptionalInterval(starts[i], sizes[i], kNoVar));
-        arg->add_demands(demands[i]);
+        LinearExpressionProto* demand = arg->add_demands();
+        if (demands[i].var == kNoVar) {
+          demand->set_offset(demands[i].value);
+        } else {
+          demand->add_vars(demands[i].var);
+          demand->add_coeffs(1);
+        }
       }
     }
   } else if (fz_ct.type == "fzn_diffn" || fz_ct.type == "fzn_diffn_nonstrict") {

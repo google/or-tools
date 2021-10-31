@@ -24,7 +24,7 @@ option csharp_namespace = "Google.OrTools.Sat";
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 194
+// NEXT TAG: 196
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -331,6 +331,8 @@ message SatParameters {
   // solver will abort as soon as it detects that this limit is crossed. As a
   // result, this limit is approximative, but usually the solver will not go too
   // much over.
+  //
+  // TODO(user): This is only used by the pure SAT solver, generalize to CP-SAT.
   optional int64 max_memory_in_mb = 40 [default = 10000];
 
   // Stop the search when the gap between the best feasible objective (O) and
@@ -454,16 +456,6 @@ message SatParameters {
   // Whether we presolve the cp_model before solving it.
   optional bool cp_model_presolve = 86 [default = true];
 
-  // Advanced usage. We have two different postsolve code. The default one
-  // should be better and it allows for a more powerful presolve, but some
-  // rarely used features like not fully assigning all variables require the
-  // other one.
-  optional bool cp_model_postsolve_with_full_solver = 162 [default = false];
-
-  // If positive, try to stop just after that many presolve rules have been
-  // applied. This is mainly useful for debugging presolve.
-  optional int32 cp_model_max_num_presolve_operations = 151 [default = 0];
-
   // How much effort do we spend on probing. 0 disables it completely.
   optional int32 cp_model_probing_level = 110 [default = 2];
 
@@ -471,24 +463,9 @@ message SatParameters {
   optional bool cp_model_use_sat_presolve = 93 [default = true];
   optional bool use_sat_inprocessing = 163 [default = false];
 
-  // If true, the element constraints are expanded into many
-  // linear constraints of the form (index == i) => (element[i] == target).
-  optional bool expand_element_constraints = 140 [default = true];
-
-  // If true, the automaton constraints are expanded.
-  optional bool expand_automaton_constraints = 143 [default = true];
-
-  // If true, the positive table constraints are expanded.
-  // Note that currently, negative table constraints are always expanded.
-  optional bool expand_table_constraints = 158 [default = true];
-
   // If true, expand all_different constraints that are not permutations.
   // Permutations (#Variables = #Values) are always expanded.
   optional bool expand_alldiff_constraints = 170 [default = false];
-
-  // If true, expand the reservoir constraints by creating booleans for all
-  // possible precedences between event and encoding the constraint.
-  optional bool expand_reservoir_constraints = 182 [default = true];
 
   // If true, it disable all constraint expansion.
   // This should only be used to test the presolve of expanded constraints.
@@ -515,6 +492,22 @@ message SatParameters {
   // as tight it seems) and on neos-3354841-apure.mps.gz (too many literals
   // created this way).
   optional bool presolve_extract_integer_enforcement = 174 [default = false];
+
+  // ==========================================================================
+  // Debugging parameters
+  // ==========================================================================
+
+  // We have two different postsolve code. The default one should be better and
+  // it allows for a more powerful presolve, but it can be useful to postsolve
+  // using the full solver instead.
+  optional bool debug_postsolve_with_full_solver = 162 [default = false];
+
+  // If positive, try to stop just after that many presolve rules have been
+  // applied. This is mainly useful for debugging presolve.
+  optional int32 debug_max_num_presolve_operations = 151 [default = 0];
+
+  // Crash if we do not manage to complete the hint into a full solution.
+  optional bool debug_crash_on_bad_hint = 195 [default = false];
 
   // ==========================================================================
   // Max-sat parameters
@@ -867,6 +860,18 @@ message SatParameters {
   // tightened_variables field in CpSolverResponse for more details.
   optional bool fill_tightened_domains_in_response = 132 [default = false];
 
+  // If true, the final response addition_solutions field will be filled with
+  // all solutions from our solutions pool.
+  //
+  // Note that if both this field and enumerate_all_solutions is true, we will
+  // copy to the pool all of the solution found. So if solution_pool_size is big
+  // enough, you can get all solutions this way instead of using the solution
+  // callback.
+  //
+  // Note that this only affect the "final" solution, not the one passed to the
+  // solution callbacks.
+  optional bool fill_additional_solutions_in_response = 194 [default = false];
+
   // If true, the solver will add a default integer branching strategy to the
   // already defined search strategy. If not, some variable might still not be
   // fixed at the end of the search. For now we assume these variable can just
@@ -915,8 +920,6 @@ message SatParameters {
 
   // LNS parameters.
   optional bool use_lns_only = 101 [default = false];
-  optional bool lns_focus_on_decision_variables = 105 [default = false];
-  optional bool lns_expand_intervals_in_constraint_graph = 184 [default = true];
 
   // Size of the top-n different solutions kept by the solver.
   // Currently this only impact the "base" solution chosen for a LNS fragment.
