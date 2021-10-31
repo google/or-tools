@@ -130,6 +130,8 @@ add_library(glop
   ortools/util/file_util.h
   ortools/util/fp_utils.cc
   ortools/util/fp_utils.h
+  ortools/util/logging.cc
+  ortools/util/logging.h
   ortools/util/rational_approximation.cc
   ortools/util/rational_approximation.h
   ortools/util/stats.cc
@@ -310,6 +312,7 @@ install(FILES
   ortools/util/bitset.h
   ortools/util/file_util.h
   ortools/util/fp_utils.h
+  ortools/util/logging.h
   ortools/util/random_engine.h
   ortools/util/rational_approximation.h
   ortools/util/return_macros.h
