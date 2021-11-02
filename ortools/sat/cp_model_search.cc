@@ -549,6 +549,10 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     if (num_workers > 10) {
       names.push_back("quick_restart_no_lp");
     }
+    // Only add lb_tree_search if there is an objective.
+    if (num_workers > 12) {
+      names.push_back("lb_tree_search");
+    }
   } else {
     names.push_back("default_lp");
     if (use_fixed_strategy) names.push_back("fixed");
@@ -562,7 +566,6 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
   }
   if (num_workers > 12) {
     names.push_back("probing");
-    names.push_back("lb_tree_search");
   }
 
   // Creates the diverse set of parameters with names and seed. We remove the
