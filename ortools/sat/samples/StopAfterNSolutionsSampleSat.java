@@ -75,6 +75,7 @@ public final class StopAfterNSolutionsSampleSat {
       throw new RuntimeException("Did not stop the search correctly.");
     }
   }
+
   private StopAfterNSolutionsSampleSat() {}
 }
 // [END program]
