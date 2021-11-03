@@ -979,7 +979,7 @@ class ConstraintChecker {
   bool AllDiffConstraintIsFeasible(const ConstraintProto& ct) {
     absl::flat_hash_set<int64_t> values;
     for (const int v : ct.all_diff().vars()) {
-      if (gtl::ContainsKey(values, Value(v))) return false;
+      if (values.contains(Value(v))) return false;
       values.insert(Value(v));
     }
     return true;
@@ -1145,7 +1145,7 @@ class ConstraintChecker {
     for (int i = 0; i < num_steps; ++i) {
       const std::pair<int64_t, int64_t> key = {current_state,
                                                Value(ct.automaton().vars(i))};
-      if (!gtl::ContainsKey(transition_map, key)) {
+      if (!transition_map.contains(key)) {
         return false;
       }
       current_state = transition_map[key];

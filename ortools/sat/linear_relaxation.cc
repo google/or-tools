@@ -1331,24 +1331,22 @@ void AppendElementEncodingRelaxation(const CpModelProto& model_proto, Model* m,
   }
 }
 
-void ComputeLinearRelaxation(const CpModelProto& model_proto,
-                             int linearization_level, Model* m,
-                             LinearRelaxation* relaxation) {
-  CHECK(relaxation != nullptr);
+LinearRelaxation ComputeLinearRelaxation(const CpModelProto& model_proto,
+                                         Model* m) {
+  LinearRelaxation relaxation;
 
   // Linearize the constraints.
-  absl::flat_hash_set<int> used_integer_variable;
-
-  auto* mapping = m->GetOrCreate<CpModelMapping>();
+  const SatParameters& params = *m->GetOrCreate<SatParameters>();
   for (const auto& ct : model_proto.constraints()) {
-    TryToLinearizeConstraint(model_proto, ct, linearization_level, m,
-                             relaxation);
+    TryToLinearizeConstraint(model_proto, ct, params.linearization_level(), m,
+                             &relaxation);
   }
 
   // Linearize the encoding of variable that are fully encoded.
   int num_loose_equality_encoding_relaxations = 0;
   int num_tight_equality_encoding_relaxations = 0;
   int num_inequality_encoding_relaxations = 0;
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
   for (int i = 0; i < model_proto.variables_size(); ++i) {
     if (mapping->IsBoolean(i)) continue;
 
@@ -1357,7 +1355,7 @@ void ComputeLinearRelaxation(const CpModelProto& model_proto,
 
     // We first try to linerize the values encoding.
     AppendRelaxationForEqualityEncoding(
-        var, *m, relaxation, &num_tight_equality_encoding_relaxations,
+        var, *m, &relaxation, &num_tight_equality_encoding_relaxations,
         &num_loose_equality_encoding_relaxations);
 
     // The we try to linearize the inequality encoding. Note that on some
@@ -1370,20 +1368,24 @@ void ComputeLinearRelaxation(const CpModelProto& model_proto,
     //
     // TODO(user): Should we add them to the LP anyway? this isn't clear as
     // we can sometimes create a lot of Booleans like this.
-    const int old = relaxation->linear_constraints.size();
-    AppendPartialGreaterThanEncodingRelaxation(var, *m, relaxation);
-    if (relaxation->linear_constraints.size() > old) {
+    const int old = relaxation.linear_constraints.size();
+    AppendPartialGreaterThanEncodingRelaxation(var, *m, &relaxation);
+    if (relaxation.linear_constraints.size() > old) {
       ++num_inequality_encoding_relaxations;
     }
   }
 
   // TODO(user): This is similar to AppendRelaxationForEqualityEncoding() above.
   // Investigate if we can merge the code.
-  if (linearization_level >= 2) {
-    AppendElementEncodingRelaxation(model_proto, m, relaxation);
+  if (params.linearization_level() >= 2) {
+    AppendElementEncodingRelaxation(model_proto, m, &relaxation);
   }
 
-  if (!m->GetOrCreate<SatSolver>()->FinishPropagation()) return;
+  // TODO(user): I am not sure this is still needed. Investigate and explain why
+  // or remove.
+  if (!m->GetOrCreate<SatSolver>()->FinishPropagation()) {
+    return relaxation;
+  }
 
   // We display the stats before linearizing the at most ones.
   auto* logger = m->GetOrCreate<SolverLogger>();
@@ -1397,20 +1399,20 @@ void ComputeLinearRelaxation(const CpModelProto& model_proto,
                " #loose_equality:", num_loose_equality_encoding_relaxations,
                " #inequality:", num_inequality_encoding_relaxations);
   }
-  if (!relaxation->linear_constraints.empty() ||
-      !relaxation->at_most_ones.empty()) {
+  if (!relaxation.linear_constraints.empty() ||
+      !relaxation.at_most_ones.empty()) {
     SOLVER_LOG(logger,
                "[LinearRelaxationBeforeCliqueExpansion]"
                " #linear:",
-               relaxation->linear_constraints.size(),
-               " #at_most_ones:", relaxation->at_most_ones.size());
+               relaxation.linear_constraints.size(),
+               " #at_most_ones:", relaxation.at_most_ones.size());
   }
 
   // Linearize the at most one constraints. Note that we transform them
   // into maximum "at most one" first and we removes redundant ones.
   m->GetOrCreate<BinaryImplicationGraph>()->TransformIntoMaxCliques(
-      &relaxation->at_most_ones);
-  for (const std::vector<Literal>& at_most_one : relaxation->at_most_ones) {
+      &relaxation.at_most_ones);
+  for (const std::vector<Literal>& at_most_one : relaxation.at_most_ones) {
     if (at_most_one.empty()) continue;
 
     LinearConstraintBuilder lc(m, kMinIntegerValue, IntegerValue(1));
@@ -1420,29 +1422,53 @@ void ComputeLinearRelaxation(const CpModelProto& model_proto,
       const bool unused ABSL_ATTRIBUTE_UNUSED =
           lc.AddLiteralTerm(literal, IntegerValue(1));
     }
-    relaxation->linear_constraints.push_back(lc.Build());
+    relaxation.linear_constraints.push_back(lc.Build());
   }
 
   // We converted all at_most_one to LP constraints, so we need to clear them
   // so that we don't do extra work in the connected component computation.
-  relaxation->at_most_ones.clear();
+  relaxation.at_most_ones.clear();
 
   // Remove size one LP constraints, they are not useful.
-  relaxation->linear_constraints.erase(
+  relaxation.linear_constraints.erase(
       std::remove_if(
-          relaxation->linear_constraints.begin(),
-          relaxation->linear_constraints.end(),
+          relaxation.linear_constraints.begin(),
+          relaxation.linear_constraints.end(),
           [](const LinearConstraint& lc) { return lc.vars.size() <= 1; }),
-      relaxation->linear_constraints.end());
+      relaxation.linear_constraints.end());
 
-  if (!relaxation->linear_constraints.empty() ||
-      !relaxation->cut_generators.empty()) {
+  // We add a clique cut generation over all Booleans of the problem.
+  // Note that in practice this might regroup independent LP together.
+  //
+  // TODO(user): compute connected components of the original problem and
+  // split these cuts accordingly.
+  if (params.linearization_level() > 1 && params.add_clique_cuts()) {
+    std::vector<IntegerVariable> all_booleans;
+    LinearConstraintBuilder builder(m);
+    for (int i = 0; i < model_proto.variables_size(); ++i) {
+      if (!mapping->IsBoolean(i)) continue;
+
+      // Note that it is okay to simply ignore the literal if it has no
+      // integer view.
+      const bool unused ABSL_ATTRIBUTE_UNUSED =
+          builder.AddLiteralTerm(mapping->Literal(i), IntegerValue(1));
+    }
+
+    // We add a generator touching all the variable in the builder.
+    relaxation.cut_generators.push_back(
+        CreateCliqueCutGenerator(builder.BuildExpression().vars, m));
+  }
+
+  if (!relaxation.linear_constraints.empty() ||
+      !relaxation.cut_generators.empty()) {
     SOLVER_LOG(logger,
                "[FinalLinearRelaxation]"
                " #linear:",
-               relaxation->linear_constraints.size(),
-               " #cut_generators:", relaxation->cut_generators.size());
+               relaxation.linear_constraints.size(),
+               " #cut_generators:", relaxation.cut_generators.size());
   }
+
+  return relaxation;
 }
 
 }  // namespace sat

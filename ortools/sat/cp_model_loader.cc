@@ -885,7 +885,7 @@ void LoadEquivalenceAC(const std::vector<Literal> enforcement_literal,
   }
   for (const auto value_literal : encoder->FullDomainEncoding(var2)) {
     const IntegerValue target = rhs - value_literal.value * coeff2;
-    if (!gtl::ContainsKey(term1_value_to_literal, target)) {
+    if (!term1_value_to_literal.contains(target)) {
       m->Add(EnforcedClause(enforcement_literal,
                             {value_literal.literal.Negated()}));
     } else {

@@ -142,7 +142,7 @@ LinearConstraintManager::ConstraintIndex LinearConstraintManager::Add(
 
   // If an identical constraint exists, only updates its bound.
   const size_t key = ComputeHashOfTerms(ct);
-  if (gtl::ContainsKey(equiv_constraints_, key)) {
+  if (equiv_constraints_.contains(key)) {
     const ConstraintIndex ct_index = equiv_constraints_[key];
     if (constraint_infos_[ct_index].constraint.vars == ct.vars &&
         constraint_infos_[ct_index].constraint.coeffs == ct.coeffs) {

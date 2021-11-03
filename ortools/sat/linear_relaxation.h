@@ -182,11 +182,9 @@ void TryToLinearizeConstraint(const CpModelProto& model_proto,
                               int linearization_level, Model* model,
                               LinearRelaxation* relaxation);
 
-// Builds the linear relaxation of a CpModelProto and stores it in the
-// LinearRelaxation container.
-void ComputeLinearRelaxation(const CpModelProto& model_proto,
-                             int linearization_level, Model* m,
-                             LinearRelaxation* relaxation);
+// Builds the linear relaxation of a CpModelProto.
+LinearRelaxation ComputeLinearRelaxation(const CpModelProto& model_proto,
+                                         Model* m);
 
 }  // namespace sat
 }  // namespace operations_research

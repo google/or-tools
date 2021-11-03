@@ -569,10 +569,8 @@ IntegerVariable GetOrCreateVariableGreaterOrEqualToSumOf(
 }  // namespace
 
 // Adds one LinearProgrammingConstraint per connected component of the model.
-IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
-                                 int linearization_level, Model* m) {
-  LinearRelaxation relaxation;
-  ComputeLinearRelaxation(model_proto, linearization_level, m, &relaxation);
+IntegerVariable AddLPConstraints(const CpModelProto& model_proto, Model* m) {
+  const LinearRelaxation relaxation = ComputeLinearRelaxation(model_proto, m);
 
   // The bipartite graph of LP constraints might be disconnected:
   // make a partition of the variables into connected components.
@@ -603,24 +601,6 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
   for (int i = 0; i < num_lp_cut_generators; ++i) {
     for (const IntegerVariable var : relaxation.cut_generators[i].vars) {
       components.AddEdge(get_cut_generator_index(i), get_var_index(var));
-    }
-  }
-
-  // Add edges for at most ones that we do not statically add to the LP.
-  //
-  // TODO(user): Because we currently add every at_most_ones (and we clear it)
-  // this code is unused outside of experiments.
-  for (const std::vector<Literal>& at_most_one : relaxation.at_most_ones) {
-    LinearConstraintBuilder builder(m, kMinIntegerValue, IntegerValue(1));
-    for (const Literal literal : at_most_one) {
-      // Note that it is okay to simply ignore the literal if it has no
-      // integer view.
-      const bool unused ABSL_ATTRIBUTE_UNUSED =
-          builder.AddLiteralTerm(literal, IntegerValue(1));
-    }
-    LinearConstraint lc = builder.Build();
-    for (int i = 1; i < lc.vars.size(); ++i) {
-      components.AddEdge(get_var_index(lc.vars[0]), get_var_index(lc.vars[i]));
     }
   }
 
@@ -669,24 +649,6 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
       lp_constraints[c] = m->Create<LinearProgrammingConstraint>();
     }
     lp_constraints[c]->AddCutGenerator(std::move(relaxation.cut_generators[i]));
-  }
-
-  // Register "generic" clique (i.e. at most one) cut generator.
-  const SatParameters& params = *(m->GetOrCreate<SatParameters>());
-  if (params.add_clique_cuts() && params.linearization_level() > 1) {
-    for (LinearProgrammingConstraint* lp : lp_constraints) {
-      if (lp == nullptr) continue;
-      lp->AddCutGenerator(CreateCliqueCutGenerator(lp->integer_variables(), m));
-    }
-  }
-
-  if (params.add_knapsack_cuts() && params.linearization_level() > 1) {
-    for (int c = 0; c < num_components; ++c) {
-      if (component_to_constraints[c].empty()) continue;
-      lp_constraints[c]->AddCutGenerator(CreateKnapsackCoverCutGenerator(
-          component_to_constraints[c], lp_constraints[c]->integer_variables(),
-          m));
-    }
   }
 
   // Add the objective.
@@ -1130,9 +1092,8 @@ void LoadFeasibilityPump(const CpModelProto& model_proto, Model* model) {
   if (parameters.linearization_level() == 0) return;
 
   // Add linear constraints to Feasibility Pump.
-  LinearRelaxation relaxation;
-  ComputeLinearRelaxation(model_proto, parameters.linearization_level(), model,
-                          &relaxation);
+  const LinearRelaxation relaxation =
+      ComputeLinearRelaxation(model_proto, model);
   const int num_lp_constraints = relaxation.linear_constraints.size();
   if (num_lp_constraints == 0) return;
   auto* feasibility_pump = model->GetOrCreate<FeasibilityPump>();
@@ -1201,8 +1162,7 @@ void LoadCpModel(const CpModelProto& model_proto, Model* model) {
   IntegerVariable objective_var = kNoIntegerVariable;
   if (parameters.linearization_level() > 0) {
     // Linearize some part of the problem and register LP constraint(s).
-    objective_var =
-        AddLPConstraints(model_proto, parameters.linearization_level(), model);
+    objective_var = AddLPConstraints(model_proto, model);
   } else if (model_proto.has_objective()) {
     const CpObjectiveProto& obj = model_proto.objective();
     std::vector<std::pair<IntegerVariable, int64_t>> terms;

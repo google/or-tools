@@ -47,7 +47,7 @@ int PresolveContext::NewIntVar(const Domain& domain) {
 int PresolveContext::NewBoolVar() { return NewIntVar(Domain(0, 1)); }
 
 int PresolveContext::GetOrCreateConstantVar(int64_t cst) {
-  if (!gtl::ContainsKey(constant_to_ref_, cst)) {
+  if (!constant_to_ref_.contains(cst)) {
     constant_to_ref_[cst] = SavedVariable(working_model->variables_size());
     IntegerVariableProto* const var_proto = working_model->add_variables();
     var_proto->add_domain(cst);
@@ -630,7 +630,7 @@ void PresolveContext::ExploitFixedDomain(int var) {
   DCHECK(RefIsPositive(var));
   DCHECK(IsFixed(var));
   const int64_t min = MinOf(var);
-  if (gtl::ContainsKey(constant_to_ref_, min)) {
+  if (constant_to_ref_.contains(min)) {
     const int rep = constant_to_ref_[min].Get(this);
     if (RefIsPositive(rep)) {
       if (rep != var) {
@@ -1414,7 +1414,7 @@ void PresolveContext::ReadObjectiveFromProto() {
   }
 }
 
-bool PresolveContext::CanonicalizeObjective() {
+bool PresolveContext::CanonicalizeObjective(bool simplify_domain) {
   int64_t offset_change = 0;
 
   // We replace each entry by its affine representative.
@@ -1508,8 +1508,12 @@ bool PresolveContext::CanonicalizeObjective() {
   // Note that the domain never include the offset.
   objective_domain_ = objective_domain_.AdditionWith(Domain(-offset_change))
                           .IntersectionWith(implied_domain);
-  objective_domain_ =
-      objective_domain_.SimplifyUsingImpliedDomain(implied_domain);
+
+  // Depending on the use case, we cannot do that.
+  if (simplify_domain) {
+    objective_domain_ =
+        objective_domain_.SimplifyUsingImpliedDomain(implied_domain);
+  }
 
   // Updat the offset.
   objective_offset_ += offset_change;

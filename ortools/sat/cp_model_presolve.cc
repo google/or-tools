@@ -1453,7 +1453,14 @@ bool CpModelPresolver::RemoveSingletonInLinear(ConstraintProto* ct) {
 
         // This makes sure the domain of var is propagated back to the
         // objective.
-        if (!context_->CanonicalizeObjective()) {
+        //
+        // Tricky: We cannot "simplify" the domain of the objective using the
+        // implied domain from the linear expression since we will substitute
+        // the variable.
+        //
+        // TODO(user): Maybe if var has a complex domain, we might not want to
+        // substitute it?
+        if (!context_->CanonicalizeObjective(/*simplify_domain=*/false)) {
           return context_->NotifyThatModelIsUnsat();
         }
 
@@ -4535,9 +4542,6 @@ bool CpModelPresolver::PresolveAutomaton(ConstraintProto* ct) {
                          proto.final_states().end()};
 
   // Forward.
-  //
-  // TODO(user): filter using the domain of vars[time] that may not contain
-  // all the possible transitions.
   for (int time = 0; time + 1 < n; ++time) {
     for (int t = 0; t < proto.transition_tail_size(); ++t) {
       const int64_t tail = proto.transition_tail(t);
@@ -5864,8 +5868,7 @@ bool CpModelPresolver::ProcessSetPPC() {
         if (c1 == c2) continue;
 
         CHECK_LT(c1, c2);
-        if (gtl::ContainsKey(compared_constraints,
-                             std::pair<int, int>(c1, c2))) {
+        if (compared_constraints.contains(std::pair<int, int>(c1, c2))) {
           continue;
         }
         compared_constraints.insert({c1, c2});
@@ -6792,8 +6795,8 @@ void CpModelPresolver::PresolveToFixPoint() {
       // Note that to avoid bad complexity in problem like a TSP with just one
       // big constraint. we mark all the singleton variables of a constraint
       // even if this constraint is already in the queue.
-      if (gtl::ContainsKey(var_constraint_pair_already_called,
-                           std::pair<int, int>(v, c))) {
+      if (var_constraint_pair_already_called.contains(
+              std::pair<int, int>(v, c))) {
         continue;
       }
       var_constraint_pair_already_called.insert({v, c});
@@ -7504,7 +7507,7 @@ bool CpModelPresolver::Presolve() {
 
       // There is not point having a variable appear twice, so we only keep
       // the first occurrence in the first strategy in which it occurs.
-      if (gtl::ContainsKey(used_variables, var)) continue;
+      if (used_variables.contains(var)) continue;
       used_variables.insert(var);
 
       if (context_->VarToConstraints(var).empty()) {

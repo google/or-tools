@@ -409,7 +409,7 @@ void CpModelBuilder::SetName(const std::string& name) {
 }
 
 int CpModelBuilder::IndexFromConstant(int64_t value) {
-  if (!gtl::ContainsKey(constant_to_index_map_, value)) {
+  if (!constant_to_index_map_.contains(value)) {
     const int index = cp_model_.variables_size();
     IntegerVariableProto* const var_proto = cp_model_.add_variables();
     var_proto->add_domain(value);
@@ -423,7 +423,7 @@ int CpModelBuilder::GetOrCreateIntegerIndex(int index) {
   if (index >= 0) {
     return index;
   }
-  if (!gtl::ContainsKey(bool_to_integer_index_map_, index)) {
+  if (!bool_to_integer_index_map_.contains(index)) {
     const int var = PositiveRef(index);
     const IntegerVariableProto& old_var = cp_model_.variables(var);
     const int new_index = cp_model_.variables_size();

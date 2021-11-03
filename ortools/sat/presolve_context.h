@@ -354,7 +354,7 @@ class PresolveContext {
   // the case, we also have an affine linear constraint, so we can't really do
   // anything with that variable since it appear in at least two constraints.
   void ReadObjectiveFromProto();
-  ABSL_MUST_USE_RESULT bool CanonicalizeObjective();
+  ABSL_MUST_USE_RESULT bool CanonicalizeObjective(bool simplify_domain = true);
   void WriteObjectiveToProto() const;
 
   // Checks if the given exactly_one is included in the objective, and simplify

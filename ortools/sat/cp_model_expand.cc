@@ -556,52 +556,71 @@ void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
   ExpandVariableElement(ct, context);
 }
 
-// Adds clauses so that literals[i] true <=> encoding[value[i]] true.
+// Adds clauses so that literals[i] true <=> encoding[values[i]] true.
 // This also implicitly use the fact that exactly one alternative is true.
-void LinkLiteralsAndValues(
-    const std::vector<int>& value_literals, const std::vector<int64_t>& values,
-    const absl::flat_hash_map<int64_t, int>& target_encoding,
-    PresolveContext* context) {
-  CHECK_EQ(value_literals.size(), values.size());
+void LinkLiteralsAndValues(const std::vector<int>& literals,
+                           const std::vector<int64_t>& values,
+                           const absl::flat_hash_map<int64_t, int>& encoding,
+                           PresolveContext* context) {
+  CHECK_EQ(literals.size(), values.size());
 
-  // TODO(user): Make sure this does not appear in the profile.
   // We use a map to make this method deterministic.
-  std::map<int, std::vector<int>> value_literals_per_target_literal;
+  //
+  // TODO(user): Make sure this does not appear in the profile. We could use
+  // the same code as in ProcessOneVariable() otherwise.
+  std::map<int, std::vector<int>> encoding_lit_to_support;
 
   // If a value is false (i.e not possible), then the tuple with this
   // value is false too (i.e not possible). Conversely, if the tuple is
   // selected, the value must be selected.
   for (int i = 0; i < values.size(); ++i) {
-    const int64_t v = values[i];
-    CHECK(target_encoding.contains(v));
-    const int lit = gtl::FindOrDie(target_encoding, v);
-    value_literals_per_target_literal[lit].push_back(value_literals[i]);
+    encoding_lit_to_support[encoding.at(values[i])].push_back(literals[i]);
   }
 
   // If all tuples supporting a value are false, then this value must be
   // false.
-  for (const auto& it : value_literals_per_target_literal) {
-    const int target_literal = it.first;
-    switch (it.second.size()) {
-      case 0: {
-        if (!context->SetLiteralToFalse(target_literal)) {
-          return;
-        }
-        break;
+  for (const auto& [encoding_lit, support] : encoding_lit_to_support) {
+    CHECK(!support.empty());
+    if (support.size() == 1) {
+      context->StoreBooleanEqualityRelation(encoding_lit, support[0]);
+    } else {
+      BoolArgumentProto* bool_or =
+          context->working_model->add_constraints()->mutable_bool_or();
+      bool_or->add_literals(NegatedRef(encoding_lit));
+      for (const int lit : support) {
+        bool_or->add_literals(lit);
+        context->AddImplication(lit, encoding_lit);
       }
-      case 1: {
-        context->StoreBooleanEqualityRelation(target_literal,
-                                              it.second.front());
-        break;
-      }
-      default: {
-        BoolArgumentProto* const bool_or =
-            context->working_model->add_constraints()->mutable_bool_or();
-        bool_or->add_literals(NegatedRef(target_literal));
-        for (const int value_literal : it.second) {
-          bool_or->add_literals(value_literal);
-          context->AddImplication(value_literal, target_literal);
-        }
+    }
+  }
+}
+
+// Add the constraint literal => one_of(encoding[v]), for v in reachable_values.
+// Note that all possible values are the ones appearing in encoding.
+void AddImplyInReachableValues(int literal,
+                               std::vector<int64_t>& reachable_values,
+                               const absl::flat_hash_map<int64_t, int> encoding,
+                               PresolveContext* context) {
+  gtl::STLSortAndRemoveDuplicates(&reachable_values);
+  if (reachable_values.size() == encoding.size()) return;  // No constraint.
+  if (reachable_values.size() <= encoding.size() / 2) {
+    // Bool or encoding.
+    ConstraintProto* ct = context->working_model->add_constraints();
+    ct->add_enforcement_literal(literal);
+    BoolArgumentProto* bool_or = ct->mutable_bool_or();
+    for (const int64_t v : reachable_values) {
+      bool_or->add_literals(encoding.at(v));
+    }
+  } else {
+    // Bool and encoding.
+    absl::flat_hash_set<int64_t> set(reachable_values.begin(),
+                                     reachable_values.end());
+    ConstraintProto* ct = context->working_model->add_constraints();
+    ct->add_enforcement_literal(literal);
+    BoolArgumentProto* bool_and = ct->mutable_bool_and();
+    for (const auto [value, literal] : encoding) {
+      if (!set.contains(value)) {
+        bool_and->add_literals(NegatedRef(literal));
       }
     }
   }
@@ -679,7 +698,7 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
     // local table constraint representing one step of the automaton at the
     // given time.
     std::vector<int64_t> in_states;
-    std::vector<int64_t> transition_values;
+    std::vector<int64_t> labels;
     std::vector<int64_t> out_states;
     for (int i = 0; i < proto.transition_label_size(); ++i) {
       const int64_t tail = proto.transition_tail(i);
@@ -694,75 +713,196 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
       // one-out state or one variable value, we could reuse the corresponding
       // Boolean variable instead of creating a new one!
       in_states.push_back(tail);
-      transition_values.push_back(label);
+      labels.push_back(label);
 
       // On the last step we don't need to distinguish the output states, so
       // we use zero.
       out_states.push_back(time + 1 == n ? 0 : head);
     }
 
-    std::vector<int> tuple_literals;
-    if (transition_values.size() == 1) {
-      tuple_literals.push_back(context->GetOrCreateConstantVar(1));
-      if (!context->IntersectDomainWith(vars[time],
-                                        Domain(transition_values.front()))) {
+    // Deal with single tuple.
+    const int num_tuples = in_states.size();
+    if (num_tuples == 1) {
+      if (!context->IntersectDomainWith(vars[time], Domain(labels.front()))) {
         VLOG(1) << "Infeasible automaton.";
         return;
       }
       in_encoding.clear();
       continue;
-    } else if (transition_values.size() == 2) {
+    }
+
+    // Fully encode vars[time].
+    {
+      std::vector<int64_t> transitions = labels;
+      gtl::STLSortAndRemoveDuplicates(&transitions);
+
+      encoding.clear();
+      if (!context->IntersectDomainWith(
+              vars[time], Domain::FromValues(transitions), &removed_values)) {
+        VLOG(1) << "Infeasible automaton.";
+        return;
+      }
+
+      // Fully encode the variable.
+      // We can leave the encoding empty for fixed vars.
+      if (!context->IsFixed(vars[time])) {
+        for (const int64_t v : context->DomainOf(vars[time]).Values()) {
+          encoding[v] = context->GetOrCreateVarValueEncoding(vars[time], v);
+        }
+      }
+    }
+
+    // Count how many time each value appear.
+    // We use this to reuse literals if possible.
+    absl::flat_hash_map<int64_t, int> in_count;
+    absl::flat_hash_map<int64_t, int> transition_count;
+    absl::flat_hash_map<int64_t, int> out_count;
+    for (int i = 0; i < num_tuples; ++i) {
+      in_count[in_states[i]]++;
+      transition_count[labels[i]]++;
+      out_count[out_states[i]]++;
+    }
+
+    // For each possible out states, create one Boolean variable.
+    //
+    // TODO(user): Add exactly one?
+    {
+      std::vector<int64_t> states = out_states;
+      gtl::STLSortAndRemoveDuplicates(&states);
+
+      out_encoding.clear();
+      if (states.size() == 2) {
+        const int var = context->NewBoolVar();
+        out_encoding[states[0]] = var;
+        out_encoding[states[1]] = NegatedRef(var);
+      } else if (states.size() > 2) {
+        struct UniqueDetector {
+          void Set(int64_t v) {
+            if (!is_unique) return;
+            if (is_set) {
+              if (v != value) is_unique = false;
+            } else {
+              is_set = true;
+              value = v;
+            }
+          }
+          bool is_set = false;
+          bool is_unique = true;
+          int64_t value = 0;
+        };
+
+        // Optimization to detect if we have an in state that is only matched to
+        // a single out state. Same with transition.
+        absl::flat_hash_map<int64_t, UniqueDetector> out_to_in;
+        absl::flat_hash_map<int64_t, UniqueDetector> out_to_transition;
+        for (int i = 0; i < num_tuples; ++i) {
+          out_to_in[out_states[i]].Set(in_states[i]);
+          out_to_transition[out_states[i]].Set(labels[i]);
+        }
+
+        for (const int64_t state : states) {
+          // If we have a relation in_state <=> out_state, then we can reuse
+          // the in Boolean and do not need to create a new one.
+          if (!in_encoding.empty() && out_to_in[state].is_unique) {
+            const int64_t unique_in = out_to_in[state].value;
+            if (in_count[unique_in] == out_count[state]) {
+              out_encoding[state] = in_encoding[unique_in];
+              continue;
+            }
+          }
+
+          // Same if we have an unique transition value that correspond only to
+          // this state.
+          if (!encoding.empty() && out_to_transition[state].is_unique) {
+            const int64_t unique_transition = out_to_transition[state].value;
+            if (transition_count[unique_transition] == out_count[state]) {
+              out_encoding[state] = encoding[unique_transition];
+              continue;
+            }
+          }
+
+          out_encoding[state] = context->NewBoolVar();
+        }
+      }
+    }
+
+    // Simple encoding. This is enough to properly enforce the constraint, but
+    // it propagate less. It creates a lot less Booleans though. Note that we
+    // use implicit "exactly one" on the encoding and do not add any extra
+    // exacly one if the simple encoding is used.
+    //
+    // We currently decide which encoding to use depending on the number of new
+    // literals needed by the "heavy" encoding compared to the number of states
+    // and labels. When the automaton is small, using the full encoding is
+    // better, see for instance on rotating-workforce_Example789 were the simple
+    // encoding make the problem hard to solve but the full encoding allow the
+    // solver to solve it in a couple of seconds!
+    //
+    // Note that both encoding create about the same number of constraints.
+    const int num_involved_variables =
+        in_encoding.size() + encoding.size() + out_encoding.size();
+    const bool use_light_encoding = (num_tuples > num_involved_variables);
+    if (use_light_encoding && !in_encoding.empty() && !encoding.empty() &&
+        !out_encoding.empty()) {
+      // Part 1: If a in_state is selected, restrict the set of possible labels.
+      // We also restrict the set of possible out states, but this is not needed
+      // for correctness.
+      absl::flat_hash_map<int64_t, std::vector<int64_t>> in_to_label;
+      absl::flat_hash_map<int64_t, std::vector<int64_t>> in_to_out;
+      for (int i = 0; i < num_tuples; ++i) {
+        in_to_label[in_states[i]].push_back(labels[i]);
+        in_to_out[in_states[i]].push_back(out_states[i]);
+      }
+      for (const auto [in_value, in_literal] : in_encoding) {
+        AddImplyInReachableValues(in_literal, in_to_label[in_value], encoding,
+                                  context);
+        AddImplyInReachableValues(in_literal, in_to_out[in_value], out_encoding,
+                                  context);
+      }
+
+      // Part2, add all 3-clauses: (in_state, label) => out_state.
+      for (int i = 0; i < num_tuples; ++i) {
+        auto* bool_or =
+            context->working_model->add_constraints()->mutable_bool_or();
+        bool_or->add_literals(NegatedRef(in_encoding.at(in_states[i])));
+        bool_or->add_literals(NegatedRef(encoding.at(labels[i])));
+        bool_or->add_literals(out_encoding.at(out_states[i]));
+      }
+
+      in_encoding.swap(out_encoding);
+      out_encoding.clear();
+      continue;
+    }
+
+    // Create the tuple literals.
+    //
+    // TODO(user): Call and use the same heuristics as the table constraint to
+    // expand this small table with 3 columns (i.e. compress, negate, etc...).
+    std::vector<int> tuple_literals;
+    if (num_tuples == 2) {
       const int bool_var = context->NewBoolVar();
       tuple_literals.push_back(bool_var);
       tuple_literals.push_back(NegatedRef(bool_var));
     } else {
       // Note that we do not need the ExactlyOneConstraint(tuple_literals)
       // because it is already implicitly encoded since we have exactly one
-      // transition value.
-      LinearConstraintProto* const exactly_one =
-          context->working_model->add_constraints()->mutable_linear();
-      exactly_one->add_domain(1);
-      exactly_one->add_domain(1);
-      for (int i = 0; i < transition_values.size(); ++i) {
-        const int tuple_literal = context->NewBoolVar();
-        tuple_literals.push_back(tuple_literal);
-        exactly_one->add_vars(tuple_literal);
-        exactly_one->add_coeffs(1);
-      }
-    }
-
-    // Fully encode vars[time].
-    {
-      std::vector<int64_t> s = transition_values;
-      gtl::STLSortAndRemoveDuplicates(&s);
-
-      encoding.clear();
-      if (!context->IntersectDomainWith(vars[time], Domain::FromValues(s),
-                                        &removed_values)) {
-        VLOG(1) << "Infeasible automaton.";
-        return;
-      }
-
-      // Fully encode the variable.
-      for (const int64_t v : context->DomainOf(vars[time]).Values()) {
-        encoding[v] = context->GetOrCreateVarValueEncoding(vars[time], v);
-      }
-    }
-
-    // For each possible out states, create one Boolean variable.
-    {
-      std::vector<int64_t> s = out_states;
-      gtl::STLSortAndRemoveDuplicates(&s);
-
-      out_encoding.clear();
-      if (s.size() == 2) {
-        const int var = context->NewBoolVar();
-        out_encoding[s.front()] = var;
-        out_encoding[s.back()] = NegatedRef(var);
-      } else if (s.size() > 2) {
-        for (const int64_t state : s) {
-          out_encoding[state] = context->NewBoolVar();
+      // transition value. But adding one seems to help.
+      BoolArgumentProto* exactly_one =
+          context->working_model->add_constraints()->mutable_exactly_one();
+      for (int i = 0; i < num_tuples; ++i) {
+        int tuple_literal;
+        if (in_count[in_states[i]] == 1 && !in_encoding.empty()) {
+          tuple_literal = in_encoding[in_states[i]];
+        } else if (transition_count[labels[i]] == 1 && !encoding.empty()) {
+          tuple_literal = encoding[labels[i]];
+        } else if (out_count[out_states[i]] == 1 && !out_encoding.empty()) {
+          tuple_literal = out_encoding[out_states[i]];
+        } else {
+          tuple_literal = context->NewBoolVar();
         }
+
+        tuple_literals.push_back(tuple_literal);
+        exactly_one->add_literals(tuple_literal);
       }
     }
 
@@ -770,12 +910,12 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
       LinkLiteralsAndValues(tuple_literals, in_states, in_encoding, context);
     }
     if (!encoding.empty()) {
-      LinkLiteralsAndValues(tuple_literals, transition_values, encoding,
-                            context);
+      LinkLiteralsAndValues(tuple_literals, labels, encoding, context);
     }
     if (!out_encoding.empty()) {
       LinkLiteralsAndValues(tuple_literals, out_states, out_encoding, context);
     }
+
     in_encoding.swap(out_encoding);
     out_encoding.clear();
   }
@@ -839,22 +979,27 @@ void ExpandNegativeTable(ConstraintProto* ct, PresolveContext* context) {
 
 // Add the implications and clauses to link one variable of a table to the
 // literals controlling if the tuples are possible or not. The parallel vectors
-// (tuple_literals, values) contains all valid projected tuples. The
-// tuples_with_any vector provides a list of tuple_literals that will support
+// (tuple_literals, values) contains all valid projected tuples.
+//
+// The special value "any_value" is used to indicate literal that will support
 // any value.
 void ProcessOneVariable(const std::vector<int>& tuple_literals,
                         const std::vector<int64_t>& values, int variable,
-                        const std::vector<int>& tuples_with_any,
-                        PresolveContext* context) {
+                        int64_t any_value, PresolveContext* context) {
   VLOG(2) << "Process var(" << variable << ") with domain "
           << context->DomainOf(variable) << " and " << values.size()
-          << " active tuples, and " << tuples_with_any.size() << " any tuples";
+          << " tuples.";
   CHECK_EQ(tuple_literals.size(), values.size());
-  std::vector<std::pair<int64_t, int>> pairs;
 
   // Collect pairs of value-literal.
+  std::vector<int> tuples_with_any;
+  std::vector<std::pair<int64_t, int>> pairs;
   for (int i = 0; i < values.size(); ++i) {
     const int64_t value = values[i];
+    if (value == any_value) {
+      tuples_with_any.push_back(tuple_literals[i]);
+      continue;
+    }
     CHECK(context->DomainContains(variable, value));
     pairs.emplace_back(value, tuple_literals[i]);
   }
@@ -964,11 +1109,11 @@ void AddSizeTwoTable(
 
 void ExpandPositiveTable(ConstraintProto* ct, PresolveContext* context) {
   const TableConstraintProto& table = ct->table();
-  const std::vector<int> vars(table.vars().begin(), table.vars().end());
   const int num_vars = table.vars_size();
   const int num_original_tuples = table.values_size() / num_vars;
 
   // Read tuples flat array and recreate the vector of tuples.
+  const std::vector<int> vars(table.vars().begin(), table.vars().end());
   std::vector<std::vector<int64_t>> tuples(num_original_tuples);
   int count = 0;
   for (int tuple_index = 0; tuple_index < num_original_tuples; ++tuple_index) {
@@ -1121,43 +1266,23 @@ void ExpandPositiveTable(ConstraintProto* ct, PresolveContext* context) {
   }
 
   // Create one Boolean variable per tuple to indicate if it can still be
-  // selected or not. Note that we don't enforce exactly one tuple to be
-  // selected as this is costly.
+  // selected or not.
   std::vector<int> tuple_literals(num_compressed_tuples);
   BoolArgumentProto* exactly_one =
       context->working_model->add_constraints()->mutable_exactly_one();
-
-  for (int var_index = 0; var_index < num_compressed_tuples; ++var_index) {
-    tuple_literals[var_index] = context->NewBoolVar();
-    exactly_one->add_literals(tuple_literals[var_index]);
+  for (int i = 0; i < num_compressed_tuples; ++i) {
+    tuple_literals[i] = context->NewBoolVar();
+    exactly_one->add_literals(tuple_literals[i]);
   }
 
-  std::vector<int> active_tuple_literals;
-  std::vector<int64_t> active_values;
-  std::vector<int> any_tuple_literals;
+  std::vector<int64_t> values(num_compressed_tuples);
   for (int var_index = 0; var_index < num_vars; ++var_index) {
     if (values_per_var[var_index].size() == 1) continue;
-
-    active_tuple_literals.clear();
-    active_values.clear();
-    any_tuple_literals.clear();
-    for (int tuple_index = 0; tuple_index < tuple_literals.size();
-         ++tuple_index) {
-      const int64_t value = tuples[tuple_index][var_index];
-      const int tuple_literal = tuple_literals[tuple_index];
-
-      if (value == any_value) {
-        any_tuple_literals.push_back(tuple_literal);
-      } else {
-        active_tuple_literals.push_back(tuple_literal);
-        active_values.push_back(value);
-      }
+    for (int i = 0; i < num_compressed_tuples; ++i) {
+      values[i] = tuples[i][var_index];
     }
-
-    if (!active_tuple_literals.empty()) {
-      ProcessOneVariable(active_tuple_literals, active_values, vars[var_index],
-                         any_tuple_literals, context);
-    }
+    ProcessOneVariable(tuple_literals, values, vars[var_index], any_value,
+                       context);
   }
 
   context->UpdateRuleStats("table: expanded positive constraint");

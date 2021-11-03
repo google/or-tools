@@ -2101,7 +2101,7 @@ CutGenerator CreateCliqueCutGenerator(
               model, IntegerValue(std::numeric_limits<int64_t>::min()),
               IntegerValue(1));
           for (const Literal l : at_most_one) {
-            if (ContainsKey(positive_map, l.Index())) {
+            if (positive_map.contains(l.Index())) {
               builder.AddTerm(positive_map.at(l.Index()), IntegerValue(1));
             } else {
               // Add 1 - X to the linear constraint.
