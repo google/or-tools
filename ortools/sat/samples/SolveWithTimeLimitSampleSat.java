@@ -46,6 +46,7 @@ public final class SolveWithTimeLimitSampleSat {
       System.out.println("z = " + solver.value(z));
     }
   }
+
   private SolveWithTimeLimitSampleSat() {}
 }
 // [END program]

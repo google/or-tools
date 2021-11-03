@@ -44,8 +44,11 @@ def main():
         105, 80, 75, 45, 65, 110, 95
     ] + [0, 0, 0, 0])
 
+    source = 0
+    sink = 13
+    tasks = 4
     # Define an array of supplies at each node.
-    supplies = [4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -4]
+    supplies = [tasks, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -tasks]
     # [END data]
 
     # [START constraints]
@@ -72,10 +75,10 @@ def main():
         print()
         for arc in range(min_cost_flow.NumArcs()):
             # Can ignore arcs leading out of source or intermediate, or into sink.
-            if (min_cost_flow.Tail(arc) != 0 and
+            if (min_cost_flow.Tail(arc) != source and
                     min_cost_flow.Tail(arc) != 11 and
                     min_cost_flow.Tail(arc) != 12 and
-                    min_cost_flow.Head(arc) != 13):
+                    min_cost_flow.Head(arc) != sink):
 
                 # Arcs in the solution will have a flow value of 1.
                 # There start and end nodes give an assignment of worker to task.

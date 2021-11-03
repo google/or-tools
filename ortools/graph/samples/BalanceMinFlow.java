@@ -42,6 +42,8 @@ public class BalanceMinFlow {
     int[] unitCosts = new int[] {0, 0, 0, 0, 0, 0, 0, 0, 90, 76, 75, 70, 35, 85, 55, 65, 125, 95,
         90, 105, 45, 110, 95, 115, 60, 105, 80, 75, 45, 65, 110, 95, 0, 0, 0, 0};
 
+    int source = 0;
+    int sink = 13;
     int tasks = 4;
     // Define an array of supplies at each node.
     int[] supplies = new int[] {tasks, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -tasks};
@@ -74,8 +76,8 @@ public class BalanceMinFlow {
       System.out.println();
       for (int i = 0; i < minCostFlow.getNumArcs(); ++i) {
         // Can ignore arcs leading out of source or intermediate nodes, or into sink.
-        if (minCostFlow.getTail(i) != 0 && minCostFlow.getTail(i) != 11
-            && minCostFlow.getTail(i) != 12 && minCostFlow.getHead(i) != 13) {
+        if (minCostFlow.getTail(i) != source && minCostFlow.getTail(i) != 11
+            && minCostFlow.getTail(i) != 12 && minCostFlow.getHead(i) != sink) {
           // Arcs in the solution have a flow value of 1. Their start and end nodes
           // give an assignment of worker to task.
           if (minCostFlow.getFlow(i) > 0) {

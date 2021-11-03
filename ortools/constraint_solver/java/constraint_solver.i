@@ -722,6 +722,7 @@ import java.lang.Runnable;
 // Used to keep alive java references to objects passed to the C++ layer.
 import java.util.HashSet;
 %}
+
 // note: SWIG does not support multiple %typemap(javacode) Type, so we have to
 // define all Solver tweak here (ed and not in the macro DEFINE_CALLBACK_*)
 %typemap(javacode) Solver %{

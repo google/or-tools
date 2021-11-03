@@ -22,7 +22,7 @@ import com.google.ortools.sat.IntVar;
 // [END import]
 
 /** Minimal CP-SAT example to showcase calling the solver. */
-public class SimpleSatProgram {
+public final class SimpleSatProgram {
   public static void main(String[] args) throws Exception {
     Loader.loadNativeLibraries();
     // Create the model.
@@ -60,5 +60,7 @@ public class SimpleSatProgram {
     }
     // [END print_solution]
   }
+
+  private SimpleSatProgram() {}
 }
 // [END program]
