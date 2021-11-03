@@ -10,6 +10,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 // [START program]
 // OR-Tools solution to the N-queens problem.
 package com.google.ortools.constraintsolver.samples;
@@ -17,15 +18,13 @@ package com.google.ortools.constraintsolver.samples;
 // [END import]
 import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.DecisionBuilder;
-import com.google.ortools.constraintsolver.IntExpr;
 import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.Solver;
-import com.google.ortools.constraintsolver.main;
 // [END import]
 
 /** N-Queens Problem. */
 public final class NQueensCp {
-  public static void main(String[] args) throws Exception {
+  public static void main(String[] args) {
     Loader.loadNativeLibraries();
     // Instantiate the solver.
     // [START solver]
@@ -75,8 +74,9 @@ public final class NQueensCp {
           } else {
             System.out.print("_");
           }
-          if (j != boardSize - 1)
+          if (j != boardSize - 1) {
             System.out.print(" ");
+          }
         }
         System.out.println();
       }
