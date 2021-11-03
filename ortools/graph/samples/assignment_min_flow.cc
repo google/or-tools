@@ -30,21 +30,21 @@ void AssignmentMinFlow() {
   // Define four parallel arrays: sources, destinations, capacities,
   // and unit costs between each pair. For instance, the arc from node 0
   // to node 1 has a capacity of 15.
-  std::vector<int64_t> start_nodes = {0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2,
-                                      3, 3, 3, 3, 4, 4, 4, 4, 5, 6, 7, 8};
-  std::vector<int64_t> end_nodes = {1, 2, 3, 4, 5, 6, 7, 8, 5, 6, 7, 8,
-                                    5, 6, 7, 8, 5, 6, 7, 8, 9, 9, 9, 9};
-  std::vector<int64_t> capacities = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                                     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
-  std::vector<int64_t> unit_costs = {0,  0,   0,  0,   90,  76, 75, 70,
-                                     35, 85,  55, 65,  125, 95, 90, 105,
-                                     45, 110, 95, 115, 0,   0,  0,  0};
+  const std::vector<int64_t> start_nodes = {0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2,
+                                            3, 3, 3, 3, 4, 4, 4, 4, 5, 6, 7, 8};
+  const std::vector<int64_t> end_nodes = {1, 2, 3, 4, 5, 6, 7, 8, 5, 6, 7, 8,
+                                          5, 6, 7, 8, 5, 6, 7, 8, 9, 9, 9, 9};
+  const std::vector<int64_t> capacities = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                           1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+  const std::vector<int64_t> unit_costs = {0,  0,   0,  0,   90,  76, 75, 70,
+                                           35, 85,  55, 65,  125, 95, 90, 105,
+                                           45, 110, 95, 115, 0,   0,  0,  0};
 
-  int64_t source = 0;
-  int64_t sink = 9;
-  int64_t tasks = 4;
+  const int64_t source = 0;
+  const int64_t sink = 9;
+  const int64_t tasks = 4;
   // Define an array of supplies at each node.
-  std::vector<int64_t> supplies = {tasks, 0, 0, 0, 0, 0, 0, 0, 0, -tasks};
+  const std::vector<int64_t> supplies = {tasks, 0, 0, 0, 0, 0, 0, 0, 0, -tasks};
   // [END data]
 
   // [START constraints]

@@ -42,8 +42,9 @@ public class AssignmentMinFlow {
 
     int source = 0;
     int sink = 9;
+    int tasks = 4;
     // Define an array of supplies at each node.
-    int[] supplies = new int[] {4, 0, 0, 0, 0, 0, 0, 0, 0, -4};
+    int[] supplies = new int[] {tasks, 0, 0, 0, 0, 0, 0, 0, 0, -tasks};
     // [END data]
 
     // [START constraints]

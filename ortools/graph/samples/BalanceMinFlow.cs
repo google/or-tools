@@ -44,8 +44,9 @@ public class BalanceMinFlow
 
         int source = 0;
         int sink = 13;
+        int tasks = 4;
         // Define an array of supplies at each node.
-        int[] supplies = { 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -4 };
+        int[] supplies = { tasks, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -tasks };
         // [END data]
 
         // [START constraints]
@@ -78,8 +79,8 @@ public class BalanceMinFlow
             for (int i = 0; i < minCostFlow.NumArcs(); ++i)
             {
                 // Can ignore arcs leading out of source or into sink.
-                if (minCostFlow.Tail(i) != 0 && minCostFlow.Tail(i) != 11 && minCostFlow.Tail(i) != 12 &&
-                    minCostFlow.Head(i) != 13)
+                if (minCostFlow.Tail(i) != source && minCostFlow.Tail(i) != 11 && minCostFlow.Tail(i) != 12 &&
+                    minCostFlow.Head(i) != sink)
                 {
                     // Arcs in the solution have a flow value of 1. Their start and end nodes
                     // give an assignment of worker to task.

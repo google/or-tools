@@ -12,6 +12,7 @@
 // limitations under the License.
 
 // [START program]
+// From Bradley, Hax, and Maganti, 'Applied Mathematical Programming', figure 8.1.
 package com.google.ortools.graph.samples;
 // [START import]
 import com.google.ortools.Loader;
