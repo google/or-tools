@@ -22,7 +22,7 @@ syntax = "proto2";
 
 package operations_research.glop;
 
-// next id = 67
+// next id = 68
 message GlopParameters {
 
   // Supported algorithms for scaling:
@@ -468,5 +468,8 @@ message GlopParameters {
   // this situation can happen only if a starting value was specified via
   // SetStartingVariableValuesForNextSolve().
   optional bool push_to_vertex = 65 [default = true];
+
+  // If presolve runs, include the pass that detects implied free variables.
+  optional bool use_implied_free_preprocessor = 67 [default = true];
 
 }

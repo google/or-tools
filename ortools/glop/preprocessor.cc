@@ -1381,6 +1381,7 @@ struct ColWithDegree {
 bool ImpliedFreePreprocessor::Run(LinearProgram* lp) {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_VALUE_IF_NULL(lp, false);
+  if (!parameters_.use_implied_free_preprocessor()) return false;
   const RowIndex num_rows = lp->num_constraints();
   const ColIndex num_cols = lp->num_variables();
 
