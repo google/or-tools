@@ -75,13 +75,15 @@ def main():
     total_time = 0
     for group in allowed_groups:
         res = assignment(costs, group)
-        solver_tmp = res[0]
-        x_tmp = res[1]
-        if solver_tmp.Objective().Value() < min_val:
-            min_val = solver_tmp.Objective().Value()
-            min_group = group
-            min_solver = solver_tmp
-            min_x = x_tmp
+        status_tmp = res[0]
+        solver_tmp = res[1]
+        x_tmp = res[2]
+        if status_tmp == pywraplp.Solver.OPTIMAL or status_tmp == pywraplp.Solver.FEASIBLE:
+            if solver_tmp.Objective().Value() < min_val:
+                min_val = solver_tmp.Objective().Value()
+                min_group = group
+                min_solver = solver_tmp
+                min_x = x_tmp
         total_time += solver_tmp.WallTime()
     # [END solves]
 
