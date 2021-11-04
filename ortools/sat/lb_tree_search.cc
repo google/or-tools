@@ -416,42 +416,41 @@ SatSolver::Status LbTreeSearch::Search(
     // and also allow for a more incremental LP solving since we do less back
     // and forth.
     //
-    // TODO(user): The code to recover that is a bit convoluted.
+    // TODO(user): The code to recover that is a bit convoluted. Alternatively
+    // Maybe we should do a "fast" propagation without the LP in each branch.
+    // That will work as long as we keep these optimal LP constraints around
+    // and propagate them.
+    //
     // TODO(user): Incorporate this in the heuristic so we choose more Boolean
     // inside these LP explanations?
     if (lp_constraint_ != nullptr) {
-      IntegerSumLE* last_rc = lp_constraint_->LatestOptimalConstraintOrNull();
-      if (last_rc != nullptr) {
-        const IntegerVariable pos_view =
-            integer_encoder_->GetLiteralView(Literal(decision));
-        if (pos_view != kNoIntegerVariable) {
-          const std::pair<IntegerValue, IntegerValue> bounds =
-              last_rc->ConditionalLb(pos_view, objective_var_);
-          Node& node = nodes_[n];
-          if (bounds.first > node.false_objective) {
-            ++num_rc_detected_;
-            node.UpdateFalseObjective(bounds.first);
-          }
-          if (bounds.second > node.true_objective) {
-            ++num_rc_detected_;
-            node.UpdateTrueObjective(bounds.second);
-          }
-        }
+      // Note that this return literal EQUIVALENT to the decision, not just
+      // implied by it. We need that for correctness.
+      int num_tests = 0;
+      for (const IntegerLiteral integer_literal :
+           integer_encoder_->GetIntegerLiterals(Literal(decision))) {
+        if (integer_trail_->IsCurrentlyIgnored(integer_literal.var)) continue;
 
-        const IntegerVariable neg_view =
-            integer_encoder_->GetLiteralView(Literal(decision).Negated());
-        if (neg_view != kNoIntegerVariable) {
-          const std::pair<IntegerValue, IntegerValue> bounds =
-              last_rc->ConditionalLb(neg_view, objective_var_);
-          Node& node = nodes_[n];
-          if (bounds.first > node.true_objective) {
-            ++num_rc_detected_;
-            node.UpdateTrueObjective(bounds.second);
-          }
-          if (bounds.second > node.false_objective) {
-            ++num_rc_detected_;
-            node.UpdateFalseObjective(bounds.second);
-          }
+        // To avoid bad corner case. Not sure it ever triggers.
+        if (++num_tests > 10) break;
+
+        // TODO(user): we could consider earlier constraint instead of just
+        // looking at the last one, but experiments didn't really show a big
+        // gain.
+        const auto& cts = lp_constraint_->OptimalConstraints();
+        if (cts.empty()) continue;
+
+        const std::unique_ptr<IntegerSumLE>& rc = cts.back();
+        const std::pair<IntegerValue, IntegerValue> bounds =
+            rc->ConditionalLb(integer_literal, objective_var_);
+        Node& node = nodes_[n];
+        if (bounds.first > node.false_objective) {
+          ++num_rc_detected_;
+          node.UpdateFalseObjective(bounds.first);
+        }
+        if (bounds.second > node.true_objective) {
+          ++num_rc_detected_;
+          node.UpdateTrueObjective(bounds.second);
         }
       }
     }

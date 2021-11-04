@@ -77,16 +77,11 @@ void IntegerSumLE::FillIntegerReason() {
 }
 
 std::pair<IntegerValue, IntegerValue> IntegerSumLE::ConditionalLb(
-    IntegerVariable bool_view, IntegerVariable target_var) const {
-  if (integer_trail_->LowerBound(bool_view) != 0 &&
-      integer_trail_->UpperBound(bool_view) != 1) {
-    return {kMinIntegerValue, kMinIntegerValue};
-  }
-
+    IntegerLiteral integer_literal, IntegerVariable target_var) const {
   // Recall that all our coefficient are positive.
-  bool bool_view_present = false;
-  bool bool_view_present_positively = false;
-  IntegerValue view_coeff;
+  bool literal_var_present = false;
+  bool literal_var_present_positively = false;
+  IntegerValue var_coeff;
 
   bool target_var_present_negatively = false;
   IntegerValue target_coeff;
@@ -104,21 +99,34 @@ std::pair<IntegerValue, IntegerValue> IntegerSumLE::ConditionalLb(
 
     const IntegerValue lb = integer_trail_->LowerBound(var);
     implied_lb += coeff * lb;
-    if (PositiveVariable(var) == PositiveVariable(bool_view)) {
-      view_coeff = coeff;
-      bool_view_present = true;
-      bool_view_present_positively = (var == bool_view);
+    if (PositiveVariable(var) == PositiveVariable(integer_literal.var)) {
+      var_coeff = coeff;
+      literal_var_present = true;
+      literal_var_present_positively = (var == integer_literal.var);
     }
   }
-  if (!bool_view_present || !target_var_present_negatively) {
+  if (!literal_var_present || !target_var_present_negatively) {
     return {kMinIntegerValue, kMinIntegerValue};
   }
 
-  if (bool_view_present_positively) {
+  // A literal means var >= bound.
+  if (literal_var_present_positively) {
+    // We have var_coeff * var in the expression, the literal is var >= bound.
+    // When it is false, it is not relevant as implied_lb used var >= lb.
+    // When it is true, the diff is bound - lb.
+    const IntegerValue diff = std::max(
+        IntegerValue(0), integer_literal.bound -
+                             integer_trail_->LowerBound(integer_literal.var));
     return {CeilRatio(implied_lb, target_coeff),
-            CeilRatio(implied_lb + view_coeff, target_coeff)};
+            CeilRatio(implied_lb + var_coeff * diff, target_coeff)};
   } else {
-    return {CeilRatio(implied_lb + view_coeff, target_coeff),
+    // We have var_coeff * -var in the expression, the literal is var >= bound.
+    // When it is true, it is not relevant as implied_lb used -var >= -ub.
+    // And when it is false it means var < bound, so -var >= -bound + 1
+    const IntegerValue diff = std::max(
+        IntegerValue(0), integer_trail_->UpperBound(integer_literal.var) -
+                             integer_literal.bound + 1);
+    return {CeilRatio(implied_lb + var_coeff * diff, target_coeff),
             CeilRatio(implied_lb, target_coeff)};
   }
 }

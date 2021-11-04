@@ -231,6 +231,10 @@ class LinearProgrammingConstraint : public PropagatorInterface,
     return optimal_constraints_.back().get();
   }
 
+  const std::vector<std::unique_ptr<IntegerSumLE>>& OptimalConstraints() const {
+    return optimal_constraints_;
+  }
+
  private:
   // Helper methods for branching. Returns true if branching on the given
   // variable helps with more propagation or finds a conflict.

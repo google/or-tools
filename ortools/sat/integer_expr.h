@@ -72,10 +72,11 @@ class IntegerSumLE : public PropagatorInterface {
   bool PropagateAtLevelZero();
 
   // This is a pretty usage specific function. Returns the implied lower bound
-  // on var if the bool_view take the value 0 or 1. If the variables do not
-  // appear both in the linear inequality, this returns two kMinIntegerValue.
+  // on target_var if the given integer literal is false (resp. true). If the
+  // variables do not appear both in the linear inequality, this returns two
+  // kMinIntegerValue.
   std::pair<IntegerValue, IntegerValue> ConditionalLb(
-      IntegerVariable bool_view, IntegerVariable target_var) const;
+      IntegerLiteral integer_literal, IntegerVariable target_var) const;
 
  private:
   // Fills integer_reason_ with all the current lower_bounds. The real
