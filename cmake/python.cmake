@@ -26,49 +26,98 @@ endif()
 find_package(Python3 REQUIRED COMPONENTS Interpreter Development.Module)
 list(APPEND CMAKE_SWIG_FLAGS "-py3" "-DPY3")
 
-# Find if python module MODULE_NAME is available,
-# if not install it (PACKAGE_NAME) to the Python3 user install directory.
-function(search_python_module MODULE_NAME PACKAGE_NAME)
-  execute_process(
-    COMMAND ${Python3_EXECUTABLE} -c "import ${MODULE_NAME}; print(${MODULE_NAME}.__version__)"
-    RESULT_VARIABLE _RESULT
-    OUTPUT_VARIABLE MODULE_VERSION
-    ERROR_QUIET
-    OUTPUT_STRIP_TRAILING_WHITESPACE
+# Find if the python module is available,
+# otherwise install it (PACKAGE_NAME) to the Python3 user install directory.
+# If CMake option FETCH_PYTHON_DEPS is OFF then issue a fatal error instead.
+# e.g
+# search_python_module(
+#   NAME
+#     mypy_protobuf
+#   PACKAGE
+#     mypy-protobuf
+#   NO_VERSION
+# )
+function(search_python_module)
+  set(options NO_VERSION)
+  set(oneValueArgs NAME PACKAGE)
+  set(multiValueArgs "")
+  cmake_parse_arguments(MODULE
+    "${options}"
+    "${oneValueArgs}"
+    "${multiValueArgs}"
+    ${ARGN}
+  )
+  message(STATUS "Searching python module: \"${MODULE_NAME}\"")
+  if(${MODULE_NO_VERSION})
+    execute_process(
+      COMMAND ${Python3_EXECUTABLE} -c "import ${MODULE_NAME}"
+      RESULT_VARIABLE _RESULT
+      ERROR_QUIET
+      OUTPUT_STRIP_TRAILING_WHITESPACE
     )
+    set(MODULE_VERSION "unknown")
+  else()
+    execute_process(
+      COMMAND ${Python3_EXECUTABLE} -c "import ${MODULE_NAME}; print(${MODULE_NAME}.__version__)"
+      RESULT_VARIABLE _RESULT
+      OUTPUT_VARIABLE MODULE_VERSION
+      ERROR_QUIET
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+      )
+  endif()
   if(${_RESULT} STREQUAL "0")
-    message(STATUS "Found python module: ${MODULE_NAME} (found version \"${MODULE_VERSION}\")")
+    message(STATUS "Found python module: \"${MODULE_NAME}\" (found version \"${MODULE_VERSION}\")")
   else()
     if(FETCH_PYTHON_DEPS)
-      message(WARNING "Can't find python module \"${MODULE_NAME}\", install it using pip...")
+      message(WARNING "Can't find python module: \"${MODULE_NAME}\", install it using pip...")
       execute_process(
-        COMMAND ${Python3_EXECUTABLE} -m pip install --user ${PACKAGE_NAME}
+        COMMAND ${Python3_EXECUTABLE} -m pip install --user ${MODULE_PACKAGE}
         OUTPUT_STRIP_TRAILING_WHITESPACE
         )
     else()
-      message(FATAL_ERROR "Can't find python module \"${MODULE_NAME}\", please install it using your system package manager.")
+      message(FATAL_ERROR "Can't find python module: \"${MODULE_NAME}\", please install it using your system package manager.")
     endif()
   endif()
 endfunction()
 
-# Find if python builtin module MODULE_NAME is available.
-function(search_python_internal_module MODULE_NAME)
+# Find if a python builtin module is available.
+# e.g
+# search_python_internal_module(
+#   NAME
+#     mypy_protobuf
+# )
+function(search_python_internal_module)
+  set(options "")
+  set(oneValueArgs NAME)
+  set(multiValueArgs "")
+  cmake_parse_arguments(MODULE
+    "${options}"
+    "${oneValueArgs}"
+    "${multiValueArgs}"
+    ${ARGN}
+  )
+  message(STATUS "Searching python module: \"${MODULE_NAME}\"")
   execute_process(
     COMMAND ${Python3_EXECUTABLE} -c "import ${MODULE_NAME}"
     RESULT_VARIABLE _RESULT
-    OUTPUT_VARIABLE MODULE_VERSION
     ERROR_QUIET
     OUTPUT_STRIP_TRAILING_WHITESPACE
     )
   if(${_RESULT} STREQUAL "0")
-    message(STATUS "Found python internal module: ${MODULE_NAME}")
+    message(STATUS "Found python internal module: \"${MODULE_NAME}\"")
   else()
     message(FATAL_ERROR "Can't find python internal module \"${MODULE_NAME}\", please install it using your system package manager.")
   endif()
 endfunction()
 
 # Generate Protobuf py sources with mypy support
-search_python_module(mypy_protobuf mypy-protobuf)
+search_python_module(
+  NAME
+    mypy_protobuf
+  PACKAGE
+    mypy-protobuf
+  NO_VERSION
+)
 set(PROTO_PYS)
 file(GLOB_RECURSE proto_py_files RELATIVE ${PROJECT_SOURCE_DIR}
   "ortools/constraint_solver/*.proto"
@@ -168,9 +217,18 @@ configure_file(
   COPYONLY)
 
 # Look for python module wheel
-search_python_module(setuptools setuptools)
-search_python_module(wheel wheel)
-
+search_python_module(
+  NAME
+    setuptools
+  PACKAGE
+    setuptools
+)
+search_python_module(
+  NAME
+    wheel
+  PACKAGE
+    wheel
+)
 add_custom_command(
   OUTPUT python/dist
   COMMAND ${CMAKE_COMMAND} -E remove_directory dist
@@ -220,8 +278,17 @@ install(SCRIPT ${PROJECT_BINARY_DIR}/python/python-install.cmake)
 # Test
 if(BUILD_TESTING)
   # Look for python module venv
-  search_python_module(absl absl-py)
-  search_python_internal_module(venv)
+  search_python_module(
+    NAME
+      absl
+    PACKAGE
+      absl-py
+    NO_VERSION
+  )
+  search_python_internal_module(
+    NAME
+      venv
+  )
   # Testing using a vitual environment
   set(VENV_EXECUTABLE ${Python3_EXECUTABLE} -m venv)
   set(VENV_DIR ${PROJECT_BINARY_DIR}/python/venv)
