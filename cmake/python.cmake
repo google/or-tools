@@ -112,12 +112,9 @@ endfunction()
 
 # Generate Protobuf py sources with mypy support
 search_python_module(
-  NAME
-    mypy_protobuf
-  PACKAGE
-    mypy-protobuf
-  NO_VERSION
-)
+  NAME mypy_protobuf
+  PACKAGE mypy-protobuf
+  NO_VERSION)
 set(PROTO_PYS)
 file(GLOB_RECURSE proto_py_files RELATIVE ${PROJECT_SOURCE_DIR}
   "ortools/constraint_solver/*.proto"
@@ -160,6 +157,10 @@ if(USE_COINOR)
 endif()
 list(APPEND CMAKE_SWIG_FLAGS ${FLAGS} "-I${PROJECT_SOURCE_DIR}")
 
+set(PYTHON_PROJECT ${PROJECT_NAME})
+message(STATUS "Python project: ${PYTHON_PROJECT}")
+
+# Swig wrap all libraries
 foreach(SUBPROJECT IN ITEMS init algorithms graph linear_solver constraint_solver sat scheduling util)
   add_subdirectory(ortools/${SUBPROJECT}/python)
 endforeach()
@@ -167,12 +168,10 @@ endforeach()
 #######################
 ## Python Packaging  ##
 #######################
-set(PYTHON_PROJECT ${PROJECT_NAME})
-message(STATUS "Python project: ${PYTHON_PROJECT}")
 set(PYTHON_PATH ${PROJECT_BINARY_DIR}/python/${PYTHON_PROJECT})
 message(STATUS "Python project build path: ${PYTHON_PATH}")
 
-#file(MAKE_DIRECTORY python/${PROJECT_NAME})
+#file(MAKE_DIRECTORY python/${PYTHON_PROJECT})
 file(GENERATE OUTPUT ${PYTHON_PATH}/__init__.py CONTENT "__version__ = \"${PROJECT_VERSION}\"\n")
 file(GENERATE OUTPUT ${PYTHON_PATH}/init/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PATH}/algorithms/__init__.py CONTENT "")
@@ -186,15 +185,15 @@ file(GENERATE OUTPUT ${PYTHON_PATH}/scheduling/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PATH}/util/__init__.py CONTENT "")
 
 file(COPY
-    ortools/linear_solver/linear_solver_natural_api.py
-    DESTINATION ${PYTHON_PATH}/linear_solver)
+  ortools/linear_solver/linear_solver_natural_api.py
+  DESTINATION ${PYTHON_PATH}/linear_solver)
 file(COPY
-    ortools/sat/python/cp_model.py
-    ortools/sat/python/cp_model_helper.py
-    ortools/sat/python/visualization.py
+  ortools/sat/python/cp_model.py
+  ortools/sat/python/cp_model_helper.py
+  ortools/sat/python/visualization.py
   DESTINATION ${PYTHON_PATH}/sat/python)
 
-# setup.py.in contains cmake variable e.g. @PROJECT_NAME@ and
+# setup.py.in contains cmake variable e.g. @PYTHON_PROJECT@ and
 # generator expression e.g. $<TARGET_FILE_NAME:pyFoo>
 configure_file(
   ${PROJECT_SOURCE_DIR}/ortools/python/setup.py.in
@@ -208,8 +207,7 @@ add_custom_command(
   OUTPUT python/setup.py
   DEPENDS ${PROJECT_BINARY_DIR}/python/$<CONFIG>/setup.py
   COMMAND ${CMAKE_COMMAND} -E copy ./$<CONFIG>/setup.py setup.py
-  WORKING_DIRECTORY python
-)
+  WORKING_DIRECTORY python)
 
 configure_file(
   ${PROJECT_SOURCE_DIR}/tools/README.pypi.txt
@@ -218,25 +216,20 @@ configure_file(
 
 # Look for python module wheel
 search_python_module(
-  NAME
-    setuptools
-  PACKAGE
-    setuptools
-)
+  NAME setuptools
+  PACKAGE setuptools)
 search_python_module(
-  NAME
-    wheel
-  PACKAGE
-    wheel
-)
+  NAME wheel
+  PACKAGE wheel)
+
 add_custom_command(
   OUTPUT python/dist
   COMMAND ${CMAKE_COMMAND} -E remove_directory dist
   #COMMAND ${CMAKE_COMMAND} -E make_directory dist
   COMMAND ${CMAKE_COMMAND} -E make_directory ${PYTHON_PROJECT}/.libs
-  # Don't need to copy static lib on windows.
-  COMMAND ${CMAKE_COMMAND} -E $<IF:$<STREQUAL:$<TARGET_PROPERTY:${PYTHON_PROJECT},TYPE>,SHARED_LIBRARY>,copy,true>
-  $<$<STREQUAL:$<TARGET_PROPERTY:${PYTHON_PROJECT},TYPE>,SHARED_LIBRARY>:$<TARGET_SONAME_FILE:${PYTHON_PROJECT}>>
+  # Don't need to copy static lib on Windows.
+  COMMAND ${CMAKE_COMMAND} -E $<IF:$<STREQUAL:$<TARGET_PROPERTY:ortools,TYPE>,SHARED_LIBRARY>,copy,true>
+  $<$<STREQUAL:$<TARGET_PROPERTY:ortools,TYPE>,SHARED_LIBRARY>:$<TARGET_SONAME_FILE:ortools>>
   ${PYTHON_PROJECT}/.libs
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywrapinit> ${PYTHON_PROJECT}/init
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywrapknapsack_solver> ${PYTHON_PROJECT}/algorithms
@@ -254,19 +247,18 @@ add_custom_command(
     python/setup.py
     Py${PROJECT_NAME}_proto
   BYPRODUCTS
-   python/${PYTHON_PROJECT}
-   python/build
-   python/${PYTHON_PROJECT}.egg-info
+    python/${PYTHON_PROJECT}
+    python/build
+    python/dist
+    python/${PYTHON_PROJECT}.egg-info
   WORKING_DIRECTORY python
-  COMMAND_EXPAND_LISTS
-  )
+  COMMAND_EXPAND_LISTS)
 
 # Main Target
 add_custom_target(python_package ALL
   DEPENDS
     python/dist
-  WORKING_DIRECTORY python
-)
+  WORKING_DIRECTORY python)
 
 # Install rules
 configure_file(
@@ -275,23 +267,18 @@ configure_file(
   @ONLY)
 install(SCRIPT ${PROJECT_BINARY_DIR}/python/python-install.cmake)
 
-# Test
+###################
+##  Python Test  ##
+###################
 if(BUILD_TESTING)
-  # Look for python module venv
   search_python_module(
-    NAME
-      absl
-    PACKAGE
-      absl-py
-    NO_VERSION
-  )
-  search_python_internal_module(
-    NAME
-      venv
-  )
+    NAME absl
+    PACKAGE absl-py
+    NO_VERSION)
+  search_python_internal_module(NAME venv)
   # Testing using a vitual environment
   set(VENV_EXECUTABLE ${Python3_EXECUTABLE} -m venv)
-  set(VENV_DIR ${PROJECT_BINARY_DIR}/python/venv)
+  set(VENV_DIR ${CMAKE_CURRENT_BINARY_DIR}/python/venv)
   if(WIN32)
     set(VENV_Python3_EXECUTABLE "${VENV_DIR}\\Scripts\\python.exe")
   else()
@@ -299,14 +286,25 @@ if(BUILD_TESTING)
   endif()
   # make a virtualenv to install our python package in it
   add_custom_command(TARGET python_package POST_BUILD
+    # Clean previous install otherwise pip install may do nothing
     COMMAND ${CMAKE_COMMAND} -E remove_directory ${VENV_DIR}
     COMMAND ${VENV_EXECUTABLE} ${VENV_DIR}
-    # Must not call it in a folder containing the setup.py otherwise pip call it
+    # Must NOT call it in a folder containing the setup.py otherwise pip call it
     # (i.e. "python setup.py bdist") while we want to consume the wheel package
-    COMMAND ${VENV_Python3_EXECUTABLE} -m pip install --find-links=${CMAKE_CURRENT_BINARY_DIR}/python/dist ${PROJECT_NAME}
-    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/test.py.in ${VENV_DIR}/test.py
+    COMMAND ${VENV_Python3_EXECUTABLE} -m pip install --find-links=${CMAKE_CURRENT_BINARY_DIR}/python/dist ${PYTHON_PROJECT}
     BYPRODUCTS ${VENV_DIR}
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} VERBATIM)
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    COMMENT "Create venv and install ${PYTHON_PROJECT}"
+    VERBATIM)
+
+  add_custom_command(TARGET python_package POST_BUILD
+    DEPENDS python/test.py
+    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/test.py.in ${VENV_DIR}/test.py
+    BYPRODUCTS ${VENV_DIR}/test.py
+    WORKING_DIRECTORY python
+    COMMENT "Copying test.py"
+    VERBATIM)
+
   # run the tests within the virtualenv
   add_test(NAME pytest_venv
     COMMAND ${VENV_Python3_EXECUTABLE} ${VENV_DIR}/test.py)
