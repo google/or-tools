@@ -7278,6 +7278,11 @@ bool CpModelPresolver::Presolve() {
     context_->UpdateNewConstraintsVariableUsage();
     ExpandCpModel(context_);
     if (logger_->LoggingIsEnabled()) context_->LogInfo();
+
+    // We need to append all the variable equivalence that are still used!
+    if (!context_->ModelIsUnsat()) {
+      EncodeAllAffineRelations();
+    }
     return true;
   }
 

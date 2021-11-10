@@ -1168,29 +1168,24 @@ void PresolveContext::InsertVarValueEncodingInternal(int literal, int var,
   // The code below is not 100% correct if this is not the case.
   DCHECK(DomainOf(var).Contains(value));
 
-  // Ticky and rare: I have only observed this on the LNS of
-  // radiation_m18_12_05_sat.fzn. The value was encoded, but maybe we never
-  // used the involved variables / constraints, so it was removed (with the
-  // encoding constraints) from the model already! We have to be careful.
-  const auto it = var_map.find(value);
-  if (it != var_map.end()) {
-    const int old_var = PositiveRef(it->second.Get(this));
-    if (removed_variables_.contains(old_var)) {
-      var_map.erase(it);
-    }
-  }
-
-  const auto insert =
-      var_map.insert(std::make_pair(value, SavedLiteral(literal)));
-
   // If an encoding already exist, make the two Boolean equals.
-  if (!insert.second) {
-    const int previous_literal = insert.first->second.Get(this);
-    CHECK(!VariableWasRemoved(previous_literal));
-    if (literal != previous_literal) {
-      UpdateRuleStats(
-          "variables: merge equivalent var value encoding literals");
-      StoreBooleanEqualityRelation(literal, previous_literal);
+  const auto [it, inserted] =
+      var_map.insert(std::make_pair(value, SavedLiteral(literal)));
+  if (!inserted) {
+    const int previous_literal = it->second.Get(this);
+
+    // Ticky and rare: I have only observed this on the LNS of
+    // radiation_m18_12_05_sat.fzn. The value was encoded, but maybe we never
+    // used the involved variables / constraints, so it was removed (with the
+    // encoding constraints) from the model already! We have to be careful.
+    if (VariableWasRemoved(previous_literal)) {
+      it->second = SavedLiteral(literal);
+    } else {
+      if (literal != previous_literal) {
+        UpdateRuleStats(
+            "variables: merge equivalent var value encoding literals");
+        StoreBooleanEqualityRelation(literal, previous_literal);
+      }
     }
     return;
   }

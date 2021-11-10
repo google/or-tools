@@ -51,6 +51,7 @@
 #include "ortools/base/map_util.h"
 #include "ortools/base/threadpool.h"
 #include "ortools/base/timer.h"
+#include "ortools/base/version.h"
 #include "ortools/base/vlog_is_on.h"
 #include "ortools/graph/connected_components.h"
 #include "ortools/port/proto_utils.h"
@@ -2990,7 +2991,8 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
 #endif  // __PORTABLE_PLATFORM__
 
   SOLVER_LOG(logger, "");
-  SOLVER_LOG(logger, "Starting CP-SAT solver.");
+  SOLVER_LOG(logger, "Starting CP-SAT solver v", OrToolsMajorVersion(), ".",
+             OrToolsMinorVersion(), ".", OrToolsPatchVersion());
 
   // Initialize the number of workers if set to 0.
   if (params.num_search_workers() == 0) {
