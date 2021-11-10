@@ -812,7 +812,9 @@ void AddMaxAffineCutGenerator(const ConstraintProto& ct, Model* model,
     return;
   }
 
-  CHECK_EQ(1, ct.lin_max().target().vars_size());
+  // If the target is constant, propagation is enough.
+  if (ct.lin_max().target().vars().empty()) return;
+
   const LinearExpression target_expr =
       PositiveVarExpr(mapping->GetExprFromProto(ct.lin_max().target()));
   relaxation->cut_generators.push_back(CreateMaxAffineCutGenerator(
