@@ -126,7 +126,7 @@ if(BUILD_Protobuf)
       NAME Protobuf
       REPOSITORY "https://github.com/protocolbuffers/protobuf.git"
       TAG "v3.18.0"
-      PATCH_COMMAND "git apply \"${CMAKE_CURRENT_LIST_DIR}/../../patches/protobuf-v3.18.0.patch\""
+      PATCH_COMMAND "git apply --ignore-whitespace \"${CMAKE_CURRENT_LIST_DIR}/../../patches/protobuf-v3.18.0.patch\""
       SOURCE_SUBDIR cmake
       )
   endif()
