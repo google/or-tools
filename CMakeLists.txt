@@ -5,7 +5,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(utils)
 set_version(VERSION)
 
-project(ortools VERSION ${VERSION} LANGUAGES CXX)
+project(ortools VERSION ${VERSION} LANGUAGES CXX C)
 set(PROJECT_NAMESPACE ortools)
 message(STATUS "${PROJECT_NAME} version: ${PROJECT_VERSION}")
 #message(STATUS "major: ${PROJECT_VERSION_MAJOR}")
@@ -134,6 +134,14 @@ if(USE_SCIP)
   CMAKE_DEPENDENT_OPTION(BUILD_SCIP "Build the SCIP dependency Library" OFF
     "NOT BUILD_DEPS" ON)
   message(STATUS "Build SCIP: ${BUILD_SCIP}")
+endif()
+
+CMAKE_DEPENDENT_OPTION(USE_GLPK "Use the GLPK solver" ON "BUILD_CXX" OFF)
+message(STATUS "GLPK support: ${USE_GLPK}")
+if(USE_GLPK)
+  CMAKE_DEPENDENT_OPTION(BUILD_GLPK "Build the GLPK dependency Library" OFF
+    "NOT BUILD_DEPS" ON)
+  message(STATUS "Build GLPK: ${BUILD_GLPK}")
 endif()
 
 CMAKE_DEPENDENT_OPTION(USE_COINOR "Use the COIN-OR solver" ON "BUILD_CXX" OFF)

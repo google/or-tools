@@ -23,10 +23,11 @@ target_link_libraries(${NAME} PRIVATE
   absl::strings
   absl::str_format
   protobuf::libprotobuf
+  $<$<BOOL:${USE_SCIP}>:libscip>
+  $<$<BOOL:${USE_GLPK}>:GLPK::GLPK>
   $<$<BOOL:${USE_COINOR}>:Coin::Cbc>
   $<$<BOOL:${USE_COINOR}>:Coin::Clp>
   $<$<BOOL:${USE_CPLEX}>:CPLEX::CPLEX>
   $<$<BOOL:${USE_XPRESS}>:XPRESS::XPRESS>
-  $<$<BOOL:${USE_SCIP}>:libscip>
   ${PROJECT_NAME}::proto)
 #add_library(${PROJECT_NAME}::linear_solver ALIAS ${NAME})

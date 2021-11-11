@@ -54,6 +54,12 @@ if(USE_SCIP)
   endif()
 endif()
 
+if(USE_GLPK)
+  if(NOT BUILD_GLPK)
+    find_package(GLPK REQUIRED)
+  endif()
+endif()
+
 if(USE_COINOR)
   if(NOT BUILD_CoinUtils)
     find_package(CoinUtils REQUIRED)

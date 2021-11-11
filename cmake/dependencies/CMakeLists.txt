@@ -103,6 +103,27 @@ if(BUILD_SCIP)
 endif()
 
 # ##############################################################################
+# GLPK
+# ##############################################################################
+if(BUILD_GLPK)
+  message(CHECK_START "Fetching GLPK")
+  list(APPEND CMAKE_MESSAGE_INDENT "  ")
+  set(BUILD_EXAMPLES OFF)
+  set(WITH_GMP OFF)
+  set(WITH_ODBC OFF)
+  set(WITH_MYSQL OFF)
+
+  FetchContent_Declare(
+    glpk
+    GIT_REPOSITORY https://github.com/Mizux/GLPK.git
+    GIT_TAG        5.0
+  )
+  FetchContent_MakeAvailable(glpk)
+  list(POP_BACK CMAKE_MESSAGE_INDENT)
+  message(CHECK_PASS "fetched")
+endif()
+
+# ##############################################################################
 # Protobuf
 # ##############################################################################
 if(BUILD_Protobuf)

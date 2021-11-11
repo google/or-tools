@@ -23,6 +23,9 @@ if(USE_SCIP)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_SCIP")
   set(GSCIP_DIR gscip)
 endif()
+if(USE_GLPK)
+  list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_GLPK")
+endif()
 if(USE_COINOR)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS
     "USE_CBC" # enable COIN-OR CBC support
@@ -123,6 +126,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   protobuf::libprotobuf
   ${COINOR_DEPS}
   $<$<BOOL:${USE_SCIP}>:libscip>
+  $<$<BOOL:${USE_GLPK}>:GLPK::GLPK>
   $<$<BOOL:${USE_CPLEX}>:CPLEX::CPLEX>
   $<$<BOOL:${USE_XPRESS}>:XPRESS::XPRESS>
   Threads::Threads)
