@@ -2,8 +2,8 @@ if(NOT BUILD_JAVA)
   return()
 endif()
 
-if(NOT TARGET ortools::ortools)
-  message(FATAL_ERROR "Java: missing ortools::ortools TARGET")
+if(NOT TARGET ${PROJECT_NAMESPACE}::ortools)
+  message(FATAL_ERROR "Java: missing ${PROJECT_NAMESPACE}::ortools TARGET")
 endif()
 
 # Will need swig
@@ -54,7 +54,7 @@ set(JAVA_NATIVE_PROJECT ortools-${NATIVE_IDENTIFIER})
 set(JAVA_PROJECT ortools-java)
 
 # CMake will remove all '-D' prefix (i.e. -DUSE_FOO become USE_FOO)
-#get_target_property(FLAGS ortools::ortools COMPILE_DEFINITIONS)
+#get_target_property(FLAGS ${PROJECT_NAMESPACE}::ortools COMPILE_DEFINITIONS)
 set(FLAGS -DUSE_BOP -DUSE_GLOP -DABSL_MUST_USE_RESULT)
 if(USE_SCIP)
   list(APPEND FLAGS "-DUSE_SCIP")
@@ -95,7 +95,7 @@ foreach(PROTO_FILE IN LISTS proto_java_files)
     VERBATIM)
   list(APPEND PROTO_JAVAS ${PROTO_JAVA})
 endforeach()
-add_custom_target(Java${PROJECT_NAME}_proto DEPENDS ${PROTO_JAVAS} ortools::ortools)
+add_custom_target(Java${PROJECT_NAME}_proto DEPENDS ${PROTO_JAVAS} ${PROJECT_NAMESPACE}::ortools)
 
 # Create the native library
 add_library(jniortools SHARED "")

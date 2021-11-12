@@ -2,7 +2,7 @@ if(NOT BUILD_DOTNET)
   return()
 endif()
 
-if(NOT TARGET ortools::ortools)
+if(NOT TARGET ${PROJECT_NAMESPACE}::ortools)
   message(FATAL_ERROR ".Net: missing ortools TARGET")
 endif()
 
@@ -57,7 +57,7 @@ foreach(PROTO_FILE IN LISTS proto_dotnet_files)
     VERBATIM)
   list(APPEND PROTO_DOTNETS ${PROTO_DOTNET})
 endforeach()
-add_custom_target(Dotnet${PROJECT_NAME}_proto DEPENDS ${PROTO_DOTNETS} ortools::ortools)
+add_custom_target(Dotnet${PROJECT_NAME}_proto DEPENDS ${PROTO_DOTNETS} ${PROJECT_NAMESPACE}::ortools)
 
 # Create the native library
 add_library(google-ortools-native SHARED "")
@@ -79,7 +79,7 @@ elseif(UNIX)
 endif()
 
 # CMake will remove all '-D' prefix (i.e. -DUSE_FOO become USE_FOO)
-#get_target_property(FLAGS ortools::ortools COMPILE_DEFINITIONS)
+#get_target_property(FLAGS ${PROJECT_NAMESPACE}::ortools COMPILE_DEFINITIONS)
 set(FLAGS -DUSE_BOP -DUSE_GLOP -DABSL_MUST_USE_RESULT)
 if(USE_SCIP)
   list(APPEND FLAGS "-DUSE_SCIP")

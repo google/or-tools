@@ -5,7 +5,7 @@ endif()
 # Use latest UseSWIG module (3.14) and Python3 module (3.18)
 cmake_minimum_required(VERSION 3.18)
 
-if(NOT TARGET ortools::ortools)
+if(NOT TARGET ${PROJECT_NAMESPACE}::ortools)
   message(FATAL_ERROR "Python: missing ortools TARGET")
 endif()
 
@@ -144,10 +144,10 @@ foreach(PROTO_FILE IN LISTS proto_py_files)
     VERBATIM)
   list(APPEND PROTO_PYS ${PROTO_PY})
 endforeach()
-add_custom_target(Py${PROJECT_NAME}_proto DEPENDS ${PROTO_PYS} ortools::ortools)
+add_custom_target(Py${PROJECT_NAME}_proto DEPENDS ${PROTO_PYS} ${PROJECT_NAMESPACE}::ortools)
 
 # CMake will remove all '-D' prefix (i.e. -DUSE_FOO become USE_FOO)
-#get_target_property(FLAGS ortools::ortools COMPILE_DEFINITIONS)
+#get_target_property(FLAGS ${PROJECT_NAMESPACE}::ortools COMPILE_DEFINITIONS)
 set(FLAGS -DUSE_BOP -DUSE_GLOP -DABSL_MUST_USE_RESULT)
 if(USE_SCIP)
   list(APPEND FLAGS "-DUSE_SCIP")
@@ -168,30 +168,30 @@ endforeach()
 #######################
 ## Python Packaging  ##
 #######################
-set(PYTHON_PATH ${PROJECT_BINARY_DIR}/python/${PYTHON_PROJECT})
-message(STATUS "Python project build path: ${PYTHON_PATH}")
+set(PYTHON_PROJECT_PATH ${PROJECT_BINARY_DIR}/python/${PYTHON_PROJECT})
+message(STATUS "Python project build path: ${PYTHON_PROJECT_PATH}")
 
 #file(MAKE_DIRECTORY python/${PYTHON_PROJECT})
-file(GENERATE OUTPUT ${PYTHON_PATH}/__init__.py CONTENT "__version__ = \"${PROJECT_VERSION}\"\n")
-file(GENERATE OUTPUT ${PYTHON_PATH}/init/__init__.py CONTENT "")
-file(GENERATE OUTPUT ${PYTHON_PATH}/algorithms/__init__.py CONTENT "")
-file(GENERATE OUTPUT ${PYTHON_PATH}/graph/__init__.py CONTENT "")
-file(GENERATE OUTPUT ${PYTHON_PATH}/linear_solver/__init__.py CONTENT "")
-file(GENERATE OUTPUT ${PYTHON_PATH}/constraint_solver/__init__.py CONTENT "")
-file(GENERATE OUTPUT ${PYTHON_PATH}/packing/__init__.py CONTENT "")
-file(GENERATE OUTPUT ${PYTHON_PATH}/sat/__init__.py CONTENT "")
-file(GENERATE OUTPUT ${PYTHON_PATH}/sat/python/__init__.py CONTENT "")
-file(GENERATE OUTPUT ${PYTHON_PATH}/scheduling/__init__.py CONTENT "")
-file(GENERATE OUTPUT ${PYTHON_PATH}/util/__init__.py CONTENT "")
+file(GENERATE OUTPUT ${PYTHON_PROJECT_PATH}/__init__.py CONTENT "__version__ = \"${PROJECT_VERSION}\"\n")
+file(GENERATE OUTPUT ${PYTHON_PROJECT_PATH}/init/__init__.py CONTENT "")
+file(GENERATE OUTPUT ${PYTHON_PROJECT_PATH}/algorithms/__init__.py CONTENT "")
+file(GENERATE OUTPUT ${PYTHON_PROJECT_PATH}/graph/__init__.py CONTENT "")
+file(GENERATE OUTPUT ${PYTHON_PROJECT_PATH}/linear_solver/__init__.py CONTENT "")
+file(GENERATE OUTPUT ${PYTHON_PROJECT_PATH}/constraint_solver/__init__.py CONTENT "")
+file(GENERATE OUTPUT ${PYTHON_PROJECT_PATH}/packing/__init__.py CONTENT "")
+file(GENERATE OUTPUT ${PYTHON_PROJECT_PATH}/sat/__init__.py CONTENT "")
+file(GENERATE OUTPUT ${PYTHON_PROJECT_PATH}/sat/python/__init__.py CONTENT "")
+file(GENERATE OUTPUT ${PYTHON_PROJECT_PATH}/scheduling/__init__.py CONTENT "")
+file(GENERATE OUTPUT ${PYTHON_PROJECT_PATH}/util/__init__.py CONTENT "")
 
 file(COPY
   ortools/linear_solver/linear_solver_natural_api.py
-  DESTINATION ${PYTHON_PATH}/linear_solver)
+  DESTINATION ${PYTHON_PROJECT_PATH}/linear_solver)
 file(COPY
   ortools/sat/python/cp_model.py
   ortools/sat/python/cp_model_helper.py
   ortools/sat/python/visualization.py
-  DESTINATION ${PYTHON_PATH}/sat/python)
+  DESTINATION ${PYTHON_PROJECT_PATH}/sat/python)
 
 # setup.py.in contains cmake variable e.g. @PYTHON_PROJECT@ and
 # generator expression e.g. $<TARGET_FILE_NAME:pyFoo>
@@ -200,14 +200,14 @@ configure_file(
   ${PROJECT_BINARY_DIR}/python/setup.py.in
   @ONLY)
 file(GENERATE
-  OUTPUT ${PROJECT_BINARY_DIR}/python/$<CONFIG>/setup.py
+  OUTPUT ${PROJECT_BINARY_DIR}/python/setup.py
   INPUT ${PROJECT_BINARY_DIR}/python/setup.py.in)
 
-add_custom_command(
-  OUTPUT python/setup.py
-  DEPENDS ${PROJECT_BINARY_DIR}/python/$<CONFIG>/setup.py
-  COMMAND ${CMAKE_COMMAND} -E copy ./$<CONFIG>/setup.py setup.py
-  WORKING_DIRECTORY python)
+#add_custom_command(
+#  OUTPUT python/setup.py
+#  DEPENDS ${PROJECT_BINARY_DIR}/python/setup.py
+#  COMMAND ${CMAKE_COMMAND} -E copy setup.py setup.py
+#  WORKING_DIRECTORY python)
 
 configure_file(
   ${PROJECT_SOURCE_DIR}/tools/README.pypi.txt
@@ -242,15 +242,16 @@ add_custom_command(
   #COMMAND ${Python3_EXECUTABLE} setup.py bdist_egg bdist_wheel
   COMMAND ${Python3_EXECUTABLE} setup.py bdist_wheel
   MAIN_DEPENDENCY
-    ortools # can't use TARGET alias here
+    ortools/python/setup.py.in
   DEPENDS
     python/setup.py
     Py${PROJECT_NAME}_proto
+    ${PROJECT_NAMESPACE}::ortools
   BYPRODUCTS
     python/${PYTHON_PROJECT}
+    python/${PYTHON_PROJECT}.egg-info
     python/build
     python/dist
-    python/${PYTHON_PROJECT}.egg-info
   WORKING_DIRECTORY python
   COMMAND_EXPAND_LISTS)
 
