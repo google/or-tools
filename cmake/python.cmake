@@ -223,9 +223,8 @@ search_python_module(
   PACKAGE wheel)
 
 add_custom_command(
-  OUTPUT python/dist
+  OUTPUT python/dist/timestamp
   COMMAND ${CMAKE_COMMAND} -E remove_directory dist
-  #COMMAND ${CMAKE_COMMAND} -E make_directory dist
   COMMAND ${CMAKE_COMMAND} -E make_directory ${PYTHON_PROJECT}/.libs
   # Don't need to copy static lib on Windows.
   COMMAND ${CMAKE_COMMAND} -E $<IF:$<STREQUAL:$<TARGET_PROPERTY:ortools,TYPE>,SHARED_LIBRARY>,copy,true>
@@ -241,6 +240,7 @@ add_custom_command(
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:sorted_interval_list> ${PYTHON_PROJECT}/util
   #COMMAND ${Python3_EXECUTABLE} setup.py bdist_egg bdist_wheel
   COMMAND ${Python3_EXECUTABLE} setup.py bdist_wheel
+  COMMAND ${CMAKE_COMMAND} -E touch ${PROJECT_BINARY_DIR}/python/dist/timestamp
   MAIN_DEPENDENCY
     ortools/python/setup.py.in
   DEPENDS
@@ -258,7 +258,7 @@ add_custom_command(
 # Main Target
 add_custom_target(python_package ALL
   DEPENDS
-    python/dist
+    python/dist/timestamp
   WORKING_DIRECTORY python)
 
 # Install rules
