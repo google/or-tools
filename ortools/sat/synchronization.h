@@ -247,23 +247,23 @@ class SharedResponseManager {
   // particular instance. Or to evaluate how efficient our LNS code is improving
   // solution.
   //
-  // Note: The integral will start counting on the first UpdatePrimalIntegral()
+  // Note: The integral will start counting on the first UpdateGapIntegral()
   // call, since before the difference is assumed to be zero.
   //
   // Important: To report a proper deterministic integral, we only update it
-  // on UpdatePrimalIntegral() which should be called in the main subsolver
+  // on UpdateGapIntegral() which should be called in the main subsolver
   // synchronization loop.
   //
   // Note(user): In the litterature, people use the relative gap to the optimal
   // solution (or the best known one), but this is ill defined in many case
   // (like if the optimal cost is zero), so I prefer this version.
-  double PrimalIntegral() const;
-  void UpdatePrimalIntegral();
+  double GapIntegral() const;
+  void UpdateGapIntegral();
 
   // Sets this to true to have the "real" but non-deterministic primal integral.
   // If this is true, then there is no need to manually call
-  // UpdatePrimalIntegral() but it is not an issue to do so.
-  void SetUpdatePrimalIntegralOnEachChange(bool set);
+  // UpdateGapIntegral() but it is not an issue to do so.
+  void SetUpdateGapIntegralOnEachChange(bool set);
 
   // Updates the inner objective bounds.
   void UpdateInnerObjectiveBounds(const std::string& update_info,
@@ -344,7 +344,7 @@ class SharedResponseManager {
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
   void SetStatsFromModelInternal(Model* model)
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
-  void UpdatePrimalIntegralInternal() ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+  void UpdateGapIntegralInternal() ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
   void RegisterSolutionFound(const std::string& improvement_info)
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
@@ -382,9 +382,9 @@ class SharedResponseManager {
       mutex_) = IntegerValue(std::numeric_limits<int64_t>::max());
 
   bool update_integral_on_each_change_ ABSL_GUARDED_BY(mutex_) = false;
-  double primal_integral_ ABSL_GUARDED_BY(mutex_) = 0.0;
+  double gap_integral_ ABSL_GUARDED_BY(mutex_) = 0.0;
   double last_absolute_gap_ ABSL_GUARDED_BY(mutex_) = 0.0;
-  double last_primal_integral_time_stamp_ ABSL_GUARDED_BY(mutex_) = 0.0;
+  double last_gap_integral_time_stamp_ ABSL_GUARDED_BY(mutex_) = 0.0;
 
   int next_callback_id_ ABSL_GUARDED_BY(mutex_) = 0;
   std::vector<std::pair<int, std::function<void(const CpSolverResponse&)>>>

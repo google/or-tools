@@ -1338,13 +1338,15 @@ bool CoverCutHelper::TrySimpleKnapsack(
   return true;
 }
 
-CutGenerator CreatePositiveMultiplicationCutGenerator(IntegerVariable z,
-                                                      IntegerVariable x,
-                                                      IntegerVariable y,
+CutGenerator CreatePositiveMultiplicationCutGenerator(AffineExpression z,
+                                                      AffineExpression x,
+                                                      AffineExpression y,
                                                       int linearization_level,
                                                       Model* model) {
   CutGenerator result;
-  result.vars = {z, x, y};
+  if (z.var != kNoIntegerVariable) result.vars.push_back(z.var);
+  if (x.var != kNoIntegerVariable) result.vars.push_back(x.var);
+  if (y.var != kNoIntegerVariable) result.vars.push_back(y.var);
 
   IntegerTrail* const integer_trail = model->GetOrCreate<IntegerTrail>();
   Trail* trail = model->GetOrCreate<Trail>();
@@ -1369,9 +1371,9 @@ CutGenerator CreatePositiveMultiplicationCutGenerator(IntegerVariable z,
           return true;
         }
 
-        const double x_lp_value = lp_values[x];
-        const double y_lp_value = lp_values[y];
-        const double z_lp_value = lp_values[z];
+        const double x_lp_value = x.LpValue(lp_values);
+        const double y_lp_value = y.LpValue(lp_values);
+        const double z_lp_value = z.LpValue(lp_values);
 
         // TODO(user): As the bounds change monotonically, these cuts
         // dominate any previous one.  try to keep a reference to the cut and
@@ -1425,15 +1427,16 @@ CutGenerator CreatePositiveMultiplicationCutGenerator(IntegerVariable z,
   return result;
 }
 
-CutGenerator CreateSquareCutGenerator(IntegerVariable y, IntegerVariable x,
+CutGenerator CreateSquareCutGenerator(AffineExpression y, AffineExpression x,
                                       int linearization_level, Model* model) {
   CutGenerator result;
-  result.vars = {y, x};
+  if (x.var != kNoIntegerVariable) result.vars.push_back(x.var);
+  if (y.var != kNoIntegerVariable) result.vars.push_back(y.var);
 
   Trail* trail = model->GetOrCreate<Trail>();
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
   result.generate_cuts =
-      [y, x, linearization_level, trail, integer_trail](
+      [y, x, linearization_level, trail, integer_trail, model](
           const absl::StrongVector<IntegerVariable, double>& lp_values,
           LinearConstraintManager* manager) {
         if (trail->CurrentDecisionLevel() > 0 && linearization_level == 1) {
@@ -1448,8 +1451,8 @@ CutGenerator CreateSquareCutGenerator(IntegerVariable y, IntegerVariable x,
         if (x_ub > (int64_t{1} << 31)) return true;
         DCHECK_GE(x_lb, 0);
 
-        const double y_lp_value = lp_values[y];
-        const double x_lp_value = lp_values[x];
+        const double y_lp_value = y.LpValue(lp_values);
+        const double x_lp_value = x.LpValue(lp_values);
 
         // First cut: target should be below the line:
         //     (x_lb, x_lb ^ 2) to (x_ub, x_ub ^ 2).
@@ -1459,14 +1462,11 @@ CutGenerator CreateSquareCutGenerator(IntegerVariable y, IntegerVariable x,
         const double max_lp_y = y_lb + above_slope * (x_lp_value - x_lb);
         if (y_lp_value >= max_lp_y + kMinCutViolation) {
           // cut: y <= (x_lb + x_ub) * x - x_lb * x_ub
-          LinearConstraint above_cut;
-          above_cut.vars.push_back(y);
-          above_cut.coeffs.push_back(IntegerValue(1));
-          above_cut.vars.push_back(x);
-          above_cut.coeffs.push_back(IntegerValue(-above_slope));
-          above_cut.lb = kMinIntegerValue;
-          above_cut.ub = IntegerValue(-x_lb * x_ub);
-          manager->AddCut(above_cut, "SquareUpper", lp_values);
+          LinearConstraintBuilder above_cut(model, kMinIntegerValue,
+                                            IntegerValue(-x_lb * x_ub));
+          above_cut.AddTerm(y, IntegerValue(1));
+          above_cut.AddTerm(x, IntegerValue(-above_slope));
+          manager->AddCut(above_cut.Build(), "SquareUpper", lp_values);
         }
 
         // Second cut: target should be above all the lines
@@ -1482,14 +1482,12 @@ CutGenerator CreateSquareCutGenerator(IntegerVariable y, IntegerVariable x,
         if (min_lp_y >= y_lp_value + kMinCutViolation) {
           // cut: y >= below_slope * (x - x_floor) + x_floor ^ 2
           //    : y >= below_slope * x - x_floor ^ 2 - x_floor
-          LinearConstraint below_cut;
-          below_cut.vars.push_back(y);
-          below_cut.coeffs.push_back(IntegerValue(1));
-          below_cut.vars.push_back(x);
-          below_cut.coeffs.push_back(-IntegerValue(below_slope));
-          below_cut.lb = IntegerValue(-x_floor - x_floor * x_floor);
-          below_cut.ub = kMaxIntegerValue;
-          manager->AddCut(below_cut, "SquareLower", lp_values);
+          LinearConstraintBuilder below_cut(
+              model, IntegerValue(-x_floor - x_floor * x_floor),
+              kMaxIntegerValue);
+          below_cut.AddTerm(y, IntegerValue(1));
+          below_cut.AddTerm(x, -IntegerValue(below_slope));
+          manager->AddCut(below_cut.Build(), "SquareLower", lp_values);
         }
         return true;
       };

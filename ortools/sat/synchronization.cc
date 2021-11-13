@@ -150,21 +150,21 @@ void SharedResponseManager::InitializeObjective(const CpModelProto& cp_model) {
   }
 }
 
-void SharedResponseManager::SetUpdatePrimalIntegralOnEachChange(bool set) {
+void SharedResponseManager::SetUpdateGapIntegralOnEachChange(bool set) {
   absl::MutexLock mutex_lock(&mutex_);
   update_integral_on_each_change_ = set;
 }
 
-void SharedResponseManager::UpdatePrimalIntegral() {
+void SharedResponseManager::UpdateGapIntegral() {
   absl::MutexLock mutex_lock(&mutex_);
-  UpdatePrimalIntegralInternal();
+  UpdateGapIntegralInternal();
 }
 
-void SharedResponseManager::UpdatePrimalIntegralInternal() {
+void SharedResponseManager::UpdateGapIntegralInternal() {
   if (objective_or_null_ == nullptr) return;
 
   const double current_time = shared_time_limit_->GetElapsedDeterministicTime();
-  const double time_delta = current_time - last_primal_integral_time_stamp_;
+  const double time_delta = current_time - last_gap_integral_time_stamp_;
 
   // We use the log of the absolute objective gap.
   //
@@ -175,10 +175,10 @@ void SharedResponseManager::UpdatePrimalIntegralInternal() {
   const double factor =
       obj.scaling_factor() != 0.0 ? std::abs(obj.scaling_factor()) : 1.0;
   const double bounds_delta = std::log(1 + factor * last_absolute_gap_);
-  primal_integral_ += time_delta * bounds_delta;
+  gap_integral_ += time_delta * bounds_delta;
 
   // Update with new value.
-  last_primal_integral_time_stamp_ = current_time;
+  last_gap_integral_time_stamp_ = current_time;
   last_absolute_gap_ =
       std::max(0.0, static_cast<double>(inner_objective_upper_bound_) -
                         static_cast<double>(inner_objective_lower_bound_));
@@ -196,7 +196,7 @@ void SharedResponseManager::TestGapLimitsIfNeeded() {
   // This is called on each internal limit change, so it is a good place to
   // update the integral. Note that this is not called at the end of the search
   // though.
-  if (update_integral_on_each_change_) UpdatePrimalIntegralInternal();
+  if (update_integral_on_each_change_) UpdateGapIntegralInternal();
 
   if (absolute_gap_limit_ == 0 && relative_gap_limit_ == 0) return;
   if (best_solution_objective_value_ >= kMaxIntegerValue) return;
@@ -263,7 +263,7 @@ void SharedResponseManager::UpdateInnerObjectiveBounds(
     } else {
       best_response_.set_status(CpSolverStatus::INFEASIBLE);
     }
-    if (update_integral_on_each_change_) UpdatePrimalIntegralInternal();
+    if (update_integral_on_each_change_) UpdateGapIntegralInternal();
     SOLVER_LOG(logger_,
                SatProgressMessage("Done", wall_timer_.Get(), update_info));
     return;
@@ -299,7 +299,7 @@ void SharedResponseManager::NotifyThatImprovingProblemIsInfeasible(
     // We just proved that the best solution cannot be improved uppon, so we
     // have a new lower bound.
     inner_objective_lower_bound_ = best_solution_objective_value_;
-    if (update_integral_on_each_change_) UpdatePrimalIntegralInternal();
+    if (update_integral_on_each_change_) UpdateGapIntegralInternal();
   } else {
     CHECK_EQ(num_solutions_, 0);
     best_response_.set_status(CpSolverStatus::INFEASIBLE);
@@ -349,9 +349,9 @@ IntegerValue SharedResponseManager::BestSolutionInnerObjectiveValue() {
   return IntegerValue(best_solution_objective_value_);
 }
 
-double SharedResponseManager::PrimalIntegral() const {
+double SharedResponseManager::GapIntegral() const {
   absl::MutexLock mutex_lock(&mutex_);
-  return primal_integral_;
+  return gap_integral_;
 }
 
 void SharedResponseManager::AddSolutionPostprocessor(
@@ -459,7 +459,7 @@ void SharedResponseManager::FillObjectiveValuesInBestResponse() {
       ScaleObjectiveValue(obj, inner_objective_lower_bound_));
 
   // Update the primal integral.
-  best_response_.set_primal_integral(primal_integral_);
+  best_response_.set_gap_integral(gap_integral_);
 }
 
 void SharedResponseManager::NewSolution(const CpSolverResponse& response,

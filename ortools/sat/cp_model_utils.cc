@@ -16,6 +16,7 @@
 #include <cstdint>
 #include <functional>
 
+#include "absl/container/flat_hash_map.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/sat/cp_model.pb.h"
 
@@ -60,23 +61,29 @@ IndexReferences GetReferencesUsedByConstraint(const ConstraintProto& ct) {
       AddIndices(ct.bool_xor().literals(), &output.literals);
       break;
     case ConstraintProto::ConstraintCase::kIntDiv:
-      output.variables.push_back(ct.int_div().target());
-      AddIndices(ct.int_div().vars(), &output.variables);
+      AddIndices(ct.int_div().target().vars(), &output.variables);
+      for (const LinearExpressionProto& expr : ct.int_div().exprs()) {
+        AddIndices(expr.vars(), &output.variables);
+      }
       break;
     case ConstraintProto::ConstraintCase::kIntMod:
-      output.variables.push_back(ct.int_mod().target());
-      AddIndices(ct.int_mod().vars(), &output.variables);
+      AddIndices(ct.int_mod().target().vars(), &output.variables);
+      for (const LinearExpressionProto& expr : ct.int_mod().exprs()) {
+        AddIndices(expr.vars(), &output.variables);
+      }
       break;
     case ConstraintProto::ConstraintCase::kLinMax: {
       AddIndices(ct.lin_max().target().vars(), &output.variables);
-      for (int i = 0; i < ct.lin_max().exprs_size(); ++i) {
-        AddIndices(ct.lin_max().exprs(i).vars(), &output.variables);
+      for (const LinearExpressionProto& expr : ct.lin_max().exprs()) {
+        AddIndices(expr.vars(), &output.variables);
       }
       break;
     }
     case ConstraintProto::ConstraintCase::kIntProd:
-      output.variables.push_back(ct.int_prod().target());
-      AddIndices(ct.int_prod().vars(), &output.variables);
+      AddIndices(ct.int_prod().target().vars(), &output.variables);
+      for (const LinearExpressionProto& expr : ct.int_prod().exprs()) {
+        AddIndices(expr.vars(), &output.variables);
+      }
       break;
     case ConstraintProto::ConstraintCase::kLinear:
       AddIndices(ct.linear().vars(), &output.variables);
@@ -222,12 +229,16 @@ void ApplyToAllVariableIndices(const std::function<void(int*)>& f,
     case ConstraintProto::ConstraintCase::kBoolXor:
       break;
     case ConstraintProto::ConstraintCase::kIntDiv:
-      APPLY_TO_SINGULAR_FIELD(int_div, target);
-      APPLY_TO_REPEATED_FIELD(int_div, vars);
+      APPLY_TO_REPEATED_FIELD(int_div, target()->mutable_vars);
+      for (int i = 0; i < ct->int_div().exprs_size(); ++i) {
+        APPLY_TO_REPEATED_FIELD(int_div, exprs(i)->mutable_vars);
+      }
       break;
     case ConstraintProto::ConstraintCase::kIntMod:
-      APPLY_TO_SINGULAR_FIELD(int_mod, target);
-      APPLY_TO_REPEATED_FIELD(int_mod, vars);
+      APPLY_TO_REPEATED_FIELD(int_mod, target()->mutable_vars);
+      for (int i = 0; i < ct->int_mod().exprs_size(); ++i) {
+        APPLY_TO_REPEATED_FIELD(int_mod, exprs(i)->mutable_vars);
+      }
       break;
     case ConstraintProto::ConstraintCase::kLinMax:
       APPLY_TO_REPEATED_FIELD(lin_max, target()->mutable_vars);
@@ -236,8 +247,10 @@ void ApplyToAllVariableIndices(const std::function<void(int*)>& f,
       }
       break;
     case ConstraintProto::ConstraintCase::kIntProd:
-      APPLY_TO_SINGULAR_FIELD(int_prod, target);
-      APPLY_TO_REPEATED_FIELD(int_prod, vars);
+      APPLY_TO_REPEATED_FIELD(int_prod, target()->mutable_vars);
+      for (int i = 0; i < ct->int_prod().exprs_size(); ++i) {
+        APPLY_TO_REPEATED_FIELD(int_prod, exprs(i)->mutable_vars);
+      }
       break;
     case ConstraintProto::ConstraintCase::kLinear:
       APPLY_TO_REPEATED_FIELD(linear, vars);
@@ -526,6 +539,23 @@ void AddLinearExpressionToLinearConstraint(const LinearExpressionProto& expr,
       d -= shift;
     }
   }
+}
+
+bool LinearExpressionProtoEquals(const LinearExpressionProto& a,
+                                 const LinearExpressionProto& b,
+                                 int64_t b_scaling) {
+  if (a.vars_size() != b.vars_size()) return false;
+  if (a.offset() != b.offset() * b_scaling) return false;
+  absl::flat_hash_map<int, int64_t> coeffs;
+  for (int i = 0; i < a.vars_size(); ++i) {
+    coeffs[a.vars(i)] += a.coeffs(i);
+    coeffs[b.vars(i)] += -b.coeffs(i) * b_scaling;
+  }
+
+  for (const auto [var, coeff] : coeffs) {
+    if (coeff != 0) return false;
+  }
+  return true;
 }
 
 }  // namespace sat

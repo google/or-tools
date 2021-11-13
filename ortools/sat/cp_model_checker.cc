@@ -37,7 +37,7 @@ namespace {
 
 // =============================================================================
 // CpModelProto validation.
-// =============================================================================
+// ========================================================================a=====
 
 // If the string returned by "statement" is not empty, returns it.
 #define RETURN_IF_NOT_EMPTY(statement)                \
@@ -270,6 +270,15 @@ std::string ValidateLinearExpression(const CpModelProto& model,
   return "";
 }
 
+std::string ValidateAffineExpression(const CpModelProto& model,
+                                     const LinearExpressionProto& expr) {
+  if (expr.vars_size() > 1) {
+    return absl::StrCat("expression must be affine: ",
+                        ProtobufShortDebugString(expr));
+  }
+  return ValidateLinearExpression(model, expr);
+}
+
 std::string ValidateLinearConstraint(const CpModelProto& model,
                                      const ConstraintProto& ct) {
   if (!DomainInProtoIsValid(ct.linear())) {
@@ -290,34 +299,42 @@ std::string ValidateLinearConstraint(const CpModelProto& model,
 
 std::string ValidateIntModConstraint(const CpModelProto& model,
                                      const ConstraintProto& ct) {
-  if (ct.int_mod().vars().size() != 2) {
+  if (ct.int_mod().exprs().size() != 2) {
     return absl::StrCat("An int_mod constraint should have exactly 2 terms: ",
                         ProtobufShortDebugString(ct));
   }
-  const int mod_var = ct.int_mod().vars(1);
-  const IntegerVariableProto& mod_proto = model.variables(PositiveRef(mod_var));
-  if ((RefIsPositive(mod_var) && mod_proto.domain(0) <= 0) ||
-      (!RefIsPositive(mod_var) &&
-       mod_proto.domain(mod_proto.domain_size() - 1) >= 0)) {
+  RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, ct.int_mod().exprs(0)));
+  RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, ct.int_mod().exprs(1)));
+  RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, ct.int_mod().target()));
+
+  const LinearExpressionProto mod_expr = ct.int_mod().exprs(1);
+  if (MinOfExpression(model, mod_expr) <= 0) {
     return absl::StrCat(
         "An int_mod must have a strictly positive modulo argument: ",
         ProtobufShortDebugString(ct));
   }
+
   return "";
 }
 
 std::string ValidateIntProdConstraint(const CpModelProto& model,
                                       const ConstraintProto& ct) {
-  if (ct.int_prod().vars().size() != 2) {
+  if (ct.int_prod().exprs().size() != 2) {
     return absl::StrCat("An int_prod constraint should have exactly 2 terms: ",
                         ProtobufShortDebugString(ct));
   }
 
+  RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, ct.int_prod().exprs(0)));
+  RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, ct.int_prod().exprs(1)));
+  RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, ct.int_prod().target()));
+
   // Detect potential overflow if some of the variables span across 0.
+  const LinearExpressionProto& expr0 = ct.int_prod().exprs(0);
+  const LinearExpressionProto& expr1 = ct.int_prod().exprs(1);
   const Domain product_domain =
-      ReadDomainFromProto(model.variables(PositiveRef(ct.int_prod().vars(0))))
-          .ContinuousMultiplicationBy(ReadDomainFromProto(
-              model.variables(PositiveRef(ct.int_prod().vars(1)))));
+      Domain({MinOfExpression(model, expr0), MaxOfExpression(model, expr0)})
+          .ContinuousMultiplicationBy(Domain(
+              {MinOfExpression(model, expr1), MaxOfExpression(model, expr1)}));
   if ((product_domain.Max() == std::numeric_limits<int64_t>::max() &&
        product_domain.Min() < 0) ||
       (product_domain.Min() == std::numeric_limits<int64_t>::min() &&
@@ -330,17 +347,22 @@ std::string ValidateIntProdConstraint(const CpModelProto& model,
 
 std::string ValidateIntDivConstraint(const CpModelProto& model,
                                      const ConstraintProto& ct) {
-  if (ct.int_div().vars().size() != 2) {
+  if (ct.int_div().exprs().size() != 2) {
     return absl::StrCat("An int_div constraint should have exactly 2 terms: ",
                         ProtobufShortDebugString(ct));
   }
-  const IntegerVariableProto& divisor_proto =
-      model.variables(PositiveRef(ct.int_div().vars(1)));
-  if (divisor_proto.domain(0) <= 0 &&
-      divisor_proto.domain(divisor_proto.domain_size() - 1) >= 0) {
+
+  RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, ct.int_div().exprs(0)));
+  RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, ct.int_div().exprs(1)));
+  RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, ct.int_div().target()));
+
+  const LinearExpressionProto& divisor_proto = ct.int_div().exprs(1);
+  if (MinOfExpression(model, divisor_proto) <= 0 &&
+      MaxOfExpression(model, divisor_proto) >= 0) {
     return absl::StrCat("The divisor cannot span across zero in constraint: ",
                         ProtobufShortDebugString(ct));
   }
+
   return "";
 }
 
@@ -958,22 +980,24 @@ class ConstraintChecker {
   }
 
   bool IntProdConstraintIsFeasible(const ConstraintProto& ct) {
-    const int64_t prod = Value(ct.int_prod().target());
+    const int64_t prod = LinearExpressionValue(ct.int_prod().target());
     int64_t actual_prod = 1;
-    for (int i = 0; i < ct.int_prod().vars_size(); ++i) {
-      actual_prod *= Value(ct.int_prod().vars(i));
+    for (const LinearExpressionProto& expr : ct.int_prod().exprs()) {
+      actual_prod *= LinearExpressionValue(expr);
     }
     return prod == actual_prod;
   }
 
   bool IntDivConstraintIsFeasible(const ConstraintProto& ct) {
-    return Value(ct.int_div().target()) ==
-           Value(ct.int_div().vars(0)) / Value(ct.int_div().vars(1));
+    return LinearExpressionValue(ct.int_div().target()) ==
+           LinearExpressionValue(ct.int_div().exprs(0)) /
+               LinearExpressionValue(ct.int_div().exprs(1));
   }
 
   bool IntModConstraintIsFeasible(const ConstraintProto& ct) {
-    return Value(ct.int_mod().target()) ==
-           Value(ct.int_mod().vars(0)) % Value(ct.int_mod().vars(1));
+    return LinearExpressionValue(ct.int_mod().target()) ==
+           LinearExpressionValue(ct.int_mod().exprs(0)) %
+               LinearExpressionValue(ct.int_mod().exprs(1));
   }
 
   bool AllDiffConstraintIsFeasible(const ConstraintProto& ct) {

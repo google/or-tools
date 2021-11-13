@@ -467,7 +467,7 @@ std::string CpSolverResponseStats(const CpSolverResponse& response,
   absl::StrAppend(&result, "\nusertime: ", response.user_time());
   absl::StrAppend(&result,
                   "\ndeterministic_time: ", response.deterministic_time());
-  absl::StrAppend(&result, "\nprimal_integral: ", response.primal_integral());
+  absl::StrAppend(&result, "\ngap_integral: ", response.gap_integral());
   absl::StrAppend(&result, "\n");
   return result;
 }
@@ -2811,11 +2811,11 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
     }
   }
 
-  // Add a synchronization point for the primal integral that is executed last.
+  // Add a synchronization point for the gap integral that is executed last.
   // This way, after each batch, the proper deterministic time is updated and
   // then the function to integrate take the value of the new gap.
   subsolvers.push_back(absl::make_unique<SynchronizationPoint>(
-      [&shared]() { shared.response->UpdatePrimalIntegral(); }));
+      [&shared]() { shared.response->UpdateGapIntegral(); }));
 
   // Log the name of all our SubSolvers.
   auto* logger = global_model->GetOrCreate<SolverLogger>();
@@ -3277,7 +3277,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
 
   // Start counting the primal integral from the current determistic time and
   // initial objective domain gap that we just filled.
-  shared_response_manager->UpdatePrimalIntegral();
+  shared_response_manager->UpdateGapIntegral();
 
 #if !defined(__PORTABLE_PLATFORM__)
   if (absl::GetFlag(FLAGS_cp_model_dump_models)) {
@@ -3329,7 +3329,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     SOLVER_LOG(logger, "");
     SOLVER_LOG(logger, absl::StrFormat("Starting to load the model at %.2fs",
                                        wall_timer->Get()));
-    shared_response_manager->SetUpdatePrimalIntegralOnEachChange(true);
+    shared_response_manager->SetUpdateGapIntegralOnEachChange(true);
     LoadCpModel(new_cp_model_proto, model);
     shared_response_manager->LoadDebugSolution(model);
 

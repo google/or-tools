@@ -838,17 +838,24 @@ class CpModelBuilder {
                                absl::Span<const LinearExpr> exprs);
 
   /// Adds target = num / denom (integer division rounded towards 0).
-  Constraint AddDivisionEquality(IntVar target, IntVar numerator,
-                                 IntVar denominator);
+  Constraint AddDivisionEquality(const LinearExpr& target,
+                                 const LinearExpr& numerator,
+                                 const LinearExpr& denominator);
 
   /// Adds target == abs(expr).
   Constraint AddAbsEquality(const LinearExpr& target, const LinearExpr& expr);
 
   /// Adds target = var % mod.
-  Constraint AddModuloEquality(IntVar target, IntVar var, IntVar mod);
+  Constraint AddModuloEquality(const LinearExpr& target, const LinearExpr& var,
+                               const LinearExpr& mod);
+
+  /// Adds target == prod(exprs).
+  Constraint AddMultiplicationEquality(const LinearExpr& target,
+                                       absl::Span<const LinearExpr> exprs);
 
   /// Adds target == prod(vars).
-  Constraint AddProductEquality(IntVar target, absl::Span<const IntVar> vars);
+  Constraint AddMultiplicationEquality(const LinearExpr& target,
+                                       absl::Span<const IntVar> vars);
 
   /**
    *  Adds a no-overlap constraint that ensures that all present intervals do

@@ -471,9 +471,9 @@ namespace Google.OrTools.Sat
         {
             Constraint ct = new Constraint(model_);
             IntegerArgumentProto args = new IntegerArgumentProto();
-            args.Vars.Add(GetOrCreateIndex(num));
-            args.Vars.Add(GetOrCreateIndex(denom));
-            args.Target = GetOrCreateIndex(target);
+            args.Vars.Add(GetLinearExpressionProto(GetLinearExpr(num)));
+            args.Vars.Add(GetLinearExpressionProto(GetLinearExpr(denom)));
+            args.Target = GetLinearExpressionProto(GetLinearExpr(target));
             ct.Proto.IntDiv = args;
             return ct;
         }
@@ -493,21 +493,34 @@ namespace Google.OrTools.Sat
         {
             Constraint ct = new Constraint(model_);
             IntegerArgumentProto args = new IntegerArgumentProto();
-            args.Vars.Add(GetOrCreateIndex(v));
-            args.Vars.Add(GetOrCreateIndex(m));
-            args.Target = GetOrCreateIndex(target);
+            args.Vars.Add(GetLinearExpressionProto(GetLinearExpr(v)));
+            args.Vars.Add(GetOrCreaGetLinearExpressionPrototeIndex(GetLinearExpr(m)));
+            args.Target = GetLinearExpressionProto(GetLinearExpr(target));
             ct.Proto.IntMod = args;
             return ct;
         }
 
-        public Constraint AddMultiplicationEquality(IntVar target, IEnumerable<IntVar> vars)
+        public Constraint AddMultiplicationEquality(LinearExpr target, IEnumerable<IntVar> vars)
         {
             Constraint ct = new Constraint(model_);
             IntegerArgumentProto args = new IntegerArgumentProto();
-            args.Target = target.Index;
+            args.Target = GetLinearExpressionProto(target);
             foreach (IntVar var in vars)
             {
-                args.Vars.Add(var.Index);
+                args.Vars.Add(GetLinearExpressionProto(var));
+            }
+            ct.Proto.IntProd = args;
+            return ct;
+        }
+
+        public Constraint AddMultiplicationEquality(LinearExpr target, IEnumerable<LinearExpr> exprs)
+        {
+            Constraint ct = new Constraint(model_);
+            IntegerArgumentProto args = new IntegerArgumentProto();
+            args.Target = GetLinearExpressionProto(target);
+            foreach (LinearExpr expr in exprs)
+            {
+                args.Vars.Add(GetLinearExpressionProto(expr));
             }
             ct.Proto.IntProd = args;
             return ct;

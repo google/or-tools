@@ -35,19 +35,6 @@ namespace operations_research {
 namespace sat {
 namespace {
 
-void AddXEqualYOrXEqualZero(int x_eq_y, int x, int y,
-                            PresolveContext* context) {
-  ConstraintProto* equality = context->working_model->add_constraints();
-  equality->add_enforcement_literal(x_eq_y);
-  equality->mutable_linear()->add_vars(x);
-  equality->mutable_linear()->add_coeffs(1);
-  equality->mutable_linear()->add_vars(y);
-  equality->mutable_linear()->add_coeffs(-1);
-  equality->mutable_linear()->add_domain(0);
-  equality->mutable_linear()->add_domain(0);
-  context->AddImplyInDomain(NegatedRef(x_eq_y), x, {0, 0});
-}
-
 void ExpandReservoir(ConstraintProto* ct, PresolveContext* context) {
   if (ct->reservoir().min_level() > ct->reservoir().max_level()) {
     VLOG(1) << "Empty level domain in reservoir constraint.";
@@ -148,17 +135,17 @@ void ExpandReservoir(ConstraintProto* ct, PresolveContext* context) {
 }
 
 void ExpandIntMod(ConstraintProto* ct, PresolveContext* context) {
-  const IntegerArgumentProto& int_mod = ct->int_mod();
-  const int mod_var = int_mod.vars(1);
-  if (context->IsFixed(mod_var)) return;
+  const LinearArgumentProto& int_mod = ct->int_mod();
+  const LinearExpressionProto& mod_expr = int_mod.exprs(1);
+  if (context->IsFixed(mod_expr)) return;
 
-  const int var = int_mod.vars(0);
-  const int target_var = int_mod.target();
+  const LinearExpressionProto& expr = int_mod.exprs(0);
+  const LinearExpressionProto& target_expr = int_mod.target();
 
-  // We reduce the domain of target_var to avoid later overflow.
+  // We reduce the domain of target_expr to avoid later overflow.
   if (!context->IntersectDomainWith(
-          target_var, context->DomainOf(var).PositiveModuloBySuperset(
-                          context->DomainOf(mod_var)))) {
+          target_expr, context->DomainSuperSetOf(expr).PositiveModuloBySuperset(
+                           context->DomainSuperSetOf(mod_expr)))) {
     return;
   }
 
@@ -169,89 +156,91 @@ void ExpandIntMod(ConstraintProto* ct, PresolveContext* context) {
     return new_ct;
   };
 
-  // div_var = var / mod_var.
-  const int div_var =
-      context->NewIntVar(context->DomainOf(var).PositiveDivisionBySuperset(
-          context->DomainOf(mod_var)));
-  IntegerArgumentProto* const div_proto =
-      new_enforced_constraint()->mutable_int_div();
-  div_proto->set_target(div_var);
-  div_proto->add_vars(var);
-  div_proto->add_vars(mod_var);
+  // div_expr = expr / mod_expr.
+  const int div_var = context->NewIntVar(
+      context->DomainSuperSetOf(expr).PositiveDivisionBySuperset(
+          context->DomainSuperSetOf(mod_expr)));
+  LinearExpressionProto div_expr;
+  div_expr.add_vars(div_var);
+  div_expr.add_coeffs(1);
 
-  // Create prod_var = div_var * mod.
+  LinearArgumentProto* const div_proto =
+      new_enforced_constraint()->mutable_int_div();
+  *div_proto->mutable_target() = div_expr;
+  *div_proto->add_exprs() = expr;
+  *div_proto->add_exprs() = mod_expr;
+
+  // Create prod_expr = div_expr * mod_expr.
   const Domain prod_domain =
       context->DomainOf(div_var)
-          .ContinuousMultiplicationBy(context->DomainOf(mod_var))
-          .IntersectionWith(context->DomainOf(var).AdditionWith(
-              context->DomainOf(target_var).Negation()));
+          .ContinuousMultiplicationBy(context->DomainSuperSetOf(mod_expr))
+          .IntersectionWith(context->DomainSuperSetOf(expr).AdditionWith(
+              context->DomainSuperSetOf(target_expr).Negation()));
   const int prod_var = context->NewIntVar(prod_domain);
-  IntegerArgumentProto* const int_prod =
-      new_enforced_constraint()->mutable_int_prod();
-  int_prod->set_target(prod_var);
-  int_prod->add_vars(div_var);
-  int_prod->add_vars(mod_var);
+  LinearExpressionProto prod_expr;
+  prod_expr.add_vars(prod_var);
+  prod_expr.add_coeffs(1);
 
-  // var - prod_var = target.
+  LinearArgumentProto* const int_prod =
+      new_enforced_constraint()->mutable_int_prod();
+  *int_prod->mutable_target() = prod_expr;
+  *int_prod->add_exprs() = div_expr;
+  *int_prod->add_exprs() = mod_expr;
+
+  // expr - prod_expr = target_expr.
   LinearConstraintProto* const lin =
       new_enforced_constraint()->mutable_linear();
-  lin->add_vars(var);
-  lin->add_coeffs(1);
-  lin->add_vars(prod_var);
-  lin->add_coeffs(-1);
-  lin->add_vars(target_var);
-  lin->add_coeffs(-1);
   lin->add_domain(0);
   lin->add_domain(0);
+  AddLinearExpressionToLinearConstraint(expr, 1, lin);
+  AddLinearExpressionToLinearConstraint(prod_expr, -1, lin);
+  AddLinearExpressionToLinearConstraint(target_expr, -1, lin);
 
   ct->Clear();
   context->UpdateRuleStats("int_mod: expanded");
 }
 
 // TODO(user): Move this into the presolve instead?
-void ExpandIntProdWithBoolean(int bool_ref, int int_ref, int product_ref,
+void ExpandIntProdWithBoolean(int bool_ref,
+                              const LinearExpressionProto& int_expr,
+                              const LinearExpressionProto& product_expr,
                               PresolveContext* context) {
   ConstraintProto* const one = context->working_model->add_constraints();
   one->add_enforcement_literal(bool_ref);
-  one->mutable_linear()->add_vars(int_ref);
-  one->mutable_linear()->add_coeffs(1);
-  one->mutable_linear()->add_vars(product_ref);
-  one->mutable_linear()->add_coeffs(-1);
   one->mutable_linear()->add_domain(0);
   one->mutable_linear()->add_domain(0);
+  AddLinearExpressionToLinearConstraint(int_expr, 1, one->mutable_linear());
+  AddLinearExpressionToLinearConstraint(product_expr, -1,
+                                        one->mutable_linear());
 
   ConstraintProto* const zero = context->working_model->add_constraints();
   zero->add_enforcement_literal(NegatedRef(bool_ref));
-  zero->mutable_linear()->add_vars(product_ref);
-  zero->mutable_linear()->add_coeffs(1);
   zero->mutable_linear()->add_domain(0);
   zero->mutable_linear()->add_domain(0);
+  AddLinearExpressionToLinearConstraint(product_expr, 1,
+                                        zero->mutable_linear());
 }
 
 void ExpandIntProd(ConstraintProto* ct, PresolveContext* context) {
-  const IntegerArgumentProto& int_prod = ct->int_prod();
-  if (int_prod.vars_size() != 2) return;
-  const int a = int_prod.vars(0);
-  const int b = int_prod.vars(1);
-  const int p = int_prod.target();
-  const bool a_is_boolean =
-      RefIsPositive(a) && context->MinOf(a) == 0 && context->MaxOf(a) == 1;
-  const bool b_is_boolean =
-      RefIsPositive(b) && context->MinOf(b) == 0 && context->MaxOf(b) == 1;
+  const LinearArgumentProto& int_prod = ct->int_prod();
+  if (int_prod.exprs_size() != 2) return;
+  const LinearExpressionProto& a = int_prod.exprs(0);
+  const LinearExpressionProto& b = int_prod.exprs(1);
+  const LinearExpressionProto& p = int_prod.target();
+  int literal;
+  const bool a_is_literal = context->ExpressionIsALiteral(a, &literal);
+  const bool b_is_literal = context->ExpressionIsALiteral(b, &literal);
 
-  // We expand if exactly one of {a, b} is Boolean. If both are Boolean, it
+  // We expand if exactly one of {a, b} is a literal. If both are literals, it
   // will be presolved into a better version.
-  if (a_is_boolean && !b_is_boolean) {
-    ExpandIntProdWithBoolean(a, b, p, context);
+  if (a_is_literal && !b_is_literal) {
+    ExpandIntProdWithBoolean(literal, b, p, context);
     ct->Clear();
     context->UpdateRuleStats("int_prod: expanded product with Boolean var");
-    return;
-  }
-  if (b_is_boolean && !a_is_boolean) {
-    ExpandIntProdWithBoolean(b, a, p, context);
+  } else if (b_is_literal) {
+    ExpandIntProdWithBoolean(literal, a, p, context);
     ct->Clear();
     context->UpdateRuleStats("int_prod: expanded product with Boolean var");
-    return;
   }
 }
 

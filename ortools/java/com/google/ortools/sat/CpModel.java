@@ -22,7 +22,6 @@ import com.google.ortools.sat.CpObjectiveProto;
 import com.google.ortools.sat.CumulativeConstraintProto;
 import com.google.ortools.sat.DecisionStrategyProto;
 import com.google.ortools.sat.ElementConstraintProto;
-import com.google.ortools.sat.IntegerArgumentProto;
 import com.google.ortools.sat.InverseConstraintProto;
 import com.google.ortools.sat.LinearArgumentProto;
 import com.google.ortools.sat.LinearConstraintProto;
@@ -690,13 +689,13 @@ public final class CpModel {
   }
 
   /** Adds {@code target == num / denom}, rounded towards 0. */
-  public Constraint addDivisionEquality(IntVar target, IntVar num, IntVar denom) {
+  public Constraint addDivisionEquality(LinearExpr target, LinearExpr num, LinearExpr denom) {
     Constraint ct = new Constraint(modelBuilder);
     ct.getBuilder()
         .getIntDivBuilder()
-        .setTarget(target.getIndex())
-        .addVars(num.getIndex())
-        .addVars(denom.getIndex());
+        .setTarget(getLinearExpressionProtoBuilderFromLinearExpr(target, /*negate=*/false))
+        .addExprs(getLinearExpressionProtoBuilderFromLinearExpr(num, /*negate=*/false))
+        .addExprs(getLinearExpressionProtoBuilderFromLinearExpr(denom, /*negate=*/false));
     return ct;
   }
 
@@ -711,34 +710,45 @@ public final class CpModel {
   }
 
   /** Adds {@code target == var % mod}. */
-  public Constraint addModuloEquality(IntVar target, IntVar var, IntVar mod) {
+  public Constraint addModuloEquality(LinearExpr target, LinearExpr var, LinearExpr mod) {
     Constraint ct = new Constraint(modelBuilder);
     ct.getBuilder()
         .getIntModBuilder()
-        .setTarget(target.getIndex())
-        .addVars(var.getIndex())
-        .addVars(mod.getIndex());
+        .setTarget(getLinearExpressionProtoBuilderFromLinearExpr(target, /*negate=*/false))
+        .addExprs(getLinearExpressionProtoBuilderFromLinearExpr(var, /*negate=*/false))
+        .addExprs(getLinearExpressionProtoBuilderFromLinearExpr(mod, /*negate=*/false));
     return ct;
   }
 
   /** Adds {@code target == var % mod}. */
-  public Constraint addModuloEquality(IntVar target, IntVar var, long mod) {
+  public Constraint addModuloEquality(LinearExpr target, LinearExpr var, long mod) {
     Constraint ct = new Constraint(modelBuilder);
     ct.getBuilder()
         .getIntModBuilder()
-        .setTarget(target.getIndex())
-        .addVars(var.getIndex())
-        .addVars(indexFromConstant(mod));
+        .setTarget(getLinearExpressionProtoBuilderFromLinearExpr(target, /*negate=*/false))
+        .addExprs(getLinearExpressionProtoBuilderFromLinearExpr(var, /*negate=*/false))
+        .addExprs(getLinearExpressionProtoBuilderFromLong(mod));
     return ct;
   }
 
   /** Adds {@code target == Product(vars)}. */
-  public Constraint addProductEquality(IntVar target, IntVar[] vars) {
+  public Constraint addMultiplicationEquality(LinearExpr target, IntVar[] vars) {
     Constraint ct = new Constraint(modelBuilder);
-    IntegerArgumentProto.Builder intProd =
-        ct.getBuilder().getIntProdBuilder().setTarget(target.getIndex());
+    LinearArgumentProto.Builder intProd = ct.getBuilder().getIntProdBuilder();
+    intProd.setTarget(getLinearExpressionProtoBuilderFromLinearExpr(target, /*negate=*/false));
     for (IntVar var : vars) {
-      intProd.addVars(var.getIndex());
+      intProd.addExprs(getLinearExpressionProtoBuilderFromLinearExpr(var, /*negate=*/false));
+    }
+    return ct;
+  }
+
+  /** Adds {@code target == Product(exprs)}. */
+  public Constraint addMultiplicationEquality(LinearExpr target, LinearExpr[] exprs) {
+    Constraint ct = new Constraint(modelBuilder);
+    LinearArgumentProto.Builder intProd = ct.getBuilder().getIntProdBuilder();
+    intProd.setTarget(getLinearExpressionProtoBuilderFromLinearExpr(target, /*negate=*/false));
+    for (LinearExpr expr : exprs) {
+      intProd.addExprs(getLinearExpressionProtoBuilderFromLinearExpr(expr, /*negate=*/false));
     }
     return ct;
   }

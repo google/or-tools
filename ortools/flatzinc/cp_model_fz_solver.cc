@@ -76,9 +76,10 @@ struct CpModelProtoWithMapping {
   // Convert a flatzinc argument to a variable or a list of variable.
   // Note that we always encode a constant argument with a constant variable.
   int LookupVar(const fz::Argument& argument);
-  LinearExpressionProto LookupExpr(const fz::Argument& argument, bool negate);
+  LinearExpressionProto LookupExpr(const fz::Argument& argument,
+                                   bool negate = false);
   LinearExpressionProto LookupExprAt(const fz::Argument& argument, int pos,
-                                     bool negate);
+                                     bool negate = false);
   std::vector<int> LookupVars(const fz::Argument& argument);
   std::vector<VarOrValue> LookupVarsOrValues(const fz::Argument& argument);
 
@@ -526,25 +527,25 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
     }
   } else if (fz_ct.type == "int_max") {
     auto* arg = ct->mutable_lin_max();
-    *arg->add_exprs() = LookupExpr(fz_ct.arguments[0], /*negate=*/false);
-    *arg->add_exprs() = LookupExpr(fz_ct.arguments[1], /*negate=*/false);
-    *arg->mutable_target() = LookupExpr(fz_ct.arguments[2], /*negate=*/false);
+    *arg->add_exprs() = LookupExpr(fz_ct.arguments[0]);
+    *arg->add_exprs() = LookupExpr(fz_ct.arguments[1]);
+    *arg->mutable_target() = LookupExpr(fz_ct.arguments[2]);
   } else if (fz_ct.type == "array_int_maximum" || fz_ct.type == "maximum_int") {
     auto* arg = ct->mutable_lin_max();
-    *arg->mutable_target() = LookupExpr(fz_ct.arguments[0], /*negate=*/false);
+    *arg->mutable_target() = LookupExpr(fz_ct.arguments[0]);
     for (int i = 0; i < fz_ct.arguments[1].Size(); ++i) {
-      *arg->add_exprs() = LookupExprAt(fz_ct.arguments[1], i, /*negate=*/false);
+      *arg->add_exprs() = LookupExprAt(fz_ct.arguments[1], i);
     }
   } else if (fz_ct.type == "int_times") {
     auto* arg = ct->mutable_int_prod();
-    arg->set_target(LookupVar(fz_ct.arguments[2]));
-    arg->add_vars(LookupVar(fz_ct.arguments[0]));
-    arg->add_vars(LookupVar(fz_ct.arguments[1]));
+    *arg->add_exprs() = LookupExpr(fz_ct.arguments[0]);
+    *arg->add_exprs() = LookupExpr(fz_ct.arguments[1]);
+    *arg->mutable_target() = LookupExpr(fz_ct.arguments[2]);
   } else if (fz_ct.type == "int_abs") {
     auto* arg = ct->mutable_lin_max();
-    *arg->add_exprs() = LookupExpr(fz_ct.arguments[0], /*negate=*/false);
+    *arg->add_exprs() = LookupExpr(fz_ct.arguments[0]);
     *arg->add_exprs() = LookupExpr(fz_ct.arguments[0], /*negate=*/true);
-    *arg->mutable_target() = LookupExpr(fz_ct.arguments[1], /*negate=*/false);
+    *arg->mutable_target() = LookupExpr(fz_ct.arguments[1]);
   } else if (fz_ct.type == "int_plus") {
     auto* arg = ct->mutable_linear();
     FillDomainInProto(Domain(0, 0), arg);
@@ -556,14 +557,14 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
     arg->add_coeffs(-1);
   } else if (fz_ct.type == "int_div") {
     auto* arg = ct->mutable_int_div();
-    arg->add_vars(LookupVar(fz_ct.arguments[0]));
-    arg->add_vars(LookupVar(fz_ct.arguments[1]));
-    arg->set_target(LookupVar(fz_ct.arguments[2]));
+    *arg->add_exprs() = LookupExpr(fz_ct.arguments[0]);
+    *arg->add_exprs() = LookupExpr(fz_ct.arguments[1]);
+    *arg->mutable_target() = LookupExpr(fz_ct.arguments[2]);
   } else if (fz_ct.type == "int_mod") {
     auto* arg = ct->mutable_int_mod();
-    arg->set_target(LookupVar(fz_ct.arguments[2]));
-    arg->add_vars(LookupVar(fz_ct.arguments[0]));
-    arg->add_vars(LookupVar(fz_ct.arguments[1]));
+    *arg->add_exprs() = LookupExpr(fz_ct.arguments[0]);
+    *arg->add_exprs() = LookupExpr(fz_ct.arguments[1]);
+    *arg->mutable_target() = LookupExpr(fz_ct.arguments[2]);
   } else if (fz_ct.type == "array_int_element" ||
              fz_ct.type == "array_bool_element" ||
              fz_ct.type == "array_var_int_element" ||

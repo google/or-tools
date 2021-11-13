@@ -122,6 +122,13 @@ int64_t PresolveContext::MaxOf(int ref) const {
                             : -domains[PositiveRef(ref)].Min();
 }
 
+int64_t PresolveContext::FixedValue(int ref) const {
+  DCHECK(!DomainIsEmpty(ref));
+  CHECK(IsFixed(ref));
+  return RefIsPositive(ref) ? domains[PositiveRef(ref)].Min()
+                            : -domains[PositiveRef(ref)].Min();
+}
+
 int64_t PresolveContext::MinOf(const LinearExpressionProto& expr) const {
   int64_t result = expr.offset();
   for (int i = 0; i < expr.vars_size(); ++i) {
@@ -155,6 +162,15 @@ bool PresolveContext::IsFixed(const LinearExpressionProto& expr) const {
   return true;
 }
 
+int64_t PresolveContext::FixedValue(const LinearExpressionProto& expr) const {
+  int64_t result = expr.offset();
+  for (int i = 0; i < expr.vars_size(); ++i) {
+    if (expr.coeffs(i) == 0) continue;
+    result += expr.coeffs(i) * FixedValue(expr.vars(i));
+  }
+  return result;
+}
+
 Domain PresolveContext::DomainSuperSetOf(
     const LinearExpressionProto& expr) const {
   Domain result(expr.offset());
@@ -180,6 +196,28 @@ int PresolveContext::LiteralForExpressionMax(
 bool PresolveContext::ExpressionIsSingleVariable(
     const LinearExpressionProto& expr) const {
   return expr.offset() == 0 && expr.vars_size() == 1 && expr.coeffs(0) == 1;
+}
+
+bool PresolveContext::ExpressionIsALiteral(const LinearExpressionProto& expr,
+                                           int* literal) const {
+  if (expr.vars_size() != 1) return false;
+  const int ref = expr.vars(0);
+  const int var = PositiveRef(ref);
+  if (MinOf(var) < 0 || MaxOf(var) > 1) return false;
+
+  if (expr.offset() == 0 && expr.coeffs(0) == 1 && RefIsPositive(ref)) {
+    if (literal != nullptr) *literal = ref;
+    return true;
+  }
+  if (expr.offset() == 1 && expr.coeffs(0) == -1 && RefIsPositive(ref)) {
+    if (literal != nullptr) *literal = NegatedRef(ref);
+    return true;
+  }
+  if (expr.offset() == 1 && expr.coeffs(0) == 1 && !RefIsPositive(ref)) {
+    if (literal != nullptr) *literal = ref;
+    return true;
+  }
+  return false;
 }
 
 // Note that we only support converted intervals.
@@ -401,7 +439,12 @@ ABSL_MUST_USE_RESULT bool PresolveContext::IntersectDomainWith(
     const LinearExpressionProto& expr, const Domain& domain,
     bool* domain_modified) {
   if (expr.vars().empty()) {
-    return domain.Contains(expr.offset());
+    if (domain.Contains(expr.offset())) {
+      return true;
+    } else {
+      is_unsat_ = true;
+      return false;
+    }
   }
   if (expr.vars().size() == 1) {  // Affine
     return IntersectDomainWith(expr.vars(0),

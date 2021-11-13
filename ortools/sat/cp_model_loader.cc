@@ -1104,35 +1104,37 @@ void LoadAllDiffConstraint(const ConstraintProto& ct, Model* m) {
 
 void LoadIntProdConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
-  const IntegerVariable prod = mapping->Integer(ct.int_prod().target());
-  const std::vector<IntegerVariable> vars =
-      mapping->Integers(ct.int_prod().vars());
-  CHECK_EQ(vars.size(), 2) << "General int_prod not supported yet.";
+  const AffineExpression prod = mapping->Affine(ct.int_prod().target());
+  CHECK_EQ(ct.int_prod().exprs_size(), 2)
+      << "General int_prod not supported yet.";
+
+  const AffineExpression expr0 = mapping->Affine(ct.int_prod().exprs(0));
+  const AffineExpression expr1 = mapping->Affine(ct.int_prod().exprs(1));
   if (VLOG_IS_ON(1)) {
     LinearConstraintBuilder builder(m);
-    if (DetectLinearEncodingOfProducts(vars[0], vars[1], m, &builder)) {
+    if (DetectLinearEncodingOfProducts(expr0, expr1, m, &builder)) {
       VLOG(1) << "Product " << ct.DebugString() << " can be linearized";
     }
   }
-  m->Add(ProductConstraint(vars[0], vars[1], prod));
+  m->Add(ProductConstraint(expr0, expr1, prod));
 }
 
 void LoadIntDivConstraint(const ConstraintProto& ct, Model* m) {
+  auto* integer_trail = m->GetOrCreate<IntegerTrail>();
   auto* mapping = m->GetOrCreate<CpModelMapping>();
-  const IntegerVariable div = mapping->Integer(ct.int_div().target());
-  const std::vector<IntegerVariable> vars =
-      mapping->Integers(ct.int_div().vars());
-  if (m->Get(IsFixed(vars[1]))) {
-    const IntegerValue denom(m->Get(Value(vars[1])));
-    if (denom == 1) {
-      m->Add(Equality(vars[0], div));
-    } else if (denom == -1) {
-      m->Add(Equality(NegationOf(vars[0]), div));
-    } else {
-      m->Add(FixedDivisionConstraint(vars[0], denom, div));
-    }
+  const AffineExpression div = mapping->Affine(ct.int_div().target());
+  const AffineExpression num = mapping->Affine(ct.int_div().exprs(0));
+  const AffineExpression denom = mapping->Affine(ct.int_div().exprs(1));
+  if (integer_trail->IsFixed(denom)) {
+    m->Add(FixedDivisionConstraint(num, integer_trail->FixedValue(denom), div));
   } else {
-    m->Add(DivisionConstraint(vars[0], vars[1], div));
+    if (VLOG_IS_ON(1)) {
+      LinearConstraintBuilder builder(m);
+      if (DetectLinearEncodingOfProducts(num, denom, m, &builder)) {
+        VLOG(1) << "Division " << ct.DebugString() << " can be linearized";
+      }
+    }
+    m->Add(DivisionConstraint(num, denom, div));
   }
 }
 
@@ -1140,12 +1142,12 @@ void LoadIntModConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
   auto* integer_trail = m->GetOrCreate<IntegerTrail>();
 
-  const IntegerVariable target = mapping->Integer(ct.int_mod().target());
-  const std::vector<IntegerVariable> vars =
-      mapping->Integers(ct.int_mod().vars());
-  CHECK(integer_trail->IsFixed(vars[1]));
-  const IntegerValue fixed_modulo = integer_trail->FixedValue(vars[1]);
-  m->Add(FixedModuloConstraint(vars[0], fixed_modulo, target));
+  const AffineExpression target = mapping->Affine(ct.int_mod().target());
+  const AffineExpression expr = mapping->Affine(ct.int_mod().exprs(0));
+  const AffineExpression mod = mapping->Affine(ct.int_mod().exprs(1));
+  CHECK(integer_trail->IsFixed(mod));
+  const IntegerValue fixed_modulo = integer_trail->FixedValue(mod);
+  m->Add(FixedModuloConstraint(expr, fixed_modulo, target));
 }
 
 void LoadLinMaxConstraint(const ConstraintProto& ct, Model* m) {

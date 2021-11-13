@@ -100,6 +100,7 @@ class PresolveContext {
   bool LiteralIsFalse(int lit) const;
   int64_t MinOf(int ref) const;
   int64_t MaxOf(int ref) const;
+  int64_t FixedValue(int ref) const;
   bool DomainContains(int ref, int64_t value) const;
   Domain DomainOf(int ref) const;
 
@@ -119,17 +120,22 @@ class PresolveContext {
   int64_t MinOf(const LinearExpressionProto& expr) const;
   int64_t MaxOf(const LinearExpressionProto& expr) const;
   bool IsFixed(const LinearExpressionProto& expr) const;
+  int64_t FixedValue(const LinearExpressionProto& expr) const;
 
   // Return a super-set of the domain of the linear expression.
   Domain DomainSuperSetOf(const LinearExpressionProto& expr) const;
 
   // Returns true iff the expr is of the form a * literal + b.
-  // The other function can be used to get the liteal that achieve MaxOf().
+  // The other function can be used to get the literal that achieve MaxOf().
   bool ExpressionIsAffineBoolean(const LinearExpressionProto& expr) const;
   int LiteralForExpressionMax(const LinearExpressionProto& expr) const;
 
   // Returns true iff the expr is of the form 1 * var + 0.
   bool ExpressionIsSingleVariable(const LinearExpressionProto& expr) const;
+
+  // Returns true iff the expr is a literal (x or not(x)).
+  bool ExpressionIsALiteral(const LinearExpressionProto& expr,
+                            int* literal) const;
 
   // This function takes a positive variable reference.
   bool DomainOfVarIsIncludedIn(int var, const Domain& domain) {

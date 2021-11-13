@@ -1112,14 +1112,14 @@ void AddRoutesCutGenerator(const ConstraintProto& ct, Model* m,
 void AddIntProdCutGenerator(const ConstraintProto& ct, int linearization_level,
                             Model* m, LinearRelaxation* relaxation) {
   if (HasEnforcementLiteral(ct)) return;
-  if (ct.int_prod().vars_size() != 2) return;
+  if (ct.int_prod().exprs_size() != 2) return;
   auto* mapping = m->GetOrCreate<CpModelMapping>();
 
   // Constraint is z == x * y.
 
-  IntegerVariable z = mapping->Integer(ct.int_prod().target());
-  IntegerVariable x = mapping->Integer(ct.int_prod().vars(0));
-  IntegerVariable y = mapping->Integer(ct.int_prod().vars(1));
+  AffineExpression z = mapping->Affine(ct.int_prod().target());
+  AffineExpression x = mapping->Affine(ct.int_prod().exprs(0));
+  AffineExpression y = mapping->Affine(ct.int_prod().exprs(1));
 
   IntegerTrail* const integer_trail = m->GetOrCreate<IntegerTrail>();
   IntegerValue x_lb = integer_trail->LowerBound(x);
@@ -1133,7 +1133,7 @@ void AddIntProdCutGenerator(const ConstraintProto& ct, int linearization_level,
 
     // Change the sigh of x if its domain is non-positive.
     if (x_ub <= 0) {
-      x = NegationOf(x);
+      x = x.Negated();
     }
 
     relaxation->cut_generators.push_back(
@@ -1146,12 +1146,12 @@ void AddIntProdCutGenerator(const ConstraintProto& ct, int linearization_level,
     // Change signs to return to the case where all variables are a domain
     // with non negative values only.
     if (x_ub <= 0) {
-      x = NegationOf(x);
-      z = NegationOf(z);
+      x = x.Negated();
+      z = z.Negated();
     }
     if (y_ub <= 0) {
-      y = NegationOf(y);
-      z = NegationOf(z);
+      y = y.Negated();
+      z = z.Negated();
     }
 
     relaxation->cut_generators.push_back(

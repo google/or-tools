@@ -345,20 +345,15 @@ message ConstraintProto {
     // The bool_xor constraint forces an odd number of the literals to be true.
     BoolArgumentProto bool_xor = 5;
 
-    // The int_div constraint forces the target to equal vars[0] / vars[1].
-    // In particular, vars[1] can never take the value 0. Also, as for now, we
-    // do not support vars[1] spanning across 0.
-    IntegerArgumentProto int_div = 7;
+    // The int_div constraint forces the target to equal expr[0] / expr[1].
+    // In particular, expr[1] can never take the value 0. Also, as for now, we
+    // do not support expr[1] spanning across 0.
+    LinearArgumentProto int_div = 7;
 
-    // The int_mod constraint forces the target to equal vars[0] % vars[1].
-    // The domain of vars[1] must be strictly positive. The sign of the target
-    // is the same as the sign of vars[0].
-    IntegerArgumentProto int_mod = 8;
-
-    // The lin_max constraint forces the target to equal the maximum of all
-    // linear expressions.
-    // Note that this can model a minimum simply by negating all expressions.
-    LinearArgumentProto lin_max = 27;
+    // The int_mod constraint forces the target to equal exprs[0] % exprs[1].
+    // The domain of exprs[1] must be strictly positive. The sign of the target
+    // is the same as the sign of exprs[0].
+    LinearArgumentProto int_mod = 8;
 
     // The int_prod constraint forces the target to equal the product of all
     // variables. By convention, because we can just remove term equal to one,
@@ -369,7 +364,12 @@ message ConstraintProto {
     // fits in [INT_MIN + 1..INT_MAX - 1].
     //
     // TODO(user): Support more than two terms in the product.
-    IntegerArgumentProto int_prod = 11;
+    LinearArgumentProto int_prod = 11;
+
+    // The lin_max constraint forces the target to equal the maximum of all
+    // linear expressions.
+    // Note that this can model a minimum simply by negating all expressions.
+    LinearArgumentProto lin_max = 27;
 
     // The linear constraint enforces a linear inequality among the variables,
     // such as 0 <= x + 2y <= 10.
@@ -729,6 +729,7 @@ message CpSolverResponse {
   repeated int32 sufficient_assumptions_for_infeasibility = 23;
 
   // Some statistics about the solve.
+  // TODO(user): These are broken in multi-thread.
   int64 num_booleans = 10;
   int64 num_conflicts = 11;
   int64 num_branches = 12;
@@ -737,10 +738,13 @@ message CpSolverResponse {
   int64 num_restarts = 24;
   int64 num_lp_iterations = 25;
 
+  // The time counted from the beginning of the Solve() call.
   double wall_time = 15;
   double user_time = 16;
   double deterministic_time = 17;
-  double primal_integral = 22;
+
+  // The integral of log(1 + absolute_objective_gap) over time.
+  double gap_integral = 22;
 
   // Additional information about how the solution was found.
   string solution_info = 20;

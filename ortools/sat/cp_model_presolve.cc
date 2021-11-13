@@ -909,29 +909,39 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
   if (HasEnforcementLiteral(*ct)) return false;
 
+  LinearArgumentProto* proto = ct->mutable_int_prod();
+
+  bool changed = CanonicalizeLinearExpression(*ct, proto->mutable_target());
+  for (LinearExpressionProto& exp : *(proto->mutable_exprs())) {
+    changed |= CanonicalizeLinearExpression(*ct, &exp);
+  }
+
   // Remove constant variables.
-  // Replace any affine relation without offset.
   int64_t constant_factor = 1;
   int new_size = 0;
-  bool changed = false;
-  for (int i = 0; i < ct->int_prod().vars().size(); ++i) {
-    const int ref = ct->int_prod().vars(i);
-    if (context_->IsFixed(ref)) {
+  for (int i = 0; i < ct->int_prod().exprs().size(); ++i) {
+    const LinearExpressionProto expr = ct->int_prod().exprs(i);
+    if (context_->IsFixed(expr)) {
       context_->UpdateRuleStats("int_prod: removed constant variable.");
       changed = true;
-      constant_factor = CapProd(constant_factor, context_->MinOf(ref));
+      constant_factor = CapProd(constant_factor, context_->FixedValue(expr));
       continue;
-    }
-    const AffineRelation::Relation& r = context_->GetAffineRelation(ref);
-    if (r.representative != ref && r.offset == 0) {
-      changed = true;
-      ct->mutable_int_prod()->set_vars(new_size++, r.representative);
-      constant_factor = CapProd(constant_factor, r.coeff);
     } else {
-      ct->mutable_int_prod()->set_vars(new_size++, ref);
+      const int64_t coeff = expr.coeffs(0);
+      const int64_t offset = expr.offset();
+      const int64_t gcd =
+          MathUtil::GCD64(static_cast<uint64_t>(std::abs(coeff)),
+                          static_cast<uint64_t>(std::abs(offset)));
+      if (gcd != 1) {
+        constant_factor = CapProd(constant_factor, gcd);
+        proto->mutable_exprs(i)->set_coeffs(0, coeff / gcd);
+        proto->mutable_exprs(i)->set_offset(offset / gcd);
+      }
     }
+    *proto->mutable_exprs(new_size++) = expr;
   }
-  ct->mutable_int_prod()->mutable_vars()->Truncate(new_size);
+  proto->mutable_exprs()->erase(proto->mutable_exprs()->begin() + new_size,
+                                proto->mutable_exprs()->end());
 
   if (constant_factor == 0) {
     context_->UpdateRuleStats("int_prod: multiplication by zero");
@@ -952,7 +962,7 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
     }
   }
 
-  if (ct->int_prod().vars().empty()) {
+  if (ct->int_prod().exprs().empty()) {
     if (!context_->IntersectDomainWith(ct->int_prod().target(),
                                        Domain(constant_factor))) {
       return false;
@@ -962,56 +972,68 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
   }
 
   // Replace by linear!
-  if (ct->int_prod().vars().size() == 1) {
-    ConstraintProto* const lin = context_->working_model->add_constraints();
-    lin->mutable_linear()->add_vars(ct->int_prod().target());
-    lin->mutable_linear()->add_coeffs(1);
-    lin->mutable_linear()->add_vars(ct->int_prod().vars(0));
-    lin->mutable_linear()->add_coeffs(-constant_factor);
-    lin->mutable_linear()->add_domain(0);
-    lin->mutable_linear()->add_domain(0);
+  if (ct->int_prod().exprs().size() == 1) {
+    LinearConstraintProto* const lin =
+        context_->working_model->add_constraints()->mutable_linear();
+    lin->add_domain(0);
+    lin->add_domain(0);
+    AddLinearExpressionToLinearConstraint(ct->int_prod().target(), 1, lin);
+    AddLinearExpressionToLinearConstraint(ct->int_prod().exprs(0),
+                                          -constant_factor, lin);
     context_->UpdateNewConstraintsVariableUsage();
     context_->UpdateRuleStats("int_prod: linearize product by constant.");
     return RemoveConstraint(ct);
   }
 
-  // TODO(user): Probably better to add a fixed variable to the product
-  // instead in this case. But we do need to support product with more than
-  // two variables properly for that.
-  //
-  // TODO(user): We might do that too early since the other presolve step below
-  // might simplify the constraint in such a way that there is no need to create
-  // a new variable!
-  if (constant_factor != 1) {
+  if (constant_factor > 1) {
     context_->UpdateRuleStats("int_prod: extracted product by constant.");
+    const LinearExpressionProto old_target = ct->int_prod().target();
+    if (context_->IsFixed(old_target)) {
+      const int64_t target_value = context_->FixedValue(old_target);
+      if (target_value % constant_factor != 0) {
+        return context_->NotifyThatModelIsUnsat(
+            "int_prod: constant factor does not divide constant target");
+      }
+      DCHECK(proto->target().vars().empty());
+      proto->mutable_target()->set_offset(target_value / constant_factor);
+      context_->UpdateRuleStats(
+          "int_prod: divide product and fixed target by constant factor");
+    } else {
+      int64_t coeff = ct->int_prod().target().coeffs(0);
+      int64_t offset = ct->int_prod().target().offset();
+      int64_t gcd = MathUtil::GCD64(static_cast<uint64_t>(std::abs(coeff)),
+                                    static_cast<uint64_t>(std::abs(offset)));
+      const int64_t common_factor =
+          MathUtil::GCD64(static_cast<uint64_t>(gcd),
+                          static_cast<uint64_t>(std::abs(constant_factor)));
+      if (gcd % constant_factor == 0) {  // Easy case.
+        proto->mutable_target()->set_coeffs(0, coeff / constant_factor);
+        proto->mutable_target()->set_offset(offset / constant_factor);
+        context_->UpdateRuleStats("int_prod: constant factor divides target");
+      } else if (common_factor > 1) {
+        // coeff * target_var * offset == constant_factor * PRODUCT.
+        // Let's simplify the coefficients.
+        constant_factor /= common_factor;
+        proto->mutable_target()->set_coeffs(0, coeff / common_factor);
+        proto->mutable_target()->set_offset(offset / common_factor);
 
-    const int old_target = ct->int_prod().target();
-    const int new_target = context_->working_model->variables_size();
-
-    IntegerVariableProto* var_proto = context_->working_model->add_variables();
-    FillDomainInProto(
-        context_->DomainOf(old_target).InverseMultiplicationBy(constant_factor),
-        var_proto);
-    context_->InitializeNewDomains();
-    if (context_->ModelIsUnsat()) return false;
-
-    ct->mutable_int_prod()->set_target(new_target);
-    if (context_->IsFixed(new_target)) {
-      // We need to fix old_target too.
-      if (!context_->IntersectDomainWith(
-              old_target, context_->DomainOf(new_target)
-                              .MultiplicationBy(constant_factor))) {
-        return false;
+        // Re-multiply the product part by the updated constant_factor.
+        proto->mutable_exprs(0)->set_coeffs(
+            0, proto->exprs(0).coeffs(0) * constant_factor);
+        proto->mutable_exprs(0)->set_offset(proto->exprs(0).offset() *
+                                            constant_factor);
+        // TODO(user): Build common variable.
+        context_->UpdateRuleStats(
+            "int_prod: divide product and target by common factor");
       }
     }
-    return context_->StoreAffineRelation(old_target, new_target,
-                                         constant_factor, 0);
   }
 
   // Restrict the target domain if possible.
   Domain implied(1);
-  for (const int ref : ct->int_prod().vars()) {
-    implied = implied.ContinuousMultiplicationBy(context_->DomainOf(ref));
+  for (const LinearExpressionProto& expr : ct->int_prod().exprs()) {
+    implied =
+        implied.ContinuousMultiplicationBy(context_->DomainSuperSetOf(expr));
   }
   bool modified = false;
   if (!context_->IntersectDomainWith(ct->int_prod().target(), implied,
@@ -1022,11 +1044,13 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
     context_->UpdateRuleStats("int_prod: reduced target domain.");
   }
 
-  if (ct->int_prod().vars_size() == 2) {
-    int a = ct->int_prod().vars(0);
-    int b = ct->int_prod().vars(1);
-    const int product = ct->int_prod().target();
-    if (a == b && a == product) {  // x = x * x, only true for {0, 1}.
+  if (ct->int_prod().exprs_size() == 2) {
+    LinearExpressionProto a = ct->int_prod().exprs(0);
+    LinearExpressionProto b = ct->int_prod().exprs(1);
+    const LinearExpressionProto product = ct->int_prod().target();
+    if (LinearExpressionProtoEquals(a, b) &&
+        LinearExpressionProtoEquals(
+            a, product)) {  // x = x * x, only true for {0, 1}.
       if (!context_->IntersectDomainWith(product, Domain(0, 1))) {
         return false;
       }
@@ -1036,33 +1060,36 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
   }
 
   // For now, we only presolve the case where all variables are Booleans.
-  const int target_ref = ct->int_prod().target();
-  if (!RefIsPositive(target_ref)) return changed;
-  for (const int var : ct->int_prod().vars()) {
-    if (!RefIsPositive(var)) return changed;
-    if (context_->MinOf(var) < 0) return changed;
-    if (context_->MaxOf(var) > 1) return changed;
+  const LinearExpressionProto target_expr = ct->int_prod().target();
+  int target;
+  if (!context_->ExpressionIsALiteral(target_expr, &target)) {
+    return changed;
+  }
+  std::vector<int> literals;
+  for (const LinearExpressionProto& expr : ct->int_prod().exprs()) {
+    int lit;
+    if (!context_->ExpressionIsALiteral(expr, &lit)) {
+      return changed;
+    }
+    literals.push_back(lit);
   }
 
   // This is a bool constraint!
-  if (!context_->IntersectDomainWith(target_ref, Domain(0, 1))) {
-    return false;
-  }
   context_->UpdateRuleStats("int_prod: all Boolean.");
   {
     ConstraintProto* new_ct = context_->working_model->add_constraints();
-    new_ct->add_enforcement_literal(target_ref);
+    new_ct->add_enforcement_literal(target);
     auto* arg = new_ct->mutable_bool_and();
-    for (const int var : ct->int_prod().vars()) {
-      arg->add_literals(var);
+    for (const int lit : literals) {
+      arg->add_literals(lit);
     }
   }
   {
     ConstraintProto* new_ct = context_->working_model->add_constraints();
     auto* arg = new_ct->mutable_bool_or();
-    arg->add_literals(target_ref);
-    for (const int var : ct->int_prod().vars()) {
-      arg->add_literals(NegatedRef(var));
+    arg->add_literals(target);
+    for (const int lit : literals) {
+      arg->add_literals(NegatedRef(lit));
     }
   }
   context_->UpdateNewConstraintsVariableUsage();
@@ -1071,67 +1098,68 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
 
 bool CpModelPresolver::PresolveIntDiv(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
-  const int target = ct->int_div().target();
-  const int ref_x = ct->int_div().vars(0);
-  const int ref_div = ct->int_div().vars(1);
 
-  if (PositiveRef(ref_x) == PositiveRef(ref_div)) {
-    const int64_t value = ref_x == ref_div ? 1 : -1;
-    if (!context_->IntersectDomainWith(target, Domain(value))) {
+  bool changed = CanonicalizeLinearExpression(
+      *ct, ct->mutable_int_div()->mutable_target());
+  for (LinearExpressionProto& exp : *(ct->mutable_int_div()->mutable_exprs())) {
+    changed |= CanonicalizeLinearExpression(*ct, &exp);
+  }
+
+  const LinearExpressionProto target = ct->int_div().target();
+  const LinearExpressionProto expr = ct->int_div().exprs(0);
+  const LinearExpressionProto div = ct->int_div().exprs(1);
+
+  if (LinearExpressionProtoEquals(expr, div)) {
+    if (!context_->IntersectDomainWith(target, Domain(1))) {
       return false;
     }
-    context_->UpdateRuleStats("int_div: y = [-] x / x");
+    context_->UpdateRuleStats("int_div: y = x / x");
+    return RemoveConstraint(ct);
+  } else if (LinearExpressionProtoEquals(expr, div, -1)) {
+    if (!context_->IntersectDomainWith(target, Domain(-1))) {
+      return false;
+    }
+    context_->UpdateRuleStats("int_div: y = - x / x");
     return RemoveConstraint(ct);
   }
 
   // For now, we only presolve the case where the divisor is constant.
-  if (!RefIsPositive(target) || !RefIsPositive(ref_x) ||
-      !RefIsPositive(ref_div) || context_->DomainIsEmpty(ref_div) ||
-      !context_->IsFixed(ref_div)) {
-    return false;
-  }
+  if (!context_->IsFixed(div)) return changed;
 
-  const int64_t divisor = context_->MinOf(ref_div);
+  const int64_t divisor = context_->FixedValue(div);
   if (divisor == 1) {
     LinearConstraintProto* const lin =
         context_->working_model->add_constraints()->mutable_linear();
-    lin->add_vars(ref_x);
-    lin->add_coeffs(1);
-    lin->add_vars(target);
-    lin->add_coeffs(-1);
     lin->add_domain(0);
     lin->add_domain(0);
+    AddLinearExpressionToLinearConstraint(expr, 1, lin);
+    AddLinearExpressionToLinearConstraint(target, -1, lin);
     context_->UpdateNewConstraintsVariableUsage();
     context_->UpdateRuleStats("int_div: rewrite to equality");
     return RemoveConstraint(ct);
   }
   bool domain_modified = false;
-  if (context_->IntersectDomainWith(
-          target, context_->DomainOf(ref_x).DivisionBy(divisor),
+  if (!context_->IntersectDomainWith(
+          target, context_->DomainSuperSetOf(expr).DivisionBy(divisor),
           &domain_modified)) {
-    if (domain_modified) {
-      context_->UpdateRuleStats(
-          "int_div: updated domain of target in target = X / cte");
-    }
-  } else {
-    // Model is unsat.
     return false;
+  }
+  if (domain_modified) {
+    context_->UpdateRuleStats(
+        "int_div: updated domain of target in target = X / cte");
   }
 
   // Linearize if everything is positive.
   // TODO(user): Deal with other cases where there is no change of
-  // sign.We can also deal with target = cte, div variable.
-
-  if (context_->MinOf(target) >= 0 && context_->MinOf(ref_x) >= 0 &&
+  // sign. We can also deal with target = cte, div variable.
+  if (context_->MinOf(target) >= 0 && context_->MinOf(expr) >= 0 &&
       divisor > 1) {
     LinearConstraintProto* const lin =
         context_->working_model->add_constraints()->mutable_linear();
-    lin->add_vars(ref_x);
-    lin->add_coeffs(1);
-    lin->add_vars(target);
-    lin->add_coeffs(-divisor);
     lin->add_domain(0);
     lin->add_domain(divisor - 1);
+    AddLinearExpressionToLinearConstraint(expr, 1, lin);
+    AddLinearExpressionToLinearConstraint(target, -divisor, lin);
     context_->UpdateNewConstraintsVariableUsage();
     context_->UpdateRuleStats(
         "int_div: linearize positive division with a constant divisor");
@@ -1140,30 +1168,36 @@ bool CpModelPresolver::PresolveIntDiv(ConstraintProto* ct) {
 
   // TODO(user): reduce the domain of X by introducing an
   // InverseDivisionOfSortedDisjointIntervals().
-  return false;
+  return changed;
 }
 
 bool CpModelPresolver::PresolveIntMod(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
 
-  const int target = ct->int_mod().target();
-  const int ref_mod = ct->int_mod().vars(1);
-  const int ref_x = ct->int_mod().vars(0);
-
-  bool changed = false;
-  if (!context_->IntersectDomainWith(
-          target,
-          context_->DomainOf(ref_x).PositiveModuloBySuperset(
-              context_->DomainOf(ref_mod)),
-          &changed)) {
-    return false;
+  bool changed = CanonicalizeLinearExpression(
+      *ct, ct->mutable_int_mod()->mutable_target());
+  for (LinearExpressionProto& exp : *(ct->mutable_int_mod()->mutable_exprs())) {
+    changed |= CanonicalizeLinearExpression(*ct, &exp);
   }
 
-  if (changed) {
+  const LinearExpressionProto target = ct->int_mod().target();
+  const LinearExpressionProto expr = ct->int_mod().exprs(0);
+  const LinearExpressionProto mod = ct->int_mod().exprs(1);
+
+  bool domain_changed = false;
+  if (!context_->IntersectDomainWith(
+          target,
+          context_->DomainSuperSetOf(expr).PositiveModuloBySuperset(
+              context_->DomainSuperSetOf(mod)),
+          &domain_changed)) {
+    return changed;
+  }
+
+  if (domain_changed) {
     context_->UpdateRuleStats("int_mod: reduce target domain");
   }
 
-  return false;
+  return changed;
 }
 
 bool CpModelPresolver::ExploitEquivalenceRelations(int c, ConstraintProto* ct) {
@@ -7340,14 +7374,15 @@ bool CpModelPresolver::Presolve() {
     PresolveToFixPoint();
 
     // Call expansion.
-    if (!context_->ModelIsExpanded()) {
+    if (!context_->ModelIsExpanded() && !context_->ModelIsUnsat()) {
       ExtractEncodingFromLinear();
       ExpandCpModel(context_);
     }
     DCHECK(context_->ConstraintVariableUsageIsConsistent());
 
     // TODO(user): do that and the pure-SAT part below more than once.
-    if (context_->params().cp_model_probing_level() > 0) {
+    if (context_->params().cp_model_probing_level() > 0 &&
+        !context_->ModelIsUnsat()) {
       if (!context_->time_limit()->LimitReached()) {
         Probe();
         PresolveToFixPoint();

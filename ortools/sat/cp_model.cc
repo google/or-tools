@@ -793,13 +793,13 @@ Constraint CpModelBuilder::AddLinMaxEquality(
   return Constraint(ct);
 }
 
-Constraint CpModelBuilder::AddDivisionEquality(IntVar target, IntVar numerator,
-                                               IntVar denominator) {
+Constraint CpModelBuilder::AddDivisionEquality(const LinearExpr& target,
+                                               const LinearExpr& numerator,
+                                               const LinearExpr& denominator) {
   ConstraintProto* const proto = cp_model_.add_constraints();
-  proto->mutable_int_div()->set_target(GetOrCreateIntegerIndex(target.index_));
-  proto->mutable_int_div()->add_vars(GetOrCreateIntegerIndex(numerator.index_));
-  proto->mutable_int_div()->add_vars(
-      GetOrCreateIntegerIndex(denominator.index_));
+  *proto->mutable_int_div()->mutable_target() = LinearExprToProto(target);
+  *proto->mutable_int_div()->add_exprs() = LinearExprToProto(numerator);
+  *proto->mutable_int_div()->add_exprs() = LinearExprToProto(denominator);
   return Constraint(proto);
 }
 
@@ -813,21 +813,32 @@ Constraint CpModelBuilder::AddAbsEquality(const LinearExpr& target,
   return Constraint(proto);
 }
 
-Constraint CpModelBuilder::AddModuloEquality(IntVar target, IntVar var,
-                                             IntVar mod) {
+Constraint CpModelBuilder::AddModuloEquality(const LinearExpr& target,
+                                             const LinearExpr& var,
+                                             const LinearExpr& mod) {
   ConstraintProto* const proto = cp_model_.add_constraints();
-  proto->mutable_int_mod()->set_target(GetOrCreateIntegerIndex(target.index_));
-  proto->mutable_int_mod()->add_vars(GetOrCreateIntegerIndex(var.index_));
-  proto->mutable_int_mod()->add_vars(GetOrCreateIntegerIndex(mod.index_));
+  *proto->mutable_int_mod()->mutable_target() = LinearExprToProto(target);
+  *proto->mutable_int_mod()->add_exprs() = LinearExprToProto(var);
+  *proto->mutable_int_mod()->add_exprs() = LinearExprToProto(mod);
   return Constraint(proto);
 }
 
-Constraint CpModelBuilder::AddProductEquality(IntVar target,
-                                              absl::Span<const IntVar> vars) {
+Constraint CpModelBuilder::AddMultiplicationEquality(
+    const LinearExpr& target, absl::Span<const IntVar> vars) {
   ConstraintProto* const proto = cp_model_.add_constraints();
-  proto->mutable_int_prod()->set_target(GetOrCreateIntegerIndex(target.index_));
+  *proto->mutable_int_prod()->mutable_target() = LinearExprToProto(target);
   for (const IntVar& var : vars) {
-    proto->mutable_int_prod()->add_vars(GetOrCreateIntegerIndex(var.index_));
+    *proto->mutable_int_prod()->add_exprs() = LinearExprToProto(var);
+  }
+  return Constraint(proto);
+}
+
+Constraint CpModelBuilder::AddMultiplicationEquality(
+    const LinearExpr& target, absl::Span<const LinearExpr> exprs) {
+  ConstraintProto* const proto = cp_model_.add_constraints();
+  *proto->mutable_int_prod()->mutable_target() = LinearExprToProto(target);
+  for (const LinearExpr& expr : exprs) {
+    *proto->mutable_int_prod()->add_exprs() = LinearExprToProto(expr);
   }
   return Constraint(proto);
 }
