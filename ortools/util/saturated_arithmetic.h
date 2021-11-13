@@ -131,6 +131,8 @@ inline int64_t CapAdd(int64_t x, int64_t y) {
 #endif
 }
 
+inline void CapAddTo(int64_t x, int64_t* y) { *y = CapAdd(*y, x); }
+
 inline int64_t CapSubGeneric(int64_t x, int64_t y) {
   const int64_t result = TwosComplementSubtraction(x, y);
   return SubHadOverflow(x, y, result) ? CapWithSignOf(x) : result;
