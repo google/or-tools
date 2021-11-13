@@ -399,11 +399,11 @@ class CpModelTest(unittest.TestCase):
         x = model.NewIntVar(0, 10, 'x')
         y = model.NewIntVar(0, 50, 'y')
         model.AddDivisionEquality(x, y, 6)
-        self.assertEqual(3, len(model.Proto().variables))
+        self.assertEqual(2, len(model.Proto().variables))
         self.assertEqual(1, len(model.Proto().constraints))
-        self.assertEqual(2, len(model.Proto().constraints[0].int_div.vars))
-        self.assertEqual(1, model.Proto().constraints[0].int_div.vars[0])
-        self.assertEqual(2, model.Proto().constraints[0].int_div.vars[1])
+        self.assertEqual(2, len(model.Proto().constraints[0].int_div.exprs))
+        self.assertEqual(1, model.Proto().constraints[0].int_div.exprs[0].vars[0])
+        self.assertEqual(6, model.Proto().constraints[0].int_div.exprs[1].offset)
 
     def testModulo(self):
         print('testModulo')
@@ -411,22 +411,22 @@ class CpModelTest(unittest.TestCase):
         x = model.NewIntVar(0, 10, 'x')
         y = model.NewIntVar(0, 50, 'y')
         model.AddModuloEquality(x, y, 6)
-        self.assertEqual(3, len(model.Proto().variables))
+        self.assertEqual(2, len(model.Proto().variables))
         self.assertEqual(1, len(model.Proto().constraints))
-        self.assertEqual(2, len(model.Proto().constraints[0].int_mod.vars))
-        self.assertEqual(1, model.Proto().constraints[0].int_mod.vars[0])
-        self.assertEqual(2, model.Proto().constraints[0].int_mod.vars[1])
+        self.assertEqual(2, len(model.Proto().constraints[0].int_mod.exprs))
+        self.assertEqual(1, model.Proto().constraints[0].int_mod.exprs[0].vars[0])
+        self.assertEqual(6, model.Proto().constraints[0].int_mod.exprs[1].offset)
 
     def testProdEquality(self):
         print('testProdEquality')
         model = cp_model.CpModel()
         x = model.NewIntVar(0, 4, 'x')
         y = [model.NewIntVar(0, 4, 'y%i' % i) for i in range(5)]
-        model.AddProdEquality(x, y)
+        model.AddMultiplicationEquality(x, y)
         self.assertEqual(6, len(model.Proto().variables))
         self.assertEqual(1, len(model.Proto().constraints))
-        self.assertEqual(5, len(model.Proto().constraints[0].int_prod.vars))
-        self.assertEqual(0, model.Proto().constraints[0].int_prod.target)
+        self.assertEqual(5, len(model.Proto().constraints[0].int_prod.exprs))
+        self.assertEqual(0, model.Proto().constraints[0].int_prod.target.vars[0])
 
     def testBoolOr(self):
         print('testBoolOr')
