@@ -470,7 +470,7 @@ namespace Google.OrTools.Sat
         public Constraint AddDivisionEquality<T, N, D>(T target, N num, D denom)
         {
             Constraint ct = new Constraint(model_);
-            IntegerArgumentProto args = new IntegerArgumentProto();
+            LinearArgumentProto args = new LinearArgumentProto();
             args.Exprs.Add(GetLinearExpressionProto(GetLinearExpr(num)));
             args.Exprs.Add(GetLinearExpressionProto(GetLinearExpr(denom)));
             args.Target = GetLinearExpressionProto(GetLinearExpr(target));
@@ -492,7 +492,7 @@ namespace Google.OrTools.Sat
         public Constraint AddModuloEquality<T, V, M>(T target, V v, M m)
         {
             Constraint ct = new Constraint(model_);
-            IntegerArgumentProto args = new IntegerArgumentProto();
+            LinearArgumentProto args = new LinearArgumentProto();
             args.Exprs.Add(GetLinearExpressionProto(GetLinearExpr(v)));
             args.Exprs.Add(GetLinearExpressionProto(GetLinearExpr(m)));
             args.Target = GetLinearExpressionProto(GetLinearExpr(target));
@@ -503,7 +503,7 @@ namespace Google.OrTools.Sat
         public Constraint AddMultiplicationEquality(LinearExpr target, IEnumerable<IntVar> vars)
         {
             Constraint ct = new Constraint(model_);
-            IntegerArgumentProto args = new IntegerArgumentProto();
+            LinearArgumentProto args = new LinearArgumentProto();
             args.Target = GetLinearExpressionProto(target);
             foreach (IntVar var in vars)
             {
@@ -516,7 +516,7 @@ namespace Google.OrTools.Sat
         public Constraint AddMultiplicationEquality(LinearExpr target, IEnumerable<LinearExpr> exprs)
         {
             Constraint ct = new Constraint(model_);
-            IntegerArgumentProto args = new IntegerArgumentProto();
+            LinearArgumentProto args = new LinearArgumentProto();
             args.Target = GetLinearExpressionProto(target);
             foreach (LinearExpr expr in exprs)
             {
