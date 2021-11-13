@@ -471,8 +471,8 @@ namespace Google.OrTools.Sat
         {
             Constraint ct = new Constraint(model_);
             IntegerArgumentProto args = new IntegerArgumentProto();
-            args.Vars.Add(GetLinearExpressionProto(GetLinearExpr(num)));
-            args.Vars.Add(GetLinearExpressionProto(GetLinearExpr(denom)));
+            args.Exprs.Add(GetLinearExpressionProto(GetLinearExpr(num)));
+            args.Exprs.Add(GetLinearExpressionProto(GetLinearExpr(denom)));
             args.Target = GetLinearExpressionProto(GetLinearExpr(target));
             ct.Proto.IntDiv = args;
             return ct;
@@ -493,8 +493,8 @@ namespace Google.OrTools.Sat
         {
             Constraint ct = new Constraint(model_);
             IntegerArgumentProto args = new IntegerArgumentProto();
-            args.Vars.Add(GetLinearExpressionProto(GetLinearExpr(v)));
-            args.Vars.Add(GetOrCreaGetLinearExpressionPrototeIndex(GetLinearExpr(m)));
+            args.Exprs.Add(GetLinearExpressionProto(GetLinearExpr(v)));
+            args.Exprs.Add(GetLinearExpressionProto(GetLinearExpr(m)));
             args.Target = GetLinearExpressionProto(GetLinearExpr(target));
             ct.Proto.IntMod = args;
             return ct;
@@ -507,7 +507,7 @@ namespace Google.OrTools.Sat
             args.Target = GetLinearExpressionProto(target);
             foreach (IntVar var in vars)
             {
-                args.Vars.Add(GetLinearExpressionProto(var));
+                args.Exprs.Add(GetLinearExpressionProto(var));
             }
             ct.Proto.IntProd = args;
             return ct;
@@ -520,7 +520,7 @@ namespace Google.OrTools.Sat
             args.Target = GetLinearExpressionProto(target);
             foreach (LinearExpr expr in exprs)
             {
-                args.Vars.Add(GetLinearExpressionProto(expr));
+                args.Exprs.Add(GetLinearExpressionProto(expr));
             }
             ct.Proto.IntProd = args;
             return ct;
