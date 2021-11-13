@@ -597,14 +597,19 @@ void SparseVector<IndexType, IteratorType>::PopulateFromSparseVector(
   // the next step anyway.
   Clear();
   Reserve(sparse_vector.capacity_);
-  // NOTE(user): Using a single memmove would be slightly faster, but it
-  // would not work correctly if this already had a greater capacity than
-  // sparse_vector, because the coefficient_ pointer would be positioned
-  // incorrectly.
-  std::memmove(index_, sparse_vector.index_,
-               sizeof(Index) * sparse_vector.num_entries_.value());
-  std::memmove(coefficient_, sparse_vector.coefficient_,
-               sizeof(Fractional) * sparse_vector.num_entries_.value());
+  // If there are no entries, then sparse_vector.index_ or .coefficient_
+  // may be nullptr or invalid, and accessing them in memmove is UB,
+  // even if the moved size is zero.
+  if (sparse_vector.num_entries_ > 0) {
+    // NOTE(user): Using a single memmove would be slightly faster, but it
+    // would not work correctly if this already had a greater capacity than
+    // sparse_vector, because the coefficient_ pointer would be positioned
+    // incorrectly.
+    std::memmove(index_, sparse_vector.index_,
+                 sizeof(Index) * sparse_vector.num_entries_.value());
+    std::memmove(coefficient_, sparse_vector.coefficient_,
+                 sizeof(Fractional) * sparse_vector.num_entries_.value());
+  }
   num_entries_ = sparse_vector.num_entries_;
   may_contain_duplicates_ = sparse_vector.may_contain_duplicates_;
 }
