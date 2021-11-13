@@ -157,12 +157,12 @@ function expand_codescape_config() {
   local FLAVOUR=""
   case "${TARGET}" in
     "mips64")
-      MIPS_FLAGS="-EB -mabi=64";
-      #FLAVOUR="mips-r2-hard";
-      FLAVOUR="mips-r6-hard";
+      MIPS_FLAGS="-EB -mabi=64"
+      #FLAVOUR="mips-r2-hard"
+      FLAVOUR="mips-r6-hard"
       ;;
     "mips64el")
-      MIPS_FLAGS="-EL -mabi=64";
+      MIPS_FLAGS="-EL -mabi=64"
       #FLAVOUR="mipsel-r2-hard"
       FLAVOUR="mipsel-r6-hard"
       ;;
@@ -261,7 +261,10 @@ DESCRIPTION
 
 \tYou MUST define the following variables before running this script:
 \t* PROJECT: glop or-tools
-\t* TARGET: x86_64 aarch64-linux-gnu aarch64_be-linux-gnu mips64 mips64el
+\t* TARGET:
+\t\tx86_64
+\t\taarch64-linux-gnu aarch64_be-linux-gnu
+\t\tmips64 mips64el
 
 OPTIONS
 \t-h --help: show this help text

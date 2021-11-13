@@ -25,8 +25,14 @@ Hints
 A user may set ``SCIP_ROOT`` to a SCIP installation root to tell this
 module where to look.
 #]=======================================================================]
-set(SCIP_FOUND FALSE)
+# first specifically look for the CMake version of SCIP
+find_package(SCIP QUIET NO_MODULE)
+# if we found the SCIP cmake package then we are done.
+if(SCIP_FOUND)
+  return()
+endif()
 
+set(SCIP_FOUND FALSE)
 if(CMAKE_C_COMPILER_LOADED)
   include (CheckIncludeFile)
   include (CheckCSourceCompiles)
@@ -76,5 +82,7 @@ if(SCIP_FOUND AND NOT TARGET SCIP::SCIP)
       ${SCIP_ROOT}/lib/soplex.lib
       ignore:4006
       )
+  else()
+    message(FATAL_ERROR "OR-Tools with SCIP not supported for ${CMAKE_SYSTEM}")
   endif()
 endif()
