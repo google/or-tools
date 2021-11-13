@@ -201,7 +201,7 @@ namespace Google.OrTools.Tests
             IntVar squaredDelta = model.NewIntVar(0, 25, "squaredDelta");
             model.Add(x == boolvar * 4);
             model.Add(delta == x - 5);
-            model.AddProdEquality(squaredDelta, new IntVar[] { delta, delta });
+            model.AddMultiplicationEquality(squaredDelta, new IntVar[] { delta, delta });
             model.Minimize(squaredDelta);
             // Console.WriteLine("model = " + model.Model.ToString());
 
