@@ -264,7 +264,7 @@ namespace Google.OrTools.Tests
             CpSolverResponse response = solver.Response;
             Assert.Equal(3, solver.Value(v1));
             Assert.Equal(1, solver.Value(v2));
-            Assert.Equal(new long[] { 3, 1, 3 }, response.Solution);
+            Assert.Equal(new long[] { 3, 1 }, response.Solution);
             Assert.Equal(0, response.ObjectiveValue);
             // Console.WriteLine("response = " + reponse.ToString());
         }
@@ -285,7 +285,7 @@ namespace Google.OrTools.Tests
             CpSolverResponse response = solver.Response;
             Assert.Equal(3, solver.Value(v1));
             Assert.Equal(4, solver.Value(v2));
-            Assert.Equal(new long[] { 3, 4, 3 }, response.Solution);
+            Assert.Equal(new long[] { 3, 4 }, response.Solution);
             Assert.Equal(0, response.ObjectiveValue);
             // Console.WriteLine("response = " + reponse.ToString());
         }
