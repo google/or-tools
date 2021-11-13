@@ -508,11 +508,14 @@ class RoutingCPSatWrapper : public RoutingLinearSolverWrapper {
     }
   }
   void AddProductConstraint(int product_var, std::vector<int> vars) override {
-    sat::IntegerArgumentProto* const ct =
+    sat::LinearArgumentProto* const ct =
         model_.add_constraints()->mutable_int_prod();
-    ct->set_target(product_var);
+    ct->mutable_target()->add_vars(product_var);
+    ct->mutable_target()->add_coeffs(1);
     for (const int var : vars) {
-      ct->add_vars(var);
+      sat::LinearExpressionProto* expr = ct->add_exprs();
+      expr->add_vars(var);
+      expr->add_coeffs(1);
     }
   }
   void SetEnforcementLiteral(int ct, int condition) override {
