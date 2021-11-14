@@ -1846,6 +1846,20 @@ class CpModel(object):
     def HasObjective(self):
         return self.__model.HasField('objective')
 
+    def SetObjectiveScaling(self, double_scaling):
+        """This must be called after creating the objective.
+
+    This method overwrites the current scaling.
+
+    Args:
+      double_scaling: define the objective scaling. The printed value will be
+        the objective value * double_scaling.
+    """
+        if self.__model.objective.scaling_factor >= 0.0:  # Minimization.
+            self.__model.objective.scaling_factor = double_scaling
+        else:  # Maximization.
+            self.__model.objective.scaling_factor = -double_scaling
+
     def AddDecisionStrategy(self, variables, var_strategy, domain_strategy):
         """Adds a search strategy to the model.
 

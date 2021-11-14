@@ -771,7 +771,7 @@ void AppendNoOverlap2dRelaxation(const CpModelProto& model_proto,
   std::vector<IntervalVariable> x_intervals =
       mapping->Intervals(ct.no_overlap_2d().x_intervals());
   std::vector<IntervalVariable> y_intervals =
-      mapping->Intervals(ct.no_overlap_2d().y_intervals());      
+      mapping->Intervals(ct.no_overlap_2d().y_intervals());
 
   // Scan energies.
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
@@ -798,7 +798,10 @@ void AppendNoOverlap2dRelaxation(const CpModelProto& model_proto,
   }
   FillEnergies(x_sizes, y_sizes, model, &energies);
 
-  LinearConstraintBuilder lc(model, IntegerValue(0), (x_max - x_min) * (y_max - y_min));
+  const IntegerValue max_area =
+      IntegerValue(CapProd(CapAdd(x_max.value(), CapOpp(x_min.value())),
+                           CapAdd(y_max.value(), CapOpp(y_min.value()))));
+  LinearConstraintBuilder lc(model, IntegerValue(0), max_area);
   for (int i = 0; i < ct.no_overlap_2d().x_intervals_size(); ++i) {
     DCHECK(!intervals_repository->IsOptional(x_intervals[i]));
     DCHECK(!intervals_repository->IsOptional(y_intervals[i]));
