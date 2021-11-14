@@ -336,6 +336,26 @@ bool DetectLinearEncodingOfProducts(const AffineExpression& left,
     return true;
   }
 
+  // Linearization is possible if both left and right have the same Boolean
+  // variable.
+  if (PositiveVariable(left.var) == PositiveVariable(right.var) &&
+      integer_trail->LowerBound(PositiveVariable(left.var)) >= 0 &&
+      integer_trail->UpperBound(PositiveVariable(left.var)) <= 1) {
+    const IntegerValue left_coeff =
+        VariableIsPositive(left.var) ? left.coeff : -left.coeff;
+    const IntegerValue left_constant =
+        VariableIsPositive(left.var) ? left.constant : -left.constant;
+    const IntegerValue right_coeff =
+        VariableIsPositive(right.var) ? right.coeff : -right.coeff;
+    const IntegerValue right_constant =
+        VariableIsPositive(right.var) ? right.constant : -right.constant;
+    builder->AddTerm(PositiveVariable(left.var),
+                     left_coeff * right_coeff + left_constant * right_coeff +
+                         left_coeff * right_constant);
+    builder->AddConstant(left_constant * right_constant);
+    return true;
+  }
+
   // Fill in the encodings for the left variable.
   const absl::flat_hash_map<int, std::vector<ValueLiteralPair>>&
       left_encodings = implied_bounds->GetElementEncodings(left.var);
