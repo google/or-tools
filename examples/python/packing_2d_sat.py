@@ -13,16 +13,19 @@
 # limitations under the License.
 """Solver a 2D rectangle knapsack problem.
 
-This code is adapted from 
+This code is adapted from
 https://yetanothermathprogrammingconsultant.blogspot.com/2021/02/2d-bin-packing.html
 """
 
-from io import StringIO
+import io
+
 from absl import app
 from absl import flags
-from google.protobuf import text_format
 import numpy as np
 import pandas as pd
+
+from google.protobuf import text_format
+
 from ortools.sat.python import cp_model
 
 FLAGS = flags.FLAGS
@@ -50,7 +53,7 @@ def build_data():
     k10             9      11       5        369.560   cyan
     """
 
-    data = pd.read_table(StringIO(data), sep='\s+')
+    data = pd.read_table(io.StringIO(data), sep=r'\s+')
     print('Input data')
     print(data)
 
@@ -77,12 +80,14 @@ def solve_with_duplicate_items(data, height, width):
     num_data_items = len(base_item_values)
 
     # Create rotated items by duplicating.
-    item_widths = np.concatenate((base_item_widths, base_item_heights))
-    item_heights = np.concatenate((base_item_heights, base_item_widths))
+    item_widths = np.concatenate(
+        (base_item_widths, base_item_heights)).to_list()
+    item_heights = np.concatenate(
+        (base_item_heights, base_item_widths)).to_list()
     item_values = np.concatenate((base_item_values, base_item_values))
 
     # Scale values to become integers.
-    item_values = (item_values * 1000.0).astype('int')
+    item_values = (item_values * 1000.0).astype('int').to_list()
     num_items = len(item_values)
 
     # OR-Tools model
@@ -94,8 +99,12 @@ def solve_with_duplicate_items(data, height, width):
     is_used = [model.NewBoolVar(f'u{i}') for i in range(num_items)]
 
     ## x_start[i],y_start[i] : location of item i
-    x_start = [model.NewIntVar(0, width, f'x_start{i}') for i in range(num_items)]
-    y_start = [model.NewIntVar(0, height, f'y_start{i}') for i in range(num_items)]
+    x_start = [
+        model.NewIntVar(0, width, f'x_start{i}') for i in range(num_items)
+    ]
+    y_start = [
+        model.NewIntVar(0, height, f'y_start{i}') for i in range(num_items)
+    ]
 
     ## x_end[i],y_end[i] : upper limit of interval variable
     x_end = [model.NewIntVar(0, width, f'x_end{i}') for i in range(num_items)]
@@ -121,6 +130,7 @@ def solve_with_duplicate_items(data, height, width):
 
     ## Objective.
     model.Maximize(sum([is_used[i] * item_values[i] for i in range(num_items)]))
+    model.SetObjectiveScaling(1e-3)
 
     # Output proto to file.
     if FLAGS.output_proto:
@@ -158,8 +168,8 @@ def solve_with_rotations(data, height, width):
     data_availability = data['available'].to_numpy()
     data_values = data['value'].to_numpy()
 
-    item_widths = np.repeat(data_widths, data_availability)
-    item_heights = np.repeat(data_heights, data_availability)
+    item_widths = np.repeat(data_widths, data_availability).astype('int')
+    item_heights = np.repeat(data_heights, data_availability).astype('int')
     item_values = np.repeat(data_values, data_availability)
 
     num_items = len(item_widths)
@@ -173,19 +183,25 @@ def solve_with_rotations(data, height, width):
     # Variables.
 
     ## x_start[i],y_start[i] : location of item i.
-    x_start = [model.NewIntVar(0, width, f'x_start{i}') for i in range(num_items)]
-    y_start = [model.NewIntVar(0, height, f'y_start{i}') for i in range(num_items)]
+    x_start = [
+        model.NewIntVar(0, width, f'x_start{i}') for i in range(num_items)
+    ]
+    y_start = [
+        model.NewIntVar(0, height, f'y_start{i}') for i in range(num_items)
+    ]
 
     ## x_size[i],y_size[i] : sizes of item i.
     x_size = [
         model.NewIntVarFromDomain(
-            cp_model.Domain.FromValues([0, item_widths[i], item_heights[i]]),
-            f'x_size{i}') for i in range(num_items)
+            cp_model.Domain.FromValues(
+                [0, int(item_widths[i]),
+                 int(item_heights[i])]), f'x_size{i}') for i in range(num_items)
     ]
     y_size = [
         model.NewIntVarFromDomain(
-            cp_model.Domain.FromValues([0, item_widths[i], item_heights[i]]),
-            f'y_size{i}') for i in range(num_items)
+            cp_model.Domain.FromValues(
+                [0, int(item_widths[i]),
+                 int(item_heights[i])]), f'y_size{i}') for i in range(num_items)
     ]
 
     ## x_end[i],y_end[i] : upper limit of interval variable.
@@ -194,11 +210,11 @@ def solve_with_rotations(data, height, width):
 
     ## Interval variables
     x_intervals = [
-        model.NewIntervalVar(x_start[i], x_size[i], x_end[i], f'xival{i}')
+        model.NewIntervalVar(x_start[i], x_size[i], x_end[i], f'x_intervals{i}')
         for i in range(num_items)
     ]
     y_intervals = [
-        model.NewIntervalVar(y_start[i], y_size[i], y_end[i], f'yival{i}')
+        model.NewIntervalVar(y_start[i], y_size[i], y_end[i], f'y_intervals{i}')
         for i in range(num_items)
     ]
 
@@ -216,12 +232,14 @@ def solve_with_rotations(data, height, width):
         model.Add(not_selected + no_rotation + rotation == 1)
 
         ### Define height and width.
+        dim1 = int(item_widths[i])
+        dim2 = int(item_heights[i])
         model.Add(x_size[i] == 0).OnlyEnforceIf(not_selected)
         model.Add(y_size[i] == 0).OnlyEnforceIf(not_selected)
-        model.Add(x_size[i] == item_widths[i]).OnlyEnforceIf(no_rotation)
-        model.Add(y_size[i] == item_heights[i]).OnlyEnforceIf(no_rotation)
-        model.Add(x_size[i] == item_heights[i]).OnlyEnforceIf(rotation)
-        model.Add(y_size[i] == item_widths[i]).OnlyEnforceIf(rotation)
+        model.Add(x_size[i] == dim1).OnlyEnforceIf(no_rotation)
+        model.Add(y_size[i] == dim2).OnlyEnforceIf(no_rotation)
+        model.Add(x_size[i] == dim2).OnlyEnforceIf(rotation)
+        model.Add(y_size[i] == dim1).OnlyEnforceIf(rotation)
 
         is_used.append(not_selected.Not())
 
@@ -230,6 +248,7 @@ def solve_with_rotations(data, height, width):
 
     # Objective.
     model.Maximize(sum(is_used[i] * item_values[i] for i in range(num_items)))
+    model.SetObjectiveScaling(1e-3)
 
     # Output proto to file.
     if FLAGS.output_proto:
