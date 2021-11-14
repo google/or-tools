@@ -761,6 +761,58 @@ void AppendNoOverlapRelaxation(const CpModelProto& model_proto,
                           relaxation);
 }
 
+void AppendNoOverlap2dRelaxation(const CpModelProto& model_proto,
+                                 const ConstraintProto& ct, Model* model,
+                                 LinearRelaxation* relaxation) {
+  CHECK(ct.has_no_overlap_2d());
+  if (HasEnforcementLiteral(ct)) return;
+
+  auto* mapping = model->GetOrCreate<CpModelMapping>();
+  std::vector<IntervalVariable> x_intervals =
+      mapping->Intervals(ct.no_overlap_2d().x_intervals());
+  std::vector<IntervalVariable> y_intervals =
+      mapping->Intervals(ct.no_overlap_2d().y_intervals());      
+
+  // Scan energies.
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  auto* intervals_repository = model->GetOrCreate<IntervalsRepository>();
+
+  IntegerValue x_min = kMaxIntegerValue;
+  IntegerValue x_max = kMinIntegerValue;
+  IntegerValue y_min = kMaxIntegerValue;
+  IntegerValue y_max = kMinIntegerValue;
+  std::vector<LinearExpression> energies;
+  std::vector<AffineExpression> x_sizes;
+  std::vector<AffineExpression> y_sizes;
+  for (int i = 0; i < ct.no_overlap_2d().x_intervals_size(); ++i) {
+    x_sizes.push_back(intervals_repository->Size(x_intervals[i]));
+    y_sizes.push_back(intervals_repository->Size(y_intervals[i]));
+    x_min = std::min(x_min, integer_trail->LowerBound(
+                                intervals_repository->Start(x_intervals[i])));
+    x_max = std::max(x_max, integer_trail->UpperBound(
+                                intervals_repository->End(x_intervals[i])));
+    y_min = std::min(y_min, integer_trail->LowerBound(
+                                intervals_repository->Start(y_intervals[i])));
+    y_max = std::max(y_max, integer_trail->UpperBound(
+                                intervals_repository->End(y_intervals[i])));
+  }
+  FillEnergies(x_sizes, y_sizes, model, &energies);
+
+  LinearConstraintBuilder lc(model, IntegerValue(0), (x_max - x_min) * (y_max - y_min));
+  for (int i = 0; i < ct.no_overlap_2d().x_intervals_size(); ++i) {
+    DCHECK(!intervals_repository->IsOptional(x_intervals[i]));
+    DCHECK(!intervals_repository->IsOptional(y_intervals[i]));
+    if (!energies[i].vars.empty() || energies[i].offset != -1) {
+      // We prefer the energy additional info instead of the McCormick
+      // relaxation.
+      lc.AddLinearExpression(energies[i]);
+    } else {
+      lc.AddQuadraticLowerBound(x_sizes[i], y_sizes[i], integer_trail);
+    }
+  }
+  relaxation->linear_constraints.push_back(lc.Build());
+}
+
 void AppendLinMaxRelaxationPart1(const ConstraintProto& ct, Model* model,
                                  LinearRelaxation* relaxation) {
   auto* mapping = model->GetOrCreate<CpModelMapping>();
@@ -1058,6 +1110,7 @@ void TryToLinearizeConstraint(const CpModelProto& model_proto,
     }
     case ConstraintProto::ConstraintCase::kNoOverlap2D: {
       if (linearization_level > 1) {
+        AppendNoOverlap2dRelaxation(model_proto, ct, model, relaxation);
         AddNoOverlap2dCutGenerator(ct, model, relaxation);
       }
       break;
