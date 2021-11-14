@@ -37,6 +37,10 @@ flags.DEFINE_string('params', 'num_search_workers:16,log_search_progress:true',
 flags.DEFINE_string('model', 'rotation', '\'duplicate\' or \'rotation\'')
 
 
+def scale_double(value):
+    return int(round(value * 1000.0))
+
+
 def build_data():
     """Build the data frame."""
     data = """
@@ -57,15 +61,18 @@ def build_data():
     print('Input data')
     print(data)
 
-    height = 20
-    width = 30
+    max_height = 20
+    max_width = 30
 
-    print(f'Container width:{width} height:{height}')
+    print(f'Container max_width:{max_width} max_height:{max_height}')
     print(f'#Items: {len(data.index)}')
-    return (data, height, width)
+    return (data, max_height, max_width)
 
 
-def solve_with_duplicate_items(data, height, width):
+# pytype: disable=wrong-arg-types
+
+
+def solve_with_duplicate_items(data, max_height, max_width):
     """Solve the problem by building 2 items (rotated or not) for each item."""
     # Derived data (expanded to individual items).
     data_widths = data['width'].to_numpy()
@@ -80,14 +87,10 @@ def solve_with_duplicate_items(data, height, width):
     num_data_items = len(base_item_values)
 
     # Create rotated items by duplicating.
-    item_widths = np.concatenate(
-        (base_item_widths, base_item_heights)).to_list()
-    item_heights = np.concatenate(
-        (base_item_heights, base_item_widths)).to_list()
+    item_widths = np.concatenate((base_item_widths, base_item_heights))
+    item_heights = np.concatenate((base_item_heights, base_item_widths))
     item_values = np.concatenate((base_item_values, base_item_values))
 
-    # Scale values to become integers.
-    item_values = (item_values * 1000.0).astype('int').to_list()
     num_items = len(item_values)
 
     # OR-Tools model
@@ -95,41 +98,45 @@ def solve_with_duplicate_items(data, height, width):
 
     # Variables
 
-    ## u[i] : item i is used
-    is_used = [model.NewBoolVar(f'u{i}') for i in range(num_items)]
+    x_starts = []
+    x_ends = []
+    y_starts = []
+    y_ends = []
+    is_used = []
+    x_intervals = []
+    y_intervals = []
 
-    ## x_start[i],y_start[i] : location of item i
-    x_start = [
-        model.NewIntVar(0, width, f'x_start{i}') for i in range(num_items)
-    ]
-    y_start = [
-        model.NewIntVar(0, height, f'y_start{i}') for i in range(num_items)
-    ]
+    for i in range(num_items):
+        ## Is the item used?
+        is_used.append(model.NewBoolVar(f'is_used{i}'))
 
-    ## x_end[i],y_end[i] : upper limit of interval variable
-    x_end = [model.NewIntVar(0, width, f'x_end{i}') for i in range(num_items)]
-    y_end = [model.NewIntVar(0, height, f'y_end{i}') for i in range(num_items)]
+        ## Item coordinates.
+        x_starts.append(model.NewIntVar(0, max_width, f'x_start{i}'))
+        x_ends.append(model.NewIntVar(0, max_width, f'x_end{i}'))
+        y_starts.append(model.NewIntVar(0, max_height, f'y_start{i}'))
+        y_ends.append(model.NewIntVar(0, max_height, f'y_end{i}'))
 
-    ## interval variables
-    x_intervals = [
-        model.NewIntervalVar(x_start[i], item_widths[i] * is_used[i], x_end[i],
-                             f'xival{i}') for i in range(num_items)
-    ]
-    y_intervals = [
-        model.NewIntervalVar(y_start[i], item_heights[i] * is_used[i], y_end[i],
-                             f'yival{i}') for i in range(num_items)
-    ]
-    # only one of non-rotated/rotated pair can be used
-    for i in range(num_data_items):
-        model.Add(is_used[i] + is_used[i + num_data_items] <= 1)
+        ## Interval variables.
+        x_intervals.append(
+            model.NewIntervalVar(x_starts[i], item_widths[i] * is_used[i],
+                                 x_ends[i], f'x_interval{i}'))
+        y_intervals.append(
+            model.NewIntervalVar(y_starts[i], item_heights[i] * is_used[i],
+                                 y_ends[i], f'y_interval{i}'))
 
     # Constraints.
+
+    ## Only one of non-rotated/rotated pair can be used.
+    for i in range(num_data_items):
+        model.Add(is_used[i] + is_used[i + num_data_items] <= 1)
 
     ## 2D no overlap.
     model.AddNoOverlap2D(x_intervals, y_intervals)
 
     ## Objective.
-    model.Maximize(sum([is_used[i] * item_values[i] for i in range(num_items)]))
+    model.Maximize(
+        sum(is_used[i] * scale_double(item_values[i])
+            for i in range(num_items)))
     model.SetObjectiveScaling(1e-3)
 
     # Output proto to file.
@@ -149,18 +156,18 @@ def solve_with_duplicate_items(data, height, width):
     if status == cp_model.OPTIMAL:
         used = {i for i in range(num_items) if solver.BooleanValue(is_used[i])}
         data = pd.DataFrame({
-            'x_start': [solver.Value(x_start[i]) for i in used],
-            'y_start': [solver.Value(y_start[i]) for i in used],
+            'x_start': [solver.Value(x_starts[i]) for i in used],
+            'y_start': [solver.Value(y_starts[i]) for i in used],
             'item_width': [item_widths[i] for i in used],
             'item_height': [item_heights[i] for i in used],
-            'x_end': [solver.Value(x_end[i]) for i in used],
-            'y_end': [solver.Value(y_end[i]) for i in used],
+            'x_end': [solver.Value(x_ends[i]) for i in used],
+            'y_end': [solver.Value(y_ends[i]) for i in used],
             'item_value': [item_values[i] for i in used]
         })
         print(data)
 
 
-def solve_with_rotations(data, height, width):
+def solve_with_rotations(data, max_height, max_width):
     """Solve the problem by rotating items."""
     # Derived data (expanded to individual items).
     data_widths = data['width'].to_numpy()
@@ -168,55 +175,51 @@ def solve_with_rotations(data, height, width):
     data_availability = data['available'].to_numpy()
     data_values = data['value'].to_numpy()
 
-    item_widths = np.repeat(data_widths, data_availability).astype('int')
-    item_heights = np.repeat(data_heights, data_availability).astype('int')
+    item_widths = np.repeat(data_widths, data_availability)
+    item_heights = np.repeat(data_heights, data_availability)
     item_values = np.repeat(data_values, data_availability)
 
     num_items = len(item_widths)
-
-    # Scale values to become integers.
-    item_values = (item_values * 1000.0).astype('int')
 
     # OR-Tools model.
     model = cp_model.CpModel()
 
     # Variables.
+    x_starts = []
+    x_sizes = []
+    x_ends = []
+    y_starts = []
+    y_sizes = []
+    y_ends = []
+    x_intervals = []
+    y_intervals = []
 
-    ## x_start[i],y_start[i] : location of item i.
-    x_start = [
-        model.NewIntVar(0, width, f'x_start{i}') for i in range(num_items)
-    ]
-    y_start = [
-        model.NewIntVar(0, height, f'y_start{i}') for i in range(num_items)
-    ]
+    for i in range(num_items):
+        # X coordinates.
+        x_starts.append(model.NewIntVar(0, max_width, f'x_start{i}'))
+        x_sizes.append(
+            model.NewIntVarFromDomain(
+                cp_model.Domain.FromValues(
+                    [0, int(item_widths[i]),
+                     int(item_heights[i])]), f'x_size{i}'))
+        x_ends.append(model.NewIntVar(0, max_width, f'x_end{i}'))
 
-    ## x_size[i],y_size[i] : sizes of item i.
-    x_size = [
-        model.NewIntVarFromDomain(
-            cp_model.Domain.FromValues(
-                [0, int(item_widths[i]),
-                 int(item_heights[i])]), f'x_size{i}') for i in range(num_items)
-    ]
-    y_size = [
-        model.NewIntVarFromDomain(
-            cp_model.Domain.FromValues(
-                [0, int(item_widths[i]),
-                 int(item_heights[i])]), f'y_size{i}') for i in range(num_items)
-    ]
+        # Y coordinates.
+        y_starts.append(model.NewIntVar(0, max_height, f'y_start{i}'))
+        y_sizes.append(
+            model.NewIntVarFromDomain(
+                cp_model.Domain.FromValues(
+                    [0, int(item_widths[i]),
+                     int(item_heights[i])]), f'y_size{i}'))
+        y_ends.append(model.NewIntVar(0, max_height, f'y_end{i}'))
 
-    ## x_end[i],y_end[i] : upper limit of interval variable.
-    x_end = [model.NewIntVar(0, width, f'x_end{i}') for i in range(num_items)]
-    y_end = [model.NewIntVar(0, height, f'y_end{i}') for i in range(num_items)]
-
-    ## Interval variables
-    x_intervals = [
-        model.NewIntervalVar(x_start[i], x_size[i], x_end[i], f'x_intervals{i}')
-        for i in range(num_items)
-    ]
-    y_intervals = [
-        model.NewIntervalVar(y_start[i], y_size[i], y_end[i], f'y_intervals{i}')
-        for i in range(num_items)
-    ]
+        ## Interval variables
+        x_intervals.append(
+            model.NewIntervalVar(x_starts[i], x_sizes[i], x_ends[i],
+                                 f'x_interval{i}'))
+        y_intervals.append(
+            model.NewIntervalVar(y_starts[i], y_sizes[i], y_ends[i],
+                                 f'y_interval{i}'))
 
     is_used = []
 
@@ -231,15 +234,15 @@ def solve_with_rotations(data, height, width):
         ### Only one state can be chosen.
         model.Add(not_selected + no_rotation + rotation == 1)
 
-        ### Define height and width.
+        ### Define max_height and width.
         dim1 = int(item_widths[i])
         dim2 = int(item_heights[i])
-        model.Add(x_size[i] == 0).OnlyEnforceIf(not_selected)
-        model.Add(y_size[i] == 0).OnlyEnforceIf(not_selected)
-        model.Add(x_size[i] == dim1).OnlyEnforceIf(no_rotation)
-        model.Add(y_size[i] == dim2).OnlyEnforceIf(no_rotation)
-        model.Add(x_size[i] == dim2).OnlyEnforceIf(rotation)
-        model.Add(y_size[i] == dim1).OnlyEnforceIf(rotation)
+        model.Add(x_sizes[i] == 0).OnlyEnforceIf(not_selected)
+        model.Add(y_sizes[i] == 0).OnlyEnforceIf(not_selected)
+        model.Add(x_sizes[i] == dim1).OnlyEnforceIf(no_rotation)
+        model.Add(y_sizes[i] == dim2).OnlyEnforceIf(no_rotation)
+        model.Add(x_sizes[i] == dim2).OnlyEnforceIf(rotation)
+        model.Add(y_sizes[i] == dim1).OnlyEnforceIf(rotation)
 
         is_used.append(not_selected.Not())
 
@@ -247,7 +250,9 @@ def solve_with_rotations(data, height, width):
     model.AddNoOverlap2D(x_intervals, y_intervals)
 
     # Objective.
-    model.Maximize(sum(is_used[i] * item_values[i] for i in range(num_items)))
+    model.Maximize(
+        sum(is_used[i] * scale_double(item_values[i])
+            for i in range(num_items)))
     model.SetObjectiveScaling(1e-3)
 
     # Output proto to file.
@@ -267,12 +272,12 @@ def solve_with_rotations(data, height, width):
     if status == cp_model.OPTIMAL:
         used = {i for i in range(num_items) if solver.BooleanValue(is_used[i])}
         data = pd.DataFrame({
-            'x_start': [solver.Value(x_start[i]) for i in used],
-            'y_start': [solver.Value(y_start[i]) for i in used],
-            'item_width': [solver.Value(x_size[i]) for i in used],
-            'item_height': [solver.Value(y_size[i]) for i in used],
-            'x_end': [solver.Value(x_end[i]) for i in used],
-            'y_end': [solver.Value(y_end[i]) for i in used],
+            'x_start': [solver.Value(x_starts[i]) for i in used],
+            'y_start': [solver.Value(y_starts[i]) for i in used],
+            'item_width': [solver.Value(x_sizes[i]) for i in used],
+            'item_height': [solver.Value(y_sizes[i]) for i in used],
+            'x_end': [solver.Value(x_ends[i]) for i in used],
+            'y_end': [solver.Value(y_ends[i]) for i in used],
             'item_value': [item_values[i] for i in used]
         })
         print(data)
@@ -280,11 +285,11 @@ def solve_with_rotations(data, height, width):
 
 def main(_):
     """Solve the problem with all models."""
-    data, height, width = build_data()
+    data, max_height, max_width = build_data()
     if FLAGS.model == 'duplicate':
-        solve_with_duplicate_items(data, height, width)
+        solve_with_duplicate_items(data, max_height, max_width)
     else:
-        solve_with_rotations(data, height, width)
+        solve_with_rotations(data, max_height, max_width)
 
 
 if __name__ == '__main__':
