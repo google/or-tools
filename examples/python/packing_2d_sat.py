@@ -14,7 +14,7 @@
 """Solver a 2D rectangle knapsack problem.
 
 This code is adapted from
-https://yetanothermathprogrammingconsultant.blogspot.com/2021/02/2d-bin-packing.html
+https://yetanothermathprogrammingconsultant.blogspot.com/2021/10/2d-knapsack-problem.html
 """
 
 import io
