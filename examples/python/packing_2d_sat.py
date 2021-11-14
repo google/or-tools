@@ -65,20 +65,20 @@ def build_data():
 def solve_with_duplicate_items(data, height, width):
     """Solve the problem by building 2 items (rotated or not) for each item."""
     # Derived data (expanded to individual items).
-    data_weights = data['width'].to_numpy()
+    data_widths = data['width'].to_numpy()
     data_heights = data['height'].to_numpy()
     data_availability = data['available'].to_numpy()
     data_values = data['value'].to_numpy()
 
     # Non duplicated items data.
-    base_item_weights = np.repeat(data_weights, data_availability)
+    base_item_widths = np.repeat(data_widths, data_availability)
     base_item_heights = np.repeat(data_heights, data_availability)
     base_item_values = np.repeat(data_values, data_availability)
     num_data_items = len(base_item_values)
 
     # Create rotated items by duplicating.
-    item_weights = np.concatenate((base_item_weights, base_item_heights))
-    item_heights = np.concatenate((base_item_heights, base_item_weights))
+    item_widths = np.concatenate((base_item_widths, base_item_heights))
+    item_heights = np.concatenate((base_item_heights, base_item_widths))
     item_values = np.concatenate((base_item_values, base_item_values))
 
     # Scale values to become integers.
@@ -103,7 +103,7 @@ def solve_with_duplicate_items(data, height, width):
 
     ## interval variables
     x_intervals = [
-        model.NewIntervalVar(x_start[i], item_weights[i] * is_used[i], x_end[i],
+        model.NewIntervalVar(x_start[i], item_widths[i] * is_used[i], x_end[i],
                              f'xival{i}') for i in range(num_items)
     ]
     y_intervals = [
@@ -141,7 +141,7 @@ def solve_with_duplicate_items(data, height, width):
         data = pd.DataFrame({
             'x_start': [solver.Value(x_start[i]) for i in used],
             'y_start': [solver.Value(y_start[i]) for i in used],
-            'item_weight': [item_weights[i] for i in used],
+            'item_width': [item_widths[i] for i in used],
             'item_height': [item_heights[i] for i in used],
             'x_end': [solver.Value(x_end[i]) for i in used],
             'y_end': [solver.Value(y_end[i]) for i in used],
@@ -153,16 +153,16 @@ def solve_with_duplicate_items(data, height, width):
 def solve_with_rotations(data, height, width):
     """Solve the problem by rotating items."""
     # Derived data (expanded to individual items).
-    data_weights = data['width'].to_numpy()
+    data_widths = data['width'].to_numpy()
     data_heights = data['height'].to_numpy()
     data_availability = data['available'].to_numpy()
     data_values = data['value'].to_numpy()
 
-    item_weights = np.repeat(data_weights, data_availability).astype('int')
-    item_heights = np.repeat(data_heights, data_availability).astype('int')
+    item_widths = np.repeat(data_widths, data_availability)
+    item_heights = np.repeat(data_heights, data_availability)
     item_values = np.repeat(data_values, data_availability)
 
-    num_items = len(item_weights)
+    num_items = len(item_widths)
 
     # Scale values to become integers.
     item_values = (item_values * 1000.0).astype('int')
@@ -179,12 +179,12 @@ def solve_with_rotations(data, height, width):
     ## x_size[i],y_size[i] : sizes of item i.
     x_size = [
         model.NewIntVarFromDomain(
-            cp_model.Domain.FromValues([0, item_weights[i], item_heights[i]]),
+            cp_model.Domain.FromValues([0, item_widths[i], item_heights[i]]),
             f'x_size{i}') for i in range(num_items)
     ]
     y_size = [
         model.NewIntVarFromDomain(
-            cp_model.Domain.FromValues([0, item_weights[i], item_heights[i]]),
+            cp_model.Domain.FromValues([0, item_widths[i], item_heights[i]]),
             f'y_size{i}') for i in range(num_items)
     ]
 
@@ -218,10 +218,10 @@ def solve_with_rotations(data, height, width):
         ### Define height and width.
         model.Add(x_size[i] == 0).OnlyEnforceIf(not_selected)
         model.Add(y_size[i] == 0).OnlyEnforceIf(not_selected)
-        model.Add(x_size[i] == item_weights[i]).OnlyEnforceIf(no_rotation)
+        model.Add(x_size[i] == item_widths[i]).OnlyEnforceIf(no_rotation)
         model.Add(y_size[i] == item_heights[i]).OnlyEnforceIf(no_rotation)
         model.Add(x_size[i] == item_heights[i]).OnlyEnforceIf(rotation)
-        model.Add(y_size[i] == item_weights[i]).OnlyEnforceIf(rotation)
+        model.Add(y_size[i] == item_widths[i]).OnlyEnforceIf(rotation)
 
         is_used.append(not_selected.Not())
 
@@ -250,7 +250,7 @@ def solve_with_rotations(data, height, width):
         data = pd.DataFrame({
             'x_start': [solver.Value(x_start[i]) for i in used],
             'y_start': [solver.Value(y_start[i]) for i in used],
-            'item_weight': [solver.Value(x_size[i]) for i in used],
+            'item_width': [solver.Value(x_size[i]) for i in used],
             'item_height': [solver.Value(y_size[i]) for i in used],
             'x_end': [solver.Value(x_end[i]) for i in used],
             'y_end': [solver.Value(y_end[i]) for i in used],
