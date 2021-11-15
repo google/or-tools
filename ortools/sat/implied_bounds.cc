@@ -343,16 +343,12 @@ bool DetectLinearEncodingOfProducts(const AffineExpression& left,
       integer_trail->UpperBound(PositiveVariable(left.var)) <= 1) {
     const IntegerValue left_coeff =
         VariableIsPositive(left.var) ? left.coeff : -left.coeff;
-    const IntegerValue left_constant =
-        VariableIsPositive(left.var) ? left.constant : -left.constant;
     const IntegerValue right_coeff =
         VariableIsPositive(right.var) ? right.coeff : -right.coeff;
-    const IntegerValue right_constant =
-        VariableIsPositive(right.var) ? right.constant : -right.constant;
     builder->AddTerm(PositiveVariable(left.var),
-                     left_coeff * right_coeff + left_constant * right_coeff +
-                         left_coeff * right_constant);
-    builder->AddConstant(left_constant * right_constant);
+                     left_coeff * right_coeff + left.constant * right_coeff +
+                         left_coeff * right.constant);
+    builder->AddConstant(left.constant * right.constant);
     return true;
   }
 
