@@ -41,6 +41,7 @@ setup(
     name='@PROJECT_NAME@',
     version='@PROJECT_VERSION@',
     packages=find_packages(),
+    python_requires=[">=3.6"],
     install_requires=[
         'protobuf >= 3.18.0',
         'numpy >= 1.13.3',
