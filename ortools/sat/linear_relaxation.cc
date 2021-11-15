@@ -761,11 +761,12 @@ void AppendNoOverlapRelaxation(const CpModelProto& model_proto,
                           relaxation);
 }
 
-void AppendNoOverlap2dRelaxation(const CpModelProto& model_proto,
-                                 const ConstraintProto& ct, Model* model,
+// Adds the energetic relaxation sum(areas) <= bounding box area.
+void AppendNoOverlap2dRelaxation(const ConstraintProto& ct, Model* model,
                                  LinearRelaxation* relaxation) {
   CHECK(ct.has_no_overlap_2d());
   if (HasEnforcementLiteral(ct)) return;
+  if (ct.no_overlap_2d().x_intervals().empty()) return;
 
   auto* mapping = model->GetOrCreate<CpModelMapping>();
   std::vector<IntervalVariable> x_intervals =
@@ -773,7 +774,6 @@ void AppendNoOverlap2dRelaxation(const CpModelProto& model_proto,
   std::vector<IntervalVariable> y_intervals =
       mapping->Intervals(ct.no_overlap_2d().y_intervals());
 
-  // Scan energies.
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
   auto* intervals_repository = model->GetOrCreate<IntervalsRepository>();
 
@@ -787,28 +787,29 @@ void AppendNoOverlap2dRelaxation(const CpModelProto& model_proto,
   for (int i = 0; i < ct.no_overlap_2d().x_intervals_size(); ++i) {
     x_sizes.push_back(intervals_repository->Size(x_intervals[i]));
     y_sizes.push_back(intervals_repository->Size(y_intervals[i]));
-    x_min = std::min(x_min, integer_trail->LowerBound(
+    x_min = std::min(x_min, integer_trail->LevelZeroLowerBound(
                                 intervals_repository->Start(x_intervals[i])));
-    x_max = std::max(x_max, integer_trail->UpperBound(
+    x_max = std::max(x_max, integer_trail->LevelZeroUpperBound(
                                 intervals_repository->End(x_intervals[i])));
-    y_min = std::min(y_min, integer_trail->LowerBound(
+    y_min = std::min(y_min, integer_trail->LevelZeroLowerBound(
                                 intervals_repository->Start(y_intervals[i])));
-    y_max = std::max(y_max, integer_trail->UpperBound(
+    y_max = std::max(y_max, integer_trail->LevelZeroUpperBound(
                                 intervals_repository->End(y_intervals[i])));
   }
-  FillEnergies(x_sizes, y_sizes, model, &energies);
 
   const IntegerValue max_area =
-      IntegerValue(CapProd(CapAdd(x_max.value(), CapOpp(x_min.value())),
-                           CapAdd(y_max.value(), CapOpp(y_min.value()))));
+      IntegerValue(CapProd(CapAdd(x_max.value(), -x_min.value()),
+                           CapAdd(y_max.value(), -y_min.value())));
+  if (max_area == kMaxIntegerValue) return;
+
   LinearConstraintBuilder lc(model, IntegerValue(0), max_area);
   for (int i = 0; i < ct.no_overlap_2d().x_intervals_size(); ++i) {
     DCHECK(!intervals_repository->IsOptional(x_intervals[i]));
     DCHECK(!intervals_repository->IsOptional(y_intervals[i]));
-    if (!energies[i].vars.empty() || energies[i].offset != -1) {
-      // We prefer the energy additional info instead of the McCormick
-      // relaxation.
-      lc.AddLinearExpression(energies[i]);
+    LinearConstraintBuilder linear_energy(model);
+    if (DetectLinearEncodingOfProducts(x_sizes[i], y_sizes[i], model,
+        &linear_energy)) {
+      lc.AddLinearExpression(linear_energy.BuildExpression());
     } else {
       lc.AddQuadraticLowerBound(x_sizes[i], y_sizes[i], integer_trail);
     }
@@ -1112,8 +1113,11 @@ void TryToLinearizeConstraint(const CpModelProto& model_proto,
       break;
     }
     case ConstraintProto::ConstraintCase::kNoOverlap2D: {
+      // Adds an energetic relaxation (sum of areas fits in bounding box).
+      AppendNoOverlap2dRelaxation(ct, model, relaxation);
       if (linearization_level > 1) {
-        AppendNoOverlap2dRelaxation(model_proto, ct, model, relaxation);
+        // Adds a completion time cut generator.
+        // TODO(lperron): investigate adding an energetic cut generator.
         AddNoOverlap2dCutGenerator(ct, model, relaxation);
       }
       break;
