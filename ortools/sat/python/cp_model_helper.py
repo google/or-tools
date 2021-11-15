@@ -13,6 +13,7 @@
 """helpers methods for the cp_model module."""
 
 import numbers
+import numpy as np
 
 INT_MIN = -9223372036854775808  # hardcoded to be platform independent.
 INT_MAX = 9223372036854775807
@@ -20,25 +21,32 @@ INT32_MIN = -2147483648
 INT32_MAX = 2147483647
 
 
+def IsIntegral(x):
+    """Checks if x has either a number.Integral or a np.integer type."""
+    return isinstance(x, numbers.Integral) or isinstance(x, np.integer)
+
+
 def AssertIsInt64(x):
     """Asserts that x is integer and x is in [min_int_64, max_int_64]."""
-    if not isinstance(x, numbers.Integral):
+    if not IsIntegral(x):
         raise TypeError('Not an integer: %s' % x)
     if x < INT_MIN or x > INT_MAX:
         raise OverflowError('Does not fit in an int64_t: %s' % x)
+    return int(x)
 
 
 def AssertIsInt32(x):
     """Asserts that x is integer and x is in [min_int_32, max_int_32]."""
-    if not isinstance(x, numbers.Integral):
+    if not IsIntegral(x):
         raise TypeError('Not an integer: %s' % x)
     if x < INT32_MIN or x > INT32_MAX:
         raise OverflowError('Does not fit in an int32_t: %s' % x)
+    return int(x)
 
 
 def AssertIsBoolean(x):
     """Asserts that x is 0 or 1."""
-    if not isinstance(x, numbers.Integral) or x < 0 or x > 1:
+    if not IsIntegral(x) or x < 0 or x > 1:
         raise TypeError('Not an boolean: %s' % x)
 
 
