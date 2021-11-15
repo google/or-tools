@@ -43,6 +43,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         'protobuf >= 3.18.0',
+        'numpy >= 1.13.3',
         'absl-py >= 0.13',
     ],
     package_data={

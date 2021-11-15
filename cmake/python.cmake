@@ -271,10 +271,6 @@ install(SCRIPT ${PROJECT_BINARY_DIR}/python/python-install.cmake)
 ##  Python Test  ##
 ###################
 if(BUILD_TESTING)
-  search_python_module(
-    NAME absl
-    PACKAGE absl-py
-    NO_VERSION)
   search_python_internal_module(NAME venv)
   # Testing using a vitual environment
   set(VENV_EXECUTABLE ${Python3_EXECUTABLE} -m venv)
