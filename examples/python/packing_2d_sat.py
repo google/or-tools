@@ -69,9 +69,6 @@ def build_data():
     return (data, max_height, max_width)
 
 
-# pytype: disable=wrong-arg-types
-
-
 def solve_with_duplicate_items(data, max_height, max_width):
     """Solve the problem by building 2 items (rotated or not) for each item."""
     # Derived data (expanded to individual items).
@@ -97,7 +94,6 @@ def solve_with_duplicate_items(data, max_height, max_width):
     model = cp_model.CpModel()
 
     # Variables
-
     x_starts = []
     x_ends = []
     y_starts = []
@@ -184,7 +180,7 @@ def solve_with_rotations(data, max_height, max_width):
     # OR-Tools model.
     model = cp_model.CpModel()
 
-    # Variables.
+    # Coordinate variables for each rectangle.
     x_starts = []
     x_sizes = []
     x_ends = []
@@ -195,22 +191,19 @@ def solve_with_rotations(data, max_height, max_width):
     y_intervals = []
 
     for i in range(num_items):
+        sizes = [0, int(item_widths[i]), int(item_heights[i])]
         # X coordinates.
         x_starts.append(model.NewIntVar(0, max_width, f'x_start{i}'))
         x_sizes.append(
-            model.NewIntVarFromDomain(
-                cp_model.Domain.FromValues(
-                    [0, int(item_widths[i]),
-                     int(item_heights[i])]), f'x_size{i}'))
+            model.NewIntVarFromDomain(cp_model.Domain.FromValues(sizes),
+                                      f'x_size{i}'))
         x_ends.append(model.NewIntVar(0, max_width, f'x_end{i}'))
 
         # Y coordinates.
         y_starts.append(model.NewIntVar(0, max_height, f'y_start{i}'))
         y_sizes.append(
-            model.NewIntVarFromDomain(
-                cp_model.Domain.FromValues(
-                    [0, int(item_widths[i]),
-                     int(item_heights[i])]), f'y_size{i}'))
+            model.NewIntVarFromDomain(cp_model.Domain.FromValues(sizes),
+                                      f'y_size{i}'))
         y_ends.append(model.NewIntVar(0, max_height, f'y_end{i}'))
 
         ## Interval variables
@@ -221,6 +214,7 @@ def solve_with_rotations(data, max_height, max_width):
             model.NewIntervalVar(y_starts[i], y_sizes[i], y_ends[i],
                                  f'y_interval{i}'))
 
+    # is_used[i] == True if and only if item i is selected.
     is_used = []
 
     # Constraints.
@@ -228,21 +222,21 @@ def solve_with_rotations(data, max_height, max_width):
     ## for each item, decide is unselected, no_rotation, rotated.
     for i in range(num_items):
         not_selected = model.NewBoolVar(f'not_selected_{i}')
-        no_rotation = model.NewBoolVar(f'no_rotation{i}')
-        rotation = model.NewBoolVar(f'rotation{i}')
+        no_rotation = model.NewBoolVar(f'no_rotation_{i}')
+        rotated = model.NewBoolVar(f'rotated_{i}')
 
-        ### Only one state can be chosen.
-        model.Add(not_selected + no_rotation + rotation == 1)
+        ### Exactly one state must be chosen.
+        model.Add(not_selected + no_rotation + rotated == 1)
 
-        ### Define max_height and width.
-        dim1 = int(item_widths[i])
-        dim2 = int(item_heights[i])
+        ### Define height and width according to the state.
+        dim1 = item_widths[i]
+        dim2 = item_heights[i]
         model.Add(x_sizes[i] == 0).OnlyEnforceIf(not_selected)
         model.Add(y_sizes[i] == 0).OnlyEnforceIf(not_selected)
         model.Add(x_sizes[i] == dim1).OnlyEnforceIf(no_rotation)
         model.Add(y_sizes[i] == dim2).OnlyEnforceIf(no_rotation)
-        model.Add(x_sizes[i] == dim2).OnlyEnforceIf(rotation)
-        model.Add(y_sizes[i] == dim1).OnlyEnforceIf(rotation)
+        model.Add(x_sizes[i] == dim2).OnlyEnforceIf(rotated)
+        model.Add(y_sizes[i] == dim1).OnlyEnforceIf(rotated)
 
         is_used.append(not_selected.Not())
 
