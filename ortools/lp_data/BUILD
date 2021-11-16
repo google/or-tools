@@ -274,6 +274,7 @@ cc_library(
         "//ortools/base:status_macros",
         "//ortools/base:strong_vector",
         "//ortools/linear_solver:linear_solver_cc_proto",
+        "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/container:node_hash_set",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
