@@ -72,6 +72,32 @@ int XPRSsetobjoffset(const XPRSprob& mLp, double value) {
   return 0;
 }
 
+void XPRS_CC optimizermsg(XPRSprob prob, void* data, const char* sMsg, int nLen,
+                          int nMsgLvl) {
+  switch (nMsgLvl) {
+      /* Print Optimizer error messages and warnings */
+    case 4: /* error */
+      printf("%*s\n", nLen, sMsg);
+      break;
+    case 3: /* warning */
+      printf("%*s\n", nLen, sMsg);
+      break;
+
+      /* Ignore other messages */
+    case 2: /* dialogue */
+      printf("%*s\n", nLen, sMsg);
+      break;
+    case 1: /* information */
+      printf("%*s\n", nLen, sMsg);
+      break;
+
+      /* Exit and flush buffers */
+    default:
+      fflush(NULL);
+      break;
+  }
+}
+
 enum XPRS_BASIS_STATUS {
   XPRS_AT_LOWER = 0,
   XPRS_BASIC = 1,
@@ -113,6 +139,9 @@ class XpressInterface : public MPSolverInterface {
 
   // Sets the optimization direction (min/max).
   virtual void SetOptimizationDirection(bool maximize);
+
+  // Sets the optimization flags
+  virtual void SetOptimizationFlags(std::string flags);
 
   // ----- Solve -----
   // Solve the problem using the parameter values specified.
@@ -213,6 +242,17 @@ class XpressInterface : public MPSolverInterface {
  private:
   XPRSprob mLp;
   bool const mMip;
+
+  // The optimizationFlags are flags to pass to XPRSmipoptimize (MIPOPTIMIZE) 
+  // or XPRSlpoptimize (LPOPTIMIZE), which specifies how to solve the
+  // initial continuous problem where the global entities are relaxed. 
+  // If the argument includes : b the initial continuous relaxation will be solved using the Newton barrier method;
+  //                            p the initial continuous relaxation will be solved using the primal simplex algorithm;
+  //                            d the initial continuous relaxation will be solved using the dual simplex algorithm;
+  //                            n the network part of the initial continuous relaxation will be identified and solved using the network simplex algorithm;
+  //                            l stop after having solved the initial continous relaxation
+  std::string optimizationFlags;
+
   // Incremental extraction.
   // Without incremental extraction we have to re-extract the model every
   // time we perform a solve. Due to the way the Reset() function is
@@ -355,6 +395,7 @@ XpressInterface::XpressInterface(MPSolver* const solver, bool mip)
     : MPSolverInterface(solver),
       mLp(0),
       mMip(mip),
+      optimizationFlags(""),
       supportIncrementalExtraction(false),
       slowUpdates(static_cast<SlowUpdates>(SlowSetObjectiveCoefficient |
                                            SlowClearObjective)),
@@ -418,6 +459,10 @@ void XpressInterface::Reset() {
 void XpressInterface::SetOptimizationDirection(bool maximize) {
   InvalidateSolutionSynchronization();
   XPRSchgobjsense(mLp, maximize ? XPRS_OBJ_MAXIMIZE : XPRS_OBJ_MINIMIZE);
+}
+
+void XpressInterface::SetOptimizationFlags(std::string flags) {
+  optimizationFlags = flags;
 }
 
 void XpressInterface::SetVariableBounds(int var_index, double lb, double ub) {
@@ -1272,23 +1317,21 @@ MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const& param) {
                                    -1.0 * solver_->time_limit_in_secs()));
   }
 
+  /* Tell Optimizer to call optimizermsg whenever a message is output */
+  XPRSsetcbmessage(mLp, optimizermsg, NULL);
+
   // Solve.
   // Do not CHECK_STATUS here since some errors (for example CPXERR_NO_MEMORY)
   // still allow us to query useful information.
+  // The direction of optimization is given by OBJSENSE
   timer.Restart();
 
   int xpressstat = 0;
   if (mMip) {
-    if (this->maximize_)
-      status = XPRSmaxim(mLp, "g");
-    else
-      status = XPRSminim(mLp, "g");
+    status = XPRSmipoptimize(mLp, optimizationFlags.c_str());
     XPRSgetintattrib(mLp, XPRS_MIPSTATUS, &xpressstat);
   } else {
-    if (this->maximize_)
-      status = XPRSmaxim(mLp, "");
-    else
-      status = XPRSminim(mLp, "");
+    status = XPRSlpoptimize(mLp, optimizationFlags.c_str());
     XPRSgetintattrib(mLp, XPRS_LPSTATUS, &xpressstat);
   }
 
