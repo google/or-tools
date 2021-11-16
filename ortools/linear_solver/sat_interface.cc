@@ -150,34 +150,13 @@ MPSolver::ResultStatus SatInterface::Solve(const MPSolverParameters& param) {
 
   // The solution must be marked as synchronized even when no solution exists.
   sync_status_ = SOLUTION_SYNCHRONIZED;
-  switch (response.status()) {
-    case MPSOLVER_OPTIMAL:
-      result_status_ = MPSolver::OPTIMAL;
-      break;
-    case MPSOLVER_FEASIBLE:
-      result_status_ = MPSolver::FEASIBLE;
-      break;
-    case MPSOLVER_INFEASIBLE:
-      result_status_ = MPSolver::INFEASIBLE;
-      break;
-    case MPSOLVER_MODEL_INVALID:
-      result_status_ = MPSolver::MODEL_INVALID;
-      break;
-    default:
-      result_status_ = MPSolver::NOT_SOLVED;
-      break;
-  }
+  result_status_ = static_cast<MPSolver::ResultStatus>(response.status());
 
-  // TODO(user): Just use LoadSolutionFromProto(), but fix that function first
-  // to load everything and not just the solution.
   if (response.status() == MPSOLVER_FEASIBLE ||
       response.status() == MPSOLVER_OPTIMAL) {
-    objective_value_ = response.objective_value();
-    best_objective_bound_ = response.best_objective_bound();
-    const size_t num_vars = solver_->variables_.size();
-    for (int var_id = 0; var_id < num_vars; ++var_id) {
-      MPVariable* const var = solver_->variables_[var_id];
-      var->set_solution_value(response.variable_value(var_id));
+    const absl::Status result = solver_->LoadSolutionFromProto(response);
+    if (!result.ok()) {
+      LOG(ERROR) << "LoadSolutionFromProto failed: " << result;
     }
   }
 
