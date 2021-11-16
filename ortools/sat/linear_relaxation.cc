@@ -766,7 +766,6 @@ void AppendNoOverlap2dRelaxation(const ConstraintProto& ct, Model* model,
                                  LinearRelaxation* relaxation) {
   CHECK(ct.has_no_overlap_2d());
   if (HasEnforcementLiteral(ct)) return;
-  if (ct.no_overlap_2d().x_intervals().empty()) return;
 
   auto* mapping = model->GetOrCreate<CpModelMapping>();
   std::vector<IntervalVariable> x_intervals =
@@ -781,7 +780,6 @@ void AppendNoOverlap2dRelaxation(const ConstraintProto& ct, Model* model,
   IntegerValue x_max = kMinIntegerValue;
   IntegerValue y_min = kMaxIntegerValue;
   IntegerValue y_max = kMinIntegerValue;
-  std::vector<LinearExpression> energies;
   std::vector<AffineExpression> x_sizes;
   std::vector<AffineExpression> y_sizes;
   for (int i = 0; i < ct.no_overlap_2d().x_intervals_size(); ++i) {
@@ -798,8 +796,8 @@ void AppendNoOverlap2dRelaxation(const ConstraintProto& ct, Model* model,
   }
 
   const IntegerValue max_area =
-      IntegerValue(CapProd(CapAdd(x_max.value(), -x_min.value()),
-                           CapAdd(y_max.value(), -y_min.value())));
+      IntegerValue(CapProd(CapSub(x_max.value(), x_min.value()),
+                           CapSub(y_max.value(), y_min.value())));
   if (max_area == kMaxIntegerValue) return;
 
   LinearConstraintBuilder lc(model, IntegerValue(0), max_area);
@@ -808,7 +806,7 @@ void AppendNoOverlap2dRelaxation(const ConstraintProto& ct, Model* model,
     DCHECK(!intervals_repository->IsOptional(y_intervals[i]));
     LinearConstraintBuilder linear_energy(model);
     if (DetectLinearEncodingOfProducts(x_sizes[i], y_sizes[i], model,
-        &linear_energy)) {
+                                       &linear_energy)) {
       lc.AddLinearExpression(linear_energy.BuildExpression());
     } else {
       lc.AddQuadraticLowerBound(x_sizes[i], y_sizes[i], integer_trail);
@@ -1117,7 +1115,7 @@ void TryToLinearizeConstraint(const CpModelProto& model_proto,
       AppendNoOverlap2dRelaxation(ct, model, relaxation);
       if (linearization_level > 1) {
         // Adds a completion time cut generator.
-        // TODO(lperron): investigate adding an energetic cut generator.
+        // TODO(user): investigate adding an energetic cut generator.
         AddNoOverlap2dCutGenerator(ct, model, relaxation);
       }
       break;

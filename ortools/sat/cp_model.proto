@@ -345,9 +345,9 @@ message ConstraintProto {
     // The bool_xor constraint forces an odd number of the literals to be true.
     BoolArgumentProto bool_xor = 5;
 
-    // The int_div constraint forces the target to equal expr[0] / expr[1].
-    // In particular, expr[1] can never take the value 0. Also, as for now, we
-    // do not support expr[1] spanning across 0.
+    // The int_div constraint forces the target to equal exprs[0] / exprs[1].
+    // In particular, exprs[1] can never take the value 0. Also, as for now, we
+    // do not support exprs[1] spanning across 0.
     LinearArgumentProto int_div = 7;
 
     // The int_mod constraint forces the target to equal exprs[0] % exprs[1].
@@ -608,7 +608,7 @@ message CpModelProto {
   // infeasibility.
   //
   // Think (IIS), except when you are only concerned by the provided
-  // assumptions. This is powerful as it allows to group a set of logicially
+  // assumptions. This is powerful as it allows to group a set of logically
   // related constraint under only one enforcement literal which can potentially
   // give you a good and interpretable explanation for infeasiblity.
   //

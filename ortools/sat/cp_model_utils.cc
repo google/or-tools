@@ -541,9 +541,9 @@ void AddLinearExpressionToLinearConstraint(const LinearExpressionProto& expr,
   }
 }
 
-bool LinearExpressionProtoEquals(const LinearExpressionProto& a,
-                                 const LinearExpressionProto& b,
-                                 int64_t b_scaling) {
+bool LinearExpressionProtosAreEqual(const LinearExpressionProto& a,
+                                    const LinearExpressionProto& b,
+                                    int64_t b_scaling) {
   if (a.vars_size() != b.vars_size()) return false;
   if (a.offset() != b.offset() * b_scaling) return false;
   absl::flat_hash_map<int, int64_t> coeffs;

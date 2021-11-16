@@ -23,7 +23,9 @@
 #include "ortools/algorithms/find_graph_symmetries.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/map_util.h"
+#include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cp_model_utils.h"
+#include "ortools/sat/sat_solver.h"
 #include "ortools/sat/symmetry_util.h"
 
 namespace operations_research {
@@ -495,6 +497,79 @@ void DetectAndAddSymmetryToProto(const SatParameters& params,
   }
 }
 
+namespace {
+
+// Given one Boolean orbit under symmetry, if there is a Boolean at one in this
+// orbit, then we can always move it to a fixed position (i.e. the given
+// variable var). Moreover, any variable implied to zero in this orbit by var
+// being at one can be fixed to zero. This is because, after symmetry breaking,
+// either var is one, or all the orbit is zero. We also add implications to
+// enforce this fact, but this is not done in this function.
+//
+// TODO(user): If an exactly one / at least one is included in the orbit, then
+// we can set a given variable to one directly. We can also detect this by
+// trying to propagate the orbit to all false.
+//
+// TODO(user): The same reasonning can be done if fixing the variable to
+// zero leads to many propagations at one. For general variables, we might be
+// able to do something too.
+void OrbitAndPropagation(const std::vector<int>& orbits, int var,
+                         std::vector<int>* can_be_fixed_to_false,
+                         PresolveContext* context) {
+  // Note that if a variable is fixed in the orbit, then everything should be
+  // fixed.
+  if (context->IsFixed(var)) return;
+  if (!context->CanBeUsedAsLiteral(var)) return;
+
+  // Lets fix var to true and see what is propagated.
+  //
+  // TODO(user): Ideally we should have a propagator ready for this. Right now
+  // we load the full model if we detected symmetries. We should really combine
+  // this with probing even though this is "breaking" the symmetry so it cannot
+  // be applied as generally as probing.
+  //
+  // TODO(user): Note that probing can also benefit from symmetry, since in
+  // each orbit, only one variable needs to be probed, and any conclusion can
+  // be duplicated to all the variables from an orbit! It is also why we just
+  // need to propagate one variable here.
+  Model model;
+  if (!LoadModelForProbing(context, &model)) return;
+
+  auto* sat_solver = model.GetOrCreate<SatSolver>();
+  auto* mapping = model.GetOrCreate<CpModelMapping>();
+  const Literal to_propagate = mapping->Literal(var);
+
+  const VariablesAssignment& assignment = sat_solver->Assignment();
+  if (assignment.LiteralIsAssigned(to_propagate)) return;
+  sat_solver->EnqueueDecisionAndBackjumpOnConflict(to_propagate);
+  if (sat_solver->CurrentDecisionLevel() != 1) return;
+
+  // We can fix to false any variable that is in the orbit and set to false!
+  can_be_fixed_to_false->clear();
+  int orbit_size = 0;
+  const int orbit_index = orbits[var];
+  const int num_variables = orbits.size();
+  for (int var = 0; var < num_variables; ++var) {
+    if (orbits[var] != orbit_index) continue;
+    ++orbit_size;
+
+    // By symmetry since same orbit.
+    DCHECK(!context->IsFixed(var));
+    DCHECK(context->CanBeUsedAsLiteral(var));
+
+    if (assignment.LiteralIsFalse(mapping->Literal(var))) {
+      can_be_fixed_to_false->push_back(var);
+    }
+  }
+  if (!can_be_fixed_to_false->empty()) {
+    SOLVER_LOG(context->logger(),
+               "[Symmetry] Num fixable by binary propagation in orbit: ",
+               can_be_fixed_to_false->size(), " / ", orbit_size);
+  }
+}
+
+}  // namespace
+
 bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
   const SatParameters& params = context->params();
   const CpModelProto& proto = *context->working_model;
@@ -558,23 +633,46 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
     }
   }
 
-  // Experimental. Generic approach. First step.
-  //
+  // We have a few heuristics. The firsts only look at the gobal orbits under
+  // the symmetry group and try to infer Boolean variable fixing via symmetry
+  // breaking. Note that nothing is fixed yet, we will decide later if we fix
+  // these Booleans or not.
+  int distinguished_var = -1;
+  std::vector<int> can_be_fixed_to_false;
+
+  // Get the global orbits and their size.
+  const std::vector<int> orbits = GetOrbits(num_vars, generators);
+  std::vector<int> orbit_sizes;
+  int max_orbit_size = 0;
+  for (int var = 0; var < num_vars; ++var) {
+    const int rep = orbits[var];
+    if (rep == -1) continue;
+    if (rep >= orbit_sizes.size()) orbit_sizes.resize(rep + 1, 0);
+    orbit_sizes[rep]++;
+    if (orbit_sizes[rep] > max_orbit_size) {
+      distinguished_var = var;
+      max_orbit_size = orbit_sizes[rep];
+    }
+  }
+
+  // First heuristic based on propagation, see the function comment.
+  if (max_orbit_size > 2) {
+    OrbitAndPropagation(orbits, distinguished_var, &can_be_fixed_to_false,
+                        context);
+  }
+  const int first_heuristic_size = can_be_fixed_to_false.size();
+
   // If an at most one intersect with one or more orbit, in each intersection,
   // we can fix all but one variable to zero. For now we only test positive
   // literal, and maximize the number of fixing.
-  std::vector<int> can_be_fixed_to_false;
+  //
+  // TODO(user): Doing that is not always good, on cod105.mps, fixing variables
+  // instead of letting the innner solver handle Boolean symmetries make the
+  // problem unsolvable instead of easily solved. This is probably because this
+  // fixing do not exploit the full structure of these symmeteries. Note
+  // however that the fixing via propagation above close cod105 even more
+  // efficiently.
   {
-    const std::vector<int> orbits = GetOrbits(num_vars, generators);
-    std::vector<int> orbit_sizes;
-    int max_orbit_size = 0;
-    for (const int rep : orbits) {
-      if (rep == -1) continue;
-      if (rep >= orbit_sizes.size()) orbit_sizes.resize(rep + 1, 0);
-      orbit_sizes[rep]++;
-      max_orbit_size = std::max(max_orbit_size, orbit_sizes[rep]);
-    }
-
     std::vector<int> tmp_to_clear;
     std::vector<int> tmp_sizes(num_vars, 0);
     for (const google::protobuf::RepeatedField<int32_t>* literals :
@@ -599,6 +697,7 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
 
       // Redo a pass to copy the intersection.
       if (num_fixable > can_be_fixed_to_false.size()) {
+        distinguished_var = -1;
         can_be_fixed_to_false.clear();
         for (const int literal : *literals) {
           if (!RefIsPositive(literal)) continue;
@@ -607,6 +706,10 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
           const int var = PositiveRef(literal);
           const int rep = orbits[var];
           if (rep == -1) continue;
+          if (distinguished_var == -1 ||
+              orbit_sizes[rep] > orbit_sizes[orbits[distinguished_var]]) {
+            distinguished_var = var;
+          }
 
           // We push all but the first one in each orbit.
           if (tmp_sizes[rep] == 0) can_be_fixed_to_false.push_back(var);
@@ -618,10 +721,12 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
       }
     }
 
-    SOLVER_LOG(
-        context->logger(),
-        "[Symmetry] Num fixable by intersecting at_most_one with orbits: ",
-        can_be_fixed_to_false.size(), " largest_orbit: ", max_orbit_size);
+    if (can_be_fixed_to_false.size() > first_heuristic_size) {
+      SOLVER_LOG(
+          context->logger(),
+          "[Symmetry] Num fixable by intersecting at_most_one with orbits: ",
+          can_be_fixed_to_false.size(), " largest_orbit: ", max_orbit_size);
+    }
   }
 
   // Orbitope approach.
@@ -662,10 +767,30 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
     }
   }
   if (max_num_fixed_in_orbitope < can_be_fixed_to_false.size()) {
+    const int orbit_index = orbits[distinguished_var];
+    int num_in_orbit = 0;
     for (int i = 0; i < can_be_fixed_to_false.size(); ++i) {
       const int var = can_be_fixed_to_false[i];
+      if (orbits[var] == orbit_index) ++num_in_orbit;
       context->UpdateRuleStats("symmetry: fixed to false in general orbit");
       if (!context->SetLiteralToFalse(var)) return false;
+    }
+
+    // Moreover, we can add the implication that in the orbit of
+    // distinguished_var, either everything is false, or var is at one.
+    if (orbit_sizes[orbit_index] > num_in_orbit + 1) {
+      context->UpdateRuleStats(
+          "symmetry: added orbit symmetry breaking implications");
+      auto* ct = context->working_model->add_constraints();
+      auto* bool_and = ct->mutable_bool_and();
+      ct->add_enforcement_literal(NegatedRef(distinguished_var));
+      for (int var = 0; var < num_vars; ++var) {
+        if (orbits[var] != orbit_index) continue;
+        if (var == distinguished_var) continue;
+        if (context->IsFixed(var)) continue;
+        bool_and->add_literals(NegatedRef(var));
+      }
+      context->UpdateNewConstraintsVariableUsage();
     }
     return true;
   }

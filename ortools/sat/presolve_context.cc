@@ -22,6 +22,7 @@
 #include "ortools/base/mathutil.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_loader.h"
 #include "ortools/util/saturated_arithmetic.h"
 
 namespace operations_research {
@@ -1843,6 +1844,66 @@ void PresolveContext::LogInfo() {
                  entry.second, " times.");
     }
   }
+}
+
+bool LoadModelForProbing(PresolveContext* context, Model* local_model) {
+  if (context->ModelIsUnsat()) return false;
+
+  // Update the domain in the current CpModelProto.
+  for (int i = 0; i < context->working_model->variables_size(); ++i) {
+    FillDomainInProto(context->DomainOf(i),
+                      context->working_model->mutable_variables(i));
+  }
+  const CpModelProto& model_proto = *(context->working_model);
+
+  // Load the constraints in a local model.
+  //
+  // TODO(user): The model we load does not contain affine relations! But
+  // ideally we should be able to remove all of them once we allow more complex
+  // constraints to contains linear expression.
+  //
+  // TODO(user): remove code duplication with cp_model_solver. Here we also do
+  // not run the heuristic to decide which variable to fully encode.
+  //
+  // TODO(user): Maybe do not load slow to propagate constraints? for instance
+  // we do not use any linear relaxation here.
+  Model model;
+  local_model->Register<SolverLogger>(context->logger());
+
+  // Adapt some of the parameters during this probing phase.
+  auto* local_param = local_model->GetOrCreate<SatParameters>();
+  *local_param = context->params();
+  local_param->set_use_implied_bounds(false);
+
+  local_model->GetOrCreate<TimeLimit>()->MergeWithGlobalTimeLimit(
+      context->time_limit());
+  local_model->Register<ModelRandomGenerator>(context->random());
+  auto* encoder = local_model->GetOrCreate<IntegerEncoder>();
+  encoder->DisableImplicationBetweenLiteral();
+  auto* mapping = local_model->GetOrCreate<CpModelMapping>();
+
+  // Important: Because the model_proto do not contains affine relation or the
+  // objective, we cannot call DetectOptionalVariables() ! This might wrongly
+  // detect optionality and derive bad conclusion.
+  LoadVariables(model_proto, /*view_all_booleans_as_integers=*/false,
+                local_model);
+  ExtractEncoding(model_proto, local_model);
+  auto* sat_solver = local_model->GetOrCreate<SatSolver>();
+  for (const ConstraintProto& ct : model_proto.constraints()) {
+    if (mapping->ConstraintIsAlreadyLoaded(&ct)) continue;
+    CHECK(LoadConstraint(ct, local_model));
+    if (sat_solver->IsModelUnsat()) {
+      return context->NotifyThatModelIsUnsat(absl::StrCat(
+          "after loading constraint during probing ", ct.ShortDebugString()));
+    }
+  }
+  encoder->AddAllImplicationsBetweenAssociatedLiterals();
+  if (!sat_solver->Propagate()) {
+    return context->NotifyThatModelIsUnsat(
+        "during probing initial propagation");
+  }
+
+  return true;
 }
 
 }  // namespace sat

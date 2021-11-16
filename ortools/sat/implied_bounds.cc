@@ -315,6 +315,8 @@ bool TryToReconcileEncodings(
   return false;
 }
 
+// TODO(user): Experiment with x * x where constants = 0, x is
+// fully encoded, and the domain is small.
 bool DetectLinearEncodingOfProducts(const AffineExpression& left,
                                     const AffineExpression& right, Model* model,
                                     LinearConstraintBuilder* builder) {
@@ -339,8 +341,8 @@ bool DetectLinearEncodingOfProducts(const AffineExpression& left,
   // Linearization is possible if both left and right have the same Boolean
   // variable.
   if (PositiveVariable(left.var) == PositiveVariable(right.var) &&
-      integer_trail->LowerBound(PositiveVariable(left.var)) >= 0 &&
-      integer_trail->UpperBound(PositiveVariable(left.var)) <= 1) {
+      integer_trail->LowerBound(PositiveVariable(left.var)) == 0 &&
+      integer_trail->UpperBound(PositiveVariable(left.var)) == 1) {
     const IntegerValue left_coeff =
         VariableIsPositive(left.var) ? left.coeff : -left.coeff;
     const IntegerValue right_coeff =

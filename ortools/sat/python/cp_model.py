@@ -1432,10 +1432,9 @@ class CpModel(object):
         """Adds `target == num // denom` (integer division rounded towards 0)."""
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
-        model_ct.int_div.vars.extend(
-            [self.GetOrMakeIndex(num),
-             self.GetOrMakeIndex(denom)])
-        model_ct.int_div.target = self.GetOrMakeIndex(target)
+        model_ct.int_div.exprs.append(self.ParseLinearExpression(num))
+        model_ct.int_div.exprs.append(self.ParseLinearExpression(denom))
+        model_ct.int_div.target.CopyFrom(self.ParseLinearExpression(target))
         return ct
 
     def AddAbsEquality(self, target, expr):
@@ -1451,27 +1450,19 @@ class CpModel(object):
         """Adds `target = var % mod`."""
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
-        model_ct.int_mod.vars.extend(
-            [self.GetOrMakeIndex(var),
-             self.GetOrMakeIndex(mod)])
-        model_ct.int_mod.target = self.GetOrMakeIndex(target)
+        model_ct.int_mod.exprs.append(self.ParseLinearExpression(var))
+        model_ct.int_mod.exprs.append(self.ParseLinearExpression(mod))
+        model_ct.int_mod.target.CopyFrom(self.ParseLinearExpression(target))
         return ct
 
-    def AddMultiplicationEquality(self, target, variables):
+    def AddMultiplicationEquality(self, target, expressions):
         """Adds `target == variables[0] * .. * variables[n]`."""
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
-        model_ct.int_prod.vars.extend(
-            [self.GetOrMakeIndex(x) for x in variables])
-        model_ct.int_prod.target = self.GetOrMakeIndex(target)
+        model_ct.int_prod.exprs.extend(
+            [self.ParseLinearExpression(expr) for expr in expressions])
+        model_ct.int_prod.target.CopyFrom(self.ParseLinearExpression(target))
         return ct
-
-    def AddProdEquality(self, target, variables):
-        """Deprecated, use AddMultiplicationEquality."""
-        warnings.warn(
-            'AddProdEquality is deprecated; use' + 'AddMultiplicationEquality.',
-            DeprecationWarning)
-        return self.AddMultiplicationEquality(target, variables)
 
     # Scheduling support
 

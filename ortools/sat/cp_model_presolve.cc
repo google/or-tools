@@ -920,7 +920,7 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
   int64_t constant_factor = 1;
   int new_size = 0;
   for (int i = 0; i < ct->int_prod().exprs().size(); ++i) {
-    const LinearExpressionProto expr = ct->int_prod().exprs(i);
+    LinearExpressionProto expr = ct->int_prod().exprs(i);
     if (context_->IsFixed(expr)) {
       context_->UpdateRuleStats("int_prod: removed constant variable.");
       changed = true;
@@ -934,8 +934,8 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
                           static_cast<uint64_t>(std::abs(offset)));
       if (gcd != 1) {
         constant_factor = CapProd(constant_factor, gcd);
-        proto->mutable_exprs(i)->set_coeffs(0, coeff / gcd);
-        proto->mutable_exprs(i)->set_offset(offset / gcd);
+        expr.set_coeffs(0, coeff / gcd);
+        expr.set_offset(offset / gcd);
       }
     }
     *proto->mutable_exprs(new_size++) = expr;
@@ -994,37 +994,43 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
         return context_->NotifyThatModelIsUnsat(
             "int_prod: constant factor does not divide constant target");
       }
-      DCHECK(proto->target().vars().empty());
+      proto->clear_target();
       proto->mutable_target()->set_offset(target_value / constant_factor);
       context_->UpdateRuleStats(
           "int_prod: divide product and fixed target by constant factor");
     } else {
       int64_t coeff = ct->int_prod().target().coeffs(0);
       int64_t offset = ct->int_prod().target().offset();
-      int64_t gcd = MathUtil::GCD64(static_cast<uint64_t>(std::abs(coeff)),
-                                    static_cast<uint64_t>(std::abs(offset)));
-      const int64_t common_factor =
-          MathUtil::GCD64(static_cast<uint64_t>(gcd),
-                          static_cast<uint64_t>(std::abs(constant_factor)));
-      if (gcd % constant_factor == 0) {  // Easy case.
+      int64_t target_gcd =
+          MathUtil::GCD64(static_cast<uint64_t>(std::abs(coeff)),
+                          static_cast<uint64_t>(std::abs(offset)));
+      if (target_gcd % constant_factor == 0) {  // Easy case.
         proto->mutable_target()->set_coeffs(0, coeff / constant_factor);
         proto->mutable_target()->set_offset(offset / constant_factor);
         context_->UpdateRuleStats("int_prod: constant factor divides target");
-      } else if (common_factor > 1) {
-        // coeff * target_var * offset == constant_factor * PRODUCT.
-        // Let's simplify the coefficients.
-        constant_factor /= common_factor;
-        proto->mutable_target()->set_coeffs(0, coeff / common_factor);
-        proto->mutable_target()->set_offset(offset / common_factor);
+      } else {
+        const int64_t global_gcd =
+            MathUtil::GCD64(static_cast<uint64_t>(target_gcd),
+                            static_cast<uint64_t>(std::abs(constant_factor)));
+        // target_gcd * (coeff * target_var * offset) ==
+        //     constant_factor * PRODUCT.
+        // Let's divide all coefficients by global_gcd if needed.
+        if (global_gcd > 1) {
+          constant_factor /= global_gcd;
+          proto->mutable_target()->set_coeffs(0, coeff / global_gcd);
+          proto->mutable_target()->set_offset(offset / global_gcd);
+          context_->UpdateRuleStats(
+              "int_prod: divide product and target by gcd");
+        }
 
         // Re-multiply the product part by the updated constant_factor.
+        // TODO(user, fdid): Instead we could "canonicalize" the target by
+        // creating a new variable such that target = constant_factor * new_var
+        // and use new_var here.
         proto->mutable_exprs(0)->set_coeffs(
             0, proto->exprs(0).coeffs(0) * constant_factor);
         proto->mutable_exprs(0)->set_offset(proto->exprs(0).offset() *
                                             constant_factor);
-        // TODO(user): Build common variable.
-        context_->UpdateRuleStats(
-            "int_prod: divide product and target by common factor");
       }
     }
   }
@@ -1048,8 +1054,8 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
     LinearExpressionProto a = ct->int_prod().exprs(0);
     LinearExpressionProto b = ct->int_prod().exprs(1);
     const LinearExpressionProto product = ct->int_prod().target();
-    if (LinearExpressionProtoEquals(a, b) &&
-        LinearExpressionProtoEquals(
+    if (LinearExpressionProtosAreEqual(a, b) &&
+        LinearExpressionProtosAreEqual(
             a, product)) {  // x = x * x, only true for {0, 1}.
       if (!context_->IntersectDomainWith(product, Domain(0, 1))) {
         return false;
@@ -1109,13 +1115,13 @@ bool CpModelPresolver::PresolveIntDiv(ConstraintProto* ct) {
   const LinearExpressionProto expr = ct->int_div().exprs(0);
   const LinearExpressionProto div = ct->int_div().exprs(1);
 
-  if (LinearExpressionProtoEquals(expr, div)) {
+  if (LinearExpressionProtosAreEqual(expr, div)) {
     if (!context_->IntersectDomainWith(target, Domain(1))) {
       return false;
     }
     context_->UpdateRuleStats("int_div: y = x / x");
     return RemoveConstraint(ct);
-  } else if (LinearExpressionProtoEquals(expr, div, -1)) {
+  } else if (LinearExpressionProtosAreEqual(expr, div, -1)) {
     if (!context_->IntersectDomainWith(target, Domain(-1))) {
       return false;
     }
@@ -4816,66 +4822,16 @@ void CpModelPresolver::ExtractBoolAnd() {
 // TODO(user): It might make sense to run this in parallel. The same apply for
 // other expansive and self-contains steps like symmetry detection, etc...
 void CpModelPresolver::Probe() {
-  if (context_->ModelIsUnsat()) return;
-
-  // Update the domain in the current CpModelProto.
-  for (int i = 0; i < context_->working_model->variables_size(); ++i) {
-    FillDomainInProto(context_->DomainOf(i),
-                      context_->working_model->mutable_variables(i));
-  }
-  const CpModelProto& model_proto = *(context_->working_model);
-
-  // Load the constraints in a local model.
-  //
-  // TODO(user): The model we load does not contain affine relations! But
-  // ideally we should be able to remove all of them once we allow more complex
-  // constraints to contains linear expression.
-  //
-  // TODO(user): remove code duplication with cp_model_solver. Here we also do
-  // not run the heuristic to decide which variable to fully encode.
-  //
-  // TODO(user): Maybe do not load slow to propagate constraints? for instance
-  // we do not use any linear relaxation here.
   Model model;
-  model.Register<SolverLogger>(context_->logger());
-
-  // Adapt some of the parameters during this probing phase.
-  auto* local_param = model.GetOrCreate<SatParameters>();
-  *local_param = context_->params();
-  local_param->set_use_implied_bounds(false);
-
-  model.GetOrCreate<TimeLimit>()->MergeWithGlobalTimeLimit(
-      context_->time_limit());
-  model.Register<ModelRandomGenerator>(context_->random());
-  auto* encoder = model.GetOrCreate<IntegerEncoder>();
-  encoder->DisableImplicationBetweenLiteral();
-  auto* mapping = model.GetOrCreate<CpModelMapping>();
-
-  // Important: Because the model_proto do not contains affine relation or the
-  // objective, we cannot call DetectOptionalVariables() ! This might wrongly
-  // detect optionality and derive bad conclusion.
-  LoadVariables(model_proto, /*view_all_booleans_as_integers=*/false, &model);
-  ExtractEncoding(model_proto, &model);
-  auto* sat_solver = model.GetOrCreate<SatSolver>();
-  for (const ConstraintProto& ct : model_proto.constraints()) {
-    if (mapping->ConstraintIsAlreadyLoaded(&ct)) continue;
-    CHECK(LoadConstraint(ct, &model));
-    if (sat_solver->IsModelUnsat()) {
-      return (void)context_->NotifyThatModelIsUnsat(absl::StrCat(
-          "after loading constraint during probing ", ct.ShortDebugString()));
-    }
-  }
-  encoder->AddAllImplicationsBetweenAssociatedLiterals();
-  if (!sat_solver->Propagate()) {
-    return (void)context_->NotifyThatModelIsUnsat(
-        "during probing initial propagation");
-  }
+  if (!LoadModelForProbing(context_, &model)) return;
 
   // Probe.
   //
   // TODO(user): Compute the transitive reduction instead of just the
   // equivalences, and use the newly learned binary clauses?
   auto* implication_graph = model.GetOrCreate<BinaryImplicationGraph>();
+  auto* sat_solver = model.GetOrCreate<SatSolver>();
+  auto* mapping = model.GetOrCreate<CpModelMapping>();
   auto* prober = model.GetOrCreate<Prober>();
   prober->ProbeBooleanVariables(/*deterministic_time_limit=*/1.0);
   context_->time_limit()->AdvanceDeterministicTime(

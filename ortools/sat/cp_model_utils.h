@@ -175,9 +175,9 @@ void AddLinearExpressionToLinearConstraint(const LinearExpressionProto& expr,
                                            LinearConstraintProto* linear);
 
 // Returns true iff a == b * b_scaling.
-bool LinearExpressionProtoEquals(const LinearExpressionProto& a,
-                                 const LinearExpressionProto& b,
-                                 int64_t b_scaling = 1);
+bool LinearExpressionProtosAreEqual(const LinearExpressionProto& a,
+                                    const LinearExpressionProto& b,
+                                    int64_t b_scaling = 1);
 
 }  // namespace sat
 }  // namespace operations_research

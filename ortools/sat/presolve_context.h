@@ -135,7 +135,7 @@ class PresolveContext {
 
   // Returns true iff the expr is a literal (x or not(x)).
   bool ExpressionIsALiteral(const LinearExpressionProto& expr,
-                            int* literal) const;
+                            int* literal = nullptr) const;
 
   // This function takes a positive variable reference.
   bool DomainOfVarIsIncludedIn(int var, const Domain& domain) {
@@ -622,6 +622,10 @@ class PresolveContext {
 
   bool model_is_expanded_ = false;
 };
+
+// Utility function to load the current problem into a in-memory representation
+// that will be used for probing. Returns false if UNSAT.
+bool LoadModelForProbing(PresolveContext* context, Model* local_model);
 
 }  // namespace sat
 }  // namespace operations_research
