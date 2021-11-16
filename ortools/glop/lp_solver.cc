@@ -35,10 +35,6 @@
 #include "ortools/util/file_util.h"
 #endif
 
-ABSL_FLAG(bool, lp_solver_enable_fp_exceptions, false,
-          "When true, NaNs and division / zero produce errors. "
-          "This is very useful for debugging, but incompatible with LLVM. "
-          "It is recommended to set this to false for production usage.");
 ABSL_FLAG(bool, lp_dump_to_proto_file, false,
           "Tells whether do dump the problem to a protobuf file.");
 ABSL_FLAG(bool, lp_dump_compressed_file, true,
@@ -171,18 +167,6 @@ ProblemStatus LPSolver::SolveWithTimeLimit(const LinearProgram& lp,
          "\n* You can gain at least an order of magnitude speedup by         *"
          "\n* compiling with optimizations enabled and by defining NDEBUG.   *"
          "\n******************************************************************";
-
-  // Note that we only activate the floating-point exceptions after we are sure
-  // that the program is valid. This way, if we have input NaNs, we will not
-  // crash.
-  ScopedFloatingPointEnv scoped_fenv;
-  if (absl::GetFlag(FLAGS_lp_solver_enable_fp_exceptions)) {
-#ifdef _MSC_VER
-    scoped_fenv.EnableExceptions(_EM_INVALID | EM_ZERODIVIDE);
-#else
-    scoped_fenv.EnableExceptions(FE_DIVBYZERO | FE_INVALID);
-#endif
-  }
 
   // Setup the logger.
   logger_.EnableLogging(parameters_.log_search_progress());

@@ -2165,6 +2165,19 @@ void RevisedSimplex::OnDualPriceChange(const DenseColumn& squared_norm,
 void RevisedSimplex::DualPhaseIUpdatePrice(RowIndex leaving_row,
                                            ColIndex entering_col) {
   SCOPED_TIME_STAT(&function_stats_);
+
+  // If the prices are going to be recomputed, there is nothing to do. See the
+  // logic at the beginning of DualPhaseIChooseLeavingVariableRow() which must
+  // be in sync with this one.
+  //
+  // TODO(user): Move the logic in a single class, so it is easier to enforce
+  // invariant.
+  if (reduced_costs_.AreReducedCostsRecomputed() ||
+      dual_edge_norms_.NeedsBasisRefactorization() ||
+      dual_pricing_vector_.empty()) {
+    return;
+  }
+
   const VariableTypeRow& variable_type = variables_info_.GetTypeRow();
   const Fractional threshold = parameters_.ratio_test_zero_threshold();
 
