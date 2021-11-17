@@ -41,7 +41,7 @@ setup(
     name='ORTOOLS_PYTHON_VERSION',
     version='VVVV',
     packages=find_packages(),
-    python_requires=[">=3.6"],
+    python_requires='>= 3.6',
     install_requires=[
         'absl-py >= 0.13',
         'numpy >= 1.13.3',
