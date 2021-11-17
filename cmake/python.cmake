@@ -217,7 +217,7 @@ configure_file(
   ${PROJECT_BINARY_DIR}/python/README.txt
   COPYONLY)
 
-# Look for python module wheel
+# Look for required python modules
 search_python_module(
   NAME setuptools
   PACKAGE setuptools)
@@ -314,6 +314,27 @@ if(BUILD_TESTING)
     COMMAND ${VENV_Python3_EXECUTABLE} ${VENV_DIR}/test.py)
 endif()
 
+# add_python_test()
+# CMake function to generate and build python test.
+# Parameters:
+#  the python filename
+# e.g.:
+# add_python_test(foo.py)
+function(add_python_test FILE_NAME)
+  message(STATUS "Configuring test ${FILE_NAME} ...")
+  get_filename_component(TEST_NAME ${FILE_NAME} NAME_WE)
+  get_filename_component(COMPONENT_DIR ${FILE_NAME} DIRECTORY)
+  get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+
+  if(BUILD_TESTING)
+    add_test(
+      NAME python_${COMPONENT_NAME}_${TEST_NAME}
+      COMMAND ${VENV_Python3_EXECUTABLE} ${FILE_NAME}
+      WORKING_DIRECTORY ${VENV_DIR})
+  endif()
+  message(STATUS "Configuring test ${FILE_NAME} done")
+endfunction()
+
 # add_python_sample()
 # CMake function to generate and build python sample.
 # Parameters:
@@ -355,25 +376,4 @@ function(add_python_example FILE_NAME)
       WORKING_DIRECTORY ${VENV_DIR})
   endif()
   message(STATUS "Configuring example ${FILE_NAME} done")
-endfunction()
-
-# add_python_test()
-# CMake function to generate and build python test.
-# Parameters:
-#  the python filename
-# e.g.:
-# add_python_test(foo.py)
-function(add_python_test FILE_NAME)
-  message(STATUS "Configuring test ${FILE_NAME} ...")
-  get_filename_component(TEST_NAME ${FILE_NAME} NAME_WE)
-  get_filename_component(COMPONENT_DIR ${FILE_NAME} DIRECTORY)
-  get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
-
-  if(BUILD_TESTING)
-    add_test(
-      NAME python_${COMPONENT_NAME}_${TEST_NAME}
-      COMMAND ${VENV_Python3_EXECUTABLE} ${FILE_NAME}
-      WORKING_DIRECTORY ${VENV_DIR})
-  endif()
-  message(STATUS "Configuring test ${FILE_NAME} done")
 endfunction()
