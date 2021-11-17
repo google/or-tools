@@ -1743,12 +1743,6 @@ bool MPSolver::SupportsCallbacks() const {
   return interface_->SupportsCallbacks();
 }
 
-#if defined(USE_XPRESS)
-void MPSolver::SetOptimizationFlags(std::string flags) {
-  interface_->SetOptimizationFlags(flags);
-}
-#endif
-
 // Global counters.
 absl::Mutex MPSolver::global_count_mutex_(absl::kConstInit);
 int64_t MPSolver::global_num_variables_ = 0;

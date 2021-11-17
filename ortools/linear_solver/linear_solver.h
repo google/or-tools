@@ -803,15 +803,6 @@ class MPSolver {
   void SetCallback(MPCallback* mp_callback);
   bool SupportsCallbacks() const;
 
-  // Xpress has a specific parameter sent directly to the solve function
-  // (XPRSmipoptimize or XPRSlpoptimize) which specifies how to solve
-  // the initial continuous problem where the global entities are relaxed.
-  // Check the optimizationFlags variable in the xpress_interface.cc
-  // file for further details.
-#if defined(USE_XPRESS)
-  void SetOptimizationFlags(std::string flags);
-#endif
-
   // Global counters of variables and constraints ever created across all
   // MPSolver instances. Those are only updated after the destruction
   // (or Clear()) of each MPSolver instance.
@@ -1752,12 +1743,6 @@ class MPSolverInterface {
   }
 
   virtual bool SupportsCallbacks() const { return false; }
-
-#if defined(USE_XPRESS)
-  virtual void SetOptimizationFlags(std::string flags) { 
-      LOG(WARNING) << "Optimization flags not appliable for this solver.";
-  }
-#endif
 
   friend class MPSolver;
 

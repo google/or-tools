@@ -21,6 +21,7 @@
 #include <string>
 
 #include "absl/strings/str_format.h"
+#include "absl/strings/str_split.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
@@ -140,9 +141,6 @@ class XpressInterface : public MPSolverInterface {
   // Sets the optimization direction (min/max).
   virtual void SetOptimizationDirection(bool maximize);
 
-  // Sets the optimization flags
-  virtual void SetOptimizationFlags(std::string flags);
-
   // ----- Solve -----
   // Solve the problem using the parameter values specified.
   virtual MPSolver::ResultStatus Solve(MPSolverParameters const& param);
@@ -215,6 +213,9 @@ class XpressInterface : public MPSolverInterface {
  protected:
   // Set all parameters in the underlying solver.
   virtual void SetParameters(MPSolverParameters const& param);
+  // Set xpress specific parameters (currently, only the optimization flag parameter is supported)
+  // TODO: improve this function to allow changing control parameters through the string
+  bool SetSolverSpecificParametersAsString(const std::string& parameters) override;
   // Set each parameter in the underlying solver.
   virtual void SetRelativeMipGap(double value);
   virtual void SetPrimalTolerance(double value);
@@ -459,10 +460,6 @@ void XpressInterface::Reset() {
 void XpressInterface::SetOptimizationDirection(bool maximize) {
   InvalidateSolutionSynchronization();
   XPRSchgobjsense(mLp, maximize ? XPRS_OBJ_MAXIMIZE : XPRS_OBJ_MINIMIZE);
-}
-
-void XpressInterface::SetOptimizationFlags(std::string flags) {
-  optimizationFlags = flags;
 }
 
 void XpressInterface::SetVariableBounds(int var_index, double lb, double ub) {
@@ -1484,6 +1481,31 @@ MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const& param) {
 
 MPSolverInterface* BuildXpressInterface(bool mip, MPSolver* const solver) {
   return new XpressInterface(solver, mip);
+}
+
+bool XpressInterface::SetSolverSpecificParametersAsString(
+    const std::string& parameters) {
+  if (parameters.empty()) return true;
+  for (const auto parameter : absl::StrSplit(parameters, absl::ByAnyChar(",\n"),
+                                             absl::SkipWhitespace())) {
+    std::vector<std::string> key_value = absl::StrSplit(
+        parameter, absl::ByAnyChar("= "), absl::SkipWhitespace());
+    if (key_value.size() != 2) {
+      LOG(WARNING) << absl::StrFormat("Cannot parse parameter '%s'. Expected format is 'parameter/name = value'", parameter);
+      return false;
+    }
+    std::string name = key_value[0];
+    absl::RemoveExtraAsciiWhitespace(&name);
+    std::string value = key_value[1];
+    absl::RemoveExtraAsciiWhitespace(&value);
+    if (name == "OPTFLAGS") {
+      optimizationFlags = value;
+      VLOG(2) << absl::StrFormat("Set parameter %s to %s", name, value);
+    } else {
+      VLOG(0) << absl::StrFormat("Parameter %s not supported", name);
+    }
+  }
+  return true;
 }
 
 }  // namespace operations_research
