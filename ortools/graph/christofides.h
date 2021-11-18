@@ -81,12 +81,6 @@ class ChristofidesPathSolver {
   bool Solve();
 
  private:
-  // Safe addition operator to avoid overflows when possible.
-  //template <typename T>
-  //T SafeAdd(T a, T b) {
-  //  return a + b;
-  //}
-  //template <>
   int64_t SafeAdd(int64_t a, int64_t b) {
     return CapAdd(a, b);
   }

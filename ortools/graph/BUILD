@@ -39,18 +39,6 @@ cc_library(
     hdrs = ["iterators.h"],
 )
 
-cc_library(
-    name = "io",
-    hdrs = ["io.h"],
-    deps = [
-        ":graph",
-        "//ortools/base:filelineiter",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
-    ],
-)
-
 #cc_library(
 #    name = "digraph",
 #    srcs = ["digraph.cc"],
