@@ -271,6 +271,131 @@ std::ostream& operator<<(std::ostream& os, const LinearExpr& e) {
   return os;
 }
 
+DoubleLinearExpr::DoubleLinearExpr() {}
+
+DoubleLinearExpr::DoubleLinearExpr(BoolVar var) { AddVar(var); }
+
+DoubleLinearExpr::DoubleLinearExpr(IntVar var) { AddVar(var); }
+
+DoubleLinearExpr::DoubleLinearExpr(double constant) { constant_ = constant; }
+
+DoubleLinearExpr DoubleLinearExpr::Sum(absl::Span<const IntVar> vars) {
+  DoubleLinearExpr result;
+  for (const IntVar& var : vars) {
+    result.AddVar(var);
+  }
+  return result;
+}
+
+DoubleLinearExpr DoubleLinearExpr::ScalProd(absl::Span<const IntVar> vars,
+                                            absl::Span<const double> coeffs) {
+  CHECK_EQ(vars.size(), coeffs.size());
+  DoubleLinearExpr result;
+  for (int i = 0; i < vars.size(); ++i) {
+    result.AddTerm(vars[i], coeffs[i]);
+  }
+  return result;
+}
+
+DoubleLinearExpr DoubleLinearExpr::Term(IntVar var, double coefficient) {
+  DoubleLinearExpr result;
+  result.AddTerm(var, coefficient);
+  return result;
+}
+
+DoubleLinearExpr DoubleLinearExpr::BooleanSum(absl::Span<const BoolVar> vars) {
+  DoubleLinearExpr result;
+  for (const BoolVar& var : vars) {
+    result.AddVar(var);
+  }
+  return result;
+}
+
+DoubleLinearExpr DoubleLinearExpr::BooleanScalProd(
+    absl::Span<const BoolVar> vars, absl::Span<const double> coeffs) {
+  CHECK_EQ(vars.size(), coeffs.size());
+  DoubleLinearExpr result;
+  for (int i = 0; i < vars.size(); ++i) {
+    result.AddTerm(vars[i], coeffs[i]);
+  }
+  return result;
+}
+
+DoubleLinearExpr& DoubleLinearExpr::AddConstant(double value) {
+  constant_ += value;
+  return *this;
+}
+
+DoubleLinearExpr& DoubleLinearExpr::AddVar(IntVar var) {
+  AddTerm(var, 1);
+  return *this;
+}
+
+DoubleLinearExpr& DoubleLinearExpr::AddTerm(IntVar var, double coeff) {
+  const int index = var.index_;
+  if (RefIsPositive(index)) {
+    variables_.push_back(var);
+    coefficients_.push_back(coeff);
+  } else {
+    variables_.push_back(IntVar(PositiveRef(var.index_), var.cp_model_));
+    coefficients_.push_back(-coeff);
+    constant_ += coeff;
+  }
+  return *this;
+}
+
+DoubleLinearExpr& DoubleLinearExpr::AddExpression(
+    const DoubleLinearExpr& expr) {
+  constant_ += expr.constant_;
+  variables_.insert(variables_.end(), expr.variables_.begin(),
+                    expr.variables_.end());
+  coefficients_.insert(coefficients_.end(), expr.coefficients_.begin(),
+                       expr.coefficients_.end());
+  return *this;
+}
+
+std::string DoubleLinearExpr::DebugString() const {
+  std::string result;
+  for (int i = 0; i < variables_.size(); ++i) {
+    const double coeff = coefficients_[i];
+    if (i == 0) {
+      if (coeff == 1.0) {
+        absl::StrAppend(&result, variables_[i].DebugString());
+      } else if (coeff == -1.0) {
+        absl::StrAppend(&result, "-", variables_[i].DebugString());
+      } else if (coeff != 0.0) {
+        absl::StrAppend(&result, coeff, " * ", variables_[i].DebugString());
+      }
+    } else if (coeff == 1.0) {
+      absl::StrAppend(&result, " + ", variables_[i].DebugString());
+    } else if (coeff > 0.0) {
+      absl::StrAppend(&result, " + ", coeff, " * ",
+                      variables_[i].DebugString());
+    } else if (coeff == -1.0) {
+      absl::StrAppend(&result, " - ", variables_[i].DebugString());
+    } else if (coeff < 0.0) {
+      absl::StrAppend(&result, " - ", -coeff, " * ",
+                      variables_[i].DebugString());
+    }
+  }
+
+  if (constant_ != 0.0) {
+    if (variables_.empty()) {
+      return absl::StrCat(constant_);
+    } else if (constant_ > 0.0) {
+      absl::StrAppend(&result, " + ", constant_);
+    } else {
+      absl::StrAppend(&result, " - ", -constant_);
+    }
+  }
+  return result;
+}
+
+std::ostream& operator<<(std::ostream& os, const DoubleLinearExpr& e) {
+  os << e.DebugString();
+  return os;
+}
+
 Constraint::Constraint(ConstraintProto* proto) : proto_(proto) {}
 
 Constraint Constraint::WithName(const std::string& name) {
@@ -864,7 +989,8 @@ CumulativeConstraint CpModelBuilder::AddCumulative(LinearExpr capacity) {
 }
 
 void CpModelBuilder::Minimize(const LinearExpr& expr) {
-  cp_model_.mutable_objective()->Clear();
+  cp_model_.clear_objective();
+  cp_model_.clear_floating_point_objective();
   for (const IntVar& x : expr.variables()) {
     cp_model_.mutable_objective()->add_vars(x.index_);
   }
@@ -875,7 +1001,8 @@ void CpModelBuilder::Minimize(const LinearExpr& expr) {
 }
 
 void CpModelBuilder::Maximize(const LinearExpr& expr) {
-  cp_model_.mutable_objective()->Clear();
+  cp_model_.clear_objective();
+  cp_model_.clear_floating_point_objective();
   for (const IntVar& x : expr.variables()) {
     cp_model_.mutable_objective()->add_vars(x.index_);
   }
@@ -886,10 +1013,30 @@ void CpModelBuilder::Maximize(const LinearExpr& expr) {
   cp_model_.mutable_objective()->set_scaling_factor(-1.0);
 }
 
-void CpModelBuilder::ScaleObjectiveBy(double scaling) {
-  CHECK(cp_model_.has_objective());
-  cp_model_.mutable_objective()->set_scaling_factor(
-      scaling * cp_model_.objective().scaling_factor());
+void CpModelBuilder::Minimize(const DoubleLinearExpr& expr) {
+  cp_model_.clear_objective();
+  cp_model_.clear_floating_point_objective();
+  for (int i = 0; i < expr.variables().size(); ++i) {
+    cp_model_.mutable_floating_point_objective()->add_vars(
+        expr.variables()[i].index());
+    cp_model_.mutable_floating_point_objective()->add_coeffs(
+        expr.coefficients()[i]);
+  }
+  cp_model_.mutable_floating_point_objective()->set_offset(expr.constant());
+  cp_model_.mutable_floating_point_objective()->set_maximize(false);
+}
+
+void CpModelBuilder::Maximize(const DoubleLinearExpr& expr) {
+  cp_model_.clear_objective();
+  cp_model_.clear_floating_point_objective();
+  for (int i = 0; i < expr.variables().size(); ++i) {
+    cp_model_.mutable_floating_point_objective()->add_vars(
+        expr.variables()[i].index());
+    cp_model_.mutable_floating_point_objective()->add_coeffs(
+        expr.coefficients()[i]);
+  }
+  cp_model_.mutable_floating_point_objective()->set_offset(expr.constant());
+  cp_model_.mutable_floating_point_objective()->set_maximize(true);
 }
 
 void CpModelBuilder::AddDecisionStrategy(

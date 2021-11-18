@@ -26,6 +26,11 @@ def IsIntegral(x):
     return isinstance(x, numbers.Integral) or isinstance(x, np.integer)
 
 
+def IsNumber(x):
+    """Checks if x has either a number.Number or a np.double type."""
+    return isinstance(x, numbers.Number) or isinstance(x, np.double)
+
+
 def AssertIsInt64(x):
     """Asserts that x is integer and x is in [min_int_64, max_int_64]."""
     if not IsIntegral(x):
@@ -48,6 +53,13 @@ def AssertIsBoolean(x):
     """Asserts that x is 0 or 1."""
     if not IsIntegral(x) or x < 0 or x > 1:
         raise TypeError('Not an boolean: %s' % x)
+
+
+def AssertIsNumber(x):
+    """Asserts that x is a number and returns it."""
+    if not IsNumber(x):
+        raise TypeError('Not an number: %s' % x)
+    return float(x)
 
 
 def CapInt64(v):

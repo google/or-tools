@@ -23,6 +23,7 @@
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_loader.h"
+#include "ortools/sat/lp_utils.h"
 #include "ortools/util/saturated_arithmetic.h"
 
 namespace operations_research {
@@ -760,6 +761,23 @@ void PresolveContext::CanonicalizeVariable(int ref) {
   CHECK(StoreAffineRelation(var, new_var, 1, min, /*debug_no_recursion=*/true));
   UpdateRuleStats("variables: canonicalize domain");
   UpdateNewConstraintsVariableUsage();
+}
+
+bool PresolveContext::ScaleFloatingPointObjective() {
+  DCHECK(working_model->has_floating_point_objective());
+  DCHECK(!working_model->has_objective());
+  std::vector<std::pair<int, double>> coefficients;
+  for (int i = 0; i < working_model->floating_point_objective().vars_size();
+       ++i) {
+    coefficients.push_back(
+        {working_model->floating_point_objective().vars(i),
+         working_model->floating_point_objective().coeffs(i)});
+  }
+  const double offset = working_model->floating_point_objective().offset();
+  const bool maximize = working_model->floating_point_objective().maximize();
+  working_model->clear_floating_point_objective();
+  return ScaleAndSetObjective(params_, coefficients, offset, maximize,
+                              working_model, logger_);
 }
 
 bool PresolveContext::CanonicalizeAffineVariable(int ref, int64_t coeff,

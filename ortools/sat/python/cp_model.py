@@ -701,6 +701,136 @@ class BoundedLinearExpression(object):
             + ' is not supported.')
 
 
+class DoubleLinearExpr(object):
+    """Holds an double linear expression.
+
+  * In CP-SAT, the objective can be a linear expression with double
+    coefficients:
+
+  ```
+  model.Minimize(cp_model.DoubleLinearExpr.Sum(expressions))
+  model.Maximize(cp_model.DoubleLinearExpr.ScalProd(expressions, coefficients))
+  ```
+  """
+
+    @classmethod
+    def Sum(cls, expressions):
+        """Creates the expression sum(expressions)."""
+        if len(expressions) == 1:
+            return expressions[0]
+        coefficients = [1.0] * len(expressions)
+        return DoubleLinearExpr(expressions, coefficients)
+
+    @classmethod
+    def ScalProd(cls, expressions, coefficients):
+        """Creates the expression sum(expressions[i] * coefficients[i])."""
+        if LinearExpr.IsEmptyOrAllNull(coefficients):
+            return 0.0
+        else:
+            return DoubleLinearExpr(expressions, coefficients)
+
+    @classmethod
+    def Term(cls, expression, coefficient):
+        """Creates `expression * coefficient`."""
+        if coefficient == 0:
+            return 0
+        else:
+            return DoubleLinearExpr([expression], [coefficient])
+
+    @classmethod
+    def IsEmptyOrAllNull(cls, coefficients):
+        for c in coefficients:
+            if c != 0.0:
+                return False
+        return True
+
+    def Expressions(self):
+        return self.__expressions
+
+    def Coefficients(self):
+        return self.__coefficients
+
+    def Constant(self):
+        return self.__constant
+
+    def GetVarValueMap(self):
+        """Scans the expression, and return a list of (var_coef_map, constant)."""
+        coeffs = collections.defaultdict(int)
+        constant = 0.0
+        to_process = [(self, 1.0)]
+        while to_process:  # Flatten to avoid recursion.
+            expr, coef = to_process.pop()
+            if isinstance(expr, IntVar):
+                coeffs[expr] += coef
+            elif isinstance(expr, _NotBooleanVariable):
+                constant += coef
+                coeffs[expr.Not()] -= coef
+            elif isinstance(expr, DoubleLinearExpr):
+                for e, c in zip(expr.Expressions(), expr.Coefficients()):
+                    to_process.append((e, coef * c))
+                constant += expr.Constant() * coef
+            else:
+                raise TypeError('Unrecognized linear expression: ' + str(expr))
+
+        return coeffs, constant
+
+    def __init__(self, expressions, coefficients, constant=0):
+        self.__expressions = []
+        self.__coefficients = []
+        self.__constant = constant
+        if len(expressions) != len(coefficients):
+            raise TypeError(
+                'In the DoubleLinearExpr builders, the expression array and the '
+                ' coefficient array must have the same length.')
+        for e, c in zip(expressions, coefficients):
+            c = cmh.AssertIsNumber(c)
+            if c == 0.0:
+                continue
+            if cmh.IsNumber(e):
+                e = cmh.AssertIsNumber(e)
+                self.__constant += e * c
+            elif isinstance(e, DoubleLinearExpr):
+                self.__constant += c * e.Constant()
+                for ee, cc in zip(e.Expressions(), e.Coefficients()):
+                    self.__expressions.append(ee)
+                    self.__coefficients.append(cc)
+            elif isinstance(e, IntVar) or isinstance(e, _NotBooleanVariable):
+                self.__expressions.append(e)
+                self.__coefficients.append(c)
+            else:
+                raise TypeError('Not a double linear expression: ' + str(e))
+
+    def __str__(self):
+        output = None
+        for expr, coeff in zip(self.__expressions, self.__coefficients):
+            if not output and coeff == 1.0:
+                output = str(expr)
+            elif not output and coeff == -1.0:
+                output = '-' + str(expr)
+            elif not output:
+                output = '{} * {}'.format(coeff, str(expr))
+            elif coeff == 1.0:
+                output += ' + {}'.format(str(expr))
+            elif coeff == -1.0:
+                output += ' - {}'.format(str(expr))
+            elif coeff > 1.0:
+                output += ' + {} * {}'.format(coeff, str(expr))
+            elif coeff < -1.0:
+                output += ' - {} * {}'.format(-coeff, str(expr))
+        if self.__constant > 0.0:
+            output += ' + {}'.format(self.__constant)
+        elif self.__constant < 0.0:
+            output += ' - {}'.format(-self.__constant)
+        if output is None:
+            output = '0.0'
+        return output
+
+    def __repr__(self):
+        return 'DoubleLinearExpr([{}], [{}], {})'.format(
+            ', '.join(map(repr, self.__expressions)),
+            ', '.join(map(repr, self.__coefficients)), self.__constant)
+
+
 class Constraint(object):
     """Base class for constraints.
 
@@ -1800,8 +1930,9 @@ class CpModel(object):
 
     def _SetObjective(self, obj, minimize):
         """Sets the objective of the model."""
+        self.__model.ClearField('objective')
+        self.__model.ClearField('floating_point_objective')
         if isinstance(obj, IntVar):
-            self.__model.ClearField('objective')
             self.__model.objective.coeffs.append(1)
             self.__model.objective.offset = 0
             if minimize:
@@ -1810,9 +1941,15 @@ class CpModel(object):
             else:
                 self.__model.objective.vars.append(self.Negated(obj.Index()))
                 self.__model.objective.scaling_factor = -1
+        elif isinstance(obj, DoubleLinearExpr):
+            coeffs_map, constant = obj.GetVarValueMap()
+            self.__model.floating_point_objective.maximize = not minimize
+            self.__model.floating_point_objective.offset = constant
+            for v, c, in coeffs_map.items():
+                self.__model.floating_point_objective.coeffs.append(c)
+                self.__model.floating_point_objective.vars.append(v.Index())
         elif isinstance(obj, LinearExpr):
             coeffs_map, constant = obj.GetVarValueMap()
-            self.__model.ClearField('objective')
             if minimize:
                 self.__model.objective.scaling_factor = 1
                 self.__model.objective.offset = constant
@@ -1842,20 +1979,6 @@ class CpModel(object):
 
     def HasObjective(self):
         return self.__model.HasField('objective')
-
-    def SetObjectiveScaling(self, double_scaling):
-        """This must be called after creating the objective.
-
-    This method overwrites the current scaling.
-
-    Args:
-      double_scaling: define the objective scaling. The printed value will be
-        the objective value * double_scaling.
-    """
-        if self.__model.objective.scaling_factor >= 0.0:  # Minimization.
-            self.__model.objective.scaling_factor = double_scaling
-        else:  # Maximization.
-            self.__model.objective.scaling_factor = -double_scaling
 
     def AddDecisionStrategy(self, variables, var_strategy, domain_strategy):
         """Adds a search strategy to the model.

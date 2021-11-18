@@ -362,6 +362,7 @@ class PresolveContext {
   void ReadObjectiveFromProto();
   ABSL_MUST_USE_RESULT bool CanonicalizeObjective(bool simplify_domain = true);
   void WriteObjectiveToProto() const;
+  ABSL_MUST_USE_RESULT bool ScaleFloatingPointObjective();
 
   // Checks if the given exactly_one is included in the objective, and simplify
   // the objective by adding a constant value to all the exactly one terms.

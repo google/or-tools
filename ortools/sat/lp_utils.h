@@ -87,6 +87,22 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
                                        CpModelProto* cp_model,
                                        SolverLogger* logger);
 
+// Scales a double objective to its integer version and fills it in the proto.
+// The variable listed in the objective must be already defined in the cp_model
+// proto as this uses the variables bounds to compute a proper scaling.
+//
+// This uses params.mip_wanted_tolerance() and
+// params.mip_max_activity_exponent() to compute the scaling. Note however that
+// if the wanted tolerance is not satisfied this still scale with best effort.
+// You can see in the log the tolerance guaranteed by this automatic scaling.
+//
+// This will almost always returns true except for really bad cases like having
+// infinity in the objective.
+bool ScaleAndSetObjective(const SatParameters& params,
+                          const std::vector<std::pair<int, double>>& objective,
+                          double objective_offset, bool maximize,
+                          CpModelProto* cp_model, SolverLogger* logger);
+
 // Converts an integer program with only binary variables to a Boolean
 // optimization problem. Returns false if the problem didn't contains only
 // binary integer variable, or if the coefficients couldn't be converted to

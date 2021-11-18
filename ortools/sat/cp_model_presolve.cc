@@ -7192,6 +7192,10 @@ void CopyEverythingExceptVariablesAndConstraintsFieldsIntoContext(
   if (in_model.has_objective()) {
     *context->working_model->mutable_objective() = in_model.objective();
   }
+  if (in_model.has_floating_point_objective()) {
+    *context->working_model->mutable_floating_point_objective() =
+        in_model.floating_point_objective();
+  }
   if (!in_model.search_strategy().empty()) {
     *context->working_model->mutable_search_strategy() =
         in_model.search_strategy();
@@ -7239,10 +7243,15 @@ CpModelPresolver::CpModelPresolver(PresolveContext* context,
   // Initialize the initial context.working_model domains.
   context_->InitializeNewDomains();
 
+  // TODO(user, fdid): can we scale the objective after bound propagation ?
+  if (context_->working_model->has_floating_point_objective()) {
+    // TODO(user): Mark the model as invalid, and remove the check.
+    CHECK(context_->ScaleFloatingPointObjective());
+  }
+
   // Initialize the objective.
   context_->ReadObjectiveFromProto();
   (void)context_->CanonicalizeObjective();
-
   // Note that we delay the call to UpdateNewConstraintsVariableUsage() for
   // efficiency during LNS presolve.
 }
@@ -7305,6 +7314,7 @@ bool CpModelPresolver::Presolve() {
     }
     if (context_->ModelIsUnsat()) break;
   }
+
   context_->UpdateNewConstraintsVariableUsage();
   context_->RegisterVariablesUsedInAssumptions();
   DCHECK(context_->ConstraintVariableUsageIsConsistent());

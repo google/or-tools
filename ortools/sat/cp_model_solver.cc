@@ -309,7 +309,8 @@ std::string CpModelStats(const CpModelProto& model_proto) {
   }
 
   std::string result;
-  if (model_proto.has_objective()) {
+  if (model_proto.has_objective() ||
+      model_proto.has_floating_point_objective()) {
     absl::StrAppend(&result, "optimization model '", model_proto.name(),
                     "':\n");
   } else {
@@ -333,7 +334,11 @@ std::string CpModelStats(const CpModelProto& model_proto) {
       model_proto.has_objective()
           ? absl::StrCat(" (", model_proto.objective().vars_size(),
                          " in objective)")
-          : "";
+          : (model_proto.has_floating_point_objective()
+                 ? absl::StrCat(
+                       " (", model_proto.floating_point_objective().vars_size(),
+                       " in floating point objective)")
+                 : "");
   absl::StrAppend(&result, "#Variables: ", model_proto.variables_size(),
                   objective_string, "\n");
   if (num_vars_per_domains.size() < 100) {
@@ -2941,8 +2946,10 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   shared_response_manager->AddFinalResponsePostprocessor(
       [logger, &model_proto, &log_string](CpSolverResponse* response) {
         SOLVER_LOG(logger, "");
-        SOLVER_LOG(logger, CpSolverResponseStats(*response,
-                                                 model_proto.has_objective()));
+        SOLVER_LOG(logger, CpSolverResponseStats(
+                               *response,
+                               model_proto.has_objective() ||
+                                   model_proto.has_floating_point_objective()));
         if (!log_string.empty()) {
           response->set_solve_log(log_string);
         }

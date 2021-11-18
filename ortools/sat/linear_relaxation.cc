@@ -1503,7 +1503,6 @@ LinearRelaxation ComputeLinearRelaxation(const CpModelProto& model_proto,
   // TODO(user): compute connected components of the original problem and
   // split these cuts accordingly.
   if (params.linearization_level() > 1 && params.add_clique_cuts()) {
-    std::vector<IntegerVariable> all_booleans;
     LinearConstraintBuilder builder(m);
     for (int i = 0; i < model_proto.variables_size(); ++i) {
       if (!mapping->IsBoolean(i)) continue;
@@ -1515,8 +1514,11 @@ LinearRelaxation ComputeLinearRelaxation(const CpModelProto& model_proto,
     }
 
     // We add a generator touching all the variable in the builder.
-    relaxation.cut_generators.push_back(
-        CreateCliqueCutGenerator(builder.BuildExpression().vars, m));
+    const LinearExpression& expr = builder.BuildExpression();
+    if (!expr.vars.empty()) {
+      relaxation.cut_generators.push_back(
+          CreateCliqueCutGenerator(expr.vars, m));
+    }
   }
 
   if (!relaxation.linear_constraints.empty() ||

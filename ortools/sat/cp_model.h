@@ -114,6 +114,7 @@ class BoolVar {
   friend class CircuitConstraint;
   friend class Constraint;
   friend class CpModelBuilder;
+  friend class DoubleLinearExpr;
   friend class IntVar;
   friend class IntervalVar;
   friend class MultipleCircuitConstraint;
@@ -196,6 +197,7 @@ class IntVar {
   friend class BoolVar;
   friend class CpModelBuilder;
   friend class CumulativeConstraint;
+  friend class DoubleLinearExpr;
   friend class LinearExpr;
   friend class IntervalVar;
   friend class ReservoirConstraint;
@@ -315,6 +317,107 @@ class LinearExpr {
 };
 
 std::ostream& operator<<(std::ostream& os, const LinearExpr& e);
+
+/**
+ * A dedicated container for linear expressions with double coefficients.
+ *
+ * This class helps building and manipulating linear expressions.
+ * Note that Not(x) will be silently transformed into 1 - x when added to the
+ * linear expression.
+ *
+ * Furthermore, static methods allows sums and scalar products, with or without
+ * an additional constant.
+ *
+ * Usage:
+ * \code
+  CpModelBuilder cp_model;
+  IntVar x = model.NewIntVar(0, 10, "x");
+  IntVar y = model.NewIntVar(0, 10, "y");
+  BoolVar b = model.NewBoolVar().WithName("b");
+  BoolVar c = model.NewBoolVar().WithName("c");
+  DoubleLinearExpr e1(x);  // e1 = x.
+  // e2 = x + y + 5
+  DoubleLinearExpr e2 = DoubleLinearExpr::Sum({x, y}).AddConstant(5.0);
+  // e3 = 2 * x - y
+  DoubleLinearExpr e3 = DoubleLinearExpr::ScalProd({x, y}, {2, -1});
+  DoubleLinearExpr e4(b);  // e4 = b.
+  DoubleLinearExpr e5(b.Not());  // e5 = 1 - b.
+  // If passing a std::vector<BoolVar>, a specialized method must be called.
+  std::vector<BoolVar> bools = {b, Not(c)};
+  DoubleLinearExpr e6 = DoubleLinearExpr::BooleanSum(bools);  // e6 = b + 1 - c;
+  // e7 = -3.0 * b + 1.5 - 1.5 * c;
+  DoubleLinearExpr e7 = DoubleLinearExpr::BooleanScalProd(bools, {-3.0, 1.5});
+  \endcode
+ *  This can be used in the objective definition.
+ * \code
+  // Minimize 3.4 * y + 5.2
+  cp_model.Minimize(DoubleLinearExpr::Term(y, 3.4).AddConstant(5.2));
+  \endcode
+  */
+class DoubleLinearExpr {
+ public:
+  DoubleLinearExpr();
+
+  /**
+   * Constructs a linear expression from a Boolean variable.
+   *
+   *  It deals with logical negation correctly.
+   */
+  explicit DoubleLinearExpr(BoolVar var);
+
+  /// Constructs a linear expression from an integer variable.
+  explicit DoubleLinearExpr(IntVar var);
+
+  /// Constructs a constant linear expression.
+  explicit DoubleLinearExpr(double constant);
+
+  /// Adds a constant value to the linear expression.
+  DoubleLinearExpr& AddConstant(double value);
+
+  /// Adds a single integer variable to the linear expression.
+  DoubleLinearExpr& AddVar(IntVar var);
+
+  /// Adds a term (var * coeff) to the linear expression.
+  DoubleLinearExpr& AddTerm(IntVar var, double coeff);
+
+  /// Adds another linear expression to the linear expression.
+  DoubleLinearExpr& AddExpression(const DoubleLinearExpr& expr);
+
+  /// Constructs the sum of a list of variables.
+  static DoubleLinearExpr Sum(absl::Span<const IntVar> vars);
+
+  /// Constructs the scalar product of variables and coefficients.
+  static DoubleLinearExpr ScalProd(absl::Span<const IntVar> vars,
+                                   absl::Span<const double> coeffs);
+
+  /// Constructs the sum of a list of Booleans.
+  static DoubleLinearExpr BooleanSum(absl::Span<const BoolVar> vars);
+
+  /// Constructs the scalar product of Booleans and coefficients.
+  static DoubleLinearExpr BooleanScalProd(absl::Span<const BoolVar> vars,
+                                          absl::Span<const double> coeffs);
+  /// Constructs var * coefficient.
+  static DoubleLinearExpr Term(IntVar var, double coefficient);
+
+  /// Returns the vector of variables.
+  const std::vector<IntVar>& variables() const { return variables_; }
+
+  /// Returns the vector of coefficients.
+  const std::vector<double>& coefficients() const { return coefficients_; }
+
+  /// Returns the constant term.
+  double constant() const { return constant_; }
+
+  /// Debug string.
+  std::string DebugString() const;
+
+ private:
+  std::vector<IntVar> variables_;
+  std::vector<double> coefficients_;
+  double constant_ = 0;
+};
+
+std::ostream& operator<<(std::ostream& os, const DoubleLinearExpr& e);
 
 /**
  * Represents a Interval variable.
@@ -878,17 +981,16 @@ class CpModelBuilder {
   /// Adds a linear minimization objective.
   void Minimize(const LinearExpr& expr);
 
+  /// Adds a linear minimization objective after rescaling of the double
+  /// coefficients.
+  void Minimize(const DoubleLinearExpr& expr);
+
   /// Adds a linear maximization objective.
   void Maximize(const LinearExpr& expr);
 
-  /**
-   * Sets scaling of the objective.
-   *
-   * It must be called after \c Minimize() or \c Maximize()).
-   *
-   * \c scaling must be > 0.0.
-   */
-  void ScaleObjectiveBy(double scaling);
+  /// Adds a linear maximization objective after rescaling of the double
+  /// coefficients.
+  void Maximize(const DoubleLinearExpr& expr);
 
   /// Adds a decision strategy on a list of integer variables.
   void AddDecisionStrategy(

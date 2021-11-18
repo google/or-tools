@@ -37,10 +37,6 @@ flags.DEFINE_string('params', 'num_search_workers:16,log_search_progress:true',
 flags.DEFINE_string('model', 'rotation', '\'duplicate\' or \'rotation\'')
 
 
-def scale_double(value):
-    return int(round(value * 1000.0))
-
-
 def build_data():
     """Build the data frame."""
     data = """
@@ -130,10 +126,7 @@ def solve_with_duplicate_items(data, max_height, max_width):
     model.AddNoOverlap2D(x_intervals, y_intervals)
 
     ## Objective.
-    model.Maximize(
-        sum(is_used[i] * scale_double(item_values[i])
-            for i in range(num_items)))
-    model.SetObjectiveScaling(1e-3)
+    model.Maximize(cp_model.DoubleLinearExpr.ScalProd(is_used, item_values))
 
     # Output proto to file.
     if FLAGS.output_proto:
@@ -244,10 +237,7 @@ def solve_with_rotations(data, max_height, max_width):
     model.AddNoOverlap2D(x_intervals, y_intervals)
 
     # Objective.
-    model.Maximize(
-        sum(is_used[i] * scale_double(item_values[i])
-            for i in range(num_items)))
-    model.SetObjectiveScaling(1e-3)
+    model.Maximize(cp_model.DoubleLinearExpr.ScalProd(is_used, item_values))
 
     # Output proto to file.
     if FLAGS.output_proto:

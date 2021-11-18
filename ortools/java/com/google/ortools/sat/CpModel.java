@@ -22,6 +22,8 @@ import com.google.ortools.sat.CpObjectiveProto;
 import com.google.ortools.sat.CumulativeConstraintProto;
 import com.google.ortools.sat.DecisionStrategyProto;
 import com.google.ortools.sat.ElementConstraintProto;
+import com.google.ortools.sat.FloatObjectiveProto;
+import com.google.ortools.sat.IntegerArgumentProto;
 import com.google.ortools.sat.InverseConstraintProto;
 import com.google.ortools.sat.LinearArgumentProto;
 import com.google.ortools.sat.LinearConstraintProto;
@@ -1078,6 +1080,14 @@ public final class CpModel {
     obj.setOffset(expr.getOffset());
   }
 
+  public void minimize(DoubleLinearExpr expr) {
+    FloatObjectiveProto.Builder obj = modelBuilder.getFloatingPointObjectiveBuilder();
+    for (int i = 0; i < expr.numElements(); ++i) {
+      obj.addVars(expr.getVariable(i).getIndex()).addCoeffs(expr.getCoefficient(i));
+    }
+    obj.setOffset(expr.getOffset()).setMaximize(false);
+  }
+
   /** Adds a maximization objective of a linear expression. */
   public void maximize(LinearExpr expr) {
     CpObjectiveProto.Builder obj = modelBuilder.getObjectiveBuilder();
@@ -1086,6 +1096,14 @@ public final class CpModel {
     }
     obj.setOffset(-expr.getOffset());
     obj.setScalingFactor(-1.0);
+  }
+
+  public void maximize(DoubleLinearExpr expr) {
+    FloatObjectiveProto.Builder obj = modelBuilder.getFloatingPointObjectiveBuilder();
+    for (int i = 0; i < expr.numElements(); ++i) {
+      obj.addVars(expr.getVariable(i).getIndex()).addCoeffs(expr.getCoefficient(i));
+    }
+    obj.setOffset(expr.getOffset()).setMaximize(true);
   }
 
   // DecisionStrategy

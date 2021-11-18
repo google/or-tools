@@ -673,6 +673,27 @@ std::string ValidateObjective(const CpModelProto& model,
   return "";
 }
 
+std::string ValidateFloatingPointObjective(const CpModelProto& model,
+                                           const FloatObjectiveProto& obj) {
+  if (obj.vars().size() != obj.coeffs().size()) {
+    return absl::StrCat("vars and coeffs size do not match in objective: ",
+                        ProtobufShortDebugString(obj));
+  }
+  for (const int v : obj.vars()) {
+    if (!VariableReferenceIsValid(model, v)) {
+      return absl::StrCat("Out of bound integer variable ", v,
+                          " in objective: ", ProtobufShortDebugString(obj));
+    }
+  }
+  for (const double coef : obj.coeffs()) {
+    if (!std::isfinite(coef)) {
+      return absl::StrCat("Coefficients must be finites in objective: ",
+                          ProtobufShortDebugString(obj));
+    }
+  }
+  return "";
+}
+
 std::string ValidateSearchStrategies(const CpModelProto& model) {
   for (const DecisionStrategyProto& strategy : model.search_strategy()) {
     const int vss = strategy.variable_selection_strategy();
@@ -867,8 +888,16 @@ std::string ValidateCpModel(const CpModelProto& model) {
       }
     }
   }
+  if (model.has_objective() && model.has_floating_point_objective()) {
+    return "A model cannot have both an objective and a floating point "
+           "objective.";
+  }
   if (model.has_objective()) {
     RETURN_IF_NOT_EMPTY(ValidateObjective(model, model.objective()));
+  }
+  if (model.has_floating_point_objective()) {
+    RETURN_IF_NOT_EMPTY(ValidateFloatingPointObjective(
+        model, model.floating_point_objective()));
   }
   RETURN_IF_NOT_EMPTY(ValidateSearchStrategies(model));
   RETURN_IF_NOT_EMPTY(ValidateSolutionHint(model));

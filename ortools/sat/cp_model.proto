@@ -464,6 +464,17 @@ message CpObjectiveProto {
   repeated int64 domain = 5;
 }
 
+// A linear floating point objective: sum coeffs[i] * vars[i] + offset.
+// Note that the variable can only still take integer value.
+message FloatObjectiveProto {
+  repeated int32 vars = 1;
+  repeated double coeffs = 2;
+  double offset = 3;
+
+  // The optimization direction. The default is to minimize
+  bool maximize = 4;
+}
+
 // Define the strategy to follow when the solver needs to take a new decision.
 // Note that this strategy is only defined on a subset of variables.
 message DecisionStrategyProto {
@@ -576,6 +587,19 @@ message CpModelProto {
 
   // The objective to minimize. Can be empty for pure decision problems.
   CpObjectiveProto objective = 4;
+
+  // Advanced usage.
+  // It is invalid to have both an objective and a floating point objective.
+  //
+  // The objective of the model, in floating point format. The solver will
+  // automatically scale this to integer during expansion and thus convert it to
+  // a normal CpObjectiveProto. See the mip* parameters to control how this is
+  // scaled. In most situation the precision will be good enough, but you can
+  // see the logs to see what are the precision guaranteed when this is
+  // converted to a fixed point representation.
+  //
+  // TODO(user): This is currently not implemented.
+  FloatObjectiveProto floating_point_objective = 9;
 
   // Defines the strategy that the solver should follow when the
   // search_branching parameter is set to FIXED_SEARCH. Note that this strategy
