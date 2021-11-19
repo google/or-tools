@@ -25,6 +25,11 @@
 #include "absl/strings/match.h"
 #include "absl/strings/string_view.h"
 
+#ifdef _MSC_VER 
+#define strncasecmp _strnicmp
+#define strcasecmp _stricmp
+#endif
+
 namespace strings {
 
 std::ostream& operator<<(std::ostream& os,
