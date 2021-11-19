@@ -890,6 +890,11 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
       float_objective->add_coeffs(mp_var.objective_coefficient());
     }
   }
+
+  // If the objective is fixed to zero, we consider there is none.
+  if (float_objective->offset() == 0 && float_objective->vars().empty()) {
+    cp_model->clear_floating_point_objective();
+  }
   return true;
 }
 

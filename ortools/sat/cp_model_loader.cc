@@ -260,8 +260,39 @@ void LoadVariables(const CpModelProto& model_proto,
 
 void LoadBooleanSymmetries(const CpModelProto& model_proto, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
-  const SymmetryProto symmetry = model_proto.symmetry();
+  const SymmetryProto& symmetry = model_proto.symmetry();
   if (symmetry.permutations().empty()) return;
+
+  // We currently can only use symmetry that touch a subset of variables.
+  const int num_vars = model_proto.variables().size();
+  std::vector<bool> can_be_used_in_symmetry(num_vars, true);
+
+  // First, we currently only support loading symmetry between Booleans.
+  for (int v = 0; v < num_vars; ++v) {
+    if (!mapping->IsBoolean(v)) can_be_used_in_symmetry[v] = false;
+  }
+
+  // Tricky: Moreover, some constraint will causes extra Boolean to be created
+  // and linked with the Boolean in the constraints. We can't use any of the
+  // symmetry that touch these since we potentially miss the component that will
+  // map these extra Booleans between each other.
+  //
+  // TODO(user): We could add these extra Boolean during expansion/presolve so
+  // that we have the symmetry involing them. Or maybe comes up with a different
+  // solution.
+  const int num_constraints = model_proto.constraints().size();
+  for (int c = 0; c < num_constraints; ++c) {
+    const ConstraintProto& ct = model_proto.constraints(c);
+    if (ct.constraint_case() != ConstraintProto::kLinear) continue;
+    if (ct.linear().domain().size() <= 2) continue;
+
+    // A linear with a complex domain might need extra Booleans to be loaded.
+    // Note that it should be fine for the Boolean(s) in enforcement_literal
+    // though.
+    for (const int ref : ct.linear().vars()) {
+      can_be_used_in_symmetry[PositiveRef(ref)] = false;
+    }
+  }
 
   auto* sat_solver = m->GetOrCreate<SatSolver>();
   auto* symmetry_handler = m->GetOrCreate<SymmetryPropagator>();
@@ -269,14 +300,14 @@ void LoadBooleanSymmetries(const CpModelProto& model_proto, Model* m) {
   const int num_literals = 2 * sat_solver->NumVariables();
 
   for (const SparsePermutationProto& perm : symmetry.permutations()) {
-    bool all_bool = true;
+    bool can_be_used = true;
     for (const int var : perm.support()) {
-      if (!mapping->IsBoolean(var)) {
-        all_bool = false;
+      if (!can_be_used_in_symmetry[var]) {
+        can_be_used = false;
         break;
       }
     }
-    if (!all_bool) continue;
+    if (!can_be_used) continue;
 
     // Convert the variable symmetry to a "literal" one.
     auto literal_permutation =

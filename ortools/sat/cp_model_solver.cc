@@ -3047,6 +3047,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   // TODO(user): Support solution hint, but then the first TODO will make it
   // automatic.
   if (!params.use_sat_inprocessing() && !model_proto.has_objective() &&
+      !model_proto.has_floating_point_objective() &&
       !model_proto.has_solution_hint() && !params.enumerate_all_solutions() &&
       !params.use_lns_only() && params.num_search_workers() <= 1 &&
       model_proto.assumptions().empty()) {
