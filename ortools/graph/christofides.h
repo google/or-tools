@@ -81,9 +81,7 @@ class ChristofidesPathSolver {
   bool Solve();
 
  private:
-  int64_t SafeAdd(int64_t a, int64_t b) {
-    return CapAdd(a, b);
-  }
+  int64_t SafeAdd(int64_t a, int64_t b) { return CapAdd(a, b); }
 
   // Matching algorithm to use.
   MatchingAlgorithm matching_;
