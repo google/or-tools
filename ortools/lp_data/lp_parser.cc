@@ -256,7 +256,7 @@ TokenType ConsumeToken(absl::string_view* sv, std::string* consumed_name,
   static const LazyRE2 kEndPattern = {R"(\s*)"};
 
   // There is nothing more to consume.
-  auto sp = std::unique_ptr<re2::StringPiece>(new re2::StringPiece(*sv)).get();
+  auto sp = std::unique_ptr<re2::StringPiece>(new re2::StringPiece(sv->data(), sv->length())).get();
   if (sp->empty() || RE2::FullMatch(*sp, *kEndPattern)) {
     return TokenType::END;
   }
