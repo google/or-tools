@@ -525,10 +525,18 @@ void CreateObjective(
   }
 
   // Add the objective to the model.
-  cp_model.Minimize(LinearExpr::ScalProd(objective_vars, objective_coeffs)
-                        .AddConstant(objective_offset));
   if (problem.has_scaling_factor()) {
-    cp_model.ScaleObjectiveBy(problem.scaling_factor().value());
+    std::vector<double> double_objective_coeffs;
+    for (const int64_t coeff : objective_coeffs) {
+      double_objective_coeffs.push_back(1.0 * coeff /
+                                        problem.scaling_factor().value());
+    }
+    cp_model.Minimize(
+        DoubleLinearExpr::ScalProd(objective_vars, double_objective_coeffs)
+            .AddConstant(objective_offset));
+  } else {
+    cp_model.Minimize(LinearExpr::ScalProd(objective_vars, objective_coeffs)
+                          .AddConstant(objective_offset));
   }
 }
 

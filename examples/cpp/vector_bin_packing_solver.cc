@@ -36,6 +36,8 @@ ABSL_FLAG(std::string, solver, "sat", "Solver to use: sat, scip");
 ABSL_FLAG(double, time_limit, 900.0, "Time limit in seconds");
 ABSL_FLAG(int, threads, 1, "Number of threads");
 ABSL_FLAG(bool, display_proto, false, "Print the input protobuf");
+ABSL_FLAG(int, max_bins, -1,
+          "Maximum number of bins: default = -1 meaning no limits");
 
 namespace operations_research {
 void ParseAndSolve(const std::string& filename, const std::string& solver,
@@ -64,6 +66,7 @@ void ParseAndSolve(const std::string& filename, const std::string& solver,
         << "Ignoring max_bins value. The feasibility problem is not supported.";
   }
 
+
   LOG(INFO) << "Solving vector packing problem '" << data.name() << "' with "
             << data.item_size() << " item types, and "
             << data.resource_capacity_size() << " dimensions.";
@@ -77,7 +80,8 @@ void ParseAndSolve(const std::string& filename, const std::string& solver,
   packing::vbp::VectorBinPackingSolution solution =
       packing::SolveVectorBinPackingWithArcFlow(data, solver_type, params,
                                                 absl::GetFlag(FLAGS_time_limit),
-                                                absl::GetFlag(FLAGS_threads));
+                                                absl::GetFlag(FLAGS_threads),
+                                                absl::GetFlag(FLAGS_max_bins));
   if (!solution.bins().empty()) {
     for (int b = 0; b < solution.bins_size(); ++b) {
       LOG(INFO) << "Bin " << b;
