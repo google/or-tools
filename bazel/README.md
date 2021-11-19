@@ -53,7 +53,6 @@ You must compile OR-Tools using C++17:
   ```sh
   bazel build --cxxopt=-std=c++17 //...:all
   ```
-
 * on Windows when using MSVC:
   ```sh
   bazel build --cxxopt="-std:c++17" //...:all
@@ -61,13 +60,12 @@ You must compile OR-Tools using C++17:
 
 ## Testing
 
-You must compile OR-Tools using C++17:
+You may run tests using:
 
 * on UNIX:
   ```sh
   bazel test --cxxopt=-std=c++17 //...:all
   ```
-
 * on Windows when using MSVC:
   ```sh
   bazel test --cxxopt="-std:c++17" //...:all
