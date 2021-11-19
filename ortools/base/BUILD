@@ -64,6 +64,19 @@ cc_library(
 )
 
 cc_library(
+    name = "case",
+    srcs = [
+        "case.cc",
+    ],
+    hdrs = [
+        "case.h",
+    ],
+    deps = [
+        ":base",
+    ],
+)
+
+cc_library(
     name = "container_logging",
     hdrs = [
         "container_logging.h",

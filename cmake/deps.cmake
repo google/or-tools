@@ -48,6 +48,13 @@ if(NOT TARGET protobuf::libprotobuf)
   message(FATAL_ERROR "Target protobuf::libprotobuf not available.")
 endif()
 
+if(NOT BUILD_re2)
+ find_package(re2 REQUIRED)
+endif()
+if(NOT TARGET re2::re2)
+  message(FATAL_ERROR "Target re2::re2 not available.")
+endif()
+
 if(USE_SCIP)
   if(NOT BUILD_SCIP)
     find_package(SCIP REQUIRED)

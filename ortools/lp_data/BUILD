@@ -201,20 +201,24 @@ cc_library(
     ],
 )
 
-#cc_library(
-#    name = "lp_parser",
-#    testonly = 1,
-#    srcs = ["lp_parser.cc"],
-#    hdrs = ["lp_parser.h"],
-#    copts = SAFE_FP_CODE,
-#    deps = [
-#        ":base",
-#        ":lp_data",
-#        "//ortools/base",
-#        "@com_google_absl//absl/strings",
-#        "//ortools/util/regexp/re2",
-#    ],
-#)
+cc_library(
+    name = "lp_parser",
+    srcs = ["lp_parser.cc"],
+    hdrs = ["lp_parser.h"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":base",
+        ":lp_data",
+        ":proto_utils",
+        "//ortools/base",
+        "//ortools/base:case",
+        "//ortools/base:map_util",
+        "//ortools/linear_solver:linear_solver_cc_proto",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_re2//:re2",
+    ],
+)
 
 #cc_library(
 #    name = "lp_constraint_classifier",

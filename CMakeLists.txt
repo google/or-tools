@@ -127,6 +127,10 @@ CMAKE_DEPENDENT_OPTION(BUILD_Protobuf "Build the Protobuf dependency Library" OF
   "NOT BUILD_DEPS" ON)
 message(STATUS "Build protobuf: ${BUILD_Protobuf}")
 
+CMAKE_DEPENDENT_OPTION(BUILD_re2 "Build the re2 dependency Library" OFF
+  "NOT BUILD_DEPS" ON)
+message(STATUS "Build re2: ${BUILD_re2}")
+
 # Optional third party solvers (enabled by default)
 CMAKE_DEPENDENT_OPTION(USE_SCIP "Use the Scip solver" ON "BUILD_CXX" OFF)
 message(STATUS "SCIP support: ${USE_SCIP}")

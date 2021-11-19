@@ -47,6 +47,12 @@ git_repository(
 )
 
 git_repository(
+    name = "com_google_re2",
+    commit = "0dade9f", # release 2021-11-01
+    remote = "https://github.com/google/re2.git",
+)
+
+git_repository(
     name = "com_google_googletest",
     commit = "703bd9c", # release-1.10.0
     remote = "https://github.com/google/googletest.git",

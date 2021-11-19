@@ -124,6 +124,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   ZLIB::ZLIB
   ${ABSL_DEPS}
   protobuf::libprotobuf
+  re2::re2
   ${COINOR_DEPS}
   $<$<BOOL:${USE_SCIP}>:libscip>
   $<$<BOOL:${USE_GLPK}>:GLPK::GLPK>
