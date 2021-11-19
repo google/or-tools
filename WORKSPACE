@@ -34,10 +34,8 @@ git_repository(
     commit = "89b14b1",  # release v3.18.0
     remote = "https://github.com/protocolbuffers/protobuf.git",
 )
-
-load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
-
 # Load common dependencies.
+load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
 protobuf_deps()
 
 git_repository(
@@ -61,8 +59,8 @@ git_repository(
 http_archive(
     name = "glpk",
     build_file = "//bazel:glpk.BUILD",
-    sha256 = "4281e29b628864dfe48d393a7bedd781e5b475387c20d8b0158f329994721a10",
-    url = "http://ftp.gnu.org/gnu/glpk/glpk-4.65.tar.gz",
+    sha256 = "4a1013eebb50f728fc601bdd833b0b2870333c3b3e5a816eeba921d95bec6f15",
+    url = "http://ftp.gnu.org/gnu/glpk/glpk-5.0.tar.gz",
 )
 
 http_archive(
