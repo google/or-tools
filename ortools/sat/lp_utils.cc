@@ -877,16 +877,20 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
   SOLVER_LOG(logger,
              "Maximum constraint scaling factor: ", scaler.max_scaling_factor);
 
-  // Now scales the objective.
-  std::vector<std::pair<int, double>> objective;
+  // Since cp_model support a floating point objective, we use that. This will
+  // allow us to scale the objective a bit later so we can potentially do more
+  // domain reduction first.
+  auto* float_objective = cp_model->mutable_floating_point_objective();
+  float_objective->set_maximize(mp_model.maximize());
+  float_objective->set_offset(mp_model.objective_offset());
   for (int i = 0; i < num_variables; ++i) {
     const MPVariableProto& mp_var = mp_model.variable(i);
     if (mp_var.objective_coefficient() != 0.0) {
-      objective.emplace_back(i, mp_var.objective_coefficient());
+      float_objective->add_vars(i);
+      float_objective->add_coeffs(mp_var.objective_coefficient());
     }
   }
-  return ScaleAndSetObjective(params, objective, mp_model.objective_offset(),
-                              mp_model.maximize(), cp_model, logger);
+  return true;
 }
 
 bool ScaleAndSetObjective(const SatParameters& params,
@@ -927,9 +931,9 @@ bool ScaleAndSetObjective(const SatParameters& params,
   if (!coefficients.empty()) {
     const double average_magnitude =
         l1_norm / static_cast<double>(coefficients.size());
-    SOLVER_LOG(logger, "Objective has ", coefficients.size(),
-               " terms with magnitude in [", min_magnitude, ", ", max_magnitude,
-               "] average = ", average_magnitude);
+    SOLVER_LOG(logger, "[Scaling] Floating point objective has ",
+               coefficients.size(), " terms with magnitude in [", min_magnitude,
+               ", ", max_magnitude, "] average = ", average_magnitude);
   }
 
   // Start by computing the largest possible factor that gives something that
@@ -975,12 +979,14 @@ bool ScaleAndSetObjective(const SatParameters& params,
 
   // Display the objective error/scaling.
   SOLVER_LOG(
-      logger, "Objective coefficient relative error: ", relative_coeff_error,
+      logger,
+      "[Scaling] Objective coefficient relative error: ", relative_coeff_error,
       (relative_coeff_error > params.mip_check_precision() ? " [IMPRECISE]"
                                                            : ""));
-  SOLVER_LOG(logger, "Objective worst-case absolute error: ",
+  SOLVER_LOG(logger, "[Scaling] Objective worst-case absolute error: ",
              scaled_sum_error / scaling_factor);
-  SOLVER_LOG(logger, "Objective scaling factor: ", scaling_factor / gcd);
+  SOLVER_LOG(logger,
+             "[Scaling] Objective scaling factor: ", scaling_factor / gcd);
 
   // Note that here we set the scaling factor for the inverse operation of
   // getting the "true" objective value from the scaled one. Hence the

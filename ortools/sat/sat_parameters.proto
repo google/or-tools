@@ -24,7 +24,7 @@ option csharp_namespace = "Google.OrTools.Sat";
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 196
+// NEXT TAG: 198
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -633,14 +633,21 @@ message SatParameters {
   // generate cuts but only keep the best n or something.
   optional int32 max_num_cuts = 91 [default = 10000];
 
+  // Control the global cut effort. Zero will turn off all cut. For now we just
+  // have one level. Note also that most cuts are only used at linearization
+  // level >= 2.
+  optional int32 cut_level = 196 [default = 1];
+
   // For the cut that can be generated at any level, this control if we only
   // try to generate them at the root node.
   optional bool only_add_cuts_at_level_zero = 92 [default = false];
 
-  // Whether we generate knapsack cuts. Note that in our setting where all
-  // variables are integer and bounded on both side, such a cut could be applied
-  // to any constraint.
-  optional bool add_knapsack_cuts = 111 [default = false];
+  // When the LP objective is fractional, do we add the cut that forces the
+  // linear objective expression to be greater or equal to this fractional value
+  // rounded up? We can always do that since our objective is integer, and
+  // combined with MIR heuristic to reduce the coefficient of such cut, it can
+  // help.
+  optional bool add_objective_cut = 197 [default = false];
 
   // Whether we generate and add Chvatal-Gomory cuts to the LP at root node.
   // Note that for now, this is not heavily tuned.

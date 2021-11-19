@@ -71,12 +71,6 @@ message BoolArgumentProto {
   repeated int32 literals = 1;
 }
 
-// Argument of the constraints of the form target_var = OP(vars).
-message IntegerArgumentProto {
-  int32 target = 1;
-  repeated int32 vars = 2;
-}
-
 // Some constraints supports linear expression instead of just using a reference
 // to a variable. This is especially useful during presolve to reduce the model
 // size.

@@ -2382,7 +2382,8 @@ class LnsSolver : public SubSolver {
       }
 
       std::vector<int> postsolve_mapping;
-      PresolveCpModel(context.get(), &postsolve_mapping);
+      const CpSolverStatus presolve_status =
+          PresolveCpModel(context.get(), &postsolve_mapping);
 
       // Release the context.
       context.reset(nullptr);
@@ -2394,9 +2395,14 @@ class LnsSolver : public SubSolver {
       auto* local_response_manager =
           local_model.GetOrCreate<SharedResponseManager>();
       local_response_manager->InitializeObjective(lns_fragment);
-      LoadCpModel(lns_fragment, &local_model);
-      QuickSolveWithHint(lns_fragment, &local_model);
-      SolveLoadedCpModel(lns_fragment, &local_model);
+
+      if (presolve_status == CpSolverStatus::UNKNOWN) {
+        LoadCpModel(lns_fragment, &local_model);
+        QuickSolveWithHint(lns_fragment, &local_model);
+        SolveLoadedCpModel(lns_fragment, &local_model);
+      } else {
+        local_response_manager->MutableResponse()->set_status(presolve_status);
+      }
       CpSolverResponse local_response = local_response_manager->GetResponse();
 
       // TODO(user): we actually do not need to postsolve if the solution is
@@ -3175,11 +3181,11 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
 
   // Do the actual presolve.
   std::vector<int> postsolve_mapping;
-  const bool ok = PresolveCpModel(context.get(), &postsolve_mapping);
-  if (!ok) {
-    LOG(ERROR) << "Error while presolving, likely due to integer overflow.";
-    shared_response_manager->MutableResponse()->set_status(
-        CpSolverStatus::MODEL_INVALID);
+  const CpSolverStatus presolve_status =
+      PresolveCpModel(context.get(), &postsolve_mapping);
+  if (presolve_status != CpSolverStatus::UNKNOWN) {
+    SOLVER_LOG(logger, "Problem closed by presolve.");
+    shared_response_manager->MutableResponse()->set_status(presolve_status);
     return shared_response_manager->GetResponse();
   }
 

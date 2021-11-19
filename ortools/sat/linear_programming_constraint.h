@@ -277,6 +277,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
 
   // Computes and adds the corresponding type of cuts.
   // This can currently only be called at the root node.
+  void AddObjectiveCut();
   void AddCGCuts();
   void AddMirCuts();
   void AddZeroHalfCuts();
@@ -456,7 +457,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   IntegerVariable objective_cp_;
 
   // Singletons from Model.
-  const SatParameters& sat_parameters_;
+  const SatParameters& parameters_;
   Model* model_;
   TimeLimit* time_limit_;
   IntegerTrail* integer_trail_;

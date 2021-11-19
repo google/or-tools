@@ -64,9 +64,12 @@ bool CpModelPresolver::RemoveConstraint(ConstraintProto* ct) {
   return true;
 }
 
+// Remove all empty constraints. Note that we need to remap the interval
+// references.
+//
+// Now that they have served their purpose, we also remove dummy constraints,
+// otherwise that causes issue because our model are invalid in tests.
 void CpModelPresolver::RemoveEmptyConstraints() {
-  // Remove all empty constraints. Note that we need to remap the interval
-  // references.
   std::vector<int> interval_mapping(context_->working_model->constraints_size(),
                                     -1);
   int new_num_constraints = 0;
@@ -75,6 +78,7 @@ void CpModelPresolver::RemoveEmptyConstraints() {
   for (int c = 0; c < old_num_non_empty_constraints; ++c) {
     const auto type = context_->working_model->constraints(c).constraint_case();
     if (type == ConstraintProto::ConstraintCase::CONSTRAINT_NOT_SET) continue;
+    if (type == ConstraintProto::ConstraintCase::kDummyConstraint) continue;
     if (type == ConstraintProto::ConstraintCase::kInterval) {
       interval_mapping[c] = new_num_constraints;
     }
@@ -7215,8 +7219,8 @@ void CopyEverythingExceptVariablesAndConstraintsFieldsIntoContext(
 // Public API.
 // =============================================================================
 
-bool PresolveCpModel(PresolveContext* context,
-                     std::vector<int>* postsolve_mapping) {
+CpSolverStatus PresolveCpModel(PresolveContext* context,
+                               std::vector<int>* postsolve_mapping) {
   CpModelPresolver presolver(context, postsolve_mapping);
   return presolver.Presolve();
 }
@@ -7225,35 +7229,11 @@ CpModelPresolver::CpModelPresolver(PresolveContext* context,
                                    std::vector<int>* postsolve_mapping)
     : postsolve_mapping_(postsolve_mapping),
       context_(context),
-      logger_(context->logger()) {
-  // TODO(user): move in the context.
-  context_->keep_all_feasible_solutions =
-      context_->params().keep_all_feasible_solutions_in_presolve() ||
-      context_->params().enumerate_all_solutions() ||
-      context_->params().fill_tightened_domains_in_response() ||
-      !context_->working_model->assumptions().empty() ||
-      !context_->params().cp_model_presolve();
+      logger_(context->logger()) {}
 
-  // We copy the search strategy to the mapping_model.
-  for (const auto& decision_strategy :
-       context_->working_model->search_strategy()) {
-    *(context_->mapping_model->add_search_strategy()) = decision_strategy;
-  }
-
-  // Initialize the initial context.working_model domains.
-  context_->InitializeNewDomains();
-
-  // TODO(user, fdid): can we scale the objective after bound propagation ?
-  if (context_->working_model->has_floating_point_objective()) {
-    // TODO(user): Mark the model as invalid, and remove the check.
-    CHECK(context_->ScaleFloatingPointObjective());
-  }
-
-  // Initialize the objective.
-  context_->ReadObjectiveFromProto();
-  (void)context_->CanonicalizeObjective();
-  // Note that we delay the call to UpdateNewConstraintsVariableUsage() for
-  // efficiency during LNS presolve.
+CpSolverStatus CpModelPresolver::InfeasibleStatus() {
+  if (logger_->LoggingIsEnabled()) context_->LogInfo();
+  return CpSolverStatus::INFEASIBLE;
 }
 
 // The presolve works as follow:
@@ -7271,53 +7251,87 @@ CpModelPresolver::CpModelPresolver(PresolveContext* context,
 // - All the variables domain will be copied to the mapping_model.
 // - Everything will be remapped so that only the variables appearing in some
 //   constraints will be kept and their index will be in [0, num_new_variables).
-bool CpModelPresolver::Presolve() {
-  // If presolve is false, just run expansion.
-  if (!context_->params().cp_model_presolve()) {
-    context_->UpdateNewConstraintsVariableUsage();
-    ExpandCpModel(context_);
-    if (logger_->LoggingIsEnabled()) context_->LogInfo();
+CpSolverStatus CpModelPresolver::Presolve() {
+  // TODO(user): move in the context.
+  context_->keep_all_feasible_solutions =
+      context_->params().keep_all_feasible_solutions_in_presolve() ||
+      context_->params().enumerate_all_solutions() ||
+      context_->params().fill_tightened_domains_in_response() ||
+      !context_->working_model->assumptions().empty() ||
+      !context_->params().cp_model_presolve();
 
-    // We need to append all the variable equivalence that are still used!
-    if (!context_->ModelIsUnsat()) {
-      EncodeAllAffineRelations();
-    }
-    return true;
+  // We copy the search strategy to the mapping_model.
+  for (const auto& decision_strategy :
+       context_->working_model->search_strategy()) {
+    *(context_->mapping_model->add_search_strategy()) = decision_strategy;
   }
+
+  // Initialize the initial context.working_model domains.
+  context_->InitializeNewDomains();
 
   // Before initializing the constraint <-> variable graph (which is costly), we
   // run a bunch of simple presolve rules. Note that these function should NOT
   // use the graph, or the part that uses it should properly check for
   // context_->ConstraintVariableGraphIsUpToDate() before doing anything that
   // depends on the graph.
-  for (int c = 0; c < context_->working_model->constraints_size(); ++c) {
-    ConstraintProto* ct = context_->working_model->mutable_constraints(c);
-    PresolveEnforcementLiteral(ct);
-    switch (ct->constraint_case()) {
-      case ConstraintProto::ConstraintCase::kBoolOr:
-        PresolveBoolOr(ct);
-        break;
-      case ConstraintProto::ConstraintCase::kBoolAnd:
-        PresolveBoolAnd(ct);
-        break;
-      case ConstraintProto::ConstraintCase::kAtMostOne:
-        PresolveAtMostOne(ct);
-        break;
-      case ConstraintProto::ConstraintCase::kExactlyOne:
-        PresolveExactlyOne(ct);
-        break;
-      case ConstraintProto::ConstraintCase::kLinear:
-        CanonicalizeLinear(ct);
-        break;
-      default:
-        break;
+  if (context_->params().cp_model_presolve()) {
+    for (int c = 0; c < context_->working_model->constraints_size(); ++c) {
+      ConstraintProto* ct = context_->working_model->mutable_constraints(c);
+      PresolveEnforcementLiteral(ct);
+      switch (ct->constraint_case()) {
+        case ConstraintProto::ConstraintCase::kBoolOr:
+          PresolveBoolOr(ct);
+          break;
+        case ConstraintProto::ConstraintCase::kBoolAnd:
+          PresolveBoolAnd(ct);
+          break;
+        case ConstraintProto::ConstraintCase::kAtMostOne:
+          PresolveAtMostOne(ct);
+          break;
+        case ConstraintProto::ConstraintCase::kExactlyOne:
+          PresolveExactlyOne(ct);
+          break;
+        case ConstraintProto::ConstraintCase::kLinear:
+          CanonicalizeLinear(ct);
+          break;
+        default:
+          break;
+      }
+      if (context_->ModelIsUnsat()) break;
     }
-    if (context_->ModelIsUnsat()) break;
   }
 
+  // If the objective is a floating point one, we scale it.
+  //
+  // TODO(user): We should probably try to delay this even more. For that we
+  // just need to isolate more the "dual" reduction that usually need to look at
+  // the objective.
+  if (context_->working_model->has_floating_point_objective()) {
+    if (!context_->ScaleFloatingPointObjective()) {
+      SOLVER_LOG(logger_,
+                 "The floating point objective cannot be scaled with enough "
+                 "precision");
+      return CpSolverStatus::MODEL_INVALID;
+    }
+  }
+
+  // Initialize the objective and the constraint <-> variable graph.
+  context_->ReadObjectiveFromProto();
+  if (!context_->CanonicalizeObjective()) return InfeasibleStatus();
   context_->UpdateNewConstraintsVariableUsage();
   context_->RegisterVariablesUsedInAssumptions();
   DCHECK(context_->ConstraintVariableUsageIsConsistent());
+
+  // If presolve is false, just run expansion.
+  if (!context_->params().cp_model_presolve()) {
+    ExpandCpModel(context_);
+    if (context_->ModelIsUnsat()) return InfeasibleStatus();
+
+    // We need to append all the variable equivalence that are still used!
+    EncodeAllAffineRelations();
+    if (logger_->LoggingIsEnabled()) context_->LogInfo();
+    return CpSolverStatus::UNKNOWN;
+  }
 
   // Main propagation loop.
   for (int iter = 0; iter < context_->params().max_presolve_iterations();
@@ -7340,15 +7354,14 @@ bool CpModelPresolver::Presolve() {
     PresolveToFixPoint();
 
     // Call expansion.
-    if (!context_->ModelIsExpanded() && !context_->ModelIsUnsat()) {
+    if (!context_->ModelIsExpanded()) {
       ExtractEncodingFromLinear();
       ExpandCpModel(context_);
     }
     DCHECK(context_->ConstraintVariableUsageIsConsistent());
 
     // TODO(user): do that and the pure-SAT part below more than once.
-    if (context_->params().cp_model_probing_level() > 0 &&
-        !context_->ModelIsUnsat()) {
+    if (context_->params().cp_model_probing_level() > 0) {
       if (!context_->time_limit()->LimitReached()) {
         Probe();
         PresolveToFixPoint();
@@ -7411,85 +7424,74 @@ bool CpModelPresolver::Presolve() {
       break;
     }
   }
+  if (context_->ModelIsUnsat()) return InfeasibleStatus();
 
   // Regroup no-overlaps into max-cliques.
-  if (!context_->ModelIsUnsat()) {
-    MergeNoOverlapConstraints();
-  }
+  MergeNoOverlapConstraints();
+  if (context_->ModelIsUnsat()) return InfeasibleStatus();
 
   // Tries to spread the objective amongst many variables.
-  if (context_->working_model->has_objective() && !context_->ModelIsUnsat()) {
+  if (context_->working_model->has_objective()) {
     ExpandObjective();
+    if (context_->ModelIsUnsat()) return InfeasibleStatus();
   }
 
   // Adds all needed affine relation to context_->working_model.
-  if (!context_->ModelIsUnsat()) {
-    EncodeAllAffineRelations();
-  }
+  EncodeAllAffineRelations();
+  if (context_->ModelIsUnsat()) return InfeasibleStatus();
 
   // Remove duplicate constraints.
   //
   // TODO(user): We might want to do that earlier so that our count of variable
   // usage is not biased by duplicate constraints.
-  if (!context_->ModelIsUnsat()) {
-    const std::vector<std::pair<int, int>> duplicates =
-        FindDuplicateConstraints(*context_->working_model);
-    for (const auto [dup, rep] : duplicates) {
-      // Note that it is important to look at the type of the representative in
-      // case the constraint became empty.
-      const int type =
-          context_->working_model->constraints(rep).constraint_case();
+  const std::vector<std::pair<int, int>> duplicates =
+      FindDuplicateConstraints(*context_->working_model);
+  for (const auto [dup, rep] : duplicates) {
+    // Note that it is important to look at the type of the representative in
+    // case the constraint became empty.
+    const int type =
+        context_->working_model->constraints(rep).constraint_case();
 
-      // TODO(user): we could delete duplicate identical interval, but we need
-      // to make sure reference to them are updated.
-      if (type == ConstraintProto::ConstraintCase::kInterval) {
-        continue;
-      }
-
-      // For linear constraint, we merge their rhs since it was ignored in the
-      // FindDuplicateConstraints() call.
-      if (type == ConstraintProto::kLinear) {
-        const Domain d1 = ReadDomainFromProto(
-            context_->working_model->constraints(rep).linear());
-        const Domain d2 = ReadDomainFromProto(
-            context_->working_model->constraints(dup).linear());
-        if (d1 != d2) {
-          context_->UpdateRuleStats(
-              "duplicate: merged rhs of linear constraint");
-          const Domain rhs = d1.IntersectionWith(d2);
-          if (rhs.IsEmpty()) {
-            if (!MarkConstraintAsFalse(
-                    context_->working_model->mutable_constraints(rep))) {
-              SOLVER_LOG(logger_, "Unsat after merging two linear constraints");
-              break;
-            }
-
-            // The representative constraint is no longer a linear constraint,
-            // so we will not enter this type case again and will just remove
-            // all subsequent duplicate linear constraints.
-            context_->UpdateConstraintVariableUsage(rep);
-            continue;
-          }
-          FillDomainInProto(rhs,
-                            context_->working_model->mutable_constraints(rep)
-                                ->mutable_linear());
-        }
-      }
-
-      context_->working_model->mutable_constraints(dup)->Clear();
-      context_->UpdateConstraintVariableUsage(dup);
-      context_->UpdateRuleStats("duplicate: removed constraint");
+    // TODO(user): we could delete duplicate identical interval, but we need
+    // to make sure reference to them are updated.
+    if (type == ConstraintProto::ConstraintCase::kInterval) {
+      continue;
     }
+
+    // For linear constraint, we merge their rhs since it was ignored in the
+    // FindDuplicateConstraints() call.
+    if (type == ConstraintProto::kLinear) {
+      const Domain d1 = ReadDomainFromProto(
+          context_->working_model->constraints(rep).linear());
+      const Domain d2 = ReadDomainFromProto(
+          context_->working_model->constraints(dup).linear());
+      if (d1 != d2) {
+        context_->UpdateRuleStats("duplicate: merged rhs of linear constraint");
+        const Domain rhs = d1.IntersectionWith(d2);
+        if (rhs.IsEmpty()) {
+          if (!MarkConstraintAsFalse(
+                  context_->working_model->mutable_constraints(rep))) {
+            SOLVER_LOG(logger_, "Unsat after merging two linear constraints");
+            break;
+          }
+
+          // The representative constraint is no longer a linear constraint,
+          // so we will not enter this type case again and will just remove
+          // all subsequent duplicate linear constraints.
+          context_->UpdateConstraintVariableUsage(rep);
+          continue;
+        }
+        FillDomainInProto(rhs, context_->working_model->mutable_constraints(rep)
+                                   ->mutable_linear());
+      }
+    }
+
+    context_->working_model->mutable_constraints(dup)->Clear();
+    context_->UpdateConstraintVariableUsage(dup);
+    context_->UpdateRuleStats("duplicate: removed constraint");
   }
 
-  if (context_->ModelIsUnsat()) {
-    if (logger_->LoggingIsEnabled()) context_->LogInfo();
-
-    // Set presolved_model to the simplest UNSAT problem (empty clause).
-    context_->working_model->Clear();
-    context_->working_model->add_constraints()->mutable_bool_or();
-    return true;
-  }
+  if (context_->ModelIsUnsat()) return InfeasibleStatus();
 
   // The strategy variable indices will be remapped in ApplyVariableMapping()
   // but first we use the representative of the affine relations for the
@@ -7615,15 +7617,14 @@ bool CpModelPresolver::Presolve() {
   // Stats and checks.
   if (logger_->LoggingIsEnabled()) context_->LogInfo();
 
-  // One possible error that is difficult to avoid here: because of our
-  // objective expansion, we might detect a possible overflow...
-  //
-  // TODO(user): We could abort the expansion when this happen.
+  // This is not supposed to happen, and is more indicative of an error than an
+  // INVALID model. But for our no-overflow preconditions, we might run into bad
+  // situation that causes the final model to be invalid.
   {
     const std::string error = ValidateCpModel(*context_->working_model);
     if (!error.empty()) {
       SOLVER_LOG(logger_, "Error while validating postsolved model: ", error);
-      return false;
+      return CpSolverStatus::MODEL_INVALID;
     }
   }
   {
@@ -7631,10 +7632,11 @@ bool CpModelPresolver::Presolve() {
     if (!error.empty()) {
       SOLVER_LOG(logger_,
                  "Error while validating mapping_model model: ", error);
-      return false;
+      return CpSolverStatus::MODEL_INVALID;
     }
   }
-  return true;
+
+  return CpSolverStatus::UNKNOWN;
 }
 
 void ApplyVariableMapping(const std::vector<int>& mapping,

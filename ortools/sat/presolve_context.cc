@@ -766,18 +766,19 @@ void PresolveContext::CanonicalizeVariable(int ref) {
 bool PresolveContext::ScaleFloatingPointObjective() {
   DCHECK(working_model->has_floating_point_objective());
   DCHECK(!working_model->has_objective());
-  std::vector<std::pair<int, double>> coefficients;
-  for (int i = 0; i < working_model->floating_point_objective().vars_size();
-       ++i) {
-    coefficients.push_back(
-        {working_model->floating_point_objective().vars(i),
-         working_model->floating_point_objective().coeffs(i)});
+  const auto& objective = working_model->floating_point_objective();
+  std::vector<std::pair<int, double>> terms;
+  for (int i = 0; i < objective.vars_size(); ++i) {
+    terms.push_back({objective.vars(i), objective.coeffs(i)});
   }
-  const double offset = working_model->floating_point_objective().offset();
-  const bool maximize = working_model->floating_point_objective().maximize();
+  const double offset = objective.offset();
+  const bool maximize = objective.maximize();
   working_model->clear_floating_point_objective();
-  return ScaleAndSetObjective(params_, coefficients, offset, maximize,
-                              working_model, logger_);
+
+  // We need the domains up to date before scaling.
+  WriteVariableDomainsToProto();
+  return ScaleAndSetObjective(params_, terms, offset, maximize, working_model,
+                              logger_);
 }
 
 bool PresolveContext::CanonicalizeAffineVariable(int ref, int64_t coeff,
@@ -1705,6 +1706,8 @@ bool PresolveContext::SubstituteVariableInObjective(
 
 bool PresolveContext::ExploitExactlyOneInObjective(
     absl::Span<const int> exactly_one) {
+  if (objective_map_.empty()) return false;
+
   int64_t min_coeff = std::numeric_limits<int64_t>::max();
   for (const int ref : exactly_one) {
     const auto it = objective_map_.find(PositiveRef(ref));
@@ -1769,6 +1772,12 @@ void PresolveContext::WriteObjectiveToProto() const {
   for (const auto& entry : entries) {
     mutable_obj->add_vars(entry.first);
     mutable_obj->add_coeffs(entry.second);
+  }
+}
+
+void PresolveContext::WriteVariableDomainsToProto() const {
+  for (int i = 0; i < working_model->variables_size(); ++i) {
+    FillDomainInProto(DomainOf(i), working_model->mutable_variables(i));
   }
 }
 
@@ -1868,10 +1877,7 @@ bool LoadModelForProbing(PresolveContext* context, Model* local_model) {
   if (context->ModelIsUnsat()) return false;
 
   // Update the domain in the current CpModelProto.
-  for (int i = 0; i < context->working_model->variables_size(); ++i) {
-    FillDomainInProto(context->DomainOf(i),
-                      context->working_model->mutable_variables(i));
-  }
+  context->WriteVariableDomainsToProto();
   const CpModelProto& model_proto = *(context->working_model);
 
   // Load the constraints in a local model.

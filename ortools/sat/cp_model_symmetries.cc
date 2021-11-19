@@ -578,16 +578,13 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
   if (context->working_model->has_objective()) {
     context->WriteObjectiveToProto();
   }
-  const int num_vars = proto.variables_size();
-  for (int i = 0; i < num_vars; ++i) {
-    FillDomainInProto(context->DomainOf(i),
-                      context->working_model->mutable_variables(i));
-  }
+  context->WriteVariableDomainsToProto();
 
   // Tricky: the equivalence relation are not part of the proto.
   // We thus add them temporarily to compute the symmetry.
   int64_t num_added = 0;
   const int initial_ct_index = proto.constraints().size();
+  const int num_vars = proto.variables_size();
   for (int var = 0; var < num_vars; ++var) {
     if (context->IsFixed(var)) continue;
     if (context->VariableWasRemoved(var)) continue;

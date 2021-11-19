@@ -66,11 +66,12 @@ class CpModelPresolver {
   CpModelPresolver(PresolveContext* context,
                    std::vector<int>* postsolve_mapping);
 
-  // Returns false if a non-recoverable error was encountered.
-  //
-  // TODO(user): Make sure this can never run into this case provided that the
-  // initial model is valid!
-  bool Presolve();
+  // We returns the status of the problem after presolve:
+  //  - UNKNOWN if everything was ok.
+  //  - INFEASIBLE if the model was proven so during presolve
+  //  - MODEL_INVALID if the model caused some issues, like if we are not able
+  //    to scale a floating point objective with enough precision.
+  CpSolverStatus Presolve();
 
   // Executes presolve method for the given constraint. Public for testing only.
   bool PresolveOneConstraint(int c);
@@ -79,6 +80,10 @@ class CpModelPresolver {
   void RemoveEmptyConstraints();
 
  private:
+  // A simple helper that logs the rules applied so far and return INFEASIBLE.
+  CpSolverStatus InfeasibleStatus();
+
+  // Runs the inner loop of the presolver.
   void PresolveToFixPoint();
 
   // Runs the probing.
@@ -274,8 +279,8 @@ void CopyEverythingExceptVariablesAndConstraintsFieldsIntoContext(
     const CpModelProto& in_model, PresolveContext* context);
 
 // Convenient wrapper to call the full presolve.
-bool PresolveCpModel(PresolveContext* context,
-                     std::vector<int>* postsolve_mapping);
+CpSolverStatus PresolveCpModel(PresolveContext* context,
+                               std::vector<int>* postsolve_mapping);
 
 // Returns the index of duplicate constraints in the given proto in the first
 // element of each pair. The second element of each pair is the "representative"

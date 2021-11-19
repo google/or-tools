@@ -364,6 +364,10 @@ class PresolveContext {
   void WriteObjectiveToProto() const;
   ABSL_MUST_USE_RESULT bool ScaleFloatingPointObjective();
 
+  // Some function need the domain to be up to date in the proto.
+  // This make sures our in-memory domain are writted back to the proto.
+  void WriteVariableDomainsToProto() const;
+
   // Checks if the given exactly_one is included in the objective, and simplify
   // the objective by adding a constant value to all the exactly one terms.
   bool ExploitExactlyOneInObjective(absl::Span<const int> exactly_one);
