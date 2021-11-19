@@ -13,7 +13,7 @@ jobs:
         brew install make
         echo "/usr/local/opt/make/libexec/gnubin" >> $GITHUB_PATH
     - name: Install python3 packages
-      run: python3 -m pip install --user mypy-protobuf absl-py
+      run: python3 -m pip install --user mypy-protobuf absl-py numpy
     - name: Swig install
       run: brew install swig
     - name: Check swig
