@@ -72,13 +72,18 @@ double ConvertVectorBinPackingProblem(const vbp::VectorBinPackingProblem& input,
 vbp::VectorBinPackingSolution SolveVectorBinPackingWithArcFlow(
     const vbp::VectorBinPackingProblem& problem,
     MPSolver::OptimizationProblemType solver_type,
-    const std::string& mip_params, double time_limit, int num_threads) {
+    const std::string& mip_params, double time_limit, int num_threads,
+    int max_bins) {
   ArcFlowGraph graph;
   const double arc_flow_time = ConvertVectorBinPackingProblem(problem, &graph);
 
   int max_num_bins = 0;
-  for (const auto& item : problem.item()) {
-    max_num_bins += item.num_copies();
+  if (max_bins > 0) {
+    max_num_bins = max_bins;
+  } else {
+    for (const auto& item : problem.item()) {
+      max_num_bins += item.num_copies();
+    }
   }
   const int num_types = problem.item_size();
   std::vector<std::vector<MPVariable*>> incoming_vars(graph.nodes.size());
