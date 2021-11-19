@@ -23,7 +23,6 @@ import com.google.ortools.sat.CumulativeConstraintProto;
 import com.google.ortools.sat.DecisionStrategyProto;
 import com.google.ortools.sat.ElementConstraintProto;
 import com.google.ortools.sat.FloatObjectiveProto;
-import com.google.ortools.sat.IntegerArgumentProto;
 import com.google.ortools.sat.InverseConstraintProto;
 import com.google.ortools.sat.LinearArgumentProto;
 import com.google.ortools.sat.LinearConstraintProto;
