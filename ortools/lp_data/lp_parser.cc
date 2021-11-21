@@ -31,7 +31,6 @@
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/lp_data/proto_utils.h"
 #include "re2/re2.h"
-#include "re2/stringpiece.h"
 
 namespace operations_research {
 namespace glop {
@@ -246,7 +245,7 @@ bool LPParser::SetVariableBounds(ColIndex col, Fractional lb, Fractional ub) {
   return true;
 }
 
-TokenType ConsumeToken(absl::string_view* sv, std::string* consumed_name,
+TokenType ConsumeToken(absl::string_view* sp, std::string* consumed_name,
                        double* consumed_coeff) {
   DCHECK(consumed_name != nullptr);
   DCHECK(consumed_coeff != nullptr);
@@ -256,7 +255,6 @@ TokenType ConsumeToken(absl::string_view* sv, std::string* consumed_name,
   static const LazyRE2 kEndPattern = {R"(\s*)"};
 
   // There is nothing more to consume.
-  auto sp = std::unique_ptr<re2::StringPiece>(new re2::StringPiece(sv->data(), sv->length())).get();
   if (sp->empty() || RE2::FullMatch(*sp, *kEndPattern)) {
     return TokenType::END;
   }
@@ -303,11 +301,11 @@ TokenType ConsumeToken(absl::string_view* sv, std::string* consumed_name,
   static const LazyRE2 kValuePattern = {
       R"(\s*([0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?))"};
   if (RE2::Consume(sp, *kValuePattern, &coeff)) {
-    if (!google::protobuf::safe_strtod(coeff, consumed_coeff)) {
-      // Note: If strtod(), Consume(), and kValuePattern are correct, this
+    if (!absl::SimpleAtod(coeff, consumed_coeff)) {
+      // Note: If absl::SimpleAtod(), Consume(), and kValuePattern are correct, this
       // should never happen.
       LOG(ERROR) << "Text: " << coeff << " was matched by RE2 to be "
-                 << "a floating point number, but safe_strtod() failed.";
+                 << "a floating point number, but absl::SimpleAtod() failed.";
       return TokenType::ERROR;
     }
     if (!IsFinite(*consumed_coeff)) {

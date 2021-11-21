@@ -1,6 +1,7 @@
 exports_files([
     "gtest.BUILD",
     "glpk.BUILD",
+    "re2.patch",
     "swig.BUILD",
     "scip.BUILD",
     "scip.patch",

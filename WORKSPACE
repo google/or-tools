@@ -46,6 +46,7 @@ git_repository(
 
 git_repository(
     name = "com_google_re2",
+    patches = ["//bazel:re2.patch"],
     commit = "0dade9f", # release 2021-11-01
     remote = "https://github.com/google/re2.git",
 )
