@@ -78,18 +78,18 @@ void XPRS_CC optimizermsg(XPRSprob prob, void* data, const char* sMsg, int nLen,
   switch (nMsgLvl) {
       /* Print Optimizer error messages and warnings */
     case 4: /* error */
-      printf("%*s\n", nLen, sMsg);
+      LOG(WARNING) << sMsg;
       break;
     case 3: /* warning */
-      printf("%*s\n", nLen, sMsg);
+      LOG(WARNING) << sMsg;
       break;
 
       /* Ignore other messages */
     case 2: /* dialogue */
-      printf("%*s\n", nLen, sMsg);
+      LOG(INFO) << sMsg;
       break;
     case 1: /* information */
-      printf("%*s\n", nLen, sMsg);
+      LOG(INFO) << sMsg;
       break;
 
       /* Exit and flush buffers */
