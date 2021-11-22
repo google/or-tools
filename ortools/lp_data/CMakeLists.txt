@@ -1,4 +1,9 @@
 file(GLOB _SRCS "*.h" "*.cc")
+if(NOT BUILD_LP_PARSER)
+  list(FILTER _SRCS EXCLUDE REGEX ".*/lp_parser.h")
+  list(FILTER _SRCS EXCLUDE REGEX ".*/lp_parser.cc")
+endif()
+
 set(NAME ${PROJECT_NAME}_lp_data)
 
 # Will be merge in libortools.so

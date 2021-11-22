@@ -22,6 +22,12 @@ if(NOT Protobuf_FOUND AND NOT PROTOBUF_FOUND AND NOT TARGET protobuf::libprotobu
   find_dependency(Protobuf REQUIRED ${CONFIG_FLAG})
 endif()
 
+if(@BUILD_LP_PARSER@)
+  if(NOT re2_FOUND AND NOT TARGET re2::re2)
+    find_dependency(re2 REQUIRED ${CONFIG_FLAG})
+  endif()
+endif()
+
 if(@USE_COINOR@)
   if(NOT Clp_FOUND AND NOT TARGET Coin::ClpSolver)
     find_dependency(Clp REQUIRED ${CONFIG_FLAG})

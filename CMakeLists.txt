@@ -77,6 +77,9 @@ message(STATUS "Build Flatzinc: ${BUILD_FLATZINC}")
 CMAKE_DEPENDENT_OPTION(BUILD_GLOP "Build GLOP standalone" ON "NOT BUILD_CXX" OFF)
 message(STATUS "Build standalone Glop: ${BUILD_GLOP}")
 
+option(BUILD_LP_PARSER "Build lp_parser" OFF)
+message(STATUS "Build LP Parser: ${BUILD_LP_PARSER}")
+
 option(BUILD_SAMPLES "Build samples" ON)
 message(STATUS "Build samples: ${BUILD_SAMPLES}")
 CMAKE_DEPENDENT_OPTION(BUILD_CXX_SAMPLES "Build cxx samples" ON "BUILD_SAMPLES;BUILD_CXX" OFF)
@@ -127,9 +130,11 @@ CMAKE_DEPENDENT_OPTION(BUILD_Protobuf "Build the Protobuf dependency Library" OF
   "NOT BUILD_DEPS" ON)
 message(STATUS "Build protobuf: ${BUILD_Protobuf}")
 
-CMAKE_DEPENDENT_OPTION(BUILD_re2 "Build the re2 dependency Library" OFF
-  "NOT BUILD_DEPS" ON)
-message(STATUS "Build re2: ${BUILD_re2}")
+if(BUILD_LP_PARSER)
+  CMAKE_DEPENDENT_OPTION(BUILD_re2 "Build the re2 dependency Library" OFF
+    "NOT BUILD_DEPS" ON)
+  message(STATUS "Build re2: ${BUILD_re2}")
+endif()
 
 # Optional third party solvers (enabled by default)
 CMAKE_DEPENDENT_OPTION(USE_SCIP "Use the Scip solver" ON "BUILD_CXX" OFF)
