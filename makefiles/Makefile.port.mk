@@ -8,6 +8,7 @@ OS = Windows
 endif
 ifeq ($(OS),Windows)
   SYSTEM = win
+  SHELL = cmd.exe
 else
   SYSTEM = unix
 endif

@@ -1,0 +1,3729 @@
+diff --git a/BUILD b/BUILD
+index 00330b6..8d44eba 100644
+--- a/BUILD
++++ b/BUILD
+@@ -50,7 +50,6 @@ cc_library(
+         "re2/simplify.cc",
+         "re2/sparse_array.h",
+         "re2/sparse_set.h",
+-        "re2/stringpiece.cc",
+         "re2/tostring.cc",
+         "re2/unicode_casefold.cc",
+         "re2/unicode_casefold.h",
+@@ -70,7 +69,6 @@ cc_library(
+         "re2/filtered_re2.h",
+         "re2/re2.h",
+         "re2/set.h",
+-        "re2/stringpiece.h",
+     ],
+     copts = select({
+         ":wasm": [],
+@@ -86,6 +84,9 @@ cc_library(
+         ":windows": [],
+         "//conditions:default": ["-pthread"],
+     }),
++    deps = [
++        "@com_google_absl//absl/strings",
++    ],
+     visibility = ["//visibility:public"],
+ )
+ 
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index fcd3870..a19c671 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -2,16 +2,17 @@
+ # Use of this source code is governed by a BSD-style
+ # license that can be found in the LICENSE file.
+ 
+-# Old enough to support Ubuntu Xenial.
+-cmake_minimum_required(VERSION 3.5.1)
++# Old enough to support Ubuntu Bionic.
++cmake_minimum_required(VERSION 3.15)
+ 
+ project(RE2 CXX)
+ include(CTest)
+ include(GNUInstallDirs)
+ 
+ if(NOT CMAKE_CXX_STANDARD)
+-  set(CMAKE_CXX_STANDARD 11)
++  set(CMAKE_CXX_STANDARD 17)
+   set(CMAKE_CXX_STANDARD_REQUIRED ON)
++  set(CMAKE_CXX_EXTENSIONS OFF)
+ endif()
+ 
+ option(BUILD_SHARED_LIBS "build shared libraries" OFF)
+@@ -21,6 +22,11 @@ option(USEPCRE "use PCRE in tests and benchmarks" OFF)
+ # so we provide an option similar to BUILD_TESTING, but just for RE2.
+ option(RE2_BUILD_TESTING "enable testing for RE2" ON)
+ 
++
++if(NOT TARGET absl::strings)
++  find_package(absl REQUIRED)
++endif()
++
+ # ABI version
+ # http://tldp.org/HOWTO/Program-Library-HOWTO/shared-libraries.html
+ set(SONAME 9)
+@@ -89,6 +95,7 @@ add_library(re2::re2 ALIAS re2)
+ if(UNIX)
+   target_link_libraries(re2 PUBLIC Threads::Threads)
+ endif()
++target_link_libraries(re2 PUBLIC absl::strings)
+ 
+ if(RE2_BUILD_TESTING)
+   set(TESTING_SOURCES
+diff --git a/WORKSPACE b/WORKSPACE
+index b35619c..908e100 100644
+--- a/WORKSPACE
++++ b/WORKSPACE
+@@ -5,3 +5,11 @@
+ # Bazel (http://bazel.io/) WORKSPACE file for RE2.
+ 
+ workspace(name = "com_googlesource_code_re2")
++
++load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository", "new_git_repository")
++
++git_repository(
++    name = "com_google_absl",
++    commit = "278e0a0", # release 20210324.2
++    remote = "https://github.com/abseil/abseil-cpp.git",
++)
+diff --git a/re2/bitstate.cc b/re2/bitstate.cc
+index 877e548..2b742dd 100644
+--- a/re2/bitstate.cc
++++ b/re2/bitstate.cc
+@@ -42,9 +42,9 @@ class BitState {
+ 
+   // The usual Search prototype.
+   // Can only call Search once per BitState.
+-  bool Search(const StringPiece& text, const StringPiece& context,
++  bool Search(const absl::string_view& text, const absl::string_view& context,
+               bool anchored, bool longest,
+-              StringPiece* submatch, int nsubmatch);
++              absl::string_view* submatch, int nsubmatch);
+ 
+  private:
+   inline bool ShouldVisit(int id, const char* p);
+@@ -54,12 +54,12 @@ class BitState {
+ 
+   // Search parameters
+   Prog* prog_;              // program being run
+-  StringPiece text_;        // text being searched
+-  StringPiece context_;     // greater context of text being searched
++  absl::string_view text_;        // text being searched
++  absl::string_view context_;     // greater context of text being searched
+   bool anchored_;           // whether search is anchored at text.begin()
+   bool longest_;            // whether search wants leftmost-longest match
+   bool endmatch_;           // whether match must end at text.end()
+-  StringPiece* submatch_;   // submatches to fill in
++  absl::string_view* submatch_;   // submatches to fill in
+   int nsubmatch_;           //   # of submatches to fill in
+ 
+   // Search state
+@@ -257,7 +257,7 @@ bool BitState::TrySearch(int id0, const char* p0) {
+             (longest_ && p > submatch_[0].data() + submatch_[0].size())) {
+           for (int i = 0; i < nsubmatch_; i++)
+             submatch_[i] =
+-                StringPiece(cap_[2 * i],
++                absl::string_view(cap_[2 * i],
+                             static_cast<size_t>(cap_[2 * i + 1] - cap_[2 * i]));
+         }
+ 
+@@ -285,9 +285,9 @@ bool BitState::TrySearch(int id0, const char* p0) {
+ }
+ 
+ // Search text (within context) for prog_.
+-bool BitState::Search(const StringPiece& text, const StringPiece& context,
++bool BitState::Search(const absl::string_view& text, const absl::string_view& context,
+                       bool anchored, bool longest,
+-                      StringPiece* submatch, int nsubmatch) {
++                      absl::string_view* submatch, int nsubmatch) {
+   // Search parameters.
+   text_ = text;
+   context_ = context;
+@@ -303,7 +303,7 @@ bool BitState::Search(const StringPiece& text, const StringPiece& context,
+   submatch_ = submatch;
+   nsubmatch_ = nsubmatch;
+   for (int i = 0; i < nsubmatch_; i++)
+-    submatch_[i] = StringPiece();
++    submatch_[i] = absl::string_view();
+ 
+   // Allocate scratch space.
+   int nvisited = prog_->list_count() * static_cast<int>(text.size()+1);
+@@ -353,16 +353,16 @@ bool BitState::Search(const StringPiece& text, const StringPiece& context,
+ }
+ 
+ // Bit-state search.
+-bool Prog::SearchBitState(const StringPiece& text,
+-                          const StringPiece& context,
++bool Prog::SearchBitState(const absl::string_view& text,
++                          const absl::string_view& context,
+                           Anchor anchor,
+                           MatchKind kind,
+-                          StringPiece* match,
++                          absl::string_view* match,
+                           int nmatch) {
+   // If full match, we ask for an anchored longest match
+   // and then check that match[0] == text.
+   // So make sure match[0] exists.
+-  StringPiece sp0;
++  absl::string_view sp0;
+   if (kind == kFullMatch) {
+     anchor = kAnchored;
+     if (nmatch < 1) {
+diff --git a/re2/compile.cc b/re2/compile.cc
+index 61d801a..4862de2 100644
+--- a/re2/compile.cc
++++ b/re2/compile.cc
+@@ -1243,7 +1243,7 @@ Prog* Compiler::CompileSet(Regexp* re, RE2::Anchor anchor, int64_t max_mem) {
+   // Make sure DFA has enough memory to operate,
+   // since we're not going to fall back to the NFA.
+   bool dfa_failed = false;
+-  StringPiece sp = "hello, world";
++  absl::string_view sp = "hello, world";
+   prog->SearchDFA(sp, sp, Prog::kAnchored, Prog::kManyMatch,
+                   NULL, &dfa_failed, NULL);
+   if (dfa_failed) {
+diff --git a/re2/dfa.cc b/re2/dfa.cc
+index d47c7d5..f81d00c 100644
+--- a/re2/dfa.cc
++++ b/re2/dfa.cc
+@@ -44,7 +44,7 @@
+ #include "re2/prog.h"
+ #include "re2/re2.h"
+ #include "re2/sparse_set.h"
+-#include "re2/stringpiece.h"
++#include "absl/strings/string_view.h"
+ 
+ // Silence "zero-sized array in struct/union" warning for DFA::State::next_.
+ #ifdef _MSC_VER
+@@ -88,7 +88,7 @@ class DFA {
+   //   returning the leftmost end of the match instead of the rightmost one.
+   // If the DFA cannot complete the search (for example, if it is out of
+   //   memory), it sets *failed and returns false.
+-  bool Search(const StringPiece& text, const StringPiece& context,
++  bool Search(const absl::string_view& text, const absl::string_view& context,
+               bool anchored, bool want_earliest_match, bool run_forward,
+               bool* failed, const char** ep, SparseSet* matches);
+ 
+@@ -238,7 +238,7 @@ class DFA {
+ 
+   // Search parameters
+   struct SearchParams {
+-    SearchParams(const StringPiece& text, const StringPiece& context,
++    SearchParams(const absl::string_view& text, const absl::string_view& context,
+                  RWLocker* cache_lock)
+       : text(text),
+         context(context),
+@@ -252,8 +252,8 @@ class DFA {
+         ep(NULL),
+         matches(NULL) {}
+ 
+-    StringPiece text;
+-    StringPiece context;
++    absl::string_view text;
++    absl::string_view context;
+     bool anchored;
+     bool can_prefix_accel;
+     bool want_earliest_match;
+@@ -1623,8 +1623,8 @@ bool DFA::FastSearchLoop(SearchParams* params) {
+ // state for the DFA search loop.  Fills in params and returns true on success.
+ // Returns false on failure.
+ bool DFA::AnalyzeSearch(SearchParams* params) {
+-  const StringPiece& text = params->text;
+-  const StringPiece& context = params->context;
++  const absl::string_view& text = params->text;
++  const absl::string_view& context = params->context;
+ 
+   // Sanity check: make sure that text lies within context.
+   if (BeginPtr(text) < BeginPtr(context) || EndPtr(text) > EndPtr(context)) {
+@@ -1728,8 +1728,8 @@ bool DFA::AnalyzeSearchHelper(SearchParams* params, StartInfo* info,
+ }
+ 
+ // The actual DFA search: calls AnalyzeSearch and then FastSearchLoop.
+-bool DFA::Search(const StringPiece& text,
+-                 const StringPiece& context,
++bool DFA::Search(const absl::string_view& text,
++                 const absl::string_view& context,
+                  bool anchored,
+                  bool want_earliest_match,
+                  bool run_forward,
+@@ -1823,12 +1823,12 @@ void Prog::DeleteDFA(DFA* dfa) {
+ //
+ // This is the only external interface (class DFA only exists in this file).
+ //
+-bool Prog::SearchDFA(const StringPiece& text, const StringPiece& const_context,
+-                     Anchor anchor, MatchKind kind, StringPiece* match0,
++bool Prog::SearchDFA(const absl::string_view& text, const absl::string_view& const_context,
++                     Anchor anchor, MatchKind kind, absl::string_view* match0,
+                      bool* failed, SparseSet* matches) {
+   *failed = false;
+ 
+-  StringPiece context = const_context;
++  absl::string_view context = const_context;
+   if (context.data() == NULL)
+     context = text;
+   bool caret = anchor_start();
+@@ -1889,10 +1889,10 @@ bool Prog::SearchDFA(const StringPiece& text, const StringPiece& const_context,
+   if (match0) {
+     if (reversed_)
+       *match0 =
+-          StringPiece(ep, static_cast<size_t>(text.data() + text.size() - ep));
++          absl::string_view(ep, static_cast<size_t>(text.data() + text.size() - ep));
+     else
+       *match0 =
+-          StringPiece(text.data(), static_cast<size_t>(ep - text.data()));
++          absl::string_view(text.data(), static_cast<size_t>(ep - text.data()));
+   }
+   return true;
+ }
+@@ -1905,7 +1905,7 @@ int DFA::BuildAllStates(const Prog::DFAStateCallback& cb) {
+   // Pick out start state for unanchored search
+   // at beginning of text.
+   RWLocker l(&cache_mutex_);
+-  SearchParams params(StringPiece(), StringPiece(), &l);
++  SearchParams params(absl::string_view(), absl::string_view(), &l);
+   params.anchored = false;
+   if (!AnalyzeSearch(&params) ||
+       params.start == NULL ||
+@@ -1993,7 +1993,7 @@ bool DFA::PossibleMatchRange(std::string* min, std::string* max, int maxlen) {
+ 
+   // Pick out start state for anchored search at beginning of text.
+   RWLocker l(&cache_mutex_);
+-  SearchParams params(StringPiece(), StringPiece(), &l);
++  SearchParams params(absl::string_view(), absl::string_view(), &l);
+   params.anchored = true;
+   if (!AnalyzeSearch(&params))
+     return false;
+diff --git a/re2/filtered_re2.cc b/re2/filtered_re2.cc
+index 5df9745..e888e6e 100644
+--- a/re2/filtered_re2.cc
++++ b/re2/filtered_re2.cc
+@@ -46,7 +46,7 @@ FilteredRE2& FilteredRE2::operator=(FilteredRE2&& other) {
+   return *this;
+ }
+ 
+-RE2::ErrorCode FilteredRE2::Add(const StringPiece& pattern,
++RE2::ErrorCode FilteredRE2::Add(const absl::string_view& pattern,
+                                 const RE2::Options& options, int* id) {
+   RE2* re = new RE2(pattern, options);
+   RE2::ErrorCode code = re->error_code();
+@@ -85,14 +85,14 @@ void FilteredRE2::Compile(std::vector<std::string>* atoms) {
+   compiled_ = true;
+ }
+ 
+-int FilteredRE2::SlowFirstMatch(const StringPiece& text) const {
++int FilteredRE2::SlowFirstMatch(const absl::string_view& text) const {
+   for (size_t i = 0; i < re2_vec_.size(); i++)
+     if (RE2::PartialMatch(text, *re2_vec_[i]))
+       return static_cast<int>(i);
+   return -1;
+ }
+ 
+-int FilteredRE2::FirstMatch(const StringPiece& text,
++int FilteredRE2::FirstMatch(const absl::string_view& text,
+                             const std::vector<int>& atoms) const {
+   if (!compiled_) {
+     LOG(DFATAL) << "FirstMatch called before Compile.";
+@@ -107,7 +107,7 @@ int FilteredRE2::FirstMatch(const StringPiece& text,
+ }
+ 
+ bool FilteredRE2::AllMatches(
+-    const StringPiece& text,
++    const absl::string_view& text,
+     const std::vector<int>& atoms,
+     std::vector<int>* matching_regexps) const {
+   matching_regexps->clear();
+diff --git a/re2/filtered_re2.h b/re2/filtered_re2.h
+index dd618c7..5d55a78 100644
+--- a/re2/filtered_re2.h
++++ b/re2/filtered_re2.h
+@@ -47,7 +47,7 @@ class FilteredRE2 {
+   // Uses RE2 constructor to create a RE2 object (re). Returns
+   // re->error_code(). If error_code is other than NoError, then re is
+   // deleted and not added to re2_vec_.
+-  RE2::ErrorCode Add(const StringPiece& pattern,
++  RE2::ErrorCode Add(const absl::string_view& pattern,
+                      const RE2::Options& options,
+                      int* id);
+ 
+@@ -63,17 +63,17 @@ class FilteredRE2 {
+   // Returns -1 on no match. Can be called prior to Compile.
+   // Does not do any filtering: simply tries to Match the
+   // regexps in a loop.
+-  int SlowFirstMatch(const StringPiece& text) const;
++  int SlowFirstMatch(const absl::string_view& text) const;
+ 
+   // Returns the index of the first matching regexp.
+   // Returns -1 on no match. Compile has to be called before
+   // calling this.
+-  int FirstMatch(const StringPiece& text,
++  int FirstMatch(const absl::string_view& text,
+                  const std::vector<int>& atoms) const;
+ 
+   // Returns the indices of all matching regexps, after first clearing
+   // matched_regexps.
+-  bool AllMatches(const StringPiece& text,
++  bool AllMatches(const absl::string_view& text,
+                   const std::vector<int>& atoms,
+                   std::vector<int>* matching_regexps) const;
+ 
+diff --git a/re2/nfa.cc b/re2/nfa.cc
+index c7339f8..defb31e 100644
+--- a/re2/nfa.cc
++++ b/re2/nfa.cc
+@@ -60,9 +60,9 @@ class NFA {
+   // Submatch[0] is the entire match.  When there is a choice in
+   // which text matches each subexpression, the submatch boundaries
+   // are chosen to match what a backtracking implementation would choose.
+-  bool Search(const StringPiece& text, const StringPiece& context,
++  bool Search(const absl::string_view& text, const absl::string_view& context,
+               bool anchored, bool longest,
+-              StringPiece* submatch, int nsubmatch);
++              absl::string_view* submatch, int nsubmatch);
+ 
+  private:
+   struct Thread {
+@@ -92,7 +92,7 @@ class NFA {
+   // Enqueues only the ByteRange instructions that match byte c.
+   // context is used (with p) for evaluating empty-width specials.
+   // p is the current input position, and t0 is the current thread.
+-  void AddToThreadq(Threadq* q, int id0, int c, const StringPiece& context,
++  void AddToThreadq(Threadq* q, int id0, int c, const absl::string_view& context,
+                     const char* p, Thread* t0);
+ 
+   // Run runq on byte c, appending new states to nextq.
+@@ -102,7 +102,7 @@ class NFA {
+   // p-1 will be used when processing Match instructions.
+   // Frees all the threads on runq.
+   // If there is a shortcut to the end, returns that shortcut.
+-  int Step(Threadq* runq, Threadq* nextq, int c, const StringPiece& context,
++  int Step(Threadq* runq, Threadq* nextq, int c, const absl::string_view& context,
+            const char* p);
+ 
+   // Returns text version of capture information, for debugging.
+@@ -192,7 +192,7 @@ void NFA::Decref(Thread* t) {
+ // Enqueues only the ByteRange instructions that match byte c.
+ // context is used (with p) for evaluating empty-width specials.
+ // p is the current input position, and t0 is the current thread.
+-void NFA::AddToThreadq(Threadq* q, int id0, int c, const StringPiece& context,
++void NFA::AddToThreadq(Threadq* q, int id0, int c, const absl::string_view& context,
+                        const char* p, Thread* t0) {
+   if (id0 == 0)
+     return;
+@@ -328,7 +328,7 @@ void NFA::AddToThreadq(Threadq* q, int id0, int c, const StringPiece& context,
+ // p-1 will be used when processing Match instructions.
+ // Frees all the threads on runq.
+ // If there is a shortcut to the end, returns that shortcut.
+-int NFA::Step(Threadq* runq, Threadq* nextq, int c, const StringPiece& context,
++int NFA::Step(Threadq* runq, Threadq* nextq, int c, const absl::string_view& context,
+               const char* p) {
+   nextq->clear();
+ 
+@@ -445,13 +445,13 @@ std::string NFA::FormatCapture(const char** capture) {
+   return s;
+ }
+ 
+-bool NFA::Search(const StringPiece& text, const StringPiece& const_context,
++bool NFA::Search(const absl::string_view& text, const absl::string_view& const_context,
+             bool anchored, bool longest,
+-            StringPiece* submatch, int nsubmatch) {
++            absl::string_view* submatch, int nsubmatch) {
+   if (start_ == 0)
+     return false;
+ 
+-  StringPiece context = const_context;
++  absl::string_view context = const_context;
+   if (context.data() == NULL)
+     context = text;
+ 
+@@ -617,7 +617,7 @@ bool NFA::Search(const StringPiece& text, const StringPiece& const_context,
+   if (matched_) {
+     for (int i = 0; i < nsubmatch; i++)
+       submatch[i] =
+-          StringPiece(match_[2 * i],
++          absl::string_view(match_[2 * i],
+                       static_cast<size_t>(match_[2 * i + 1] - match_[2 * i]));
+     if (ExtraDebug)
+       fprintf(stderr, "match (%td,%td)\n",
+@@ -629,14 +629,14 @@ bool NFA::Search(const StringPiece& text, const StringPiece& const_context,
+ }
+ 
+ bool
+-Prog::SearchNFA(const StringPiece& text, const StringPiece& context,
++Prog::SearchNFA(const absl::string_view& text, const absl::string_view& context,
+                 Anchor anchor, MatchKind kind,
+-                StringPiece* match, int nmatch) {
++                absl::string_view* match, int nmatch) {
+   if (ExtraDebug)
+     Dump();
+ 
+   NFA nfa(this);
+-  StringPiece sp;
++  absl::string_view sp;
+   if (kind == kFullMatch) {
+     anchor = kAnchored;
+     if (nmatch == 0) {
+diff --git a/re2/onepass.cc b/re2/onepass.cc
+index 2639746..dd6a38b 100644
+--- a/re2/onepass.cc
++++ b/re2/onepass.cc
+@@ -64,7 +64,7 @@
+ #include "re2/pod_array.h"
+ #include "re2/prog.h"
+ #include "re2/sparse_set.h"
+-#include "re2/stringpiece.h"
++#include "absl/strings/string_view.h"
+ 
+ // Silence "zero-sized array in struct/union" warning for OneState::action.
+ #ifdef _MSC_VER
+@@ -189,7 +189,7 @@ void OnePass_Checks() {
+                 "kMaxCap disagrees with kMaxOnePassCapture");
+ }
+ 
+-static bool Satisfy(uint32_t cond, const StringPiece& context, const char* p) {
++static bool Satisfy(uint32_t cond, const absl::string_view& context, const char* p) {
+   uint32_t satisfied = Prog::EmptyFlags(context, p);
+   if (cond & kEmptyAllFlags & ~satisfied)
+     return false;
+@@ -211,10 +211,10 @@ static inline OneState* IndexToNode(uint8_t* nodes, int statesize,
+   return reinterpret_cast<OneState*>(nodes + statesize*nodeindex);
+ }
+ 
+-bool Prog::SearchOnePass(const StringPiece& text,
+-                         const StringPiece& const_context,
++bool Prog::SearchOnePass(const absl::string_view& text,
++                         const absl::string_view& const_context,
+                          Anchor anchor, MatchKind kind,
+-                         StringPiece* match, int nmatch) {
++                         absl::string_view* match, int nmatch) {
+   if (anchor != kAnchored && kind != kFullMatch) {
+     LOG(DFATAL) << "Cannot use SearchOnePass for unanchored matches.";
+     return false;
+@@ -234,7 +234,7 @@ bool Prog::SearchOnePass(const StringPiece& text,
+   for (int i = 0; i < ncap; i++)
+     matchcap[i] = NULL;
+ 
+-  StringPiece context = const_context;
++  absl::string_view context = const_context;
+   if (context.data() == NULL)
+     context = text;
+   if (anchor_start() && BeginPtr(context) != BeginPtr(text))
+@@ -340,7 +340,7 @@ done:
+     return false;
+   for (int i = 0; i < nmatch; i++)
+     match[i] =
+-        StringPiece(matchcap[2 * i],
++        absl::string_view(matchcap[2 * i],
+                     static_cast<size_t>(matchcap[2 * i + 1] - matchcap[2 * i]));
+   return true;
+ }
+diff --git a/re2/parse.cc b/re2/parse.cc
+index 85f16f0..3a79c99 100644
+--- a/re2/parse.cc
++++ b/re2/parse.cc
+@@ -31,7 +31,7 @@
+ #include "util/utf.h"
+ #include "re2/pod_array.h"
+ #include "re2/regexp.h"
+-#include "re2/stringpiece.h"
++#include "absl/strings/string_view.h"
+ #include "re2/unicode_casefold.h"
+ #include "re2/unicode_groups.h"
+ #include "re2/walker-inl.h"
+@@ -70,7 +70,7 @@ void Regexp::FUZZING_ONLY_set_maximum_repeat_count(int i) {
+ 
+ class Regexp::ParseState {
+  public:
+-  ParseState(ParseFlags flags, const StringPiece& whole_regexp,
++  ParseState(ParseFlags flags, const absl::string_view& whole_regexp,
+              RegexpStatus* status);
+   ~ParseState();
+ 
+@@ -107,18 +107,18 @@ class Regexp::ParseState {
+   // Pushes a repeat operator regexp onto the stack.
+   // A valid argument for the operator must already be on the stack.
+   // s is the name of the operator, for use in error messages.
+-  bool PushRepeatOp(RegexpOp op, const StringPiece& s, bool nongreedy);
++  bool PushRepeatOp(RegexpOp op, const absl::string_view& s, bool nongreedy);
+ 
+   // Pushes a repetition regexp onto the stack.
+   // A valid argument for the operator must already be on the stack.
+-  bool PushRepetition(int min, int max, const StringPiece& s, bool nongreedy);
++  bool PushRepetition(int min, int max, const absl::string_view& s, bool nongreedy);
+ 
+   // Checks whether a particular regexp op is a marker.
+   bool IsMarker(RegexpOp op);
+ 
+   // Processes a left parenthesis in the input.
+   // Pushes a marker onto the stack.
+-  bool DoLeftParen(const StringPiece& name);
++  bool DoLeftParen(const absl::string_view& name);
+   bool DoLeftParenNoCapture();
+ 
+   // Processes a vertical bar in the input.
+@@ -142,23 +142,23 @@ class Regexp::ParseState {
+ 
+   // Parse a character class into *out_re.
+   // Removes parsed text from s.
+-  bool ParseCharClass(StringPiece* s, Regexp** out_re,
++  bool ParseCharClass(absl::string_view* s, Regexp** out_re,
+                       RegexpStatus* status);
+ 
+   // Parse a character class character into *rp.
+   // Removes parsed text from s.
+-  bool ParseCCCharacter(StringPiece* s, Rune *rp,
+-                        const StringPiece& whole_class,
++  bool ParseCCCharacter(absl::string_view* s, Rune *rp,
++                        const absl::string_view& whole_class,
+                         RegexpStatus* status);
+ 
+   // Parse a character class range into rr.
+   // Removes parsed text from s.
+-  bool ParseCCRange(StringPiece* s, RuneRange* rr,
+-                    const StringPiece& whole_class,
++  bool ParseCCRange(absl::string_view* s, RuneRange* rr,
++                    const absl::string_view& whole_class,
+                     RegexpStatus* status);
+ 
+   // Parse a Perl flag set or non-capturing group from s.
+-  bool ParsePerlFlags(StringPiece* s);
++  bool ParsePerlFlags(absl::string_view* s);
+ 
+ 
+   // Finishes the current concatenation,
+@@ -177,7 +177,7 @@ class Regexp::ParseState {
+ 
+ private:
+   ParseFlags flags_;
+-  StringPiece whole_regexp_;
++  absl::string_view whole_regexp_;
+   RegexpStatus* status_;
+   Regexp* stacktop_;
+   int ncap_;  // number of capturing parens seen
+@@ -192,7 +192,7 @@ const RegexpOp kLeftParen = static_cast<RegexpOp>(kMaxRegexpOp+1);
+ const RegexpOp kVerticalBar = static_cast<RegexpOp>(kMaxRegexpOp+2);
+ 
+ Regexp::ParseState::ParseState(ParseFlags flags,
+-                               const StringPiece& whole_regexp,
++                               const absl::string_view& whole_regexp,
+                                RegexpStatus* status)
+   : flags_(flags), whole_regexp_(whole_regexp),
+     status_(status), stacktop_(NULL), ncap_(0) {
+@@ -472,7 +472,7 @@ bool Regexp::ParseState::PushSimpleOp(RegexpOp op) {
+ // Pushes a repeat operator regexp onto the stack.
+ // A valid argument for the operator must already be on the stack.
+ // The char c is the name of the operator, for use in error messages.
+-bool Regexp::ParseState::PushRepeatOp(RegexpOp op, const StringPiece& s,
++bool Regexp::ParseState::PushRepeatOp(RegexpOp op, const absl::string_view& s,
+                                       bool nongreedy) {
+   if (stacktop_ == NULL || IsMarker(stacktop_->op())) {
+     status_->set_code(kRegexpRepeatArgument);
+@@ -566,7 +566,7 @@ int RepetitionWalker::ShortVisit(Regexp* re, int parent_arg) {
+ // Pushes a repetition regexp onto the stack.
+ // A valid argument for the operator must already be on the stack.
+ bool Regexp::ParseState::PushRepetition(int min, int max,
+-                                        const StringPiece& s,
++                                        const absl::string_view& s,
+                                         bool nongreedy) {
+   if ((max != -1 && max < min) ||
+       min > maximum_repeat_count ||
+@@ -609,7 +609,7 @@ bool Regexp::ParseState::IsMarker(RegexpOp op) {
+ 
+ // Processes a left parenthesis in the input.
+ // Pushes a marker onto the stack.
+-bool Regexp::ParseState::DoLeftParen(const StringPiece& name) {
++bool Regexp::ParseState::DoLeftParen(const absl::string_view& name) {
+   Regexp* re = new Regexp(kLeftParen, flags_);
+   re->cap_ = ++ncap_;
+   if (name.data() != NULL)
+@@ -1325,7 +1325,7 @@ bool Regexp::ParseState::MaybeConcatString(int r, ParseFlags flags) {
+ 
+ // Parses a decimal integer, storing it in *np.
+ // Sets *s to span the remainder of the string.
+-static bool ParseInteger(StringPiece* s, int* np) {
++static bool ParseInteger(absl::string_view* s, int* np) {
+   if (s->empty() || !isdigit((*s)[0] & 0xFF))
+     return false;
+   // Disallow leading zeros.
+@@ -1351,10 +1351,10 @@ static bool ParseInteger(StringPiece* s, int* np) {
+ // sets *hi to -1 to signify this.
+ // {,2} is NOT a valid suffix.
+ // The Maybe in the name signifies that the regexp parse
+-// doesn't fail even if ParseRepetition does, so the StringPiece
++// doesn't fail even if ParseRepetition does, so the absl::string_view
+ // s must NOT be edited unless MaybeParseRepetition returns true.
+-static bool MaybeParseRepetition(StringPiece* sp, int* lo, int* hi) {
+-  StringPiece s = *sp;
++static bool MaybeParseRepetition(absl::string_view* sp, int* lo, int* hi) {
++  absl::string_view s = *sp;
+   if (s.empty() || s[0] != '{')
+     return false;
+   s.remove_prefix(1);  // '{'
+@@ -1385,12 +1385,12 @@ static bool MaybeParseRepetition(StringPiece* sp, int* lo, int* hi) {
+   return true;
+ }
+ 
+-// Removes the next Rune from the StringPiece and stores it in *r.
++// Removes the next Rune from the absl::string_view and stores it in *r.
+ // Returns number of bytes removed from sp.
+ // Behaves as though there is a terminating NUL at the end of sp.
+ // Argument order is backwards from usual Google style
+ // but consistent with chartorune.
+-static int StringPieceToRune(Rune *r, StringPiece *sp, RegexpStatus* status) {
++static int StringViewToRune(Rune *r, absl::string_view *sp, RegexpStatus* status) {
+   // fullrune() takes int, not size_t. However, it just looks
+   // at the leading byte and treats any length >= 4 the same.
+   if (fullrune(sp->data(), static_cast<int>(std::min(size_t{4}, sp->size())))) {
+@@ -1411,18 +1411,18 @@ static int StringPieceToRune(Rune *r, StringPiece *sp, RegexpStatus* status) {
+ 
+   if (status != NULL) {
+     status->set_code(kRegexpBadUTF8);
+-    status->set_error_arg(StringPiece());
++    status->set_error_arg(absl::string_view());
+   }
+   return -1;
+ }
+ 
+ // Returns whether name is valid UTF-8.
+ // If not, sets status to kRegexpBadUTF8.
+-static bool IsValidUTF8(const StringPiece& s, RegexpStatus* status) {
+-  StringPiece t = s;
++static bool IsValidUTF8(const absl::string_view& s, RegexpStatus* status) {
++  absl::string_view t = s;
+   Rune r;
+   while (!t.empty()) {
+-    if (StringPieceToRune(&r, &t, status) < 0)
++    if (StringViewToRune(&r, &t, status) < 0)
+       return false;
+   }
+   return true;
+@@ -1450,23 +1450,23 @@ static int UnHex(int c) {
+ // Parse an escape sequence (e.g., \n, \{).
+ // Sets *s to span the remainder of the string.
+ // Sets *rp to the named character.
+-static bool ParseEscape(StringPiece* s, Rune* rp,
++static bool ParseEscape(absl::string_view* s, Rune* rp,
+                         RegexpStatus* status, int rune_max) {
+   const char* begin = s->data();
+   if (s->empty() || (*s)[0] != '\\') {
+     // Should not happen - caller always checks.
+     status->set_code(kRegexpInternalError);
+-    status->set_error_arg(StringPiece());
++    status->set_error_arg(absl::string_view());
+     return false;
+   }
+   if (s->size() == 1) {
+     status->set_code(kRegexpTrailingBackslash);
+-    status->set_error_arg(StringPiece());
++    status->set_error_arg(absl::string_view());
+     return false;
+   }
+   Rune c, c1;
+   s->remove_prefix(1);  // backslash
+-  if (StringPieceToRune(&c, s, status) < 0)
++  if (StringViewToRune(&c, s, status) < 0)
+     return false;
+   int code;
+   switch (c) {
+@@ -1516,7 +1516,7 @@ static bool ParseEscape(StringPiece* s, Rune* rp,
+     case 'x':
+       if (s->empty())
+         goto BadEscape;
+-      if (StringPieceToRune(&c, s, status) < 0)
++      if (StringViewToRune(&c, s, status) < 0)
+         return false;
+       if (c == '{') {
+         // Any number of digits in braces.
+@@ -1525,7 +1525,7 @@ static bool ParseEscape(StringPiece* s, Rune* rp,
+         // Perl accepts any text at all; it ignores all text
+         // after the first non-hex digit.  We require only hex digits,
+         // and at least one.
+-        if (StringPieceToRune(&c, s, status) < 0)
++        if (StringViewToRune(&c, s, status) < 0)
+           return false;
+         int nhex = 0;
+         code = 0;
+@@ -1536,7 +1536,7 @@ static bool ParseEscape(StringPiece* s, Rune* rp,
+             goto BadEscape;
+           if (s->empty())
+             goto BadEscape;
+-          if (StringPieceToRune(&c, s, status) < 0)
++          if (StringViewToRune(&c, s, status) < 0)
+             return false;
+         }
+         if (c != '}' || nhex == 0)
+@@ -1547,7 +1547,7 @@ static bool ParseEscape(StringPiece* s, Rune* rp,
+       // Easy case: two hex digits.
+       if (s->empty())
+         goto BadEscape;
+-      if (StringPieceToRune(&c1, s, status) < 0)
++      if (StringViewToRune(&c1, s, status) < 0)
+         return false;
+       if (!IsHex(c) || !IsHex(c1))
+         goto BadEscape;
+@@ -1595,7 +1595,7 @@ BadEscape:
+   // Unrecognized escape sequence.
+   status->set_code(kRegexpBadEscape);
+   status->set_error_arg(
+-      StringPiece(begin, static_cast<size_t>(s->data() - begin)));
++      absl::string_view(begin, static_cast<size_t>(s->data() - begin)));
+   return false;
+ }
+ 
+@@ -1623,21 +1623,21 @@ void CharClassBuilder::AddRangeFlags(
+ }
+ 
+ // Look for a group with the given name.
+-static const UGroup* LookupGroup(const StringPiece& name,
++static const UGroup* LookupGroup(const absl::string_view& name,
+                                  const UGroup *groups, int ngroups) {
+   // Simple name lookup.
+   for (int i = 0; i < ngroups; i++)
+-    if (StringPiece(groups[i].name) == name)
++    if (absl::string_view(groups[i].name) == name)
+       return &groups[i];
+   return NULL;
+ }
+ 
+ // Look for a POSIX group with the given name (e.g., "[:^alpha:]")
+-static const UGroup* LookupPosixGroup(const StringPiece& name) {
++static const UGroup* LookupPosixGroup(const absl::string_view& name) {
+   return LookupGroup(name, posix_groups, num_posix_groups);
+ }
+ 
+-static const UGroup* LookupPerlGroup(const StringPiece& name) {
++static const UGroup* LookupPerlGroup(const absl::string_view& name) {
+   return LookupGroup(name, perl_groups, num_perl_groups);
+ }
+ 
+@@ -1648,9 +1648,9 @@ static URange32 any32[] = { { 65536, Runemax } };
+ static UGroup anygroup = { "Any", +1, any16, 1, any32, 1 };
+ 
+ // Look for a Unicode group with the given name (e.g., "Han")
+-static const UGroup* LookupUnicodeGroup(const StringPiece& name) {
++static const UGroup* LookupUnicodeGroup(const absl::string_view& name) {
+   // Special case: "Any" means any.
+-  if (name == StringPiece("Any"))
++  if (name == absl::string_view("Any"))
+     return &anygroup;
+   return LookupGroup(name, unicode_groups, num_unicode_groups);
+ }
+@@ -1707,15 +1707,15 @@ static void AddUGroup(CharClassBuilder *cc, const UGroup *g, int sign,
+ // not the Perl empty-string classes (\b \B \A \Z \z).
+ // On success, sets *s to span the remainder of the string
+ // and returns the corresponding UGroup.
+-// The StringPiece must *NOT* be edited unless the call succeeds.
+-const UGroup* MaybeParsePerlCCEscape(StringPiece* s, Regexp::ParseFlags parse_flags) {
++// The absl::string_view must *NOT* be edited unless the call succeeds.
++const UGroup* MaybeParsePerlCCEscape(absl::string_view* s, Regexp::ParseFlags parse_flags) {
+   if (!(parse_flags & Regexp::PerlClasses))
+     return NULL;
+   if (s->size() < 2 || (*s)[0] != '\\')
+     return NULL;
+-  // Could use StringPieceToRune, but there aren't
++  // Could use StringViewToRune, but there aren't
+   // any non-ASCII Perl group names.
+-  StringPiece name(s->data(), 2);
++  absl::string_view name(s->data(), 2);
+   const UGroup *g = LookupPerlGroup(name);
+   if (g == NULL)
+     return NULL;
+@@ -1731,7 +1731,7 @@ enum ParseStatus {
+ 
+ // Maybe parses a Unicode character group like \p{Han} or \P{Han}
+ // (the latter is a negated group).
+-ParseStatus ParseUnicodeGroup(StringPiece* s, Regexp::ParseFlags parse_flags,
++ParseStatus ParseUnicodeGroup(absl::string_view* s, Regexp::ParseFlags parse_flags,
+                               CharClassBuilder *cc,
+                               RegexpStatus* status) {
+   // Decide whether to parse.
+@@ -1747,34 +1747,34 @@ ParseStatus ParseUnicodeGroup(StringPiece* s, Regexp::ParseFlags parse_flags,
+   int sign = +1;  // -1 = negated char class
+   if (c == 'P')
+     sign = -sign;
+-  StringPiece seq = *s;  // \p{Han} or \pL
+-  StringPiece name;  // Han or L
++  absl::string_view seq = *s;  // \p{Han} or \pL
++  absl::string_view name;  // Han or L
+   s->remove_prefix(2);  // '\\', 'p'
+ 
+-  if (!StringPieceToRune(&c, s, status))
++  if (!StringViewToRune(&c, s, status))
+     return kParseError;
+   if (c != '{') {
+     // Name is the bit of string we just skipped over for c.
+     const char* p = seq.data() + 2;
+-    name = StringPiece(p, static_cast<size_t>(s->data() - p));
++    name = absl::string_view(p, static_cast<size_t>(s->data() - p));
+   } else {
+     // Name is in braces. Look for closing }
+     size_t end = s->find('}', 0);
+-    if (end == StringPiece::npos) {
++    if (end == absl::string_view::npos) {
+       if (!IsValidUTF8(seq, status))
+         return kParseError;
+       status->set_code(kRegexpBadCharRange);
+       status->set_error_arg(seq);
+       return kParseError;
+     }
+-    name = StringPiece(s->data(), end);  // without '}'
++    name = absl::string_view(s->data(), end);  // without '}'
+     s->remove_prefix(end + 1);  // with '}'
+     if (!IsValidUTF8(name, status))
+       return kParseError;
+   }
+ 
+   // Chop seq where s now begins.
+-  seq = StringPiece(seq.data(), static_cast<size_t>(s->data() - seq.data()));
++  seq = absl::string_view(seq.data(), static_cast<size_t>(s->data() - seq.data()));
+ 
+   if (!name.empty() && name[0] == '^') {
+     sign = -sign;
+@@ -1821,7 +1821,7 @@ ParseStatus ParseUnicodeGroup(StringPiece* s, Regexp::ParseFlags parse_flags,
+ // Parses a character class name like [:alnum:].
+ // Sets *s to span the remainder of the string.
+ // Adds the ranges corresponding to the class to ranges.
+-static ParseStatus ParseCCName(StringPiece* s, Regexp::ParseFlags parse_flags,
++static ParseStatus ParseCCName(absl::string_view* s, Regexp::ParseFlags parse_flags,
+                                CharClassBuilder *cc,
+                                RegexpStatus* status) {
+   // Check begins with [:
+@@ -1841,7 +1841,7 @@ static ParseStatus ParseCCName(StringPiece* s, Regexp::ParseFlags parse_flags,
+ 
+   // Got it.  Check that it's valid.
+   q += 2;
+-  StringPiece name(p, static_cast<size_t>(q - p));
++  absl::string_view name(p, static_cast<size_t>(q - p));
+ 
+   const UGroup *g = LookupPosixGroup(name);
+   if (g == NULL) {
+@@ -1859,8 +1859,8 @@ static ParseStatus ParseCCName(StringPiece* s, Regexp::ParseFlags parse_flags,
+ // There are fewer special characters here than in the rest of the regexp.
+ // Sets *s to span the remainder of the string.
+ // Sets *rp to the character.
+-bool Regexp::ParseState::ParseCCCharacter(StringPiece* s, Rune *rp,
+-                                          const StringPiece& whole_class,
++bool Regexp::ParseState::ParseCCCharacter(absl::string_view* s, Rune *rp,
++                                          const absl::string_view& whole_class,
+                                           RegexpStatus* status) {
+   if (s->empty()) {
+     status->set_code(kRegexpMissingBracket);
+@@ -1874,7 +1874,7 @@ bool Regexp::ParseState::ParseCCCharacter(StringPiece* s, Rune *rp,
+     return ParseEscape(s, rp, status, rune_max_);
+ 
+   // Otherwise take the next rune.
+-  return StringPieceToRune(rp, s, status) >= 0;
++  return StringViewToRune(rp, s, status) >= 0;
+ }
+ 
+ // Parses a character class character, or, if the character
+@@ -1882,10 +1882,10 @@ bool Regexp::ParseState::ParseCCCharacter(StringPiece* s, Rune *rp,
+ // For single characters, rr->lo == rr->hi.
+ // Sets *s to span the remainder of the string.
+ // Sets *rp to the character.
+-bool Regexp::ParseState::ParseCCRange(StringPiece* s, RuneRange* rr,
+-                                      const StringPiece& whole_class,
++bool Regexp::ParseState::ParseCCRange(absl::string_view* s, RuneRange* rr,
++                                      const absl::string_view& whole_class,
+                                       RegexpStatus* status) {
+-  StringPiece os = *s;
++  absl::string_view os = *s;
+   if (!ParseCCCharacter(s, &rr->lo, whole_class, status))
+     return false;
+   // [a-] means (a|-), so check for final ].
+@@ -1896,7 +1896,7 @@ bool Regexp::ParseState::ParseCCRange(StringPiece* s, RuneRange* rr,
+     if (rr->hi < rr->lo) {
+       status->set_code(kRegexpBadCharRange);
+       status->set_error_arg(
+-          StringPiece(os.data(), static_cast<size_t>(s->data() - os.data())));
++          absl::string_view(os.data(), static_cast<size_t>(s->data() - os.data())));
+       return false;
+     }
+   } else {
+@@ -1908,14 +1908,14 @@ bool Regexp::ParseState::ParseCCRange(StringPiece* s, RuneRange* rr,
+ // Parses a possibly-negated character class expression like [^abx-z[:digit:]].
+ // Sets *s to span the remainder of the string.
+ // Sets *out_re to the regexp for the class.
+-bool Regexp::ParseState::ParseCharClass(StringPiece* s,
++bool Regexp::ParseState::ParseCharClass(absl::string_view* s,
+                                         Regexp** out_re,
+                                         RegexpStatus* status) {
+-  StringPiece whole_class = *s;
++  absl::string_view whole_class = *s;
+   if (s->empty() || (*s)[0] != '[') {
+     // Caller checked this.
+     status->set_code(kRegexpInternalError);
+-    status->set_error_arg(StringPiece());
++    status->set_error_arg(absl::string_view());
+     return false;
+   }
+   bool negated = false;
+@@ -1937,16 +1937,16 @@ bool Regexp::ParseState::ParseCharClass(StringPiece* s,
+     // Except that Perl allows - anywhere.
+     if ((*s)[0] == '-' && !first && !(flags_&PerlX) &&
+         (s->size() == 1 || (*s)[1] != ']')) {
+-      StringPiece t = *s;
++      absl::string_view t = *s;
+       t.remove_prefix(1);  // '-'
+       Rune r;
+-      int n = StringPieceToRune(&r, &t, status);
++      int n = StringViewToRune(&r, &t, status);
+       if (n < 0) {
+         re->Decref();
+         return false;
+       }
+       status->set_code(kRegexpBadCharRange);
+-      status->set_error_arg(StringPiece(s->data(), 1+n));
++      status->set_error_arg(absl::string_view(s->data(), 1+n));
+       re->Decref();
+       return false;
+     }
+@@ -2016,7 +2016,7 @@ bool Regexp::ParseState::ParseCharClass(StringPiece* s,
+ }
+ 
+ // Returns whether name is a valid capture name.
+-static bool IsValidCaptureName(const StringPiece& name) {
++static bool IsValidCaptureName(const absl::string_view& name) {
+   if (name.empty())
+     return false;
+ 
+@@ -2030,17 +2030,17 @@ static bool IsValidCaptureName(const StringPiece& name) {
+   // if they start doing that for capture names, we won't follow suit.
+   static const CharClass* const cc = []() {
+     CharClassBuilder ccb;
+-    for (StringPiece group :
++    for (absl::string_view group :
+          {"Lu", "Ll", "Lt", "Lm", "Lo", "Nl", "Mn", "Mc", "Nd", "Pc"})
+       AddUGroup(&ccb, LookupGroup(group, unicode_groups, num_unicode_groups),
+                 +1, Regexp::NoParseFlags);
+     return ccb.GetCharClass();
+   }();
+ 
+-  StringPiece t = name;
++  absl::string_view t = name;
+   Rune r;
+   while (!t.empty()) {
+-    if (StringPieceToRune(&r, &t, NULL) < 0)
++    if (StringViewToRune(&r, &t, NULL) < 0)
+       return false;
+     if (cc->Contains(r))
+       continue;
+@@ -2054,8 +2054,8 @@ static bool IsValidCaptureName(const StringPiece& name) {
+ // The caller must check that s begins with "(?".
+ // Returns true on success.  If the Perl flag is not
+ // well-formed or not supported, sets status_ and returns false.
+-bool Regexp::ParseState::ParsePerlFlags(StringPiece* s) {
+-  StringPiece t = *s;
++bool Regexp::ParseState::ParsePerlFlags(absl::string_view* s) {
++  absl::string_view t = *s;
+ 
+   // Caller is supposed to check this.
+   if (!(flags_ & PerlX) || t.size() < 2 || t[0] != '(' || t[1] != '?') {
+@@ -2084,7 +2084,7 @@ bool Regexp::ParseState::ParsePerlFlags(StringPiece* s) {
+   if (t.size() > 2 && t[0] == 'P' && t[1] == '<') {
+     // Pull out name.
+     size_t end = t.find('>', 2);
+-    if (end == StringPiece::npos) {
++    if (end == absl::string_view::npos) {
+       if (!IsValidUTF8(*s, status_))
+         return false;
+       status_->set_code(kRegexpBadNamedCapture);
+@@ -2093,8 +2093,8 @@ bool Regexp::ParseState::ParsePerlFlags(StringPiece* s) {
+     }
+ 
+     // t is "P<name>...", t[end] == '>'
+-    StringPiece capture(t.data()-2, end+3);  // "(?P<name>"
+-    StringPiece name(t.data()+2, end-2);     // "name"
++    absl::string_view capture(t.data()-2, end+3);  // "(?P<name>"
++    absl::string_view name(t.data()+2, end-2);     // "name"
+     if (!IsValidUTF8(name, status_))
+       return false;
+     if (!IsValidCaptureName(name)) {
+@@ -2120,7 +2120,7 @@ bool Regexp::ParseState::ParsePerlFlags(StringPiece* s) {
+   for (bool done = false; !done; ) {
+     if (t.empty())
+       goto BadPerlOp;
+-    if (StringPieceToRune(&c, &t, status_) < 0)
++    if (StringViewToRune(&c, &t, status_) < 0)
+       return false;
+     switch (c) {
+       default:
+@@ -2193,7 +2193,7 @@ bool Regexp::ParseState::ParsePerlFlags(StringPiece* s) {
+ BadPerlOp:
+   status_->set_code(kRegexpBadPerlOp);
+   status_->set_error_arg(
+-      StringPiece(s->data(), static_cast<size_t>(t.data() - s->data())));
++      absl::string_view(s->data(), static_cast<size_t>(t.data() - s->data())));
+   return false;
+ }
+ 
+@@ -2201,7 +2201,7 @@ BadPerlOp:
+ // into UTF8 encoding in string.
+ // Can't use EncodingUtils::EncodeLatin1AsUTF8 because it is
+ // deprecated and because it rejects code points 0x80-0x9F.
+-void ConvertLatin1ToUTF8(const StringPiece& latin1, std::string* utf) {
++void ConvertLatin1ToUTF8(const absl::string_view& latin1, std::string* utf) {
+   char buf[UTFmax];
+ 
+   utf->clear();
+@@ -2216,7 +2216,7 @@ void ConvertLatin1ToUTF8(const StringPiece& latin1, std::string* utf) {
+ // returning the corresponding Regexp tree.
+ // The caller must Decref the return value when done with it.
+ // Returns NULL on error.
+-Regexp* Regexp::Parse(const StringPiece& s, ParseFlags global_flags,
++Regexp* Regexp::Parse(const absl::string_view& s, ParseFlags global_flags,
+                       RegexpStatus* status) {
+   // Make status non-NULL (easier on everyone else).
+   RegexpStatus xstatus;
+@@ -2224,7 +2224,7 @@ Regexp* Regexp::Parse(const StringPiece& s, ParseFlags global_flags,
+     status = &xstatus;
+ 
+   ParseState ps(global_flags, s, status);
+-  StringPiece t = s;
++  absl::string_view t = s;
+ 
+   // Convert regexp to UTF-8 (easier on the rest of the parser).
+   if (global_flags & Latin1) {
+@@ -2238,7 +2238,7 @@ Regexp* Regexp::Parse(const StringPiece& s, ParseFlags global_flags,
+     // Special parse loop for literal string.
+     while (!t.empty()) {
+       Rune r;
+-      if (StringPieceToRune(&r, &t, status) < 0)
++      if (StringViewToRune(&r, &t, status) < 0)
+         return NULL;
+       if (!ps.PushLiteral(r))
+         return NULL;
+@@ -2246,13 +2246,13 @@ Regexp* Regexp::Parse(const StringPiece& s, ParseFlags global_flags,
+     return ps.DoFinish();
+   }
+ 
+-  StringPiece lastunary = StringPiece();
++  absl::string_view lastunary = absl::string_view();
+   while (!t.empty()) {
+-    StringPiece isunary = StringPiece();
++    absl::string_view isunary = absl::string_view();
+     switch (t[0]) {
+       default: {
+         Rune r;
+-        if (StringPieceToRune(&r, &t, status) < 0)
++        if (StringViewToRune(&r, &t, status) < 0)
+           return NULL;
+         if (!ps.PushLiteral(r))
+           return NULL;
+@@ -2271,7 +2271,7 @@ Regexp* Regexp::Parse(const StringPiece& s, ParseFlags global_flags,
+           if (!ps.DoLeftParenNoCapture())
+             return NULL;
+         } else {
+-          if (!ps.DoLeftParen(StringPiece()))
++          if (!ps.DoLeftParen(absl::string_view()))
+             return NULL;
+         }
+         t.remove_prefix(1);  // '('
+@@ -2327,7 +2327,7 @@ Regexp* Regexp::Parse(const StringPiece& s, ParseFlags global_flags,
+         op = kRegexpQuest;
+         goto Rep;
+       Rep:
+-        StringPiece opstr = t;
++        absl::string_view opstr = t;
+         bool nongreedy = false;
+         t.remove_prefix(1);  // '*' or '+' or '?'
+         if (ps.flags() & PerlX) {
+@@ -2340,13 +2340,13 @@ Regexp* Regexp::Parse(const StringPiece& s, ParseFlags global_flags,
+             //   a** is a syntax error, not a double-star.
+             // (and a++ means something else entirely, which we don't support!)
+             status->set_code(kRegexpRepeatOp);
+-            status->set_error_arg(StringPiece(
++            status->set_error_arg(absl::string_view(
+                 lastunary.data(),
+                 static_cast<size_t>(t.data() - lastunary.data())));
+             return NULL;
+           }
+         }
+-        opstr = StringPiece(opstr.data(),
++        opstr = absl::string_view(opstr.data(),
+                             static_cast<size_t>(t.data() - opstr.data()));
+         if (!ps.PushRepeatOp(op, opstr, nongreedy))
+           return NULL;
+@@ -2356,7 +2356,7 @@ Regexp* Regexp::Parse(const StringPiece& s, ParseFlags global_flags,
+ 
+       case '{': {  // Counted repetition.
+         int lo, hi;
+-        StringPiece opstr = t;
++        absl::string_view opstr = t;
+         if (!MaybeParseRepetition(&t, &lo, &hi)) {
+           // Treat like a literal.
+           if (!ps.PushLiteral('{'))
+@@ -2373,13 +2373,13 @@ Regexp* Regexp::Parse(const StringPiece& s, ParseFlags global_flags,
+           if (!lastunary.empty()) {
+             // Not allowed to stack repetition operators.
+             status->set_code(kRegexpRepeatOp);
+-            status->set_error_arg(StringPiece(
++            status->set_error_arg(absl::string_view(
+                 lastunary.data(),
+                 static_cast<size_t>(t.data() - lastunary.data())));
+             return NULL;
+           }
+         }
+-        opstr = StringPiece(opstr.data(),
++        opstr = absl::string_view(opstr.data(),
+                             static_cast<size_t>(t.data() - opstr.data()));
+         if (!ps.PushRepetition(lo, hi, opstr, nongreedy))
+           return NULL;
+@@ -2430,7 +2430,7 @@ Regexp* Regexp::Parse(const StringPiece& s, ParseFlags global_flags,
+                 break;
+               }
+               Rune r;
+-              if (StringPieceToRune(&r, &t, status) < 0)
++              if (StringViewToRune(&r, &t, status) < 0)
+                 return NULL;
+               if (!ps.PushLiteral(r))
+                 return NULL;
+diff --git a/re2/prog.cc b/re2/prog.cc
+index 55dc105..0a9c7d4 100644
+--- a/re2/prog.cc
++++ b/re2/prog.cc
+@@ -23,7 +23,7 @@
+ #include "util/logging.h"
+ #include "util/strutil.h"
+ #include "re2/bitmap256.h"
+-#include "re2/stringpiece.h"
++#include "absl/strings/string_view.h"
+ 
+ namespace re2 {
+ 
+@@ -284,7 +284,7 @@ void Prog::Optimize() {
+   }
+ }
+ 
+-uint32_t Prog::EmptyFlags(const StringPiece& text, const char* p) {
++uint32_t Prog::EmptyFlags(const absl::string_view& text, const char* p) {
+   int flags = 0;
+ 
+   // ^ and \A
+diff --git a/re2/prog.h b/re2/prog.h
+index 4af012a..62091d5 100644
+--- a/re2/prog.h
++++ b/re2/prog.h
+@@ -249,7 +249,7 @@ class Prog {
+ 
+   // Returns the set of kEmpty flags that are in effect at
+   // position p within context.
+-  static uint32_t EmptyFlags(const StringPiece& context, const char* p);
++  static uint32_t EmptyFlags(const absl::string_view& context, const char* p);
+ 
+   // Returns whether byte c is a word character: ASCII only.
+   // Used by the implementation of \b and \B.
+@@ -274,15 +274,15 @@ class Prog {
+   // If a particular submatch is not matched during the regexp match,
+   // it is set to NULL.
+   //
+-  // Matching text == StringPiece(NULL, 0) is treated as any other empty
++  // Matching text == absl::string_view(NULL, 0) is treated as any other empty
+   // string, but note that on return, it will not be possible to distinguish
+   // submatches that matched that empty string from submatches that didn't
+   // match anything.  Either way, match[i] == NULL.
+ 
+   // Search using NFA: can find submatches but kind of slow.
+-  bool SearchNFA(const StringPiece& text, const StringPiece& context,
++  bool SearchNFA(const absl::string_view& text, const absl::string_view& context,
+                  Anchor anchor, MatchKind kind,
+-                 StringPiece* match, int nmatch);
++                 absl::string_view* match, int nmatch);
+ 
+   // Search using DFA: much faster than NFA but only finds
+   // end of match and can use a lot more memory.
+@@ -290,8 +290,8 @@ class Prog {
+   // If the DFA runs out of memory, sets *failed to true and returns false.
+   // If matches != NULL and kind == kManyMatch and there is a match,
+   // SearchDFA fills matches with the match IDs of the final matching state.
+-  bool SearchDFA(const StringPiece& text, const StringPiece& context,
+-                 Anchor anchor, MatchKind kind, StringPiece* match0,
++  bool SearchDFA(const absl::string_view& text, const absl::string_view& context,
++                 Anchor anchor, MatchKind kind, absl::string_view* match0,
+                  bool* failed, SparseSet* matches);
+ 
+   // The callback issued after building each DFA state with BuildEntireDFA().
+@@ -321,16 +321,16 @@ class Prog {
+   // but much faster than NFA (competitive with PCRE)
+   // for those expressions.
+   bool IsOnePass();
+-  bool SearchOnePass(const StringPiece& text, const StringPiece& context,
++  bool SearchOnePass(const absl::string_view& text, const absl::string_view& context,
+                      Anchor anchor, MatchKind kind,
+-                     StringPiece* match, int nmatch);
++                     absl::string_view* match, int nmatch);
+ 
+   // Bit-state backtracking.  Fast on small cases but uses memory
+   // proportional to the product of the list count and the text size.
+   bool CanBitState() { return list_heads_.data() != NULL; }
+-  bool SearchBitState(const StringPiece& text, const StringPiece& context,
++  bool SearchBitState(const absl::string_view& text, const absl::string_view& context,
+                       Anchor anchor, MatchKind kind,
+-                      StringPiece* match, int nmatch);
++                      absl::string_view* match, int nmatch);
+ 
+   static const int kMaxOnePassCapture = 5;  // $0 through $4
+ 
+@@ -340,10 +340,10 @@ class Prog {
+   // It is also recursive, so can't use in production (will overflow stacks).
+   // The name "Unsafe" here is supposed to be a flag that
+   // you should not be using this function.
+-  bool UnsafeSearchBacktrack(const StringPiece& text,
+-                             const StringPiece& context,
++  bool UnsafeSearchBacktrack(const absl::string_view& text,
++                             const absl::string_view& context,
+                              Anchor anchor, MatchKind kind,
+-                             StringPiece* match, int nmatch);
++                             absl::string_view* match, int nmatch);
+ 
+   // Computes range for any strings matching regexp. The min and max can in
+   // some cases be arbitrarily precise, so the caller gets to specify the
+@@ -456,10 +456,10 @@ class Prog {
+ // that don't allow comparisons between different objects - not even if
+ // those objects are views into the same string! Thus, we provide these
+ // conversion functions for convenience.
+-static inline const char* BeginPtr(const StringPiece& s) {
++static inline const char* BeginPtr(const absl::string_view& s) {
+   return s.data();
+ }
+-static inline const char* EndPtr(const StringPiece& s) {
++static inline const char* EndPtr(const absl::string_view& s) {
+   return s.data() + s.size();
+ }
+ 
+diff --git a/re2/re2.cc b/re2/re2.cc
+index c027133..e79c68d 100644
+--- a/re2/re2.cc
++++ b/re2/re2.cc
+@@ -103,7 +103,7 @@ static RE2::ErrorCode RegexpErrorToRE2(re2::RegexpStatusCode code) {
+   return RE2::ErrorInternal;
+ }
+ 
+-static std::string trunc(const StringPiece& pattern) {
++static std::string trunc(const absl::string_view& pattern) {
+   if (pattern.size() < 100)
+     return std::string(pattern);
+   return std::string(pattern.substr(0, 100)) + "...";
+@@ -118,11 +118,11 @@ RE2::RE2(const std::string& pattern) {
+   Init(pattern, DefaultOptions);
+ }
+ 
+-RE2::RE2(const StringPiece& pattern) {
++RE2::RE2(const absl::string_view& pattern) {
+   Init(pattern, DefaultOptions);
+ }
+ 
+-RE2::RE2(const StringPiece& pattern, const Options& options) {
++RE2::RE2(const absl::string_view& pattern, const Options& options) {
+   Init(pattern, options);
+ }
+ 
+@@ -170,7 +170,7 @@ int RE2::Options::ParseFlags() const {
+   return flags;
+ }
+ 
+-void RE2::Init(const StringPiece& pattern, const Options& options) {
++void RE2::Init(const absl::string_view& pattern, const Options& options) {
+   static std::once_flag empty_once;
+   std::call_once(empty_once, []() {
+     empty_string = new std::string;
+@@ -370,17 +370,17 @@ const std::map<int, std::string>& RE2::CapturingGroupNames() const {
+ 
+ /***** Convenience interfaces *****/
+ 
+-bool RE2::FullMatchN(const StringPiece& text, const RE2& re,
++bool RE2::FullMatchN(const absl::string_view& text, const RE2& re,
+                      const Arg* const args[], int n) {
+   return re.DoMatch(text, ANCHOR_BOTH, NULL, args, n);
+ }
+ 
+-bool RE2::PartialMatchN(const StringPiece& text, const RE2& re,
++bool RE2::PartialMatchN(const absl::string_view& text, const RE2& re,
+                         const Arg* const args[], int n) {
+   return re.DoMatch(text, UNANCHORED, NULL, args, n);
+ }
+ 
+-bool RE2::ConsumeN(StringPiece* input, const RE2& re,
++bool RE2::ConsumeN(absl::string_view* input, const RE2& re,
+                    const Arg* const args[], int n) {
+   size_t consumed;
+   if (re.DoMatch(*input, ANCHOR_START, &consumed, args, n)) {
+@@ -391,7 +391,7 @@ bool RE2::ConsumeN(StringPiece* input, const RE2& re,
+   }
+ }
+ 
+-bool RE2::FindAndConsumeN(StringPiece* input, const RE2& re,
++bool RE2::FindAndConsumeN(absl::string_view* input, const RE2& re,
+                           const Arg* const args[], int n) {
+   size_t consumed;
+   if (re.DoMatch(*input, UNANCHORED, &consumed, args, n)) {
+@@ -404,8 +404,8 @@ bool RE2::FindAndConsumeN(StringPiece* input, const RE2& re,
+ 
+ bool RE2::Replace(std::string* str,
+                   const RE2& re,
+-                  const StringPiece& rewrite) {
+-  StringPiece vec[kVecSize];
++                  const absl::string_view& rewrite) {
++  absl::string_view vec[kVecSize];
+   int nvec = 1 + MaxSubmatch(rewrite);
+   if (nvec > 1 + re.NumberOfCapturingGroups())
+     return false;
+@@ -426,8 +426,8 @@ bool RE2::Replace(std::string* str,
+ 
+ int RE2::GlobalReplace(std::string* str,
+                        const RE2& re,
+-                       const StringPiece& rewrite) {
+-  StringPiece vec[kVecSize];
++                       const absl::string_view& rewrite) {
++  absl::string_view vec[kVecSize];
+   int nvec = 1 + MaxSubmatch(rewrite);
+   if (nvec > 1 + re.NumberOfCapturingGroups())
+     return false;
+@@ -497,11 +497,11 @@ int RE2::GlobalReplace(std::string* str,
+   return count;
+ }
+ 
+-bool RE2::Extract(const StringPiece& text,
++bool RE2::Extract(const absl::string_view& text,
+                   const RE2& re,
+-                  const StringPiece& rewrite,
++                  const absl::string_view& rewrite,
+                   std::string* out) {
+-  StringPiece vec[kVecSize];
++  absl::string_view vec[kVecSize];
+   int nvec = 1 + MaxSubmatch(rewrite);
+   if (nvec > 1 + re.NumberOfCapturingGroups())
+     return false;
+@@ -514,7 +514,7 @@ bool RE2::Extract(const StringPiece& text,
+   return re.Rewrite(out, rewrite, vec, nvec);
+ }
+ 
+-std::string RE2::QuoteMeta(const StringPiece& unquoted) {
++std::string RE2::QuoteMeta(const absl::string_view& unquoted) {
+   std::string result;
+   result.reserve(unquoted.size() << 1);
+ 
+@@ -613,11 +613,11 @@ static int ascii_strcasecmp(const char* a, const char* b, size_t len) {
+ 
+ /***** Actual matching and rewriting code *****/
+ 
+-bool RE2::Match(const StringPiece& text,
++bool RE2::Match(const absl::string_view& text,
+                 size_t startpos,
+                 size_t endpos,
+                 Anchor re_anchor,
+-                StringPiece* submatch,
++                absl::string_view* submatch,
+                 int nsubmatch) const {
+   if (!ok()) {
+     if (options_.log_errors())
+@@ -634,7 +634,7 @@ bool RE2::Match(const StringPiece& text,
+     return false;
+   }
+ 
+-  StringPiece subtext = text;
++  absl::string_view subtext = text;
+   subtext.remove_prefix(startpos);
+   subtext.remove_suffix(text.size() - endpos);
+ 
+@@ -642,8 +642,8 @@ bool RE2::Match(const StringPiece& text,
+ 
+   // Don't ask for the location if we won't use it.
+   // SearchDFA can do extra optimizations in that case.
+-  StringPiece match;
+-  StringPiece* matchp = &match;
++  absl::string_view match;
++  absl::string_view* matchp = &match;
+   if (nsubmatch == 0)
+     matchp = NULL;
+ 
+@@ -827,7 +827,7 @@ bool RE2::Match(const StringPiece& text,
+     if (ncap == 1)
+       submatch[0] = match;
+   } else {
+-    StringPiece subtext1;
++    absl::string_view subtext1;
+     if (skipped_test) {
+       // DFA ran out of memory or was skipped:
+       // need to search in entire original text.
+@@ -865,17 +865,17 @@ bool RE2::Match(const StringPiece& text,
+ 
+   // Adjust overall match for required prefix that we stripped off.
+   if (prefixlen > 0 && nsubmatch > 0)
+-    submatch[0] = StringPiece(submatch[0].data() - prefixlen,
++    submatch[0] = absl::string_view(submatch[0].data() - prefixlen,
+                               submatch[0].size() + prefixlen);
+ 
+   // Zero submatches that don't exist in the regexp.
+   for (int i = ncap; i < nsubmatch; i++)
+-    submatch[i] = StringPiece();
++    submatch[i] = absl::string_view();
+   return true;
+ }
+ 
+-// Internal matcher - like Match() but takes Args not StringPieces.
+-bool RE2::DoMatch(const StringPiece& text,
++// Internal matcher - like Match() but takes Args not absl::string_views.
++bool RE2::DoMatch(const absl::string_view& text,
+                   Anchor re_anchor,
+                   size_t* consumed,
+                   const Arg* const* args,
+@@ -898,14 +898,14 @@ bool RE2::DoMatch(const StringPiece& text,
+   else
+     nvec = n+1;
+ 
+-  StringPiece* vec;
+-  StringPiece stkvec[kVecSize];
+-  StringPiece* heapvec = NULL;
++  absl::string_view* vec;
++  absl::string_view stkvec[kVecSize];
++  absl::string_view* heapvec = NULL;
+ 
+   if (nvec <= static_cast<int>(arraysize(stkvec))) {
+     vec = stkvec;
+   } else {
+-    vec = new StringPiece[nvec];
++    vec = new absl::string_view[nvec];
+     heapvec = vec;
+   }
+ 
+@@ -925,7 +925,7 @@ bool RE2::DoMatch(const StringPiece& text,
+ 
+   // If we got here, we must have matched the whole pattern.
+   for (int i = 0; i < n; i++) {
+-    const StringPiece& s = vec[i+1];
++    const absl::string_view& s = vec[i+1];
+     if (!args[i]->Parse(s.data(), s.size())) {
+       // TODO: Should we indicate what the error was?
+       delete[] heapvec;
+@@ -939,7 +939,7 @@ bool RE2::DoMatch(const StringPiece& text,
+ 
+ // Checks that the rewrite string is well-formed with respect to this
+ // regular expression.
+-bool RE2::CheckRewriteString(const StringPiece& rewrite,
++bool RE2::CheckRewriteString(const absl::string_view& rewrite,
+                              std::string* error) const {
+   int max_token = -1;
+   for (const char *s = rewrite.data(), *end = s + rewrite.size();
+@@ -979,7 +979,7 @@ bool RE2::CheckRewriteString(const StringPiece& rewrite,
+ 
+ // Returns the maximum submatch needed for the rewrite to be done by Replace().
+ // E.g. if rewrite == "foo \\2,\\1", returns 2.
+-int RE2::MaxSubmatch(const StringPiece& rewrite) {
++int RE2::MaxSubmatch(const absl::string_view& rewrite) {
+   int max = 0;
+   for (const char *s = rewrite.data(), *end = s + rewrite.size();
+        s < end; s++) {
+@@ -999,8 +999,8 @@ int RE2::MaxSubmatch(const StringPiece& rewrite) {
+ // Append the "rewrite" string, with backslash subsitutions from "vec",
+ // to string "out".
+ bool RE2::Rewrite(std::string* out,
+-                  const StringPiece& rewrite,
+-                  const StringPiece* vec,
++                  const absl::string_view& rewrite,
++                  const absl::string_view* vec,
+                   int veclen) const {
+   for (const char *s = rewrite.data(), *end = s + rewrite.size();
+        s < end; s++) {
+@@ -1019,7 +1019,7 @@ bool RE2::Rewrite(std::string* out,
+         }
+         return false;
+       }
+-      StringPiece snip = vec[n];
++      absl::string_view snip = vec[n];
+       if (!snip.empty())
+         out->append(snip.data(), snip.size());
+     } else if (c == '\\') {
+@@ -1051,9 +1051,9 @@ bool Parse(const char* str, size_t n, std::string* dest) {
+ }
+ 
+ template <>
+-bool Parse(const char* str, size_t n, StringPiece* dest) {
++bool Parse(const char* str, size_t n, absl::string_view* dest) {
+   if (dest == NULL) return true;
+-  *dest = StringPiece(str, n);
++  *dest = absl::string_view(str, n);
+   return true;
+ }
+ 
+diff --git a/re2/re2.h b/re2/re2.h
+index 7fd2245..6193969 100644
+--- a/re2/re2.h
++++ b/re2/re2.h
+@@ -75,7 +75,7 @@
+ // have succeeded or one conversion has failed.
+ // On conversion failure, the pointees will be in an indeterminate state
+ // because the caller has no way of knowing which conversion failed.
+-// However, conversion cannot fail for types like string and StringPiece
++// However, conversion cannot fail for types like string and absl::string_view
+ // that do not inspect the substring contents. Hence, in the common case
+ // where all of the pointees are of such types, failure is always due to
+ // match failure and thus none of the pointees will have been modified.
+@@ -140,12 +140,12 @@
+ //
+ // The "Consume" operation may be useful if you want to repeatedly
+ // match regular expressions at the front of a string and skip over
+-// them as they match.  This requires use of the "StringPiece" type,
++// them as they match.  This requires use of the "absl::string_view" type,
+ // which represents a sub-range of a real string.
+ //
+ // Example: read lines of the form "var = value" from a string.
+ //      std::string contents = ...;     // Fill string somehow
+-//      StringPiece input(contents);    // Wrap a StringPiece around it
++//      absl::string_view input(contents);    // Wrap a absl::string_view around it
+ //
+ //      std::string var;
+ //      int value;
+@@ -215,7 +215,7 @@
+ #include <TargetConditionals.h>
+ #endif
+ 
+-#include "re2/stringpiece.h"
++#include "absl/strings/string_view.h"
+ 
+ namespace re2 {
+ class Prog;
+@@ -273,13 +273,13 @@ class RE2 {
+ 
+   // Need to have the const char* and const std::string& forms for implicit
+   // conversions when passing string literals to FullMatch and PartialMatch.
+-  // Otherwise the StringPiece form would be sufficient.
++  // Otherwise the absl::string_view form would be sufficient.
+ #ifndef SWIG
+   RE2(const char* pattern);
+   RE2(const std::string& pattern);
+ #endif
+-  RE2(const StringPiece& pattern);
+-  RE2(const StringPiece& pattern, const Options& options);
++  RE2(const absl::string_view& pattern);
++  RE2(const absl::string_view& pattern, const Options& options);
+   ~RE2();
+ 
+   // Returns whether RE2 was created properly.
+@@ -324,13 +324,13 @@ class RE2 {
+   // the functions whose names are the prefix before the 'N'. It is sometimes
+   // useful to invoke them directly, but the syntax is awkward, so the 'N'-less
+   // versions should be preferred.
+-  static bool FullMatchN(const StringPiece& text, const RE2& re,
++  static bool FullMatchN(const absl::string_view& text, const RE2& re,
+                          const Arg* const args[], int n);
+-  static bool PartialMatchN(const StringPiece& text, const RE2& re,
++  static bool PartialMatchN(const absl::string_view& text, const RE2& re,
+                             const Arg* const args[], int n);
+-  static bool ConsumeN(StringPiece* input, const RE2& re,
++  static bool ConsumeN(absl::string_view* input, const RE2& re,
+                        const Arg* const args[], int n);
+-  static bool FindAndConsumeN(StringPiece* input, const RE2& re,
++  static bool FindAndConsumeN(absl::string_view* input, const RE2& re,
+                               const Arg* const args[], int n);
+ 
+ #ifndef SWIG
+@@ -364,7 +364,7 @@ class RE2 {
+   // The provided pointer arguments can be pointers to any scalar numeric
+   // type, or one of:
+   //    std::string     (matched piece is copied to string)
+-  //    StringPiece     (StringPiece is mutated to point to matched piece)
++  //    absl::string_view     (absl::string_view is mutated to point to matched piece)
+   //    T               (where "bool T::ParseFrom(const char*, size_t)" exists)
+   //    (void*)NULL     (the corresponding matched sub-pattern is not copied)
+   //
+@@ -384,7 +384,7 @@ class RE2 {
+   //    int number;
+   //    RE2::FullMatch("abc", "[a-z]+(\\d+)?", &number);
+   template <typename... A>
+-  static bool FullMatch(const StringPiece& text, const RE2& re, A&&... a) {
++  static bool FullMatch(const absl::string_view& text, const RE2& re, A&&... a) {
+     return Apply(FullMatchN, text, re, Arg(std::forward<A>(a))...);
+   }
+ 
+@@ -400,7 +400,7 @@ class RE2 {
+   //      number of sub-patterns, the "i"th captured sub-pattern is
+   //      ignored.
+   template <typename... A>
+-  static bool PartialMatch(const StringPiece& text, const RE2& re, A&&... a) {
++  static bool PartialMatch(const absl::string_view& text, const RE2& re, A&&... a) {
+     return Apply(PartialMatchN, text, re, Arg(std::forward<A>(a))...);
+   }
+ 
+@@ -418,7 +418,7 @@ class RE2 {
+   //      number of sub-patterns, the "i"th captured sub-pattern is
+   //      ignored.
+   template <typename... A>
+-  static bool Consume(StringPiece* input, const RE2& re, A&&... a) {
++  static bool Consume(absl::string_view* input, const RE2& re, A&&... a) {
+     return Apply(ConsumeN, input, re, Arg(std::forward<A>(a))...);
+   }
+ 
+@@ -436,7 +436,7 @@ class RE2 {
+   //      number of sub-patterns, the "i"th captured sub-pattern is
+   //      ignored.
+   template <typename... A>
+-  static bool FindAndConsume(StringPiece* input, const RE2& re, A&&... a) {
++  static bool FindAndConsume(absl::string_view* input, const RE2& re, A&&... a) {
+     return Apply(FindAndConsumeN, input, re, Arg(std::forward<A>(a))...);
+   }
+ #endif
+@@ -456,7 +456,7 @@ class RE2 {
+   // false otherwise.
+   static bool Replace(std::string* str,
+                       const RE2& re,
+-                      const StringPiece& rewrite);
++                      const absl::string_view& rewrite);
+ 
+   // Like Replace(), except replaces successive non-overlapping occurrences
+   // of the pattern in the string with the rewrite. E.g.
+@@ -473,7 +473,7 @@ class RE2 {
+   // Returns the number of replacements made.
+   static int GlobalReplace(std::string* str,
+                            const RE2& re,
+-                           const StringPiece& rewrite);
++                           const absl::string_view& rewrite);
+ 
+   // Like Replace, except that if the pattern matches, "rewrite"
+   // is copied into "out" with substitutions.  The non-matching
+@@ -483,9 +483,9 @@ class RE2 {
+   // successfully;  if no match occurs, the string is left unaffected.
+   //
+   // REQUIRES: "text" must not alias any part of "*out".
+-  static bool Extract(const StringPiece& text,
++  static bool Extract(const absl::string_view& text,
+                       const RE2& re,
+-                      const StringPiece& rewrite,
++                      const absl::string_view& rewrite,
+                       std::string* out);
+ 
+   // Escapes all potentially meaningful regexp characters in
+@@ -494,7 +494,7 @@ class RE2 {
+   //           1.5-2.0?
+   // may become:
+   //           1\.5\-2\.0\?
+-  static std::string QuoteMeta(const StringPiece& unquoted);
++  static std::string QuoteMeta(const absl::string_view& unquoted);
+ 
+   // Computes range for any strings matching regexp. The min and max can in
+   // some cases be arbitrarily precise, so the caller gets to specify the
+@@ -555,15 +555,15 @@ class RE2 {
+   // Doesn't make sense to use nsubmatch > 1 + NumberOfCapturingGroups(),
+   // but will be handled correctly.
+   //
+-  // Passing text == StringPiece(NULL, 0) will be handled like any other
++  // Passing text == absl::string_view(NULL, 0) will be handled like any other
+   // empty string, but note that on return, it will not be possible to tell
+   // whether submatch i matched the empty string or did not match:
+   // either way, submatch[i].data() == NULL.
+-  bool Match(const StringPiece& text,
++  bool Match(const absl::string_view& text,
+              size_t startpos,
+              size_t endpos,
+              Anchor re_anchor,
+-             StringPiece* submatch,
++             absl::string_view* submatch,
+              int nsubmatch) const;
+ 
+   // Check that the given rewrite string is suitable for use with this
+@@ -574,12 +574,12 @@ class RE2 {
+   //     '\' followed by anything other than a digit or '\'.
+   // A true return value guarantees that Replace() and Extract() won't
+   // fail because of a bad rewrite string.
+-  bool CheckRewriteString(const StringPiece& rewrite,
++  bool CheckRewriteString(const absl::string_view& rewrite,
+                           std::string* error) const;
+ 
+   // Returns the maximum submatch needed for the rewrite to be done by
+   // Replace(). E.g. if rewrite == "foo \\2,\\1", returns 2.
+-  static int MaxSubmatch(const StringPiece& rewrite);
++  static int MaxSubmatch(const absl::string_view& rewrite);
+ 
+   // Append the "rewrite" string, with backslash subsitutions from "vec",
+   // to string "out".
+@@ -587,8 +587,8 @@ class RE2 {
+   // rewrite string.  CheckRewriteString guarantees that the rewrite will
+   // be sucessful.
+   bool Rewrite(std::string* out,
+-               const StringPiece& rewrite,
+-               const StringPiece* vec,
++               const absl::string_view& rewrite,
++               const absl::string_view* vec,
+                int veclen) const;
+ 
+   // Constructor options
+@@ -743,9 +743,9 @@ class RE2 {
+   static Arg Octal(T* ptr);
+ 
+  private:
+-  void Init(const StringPiece& pattern, const Options& options);
++  void Init(const absl::string_view& pattern, const Options& options);
+ 
+-  bool DoMatch(const StringPiece& text,
++  bool DoMatch(const absl::string_view& text,
+                Anchor re_anchor,
+                size_t* consumed,
+                const Arg* const args[],
+@@ -789,7 +789,7 @@ namespace re2_internal {
+ template <typename T> struct Parse3ary : public std::false_type {};
+ template <> struct Parse3ary<void> : public std::true_type {};
+ template <> struct Parse3ary<std::string> : public std::true_type {};
+-template <> struct Parse3ary<StringPiece> : public std::true_type {};
++template <> struct Parse3ary<absl::string_view> : public std::true_type {};
+ template <> struct Parse3ary<char> : public std::true_type {};
+ template <> struct Parse3ary<signed char> : public std::true_type {};
+ template <> struct Parse3ary<unsigned char> : public std::true_type {};
+diff --git a/re2/regexp.cc b/re2/regexp.cc
+index 2e1bfac..84cb68c 100644
+--- a/re2/regexp.cc
++++ b/re2/regexp.cc
+@@ -21,7 +21,7 @@
+ #include "util/mutex.h"
+ #include "util/utf.h"
+ #include "re2/pod_array.h"
+-#include "re2/stringpiece.h"
++#include "absl/strings/string_view.h"
+ #include "re2/walker-inl.h"
+ 
+ namespace re2 {
+diff --git a/re2/regexp.h b/re2/regexp.h
+index b6446f9..c461741 100644
+--- a/re2/regexp.h
++++ b/re2/regexp.h
+@@ -95,7 +95,7 @@
+ #include "util/util.h"
+ #include "util/logging.h"
+ #include "util/utf.h"
+-#include "re2/stringpiece.h"
++#include "absl/strings/string_view.h"
+ 
+ namespace re2 {
+ 
+@@ -195,10 +195,10 @@ class RegexpStatus {
+   ~RegexpStatus() { delete tmp_; }
+ 
+   void set_code(RegexpStatusCode code) { code_ = code; }
+-  void set_error_arg(const StringPiece& error_arg) { error_arg_ = error_arg; }
++  void set_error_arg(const absl::string_view& error_arg) { error_arg_ = error_arg; }
+   void set_tmp(std::string* tmp) { delete tmp_; tmp_ = tmp; }
+   RegexpStatusCode code() const { return code_; }
+-  const StringPiece& error_arg() const { return error_arg_; }
++  const absl::string_view& error_arg() const { return error_arg_; }
+   bool ok() const { return code() == kRegexpSuccess; }
+ 
+   // Copies state from status.
+@@ -214,7 +214,7 @@ class RegexpStatus {
+ 
+  private:
+   RegexpStatusCode code_;  // Kind of error
+-  StringPiece error_arg_;  // Piece of regexp containing syntax error.
++  absl::string_view error_arg_;  // Piece of regexp containing syntax error.
+   std::string* tmp_;       // Temporary storage, possibly where error_arg_ is.
+ 
+   RegexpStatus(const RegexpStatus&) = delete;
+@@ -352,7 +352,7 @@ class Regexp {
+   // Parses string s to produce regular expression, returned.
+   // Caller must release return value with re->Decref().
+   // On failure, sets *status (if status != NULL) and returns NULL.
+-  static Regexp* Parse(const StringPiece& s, ParseFlags flags,
++  static Regexp* Parse(const absl::string_view& s, ParseFlags flags,
+                        RegexpStatus* status);
+ 
+   // Returns a _new_ simplified version of the current regexp.
+@@ -369,7 +369,7 @@ class Regexp {
+   // Parses the regexp src and then simplifies it and sets *dst to the
+   // string representation of the simplified form.  Returns true on success.
+   // Returns false and sets *status (if status != NULL) on parse error.
+-  static bool SimplifyRegexp(const StringPiece& src, ParseFlags flags,
++  static bool SimplifyRegexp(const absl::string_view& src, ParseFlags flags,
+                              std::string* dst, RegexpStatus* status);
+ 
+   // Returns the number of capturing groups in the regexp.
+@@ -467,7 +467,7 @@ class Regexp {
+   class ParseState;
+ 
+   friend class ParseState;
+-  friend bool ParseCharClass(StringPiece* s, Regexp** out_re,
++  friend bool ParseCharClass(absl::string_view* s, Regexp** out_re,
+                              RegexpStatus* status);
+ 
+   // Helper for testing [sic].
+diff --git a/re2/set.cc b/re2/set.cc
+index 1870566..f0d550a 100644
+--- a/re2/set.cc
++++ b/re2/set.cc
+@@ -15,7 +15,7 @@
+ #include "re2/prog.h"
+ #include "re2/re2.h"
+ #include "re2/regexp.h"
+-#include "re2/stringpiece.h"
++#include "absl/strings/string_view.h"
+ 
+ namespace re2 {
+ 
+@@ -52,7 +52,7 @@ RE2::Set& RE2::Set::operator=(Set&& other) {
+   return *this;
+ }
+ 
+-int RE2::Set::Add(const StringPiece& pattern, std::string* error) {
++int RE2::Set::Add(const absl::string_view& pattern, std::string* error) {
+   if (compiled_) {
+     LOG(DFATAL) << "RE2::Set::Add() called after compiling";
+     return -1;
+@@ -121,11 +121,11 @@ bool RE2::Set::Compile() {
+   return prog_ != nullptr;
+ }
+ 
+-bool RE2::Set::Match(const StringPiece& text, std::vector<int>* v) const {
++bool RE2::Set::Match(const absl::string_view& text, std::vector<int>* v) const {
+   return Match(text, v, NULL);
+ }
+ 
+-bool RE2::Set::Match(const StringPiece& text, std::vector<int>* v,
++bool RE2::Set::Match(const absl::string_view& text, std::vector<int>* v,
+                      ErrorInfo* error_info) const {
+   if (!compiled_) {
+     LOG(DFATAL) << "RE2::Set::Match() called before compiling";
+diff --git a/re2/set.h b/re2/set.h
+index 8d64f30..3fedcba 100644
+--- a/re2/set.h
++++ b/re2/set.h
+@@ -50,7 +50,7 @@ class RE2::Set {
+   // Indices are assigned in sequential order starting from 0.
+   // Errors do not increment the index; if error is not NULL, *error will hold
+   // the error message from the parser.
+-  int Add(const StringPiece& pattern, std::string* error);
++  int Add(const absl::string_view& pattern, std::string* error);
+ 
+   // Compiles the set in preparation for matching.
+   // Returns false if the compiler runs out of memory.
+@@ -61,12 +61,12 @@ class RE2::Set {
+   // Returns true if text matches at least one of the regexps in the set.
+   // Fills v (if not NULL) with the indices of the matching regexps.
+   // Callers must not expect v to be sorted.
+-  bool Match(const StringPiece& text, std::vector<int>* v) const;
++  bool Match(const absl::string_view& text, std::vector<int>* v) const;
+ 
+   // As above, but populates error_info (if not NULL) when none of the regexps
+   // in the set matched. This can inform callers when DFA execution fails, for
+   // example, because they might wish to handle that case differently.
+-  bool Match(const StringPiece& text, std::vector<int>* v,
++  bool Match(const absl::string_view& text, std::vector<int>* v,
+              ErrorInfo* error_info) const;
+ 
+  private:
+diff --git a/re2/simplify.cc b/re2/simplify.cc
+index 663d5fc..0266c43 100644
+--- a/re2/simplify.cc
++++ b/re2/simplify.cc
+@@ -20,7 +20,7 @@ namespace re2 {
+ // Parses the regexp src and then simplifies it and sets *dst to the
+ // string representation of the simplified form.  Returns true on success.
+ // Returns false and sets *error (if error != NULL) on error.
+-bool Regexp::SimplifyRegexp(const StringPiece& src, ParseFlags flags,
++bool Regexp::SimplifyRegexp(const absl::string_view& src, ParseFlags flags,
+                             std::string* dst, RegexpStatus* status) {
+   Regexp* re = Parse(src, flags, status);
+   if (re == NULL)
+diff --git a/re2/testing/backtrack.cc b/re2/testing/backtrack.cc
+index 920a453..00419c3 100644
+--- a/re2/testing/backtrack.cc
++++ b/re2/testing/backtrack.cc
+@@ -55,9 +55,9 @@ class Backtracker {
+  public:
+   explicit Backtracker(Prog* prog);
+ 
+-  bool Search(const StringPiece& text, const StringPiece& context,
++  bool Search(const absl::string_view& text, const absl::string_view& context,
+               bool anchored, bool longest,
+-              StringPiece* submatch, int nsubmatch);
++              absl::string_view* submatch, int nsubmatch);
+ 
+  private:
+   // Explores from instruction id at string position p looking for a match.
+@@ -70,12 +70,12 @@ class Backtracker {
+ 
+   // Search parameters
+   Prog* prog_;              // program being run
+-  StringPiece text_;        // text being searched
+-  StringPiece context_;     // greater context of text being searched
++  absl::string_view text_;        // text being searched
++  absl::string_view context_;     // greater context of text being searched
+   bool anchored_;           // whether search is anchored at text.begin()
+   bool longest_;            // whether search wants leftmost-longest match
+   bool endmatch_;           // whether search must end at text.end()
+-  StringPiece *submatch_;   // submatches to fill in
++  absl::string_view *submatch_;   // submatches to fill in
+   int nsubmatch_;           //   # of submatches to fill in
+ 
+   // Search state
+@@ -96,9 +96,9 @@ Backtracker::Backtracker(Prog* prog)
+ }
+ 
+ // Runs a backtracking search.
+-bool Backtracker::Search(const StringPiece& text, const StringPiece& context,
++bool Backtracker::Search(const absl::string_view& text, const absl::string_view& context,
+                          bool anchored, bool longest,
+-                         StringPiece* submatch, int nsubmatch) {
++                         absl::string_view* submatch, int nsubmatch) {
+   text_ = text;
+   context_ = context;
+   if (context_.data() == NULL)
+@@ -117,12 +117,12 @@ bool Backtracker::Search(const StringPiece& text, const StringPiece& context,
+ 
+   // We use submatch_[0] for our own bookkeeping,
+   // so it had better exist.
+-  StringPiece sp0;
++  absl::string_view sp0;
+   if (nsubmatch < 1) {
+     submatch_ = &sp0;
+     nsubmatch_ = 1;
+   }
+-  submatch_[0] = StringPiece();
++  submatch_[0] = absl::string_view();
+ 
+   // Allocate new visited_ bitmap -- size is proportional
+   // to text, so have to reallocate on each call to Search.
+@@ -232,7 +232,7 @@ bool Backtracker::Try(int id, const char* p) {
+           (longest_ && p > submatch_[0].data() + submatch_[0].size())) {
+         // First match so far - or better match.
+         for (int i = 0; i < nsubmatch_; i++)
+-          submatch_[i] = StringPiece(
++          submatch_[i] = absl::string_view(
+               cap_[2 * i], static_cast<size_t>(cap_[2 * i + 1] - cap_[2 * i]));
+       }
+       return true;
+@@ -243,16 +243,16 @@ bool Backtracker::Try(int id, const char* p) {
+ }
+ 
+ // Runs a backtracking search.
+-bool Prog::UnsafeSearchBacktrack(const StringPiece& text,
+-                                 const StringPiece& context,
++bool Prog::UnsafeSearchBacktrack(const absl::string_view& text,
++                                 const absl::string_view& context,
+                                  Anchor anchor,
+                                  MatchKind kind,
+-                                 StringPiece* match,
++                                 absl::string_view* match,
+                                  int nmatch) {
+   // If full match, we ask for an anchored longest match
+   // and then check that match[0] == text.
+   // So make sure match[0] exists.
+-  StringPiece sp0;
++  absl::string_view sp0;
+   if (kind == kFullMatch) {
+     anchor = kAnchored;
+     if (nmatch < 1) {
+diff --git a/re2/testing/compile_test.cc b/re2/testing/compile_test.cc
+index 4718830..a564be7 100644
+--- a/re2/testing/compile_test.cc
++++ b/re2/testing/compile_test.cc
+@@ -156,7 +156,7 @@ TEST(TestRegexpCompileToProg, Simple) {
+   EXPECT_EQ(failed, 0);
+ }
+ 
+-static void DumpByteMap(StringPiece pattern, Regexp::ParseFlags flags,
++static void DumpByteMap(absl::string_view pattern, Regexp::ParseFlags flags,
+                         std::string* bytemap) {
+   Regexp* re = Regexp::Parse(pattern, flags, NULL);
+   EXPECT_TRUE(re != NULL);
+@@ -257,7 +257,7 @@ TEST(TestCompile, InsufficientMemory) {
+   re->Decref();
+ }
+ 
+-static void Dump(StringPiece pattern, Regexp::ParseFlags flags,
++static void Dump(absl::string_view pattern, Regexp::ParseFlags flags,
+                  std::string* forward, std::string* reverse) {
+   Regexp* re = Regexp::Parse(pattern, flags, NULL);
+   EXPECT_TRUE(re != NULL);
+diff --git a/re2/testing/dfa_test.cc b/re2/testing/dfa_test.cc
+index 842daaf..4f673fc 100644
+--- a/re2/testing/dfa_test.cc
++++ b/re2/testing/dfa_test.cc
+@@ -172,11 +172,11 @@ TEST(SingleThreaded, SearchDFA) {
+     for (int i = 0; i < 10; i++) {
+       bool matched = false;
+       bool failed = false;
+-      matched = prog->SearchDFA(match, StringPiece(), Prog::kUnanchored,
++      matched = prog->SearchDFA(match, absl::string_view(), Prog::kUnanchored,
+                                 Prog::kFirstMatch, NULL, &failed, NULL);
+       ASSERT_FALSE(failed);
+       ASSERT_TRUE(matched);
+-      matched = prog->SearchDFA(no_match, StringPiece(), Prog::kUnanchored,
++      matched = prog->SearchDFA(no_match, absl::string_view(), Prog::kUnanchored,
+                                 Prog::kFirstMatch, NULL, &failed, NULL);
+       ASSERT_FALSE(failed);
+       ASSERT_FALSE(matched);
+@@ -201,16 +201,16 @@ TEST(SingleThreaded, SearchDFA) {
+ 
+ // Helper function: searches for match, which should match,
+ // and no_match, which should not.
+-static void DoSearch(Prog* prog, const StringPiece& match,
+-                     const StringPiece& no_match) {
++static void DoSearch(Prog* prog, const absl::string_view& match,
++                     const absl::string_view& no_match) {
+   for (int i = 0; i < 2; i++) {
+     bool matched = false;
+     bool failed = false;
+-    matched = prog->SearchDFA(match, StringPiece(), Prog::kUnanchored,
++    matched = prog->SearchDFA(match, absl::string_view(), Prog::kUnanchored,
+                               Prog::kFirstMatch, NULL, &failed, NULL);
+     ASSERT_FALSE(failed);
+     ASSERT_TRUE(matched);
+-    matched = prog->SearchDFA(no_match, StringPiece(), Prog::kUnanchored,
++    matched = prog->SearchDFA(no_match, absl::string_view(), Prog::kUnanchored,
+                               Prog::kFirstMatch, NULL, &failed, NULL);
+     ASSERT_FALSE(failed);
+     ASSERT_FALSE(matched);
+@@ -288,7 +288,7 @@ TEST(DFA, ReverseMatch) {
+     Prog* prog = re->CompileToReverseProg(0);
+     ASSERT_TRUE(prog != NULL);
+     bool failed = false;
+-    bool matched = prog->SearchDFA(t.text, StringPiece(), Prog::kUnanchored,
++    bool matched = prog->SearchDFA(t.text, absl::string_view(), Prog::kUnanchored,
+                                    Prog::kFirstMatch, NULL, &failed, NULL);
+     if (matched != t.match) {
+       LOG(ERROR) << t.regexp << " on " << t.text << ": want " << t.match;
+diff --git a/re2/testing/dump.cc b/re2/testing/dump.cc
+index cad0910..75e0b97 100644
+--- a/re2/testing/dump.cc
++++ b/re2/testing/dump.cc
+@@ -22,7 +22,7 @@
+ #include "util/logging.h"
+ #include "util/strutil.h"
+ #include "util/utf.h"
+-#include "re2/stringpiece.h"
++#include "absl/strings/string_view.h"
+ #include "re2/regexp.h"
+ 
+ namespace re2 {
+diff --git a/re2/testing/exhaustive_tester.cc b/re2/testing/exhaustive_tester.cc
+index b0409c3..1cac2f5 100644
+--- a/re2/testing/exhaustive_tester.cc
++++ b/re2/testing/exhaustive_tester.cc
+@@ -33,7 +33,7 @@ DEFINE_FLAG(int, max_bad_regexp_inputs, 1,
+ 
+ namespace re2 {
+ 
+-static char* escape(const StringPiece& sp) {
++static char* escape(const absl::string_view& sp) {
+   static char buf[512];
+   char* p = buf;
+   *p++ = '\"';
+@@ -55,7 +55,7 @@ static char* escape(const StringPiece& sp) {
+   return buf;
+ }
+ 
+-static void PrintResult(const RE2& re, const StringPiece& input, RE2::Anchor anchor, StringPiece *m, int n) {
++static void PrintResult(const RE2& re, const absl::string_view& input, RE2::Anchor anchor, absl::string_view *m, int n) {
+   if (!re.Match(input, 0, input.size(), anchor, m, n)) {
+     printf("-");
+     return;
+@@ -106,11 +106,11 @@ void ExhaustiveTester::HandleRegexp(const std::string& const_regexp) {
+     longest.set_longest_match(true);
+     RE2 relongest(regexp, longest);
+     int ngroup = re.NumberOfCapturingGroups()+1;
+-    StringPiece* group = new StringPiece[ngroup];
++    absl::string_view* group = new absl::string_view[ngroup];
+ 
+     strgen_.Reset();
+     while (strgen_.HasNext()) {
+-      StringPiece input = strgen_.Next();
++      absl::string_view input = strgen_.Next();
+       PrintResult(re, input, RE2::ANCHOR_BOTH, group, ngroup);
+       printf(";");
+       PrintResult(re, input, RE2::UNANCHORED, group, ngroup);
+diff --git a/re2/testing/possible_match_test.cc b/re2/testing/possible_match_test.cc
+index 0ec90ae..d369ad2 100644
+--- a/re2/testing/possible_match_test.cc
++++ b/re2/testing/possible_match_test.cc
+@@ -218,7 +218,7 @@ void PossibleMatchTester::HandleRegexp(const std::string& regexp) {
+ 
+   strgen_.Reset();
+   while (strgen_.HasNext()) {
+-    const StringPiece& s = strgen_.Next();
++    const absl::string_view& s = strgen_.Next();
+     tests_++;
+     if (!RE2::FullMatch(s, re))
+       continue;
+diff --git a/re2/testing/re2_test.cc b/re2/testing/re2_test.cc
+index b1f7d73..833b0b5 100644
+--- a/re2/testing/re2_test.cc
++++ b/re2/testing/re2_test.cc
+@@ -238,7 +238,7 @@ TEST(RE2, Consume) {
+   std::string word;
+ 
+   std::string s("   aaa b!@#$@#$cccc");
+-  StringPiece input(s);
++  absl::string_view input(s);
+ 
+   ASSERT_TRUE(RE2::Consume(&input, r, &word));
+   ASSERT_EQ(word, "aaa") << " input: " << input;
+@@ -249,7 +249,7 @@ TEST(RE2, Consume) {
+ 
+ TEST(RE2, ConsumeN) {
+   const std::string s(" one two three 4");
+-  StringPiece input(s);
++  absl::string_view input(s);
+ 
+   RE2::Arg argv[2];
+   const RE2::Arg* const args[2] = { &argv[0], &argv[1] };
+@@ -276,7 +276,7 @@ TEST(RE2, FindAndConsume) {
+   std::string word;
+ 
+   std::string s("   aaa b!@#$@#$cccc");
+-  StringPiece input(s);
++  absl::string_view input(s);
+ 
+   ASSERT_TRUE(RE2::FindAndConsume(&input, r, &word));
+   ASSERT_EQ(word, "aaa");
+@@ -296,7 +296,7 @@ TEST(RE2, FindAndConsume) {
+ 
+ TEST(RE2, FindAndConsumeN) {
+   const std::string s(" one two three 4");
+-  StringPiece input(s);
++  absl::string_view input(s);
+ 
+   RE2::Arg argv[2];
+   const RE2::Arg* const args[2] = { &argv[0], &argv[1] };
+@@ -345,10 +345,10 @@ TEST(RE2, MatchNumberPeculiarity) {
+ 
+ TEST(RE2, Match) {
+   RE2 re("((\\w+):([0-9]+))");   // extracts host and port
+-  StringPiece group[4];
++  absl::string_view group[4];
+ 
+   // No match.
+-  StringPiece s = "zyzzyva";
++  absl::string_view s = "zyzzyva";
+   ASSERT_FALSE(
+       re.Match(s, 0, s.size(), RE2::UNANCHORED, group, arraysize(group)));
+ 
+@@ -542,7 +542,7 @@ TEST(EmptyCharset, BitstateAssumptions) {
+     "((((()))))" "([^\\S\\s]|[^\\S\\s])?",
+     "((((()))))" "(([^\\S\\s]|[^\\S\\s])|)"
+   };
+-  StringPiece group[6];
++  absl::string_view group[6];
+   for (size_t i = 0; i < arraysize(nop_empties); i++)
+     ASSERT_TRUE(RE2(nop_empties[i]).Match("", 0, 0, RE2::UNANCHORED, group, 6));
+ }
+@@ -677,10 +677,10 @@ TEST(RE2, FullMatchStringArg) {
+   ASSERT_EQ(s, std::string("ell"));
+ }
+ 
+-TEST(RE2, FullMatchStringPieceArg) {
++TEST(RE2, FullMatchStringViewArg) {
+   int i;
+-  // StringPiece-arg
+-  StringPiece sp;
++  // absl::string_view-arg
++  absl::string_view sp;
+   ASSERT_TRUE(RE2::FullMatch("ruby:1234", "(\\w+):(\\d+)", &sp, &i));
+   ASSERT_EQ(sp.size(), 4);
+   ASSERT_TRUE(memcmp(sp.data(), "ruby", 4) == 0);
+@@ -742,7 +742,7 @@ TEST(RE2, FullMatchTypedNullArg) {
+   // Ignore non-void* NULL arg
+   ASSERT_TRUE(RE2::FullMatch("hello", "he(.*)lo", (char*)NULL));
+   ASSERT_TRUE(RE2::FullMatch("hello", "h(.*)o", (std::string*)NULL));
+-  ASSERT_TRUE(RE2::FullMatch("hello", "h(.*)o", (StringPiece*)NULL));
++  ASSERT_TRUE(RE2::FullMatch("hello", "h(.*)o", (absl::string_view*)NULL));
+   ASSERT_TRUE(RE2::FullMatch("1234", "(.*)", (int*)NULL));
+   ASSERT_TRUE(RE2::FullMatch("1234567890123456", "(.*)", (long long*)NULL));
+   ASSERT_TRUE(RE2::FullMatch("123.4567890123456", "(.*)", (double*)NULL));
+@@ -777,7 +777,7 @@ TEST(RE2, NULTerminated) {
+   v[pagesize - 1] = '1';
+ 
+   x = 0;
+-  ASSERT_TRUE(RE2::FullMatch(StringPiece(v + pagesize - 1, 1), "(.*)", &x));
++  ASSERT_TRUE(RE2::FullMatch(absl::string_view(v + pagesize - 1, 1), "(.*)", &x));
+   ASSERT_EQ(x, 1);
+ #endif
+ }
+@@ -1242,17 +1242,17 @@ TEST(RE2, DeepRecursion) {
+ // not implementing case-folding.
+ TEST(CaseInsensitive, MatchAndConsume) {
+   std::string text = "A fish named *Wanda*";
+-  StringPiece sp(text);
+-  StringPiece result;
++  absl::string_view sp(text);
++  absl::string_view result;
+   EXPECT_TRUE(RE2::PartialMatch(text, "(?i)([wand]{5})", &result));
+   EXPECT_TRUE(RE2::FindAndConsume(&sp, "(?i)([wand]{5})", &result));
+ }
+ 
+-// RE2 should permit implicit conversions from string, StringPiece, const char*,
++// RE2 should permit implicit conversions from string, absl::string_view, const char*,
+ // and C string literals.
+ TEST(RE2, ImplicitConversions) {
+   std::string re_string(".");
+-  StringPiece re_stringpiece(".");
++  absl::string_view re_stringpiece(".");
+   const char* re_cstring = ".";
+   EXPECT_TRUE(RE2::PartialMatch("e", re_string));
+   EXPECT_TRUE(RE2::PartialMatch("e", re_stringpiece));
+@@ -1338,7 +1338,7 @@ TEST(RE2, NeverNewline) {
+     if (t.match == NULL) {
+       EXPECT_FALSE(re.PartialMatch(t.text, re));
+     } else {
+-      StringPiece m;
++      absl::string_view m;
+       EXPECT_TRUE(re.PartialMatch(t.text, re, &m));
+       EXPECT_EQ(m, t.match);
+     }
+@@ -1371,7 +1371,7 @@ TEST(RE2, BitstateCaptureBug) {
+   RE2::Options opt;
+   opt.set_max_mem(20000);
+   RE2 re("(_________$)", opt);
+-  StringPiece s = "xxxxxxxxxxxxxxxxxxxxxxxxxx_________x";
++  absl::string_view s = "xxxxxxxxxxxxxxxxxxxxxxxxxx_________x";
+   EXPECT_FALSE(re.Match(s, 0, s.size(), RE2::UNANCHORED, NULL, 0));
+ }
+ 
+@@ -1450,10 +1450,10 @@ TEST(RE2, NullVsEmptyString) {
+   RE2 re(".*");
+   EXPECT_TRUE(re.ok());
+ 
+-  StringPiece null;
++  absl::string_view null;
+   EXPECT_TRUE(RE2::FullMatch(null, re));
+ 
+-  StringPiece empty("");
++  absl::string_view empty("");
+   EXPECT_TRUE(RE2::FullMatch(empty, re));
+ }
+ 
+@@ -1465,12 +1465,12 @@ TEST(RE2, NullVsEmptyStringSubmatches) {
+   EXPECT_TRUE(re.ok());
+ 
+   // matches[0] is overall match, [1] is (), [2] is (foo), [3] is nonexistent.
+-  StringPiece matches[4];
++  absl::string_view matches[4];
+ 
+   for (size_t i = 0; i < arraysize(matches); i++)
+     matches[i] = "bar";
+ 
+-  StringPiece null;
++  absl::string_view null;
+   EXPECT_TRUE(re.Match(null, 0, null.size(), RE2::UNANCHORED,
+                        matches, arraysize(matches)));
+   for (size_t i = 0; i < arraysize(matches); i++) {
+@@ -1481,7 +1481,7 @@ TEST(RE2, NullVsEmptyStringSubmatches) {
+   for (size_t i = 0; i < arraysize(matches); i++)
+     matches[i] = "bar";
+ 
+-  StringPiece empty("");
++  absl::string_view empty("");
+   EXPECT_TRUE(re.Match(empty, 0, empty.size(), RE2::UNANCHORED,
+                        matches, arraysize(matches)));
+   EXPECT_TRUE(matches[0].data() != NULL);  // empty, not null
+@@ -1497,7 +1497,7 @@ TEST(RE2, NullVsEmptyStringSubmatches) {
+ // Issue 1816809
+ TEST(RE2, Bug1816809) {
+   RE2 re("(((((llx((-3)|(4)))(;(llx((-3)|(4))))*))))");
+-  StringPiece piece("llx-3;llx4");
++  absl::string_view piece("llx-3;llx4");
+   std::string x;
+   EXPECT_TRUE(RE2::Consume(&piece, re, &x));
+ }
+@@ -1615,7 +1615,7 @@ TEST(RE2, Bug26356109) {
+   ASSERT_TRUE(re.ok());
+ 
+   std::string s = "abc";
+-  StringPiece m;
++  absl::string_view m;
+ 
+   ASSERT_TRUE(re.Match(s, 0, s.size(), RE2::UNANCHORED, &m, 1));
+   ASSERT_EQ(m, s) << " (UNANCHORED) got m='" << m << "', want '" << s << "'";
+@@ -1645,7 +1645,7 @@ TEST(RE2, Issue310) {
+   // (?:|a)* matched more text than (?:|a)+ did.
+ 
+   std::string s = "aaa";
+-  StringPiece m;
++  absl::string_view m;
+ 
+   RE2 star("(?:|a)*");
+   ASSERT_TRUE(star.Match(s, 0, s.size(), RE2::UNANCHORED, &m, 1));
+diff --git a/re2/testing/regexp_benchmark.cc b/re2/testing/regexp_benchmark.cc
+index 3eeb098..e13d282 100644
+--- a/re2/testing/regexp_benchmark.cc
++++ b/re2/testing/regexp_benchmark.cc
+@@ -41,7 +41,7 @@ void Test() {
+   CHECK(prog->IsOnePass());
+   CHECK(prog->CanBitState());
+   const char* text = "650-253-0001";
+-  StringPiece sp[4];
++  absl::string_view sp[4];
+   CHECK(prog->SearchOnePass(text, text, Prog::kAnchored, Prog::kFullMatch, sp, 4));
+   CHECK_EQ(sp[0], "650-253-0001");
+   CHECK_EQ(sp[1], "650");
+@@ -73,7 +73,7 @@ void MemoryUsage() {
+             mc.HeapGrowth(), mc.PeakHeapGrowth());
+     mc.Reset();
+ 
+-    StringPiece sp[4];
++    absl::string_view sp[4];
+     CHECK(prog->SearchOnePass(text, text, Prog::kAnchored, Prog::kFullMatch, sp, 4));
+     fprintf(stderr, "Search: %7lld bytes (peak=%lld)\n",
+             mc.HeapGrowth(), mc.PeakHeapGrowth());
+@@ -128,7 +128,7 @@ int NumCPUs() {
+ // and not interesting.
+ 
+ typedef void SearchImpl(benchmark::State& state, const char* regexp,
+-                        const StringPiece& text, Prog::Anchor anchor,
++                        const absl::string_view& text, Prog::Anchor anchor,
+                         bool expect_match);
+ 
+ SearchImpl SearchDFA, SearchNFA, SearchOnePass, SearchBitState, SearchPCRE,
+@@ -136,7 +136,7 @@ SearchImpl SearchDFA, SearchNFA, SearchOnePass, SearchBitState, SearchPCRE,
+     SearchCachedBitState, SearchCachedPCRE, SearchCachedRE2;
+ 
+ typedef void ParseImpl(benchmark::State& state, const char* regexp,
+-                       const StringPiece& text);
++                       const absl::string_view& text);
+ 
+ ParseImpl Parse1NFA, Parse1OnePass, Parse1BitState, Parse1PCRE, Parse1RE2,
+     Parse1Backtrack, Parse1CachedNFA, Parse1CachedOnePass, Parse1CachedBitState,
+@@ -318,8 +318,8 @@ void FindAndConsume(benchmark::State& state) {
+   s.append("Hello World");
+   RE2 re("((Hello World))");
+   for (auto _ : state) {
+-    StringPiece t = s;
+-    StringPiece u;
++    absl::string_view t = s;
++    absl::string_view u;
+     CHECK(RE2::FindAndConsume(&t, re, &u));
+     CHECK_EQ(u, "Hello World");
+   }
+@@ -442,7 +442,7 @@ BENCHMARK_RANGE(Search_AltMatch_CachedRE2,      8, 16<<20)->ThreadRange(1, NumCP
+ // Benchmark: use regexp to find phone number.
+ 
+ void SearchDigits(benchmark::State& state, SearchImpl* search) {
+-  StringPiece s("650-253-0001");
++  absl::string_view s("650-253-0001");
+   search(state, "([0-9]+)-([0-9]+)-([0-9]+)", s, Prog::kAnchored, true);
+   state.SetItemsProcessed(state.iterations());
+ }
+@@ -467,7 +467,7 @@ BENCHMARK(Search_Digits_BitState)->ThreadRange(1, NumCPUs());
+ 
+ void Parse3Digits(benchmark::State& state,
+                   void (*parse3)(benchmark::State&, const char*,
+-                                 const StringPiece&)) {
++                                 const absl::string_view&)) {
+   parse3(state, "([0-9]+)-([0-9]+)-([0-9]+)", "650-253-0001");
+   state.SetItemsProcessed(state.iterations());
+ }
+@@ -506,7 +506,7 @@ BENCHMARK(Parse_CachedDigits_BitState)->ThreadRange(1, NumCPUs());
+ 
+ void Parse3DigitDs(benchmark::State& state,
+                    void (*parse3)(benchmark::State&, const char*,
+-                                  const StringPiece&)) {
++                                  const absl::string_view&)) {
+   parse3(state, "(\\d+)-(\\d+)-(\\d+)", "650-253-0001");
+   state.SetItemsProcessed(state.iterations());
+ }
+@@ -547,7 +547,7 @@ BENCHMARK(Parse_CachedDigitDs_BitState)->ThreadRange(1, NumCPUs());
+ 
+ void Parse1Split(benchmark::State& state,
+                  void (*parse1)(benchmark::State&, const char*,
+-                                const StringPiece&)) {
++                                const absl::string_view&)) {
+   parse1(state, "[0-9]+-(.*)", "650-253-0001");
+   state.SetItemsProcessed(state.iterations());
+ }
+@@ -584,7 +584,7 @@ BENCHMARK(Parse_CachedSplit_BitState)->ThreadRange(1, NumCPUs());
+ 
+ void Parse1SplitHard(benchmark::State& state,
+                      void (*run)(benchmark::State&, const char*,
+-                                 const StringPiece&)) {
++                                 const absl::string_view&)) {
+   run(state, "[0-9]+.(.*)", "650-253-0001");
+   state.SetItemsProcessed(state.iterations());
+ }
+@@ -619,7 +619,7 @@ BENCHMARK(Parse_CachedSplitHard_Backtrack)->ThreadRange(1, NumCPUs());
+ 
+ void Parse1SplitBig1(benchmark::State& state,
+                      void (*run)(benchmark::State&, const char*,
+-                                 const StringPiece&)) {
++                                 const absl::string_view&)) {
+   std::string s;
+   s.append(100000, 'x');
+   s.append("650-253-0001");
+@@ -639,7 +639,7 @@ BENCHMARK(Parse_CachedSplitBig1_RE2)->ThreadRange(1, NumCPUs());
+ 
+ void Parse1SplitBig2(benchmark::State& state,
+                      void (*run)(benchmark::State&, const char*,
+-                                 const StringPiece&)) {
++                                 const absl::string_view&)) {
+   std::string s;
+   s.append("650-253-");
+   s.append(100000, '0');
+@@ -859,7 +859,7 @@ DO24(MY_BENCHMARK_WITH_ARG, CacheFillDFA)
+ // Anchored says whether to run an anchored search.
+ 
+ void SearchDFA(benchmark::State& state, const char* regexp,
+-               const StringPiece& text, Prog::Anchor anchor,
++               const absl::string_view& text, Prog::Anchor anchor,
+                bool expect_match) {
+   for (auto _ : state) {
+     Regexp* re = Regexp::Parse(regexp, Regexp::LikePerl, NULL);
+@@ -867,7 +867,7 @@ void SearchDFA(benchmark::State& state, const char* regexp,
+     Prog* prog = re->CompileToProg(0);
+     CHECK(prog);
+     bool failed = false;
+-    CHECK_EQ(prog->SearchDFA(text, StringPiece(), anchor, Prog::kFirstMatch,
++    CHECK_EQ(prog->SearchDFA(text, absl::string_view(), anchor, Prog::kFirstMatch,
+                              NULL, &failed, NULL),
+              expect_match);
+     CHECK(!failed);
+@@ -877,14 +877,14 @@ void SearchDFA(benchmark::State& state, const char* regexp,
+ }
+ 
+ void SearchNFA(benchmark::State& state, const char* regexp,
+-               const StringPiece& text, Prog::Anchor anchor,
++               const absl::string_view& text, Prog::Anchor anchor,
+                bool expect_match) {
+   for (auto _ : state) {
+     Regexp* re = Regexp::Parse(regexp, Regexp::LikePerl, NULL);
+     CHECK(re);
+     Prog* prog = re->CompileToProg(0);
+     CHECK(prog);
+-    CHECK_EQ(prog->SearchNFA(text, StringPiece(), anchor, Prog::kFirstMatch,
++    CHECK_EQ(prog->SearchNFA(text, absl::string_view(), anchor, Prog::kFirstMatch,
+                              NULL, 0),
+              expect_match);
+     delete prog;
+@@ -893,7 +893,7 @@ void SearchNFA(benchmark::State& state, const char* regexp,
+ }
+ 
+ void SearchOnePass(benchmark::State& state, const char* regexp,
+-                   const StringPiece& text, Prog::Anchor anchor,
++                   const absl::string_view& text, Prog::Anchor anchor,
+                    bool expect_match) {
+   for (auto _ : state) {
+     Regexp* re = Regexp::Parse(regexp, Regexp::LikePerl, NULL);
+@@ -909,7 +909,7 @@ void SearchOnePass(benchmark::State& state, const char* regexp,
+ }
+ 
+ void SearchBitState(benchmark::State& state, const char* regexp,
+-                    const StringPiece& text, Prog::Anchor anchor,
++                    const absl::string_view& text, Prog::Anchor anchor,
+                     bool expect_match) {
+   for (auto _ : state) {
+     Regexp* re = Regexp::Parse(regexp, Regexp::LikePerl, NULL);
+@@ -925,7 +925,7 @@ void SearchBitState(benchmark::State& state, const char* regexp,
+ }
+ 
+ void SearchPCRE(benchmark::State& state, const char* regexp,
+-                const StringPiece& text, Prog::Anchor anchor,
++                const absl::string_view& text, Prog::Anchor anchor,
+                 bool expect_match) {
+   for (auto _ : state) {
+     PCRE re(regexp, PCRE::UTF8);
+@@ -938,7 +938,7 @@ void SearchPCRE(benchmark::State& state, const char* regexp,
+ }
+ 
+ void SearchRE2(benchmark::State& state, const char* regexp,
+-               const StringPiece& text, Prog::Anchor anchor,
++               const absl::string_view& text, Prog::Anchor anchor,
+                bool expect_match) {
+   for (auto _ : state) {
+     RE2 re(regexp);
+@@ -999,12 +999,12 @@ RE2* GetCachedRE2(const char* regexp) {
+ }
+ 
+ void SearchCachedDFA(benchmark::State& state, const char* regexp,
+-                     const StringPiece& text, Prog::Anchor anchor,
++                     const absl::string_view& text, Prog::Anchor anchor,
+                      bool expect_match) {
+   Prog* prog = GetCachedProg(regexp);
+   for (auto _ : state) {
+     bool failed = false;
+-    CHECK_EQ(prog->SearchDFA(text, StringPiece(), anchor, Prog::kFirstMatch,
++    CHECK_EQ(prog->SearchDFA(text, absl::string_view(), anchor, Prog::kFirstMatch,
+                              NULL, &failed, NULL),
+              expect_match);
+     CHECK(!failed);
+@@ -1012,18 +1012,18 @@ void SearchCachedDFA(benchmark::State& state, const char* regexp,
+ }
+ 
+ void SearchCachedNFA(benchmark::State& state, const char* regexp,
+-                     const StringPiece& text, Prog::Anchor anchor,
++                     const absl::string_view& text, Prog::Anchor anchor,
+                      bool expect_match) {
+   Prog* prog = GetCachedProg(regexp);
+   for (auto _ : state) {
+-    CHECK_EQ(prog->SearchNFA(text, StringPiece(), anchor, Prog::kFirstMatch,
++    CHECK_EQ(prog->SearchNFA(text, absl::string_view(), anchor, Prog::kFirstMatch,
+                              NULL, 0),
+              expect_match);
+   }
+ }
+ 
+ void SearchCachedOnePass(benchmark::State& state, const char* regexp,
+-                         const StringPiece& text, Prog::Anchor anchor,
++                         const absl::string_view& text, Prog::Anchor anchor,
+                          bool expect_match) {
+   Prog* prog = GetCachedProg(regexp);
+   CHECK(prog->IsOnePass());
+@@ -1034,7 +1034,7 @@ void SearchCachedOnePass(benchmark::State& state, const char* regexp,
+ }
+ 
+ void SearchCachedBitState(benchmark::State& state, const char* regexp,
+-                          const StringPiece& text, Prog::Anchor anchor,
++                          const absl::string_view& text, Prog::Anchor anchor,
+                           bool expect_match) {
+   Prog* prog = GetCachedProg(regexp);
+   CHECK(prog->CanBitState());
+@@ -1045,7 +1045,7 @@ void SearchCachedBitState(benchmark::State& state, const char* regexp,
+ }
+ 
+ void SearchCachedPCRE(benchmark::State& state, const char* regexp,
+-                      const StringPiece& text, Prog::Anchor anchor,
++                      const absl::string_view& text, Prog::Anchor anchor,
+                       bool expect_match) {
+   PCRE& re = *GetCachedPCRE(regexp);
+   for (auto _ : state) {
+@@ -1057,7 +1057,7 @@ void SearchCachedPCRE(benchmark::State& state, const char* regexp,
+ }
+ 
+ void SearchCachedRE2(benchmark::State& state, const char* regexp,
+-                     const StringPiece& text, Prog::Anchor anchor,
++                     const absl::string_view& text, Prog::Anchor anchor,
+                      bool expect_match) {
+   RE2& re = *GetCachedRE2(regexp);
+   for (auto _ : state) {
+@@ -1072,14 +1072,14 @@ void SearchCachedRE2(benchmark::State& state, const char* regexp,
+ // extracting three submatches.  Expects match always.
+ 
+ void Parse3NFA(benchmark::State& state, const char* regexp,
+-               const StringPiece& text) {
++               const absl::string_view& text) {
+   for (auto _ : state) {
+     Regexp* re = Regexp::Parse(regexp, Regexp::LikePerl, NULL);
+     CHECK(re);
+     Prog* prog = re->CompileToProg(0);
+     CHECK(prog);
+-    StringPiece sp[4];  // 4 because sp[0] is whole match.
+-    CHECK(prog->SearchNFA(text, StringPiece(), Prog::kAnchored,
++    absl::string_view sp[4];  // 4 because sp[0] is whole match.
++    CHECK(prog->SearchNFA(text, absl::string_view(), Prog::kAnchored,
+                           Prog::kFullMatch, sp, 4));
+     delete prog;
+     re->Decref();
+@@ -1087,14 +1087,14 @@ void Parse3NFA(benchmark::State& state, const char* regexp,
+ }
+ 
+ void Parse3OnePass(benchmark::State& state, const char* regexp,
+-                   const StringPiece& text) {
++                   const absl::string_view& text) {
+   for (auto _ : state) {
+     Regexp* re = Regexp::Parse(regexp, Regexp::LikePerl, NULL);
+     CHECK(re);
+     Prog* prog = re->CompileToProg(0);
+     CHECK(prog);
+     CHECK(prog->IsOnePass());
+-    StringPiece sp[4];  // 4 because sp[0] is whole match.
++    absl::string_view sp[4];  // 4 because sp[0] is whole match.
+     CHECK(prog->SearchOnePass(text, text, Prog::kAnchored, Prog::kFullMatch, sp, 4));
+     delete prog;
+     re->Decref();
+@@ -1102,14 +1102,14 @@ void Parse3OnePass(benchmark::State& state, const char* regexp,
+ }
+ 
+ void Parse3BitState(benchmark::State& state, const char* regexp,
+-                    const StringPiece& text) {
++                    const absl::string_view& text) {
+   for (auto _ : state) {
+     Regexp* re = Regexp::Parse(regexp, Regexp::LikePerl, NULL);
+     CHECK(re);
+     Prog* prog = re->CompileToProg(0);
+     CHECK(prog);
+     CHECK(prog->CanBitState());
+-    StringPiece sp[4];  // 4 because sp[0] is whole match.
++    absl::string_view sp[4];  // 4 because sp[0] is whole match.
+     CHECK(prog->SearchBitState(text, text, Prog::kAnchored, Prog::kFullMatch, sp, 4));
+     delete prog;
+     re->Decref();
+@@ -1117,13 +1117,13 @@ void Parse3BitState(benchmark::State& state, const char* regexp,
+ }
+ 
+ void Parse3Backtrack(benchmark::State& state, const char* regexp,
+-                     const StringPiece& text) {
++                     const absl::string_view& text) {
+   for (auto _ : state) {
+     Regexp* re = Regexp::Parse(regexp, Regexp::LikePerl, NULL);
+     CHECK(re);
+     Prog* prog = re->CompileToProg(0);
+     CHECK(prog);
+-    StringPiece sp[4];  // 4 because sp[0] is whole match.
++    absl::string_view sp[4];  // 4 because sp[0] is whole match.
+     CHECK(prog->UnsafeSearchBacktrack(text, text, Prog::kAnchored, Prog::kFullMatch, sp, 4));
+     delete prog;
+     re->Decref();
+@@ -1131,77 +1131,77 @@ void Parse3Backtrack(benchmark::State& state, const char* regexp,
+ }
+ 
+ void Parse3PCRE(benchmark::State& state, const char* regexp,
+-                const StringPiece& text) {
++                const absl::string_view& text) {
+   for (auto _ : state) {
+     PCRE re(regexp, PCRE::UTF8);
+     CHECK_EQ(re.error(), "");
+-    StringPiece sp1, sp2, sp3;
++    absl::string_view sp1, sp2, sp3;
+     CHECK(PCRE::FullMatch(text, re, &sp1, &sp2, &sp3));
+   }
+ }
+ 
+ void Parse3RE2(benchmark::State& state, const char* regexp,
+-               const StringPiece& text) {
++               const absl::string_view& text) {
+   for (auto _ : state) {
+     RE2 re(regexp);
+     CHECK_EQ(re.error(), "");
+-    StringPiece sp1, sp2, sp3;
++    absl::string_view sp1, sp2, sp3;
+     CHECK(RE2::FullMatch(text, re, &sp1, &sp2, &sp3));
+   }
+ }
+ 
+ void Parse3CachedNFA(benchmark::State& state, const char* regexp,
+-                     const StringPiece& text) {
++                     const absl::string_view& text) {
+   Prog* prog = GetCachedProg(regexp);
+-  StringPiece sp[4];  // 4 because sp[0] is whole match.
++  absl::string_view sp[4];  // 4 because sp[0] is whole match.
+   for (auto _ : state) {
+-    CHECK(prog->SearchNFA(text, StringPiece(), Prog::kAnchored,
++    CHECK(prog->SearchNFA(text, absl::string_view(), Prog::kAnchored,
+                           Prog::kFullMatch, sp, 4));
+   }
+ }
+ 
+ void Parse3CachedOnePass(benchmark::State& state, const char* regexp,
+-                         const StringPiece& text) {
++                         const absl::string_view& text) {
+   Prog* prog = GetCachedProg(regexp);
+   CHECK(prog->IsOnePass());
+-  StringPiece sp[4];  // 4 because sp[0] is whole match.
++  absl::string_view sp[4];  // 4 because sp[0] is whole match.
+   for (auto _ : state) {
+     CHECK(prog->SearchOnePass(text, text, Prog::kAnchored, Prog::kFullMatch, sp, 4));
+   }
+ }
+ 
+ void Parse3CachedBitState(benchmark::State& state, const char* regexp,
+-                          const StringPiece& text) {
++                          const absl::string_view& text) {
+   Prog* prog = GetCachedProg(regexp);
+   CHECK(prog->CanBitState());
+-  StringPiece sp[4];  // 4 because sp[0] is whole match.
++  absl::string_view sp[4];  // 4 because sp[0] is whole match.
+   for (auto _ : state) {
+     CHECK(prog->SearchBitState(text, text, Prog::kAnchored, Prog::kFullMatch, sp, 4));
+   }
+ }
+ 
+ void Parse3CachedBacktrack(benchmark::State& state, const char* regexp,
+-                           const StringPiece& text) {
++                           const absl::string_view& text) {
+   Prog* prog = GetCachedProg(regexp);
+-  StringPiece sp[4];  // 4 because sp[0] is whole match.
++  absl::string_view sp[4];  // 4 because sp[0] is whole match.
+   for (auto _ : state) {
+     CHECK(prog->UnsafeSearchBacktrack(text, text, Prog::kAnchored, Prog::kFullMatch, sp, 4));
+   }
+ }
+ 
+ void Parse3CachedPCRE(benchmark::State& state, const char* regexp,
+-                      const StringPiece& text) {
++                      const absl::string_view& text) {
+   PCRE& re = *GetCachedPCRE(regexp);
+-  StringPiece sp1, sp2, sp3;
++  absl::string_view sp1, sp2, sp3;
+   for (auto _ : state) {
+     CHECK(PCRE::FullMatch(text, re, &sp1, &sp2, &sp3));
+   }
+ }
+ 
+ void Parse3CachedRE2(benchmark::State& state, const char* regexp,
+-                     const StringPiece& text) {
++                     const absl::string_view& text) {
+   RE2& re = *GetCachedRE2(regexp);
+-  StringPiece sp1, sp2, sp3;
++  absl::string_view sp1, sp2, sp3;
+   for (auto _ : state) {
+     CHECK(RE2::FullMatch(text, re, &sp1, &sp2, &sp3));
+   }
+@@ -1211,14 +1211,14 @@ void Parse3CachedRE2(benchmark::State& state, const char* regexp,
+ // extracting three submatches.  Expects match always.
+ 
+ void Parse1NFA(benchmark::State& state, const char* regexp,
+-               const StringPiece& text) {
++               const absl::string_view& text) {
+   for (auto _ : state) {
+     Regexp* re = Regexp::Parse(regexp, Regexp::LikePerl, NULL);
+     CHECK(re);
+     Prog* prog = re->CompileToProg(0);
+     CHECK(prog);
+-    StringPiece sp[2];  // 2 because sp[0] is whole match.
+-    CHECK(prog->SearchNFA(text, StringPiece(), Prog::kAnchored,
++    absl::string_view sp[2];  // 2 because sp[0] is whole match.
++    CHECK(prog->SearchNFA(text, absl::string_view(), Prog::kAnchored,
+                           Prog::kFullMatch, sp, 2));
+     delete prog;
+     re->Decref();
+@@ -1226,14 +1226,14 @@ void Parse1NFA(benchmark::State& state, const char* regexp,
+ }
+ 
+ void Parse1OnePass(benchmark::State& state, const char* regexp,
+-                   const StringPiece& text) {
++                   const absl::string_view& text) {
+   for (auto _ : state) {
+     Regexp* re = Regexp::Parse(regexp, Regexp::LikePerl, NULL);
+     CHECK(re);
+     Prog* prog = re->CompileToProg(0);
+     CHECK(prog);
+     CHECK(prog->IsOnePass());
+-    StringPiece sp[2];  // 2 because sp[0] is whole match.
++    absl::string_view sp[2];  // 2 because sp[0] is whole match.
+     CHECK(prog->SearchOnePass(text, text, Prog::kAnchored, Prog::kFullMatch, sp, 2));
+     delete prog;
+     re->Decref();
+@@ -1241,14 +1241,14 @@ void Parse1OnePass(benchmark::State& state, const char* regexp,
+ }
+ 
+ void Parse1BitState(benchmark::State& state, const char* regexp,
+-                    const StringPiece& text) {
++                    const absl::string_view& text) {
+   for (auto _ : state) {
+     Regexp* re = Regexp::Parse(regexp, Regexp::LikePerl, NULL);
+     CHECK(re);
+     Prog* prog = re->CompileToProg(0);
+     CHECK(prog);
+     CHECK(prog->CanBitState());
+-    StringPiece sp[2];  // 2 because sp[0] is whole match.
++    absl::string_view sp[2];  // 2 because sp[0] is whole match.
+     CHECK(prog->SearchBitState(text, text, Prog::kAnchored, Prog::kFullMatch, sp, 2));
+     delete prog;
+     re->Decref();
+@@ -1256,114 +1256,114 @@ void Parse1BitState(benchmark::State& state, const char* regexp,
+ }
+ 
+ void Parse1PCRE(benchmark::State& state, const char* regexp,
+-                const StringPiece& text) {
++                const absl::string_view& text) {
+   for (auto _ : state) {
+     PCRE re(regexp, PCRE::UTF8);
+     CHECK_EQ(re.error(), "");
+-    StringPiece sp1;
++    absl::string_view sp1;
+     CHECK(PCRE::FullMatch(text, re, &sp1));
+   }
+ }
+ 
+ void Parse1RE2(benchmark::State& state, const char* regexp,
+-               const StringPiece& text) {
++               const absl::string_view& text) {
+   for (auto _ : state) {
+     RE2 re(regexp);
+     CHECK_EQ(re.error(), "");
+-    StringPiece sp1;
++    absl::string_view sp1;
+     CHECK(RE2::FullMatch(text, re, &sp1));
+   }
+ }
+ 
+ void Parse1CachedNFA(benchmark::State& state, const char* regexp,
+-                     const StringPiece& text) {
++                     const absl::string_view& text) {
+   Prog* prog = GetCachedProg(regexp);
+-  StringPiece sp[2];  // 2 because sp[0] is whole match.
++  absl::string_view sp[2];  // 2 because sp[0] is whole match.
+   for (auto _ : state) {
+-    CHECK(prog->SearchNFA(text, StringPiece(), Prog::kAnchored,
++    CHECK(prog->SearchNFA(text, absl::string_view(), Prog::kAnchored,
+                           Prog::kFullMatch, sp, 2));
+   }
+ }
+ 
+ void Parse1CachedOnePass(benchmark::State& state, const char* regexp,
+-                         const StringPiece& text) {
++                         const absl::string_view& text) {
+   Prog* prog = GetCachedProg(regexp);
+   CHECK(prog->IsOnePass());
+-  StringPiece sp[2];  // 2 because sp[0] is whole match.
++  absl::string_view sp[2];  // 2 because sp[0] is whole match.
+   for (auto _ : state) {
+     CHECK(prog->SearchOnePass(text, text, Prog::kAnchored, Prog::kFullMatch, sp, 2));
+   }
+ }
+ 
+ void Parse1CachedBitState(benchmark::State& state, const char* regexp,
+-                          const StringPiece& text) {
++                          const absl::string_view& text) {
+   Prog* prog = GetCachedProg(regexp);
+   CHECK(prog->CanBitState());
+-  StringPiece sp[2];  // 2 because sp[0] is whole match.
++  absl::string_view sp[2];  // 2 because sp[0] is whole match.
+   for (auto _ : state) {
+     CHECK(prog->SearchBitState(text, text, Prog::kAnchored, Prog::kFullMatch, sp, 2));
+   }
+ }
+ 
+ void Parse1CachedBacktrack(benchmark::State& state, const char* regexp,
+-                           const StringPiece& text) {
++                           const absl::string_view& text) {
+   Prog* prog = GetCachedProg(regexp);
+-  StringPiece sp[2];  // 2 because sp[0] is whole match.
++  absl::string_view sp[2];  // 2 because sp[0] is whole match.
+   for (auto _ : state) {
+     CHECK(prog->UnsafeSearchBacktrack(text, text, Prog::kAnchored, Prog::kFullMatch, sp, 2));
+   }
+ }
+ 
+ void Parse1CachedPCRE(benchmark::State& state, const char* regexp,
+-                      const StringPiece& text) {
++                      const absl::string_view& text) {
+   PCRE& re = *GetCachedPCRE(regexp);
+-  StringPiece sp1;
++  absl::string_view sp1;
+   for (auto _ : state) {
+     CHECK(PCRE::FullMatch(text, re, &sp1));
+   }
+ }
+ 
+ void Parse1CachedRE2(benchmark::State& state, const char* regexp,
+-                     const StringPiece& text) {
++                     const absl::string_view& text) {
+   RE2& re = *GetCachedRE2(regexp);
+-  StringPiece sp1;
++  absl::string_view sp1;
+   for (auto _ : state) {
+     CHECK(RE2::FullMatch(text, re, &sp1));
+   }
+ }
+ 
+ void SearchParse2CachedPCRE(benchmark::State& state, const char* regexp,
+-                            const StringPiece& text) {
++                            const absl::string_view& text) {
+   PCRE& re = *GetCachedPCRE(regexp);
+   for (auto _ : state) {
+-    StringPiece sp1, sp2;
++    absl::string_view sp1, sp2;
+     CHECK(PCRE::PartialMatch(text, re, &sp1, &sp2));
+   }
+ }
+ 
+ void SearchParse2CachedRE2(benchmark::State& state, const char* regexp,
+-                           const StringPiece& text) {
++                           const absl::string_view& text) {
+   RE2& re = *GetCachedRE2(regexp);
+   for (auto _ : state) {
+-    StringPiece sp1, sp2;
++    absl::string_view sp1, sp2;
+     CHECK(RE2::PartialMatch(text, re, &sp1, &sp2));
+   }
+ }
+ 
+ void SearchParse1CachedPCRE(benchmark::State& state, const char* regexp,
+-                            const StringPiece& text) {
++                            const absl::string_view& text) {
+   PCRE& re = *GetCachedPCRE(regexp);
+   for (auto _ : state) {
+-    StringPiece sp1;
++    absl::string_view sp1;
+     CHECK(PCRE::PartialMatch(text, re, &sp1));
+   }
+ }
+ 
+ void SearchParse1CachedRE2(benchmark::State& state, const char* regexp,
+-                           const StringPiece& text) {
++                           const absl::string_view& text) {
+   RE2& re = *GetCachedRE2(regexp);
+   for (auto _ : state) {
+-    StringPiece sp1;
++    absl::string_view sp1;
+     CHECK(RE2::PartialMatch(text, re, &sp1));
+   }
+ }
+@@ -1409,7 +1409,7 @@ static std::string http_text =
+   "alksdjfhasdlkfhasdlkjfhasdljkfhadsjklf HTTP/1.1";
+ 
+ void HTTPPartialMatchPCRE(benchmark::State& state) {
+-  StringPiece a;
++  absl::string_view a;
+   PCRE re("(?-s)^(?:GET|POST) +([^ ]+) HTTP");
+   for (auto _ : state) {
+     PCRE::PartialMatch(http_text, re, &a);
+@@ -1417,7 +1417,7 @@ void HTTPPartialMatchPCRE(benchmark::State& state) {
+ }
+ 
+ void HTTPPartialMatchRE2(benchmark::State& state) {
+-  StringPiece a;
++  absl::string_view a;
+   RE2 re("(?-s)^(?:GET|POST) +([^ ]+) HTTP");
+   for (auto _ : state) {
+     RE2::PartialMatch(http_text, re, &a);
+@@ -1433,7 +1433,7 @@ static std::string smallhttp_text =
+   "GET /abc HTTP/1.1";
+ 
+ void SmallHTTPPartialMatchPCRE(benchmark::State& state) {
+-  StringPiece a;
++  absl::string_view a;
+   PCRE re("(?-s)^(?:GET|POST) +([^ ]+) HTTP");
+   for (auto _ : state) {
+     PCRE::PartialMatch(smallhttp_text, re, &a);
+@@ -1441,7 +1441,7 @@ void SmallHTTPPartialMatchPCRE(benchmark::State& state) {
+ }
+ 
+ void SmallHTTPPartialMatchRE2(benchmark::State& state) {
+-  StringPiece a;
++  absl::string_view a;
+   RE2 re("(?-s)^(?:GET|POST) +([^ ]+) HTTP");
+   for (auto _ : state) {
+     RE2::PartialMatch(smallhttp_text, re, &a);
+@@ -1454,7 +1454,7 @@ BENCHMARK(SmallHTTPPartialMatchPCRE)->ThreadRange(1, NumCPUs());
+ BENCHMARK(SmallHTTPPartialMatchRE2)->ThreadRange(1, NumCPUs());
+ 
+ void DotMatchPCRE(benchmark::State& state) {
+-  StringPiece a;
++  absl::string_view a;
+   PCRE re("(?-s)^(.+)");
+   for (auto _ : state) {
+     PCRE::PartialMatch(http_text, re, &a);
+@@ -1462,7 +1462,7 @@ void DotMatchPCRE(benchmark::State& state) {
+ }
+ 
+ void DotMatchRE2(benchmark::State& state) {
+-  StringPiece a;
++  absl::string_view a;
+   RE2 re("(?-s)^(.+)");
+   for (auto _ : state) {
+     RE2::PartialMatch(http_text, re, &a);
+@@ -1475,7 +1475,7 @@ BENCHMARK(DotMatchPCRE)->ThreadRange(1, NumCPUs());
+ BENCHMARK(DotMatchRE2)->ThreadRange(1, NumCPUs());
+ 
+ void ASCIIMatchPCRE(benchmark::State& state) {
+-  StringPiece a;
++  absl::string_view a;
+   PCRE re("(?-s)^([ -~]+)");
+   for (auto _ : state) {
+     PCRE::PartialMatch(http_text, re, &a);
+@@ -1483,7 +1483,7 @@ void ASCIIMatchPCRE(benchmark::State& state) {
+ }
+ 
+ void ASCIIMatchRE2(benchmark::State& state) {
+-  StringPiece a;
++  absl::string_view a;
+   RE2 re("(?-s)^([ -~]+)");
+   for (auto _ : state) {
+     RE2::PartialMatch(http_text, re, &a);
+diff --git a/re2/testing/regexp_generator.cc b/re2/testing/regexp_generator.cc
+index 3eeda25..e4f8279 100644
+--- a/re2/testing/regexp_generator.cc
++++ b/re2/testing/regexp_generator.cc
+@@ -238,7 +238,7 @@ void RegexpGenerator::RunPostfix(const std::vector<std::string>& post) {
+ }
+ 
+ // Split s into an vector of strings, one for each UTF-8 character.
+-std::vector<std::string> Explode(const StringPiece& s) {
++std::vector<std::string> Explode(const absl::string_view& s) {
+   std::vector<std::string> v;
+ 
+   for (const char *q = s.data(); q < s.data() + s.size(); ) {
+@@ -253,7 +253,7 @@ std::vector<std::string> Explode(const StringPiece& s) {
+ 
+ // Split string everywhere a substring is found, returning
+ // vector of pieces.
+-std::vector<std::string> Split(const StringPiece& sep, const StringPiece& s) {
++std::vector<std::string> Split(const absl::string_view& sep, const absl::string_view& s) {
+   std::vector<std::string> v;
+ 
+   if (sep.empty())
+@@ -261,7 +261,7 @@ std::vector<std::string> Split(const StringPiece& sep, const StringPiece& s) {
+ 
+   const char *p = s.data();
+   for (const char *q = s.data(); q + sep.size() <= s.data() + s.size(); q++) {
+-    if (StringPiece(q, sep.size()) == sep) {
++    if (absl::string_view(q, sep.size()) == sep) {
+       v.push_back(std::string(p, q - p));
+       p = q + sep.size();
+       q = p - 1;  // -1 for ++ in loop
+diff --git a/re2/testing/regexp_generator.h b/re2/testing/regexp_generator.h
+index 7d72aff..a0ced6f 100644
+--- a/re2/testing/regexp_generator.h
++++ b/re2/testing/regexp_generator.h
+@@ -14,7 +14,7 @@
+ #include <vector>
+ 
+ #include "util/util.h"
+-#include "re2/stringpiece.h"
++#include "absl/strings/string_view.h"
+ 
+ namespace re2 {
+ 
+@@ -66,11 +66,11 @@ class RegexpGenerator {
+ // Helpers for preparing arguments to RegexpGenerator constructor.
+ 
+ // Returns one string for each character in s.
+-std::vector<std::string> Explode(const StringPiece& s);
++std::vector<std::string> Explode(const absl::string_view& s);
+ 
+ // Splits string everywhere sep is found, returning
+ // vector of pieces.
+-std::vector<std::string> Split(const StringPiece& sep, const StringPiece& s);
++std::vector<std::string> Split(const absl::string_view& sep, const absl::string_view& s);
+ 
+ }  // namespace re2
+ 
+diff --git a/re2/testing/string_generator.cc b/re2/testing/string_generator.cc
+index 44837fe..c635493 100644
+--- a/re2/testing/string_generator.cc
++++ b/re2/testing/string_generator.cc
+@@ -81,11 +81,11 @@ bool StringGenerator::RandomDigits() {
+ // currently described by digits_.  Calls IncrementDigits
+ // after computing the string, so that it knows the answer
+ // for subsequent HasNext() calls.
+-const StringPiece& StringGenerator::Next() {
++const absl::string_view& StringGenerator::Next() {
+   CHECK(hasnext_);
+   if (generate_null_) {
+     generate_null_ = false;
+-    sp_ = StringPiece();
++    sp_ = absl::string_view();
+     return sp_;
+   }
+   s_.clear();
+diff --git a/re2/testing/string_generator.h b/re2/testing/string_generator.h
+index 73fbb51..0fcc572 100644
+--- a/re2/testing/string_generator.h
++++ b/re2/testing/string_generator.h
+@@ -15,7 +15,7 @@
+ #include <vector>
+ 
+ #include "util/util.h"
+-#include "re2/stringpiece.h"
++#include "absl/strings/string_view.h"
+ 
+ namespace re2 {
+ 
+@@ -24,7 +24,7 @@ class StringGenerator {
+   StringGenerator(int maxlen, const std::vector<std::string>& alphabet);
+   ~StringGenerator() {}
+ 
+-  const StringPiece& Next();
++  const absl::string_view& Next();
+   bool HasNext() { return hasnext_; }
+ 
+   // Resets generator to start sequence over.
+@@ -45,11 +45,11 @@ class StringGenerator {
+   std::vector<std::string> alphabet_;  // Alphabet, one string per letter.
+ 
+   // Iteration state.
+-  StringPiece sp_;           // Last StringPiece returned by Next().
+-  std::string s_;            // String data in last StringPiece returned by Next().
++  absl::string_view sp_;           // Last absl::string_view returned by Next().
++  std::string s_;            // String data in last absl::string_view returned by Next().
+   bool hasnext_;             // Whether Next() can be called again.
+   std::vector<int> digits_;  // Alphabet indices for next string.
+-  bool generate_null_;       // Whether to generate a NULL StringPiece next.
++  bool generate_null_;       // Whether to generate a NULL absl::string_view next.
+   bool random_;              // Whether generated strings are random.
+   int nrandom_;              // Number of random strings left to generate.
+   std::minstd_rand0 rng_;    // Random number generator.
+diff --git a/re2/testing/string_generator_test.cc b/re2/testing/string_generator_test.cc
+index d0f84f4..640e42e 100644
+--- a/re2/testing/string_generator_test.cc
++++ b/re2/testing/string_generator_test.cc
+@@ -41,7 +41,7 @@ static void RunTest(int len, const std::string& alphabet, bool donull) {
+   if (donull) {
+     g.GenerateNULL();
+     EXPECT_TRUE(g.HasNext());
+-    StringPiece sp = g.Next();
++    absl::string_view sp = g.Next();
+     EXPECT_EQ(sp.data(), static_cast<const char*>(NULL));
+     EXPECT_EQ(sp.size(), 0);
+   }
+diff --git a/re2/testing/tester.cc b/re2/testing/tester.cc
+index b0c22f2..a9b5585 100644
+--- a/re2/testing/tester.cc
++++ b/re2/testing/tester.cc
+@@ -97,7 +97,7 @@ struct TestInstance::Result {
+ 
+   void ClearSubmatch() {
+     for (int i = 0; i < kMaxSubmatch; i++)
+-      submatch[i] = StringPiece();
++      submatch[i] = absl::string_view();
+   }
+ 
+   bool skipped;         // test skipped: wasn't applicable
+@@ -105,15 +105,15 @@ struct TestInstance::Result {
+   bool untrusted;       // don't really trust the answer
+   bool have_submatch;   // computed all submatch info
+   bool have_submatch0;  // computed just submatch[0]
+-  StringPiece submatch[kMaxSubmatch];
++  absl::string_view submatch[kMaxSubmatch];
+ };
+ 
+ typedef TestInstance::Result Result;
+ 
+ // Formats a single capture range s in text in the form (a,b)
+ // where a and b are the starting and ending offsets of s in text.
+-static std::string FormatCapture(const StringPiece& text,
+-                                 const StringPiece& s) {
++static std::string FormatCapture(const absl::string_view& text,
++                                 const absl::string_view& s) {
+   if (s.data() == NULL)
+     return "(?,?)";
+   return StringPrintf("(%td,%td)",
+@@ -122,7 +122,7 @@ static std::string FormatCapture(const StringPiece& text,
+ }
+ 
+ // Returns whether text contains non-ASCII (>= 0x80) bytes.
+-static bool NonASCII(const StringPiece& text) {
++static bool NonASCII(const absl::string_view& text) {
+   for (size_t i = 0; i < text.size(); i++)
+     if ((uint8_t)text[i] >= 0x80)
+       return true;
+@@ -182,7 +182,7 @@ static std::string FormatMode(Regexp::ParseFlags flags) {
+ 
+ // Constructs and saves all the matching engines that
+ // will be required for the given tests.
+-TestInstance::TestInstance(const StringPiece& regexp_str, Prog::MatchKind kind,
++TestInstance::TestInstance(const absl::string_view& regexp_str, Prog::MatchKind kind,
+                            Regexp::ParseFlags flags)
+   : regexp_str_(regexp_str),
+     kind_(kind),
+@@ -302,8 +302,8 @@ TestInstance::~TestInstance() {
+ // This interface hides all the irregularities of the various
+ // engine interfaces from the rest of this file.
+ void TestInstance::RunSearch(Engine type,
+-                             const StringPiece& orig_text,
+-                             const StringPiece& orig_context,
++                             const absl::string_view& orig_text,
++                             const absl::string_view& orig_context,
+                              Prog::Anchor anchor,
+                              Result* result) {
+   if (regexp_ == NULL) {
+@@ -314,8 +314,8 @@ void TestInstance::RunSearch(Engine type,
+   if (nsubmatch > kMaxSubmatch)
+     nsubmatch = kMaxSubmatch;
+ 
+-  StringPiece text = orig_text;
+-  StringPiece context = orig_context;
++  absl::string_view text = orig_text;
++  absl::string_view context = orig_context;
+ 
+   switch (type) {
+     default:
+@@ -438,19 +438,19 @@ void TestInstance::RunSearch(Engine type,
+       // whitespace, not just vertical tab. Regexp::MimicsPCRE() is
+       // unable to handle all cases of this, unfortunately, so just
+       // catch them here. :(
+-      if (regexp_str_.find("\\v") != StringPiece::npos &&
+-          (text.find('\n') != StringPiece::npos ||
+-           text.find('\f') != StringPiece::npos ||
+-           text.find('\r') != StringPiece::npos)) {
++      if (regexp_str_.find("\\v") != absl::string_view::npos &&
++          (text.find('\n') != absl::string_view::npos ||
++           text.find('\f') != absl::string_view::npos ||
++           text.find('\r') != absl::string_view::npos)) {
+         result->skipped = true;
+         break;
+       }
+ 
+       // PCRE 8.34 or so started allowing vertical tab to match \s,
+       // following a change made in Perl 5.18. RE2 does not.
+-      if ((regexp_str_.find("\\s") != StringPiece::npos ||
+-           regexp_str_.find("\\S") != StringPiece::npos) &&
+-          text.find('\v') != StringPiece::npos) {
++      if ((regexp_str_.find("\\s") != absl::string_view::npos ||
++           regexp_str_.find("\\S") != absl::string_view::npos) &&
++          text.find('\v') != absl::string_view::npos) {
+         result->skipped = true;
+         break;
+       }
+@@ -513,7 +513,7 @@ static bool ResultOkay(const Result& r, const Result& correct) {
+ }
+ 
+ // Runs a single test.
+-bool TestInstance::RunCase(const StringPiece& text, const StringPiece& context,
++bool TestInstance::RunCase(const absl::string_view& text, const absl::string_view& context,
+                            Prog::Anchor anchor) {
+   // Backtracking is the gold standard.
+   Result correct;
+@@ -595,7 +595,7 @@ bool TestInstance::RunCase(const StringPiece& text, const StringPiece& context,
+ }
+ 
+ void TestInstance::LogMatch(const char* prefix, Engine e,
+-                            const StringPiece& text, const StringPiece& context,
++                            const absl::string_view& text, const absl::string_view& context,
+                             Prog::Anchor anchor) {
+   LOG(INFO) << prefix
+     << EngineName(e)
+@@ -624,7 +624,7 @@ static Prog::MatchKind kinds[] = {
+ };
+ 
+ // Test all possible match kinds and parse modes.
+-Tester::Tester(const StringPiece& regexp) {
++Tester::Tester(const absl::string_view& regexp) {
+   error_ = false;
+   for (size_t i = 0; i < arraysize(kinds); i++) {
+     for (size_t j = 0; j < arraysize(parse_modes); j++) {
+@@ -641,7 +641,7 @@ Tester::~Tester() {
+     delete v_[i];
+ }
+ 
+-bool Tester::TestCase(const StringPiece& text, const StringPiece& context,
++bool Tester::TestCase(const absl::string_view& text, const absl::string_view& context,
+                          Prog::Anchor anchor) {
+   bool okay = true;
+   for (size_t i = 0; i < v_.size(); i++)
+@@ -654,10 +654,10 @@ static Prog::Anchor anchors[] = {
+   Prog::kUnanchored
+ };
+ 
+-bool Tester::TestInput(const StringPiece& text) {
++bool Tester::TestInput(const absl::string_view& text) {
+   bool okay = TestInputInContext(text, text);
+   if (!text.empty()) {
+-    StringPiece sp;
++    absl::string_view sp;
+     sp = text;
+     sp.remove_prefix(1);
+     okay &= TestInputInContext(sp, text);
+@@ -668,16 +668,16 @@ bool Tester::TestInput(const StringPiece& text) {
+   return okay;
+ }
+ 
+-bool Tester::TestInputInContext(const StringPiece& text,
+-                                const StringPiece& context) {
++bool Tester::TestInputInContext(const absl::string_view& text,
++                                const absl::string_view& context) {
+   bool okay = true;
+   for (size_t i = 0; i < arraysize(anchors); i++)
+     okay &= TestCase(text, context, anchors[i]);
+   return okay;
+ }
+ 
+-bool TestRegexpOnText(const StringPiece& regexp,
+-                      const StringPiece& text) {
++bool TestRegexpOnText(const absl::string_view& regexp,
++                      const absl::string_view& text) {
+   Tester t(regexp);
+   return t.TestInput(text);
+ }
+diff --git a/re2/testing/tester.h b/re2/testing/tester.h
+index 47d0c43..03f0ccb 100644
+--- a/re2/testing/tester.h
++++ b/re2/testing/tester.h
+@@ -10,7 +10,7 @@
+ 
+ #include <vector>
+ 
+-#include "re2/stringpiece.h"
++#include "absl/strings/string_view.h"
+ #include "re2/prog.h"
+ #include "re2/regexp.h"
+ #include "re2/re2.h"
+@@ -51,7 +51,7 @@ class TestInstance {
+  public:
+   struct Result;
+ 
+-  TestInstance(const StringPiece& regexp, Prog::MatchKind kind,
++  TestInstance(const absl::string_view& regexp, Prog::MatchKind kind,
+                Regexp::ParseFlags flags);
+   ~TestInstance();
+   Regexp::ParseFlags flags() { return flags_; }
+@@ -59,20 +59,20 @@ class TestInstance {
+ 
+   // Runs a single test case: search in text, which is in context,
+   // using the given anchoring.
+-  bool RunCase(const StringPiece& text, const StringPiece& context,
++  bool RunCase(const absl::string_view& text, const absl::string_view& context,
+                Prog::Anchor anchor);
+ 
+  private:
+   // Runs a single search using the named engine type.
+   void RunSearch(Engine type,
+-                 const StringPiece& text, const StringPiece& context,
++                 const absl::string_view& text, const absl::string_view& context,
+                  Prog::Anchor anchor,
+                  Result *result);
+ 
+-  void LogMatch(const char* prefix, Engine e, const StringPiece& text,
+-                const StringPiece& context, Prog::Anchor anchor);
++  void LogMatch(const char* prefix, Engine e, const absl::string_view& text,
++                const absl::string_view& context, Prog::Anchor anchor);
+ 
+-  const StringPiece regexp_str_;    // regexp being tested
++  const absl::string_view regexp_str_;    // regexp being tested
+   Prog::MatchKind kind_;            // kind of match
+   Regexp::ParseFlags flags_;        // flags for parsing regexp_str_
+   bool error_;                      // error during constructor?
+@@ -91,21 +91,21 @@ class TestInstance {
+ // A group of TestInstances for all possible configurations.
+ class Tester {
+  public:
+-  explicit Tester(const StringPiece& regexp);
++  explicit Tester(const absl::string_view& regexp);
+   ~Tester();
+ 
+   bool error() { return error_; }
+ 
+   // Runs a single test case: search in text, which is in context,
+   // using the given anchoring.
+-  bool TestCase(const StringPiece& text, const StringPiece& context,
++  bool TestCase(const absl::string_view& text, const absl::string_view& context,
+                 Prog::Anchor anchor);
+ 
+   // Run TestCase(text, text, anchor) for all anchoring modes.
+-  bool TestInput(const StringPiece& text);
++  bool TestInput(const absl::string_view& text);
+ 
+   // Run TestCase(text, context, anchor) for all anchoring modes.
+-  bool TestInputInContext(const StringPiece& text, const StringPiece& context);
++  bool TestInputInContext(const absl::string_view& text, const absl::string_view& context);
+ 
+  private:
+   bool error_;
+@@ -116,7 +116,7 @@ class Tester {
+ };
+ 
+ // Run all possible tests using regexp and text.
+-bool TestRegexpOnText(const StringPiece& regexp, const StringPiece& text);
++bool TestRegexpOnText(const absl::string_view& regexp, const absl::string_view& text);
+ 
+ }  // namespace re2
+ 
+diff --git a/util/pcre.cc b/util/pcre.cc
+index b689851..6be9a5d 100644
+--- a/util/pcre.cc
++++ b/util/pcre.cc
+@@ -191,7 +191,7 @@ pcre* PCRE::Compile(Anchor anchor) {
+ 
+ /***** Convenience interfaces *****/
+ 
+-bool PCRE::FullMatchFunctor::operator ()(const StringPiece& text,
++bool PCRE::FullMatchFunctor::operator ()(const absl::string_view& text,
+                                        const PCRE& re,
+                                        const Arg& a0,
+                                        const Arg& a1,
+@@ -234,7 +234,7 @@ done:
+   return re.DoMatchImpl(text, ANCHOR_BOTH, &consumed, args, n, vec, kVecSize);
+ }
+ 
+-bool PCRE::PartialMatchFunctor::operator ()(const StringPiece& text,
++bool PCRE::PartialMatchFunctor::operator ()(const absl::string_view& text,
+                                           const PCRE& re,
+                                           const Arg& a0,
+                                           const Arg& a1,
+@@ -277,7 +277,7 @@ done:
+   return re.DoMatchImpl(text, UNANCHORED, &consumed, args, n, vec, kVecSize);
+ }
+ 
+-bool PCRE::ConsumeFunctor::operator ()(StringPiece* input,
++bool PCRE::ConsumeFunctor::operator ()(absl::string_view* input,
+                                      const PCRE& pattern,
+                                      const Arg& a0,
+                                      const Arg& a1,
+@@ -326,7 +326,7 @@ done:
+   }
+ }
+ 
+-bool PCRE::FindAndConsumeFunctor::operator ()(StringPiece* input,
++bool PCRE::FindAndConsumeFunctor::operator ()(absl::string_view* input,
+                                             const PCRE& pattern,
+                                             const Arg& a0,
+                                             const Arg& a1,
+@@ -377,7 +377,7 @@ done:
+ 
+ bool PCRE::Replace(std::string *str,
+                  const PCRE& pattern,
+-                 const StringPiece& rewrite) {
++                 const absl::string_view& rewrite) {
+   int vec[kVecSize] = {};
+   int matches = pattern.TryMatch(*str, 0, UNANCHORED, true, vec, kVecSize);
+   if (matches == 0)
+@@ -395,7 +395,7 @@ bool PCRE::Replace(std::string *str,
+ 
+ int PCRE::GlobalReplace(std::string *str,
+                       const PCRE& pattern,
+-                      const StringPiece& rewrite) {
++                      const absl::string_view& rewrite) {
+   int count = 0;
+   int vec[kVecSize] = {};
+   std::string out;
+@@ -451,9 +451,9 @@ int PCRE::GlobalReplace(std::string *str,
+   return count;
+ }
+ 
+-bool PCRE::Extract(const StringPiece &text,
++bool PCRE::Extract(const absl::string_view &text,
+                  const PCRE& pattern,
+-                 const StringPiece &rewrite,
++                 const absl::string_view &rewrite,
+                  std::string *out) {
+   int vec[kVecSize] = {};
+   int matches = pattern.TryMatch(text, 0, UNANCHORED, true, vec, kVecSize);
+@@ -463,7 +463,7 @@ bool PCRE::Extract(const StringPiece &text,
+   return pattern.Rewrite(out, rewrite, text, vec, matches);
+ }
+ 
+-std::string PCRE::QuoteMeta(const StringPiece& unquoted) {
++std::string PCRE::QuoteMeta(const absl::string_view& unquoted) {
+   std::string result;
+   result.reserve(unquoted.size() << 1);
+ 
+@@ -508,7 +508,7 @@ void PCRE::ClearHitLimit() {
+   hit_limit_ = 0;
+ }
+ 
+-int PCRE::TryMatch(const StringPiece& text,
++int PCRE::TryMatch(const absl::string_view& text,
+                    size_t startpos,
+                    Anchor anchor,
+                    bool empty_ok,
+@@ -604,7 +604,7 @@ int PCRE::TryMatch(const StringPiece& text,
+   return rc;
+ }
+ 
+-bool PCRE::DoMatchImpl(const StringPiece& text,
++bool PCRE::DoMatchImpl(const absl::string_view& text,
+                        Anchor anchor,
+                        size_t* consumed,
+                        const Arg* const* args,
+@@ -654,7 +654,7 @@ bool PCRE::DoMatchImpl(const StringPiece& text,
+   return true;
+ }
+ 
+-bool PCRE::DoMatch(const StringPiece& text,
++bool PCRE::DoMatch(const absl::string_view& text,
+                    Anchor anchor,
+                    size_t* consumed,
+                    const Arg* const args[],
+@@ -668,8 +668,8 @@ bool PCRE::DoMatch(const StringPiece& text,
+   return b;
+ }
+ 
+-bool PCRE::Rewrite(std::string *out, const StringPiece &rewrite,
+-                 const StringPiece &text, int *vec, int veclen) const {
++bool PCRE::Rewrite(std::string *out, const absl::string_view &rewrite,
++                 const absl::string_view &text, int *vec, int veclen) const {
+   int number_of_capturing_groups = NumberOfCapturingGroups();
+   for (const char *s = rewrite.data(), *end = s + rewrite.size();
+        s < end; s++) {
+@@ -704,7 +704,7 @@ bool PCRE::Rewrite(std::string *out, const StringPiece &rewrite,
+   return true;
+ }
+ 
+-bool PCRE::CheckRewriteString(const StringPiece& rewrite,
++bool PCRE::CheckRewriteString(const absl::string_view& rewrite,
+                               std::string* error) const {
+   int max_token = -1;
+   for (const char *s = rewrite.data(), *end = s + rewrite.size();
+@@ -776,7 +776,7 @@ bool PCRE::Arg::parse_string(const char* str, size_t n, void* dest) {
+ 
+ bool PCRE::Arg::parse_stringpiece(const char* str, size_t n, void* dest) {
+   if (dest == NULL) return true;
+-  *(reinterpret_cast<StringPiece*>(dest)) = StringPiece(str, n);
++  *(reinterpret_cast<absl::string_view*>(dest)) = absl::string_view(str, n);
+   return true;
+ }
+ 
+diff --git a/util/pcre.h b/util/pcre.h
+index 896b0bd..a5eb939 100644
+--- a/util/pcre.h
++++ b/util/pcre.h
+@@ -120,12 +120,12 @@
+ //
+ // The "Consume" operation may be useful if you want to repeatedly
+ // match regular expressions at the front of a string and skip over
+-// them as they match.  This requires use of the "StringPiece" type,
++// them as they match.  This requires use of the "absl::string_view" type,
+ // which represents a sub-range of a real string.
+ //
+ // Example: read lines of the form "var = value" from a string.
+ //      std::string contents = ...;     // Fill string somehow
+-//      StringPiece input(contents);    // Wrap a StringPiece around it
++//      absl::string_view input(contents);    // Wrap a absl::string_view around it
+ //
+ //      std::string var;
+ //      int value;
+@@ -162,7 +162,7 @@
+ // will leave 64 in a, b, c, and d.
+ 
+ #include "util/util.h"
+-#include "re2/stringpiece.h"
++#include "absl/strings/string_view.h"
+ 
+ #ifdef USEPCRE
+ #include <pcre.h>
+@@ -247,7 +247,7 @@ class PCRE {
+   // The provided pointer arguments can be pointers to any scalar numeric
+   // type, or one of:
+   //    std::string     (matched piece is copied to string)
+-  //    StringPiece     (StringPiece is mutated to point to matched piece)
++  //    absl::string_view     (absl::string_view is mutated to point to matched piece)
+   //    T               (where "bool T::ParseFrom(const char*, size_t)" exists)
+   //    (void*)NULL     (the corresponding matched sub-pattern is not copied)
+   //
+@@ -267,7 +267,7 @@ class PCRE {
+   //    int number;
+   //    PCRE::FullMatch("abc", "[a-z]+(\\d+)?", &number);
+   struct FullMatchFunctor {
+-    bool operator ()(const StringPiece& text, const PCRE& re, // 3..16 args
++    bool operator ()(const absl::string_view& text, const PCRE& re, // 3..16 args
+                      const Arg& ptr1 = no_more_args,
+                      const Arg& ptr2 = no_more_args,
+                      const Arg& ptr3 = no_more_args,
+@@ -291,7 +291,7 @@ class PCRE {
+   // Exactly like FullMatch(), except that "pattern" is allowed to match
+   // a substring of "text".
+   struct PartialMatchFunctor {
+-    bool operator ()(const StringPiece& text, const PCRE& re, // 3..16 args
++    bool operator ()(const absl::string_view& text, const PCRE& re, // 3..16 args
+                      const Arg& ptr1 = no_more_args,
+                      const Arg& ptr2 = no_more_args,
+                      const Arg& ptr3 = no_more_args,
+@@ -316,7 +316,7 @@ class PCRE {
+   // match a prefix of "text", and "input" is advanced past the matched
+   // text.  Note: "input" is modified iff this routine returns true.
+   struct ConsumeFunctor {
+-    bool operator ()(StringPiece* input, const PCRE& pattern, // 3..16 args
++    bool operator ()(absl::string_view* input, const PCRE& pattern, // 3..16 args
+                      const Arg& ptr1 = no_more_args,
+                      const Arg& ptr2 = no_more_args,
+                      const Arg& ptr3 = no_more_args,
+@@ -342,7 +342,7 @@ class PCRE {
+   // "input".  For example, "FindAndConsume(s, "(\\w+)", &word)" finds the next
+   // word in "s" and stores it in "word".
+   struct FindAndConsumeFunctor {
+-    bool operator ()(StringPiece* input, const PCRE& pattern,
++    bool operator ()(absl::string_view* input, const PCRE& pattern,
+                      const Arg& ptr1 = no_more_args,
+                      const Arg& ptr2 = no_more_args,
+                      const Arg& ptr3 = no_more_args,
+@@ -378,7 +378,7 @@ class PCRE {
+   // false otherwise.
+   static bool Replace(std::string *str,
+                       const PCRE& pattern,
+-                      const StringPiece& rewrite);
++                      const absl::string_view& rewrite);
+ 
+   // Like Replace(), except replaces all occurrences of the pattern in
+   // the string with the rewrite.  Replacements are not subject to
+@@ -392,7 +392,7 @@ class PCRE {
+   // Returns the number of replacements made.
+   static int GlobalReplace(std::string *str,
+                            const PCRE& pattern,
+-                           const StringPiece& rewrite);
++                           const absl::string_view& rewrite);
+ 
+   // Like Replace, except that if the pattern matches, "rewrite"
+   // is copied into "out" with substitutions.  The non-matching
+@@ -400,9 +400,9 @@ class PCRE {
+   //
+   // Returns true iff a match occurred and the extraction happened
+   // successfully;  if no match occurs, the string is left unaffected.
+-  static bool Extract(const StringPiece &text,
++  static bool Extract(const absl::string_view &text,
+                       const PCRE& pattern,
+-                      const StringPiece &rewrite,
++                      const absl::string_view &rewrite,
+                       std::string *out);
+ 
+   // Check that the given @p rewrite string is suitable for use with
+@@ -418,7 +418,7 @@ class PCRE {
+   // @param error An error message is recorded here, iff we return false.
+   //              Otherwise, it is unchanged.
+   // @return true, iff @p rewrite is suitable for use with the PCRE.
+-  bool CheckRewriteString(const StringPiece& rewrite,
++  bool CheckRewriteString(const absl::string_view& rewrite,
+                           std::string* error) const;
+ 
+   // Returns a copy of 'unquoted' with all potentially meaningful
+@@ -428,7 +428,7 @@ class PCRE {
+   //           1.5-2.0?
+   //  becomes:
+   //           1\.5\-2\.0\?
+-  static std::string QuoteMeta(const StringPiece& unquoted);
++  static std::string QuoteMeta(const absl::string_view& unquoted);
+ 
+   /***** Generic matching interface (not so nice to use) *****/
+ 
+@@ -441,7 +441,7 @@ class PCRE {
+ 
+   // General matching routine.  Stores the length of the match in
+   // "*consumed" if successful.
+-  bool DoMatch(const StringPiece& text,
++  bool DoMatch(const absl::string_view& text,
+                Anchor anchor,
+                size_t* consumed,
+                const Arg* const* args, int n) const;
+@@ -465,7 +465,7 @@ class PCRE {
+   // against "foo", "bar", and "baz" respectively.
+   // When matching PCRE("(foo)|hello") against "hello", it will return 1.
+   // But the values for all subpattern are filled in into "vec".
+-  int TryMatch(const StringPiece& text,
++  int TryMatch(const absl::string_view& text,
+                size_t startpos,
+                Anchor anchor,
+                bool empty_ok,
+@@ -475,13 +475,13 @@ class PCRE {
+   // Append the "rewrite" string, with backslash subsitutions from "text"
+   // and "vec", to string "out".
+   bool Rewrite(std::string *out,
+-               const StringPiece &rewrite,
+-               const StringPiece &text,
++               const absl::string_view &rewrite,
++               const absl::string_view &text,
+                int *vec,
+                int veclen) const;
+ 
+   // internal implementation for DoMatch
+-  bool DoMatchImpl(const StringPiece& text,
++  bool DoMatchImpl(const absl::string_view& text,
+                    Anchor anchor,
+                    size_t* consumed,
+                    const Arg* const args[],
+@@ -586,7 +586,7 @@ class PCRE::Arg {
+   MAKE_PARSER(float,              parse_float);
+   MAKE_PARSER(double,             parse_double);
+   MAKE_PARSER(std::string,        parse_string);
+-  MAKE_PARSER(StringPiece,        parse_stringpiece);
++  MAKE_PARSER(absl::string_view,        parse_stringpiece);
+ 
+   MAKE_PARSER(short,              parse_short);
+   MAKE_PARSER(unsigned short,     parse_ushort);
+diff --git a/util/strutil.cc b/util/strutil.cc
+index fb7e6b1..21cf4e7 100644
+--- a/util/strutil.cc
++++ b/util/strutil.cc
+@@ -65,7 +65,7 @@ static size_t CEscapeString(const char* src, size_t src_len,
+ //    Copies 'src' to result, escaping dangerous characters using
+ //    C-style escape sequences.  'src' and 'dest' should not overlap.
+ // ----------------------------------------------------------------------
+-std::string CEscape(const StringPiece& src) {
++std::string CEscape(const absl::string_view& src) {
+   const size_t dest_len = src.size() * 4 + 1; // Maximum possible expansion
+   char* dest = new char[dest_len];
+   const size_t used = CEscapeString(src.data(), src.size(),
+diff --git a/util/strutil.h b/util/strutil.h
+index a69908a..a449054 100644
+--- a/util/strutil.h
++++ b/util/strutil.h
+@@ -7,12 +7,12 @@
+ 
+ #include <string>
+ 
+-#include "re2/stringpiece.h"
++#include "absl/strings/string_view.h"
+ #include "util/util.h"
+ 
+ namespace re2 {
+ 
+-std::string CEscape(const StringPiece& src);
++std::string CEscape(const absl::string_view& src);
+ void PrefixSuccessor(std::string* prefix);
+ std::string StringPrintf(const char* format, ...);
+ 

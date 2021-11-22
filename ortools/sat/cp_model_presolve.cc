@@ -7301,6 +7301,8 @@ CpSolverStatus CpModelPresolver::Presolve() {
     }
   }
 
+  if (context_->ModelIsUnsat()) return InfeasibleStatus();
+
   // If the objective is a floating point one, we scale it.
   //
   // TODO(user): We should probably try to delay this even more. For that we
