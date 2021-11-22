@@ -29,7 +29,7 @@ index 00330b6..8d44eba 100644
  )
  
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index fcd3870..84e8db8 100644
+index fcd3870..a19c671 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -2,16 +2,17 @@
@@ -53,6 +53,26 @@ index fcd3870..84e8db8 100644
  endif()
  
  option(BUILD_SHARED_LIBS "build shared libraries" OFF)
+@@ -21,6 +22,11 @@ option(USEPCRE "use PCRE in tests and benchmarks" OFF)
+ # so we provide an option similar to BUILD_TESTING, but just for RE2.
+ option(RE2_BUILD_TESTING "enable testing for RE2" ON)
+ 
++
++if(NOT TARGET absl::strings)
++  find_package(absl REQUIRED)
++endif()
++
+ # ABI version
+ # http://tldp.org/HOWTO/Program-Library-HOWTO/shared-libraries.html
+ set(SONAME 9)
+@@ -89,6 +95,7 @@ add_library(re2::re2 ALIAS re2)
+ if(UNIX)
+   target_link_libraries(re2 PUBLIC Threads::Threads)
+ endif()
++target_link_libraries(re2 PUBLIC absl::strings)
+ 
+ if(RE2_BUILD_TESTING)
+   set(TESTING_SOURCES
 diff --git a/WORKSPACE b/WORKSPACE
 index b35619c..908e100 100644
 --- a/WORKSPACE

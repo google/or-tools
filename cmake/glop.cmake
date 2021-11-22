@@ -236,6 +236,7 @@ target_link_libraries(glop PUBLIC
   absl::statusor
   absl::str_format
   protobuf::libprotobuf
+  ${RE2_DEPS}
   )
 if(WIN32)
   #target_link_libraries(glop PUBLIC psapi.lib ws2_32.lib)
