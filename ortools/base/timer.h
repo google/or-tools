@@ -48,6 +48,7 @@ class WallTimer {
   inline absl::Duration GetDuration() const {
     return absl::Nanoseconds(GetNanos());
   }
+  bool IsRunning() const { return running_; }
 
  protected:
   int64_t GetNanos() const {
