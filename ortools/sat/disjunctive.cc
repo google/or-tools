@@ -34,18 +34,16 @@ std::function<void(Model*)> Disjunctive(
     IntervalsRepository* repository = model->GetOrCreate<IntervalsRepository>();
     for (const IntervalVariable var : vars) {
       if (repository->IsOptional(var) || repository->MinSize(var) != 1 ||
-          repository->MaxSize(var) != 1 ||
-          repository->Start(var).constant != 0 ||
-          repository->Start(var).coeff != 1) {
+          repository->MaxSize(var) != 1) {
         is_all_different = false;
         break;
       }
     }
     if (is_all_different) {
-      std::vector<IntegerVariable> starts;
+      std::vector<AffineExpression> starts;
       starts.reserve(vars.size());
-      for (const IntervalVariable var : vars) {
-        starts.push_back(model->Get(StartVar(var)));
+      for (const IntervalVariable interval : vars) {
+        starts.push_back(repository->Start(interval));
       }
       model->Add(AllDifferentOnBounds(starts));
       return;
@@ -311,9 +309,9 @@ bool DisjunctiveWithTwoItems::Propagate() {
 }
 
 int DisjunctiveWithTwoItems::RegisterWith(GenericLiteralWatcher* watcher) {
-  // This propagator reach the fix point in one pass.
   const int id = watcher->Register(this);
   helper_->WatchAllTasks(id, watcher);
+  watcher->NotifyThatPropagatorMayNotReachFixedPointInOnePass(id);
   return id;
 }
 

@@ -221,7 +221,9 @@ void PostsolveLinMax(const ConstraintProto& ct, std::vector<Domain>* domains) {
 }
 
 // We only support 3 cases in the presolve currently.
-void PostsolveElement(const ConstraintProto& ct, std::vector<Domain>* domains) {
+void PostsolveElement(const ConstraintProto& ct,
+                      const std::vector<bool>& prefer_lower_value,
+                      std::vector<Domain>* domains) {
   const int index_ref = ct.element().index();
   const int index_var = PositiveRef(index_ref);
   const int target_ref = ct.element().target();
@@ -243,18 +245,36 @@ void PostsolveElement(const ConstraintProto& ct, std::vector<Domain>* domains) {
     }
   }
 
-  // Deal with fixed index (and constant vars).
+  // Deal with fixed index.
   if ((*domains)[index_var].IsFixed()) {
     const int64_t index_var_value = (*domains)[index_var].FixedValue();
     const int selected_ref = ct.element().vars(
         RefIsPositive(index_ref) ? index_var_value : -index_var_value);
     const int selected_var = PositiveRef(selected_ref);
-    const int64_t selected_value = (*domains)[selected_var].FixedValue();
-    (*domains)[target_var] = (*domains)[target_var].IntersectionWith(
-        Domain(RefIsPositive(target_ref) == RefIsPositive(selected_ref)
-                   ? selected_value
-                   : -selected_value));
-    DCHECK(!(*domains)[target_var].IsEmpty());
+    if ((*domains)[selected_var].IsFixed()) {
+      const int64_t selected_value = (*domains)[selected_var].FixedValue();
+      (*domains)[target_var] = (*domains)[target_var].IntersectionWith(
+          Domain(RefIsPositive(target_ref) == RefIsPositive(selected_ref)
+                     ? selected_value
+                     : -selected_value));
+      DCHECK(!(*domains)[target_var].IsEmpty());
+    } else {
+      const bool same_sign =
+          (selected_var == selected_ref) == (target_var == target_ref);
+      const Domain target_domain = (*domains)[target_var];
+      const Domain selected_domain = same_sign
+                                         ? (*domains)[selected_var]
+                                         : (*domains)[selected_var].Negation();
+      const Domain final = target_domain.IntersectionWith(selected_domain);
+      const int64_t value =
+          prefer_lower_value[target_var] ? final.Min() : final.Max();
+      (*domains)[target_var] =
+          (*domains)[target_var].IntersectionWith(Domain(value));
+      (*domains)[selected_var] = (*domains)[selected_var].IntersectionWith(
+          Domain(same_sign ? value : -value));
+      DCHECK(!(*domains)[target_var].IsEmpty());
+      DCHECK(!(*domains)[selected_var].IsEmpty());
+    }
     return;
   }
 
@@ -360,7 +380,7 @@ void PostsolveResponse(const int64_t num_variables_in_original_model,
         PostsolveLinMax(ct, &domains);
         break;
       case ConstraintProto::kElement:
-        PostsolveElement(ct, &domains);
+        PostsolveElement(ct, prefer_lower_value, &domains);
         break;
       default:
         // This should never happen as we control what kind of constraint we

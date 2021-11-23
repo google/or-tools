@@ -1331,7 +1331,7 @@ void ExpandAllDiff(bool force_alldiff_expansion, ConstraintProto* ct,
     for (const int ref : proto.vars()) {
       if (!context->DomainContains(ref, v)) continue;
       possible_refs.push_back(ref);
-      if (context->DomainOf(ref).IsFixed()) {
+      if (context->IsFixed(ref)) {
         fixed_variable_count++;
       }
     }
@@ -1342,7 +1342,7 @@ void ExpandAllDiff(bool force_alldiff_expansion, ConstraintProto* ct,
     } else if (fixed_variable_count == 1) {
       // Remove values from other domains.
       for (const int ref : possible_refs) {
-        if (context->DomainOf(ref).IsFixed()) continue;
+        if (context->IsFixed(ref)) continue;
         if (!context->IntersectDomainWith(ref, Domain(v).Complement())) {
           VLOG(1) << "Empty domain for a variable in ExpandAllDiff()";
           return;
@@ -1350,26 +1350,16 @@ void ExpandAllDiff(bool force_alldiff_expansion, ConstraintProto* ct,
       }
     }
 
-    LinearConstraintProto* at_most_or_equal_one =
-        context->working_model->add_constraints()->mutable_linear();
-    int lb = is_a_permutation ? 1 : 0;
-    int ub = 1;
+    BoolArgumentProto* at_most_or_equal_one =
+        is_a_permutation
+            ? context->working_model->add_constraints()->mutable_exactly_one()
+            : context->working_model->add_constraints()->mutable_at_most_one();
     for (const int ref : possible_refs) {
       DCHECK(context->DomainContains(ref, v));
       DCHECK_GT(context->DomainOf(ref).Size(), 1);
       const int encoding = context->GetOrCreateVarValueEncoding(ref, v);
-      if (RefIsPositive(encoding)) {
-        at_most_or_equal_one->add_vars(encoding);
-        at_most_or_equal_one->add_coeffs(1);
-      } else {
-        at_most_or_equal_one->add_vars(PositiveRef(encoding));
-        at_most_or_equal_one->add_coeffs(-1);
-        lb--;
-        ub--;
-      }
+      at_most_or_equal_one->add_literals(encoding);
     }
-    at_most_or_equal_one->add_domain(lb);
-    at_most_or_equal_one->add_domain(ub);
   }
   if (is_a_permutation) {
     context->UpdateRuleStats("all_diff: permutation expanded");

@@ -199,6 +199,22 @@ bool CpModelPresolver::PresolveBoolXor(ConstraintProto* ct) {
   } else if (new_size == 2) {  // We can simplify the bool_xor.
     const int a = ct->bool_xor().literals(0);
     const int b = ct->bool_xor().literals(1);
+    if (a == b) {
+      if (num_true_literals % 2 == 0) {
+        return context_->NotifyThatModelIsUnsat("bool_xor: always false");
+      } else {
+        context_->UpdateRuleStats("bool_xor: always true");
+        return RemoveConstraint(ct);
+      }
+    }
+    if (a == NegatedRef(b)) {
+      if (num_true_literals % 2 == 1) {
+        return context_->NotifyThatModelIsUnsat("bool_xor: always false");
+      } else {
+        context_->UpdateRuleStats("bool_xor: always true");
+        return RemoveConstraint(ct);
+      }
+    }
     if (num_true_literals % 2 == 0) {  // a == not(b).
       context_->StoreBooleanEqualityRelation(a, NegatedRef(b));
     } else {  // a == b.
@@ -7300,7 +7316,6 @@ CpSolverStatus CpModelPresolver::Presolve() {
       if (context_->ModelIsUnsat()) break;
     }
   }
-
   if (context_->ModelIsUnsat()) return InfeasibleStatus();
 
   // If the objective is a floating point one, we scale it.

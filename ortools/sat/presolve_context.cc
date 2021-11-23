@@ -769,6 +769,7 @@ bool PresolveContext::ScaleFloatingPointObjective() {
   const auto& objective = working_model->floating_point_objective();
   std::vector<std::pair<int, double>> terms;
   for (int i = 0; i < objective.vars_size(); ++i) {
+    DCHECK(RefIsPositive(objective.vars(i)));
     terms.push_back({objective.vars(i), objective.coeffs(i)});
   }
   const double offset = objective.offset();
@@ -1455,14 +1456,18 @@ void PresolveContext::ReadObjectiveFromProto() {
   objective_map_.clear();
   for (int i = 0; i < obj.vars_size(); ++i) {
     const int ref = obj.vars(i);
-    int64_t coeff = obj.coeffs(i);
-    if (!RefIsPositive(ref)) coeff = -coeff;
-    int var = PositiveRef(ref);
+    const int64_t var_max_magnitude =
+        std::max(std::abs(MinOf(ref)), std::abs(MaxOf(ref)));
 
-    objective_overflow_detection_ +=
-        std::abs(coeff) * std::max(std::abs(MinOf(var)), std::abs(MaxOf(var)));
+    // Skipping var fixed to zero allow to avoid some overflow in situation
+    // were we can deal with it.
+    if (var_max_magnitude == 0) continue;
 
-    objective_map_[var] += coeff;
+    const int64_t coeff = obj.coeffs(i);
+    objective_overflow_detection_ += var_max_magnitude * std::abs(coeff);
+
+    const int var = PositiveRef(ref);
+    objective_map_[var] += RefIsPositive(ref) ? coeff : -coeff;
     if (objective_map_[var] == 0) {
       objective_map_.erase(var);
       var_to_constraints_[var].erase(kObjectiveConstraint);

@@ -18,6 +18,7 @@
 #include <memory>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/strings/str_join.h"
 #include "absl/memory/memory.h"
 #include "google/protobuf/repeated_field.h"
 #include "ortools/algorithms/find_graph_symmetries.h"
@@ -448,9 +449,8 @@ void FindCpModelSymmetries(
              time_limit->GetElapsedTime(),
              " dtime: ", time_limit->GetElapsedDeterministicTime());
   if (num_generators > 0) {
-    SOLVER_LOG(logger, "[Symmetry] # of generators: ", num_generators);
-    SOLVER_LOG(logger,
-               "[Symmetry] Average support size: ", average_support_size);
+    SOLVER_LOG(logger, "[Symmetry] #generators: ", num_generators,
+               ", average support size: ", average_support_size);
     if (num_duplicate_constraints > 0) {
       SOLVER_LOG(logger, "[Symmetry] The model contains ",
                  num_duplicate_constraints, " duplicate constraints !");
@@ -650,6 +650,20 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
       distinguished_var = var;
       max_orbit_size = orbit_sizes[rep];
     }
+  }
+
+  // Log orbit info.
+  if (context->logger()->LoggingIsEnabled()) {
+    std::vector<int> sorted_sizes;
+    for (const int s : orbit_sizes) {
+      if (s != 0) sorted_sizes.push_back(s);
+    }
+    std::sort(sorted_sizes.begin(), sorted_sizes.end(), std::greater<int>());
+    const int num_orbits = sorted_sizes.size();
+    if (num_orbits > 10) sorted_sizes.resize(10);
+    SOLVER_LOG(context->logger(), "[Symmetry] ", num_orbits,
+               " orbits with sizes: ", absl::StrJoin(sorted_sizes, ","),
+               (num_orbits > sorted_sizes.size() ? ",..." : ""));
   }
 
   // First heuristic based on propagation, see the function comment.

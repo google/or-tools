@@ -63,6 +63,14 @@ bool VariableReferenceIsValid(const CpModelProto& model, int reference) {
   return reference >= -static_cast<int>(model.variables_size());
 }
 
+// Note(user): Historically we always accepted positive or negative variable
+// reference everywhere, but now that we can always substitute affine relation,
+// we starts to transition to positive reference only, which are clearer. Note
+// that this doesn't concern literal reference though.
+bool VariableIndexIsValid(const CpModelProto& model, int var) {
+  return var >= 0 && var < model.variables_size();
+}
+
 bool LiteralReferenceIsValid(const CpModelProto& model, int reference) {
   if (!VariableReferenceIsValid(model, reference)) return false;
   const auto& var_proto = model.variables(PositiveRef(reference));
@@ -546,6 +554,12 @@ std::string ValidateCumulativeConstraint(const CpModelProto& model,
                         ProtobufShortDebugString(ct));
   }
 
+  RETURN_IF_NOT_EMPTY(
+      ValidateLinearExpression(model, ct.cumulative().capacity()));
+  for (const LinearExpressionProto& demand : ct.cumulative().demands()) {
+    RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, demand));
+  }
+
   for (const LinearExpressionProto& demand_expr : ct.cumulative().demands()) {
     if (MinOfExpression(model, demand_expr) < 0) {
       return absl::StrCat(
@@ -680,7 +694,7 @@ std::string ValidateFloatingPointObjective(const CpModelProto& model,
                         ProtobufShortDebugString(obj));
   }
   for (const int v : obj.vars()) {
-    if (!VariableReferenceIsValid(model, v)) {
+    if (!VariableIndexIsValid(model, v)) {
       return absl::StrCat("Out of bound integer variable ", v,
                           " in objective: ", ProtobufShortDebugString(obj));
     }

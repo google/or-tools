@@ -1130,7 +1130,11 @@ void LoadAllDiffConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
   const std::vector<IntegerVariable> vars =
       mapping->Integers(ct.all_diff().vars());
-  m->Add(AllDifferentOnBounds(vars));
+  std::vector<AffineExpression> expressions;
+  for (const IntegerVariable var : vars) {
+    expressions.push_back(AffineExpression(var));
+  }
+  m->Add(AllDifferentOnBounds(expressions));
 }
 
 void LoadIntProdConstraint(const ConstraintProto& ct, Model* m) {
