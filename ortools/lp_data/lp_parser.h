@@ -36,7 +36,7 @@
 //   E.g., "min: ++---+ - +x1" is the same as "min: x1".
 //   2. A constraint consists of two or three parts. A two part constraint has
 //   a bound on the left (resp. right) side and variables on the right
-//   (resp. left) side, with the two parts being separeted by any of the
+//   (resp. left) side, with the two parts being separated by any of the
 //   relation signs "<", "<=", "=", ">=", ">".
 //   3. A three part constraint has the variables in the middle part, and two
 //   bounds on the left and right side, with all three parts being separated by
