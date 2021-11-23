@@ -48,23 +48,16 @@ void NQueensSat(const int board_size) {
 
   // All columns must be different because the indices of queens are all
   // different. No two queens can be on the same diagonal.
-  std::vector<IntVar> diag_1;
+  std::vector<LinearExpr> diag_1;
   diag_1.reserve(board_size);
-  std::vector<IntVar> diag_2;
+  std::vector<LinearExpr> diag_2;
   diag_2.reserve(board_size);
   for (int i = 0; i < board_size; ++i) {
-    IntVar tmp_1 = cp_model.NewIntVar(Domain(0, board_size * 2))
-                       .WithName("x" + std::to_string(i));
-    cp_model.AddEquality(queens[i].AddConstant(i), tmp_1);
-    diag_1.push_back(tmp_1);
-
-    IntVar tmp_2 = cp_model.NewIntVar(Domain(-board_size, board_size))
-                       .WithName("x" + std::to_string(i));
-    cp_model.AddEquality(queens[i].AddConstant(-i), tmp_2);
-    diag_2.push_back(tmp_2);
+    diag_1.push_back(queens[i].AddConstant(i));
+    diag_2.push_back(queens[i].AddConstant(-i));
   }
-  cp_model.AddAllDifferent(diag_1);
-  cp_model.AddAllDifferent(diag_2);
+  cp_model.AddAllDifferentExpr(diag_1);
+  cp_model.AddAllDifferentExpr(diag_2);
   // [END constraints]
 
   // [START solution_printer]

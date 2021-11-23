@@ -665,6 +665,15 @@ const Domain& IntegerTrail::InitialVariableDomain(IntegerVariable var) const {
   return (*domains_)[var];
 }
 
+Domain IntegerTrail::InitialAffineDomain(AffineExpression expr) const {
+  if (expr.var == kNoIntegerVariable) {
+    return Domain(expr.constant.value());
+  }
+  return (*domains_)[expr.var]
+      .MultiplicationBy(expr.coeff.value())
+      .AdditionWith(Domain(expr.constant.value()));
+}
+
 bool IntegerTrail::UpdateInitialDomain(IntegerVariable var, Domain domain) {
   CHECK_EQ(trail_->CurrentDecisionLevel(), 0);
 

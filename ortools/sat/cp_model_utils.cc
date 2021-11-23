@@ -89,7 +89,9 @@ IndexReferences GetReferencesUsedByConstraint(const ConstraintProto& ct) {
       AddIndices(ct.linear().vars(), &output.variables);
       break;
     case ConstraintProto::ConstraintCase::kAllDiff:
-      AddIndices(ct.all_diff().vars(), &output.variables);
+      for (const LinearExpressionProto& expr : ct.all_diff().exprs()) {
+        AddIndices(expr.vars(), &output.variables);
+      }
       break;
     case ConstraintProto::ConstraintCase::kDummyConstraint:
       AddIndices(ct.dummy_constraint().vars(), &output.variables);
@@ -256,7 +258,9 @@ void ApplyToAllVariableIndices(const std::function<void(int*)>& f,
       APPLY_TO_REPEATED_FIELD(linear, vars);
       break;
     case ConstraintProto::ConstraintCase::kAllDiff:
-      APPLY_TO_REPEATED_FIELD(all_diff, vars);
+      for (int i = 0; i < ct->all_diff().exprs_size(); ++i) {
+        APPLY_TO_REPEATED_FIELD(all_diff, exprs(i)->mutable_vars);
+      }
       break;
     case ConstraintProto::ConstraintCase::kDummyConstraint:
       APPLY_TO_REPEATED_FIELD(dummy_constraint, vars);

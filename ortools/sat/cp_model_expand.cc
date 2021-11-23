@@ -1281,21 +1281,21 @@ void ExpandPositiveTable(ConstraintProto* ct, PresolveContext* context) {
 bool AllDiffShouldBeExpanded(const Domain& union_of_domains,
                              ConstraintProto* ct, PresolveContext* context) {
   const AllDifferentConstraintProto& proto = *ct->mutable_all_diff();
-  const int num_vars = proto.vars_size();
+  const int num_exprs = proto.exprs_size();
   int num_fully_encoded = 0;
-  for (int i = 0; i < num_vars; ++i) {
-    if (context->IsFullyEncoded(proto.vars(i))) {
+  for (int i = 0; i < num_exprs; ++i) {
+    if (context->IsFullyEncoded(proto.exprs(i))) {
       num_fully_encoded++;
     }
   }
 
-  if ((union_of_domains.Size() <= 2 * proto.vars_size()) ||
+  if ((union_of_domains.Size() <= 2 * proto.exprs_size()) ||
       (union_of_domains.Size() <= 32)) {
     // Small domains.
     return true;
   }
 
-  if (num_fully_encoded == num_vars && union_of_domains.Size() < 256) {
+  if (num_fully_encoded == num_exprs && union_of_domains.Size() < 256) {
     // All variables fully encoded, and domains are small enough.
     return true;
   }
@@ -1305,13 +1305,13 @@ bool AllDiffShouldBeExpanded(const Domain& union_of_domains,
 void ExpandAllDiff(bool force_alldiff_expansion, ConstraintProto* ct,
                    PresolveContext* context) {
   AllDifferentConstraintProto& proto = *ct->mutable_all_diff();
-  if (proto.vars_size() <= 1) return;
+  if (proto.exprs_size() <= 1) return;
 
-  const int num_vars = proto.vars_size();
-  Domain union_of_domains = context->DomainOf(proto.vars(0));
-  for (int i = 1; i < num_vars; ++i) {
+  const int num_exprs = proto.exprs_size();
+  Domain union_of_domains = context->DomainSuperSetOf(proto.exprs(0));
+  for (int i = 1; i < num_exprs; ++i) {
     union_of_domains =
-        union_of_domains.UnionWith(context->DomainOf(proto.vars(i)));
+        union_of_domains.UnionWith(context->DomainSuperSetOf(proto.exprs(i)));
   }
 
   if (!AllDiffShouldBeExpanded(union_of_domains, ct, context) &&
@@ -1319,31 +1319,31 @@ void ExpandAllDiff(bool force_alldiff_expansion, ConstraintProto* ct,
     return;
   }
 
-  const bool is_a_permutation = num_vars == union_of_domains.Size();
+  const bool is_a_permutation = num_exprs == union_of_domains.Size();
 
   // Collect all possible variables that can take each value, and add one linear
   // equation per value stating that this value can be assigned at most once, or
   // exactly once in case of permutation.
   for (const int64_t v : union_of_domains.Values()) {
     // Collect references which domain contains v.
-    std::vector<int> possible_refs;
-    int fixed_variable_count = 0;
-    for (const int ref : proto.vars()) {
-      if (!context->DomainContains(ref, v)) continue;
-      possible_refs.push_back(ref);
-      if (context->IsFixed(ref)) {
-        fixed_variable_count++;
+    std::vector<LinearExpressionProto> possible_exprs;
+    int fixed_expression_count = 0;
+    for (const LinearExpressionProto& expr : proto.exprs()) {
+      if (!context->DomainContains(expr, v)) continue;
+      possible_exprs.push_back(expr);
+      if (context->IsFixed(expr)) {
+        fixed_expression_count++;
       }
     }
 
-    if (fixed_variable_count > 1) {
+    if (fixed_expression_count > 1) {
       // Violates the definition of AllDifferent.
       return (void)context->NotifyThatModelIsUnsat();
-    } else if (fixed_variable_count == 1) {
+    } else if (fixed_expression_count == 1) {
       // Remove values from other domains.
-      for (const int ref : possible_refs) {
-        if (context->IsFixed(ref)) continue;
-        if (!context->IntersectDomainWith(ref, Domain(v).Complement())) {
+      for (const LinearExpressionProto& expr : possible_exprs) {
+        if (context->IsFixed(expr)) continue;
+        if (!context->IntersectDomainWith(expr, Domain(v).Complement())) {
           VLOG(1) << "Empty domain for a variable in ExpandAllDiff()";
           return;
         }
@@ -1354,10 +1354,10 @@ void ExpandAllDiff(bool force_alldiff_expansion, ConstraintProto* ct,
         is_a_permutation
             ? context->working_model->add_constraints()->mutable_exactly_one()
             : context->working_model->add_constraints()->mutable_at_most_one();
-    for (const int ref : possible_refs) {
-      DCHECK(context->DomainContains(ref, v));
-      DCHECK_GT(context->DomainOf(ref).Size(), 1);
-      const int encoding = context->GetOrCreateVarValueEncoding(ref, v);
+    for (const LinearExpressionProto& expr : possible_exprs) {
+      DCHECK(context->DomainContains(expr, v));
+      DCHECK(!context->IsFixed(expr));
+      const int encoding = context->GetOrCreateAffineValueEncoding(expr, v);
       at_most_or_equal_one->add_literals(encoding);
     }
   }

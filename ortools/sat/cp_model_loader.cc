@@ -1128,11 +1128,10 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
 
 void LoadAllDiffConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
-  const std::vector<IntegerVariable> vars =
-      mapping->Integers(ct.all_diff().vars());
   std::vector<AffineExpression> expressions;
-  for (const IntegerVariable var : vars) {
-    expressions.push_back(AffineExpression(var));
+  expressions.reserve(ct.all_diff().exprs_size());
+  for (const LinearExpressionProto& expr : ct.all_diff().exprs()) {
+    expressions.push_back(mapping->Affine(expr));
   }
   m->Add(AllDifferentOnBounds(expressions));
 }

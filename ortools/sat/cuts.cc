@@ -1776,37 +1776,37 @@ bool ImpliedBoundsProcessor::DebugSlack(IntegerVariable first_slack,
 namespace {
 
 void TryToGenerateAllDiffCut(
-    const std::vector<std::pair<double, IntegerVariable>>& sorted_vars_lp,
+    const std::vector<std::pair<double, AffineExpression>>& sorted_exprs_lp,
     const IntegerTrail& integer_trail,
     const absl::StrongVector<IntegerVariable, double>& lp_values,
-    LinearConstraintManager* manager) {
+    LinearConstraintManager* manager, Model* model) {
   Domain current_union;
-  std::vector<IntegerVariable> current_set_vars;
+  std::vector<AffineExpression> current_set_exprs;
   double sum = 0.0;
-  for (auto value_var : sorted_vars_lp) {
-    sum += value_var.first;
-    const IntegerVariable var = value_var.second;
+  for (auto value_expr : sorted_exprs_lp) {
+    sum += value_expr.first;
+    const AffineExpression expr = value_expr.second;
     // TODO(user): The union of the domain of the variable being considered
     // does not give the tightest bounds, try to get better bounds.
+
     current_union =
-        current_union.UnionWith(integer_trail.InitialVariableDomain(var));
-    current_set_vars.push_back(var);
+        current_union.UnionWith(integer_trail.InitialAffineDomain(expr));
+    current_set_exprs.push_back(expr);
     const int64_t required_min_sum =
-        SumOfKMinValueInDomain(current_union, current_set_vars.size());
+        SumOfKMinValueInDomain(current_union, current_set_exprs.size());
     const int64_t required_max_sum =
-        SumOfKMaxValueInDomain(current_union, current_set_vars.size());
+        SumOfKMaxValueInDomain(current_union, current_set_exprs.size());
     if (sum < required_min_sum || sum > required_max_sum) {
-      LinearConstraint cut;
-      for (IntegerVariable var : current_set_vars) {
-        cut.AddTerm(var, IntegerValue(1));
+      LinearConstraintBuilder cut(model, IntegerValue(required_min_sum),
+                                  IntegerValue(required_max_sum));
+      for (AffineExpression expr : current_set_exprs) {
+        cut.AddTerm(expr, IntegerValue(1));
       }
-      cut.lb = IntegerValue(required_min_sum);
-      cut.ub = IntegerValue(required_max_sum);
-      manager->AddCut(cut, "all_diff", lp_values);
+      manager->AddCut(cut.Build(), "all_diff", lp_values);
       // NOTE: We can extend the current set but it is more helpful to generate
       // the cut on a different set of variables so we reset the counters.
       sum = 0.0;
-      current_set_vars.clear();
+      current_set_exprs.clear();
       current_union = Domain();
     }
   }
@@ -1815,37 +1815,48 @@ void TryToGenerateAllDiffCut(
 }  // namespace
 
 CutGenerator CreateAllDifferentCutGenerator(
-    const std::vector<IntegerVariable>& vars, Model* model) {
+    const std::vector<AffineExpression>& exprs, Model* model) {
   CutGenerator result;
-  result.vars = vars;
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+
+  for (const AffineExpression& expr : exprs) {
+    if (!integer_trail->IsFixed(expr)) {
+      result.vars.push_back(expr.var);
+    }
+  }
+  gtl::STLSortAndRemoveDuplicates(&result.vars);
+
   Trail* trail = model->GetOrCreate<Trail>();
   result.generate_cuts =
-      [vars, integer_trail, trail](
+      [exprs, integer_trail, trail, model](
           const absl::StrongVector<IntegerVariable, double>& lp_values,
           LinearConstraintManager* manager) {
         // These cuts work at all levels but the generator adds too many cuts on
         // some instances and degrade the performance so we only use it at level
         // 0.
         if (trail->CurrentDecisionLevel() > 0) return true;
-        std::vector<std::pair<double, IntegerVariable>> sorted_vars;
-        for (const IntegerVariable var : vars) {
-          if (integer_trail->LevelZeroLowerBound(var) ==
-              integer_trail->LevelZeroUpperBound(var)) {
+        std::vector<std::pair<double, AffineExpression>> sorted_exprs;
+        for (const AffineExpression expr : exprs) {
+          if (integer_trail->LevelZeroLowerBound(expr) ==
+              integer_trail->LevelZeroUpperBound(expr)) {
             continue;
           }
-          sorted_vars.push_back(std::make_pair(lp_values[var], var));
+          sorted_exprs.push_back(std::make_pair(expr.LpValue(lp_values), expr));
         }
-        std::sort(sorted_vars.begin(), sorted_vars.end());
-        TryToGenerateAllDiffCut(sorted_vars, *integer_trail, lp_values,
-                                manager);
+        std::sort(sorted_exprs.begin(), sorted_exprs.end(),
+                  [](std::pair<double, AffineExpression>& a,
+                     const std::pair<double, AffineExpression>& b) {
+                    return a.first < b.first;
+                  });
+        TryToGenerateAllDiffCut(sorted_exprs, *integer_trail, lp_values,
+                                manager, model);
         // Other direction.
-        std::reverse(sorted_vars.begin(), sorted_vars.end());
-        TryToGenerateAllDiffCut(sorted_vars, *integer_trail, lp_values,
-                                manager);
+        std::reverse(sorted_exprs.begin(), sorted_exprs.end());
+        TryToGenerateAllDiffCut(sorted_exprs, *integer_trail, lp_values,
+                                manager, model);
         return true;
       };
-  VLOG(1) << "Created all_diff cut generator of size: " << vars.size();
+  VLOG(1) << "Created all_diff cut generator of size: " << exprs.size();
   return result;
 }
 

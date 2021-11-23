@@ -1112,21 +1112,21 @@ class CpModel(object):
 
     # General Integer Constraints.
 
-    def AddAllDifferent(self, variables):
-        """Adds AllDifferent(variables).
+    def AddAllDifferent(self, expressions):
+        """Adds AllDifferent(expressions).
 
-    This constraint forces all variables to have different values.
+    This constraint forces all expressions to have different values.
 
     Args:
-      variables: a list of integer variables.
+      expressions: a list of integer affine expressions.
 
     Returns:
       An instance of the `Constraint` class.
     """
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
-        model_ct.all_diff.vars.extend(
-            [self.GetOrMakeIndex(x) for x in variables])
+        model_ct.all_diff.exprs.extend(
+            [self.ParseLinearExpression(x) for x in expressions])
         return ct
 
     def AddElement(self, index, variables, target):

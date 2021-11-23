@@ -797,6 +797,9 @@ class CpModelBuilder {
   /// this constraint forces all variables to have different values.
   Constraint AddAllDifferent(absl::Span<const IntVar> vars);
 
+  /// this constraint forces all expressions to have different values.
+  Constraint AddAllDifferentExpr(absl::Span<const LinearExpr> exprs);
+
   /// Adds the element constraint: variables[index] == target
   Constraint AddVariableElement(IntVar index,
                                 absl::Span<const IntVar> variables,

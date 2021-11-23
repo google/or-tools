@@ -661,6 +661,10 @@ class IntegerTrail : public SatPropagator {
   // are updated with level zero propagation, but not holes.
   const Domain& InitialVariableDomain(IntegerVariable var) const;
 
+  // Returns the initial domain of the given affine expression. Note that the
+  // min/max are updated with level zero propagation, but not holes.
+  Domain InitialAffineDomain(AffineExpression expr) const;
+
   // Takes the intersection with the current initial variable domain.
   //
   // TODO(user): There is some memory inefficiency if this is called many time

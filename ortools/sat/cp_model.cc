@@ -759,8 +759,20 @@ Constraint CpModelBuilder::AddNotEqual(const LinearExpr& left,
 Constraint CpModelBuilder::AddAllDifferent(absl::Span<const IntVar> vars) {
   ConstraintProto* const proto = cp_model_.add_constraints();
   for (const IntVar& var : vars) {
-    proto->mutable_all_diff()->add_vars(GetOrCreateIntegerIndex(var.index_));
+    auto* expr = proto->mutable_all_diff()->add_exprs();
+    expr->add_vars(GetOrCreateIntegerIndex(var.index_));
+    expr->add_coeffs(1);
   }
+  return Constraint(proto);
+}
+
+Constraint CpModelBuilder::AddAllDifferentExpr(
+    absl::Span<const LinearExpr> exprs) {
+  ConstraintProto* const proto = cp_model_.add_constraints();
+  for (const LinearExpr& expr : exprs) {
+    *proto->mutable_all_diff()->add_exprs() = LinearExprToProto(expr);
+  }
+
   return Constraint(proto);
 }
 

@@ -1222,11 +1222,15 @@ void AddAllDiffCutGenerator(const ConstraintProto& ct, Model* m,
                             LinearRelaxation* relaxation) {
   if (HasEnforcementLiteral(ct)) return;
   auto* mapping = m->GetOrCreate<CpModelMapping>();
-  const int num_vars = ct.all_diff().vars_size();
-  if (num_vars <= m->GetOrCreate<SatParameters>()->max_all_diff_cut_size()) {
-    std::vector<IntegerVariable> vars = mapping->Integers(ct.all_diff().vars());
+  const int num_exprs = ct.all_diff().exprs_size();
+
+  if (num_exprs <= m->GetOrCreate<SatParameters>()->max_all_diff_cut_size()) {
+    std::vector<AffineExpression> exprs(num_exprs);
+    for (const LinearExpressionProto& expr : ct.all_diff().exprs()) {
+      exprs.push_back(mapping->Affine(expr));
+    }
     relaxation->cut_generators.push_back(
-        CreateAllDifferentCutGenerator(vars, m));
+        CreateAllDifferentCutGenerator(exprs, m));
   }
 }
 

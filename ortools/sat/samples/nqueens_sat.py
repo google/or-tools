@@ -49,6 +49,7 @@ class NQueenSolutionPrinter(cp_model.CpSolverSolutionCallback):
                     print('_', end=' ')
             print()
         print()
+
 # [END solution_printer]
 
 
@@ -75,17 +76,8 @@ def main(board_size):
     # different.
 
     # No two queens can be on the same diagonal.
-    diag1 = []
-    diag2 = []
-    for i in range(board_size):
-        q1 = model.NewIntVar(0, 2 * board_size, 'diag1_%i' % i)
-        q2 = model.NewIntVar(-board_size, board_size, 'diag2_%i' % i)
-        diag1.append(q1)
-        diag2.append(q2)
-        model.Add(q1 == queens[i] + i)
-        model.Add(q2 == queens[i] - i)
-    model.AddAllDifferent(diag1)
-    model.AddAllDifferent(diag2)
+    model.AddAllDifferent([queens[i] + i for i in range(board_size)])
+    model.AddAllDifferent([queens[i] - i for i in range(board_size)])
     # [END constraints]
 
     # Solve the model.

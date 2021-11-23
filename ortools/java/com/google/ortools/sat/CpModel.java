@@ -271,7 +271,24 @@ public final class CpModel {
     Constraint ct = new Constraint(modelBuilder);
     AllDifferentConstraintProto.Builder allDiff = ct.getBuilder().getAllDiffBuilder();
     for (IntVar var : variables) {
-      allDiff.addVars(var.getIndex());
+      allDiff.addExprs(getLinearExpressionProtoBuilderFromLinearExpr(var, /*negate=*/false));
+    }
+    return ct;
+  }
+
+  /**
+   * Adds {@code AllDifferent(expressions)}.
+   *
+   * <p>This constraint forces all affine expressions to have different values.
+   *
+   * @param expressions a list of affine integer expressions
+   * @return an instance of the Constraint class
+   */
+  public Constraint addAllDifferent(LinearExpr[] expressions) {
+    Constraint ct = new Constraint(modelBuilder);
+    AllDifferentConstraintProto.Builder allDiff = ct.getBuilder().getAllDiffBuilder();
+    for (LinearExpr expr : expressions) {
+      allDiff.addExprs(getLinearExpressionProtoBuilderFromLinearExpr(expr, /*negate=*/false));
     }
     return ct;
   }

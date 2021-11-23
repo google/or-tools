@@ -87,7 +87,7 @@ message LinearArgumentProto {
 
 // All variables must take different values.
 message AllDifferentConstraintProto {
-  repeated int32 vars = 1;
+  repeated LinearExpressionProto exprs = 1;
 }
 
 // The linear sum vars[i] * coeffs[i] must fall in the given domain. The domain

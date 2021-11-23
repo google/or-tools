@@ -84,17 +84,12 @@ public class NQueensSat
 
         // All columns must be different because the indices of queens are all different.
         // No two queens can be on the same diagonal.
-        IntVar[] diag1 = new IntVar[BoardSize];
-        IntVar[] diag2 = new IntVar[BoardSize];
+        LinearExpr[] diag1 = new LinearExpr[BoardSize];
+        LinearExpr[] diag2 = new LinearExpr[BoardSize];
         for (int i = 0; i < BoardSize; ++i)
         {
-            IntVar tmp1 = model.NewIntVar(0, BoardSize * 2, $"x{i}");
-            model.Add(LinearExpr.Affine(queens[i], /*coeff=*/1, /*offset=*/i) == tmp1);
-            diag1[i] = tmp1;
-
-            IntVar tmp2 = model.NewIntVar(-BoardSize, BoardSize, $"x{i}");
-            model.Add(LinearExpr.Affine(queens[i], /*coeff=*/1, /*offset=*/-i) == tmp2);
-            diag2[i] = tmp2;
+            diag1[i] = LinearExpr.Affine(queens[i], /*coeff=*/1, /*offset=*/i);
+            diag2[i] = LinearExpr.Affine(queens[i], /*coeff=*/1, /*offset=*/-i);
         }
 
         model.AddAllDifferent(diag1);

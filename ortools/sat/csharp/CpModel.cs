@@ -135,8 +135,21 @@ namespace Google.OrTools.Sat
             AllDifferentConstraintProto alldiff = new AllDifferentConstraintProto();
             foreach (IntVar var in vars)
             {
-                alldiff.Vars.Add(var.Index);
+                alldiff.Exprs.Add(GetLinearExpressionProto(var));
             }
+            ct.Proto.AllDiff = alldiff;
+            return ct;
+        }
+
+        public Constraint AddAllDifferent(IEnumerable<LinearExpr> exprs)
+        {
+            Constraint ct = new Constraint(model_);
+            AllDifferentConstraintProto alldiff = new AllDifferentConstraintProto();
+            foreach (LinearExpr expr in exprs)
+            {
+                alldiff.Exprs.Add(GetLinearExpressionProto(expr));
+            }
+
             ct.Proto.AllDiff = alldiff;
             return ct;
         }

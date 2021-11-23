@@ -18,8 +18,8 @@
 #include <memory>
 
 #include "absl/container/flat_hash_map.h"
-#include "absl/strings/str_join.h"
 #include "absl/memory/memory.h"
+#include "absl/strings/str_join.h"
 #include "google/protobuf/repeated_field.h"
 #include "ortools/algorithms/find_graph_symmetries.h"
 #include "ortools/base/hash.h"

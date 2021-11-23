@@ -3390,8 +3390,13 @@ bool CpModelPresolver::PresolveAllDiff(ConstraintProto* ct) {
   AllDifferentConstraintProto& all_diff = *ct->mutable_all_diff();
 
   bool constraint_has_changed = false;
+  for (LinearExpressionProto& exp :
+       *(ct->mutable_all_diff()->mutable_exprs())) {
+    constraint_has_changed |= CanonicalizeLinearExpression(*ct, &exp);
+  }
+
   for (;;) {
-    const int size = all_diff.vars_size();
+    const int size = all_diff.exprs_size();
     if (size == 0) {
       context_->UpdateRuleStats("all_diff: empty constraint");
       return RemoveConstraint(ct);
@@ -3402,19 +3407,19 @@ bool CpModelPresolver::PresolveAllDiff(ConstraintProto* ct) {
     }
 
     bool something_was_propagated = false;
-    std::vector<int> new_variables;
+    std::vector<LinearExpressionProto> kept_expressions;
     for (int i = 0; i < size; ++i) {
-      if (!context_->IsFixed(all_diff.vars(i))) {
-        new_variables.push_back(all_diff.vars(i));
+      if (!context_->IsFixed(all_diff.exprs(i))) {
+        kept_expressions.push_back(all_diff.exprs(i));
         continue;
       }
 
-      const int64_t value = context_->MinOf(all_diff.vars(i));
+      const int64_t value = context_->MinOf(all_diff.exprs(i));
       bool propagated = false;
       for (int j = 0; j < size; ++j) {
         if (i == j) continue;
-        if (context_->DomainContains(all_diff.vars(j), value)) {
-          if (!context_->IntersectDomainWith(all_diff.vars(j),
+        if (context_->DomainContains(all_diff.exprs(j), value)) {
+          if (!context_->IntersectDomainWith(all_diff.exprs(j),
                                              Domain(value).Complement())) {
             return true;
           }
@@ -3427,61 +3432,79 @@ bool CpModelPresolver::PresolveAllDiff(ConstraintProto* ct) {
       }
     }
 
-    std::sort(new_variables.begin(), new_variables.end(),
-              [](int ref_a, int ref_b) {
-                const int var_a = PositiveRef(ref_a);
-                const int var_b = PositiveRef(ref_b);
-                return std::tie(var_a, ref_a) < std::tie(var_b, ref_b);
-              });
-    for (int i = 1; i < new_variables.size(); ++i) {
-      if (new_variables[i] == new_variables[i - 1]) {
+    std::sort(
+        kept_expressions.begin(), kept_expressions.end(),
+        [](const LinearExpressionProto& expr_a,
+           const LinearExpressionProto& expr_b) {
+          DCHECK_EQ(expr_a.vars_size(), 1);
+          DCHECK_EQ(expr_b.vars_size(), 1);
+          const int ref_a = expr_a.vars(0);
+          const int ref_b = expr_b.vars(0);
+          const int64_t coeff_a = expr_a.coeffs(0);
+          const int64_t coeff_b = expr_b.coeffs(0);
+          const int64_t abs_coeff_a = std::abs(coeff_a);
+          const int64_t abs_coeff_b = std::abs(coeff_b);
+          const int64_t offset_a = expr_a.offset();
+          const int64_t offset_b = expr_b.offset();
+          const int64_t abs_offset_a = std::abs(offset_a);
+          const int64_t abs_offset_b = std::abs(offset_b);
+          return std::tie(ref_a, abs_coeff_a, coeff_a, abs_offset_a, offset_a) <
+                 std::tie(ref_b, abs_coeff_b, coeff_b, abs_offset_b, offset_b);
+        });
+    for (int i = 1; i < kept_expressions.size(); ++i) {
+      if (LinearExpressionProtosAreEqual(kept_expressions[i],
+                                         kept_expressions[i - 1], 1)) {
         return context_->NotifyThatModelIsUnsat(
             "Duplicate variable in all_diff");
       }
-      if (new_variables[i] == NegatedRef(new_variables[i - 1])) {
+      if (LinearExpressionProtosAreEqual(kept_expressions[i],
+                                         kept_expressions[i - 1], -1)) {
         bool domain_modified = false;
-        if (!context_->IntersectDomainWith(PositiveRef(new_variables[i]),
+        if (!context_->IntersectDomainWith(kept_expressions[i],
                                            Domain(0).Complement(),
                                            &domain_modified)) {
           return false;
         }
         if (domain_modified) {
           context_->UpdateRuleStats(
-              "all_diff: remove 0 from variable appearing with its opposite.");
+              "all_diff: remove 0 from expression appearing with its "
+              "opposite.");
         }
       }
     }
 
-    if (new_variables.size() < all_diff.vars_size()) {
-      all_diff.mutable_vars()->Clear();
-      for (const int var : new_variables) {
-        all_diff.add_vars(var);
+    if (kept_expressions.size() < all_diff.exprs_size()) {
+      LOG(INFO) << all_diff.DebugString();
+      all_diff.clear_exprs();
+      for (const LinearExpressionProto& expr : kept_expressions) {
+        *all_diff.add_exprs() = expr;
       }
       context_->UpdateRuleStats("all_diff: removed fixed variables");
       something_was_propagated = true;
       constraint_has_changed = true;
-      if (new_variables.size() <= 1) continue;
+      if (kept_expressions.size() <= 1) continue;
     }
 
     // Propagate mandatory value if the all diff is actually a permutation.
-    CHECK_GE(all_diff.vars_size(), 2);
-    Domain domain = context_->DomainOf(all_diff.vars(0));
-    for (int i = 1; i < all_diff.vars_size(); ++i) {
-      domain = domain.UnionWith(context_->DomainOf(all_diff.vars(i)));
+    CHECK_GE(all_diff.exprs_size(), 2);
+    Domain domain = context_->DomainSuperSetOf(all_diff.exprs(0));
+    for (int i = 1; i < all_diff.exprs_size(); ++i) {
+      domain = domain.UnionWith(context_->DomainSuperSetOf(all_diff.exprs(i)));
     }
-    if (all_diff.vars_size() == domain.Size()) {
-      absl::flat_hash_map<int64_t, std::vector<int>> value_to_refs;
-      for (const int ref : all_diff.vars()) {
-        for (const int64_t v : context_->DomainOf(ref).Values()) {
-          value_to_refs[v].push_back(ref);
+    if (all_diff.exprs_size() == domain.Size()) {
+      absl::flat_hash_map<int64_t, std::vector<LinearExpressionProto>>
+          value_to_exprs;
+      for (const LinearExpressionProto& expr : all_diff.exprs()) {
+        DCHECK(!context_->IsFixed(expr));
+        for (const int64_t v : context_->DomainOf(expr.vars(0)).Values()) {
+          value_to_exprs[expr.coeffs(0) * v + expr.offset()].push_back(expr);
         }
       }
       bool propagated = false;
-      for (const auto& it : value_to_refs) {
-        if (it.second.size() == 1 &&
-            context_->DomainOf(it.second.front()).Size() > 1) {
-          const int ref = it.second.front();
-          if (!context_->IntersectDomainWith(ref, Domain(it.first))) {
+      for (const auto& it : value_to_exprs) {
+        if (it.second.size() == 1 && !context_->IsFixed(it.second.front())) {
+          const LinearExpressionProto& expr = it.second.front();
+          if (!context_->IntersectDomainWith(expr, Domain(it.first))) {
             return true;
           }
           propagated = true;
@@ -4152,7 +4175,7 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
   const int num_intervals = proto->intervals_size();
   const LinearExpressionProto& capacity_expr = proto->capacity();
 
-  std::vector<int> start_refs(num_intervals, -1);
+  std::vector<LinearExpressionProto> start_exprs(num_intervals);
 
   int num_duration_one = 0;
   int num_greater_half_capacity = 0;
@@ -4166,11 +4189,7 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
     const ConstraintProto& ct =
         context_->working_model->constraints(proto->intervals(i));
     const IntervalConstraintProto& interval = ct.interval();
-    if (!context_->ExpressionIsSingleVariable(interval.start())) {
-      all_starts_are_variables = false;
-    } else {
-      start_refs[i] = interval.start().vars(0);
-    }
+    start_exprs[i] = interval.start();
 
     const LinearExpressionProto& demand_expr = proto->demands(i);
     if (context_->SizeMin(index) == 1 && context_->SizeMax(index) == 1) {
@@ -4221,7 +4240,9 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
       context_->UpdateRuleStats("cumulative: convert to all_different");
       ConstraintProto* new_ct = context_->working_model->add_constraints();
       auto* arg = new_ct->mutable_all_diff();
-      for (const int var : start_refs) arg->add_vars(var);
+      for (const LinearExpressionProto& expr : start_exprs) {
+        *arg->add_exprs() = expr;
+      }
       context_->UpdateNewConstraintsVariableUsage();
       return RemoveConstraint(ct);
     } else {

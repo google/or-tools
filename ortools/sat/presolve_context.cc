@@ -400,6 +400,16 @@ bool PresolveContext::DomainContains(int ref, int64_t value) const {
   return domains[ref].Contains(value);
 }
 
+bool PresolveContext::DomainContains(const LinearExpressionProto& expr,
+                                     int64_t value) const {
+  CHECK_LE(expr.vars_size(), 1);
+  if (expr.vars().empty()) {
+    return expr.offset() == value;
+  }
+  if ((value - expr.offset()) % expr.coeffs(0) != 0) return false;
+  return DomainContains(expr.vars(0), (value - expr.offset()) / expr.coeffs(0));
+}
+
 ABSL_MUST_USE_RESULT bool PresolveContext::IntersectDomainWith(
     int ref, const Domain& domain, bool* domain_modified) {
   DCHECK(!DomainIsEmpty(ref));
@@ -1358,6 +1368,12 @@ bool PresolveContext::IsFullyEncoded(int ref) const {
   return it == encoding_.end() ? false : size <= it->second.size();
 }
 
+bool PresolveContext::IsFullyEncoded(const LinearExpressionProto& expr) const {
+  CHECK_LE(expr.vars_size(), 1);
+  if (IsFixed(expr)) return true;
+  return IsFullyEncoded(expr.vars(0));
+}
+
 int PresolveContext::GetOrCreateVarValueEncoding(int ref, int64_t value) {
   CHECK(!VariableWasRemoved(ref));
   if (!CanonicalizeEncoding(&ref, &value)) return GetOrCreateConstantVar(0);
@@ -1428,6 +1444,25 @@ int PresolveContext::GetOrCreateVarValueEncoding(int ref, int64_t value) {
   const int literal = NewBoolVar();
   InsertVarValueEncoding(literal, var, value);
   return GetLiteralRepresentative(literal);
+}
+
+int PresolveContext::GetOrCreateAffineValueEncoding(
+    const LinearExpressionProto& expr, int64_t value) {
+  DCHECK_LE(expr.vars_size(), 1);
+  if (IsFixed(expr)) {
+    if (FixedValue(expr) == value) {
+      return GetOrCreateConstantVar(1);
+    } else {
+      return GetOrCreateConstantVar(0);
+    }
+  }
+
+  if ((value - expr.offset()) % expr.coeffs(0) != 0) {
+    return GetOrCreateConstantVar(0);
+  }
+
+  return GetOrCreateVarValueEncoding(expr.vars(0),
+                                     (value - expr.offset()) / expr.coeffs(0));
 }
 
 void PresolveContext::ReadObjectiveFromProto() {

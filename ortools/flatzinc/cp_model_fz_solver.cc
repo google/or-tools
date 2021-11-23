@@ -659,7 +659,9 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
     }
   } else if (fz_ct.type == "fzn_all_different_int") {
     auto* arg = ct->mutable_all_diff();
-    for (const int var : LookupVars(fz_ct.arguments[0])) arg->add_vars(var);
+    for (int i = 0; i < fz_ct.arguments[0].Size(); ++i) {
+      *arg->add_exprs() = LookupExprAt(fz_ct.arguments[0], i);
+    }
   } else if (fz_ct.type == "ortools_circuit" ||
              fz_ct.type == "ortools_subcircuit") {
     const int64_t min_index = fz_ct.arguments[1].Value();

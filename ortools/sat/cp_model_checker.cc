@@ -835,9 +835,8 @@ std::string ValidateCpModel(const CpModelProto& model) {
       case ConstraintProto::ConstraintCase::kLinMax: {
         RETURN_IF_NOT_EMPTY(
             ValidateLinearExpression(model, ct.lin_max().target()));
-        for (int i = 0; i < ct.lin_max().exprs_size(); ++i) {
-          RETURN_IF_NOT_EMPTY(
-              ValidateLinearExpression(model, ct.lin_max().exprs(i)));
+        for (const LinearExpressionProto& expr : ct.lin_max().exprs()) {
+          RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, expr));
         }
         break;
       }
@@ -854,6 +853,11 @@ std::string ValidateCpModel(const CpModelProto& model) {
         if (ct.inverse().f_direct().size() != ct.inverse().f_inverse().size()) {
           return absl::StrCat("Non-matching fields size in inverse: ",
                               ProtobufShortDebugString(ct));
+        }
+        break;
+      case ConstraintProto::ConstraintCase::kAllDiff:
+        for (const LinearExpressionProto& expr : ct.all_diff().exprs()) {
+          RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, expr));
         }
         break;
       case ConstraintProto::ConstraintCase::kTable:
@@ -1045,9 +1049,10 @@ class ConstraintChecker {
 
   bool AllDiffConstraintIsFeasible(const ConstraintProto& ct) {
     absl::flat_hash_set<int64_t> values;
-    for (const int v : ct.all_diff().vars()) {
-      if (values.contains(Value(v))) return false;
-      values.insert(Value(v));
+    for (const LinearExpressionProto& expr : ct.all_diff().exprs()) {
+      const int64_t value = LinearExpressionValue(expr);
+      if (values.contains(value)) return false;
+      values.insert(value);
     }
     return true;
   }

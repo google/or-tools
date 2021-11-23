@@ -433,7 +433,7 @@ CutGenerator CreateSquareCutGenerator(AffineExpression y, AffineExpression x,
 // cuts of the form described above if they are violated by lp solution. Note
 // that all the fixed variables are ignored while generating cuts.
 CutGenerator CreateAllDifferentCutGenerator(
-    const std::vector<IntegerVariable>& vars, Model* model);
+    const std::vector<AffineExpression>& exprs, Model* model);
 
 // Consider the Lin Max constraint with d expressions and n variables in the
 // form: target = max {exprs[k] = Sum (wki * xi + bk)}. k in {1,..,d}.

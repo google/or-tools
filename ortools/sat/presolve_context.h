@@ -121,6 +121,8 @@ class PresolveContext {
   int64_t MaxOf(const LinearExpressionProto& expr) const;
   bool IsFixed(const LinearExpressionProto& expr) const;
   int64_t FixedValue(const LinearExpressionProto& expr) const;
+  // This methods only works for affine expressions (checked).
+  bool DomainContains(const LinearExpressionProto& expr, int64_t value) const;
 
   // Return a super-set of the domain of the linear expression.
   Domain DomainSuperSetOf(const LinearExpressionProto& expr) const;
@@ -320,6 +322,15 @@ class PresolveContext {
   // UpdateNewConstraintsVariableUsage() is called.
   int GetOrCreateVarValueEncoding(int ref, int64_t value);
 
+  // Gets the associated literal if it is already created. Otherwise
+  // create it, add the corresponding constraints and returns it.
+  //
+  // Important: This does not update the constraint<->variable graph, so
+  // ConstraintVariableGraphIsUpToDate() will be false until
+  // UpdateNewConstraintsVariableUsage() is called.
+  int GetOrCreateAffineValueEncoding(const LinearExpressionProto& expr,
+                                     int64_t value);
+
   // If not already done, adds a Boolean to represent any integer variables that
   // take only two values. Make sure all the relevant affine and encoding
   // relations are updated.
@@ -337,6 +348,11 @@ class PresolveContext {
   // Still it means that the number of values removed is greater than the number
   // of values not encoded.
   bool IsFullyEncoded(int ref) const;
+
+  // This methods only works for affine expressions (checked).
+  // It returns true iff the expression is constant or its one variable is full
+  // encoded.
+  bool IsFullyEncoded(const LinearExpressionProto& expr) const;
 
   // Stores the fact that literal implies var == value.
   // It returns true if that information is new.
