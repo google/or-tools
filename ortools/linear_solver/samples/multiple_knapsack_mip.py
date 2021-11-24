@@ -11,14 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Solve a multiple knapsack problem using a MIP solver."""
 # [START program]
+"""Solve a multiple knapsack problem using a MIP solver."""
 # [START import]
 from ortools.linear_solver import pywraplp
 # [END import]
 
 
-# [START program_part1]
 # [START data_model]
 def create_data_model():
     """Create the data for the example."""
@@ -27,56 +26,77 @@ def create_data_model():
     values = [10, 30, 25, 50, 35, 30, 15, 40, 30, 35, 45, 10, 20, 30, 25]
     data['weights'] = weights
     data['values'] = values
-    data['items'] = list(range(len(weights)))
     data['num_items'] = len(weights)
-    num_bins = 5
-    data['bins'] = list(range(num_bins))
+    data['all_items'] = range(data['num_items'])
     data['bin_capacities'] = [100, 100, 100, 100, 100]
+    data['num_bins'] = len(data['bin_capacities'])
+    data['all_bins'] = range(data['num_bins'])
     return data
 
 # [END data_model]
+
+
+# [START solution_printer]
+def print_solutions(data, objective, x):
+    """Display the solution."""
+    print('Total packed value:', objective.Value())
+    total_weight = 0
+    for b in data['all_bins']:
+        print(f'Bin {b}\n')
+        bin_weight = 0
+        bin_value = 0
+        for idx, weight in enumerate(data['weights']):
+            if x[idx, b].solution_value() > 0:
+                print(f"Item {idx} - weight: {weight} value: {data['values'][idx]}")
+                bin_weight += weight
+                bin_value += data['values'][idx]
+        print(f'Packed bin weight: {bin_weight}')
+        print(f'Packed bin value: {bin_value}\n')
+        total_weight += bin_weight
+    print(f'Total packed weight: {total_weight}')
+# [END solution_printer]
 
 
 def main():
     # [START data]
     data = create_data_model()
     # [END data]
-    # [END program_part1]
 
-    # [START solver]
     # Create the mip solver with the SCIP backend.
+    # [START solver]
     solver = pywraplp.Solver.CreateSolver('SCIP')
     # [END solver]
 
-    # [START program_part2]
+    # Main variables.
     # [START variables]
     # Variables
     # x[i, j] = 1 if item i is packed in bin j.
     x = {}
-    for i in data['items']:
-        for j in data['bins']:
-            x[(i, j)] = solver.IntVar(0, 1, 'x_%i_%i' % (i, j))
+    for idx in data['all_items']:
+        for b in data['all_bins']:
+            x[idx, b] = solver.IntVar(0, 1, f'x_{idx}_{b}')
     # [END variables]
 
-    # [START constraints]
     # Constraints
+    # [START constraints]
     # Each item can be in at most one bin.
-    for i in data['items']:
-        solver.Add(sum(x[i, j] for j in data['bins']) <= 1)
+    for idx in data['all_items']:
+        solver.Add(sum(x[idx, b] for b in data['all_bins']) <= 1)
+
     # The amount packed in each bin cannot exceed its capacity.
-    for j in data['bins']:
+    for b in data['all_bins']:
         solver.Add(
-            sum(x[(i, j)] * data['weights'][i]
-                for i in data['items']) <= data['bin_capacities'][j])
+            sum(x[i, b] * data['weights'][i]
+                for i in data['all_items']) <= data['bin_capacities'][b])
     # [END constraints]
 
-    # [START objective]
     # Objective
+    # [START objective]
+    # Maximize total value of packed items.
     objective = solver.Objective()
-
-    for i in data['items']:
-        for j in data['bins']:
-            objective.SetCoefficient(x[(i, j)], data['values'][i])
+    for i in data['all_items']:
+        for b in data['all_bins']:
+            objective.SetCoefficient(x[i, b], data['values'][i])
     objective.SetMaximization()
     # [END objective]
 
@@ -86,23 +106,7 @@ def main():
 
     # [START print_solution]
     if status == pywraplp.Solver.OPTIMAL:
-        print('Total packed value:', objective.Value())
-        total_weight = 0
-        for j in data['bins']:
-            bin_weight = 0
-            bin_value = 0
-            print('Bin ', j, '\n')
-            for i in data['items']:
-                if x[i, j].solution_value() > 0:
-                    print('Item', i, '- weight:', data['weights'][i], ' value:',
-                          data['values'][i])
-                    bin_weight += data['weights'][i]
-                    bin_value += data['values'][i]
-            print('Packed bin weight:', bin_weight)
-            print('Packed bin value:', bin_value)
-            print()
-            total_weight += bin_weight
-        print('Total packed weight:', total_weight)
+        print_solutions(data, objective, x)
     else:
         print('The problem does not have an optimal solution.')
     # [END print_solution]
@@ -110,5 +114,4 @@ def main():
 
 if __name__ == '__main__':
     main()
-# [END program_part2]
 # [END program]
