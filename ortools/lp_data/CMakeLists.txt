@@ -23,6 +23,6 @@ target_link_libraries(${NAME} PRIVATE
   absl::strings
   absl::str_format
   protobuf::libprotobuf
-  re2::re2
+  ${RE2_DEPS}
   ${PROJECT_NAME}::proto)
 #add_library(${PROJECT_NAME}::lp_data ALIAS ${NAME})
