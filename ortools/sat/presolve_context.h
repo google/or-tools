@@ -162,6 +162,7 @@ class PresolveContext {
 
   // Same as VariableIsUniqueAndRemovable() except that in this case the
   // variable also appear in the objective in addition to a single constraint.
+  bool VariableWithCostIsUnique(int ref) const;
   bool VariableWithCostIsUniqueAndRemovable(int ref) const;
 
   // Returns true if an integer variable is only appearing in the rhs of

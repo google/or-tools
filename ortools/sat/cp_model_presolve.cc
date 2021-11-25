@@ -1473,12 +1473,13 @@ bool CpModelPresolver::RemoveSingletonInLinear(ConstraintProto* ct) {
 
       // If the variable appear only in the objective and we have an equality,
       // we can transfer the cost to the rest of the linear expression, and
-      // remove that variable.
+      // remove that variable. Note that this do not remove any feasible
+      // solution and is not a "dual" reduction.
       //
       // Note that is similar to the substitution code in PresolveLinear() but
       // it doesn't require the variable to be implied free since we do not
       // remove the constraints afterwards, just the variable.
-      if (!context_->VariableWithCostIsUniqueAndRemovable(var)) continue;
+      if (!context_->VariableWithCostIsUnique(var)) continue;
       DCHECK(context_->ObjectiveMap().contains(var));
 
       // We only support substitution that does not require to multiply the
@@ -7614,29 +7615,29 @@ CpSolverStatus CpModelPresolver::Presolve() {
   for (int i = 0; i < context_->working_model->variables_size(); ++i) {
     if (mapping[i] != -1) continue;  // Already mapped.
 
+    if (context_->VariableWasRemoved(i)) {
+      // Heuristic: If a variable is removed and has a representative that is
+      // not, we "move" the representative to the spot of that variable in the
+      // original order. This is to preserve any info encoded in the variable
+      // order by the modeler.
+      const int r = PositiveRef(context_->GetAffineRelation(i).representative);
+      if (mapping[r] == -1 && !context_->VariableIsNotUsedAnymore(r)) {
+        mapping[r] = postsolve_mapping_->size();
+        postsolve_mapping_->push_back(r);
+      }
+      continue;
+    }
+
     if (context_->VariableIsNotUsedAnymore(i) &&
         !context_->keep_all_feasible_solutions) {
-      if (context_->VariableWasRemoved(i)) {
-        // Heuristic: If a variable is removed and has a representative that is
-        // not, we "move" the representative to the spot of that variable in the
-        // original order. This is to preserve any info encoded in the variable
-        // order by the modeler.
-        const int r =
-            PositiveRef(context_->GetAffineRelation(i).representative);
-        if (mapping[r] == -1 && !context_->VariableIsNotUsedAnymore(r)) {
-          mapping[r] = postsolve_mapping_->size();
-          postsolve_mapping_->push_back(r);
-        }
-      } else {
-        // Tricky. Variables that where not removed by a presolve rule should be
-        // fixed first during postsolve, so that more complex postsolve rules
-        // can use their values. One way to do that is to fix them here.
-        //
-        // We prefer to fix them to zero if possible.
-        ++num_free_variables;
-        FillDomainInProto(Domain(context_->DomainOf(i).SmallestValue()),
-                          context_->mapping_model->mutable_variables(i));
-      }
+      // Tricky. Variables that where not removed by a presolve rule should be
+      // fixed first during postsolve, so that more complex postsolve rules
+      // can use their values. One way to do that is to fix them here.
+      //
+      // We prefer to fix them to zero if possible.
+      ++num_free_variables;
+      FillDomainInProto(Domain(context_->DomainOf(i).SmallestValue()),
+                        context_->mapping_model->mutable_variables(i));
       continue;
     }
 

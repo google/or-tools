@@ -387,7 +387,7 @@ namespace Google.OrTools.Sat
                 res.ActiveLiterals.Add(var.Index);
             }
             res.MinLevel = minLevel;
-            res.MaxLevel = MaxLevel;
+            res.MaxLevel = maxLevel;
             ct.Proto.Reservoir = res;
 
             return ct;

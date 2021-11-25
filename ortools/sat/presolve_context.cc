@@ -333,13 +333,23 @@ bool PresolveContext::VariableIsUniqueAndRemovable(int ref) const {
   return var_to_constraints_[var].size() == 1 && VariableIsRemovable(var);
 }
 
+bool PresolveContext::VariableWithCostIsUnique(int ref) const {
+  if (!ConstraintVariableGraphIsUpToDate()) return false;
+  const int var = PositiveRef(ref);
+  return VariableIsNotRepresentativeOfEquivalenceClass(var) &&
+         var_to_constraints_[var].contains(kObjectiveConstraint) &&
+         var_to_constraints_[var].size() == 2;
+}
+
 // Tricky: Same remark as for VariableIsUniqueAndRemovable().
+//
+// Also if the objective domain is constraining, we can't have a preferred
+// direction, so we cannot easily remove such variable.
 bool PresolveContext::VariableWithCostIsUniqueAndRemovable(int ref) const {
   if (!ConstraintVariableGraphIsUpToDate()) return false;
   const int var = PositiveRef(ref);
-  return VariableIsRemovable(var) &&
-         var_to_constraints_[var].contains(kObjectiveConstraint) &&
-         var_to_constraints_[var].size() == 2;
+  return VariableIsRemovable(var) && !objective_domain_is_constraining_ &&
+         VariableWithCostIsUnique(var);
 }
 
 // Here, even if the variable is equivalent to others, if its affine defining

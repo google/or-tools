@@ -584,7 +584,8 @@ void DualBoundStrengthening::ProcessLinearConstraint(
     }
 
     if (is_objective) {
-      // We never want to increase the objective value.
+      // We never want to increase the objective value. Note that if the
+      // objective is lower bounded, we checked that on the lb side above.
       num_locks_[NegationOf(var)]++;
       can_freely_decrease_until_[NegationOf(var)] = kMaxIntegerValue;
       continue;
