@@ -623,9 +623,14 @@ std::string ValidateReservoirConstraint(const CpModelProto& model,
   if (ct.enforcement_literal_size() > 0) {
     return "Reservoir does not support enforcement literals.";
   }
-  if (ct.reservoir().times().size() != ct.reservoir().demands().size()) {
-    return absl::StrCat("Times and demands fields must be of the same size: ",
-                        ProtobufShortDebugString(ct));
+  if (ct.reservoir().time_exprs().size() !=
+      ct.reservoir().level_changes().size()) {
+    return absl::StrCat(
+        "time_exprs and level_changes fields must be of the same size: ",
+        ProtobufShortDebugString(ct));
+  }
+  for (const LinearExpressionProto& expr : ct.reservoir().time_exprs()) {
+    RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, expr));
   }
   if (ct.reservoir().min_level() > 0) {
     return absl::StrCat(
@@ -641,7 +646,7 @@ std::string ValidateReservoirConstraint(const CpModelProto& model,
   }
 
   int64_t sum_abs = 0;
-  for (const int64_t demand : ct.reservoir().demands()) {
+  for (const int64_t demand : ct.reservoir().level_changes()) {
     // We test for min int64_t before the abs().
     if (demand == std::numeric_limits<int64_t>::min()) {
       return "Possible integer overflow in constraint: " +
@@ -653,13 +658,14 @@ std::string ValidateReservoirConstraint(const CpModelProto& model,
              ProtobufDebugString(ct);
     }
   }
-  if (ct.reservoir().actives_size() > 0 &&
-      ct.reservoir().actives_size() != ct.reservoir().times_size()) {
-    return "Wrong array length of actives variables";
+  if (ct.reservoir().active_literals_size() > 0 &&
+      ct.reservoir().active_literals_size() !=
+          ct.reservoir().time_exprs_size()) {
+    return "Wrong array length of active_literals variables";
   }
-  if (ct.reservoir().demands_size() > 0 &&
-      ct.reservoir().demands_size() != ct.reservoir().times_size()) {
-    return "Wrong array length of demands variables";
+  if (ct.reservoir().level_changes_size() > 0 &&
+      ct.reservoir().level_changes_size() != ct.reservoir().time_exprs_size()) {
+    return "Wrong array length of level_changes variables";
   }
   return "";
 }
@@ -857,7 +863,7 @@ std::string ValidateCpModel(const CpModelProto& model) {
         break;
       case ConstraintProto::ConstraintCase::kAllDiff:
         for (const LinearExpressionProto& expr : ct.all_diff().exprs()) {
-          RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, expr));
+          RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, expr));
         }
         break;
       case ConstraintProto::ConstraintCase::kTable:
@@ -1051,8 +1057,8 @@ class ConstraintChecker {
     absl::flat_hash_set<int64_t> values;
     for (const LinearExpressionProto& expr : ct.all_diff().exprs()) {
       const int64_t value = LinearExpressionValue(expr);
-      if (values.contains(value)) return false;
-      values.insert(value);
+      const auto [it, inserted] = values.insert(value);
+      if (!inserted) return false;
     }
     return true;
   }
@@ -1332,7 +1338,7 @@ class ConstraintChecker {
     }
 
     // Each routes cover as many node as there is arcs, but this way we count
-    // multiple times the depot. So the number of nodes covered are:
+    // multiple time_exprs the depot. So the number of nodes covered are:
     //     count - depot_nexts.size() + 1.
     // And this number + the self arcs should be num_nodes.
     if (count - depot_nexts.size() + 1 + num_self_arcs != num_nodes) {
@@ -1356,15 +1362,16 @@ class ConstraintChecker {
   }
 
   bool ReservoirConstraintIsFeasible(const ConstraintProto& ct) {
-    const int num_variables = ct.reservoir().times_size();
+    const int num_variables = ct.reservoir().time_exprs_size();
     const int64_t min_level = ct.reservoir().min_level();
     const int64_t max_level = ct.reservoir().max_level();
     std::map<int64_t, int64_t> deltas;
-    const bool has_active_variables = ct.reservoir().actives_size() > 0;
+    const bool has_active_variables = ct.reservoir().active_literals_size() > 0;
     for (int i = 0; i < num_variables; i++) {
-      const int64_t time = Value(ct.reservoir().times(i));
-      if (!has_active_variables || Value(ct.reservoir().actives(i)) == 1) {
-        deltas[time] += ct.reservoir().demands(i);
+      const int64_t time = LinearExpressionValue(ct.reservoir().time_exprs(i));
+      if (!has_active_variables ||
+          Value(ct.reservoir().active_literals(i)) == 1) {
+        deltas[time] += ct.reservoir().level_changes(i);
       }
     }
     int64_t current_level = 0;

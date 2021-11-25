@@ -42,18 +42,18 @@ void ExpandReservoir(ConstraintProto* ct, PresolveContext* context) {
   }
 
   const ReservoirConstraintProto& reservoir = ct->reservoir();
-  const int num_events = reservoir.times_size();
+  const int num_events = reservoir.time_exprs_size();
 
   const int true_literal = context->GetOrCreateConstantVar(1);
 
   const auto is_active_literal = [&reservoir, true_literal](int index) {
-    if (reservoir.actives_size() == 0) return true_literal;
-    return reservoir.actives(index);
+    if (reservoir.active_literals_size() == 0) return true_literal;
+    return reservoir.active_literals(index);
   };
 
   int num_positives = 0;
   int num_negatives = 0;
-  for (const int64_t demand : reservoir.demands()) {
+  for (const int64_t demand : reservoir.level_changes()) {
     if (demand > 0) {
       num_positives++;
     } else if (demand < 0) {
@@ -61,70 +61,81 @@ void ExpandReservoir(ConstraintProto* ct, PresolveContext* context) {
     }
   }
 
+  absl::flat_hash_map<std::pair<int, int>, int> precedence_cache;
+
   if (num_positives > 0 && num_negatives > 0) {
     // Creates Boolean variables equivalent to (start[i] <= start[j]) i != j
     for (int i = 0; i < num_events - 1; ++i) {
       const int active_i = is_active_literal(i);
       if (context->LiteralIsFalse(active_i)) continue;
-      const int time_i = reservoir.times(i);
+      const LinearExpressionProto& time_i = reservoir.time_exprs(i);
 
       for (int j = i + 1; j < num_events; ++j) {
         const int active_j = is_active_literal(j);
         if (context->LiteralIsFalse(active_j)) continue;
-        const int time_j = reservoir.times(j);
+        const LinearExpressionProto& time_j = reservoir.time_exprs(j);
 
         const int i_lesseq_j = context->GetOrCreateReifiedPrecedenceLiteral(
             time_i, time_j, active_i, active_j);
         context->working_model->mutable_variables(i_lesseq_j)
             ->set_name(absl::StrCat(i, " before ", j));
+        precedence_cache[{i, j}] = i_lesseq_j;
         const int j_lesseq_i = context->GetOrCreateReifiedPrecedenceLiteral(
             time_j, time_i, active_j, active_i);
         context->working_model->mutable_variables(j_lesseq_i)
             ->set_name(absl::StrCat(j, " before ", i));
+        precedence_cache[{j, i}] = j_lesseq_i;
       }
     }
 
-    // Constrains the running level to be consistent at all times.
+    // Constrains the running level to be consistent at all time_exprs.
     // For this we only add a constraint at the time a given demand
     // take place. We also have a constraint for time zero if needed
     // (added below).
     for (int i = 0; i < num_events; ++i) {
       const int active_i = is_active_literal(i);
       if (context->LiteralIsFalse(active_i)) continue;
-      const int time_i = reservoir.times(i);
 
-      // Accumulates demands of all predecessors.
+      // Accumulates level_changes of all predecessors.
       ConstraintProto* const level = context->working_model->add_constraints();
       level->add_enforcement_literal(active_i);
 
       // Add contributions from previous events.
+      int64_t offset = 0;
       for (int j = 0; j < num_events; ++j) {
         if (i == j) continue;
         const int active_j = is_active_literal(j);
         if (context->LiteralIsFalse(active_j)) continue;
 
-        const int time_j = reservoir.times(j);
-        level->mutable_linear()->add_vars(
-            context->GetOrCreateReifiedPrecedenceLiteral(time_j, time_i,
-                                                         active_j, active_i));
-        level->mutable_linear()->add_coeffs(reservoir.demands(j));
+        const auto prec_it = precedence_cache.find({j, i});
+        CHECK(prec_it != precedence_cache.end());
+        const int prec_lit = prec_it->second;
+        const int64_t demand = reservoir.level_changes(j);
+        if (RefIsPositive(prec_lit)) {
+          level->mutable_linear()->add_vars(prec_lit);
+          level->mutable_linear()->add_coeffs(demand);
+        } else {
+          level->mutable_linear()->add_vars(prec_lit);
+          level->mutable_linear()->add_coeffs(-demand);
+          offset -= demand;
+        }
       }
 
       // Accounts for own demand in the domain of the sum.
-      const int64_t demand_i = reservoir.demands(i);
+      const int64_t demand_i = reservoir.level_changes(i);
       level->mutable_linear()->add_domain(
-          CapSub(reservoir.min_level(), demand_i));
+          CapAdd(CapSub(reservoir.min_level(), demand_i), offset));
       level->mutable_linear()->add_domain(
-          CapSub(reservoir.max_level(), demand_i));
+          CapAdd(CapSub(reservoir.max_level(), demand_i), offset));
     }
   } else {
-    // If all demands have the same sign, we do not care about the order, just
-    // the sum.
+    // If all level_changes have the same sign, we do not care about the order,
+    // just the sum.
     auto* const sum =
         context->working_model->add_constraints()->mutable_linear();
     for (int i = 0; i < num_events; ++i) {
       sum->add_vars(is_active_literal(i));
-      sum->add_coeffs(reservoir.demands(i));
+      sum->add_coeffs(reservoir.level_changes(i));
     }
     sum->add_domain(reservoir.min_level());
     sum->add_domain(reservoir.max_level());

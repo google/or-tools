@@ -635,17 +635,18 @@ class ReservoirConstraint : public Constraint {
   /**
    * Adds a mandatory event
    *
-   * It will increase the used capacity by `c demand at time `c time.
+   * It will increase the used capacity by `level_change` at time `time`.
    */
-  void AddEvent(IntVar time, int64_t demand);
+  void AddEvent(LinearExpr time, int64_t level_change);
 
   /**
    * Adds a optional event
    *
-   * If `c is_active is true, It will increase the used capacity by `c demand at
-   * time `c time.
+   * If `c is_active is true, It will increase the used capacity by
+   * `level_change` at time `c time.
    */
-  void AddOptionalEvent(IntVar time, int64_t demand, BoolVar is_active);
+  void AddOptionalEvent(LinearExpr time, int64_t level_change,
+                        BoolVar is_active);
 
  private:
   friend class CpModelBuilder;
@@ -794,10 +795,10 @@ class CpModelBuilder {
   /// Adds left != right.
   Constraint AddNotEqual(const LinearExpr& left, const LinearExpr& right);
 
-  /// this constraint forces all variables to have different values.
+  /// This constraint forces all variables to have different values.
   Constraint AddAllDifferent(absl::Span<const IntVar> vars);
 
-  /// this constraint forces all expressions to have different values.
+  /// This constraint forces all expressions to have different values.
   Constraint AddAllDifferentExpr(absl::Span<const LinearExpr> exprs);
 
   /// Adds the element constraint: variables[index] == target
@@ -886,9 +887,10 @@ class CpModelBuilder {
    * time t.
    *
    * Note that level_min can be > 0, or level_max can be < 0. It just forces
-   * some demands to be executed at time 0 to make sure that we are within those
-   * bounds with the executed demands. Therefore, at any time t >= 0:
-   *     sum(demands[i] * actives[i] if times[i] <= t) in [min_level, max_level]
+   * some level_changes to be executed at time 0 to make sure that we are within
+   * those bounds with the executed level_changes. Therefore, at any time t >=
+   * 0: sum(level_changes[i] * actives[i] if times[i] <= t) in [min_level,
+   * max_level]
    *
    * It returns a ReservoirConstraint that allows adding optional and non
    * optional events incrementally after construction.

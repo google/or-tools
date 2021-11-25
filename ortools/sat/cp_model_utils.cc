@@ -112,8 +112,10 @@ IndexReferences GetReferencesUsedByConstraint(const ConstraintProto& ct) {
       AddIndices(ct.inverse().f_inverse(), &output.variables);
       break;
     case ConstraintProto::ConstraintCase::kReservoir:
-      AddIndices(ct.reservoir().times(), &output.variables);
-      AddIndices(ct.reservoir().actives(), &output.literals);
+      for (const LinearExpressionProto& time : ct.reservoir().time_exprs()) {
+        AddIndices(time.vars(), &output.variables);
+      }
+      AddIndices(ct.reservoir().active_literals(), &output.literals);
       break;
     case ConstraintProto::ConstraintCase::kTable:
       AddIndices(ct.table().vars(), &output.variables);
@@ -198,7 +200,7 @@ void ApplyToAllLiteralIndices(const std::function<void(int*)>& f,
     case ConstraintProto::ConstraintCase::kInverse:
       break;
     case ConstraintProto::ConstraintCase::kReservoir:
-      APPLY_TO_REPEATED_FIELD(reservoir, actives);
+      APPLY_TO_REPEATED_FIELD(reservoir, active_literals);
       break;
     case ConstraintProto::ConstraintCase::kTable:
       break;
@@ -279,7 +281,9 @@ void ApplyToAllVariableIndices(const std::function<void(int*)>& f,
       APPLY_TO_REPEATED_FIELD(inverse, f_inverse);
       break;
     case ConstraintProto::ConstraintCase::kReservoir:
-      APPLY_TO_REPEATED_FIELD(reservoir, times);
+      for (int i = 0; i < ct->reservoir().time_exprs_size(); ++i) {
+        APPLY_TO_REPEATED_FIELD(reservoir, time_exprs(i)->mutable_vars);
+      }
       break;
     case ConstraintProto::ConstraintCase::kTable:
       APPLY_TO_REPEATED_FIELD(table, vars);

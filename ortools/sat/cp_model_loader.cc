@@ -1128,11 +1128,8 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
 
 void LoadAllDiffConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
-  std::vector<AffineExpression> expressions;
-  expressions.reserve(ct.all_diff().exprs_size());
-  for (const LinearExpressionProto& expr : ct.all_diff().exprs()) {
-    expressions.push_back(mapping->Affine(expr));
-  }
+  const std::vector<AffineExpression> expressions =
+      mapping->Affines(ct.all_diff().exprs());
   m->Add(AllDifferentOnBounds(expressions));
 }
 
@@ -1224,10 +1221,8 @@ void LoadCumulativeConstraint(const ConstraintProto& ct, Model* m) {
   const std::vector<IntervalVariable> intervals =
       mapping->Intervals(ct.cumulative().intervals());
   const AffineExpression capacity = mapping->Affine(ct.cumulative().capacity());
-  std::vector<AffineExpression> demands;
-  for (const LinearExpressionProto& demand_expr : ct.cumulative().demands()) {
-    demands.push_back(mapping->Affine(demand_expr));
-  }
+  const std::vector<AffineExpression> demands =
+      mapping->Affines(ct.cumulative().demands());
   m->Add(Cumulative(intervals, demands, capacity));
 }
 

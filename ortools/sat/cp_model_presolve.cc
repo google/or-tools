@@ -2277,8 +2277,8 @@ bool CpModelPresolver::PropagateDomainsInLinear(int ct_index,
     // Given a variable that only appear in one constraint and in the
     // objective, for any feasible solution, it will be always better to move
     // this singleton variable as much as possible towards its good objective
-    // direction. Sometimes, we can detect that we will always be able to do
-    // this until the only constraint of this singleton variable is tight.
+    // direction. Sometime_exprs, we can detect that we will always be able to
+    // do this until the only constraint of this singleton variable is tight.
     //
     // When this happens, we can make the constraint an equality. Note that it
     // might not always be good to restrict constraint like this, but in this
@@ -3133,8 +3133,8 @@ bool CpModelPresolver::PresolveElement(ConstraintProto* ct) {
 
   // If a variable (target or index) appears only in this constraint, it does
   // not necessarily mean that we can remove the constraint, as the variable
-  // can be used multiple times in the element. So let's count the local uses of
-  // each variable.
+  // can be used multiple time_exprs in the element. So let's count the local
+  // uses of each variable.
   absl::flat_hash_map<int, int> local_var_occurrence_counter;
   local_var_occurrence_counter[PositiveRef(index_ref)]++;
   local_var_occurrence_counter[PositiveRef(target_ref)]++;
@@ -3427,11 +3427,13 @@ bool CpModelPresolver::PresolveAllDiff(ConstraintProto* ct) {
         }
       }
       if (propagated) {
-        context_->UpdateRuleStats("all_diff: propagated fixed variables");
+        context_->UpdateRuleStats("all_diff: propagated fixed expressions");
         something_was_propagated = true;
       }
     }
 
+    // CanonicalizeLinearExpression() made sure that only positive variable
+    // appears here, so this order will put expr and -expr one after the other.
     std::sort(
         kept_expressions.begin(), kept_expressions.end(),
         [](const LinearExpressionProto& expr_a,
@@ -3451,6 +3453,10 @@ bool CpModelPresolver::PresolveAllDiff(ConstraintProto* ct) {
           return std::tie(ref_a, abs_coeff_a, coeff_a, abs_offset_a, offset_a) <
                  std::tie(ref_b, abs_coeff_b, coeff_b, abs_offset_b, offset_b);
         });
+
+    // TODO(user): improve algorithm if of (a + offset) and (-a - offset)
+    // might not be together if (a - offset) is present.
+
     for (int i = 1; i < kept_expressions.size(); ++i) {
       if (LinearExpressionProtosAreEqual(kept_expressions[i],
                                          kept_expressions[i - 1], 1)) {
@@ -3495,7 +3501,6 @@ bool CpModelPresolver::PresolveAllDiff(ConstraintProto* ct) {
       absl::flat_hash_map<int64_t, std::vector<LinearExpressionProto>>
           value_to_exprs;
       for (const LinearExpressionProto& expr : all_diff.exprs()) {
-        DCHECK(!context_->IsFixed(expr));
         for (const int64_t v : context_->DomainOf(expr.vars(0)).Values()) {
           value_to_exprs[expr.coeffs(0) * v + expr.offset()].push_back(expr);
         }
@@ -4035,9 +4040,9 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
     }
 
     // We construct the profile which correspond to a set of [time, next_time)
-    // to max_profile height. And for each time in our discrete set of times
-    // (all the start_min and end_max) we count for how often the height was
-    // above the capacity before this time.
+    // to max_profile height. And for each time in our discrete set of
+    // time_exprs (all the start_min and end_max) we count for how often the
+    // height was above the capacity before this time.
     //
     // This rely on the iteration in sorted order.
     int num_possible_overloads = 0;
@@ -4081,8 +4086,8 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
       if (start_min >= end_max) continue;
 
       // Note that by construction, both point are in the map. The formula
-      // counts exactly for how many times in [start_min, end_max), we have a
-      // point in our discrete set of time that exceeded the capacity. Because
+      // counts exactly for how many time_exprs in [start_min, end_max), we have
+      // a point in our discrete set of time that exceeded the capacity. Because
       // we included all the relevant points, this works.
       const int num_diff = num_possible_overloads_before.at(end_max) -
                            num_possible_overloads_before.at(start_min);
@@ -4673,104 +4678,107 @@ bool CpModelPresolver::PresolveReservoir(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
   if (HasEnforcementLiteral(*ct)) return false;
 
+  ReservoirConstraintProto& proto = *ct->mutable_reservoir();
   bool changed = false;
+  for (LinearExpressionProto& exp : *(proto.mutable_time_exprs())) {
+    changed |= CanonicalizeLinearExpression(*ct, &exp);
+  }
 
-  ReservoirConstraintProto& mutable_reservoir = *ct->mutable_reservoir();
-  if (mutable_reservoir.actives().empty()) {
+  if (proto.active_literals().empty()) {
     const int true_literal = context_->GetOrCreateConstantVar(1);
-    for (int i = 0; i < mutable_reservoir.times_size(); ++i) {
-      mutable_reservoir.add_actives(true_literal);
+    for (int i = 0; i < proto.time_exprs_size(); ++i) {
+      proto.add_active_literals(true_literal);
     }
     changed = true;
   }
 
   const auto& demand_is_null = [&](int i) {
-    return mutable_reservoir.demands(i) == 0 ||
-           context_->LiteralIsFalse(mutable_reservoir.actives(i));
+    return proto.level_changes(i) == 0 ||
+           context_->LiteralIsFalse(proto.active_literals(i));
   };
 
-  // Remove zero demands, and inactive events.
+  // Remove zero level_changes, and inactive events.
   int num_zeros = 0;
-  for (int i = 0; i < mutable_reservoir.demands_size(); ++i) {
+  for (int i = 0; i < proto.level_changes_size(); ++i) {
     if (demand_is_null(i)) num_zeros++;
   }
 
   if (num_zeros > 0) {  // Remove null events
     changed = true;
     int new_size = 0;
-    for (int i = 0; i < mutable_reservoir.demands_size(); ++i) {
+    for (int i = 0; i < proto.level_changes_size(); ++i) {
       if (demand_is_null(i)) continue;
-      mutable_reservoir.set_demands(new_size, mutable_reservoir.demands(i));
-      mutable_reservoir.set_times(new_size, mutable_reservoir.times(i));
-      mutable_reservoir.set_actives(new_size, mutable_reservoir.actives(i));
+      proto.set_level_changes(new_size, proto.level_changes(i));
+      *proto.mutable_time_exprs(new_size) = proto.time_exprs(i);
+      proto.set_active_literals(new_size, proto.active_literals(i));
       new_size++;
     }
 
-    mutable_reservoir.mutable_demands()->Truncate(new_size);
-    mutable_reservoir.mutable_times()->Truncate(new_size);
-    mutable_reservoir.mutable_actives()->Truncate(new_size);
+    proto.mutable_level_changes()->Truncate(new_size);
+    proto.mutable_time_exprs()->erase(
+        proto.mutable_time_exprs()->begin() + new_size,
+        proto.mutable_time_exprs()->end());
+    proto.mutable_active_literals()->Truncate(new_size);
 
     context_->UpdateRuleStats(
-        "reservoir: remove zero demands or inactive events.");
+        "reservoir: remove zero level_changes or inactive events.");
   }
 
-  const int num_events = mutable_reservoir.demands_size();
-  int64_t gcd = mutable_reservoir.demands().empty()
-                    ? 0
-                    : std::abs(mutable_reservoir.demands(0));
+  const int num_events = proto.level_changes_size();
+  int64_t gcd =
+      proto.level_changes().empty() ? 0 : std::abs(proto.level_changes(0));
   int num_positives = 0;
   int num_negatives = 0;
-  int64_t max_sum_of_positive_demands = 0;
-  int64_t min_sum_of_negative_demands = 0;
+  int64_t max_sum_of_positive_level_changes = 0;
+  int64_t min_sum_of_negative_level_changes = 0;
   for (int i = 0; i < num_events; ++i) {
-    const int64_t demand = mutable_reservoir.demands(i);
+    const int64_t demand = proto.level_changes(i);
     gcd = MathUtil::GCD64(gcd, std::abs(demand));
     if (demand > 0) {
       num_positives++;
-      max_sum_of_positive_demands += demand;
+      max_sum_of_positive_level_changes += demand;
     } else {
       DCHECK_LT(demand, 0);
       num_negatives++;
-      min_sum_of_negative_demands += demand;
+      min_sum_of_negative_level_changes += demand;
     }
   }
 
-  if (min_sum_of_negative_demands >= mutable_reservoir.min_level() &&
-      max_sum_of_positive_demands <= mutable_reservoir.max_level()) {
+  if (min_sum_of_negative_level_changes >= proto.min_level() &&
+      max_sum_of_positive_level_changes <= proto.max_level()) {
     context_->UpdateRuleStats("reservoir: always feasible");
     return RemoveConstraint(ct);
   }
 
-  if (min_sum_of_negative_demands > mutable_reservoir.max_level() ||
-      max_sum_of_positive_demands < mutable_reservoir.min_level()) {
+  if (min_sum_of_negative_level_changes > proto.max_level() ||
+      max_sum_of_positive_level_changes < proto.min_level()) {
     context_->UpdateRuleStats("reservoir: trivially infeasible");
     return context_->NotifyThatModelIsUnsat();
   }
 
-  if (min_sum_of_negative_demands > mutable_reservoir.min_level()) {
-    mutable_reservoir.set_min_level(min_sum_of_negative_demands);
+  if (min_sum_of_negative_level_changes > proto.min_level()) {
+    proto.set_min_level(min_sum_of_negative_level_changes);
     context_->UpdateRuleStats(
         "reservoir: increase min_level to reachable value");
   }
 
-  if (max_sum_of_positive_demands < mutable_reservoir.max_level()) {
-    mutable_reservoir.set_max_level(max_sum_of_positive_demands);
+  if (max_sum_of_positive_level_changes < proto.max_level()) {
+    proto.set_max_level(max_sum_of_positive_level_changes);
     context_->UpdateRuleStats("reservoir: reduce max_level to reachable value");
   }
 
-  if (mutable_reservoir.min_level() <= 0 &&
-      mutable_reservoir.max_level() >= 0 &&
+  if (proto.min_level() <= 0 && proto.max_level() >= 0 &&
       (num_positives == 0 || num_negatives == 0)) {
-    // If all demands have the same sign, and if the initial state is
+    // If all level_changes have the same sign, and if the initial state is
     // always feasible, we do not care about the order, just the sum.
     auto* const sum =
         context_->working_model->add_constraints()->mutable_linear();
     int64_t fixed_contrib = 0;
-    for (int i = 0; i < mutable_reservoir.demands_size(); ++i) {
-      const int64_t demand = mutable_reservoir.demands(i);
+    for (int i = 0; i < proto.level_changes_size(); ++i) {
+      const int64_t demand = proto.level_changes(i);
       DCHECK_NE(demand, 0);
 
-      const int active = mutable_reservoir.actives(i);
+      const int active = proto.active_literals(i);
       if (RefIsPositive(active)) {
         sum->add_vars(active);
         sum->add_coeffs(demand);
@@ -4780,26 +4788,26 @@ bool CpModelPresolver::PresolveReservoir(ConstraintProto* ct) {
         fixed_contrib += demand;
       }
     }
-    sum->add_domain(mutable_reservoir.min_level() - fixed_contrib);
-    sum->add_domain(mutable_reservoir.max_level() - fixed_contrib);
+    sum->add_domain(proto.min_level() - fixed_contrib);
+    sum->add_domain(proto.max_level() - fixed_contrib);
     context_->UpdateRuleStats("reservoir: converted to linear");
     return RemoveConstraint(ct);
   }
 
   if (gcd > 1) {
-    for (int i = 0; i < mutable_reservoir.demands_size(); ++i) {
-      mutable_reservoir.set_demands(i, mutable_reservoir.demands(i) / gcd);
+    for (int i = 0; i < proto.level_changes_size(); ++i) {
+      proto.set_level_changes(i, proto.level_changes(i) / gcd);
     }
 
     // Adjust min and max levels.
     //   max level is always rounded down.
     //   min level is always rounded up.
-    const Domain reduced_domain =
-        Domain({mutable_reservoir.min_level(), mutable_reservoir.max_level()})
-            .InverseMultiplicationBy(gcd);
-    mutable_reservoir.set_min_level(reduced_domain.Min());
-    mutable_reservoir.set_max_level(reduced_domain.Max());
-    context_->UpdateRuleStats("reservoir: simplify demands and levels by gcd.");
+    const Domain reduced_domain = Domain({proto.min_level(), proto.max_level()})
+                                      .InverseMultiplicationBy(gcd);
+    proto.set_min_level(reduced_domain.Min());
+    proto.set_max_level(reduced_domain.Max());
+    context_->UpdateRuleStats(
+        "reservoir: simplify level_changes and levels by gcd.");
   }
 
   if (num_positives == 1 && num_negatives > 0) {
@@ -4807,10 +4815,16 @@ bool CpModelPresolver::PresolveReservoir(ConstraintProto* ct) {
         "TODO reservoir: one producer, multiple consumers.");
   }
 
-  absl::flat_hash_set<std::pair<int, int>> time_active_set;
-  for (int i = 0; i < mutable_reservoir.demands_size(); ++i) {
-    const std::pair<int, int> key = std::make_pair(
-        mutable_reservoir.times(i), mutable_reservoir.actives(i));
+  absl::flat_hash_set<std::tuple<int, int64_t, int64_t, int>> time_active_set;
+  for (int i = 0; i < proto.level_changes_size(); ++i) {
+    const LinearExpressionProto& time = proto.time_exprs(i);
+    const int var = context_->IsFixed(time) ? std::numeric_limits<int>::min()
+                                            : time.vars(0);
+    const int64_t coeff = context_->IsFixed(time) ? 0 : time.coeffs(0);
+    const std::tuple<int, int64_t, int64_t, int> key = std::make_tuple(
+        var, coeff,
+        context_->IsFixed(time) ? context_->FixedValue(time) : time.offset(),
+        proto.active_literals(i));
     if (time_active_set.contains(key)) {
       context_->UpdateRuleStats("TODO reservoir: merge synchronized events.");
       break;
@@ -4943,7 +4957,7 @@ void CpModelPresolver::PresolvePureSatPart() {
     params.set_presolve_blocked_clause(false);
   }
 
-  // TODO(user): BVA takes times and do not seems to help on the minizinc
+  // TODO(user): BVA takes time_exprs and do not seems to help on the minizinc
   // benchmarks. That said, it was useful on pure sat problems, so we may
   // want to enable it.
   params.set_presolve_use_bva(false);
@@ -6842,7 +6856,7 @@ void CpModelPresolver::PresolveToFixPoint() {
       // Re-add to the queue the constraints that touch a variable that changed.
       //
       // TODO(user): Avoid reprocessing the constraints that changed the
-      // variables with the use of timestamp.
+      // variables with the use of time_exprstamp.
       if (context_->ModelIsUnsat()) return;
       in_queue.resize(context_->working_model->constraints_size(), false);
       for (const int v : context_->modified_domains.PositionsSetAtLeastOnce()) {

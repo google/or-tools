@@ -121,6 +121,13 @@ class CpModelMapping {
     return result;
   }
 
+  template <typename List>
+  std::vector<AffineExpression> Affines(const List& list) const {
+    std::vector<AffineExpression> result;
+    for (const auto& i : list) result.push_back(Affine(i));
+    return result;
+  }
+
   template <typename ProtoIndices>
   std::vector<IntervalVariable> Intervals(const ProtoIndices& indices) const {
     std::vector<IntervalVariable> result;

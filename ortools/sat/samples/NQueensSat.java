@@ -81,14 +81,11 @@ public final class NQueensSat {
 
     // All columns must be different because the indices of queens are all different.
     // No two queens can be on the same diagonal.
-    IntVar[] diag1 = new IntVar[boardSize];
-    IntVar[] diag2 = new IntVar[boardSize];
+    LinearExpr[] diag1 = new LinearExpr[boardSize];
+    LinearExpr[] diag2 = new LinearExpr[boardSize];
     for (int i = 0; i < boardSize; ++i) {
-      diag1[i] = model.newIntVar(0, boardSize * 2, "x" + i);
-      model.addEquality(LinearExpr.affine(queens[i], /*coefficient=*/1, /*offset=*/i), diag1[i]);
-
-      diag2[i] = model.newIntVar(-boardSize, boardSize, "x" + i);
-      model.addEquality(LinearExpr.affine(queens[i], /*coefficient=*/1, /*offset=*/-i), diag2[i]);
+      diag1[i] = LinearExpr.affine(queens[i], /*coefficient=*/1, /*offset=*/i);
+      diag2[i] = LinearExpr.affine(queens[i], /*coefficient=*/1, /*offset=*/-i);
     }
     model.addAllDifferent(diag1);
     model.addAllDifferent(diag2);
@@ -117,4 +114,3 @@ public final class NQueensSat {
   private NQueensSat() {}
 }
 // [END program]
-

@@ -302,47 +302,92 @@ namespace Google.OrTools.Sat
             return ct;
         }
 
-        public Constraint AddReservoirConstraint<I>(IEnumerable<IntVar> times, IEnumerable<I> demands, long min_level,
-                                                    long max_level)
+        public Constraint AddReservoirConstraint<I>(IEnumerable<IntVar> times, IEnumerable<I> levelChanges,
+                                                    long minLevel, long maxLevel)
         {
             Constraint ct = new Constraint(model_);
             ReservoirConstraintProto res = new ReservoirConstraintProto();
-            foreach (IntVar var in times)
+            foreach (IntVar time in times)
             {
-                res.Times.Add(var.Index);
+                res.TimeExprs.Add(GetLinearExpressionProto(time));
             }
-            foreach (I d in demands)
+            foreach (I d in levelChanges)
             {
-                res.Demands.Add(Convert.ToInt64(d));
+                res.LevelChanges.Add(Convert.ToInt64(d));
             }
 
-            res.MinLevel = min_level;
-            res.MaxLevel = max_level;
+            res.MinLevel = minLevel;
+            res.MaxLevel = maxLevel;
             ct.Proto.Reservoir = res;
 
             return ct;
         }
 
-        public Constraint AddReservoirConstraintWithActive<I>(IEnumerable<IntVar> times, IEnumerable<I> demands,
-                                                              IEnumerable<IntVar> actives, long min_level,
-                                                              long max_level)
+        public Constraint AddReservoirConstraintWithActive<I>(IEnumerable<IntVar> times, IEnumerable<I> levelChanges,
+                                                              IEnumerable<IntVar> actives, long minLevel, long maxLevel)
         {
             Constraint ct = new Constraint(model_);
             ReservoirConstraintProto res = new ReservoirConstraintProto();
-            foreach (IntVar var in times)
+            foreach (IntVar time in times)
             {
-                res.Times.Add(var.Index);
+                res.TimeExprs.Add(GetLinearExpressionProto(time));
             }
-            foreach (I d in demands)
+            foreach (I d in levelChanges)
             {
-                res.Demands.Add(Convert.ToInt64(d));
+                res.LevelChanges.Add(Convert.ToInt64(d));
             }
             foreach (IntVar var in actives)
             {
-                res.Actives.Add(var.Index);
+                res.ActiveLiterals.Add(var.Index);
             }
-            res.MinLevel = min_level;
-            res.MaxLevel = max_level;
+            res.MinLevel = minLevel;
+            res.MaxLevel = maxLevel;
+            ct.Proto.Reservoir = res;
+
+            return ct;
+        }
+
+        public Constraint AddReservoirConstraint<I>(IEnumerable<LinearExpr> times, IEnumerable<I> levelChanges,
+                                                    long minLevel, long maxLevel)
+        {
+            Constraint ct = new Constraint(model_);
+            ReservoirConstraintProto res = new ReservoirConstraintProto();
+            foreach (LinearExpr time in times)
+            {
+                res.TimeExprs.Add(GetLinearExpressionProto(time));
+            }
+            foreach (I d in levelChanges)
+            {
+                res.LevelChanges.Add(Convert.ToInt64(d));
+            }
+
+            res.MinLevel = minLevel;
+            res.MaxLevel = maxLevel;
+            ct.Proto.Reservoir = res;
+
+            return ct;
+        }
+
+        public Constraint AddReservoirConstraintWithActive<I>(IEnumerable<LinearExpr> times,
+                                                              IEnumerable<I> levelChanges, IEnumerable<IntVar> actives,
+                                                              long minLevel, long MaxLevel)
+        {
+            Constraint ct = new Constraint(model_);
+            ReservoirConstraintProto res = new ReservoirConstraintProto();
+            foreach (LinearExpr time in times)
+            {
+                res.TimeExprs.Add(GetLinearExpressionProto(time));
+            }
+            foreach (I d in levelChanges)
+            {
+                res.LevelChanges.Add(Convert.ToInt64(d));
+            }
+            foreach (IntVar var in actives)
+            {
+                res.ActiveLiterals.Add(var.Index);
+            }
+            res.MinLevel = minLevel;
+            res.MaxLevel = MaxLevel;
             ct.Proto.Reservoir = res;
 
             return ct;

@@ -1080,6 +1080,7 @@ cc_library(
         "//ortools/base:int_type",
         "//ortools/base:stl_util",
         "//ortools/util:time_limit",
+        "@com_google_absl//absl/container:btree",
     ],
 )
 

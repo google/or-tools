@@ -440,19 +440,21 @@ ReservoirConstraint::ReservoirConstraint(ConstraintProto* proto,
                                          CpModelBuilder* builder)
     : Constraint(proto), builder_(builder) {}
 
-void ReservoirConstraint::AddEvent(IntVar time, int64_t demand) {
-  proto_->mutable_reservoir()->add_times(
-      builder_->GetOrCreateIntegerIndex(time.index_));
-  proto_->mutable_reservoir()->add_demands(demand);
-  proto_->mutable_reservoir()->add_actives(builder_->IndexFromConstant(1));
+void ReservoirConstraint::AddEvent(LinearExpr time, int64_t level_change) {
+  *proto_->mutable_reservoir()->add_time_exprs() =
+      builder_->LinearExprToProto(time);
+  proto_->mutable_reservoir()->add_level_changes(level_change);
+  proto_->mutable_reservoir()->add_active_literals(
+      builder_->IndexFromConstant(1));
 }
 
-void ReservoirConstraint::AddOptionalEvent(IntVar time, int64_t demand,
+void ReservoirConstraint::AddOptionalEvent(LinearExpr time,
+                                           int64_t level_change,
                                            BoolVar is_active) {
-  proto_->mutable_reservoir()->add_times(
-      builder_->GetOrCreateIntegerIndex(time.index_));
-  proto_->mutable_reservoir()->add_demands(demand);
-  proto_->mutable_reservoir()->add_actives(is_active.index_);
+  *proto_->mutable_reservoir()->add_time_exprs() =
+      builder_->LinearExprToProto(time);
+  proto_->mutable_reservoir()->add_level_changes(level_change);
+  proto_->mutable_reservoir()->add_active_literals(is_active.index_);
 }
 
 void AutomatonConstraint::AddTransition(int tail, int head,
@@ -772,7 +774,6 @@ Constraint CpModelBuilder::AddAllDifferentExpr(
   for (const LinearExpr& expr : exprs) {
     *proto->mutable_all_diff()->add_exprs() = LinearExprToProto(expr);
   }
-
   return Constraint(proto);
 }
 

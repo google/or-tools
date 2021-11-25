@@ -121,6 +121,7 @@ class PresolveContext {
   int64_t MaxOf(const LinearExpressionProto& expr) const;
   bool IsFixed(const LinearExpressionProto& expr) const;
   int64_t FixedValue(const LinearExpressionProto& expr) const;
+
   // This methods only works for affine expressions (checked).
   bool DomainContains(const LinearExpressionProto& expr, int64_t value) const;
 
@@ -473,8 +474,14 @@ class PresolveContext {
   // Note that this cache should just be used temporarily and then cleared
   // with ClearPrecedenceCache() because there is no mechanism to update the
   // cached literals when literal equivalence are detected.
-  int GetOrCreateReifiedPrecedenceLiteral(int time_i, int time_j, int active_i,
-                                          int active_j);
+  int GetOrCreateReifiedPrecedenceLiteral(const LinearExpressionProto& time_i,
+                                          const LinearExpressionProto& time_j,
+                                          int active_i, int active_j);
+
+  std::tuple<int, int64_t, int, int64_t, int64_t, int, int>
+  GetReifiedPrecedenceKey(const LinearExpressionProto& time_i,
+                          const LinearExpressionProto& time_j, int active_i,
+                          int active_j);
 
   // Clear the precedence cache.
   void ClearPrecedenceCache();
@@ -635,7 +642,8 @@ class PresolveContext {
   // Cache for the reified precedence literals created during the expansion of
   // the reservoir constraint. This cache is only valid during the expansion
   // phase, and is cleared afterwards.
-  absl::flat_hash_map<std::tuple<int, int, int, int>, int>
+  absl::flat_hash_map<std::tuple<int, int64_t, int, int64_t, int64_t, int, int>,
+                      int>
       reified_precedences_cache_;
 
   // Just used to display statistics on the presolve rules that were used.

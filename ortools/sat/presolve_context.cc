@@ -403,8 +403,8 @@ bool PresolveContext::DomainContains(int ref, int64_t value) const {
 bool PresolveContext::DomainContains(const LinearExpressionProto& expr,
                                      int64_t value) const {
   CHECK_LE(expr.vars_size(), 1);
-  if (expr.vars().empty()) {
-    return expr.offset() == value;
+  if (IsFixed(expr)) {
+    return FixedValue(expr) == value;
   }
   if ((value - expr.offset()) % expr.coeffs(0) != 0) return false;
   return DomainContains(expr.vars(0), (value - expr.offset()) / expr.coeffs(0));
@@ -1821,17 +1821,16 @@ void PresolveContext::WriteVariableDomainsToProto() const {
   }
 }
 
-int PresolveContext::GetOrCreateReifiedPrecedenceLiteral(int time_i, int time_j,
-                                                         int active_i,
-                                                         int active_j) {
+int PresolveContext::GetOrCreateReifiedPrecedenceLiteral(
+    const LinearExpressionProto& time_i, const LinearExpressionProto& time_j,
+    int active_i, int active_j) {
   CHECK(!LiteralIsFalse(active_i));
   CHECK(!LiteralIsFalse(active_j));
+  DCHECK(ExpressionIsAffine(time_i));
+  DCHECK(ExpressionIsAffine(time_j));
 
-  // Sort the active literals.
-  if (active_j < active_i) std::swap(active_i, active_j);
-
-  const std::tuple<int, int, int, int> key =
-      std::make_tuple(time_i, time_j, active_i, active_j);
+  const std::tuple<int, int64_t, int, int64_t, int64_t, int, int> key =
+      GetReifiedPrecedenceKey(time_i, time_j, active_i, active_j);
   const auto& it = reified_precedences_cache_.find(key);
   if (it != reified_precedences_cache_.end()) return it->second;
 
@@ -1841,11 +1840,19 @@ int PresolveContext::GetOrCreateReifiedPrecedenceLiteral(int time_i, int time_j,
   // result => (time_i <= time_j) && active_i && active_j.
   ConstraintProto* const lesseq = working_model->add_constraints();
   lesseq->add_enforcement_literal(result);
-  lesseq->mutable_linear()->add_vars(time_i);
-  lesseq->mutable_linear()->add_vars(time_j);
-  lesseq->mutable_linear()->add_coeffs(-1);
-  lesseq->mutable_linear()->add_coeffs(1);
-  lesseq->mutable_linear()->add_domain(0);
+  if (!IsFixed(time_i)) {
+    lesseq->mutable_linear()->add_vars(time_i.vars(0));
+    lesseq->mutable_linear()->add_coeffs(-time_i.coeffs(0));
+  }
+  if (!IsFixed(time_j)) {
+    lesseq->mutable_linear()->add_vars(time_j.vars(0));
+    lesseq->mutable_linear()->add_coeffs(time_j.coeffs(0));
+  }
+
+  const int64_t offset =
+      (IsFixed(time_i) ? FixedValue(time_i) : time_i.offset()) -
+      (IsFixed(time_j) ? FixedValue(time_j) : time_j.offset());
+  lesseq->mutable_linear()->add_domain(offset);
   lesseq->mutable_linear()->add_domain(std::numeric_limits<int64_t>::max());
   if (!LiteralIsTrue(active_i)) {
     AddImplication(result, active_i);
@@ -1856,12 +1863,16 @@ int PresolveContext::GetOrCreateReifiedPrecedenceLiteral(int time_i, int time_j,
 
   // Not(result) && active_i && active_j => (time_i > time_j)
   ConstraintProto* const greater = working_model->add_constraints();
-  greater->mutable_linear()->add_vars(time_i);
-  greater->mutable_linear()->add_vars(time_j);
-  greater->mutable_linear()->add_coeffs(-1);
-  greater->mutable_linear()->add_coeffs(1);
+  if (!IsFixed(time_i)) {
+    greater->mutable_linear()->add_vars(time_i.vars(0));
+    greater->mutable_linear()->add_coeffs(-time_i.coeffs(0));
+  }
+  if (!IsFixed(time_j)) {
+    greater->mutable_linear()->add_vars(time_j.vars(0));
+    greater->mutable_linear()->add_coeffs(time_j.coeffs(0));
+  }
   greater->mutable_linear()->add_domain(std::numeric_limits<int64_t>::min());
-  greater->mutable_linear()->add_domain(-1);
+  greater->mutable_linear()->add_domain(offset - 1);
 
   // Manages enforcement literal.
   greater->add_enforcement_literal(NegatedRef(result));
@@ -1874,11 +1885,11 @@ int PresolveContext::GetOrCreateReifiedPrecedenceLiteral(int time_i, int time_j,
 
   // This is redundant but should improves performance.
   //
-  // If GetOrCreateReifiedPrecedenceLiteral(time_j, time_i, active_j, active_j)
+  // If GetOrCreateReifiedPrecedenceLiteral(time_j, time_i, active_j, active_i)
   // (the reverse precedence) has been called too, then we can link the two
   // precedence literals, and the two active literals together.
   const auto& rev_it = reified_precedences_cache_.find(
-      std::make_tuple(time_j, time_i, active_i, active_j));
+      GetReifiedPrecedenceKey(time_j, time_i, active_j, active_i));
   if (rev_it != reified_precedences_cache_.end()) {
     auto* const bool_or = working_model->add_constraints()->mutable_bool_or();
     bool_or->add_literals(result);
@@ -1888,6 +1899,26 @@ int PresolveContext::GetOrCreateReifiedPrecedenceLiteral(int time_i, int time_j,
   }
 
   return result;
+}
+
+std::tuple<int, int64_t, int, int64_t, int64_t, int, int>
+PresolveContext::GetReifiedPrecedenceKey(const LinearExpressionProto& time_i,
+                                         const LinearExpressionProto& time_j,
+                                         int active_i, int active_j) {
+  const int var_i =
+      IsFixed(time_i) ? std::numeric_limits<int>::min() : time_i.vars(0);
+  const int64_t coeff_i = IsFixed(time_i) ? 0 : time_i.coeffs(0);
+  const int var_j =
+      IsFixed(time_j) ? std::numeric_limits<int>::min() : time_j.vars(0);
+  const int64_t coeff_j = IsFixed(time_j) ? 0 : time_j.coeffs(0);
+  const int64_t offset =
+      (IsFixed(time_i) ? FixedValue(time_i) : time_i.offset()) -
+      (IsFixed(time_j) ? FixedValue(time_j) : time_j.offset());
+  // In all formulas, active_i and active_j are symmetrical, we can sort the
+  // active literals.
+  if (active_j < active_i) std::swap(active_i, active_j);
+  return std::make_tuple(var_i, coeff_i, var_j, coeff_j, offset, active_i,
+                         active_j);
 }
 
 void PresolveContext::ClearPrecedenceCache() {

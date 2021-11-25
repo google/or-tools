@@ -23,6 +23,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/btree_set.h"
 #include "ortools/algorithms/knapsack_solver_for_cuts.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/stl_util.h"
@@ -1775,27 +1776,63 @@ bool ImpliedBoundsProcessor::DebugSlack(IntegerVariable first_slack,
 
 namespace {
 
+int64_t SumOfKMinValues(const absl::btree_set<int64_t>& values, int k) {
+  int count = 0;
+  int64_t sum = 0;
+  for (const int64_t value : values) {
+    sum += value;
+    if (++count >= k) return sum;
+  }
+  return sum;
+}
+
 void TryToGenerateAllDiffCut(
     const std::vector<std::pair<double, AffineExpression>>& sorted_exprs_lp,
     const IntegerTrail& integer_trail,
     const absl::StrongVector<IntegerVariable, double>& lp_values,
     LinearConstraintManager* manager, Model* model) {
-  Domain current_union;
   std::vector<AffineExpression> current_set_exprs;
+  const int num_exprs = sorted_exprs_lp.size();
+  absl::btree_set<int64_t> min_values;
+  absl::btree_set<int64_t> negated_max_values;
   double sum = 0.0;
   for (auto value_expr : sorted_exprs_lp) {
     sum += value_expr.first;
     const AffineExpression expr = value_expr.second;
-    // TODO(user): The union of the domain of the variable being considered
-    // does not give the tightest bounds, try to get better bounds.
+    if (integer_trail.IsFixed(expr)) {
+      const int64_t value = integer_trail.FixedValue(expr).value();
+      min_values.insert(value);
+      negated_max_values.insert(-value);
+    } else {
+      int count = 0;
+      const int64_t coeff = expr.coeff.value();
+      const int64_t constant = expr.constant.value();
+      for (const int64_t value :
+           integer_trail.InitialVariableDomain(expr.var).Values()) {
+        if (coeff > 0) {
+          min_values.insert(value * coeff + constant);
+        } else {
+          negated_max_values.insert(-(value * coeff + constant));
+        }
+        if (++count >= num_exprs) break;
+      }
 
-    current_union =
-        current_union.UnionWith(integer_trail.InitialAffineDomain(expr));
+      count = 0;
+      for (const int64_t value :
+           integer_trail.InitialVariableDomain(expr.var).Negation().Values()) {
+        if (coeff > 0) {
+          negated_max_values.insert(value * coeff - constant);
+        } else {
+          min_values.insert(-value * coeff + constant);
+        }
+        if (++count >= num_exprs) break;
+      }
+    }
     current_set_exprs.push_back(expr);
     const int64_t required_min_sum =
-        SumOfKMinValueInDomain(current_union, current_set_exprs.size());
+        SumOfKMinValues(min_values, current_set_exprs.size());
     const int64_t required_max_sum =
-        SumOfKMaxValueInDomain(current_union, current_set_exprs.size());
+        -SumOfKMinValues(negated_max_values, current_set_exprs.size());
     if (sum < required_min_sum || sum > required_max_sum) {
       LinearConstraintBuilder cut(model, IntegerValue(required_min_sum),
                                   IntegerValue(required_max_sum));
@@ -1807,7 +1844,8 @@ void TryToGenerateAllDiffCut(
       // the cut on a different set of variables so we reset the counters.
       sum = 0.0;
       current_set_exprs.clear();
-      current_union = Domain();
+      min_values.clear();
+      negated_max_values.clear();
     }
   }
 }

@@ -1358,25 +1358,26 @@ class CpModel(object):
             [self.GetOrMakeIndex(x) for x in inverse_variables])
         return ct
 
-    def AddReservoirConstraint(self, times, demands, min_level, max_level):
-        """Adds Reservoir(times, demands, min_level, max_level).
+    def AddReservoirConstraint(self, times, level_changes, min_level,
+                               max_level):
+        """Adds Reservoir(times, level_changes, min_level, max_level).
 
     Maintains a reservoir level within bounds. The water level starts at 0, and
     at any time, it must be between min_level and max_level.
 
-    If the variable `times[i]` is assigned a value t, then the current level
-    changes by `demands[i]`, which is constant, at time t.
+    If the affine expression `times[i]` is assigned a value t, then the current
+    level changes by `level_changes[i]`, which is constant, at time t.
 
      Note that min level must be <= 0, and the max level must be >= 0. Please
-     use fixed demands to simulate initial state.
+     use fixed level_changes to simulate initial state.
 
      Therefore, at any time:
-         sum(demands[i] if times[i] <= t) in [min_level, max_level]
+         sum(level_changes[i] if times[i] <= t) in [min_level, max_level]
 
     Args:
-      times: A list of integer variables which specify the time of the filling
+      times: A list of affine expressions which specify the time of the filling
         or emptying the reservoir.
-      demands: A list of integer values that specifies the amount of the
+      level_changes: A list of integer values that specifies the amount of the
         emptying or filling.
       min_level: At any time, the level of the reservoir must be greater or
         equal than the min level.
@@ -1406,37 +1407,40 @@ class CpModel(object):
 
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
-        model_ct.reservoir.times.extend([self.GetOrMakeIndex(x) for x in times])
-        model_ct.reservoir.demands.extend(demands)
+        model_ct.reservoir.time_exprs.extend(
+            [self.ParseLinearExpression(x) for x in times])
+        model_ct.reservoir.level_changes.extend(level_changes)
         model_ct.reservoir.min_level = min_level
         model_ct.reservoir.max_level = max_level
         return ct
 
-    def AddReservoirConstraintWithActive(self, times, demands, actives,
+    def AddReservoirConstraintWithActive(self, times, level_changes, actives,
                                          min_level, max_level):
-        """Adds Reservoir(times, demands, actives, min_level, max_level).
+        """Adds Reservoir(times, level_changes, actives, min_level, max_level).
 
     Maintains a reservoir level within bounds. The water level starts at 0, and
     at any time, it must be between min_level and max_level.
 
     If the variable `times[i]` is assigned a value t, and `actives[i]` is
-    `True`, then the current level changes by `demands[i]`, which is constant,
+    `True`, then the current level changes by `level_changes[i]`, which is
+    constant,
     at time t.
 
      Note that min level must be <= 0, and the max level must be >= 0. Please
-     use fixed demands to simulate initial state.
+     use fixed level_changes to simulate initial state.
 
      Therefore, at any time:
-         sum(demands[i] * actives[i] if times[i] <= t) in [min_level, max_level]
+         sum(level_changes[i] * actives[i] if times[i] <= t) in [min_level,
+         max_level]
 
 
     The array of boolean variables 'actives', if defined, indicates which
     actions are actually performed.
 
     Args:
-      times: A list of integer variables which specify the time of the filling
+      times: A list of affine expressions which specify the time of the filling
         or emptying the reservoir.
-      demands: A list of integer values that specifies the amount of the
+      level_changes: A list of integer values that specifies the amount of the
         emptying or filling.
       actives: a list of boolean variables. They indicates if the
         emptying/refilling events actually take place.
@@ -1468,9 +1472,10 @@ class CpModel(object):
 
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
-        model_ct.reservoir.times.extend([self.GetOrMakeIndex(x) for x in times])
-        model_ct.reservoir.demands.extend(demands)
-        model_ct.reservoir.actives.extend(
+        model_ct.reservoir.time_exprs.extend(
+            [self.ParseLinearExpression(x) for x in times])
+        model_ct.reservoir.level_changes.extend(level_changes)
+        model_ct.reservoir.active_literals.extend(
             [self.GetOrMakeIndex(x) for x in actives])
         model_ct.reservoir.min_level = min_level
         model_ct.reservoir.max_level = max_level
