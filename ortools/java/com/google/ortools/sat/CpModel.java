@@ -35,6 +35,7 @@ import com.google.ortools.util.Domain;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+// TODO(user): Rewrite API to be closer to the C++ CpModel class.
 /**
  * Main modeling class.
  *
@@ -531,32 +532,33 @@ public final class CpModel {
   }
 
   /**
-   * Adds {@code Reservoir(times, demands, minLevel, maxLevel)}.
+   * Adds {@code Reservoir(times, levelChanges, minLevel, maxLevel)}.
    *
    * <p>Maintains a reservoir level within bounds. The water level starts at 0, and at any times, it
    * must be between minLevel and maxLevel. If the variable {@code times[i]} is assigned a value t,
-   * and if {@code actives[i]} is true, then the current level changes by {@code demands[i]} (which
-   * is constant) at the time t.
+   * and if {@code actives[i]} is true, then the current level changes by {@code levelChanges[i]}
+   * (which is constant) at the time t.
    *
    * <p>Note that {@code minLevel} must be less than 0, and {@code maxLevel} must be greater than 0.
-   * Therefore, {@code forall t : minLevel <= sum(demands[i] if times[i] <= t) <= maxLevel}.
+   * Therefore, {@code forall t : minLevel <= sum(levelChanges[i] if times[i] <= t) <= maxLevel}.
    *
    * @param times a list of integer variables which specify the time of the filling or emptying the
    *     reservoir
-   * @param demands a list of integer values that specifies the amount of the emptying or feeling
+   * @param levelChanges a list of integer values that specifies the amount of the emptying or
+   *     feeling
    * @param minLevel at any time, the level of the reservoir must be greater of equal than the min
    *     level. minLevel must me <= 0.
    * @param maxLevel at any time, the level of the reservoir must be less or equal than the max
    *     level. maxLevel must be >= 0.
    * @return an instance of the Constraint class
-   * @throws MismatchedArrayLengths if times and demands have different length
+   * @throws MismatchedArrayLengths if times and levelChanges have different lengths
    * @throws IllegalArgumentException if minLevel > 0
    * @throws IllegalArgumentException if maxLevel < 0
    */
   public Constraint addReservoirConstraint(
-      IntVar[] times, long[] demands, long minLevel, long maxLevel) {
-    if (times.length != demands.length) {
-      throw new MismatchedArrayLengths("CpModel.addReservoirConstraint", "times", "demands");
+      IntVar[] times, long[] levelChanges, long minLevel, long maxLevel) {
+    if (times.length != levelChanges.length) {
+      throw new MismatchedArrayLengths("CpModel.addReservoirConstraint", "times", "levelChanges");
     }
     if (minLevel > 0) {
       throw new IllegalArgumentException("CpModel.addReservoirConstraint: minLevel must be <= 0");
@@ -566,54 +568,112 @@ public final class CpModel {
     }
     Constraint ct = new Constraint(modelBuilder);
     ReservoirConstraintProto.Builder reservoir = ct.getBuilder().getReservoirBuilder();
-    for (IntVar var : times) {
-      reservoir.addTimes(var.getIndex());
+    for (IntVar time : times) {
+      reservoir.addTimeExprs(getLinearExpressionProtoBuilderFromLinearExpr(time, /*negate=*/false));
     }
-    for (long d : demands) {
-      reservoir.addDemands(d);
+    for (long d : levelChanges) {
+      reservoir.addLevelChanges(d);
     }
     reservoir.setMinLevel(minLevel).setMaxLevel(maxLevel);
     return ct;
   }
 
   /**
-   * Adds {@code Reservoir(times, demands, minLevel, maxLevel)}.
+   * Adds {@code Reservoir(times, levelChanges, minLevel, maxLevel)}.
    *
    * @see #addReservoirConstraint(IntVar[], long[], long, long) Reservoir
    */
   public Constraint addReservoirConstraint(
-      IntVar[] times, int[] demands, long minLevel, long maxLevel) {
-    return addReservoirConstraint(times, toLongArray(demands), minLevel, maxLevel);
+      IntVar[] times, int[] levelChanges, long minLevel, long maxLevel) {
+    return addReservoirConstraint(times, toLongArray(levelChanges), minLevel, maxLevel);
   }
 
   /**
-   * Adds {@code Reservoir(times, demands, actives, minLevel, maxLevel)}.
+   * Adds {@code Reservoir(times, levelChanges, minLevel, maxLevel)}.
    *
-   * <p>Maintains a reservoir level within bounds. The water level starts at 0, and at any time, it
-   * must be between minLevel and maxLevel. If the variable {@code times[i]} is assigned a value t,
-   * then the current level changes by {@code demands[i]} (which is constant) at the time t.
+   * <p>Maintains a reservoir level within bounds. The water level starts at 0, and at any times, it
+   * must be between minLevel and maxLevel. If the expression {@code times[i]} is assigned a value
+   * t, and if {@code actives[i]} is true, then the current level changes by {@code levelChanges[i]}
+   * (which is constant) at the time t.
    *
    * <p>Note that {@code minLevel} must be less than 0, and {@code maxLevel} must be greater than 0.
-   * Therefore, {@code forall t : minLevel <= sum(demands[i] * actives[i] if times[i] <= t) <=
-   * maxLevel}.
+   * Therefore, {@code forall t : minLevel <= sum(levelChanges[i] if times[i] <= t) <= maxLevel}.
    *
-   * @param times a list of integer variables which specify the time of the filling or emptying the
+   * @param times a list of affine expressions which specify the time of the filling or emptying the
    *     reservoir
-   * @param demands a list of integer values that specifies the amount of the emptying or feeling
+   * @param levelChanges a list of integer values that specifies the amount of the emptying or
+   *     feeling
    * @param minLevel at any time, the level of the reservoir must be greater of equal than the min
    *     level. minLevel must me <= 0.
    * @param maxLevel at any time, the level of the reservoir must be less or equal than the max
    *     level. maxLevel must be >= 0.
    * @return an instance of the Constraint class
-   * @throws MismatchedArrayLengths if times, demands, or actives have different length
+   * @throws MismatchedArrayLengths if times and levelChanges have different lengths
+   * @throws IllegalArgumentException if minLevel > 0
+   * @throws IllegalArgumentException if maxLevel < 0
+   */
+  public Constraint addReservoirConstraint(
+      LinearExpr[] times, long[] levelChanges, long minLevel, long maxLevel) {
+    if (times.length != levelChanges.length) {
+      throw new MismatchedArrayLengths("CpModel.addReservoirConstraint", "times", "levelChanges");
+    }
+    if (minLevel > 0) {
+      throw new IllegalArgumentException("CpModel.addReservoirConstraint: minLevel must be <= 0");
+    }
+    if (maxLevel < 0) {
+      throw new IllegalArgumentException("CpModel.addReservoirConstraint: maxLevel must be >= 0");
+    }
+    Constraint ct = new Constraint(modelBuilder);
+    ReservoirConstraintProto.Builder reservoir = ct.getBuilder().getReservoirBuilder();
+    for (LinearExpr time : times) {
+      reservoir.addTimeExprs(getLinearExpressionProtoBuilderFromLinearExpr(time, /*negate=*/false));
+    }
+    for (long d : levelChanges) {
+      reservoir.addLevelChanges(d);
+    }
+    reservoir.setMinLevel(minLevel).setMaxLevel(maxLevel);
+    return ct;
+  }
+
+  /**
+   * Adds {@code Reservoir(times, levelChanges, minLevel, maxLevel)}.
+   *
+   * @see #addReservoirConstraint(IntVar[], long[], long, long) Reservoir
+   */
+  public Constraint addReservoirConstraint(
+      LinearExpr[] times, int[] levelChanges, long minLevel, long maxLevel) {
+    return addReservoirConstraint(times, toLongArray(levelChanges), minLevel, maxLevel);
+  }
+
+  /**
+   * Adds {@code Reservoir(times, levelChanges, actives, minLevel, maxLevel)}.
+   *
+   * <p>Maintains a reservoir level within bounds. The water level starts at 0, and at any time, it
+   * must be between minLevel and maxLevel. If the variable {@code times[i]} is assigned a value t,
+   * then the current level changes by {@code levelChanges[i]} (which is constant) at the time t.
+   *
+   * <p>Note that {@code minLevel} must be less than 0, and {@code maxLevel} must be greater than 0.
+   * Therefore, {@code forall t : minLevel <= sum(levelChanges[i] * actives[i] if times[i] <= t) <=
+   * maxLevel}.
+   *
+   * @param times a list of integer variables which specify the time of the filling or emptying the
+   *     reservoir
+   * @param levelChanges a list of integer values that specifies the amount of the emptying or
+   *     feeling
+   * @param minLevel at any time, the level of the reservoir must be greater of equal than the min
+   *     level. minLevel must me <= 0.
+   * @param maxLevel at any time, the level of the reservoir must be less or equal than the max
+   *     level. maxLevel must be >= 0.
+   * @return an instance of the Constraint class
+   * @throws MismatchedArrayLengths if times, levelChanges, or actives have different lengths
    * @throws IllegalArgumentException if minLevel > 0
    * @throws IllegalArgumentException if maxLevel < 0
    */
   public Constraint addReservoirConstraintWithActive(
-      IntVar[] times, long[] demands, IntVar[] actives, long minLevel, long maxLevel) {
-    if (times.length != demands.length) {
+      IntVar[] times, long[] levelChanges, IntVar[] actives, long minLevel, long maxLevel) {
+    if (times.length != levelChanges.length) {
       throw new MismatchedArrayLengths(
-          "CpModel.addReservoirConstraintWithActive", "times", "demands");
+          "CpModel.addReservoirConstraintWithActive", "times", "levelChanges");
     }
     if (times.length != actives.length) {
       throw new MismatchedArrayLengths(
@@ -630,28 +690,97 @@ public final class CpModel {
 
     Constraint ct = new Constraint(modelBuilder);
     ReservoirConstraintProto.Builder reservoir = ct.getBuilder().getReservoirBuilder();
-    for (IntVar var : times) {
-      reservoir.addTimes(var.getIndex());
+    for (IntVar time : times) {
+      reservoir.addTimeExprs(getLinearExpressionProtoBuilderFromLinearExpr(time, /*negate=*/false));
     }
-    for (long d : demands) {
-      reservoir.addDemands(d);
+    for (long d : levelChanges) {
+      reservoir.addLevelChanges(d);
     }
     for (IntVar var : actives) {
-      reservoir.addActives(var.getIndex());
+      reservoir.addActiveLiterals(var.getIndex());
     }
     reservoir.setMinLevel(minLevel).setMaxLevel(maxLevel);
     return ct;
   }
 
   /**
-   * Adds {@code Reservoir(times, demands, actives, minLevel, maxLevel)}.
+   * Adds {@code Reservoir(times, levelChanges, actives, minLevel, maxLevel)}.
    *
    * @see #addReservoirConstraintWithActive(IntVar[], long[], IntVar[], long, long) Reservoir
    */
   public Constraint addReservoirConstraintWithActive(
-      IntVar[] times, int[] demands, IntVar[] actives, long minLevel, long maxLevel) {
+      IntVar[] times, int[] levelChanges, IntVar[] actives, long minLevel, long maxLevel) {
     return addReservoirConstraintWithActive(
-        times, toLongArray(demands), actives, minLevel, maxLevel);
+        times, toLongArray(levelChanges), actives, minLevel, maxLevel);
+  }
+
+  /**
+   * Adds {@code Reservoir(times, levelChanges, actives, minLevel, maxLevel)}.
+   *
+   * <p>Maintains a reservoir level within bounds. The water level starts at 0, and at any time, it
+   * must be between minLevel and maxLevel. If the expression {@code times[i]} is assigned a value
+   * t, then the current level changes by {@code levelChanges[i]} (which is constant) at the time t.
+   *
+   * <p>Note that {@code minLevel} must be less than 0, and {@code maxLevel} must be greater than 0.
+   * Therefore, {@code forall t : minLevel <= sum(levelChanges[i] * actives[i] if times[i] <= t) <=
+   * maxLevel}.
+   *
+   * @param times a list of affine expressions which specify the time of the filling or emptying the
+   *     reservoir
+   * @param levelChanges a list of integer values that specifies the amount of the emptying or
+   *     feeling
+   * @param minLevel at any time, the level of the reservoir must be greater of equal than the min
+   *     level. minLevel must me <= 0.
+   * @param maxLevel at any time, the level of the reservoir must be less or equal than the max
+   *     level. maxLevel must be >= 0.
+   * @return an instance of the Constraint class
+   * @throws MismatchedArrayLengths if times, levelChanges, or actives have different lengths
+   * @throws IllegalArgumentException if minLevel > 0
+   * @throws IllegalArgumentException if maxLevel < 0
+   */
+  public Constraint addReservoirConstraintWithActive(
+      LinearExpr[] times, long[] levelChanges, IntVar[] actives, long minLevel, long maxLevel) {
+    if (times.length != levelChanges.length) {
+      throw new MismatchedArrayLengths(
+          "CpModel.addReservoirConstraintWithActive", "times", "levelChanges");
+    }
+    if (times.length != actives.length) {
+      throw new MismatchedArrayLengths(
+          "CpModel.addReservoirConstraintWithActive", "times", "actives");
+    }
+    if (minLevel > 0) {
+      throw new IllegalArgumentException(
+          "CpModel.addReservoirConstraintWithActive: minLevel must be <= 0");
+    }
+    if (maxLevel < 0) {
+      throw new IllegalArgumentException(
+          "CpModel.addReservoirConstraintWithActive: maxLevel must be >= 0");
+    }
+
+    Constraint ct = new Constraint(modelBuilder);
+    ReservoirConstraintProto.Builder reservoir = ct.getBuilder().getReservoirBuilder();
+    for (LinearExpr time : times) {
+      reservoir.addTimeExprs(getLinearExpressionProtoBuilderFromLinearExpr(time, /*negate=*/false));
+    }
+    for (long l : levelChanges) {
+      reservoir.addLevelChanges(l);
+    }
+    for (IntVar var : actives) {
+      reservoir.addActiveLiterals(var.getIndex());
+    }
+    reservoir.setMinLevel(minLevel).setMaxLevel(maxLevel);
+    return ct;
+  }
+
+  /**
+   * Adds {@code Reservoir(times, levelChanges, actives, minLevel, maxLevel)}.
+   *
+   * @see #addReservoirConstraintWithActive(IntVar[], long[], IntVar[], long, long) Reservoir
+   */
+  public Constraint addReservoirConstraintWithActive(
+      LinearExpr[] times, int[] levelChanges, IntVar[] actives, long minLevel, long maxLevel) {
+    return addReservoirConstraintWithActive(
+        times, toLongArray(levelChanges), actives, minLevel, maxLevel);
   }
 
   /** Adds {@code var == i + offset <=> booleans[i] == true for all i in [0, booleans.length)}. */
