@@ -539,7 +539,8 @@ constexpr
         {MPSolver::KNAPSACK_MIXED_INTEGER_PROGRAMMING, "knapsack"},
         {MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING, "cplex"},
         {MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING, "xpress"},
-
+        {MPSolver::SIRIUS_LINEAR_PROGRAMMING, "sirius_lp"},
+        {MPSolver::SIRIUS_MIXED_INTEGER_PROGRAMMING, "sirius"},
 };
 // static
 bool MPSolver::ParseSolverType(absl::string_view solver_id,
