@@ -67,29 +67,31 @@ CMake as a standalone project or it can be incorporated into an existing CMake
 
 OR-Tools depends on several mandatory libraries. You can compile them all at
 configure time using the option `-DBUILD_DEPS=ON` (`OFF` by default) or you can
-compile few of them using the options below (see [CMake Options](#cmake-options) below).
+compile few of them using the options below (see [CMake Options](#cmake-options)
+below).
 
-* ZLIB (`BUILD_ZLIB`),
-* Google Abseil-cpp (`BUILD_absl`),
-* Google Protobuf (`BUILD_Protobuf`),
-* SCIP (`BUILD_SCIP`),<br>
+*   ZLIB (`BUILD_ZLIB`),
+*   Google Abseil-cpp (`BUILD_absl`),
+*   Google Protobuf (`BUILD_Protobuf`),
+*   SCIP (`BUILD_SCIP`),<br>
   note: You can disable the support of SCIP solvers
   by using `-DUSE_SCIP=OFF` (`ON` by default).
-* GLPK (`BUILD_GLPK`),<br>
+*   GLPK (`BUILD_GLPK`),<br>
   note: You can disable the support of GLPK solvers
   by using `-DUSE_GLPK=OFF` (`ON` by default).
 
-* COIN-OR solvers,
-  * COIN-OR CoinUtils (`BUILD_CoinUtils`),
-  * COIN-OR Osi (`BUILD_Osi`),
-  * COIN-OR Clp (`BUILD_Clp`),
-  * COIN-OR Cgl (`BUILD_Cgl`),
-  * COIN-OR Cbc (`BUILD_Cbc`),<br>
+*   COIN-OR solvers,
+
+    *   COIN-OR CoinUtils (`BUILD_CoinUtils`),
+    *   COIN-OR Osi (`BUILD_Osi`),
+    *   COIN-OR Clp (`BUILD_Clp`),
+    *   COIN-OR Cgl (`BUILD_Cgl`),
+    *   COIN-OR Cbc (`BUILD_Cbc`),<br>
   note: You can disable the support of COIN-OR solvers (i.e. Cbc and Clp solver)
   by using `-DUSE_COINOR=OFF` (`ON` by default).
 
-OR-Tools can also optionally (disabled by default) be compiled with support for the following third-party proprietary
-solvers:
+OR-Tools can also optionally (disabled by default) be compiled with support for
+the following third-party proprietary solvers:
 
 * CPLEX (`USE_CPLEX`),
 * XPRESS (`USE_XPRESS`)
@@ -99,19 +101,23 @@ test it on public CI and support can be broken.**
 
 ### Enabling CPLEX Support
 
-To enable CPLEX support, configure with `-DUSE_CPLEX=ON` and `-DCPLEX_ROOT=/absolute/path/to/CPLEX/root/dir`,
-replacing `/absolute/path/to/CPLEX/root/dir` with the path to your CPLEX installation.
-`CPLEX_ROOT` can also be defined as an environment variable rather than an option at configure time.
+To enable CPLEX support, configure with `-DUSE_CPLEX=ON` and
+`-DCPLEX_ROOT=/absolute/path/to/CPLEX/root/dir`, replacing
+`/absolute/path/to/CPLEX/root/dir` with the path to your CPLEX installation.
+`CPLEX_ROOT` can also be defined as an environment variable rather than an
+option at configure time.
 
-For ease of migration from legacy `make third_party` builds, CMake will also read the CPLEX installation path from the
-`UNIX_CPLEX_DIR` environment variable, if defined.
+For ease of migration from legacy `make third_party` builds, CMake will also
+read the CPLEX installation path from the `UNIX_CPLEX_DIR` environment variable,
+if defined.
 
 ### Enabling XPRESS Support
 
-To enable XPRESS support, configure with `-DUSE_XPRESS=ON` and `-DXPRESS_ROOT=/absolute/path/to/XPRESS/root/dir`,
-replacing `/absolute/path/to/XPRESS/root/dir` with the path to your XPRESS
-installation. `XPRESS_ROOT` can also be defined as an environment variable rather than an option at configure time.
-
+To enable XPRESS support, configure with `-DUSE_XPRESS=ON` and
+`-DXPRESS_ROOT=/absolute/path/to/XPRESS/root/dir`, replacing
+`/absolute/path/to/XPRESS/root/dir` with the path to your XPRESS installation.
+`XPRESS_ROOT` can also be defined as an environment variable rather than an
+option at configure time.
 
 <a name="options"></a>
 
