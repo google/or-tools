@@ -22,39 +22,16 @@ from ortools.linear_solver import pywraplp
 def create_data_model():
     """Create the data for the example."""
     data = {}
-    weights = [48, 30, 42, 36, 36, 48, 42, 42, 36, 24, 30, 30, 42, 36, 36]
-    values = [10, 30, 25, 50, 35, 30, 15, 40, 30, 35, 45, 10, 20, 30, 25]
-    data['weights'] = weights
-    data['values'] = values
-    data['num_items'] = len(weights)
+    data['weights'] = [48, 30, 42, 36, 36, 48, 42, 42, 36, 24, 30, 30, 42, 36, 36]
+    data['values'] = [10, 30, 25, 50, 35, 30, 15, 40, 30, 35, 45, 10, 20, 30, 25]
+    assert len(data['weights']) == len(data['values'])
+    data['num_items'] = len(data['weights'])
     data['all_items'] = range(data['num_items'])
     data['bin_capacities'] = [100, 100, 100, 100, 100]
     data['num_bins'] = len(data['bin_capacities'])
     data['all_bins'] = range(data['num_bins'])
     return data
-
 # [END data_model]
-
-
-# [START solution_printer]
-def print_solutions(data, objective, x):
-    """Display the solution."""
-    print('Total packed value:', objective.Value())
-    total_weight = 0
-    for b in data['all_bins']:
-        print(f'Bin {b}\n')
-        bin_weight = 0
-        bin_value = 0
-        for idx, weight in enumerate(data['weights']):
-            if x[idx, b].solution_value() > 0:
-                print(f"Item {idx} - weight: {weight} value: {data['values'][idx]}")
-                bin_weight += weight
-                bin_value += data['values'][idx]
-        print(f'Packed bin weight: {bin_weight}')
-        print(f'Packed bin value: {bin_value}\n')
-        total_weight += bin_weight
-    print(f'Total packed weight: {total_weight}')
-# [END solution_printer]
 
 
 def main():
@@ -65,23 +42,25 @@ def main():
     # Create the mip solver with the SCIP backend.
     # [START solver]
     solver = pywraplp.Solver.CreateSolver('SCIP')
+    if solver == None:
+        print('SCIP solver unavailable.')
+        return
     # [END solver]
 
-    # Main variables.
+    # Variables.
     # [START variables]
-    # Variables
-    # x[i, j] = 1 if item i is packed in bin j.
+    # x[i, b] = 1 if item i is packed in bin b.
     x = {}
-    for idx in data['all_items']:
+    for i in data['all_items']:
         for b in data['all_bins']:
-            x[idx, b] = solver.IntVar(0, 1, f'x_{idx}_{b}')
+            x[i, b] = solver.BoolVar(f'x_{i}_{b}')
     # [END variables]
 
-    # Constraints
+    # Constraints.
     # [START constraints]
-    # Each item can be in at most one bin.
-    for idx in data['all_items']:
-        solver.Add(sum(x[idx, b] for b in data['all_bins']) <= 1)
+    # Each item is assigned to at most one bin.
+    for i in data['all_items']:
+        solver.Add(sum(x[i, b] for b in data['all_bins']) <= 1)
 
     # The amount packed in each bin cannot exceed its capacity.
     for b in data['all_bins']:
@@ -90,7 +69,7 @@ def main():
                 for i in data['all_items']) <= data['bin_capacities'][b])
     # [END constraints]
 
-    # Objective
+    # Objective.
     # [START objective]
     # Maximize total value of packed items.
     objective = solver.Objective()
@@ -106,7 +85,21 @@ def main():
 
     # [START print_solution]
     if status == pywraplp.Solver.OPTIMAL:
-        print_solutions(data, objective, x)
+        print(f'Total packed value: {objective.Value()}')
+        total_weight = 0
+        for b in data['all_bins']:
+            print(f'Bin {b}')
+            bin_weight = 0
+            bin_value = 0
+            for i in data['all_items']:
+                if x[i, b].solution_value() > 0:
+                    print(f"Item {i} weight: {data['weights'][i]} value: {data['values'][i]}")
+                    bin_weight += data['weights'][i]
+                    bin_value += data['values'][i]
+            print(f'Packed bin weight: {bin_weight}')
+            print(f'Packed bin value: {bin_value}')
+            total_weight += bin_weight
+        print(f'Total packed weight: {total_weight}')
     else:
         print('The problem does not have an optimal solution.')
     # [END print_solution]

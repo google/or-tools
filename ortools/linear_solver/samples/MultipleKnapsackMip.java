@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// MIP example that solves a multiple knapsack problem.
 // [START program]
+// MIP example that solves a multiple knapsack problem.
 package com.google.ortools.linearsolver.samples;
 // [START import]
 import com.google.ortools.Loader;
@@ -24,7 +24,6 @@ import com.google.ortools.linearsolver.MPVariable;
 
 /** Multiple knapsack problem. */
 public class MultipleKnapsackMip {
-  // [START program_part1]
   // [START data_model]
   static class DataModel {
     public final double[] weights = {48, 30, 42, 36, 36, 48, 42, 42, 36, 24, 30, 30, 42, 36, 36};
@@ -40,7 +39,6 @@ public class MultipleKnapsackMip {
     // [START data]
     final DataModel data = new DataModel();
     // [END data]
-    // [END program_part1]
 
     // [START solver]
     // Create the linear solver with the SCIP backend.
@@ -51,36 +49,41 @@ public class MultipleKnapsackMip {
     }
     // [END solver]
 
-    // [START program_part2]
+    // Variables.
     // [START variables]
     MPVariable[][] x = new MPVariable[data.numItems][data.numBins];
     for (int i = 0; i < data.numItems; ++i) {
-      for (int j = 0; j < data.numBins; ++j) {
-        x[i][j] = solver.makeIntVar(0, 1, "");
+      for (int b = 0; b < data.numBins; ++b) {
+        x[i][b] = solver.makeBoolVar("x_" + i + "_" + b);
       }
     }
     // [END variables]
 
+    // Constraints.
     // [START constraints]
+    // Each item is assigned to at most one bin.
     for (int i = 0; i < data.numItems; ++i) {
       MPConstraint constraint = solver.makeConstraint(0, 1, "");
-      for (int j = 0; j < data.numBins; ++j) {
-        constraint.setCoefficient(x[i][j], 1);
+      for (int b = 0; b < data.numBins; ++b) {
+        constraint.setCoefficient(x[i][b], 1);
       }
     }
-    for (int j = 0; j < data.numBins; ++j) {
-      MPConstraint constraint = solver.makeConstraint(0, data.binCapacities[j], "");
+
+    // The amount packed in each bin cannot exceed its capacity.
+    for (int b = 0; b < data.numBins; ++b) {
+      MPConstraint constraint = solver.makeConstraint(0, data.binCapacities[b], "");
       for (int i = 0; i < data.numItems; ++i) {
-        constraint.setCoefficient(x[i][j], data.weights[i]);
+        constraint.setCoefficient(x[i][b], data.weights[i]);
       }
     }
     // [END constraints]
 
+    // Objective.
     // [START objective]
     MPObjective objective = solver.objective();
     for (int i = 0; i < data.numItems; ++i) {
-      for (int j = 0; j < data.numBins; ++j) {
-        objective.setCoefficient(x[i][j], data.values[i]);
+      for (int b = 0; b < data.numBins; ++b) {
+        objective.setCoefficient(x[i][b], data.values[i]);
       }
     }
     objective.setMaximization();
@@ -93,22 +96,22 @@ public class MultipleKnapsackMip {
     // [START print_solution]
     // Check that the problem has an optimal solution.
     if (resultStatus == MPSolver.ResultStatus.OPTIMAL) {
-      System.out.println("Total packed value: " + objective.value() + "\n");
+      System.out.println("Total packed value: " + objective.value());
       double totalWeight = 0;
-      for (int j = 0; j < data.numBins; ++j) {
+      for (int b = 0; b < data.numBins; ++b) {
         double binWeight = 0;
         double binValue = 0;
-        System.out.println("Bin " + j + "\n");
+        System.out.println("Bin " + b);
         for (int i = 0; i < data.numItems; ++i) {
-          if (x[i][j].solutionValue() == 1) {
+          if (x[i][b].solutionValue() == 1) {
             System.out.println(
-                "Item " + i + " - weight: " + data.weights[i] + "  value: " + data.values[i]);
+                "Item " + i + " weight: " + data.weights[i] + " value: " + data.values[i]);
             binWeight += data.weights[i];
             binValue += data.values[i];
           }
         }
         System.out.println("Packed bin weight: " + binWeight);
-        System.out.println("Packed bin value: " + binValue + "\n");
+        System.out.println("Packed bin value: " + binValue);
         totalWeight += binWeight;
       }
       System.out.println("Total packed weight: " + totalWeight);
@@ -120,5 +123,4 @@ public class MultipleKnapsackMip {
 
   private MultipleKnapsackMip() {}
 }
-// [END program_part2]
 // [END program]
