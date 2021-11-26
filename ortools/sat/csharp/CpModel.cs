@@ -370,7 +370,7 @@ namespace Google.OrTools.Sat
 
         public Constraint AddReservoirConstraintWithActive<I>(IEnumerable<LinearExpr> times,
                                                               IEnumerable<I> levelChanges, IEnumerable<IntVar> actives,
-                                                              long minLevel, long MaxLevel)
+                                                              long minLevel, long maxLevel)
         {
             Constraint ct = new Constraint(model_);
             ReservoirConstraintProto res = new ReservoirConstraintProto();

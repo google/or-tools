@@ -3481,7 +3481,6 @@ bool CpModelPresolver::PresolveAllDiff(ConstraintProto* ct) {
     }
 
     if (kept_expressions.size() < all_diff.exprs_size()) {
-      LOG(INFO) << all_diff.DebugString();
       all_diff.clear_exprs();
       for (const LinearExpressionProto& expr : kept_expressions) {
         *all_diff.add_exprs() = expr;
