@@ -337,6 +337,9 @@ function(add_python_test FILE_NAME)
   message(STATUS "Configuring test ${FILE_NAME} done")
 endfunction()
 
+#####################
+##  Python Sample  ##
+#####################
 # add_python_sample()
 # CMake function to generate and build python sample.
 # Parameters:
@@ -359,6 +362,9 @@ function(add_python_sample FILE_NAME)
   message(STATUS "Configuring sample ${FILE_NAME} done")
 endfunction()
 
+######################
+##  Python Example  ##
+######################
 # add_python_example()
 # CMake function to generate and build python example.
 # Parameters:

@@ -391,4 +391,3 @@ function(add_dotnet_example FILE_NAME)
   endif()
   message(STATUS "Configuring example ${FILE_NAME} done")
 endfunction()
-

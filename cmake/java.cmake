@@ -200,9 +200,7 @@ add_custom_target(java_package ALL
   WORKING_DIRECTORY ${JAVA_PROJECT_PATH})
 add_dependencies(java_package java_native_package Java${PROJECT_NAME}_proto)
 
-#################
-##  Java Test  ##
-#################
+# TO REMOVE and use add_java_test() instead...
 if(BUILD_TESTING)
   set(TEST_PATH ${PROJECT_BINARY_DIR}/java/tests/ortools-test)
   file(MAKE_DIRECTORY ${TEST_PATH}/${JAVA_TEST_PATH})
@@ -229,6 +227,56 @@ if(BUILD_TESTING)
     COMMAND ${MAVEN_EXECUTABLE} test
     WORKING_DIRECTORY ${TEST_PATH})
 endif()
+
+#################
+##  Java Test  ##
+#################
+# add_java_test()
+# CMake function to generate and build java test.
+# Parameters:
+#  the java filename
+# e.g.:
+# add_java_test(Foo.java)
+function(add_java_test FILE_NAME)
+  message(STATUS "Configuring test ${FILE_NAME}: ...")
+  get_filename_component(TEST_NAME ${FILE_NAME} NAME_WE)
+  get_filename_component(COMPONENT_DIR ${FILE_NAME} DIRECTORY)
+  get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+
+  set(TEST_PATH ${PROJECT_BINARY_DIR}/java/${COMPONENT_NAME}/${TEST_NAME})
+  file(MAKE_DIRECTORY ${TEST_PATH}/${JAVA_TEST_PATH})
+
+  add_custom_command(
+    OUTPUT ${TEST_PATH}/${JAVA_TEST_PATH}/${TEST_NAME}.java
+    COMMAND ${CMAKE_COMMAND} -E copy ${FILE_NAME} ${TEST_PATH}/${JAVA_TEST_PATH}
+    MAIN_DEPENDENCY ${FILE_NAME}
+    VERBATIM
+  )
+
+  string(TOLOWER ${TEST_NAME} JAVA_TEST_PROJECT)
+  configure_file(
+    ${PROJECT_SOURCE_DIR}/ortools/java/pom-test.xml.in
+    ${TEST_PATH}/pom.xml
+    @ONLY)
+
+  add_custom_target(java_${COMPONENT_NAME}_${TEST_NAME} ALL
+    DEPENDS
+      ${TEST_PATH}/pom.xml
+      ${TEST_PATH}/${JAVA_TEST_PATH}/${TEST_NAME}.java
+    COMMAND ${MAVEN_EXECUTABLE} compile -B
+    BYPRODUCTS
+      ${TEST_PATH}/target
+    WORKING_DIRECTORY ${TEST_PATH})
+  add_dependencies(java_${COMPONENT_NAME}_${TEST_NAME} java_package)
+
+  if(BUILD_TESTING)
+    add_test(
+      NAME java_${COMPONENT_NAME}_${TEST_NAME}
+      COMMAND ${MAVEN_EXECUTABLE} test
+      WORKING_DIRECTORY ${TEST_PATH})
+  endif()
+  message(STATUS "Configuring test ${FILE_NAME}: ...DONE")
+endfunction()
 
 ###################
 ##  Java Sample  ##
@@ -334,54 +382,4 @@ function(add_java_example FILE_NAME)
       WORKING_DIRECTORY ${EXAMPLE_PATH})
   endif()
   message(STATUS "Configuring example ${FILE_NAME}: ...DONE")
-endfunction()
-
-#################
-##  Java Test  ##
-#################
-# add_java_test()
-# CMake function to generate and build java test.
-# Parameters:
-#  the java filename
-# e.g.:
-# add_java_test(Foo.java)
-function(add_java_test FILE_NAME)
-  message(STATUS "Configuring test ${FILE_NAME}: ...")
-  get_filename_component(TEST_NAME ${FILE_NAME} NAME_WE)
-  get_filename_component(COMPONENT_DIR ${FILE_NAME} DIRECTORY)
-  get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
-
-  set(TEST_PATH ${PROJECT_BINARY_DIR}/java/${COMPONENT_NAME}/${TEST_NAME})
-  file(MAKE_DIRECTORY ${TEST_PATH}/${JAVA_TEST_PATH})
-
-  add_custom_command(
-    OUTPUT ${TEST_PATH}/${JAVA_TEST_PATH}/${TEST_NAME}.java
-    COMMAND ${CMAKE_COMMAND} -E copy ${FILE_NAME} ${TEST_PATH}/${JAVA_TEST_PATH}
-    MAIN_DEPENDENCY ${FILE_NAME}
-    VERBATIM
-  )
-
-  string(TOLOWER ${TEST_NAME} JAVA_TEST_PROJECT)
-  configure_file(
-    ${PROJECT_SOURCE_DIR}/ortools/java/pom-test.xml.in
-    ${TEST_PATH}/pom.xml
-    @ONLY)
-
-  add_custom_target(java_${COMPONENT_NAME}_${TEST_NAME} ALL
-    DEPENDS
-      ${TEST_PATH}/pom.xml
-      ${TEST_PATH}/${JAVA_TEST_PATH}/${TEST_NAME}.java
-    COMMAND ${MAVEN_EXECUTABLE} compile -B
-    BYPRODUCTS
-      ${TEST_PATH}/target
-    WORKING_DIRECTORY ${TEST_PATH})
-  add_dependencies(java_${COMPONENT_NAME}_${TEST_NAME} java_package)
-
-  if(BUILD_TESTING)
-    add_test(
-      NAME java_${COMPONENT_NAME}_${TEST_NAME}
-      COMMAND ${MAVEN_EXECUTABLE} test
-      WORKING_DIRECTORY ${TEST_PATH})
-  endif()
-  message(STATUS "Configuring test ${FILE_NAME}: ...DONE")
 endfunction()
