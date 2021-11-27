@@ -4,6 +4,20 @@
 
 package(default_visibility = ["//visibility:public"])
 
+config_setting(
+    name = "on_linux",
+    constraint_values = [
+        "@platforms//os:linux",
+    ],
+)
+
+config_setting(
+    name = "on_windows",
+    constraint_values = [
+        "@platforms//os:windows",
+    ],
+)
+
 # ---------------------------------------------------------------------------
 # Baseline flatzinc model.
 # ---------------------------------------------------------------------------
@@ -52,9 +66,10 @@ cc_library(
 cc_library(
     name = "parser_lex_lib",
     srcs = ["parser.yy.cc"],
-    copts = [
-        "-Wno-unused-function",  # parser.yy.cc
-    ],
+    copts = select({
+        "on_windows": [""],
+        "//conditions:default": ["-Wno-unused-function"],
+    }),
     deps = [
         "//ortools/base",
         ":parser_yacc_lib",
