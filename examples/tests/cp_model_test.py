@@ -327,7 +327,7 @@ class CpModelTest(unittest.TestCase):
         model.AddAllDifferent(x)
         self.assertEqual(5, len(model.Proto().variables))
         self.assertEqual(1, len(model.Proto().constraints))
-        self.assertEqual(5, len(model.Proto().constraints[0].all_diff.vars))
+        self.assertEqual(5, len(model.Proto().constraints[0].all_diff.exprs))
 
     def testMaxEquality(self):
         print('testMaxEquality')
