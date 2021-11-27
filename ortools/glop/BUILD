@@ -4,10 +4,28 @@ package(
     default_visibility = ["//visibility:public"],
 )
 
+config_setting(
+    name = "on_linux",
+    constraint_values = [
+        "@platforms//os:linux",
+    ],
+)
+
+config_setting(
+    name = "on_windows",
+    constraint_values = [
+        "@platforms//os:windows",
+    ],
+)
+
 # Floating-point code in this directory must not be compiled with
 # dangerous optimizations. For example do not assume that FP expressions
 # are associative. This is what -fno-fast-math is for.
-SAFE_FP_CODE = ["-fno-fast-math"]
+SAFE_FP_CODE = select({
+    "on_linux": ["-fno-fast-math"],
+    "//conditions:default": [""],
+})
+
 
 # Revised Simplex LP solver.
 cc_library(

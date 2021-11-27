@@ -1,13 +1,23 @@
 package(default_visibility = ["//visibility:public"])
 
-#W_FLOAT_CONVERSION = select({
-#    "//tools/cc_target_os:android": [""],
-#    "//tools/cc_target_os:ios": ["-Xclang-only=-Wfloat-conversion"],
-#    "//conditions:default": ["-Xclang-only=-Wfloat-conversion"],
-#})
+config_setting(
+    name = "on_linux",
+    constraint_values = [
+        "@platforms//os:linux",
+    ],
+)
 
-#SAFE_FP_CODE = W_FLOAT_CONVERSION + ["-fno-fast-math"]
-SAFE_FP_CODE = ["-fno-fast-math"]
+config_setting(
+    name = "on_windows",
+    constraint_values = [
+        "@platforms//os:windows",
+    ],
+)
+
+SAFE_FP_CODE = select({
+    "on_linux": ["-fno-fast-math"],
+    "//conditions:default": [""],
+})
 
 cc_library(
     name = "base",
