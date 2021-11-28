@@ -13,6 +13,9 @@
 
 #include "ortools/packing/arc_flow_solver.h"
 
+#include <string>
+
+#include "absl/container/btree_map.h"
 #include "absl/flags/flag.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/file.h"
@@ -211,7 +214,7 @@ vbp::VectorBinPackingSolution SolveVectorBinPackingWithArcFlow(
     const int start_node = 0;
     const int end_node = graph.nodes.size() - 1;
     while (!node_to_next_count_item[start_node].empty()) {
-      std::map<int, int> item_count;
+      absl::btree_map<int, int> item_count;
       int current = start_node;
       while (current != end_node) {
         const auto& [next, item] = pop_next_item(current);

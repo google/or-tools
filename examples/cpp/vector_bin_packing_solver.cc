@@ -66,7 +66,6 @@ void ParseAndSolve(const std::string& filename, const std::string& solver,
         << "Ignoring max_bins value. The feasibility problem is not supported.";
   }
 
-
   LOG(INFO) << "Solving vector packing problem '" << data.name() << "' with "
             << data.item_size() << " item types, and "
             << data.resource_capacity_size() << " dimensions.";
@@ -78,10 +77,9 @@ void ParseAndSolve(const std::string& filename, const std::string& solver,
   MPSolver::OptimizationProblemType solver_type;
   MPSolver::ParseSolverType(solver, &solver_type);
   packing::vbp::VectorBinPackingSolution solution =
-      packing::SolveVectorBinPackingWithArcFlow(data, solver_type, params,
-                                                absl::GetFlag(FLAGS_time_limit),
-                                                absl::GetFlag(FLAGS_threads),
-                                                absl::GetFlag(FLAGS_max_bins));
+      packing::SolveVectorBinPackingWithArcFlow(
+          data, solver_type, params, absl::GetFlag(FLAGS_time_limit),
+          absl::GetFlag(FLAGS_threads), absl::GetFlag(FLAGS_max_bins));
   if (!solution.bins().empty()) {
     for (int b = 0; b < solution.bins_size(); ++b) {
       LOG(INFO) << "Bin " << b;
