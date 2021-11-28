@@ -53,12 +53,12 @@ cc_library(
         "$(STACK_FRAME_UNLIMITED)",  # parser.tab.cc
     ],
     deps = [
+        ":model",
         "//ortools/base",
         "//ortools/base:map_util",
         "//ortools/base:mathutil",
         "//ortools/base:stl_util",
         "//ortools/util:string_array",
-        ":model",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -68,11 +68,11 @@ cc_library(
     srcs = ["parser.yy.cc"],
     copts = select({
         "on_windows": [""],
-        "//conditions:default": ["-Wno-unused-function"],
+        "//conditions:default": ["-Wno-unused-function"],  # parser.yy.cc
     }),
     deps = [
-        "//ortools/base",
         ":parser_yacc_lib",
+        "//ortools/base",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
     ],
@@ -94,6 +94,7 @@ cc_library(
     srcs = ["presolve.cc"],
     hdrs = ["presolve.h"],
     deps = [
+        ":model",
         "//ortools/base",
         "//ortools/base:hash",
         "//ortools/base:map_util",
@@ -101,7 +102,6 @@ cc_library(
         "//ortools/util:logging",
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:vector_map",
-        ":model",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -111,11 +111,11 @@ cc_library(
     srcs = ["checker.cc"],
     hdrs = ["checker.h"],
     deps = [
+        ":model",
         "//ortools/base",
         "//ortools/base:hash",
         "//ortools/base:map_util",
         "//ortools/util:logging",
-        ":model",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/strings",
     ],
@@ -126,6 +126,8 @@ cc_library(
     srcs = ["cp_model_fz_solver.cc"],
     hdrs = ["cp_model_fz_solver.h"],
     deps = [
+        ":checker",
+        ":model",
         "//ortools/base",
         "//ortools/base:map_util",
         "//ortools/base:threadpool",
@@ -143,8 +145,6 @@ cc_library(
         "//ortools/sat:sat_solver",
         "//ortools/sat:table",
         "//ortools/util:logging",
-        ":checker",
-        ":model",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -153,12 +153,12 @@ cc_binary(
     name = "fz",
     srcs = ["fz.cc"],
     deps = [
-        "//ortools/base",
-        "//ortools/base:threadpool",
-        "//ortools/util:logging",
         ":cp_model_fz_solver",
         ":model",
         ":parser_lib",
         ":presolve",
+        "//ortools/base",
+        "//ortools/base:threadpool",
+        "//ortools/util:logging",
     ],
 )
