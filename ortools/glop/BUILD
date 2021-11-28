@@ -26,7 +26,6 @@ SAFE_FP_CODE = select({
     "//conditions:default": [""],
 })
 
-
 # Revised Simplex LP solver.
 cc_library(
     name = "pricing",

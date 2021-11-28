@@ -397,11 +397,15 @@ ProblemStatus LPSolver::LoadAndVerifySolution(const LinearProgram& lp,
     }
     if (rhs_perturbation_is_too_large) {
       SOLVER_LOG(&logger_, "The needed rhs perturbation is too large !!");
-      status = ProblemStatus::IMPRECISE;
+      if (parameters_.change_status_to_imprecise()) {
+        status = ProblemStatus::IMPRECISE;
+      }
     }
     if (cost_perturbation_is_too_large) {
       SOLVER_LOG(&logger_, "The needed cost perturbation is too large !!");
-      status = ProblemStatus::IMPRECISE;
+      if (parameters_.change_status_to_imprecise()) {
+        status = ProblemStatus::IMPRECISE;
+      }
     }
   }
 
@@ -413,7 +417,9 @@ ProblemStatus LPSolver::LoadAndVerifySolution(const LinearProgram& lp,
         objective_error_ub) {
       SOLVER_LOG(&logger_,
                  "The objective gap of the final solution is too large.");
-      status = ProblemStatus::IMPRECISE;
+      if (parameters_.change_status_to_imprecise()) {
+        status = ProblemStatus::IMPRECISE;
+      }
     }
   }
   if ((status == ProblemStatus::OPTIMAL ||
@@ -421,14 +427,18 @@ ProblemStatus LPSolver::LoadAndVerifySolution(const LinearProgram& lp,
       (primal_residual_is_too_large || primal_infeasibility_is_too_large)) {
     SOLVER_LOG(&logger_,
                "The primal infeasibility of the final solution is too large.");
-    status = ProblemStatus::IMPRECISE;
+    if (parameters_.change_status_to_imprecise()) {
+      status = ProblemStatus::IMPRECISE;
+    }
   }
   if ((status == ProblemStatus::OPTIMAL ||
        status == ProblemStatus::DUAL_FEASIBLE) &&
       (dual_residual_is_too_large || dual_infeasibility_is_too_large)) {
     SOLVER_LOG(&logger_,
                "The dual infeasibility of the final solution is too large.");
-    status = ProblemStatus::IMPRECISE;
+    if (parameters_.change_status_to_imprecise()) {
+      status = ProblemStatus::IMPRECISE;
+    }
   }
 
   may_have_multiple_solutions_ =
