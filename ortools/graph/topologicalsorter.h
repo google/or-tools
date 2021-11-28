@@ -64,6 +64,7 @@
 #include <type_traits>
 #include <vector>
 
+#include "absl/base/attributes.h"
 #include "absl/container/flat_hash_map.h"
 #include "ortools/base/container_logging.h"
 #include "ortools/base/logging.h"
