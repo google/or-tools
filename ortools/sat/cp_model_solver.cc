@@ -35,6 +35,7 @@
 #include "ortools/util/sigint.h"
 #endif  // __PORTABLE_PLATFORM__
 
+#include "absl/base/attributes.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/memory/memory.h"
 #include "absl/status/status.h"
@@ -77,6 +78,7 @@
 #include "ortools/sat/lb_tree_search.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/linear_relaxation.h"
+#include "ortools/sat/lp_utils.h"
 #include "ortools/sat/optimization.h"
 #include "ortools/sat/parameters_validation.h"
 #include "ortools/sat/precedences.h"
@@ -3150,6 +3152,73 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
                  "The solution hint is complete, but it is infeasible! we "
                  "will try to repair it.");
     }
+  }
+
+  // If the objective was a floating point one, do some postprocessing on the
+  // final response.
+  if (model_proto.has_floating_point_objective()) {
+    shared_response_manager->AddFinalResponsePostprocessor(
+        [&params, &model_proto, &mapping_proto,
+         &logger](CpSolverResponse* response) {
+          if (response->solution().empty()) return;
+
+          // Compute the true objective of the best returned solution.
+          const auto& float_obj = model_proto.floating_point_objective();
+          double value = float_obj.offset();
+          const int num_terms = float_obj.vars().size();
+          for (int i = 0; i < num_terms; ++i) {
+            value += float_obj.coeffs(i) *
+                     static_cast<double>(response->solution(float_obj.vars(i)));
+          }
+          response->set_objective_value(value);
+
+          // Also copy the scaled objective which must be in the mapping model.
+          // This can be useful for some client, like if they want to do
+          // multi-objective optimization in stages.
+          if (!mapping_proto.has_objective()) return;
+          const CpObjectiveProto& integer_obj = mapping_proto.objective();
+          *response->mutable_integer_objective() = integer_obj;
+
+          // If requested, compute a correct lb from the one on the integer
+          // objective. We only do that if some error were introduced by the
+          // scaling algorithm.
+          if (params.mip_compute_true_objective_bound() &&
+              !integer_obj.scaling_was_exact()) {
+            const int64_t integer_lb =
+                static_cast<int64_t>(std::round(UnscaleObjectiveValue(
+                    integer_obj, response->best_objective_bound())));
+            const double lb = ComputeTrueObjectiveLowerBound(
+                model_proto, integer_obj, integer_lb);
+            SOLVER_LOG(logger, "[Scaling] scaled_objective_bound: ",
+                       response->best_objective_bound(),
+                       " corrected_bound: ", lb,
+                       " delta: ", response->best_objective_bound() - lb);
+
+            // To avoid small errors that can be confusing, we take the
+            // min/max with the objective value.
+            if (float_obj.maximize()) {
+              response->set_best_objective_bound(
+                  std::max(lb, response->objective_value()));
+            } else {
+              response->set_best_objective_bound(
+                  std::min(lb, response->objective_value()));
+            }
+          }
+
+          // Check the absolute gap, and display warning if needed.
+          // TODO(user): Change status to IMPRECISE?
+          if (response->status() == CpSolverStatus::OPTIMAL) {
+            const double gap = std::abs(response->objective_value() -
+                                        response->best_objective_bound());
+            if (gap > params.absolute_gap_limit()) {
+              SOLVER_LOG(logger,
+                         "[Scaling] Warning: OPTIMAL was reported, yet the "
+                         "objective gap (",
+                         gap, ") is greater than requested absolute limit (",
+                         params.absolute_gap_limit(), ").");
+            }
+          }
+        });
   }
 
   if (params.num_search_workers() > 1 || model_proto.has_objective()) {

@@ -19,6 +19,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/base/attributes.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/model.h"

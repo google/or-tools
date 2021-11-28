@@ -103,6 +103,20 @@ bool ScaleAndSetObjective(const SatParameters& params,
                           double objective_offset, bool maximize,
                           CpModelProto* cp_model, SolverLogger* logger);
 
+// Given a CpModelProto with a floating point objective, and its scaled integer
+// version with a known lower bound, this uses the variable bounds to derive a
+// correct lower bound on the original objective.
+//
+// Note that the integer version can be way different, but then the bound is
+// likely to be bad. For now, we solve this with a simple LP with one
+// constraint.
+//
+// TODO(user): Code a custom algo with more precision guarantee?
+double ComputeTrueObjectiveLowerBound(
+    const CpModelProto& model_proto_with_floating_point_objective,
+    const CpObjectiveProto& integer_objective,
+    const int64_t inner_integer_objective_lower_bound);
+
 // Converts an integer program with only binary variables to a Boolean
 // optimization problem. Returns false if the problem didn't contains only
 // binary integer variable, or if the coefficients couldn't be converted to

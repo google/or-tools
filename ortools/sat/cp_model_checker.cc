@@ -509,10 +509,22 @@ std::string ValidateIntervalConstraint(const CpModelProto& model,
         "supported: ",
         ProtobufShortDebugString(ct));
   }
+  const IntervalConstraintProto& arg = ct.interval();
+
+  if (!arg.has_start()) {
+    return absl::StrCat("Interval must have a start expression: ",
+                        ProtobufShortDebugString(ct));
+  }
+  if (!arg.has_size()) {
+    return absl::StrCat("Interval must have a size expression: ",
+                        ProtobufShortDebugString(ct));
+  }
+  if (!arg.has_end()) {
+    return absl::StrCat("Interval must have a end expression: ",
+                        ProtobufShortDebugString(ct));
+  }
 
   LinearExpressionProto for_overflow_validation;
-
-  const IntervalConstraintProto& arg = ct.interval();
   if (arg.start().vars_size() > 1) {
     return "Interval with a start expression containing more than one "
            "variable are currently not supported.";

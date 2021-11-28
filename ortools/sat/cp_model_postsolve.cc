@@ -104,9 +104,7 @@ void SetEnforcementLiteralToFalse(const ConstraintProto& ct,
 
 // Here we simply assign all non-fixed variable to a feasible value. Which
 // should always exists by construction.
-void PostsolveLinear(const ConstraintProto& ct,
-                     const std::vector<bool>& prefer_lower_value,
-                     std::vector<Domain>* domains) {
+void PostsolveLinear(const ConstraintProto& ct, std::vector<Domain>* domains) {
   int64_t fixed_activity = 0;
   const int size = ct.linear().vars().size();
   std::vector<int> free_vars;
@@ -142,8 +140,7 @@ void PostsolveLinear(const ConstraintProto& ct,
       SetEnforcementLiteralToFalse(ct, domains);
       return;
     }
-    const int64_t value = prefer_lower_value[var] ? domain.Min() : domain.Max();
-    (*domains)[var] = Domain(value);
+    (*domains)[var] = Domain(domain.SmallestValue());
     return;
   }
 
@@ -180,7 +177,7 @@ void PostsolveLinear(const ConstraintProto& ct,
     // case, so if this fail, it might indicate an issue here and not in the
     // presolve/solver code.
     CHECK(!domain.IsEmpty()) << ct.ShortDebugString();
-    const int64_t value = prefer_lower_value[var] ? domain.Min() : domain.Max();
+    const int64_t value = domain.SmallestValue();
     (*domains)[var] = Domain(value);
 
     fixed_activity += coeff * value;
@@ -221,9 +218,7 @@ void PostsolveLinMax(const ConstraintProto& ct, std::vector<Domain>* domains) {
 }
 
 // We only support 3 cases in the presolve currently.
-void PostsolveElement(const ConstraintProto& ct,
-                      const std::vector<bool>& prefer_lower_value,
-                      std::vector<Domain>* domains) {
+void PostsolveElement(const ConstraintProto& ct, std::vector<Domain>* domains) {
   const int index_ref = ct.element().index();
   const int index_var = PositiveRef(index_ref);
   const int target_ref = ct.element().target();
@@ -266,8 +261,7 @@ void PostsolveElement(const ConstraintProto& ct,
                                          ? (*domains)[selected_var]
                                          : (*domains)[selected_var].Negation();
       const Domain final = target_domain.IntersectionWith(selected_domain);
-      const int64_t value =
-          prefer_lower_value[target_var] ? final.Min() : final.Max();
+      const int64_t value = final.SmallestValue();
       (*domains)[target_var] =
           (*domains)[target_var].IntersectionWith(Domain(value));
       (*domains)[selected_var] = (*domains)[selected_var].IntersectionWith(
@@ -327,25 +321,6 @@ void PostsolveResponse(const int64_t num_variables_in_original_model,
     CHECK(!domains[i].IsEmpty());
   }
 
-  // Some free variable should be fixed towards their good objective direction.
-  //
-  // TODO(user): currently the objective is not part of the mapping_proto, so
-  // this shouldn't matter for our current presolve reduction.
-  CHECK(!mapping_proto.has_objective());
-  std::vector<bool> prefer_lower_value(domains.size(), true);
-  if (mapping_proto.has_objective()) {
-    const int size = mapping_proto.objective().vars().size();
-    for (int i = 0; i < size; ++i) {
-      int var = mapping_proto.objective().vars(i);
-      int64_t coeff = mapping_proto.objective().coeffs(i);
-      if (!RefIsPositive(var)) {
-        var = PositiveRef(var);
-        coeff = -coeff;
-      }
-      prefer_lower_value[i] = (coeff >= 0);
-    }
-  }
-
   // Process the constraints in reverse order.
   const int num_constraints = mapping_proto.constraints_size();
   for (int i = num_constraints - 1; i >= 0; i--) {
@@ -374,13 +349,13 @@ void PostsolveResponse(const int64_t num_variables_in_original_model,
         PostsolveExactlyOne(ct, &domains);
         break;
       case ConstraintProto::kLinear:
-        PostsolveLinear(ct, prefer_lower_value, &domains);
+        PostsolveLinear(ct, &domains);
         break;
       case ConstraintProto::kLinMax:
         PostsolveLinMax(ct, &domains);
         break;
       case ConstraintProto::kElement:
-        PostsolveElement(ct, prefer_lower_value, &domains);
+        PostsolveElement(ct, &domains);
         break;
       default:
         // This should never happen as we control what kind of constraint we
@@ -389,15 +364,12 @@ void PostsolveResponse(const int64_t num_variables_in_original_model,
     }
   }
 
-  // Fill the response. Maybe fix some still unfixed variable.
+  // Fill the response.
+  // Maybe fix some still unfixed variable.
   solution->clear();
   CHECK_LE(num_variables_in_original_model, domains.size());
   for (int i = 0; i < num_variables_in_original_model; ++i) {
-    if (prefer_lower_value[i]) {
-      solution->push_back(domains[i].Min());
-    } else {
-      solution->push_back(domains[i].Max());
-    }
+    solution->push_back(domains[i].SmallestValue());
   }
 }
 

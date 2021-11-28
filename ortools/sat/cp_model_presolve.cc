@@ -28,6 +28,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/attributes.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/hash/hash.h"
@@ -1561,11 +1562,30 @@ bool CpModelPresolver::RemoveSingletonInLinear(ConstraintProto* ct) {
   }
   if (index_to_erase.empty()) return false;
 
+  // Tricky: If we have a singleton variable in an enforced constraint, and at
+  // postsolve the enforcement is false, we might just ignore the constraint.
+  // This is fine, but we still need to assign any removed variable to a
+  // feasible value, otherwise later postsolve rules might not work correctly.
+  // Adding these linear1 achieve that.
+  //
+  // TODO(user): Alternatively, we could copy the constraint without the
+  // enforcement to the mapping model, since singleton variable are supposed
+  // to always have a feasible value anyway.
+  if (!ct->enforcement_literal().empty()) {
+    for (const int i : index_to_erase) {
+      const int var = ct->linear().vars(i);
+      auto* l = context_->mapping_model->add_constraints()->mutable_linear();
+      l->add_vars(var);
+      l->add_coeffs(1);
+      FillDomainInProto(context_->DomainOf(var), l);
+    }
+  }
+
   // TODO(user): we could add the constraint to mapping_model only once
   // instead of adding a reduced version of it each time a new singleton
   // variable appear in the same constraint later. That would work but would
   // also force the postsolve to take search decisions...
-  *(context_->mapping_model->add_constraints()) = *ct;
+  *context_->mapping_model->add_constraints() = *ct;
 
   int new_size = 0;
   for (int i = 0; i < num_vars; ++i) {
@@ -7365,6 +7385,13 @@ CpSolverStatus CpModelPresolver::Presolve() {
                  "precision");
       return CpSolverStatus::MODEL_INVALID;
     }
+
+    // At this point, we didn't create any new variables, so the integer
+    // objective is in term of the orinal problem variables. We save it so that
+    // we can expose to the user what exact objective we are actually
+    // optimizing.
+    *context_->mapping_model->mutable_objective() =
+        context_->working_model->objective();
   }
 
   // Initialize the objective and the constraint <-> variable graph.

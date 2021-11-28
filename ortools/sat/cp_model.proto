@@ -457,6 +457,13 @@ message CpObjectiveProto {
   // Note that this does not depend on the offset or scaling factor, it is a
   // domain on the sum of the objective terms only.
   repeated int64 domain = 5;
+
+  // Internal field. Do not set. When we scale a FloatObjectiveProto to a
+  // integer version, we set this to true if the scaling was exact (i.e. all
+  // original coeff were integer for instance).
+  //
+  // TODO(user): Put the error bounds we computed instead?
+  bool scaling_was_exact = 6;
 }
 
 // A linear floating point objective: sum coeffs[i] * vars[i] + offset.
@@ -593,7 +600,9 @@ message CpModelProto {
   // see the logs to see what are the precision guaranteed when this is
   // converted to a fixed point representation.
   //
-  // TODO(user): This is currently not implemented.
+  // Note that even if the precision is bad, the returned objective_value and
+  // best_objective_bound will be computed correctly. So at the end of the solve
+  // you can check the gap if you only want precise optimal.
   FloatObjectiveProto floating_point_objective = 9;
 
   // Defines the strategy that the solver should follow when the
@@ -682,7 +691,7 @@ message CpSolverSolution {
 //
 // TODO(user): support returning multiple solutions. Look at the Stubby
 // streaming API as we probably wants to get them as they are found.
-// Next id: 28
+// Next id: 29
 message CpSolverResponse {
   // The status of the solve.
   CpSolverStatus status = 1;
@@ -746,6 +755,11 @@ message CpSolverResponse {
   //
   // TODO(user): Allows for returning multiple core at once.
   repeated int32 sufficient_assumptions_for_infeasibility = 23;
+
+  // Contains the integer objective optimized internally. This is only filled if
+  // the problem had a floating point objective, and on the final response, not
+  // the ones given to callbacks.
+  CpObjectiveProto integer_objective = 28;
 
   // Some statistics about the solve.
   // TODO(user): These are broken in multi-thread.

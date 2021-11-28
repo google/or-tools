@@ -17,6 +17,7 @@
 #include <cstdint>
 #include <vector>
 
+#include "absl/strings/numbers.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -105,7 +106,7 @@ void NQueensSat(const int board_size) {
 int main(int argc, char** argv) {
   int board_size = 8;
   if (argc > 1) {
-    board_size = std::atoi(argv[1]);
+    CHECK(absl::SimpleAtoi(argv[1], &board_size));
   }
   operations_research::sat::NQueensSat(board_size);
   return EXIT_SUCCESS;

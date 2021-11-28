@@ -961,7 +961,8 @@ bool ScaleAndSetObjective(const SatParameters& params,
   double x = std::min(scaling_factor, 1.0);
   double relative_coeff_error;
   double scaled_sum_error;
-  const double kWantedPrecision = params.mip_wanted_precision();
+  const double kWantedPrecision =
+      std::max(params.mip_wanted_precision(), params.absolute_gap_limit());
   for (; x <= scaling_factor; x *= 2) {
     ComputeScalingErrors(coefficients, lower_bounds, upper_bounds, x,
                          &relative_coeff_error, &scaled_sum_error);
@@ -983,11 +984,8 @@ bool ScaleAndSetObjective(const SatParameters& params,
   const int64_t gcd = ComputeGcdOfRoundedDoubles(coefficients, scaling_factor);
 
   // Display the objective error/scaling.
-  SOLVER_LOG(
-      logger,
-      "[Scaling] Objective coefficient relative error: ", relative_coeff_error,
-      (relative_coeff_error > params.mip_check_precision() ? " [IMPRECISE]"
-                                                           : ""));
+  SOLVER_LOG(logger, "[Scaling] Objective coefficient relative error: ",
+             relative_coeff_error);
   SOLVER_LOG(logger, "[Scaling] Objective worst-case absolute error: ",
              scaled_sum_error / scaling_factor);
   SOLVER_LOG(logger,
@@ -1008,6 +1006,10 @@ bool ScaleAndSetObjective(const SatParameters& params,
       objective_proto->add_vars(var_indices[i]);
       objective_proto->add_coeffs(value * mult);
     }
+  }
+
+  if (scaled_sum_error == 0.0) {
+    objective_proto->set_scaling_was_exact(true);
   }
 
   return true;
@@ -1321,6 +1323,54 @@ bool SolveLpAndUseIntegerVariableToStartLNS(const glop::LinearProgram& lp,
   }
   LOG(INFO) << "LNS with " << num_variable_fixed << " fixed variables.";
   return true;
+}
+
+double ComputeTrueObjectiveLowerBound(
+    const CpModelProto& model_proto_with_floating_point_objective,
+    const CpObjectiveProto& integer_objective,
+    const int64_t inner_integer_objective_lower_bound) {
+  // Create an LP with the correct variable domain.
+  glop::LinearProgram lp;
+  const CpModelProto& proto = model_proto_with_floating_point_objective;
+  for (int i = 0; i < proto.variables().size(); ++i) {
+    const auto& domain = proto.variables(i).domain();
+    lp.SetVariableBounds(lp.CreateNewVariable(), static_cast<double>(domain[0]),
+                         static_cast<double>(domain[domain.size() - 1]));
+  }
+
+  // Add the original problem floating point objective.
+  const FloatObjectiveProto& float_obj = proto.floating_point_objective();
+  lp.SetObjectiveOffset(float_obj.offset());
+  lp.SetMaximizationProblem(float_obj.maximize());
+  for (int i = 0; i < float_obj.vars().size(); ++i) {
+    lp.SetObjectiveCoefficient(glop::ColIndex(float_obj.vars(i)),
+                               float_obj.coeffs(i));
+  }
+
+  // Add a single constraint "integer_objective >= lower_bound".
+  const glop::RowIndex ct = lp.CreateNewConstraint();
+  lp.SetConstraintBounds(
+      ct, static_cast<double>(inner_integer_objective_lower_bound),
+      std::numeric_limits<double>::infinity());
+  for (int i = 0; i < integer_objective.vars().size(); ++i) {
+    lp.SetCoefficient(ct, glop::ColIndex(integer_objective.vars(i)),
+                      static_cast<double>(integer_objective.coeffs(i)));
+  }
+
+  // This should be fast.
+  glop::LPSolver solver;
+  glop::GlopParameters glop_parameters;
+  glop_parameters.set_max_deterministic_time(10);
+  glop_parameters.set_change_status_to_imprecise(false);
+  solver.SetParameters(glop_parameters);
+  const glop::ProblemStatus& status = solver.Solve(lp);
+  if (status == glop::ProblemStatus::OPTIMAL) {
+    return solver.GetObjectiveValue();
+  }
+
+  // Error. Hoperfully this shouldn't happen.
+  return float_obj.maximize() ? std::numeric_limits<double>::infinity()
+                              : -std::numeric_limits<double>::infinity();
 }
 
 }  // namespace sat
