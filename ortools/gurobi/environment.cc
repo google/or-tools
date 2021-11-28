@@ -666,8 +666,8 @@ void LoadGurobiFunctions(DynamicLibrary* gurobi_dynamic_library) {
 
 std::vector<std::string> GurobiDynamicLibraryPotentialPaths() {
   std::vector<std::string> potential_paths;
-  const std::vector<std::string> kGurobiVersions = {"911", "910", "903", "902",
-                                                    "811", "801", "752"};
+  const std::vector<std::string> kGurobiVersions = {
+      "951", "950", "911", "910", "903", "902", "811", "801", "752"};
 
   // Look for libraries pointed by GUROBI_HOME first.
   const char* gurobi_home_from_env = getenv("GUROBI_HOME");
