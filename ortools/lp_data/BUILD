@@ -224,8 +224,8 @@ cc_library(
         "//ortools/base:case",
         "//ortools/base:map_util",
         "//ortools/linear_solver:linear_solver_cc_proto",
-        "@com_google_absl//absl/strings",
         "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
         "@com_google_re2//:re2",
     ],
 )

@@ -302,8 +302,8 @@ TokenType ConsumeToken(absl::string_view* sp, std::string* consumed_name,
       R"(\s*([0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?))"};
   if (RE2::Consume(sp, *kValuePattern, &coeff)) {
     if (!absl::SimpleAtod(coeff, consumed_coeff)) {
-      // Note: If absl::SimpleAtod(), Consume(), and kValuePattern are correct, this
-      // should never happen.
+      // Note: If absl::SimpleAtod(), Consume(), and kValuePattern are correct,
+      // this should never happen.
       LOG(ERROR) << "Text: " << coeff << " was matched by RE2 to be "
                  << "a floating point number, but absl::SimpleAtod() failed.";
       return TokenType::ERROR;
