@@ -14,11 +14,17 @@
 #ifndef OR_TOOLS_BASE_VERSION_H_
 #define OR_TOOLS_BASE_VERSION_H_
 
+#include <string>
+
 namespace operations_research {
 
 int OrToolsMajorVersion();
+
 int OrToolsMinorVersion();
+
 int OrToolsPatchVersion();
+
+std::string OrToolsVersionString();
 
 }  // namespace operations_research
 

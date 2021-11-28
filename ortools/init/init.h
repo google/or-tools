@@ -18,7 +18,6 @@
 #include <vector>
 
 #include "absl/flags/flag.h"
-#include "absl/strings/str_cat.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/version.h"
 #include "ortools/gurobi/environment.h"
@@ -153,9 +152,7 @@ class OrToolsVersion {
    * Returns the string version of OR-Tools.
    */
   static std::string VersionString() {
-    return absl::StrCat(::operations_research::OrToolsMajorVersion(), ".",
-                        ::operations_research::OrToolsMinorVersion(), ".",
-                        ::operations_research::OrToolsPatchVersion(), ".");
+    return ::operations_research::OrToolsVersionString();
   }
 };
 
