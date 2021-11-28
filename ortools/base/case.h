@@ -18,8 +18,6 @@
 // Unlike <ctype.h> (or absl/strings/ascii.h), the functions in this file
 // are designed to operate on strings, not single characters.
 //
-// If you need to process UTF8 strings, take a look at files in i18n/utf8.
-//
 // Except for those marked as "using the C/POSIX locale", these functions are
 // for ASCII strings only.
 
@@ -43,7 +41,6 @@
 #include "absl/strings/string_view.h"
 
 namespace strings {
-
 // Enum values returned by GetAsciiCapitalization().
 enum class AsciiCapitalizationType {
   kLower,   // Entirely lowercase
@@ -128,5 +125,4 @@ std::string MakeAsciiTitlecase(absl::string_view s,
                                absl::string_view delimiters);
 
 }  // namespace strings
-
 #endif  // OR_TOOLS_BASE_CASE_H_

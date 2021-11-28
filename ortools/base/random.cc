@@ -11,11 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
-#include <cstring>
-#include <ctime>
-#include <random>
-
 #include "ortools/base/random.h"
 
 namespace operations_research {
@@ -34,9 +29,7 @@ uint64_t ACMRandom::operator()(uint64_t val_max) {
   return val_max == 0 ? 0 : Next64() % val_max;
 }
 
-int32_t ACMRandom::HostnamePidTimeSeed() {
-  return std::random_device{}();
-}
+int32_t ACMRandom::HostnamePidTimeSeed() { return std::random_device{}(); }
 
 int32_t ACMRandom::DeterministicSeed() { return 0; }
 

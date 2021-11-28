@@ -13,19 +13,17 @@
 
 // This file contains string processing functions related to
 // uppercase, lowercase, etc.
-
 #include "ortools/base/case.h"
 
 #include <functional>
 #include <string>
 
-//#include "base/port.h"
 #include "absl/hash/hash.h"
 #include "absl/strings/ascii.h"
 #include "absl/strings/match.h"
 #include "absl/strings/string_view.h"
 
-#ifdef _MSC_VER 
+#ifdef _MSC_VER
 #define strncasecmp _strnicmp
 #define strcasecmp _stricmp
 #endif
@@ -101,7 +99,7 @@ int AsciiCaseInsensitiveCompare(absl::string_view s1, absl::string_view s2) {
 }
 
 size_t AsciiCaseInsensitiveHash::operator()(absl::string_view s) const {
-  //return absl::HashOf(absl::AsciiStrToLower(s));
+  // return absl::HashOf(absl::AsciiStrToLower(s));
   return std::hash<std::string>{}(absl::AsciiStrToLower(s));
 }
 
@@ -113,7 +111,7 @@ bool AsciiCaseInsensitiveEq::operator()(absl::string_view s1,
 
 void MakeAsciiTitlecase(std::string* s, absl::string_view delimiters) {
   bool upper = true;
-  for (auto &ch : *s) {
+  for (auto& ch : *s) {
     if (upper) {
       ch = absl::ascii_toupper(ch);
     }
@@ -127,5 +125,4 @@ std::string MakeAsciiTitlecase(absl::string_view s,
   MakeAsciiTitlecase(&result, delimiters);
   return result;
 }
-
 }  // namespace strings
