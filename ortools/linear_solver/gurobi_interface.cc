@@ -52,6 +52,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/attributes.h"
 #include "absl/status/status.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_format.h"
@@ -64,6 +65,7 @@
 #include "ortools/linear_solver/gurobi_proto_solver.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver_callback.h"
+#include "ortools/util/time_limit.h"
 
 ABSL_FLAG(int, num_gurobi_threads, 4,
           "Number of threads available for Gurobi.");
@@ -84,7 +86,6 @@ class GurobiInterface : public MPSolverInterface {
   MPSolver::ResultStatus Solve(const MPSolverParameters& param) override;
   absl::optional<MPSolutionResponse> DirectlySolveProto(
       const MPModelRequest& request, std::atomic<bool>* interrupt) override;
-
   // Writes the model.
   void Write(const std::string& filename) override;
 

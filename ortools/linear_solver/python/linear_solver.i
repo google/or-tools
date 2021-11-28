@@ -98,7 +98,7 @@ from ortools.linear_solver.linear_solver_natural_api import VariableExpr
   // Change the API of LoadSolutionFromProto() to simply return a boolean.
   bool LoadSolutionFromProto(
       const operations_research::MPSolutionResponse& response,
-      double tolerance = operations_research::MPSolverParameters::kDefaultPrimalTolerance) {
+      double tolerance = std::numeric_limits<double>::infinity()) {
     const absl::Status status =
         $self->LoadSolutionFromProto(response, tolerance);
     LOG_IF(ERROR, !status.ok()) << "LoadSolutionFromProto() failed: " << status;

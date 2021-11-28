@@ -24,6 +24,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/attributes.h"
 #include "absl/memory/memory.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/commandlineflags.h"

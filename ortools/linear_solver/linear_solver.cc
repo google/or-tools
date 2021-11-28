@@ -40,7 +40,6 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/threadpool.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
@@ -48,6 +47,7 @@
 #include "ortools/linear_solver/model_validator.h"
 #include "ortools/port/file.h"
 #include "ortools/util/fp_utils.h"
+#include "ortools/util/time_limit.h"
 
 ABSL_FLAG(bool, verify_solution, false,
           "Systematically verify the solution when calling Solve()"
@@ -240,7 +240,7 @@ void MPObjective::SetOptimizationDirection(bool maximize) {
   // Note(user): The maximize_ bool would more naturally belong to the
   // MPObjective, but it actually has to be a member of MPSolverInterface,
   // because some implementations (such as GLPK) need that bool for the
-  // MPSolverInterface constructor, i.e at a time when the MPObjective is not
+  // MPSolverInterface constructor, i.e. at a time when the MPObjective is not
   // constructed yet (MPSolverInterface is always built before MPObjective
   // when a new MPSolver is constructed).
   interface_->maximize_ = maximize;
