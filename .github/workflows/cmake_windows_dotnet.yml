@@ -8,8 +8,6 @@ jobs:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Check cmake
-      run: cmake --version
     - name: Install SWIG 4.0.2
       run: |
         (New-Object System.Net.WebClient).DownloadFile("http://prdownloads.sourceforge.net/swig/swigwin-4.0.2.zip","swigwin-4.0.2.zip");
@@ -19,6 +17,8 @@ jobs:
       run: swig -version
     - name: Check dotnet
       run: dotnet --info
+    - name: Check cmake
+      run: cmake --version
     - name: Configure
       run: cmake -S. -Bbuild -G "Visual Studio 16 2019" -DCMAKE_BUILD_TYPE=Release -DBUILD_DOTNET=ON -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
     - name: Build
