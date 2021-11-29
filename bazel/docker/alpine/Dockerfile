@@ -5,7 +5,7 @@ LABEL maintainer="corentinl@google.com"
 # Install system build dependencies
 ENV PATH=/usr/local/bin:$PATH
 RUN apk add --no-cache git build-base linux-headers zlib-dev
-RUN apk add --no-cache -X http://dl-cdn.alpinelinux.org/alpine/edge/testing bazel
+RUN apk add --no-cache -X http://dl-cdn.alpinelinux.org/alpine/edge/testing bazel4
 
 # Install OpenJDK16
 # note: default-jvm will now point to java-16-openjdk
