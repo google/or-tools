@@ -36,7 +36,8 @@ PLATFORM_FLAGS = select({
     ],
     "on_windows": [
         "/DSYM=none",
-        "/DSCIP_NO_SIGACTION"
+        "/DSCIP_NO_SIGACTION",
+        "/DSCIP_NO_STRTOK_R",
         ],
     "//conditions:default": [],
 })
