@@ -10,9 +10,6 @@ jobs:
     - uses: actions/checkout@v2
     - name: Install python3 venv
       run: sudo apt-get install python3-venv
-    - name: Check cmake
-
-      run: cmake --version
     - name: Install Ninja
       run: |
         sudo apt update
@@ -23,6 +20,8 @@ jobs:
       run: swig -version
     - name: Update Path
       run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+    - name: Check cmake
+      run: cmake --version
     - name: Configure
       run: cmake -S. -Bbuild -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DBUILD_PYTHON=ON -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF -DCMAKE_INSTALL_PREFIX=install
     - name: Build
@@ -37,8 +36,6 @@ jobs:
     - uses: actions/checkout@v2
     - name: Install python3 venv
       run: sudo apt-get install python3-venv
-    - name: Check cmake
-      run: cmake --version
     - name: Install Ninja
       run: |
         sudo apt update
@@ -49,6 +46,8 @@ jobs:
       run: swig -version
     - name: Update Path
       run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+    - name: Check cmake
+      run: cmake --version
     - name: Configure
       run: cmake -S. -Bbuild -G "Ninja Multi-Config" -DBUILD_PYTHON=ON -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF -DCMAKE_INSTALL_PREFIX=install
     - name: Build
@@ -63,14 +62,14 @@ jobs:
     - uses: actions/checkout@v2
     - name: Install python3 venv
       run: sudo apt-get install python3-venv
-    - name: Check cmake
-      run: cmake --version
     - name: Swig install
       run: sudo apt install -y swig
     - name: Check swig
       run: swig -version
     - name: Update Path
       run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+    - name: Check cmake
+      run: cmake --version
     - name: Configure
       run: cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release -DBUILD_PYTHON=ON -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
     - name: Build
