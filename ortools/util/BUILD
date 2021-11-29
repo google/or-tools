@@ -348,7 +348,7 @@ cc_library(
 #        "//ortools/base:mathutil",
 #        "/@com_google_absl//absl/strings",
 #        "//file/zipfile",
-#        "//re2",
+#        "@com_google_re2//:re2",
 #    ],
 #)
 

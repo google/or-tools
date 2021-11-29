@@ -173,7 +173,7 @@ cc_library(
         "//ortools/util:tuple_set",
         "//ortools/util:vector_map",
         "//ortools/base:random",
-        #        "//util/regexp/re2",
+        #        "@com_google_re2//:re2",
         "@com_google_absl//absl/status",
         #        "//util/textprogressbar",
         "//ortools/base:timer",
