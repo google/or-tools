@@ -113,6 +113,7 @@ cc_library(
     deps = [
         ":saturated_arithmetic",
         "//ortools/base",
+        "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
     ],
