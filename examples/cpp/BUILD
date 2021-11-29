@@ -240,8 +240,6 @@ cc_binary(
         "//ortools/base:file",
         "@com_google_absl//absl/strings",
         "//ortools/base:timer",
-        "//ortools/data:jobshop_scheduling_cc_proto",
-        "//ortools/data:jobshop_scheduling_parser",
         "//ortools/sat:cp_model",
         "//ortools/sat:cp_model_solver",
         "//ortools/sat:disjunctive",
@@ -251,6 +249,8 @@ cc_binary(
         "//ortools/sat:optimization",
         "//ortools/sat:precedences",
         "//ortools/sat:sat_solver",
+        "//ortools/scheduling:jobshop_scheduling_cc_proto",
+        "//ortools/scheduling:jobshop_scheduling_parser",
     ],
 )
 
@@ -281,6 +281,17 @@ cc_binary(
         "//ortools/base",
         "//ortools/linear_solver",
         "//ortools/linear_solver:linear_solver_cc_proto",
+    ],
+)
+
+cc_binary(
+    name = "magic_sequence_sat",
+    srcs = ["magic_sequence_sat.cc"],
+    deps = [
+        "//ortools/base",
+        "@com_google_absl//absl/strings",
+        "//ortools/sat:cp_model",
+        "//ortools/sat:model",
     ],
 )
 
@@ -325,6 +336,17 @@ cc_binary(
         "//ortools/lp_data:mps_reader",
         "//ortools/util:proto_tools",
         "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_binary(
+    name = "multi_knapsack_sat",
+    srcs = ["multi_knapsack_sat.cc"],
+    deps = [
+        "//ortools/base",
+        "@com_google_absl//absl/strings",
+        "//ortools/sat:cp_model",
+        "//ortools/sat:model",
     ],
 )
 
@@ -463,15 +485,6 @@ cc_binary(
 )
 
 cc_binary(
-    name = "stigler_diet",
-    srcs = ["stigler_diet.cc"],
-    deps = [
-        "//ortools/base",
-        "//ortools/linear_solver",
-    ],
-)
-
-cc_binary(
     name = "strawberry_fields_with_column_generation",
     srcs = ["strawberry_fields_with_column_generation.cc"],
     deps = [
@@ -496,6 +509,24 @@ cc_binary(
     deps = [
         "//ortools/sat:cp_model",
         "//ortools/util:time_limit",
+    ],
+)
+
+cc_binary(
+    name = "vector_bin_packing_solver",
+    srcs = [
+        "vector_bin_packing_solver.cc",
+    ],
+    deps = [
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+        "//ortools/base:file",
+        "//ortools/base",
+        "//ortools/packing:arc_flow_builder",
+        "//ortools/packing:arc_flow_solver",
+        "//ortools/packing:vector_bin_packing_cc_proto",
+        "//ortools/packing:vector_bin_packing_parser",
     ],
 )
 

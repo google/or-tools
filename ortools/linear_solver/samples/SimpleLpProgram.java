@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -22,50 +22,72 @@ import com.google.ortools.linearsolver.MPSolver;
 import com.google.ortools.linearsolver.MPVariable;
 // [END import]
 
-/** Minimal Linear Programming example to showcase calling the solver.*/
-public class SimpleLpProgram {
-  public static void main(String[] args) throws Exception {
+/** Minimal Linear Programming example to showcase calling the solver. */
+public final class SimpleLpProgram {
+  public static void main(String[] args) {
     Loader.loadNativeLibraries();
     // [START solver]
     // Create the linear solver with the GLOP backend.
     MPSolver solver = MPSolver.createSolver("GLOP");
+    if (solver == null) {
+      System.out.println("Could not create solver SCIP");
+      return;
+    }
     // [END solver]
 
     // [START variables]
+    double infinity = java.lang.Double.POSITIVE_INFINITY;
     // Create the variables x and y.
-    MPVariable x = solver.makeNumVar(0.0, 1.0, "x");
-    MPVariable y = solver.makeNumVar(0.0, 2.0, "y");
+    MPVariable x = solver.makeNumVar(0.0, infinity, "x");
+    MPVariable y = solver.makeNumVar(0.0, infinity, "y");
 
     System.out.println("Number of variables = " + solver.numVariables());
     // [END variables]
 
     // [START constraints]
-    // Create a linear constraint, 0 <= x + y <= 2.
-    MPConstraint ct = solver.makeConstraint(0.0, 2.0, "ct");
-    ct.setCoefficient(x, 1);
-    ct.setCoefficient(y, 1);
+    // x + 7 * y <= 17.5.
+    MPConstraint c0 = solver.makeConstraint(-infinity, 17.5, "c0");
+    c0.setCoefficient(x, 1);
+    c0.setCoefficient(y, 7);
+
+    // x <= 3.5.
+    MPConstraint c1 = solver.makeConstraint(-infinity, 3.5, "c1");
+    c1.setCoefficient(x, 1);
+    c1.setCoefficient(y, 0);
 
     System.out.println("Number of constraints = " + solver.numConstraints());
     // [END constraints]
 
     // [START objective]
-    // Create the objective function, 3 * x + y.
+    // Maximize x + 10 * y.
     MPObjective objective = solver.objective();
-    objective.setCoefficient(x, 3);
-    objective.setCoefficient(y, 1);
+    objective.setCoefficient(x, 1);
+    objective.setCoefficient(y, 10);
     objective.setMaximization();
     // [END objective]
 
     // [START solve]
-    solver.solve();
+    final MPSolver.ResultStatus resultStatus = solver.solve();
     // [END solve]
 
     // [START print_solution]
-    System.out.println("Solution:");
-    System.out.println("Objective value = " + objective.value());
-    System.out.println("x = " + x.solutionValue());
-    System.out.println("y = " + y.solutionValue());
+    if (resultStatus == MPSolver.ResultStatus.OPTIMAL) {
+      System.out.println("Solution:");
+      System.out.println("Objective value = " + objective.value());
+      System.out.println("x = " + x.solutionValue());
+      System.out.println("y = " + y.solutionValue());
+    } else {
+      System.err.println("The problem does not have an optimal solution!");
+    }
     // [END print_solution]
+
+    // [START advanced]
+    System.out.println("\nAdvanced usage:");
+    System.out.println("Problem solved in " + solver.wallTime() + " milliseconds");
+    System.out.println("Problem solved in " + solver.iterations() + " iterations");
+    // [END advanced]
   }
+
+  private SimpleLpProgram() {}
 }
 // [END program]

@@ -1,0 +1,144 @@
+// Copyright 2010-2021 Google LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Updates an existing Model proto.
+syntax = "proto3";
+
+package operations_research.math_opt;
+
+import "ortools/math_opt/model.proto";
+import "ortools/math_opt/sparse_containers.proto";
+
+// Updates to existing variables in a ModelProto.
+//
+// Applies only to existing variables in a model, for new variables, see
+// ModelUpdateProto.new_variables.
+message VariableUpdatesProto {
+  // Updates ModelProto.variables.lower_bounds.
+  //
+  // Requirements:
+  //  * lower_bounds.ids must be from ModelProto.variables.ids.
+  //  * lower_bounds.values must be < infinity.
+  //  * Unset values are unchanged.
+  SparseDoubleVectorProto lower_bounds = 1;
+
+  // Updates ModelProto.variables.upper_bounds.
+  //
+  // Requirements:
+  //  * upper_bounds.ids must be from ModelProto.variables.ids.
+  //  * upper_bounds.values must be > -infinity.
+  //  * Unset values are unchanged.
+  SparseDoubleVectorProto upper_bounds = 2;
+
+  // Updates ModelProto.variables.integers.
+  //
+  // Requirements:
+  //  * integers.ids must be from ModelProto.variables.ids.
+  //  * Unset values are unchanged.
+  SparseBoolVectorProto integers = 3;
+}
+
+// Updates the objective of a Model, both for existing and new variables.
+message ObjectiveUpdatesProto {
+  // Not set indicates no change, false is minimize, true is maximize.
+  optional bool direction_update = 1;
+  // Not set indicates not change, otherwise the new offset.
+  optional double offset_update = 2;
+
+  // Updates ModelProto.objective.linear_coefficients.
+  //
+  // Requirements:
+  //  * linear_coefficients.ids must be variable ids, either existing one (from
+  //    ModelProto.variables.ids) or new ones (from
+  //    ModelUpdateProto.new_variables.ids).
+  //  * linear_coefficients.values must be finite
+  //  * Unset values are unchanged.
+  //  * The value 0.0 removes a variable from the linear objective. This
+  //    value should only be used for existing variables.
+  SparseDoubleVectorProto linear_coefficients = 3;
+}
+
+// Updates to existing linear constraints in a ModelProto.
+message LinearConstraintUpdatesProto {
+  // Updates ModelProto.linear_constraints.lower_bounds.
+  //
+  // Requirements:
+  //  * lower_bounds.ids must be from ModelProto.linear_constraints.ids.
+  //  * lower_bounds.values must be < infinity.
+  //  * Unset values are unchanged.
+  SparseDoubleVectorProto lower_bounds = 1;
+  // Updates ModelProto.linear_constraints.upper_bounds.
+  //
+  // Requirements:
+  //  * upper_bounds.ids must be from ModelProto.linear_constraints.ids.
+  //  * upper_bounds.values must be > -infinity.
+  //  * Unset values are unchanged.
+  SparseDoubleVectorProto upper_bounds = 2;
+}
+
+// Updates to a ModelProto.
+message ModelUpdateProto {
+  // Removes variables from the model.
+  //
+  // Values must be in strictly increasing order. Apply only to existing
+  // variable ids that have not yet been deleted. The ids of deleted variables
+  // should not appear in other fields (e.g. variable_updates,
+  // objective_updates, linear_constraint_matrix_updates).
+  repeated int64 deleted_variable_ids = 1;
+
+  // Removes linear constraints from the model.
+  //
+  // Values must be in strictly increasing order. Apply only to existing
+  // linear constraint ids that have not yet been deleted. The ids of deleted
+  // linear constraints should not appear in other fields (e.g.
+  // linear_constraint_updates, linear_constraint_matrix_updates).
+  repeated int64 deleted_linear_constraint_ids = 2;
+
+  // Updates properties of existing variables. Should not contain any deleted
+  // variable ids.
+  VariableUpdatesProto variable_updates = 3;
+
+  // Updates properties of existing linear constraints. Should not contain any
+  // deleted linear constraints ids.
+  LinearConstraintUpdatesProto linear_constraint_updates = 4;
+
+  // Add new variables to the model. All new_variables.ids must be greater than
+  // the existing model's largest variable id. All nonempty names should be
+  // distinct from existing names. TODO(b/169575522): we may relax this.
+  VariablesProto new_variables = 5;
+
+  // Add new linear constraints to the model. All new_linear_constraints.ids
+  // must be greater than the existing model's largest linear constraints id.
+  // All nonempty names should be distinct from existing names.
+  // TODO(b/169575522): we may relax this.
+  LinearConstraintsProto new_linear_constraints = 6;
+
+  // Updates the objective, both for existing and new variables.
+  ObjectiveUpdatesProto objective_updates = 7;
+
+  // Updates the linear constraint matrix, both for existing and new
+  // variables/linear constraints.
+  //
+  // Requirements:
+  //  * linear_constraint_matrix_updates.row_ids are linear constraint ids,
+  //    either existing or new.
+  //  * linear_constraint_matrix_updates.column_ids are variables ids, either
+  //    existing or new.
+  //  * Matrix entries are unchanged if the (constraint, variable) pair is
+  //    existing and unset.
+  //  * Matrix entries are zero if either the constraint or variable is new and
+  //    the (constraint, variable) pair is unset.
+  //  * Zero values delete existing entries, and have no effect for new entries.
+  //  * linear_constraint_matrix.values must all be finite.
+  SparseDoubleMatrixProto linear_constraint_matrix_updates = 8;
+}

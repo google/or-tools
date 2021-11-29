@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,13 +14,16 @@
 #ifndef OR_TOOLS_SAT_UTIL_H_
 #define OR_TOOLS_SAT_UTIL_H_
 
+#include <cstdint>
 #include <deque>
 
+#include "absl/random/bit_gen_ref.h"
 #include "absl/random/random.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/random_engine.h"
+#include "ortools/util/time_limit.h"
 
 #if !defined(__PORTABLE_PLATFORM__)
 #include "google/protobuf/descriptor.h"
@@ -30,14 +33,44 @@ namespace operations_research {
 namespace sat {
 
 // The model "singleton" random engine used in the solver.
-struct ModelRandomGenerator : public random_engine_t {
+//
+// In test, we usually set use_absl_random() so that the sequence is changed at
+// each invocation. This way, clients do not relly on the wrong assumption that
+// a particular optimal solution will be returned if they are many equivalent
+// ones.
+class ModelRandomGenerator : public absl::BitGenRef {
+ public:
   // We seed the strategy at creation only. This should be enough for our use
   // case since the SatParameters is set first before the solver is created. We
   // also never really need to change the seed afterwards, it is just used to
   // diversify solves with identical parameters on different Model objects.
-  explicit ModelRandomGenerator(Model* model) : random_engine_t() {
-    seed(model->GetOrCreate<SatParameters>()->random_seed());
+  explicit ModelRandomGenerator(Model* model)
+      : absl::BitGenRef(deterministic_random_) {
+    const auto& params = *model->GetOrCreate<SatParameters>();
+    deterministic_random_.seed(params.random_seed());
+    if (params.use_absl_random()) {
+      absl_random_ = absl::BitGen(absl::SeedSeq({params.random_seed()}));
+      absl::BitGenRef::operator=(absl::BitGenRef(absl_random_));
+    }
   }
+
+  // This is just used to display ABSL_RANDOM_SALT_OVERRIDE in the log so that
+  // it is possible to reproduce a failure more easily while looking at a solver
+  // log.
+  //
+  // TODO(user): I didn't find a cleaner way to log this.
+  void LogSalt() const {}
+
+ private:
+  random_engine_t deterministic_random_;
+  absl::BitGen absl_random_;
+};
+
+// The model "singleton" shared time limit.
+class ModelSharedTimeLimit : public SharedTimeLimit {
+ public:
+  explicit ModelSharedTimeLimit(Model* model)
+      : SharedTimeLimit(model->GetOrCreate<TimeLimit>()) {}
 };
 
 // Randomizes the decision heuristic of the given SatParameters.
@@ -111,13 +144,13 @@ class IncrementalAverage {
   void Reset(double reset_value);
 
   double CurrentAverage() const { return average_; }
-  int64 NumRecords() const { return num_records_; }
+  int64_t NumRecords() const { return num_records_; }
 
   void AddData(double new_record);
 
  private:
   double average_ = 0.0;
-  int64 num_records_ = 0;
+  int64_t num_records_ = 0;
 };
 
 // Manages exponential moving averages defined as
@@ -136,13 +169,13 @@ class ExponentialMovingAverage {
   double CurrentAverage() const { return average_; }
 
   // Returns the total number of added records so far.
-  int64 NumRecords() const { return num_records_; }
+  int64_t NumRecords() const { return num_records_; }
 
   void AddData(double new_record);
 
  private:
   double average_ = 0.0;
-  int64 num_records_ = 0;
+  int64_t num_records_ = 0;
   const double decaying_factor_;
 };
 
@@ -161,7 +194,7 @@ class Percentile {
   void AddRecord(double record);
 
   // Returns number of stored records.
-  int64 NumRecords() const { return records_.size(); }
+  int64_t NumRecords() const { return records_.size(); }
 
   // Note that this is not fast and runs in O(n log n) for n records.
   double GetPercentile(double percent);
@@ -178,8 +211,8 @@ class Percentile {
 // regexps.
 //
 // This method is exposed for testing purposes.
-void CompressTuples(absl::Span<const int64> domain_sizes, int64 any_value,
-                    std::vector<std::vector<int64>>* tuples);
+void CompressTuples(absl::Span<const int64_t> domain_sizes, int64_t any_value,
+                    std::vector<std::vector<int64_t>>* tuples);
 
 }  // namespace sat
 }  // namespace operations_research

@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,9 +13,13 @@
 
 #include "ortools/bop/bop_portfolio.h"
 
+#include <cstdint>
+#include <limits>
+
 #include "absl/memory/memory.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/bop/bop_fs.h"
 #include "ortools/bop/bop_lns.h"
 #include "ortools/bop/bop_ls.h"
@@ -46,7 +50,7 @@ void BuildObjectiveTerms(const LinearBooleanProblem& problem,
     CHECK_NE(objective.coefficients(i), 0);
 
     const VariableIndex var_id(objective.literals(i) - 1);
-    const int64 weight = objective.coefficients(i);
+    const int64_t weight = objective.coefficients(i);
     objective_terms->push_back(BopConstraintTerm(var_id, weight));
   }
 }
@@ -135,9 +139,9 @@ BopOptimizerBase::Status PortfolioOptimizer::Optimize(
         i, optimizers_[i]->ShouldBeRun(problem_state));
   }
 
-  const int64 init_cost = problem_state.solution().IsFeasible()
-                              ? problem_state.solution().GetCost()
-                              : kint64max;
+  const int64_t init_cost = problem_state.solution().IsFeasible()
+                                ? problem_state.solution().GetCost()
+                                : std::numeric_limits<int64_t>::max();
   const double init_deterministic_time =
       time_limit->GetElapsedDeterministicTime();
 
@@ -166,11 +170,12 @@ BopOptimizerBase::Status PortfolioOptimizer::Optimize(
   // The gain is defined as 1 for the first solution.
   // TODO(user): Is 1 the right value? It might be better to use a percentage
   //              of the gap, or use the same gain as for the second solution.
-  const int64 gain = optimization_status == BopOptimizerBase::SOLUTION_FOUND
-                         ? (init_cost == kint64max
-                                ? 1
-                                : init_cost - learned_info->solution.GetCost())
-                         : 0;
+  const int64_t gain =
+      optimization_status == BopOptimizerBase::SOLUTION_FOUND
+          ? (init_cost == std::numeric_limits<int64_t>::max()
+                 ? 1
+                 : init_cost - learned_info->solution.GetCost())
+          : 0;
   const double spent_deterministic_time =
       time_limit->GetElapsedDeterministicTime() - init_deterministic_time;
   selector_->UpdateScore(gain, spent_deterministic_time);
@@ -385,7 +390,7 @@ OptimizerIndex OptimizerSelector::SelectOptimizer() {
   return run_infos_[selected_index_].optimizer_index;
 }
 
-void OptimizerSelector::UpdateScore(int64 gain, double time_spent) {
+void OptimizerSelector::UpdateScore(int64_t gain, double time_spent) {
   const bool new_solution_found = gain != 0;
   if (new_solution_found) NewSolutionFound(gain);
   UpdateDeterministicTime(time_spent);
@@ -442,7 +447,7 @@ void OptimizerSelector::DebugPrint() const {
   }
 }
 
-void OptimizerSelector::NewSolutionFound(int64 gain) {
+void OptimizerSelector::NewSolutionFound(int64_t gain) {
   run_infos_[selected_index_].num_successes++;
   run_infos_[selected_index_].total_gain += gain;
 

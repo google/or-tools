@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -95,22 +95,22 @@ File* File::Open(const char* const name, const char* const flag) {
   return f;
 }
 
-char* File::ReadLine(char* const output, uint64 max_length) {
+char* File::ReadLine(char* const output, uint64_t max_length) {
   return fgets(output, max_length, f_);
 }
 
-int64 File::ReadToString(std::string* const output, uint64 max_length) {
+int64_t File::ReadToString(std::string* const output, uint64_t max_length) {
   CHECK(output != nullptr);
   output->clear();
 
   if (max_length == 0) return 0;
 
-  int64 needed = max_length;
+  int64_t needed = max_length;
   int bufsize = (needed < (2 << 20) ? needed : (2 << 20));
 
   std::unique_ptr<char[]> buf(new char[bufsize]);
 
-  int64 nread = 0;
+  int64_t nread = 0;
   while (needed > 0) {
     nread = Read(buf.get(), (bufsize < needed ? bufsize : needed));
     if (nread > 0) {
@@ -120,7 +120,7 @@ int64 File::ReadToString(std::string* const output, uint64 max_length) {
       break;
     }
   }
-  return (nread >= 0 ? static_cast<int64>(output->size()) : -1);
+  return (nread >= 0 ? static_cast<int64_t>(output->size()) : -1);
 }
 
 size_t File::WriteString(const std::string& line) {
@@ -165,8 +165,16 @@ absl::Status GetContents(const absl::string_view& filename, std::string* output,
   if (flags == Defaults()) {
     File* file = File::Open(filename, "r");
     if (file != NULL) {
-      const int64 size = file->Size();
+      const int64_t size = file->Size();
       if (file->ReadToString(output, size) == size) return absl::OkStatus();
+#if defined(_MSC_VER)
+      // On windows, binary files needs to be opened with the "rb" flags.
+      file->Close();
+      // Retry in binary mode.
+      File* file = File::Open(filename, "rb");
+      const int64_t b_size = file->Size();
+      if (file->ReadToString(output, b_size) == b_size) return absl::OkStatus();
+#endif  // _MSC_VER
     }
   }
   return absl::Status(absl::StatusCode::kInvalidArgument,

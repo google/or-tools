@@ -1,5 +1,5 @@
 # This file is just an orchestration
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.15)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 # Apple: Don't modify install_name when touching RPATH.
@@ -138,6 +138,17 @@ message(STATUS "Build .Net examples: ${BUILD_DOTNET_EXAMPLES}")
 #option(BUILD_DOC "Build doxygen" OFF)
 #message(STATUS "Build doxygen: ${BUILD_DOC}")
 
+if(BUILD_JAVA)
+  option(SKIP_GPG "Disable GPG sign" ON)
+  message(STATUS "Java disable gpg:sign: ${SKIP_GPG}")
+
+  option(UNIVERSAL_JAVA_PACKAGE "Build a Java multi OS Package" OFF)
+  message(STATUS "Java multiple os package: ${UNIVERSAL_JAVA_PACKAGE}")
+
+  set(GPG_ARGS "<arg>--pinentry-mode</arg><arg>loopback</arg>" CACHE STRING "Extra options for GPG")
+  message(STATUS "GPG options: ${GPG_ARGS}")
+endif()
+
 # By default all dependencies are NOT built (i.e. BUILD_DEPS=OFF),
 # BUT if building any wrappers (Python, Java or .Net) then BUILD_DEPS=ON.
 if(BUILD_PYTHON OR BUILD_JAVA OR BUILD_DOTNET)
@@ -234,6 +245,7 @@ check_type_size("int *" SIZEOF_INT_P LANGUAGE CXX)
 message(STATUS "Found int * size: ${SIZEOF_INT_P}")
 cmake_pop_check_state()
 
+include(host)
 include(deps)
 include(cpp)
 include(flatzinc)

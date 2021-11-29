@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -17,6 +17,7 @@
 #ifndef OR_TOOLS_SAT_CLAUSE_H_
 #define OR_TOOLS_SAT_CLAUSE_H_
 
+#include <cstdint>
 #include <deque>
 #include <string>
 #include <utility>
@@ -25,6 +26,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/container/inlined_vector.h"
+#include "absl/random/bit_gen_ref.h"
 #include "absl/types/span.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/int_type.h"
@@ -37,7 +39,6 @@
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
-#include "ortools/util/random_engine.h"
 #include "ortools/util/stats.h"
 #include "ortools/util/time_limit.h"
 
@@ -128,7 +129,7 @@ class SatClause {
     for (const Literal l : new_clause) literals_[size_++] = l;
   }
 
-  int32 size_;
+  int32_t size_;
 
   // This class store the literals inline, and literals_ mark the starts of the
   // variable length portion.
@@ -142,7 +143,7 @@ class SatClause {
 // the learned one that we wants to keep forever do not have one.
 struct ClauseInfo {
   double activity = 0.0;
-  int32 lbd = 0;
+  int32_t lbd = 0;
   bool protected_during_next_cleanup = false;
 };
 
@@ -207,7 +208,7 @@ class LiteralWatchers : public SatPropagator {
   // zero) and remove them from AllClausesInCreationOrder() this work in
   // O(num_clauses()).
   void DeleteRemovedClauses();
-  int64 num_clauses() const { return clauses_.size(); }
+  int64_t num_clauses() const { return clauses_.size(); }
   const std::vector<SatClause*>& AllClausesInCreationOrder() const {
     return clauses_;
   }
@@ -219,22 +220,22 @@ class LiteralWatchers : public SatPropagator {
   bool IsRemovable(SatClause* const clause) const {
     return gtl::ContainsKey(clauses_info_, clause);
   }
-  int64 num_removable_clauses() const { return clauses_info_.size(); }
+  int64_t num_removable_clauses() const { return clauses_info_.size(); }
   absl::flat_hash_map<SatClause*, ClauseInfo>* mutable_clauses_info() {
     return &clauses_info_;
   }
 
   // Total number of clauses inspected during calls to PropagateOnFalse().
-  int64 num_inspected_clauses() const { return num_inspected_clauses_; }
-  int64 num_inspected_clause_literals() const {
+  int64_t num_inspected_clauses() const { return num_inspected_clauses_; }
+  int64_t num_inspected_clause_literals() const {
     return num_inspected_clause_literals_;
   }
 
   // The number of different literals (always twice the number of variables).
-  int64 literal_size() const { return needs_cleaning_.size().value(); }
+  int64_t literal_size() const { return needs_cleaning_.size().value(); }
 
   // Number of clauses currently watched.
-  int64 num_watched_clauses() const { return num_watched_clauses_; }
+  int64_t num_watched_clauses() const { return num_watched_clauses_; }
 
   void SetDratProofHandler(DratProofHandler* drat_proof_handler) {
     drat_proof_handler_ = drat_proof_handler;
@@ -302,7 +303,7 @@ class LiteralWatchers : public SatPropagator {
     // Note that ideally, this should be part of a SatClause, so it can be
     // shared across watchers. However, since we have 32 bits for "free" here
     // because of the struct alignment, we store it here instead.
-    int32 start_index;
+    int32_t start_index;
 
     SatClause* clause;
   };
@@ -344,9 +345,9 @@ class LiteralWatchers : public SatPropagator {
   BinaryImplicationGraph* implication_graph_;
   Trail* trail_;
 
-  int64 num_inspected_clauses_;
-  int64 num_inspected_clause_literals_;
-  int64 num_watched_clauses_;
+  int64_t num_inspected_clauses_;
+  int64_t num_inspected_clause_literals_;
+  int64_t num_watched_clauses_;
   mutable StatsGroup stats_;
 
   // For DetachAllClauses()/AttachAllClauses().
@@ -519,7 +520,7 @@ class BinaryImplicationGraph : public SatPropagator {
                              SparseBitset<BooleanVariable>* marked);
   void MinimizeConflictFirstWithTransitiveReduction(
       const Trail& trail, std::vector<Literal>* c,
-      SparseBitset<BooleanVariable>* marked, random_engine_t* random);
+      SparseBitset<BooleanVariable>* marked, absl::BitGenRef random);
 
   // This must only be called at decision level 0 after all the possible
   // propagations. It:
@@ -586,7 +587,7 @@ class BinaryImplicationGraph : public SatPropagator {
   // Returns false if the model is detected to be UNSAT (this needs to call
   // DetectEquivalences() if not already done).
   bool TransformIntoMaxCliques(std::vector<std::vector<Literal>>* at_most_ones,
-                               int64 max_num_explored_nodes = 1e8);
+                               int64_t max_num_explored_nodes = 1e8);
 
   // LP clique cut heuristic. Returns a set of "at most one" constraints on the
   // given literals or their negation that are violated by the current LP
@@ -602,14 +603,14 @@ class BinaryImplicationGraph : public SatPropagator {
       const std::vector<double>& lp_values);
 
   // Number of literal propagated by this class (including conflicts).
-  int64 num_propagations() const { return num_propagations_; }
+  int64_t num_propagations() const { return num_propagations_; }
 
   // Number of literals inspected by this class during propagation.
-  int64 num_inspections() const { return num_inspections_; }
+  int64_t num_inspections() const { return num_inspections_; }
 
   // MinimizeClause() stats.
-  int64 num_minimization() const { return num_minimization_; }
-  int64 num_literals_removed() const { return num_literals_removed_; }
+  int64_t num_minimization() const { return num_minimization_; }
+  int64_t num_literals_removed() const { return num_literals_removed_; }
 
   // Returns true if this literal is fixed or is equivalent to another literal.
   // This means that it can just be ignored in most situation.
@@ -618,13 +619,13 @@ class BinaryImplicationGraph : public SatPropagator {
   // time. This is because we always use the lowest index as representative of
   // an equivalent class, so a redundant literal will stay that way.
   bool IsRedundant(Literal l) const { return is_redundant_[l.Index()]; }
-  int64 num_redundant_literals() const {
+  int64_t num_redundant_literals() const {
     CHECK_EQ(num_redundant_literals_ % 2, 0);
     return num_redundant_literals_;
   }
 
   // Number of implications removed by transitive reduction.
-  int64 num_redundant_implications() const {
+  int64_t num_redundant_implications() const {
     return num_redundant_implications_;
   }
 
@@ -632,8 +633,8 @@ class BinaryImplicationGraph : public SatPropagator {
   // not(a) are counted separately since they appear separately in our
   // propagation lists. The number of size 2 clauses that represent the same
   // thing is half this number.
-  int64 num_implications() const { return num_implications_; }
-  int64 literal_size() const { return implications_.size(); }
+  int64_t num_implications() const { return num_implications_; }
+  int64_t literal_size() const { return implications_.size(); }
 
   // Extract all the binary clauses managed by this class. The Output type must
   // support an AddBinaryClause(Literal a, Literal b) function.
@@ -702,7 +703,7 @@ class BinaryImplicationGraph : public SatPropagator {
   // var => not(a) then a must be false and this is detected and dealt with by
   // FindFailedLiteralAroundVar().
   bool FindFailedLiteralAroundVar(BooleanVariable var, bool* is_unsat);
-  int64 NumImplicationOnVariableRemoval(BooleanVariable var);
+  int64_t NumImplicationOnVariableRemoval(BooleanVariable var);
   void RemoveBooleanVariable(
       BooleanVariable var, std::deque<std::vector<Literal>>* postsolve_clauses);
   bool IsRemoved(Literal l) const { return is_removed_[l.Index()]; }
@@ -762,35 +763,36 @@ class BinaryImplicationGraph : public SatPropagator {
   //
   // Using InlinedVector helps quite a bit because on many problems, a literal
   // only implies a few others. Note that on a 64 bits computer we get exactly
-  // 6 inlined int32 elements without extra space, and the size of the inlined
+  // 6 inlined int32_t elements without extra space, and the size of the inlined
   // vector is 4 times 64 bits.
   //
-  // TODO(user): We could be even more efficient since a size of int32 is enough
-  // for us and we could store in common the inlined/not-inlined size.
+  // TODO(user): We could be even more efficient since a size of int32_t is
+  // enough for us and we could store in common the inlined/not-inlined size.
   absl::StrongVector<LiteralIndex, absl::InlinedVector<Literal, 6>>
       implications_;
-  int64 num_implications_ = 0;
+  int64_t num_implications_ = 0;
 
   // Internal representation of at_most_one constraints. Each entry point to the
-  // start of a constraint in the buffer. Contraints are terminated by
+  // start of a constraint in the buffer. Constraints are terminated by
   // kNoLiteral. When LiteralIndex is true, then all entry in the at most one
-  // constraint must be false except the one refering to LiteralIndex.
+  // constraint must be false except the one referring to LiteralIndex.
   //
   // TODO(user): We could be more cache efficient by combining this with
   // implications_ in some way. Do some propagation speed benchmark.
-  absl::StrongVector<LiteralIndex, absl::InlinedVector<int32, 6>> at_most_ones_;
+  absl::StrongVector<LiteralIndex, absl::InlinedVector<int32_t, 6>>
+      at_most_ones_;
   std::vector<Literal> at_most_one_buffer_;
 
   // Used by GenerateAtMostOnesWithLargeWeight().
   std::vector<std::vector<Literal>> tmp_cuts_;
 
   // Some stats.
-  int64 num_propagations_ = 0;
-  int64 num_inspections_ = 0;
-  int64 num_minimization_ = 0;
-  int64 num_literals_removed_ = 0;
-  int64 num_redundant_implications_ = 0;
-  int64 num_redundant_literals_ = 0;
+  int64_t num_propagations_ = 0;
+  int64_t num_inspections_ = 0;
+  int64_t num_minimization_ = 0;
+  int64_t num_literals_removed_ = 0;
+  int64_t num_redundant_implications_ = 0;
+  int64_t num_redundant_literals_ = 0;
 
   // Bitset used by MinimizeClause().
   // TODO(user): use the same one as the one used in the classic minimization
@@ -804,7 +806,7 @@ class BinaryImplicationGraph : public SatPropagator {
 
   // Used to limit the work done by ComputeTransitiveReduction() and
   // TransformIntoMaxCliques().
-  int64 work_done_in_mark_descendants_ = 0;
+  int64_t work_done_in_mark_descendants_ = 0;
 
   // Filled by DetectEquivalences().
   bool is_dag_ = false;

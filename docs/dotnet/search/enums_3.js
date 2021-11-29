@@ -1,5 +1,4 @@
 var searchData=
 [
-  ['incrementalityvalues_10110',['IncrementalityValues',['../classGoogle_1_1OrTools_1_1LinearSolver_1_1MPSolverParameters.html#a215b66c2ff063ffbf5b538ee402304cb',1,'Google::OrTools::LinearSolver::MPSolverParameters']]],
-  ['integerparam_10111',['IntegerParam',['../classGoogle_1_1OrTools_1_1LinearSolver_1_1MPSolverParameters.html#a7319655592ea63d50ef2a6645e309784',1,'Google::OrTools::LinearSolver::MPSolverParameters']]]
+  ['fproundingmethod_0',['FPRoundingMethod',['../classGoogle_1_1OrTools_1_1Sat_1_1SatParameters_1_1Types.html#a92e7530522cab73e8c3933ce30215794',1,'Google::OrTools::Sat::SatParameters::Types']]]
 ];

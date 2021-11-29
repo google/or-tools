@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,6 +14,8 @@
 #include "ortools/sat/cp_model_loader.h"
 
 #include <algorithm>
+#include <cstdint>
+#include <limits>
 #include <map>
 #include <memory>
 #include <set>
@@ -45,7 +47,10 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/symmetry.h"
 #include "ortools/sat/table.h"
+#include "ortools/sat/timetable.h"
+#include "ortools/util/logging.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 
@@ -55,21 +60,21 @@ namespace sat {
 namespace {
 
 template <typename Values>
-std::vector<int64> ValuesFromProto(const Values& values) {
-  return std::vector<int64>(values.begin(), values.end());
+std::vector<int64_t> ValuesFromProto(const Values& values) {
+  return std::vector<int64_t>(values.begin(), values.end());
 }
 
 void ComputeLinearBounds(const LinearConstraintProto& proto,
                          CpModelMapping* mapping, IntegerTrail* integer_trail,
-                         int64* sum_min, int64* sum_max) {
+                         int64_t* sum_min, int64_t* sum_max) {
   *sum_min = 0;
   *sum_max = 0;
 
   for (int i = 0; i < proto.vars_size(); ++i) {
-    const int64 coeff = proto.coeffs(i);
+    const int64_t coeff = proto.coeffs(i);
     const IntegerVariable var = mapping->Integer(proto.vars(i));
-    const int64 lb = integer_trail->LowerBound(var).value();
-    const int64 ub = integer_trail->UpperBound(var).value();
+    const int64_t lb = integer_trail->LowerBound(var).value();
+    const int64_t ub = integer_trail->UpperBound(var).value();
     if (coeff >= 0) {
       (*sum_min) += coeff * lb;
       (*sum_max) += coeff * ub;
@@ -88,16 +93,16 @@ bool ConstraintIsEq(const LinearConstraintProto& proto) {
 // We check if the constraint is a sum(ax * xi) != value.
 bool ConstraintIsNEq(const LinearConstraintProto& proto,
                      CpModelMapping* mapping, IntegerTrail* integer_trail,
-                     int64* single_value) {
-  int64 sum_min = 0;
-  int64 sum_max = 0;
+                     int64_t* single_value) {
+  int64_t sum_min = 0;
+  int64_t sum_max = 0;
   ComputeLinearBounds(proto, mapping, integer_trail, &sum_min, &sum_max);
 
   const Domain complement =
       Domain(sum_min, sum_max)
           .IntersectionWith(ReadDomainFromProto(proto).Complement());
   if (complement.IsEmpty()) return false;
-  const int64 value = complement.Min();
+  const int64_t value = complement.Min();
 
   if (complement.Size() == 1) {
     if (single_value != nullptr) {
@@ -110,9 +115,9 @@ bool ConstraintIsNEq(const LinearConstraintProto& proto,
 
 }  // namespace
 
-void CpModelMapping::CreateVariables(const CpModelProto& model_proto,
-                                     bool view_all_booleans_as_integers,
-                                     Model* m) {
+void LoadVariables(const CpModelProto& model_proto,
+                   bool view_all_booleans_as_integers, Model* m) {
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
   const int num_proto_variables = model_proto.variables_size();
 
   // All [0, 1] variables always have a corresponding Boolean, even if it is
@@ -125,14 +130,14 @@ void CpModelMapping::CreateVariables(const CpModelProto& model_proto,
     std::vector<BooleanVariable> false_variables;
     std::vector<BooleanVariable> true_variables;
 
-    booleans_.resize(num_proto_variables, kNoBooleanVariable);
-    reverse_boolean_map_.resize(num_proto_variables, -1);
+    mapping->booleans_.resize(num_proto_variables, kNoBooleanVariable);
+    mapping->reverse_boolean_map_.resize(num_proto_variables, -1);
     for (int i = 0; i < num_proto_variables; ++i) {
       const auto& domain = model_proto.variables(i).domain();
       if (domain.size() != 2) continue;
       if (domain[0] >= 0 && domain[1] <= 1) {
-        booleans_[i] = new_var;
-        reverse_boolean_map_[new_var] = i;
+        mapping->booleans_[i] = new_var;
+        mapping->reverse_boolean_map_[new_var] = i;
         if (domain[1] == 0) {
           false_variables.push_back(new_var);
         } else if (domain[0] == 1) {
@@ -172,24 +177,18 @@ void CpModelMapping::CreateVariables(const CpModelProto& model_proto,
       }
     }
 
-    // Add the objectives and search heuristics variables that needs to be
-    // referenceable as integer even if they are only used as Booleans.
+    // Add the objectives variables that needs to be referenceable as integer
+    // even if they are only used as Booleans.
     if (model_proto.has_objective()) {
       for (const int obj_var : model_proto.objective().vars()) {
         used_variables.insert(PositiveRef(obj_var));
-      }
-    }
-    for (const DecisionStrategyProto& strategy :
-         model_proto.search_strategy()) {
-      for (const int var : strategy.variables()) {
-        used_variables.insert(PositiveRef(var));
       }
     }
 
     // Make sure any unused variable, that is not already a Boolean is
     // considered "used".
     for (int i = 0; i < num_proto_variables; ++i) {
-      if (booleans_[i] == kNoBooleanVariable) {
+      if (mapping->booleans_[i] == kNoBooleanVariable) {
         used_variables.insert(i);
       }
     }
@@ -199,34 +198,38 @@ void CpModelMapping::CreateVariables(const CpModelProto& model_proto,
                                          used_variables.end());
     gtl::STLSortAndRemoveDuplicates(&var_to_instantiate_as_integer);
   }
-  integers_.resize(num_proto_variables, kNoIntegerVariable);
+  mapping->integers_.resize(num_proto_variables, kNoIntegerVariable);
 
   auto* integer_trail = m->GetOrCreate<IntegerTrail>();
   integer_trail->ReserveSpaceForNumVariables(
       var_to_instantiate_as_integer.size());
-  reverse_integer_map_.resize(2 * var_to_instantiate_as_integer.size(), -1);
+  mapping->reverse_integer_map_.resize(2 * var_to_instantiate_as_integer.size(),
+                                       -1);
   for (const int i : var_to_instantiate_as_integer) {
     const auto& var_proto = model_proto.variables(i);
-    integers_[i] =
+    mapping->integers_[i] =
         integer_trail->AddIntegerVariable(ReadDomainFromProto(var_proto));
-    DCHECK_LT(integers_[i], reverse_integer_map_.size());
-    reverse_integer_map_[integers_[i]] = i;
+    DCHECK_LT(mapping->integers_[i], mapping->reverse_integer_map_.size());
+    mapping->reverse_integer_map_[mapping->integers_[i]] = i;
   }
 
   auto* encoder = m->GetOrCreate<IntegerEncoder>();
+  auto* intervals_repository = m->GetOrCreate<IntervalsRepository>();
 
   // Link any variable that has both views.
   for (int i = 0; i < num_proto_variables; ++i) {
-    if (integers_[i] == kNoIntegerVariable) continue;
-    if (booleans_[i] == kNoBooleanVariable) continue;
+    if (mapping->integers_[i] == kNoIntegerVariable) continue;
+    if (mapping->booleans_[i] == kNoBooleanVariable) continue;
 
     // Associate with corresponding integer variable.
-    encoder->AssociateToIntegerEqualValue(sat::Literal(booleans_[i], true),
-                                          integers_[i], IntegerValue(1));
+    encoder->AssociateToIntegerEqualValue(
+        sat::Literal(mapping->booleans_[i], true), mapping->integers_[i],
+        IntegerValue(1));
   }
 
   // Create the interval variables.
-  intervals_.resize(model_proto.constraints_size(), kNoIntervalVariable);
+  mapping->intervals_.resize(model_proto.constraints_size(),
+                             kNoIntervalVariable);
   for (int c = 0; c < model_proto.constraints_size(); ++c) {
     const ConstraintProto& ct = model_proto.constraints(c);
     if (ct.constraint_case() != ConstraintProto::ConstraintCase::kInterval) {
@@ -234,20 +237,92 @@ void CpModelMapping::CreateVariables(const CpModelProto& model_proto,
     }
     if (HasEnforcementLiteral(ct)) {
       const sat::Literal enforcement_literal =
-          Literal(ct.enforcement_literal(0));
+          mapping->Literal(ct.enforcement_literal(0));
       // TODO(user): Fix the constant variable situation. An optional interval
       // with constant start/end or size cannot share the same constant
       // variable if it is used in non-optional situation.
-      intervals_[c] = m->Add(NewOptionalInterval(
-          Integer(ct.interval().start()), Integer(ct.interval().end()),
-          Integer(ct.interval().size()), enforcement_literal));
+      if (ct.interval().has_start_view()) {
+        mapping->intervals_[c] = intervals_repository->CreateInterval(
+            mapping->LoadAffineView(ct.interval().start_view()),
+            mapping->LoadAffineView(ct.interval().end_view()),
+            mapping->LoadAffineView(ct.interval().size_view()),
+            enforcement_literal.Index(),
+            /*add_linear_relation=*/false);
+      } else {
+        mapping->intervals_[c] = m->Add(NewOptionalInterval(
+            mapping->Integer(ct.interval().start()),
+            mapping->Integer(ct.interval().end()),
+            mapping->Integer(ct.interval().size()), enforcement_literal));
+      }
     } else {
-      intervals_[c] = m->Add(NewInterval(Integer(ct.interval().start()),
-                                         Integer(ct.interval().end()),
-                                         Integer(ct.interval().size())));
+      if (ct.interval().has_start_view()) {
+        mapping->intervals_[c] = intervals_repository->CreateInterval(
+            mapping->LoadAffineView(ct.interval().start_view()),
+            mapping->LoadAffineView(ct.interval().end_view()),
+            mapping->LoadAffineView(ct.interval().size_view()), kNoLiteralIndex,
+            /*add_linear_relation=*/false);
+      } else {
+        mapping->intervals_[c] =
+            m->Add(NewInterval(mapping->Integer(ct.interval().start()),
+                               mapping->Integer(ct.interval().end()),
+                               mapping->Integer(ct.interval().size())));
+      }
     }
-    already_loaded_ct_.insert(&ct);
+    mapping->already_loaded_ct_.insert(&ct);
   }
+}
+
+void LoadBooleanSymmetries(const CpModelProto& model_proto, Model* m) {
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
+  const SymmetryProto symmetry = model_proto.symmetry();
+  if (symmetry.permutations().empty()) return;
+
+  auto* sat_solver = m->GetOrCreate<SatSolver>();
+  auto* symmetry_handler = m->GetOrCreate<SymmetryPropagator>();
+  sat_solver->AddPropagator(symmetry_handler);
+  const int num_literals = 2 * sat_solver->NumVariables();
+
+  for (const SparsePermutationProto& perm : symmetry.permutations()) {
+    bool all_bool = true;
+    for (const int var : perm.support()) {
+      if (!mapping->IsBoolean(var)) {
+        all_bool = false;
+        break;
+      }
+    }
+    if (!all_bool) continue;
+
+    // Convert the variable symmetry to a "literal" one.
+    auto literal_permutation =
+        absl::make_unique<SparsePermutation>(num_literals);
+    int support_index = 0;
+    const int num_cycle = perm.cycle_sizes().size();
+    for (int i = 0; i < num_cycle; ++i) {
+      const int size = perm.cycle_sizes(i);
+      const int saved_support_index = support_index;
+      for (int j = 0; j < size; ++j) {
+        const int var = perm.support(support_index++);
+        literal_permutation->AddToCurrentCycle(
+            mapping->Literal(var).Index().value());
+      }
+      literal_permutation->CloseCurrentCycle();
+
+      // Note that we also need to add the corresponding cycle for the negated
+      // literals.
+      support_index = saved_support_index;
+      for (int j = 0; j < size; ++j) {
+        const int var = perm.support(support_index++);
+        literal_permutation->AddToCurrentCycle(
+            mapping->Literal(var).NegatedIndex().value());
+      }
+      literal_permutation->CloseCurrentCycle();
+    }
+    symmetry_handler->AddSymmetry(std::move(literal_permutation));
+  }
+
+  SOLVER_LOG(m->GetOrCreate<SolverLogger>(), "Added ",
+             symmetry_handler->num_permutations(),
+             " symmetry to the SAT solver.");
 }
 
 // The logic assumes that the linear constraints have been presolved, so that
@@ -256,8 +331,8 @@ void CpModelMapping::CreateVariables(const CpModelProto& model_proto,
 //
 // TODO(user): Regroup/presolve two encoding like b => x > 2 and the same
 // Boolean b => x > 5. These shouldn't happen if we merge linear constraints.
-void CpModelMapping::ExtractEncoding(const CpModelProto& model_proto,
-                                     Model* m) {
+void ExtractEncoding(const CpModelProto& model_proto, Model* m) {
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
   auto* encoder = m->GetOrCreate<IntegerEncoder>();
   auto* integer_trail = m->GetOrCreate<IntegerTrail>();
   auto* sat_solver = m->GetOrCreate<SatSolver>();
@@ -271,7 +346,7 @@ void CpModelMapping::ExtractEncoding(const CpModelProto& model_proto,
   struct EqualityDetectionHelper {
     const ConstraintProto* ct;
     sat::Literal literal;
-    int64 value;
+    int64_t value;
     bool is_equality;  // false if != instead.
 
     bool operator<(const EqualityDetectionHelper& o) const {
@@ -308,7 +383,7 @@ void CpModelMapping::ExtractEncoding(const CpModelProto& model_proto,
   };
   std::vector<InequalityDetectionHelper> inequalities;
 
-  // Loop over all contraints and fill var_to_equalities and inequalities.
+  // Loop over all constraints and fill var_to_equalities and inequalities.
   for (const ConstraintProto& ct : model_proto.constraints()) {
     if (ct.constraint_case() != ConstraintProto::ConstraintCase::kLinear) {
       continue;
@@ -317,7 +392,10 @@ void CpModelMapping::ExtractEncoding(const CpModelProto& model_proto,
     if (ct.linear().vars_size() != 1) continue;
 
     // ct is a linear constraint with one term and one enforcement literal.
-    const sat::Literal enforcement_literal = Literal(ct.enforcement_literal(0));
+    const sat::Literal enforcement_literal =
+        mapping->Literal(ct.enforcement_literal(0));
+    if (sat_solver->Assignment().LiteralIsFalse(enforcement_literal)) continue;
+
     const int ref = ct.linear().vars(0);
     const int var = PositiveRef(ref);
 
@@ -327,23 +405,41 @@ void CpModelMapping::ExtractEncoding(const CpModelProto& model_proto,
             .InverseMultiplicationBy(ct.linear().coeffs(0) *
                                      (RefIsPositive(ref) ? 1 : -1));
 
+    if (domain_if_enforced.IsEmpty()) {
+      if (!sat_solver->AddUnitClause(enforcement_literal.Negated())) return;
+      continue;
+    }
+
     // Detect enforcement_literal => (var >= value or var <= value).
     if (domain_if_enforced.NumIntervals() == 1) {
       if (domain_if_enforced.Max() >= domain.Max() &&
           domain_if_enforced.Min() > domain.Min()) {
-        inequalities.push_back(
-            {&ct, enforcement_literal,
-             IntegerLiteral::GreaterOrEqual(
-                 Integer(var), IntegerValue(domain_if_enforced.Min()))});
-        implied_bounds->Add(enforcement_literal, inequalities.back().i_lit);
+        inequalities.push_back({&ct, enforcement_literal,
+                                IntegerLiteral::GreaterOrEqual(
+                                    mapping->Integer(var),
+                                    IntegerValue(domain_if_enforced.Min()))});
       } else if (domain_if_enforced.Min() <= domain.Min() &&
                  domain_if_enforced.Max() < domain.Max()) {
-        inequalities.push_back(
-            {&ct, enforcement_literal,
-             IntegerLiteral::LowerOrEqual(
-                 Integer(var), IntegerValue(domain_if_enforced.Max()))});
-        implied_bounds->Add(enforcement_literal, inequalities.back().i_lit);
+        inequalities.push_back({&ct, enforcement_literal,
+                                IntegerLiteral::LowerOrEqual(
+                                    mapping->Integer(var),
+                                    IntegerValue(domain_if_enforced.Max()))});
       }
+    }
+
+    // Detect implied bounds. The test is less strict than the above
+    // test.
+    if (domain_if_enforced.Min() > domain.Min()) {
+      implied_bounds->Add(
+          enforcement_literal,
+          IntegerLiteral::GreaterOrEqual(
+              mapping->Integer(var), IntegerValue(domain_if_enforced.Min())));
+    }
+    if (domain_if_enforced.Max() < domain.Max()) {
+      implied_bounds->Add(
+          enforcement_literal,
+          IntegerLiteral::LowerOrEqual(mapping->Integer(var),
+                                       IntegerValue(domain_if_enforced.Max())));
     }
 
     // Detect enforcement_literal => (var == value or var != value).
@@ -357,7 +453,7 @@ void CpModelMapping::ExtractEncoding(const CpModelProto& model_proto,
         var_to_equalities[var].push_back(
             {&ct, enforcement_literal, inter.Min(), true});
         if (domain.Contains(inter.Min())) {
-          variables_to_encoded_values_[var].insert(inter.Min());
+          mapping->variables_to_encoded_values_[var].insert(inter.Min());
         }
       }
     }
@@ -368,7 +464,7 @@ void CpModelMapping::ExtractEncoding(const CpModelProto& model_proto,
         var_to_equalities[var].push_back(
             {&ct, enforcement_literal, inter.Min(), false});
         if (domain.Contains(inter.Min())) {
-          variables_to_encoded_values_[var].insert(inter.Min());
+          mapping->variables_to_encoded_values_[var].insert(inter.Min());
         }
       }
     }
@@ -400,23 +496,23 @@ void CpModelMapping::ExtractEncoding(const CpModelProto& model_proto,
       ++num_inequalities;
       encoder->AssociateToIntegerLiteral(inequalities[i].literal,
                                          inequalities[i].i_lit);
-      already_loaded_ct_.insert(inequalities[i].ct);
-      already_loaded_ct_.insert(inequalities[i + 1].ct);
+      mapping->already_loaded_ct_.insert(inequalities[i].ct);
+      mapping->already_loaded_ct_.insert(inequalities[i + 1].ct);
     }
   }
 
   // Encode the half-inequalities.
   int num_half_inequalities = 0;
   for (const auto inequality : inequalities) {
-    if (ConstraintIsAlreadyLoaded(inequality.ct)) continue;
+    if (mapping->ConstraintIsAlreadyLoaded(inequality.ct)) continue;
     m->Add(
         Implication(inequality.literal,
                     encoder->GetOrCreateAssociatedLiteral(inequality.i_lit)));
     if (sat_solver->IsModelUnsat()) return;
 
     ++num_half_inequalities;
-    already_loaded_ct_.insert(inequality.ct);
-    is_half_encoding_ct_.insert(inequality.ct);
+    mapping->already_loaded_ct_.insert(inequality.ct);
+    mapping->is_half_encoding_ct_.insert(inequality.ct);
   }
 
   if (!inequalities.empty()) {
@@ -438,7 +534,7 @@ void CpModelMapping::ExtractEncoding(const CpModelProto& model_proto,
     if (encoding.empty()) continue;
     num_constraints += encoding.size();
 
-    absl::flat_hash_set<int64> values;
+    absl::flat_hash_set<int64_t> values;
     for (int j = 0; j + 1 < encoding.size(); j++) {
       if ((encoding[j].value != encoding[j + 1].value) ||
           (encoding[j].literal != encoding[j + 1].literal.Negated()) ||
@@ -448,10 +544,11 @@ void CpModelMapping::ExtractEncoding(const CpModelProto& model_proto,
       }
 
       ++num_equalities;
-      encoder->AssociateToIntegerEqualValue(encoding[j].literal, integers_[i],
+      encoder->AssociateToIntegerEqualValue(encoding[j].literal,
+                                            mapping->integers_[i],
                                             IntegerValue(encoding[j].value));
-      already_loaded_ct_.insert(encoding[j].ct);
-      already_loaded_ct_.insert(encoding[j + 1].ct);
+      mapping->already_loaded_ct_.insert(encoding[j].ct);
+      mapping->already_loaded_ct_.insert(encoding[j + 1].ct);
       values.insert(encoding[j].value);
     }
 
@@ -467,9 +564,9 @@ void CpModelMapping::ExtractEncoding(const CpModelProto& model_proto,
     // however, that in the presolve, we should only use the "representative" in
     // linear constraints, so we should be fine.
     for (const auto equality : encoding) {
-      if (ConstraintIsAlreadyLoaded(equality.ct)) continue;
+      if (mapping->ConstraintIsAlreadyLoaded(equality.ct)) continue;
       const class Literal eq = encoder->GetOrCreateLiteralAssociatedToEquality(
-          integers_[i], IntegerValue(equality.value));
+          mapping->integers_[i], IntegerValue(equality.value));
       if (equality.is_equality) {
         m->Add(Implication(equality.literal, eq));
       } else {
@@ -477,13 +574,13 @@ void CpModelMapping::ExtractEncoding(const CpModelProto& model_proto,
       }
 
       ++num_half_equalities;
-      already_loaded_ct_.insert(equality.ct);
-      is_half_encoding_ct_.insert(equality.ct);
+      mapping->already_loaded_ct_.insert(equality.ct);
+      mapping->is_half_encoding_ct_.insert(equality.ct);
     }
 
     // Update stats.
     if (VLOG_IS_ON(1)) {
-      if (encoder->VariableIsFullyEncoded(integers_[i])) {
+      if (encoder->VariableIsFullyEncoded(mapping->integers_[i])) {
         ++num_fully_encoded;
       } else {
         ++num_partially_encoded;
@@ -503,14 +600,15 @@ void CpModelMapping::ExtractEncoding(const CpModelProto& model_proto,
   }
 }
 
-void CpModelMapping::PropagateEncodingFromEquivalenceRelations(
-    const CpModelProto& model_proto, Model* m) {
+void PropagateEncodingFromEquivalenceRelations(const CpModelProto& model_proto,
+                                               Model* m) {
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
   auto* encoder = m->GetOrCreate<IntegerEncoder>();
   auto* sat_solver = m->GetOrCreate<SatSolver>();
 
-  // Loop over all contraints and find affine ones.
-  int64 num_associations = 0;
-  int64 num_set_to_false = 0;
+  // Loop over all constraints and find affine ones.
+  int64_t num_associations = 0;
+  int64_t num_set_to_false = 0;
   for (const ConstraintProto& ct : model_proto.constraints()) {
     if (!ct.enforcement_literal().empty()) continue;
     if (ct.constraint_case() != ConstraintProto::kLinear) continue;
@@ -520,8 +618,8 @@ void CpModelMapping::PropagateEncodingFromEquivalenceRelations(
     const IntegerValue rhs(ct.linear().domain(0));
 
     // Make sure the coefficient are positive.
-    IntegerVariable var1 = Integer(ct.linear().vars(0));
-    IntegerVariable var2 = Integer(ct.linear().vars(1));
+    IntegerVariable var1 = mapping->Integer(ct.linear().vars(0));
+    IntegerVariable var2 = mapping->Integer(ct.linear().vars(1));
     IntegerValue coeff1(ct.linear().coeffs(0));
     IntegerValue coeff2(ct.linear().coeffs(1));
     if (coeff1 < 0) {
@@ -586,8 +684,8 @@ void CpModelMapping::PropagateEncodingFromEquivalenceRelations(
   }
 }
 
-void CpModelMapping::DetectOptionalVariables(const CpModelProto& model_proto,
-                                             Model* m) {
+void DetectOptionalVariables(const CpModelProto& model_proto, Model* m) {
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
   const SatParameters& parameters = *(m->GetOrCreate<SatParameters>());
   if (!parameters.use_optional_variables()) return;
   if (parameters.enumerate_all_solutions()) return;
@@ -605,7 +703,7 @@ void CpModelMapping::DetectOptionalVariables(const CpModelProto& model_proto,
   // of the constraints in which they appear.
   //
   // TODO(user): This deals with the simplest cases, but we could try to
-  // detect literals that implies all the constaints in which a variable
+  // detect literals that implies all the constraints in which a variable
   // appear to false. This can be done with a LCA computation in the tree of
   // Boolean implication (once the presolve remove cycles). Not sure if we can
   // properly exploit that afterwards though. Do some research!
@@ -647,15 +745,16 @@ void CpModelMapping::DetectOptionalVariables(const CpModelProto& model_proto,
   auto* integer_trail = m->GetOrCreate<IntegerTrail>();
   for (int var = 0; var < num_proto_variables; ++var) {
     const IntegerVariableProto& var_proto = model_proto.variables(var);
-    const int64 min = var_proto.domain(0);
-    const int64 max = var_proto.domain(var_proto.domain().size() - 1);
+    const int64_t min = var_proto.domain(0);
+    const int64_t max = var_proto.domain(var_proto.domain().size() - 1);
     if (min == max) continue;
     if (min == 0 && max == 1) continue;
     if (enforcement_intersection[var].empty()) continue;
 
     ++num_optionals;
     integer_trail->MarkIntegerVariableAsOptional(
-        Integer(var), Literal(enforcement_intersection[var].front()));
+        mapping->Integer(var),
+        mapping->Literal(enforcement_intersection[var].front()));
   }
   VLOG(2) << "Auto-detected " << num_optionals << " optional variables.";
 }
@@ -678,7 +777,7 @@ class FullEncodingFixedPointComputer {
   void ComputeFixedPoint();
 
  private:
-  DEFINE_INT_TYPE(ConstraintIndex, int32);
+  DEFINE_INT_TYPE(ConstraintIndex, int32_t);
 
   // Constraint ct is interested by (full-encoding) state of variable.
   void Register(ConstraintIndex ct_index, int variable) {
@@ -706,7 +805,7 @@ class FullEncodingFixedPointComputer {
   // Note that we always consider a fixed variable to be fully encoded here.
   const bool IsFullyEncoded(int v) {
     const IntegerVariable variable = mapping_->Integer(v);
-    if (v == kNoIntegerVariable) return false;
+    if (variable == kNoIntegerVariable) return false;
     return integer_trail_->IsFixed(variable) ||
            integer_encoder_->VariableIsFullyEncoded(variable);
   }
@@ -777,13 +876,13 @@ void FullEncodingFixedPointComputer::ComputeFixedPoint() {
     if (!mapping_->IsInteger(var) || IsFullyEncoded(var)) continue;
     const IntegerVariableProto& int_var_proto = model_proto_.variables(var);
     const Domain domain = ReadDomainFromProto(int_var_proto);
-    int64 domain_size = domain.Size();
-    int64 num_diff_or_equal_var_constraints = 0;
-    int64 num_potential_encoded_values_without_bounds = 0;
+    int64_t domain_size = domain.Size();
+    int64_t num_diff_or_equal_var_constraints = 0;
+    int64_t num_potential_encoded_values_without_bounds = 0;
 
     if (domain_size <= 2) continue;
 
-    const absl::flat_hash_set<int64>& value_set =
+    const absl::flat_hash_set<int64_t>& value_set =
         mapping_->PotentialEncodedValues(var);
     for (const int value : value_set) {
       if (value > domain.Min() && value < domain.Max() &&
@@ -939,6 +1038,26 @@ void MaybeFullyEncodeMoreVariables(const CpModelProto& model_proto, Model* m) {
   fixpoint.ComputeFixedPoint();
 }
 
+void AddFullEncodingFromSearchBranching(const CpModelProto& model_proto,
+                                        Model* m) {
+  if (model_proto.search_strategy().empty()) return;
+
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
+  auto* integer_trail = m->GetOrCreate<IntegerTrail>();
+  for (const DecisionStrategyProto& strategy : model_proto.search_strategy()) {
+    if (strategy.domain_reduction_strategy() ==
+        DecisionStrategyProto::SELECT_MEDIAN_VALUE) {
+      for (const int ref : strategy.variables()) {
+        if (!mapping->IsInteger(ref)) return;
+        const IntegerVariable variable = mapping->Integer(PositiveRef(ref));
+        if (!integer_trail->IsFixed(variable)) {
+          m->Add(FullyEncodeVariable(variable));
+        }
+      }
+    }
+  }
+}
+
 // ============================================================================
 // Constraint loading functions.
 // ============================================================================
@@ -970,6 +1089,12 @@ void LoadAtMostOneConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
   CHECK(!HasEnforcementLiteral(ct)) << "Not supported.";
   m->Add(AtMostOneConstraint(mapping->Literals(ct.at_most_one().literals())));
+}
+
+void LoadExactlyOneConstraint(const ConstraintProto& ct, Model* m) {
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
+  CHECK(!HasEnforcementLiteral(ct)) << "Not supported.";
+  m->Add(ExactlyOneConstraint(mapping->Literals(ct.exactly_one().literals())));
 }
 
 void LoadBoolXorConstraint(const ConstraintProto& ct, Model* m) {
@@ -1073,7 +1198,7 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
   auto* integer_trail = m->GetOrCreate<IntegerTrail>();
   const std::vector<IntegerVariable> vars =
       mapping->Integers(ct.linear().vars());
-  const std::vector<int64> coeffs = ValuesFromProto(ct.linear().coeffs());
+  const std::vector<int64_t> coeffs = ValuesFromProto(ct.linear().coeffs());
 
   // Compute the min/max to relax the bounds if needed.
   //
@@ -1096,9 +1221,12 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
     max_sum += std::max(term_a, term_b);
   }
 
+  const SatParameters& params = *m->GetOrCreate<SatParameters>();
+  const IntegerValue domain_size_limit(
+      params.max_domain_size_when_encoding_eq_neq_constraints());
   if (ct.linear().vars_size() == 2 && !integer_trail->IsFixed(vars[0]) &&
-      !integer_trail->IsFixed(vars[1]) && max_domain_size < 16) {
-    const SatParameters& params = *m->GetOrCreate<SatParameters>();
+      !integer_trail->IsFixed(vars[1]) &&
+      max_domain_size <= domain_size_limit) {
     auto* encoder = m->GetOrCreate<IntegerEncoder>();
     if (params.boolean_encoding_level() > 0 && ConstraintIsEq(ct.linear()) &&
         ct.linear().domain(0) != min_sum && ct.linear().domain(0) != max_sum &&
@@ -1114,7 +1242,7 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
                                IntegerValue(ct.linear().domain(0)), m);
     }
 
-    int64 single_value = 0;
+    int64_t single_value = 0;
     if (params.boolean_encoding_level() > 0 &&
         ConstraintIsNEq(ct.linear(), mapping, integer_trail, &single_value) &&
         single_value != min_sum && single_value != max_sum &&
@@ -1134,10 +1262,10 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
   }
 
   if (ct.linear().domain_size() == 2) {
-    int64 lb = ct.linear().domain(0);
-    int64 ub = ct.linear().domain(1);
-    if (min_sum >= lb) lb = kint64min;
-    if (max_sum <= ub) ub = kint64max;
+    int64_t lb = ct.linear().domain(0);
+    int64_t ub = ct.linear().domain(1);
+    if (min_sum >= lb) lb = std::numeric_limits<int64_t>::min();
+    if (max_sum <= ub) ub = std::numeric_limits<int64_t>::max();
 
     if (!HasEnforcementLiteral(ct)) {
       if (all_booleans) {
@@ -1150,21 +1278,21 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
         }
         m->Add(BooleanLinearConstraint(lb, ub, &cst));
       } else {
-        if (lb != kint64min) {
+        if (lb != std::numeric_limits<int64_t>::min()) {
           m->Add(WeightedSumGreaterOrEqual(vars, coeffs, lb));
         }
-        if (ub != kint64max) {
+        if (ub != std::numeric_limits<int64_t>::max()) {
           m->Add(WeightedSumLowerOrEqual(vars, coeffs, ub));
         }
       }
     } else {
       const std::vector<Literal> enforcement_literals =
           mapping->Literals(ct.enforcement_literal());
-      if (lb != kint64min) {
+      if (lb != std::numeric_limits<int64_t>::min()) {
         m->Add(ConditionalWeightedSumGreaterOrEqual(enforcement_literals, vars,
                                                     coeffs, lb));
       }
-      if (ub != kint64max) {
+      if (ub != std::numeric_limits<int64_t>::max()) {
         m->Add(ConditionalWeightedSumLowerOrEqual(enforcement_literals, vars,
                                                   coeffs, ub));
       }
@@ -1177,21 +1305,21 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
 
     std::vector<Literal> clause;
     for (int i = 0; i < ct.linear().domain_size(); i += 2) {
-      int64 lb = ct.linear().domain(i);
-      int64 ub = ct.linear().domain(i + 1);
-      if (min_sum >= lb) lb = kint64min;
-      if (max_sum <= ub) ub = kint64max;
+      int64_t lb = ct.linear().domain(i);
+      int64_t ub = ct.linear().domain(i + 1);
+      if (min_sum >= lb) lb = std::numeric_limits<int64_t>::min();
+      if (max_sum <= ub) ub = std::numeric_limits<int64_t>::max();
 
       const Literal subdomain_literal(
           special_case && i > 0 ? clause.back().Negated()
                                 : Literal(m->Add(NewBooleanVariable()), true));
       clause.push_back(subdomain_literal);
 
-      if (lb != kint64min) {
+      if (lb != std::numeric_limits<int64_t>::min()) {
         m->Add(ConditionalWeightedSumGreaterOrEqual({subdomain_literal}, vars,
                                                     coeffs, lb));
       }
-      if (ub != kint64max) {
+      if (ub != std::numeric_limits<int64_t>::max()) {
         m->Add(ConditionalWeightedSumLowerOrEqual({subdomain_literal}, vars,
                                                   coeffs, ub));
       }
@@ -1212,13 +1340,13 @@ void LoadAllDiffConstraint(const ConstraintProto& ct, Model* m) {
   IntegerTrail* integer_trail = m->GetOrCreate<IntegerTrail>();
   IntegerEncoder* encoder = m->GetOrCreate<IntegerEncoder>();
   int num_fully_encoded = 0;
-  int64 max_domain_size = 0;
+  int64_t max_domain_size = 0;
   for (const IntegerVariable variable : vars) {
     if (encoder->VariableIsFullyEncoded(variable)) num_fully_encoded++;
 
     IntegerValue lb = integer_trail->LowerBound(variable);
     IntegerValue ub = integer_trail->UpperBound(variable);
-    const int64 domain_size = ub.value() - lb.value() + 1;
+    const int64_t domain_size = ub.value() - lb.value() + 1;
     max_domain_size = std::max(max_domain_size, domain_size);
   }
 
@@ -1264,26 +1392,19 @@ void LoadIntMinConstraint(const ConstraintProto& ct, Model* m) {
   m->Add(IsEqualToMinOf(min, vars));
 }
 
-LinearExpression GetExprFromProto(const LinearExpressionProto& expr_proto,
-                                  const CpModelMapping& mapping) {
-  LinearExpression expr;
-  expr.vars = mapping.Integers(expr_proto.vars());
-  for (int j = 0; j < expr_proto.coeffs_size(); ++j) {
-    expr.coeffs.push_back(IntegerValue(expr_proto.coeffs(j)));
-  }
-  expr.offset = IntegerValue(expr_proto.offset());
-  return CanonicalizeExpr(expr);
-}
-
 void LoadLinMaxConstraint(const ConstraintProto& ct, Model* m) {
+  if (ct.lin_max().exprs().empty()) {
+    m->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
+    return;
+  }
+
   auto* mapping = m->GetOrCreate<CpModelMapping>();
-  const LinearExpression max =
-      GetExprFromProto(ct.lin_max().target(), *mapping);
+  const LinearExpression max = mapping->GetExprFromProto(ct.lin_max().target());
   std::vector<LinearExpression> negated_exprs;
   negated_exprs.reserve(ct.lin_max().exprs_size());
   for (int i = 0; i < ct.lin_max().exprs_size(); ++i) {
     negated_exprs.push_back(
-        NegationOf(GetExprFromProto(ct.lin_max().exprs(i), *mapping)));
+        NegationOf(mapping->GetExprFromProto(ct.lin_max().exprs(i))));
   }
   // TODO(user): Consider replacing the min propagator by max.
   m->Add(IsEqualToMinOf(NegationOf(max), negated_exprs));
@@ -1325,6 +1446,26 @@ void LoadCumulativeConstraint(const ConstraintProto& ct, Model* m) {
     demands.push_back(AffineExpression(var));
   }
   m->Add(Cumulative(intervals, demands, capacity));
+}
+
+void LoadReservoirConstraint(const ConstraintProto& ct, Model* m) {
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
+  auto* encoder = m->GetOrCreate<IntegerEncoder>();
+  std::vector<AffineExpression> times;
+  std::vector<IntegerValue> deltas;
+  std::vector<Literal> presences;
+  const int size = ct.reservoir().times().size();
+  for (int i = 0; i < size; ++i) {
+    times.push_back(mapping->Integer(ct.reservoir().times(i)));
+    deltas.push_back(IntegerValue(ct.reservoir().demands(i)));
+    if (!ct.reservoir().actives().empty()) {
+      presences.push_back(mapping->Literal(ct.reservoir().actives(i)));
+    } else {
+      presences.push_back(encoder->GetTrueLiteral());
+    }
+  }
+  AddReservoirConstraint(times, deltas, presences, ct.reservoir().min_level(),
+                         ct.reservoir().max_level(), m);
 }
 
 // If a variable is constant and its value appear in no other variable domains,
@@ -1410,10 +1551,10 @@ void LoadElementConstraintBounds(const ConstraintProto& ct, Model* m) {
 
     if (vars[i] == target) continue;
     if (m->Get(IsFixed(target))) {
-      const int64 value = m->Get(Value(target));
+      const int64_t value = m->Get(Value(target));
       m->Add(ImpliesInInterval(r, vars[i], value, value));
     } else if (m->Get(IsFixed(vars[i]))) {
-      const int64 value = m->Get(Value(vars[i]));
+      const int64_t value = m->Get(Value(vars[i]));
       m->Add(ImpliesInInterval(r, target, value, value));
     } else {
       m->Add(ConditionalLowerOrEqualWithOffset(vars[i], target, 0, r));
@@ -1643,10 +1784,10 @@ void LoadTableConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
   const std::vector<IntegerVariable> vars =
       mapping->Integers(ct.table().vars());
-  const std::vector<int64> values = ValuesFromProto(ct.table().values());
+  const std::vector<int64_t> values = ValuesFromProto(ct.table().values());
   const int num_vars = vars.size();
   const int num_tuples = values.size() / num_vars;
-  std::vector<std::vector<int64>> tuples(num_tuples);
+  std::vector<std::vector<int64_t>> tuples(num_tuples);
   int count = 0;
   for (int i = 0; i < num_tuples; ++i) {
     for (int j = 0; j < num_vars; ++j) {
@@ -1666,7 +1807,7 @@ void LoadAutomatonConstraint(const ConstraintProto& ct, Model* m) {
       mapping->Integers(ct.automaton().vars());
 
   const int num_transitions = ct.automaton().transition_tail_size();
-  std::vector<std::vector<int64>> transitions;
+  std::vector<std::vector<int64_t>> transitions;
   transitions.reserve(num_transitions);
   for (int i = 0; i < num_transitions; ++i) {
     transitions.push_back({ct.automaton().transition_tail(i),
@@ -1674,8 +1815,8 @@ void LoadAutomatonConstraint(const ConstraintProto& ct, Model* m) {
                            ct.automaton().transition_head(i)});
   }
 
-  const int64 starting_state = ct.automaton().starting_state();
-  const std::vector<int64> final_states =
+  const int64_t starting_state = ct.automaton().starting_state();
+  const std::vector<int64_t> final_states =
       ValuesFromProto(ct.automaton().final_states());
   m->Add(TransitionConstraint(vars, transitions, starting_state, final_states));
 }
@@ -1750,6 +1891,9 @@ bool LoadConstraint(const ConstraintProto& ct, Model* m) {
     case ConstraintProto::ConstraintCase::kAtMostOne:
       LoadAtMostOneConstraint(ct, m);
       return true;
+    case ConstraintProto::ConstraintCase::kExactlyOne:
+      LoadExactlyOneConstraint(ct, m);
+      return true;
     case ConstraintProto::ConstraintCase::kBoolXor:
       LoadBoolXorConstraint(ct, m);
       return true;
@@ -1785,6 +1929,9 @@ bool LoadConstraint(const ConstraintProto& ct, Model* m) {
       return true;
     case ConstraintProto::ConstraintProto::kCumulative:
       LoadCumulativeConstraint(ct, m);
+      return true;
+    case ConstraintProto::ConstraintProto::kReservoir:
+      LoadReservoirConstraint(ct, m);
       return true;
     case ConstraintProto::ConstraintProto::kElement:
       LoadElementConstraint(ct, m);

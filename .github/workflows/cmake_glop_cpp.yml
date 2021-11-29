@@ -1,0 +1,65 @@
+name: CMake Glop C++
+
+on: [push, pull_request]
+
+# Building using the github runner environement directly.
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build env image
+      run: make --directory=cmake glop_env
+    - name: Build devel image
+      run: make --directory=cmake glop_devel
+    - name: Build project
+      run: make --directory=cmake glop_build
+    - name: Test project
+      run: make --directory=cmake glop_test
+    - name: Build Install env image
+      run: make --directory=cmake glop_install_env
+    - name: Build Install devel image
+      run: make --directory=cmake glop_install_devel
+    - name: Build Install
+      run: make --directory=cmake glop_install_build
+    - name: Test Install
+      run: make --directory=cmake glop_install_test
+
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Check cmake
+      run: cmake --version
+    - name: Configure
+      run: cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release -DBUILD_DEPS=ON -DBUILD_CXX=OFF -DBUILD_GLOP=ON
+    - name: Build
+      run: cmake --build build --config Release --target all -v
+    - name: Install
+      run: cmake --build build --config Release --target install -v -- DESTDIR=install
+
+  macos:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Check cmake
+      run: cmake --version
+    - name: Configure
+      run: cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release -DBUILD_DEPS=ON -DBUILD_CXX=OFF -DBUILD_GLOP=ON
+    - name: Build
+      run: cmake --build build --target all -v
+    - name: Install
+      run: cmake --build build --target install -v -- DESTDIR=install
+
+  windows:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Check cmake
+      run: cmake --version
+    - name: Configure
+      run: cmake -S. -Bbuild -G "Visual Studio 16 2019" -DCMAKE_BUILD_TYPE=Release -DBUILD_DEPS=ON -DBUILD_CXX=OFF -DBUILD_GLOP=ON
+    - name: Build
+      run: cmake --build build --config Release --target ALL_BUILD -- /maxcpucount
+    - name: Install
+      run: cmake --build build --config Release --target INSTALL -- /maxcpucount

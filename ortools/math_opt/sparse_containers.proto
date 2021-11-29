@@ -1,0 +1,64 @@
+// Copyright 2010-2021 Google LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Data structures used throughout MathOpt to model sparse vectors and matrices.
+syntax = "proto3";
+
+package operations_research.math_opt;
+
+// A sparse representation of a vector of doubles.
+message SparseDoubleVectorProto {
+  // Must be sorted (in increasing ordering) with all elements distinct.
+  repeated int64 ids = 1;
+  // Must have equal length to ids. May not contain NaN.
+  repeated double values = 2;
+}
+
+// A sparse representation of a vector of bools.
+message SparseBoolVectorProto {
+  // Should be sorted (in increasing ordering) with all elements distinct.
+  repeated int64 ids = 1;
+  // Must have equal length to ids.
+  repeated bool values = 2;
+}
+
+// This message allows to query/set specific parts of a SparseXxxxVector.
+// The default behavior is not to filter out anything.
+// A common usage is to query only parts of solutions (only non-zero values,
+// and/or just a hand-picked set of variable values).
+message SparseVectorFilterProto {
+  // For SparseBoolVectorProto "zero" is `false`.
+  bool skip_zero_values = 1;
+  // When true, return only the values corresponding to the IDs listed in
+  // filtered_ids.
+  bool filter_by_ids = 2;
+  // The list of IDs to use when filter_by_ids is true. Must be empty when
+  // filter_by_ids is false.
+  // NOTE: if this is empty, and filter_by_ids is true, you are saying that
+  // you do not want any information in the result.
+  repeated int64 filtered_ids = 3;
+}
+
+// A sparse representation of a matrix of doubles.
+//
+// The matrix is stored as triples of row id, column id, and coefficient. These
+// three vectors must be of equal length. For all i, the tuple (row_ids[i],
+// column_ids[i]) should be distinct. Entries must be in row major order.
+//
+// TODO(user): consider CSR.
+message SparseDoubleMatrixProto {
+  repeated int64 row_ids = 1;
+  repeated int64 column_ids = 2;
+  // May not contain NaN.
+  repeated double coefficients = 3;
+}

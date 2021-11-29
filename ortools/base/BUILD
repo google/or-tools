@@ -16,33 +16,33 @@ config_setting(
 
 cc_library(
     name = "base",
+    srcs = [
+        "commandlineflags.cc",
+        "logging.cc",
+        "logging_utilities.cc",
+        "raw_logging.cc",
+        "version.cc",
+        "vlog_is_on.cc",
+    ],
     hdrs = [
         "basictypes.h",
         "commandlineflags.h",
         "integral_types.h",
         "log_severity.h",
+        "logging.h",
         "logging_export.h",
         "logging_utilities.h",
-        "logging.h",
         "macros.h",
         "raw_logging.h",
         "stl_logging.h",
         "version.h",
         "vlog_is_on.h",
     ],
-    srcs = [
-        "commandlineflags.cc",
-        "logging_utilities.cc",
-        "logging.cc",
-        "raw_logging.cc",
-        "version.cc",
-        "vlog_is_on.cc",
-    ],
     copts = [
         "-DOR_TOOLS_MAJOR=8",
         "-DOR_TOOLS_MINOR=1",
     ],
-    defines =  select({
+    defines = select({
         "on_windows": ["OR_TOOLS_EXPORTS"],
         "//conditions:default": [],
     }),
@@ -52,9 +52,9 @@ cc_library(
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/container:node_hash_map",
         "@com_google_absl//absl/container:node_hash_set",
+        "@com_google_absl//absl/debugging:failure_signal_handler",
         "@com_google_absl//absl/debugging:stacktrace",
         "@com_google_absl//absl/debugging:symbolize",
-        "@com_google_absl//absl/debugging:failure_signal_handler",
         "@com_google_absl//absl/flags:commandlineflag",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/flags:parse",
@@ -89,6 +89,7 @@ cc_library(
     ],
     deps = [
         ":base",
+        ":status_builder",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
     ],
@@ -372,6 +373,16 @@ cc_library(
 )
 
 cc_library(
+    name = "linked_hash_map",
+    hdrs = ["linked_hash_map.h"],
+    deps = [
+        ":base",
+        "@com_google_absl//absl/container:common",
+        "@com_google_absl//absl/container:flat_hash_map",
+    ],
+)
+
+cc_library(
     name = "threadpool",
     srcs = [
         "threadpool.cc",
@@ -392,5 +403,11 @@ cc_library(
         "on_linux": ["-Wl,--no-as-needed -ldl"],
         "//conditions:default": [],
     }),
+    deps = [":base"],
+)
+
+cc_library(
+    name = "gzipstring",
+    hdrs = ["gzipstring.h"],
     deps = [":base"],
 )

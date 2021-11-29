@@ -3,6 +3,7 @@
 
 # Scheduling recipes for the CP-SAT solver.
 
+https://developers.google.com/optimization/
 
 <!--ts-->
    * [Scheduling recipes for the CP-SAT solver.](#scheduling-recipes-for-the-cp-sat-solver)
@@ -31,12 +32,13 @@
          * [C# code](#c-code-7)
       * [Intervals spanning over breaks in the calendar](#intervals-spanning-over-breaks-in-the-calendar)
          * [Python code](#python-code-4)
+      * [Detecting if two intervals overlap.](#detecting-if-two-intervals-overlap)
+         * [Python code](#python-code-5)
       * [Transitions in a disjunctive resource](#transitions-in-a-disjunctive-resource)
       * [Precedences between intervals](#precedences-between-intervals)
       * [Convex hull of a set of intervals](#convex-hull-of-a-set-of-intervals)
       * [Reservoir constraint](#reservoir-constraint)
 
-<!-- Added by: lperron, at: Tue Nov  3 17:33:09 CET 2020 -->
 
 <!--te-->
 
@@ -50,14 +52,14 @@ exclusivity between tasks, and temporal relations between tasks.
 
 ## Interval variables
 
-Intervals are constraints containing three integer variables (start, size, and
-end). Creating an interval constraint will enforce that start + size == end.
+Intervals are constraints containing three constant of affine expressions
+(start, size, and end). Creating an interval constraint will enforce that start
++ size == end.
 
-4:15PM, Jun 20 To define an interval, we need to create three variables: start,
-size, and end.Then we create an interval constraint using these three variables.
+The more general API uses three expressions to define the interval. If the size
+is fixed, a simpler API uses the start expression and the fixed size.
 
-We give two code snippets the demonstrate how to build these objects in Python,
-C++, Java, and C\#.
+Creating these intervals is illustrated in the following code snippets.
 
 ### Python code
 
@@ -69,16 +71,28 @@ from ortools.sat.python import cp_model
 
 
 def IntervalSampleSat():
+  """Showcases how to build interval variables."""
   model = cp_model.CpModel()
-
   horizon = 100
+
+  # An interval can be created from three affine expressions.
   start_var = model.NewIntVar(0, horizon, 'start')
   duration = 10  # Python cp/sat code accept integer variables or constants.
   end_var = model.NewIntVar(0, horizon, 'end')
-  interval_var = model.NewIntervalVar(start_var, duration, end_var, 'interval')
+  interval_var = model.NewIntervalVar(start_var, duration, end_var + 2,
+                                      'interval')
 
-  print('start = %s, duration = %i, end = %s, interval = %s' %
-        (start_var, duration, end_var, interval_var))
+  print(f'interval = {repr(interval_var)}')
+
+  # If the size is fixed, a simpler version uses the start expression and the
+  # size.
+  fixed_size_interval_var = model.NewFixedSizeIntervalVar(
+      start_var, 10, 'fixed_size_interval_var')
+  print(f'fixed_size_interval_var = {repr(fixed_size_interval_var)}')
+
+  # A fixed interval can be created using the same API.
+  fixed_interval = model.NewFixedSizeIntervalVar(5, 10, 'fixed_interval')
+  print(f'fixed_interval = {repr(fixed_interval)}')
 
 
 IntervalSampleSat()
@@ -95,18 +109,38 @@ namespace sat {
 void IntervalSampleSat() {
   CpModelBuilder cp_model;
   const int kHorizon = 100;
-
   const Domain horizon(0, kHorizon);
-  const IntVar start_var = cp_model.NewIntVar(horizon).WithName("start");
-  const IntVar duration_var = cp_model.NewConstant(10);
-  const IntVar end_var = cp_model.NewIntVar(horizon).WithName("end");
+
+  // An interval can be created from three affine expressions.
+  const IntVar x = cp_model.NewIntVar(horizon).WithName("x");
+  const IntVar y = cp_model.NewIntVar({2, 4}).WithName("y");
+  const IntVar z = cp_model.NewIntVar(horizon).WithName("z");
 
   const IntervalVar interval_var =
-      cp_model.NewIntervalVar(start_var, duration_var, end_var)
+      cp_model.NewIntervalVar(x, y, LinearExpr(z).AddConstant(2))
           .WithName("interval");
-  LOG(INFO) << "start_var = " << start_var
-            << ", duration_var = " << duration_var << ", end_var = " << end_var
+  LOG(INFO) << "start = " << interval_var.StartExpr()
+            << ", size = " << interval_var.SizeExpr()
+            << ", end = " << interval_var.EndExpr()
             << ", interval_var = " << interval_var;
+
+  // If the size is fixed, a simpler version uses the start expression and the
+  // size.
+  const IntervalVar fixed_size_interval_var =
+      cp_model.NewFixedSizeIntervalVar(x, 10).WithName(
+          "fixed_size_interval_var");
+  LOG(INFO) << "start = " << fixed_size_interval_var.StartExpr()
+            << ", size = " << fixed_size_interval_var.SizeExpr()
+            << ", end = " << fixed_size_interval_var.EndExpr()
+            << ", fixed_size_interval_var = " << fixed_size_interval_var;
+
+  // A fixed interval can be created using the same API.
+  const IntervalVar fixed_interval =
+      cp_model.NewFixedSizeIntervalVar(5, 10).WithName("fixed_interval");
+  LOG(INFO) << "start = " << fixed_interval.StartExpr()
+            << ", size = " << fixed_interval.SizeExpr()
+            << ", end = " << fixed_interval.EndExpr()
+            << ", fixed_interval = " << fixed_interval;
 }
 
 }  // namespace sat
@@ -128,6 +162,7 @@ import com.google.ortools.Loader;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.IntervalVar;
+import com.google.ortools.sat.LinearExpr;
 
 /** Code sample to demonstrates how to build an interval. */
 public class IntervalSampleSat {
@@ -135,13 +170,23 @@ public class IntervalSampleSat {
     Loader.loadNativeLibraries();
     CpModel model = new CpModel();
     int horizon = 100;
+
+    // An interval can be created from three affine expressions.
     IntVar startVar = model.newIntVar(0, horizon, "start");
     IntVar endVar = model.newIntVar(0, horizon, "end");
-    // Java code supports IntVar or integer constants in intervals.
-    int duration = 10;
-    IntervalVar interval = model.newIntervalVar(startVar, duration, endVar, "interval");
+    IntervalVar intervalVar =
+        model.newIntervalVar(
+            startVar, LinearExpr.constant(10), LinearExpr.affine(endVar, 1, 2), "interval");
+    System.out.println(intervalVar);
 
-    System.out.println(interval);
+    // If the size is fixed, a simpler version uses the start expression and the size.
+    IntervalVar fixedSizeIntervalVar =
+        model.newFixedSizeIntervalVar(startVar, 10, "fixed_size_interval_var");
+    System.out.println(fixedSizeIntervalVar);
+
+    // A fixed interval can be created using another method.
+    IntervalVar fixedInterval = model.newFixedInterval(5, 10, "fixed_interval");
+    System.out.println(fixedInterval);
   }
 }
 ```
@@ -158,11 +203,22 @@ public class IntervalSampleSat
     {
         CpModel model = new CpModel();
         int horizon = 100;
+
+        // C# code supports constant of affine expressions.
         IntVar start_var = model.NewIntVar(0, horizon, "start");
-        // C# code supports IntVar or integer constants in intervals.
-        int duration = 10;
         IntVar end_var = model.NewIntVar(0, horizon, "end");
-        IntervalVar interval = model.NewIntervalVar(start_var, duration, end_var, "interval");
+        IntervalVar interval = model.NewIntervalVar(start_var, 10, end_var + 2, "interval");
+        Console.WriteLine(interval);
+
+        // If the size is fixed, a simpler version uses the start expression, the size and the
+        // literal.
+        IntervalVar fixedSizeIntervalVar =
+            model.NewFixedSizeIntervalVar(start_var, 10, "fixed_size_interval_var");
+        Console.WriteLine(fixedSizeIntervalVar);
+
+        // A fixed interval can be created using the same API.
+        IntervalVar fixedInterval = model.NewFixedSizeIntervalVar(5, 10, "fixed_interval");
+        Console.WriteLine(fixedInterval);
     }
 }
 ```
@@ -182,19 +238,30 @@ from ortools.sat.python import cp_model
 
 
 def OptionalIntervalSampleSat():
-  """Build an optional interval."""
+  """Showcases how to build optional interval variables."""
   model = cp_model.CpModel()
-
   horizon = 100
+
+  # An interval can be created from three affine expressions.
   start_var = model.NewIntVar(0, horizon, 'start')
   duration = 10  # Python cp/sat code accept integer variables or constants.
   end_var = model.NewIntVar(0, horizon, 'end')
   presence_var = model.NewBoolVar('presence')
-  interval_var = model.NewOptionalIntervalVar(start_var, duration, end_var,
+  interval_var = model.NewOptionalIntervalVar(start_var, duration, end_var + 2,
                                               presence_var, 'interval')
 
-  print('start = %s, duration = %i, end = %s, presence = %s, interval = %s' %
-        (start_var, duration, end_var, presence_var, interval_var))
+  print(f'interval = {repr(interval_var)}')
+
+  # If the size is fixed, a simpler version uses the start expression and the
+  # size.
+  fixed_size_interval_var = model.NewOptionalFixedSizeIntervalVar(
+      start_var, 10, presence_var, 'fixed_size_interval_var')
+  print(f'fixed_size_interval_var = {repr(fixed_size_interval_var)}')
+
+  # A fixed interval can be created using the same API.
+  fixed_interval = model.NewOptionalFixedSizeIntervalVar(
+      5, 10, presence_var, 'fixed_interval')
+  print(f'fixed_interval = {repr(fixed_interval)}')
 
 
 OptionalIntervalSampleSat()
@@ -211,23 +278,36 @@ namespace sat {
 void OptionalIntervalSampleSat() {
   CpModelBuilder cp_model;
   const int kHorizon = 100;
-
   const Domain horizon(0, kHorizon);
-  const IntVar start_var = cp_model.NewIntVar(horizon).WithName("start");
-  const IntVar duration_var = cp_model.NewConstant(10);
-  const IntVar end_var = cp_model.NewIntVar(horizon).WithName("end");
+
+  // An optional interval can be created from three affine expressions and a
+  // BoolVar.
+  const IntVar x = cp_model.NewIntVar(horizon).WithName("x");
+  const IntVar y = cp_model.NewIntVar({2, 4}).WithName("y");
+  const IntVar z = cp_model.NewIntVar(horizon).WithName("z");
   const BoolVar presence_var = cp_model.NewBoolVar().WithName("presence");
 
   const IntervalVar interval_var =
       cp_model
-          .NewOptionalIntervalVar(start_var, duration_var, end_var,
+          .NewOptionalIntervalVar(x, y, LinearExpr(z).AddConstant(2),
                                   presence_var)
           .WithName("interval");
-
-  LOG(INFO) << "start_var = " << start_var
-            << ", duration_var = " << duration_var << ", end_var = " << end_var
-            << ", presence_var = " << presence_var
+  LOG(INFO) << "start = " << interval_var.StartExpr()
+            << ", size = " << interval_var.SizeExpr()
+            << ", end = " << interval_var.EndExpr()
+            << ", presence = " << interval_var.PresenceBoolVar()
             << ", interval_var = " << interval_var;
+
+  // If the size is fixed, a simpler version uses the start expression and the
+  // size.
+  const IntervalVar fixed_size_interval_var =
+      cp_model.NewOptionalFixedSizeIntervalVar(x, 10, presence_var)
+          .WithName("fixed_size_interval_var");
+  LOG(INFO) << "start = " << fixed_size_interval_var.StartExpr()
+            << ", size = " << fixed_size_interval_var.SizeExpr()
+            << ", end = " << fixed_size_interval_var.EndExpr()
+            << ", presence = " << fixed_size_interval_var.PresenceBoolVar()
+            << ", interval_var = " << fixed_size_interval_var;
 }
 
 }  // namespace sat
@@ -249,6 +329,7 @@ import com.google.ortools.Loader;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.IntervalVar;
+import com.google.ortools.sat.LinearExpr;
 import com.google.ortools.sat.Literal;
 
 /** Code sample to demonstrates how to build an optional interval. */
@@ -257,15 +338,28 @@ public class OptionalIntervalSampleSat {
     Loader.loadNativeLibraries();
     CpModel model = new CpModel();
     int horizon = 100;
+
+    // An interval can be created from three affine expressions, and a literal.
     IntVar startVar = model.newIntVar(0, horizon, "start");
     IntVar endVar = model.newIntVar(0, horizon, "end");
-    // Java code supports IntVar or integer constants in intervals.
-    int duration = 10;
     Literal presence = model.newBoolVar("presence");
-    IntervalVar interval =
-        model.newOptionalIntervalVar(startVar, duration, endVar, presence, "interval");
+    IntervalVar intervalVar =
+        model.newOptionalIntervalVar(
+            startVar,
+            LinearExpr.constant(10),
+            LinearExpr.affine(endVar, 1, 2),
+            presence,
+            "interval");
+    System.out.println(intervalVar);
 
-    System.out.println(interval);
+    // If the size is fixed, a simpler version uses the start expression, the size and the literal.
+    IntervalVar fixedSizeIntervalVar =
+        model.newOptionalFixedSizeIntervalVar(startVar, 10, presence, "fixed_size_interval_var");
+    System.out.println(fixedSizeIntervalVar);
+
+    // A fixed interval can be created using another method.
+    IntervalVar fixedInterval = model.newOptionalFixedInterval(5, 10, presence, "fixed_interval");
+    System.out.println(fixedInterval);
   }
 }
 ```
@@ -282,12 +376,25 @@ public class OptionalIntervalSampleSat
     {
         CpModel model = new CpModel();
         int horizon = 100;
+
+        // C# code supports constant of affine expressions.
         IntVar start_var = model.NewIntVar(0, horizon, "start");
-        // C# code supports IntVar or integer constants in intervals.
-        int duration = 10;
         IntVar end_var = model.NewIntVar(0, horizon, "end");
         IntVar presence_var = model.NewBoolVar("presence");
-        IntervalVar interval = model.NewOptionalIntervalVar(start_var, duration, end_var, presence_var, "interval");
+        IntervalVar interval =
+            model.NewOptionalIntervalVar(start_var, 10, end_var + 2, presence_var, "interval");
+        Console.WriteLine(interval);
+
+        // If the size is fixed, a simpler version uses the start expression, the size and the
+        // literal.
+        IntervalVar fixedSizeIntervalVar = model.NewOptionalFixedSizeIntervalVar(
+            start_var, 10, presence_var, "fixed_size_interval_var");
+        Console.WriteLine(fixedSizeIntervalVar);
+
+        // A fixed interval can be created using the same API.
+        IntervalVar fixedInterval =
+            model.NewOptionalFixedSizeIntervalVar(5, 10, presence_var, "fixed_interval");
+        Console.WriteLine(fixedInterval);
     }
 }
 ```
@@ -364,6 +471,8 @@ NoOverlapSampleSat()
 ### C++ code
 
 ```cpp
+#include <cstdint>
+
 #include "ortools/sat/cp_model.h"
 
 namespace operations_research {
@@ -371,7 +480,7 @@ namespace sat {
 
 void NoOverlapSampleSat() {
   CpModelBuilder cp_model;
-  const int64 kHorizon = 21;  // 3 weeks.
+  const int64_t kHorizon = 21;  // 3 weeks.
 
   const Domain horizon(0, kHorizon);
   // Task 0, duration 2.
@@ -452,6 +561,7 @@ import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.IntervalVar;
+import com.google.ortools.sat.LinearExpr;
 
 /**
  * We want to schedule 3 tasks on 3 weeks excluding weekends, making the final day as early as
@@ -468,19 +578,19 @@ public class NoOverlapSampleSat {
     IntVar start0 = model.newIntVar(0, horizon, "start0");
     int duration0 = 2;
     IntVar end0 = model.newIntVar(0, horizon, "end0");
-    IntervalVar task0 = model.newIntervalVar(start0, duration0, end0, "task0");
+    IntervalVar task0 = model.newIntervalVar(start0, LinearExpr.constant(duration0), end0, "task0");
 
     //  Task 1, duration 4.
     IntVar start1 = model.newIntVar(0, horizon, "start1");
     int duration1 = 4;
     IntVar end1 = model.newIntVar(0, horizon, "end1");
-    IntervalVar task1 = model.newIntervalVar(start1, duration1, end1, "task1");
+    IntervalVar task1 = model.newIntervalVar(start1, LinearExpr.constant(duration1), end1, "task1");
 
     // Task 2, duration 3.
     IntVar start2 = model.newIntVar(0, horizon, "start2");
     int duration2 = 3;
     IntVar end2 = model.newIntVar(0, horizon, "end2");
-    IntervalVar task2 = model.newIntervalVar(start2, duration2, end2, "task2");
+    IntervalVar task2 = model.newIntervalVar(start2, LinearExpr.constant(duration2), end2, "task2");
 
     // Weekends.
     IntervalVar weekend0 = model.newFixedInterval(5, 2, "weekend0");
@@ -636,12 +746,12 @@ def RankTasks(model, starts, presences, ranks):
   for i in range(num_tasks - 1):
     for j in range(i + 1, num_tasks):
       tmp_array = [precedences[(i, j)], precedences[(j, i)]]
-      if presences[i] != 1:
+      if not cp_model.ObjectIsATrueLiteral(presences[i]):
         tmp_array.append(presences[i].Not())
         # Makes sure that if i is not performed, all precedences are false.
         model.AddImplication(presences[i].Not(), precedences[(i, j)].Not())
         model.AddImplication(presences[i].Not(), precedences[(j, i)].Not())
-      if presences[j] != 1:
+      if not cp_model.ObjectIsATrueLiteral(presences[j]):
         tmp_array.append(presences[j].Not())
         # Makes sure that if j is not performed, all precedences are false.
         model.AddImplication(presences[j].Not(), precedences[(i, j)].Not())
@@ -706,10 +816,7 @@ def RankingSampleSat():
   # Creates makespan variable.
   makespan = model.NewIntVar(0, horizon, 'makespan')
   for t in all_tasks:
-    if presences[t] == 1:
-      model.Add(ends[t] <= makespan)
-    else:
-      model.Add(ends[t] <= makespan).OnlyEnforceIf(presences[t])
+    model.Add(ends[t] <= makespan).OnlyEnforceIf(presences[t])
 
   # Minimizes makespan - fixed gain per tasks performed.
   # As the fixed cost is less that the duration of the last interval,
@@ -988,13 +1095,15 @@ public class RankingSampleSat {
       int duration = t + 1;
       ends[t] = model.newIntVar(0, horizon, "end_" + t);
       if (t < numTasks / 2) {
-        intervals[t] = model.newIntervalVar(starts[t], duration, ends[t], "interval_" + t);
+        intervals[t] =
+            model.newIntervalVar(
+                starts[t], LinearExpr.constant(duration), ends[t], "interval_" + t);
         presences[t] = trueVar;
       } else {
         presences[t] = model.newBoolVar("presence_" + t);
         intervals[t] =
             model.newOptionalIntervalVar(
-                starts[t], duration, ends[t], presences[t], "o_interval_" + t);
+                starts[t], LinearExpr.constant(duration), ends[t], presences[t], "o_interval_" + t);
       }
 
       // The rank will be -1 iff the task is not performed.
@@ -1300,13 +1409,136 @@ def SchedulingWithCalendarSampleSat():
 
   # Force the solver to follow the decision strategy exactly.
   solver.parameters.search_branching = cp_model.FIXED_SEARCH
+  # Enumerate all solutions.
+  solver.parameters.enumerate_all_solutions = True
 
   # Search and print all solutions.
   solution_printer = VarArraySolutionPrinter([start, duration, across])
-  solver.SearchForAllSolutions(model, solution_printer)
+  solver.Solve(model, solution_printer)
 
 
 SchedulingWithCalendarSampleSat()
+```
+
+## Detecting if two intervals overlap.
+
+We want a Boolean variable to be true iff two intervals overlap. To enforce
+this, we will create 3 Boolean variables, link two of them to the relative
+positions of the two intervals, and define the third one using the other two
+Boolean variables.
+
+There are two ways of linking the three Boolean variables. The first version
+uses one clause and two implications. Propagation will be faster using this
+version. The second version uses a `sum(..) == 1` equation. It is more compact,
+but assumes the length of the two intervals is > 0.
+
+Note that we need to create the intervals to enforce `start + size == end`, but
+we do not actually use them in this code sample.
+
+The following code displays
+
+```
+start_a=0 start_b=0 a_overlaps_b=1
+start_a=0 start_b=1 a_overlaps_b=1
+start_a=0 start_b=2 a_overlaps_b=1
+start_a=0 start_b=3 a_overlaps_b=0
+start_a=0 start_b=4 a_overlaps_b=0
+start_a=0 start_b=5 a_overlaps_b=0
+start_a=1 start_b=0 a_overlaps_b=1
+start_a=1 start_b=1 a_overlaps_b=1
+start_a=1 start_b=2 a_overlaps_b=1
+start_a=1 start_b=3 a_overlaps_b=1
+start_a=1 start_b=4 a_overlaps_b=0
+start_a=1 start_b=5 a_overlaps_b=0
+...
+```
+
+### Python code
+
+```python
+"""Code sample to demonstrates how to detect if two intervals overlap."""
+
+from ortools.sat.python import cp_model
+
+
+class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
+  """Print intermediate solutions."""
+
+  def __init__(self, variables):
+    cp_model.CpSolverSolutionCallback.__init__(self)
+    self.__variables = variables
+    self.__solution_count = 0
+
+  def on_solution_callback(self):
+    self.__solution_count += 1
+    for v in self.__variables:
+      print('%s=%i' % (v, self.Value(v)), end=' ')
+    print()
+
+  def solution_count(self):
+    return self.__solution_count
+
+
+def OverlappingIntervals():
+  """Create the overlapping Boolean variables and enumerate all states."""
+  model = cp_model.CpModel()
+
+  horizon = 7
+
+  # First interval.
+  start_var_a = model.NewIntVar(0, horizon, 'start_a')
+  duration_a = 3
+  end_var_a = model.NewIntVar(0, horizon, 'end_a')
+  unused_interval_var_a = model.NewIntervalVar(start_var_a, duration_a,
+                                               end_var_a, 'interval_a')
+
+  # Second interval.
+  start_var_b = model.NewIntVar(0, horizon, 'start_b')
+  duration_b = 2
+  end_var_b = model.NewIntVar(0, horizon, 'end_b')
+  unused_interval_var_b = model.NewIntervalVar(start_var_b, duration_b,
+                                               end_var_b, 'interval_b')
+
+  # a_after_b Boolean variable.
+  a_after_b = model.NewBoolVar('a_after_b')
+  model.Add(start_var_a >= end_var_b).OnlyEnforceIf(a_after_b)
+  model.Add(start_var_a < end_var_b).OnlyEnforceIf(a_after_b.Not())
+
+  # b_after_a Boolean variable.
+  b_after_a = model.NewBoolVar('b_after_a')
+  model.Add(start_var_b >= end_var_a).OnlyEnforceIf(b_after_a)
+  model.Add(start_var_b < end_var_a).OnlyEnforceIf(b_after_a.Not())
+
+  # Result Boolean variable.
+  a_overlaps_b = model.NewBoolVar('a_overlaps_b')
+
+  # Option a: using only clauses
+  model.AddBoolOr([a_after_b, b_after_a, a_overlaps_b])
+  model.AddImplication(a_after_b, a_overlaps_b.Not())
+  model.AddImplication(b_after_a, a_overlaps_b.Not())
+
+  # Option b: using a sum() == 1.
+  # model.Add(a_after_b + b_after_a + a_overlaps_b == 1)
+
+  # Search for start values in increasing order for the two intervals.
+  model.AddDecisionStrategy([start_var_a, start_var_b], cp_model.CHOOSE_FIRST,
+                            cp_model.SELECT_MIN_VALUE)
+
+  # Create a solver and solve with a fixed search.
+  solver = cp_model.CpSolver()
+
+  # Force the solver to follow the decision strategy exactly.
+  solver.parameters.search_branching = cp_model.FIXED_SEARCH
+  # Enumerate all solutions.
+  solver.parameters.enumerate_all_solutions = True
+
+  # Search and print out all solutions.
+  solution_printer = VarArraySolutionPrinter(
+      [start_var_a, start_var_b, a_overlaps_b])
+  solver.Solve(model, solution_printer)
+
+
+OverlappingIntervals()
 ```
 
 ## Transitions in a disjunctive resource

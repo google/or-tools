@@ -1,0 +1,103 @@
+// Copyright 2010-2021 Google LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// An encoding format for mathematical optimization problems.
+syntax = "proto3";
+
+package operations_research.math_opt;
+
+import "ortools/math_opt/sparse_containers.proto";
+
+// As used below, we define "#variables" = size(VariablesProto.ids).
+message VariablesProto {
+  // Must be nonnegative and strictly increasing.
+  repeated int64 ids = 1;
+  // Should have length equal to #variables, values in [-inf, inf).
+  repeated double lower_bounds = 2;
+  // Should have length equal to #variables, values in (-inf, inf].
+  repeated double upper_bounds = 3;
+  // Should have length equal to #variables. Value is false for continuous
+  // variables and true for integer variables.
+  repeated bool integers = 4;
+  // If not set, assumed to be all empty strings. Otherwise, should have length
+  // equal to #variables.
+  //
+  // All nonempty names must be distinct. TODO(b/169575522): we may relax this.
+  repeated string names = 5;
+}
+
+message ObjectiveProto {
+  // false is minimize, true is maximize
+  bool maximize = 1;
+  double offset = 2;
+
+  // ObjectiveProto terms that are linear in the decision variables.
+  //
+  // Requirements:
+  //  * linear_coefficients.ids are elements of VariablesProto.ids.
+  //  * VariablesProto not specified correspond to zero.
+  //  * linear_coefficients.values must all be finite.
+  //  * linear_coefficients.values can be zero, but this just wastes space.
+  SparseDoubleVectorProto linear_coefficients = 3;
+
+  // TODO(user): add support for a quadratic objective term.
+}
+
+// As used below, we define "#linear constraints" =
+// size(LinearConstraintsProto.ids).
+message LinearConstraintsProto {
+  // Must be nonnegative and strictly increasing.
+  repeated int64 ids = 1;
+  // Should have length equal to #linear constraints, values in [-inf, inf).
+  repeated double lower_bounds = 2;
+  // Should have length equal to #linear constraints, values in (-inf, inf].
+  repeated double upper_bounds = 3;
+  // If not set, assumed to be all empty strings. Otherwise, should have length
+  // equal to #linear constraints.
+  //
+  // All nonempty names must be distinct. TODO(b/169575522): we may relax this.
+  repeated string names = 4;
+}
+
+// An optimization problem of the form
+//
+// min(/max) c * x
+// s.t.
+// cons_lb <= A * x <= cons_ub
+// var_lb  <=     x <= var_ub
+// x_i integer for i in I
+//
+// where:
+//  * x is a vector of decision variables in R^n
+//  * c, var_lb, var_ub are vectors in R^n
+//  * cons_lb, cons_ub are vectors in R^m
+//  * A is a sparse matrix in R^{m by n}
+//  * potentially var_lb, cons_lb are -inf
+//  * potentially var_ub, cons_ub are +inf
+//
+// For more details see go/mathopt-model
+message ModelProto {
+  string name = 1;
+  VariablesProto variables = 2;
+  ObjectiveProto objective = 3;
+  LinearConstraintsProto linear_constraints = 4;
+
+  // The variable coefficients for the linear constraints.
+  //
+  // Requirements:
+  //  * linear_constraint_matrix.row_ids are elements of linear_constraints.ids.
+  //  * linear_constraint_matrix.column_ids are elements of variables.ids.
+  //  * Matrix entries not specified are zero.
+  //  * linear_constraint_matrix.values must all be finite.
+  SparseDoubleMatrixProto linear_constraint_matrix = 5;
+}

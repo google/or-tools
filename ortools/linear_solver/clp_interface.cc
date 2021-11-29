@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,6 +14,7 @@
 //
 
 #include <algorithm>
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <vector>
@@ -82,9 +83,9 @@ class CLPInterface : public MPSolverInterface {
 
   // ------ Query statistics on the solution and the solve ------
   // Number of simplex iterations
-  int64 iterations() const override;
+  int64_t iterations() const override;
   // Number of branch-and-bound nodes. Only available for discrete problems.
-  int64 nodes() const override;
+  int64_t nodes() const override;
 
   // Returns the basis status of a row.
   MPSolver::BasisStatus row_status(int constraint_index) const override;
@@ -532,12 +533,12 @@ MPSolver::BasisStatus CLPInterface::TransformCLPBasisStatus(
 
 // ------ Query statistics on the solution and the solve ------
 
-int64 CLPInterface::iterations() const {
+int64_t CLPInterface::iterations() const {
   if (!CheckSolutionIsSynchronized()) return kUnknownNumberOfIterations;
   return clp_->getIterationCount();
 }
 
-int64 CLPInterface::nodes() const {
+int64_t CLPInterface::nodes() const {
   LOG(DFATAL) << "Number of nodes only available for discrete problems";
   return kUnknownNumberOfNodes;
 }

@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,8 +19,10 @@
 #include <unistd.h>
 #endif
 
+#include <atomic>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <utility>
 
 #include "absl/status/status.h"
@@ -31,6 +33,8 @@
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_replace.h"
 #include "absl/synchronization/mutex.h"
+#include "absl/synchronization/notification.h"
+#include "absl/time/time.h"
 #include "ortools/base/accurate_sum.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
@@ -38,6 +42,7 @@
 #include "ortools/base/map_util.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/base/threadpool.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_exporter.h"
 #include "ortools/linear_solver/model_validator.h"
@@ -465,6 +470,8 @@ MPSolver::MPSolver(const std::string& name,
 
 MPSolver::~MPSolver() { Clear(); }
 
+extern bool GurobiIsCorrectlyInstalled();
+
 // static
 bool MPSolver::SupportsProblemType(OptimizationProblemType problem_type) {
 #ifdef USE_CLP
@@ -481,7 +488,7 @@ bool MPSolver::SupportsProblemType(OptimizationProblemType problem_type) {
   if (problem_type == GLOP_LINEAR_PROGRAMMING) return true;
   if (problem_type == GUROBI_LINEAR_PROGRAMMING ||
       problem_type == GUROBI_MIXED_INTEGER_PROGRAMMING) {
-    return MPSolver::GurobiIsCorrectlyInstalled();
+    return GurobiIsCorrectlyInstalled();
   }
 #ifdef USE_SCIP
   if (problem_type == SCIP_MIXED_INTEGER_PROGRAMMING) return true;
@@ -624,7 +631,8 @@ MPSolver* MPSolver::CreateSolver(const std::string& solver_id) {
                  << " not linked in, or the license was not found.";
     return nullptr;
   }
-  return new MPSolver("", problem_type);
+  MPSolver* solver = new MPSolver("", problem_type);
+  return solver;
 }
 
 MPVariable* MPSolver::LookupVariableOrNull(const std::string& var_name) const {
@@ -649,6 +657,8 @@ MPConstraint* MPSolver::LookupConstraintOrNull(
 
 MPSolverResponseStatus MPSolver::LoadModelFromProto(
     const MPModelProto& input_model, std::string* error_message) {
+  Clear();
+
   // The variable and constraint names are dropped, because we allow
   // duplicate names in the proto (they're not considered as 'ids'),
   // unlike the MPSolver C++ API which crashes if there are duplicate names.
@@ -660,6 +670,8 @@ MPSolverResponseStatus MPSolver::LoadModelFromProto(
 
 MPSolverResponseStatus MPSolver::LoadModelFromProtoWithUniqueNamesOrDie(
     const MPModelProto& input_model, std::string* error_message) {
+  Clear();
+
   // Force variable and constraint name indexing (which CHECKs name uniqueness).
   GenerateVariableNameIndex();
   GenerateConstraintNameIndex();
@@ -844,10 +856,35 @@ void MPSolver::FillSolutionResponseProto(MPSolutionResponse* response) const {
   }
 }
 
+namespace {
+bool InCategory(int status, int category) {
+  if (category == MPSOLVER_OPTIMAL) return status == MPSOLVER_OPTIMAL;
+  while (status > category) status >>= 4;
+  return status == category;
+}
+
+void AppendStatusStr(const std::string& msg, MPSolutionResponse* response) {
+  response->set_status_str(
+      absl::StrCat(response->status_str(),
+                   (response->status_str().empty() ? "" : "\n"), msg));
+}
+}  // namespace
+
 // static
 void MPSolver::SolveWithProto(const MPModelRequest& model_request,
-                              MPSolutionResponse* response) {
+                              MPSolutionResponse* response,
+                              std::atomic<bool>* interrupt) {
   CHECK(response != nullptr);
+
+  if (interrupt != nullptr &&
+      !SolverTypeSupportsInterruption(model_request.solver_type())) {
+    response->set_status(MPSOLVER_INCOMPATIBLE_OPTIONS);
+    response->set_status_str(
+        "Called MPSolver::SolveWithProto with an underlying solver that "
+        "doesn't support interruption.");
+    return;
+  }
+
   MPSolver solver(model_request.model().name(),
                   static_cast<MPSolver::OptimizationProblemType>(
                       model_request.solver_type()));
@@ -855,7 +892,10 @@ void MPSolver::SolveWithProto(const MPModelRequest& model_request,
     solver.EnableOutput();
   }
 
-  auto optional_response = solver.interface_->DirectlySolveProto(model_request);
+  // If interruption support is not required, we don't need access to the
+  // underlying solver and can solve it directly if the interface supports it.
+  auto optional_response =
+      solver.interface_->DirectlySolveProto(model_request, interrupt);
   if (optional_response) {
     *response = std::move(optional_response).value();
     return;
@@ -904,12 +944,113 @@ void MPSolver::SolveWithProto(const MPModelRequest& model_request,
       }
     }
   }
-  solver.Solve();
-  solver.FillSolutionResponseProto(response);
+
+  if (interrupt == nullptr) {
+    // If we don't need interruption support, we can save some overhead by
+    // running the solve in the current thread.
+    solver.Solve();
+    solver.FillSolutionResponseProto(response);
+  } else {
+    const absl::Time start_time = absl::Now();
+    absl::Time interrupt_time;
+    bool interrupted_by_user = false;
+    {
+      absl::Notification solve_finished;
+      auto polling_func = [&interrupt, &solve_finished, &solver,
+                           &interrupted_by_user, &interrupt_time,
+                           &model_request]() {
+        constexpr absl::Duration kPollDelay = absl::Microseconds(100);
+        constexpr absl::Duration kMaxInterruptionDelay = absl::Seconds(10);
+
+        while (!interrupt->load()) {
+          if (solve_finished.HasBeenNotified()) return;
+          absl::SleepFor(kPollDelay);
+        }
+
+        // If we get here, we received an interruption notification before the
+        // solve finished "naturally".
+        solver.InterruptSolve();
+        interrupt_time = absl::Now();
+        interrupted_by_user = true;
+
+        // SUBTLE: our call to InterruptSolve() can be ignored by the
+        // underlying solver for several reasons:
+        // 1) The solver thread doesn't poll its 'interrupted' bit often
+        //    enough and takes too long to realize that it should return, or
+        //    its mere return + FillSolutionResponse() takes too long.
+        // 2) The user interrupted the solve so early that Solve() hadn't
+        //    really started yet when we called InterruptSolve().
+        // In case 1), we should just wait a little longer. In case 2), we
+        // should call InterruptSolve() again, maybe several times. To both
+        // accommodate cases where the solver takes really a long time to
+        // react to the interruption, while returning as quickly as possible,
+        // we poll the solve_finished notification with increasing durations
+        // and call InterruptSolve again, each time.
+        for (absl::Duration poll_delay = kPollDelay;
+             absl::Now() <= interrupt_time + kMaxInterruptionDelay;
+             poll_delay *= 2) {
+          if (solve_finished.WaitForNotificationWithTimeout(poll_delay)) {
+            return;
+          } else {
+            solver.InterruptSolve();
+          }
+        }
+
+        LOG(DFATAL)
+            << "MPSolver::InterruptSolve() seems to be ignored by the "
+               "underlying solver, despite repeated calls over at least "
+            << absl::FormatDuration(kMaxInterruptionDelay)
+            << ". Solver type used: "
+            << MPModelRequest_SolverType_Name(model_request.solver_type());
+
+        // Note that in opt builds, the polling thread terminates here with an
+        // error message, but we let Solve() finish, ignoring the user
+        // interruption request.
+      };
+
+      // The choice to do polling rather than solving in the second thread is
+      // not arbitrary, as we want to maintain any custom thread options set by
+      // the user. They shouldn't matter for polling, but for solving we might
+      // e.g. use a larger stack.
+      ThreadPool thread_pool("SolverThread", /*num_threads=*/1);
+      thread_pool.StartWorkers();
+      thread_pool.Schedule(polling_func);
+
+      // Make sure the interruption notification didn't arrive while waiting to
+      // be scheduled.
+      if (!interrupt->load()) {
+        solver.Solve();
+        solver.FillSolutionResponseProto(response);
+      } else {  // *interrupt == true
+        response->set_status(MPSOLVER_CANCELLED_BY_USER);
+        response->set_status_str(
+            "Solve not started, because the user set the atomic<bool> in "
+            "MPSolver::SolveWithProto() to true before solving could "
+            "start.");
+      }
+      solve_finished.Notify();
+
+      // We block until the thread finishes when thread_pool goes out of scope.
+    }
+
+    if (interrupted_by_user) {
+      // Despite the interruption, the solver might still have found a useful
+      // result. If so, don't overwrite the status.
+      if (InCategory(response->status(), MPSOLVER_NOT_SOLVED)) {
+        response->set_status(MPSOLVER_CANCELLED_BY_USER);
+      }
+      AppendStatusStr(
+          absl::StrFormat(
+              "User interrupted MPSolver::SolveWithProto() by setting the "
+              "atomic<bool> to true at %s (%s after solving started.)",
+              absl::FormatTime(interrupt_time),
+              absl::FormatDuration(interrupt_time - start_time)),
+          response);
+    }
+  }
+
   if (!warning_message.empty()) {
-    response->set_status_str(absl::StrCat(
-        response->status_str(), (response->status_str().empty() ? "" : "\n"),
-        warning_message));
+    AppendStatusStr(warning_message, response);
   }
 }
 
@@ -1051,9 +1192,30 @@ absl::Status MPSolver::LoadSolutionFromProto(const MPSolutionResponse& response,
           "'"));
     }
   }
-  // TODO(user): Load the reduced costs too, if available.
   for (int i = 0; i < response.variable_value_size(); ++i) {
     variables_[i]->set_solution_value(response.variable_value(i));
+  }
+  if (response.dual_value_size() > 0) {
+    if (response.dual_value_size() != constraints_.size()) {
+      return absl::InvalidArgumentError(absl::StrCat(
+          "Trying to load a dual solution whose number of entries (",
+          response.dual_value_size(), ") does not correspond to the Solver's (",
+          constraints_.size(), ")"));
+    }
+    for (int i = 0; i < response.dual_value_size(); ++i) {
+      constraints_[i]->set_dual_value(response.dual_value(i));
+    }
+  }
+  if (response.reduced_cost_size() > 0) {
+    if (response.reduced_cost_size() != variables_.size()) {
+      return absl::InvalidArgumentError(absl::StrCat(
+          "Trying to load a reduced cost solution whose number of entries (",
+          response.reduced_cost_size(),
+          ") does not correspond to the Solver's (", variables_.size(), ")"));
+    }
+    for (int i = 0; i < response.reduced_cost_size(); ++i) {
+      variables_[i]->set_reduced_cost(response.reduced_cost(i));
+    }
   }
   // Set the objective value, if is known.
   // NOTE(user): We do not verify the objective, even though we could!
@@ -1070,15 +1232,18 @@ absl::Status MPSolver::LoadSolutionFromProto(const MPSolutionResponse& response,
 }
 
 void MPSolver::Clear() {
+  {
+    absl::MutexLock lock(&global_count_mutex_);
+    global_num_variables_ += variables_.size();
+    global_num_constraints_ += constraints_.size();
+  }
   MutableObjective()->Clear();
   gtl::STLDeleteElements(&variables_);
   gtl::STLDeleteElements(&constraints_);
-  variables_.clear();
   if (variable_name_to_index_) {
     variable_name_to_index_->clear();
   }
   variable_is_extracted_.clear();
-  constraints_.clear();
   if (constraint_name_to_index_) {
     constraint_name_to_index_->clear();
   }
@@ -1282,8 +1447,8 @@ std::string PrettyPrintVar(const MPVariable& var) {
   // Special case: integer variable with at most two possible values
   // (and potentially none).
   if (var.integer() && var.ub() - var.lb() <= 1) {
-    const int64 lb = static_cast<int64>(ceil(var.lb()));
-    const int64 ub = static_cast<int64>(floor(var.ub()));
+    const int64_t lb = static_cast<int64_t>(ceil(var.lb()));
+    const int64_t ub = static_cast<int64_t>(floor(var.ub()));
     if (lb > ub) {
       return prefix + "∅";
     } else if (lb == ub) {
@@ -1517,9 +1682,9 @@ void MPSolver::EnableOutput() { interface_->set_quiet(false); }
 
 void MPSolver::SuppressOutput() { interface_->set_quiet(true); }
 
-int64 MPSolver::iterations() const { return interface_->iterations(); }
+int64_t MPSolver::iterations() const { return interface_->iterations(); }
 
-int64 MPSolver::nodes() const { return interface_->nodes(); }
+int64_t MPSolver::nodes() const { return interface_->nodes(); }
 
 double MPSolver::ComputeExactConditionNumber() const {
   return interface_->ComputeExactConditionNumber();
@@ -1548,11 +1713,6 @@ bool MPSolver::ExportModelAsLpFormat(bool obfuscate,
 
 bool MPSolver::ExportModelAsMpsFormat(bool fixed_format, bool obfuscate,
                                       std::string* model_str) const {
-  //   if (fixed_format) {
-  //     LOG_EVERY_N_SEC(WARNING, 10)
-  //         << "Fixed format is deprecated. Using free format instead.";
-  //
-
   MPModelProto proto;
   ExportModelToProto(&proto);
   MPModelExportOptions options;
@@ -1599,6 +1759,25 @@ bool MPSolver::SupportsCallbacks() const {
   return interface_->SupportsCallbacks();
 }
 
+// Global counters.
+absl::Mutex MPSolver::global_count_mutex_(absl::kConstInit);
+int64_t MPSolver::global_num_variables_ = 0;
+int64_t MPSolver::global_num_constraints_ = 0;
+
+// static
+int64_t MPSolver::global_num_variables() {
+  // Why not ReaderMutexLock? See go/totw/197#when-are-shared-locks-useful.
+  absl::MutexLock lock(&global_count_mutex_);
+  return global_num_variables_;
+}
+
+// static
+int64_t MPSolver::global_num_constraints() {
+  // Why not ReaderMutexLock? See go/totw/197#when-are-shared-locks-useful.
+  absl::MutexLock lock(&global_count_mutex_);
+  return global_num_constraints_;
+}
+
 bool MPSolverResponseStatusIsRpcError(MPSolverResponseStatus status) {
   switch (status) {
     // Cases that don't yield an RPC error when they happen on the server.
@@ -1613,12 +1792,14 @@ bool MPSolverResponseStatusIsRpcError(MPSolverResponseStatus status) {
     // Cases that should never happen with the linear solver server. We prefer
     // to consider those as "not RPC errors".
     case MPSOLVER_MODEL_IS_VALID:
+    case MPSOLVER_CANCELLED_BY_USER:
       return false;
     // Cases that yield an RPC error when they happen on the server.
     case MPSOLVER_MODEL_INVALID:
     case MPSOLVER_MODEL_INVALID_SOLUTION_HINT:
     case MPSOLVER_MODEL_INVALID_SOLVER_PARAMETERS:
     case MPSOLVER_SOLVER_TYPE_UNAVAILABLE:
+    case MPSOLVER_INCOMPATIBLE_OPTIONS:
       return true;
   }
   LOG(DFATAL)
@@ -1800,49 +1981,13 @@ absl::Status MPSolverInterface::SetNumThreads(int num_threads) {
 
 bool MPSolverInterface::SetSolverSpecificParametersAsString(
     const std::string& parameters) {
-  // Note(user): this method needs to return a success/failure boolean
-  // immediately, so we also perform the actual parameter parsing right away.
-  // Some implementations will keep them forever and won't need to re-parse
-  // them; some (eg. Gurobi) need to re-parse the parameters every time they do
-  // Solve(). We just store the parameters string anyway.
-  //
-  // Note(user): This is not implemented on Android because there is no
-  // temporary directory to write files to without a pointer to the Java
-  // environment.
-  if (parameters.empty()) return true;
+  if (parameters.empty()) {
+    return true;
+  }
 
-  std::string extension = ValidFileExtensionForParameterFile();
-  std::string filename;
-  bool no_error_so_far = PortableTemporaryFile(nullptr, &filename);
-  filename += extension;
-  if (no_error_so_far) {
-    no_error_so_far = PortableFileSetContents(filename, parameters).ok();
-  }
-  if (no_error_so_far) {
-    no_error_so_far = ReadParameterFile(filename);
-    // We need to clean up the file even if ReadParameterFile() returned
-    // false. In production we can continue even if the deletion failed.
-    if (!PortableDeleteFile(filename).ok()) {
-      LOG(DFATAL) << "Couldn't delete temporary parameters file: " << filename;
-    }
-  }
-  if (!no_error_so_far) {
-    LOG(WARNING) << "Error in SetSolverSpecificParametersAsString() "
-                 << "for solver type: "
-                 << ProtoEnumToString<MPModelRequest::SolverType>(
-                        static_cast<MPModelRequest::SolverType>(
-                            solver_->ProblemType()));
-  }
-  return no_error_so_far;
-}
-
-bool MPSolverInterface::ReadParameterFile(const std::string& filename) {
-  LOG(WARNING) << "ReadParameterFile() not supported by this solver.";
+  LOG(WARNING) << "SetSolverSpecificParametersAsString() not supported by "
+               << SolverVersion();
   return false;
-}
-
-std::string MPSolverInterface::ValidFileExtensionForParameterFile() const {
-  return ".tmp";
 }
 
 // ---------- MPSolverParameters ----------

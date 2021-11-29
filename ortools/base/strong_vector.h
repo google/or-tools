@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -27,7 +27,7 @@
 //
 // where IntTypeName is the desired name for the "logical" integer-like type
 // and the ValueType is a supported native integer type such as int or
-// uint64 (see int_type.h for details).
+// uint64_t (see int_type.h for details).
 //
 // The wrapper exposes all public methods of STL vector and behaves mostly as
 // pass-through.  The only method modified to ensure type-safety is the operator
@@ -35,19 +35,19 @@
 //
 // EXAMPLES --------------------------------------------------------------------
 //
-//    DEFINE_INT_TYPE(PhysicalChildIndex, int32);
+//    DEFINE_INT_TYPE(PhysicalChildIndex, int32_t);
 //    absl::StrongVector<PhysicalChildIndex, ChildStats*> vec;
 //
 //    PhysicalChildIndex physical_index;
 //    vec[physical_index] = ...;        <-- index type match: compiles properly.
 //    vec.at(physical_index) = ...;     <-- index type match: compiles properly.
 //
-//    int32 physical_index;
+//    int32_t physical_index;
 //    vec[physical_index] = ...;        <-- fails to compile.
 //    vec.at(physical_index) = ...;     <-- fails to compile.
 //
-//    DEFINE_INT_TYPE(LogicalChildIndex, int32);
-//    int32 logical_index;
+//    DEFINE_INT_TYPE(LogicalChildIndex, int32_t);
+//    int32_t logical_index;
 //    vec[logical_index] = ...;        <-- fails to compile.
 //    vec.at(logical_index) = ...;     <-- fails to compile.
 //

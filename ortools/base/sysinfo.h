@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,10 +18,10 @@
 
 namespace operations_research {
 // Returns the memory usage of the process.
-int64 GetProcessMemoryUsage();
+int64_t GetProcessMemoryUsage();
 }  // namespace operations_research
 
-inline int64 MemoryUsage(int unused) {
+inline int64_t MemoryUsage(int unused) {
   return operations_research::GetProcessMemoryUsage();
 }
 

@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -32,7 +32,7 @@ namespace operations_research {
  */
 struct ClosedInterval {
   ClosedInterval() {}
-  ClosedInterval(int64 s, int64 e) : start(s), end(e) {
+  ClosedInterval(int64_t s, int64_t e) : start(s), end(e) {
     DLOG_IF(DFATAL, s > e) << "Invalid ClosedInterval(" << s << ", " << e
                            << ")";
   }
@@ -49,8 +49,8 @@ struct ClosedInterval {
     return start < other.start;
   }
 
-  int64 start = 0;  // Inclusive.
-  int64 end = 0;    // Inclusive.
+  int64_t start = 0;  // Inclusive.
+  int64_t end = 0;    // Inclusive.
 };
 
 std::ostream& operator<<(std::ostream& out, const ClosedInterval& interval);
@@ -104,13 +104,13 @@ class Domain {
 #endif  // !defined(SWIG)
 
   /// Constructor for the common case of a singleton domain.
-  explicit Domain(int64 value);
+  explicit Domain(int64_t value);
 
   /**
    * Constructor for the common case of a single interval [left, right].
    * If left > right, this will result in the empty domain.
    */
-  Domain(int64 left, int64 right);
+  Domain(int64_t left, int64_t right);
 
   /**
    * Returns the full domain Int64.
@@ -121,7 +121,7 @@ class Domain {
    * Creates a domain from the union of an unsorted list of integer values.
    * Input values may be repeated, with no consequence on the output
    */
-  static Domain FromValues(std::vector<int64> values);
+  static Domain FromValues(std::vector<int64_t> values);
 
   /**
    * Creates a domain from the union of an unsorted list of intervals.
@@ -132,7 +132,8 @@ class Domain {
    * Same as FromIntervals() for a flattened representation (start, end,
    * start, end, ...).
    */
-  static Domain FromFlatSpanOfIntervals(absl::Span<const int64> flat_intervals);
+  static Domain FromFlatSpanOfIntervals(
+      absl::Span<const int64_t> flat_intervals);
 
   /**
    * This method is available in Python, Java and .NET. It allows
@@ -140,23 +141,80 @@ class Domain {
    * .NET, [[0, 2], [5, 5], [8, 10]] in python).
    */
   static Domain FromVectorIntervals(
-      const std::vector<std::vector<int64> >& intervals);
+      const std::vector<std::vector<int64_t> >& intervals);
 
   /**
    * This method is available in Python, Java and .NET. It allows
    * building a Domain object from a flattened list of intervals
    * (long[] in Java and .NET, [0, 2, 5, 5, 8, 10] in python).
    */
-  static Domain FromFlatIntervals(const std::vector<int64>& flat_intervals);
+  static Domain FromFlatIntervals(const std::vector<int64_t>& flat_intervals);
 
   /**
    * This method returns the flattened list of interval bounds of the domain.
    *
    * Thus the domain {0, 1, 2, 5, 8, 9, 10} will return [0, 2, 5, 5,
-   * 8, 10] (as a C++ std::vector<int64>, as a java or C# long[], as
+   * 8, 10] (as a C++ std::vector<int64_t>, as a java or C# long[], as
    * a python list of integers).
    */
-  std::vector<int64> FlattenedIntervals() const;
+  std::vector<int64_t> FlattenedIntervals() const;
+
+#if !defined(SWIG)
+  /**
+   * Allows to iterate over all values of a domain in order with
+   * for (const int64_t v : domain.Values()) { ... }
+   *
+   * Note that this shouldn't be used in another context !!
+   * We don't implement full fledged iterator APIs.
+   */
+  class DomainIterator {
+   public:
+    explicit DomainIterator(
+        const absl::InlinedVector<ClosedInterval, 1>& intervals)
+        : value_(intervals.empty() ? int64_t{0} : intervals.front().start),
+          it_(intervals.begin()),
+          end_(intervals.end()) {}
+
+    int64_t operator*() const { return value_; }
+
+    void operator++() {
+      if (value_ == it_->end) {
+        ++it_;
+        if (it_ != end_) value_ = it_->start;
+      } else {
+        ++value_;
+      }
+    }
+
+    bool operator!=(
+        absl::InlinedVector<ClosedInterval, 1>::const_iterator end) const {
+      return it_ != end;
+    }
+
+   private:
+    int64_t value_;
+    absl::InlinedVector<ClosedInterval, 1>::const_iterator it_;
+    absl::InlinedVector<ClosedInterval, 1>::const_iterator end_;
+  };
+  struct DomainIteratorBeginEnd {
+    DomainIterator begin() const { return DomainIterator(intervals); }
+    absl::InlinedVector<ClosedInterval, 1>::const_iterator end() const {
+      return intervals.end();
+    }
+    const absl::InlinedVector<ClosedInterval, 1>& intervals;
+  };
+  struct DomainIteratorBeginEndWithOwnership {
+    DomainIterator begin() const { return DomainIterator(intervals); }
+    absl::InlinedVector<ClosedInterval, 1>::const_iterator end() const {
+      return intervals.end();
+    }
+    absl::InlinedVector<ClosedInterval, 1> intervals;
+  };
+  DomainIteratorBeginEnd Values() const& { return {this->intervals_}; }
+  DomainIteratorBeginEndWithOwnership Values() const&& {
+    return {std::move(this->intervals_)};
+  }
+#endif  // !defined(SWIG)
 
   /**
    * Returns true if this is the empty set.
@@ -166,19 +224,24 @@ class Domain {
   /**
    * Returns the number of elements in the domain. It is capped at kint64max
    */
-  int64 Size() const;
+  int64_t Size() const;
 
   /**
    * Returns the min value of the domain.
    * The domain must not be empty.
    */
-  int64 Min() const;
+  int64_t Min() const;
 
   /**
    * Returns the max value of the domain.
    * The domain must not be empty.
    */
-  int64 Max() const;
+  int64_t Max() const;
+
+  /**
+   * Returns the value closest to zero. If there is a tie, pick positive one.
+   */
+  int64_t SmallestValue() const;
 
   /**
    * Returns true iff the domain is reduced to a single value.
@@ -188,15 +251,15 @@ class Domain {
 
   /**
    * Returns the value of a fixed domain. IsFixed() must be true.
-   * This is the same as Min() or Max() but allows for amore readable code and
+   * This is the same as Min() or Max() but allows for a more readable code and
    * also crash in debug mode if called on a non fixed domain.
    */
-  int64 FixedValue() const;
+  int64_t FixedValue() const;
 
   /**
    * Returns true iff value is in Domain.
    */
-  bool Contains(int64 value) const;
+  bool Contains(int64_t value) const;
 
   /**
    * Returns true iff D is included in the given domain.
@@ -242,7 +305,7 @@ class Domain {
    * Note that if you multiply by a negative coeff, kint64min will be dropped
    * from the result even if it was here due to how this is implemented.
    */
-  Domain MultiplicationBy(int64 coeff, bool* exact = nullptr) const;
+  Domain MultiplicationBy(int64_t coeff, bool* exact = nullptr) const;
 
   /**
    * If NumIntervals() is too large, this return a superset of the domain.
@@ -261,7 +324,7 @@ class Domain {
    * look for {x ∈ Int64, ∃ e ∈ D, x / coeff = e}, then we will get [2, 201] in
    * the case above.
    */
-  Domain ContinuousMultiplicationBy(int64 coeff) const;
+  Domain ContinuousMultiplicationBy(int64_t coeff) const;
 
   /**
    * Returns a superset of MultiplicationBy() to avoid the explosion in the
@@ -282,14 +345,31 @@ class Domain {
    *
    * For instance Domain(1, 7).DivisionBy(2) == Domain(0, 3).
    */
-  Domain DivisionBy(int64 coeff) const;
+  Domain DivisionBy(int64_t coeff) const;
 
   /**
    * Returns {x ∈ Int64, ∃ e ∈ D, x * coeff = e}.
    *
    * For instance Domain(1, 7).InverseMultiplicationBy(2) == Domain(1, 3).
    */
-  Domain InverseMultiplicationBy(const int64 coeff) const;
+  Domain InverseMultiplicationBy(const int64_t coeff) const;
+
+  /**
+   * Returns a superset of {x ∈ Int64, ∃ e ∈ D, ∃ m ∈ modulo, x = e % m }.
+   *
+   * We check that modulo is strictly positive.
+   * The sign of the modulo depends on the sign of e.
+   * For now we just intersect with the min/max possible value.
+   */
+  Domain PositiveModuloBySuperset(const Domain& modulo) const;
+
+  /**
+   * Returns a superset of {x ∈ Int64, ∃ e ∈ D, ∃ d ∈ divisor, x = e / d }.
+   *
+   * We check that divisor is strictly positive.
+   * For now we just intersect with the min/max possible value.
+   */
+  Domain PositiveDivisionBySuperset(const Domain& divisor) const;
 
   /**
    * Advanced usage. Given some \e implied information on this domain that is
@@ -374,10 +454,10 @@ class Domain {
 std::ostream& operator<<(std::ostream& out, const Domain& domain);
 
 // Returns the sum of smallest k values in the domain.
-int64 SumOfKMinValueInDomain(const Domain& domain, int k);
+int64_t SumOfKMinValueInDomain(const Domain& domain, int k);
 
 // Returns the sum of largest k values in the domain.
-int64 SumOfKMaxValueInDomain(const Domain& domain, int k);
+int64_t SumOfKMaxValueInDomain(const Domain& domain, int k);
 
 /**
  * This class represents a sorted list of disjoint, closed intervals.  When an
@@ -405,19 +485,20 @@ class SortedDisjointIntervalList {
   /**
    * Creates a SortedDisjointIntervalList and fills it with intervals
    * [starts[i]..ends[i]]. All intervals must be consistent (starts[i] <=
-   * ends[i]). There are two version, one for int64 and one for int.
+   * ends[i]). There are two version, one for int64_t and one for int.
    */
   // TODO(user): Explain why we favored this API to the more natural
   // input std::vector<ClosedInterval> or std::vector<std::pair<int, int>>.
-  SortedDisjointIntervalList(const std::vector<int64>& starts,
-                             const std::vector<int64>& ends);
+  SortedDisjointIntervalList(const std::vector<int64_t>& starts,
+                             const std::vector<int64_t>& ends);
   SortedDisjointIntervalList(const std::vector<int>& starts,
                              const std::vector<int>& ends);
 
   /**
    * Builds the complement of the interval list on the interval [start, end].
    */
-  SortedDisjointIntervalList BuildComplementOnInterval(int64 start, int64 end);
+  SortedDisjointIntervalList BuildComplementOnInterval(int64_t start,
+                                                       int64_t end);
 
   /**
    * Adds the interval [start..end] to the list, and merges overlapping or
@@ -428,7 +509,7 @@ class SortedDisjointIntervalList {
    *
    * If start > end, it does LOG(DFATAL) and returns end() (no interval added).
    */
-  Iterator InsertInterval(int64 start, int64 end);
+  Iterator InsertInterval(int64_t start, int64_t end);
 
   /**
    * If value is in an interval, increase its end by one, otherwise insert the
@@ -439,16 +520,16 @@ class SortedDisjointIntervalList {
    * If this causes an interval ending at kint64max to grow, it will die with a
    * CHECK fail.
    */
-  Iterator GrowRightByOne(int64 value, int64* newly_covered);
+  Iterator GrowRightByOne(int64_t value, int64_t* newly_covered);
 
   /**
    * Adds all intervals [starts[i]..ends[i]].
    *
    * Same behavior as InsertInterval() upon invalid intervals. There's a version
-   * with int64 and int32.
+   * with int64_t and int32_t.
    */
-  void InsertIntervals(const std::vector<int64>& starts,
-                       const std::vector<int64>& ends);
+  void InsertIntervals(const std::vector<int64_t>& starts,
+                       const std::vector<int64_t>& ends);
   void InsertIntervals(const std::vector<int>& starts,
                        const std::vector<int>& ends);
 
@@ -465,8 +546,8 @@ class SortedDisjointIntervalList {
    *
    * If the value is within an interval, both functions will return it.
    */
-  Iterator FirstIntervalGreaterOrEqual(int64 value) const;
-  Iterator LastIntervalLessOrEqual(int64 value) const;
+  Iterator FirstIntervalGreaterOrEqual(int64_t value) const;
+  Iterator LastIntervalLessOrEqual(int64_t value) const;
 
   std::string DebugString() const;
 

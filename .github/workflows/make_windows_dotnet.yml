@@ -1,0 +1,35 @@
+name: Make Windows .Net
+
+on: [push, pull_request]
+
+jobs:
+  # Building using the github runner environement directly.
+  make:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: ilammy/msvc-dev-cmd@v1
+    - name: Check dotnet
+      run: dotnet --info
+    - name: Clean sh.exe
+      run: |
+        where sh
+        rm 'C:\Program Files\Git\usr\bin\sh.exe'
+        rm 'C:\Program Files\Git\bin\sh.exe'
+      shell: bash
+    - name: Check make
+      run: tools\make --version
+    - name: Check system
+      run: tools\make detect_port
+    - name: Check .Net
+      run: tools\make detect_dotnet
+    - name: Build third party
+      run: tools\make third_party -j4
+    - name: Build C++
+      run: tools\make cc -j4
+    - name: Build .Net
+      run: tools\make dotnet -j4
+    - name: Test .Net
+      run: tools\make test_dotnet -j4
+    - name: Create nuget packages
+      run: tools\make package_dotnet

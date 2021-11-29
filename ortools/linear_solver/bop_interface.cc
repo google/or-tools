@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -12,6 +12,7 @@
 // limitations under the License.
 
 #include <atomic>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -73,8 +74,8 @@ class BopInterface : public MPSolverInterface {
   void ClearObjective() override;
 
   // ------ Query statistics on the solution and the solve ------
-  int64 iterations() const override;
-  int64 nodes() const override;
+  int64_t iterations() const override;
+  int64_t nodes() const override;
   MPSolver::BasisStatus row_status(int constraint_index) const override;
   MPSolver::BasisStatus column_status(int variable_index) const override;
 
@@ -127,7 +128,10 @@ MPSolver::ResultStatus BopInterface::Solve(const MPSolverParameters& param) {
   // Check whenever the solve has already been stopped by the user.
   if (interrupt_solver_) {
     Reset();
-    return MPSolver::NOT_SOLVED;
+    // linear_solver.cc as DCHECK_EQ that interface_->result_status_ is the same
+    // as the status returned by interface_->Solve().
+    result_status_ = MPSolver::NOT_SOLVED;
+    return result_status_;
   }
 
   // Reset extraction as this interface is not incremental yet.
@@ -250,12 +254,12 @@ void BopInterface::SetObjectiveOffset(double value) { NonIncrementalChange(); }
 
 void BopInterface::ClearObjective() { NonIncrementalChange(); }
 
-int64 BopInterface::iterations() const {
+int64_t BopInterface::iterations() const {
   LOG(DFATAL) << "Number of iterations not available";
   return kUnknownNumberOfIterations;
 }
 
-int64 BopInterface::nodes() const {
+int64_t BopInterface::nodes() const {
   LOG(DFATAL) << "Number of nodes not available";
   return kUnknownNumberOfNodes;
 }

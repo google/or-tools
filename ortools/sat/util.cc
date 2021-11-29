@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 
 #include "ortools/base/stl_util.h"
 
@@ -109,8 +110,8 @@ double Percentile::GetPercentile(double percent) {
              (sorted_records[lower_rank + 1] - sorted_records[lower_rank]);
 }
 
-void CompressTuples(absl::Span<const int64> domain_sizes, int64 any_value,
-                    std::vector<std::vector<int64>>* tuples) {
+void CompressTuples(absl::Span<const int64_t> domain_sizes, int64_t any_value,
+                    std::vector<std::vector<int64_t>>* tuples) {
   if (tuples->empty()) return;
 
   // Remove duplicates if any.
@@ -119,11 +120,11 @@ void CompressTuples(absl::Span<const int64> domain_sizes, int64 any_value,
   const int num_vars = (*tuples)[0].size();
 
   std::vector<int> to_remove;
-  std::vector<int64> tuple_minus_var_i(num_vars - 1);
+  std::vector<int64_t> tuple_minus_var_i(num_vars - 1);
   for (int i = 0; i < num_vars; ++i) {
     const int domain_size = domain_sizes[i];
     if (domain_size == 1) continue;
-    absl::flat_hash_map<const std::vector<int64>, std::vector<int>>
+    absl::flat_hash_map<const std::vector<int64_t>, std::vector<int>>
         masked_tuples_to_indices;
     for (int t = 0; t < tuples->size(); ++t) {
       int out = 0;

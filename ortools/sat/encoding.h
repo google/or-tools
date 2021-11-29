@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,6 +18,7 @@
 #ifndef OR_TOOLS_SAT_ENCODING_H_
 #define OR_TOOLS_SAT_ENCODING_H_
 
+#include <cstdint>
 #include <deque>
 #include <vector>
 
@@ -100,7 +101,7 @@ class EncodingNode {
 
   // Fix the right-side variables with indices >= to the given upper_bound to
   // false.
-  void ApplyUpperBound(int64 upper_bound, SatSolver* solver);
+  void ApplyUpperBound(int64_t upper_bound, SatSolver* solver);
 
   void set_weight(Coefficient w) { weight_ = w; }
   Coefficient weight() const { return weight_; }

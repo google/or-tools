@@ -9,7 +9,7 @@ declare -r FILE_PROJ="${FILE}proj";
 # shellcheck disable=SC2155
 declare -r SRC=$(basename "$FILE")
 # shellcheck disable=SC2155
-declare -r PACKAGES_PATH=$(realpath --relative-to="${FILE%/*}" packages)
+declare -r PACKAGES_PATH=$(realpath --relative-to="${FILE%/*}" temp_dotnet/packages)
 if [[ $FILE == *.cs ]] ; then
   declare -r LANG_VERSION="<LangVersion>7.3</LangVersion>"
   declare -r OR_TOOLS_PKG="Google.OrTools"
@@ -52,7 +52,7 @@ cat >"$FILE_PROJ" <<EOL
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     ${LANG_VERSION}
-    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
     <EnableDefaultItems>false</EnableDefaultItems>
     <!-- see https://github.com/dotnet/docs/issues/12237 -->
     <RollForward>LatestMajor</RollForward>

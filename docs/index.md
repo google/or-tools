@@ -8,7 +8,7 @@
 - [CP-SAT](cpp_sat/index.html)
 - [Routing](cpp_routing/index.html)
 
-## DotNET Documentation
+## .NET Documentation
 
 - [Algorithms package](dotnet/namespaceGoogle_1_1OrTools_1_1Algorithms.html)
 - [Graph package](dotnet/namespaceGoogle_1_1OrTools_1_1Graph.html)
@@ -18,6 +18,12 @@
 - [Util package](dotnet/namespaceGoogle_1_1OrTools_1_1Util.html)
 
 ## Java Documentation
+
+### Javadoc
+
+- [ortools-java package](javadoc/index.html)
+
+### Doxygen
 
 - [Algorithms package](java/namespacecom_1_1google_1_1ortools_1_1algorithms.html)
 - [Graph package](java/namespacecom_1_1google_1_1ortools_1_1graph.html)

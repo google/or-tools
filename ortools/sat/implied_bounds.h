@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,6 +15,7 @@
 #define OR_TOOLS_SAT_IMPLIED_BOUNDS_H_
 
 #include <algorithm>
+#include <cstdint>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
@@ -90,6 +91,10 @@ class ImpliedBounds {
   // level zero lower bound of the variable.
   void Add(Literal literal, IntegerLiteral integer_literal);
 
+  // Adds literal => var == value.
+  void AddLiteralImpliesVarEqValue(Literal literal, IntegerVariable var,
+                                   IntegerValue value);
+
   // This must be called after first_decision has been enqueued and propagated.
   // It will inspect the trail and add all new implied bounds.
   //
@@ -106,6 +111,14 @@ class ImpliedBounds {
   // that become trivial as the search progress.
   const std::vector<IntegerVariable>& VariablesWithImpliedBounds() const {
     return has_implied_bounds_.PositionsSetAtLeastOnce();
+  }
+
+  // Returns all the implied values stored for a given literal.
+  const absl::flat_hash_map<IntegerVariable, IntegerValue>& GetImpliedValues(
+      Literal literal) const {
+    const auto it = literal_to_var_to_value_.find(literal.Index());
+    return it != literal_to_var_to_value_.end() ? it->second
+                                                : empty_var_to_value_;
   }
 
   // Adds to the integer trail all the new level-zero deduction made here.
@@ -151,14 +164,20 @@ class ImpliedBounds {
   // Track the list of variables with some implied bounds.
   SparseBitset<IntegerVariable> has_implied_bounds_;
 
+  // Stores implied values per variable.
+  absl::flat_hash_map<LiteralIndex,
+                      absl::flat_hash_map<IntegerVariable, IntegerValue>>
+      literal_to_var_to_value_;
+  const absl::flat_hash_map<IntegerVariable, IntegerValue> empty_var_to_value_;
+
   // TODO(user): Ideally, this should go away if we manage to push level-zero
   // fact at a positive level directly.
   absl::StrongVector<IntegerVariable, IntegerValue> level_zero_lower_bounds_;
   SparseBitset<IntegerVariable> new_level_zero_bounds_;
 
   // Stats.
-  int64 num_deductions_ = 0;
-  int64 num_enqueued_in_var_to_bounds_ = 0;
+  int64_t num_deductions_ = 0;
+  int64_t num_enqueued_in_var_to_bounds_ = 0;
 };
 
 }  // namespace sat

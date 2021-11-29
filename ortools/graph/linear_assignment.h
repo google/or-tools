@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -102,7 +102,7 @@
 // problem and takes advantage of special properties of the resulting
 // minimum-cost flow problem to solve it efficiently using a
 // push-relabel method. For more information about minimum-cost flow
-// see google3/ortools/graph/min_cost_flow.h
+// see ortools/graph/min_cost_flow.h
 //
 // The method used here is the cost-scaling approach for the
 // minimum-cost circulation problem as described in [Goldberg and
@@ -196,6 +196,7 @@
 #define OR_TOOLS_GRAPH_LINEAR_ASSIGNMENT_H_
 
 #include <algorithm>
+#include <cstdint>
 #include <cstdlib>
 #include <deque>
 #include <limits>
@@ -214,7 +215,7 @@
 #include "ortools/util/zvector.h"
 
 #ifndef SWIG
-ABSL_DECLARE_FLAG(int64, assignment_alpha);
+ABSL_DECLARE_FLAG(int64_t, assignment_alpha);
 ABSL_DECLARE_FLAG(int, assignment_progress_logging_period);
 ABSL_DECLARE_FLAG(bool, assignment_stack_order);
 #endif
@@ -396,10 +397,10 @@ class LinearSumAssignment {
           "%d double pushes; %d pushes",
           refinements_, relabelings_, double_pushes_, pushes_);
     }
-    int64 pushes_;
-    int64 double_pushes_;
-    int64 relabelings_;
-    int64 refinements_;
+    int64_t pushes_;
+    int64_t double_pushes_;
+    int64_t relabelings_;
+    int64_t refinements_;
   };
 
 #ifndef SWIG

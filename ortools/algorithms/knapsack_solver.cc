@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,6 +14,8 @@
 #include "ortools/algorithms/knapsack_solver.h"
 
 #include <algorithm>
+#include <cstdint>
+#include <limits>
 #include <queue>
 #include <string>
 #include <vector>
@@ -35,13 +37,13 @@ const int kMaxNumberOf64Items = 64;
 // Comparator used to sort item in decreasing efficiency order
 // (see KnapsackCapacityPropagator).
 struct CompareKnapsackItemsInDecreasingEfficiencyOrder {
-  explicit CompareKnapsackItemsInDecreasingEfficiencyOrder(int64 _profit_max)
+  explicit CompareKnapsackItemsInDecreasingEfficiencyOrder(int64_t _profit_max)
       : profit_max(_profit_max) {}
   bool operator()(const KnapsackItemPtr& item1,
                   const KnapsackItemPtr& item2) const {
     return item1->GetEfficiency(profit_max) > item2->GetEfficiency(profit_max);
   }
-  const int64 profit_max;
+  const int64_t profit_max;
 };
 
 // Comparator used to sort search nodes in the priority queue in order
@@ -52,8 +54,8 @@ struct CompareKnapsackItemsInDecreasingEfficiencyOrder {
 struct CompareKnapsackSearchNodePtrInDecreasingUpperBoundOrder {
   bool operator()(const KnapsackSearchNode* node_1,
                   const KnapsackSearchNode* node_2) const {
-    const int64 profit_upper_bound_1 = node_1->profit_upper_bound();
-    const int64 profit_upper_bound_2 = node_2->profit_upper_bound();
+    const int64_t profit_upper_bound_1 = node_1->profit_upper_bound();
+    const int64_t profit_upper_bound_2 = node_2->profit_upper_bound();
     if (profit_upper_bound_1 == profit_upper_bound_2) {
       return node_1->current_profit() < node_2->current_profit();
     }
@@ -66,31 +68,31 @@ typedef std::priority_queue<
     CompareKnapsackSearchNodePtrInDecreasingUpperBoundOrder>
     SearchQueue;
 
-// Returns true when value_1 * value_2 may overflow int64.
-inline bool WillProductOverflow(int64 value_1, int64 value_2) {
+// Returns true when value_1 * value_2 may overflow int64_t.
+inline bool WillProductOverflow(int64_t value_1, int64_t value_2) {
   const int MostSignificantBitPosition1 = MostSignificantBitPosition64(value_1);
   const int MostSignificantBitPosition2 = MostSignificantBitPosition64(value_2);
   // The sum should be less than 61 to be safe as we are only considering the
-  // most significant bit and dealing with int64 instead of uint64.
+  // most significant bit and dealing with int64_t instead of uint64_t.
   const int kOverflow = 61;
   return MostSignificantBitPosition1 + MostSignificantBitPosition2 > kOverflow;
 }
 
 // Returns an upper bound of (numerator_1 * numerator_2) / denominator
-int64 UpperBoundOfRatio(int64 numerator_1, int64 numerator_2,
-                        int64 denominator) {
-  DCHECK_GT(denominator, int64{0});
+int64_t UpperBoundOfRatio(int64_t numerator_1, int64_t numerator_2,
+                          int64_t denominator) {
+  DCHECK_GT(denominator, int64_t{0});
   if (!WillProductOverflow(numerator_1, numerator_2)) {
-    const int64 numerator = numerator_1 * numerator_2;
+    const int64_t numerator = numerator_1 * numerator_2;
     // Round to zero.
-    const int64 result = numerator / denominator;
+    const int64_t result = numerator / denominator;
     return result;
   } else {
     const double ratio =
         (static_cast<double>(numerator_1) * static_cast<double>(numerator_2)) /
         static_cast<double>(denominator);
     // Round near.
-    const int64 result = static_cast<int64>(floor(ratio + 0.5));
+    const int64_t result = static_cast<int64_t>(floor(ratio + 0.5));
     return result;
   }
 }
@@ -104,7 +106,7 @@ KnapsackSearchNode::KnapsackSearchNode(const KnapsackSearchNode* const parent,
       parent_(parent),
       assignment_(assignment),
       current_profit_(0),
-      profit_upper_bound_(kint64max),
+      profit_upper_bound_(std::numeric_limits<int64_t>::max()),
       next_item_id_(kNoSelection) {}
 
 // ----- KnapsackSearchPath -----
@@ -163,21 +165,21 @@ KnapsackPropagator::KnapsackPropagator(const KnapsackState& state)
     : items_(),
       current_profit_(0),
       profit_lower_bound_(0),
-      profit_upper_bound_(kint64max),
+      profit_upper_bound_(std::numeric_limits<int64_t>::max()),
       state_(state) {}
 
 KnapsackPropagator::~KnapsackPropagator() { gtl::STLDeleteElements(&items_); }
 
-void KnapsackPropagator::Init(const std::vector<int64>& profits,
-                              const std::vector<int64>& weights) {
+void KnapsackPropagator::Init(const std::vector<int64_t>& profits,
+                              const std::vector<int64_t>& weights) {
   const int number_of_items = profits.size();
   items_.assign(number_of_items, static_cast<KnapsackItemPtr>(nullptr));
   for (int i = 0; i < number_of_items; ++i) {
     items_[i] = new KnapsackItem(i, weights[i], profits[i]);
   }
   current_profit_ = 0;
-  profit_lower_bound_ = kint64min;
-  profit_upper_bound_ = kint64max;
+  profit_lower_bound_ = std::numeric_limits<int64_t>::min();
+  profit_upper_bound_ = std::numeric_limits<int64_t>::max();
   InitPropagator();
 }
 
@@ -207,7 +209,7 @@ void KnapsackPropagator::CopyCurrentStateToSolution(
 
 // ----- KnapsackCapacityPropagator -----
 KnapsackCapacityPropagator::KnapsackCapacityPropagator(
-    const KnapsackState& state, int64 capacity)
+    const KnapsackState& state, int64_t capacity)
     : KnapsackPropagator(state),
       capacity_(capacity),
       consumed_capacity_(0),
@@ -223,7 +225,7 @@ void KnapsackCapacityPropagator::ComputeProfitBounds() {
   set_profit_lower_bound(current_profit());
   break_item_id_ = kNoSelection;
 
-  int64 remaining_capacity = capacity_ - consumed_capacity_;
+  int64_t remaining_capacity = capacity_ - consumed_capacity_;
   int break_sorted_item_id = kNoSelection;
   const int number_of_sorted_items = sorted_items_.size();
   for (int sorted_id = 0; sorted_id < number_of_sorted_items; ++sorted_id) {
@@ -244,7 +246,7 @@ void KnapsackCapacityPropagator::ComputeProfitBounds() {
   set_profit_upper_bound(profit_lower_bound());
 
   if (break_sorted_item_id != kNoSelection) {
-    const int64 additional_profit =
+    const int64_t additional_profit =
         GetAdditionalProfit(remaining_capacity, break_sorted_item_id);
     set_profit_upper_bound(profit_upper_bound() + additional_profit);
   }
@@ -260,7 +262,7 @@ void KnapsackCapacityPropagator::InitPropagator() {
   }
   ++profit_max_;
   CompareKnapsackItemsInDecreasingEfficiencyOrder compare_object(profit_max_);
-  std::sort(sorted_items_.begin(), sorted_items_.end(), compare_object);
+  std::stable_sort(sorted_items_.begin(), sorted_items_.end(), compare_object);
 }
 
 // Returns false when the propagator fails.
@@ -282,7 +284,7 @@ bool KnapsackCapacityPropagator::UpdatePropagator(
 void KnapsackCapacityPropagator::CopyCurrentStateToSolutionPropagator(
     std::vector<bool>* solution) const {
   CHECK(solution != nullptr);
-  int64 remaining_capacity = capacity_ - consumed_capacity_;
+  int64_t remaining_capacity = capacity_ - consumed_capacity_;
   for (const KnapsackItem* const item : sorted_items_) {
     if (!state().is_bound(item->id)) {
       if (remaining_capacity >= item->weight) {
@@ -295,39 +297,40 @@ void KnapsackCapacityPropagator::CopyCurrentStateToSolutionPropagator(
   }
 }
 
-int64 KnapsackCapacityPropagator::GetAdditionalProfit(int64 remaining_capacity,
-                                                      int break_item_id) const {
+int64_t KnapsackCapacityPropagator::GetAdditionalProfit(
+    int64_t remaining_capacity, int break_item_id) const {
   const int after_break_item_id = break_item_id + 1;
-  int64 additional_profit_when_no_break_item = 0;
+  int64_t additional_profit_when_no_break_item = 0;
   if (after_break_item_id < sorted_items_.size()) {
     // As items are sorted by decreasing profit / weight ratio, and the current
     // weight is non-zero, the next_weight is non-zero too.
-    const int64 next_weight = sorted_items_[after_break_item_id]->weight;
-    const int64 next_profit = sorted_items_[after_break_item_id]->profit;
+    const int64_t next_weight = sorted_items_[after_break_item_id]->weight;
+    const int64_t next_profit = sorted_items_[after_break_item_id]->profit;
     additional_profit_when_no_break_item =
         UpperBoundOfRatio(remaining_capacity, next_profit, next_weight);
   }
 
   const int before_break_item_id = break_item_id - 1;
-  int64 additional_profit_when_break_item = 0;
+  int64_t additional_profit_when_break_item = 0;
   if (before_break_item_id >= 0) {
-    const int64 previous_weight = sorted_items_[before_break_item_id]->weight;
+    const int64_t previous_weight = sorted_items_[before_break_item_id]->weight;
     // Having previous_weight == 0 means the total capacity is smaller than
     // the weight of the current item. In such a case the item cannot be part
     // of a solution of the local one dimension problem.
     if (previous_weight != 0) {
-      const int64 previous_profit = sorted_items_[before_break_item_id]->profit;
-      const int64 overused_capacity =
+      const int64_t previous_profit =
+          sorted_items_[before_break_item_id]->profit;
+      const int64_t overused_capacity =
           sorted_items_[break_item_id]->weight - remaining_capacity;
-      const int64 ratio = UpperBoundOfRatio(overused_capacity, previous_profit,
-                                            previous_weight);
+      const int64_t ratio = UpperBoundOfRatio(overused_capacity,
+                                              previous_profit, previous_weight);
       additional_profit_when_break_item =
           sorted_items_[break_item_id]->profit - ratio;
     }
   }
 
-  const int64 additional_profit = std::max(additional_profit_when_no_break_item,
-                                           additional_profit_when_break_item);
+  const int64_t additional_profit = std::max(
+      additional_profit_when_no_break_item, additional_profit_when_break_item);
   CHECK_GE(additional_profit, 0);
   return additional_profit;
 }
@@ -344,9 +347,10 @@ KnapsackGenericSolver::KnapsackGenericSolver(const std::string& solver_name)
 
 KnapsackGenericSolver::~KnapsackGenericSolver() { Clear(); }
 
-void KnapsackGenericSolver::Init(const std::vector<int64>& profits,
-                                 const std::vector<std::vector<int64>>& weights,
-                                 const std::vector<int64>& capacities) {
+void KnapsackGenericSolver::Init(
+    const std::vector<int64_t>& profits,
+    const std::vector<std::vector<int64_t>>& weights,
+    const std::vector<int64_t>& capacities) {
   CHECK_EQ(capacities.size(), weights.size());
 
   Clear();
@@ -365,10 +369,8 @@ void KnapsackGenericSolver::Init(const std::vector<int64>& profits,
   master_propagator_id_ = kMasterPropagatorId;
 }
 
-void KnapsackGenericSolver::GetLowerAndUpperBoundWhenItem(int item_id,
-                                                          bool is_item_in,
-                                                          int64* lower_bound,
-                                                          int64* upper_bound) {
+void KnapsackGenericSolver::GetLowerAndUpperBoundWhenItem(
+    int item_id, bool is_item_in, int64_t* lower_bound, int64_t* upper_bound) {
   CHECK(lower_bound != nullptr);
   CHECK(upper_bound != nullptr);
   KnapsackAssignment assignment(item_id, is_item_in);
@@ -391,8 +393,8 @@ void KnapsackGenericSolver::GetLowerAndUpperBoundWhenItem(int item_id,
   }
 }
 
-int64 KnapsackGenericSolver::Solve(TimeLimit* time_limit,
-                                   bool* is_solution_optimal) {
+int64_t KnapsackGenericSolver::Solve(TimeLimit* time_limit,
+                                     bool* is_solution_optimal) {
   DCHECK(time_limit != nullptr);
   DCHECK(is_solution_optimal != nullptr);
   best_solution_profit_ = 0LL;
@@ -465,11 +467,11 @@ bool KnapsackGenericSolver::UpdatePropagators(const KnapsackSearchPath& path) {
   return no_fail;
 }
 
-int64 KnapsackGenericSolver::GetAggregatedProfitUpperBound() const {
-  int64 upper_bound = kint64max;
+int64_t KnapsackGenericSolver::GetAggregatedProfitUpperBound() const {
+  int64_t upper_bound = std::numeric_limits<int64_t>::max();
   for (KnapsackPropagator* const prop : propagators_) {
     prop->ComputeProfitBounds();
-    const int64 propagator_upper_bound = prop->profit_upper_bound();
+    const int64_t propagator_upper_bound = prop->profit_upper_bound();
     upper_bound = std::min(upper_bound, propagator_upper_bound);
   }
   return upper_bound;
@@ -524,7 +526,7 @@ bool KnapsackGenericSolver::IncrementalUpdate(
 }
 
 void KnapsackGenericSolver::UpdateBestSolution() {
-  const int64 profit_lower_bound =
+  const int64_t profit_lower_bound =
       (HasOnePropagator())
           ? propagators_[master_propagator_id_]->profit_lower_bound()
           : propagators_[master_propagator_id_]->current_profit();
@@ -546,12 +548,12 @@ class KnapsackBruteForceSolver : public BaseKnapsackSolver {
   explicit KnapsackBruteForceSolver(const std::string& solver_name);
 
   // Initializes the solver and enters the problem to be solved.
-  void Init(const std::vector<int64>& profits,
-            const std::vector<std::vector<int64>>& weights,
-            const std::vector<int64>& capacities) override;
+  void Init(const std::vector<int64_t>& profits,
+            const std::vector<std::vector<int64_t>>& weights,
+            const std::vector<int64_t>& capacities) override;
 
   // Solves the problem and returns the profit of the optimal solution.
-  int64 Solve(TimeLimit* time_limit, bool* is_solution_optimal) override;
+  int64_t Solve(TimeLimit* time_limit, bool* is_solution_optimal) override;
 
   // Returns true if the item 'item_id' is packed in the optimal knapsack.
   bool best_solution(int item_id) const override {
@@ -560,10 +562,10 @@ class KnapsackBruteForceSolver : public BaseKnapsackSolver {
 
  private:
   int num_items_;
-  int64 profits_weights_[kMaxNumberOfBruteForceItems * 2];
-  int64 capacity_;
-  int64 best_solution_profit_;
-  uint32 best_solution_;
+  int64_t profits_weights_[kMaxNumberOfBruteForceItems * 2];
+  int64_t capacity_;
+  int64_t best_solution_profit_;
+  uint32_t best_solution_;
 
   DISALLOW_COPY_AND_ASSIGN(KnapsackBruteForceSolver);
 };
@@ -577,9 +579,9 @@ KnapsackBruteForceSolver::KnapsackBruteForceSolver(
       best_solution_(0U) {}
 
 void KnapsackBruteForceSolver::Init(
-    const std::vector<int64>& profits,
-    const std::vector<std::vector<int64>>& weights,
-    const std::vector<int64>& capacities) {
+    const std::vector<int64_t>& profits,
+    const std::vector<std::vector<int64_t>>& weights,
+    const std::vector<int64_t>& capacities) {
   // TODO(user): Implement multi-dimensional brute force solver.
   CHECK_EQ(weights.size(), 1)
       << "Brute force solver only works with one dimension.";
@@ -599,23 +601,23 @@ void KnapsackBruteForceSolver::Init(
   capacity_ = capacities.at(0);
 }
 
-int64 KnapsackBruteForceSolver::Solve(TimeLimit* time_limit,
-                                      bool* is_solution_optimal) {
+int64_t KnapsackBruteForceSolver::Solve(TimeLimit* time_limit,
+                                        bool* is_solution_optimal) {
   DCHECK(is_solution_optimal != nullptr);
   *is_solution_optimal = true;
   best_solution_profit_ = 0LL;
   best_solution_ = 0U;
 
-  const uint32 num_states = OneBit32(num_items_);
-  uint32 prev_state = 0U;
-  uint64 sum_profit = 0ULL;
-  uint64 sum_weight = 0ULL;
-  uint32 diff_state = 0U;
-  uint32 local_state = 0U;
+  const uint32_t num_states = OneBit32(num_items_);
+  uint32_t prev_state = 0U;
+  uint64_t sum_profit = 0ULL;
+  uint64_t sum_weight = 0ULL;
+  uint32_t diff_state = 0U;
+  uint32_t local_state = 0U;
   int item_id = 0;
   // This loop starts at 1, because state = 0 was already considered previously,
   // ie. when no items are in, sum_profit = 0.
-  for (uint32 state = 1U; state < num_states; ++state, ++prev_state) {
+  for (uint32_t state = 1U; state < num_states; ++state, ++prev_state) {
     diff_state = state ^ prev_state;
     local_state = state;
     item_id = 0;
@@ -652,8 +654,8 @@ int64 KnapsackBruteForceSolver::Solve(TimeLimit* time_limit,
 // with one dimension, that's more efficient to store 'efficiency' than
 // computing it on the fly.
 struct KnapsackItemWithEfficiency {
-  KnapsackItemWithEfficiency(int _id, int64 _profit, int64 _weight,
-                             int64 _profit_max)
+  KnapsackItemWithEfficiency(int _id, int64_t _profit, int64_t _weight,
+                             int64_t _profit_max)
       : id(_id),
         profit(_profit),
         weight(_weight),
@@ -662,8 +664,8 @@ struct KnapsackItemWithEfficiency {
                                 : static_cast<double>(_profit_max)) {}
 
   int id;
-  int64 profit;
-  int64 weight;
+  int64_t profit;
+  int64_t weight;
   double efficiency;
 };
 
@@ -676,12 +678,12 @@ class Knapsack64ItemsSolver : public BaseKnapsackSolver {
   explicit Knapsack64ItemsSolver(const std::string& solver_name);
 
   // Initializes the solver and enters the problem to be solved.
-  void Init(const std::vector<int64>& profits,
-            const std::vector<std::vector<int64>>& weights,
-            const std::vector<int64>& capacities) override;
+  void Init(const std::vector<int64_t>& profits,
+            const std::vector<std::vector<int64_t>>& weights,
+            const std::vector<int64_t>& capacities) override;
 
   // Solves the problem and returns the profit of the optimal solution.
-  int64 Solve(TimeLimit* time_limit, bool* is_solution_optimal) override;
+  int64_t Solve(TimeLimit* time_limit, bool* is_solution_optimal) override;
 
   // Returns true if the item 'item_id' is packed in the optimal knapsack.
   bool best_solution(int item_id) const override {
@@ -689,28 +691,28 @@ class Knapsack64ItemsSolver : public BaseKnapsackSolver {
   }
 
  private:
-  int GetBreakItemId(int64 capacity) const;
-  void GetLowerAndUpperBound(int64* lower_bound, int64* upper_bound) const;
+  int GetBreakItemId(int64_t capacity) const;
+  void GetLowerAndUpperBound(int64_t* lower_bound, int64_t* upper_bound) const;
   void GoToNextState(bool has_failed);
   void BuildBestSolution();
 
   std::vector<KnapsackItemWithEfficiency> sorted_items_;
-  std::vector<int64> sum_profits_;
-  std::vector<int64> sum_weights_;
-  int64 capacity_;
-  uint64 state_;
+  std::vector<int64_t> sum_profits_;
+  std::vector<int64_t> sum_weights_;
+  int64_t capacity_;
+  uint64_t state_;
   int state_depth_;
 
-  int64 best_solution_profit_;
-  uint64 best_solution_;
+  int64_t best_solution_profit_;
+  uint64_t best_solution_;
   int best_solution_depth_;
 
   // Sum of weights of included item in state.
-  int64 state_weight_;
+  int64_t state_weight_;
   // Sum of profits of non included items in state.
-  int64 rejected_items_profit_;
+  int64_t rejected_items_profit_;
   // Sum of weights of non included items in state.
-  int64 rejected_items_weight_;
+  int64_t rejected_items_weight_;
 };
 
 // Comparator used to sort item in decreasing efficiency order
@@ -736,9 +738,10 @@ Knapsack64ItemsSolver::Knapsack64ItemsSolver(const std::string& solver_name)
       rejected_items_profit_(0LL),
       rejected_items_weight_(0LL) {}
 
-void Knapsack64ItemsSolver::Init(const std::vector<int64>& profits,
-                                 const std::vector<std::vector<int64>>& weights,
-                                 const std::vector<int64>& capacities) {
+void Knapsack64ItemsSolver::Init(
+    const std::vector<int64_t>& profits,
+    const std::vector<std::vector<int64_t>>& weights,
+    const std::vector<int64_t>& capacities) {
   CHECK_EQ(weights.size(), 1)
       << "Brute force solver only works with one dimension.";
   CHECK_EQ(capacities.size(), weights.size());
@@ -753,7 +756,7 @@ void Knapsack64ItemsSolver::Init(const std::vector<int64>& profits,
       << "To use Knapsack64ItemsSolver the number of items should be "
       << "less than " << kMaxNumberOf64Items << ". Current value: " << num_items
       << ".";
-  int64 profit_max = *std::max_element(profits.begin(), profits.end());
+  int64_t profit_max = *std::max_element(profits.begin(), profits.end());
 
   for (int i = 0; i < num_items; ++i) {
     sorted_items_.push_back(
@@ -763,8 +766,8 @@ void Knapsack64ItemsSolver::Init(const std::vector<int64>& profits,
   std::sort(sorted_items_.begin(), sorted_items_.end(),
             CompareKnapsackItemWithEfficiencyInDecreasingEfficiencyOrder);
 
-  int64 sum_profit = 0;
-  int64 sum_weight = 0;
+  int64_t sum_profit = 0;
+  int64_t sum_weight = 0;
   sum_profits_.push_back(sum_profit);
   sum_weights_.push_back(sum_weight);
   for (int i = 0; i < num_items; ++i) {
@@ -776,8 +779,8 @@ void Knapsack64ItemsSolver::Init(const std::vector<int64>& profits,
   }
 }
 
-int64 Knapsack64ItemsSolver::Solve(TimeLimit* time_limit,
-                                   bool* is_solution_optimal) {
+int64_t Knapsack64ItemsSolver::Solve(TimeLimit* time_limit,
+                                     bool* is_solution_optimal) {
   DCHECK(is_solution_optimal != nullptr);
   *is_solution_optimal = true;
   const int num_items = sorted_items_.size();
@@ -790,8 +793,8 @@ int64 Knapsack64ItemsSolver::Solve(TimeLimit* time_limit,
   best_solution_ = 0ULL;
   best_solution_depth_ = 0;
 
-  int64 lower_bound = 0LL;
-  int64 upper_bound = 0LL;
+  int64_t lower_bound = 0LL;
+  int64_t upper_bound = 0LL;
   bool fail = false;
   while (state_depth_ >= 0) {
     fail = false;
@@ -813,8 +816,8 @@ int64 Knapsack64ItemsSolver::Solve(TimeLimit* time_limit,
   return best_solution_profit_;
 }
 
-int Knapsack64ItemsSolver::GetBreakItemId(int64 capacity) const {
-  std::vector<int64>::const_iterator binary_search_iterator =
+int Knapsack64ItemsSolver::GetBreakItemId(int64_t capacity) const {
+  std::vector<int64_t>::const_iterator binary_search_iterator =
       std::upper_bound(sum_weights_.begin(), sum_weights_.end(), capacity);
   return static_cast<int>(binary_search_iterator - sum_weights_.begin()) - 1;
 }
@@ -826,9 +829,9 @@ int Knapsack64ItemsSolver::GetBreakItemId(int64 capacity) const {
 // Unfortunately, experiments show equivalent results with or without this
 // code optimization (only 1/7 of calls can be reused).
 // In order to simplify the code, this optimization is not implemented.
-void Knapsack64ItemsSolver::GetLowerAndUpperBound(int64* lower_bound,
-                                                  int64* upper_bound) const {
-  const int64 available_capacity = capacity_ + rejected_items_weight_;
+void Knapsack64ItemsSolver::GetLowerAndUpperBound(int64_t* lower_bound,
+                                                  int64_t* upper_bound) const {
+  const int64_t available_capacity = capacity_ + rejected_items_weight_;
   const int break_item_id = GetBreakItemId(available_capacity);
   const int num_items = sorted_items_.size();
   if (break_item_id >= num_items) {
@@ -839,11 +842,11 @@ void Knapsack64ItemsSolver::GetLowerAndUpperBound(int64* lower_bound,
 
   *lower_bound = sum_profits_[break_item_id] - rejected_items_profit_;
   *upper_bound = *lower_bound;
-  const int64 consumed_capacity = sum_weights_[break_item_id];
-  const int64 remaining_capacity = available_capacity - consumed_capacity;
+  const int64_t consumed_capacity = sum_weights_[break_item_id];
+  const int64_t remaining_capacity = available_capacity - consumed_capacity;
   const double efficiency = sorted_items_[break_item_id].efficiency;
-  const int64 additional_profit =
-      static_cast<int64>(remaining_capacity * efficiency);
+  const int64_t additional_profit =
+      static_cast<int64_t>(remaining_capacity * efficiency);
   *upper_bound += additional_profit;
 }
 
@@ -853,7 +856,7 @@ void Knapsack64ItemsSolver::GetLowerAndUpperBound(int64* lower_bound,
 // Unfortunately experiments show smaller computation time using the 'while'
 // (10% speed-up). That's the reason why the loop version is implemented.
 void Knapsack64ItemsSolver::GoToNextState(bool has_failed) {
-  uint64 mask = OneBit64(state_depth_);
+  uint64_t mask = OneBit64(state_depth_);
   if (!has_failed) {  // Go to next item.
     ++state_depth_;
     state_ = state_ | (mask << 1);
@@ -879,8 +882,8 @@ void Knapsack64ItemsSolver::GoToNextState(bool has_failed) {
 }
 
 void Knapsack64ItemsSolver::BuildBestSolution() {
-  int64 remaining_capacity = capacity_;
-  int64 check_profit = 0LL;
+  int64_t remaining_capacity = capacity_;
+  int64_t check_profit = 0LL;
 
   // Compute remaining capacity at best_solution_depth_ to be able to redo
   // the GetLowerAndUpperBound computation.
@@ -894,7 +897,7 @@ void Knapsack64ItemsSolver::BuildBestSolution() {
   // Add all items till the break item.
   const int num_items = sorted_items_.size();
   for (int i = best_solution_depth_ + 1; i < num_items; ++i) {
-    int64 weight = sorted_items_[i].weight;
+    int64_t weight = sorted_items_[i].weight;
     if (remaining_capacity >= weight) {
       remaining_capacity -= weight;
       check_profit += sorted_items_[i].profit;
@@ -909,7 +912,7 @@ void Knapsack64ItemsSolver::BuildBestSolution() {
   // in user order.
   // Note that best_solution_ will not be in the same order than other data
   // structures anymore.
-  uint64 tmp_solution = 0ULL;
+  uint64_t tmp_solution = 0ULL;
   for (int i = 0; i < num_items; ++i) {
     if (best_solution_ & OneBit64(i)) {
       const int original_id = sorted_items_[i].id;
@@ -932,12 +935,12 @@ class KnapsackDynamicProgrammingSolver : public BaseKnapsackSolver {
   explicit KnapsackDynamicProgrammingSolver(const std::string& solver_name);
 
   // Initializes the solver and enters the problem to be solved.
-  void Init(const std::vector<int64>& profits,
-            const std::vector<std::vector<int64>>& weights,
-            const std::vector<int64>& capacities) override;
+  void Init(const std::vector<int64_t>& profits,
+            const std::vector<std::vector<int64_t>>& weights,
+            const std::vector<int64_t>& capacities) override;
 
   // Solves the problem and returns the profit of the optimal solution.
-  int64 Solve(TimeLimit* time_limit, bool* is_solution_optimal) override;
+  int64_t Solve(TimeLimit* time_limit, bool* is_solution_optimal) override;
 
   // Returns true if the item 'item_id' is packed in the optimal knapsack.
   bool best_solution(int item_id) const override {
@@ -945,12 +948,12 @@ class KnapsackDynamicProgrammingSolver : public BaseKnapsackSolver {
   }
 
  private:
-  int64 SolveSubProblem(int64 capacity, int num_items);
+  int64_t SolveSubProblem(int64_t capacity, int num_items);
 
-  std::vector<int64> profits_;
-  std::vector<int64> weights_;
-  int64 capacity_;
-  std::vector<int64> computed_profits_;
+  std::vector<int64_t> profits_;
+  std::vector<int64_t> weights_;
+  int64_t capacity_;
+  std::vector<int64_t> computed_profits_;
   std::vector<int> selected_item_ids_;
   std::vector<bool> best_solution_;
 };
@@ -967,9 +970,9 @@ KnapsackDynamicProgrammingSolver::KnapsackDynamicProgrammingSolver(
       best_solution_() {}
 
 void KnapsackDynamicProgrammingSolver::Init(
-    const std::vector<int64>& profits,
-    const std::vector<std::vector<int64>>& weights,
-    const std::vector<int64>& capacities) {
+    const std::vector<int64_t>& profits,
+    const std::vector<std::vector<int64_t>>& weights,
+    const std::vector<int64_t>& capacities) {
   CHECK_EQ(weights.size(), 1)
       << "Current implementation of the dynamic programming solver only deals"
       << " with one dimension.";
@@ -980,15 +983,15 @@ void KnapsackDynamicProgrammingSolver::Init(
   capacity_ = capacities[0];
 }
 
-int64 KnapsackDynamicProgrammingSolver::SolveSubProblem(int64 capacity,
-                                                        int num_items) {
-  const int64 capacity_plus_1 = capacity + 1;
+int64_t KnapsackDynamicProgrammingSolver::SolveSubProblem(int64_t capacity,
+                                                          int num_items) {
+  const int64_t capacity_plus_1 = capacity + 1;
   std::fill_n(selected_item_ids_.begin(), capacity_plus_1, 0);
-  std::fill_n(computed_profits_.begin(), capacity_plus_1, int64{0});
+  std::fill_n(computed_profits_.begin(), capacity_plus_1, int64_t{0});
   for (int item_id = 0; item_id < num_items; ++item_id) {
-    const int64 item_weight = weights_[item_id];
-    const int64 item_profit = profits_[item_id];
-    for (int64 used_capacity = capacity; used_capacity >= item_weight;
+    const int64_t item_weight = weights_[item_id];
+    const int64_t item_profit = profits_[item_id];
+    for (int64_t used_capacity = capacity; used_capacity >= item_weight;
          --used_capacity) {
       if (computed_profits_[used_capacity - item_weight] + item_profit >
           computed_profits_[used_capacity]) {
@@ -1001,15 +1004,15 @@ int64 KnapsackDynamicProgrammingSolver::SolveSubProblem(int64 capacity,
   return selected_item_ids_.at(capacity);
 }
 
-int64 KnapsackDynamicProgrammingSolver::Solve(TimeLimit* time_limit,
-                                              bool* is_solution_optimal) {
+int64_t KnapsackDynamicProgrammingSolver::Solve(TimeLimit* time_limit,
+                                                bool* is_solution_optimal) {
   DCHECK(is_solution_optimal != nullptr);
   *is_solution_optimal = true;
-  const int64 capacity_plus_1 = capacity_ + 1;
+  const int64_t capacity_plus_1 = capacity_ + 1;
   selected_item_ids_.assign(capacity_plus_1, 0);
   computed_profits_.assign(capacity_plus_1, 0LL);
 
-  int64 remaining_capacity = capacity_;
+  int64_t remaining_capacity = capacity_;
   int num_items = profits_.size();
   best_solution_.assign(num_items, false);
 
@@ -1024,7 +1027,143 @@ int64 KnapsackDynamicProgrammingSolver::Solve(TimeLimit* time_limit,
 
   return computed_profits_[capacity_];
 }
+// ----- KnapsackDivideAndConquerSolver -----
+// KnapsackDivideAndConquerSolver solves the 0-1 knapsack problem (KP)
+// using divide and conquer and dynamic programming.
+// By using one-dimensional vectors it keeps a complexity of O(capacity *
+// number_of_items) in time, but reduces the space complexity to O(capacity +
+// number_of_items) and is therefore suitable for large hard to solve
+// (KP)/(SSP). The implemented algorithm is based on 'DP-2' and Divide and
+// Conquer for storage reduction from [Hans Kellerer et al., "Knapsack problems"
+// (DOI 10.1007/978-3-540-24777-7)].
+class KnapsackDivideAndConquerSolver : public BaseKnapsackSolver {
+ public:
+  explicit KnapsackDivideAndConquerSolver(const std::string& solver_name);
 
+  // Initializes the solver and enters the problem to be solved.
+  void Init(const std::vector<int64_t>& profits,
+            const std::vector<std::vector<int64_t>>& weights,
+            const std::vector<int64_t>& capacities) override;
+
+  // Solves the problem and returns the profit of the optimal solution.
+  int64_t Solve(TimeLimit* time_limit, bool* is_solution_optimal) override;
+
+  // Returns true if the item 'item_id' is packed in the optimal knapsack.
+  bool best_solution(int item_id) const override {
+    return best_solution_.at(item_id);
+  }
+
+ private:
+  // 'DP 2' computes solution 'z' for 0 up to capacitiy
+  void SolveSubProblem(bool first_storage, int64_t capacity, int start_item,
+                       int end_item);
+
+  // Calculates best_solution_ and return 'z' from first instance
+  int64_t DivideAndConquer(int64_t capacity, int start_item, int end_item);
+
+  std::vector<int64_t> profits_;
+  std::vector<int64_t> weights_;
+  int64_t capacity_;
+  std::vector<int64_t> computed_profits_storage1_;
+  std::vector<int64_t> computed_profits_storage2_;
+  std::vector<bool> best_solution_;
+};
+
+// ----- KnapsackDivideAndConquerSolver -----
+KnapsackDivideAndConquerSolver::KnapsackDivideAndConquerSolver(
+    const std::string& solver_name)
+    : BaseKnapsackSolver(solver_name),
+      profits_(),
+      weights_(),
+      capacity_(0),
+      computed_profits_storage1_(),
+      computed_profits_storage2_(),
+      best_solution_() {}
+
+void KnapsackDivideAndConquerSolver::Init(
+    const std::vector<int64_t>& profits,
+    const std::vector<std::vector<int64_t>>& weights,
+    const std::vector<int64_t>& capacities) {
+  CHECK_EQ(weights.size(), 1)
+      << "Current implementation of the divide and conquer solver only deals"
+      << " with one dimension.";
+  CHECK_EQ(capacities.size(), weights.size());
+
+  profits_ = profits;
+  weights_ = weights[0];
+  capacity_ = capacities[0];
+}
+
+void KnapsackDivideAndConquerSolver::SolveSubProblem(bool first_storage,
+                                                     int64_t capacity,
+                                                     int start_item,
+                                                     int end_item) {
+  std::vector<int64_t>& computed_profits_storage_ =
+      (first_storage) ? computed_profits_storage1_ : computed_profits_storage2_;
+  const int64_t capacity_plus_1 = capacity + 1;
+  std::fill_n(computed_profits_storage_.begin(), capacity_plus_1, 0LL);
+  for (int item_id = start_item; item_id < end_item; ++item_id) {
+    const int64_t item_weight = weights_[item_id];
+    const int64_t item_profit = profits_[item_id];
+    for (int64_t used_capacity = capacity; used_capacity >= item_weight;
+         --used_capacity) {
+      if (computed_profits_storage_[used_capacity - item_weight] + item_profit >
+          computed_profits_storage_[used_capacity]) {
+        computed_profits_storage_[used_capacity] =
+            computed_profits_storage_[used_capacity - item_weight] +
+            item_profit;
+      }
+    }
+  }
+}
+
+int64_t KnapsackDivideAndConquerSolver::DivideAndConquer(int64_t capacity,
+                                                         int start_item,
+                                                         int end_item) {
+  const int64_t capacity_plus_1 = capacity_ + 1;
+  int item_boundary_ = start_item + ((end_item - start_item) / 2);
+
+  SolveSubProblem(true, capacity, start_item, item_boundary_);
+  SolveSubProblem(false, capacity, item_boundary_, end_item);
+
+  int64_t max_solution_ = 0, capacity1_ = 0, capacity2_ = 0;
+
+  for (int64_t capacity_id = 0; capacity_id <= capacity; capacity_id++) {
+    if ((computed_profits_storage1_[capacity_id] +
+         computed_profits_storage2_[(capacity - capacity_id)]) >
+        max_solution_) {
+      capacity1_ = capacity_id;
+      capacity2_ = capacity - capacity_id;
+      max_solution_ = (computed_profits_storage1_[capacity_id] +
+                       computed_profits_storage2_[(capacity - capacity_id)]);
+    }
+  }
+
+  if ((item_boundary_ - start_item) == 1) {
+    if (weights_[start_item] <= capacity1_) best_solution_[start_item] = true;
+  } else if ((item_boundary_ - start_item) > 1)
+    DivideAndConquer(capacity1_, start_item, item_boundary_);
+
+  if ((end_item - item_boundary_) == 1) {
+    if (weights_[item_boundary_] <= capacity2_)
+      best_solution_[item_boundary_] = true;
+  } else if ((end_item - item_boundary_) > 1)
+    DivideAndConquer(capacity2_, item_boundary_, end_item);
+
+  return max_solution_;
+}
+
+int64_t KnapsackDivideAndConquerSolver::Solve(TimeLimit* time_limit,
+                                              bool* is_solution_optimal) {
+  DCHECK(is_solution_optimal != nullptr);
+  *is_solution_optimal = true;
+  const int64_t capacity_plus_1 = capacity_ + 1;
+  computed_profits_storage1_.assign(capacity_plus_1, 0LL);
+  computed_profits_storage2_.assign(capacity_plus_1, 0LL);
+  best_solution_.assign(profits_.size(), false);
+
+  return DivideAndConquer(capacity_, 0, profits_.size());
+}
 // ----- KnapsackMIPSolver -----
 class KnapsackMIPSolver : public BaseKnapsackSolver {
  public:
@@ -1032,12 +1171,12 @@ class KnapsackMIPSolver : public BaseKnapsackSolver {
                     const std::string& solver_name);
 
   // Initializes the solver and enters the problem to be solved.
-  void Init(const std::vector<int64>& profits,
-            const std::vector<std::vector<int64>>& weights,
-            const std::vector<int64>& capacities) override;
+  void Init(const std::vector<int64_t>& profits,
+            const std::vector<std::vector<int64_t>>& weights,
+            const std::vector<int64_t>& capacities) override;
 
   // Solves the problem and returns the profit of the optimal solution.
-  int64 Solve(TimeLimit* time_limit, bool* is_solution_optimal) override;
+  int64_t Solve(TimeLimit* time_limit, bool* is_solution_optimal) override;
 
   // Returns true if the item 'item_id' is packed in the optimal knapsack.
   bool best_solution(int item_id) const override {
@@ -1046,9 +1185,9 @@ class KnapsackMIPSolver : public BaseKnapsackSolver {
 
  private:
   MPSolver::OptimizationProblemType problem_type_;
-  std::vector<int64> profits_;
-  std::vector<std::vector<int64>> weights_;
-  std::vector<int64> capacities_;
+  std::vector<int64_t> profits_;
+  std::vector<std::vector<int64_t>> weights_;
+  std::vector<int64_t> capacities_;
   std::vector<bool> best_solution_;
 };
 
@@ -1062,16 +1201,16 @@ KnapsackMIPSolver::KnapsackMIPSolver(
       capacities_(),
       best_solution_() {}
 
-void KnapsackMIPSolver::Init(const std::vector<int64>& profits,
-                             const std::vector<std::vector<int64>>& weights,
-                             const std::vector<int64>& capacities) {
+void KnapsackMIPSolver::Init(const std::vector<int64_t>& profits,
+                             const std::vector<std::vector<int64_t>>& weights,
+                             const std::vector<int64_t>& capacities) {
   profits_ = profits;
   weights_ = weights;
   capacities_ = capacities;
 }
 
-int64 KnapsackMIPSolver::Solve(TimeLimit* time_limit,
-                               bool* is_solution_optimal) {
+int64_t KnapsackMIPSolver::Solve(TimeLimit* time_limit,
+                                 bool* is_solution_optimal) {
   DCHECK(is_solution_optimal != nullptr);
   *is_solution_optimal = true;
   MPSolver solver(GetName(), problem_type_);
@@ -1144,6 +1283,9 @@ KnapsackSolver::KnapsackSolver(SolverType solver_type,
     case KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER:
       solver_ = absl::make_unique<KnapsackGenericSolver>(solver_name);
       break;
+    case KNAPSACK_DIVIDE_AND_CONQUER_SOLVER:
+      solver_ = absl::make_unique<KnapsackDivideAndConquerSolver>(solver_name);
+      break;
 #if defined(USE_CBC)
     case KNAPSACK_MULTIDIMENSION_CBC_MIP_SOLVER:
       solver_ = absl::make_unique<KnapsackMIPSolver>(
@@ -1175,17 +1317,23 @@ KnapsackSolver::KnapsackSolver(SolverType solver_type,
 
 KnapsackSolver::~KnapsackSolver() {}
 
-void KnapsackSolver::Init(const std::vector<int64>& profits,
-                          const std::vector<std::vector<int64>>& weights,
-                          const std::vector<int64>& capacities) {
+void KnapsackSolver::Init(const std::vector<int64_t>& profits,
+                          const std::vector<std::vector<int64_t>>& weights,
+                          const std::vector<int64_t>& capacities) {
+  for (const std::vector<int64_t>& w : weights) {
+    CHECK_EQ(profits.size(), w.size())
+        << "Profits and inner weights must have the same size (#items)";
+  }
+  CHECK_EQ(capacities.size(), weights.size())
+      << "Capacities and weights must have the same size (#bins)";
   time_limit_ = absl::make_unique<TimeLimit>(time_limit_seconds_);
   is_solution_optimal_ = false;
   additional_profit_ = 0LL;
   is_problem_solved_ = false;
 
   const int num_items = profits.size();
-  std::vector<std::vector<int64>> reduced_weights;
-  std::vector<int64> reduced_capacities;
+  std::vector<std::vector<int64_t>> reduced_weights;
+  std::vector<int64_t> reduced_capacities;
   if (use_reduction_) {
     const int num_reduced_items = ReduceCapacities(
         num_items, weights, capacities, &reduced_weights, &reduced_capacities);
@@ -1216,18 +1364,18 @@ void KnapsackSolver::Init(const std::vector<int64>& profits,
 }
 
 int KnapsackSolver::ReduceCapacities(
-    int num_items, const std::vector<std::vector<int64>>& weights,
-    const std::vector<int64>& capacities,
-    std::vector<std::vector<int64>>* reduced_weights,
-    std::vector<int64>* reduced_capacities) {
+    int num_items, const std::vector<std::vector<int64_t>>& weights,
+    const std::vector<int64_t>& capacities,
+    std::vector<std::vector<int64_t>>* reduced_weights,
+    std::vector<int64_t>* reduced_capacities) {
   known_value_.assign(num_items, false);
   best_solution_.assign(num_items, false);
   mapping_reduced_item_id_.assign(num_items, 0);
   std::vector<bool> active_capacities(weights.size(), true);
   int number_of_active_capacities = 0;
   for (int i = 0; i < weights.size(); ++i) {
-    int64 max_weight = 0;
-    for (int64 weight : weights[i]) {
+    int64_t max_weight = 0;
+    for (int64_t weight : weights[i]) {
       max_weight += weight;
     }
     if (max_weight <= capacities[i]) {
@@ -1269,15 +1417,17 @@ int KnapsackSolver::ReduceProblem(int num_items) {
     mapping_reduced_item_id_[item_id] = item_id;
   }
 
-  int64 best_lower_bound = 0LL;
-  std::vector<int64> J0_upper_bounds(num_items, kint64max);
-  std::vector<int64> J1_upper_bounds(num_items, kint64max);
+  int64_t best_lower_bound = 0LL;
+  std::vector<int64_t> J0_upper_bounds(num_items,
+                                       std::numeric_limits<int64_t>::max());
+  std::vector<int64_t> J1_upper_bounds(num_items,
+                                       std::numeric_limits<int64_t>::max());
   for (int item_id = 0; item_id < num_items; ++item_id) {
     if (time_limit_->LimitReached()) {
       break;
     }
-    int64 lower_bound = 0LL;
-    int64 upper_bound = kint64max;
+    int64_t lower_bound = 0LL;
+    int64_t upper_bound = std::numeric_limits<int64_t>::max();
     solver_->GetLowerAndUpperBoundWhenItem(item_id, false, &lower_bound,
                                            &upper_bound);
     J1_upper_bounds.at(item_id) = upper_bound;
@@ -1307,7 +1457,7 @@ int KnapsackSolver::ReduceProblem(int num_items) {
 }
 
 void KnapsackSolver::ComputeAdditionalProfit(
-    const std::vector<int64>& profits) {
+    const std::vector<int64_t>& profits) {
   const int num_items = profits.size();
   additional_profit_ = 0LL;
   for (int item_id = 0; item_id < num_items; ++item_id) {
@@ -1318,13 +1468,13 @@ void KnapsackSolver::ComputeAdditionalProfit(
 }
 
 void KnapsackSolver::InitReducedProblem(
-    const std::vector<int64>& profits,
-    const std::vector<std::vector<int64>>& weights,
-    const std::vector<int64>& capacities) {
+    const std::vector<int64_t>& profits,
+    const std::vector<std::vector<int64_t>>& weights,
+    const std::vector<int64_t>& capacities) {
   const int num_items = profits.size();
   const int num_dimensions = capacities.size();
 
-  std::vector<int64> reduced_profits;
+  std::vector<int64_t> reduced_profits;
   for (int item_id = 0; item_id < num_items; ++item_id) {
     if (!known_value_[item_id]) {
       mapping_reduced_item_id_[item_id] = reduced_profits.size();
@@ -1332,11 +1482,11 @@ void KnapsackSolver::InitReducedProblem(
     }
   }
 
-  std::vector<std::vector<int64>> reduced_weights;
-  std::vector<int64> reduced_capacities = capacities;
+  std::vector<std::vector<int64_t>> reduced_weights;
+  std::vector<int64_t> reduced_capacities = capacities;
   for (int dim = 0; dim < num_dimensions; ++dim) {
-    const std::vector<int64>& one_dimension_weights = weights[dim];
-    std::vector<int64> one_dimension_reduced_weights;
+    const std::vector<int64_t>& one_dimension_weights = weights[dim];
+    std::vector<int64_t> one_dimension_reduced_weights;
     for (int item_id = 0; item_id < num_items; ++item_id) {
       if (known_value_[item_id]) {
         if (best_solution_[item_id]) {
@@ -1351,7 +1501,7 @@ void KnapsackSolver::InitReducedProblem(
   solver_->Init(reduced_profits, reduced_weights, reduced_capacities);
 }
 
-int64 KnapsackSolver::Solve() {
+int64_t KnapsackSolver::Solve() {
   return additional_profit_ +
          ((is_problem_solved_)
               ? 0
@@ -1371,12 +1521,12 @@ std::string KnapsackSolver::GetName() const { return solver_->GetName(); }
 // ----- BaseKnapsackSolver -----
 void BaseKnapsackSolver::GetLowerAndUpperBoundWhenItem(int item_id,
                                                        bool is_item_in,
-                                                       int64* lower_bound,
-                                                       int64* upper_bound) {
+                                                       int64_t* lower_bound,
+                                                       int64_t* upper_bound) {
   CHECK(lower_bound != nullptr);
   CHECK(upper_bound != nullptr);
   *lower_bound = 0LL;
-  *upper_bound = kint64max;
+  *upper_bound = std::numeric_limits<int64_t>::max();
 }
 
 }  // namespace operations_research

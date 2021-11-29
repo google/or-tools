@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <LangVersion>7.3</LangVersion>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <EnableDefaultItems>false</EnableDefaultItems>
+    <!-- see https://github.com/dotnet/docs/issues/12237 -->
+    <RollForward>LatestMajor</RollForward>
+    <RestoreSources>../../temp_dotnet/packages;$(RestoreSources);https://api.nuget.org/v3/index.json</RestoreSources>
+    <AssemblyName>Google.OrTools.furniture_moving_intervals</AssemblyName>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugType>full</DebugType>
+    <Optimize>true</Optimize>
+    <GenerateTailCalls>true</GenerateTailCalls>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="furniture_moving_intervals.cs" />
+    <PackageReference Include="Google.OrTools" Version="9.1.*" />
+  </ItemGroup>
+</Project>

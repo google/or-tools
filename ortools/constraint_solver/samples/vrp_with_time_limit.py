@@ -1,4 +1,5 @@
-# Copyright 2010-2018 Google LLC
+#!/usr/bin/env python3
+# Copyright 2010-2021 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -18,9 +19,11 @@ from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
 # [END import]
 
+
 # [START solution_printer]
 def print_solution(manager, routing, solution):
     """Prints solution on console."""
+    print(f'Objective: {solution.ObjectiveValue()}')
     max_route_distance = 0
     for vehicle_id in range(manager.GetNumberOfVehicles()):
         index = routing.Start(vehicle_id)
@@ -37,22 +40,21 @@ def print_solution(manager, routing, solution):
         print(plan_output)
         max_route_distance = max(route_distance, max_route_distance)
     print('Maximum of the route distances: {}m'.format(max_route_distance))
-# [END solution_printer]
+    # [END solution_printer]
 
 
 def main():
     """Solve the CVRP problem."""
     # Instantiate the data problem.
     # [START data]
-    num_locations = 20;
-    num_vehicles = 5;
-    depot = 0;
+    num_locations = 20
+    num_vehicles = 5
+    depot = 0
     # [END data]
 
     # Create the routing index manager.
     # [START index_manager]
-    manager = pywrapcp.RoutingIndexManager(
-        num_locations, num_vehicles, depot)
+    manager = pywrapcp.RoutingIndexManager(num_locations, num_vehicles, depot)
     # [END index_manager]
 
     # Create Routing Model.
@@ -64,10 +66,8 @@ def main():
     # Create and register a transit callback.
     # [START transit_callback]
     def distance_callback(from_index, to_index):
+        # pylint: disable=unused-argument
         """Returns the distance between the two nodes."""
-        # Convert from routing variable Index to distance matrix NodeIndex.
-        from_node = manager.IndexToNode(from_index)
-        to_node = manager.IndexToNode(to_index)
         return 1
 
     transit_callback_index = routing.RegisterTransitCallback(distance_callback)
@@ -99,7 +99,7 @@ def main():
     search_parameters.local_search_metaheuristic = (
         routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH)
     search_parameters.log_search = True
-    search_parameters.time_limit.FromSeconds(10)
+    search_parameters.time_limit.FromSeconds(5)
     # [END parameters]
 
     # Solve the problem.

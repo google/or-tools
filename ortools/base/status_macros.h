@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,6 +16,7 @@
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "ortools/base/status_builder.h"
 
 namespace absl {
 
@@ -24,28 +25,23 @@ namespace absl {
 //
 // Example:
 //   RETURN_IF_ERROR(DoThings(4));
-#define RETURN_IF_ERROR(expr)                                                \
-  do {                                                                       \
-    /* Using _status below to avoid capture problems if expr is "status". */ \
-    const ::absl::Status _status = (expr);                                   \
-    if (!_status.ok()) return _status;                                       \
-  } while (0)
+//   RETURN_IF_ERROR(DoThings(5)) << "Additional error context";
+#define RETURN_IF_ERROR(expr)                                \
+  switch (0)                                                 \
+  case 0:                                                    \
+  default:                                                   \
+    if (const ::absl::Status status = (expr); status.ok()) { \
+    } else /* NOLINT */                                      \
+      return ::util::StatusBuilder(status)
 
 // Internal helper for concatenating macro values.
 #define STATUS_MACROS_CONCAT_NAME_INNER(x, y) x##y
 #define STATUS_MACROS_CONCAT_NAME(x, y) STATUS_MACROS_CONCAT_NAME_INNER(x, y)
 
-template <typename T>
-::absl::Status DoAssignOrReturn(T& lhs, ::absl::StatusOr<T> result) {  // NOLINT
-  if (result.ok()) {
-    lhs = result.value();
-  }
-  return result.status();
-}
-
-#define ASSIGN_OR_RETURN_IMPL(status, lhs, rexpr)         \
-  ::absl::Status status = DoAssignOrReturn(lhs, (rexpr)); \
-  if (!status.ok()) return status;
+#define ASSIGN_OR_RETURN_IMPL(statusor, lhs, rexpr) \
+  auto statusor = (rexpr);                          \
+  RETURN_IF_ERROR(statusor.status());               \
+  lhs = *std::move(statusor)
 
 // Executes an expression that returns an absl::StatusOr, extracting its value
 // into the variable defined by lhs (or returning on error).

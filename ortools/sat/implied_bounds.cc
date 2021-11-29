@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -12,6 +12,10 @@
 // limitations under the License.
 
 #include "ortools/sat/implied_bounds.h"
+
+#include <algorithm>
+
+#include "ortools/sat/integer.h"
 
 namespace operations_research {
 namespace sat {
@@ -42,9 +46,10 @@ void ImpliedBounds::Add(Literal literal, IntegerLiteral integer_literal) {
     return;
   }
 
-  // We skip any IntegerLiteral refering to a variable with only two consecutive
-  // possible values. This is because, once shifted this will already be a
-  // variable in [0, 1] so we shouldn't gain much by substituing it.
+  // We skip any IntegerLiteral referring to a variable with only two
+  // consecutive possible values. This is because, once shifted this will
+  // already be a variable in [0, 1] so we shouldn't gain much by substituing
+  // it.
   if (integer_trail_->LevelZeroLowerBound(var) + 1 >=
       integer_trail_->LevelZeroUpperBound(var)) {
     return;
@@ -59,6 +64,17 @@ void ImpliedBounds::Add(Literal literal, IntegerLiteral integer_literal) {
     } else {
       // No new info.
       return;
+    }
+  }
+
+  // Checks if the variable is now fixed.
+  if (integer_trail_->LevelZeroUpperBound(var) == integer_literal.bound) {
+    AddLiteralImpliesVarEqValue(literal, var, integer_literal.bound);
+  } else {
+    const auto it =
+        bounds_.find(std::make_pair(literal.Index(), NegationOf(var)));
+    if (it != bounds_.end() && it->second == -integer_literal.bound) {
+      AddLiteralImpliesVarEqValue(literal, var, integer_literal.bound);
     }
   }
 
@@ -164,6 +180,16 @@ const std::vector<ImpliedBoundEntry>& ImpliedBounds::GetImpliedBounds(
   ref.resize(new_size);
 
   return ref;
+}
+
+void ImpliedBounds::AddLiteralImpliesVarEqValue(Literal literal,
+                                                IntegerVariable var,
+                                                IntegerValue value) {
+  if (!VariableIsPositive(var)) {
+    var = NegationOf(var);
+    value = -value;
+  }
+  literal_to_var_to_value_[literal.Index()][var] = value;
 }
 
 void ImpliedBounds::ProcessIntegerTrail(Literal first_decision) {

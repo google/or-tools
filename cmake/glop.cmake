@@ -30,12 +30,12 @@ foreach(PROTO_FILE IN LISTS proto_files)
   #message(STATUS "protoc src: ${PROTO_SRC}")
   add_custom_command(
     OUTPUT ${PROTO_SRC} ${PROTO_HDR}
-    COMMAND protobuf::protoc
+    COMMAND ${PROTOC_PRG}
     "--proto_path=${PROJECT_SOURCE_DIR}"
     ${PROTO_DIRS}
     "--cpp_out=${PROJECT_BINARY_DIR}"
     ${PROTO_FILE}
-    DEPENDS ${PROTO_FILE} protobuf::protoc
+    DEPENDS ${PROTO_FILE} ${PROTOC_PRG}
     COMMENT "Generate C++ protocol buffer for ${PROTO_FILE}"
     VERBATIM)
   list(APPEND PROTO_HDRS ${PROTO_HDR})
@@ -125,7 +125,7 @@ add_library(glop
   ortools/lp_data/sparse.h
   ortools/lp_data/sparse_column.cc
   ortools/port/sysinfo.h
-  ortools/port/sysinfo_nonport.cc
+  ortools/port/sysinfo.cc
   ortools/util/file_util.cc
   ortools/util/file_util.h
   ortools/util/fp_utils.cc
@@ -224,7 +224,6 @@ target_link_libraries(glop PUBLIC
   absl::time
   absl::strings
   absl::statusor
-  absl::container
   absl::str_format
   protobuf::libprotobuf
   )

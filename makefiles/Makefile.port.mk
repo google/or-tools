@@ -47,6 +47,12 @@ ifeq ($(SYSTEM),unix)
         /usr/lib/jvm/default-java \
         /usr/lib64/jvm/java-openjdk \
         /usr/lib/jvm/java-openjdk \
+        /usr/lib/jvm/java-17-openjdk-amd64 \
+        /usr/lib/jvm/java-17-openjdk \
+        /usr/lib/jvm/java-16-openjdk-amd64 \
+        /usr/lib/jvm/java-16-openjdk \
+        /usr/lib/jvm/java-15-openjdk-amd64 \
+        /usr/lib/jvm/java-15-openjdk \
         /usr/lib/jvm/java-14-openjdk-amd64 \
         /usr/lib/jvm/java-14-openjdk \
         /usr/lib/jvm/java-13-openjdk-amd64 \
@@ -112,7 +118,7 @@ ifeq ($(SYSTEM),unix)
     else
       JAVA_HOME ?= $(shell /usr/libexec/java_home)
     endif
-    MAC_MIN_VERSION = 10.9
+    MAC_MIN_VERSION = 10.14
   endif # ($(OS),Darwin)
 endif # ($(SYSTEM),unix)
 

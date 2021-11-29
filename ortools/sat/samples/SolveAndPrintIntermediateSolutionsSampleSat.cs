@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -76,7 +76,7 @@ public class SolveAndPrintIntermediateSolutionsSampleSat
         // [START solve]
         CpSolver solver = new CpSolver();
         VarArraySolutionPrinterWithObjective cb = new VarArraySolutionPrinterWithObjective(new IntVar[] { x, y, z });
-        solver.SolveWithSolutionCallback(model, cb);
+        solver.Solve(model, cb);
         // [END solve]
 
         Console.WriteLine(String.Format("Number of solutions found: {0}", cb.SolutionCount()));

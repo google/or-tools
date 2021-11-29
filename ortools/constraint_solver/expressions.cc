@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,6 +13,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
+#include <limits>
 #include <memory>
 #include <string>
 #include <utility>
@@ -65,19 +67,19 @@ IntVar::IntVar(Solver* const s, const std::string& name)
 
 const int BooleanVar::kUnboundBooleanVarValue = 2;
 
-void BooleanVar::SetMin(int64 m) {
+void BooleanVar::SetMin(int64_t m) {
   if (m <= 0) return;
   if (m > 1) solver()->Fail();
   SetValue(1);
 }
 
-void BooleanVar::SetMax(int64 m) {
+void BooleanVar::SetMax(int64_t m) {
   if (m >= 1) return;
   if (m < 0) solver()->Fail();
   SetValue(0);
 }
 
-void BooleanVar::SetRange(int64 mi, int64 ma) {
+void BooleanVar::SetRange(int64_t mi, int64_t ma) {
   if (mi > 1 || ma < 0 || mi > ma) {
     solver()->Fail();
   }
@@ -88,7 +90,7 @@ void BooleanVar::SetRange(int64 mi, int64 ma) {
   }
 }
 
-void BooleanVar::RemoveValue(int64 v) {
+void BooleanVar::RemoveValue(int64_t v) {
   if (value_ == kUnboundBooleanVarValue) {
     if (v == 0) {
       SetValue(1);
@@ -100,7 +102,7 @@ void BooleanVar::RemoveValue(int64 v) {
   }
 }
 
-void BooleanVar::RemoveInterval(int64 l, int64 u) {
+void BooleanVar::RemoveInterval(int64_t l, int64_t u) {
   if (u < l) return;
   if (l <= 0 && u >= 1) {
     solver()->Fail();
@@ -121,15 +123,15 @@ void BooleanVar::WhenBound(Demon* d) {
   }
 }
 
-uint64 BooleanVar::Size() const {
+uint64_t BooleanVar::Size() const {
   return (1 + (value_ == kUnboundBooleanVarValue));
 }
 
-bool BooleanVar::Contains(int64 v) const {
+bool BooleanVar::Contains(int64_t v) const {
   return ((v == 0 && value_ != 1) || (v == 1 && value_ != 0));
 }
 
-IntVar* BooleanVar::IsEqual(int64 constant) {
+IntVar* BooleanVar::IsEqual(int64_t constant) {
   if (constant > 1 || constant < 0) {
     return solver()->MakeIntConst(0);
   }
@@ -140,7 +142,7 @@ IntVar* BooleanVar::IsEqual(int64 constant) {
   }
 }
 
-IntVar* BooleanVar::IsDifferent(int64 constant) {
+IntVar* BooleanVar::IsDifferent(int64_t constant) {
   if (constant > 1 || constant < 0) {
     return solver()->MakeIntConst(1);
   }
@@ -151,7 +153,7 @@ IntVar* BooleanVar::IsDifferent(int64 constant) {
   }
 }
 
-IntVar* BooleanVar::IsGreaterOrEqual(int64 constant) {
+IntVar* BooleanVar::IsGreaterOrEqual(int64_t constant) {
   if (constant > 1) {
     return solver()->MakeIntConst(0);
   } else if (constant <= 0) {
@@ -161,7 +163,7 @@ IntVar* BooleanVar::IsGreaterOrEqual(int64 constant) {
   }
 }
 
-IntVar* BooleanVar::IsLessOrEqual(int64 constant) {
+IntVar* BooleanVar::IsLessOrEqual(int64_t constant) {
   if (constant < 0) {
     return solver()->MakeIntConst(0);
   } else if (constant >= 1) {
@@ -204,19 +206,22 @@ class DomainIntVar : public IntVar {
   // Utility classes
   class BitSetIterator : public BaseObject {
    public:
-    BitSetIterator(uint64* const bitset, int64 omin)
-        : bitset_(bitset), omin_(omin), max_(kint64min), current_(kint64max) {}
+    BitSetIterator(uint64_t* const bitset, int64_t omin)
+        : bitset_(bitset),
+          omin_(omin),
+          max_(std::numeric_limits<int64_t>::min()),
+          current_(std::numeric_limits<int64_t>::max()) {}
 
     ~BitSetIterator() override {}
 
-    void Init(int64 min, int64 max) {
+    void Init(int64_t min, int64_t max) {
       max_ = max;
       current_ = min;
     }
 
     bool Ok() const { return current_ <= max_; }
 
-    int64 Value() const { return current_; }
+    int64_t Value() const { return current_; }
 
     void Next() {
       if (++current_ <= max_) {
@@ -229,10 +234,10 @@ class DomainIntVar : public IntVar {
     std::string DebugString() const override { return "BitSetIterator"; }
 
    private:
-    uint64* const bitset_;
-    const int64 omin_;
-    int64 max_;
-    int64 current_;
+    uint64_t* const bitset_;
+    const int64_t omin_;
+    int64_t max_;
+    int64_t current_;
   };
 
   class BitSet : public BaseObject {
@@ -240,20 +245,20 @@ class DomainIntVar : public IntVar {
     explicit BitSet(Solver* const s) : solver_(s), holes_stamp_(0) {}
     ~BitSet() override {}
 
-    virtual int64 ComputeNewMin(int64 nmin, int64 cmin, int64 cmax) = 0;
-    virtual int64 ComputeNewMax(int64 nmax, int64 cmin, int64 cmax) = 0;
-    virtual bool Contains(int64 val) const = 0;
-    virtual bool SetValue(int64 val) = 0;
-    virtual bool RemoveValue(int64 val) = 0;
-    virtual uint64 Size() const = 0;
-    virtual void DelayRemoveValue(int64 val) = 0;
+    virtual int64_t ComputeNewMin(int64_t nmin, int64_t cmin, int64_t cmax) = 0;
+    virtual int64_t ComputeNewMax(int64_t nmax, int64_t cmin, int64_t cmax) = 0;
+    virtual bool Contains(int64_t val) const = 0;
+    virtual bool SetValue(int64_t val) = 0;
+    virtual bool RemoveValue(int64_t val) = 0;
+    virtual uint64_t Size() const = 0;
+    virtual void DelayRemoveValue(int64_t val) = 0;
     virtual void ApplyRemovedValues(DomainIntVar* var) = 0;
     virtual void ClearRemovedValues() = 0;
-    virtual std::string pretty_DebugString(int64 min, int64 max) const = 0;
+    virtual std::string pretty_DebugString(int64_t min, int64_t max) const = 0;
     virtual BitSetIterator* MakeIterator() = 0;
 
     void InitHoles() {
-      const uint64 current_stamp = solver_->stamp();
+      const uint64_t current_stamp = solver_->stamp();
       if (holes_stamp_ < current_stamp) {
         holes_.clear();
         holes_stamp_ = current_stamp;
@@ -262,9 +267,9 @@ class DomainIntVar : public IntVar {
 
     virtual void ClearHoles() { holes_.clear(); }
 
-    const std::vector<int64>& Holes() { return holes_; }
+    const std::vector<int64_t>& Holes() { return holes_; }
 
-    void AddHole(int64 value) { holes_.push_back(value); }
+    void AddHole(int64_t value) { holes_.push_back(value); }
 
     int NumHoles() const {
       return holes_stamp_ < solver_->stamp() ? 0 : holes_.size();
@@ -274,8 +279,8 @@ class DomainIntVar : public IntVar {
     Solver* const solver_;
 
    private:
-    std::vector<int64> holes_;
-    uint64 holes_stamp_;
+    std::vector<int64_t> holes_;
+    uint64_t holes_stamp_;
   };
 
   class QueueHandler : public Demon {
@@ -306,7 +311,7 @@ class DomainIntVar : public IntVar {
   template <class T>
   class RevIntPtrMap {
    public:
-    RevIntPtrMap(Solver* const solver, int64 rmin, int64 rmax)
+    RevIntPtrMap(Solver* const solver, int64_t rmin, int64_t rmax)
         : solver_(solver), range_min_(rmin), start_(0) {}
 
     ~RevIntPtrMap() {}
@@ -318,7 +323,7 @@ class DomainIntVar : public IntVar {
     // Access with value API.
 
     // Add the pointer to the map attached to the given value.
-    void UnsafeRevInsert(int64 value, T* elem) {
+    void UnsafeRevInsert(int64_t value, T* elem) {
       elements_.push_back(std::make_pair(value, elem));
       if (solver_->state() != Solver::OUTSIDE_SEARCH) {
         solver_->AddBacktrackAction(
@@ -326,7 +331,7 @@ class DomainIntVar : public IntVar {
       }
     }
 
-    T* FindPtrOrNull(int64 value, int* position) {
+    T* FindPtrOrNull(int64_t value, int* position) {
       for (int pos = start_.Value(); pos < elements_.size(); ++pos) {
         if (elements_[pos].first == value) {
           if (position != nullptr) *position = pos;
@@ -344,14 +349,14 @@ class DomainIntVar : public IntVar {
       if (position > start) {
         // Swap the current element with the one at the start position, and
         // increase start.
-        const std::pair<int64, T*> copy = elements_[start];
+        const std::pair<int64_t, T*> copy = elements_[start];
         elements_[start] = elements_[position];
         elements_[position] = copy;
       }
       start_.Incr(solver_);
     }
 
-    const std::pair<int64, T*>& At(int position) const {
+    const std::pair<int64_t, T*>& At(int position) const {
       DCHECK_GE(position, start_.Value());
       DCHECK_LT(position, elements_.size());
       return elements_[position];
@@ -365,7 +370,7 @@ class DomainIntVar : public IntVar {
     int Size() const { return elements_.size() - start_.Value(); }
 
     // Removes the object permanently from the map.
-    void Uninsert(int64 value) {
+    void Uninsert(int64_t value) {
       for (int pos = 0; pos < elements_.size(); ++pos) {
         if (elements_[pos].first == value) {
           DCHECK_GE(pos, start_.Value());
@@ -382,9 +387,9 @@ class DomainIntVar : public IntVar {
 
    private:
     Solver* const solver_;
-    const int64 range_min_;
+    const int64_t range_min_;
     NumericalRev<int> start_;
-    std::vector<std::pair<int64, T*>> elements_;
+    std::vector<std::pair<int64_t, T*>> elements_;
   };
 
   // Base class for value watchers
@@ -394,9 +399,9 @@ class DomainIntVar : public IntVar {
 
     ~BaseValueWatcher() override {}
 
-    virtual IntVar* GetOrMakeValueWatcher(int64 value) = 0;
+    virtual IntVar* GetOrMakeValueWatcher(int64_t value) = 0;
 
-    virtual void SetValueWatcher(IntVar* const boolvar, int64 value) = 0;
+    virtual void SetValueWatcher(IntVar* const boolvar, int64_t value) = 0;
   };
 
   // This class monitors the domain of the variable and updates the
@@ -405,7 +410,7 @@ class DomainIntVar : public IntVar {
    public:
     class WatchDemon : public Demon {
      public:
-      WatchDemon(ValueWatcher* const watcher, int64 value, IntVar* var)
+      WatchDemon(ValueWatcher* const watcher, int64_t value, IntVar* var)
           : value_watcher_(watcher), value_(value), var_(var) {}
       ~WatchDemon() override {}
 
@@ -415,7 +420,7 @@ class DomainIntVar : public IntVar {
 
      private:
       ValueWatcher* const value_watcher_;
-      const int64 value_;
+      const int64_t value_;
       IntVar* const var_;
     };
 
@@ -441,7 +446,7 @@ class DomainIntVar : public IntVar {
 
     ~ValueWatcher() override {}
 
-    IntVar* GetOrMakeValueWatcher(int64 value) override {
+    IntVar* GetOrMakeValueWatcher(int64_t value) override {
       IntVar* const watcher = watchers_.FindPtrOrNull(value, nullptr);
       if (watcher != nullptr) return watcher;
       if (variable_->Contains(value)) {
@@ -467,7 +472,7 @@ class DomainIntVar : public IntVar {
       }
     }
 
-    void SetValueWatcher(IntVar* const boolvar, int64 value) override {
+    void SetValueWatcher(IntVar* const boolvar, int64_t value) override {
       CHECK(watchers_.FindPtrOrNull(value, nullptr) == nullptr);
       if (!boolvar->Bound()) {
         watchers_.UnsafeRevInsert(value, boolvar);
@@ -483,8 +488,8 @@ class DomainIntVar : public IntVar {
       var_demon_ = solver()->RevAlloc(new VarDemon(this));
       variable_->WhenDomain(var_demon_);
       for (int pos = watchers_.start(); pos < watchers_.end(); ++pos) {
-        const std::pair<int64, IntVar*>& w = watchers_.At(pos);
-        const int64 value = w.first;
+        const std::pair<int64_t, IntVar*>& w = watchers_.At(pos);
+        const int64_t value = w.first;
         IntVar* const boolvar = w.second;
         if (!boolvar->Bound() && variable_->Contains(value)) {
           boolvar->WhenBound(
@@ -499,8 +504,8 @@ class DomainIntVar : public IntVar {
         VariableBound();
       } else {
         for (int pos = watchers_.start(); pos < watchers_.end(); ++pos) {
-          const std::pair<int64, IntVar*>& w = watchers_.At(pos);
-          const int64 value = w.first;
+          const std::pair<int64_t, IntVar*>& w = watchers_.At(pos);
+          const int64_t value = w.first;
           IntVar* const boolvar = w.second;
           if (!variable_->Contains(value)) {
             boolvar->SetValue(0);
@@ -516,7 +521,7 @@ class DomainIntVar : public IntVar {
       }
     }
 
-    void ProcessValueWatcher(int64 value, IntVar* boolvar) {
+    void ProcessValueWatcher(int64_t value, IntVar* boolvar) {
       if (boolvar->Min() == 0) {
         if (variable_->Size() < 0xFFFFFF) {
           variable_->RemoveValue(value);
@@ -548,7 +553,7 @@ class DomainIntVar : public IntVar {
         BitSet* const bitset = variable_->bitset();
         if (bitset != nullptr && !watchers_.Empty()) {
           if (bitset->NumHoles() * 2 < watchers_.Size()) {
-            for (const int64 hole : InitAndGetValues(hole_iterator_)) {
+            for (const int64_t hole : InitAndGetValues(hole_iterator_)) {
               int pos = 0;
               IntVar* const boolvar = watchers_.FindPtrOrNull(hole, &pos);
               if (boolvar != nullptr) {
@@ -567,9 +572,9 @@ class DomainIntVar : public IntVar {
     // Optimized case if the variable is bound.
     void VariableBound() {
       DCHECK(variable_->Bound());
-      const int64 value = variable_->Min();
+      const int64_t value = variable_->Min();
       for (int pos = watchers_.start(); pos < watchers_.end(); ++pos) {
-        const std::pair<int64, IntVar*>& w = watchers_.At(pos);
+        const std::pair<int64_t, IntVar*>& w = watchers_.At(pos);
         w.second->SetValue(w.first == value);
       }
       watchers_.RemoveAll();
@@ -579,7 +584,7 @@ class DomainIntVar : public IntVar {
     // Scans all the watchers to check and assign them.
     void ScanWatchers() {
       for (int pos = watchers_.start(); pos < watchers_.end(); ++pos) {
-        const std::pair<int64, IntVar*>& w = watchers_.At(pos);
+        const std::pair<int64_t, IntVar*>& w = watchers_.At(pos);
         if (!variable_->Contains(w.first)) {
           IntVar* const boolvar = w.second;
           boolvar->SetValue(0);
@@ -600,11 +605,11 @@ class DomainIntVar : public IntVar {
       visitor->BeginVisitConstraint(ModelVisitor::kVarValueWatcher, this);
       visitor->VisitIntegerExpressionArgument(ModelVisitor::kVariableArgument,
                                               variable_);
-      std::vector<int64> all_coefficients;
+      std::vector<int64_t> all_coefficients;
       std::vector<IntVar*> all_bool_vars;
       for (int position = watchers_.start(); position < watchers_.end();
            ++position) {
-        const std::pair<int64, IntVar*>& w = watchers_.At(position);
+        const std::pair<int64_t, IntVar*>& w = watchers_.At(position);
         all_coefficients.push_back(w.first);
         all_bool_vars.push_back(w.second);
       }
@@ -632,7 +637,7 @@ class DomainIntVar : public IntVar {
    public:
     class WatchDemon : public Demon {
      public:
-      WatchDemon(DenseValueWatcher* const watcher, int64 value, IntVar* var)
+      WatchDemon(DenseValueWatcher* const watcher, int64_t value, IntVar* var)
           : value_watcher_(watcher), value_(value), var_(var) {}
       ~WatchDemon() override {}
 
@@ -642,7 +647,7 @@ class DomainIntVar : public IntVar {
 
      private:
       DenseValueWatcher* const value_watcher_;
-      const int64 value_;
+      const int64_t value_;
       IntVar* const var_;
     };
 
@@ -670,8 +675,8 @@ class DomainIntVar : public IntVar {
 
     ~DenseValueWatcher() override {}
 
-    IntVar* GetOrMakeValueWatcher(int64 value) override {
-      const int64 var_max = offset_ + watchers_.size() - 1;  // Bad cast.
+    IntVar* GetOrMakeValueWatcher(int64_t value) override {
+      const int64_t var_max = offset_ + watchers_.size() - 1;  // Bad cast.
       if (value < offset_ || value > var_max) {
         return solver()->MakeIntConst(0);
       }
@@ -701,7 +706,7 @@ class DomainIntVar : public IntVar {
       }
     }
 
-    void SetValueWatcher(IntVar* const boolvar, int64 value) override {
+    void SetValueWatcher(IntVar* const boolvar, int64_t value) override {
       const int index = value - offset_;
       CHECK(watchers_[index] == nullptr);
       if (!boolvar->Bound()) {
@@ -718,7 +723,7 @@ class DomainIntVar : public IntVar {
       var_demon_ = solver()->RevAlloc(new VarDemon(this));
       variable_->WhenDomain(var_demon_);
       for (int pos = 0; pos < watchers_.size(); ++pos) {
-        const int64 value = pos + offset_;
+        const int64_t value = pos + offset_;
         IntVar* const boolvar = watchers_[pos];
         if (boolvar != nullptr && !boolvar->Bound() &&
             variable_->Contains(value)) {
@@ -736,7 +741,7 @@ class DomainIntVar : public IntVar {
         for (int pos = 0; pos < watchers_.size(); ++pos) {
           IntVar* const boolvar = watchers_[pos];
           if (boolvar == nullptr) continue;
-          const int64 value = pos + offset_;
+          const int64_t value = pos + offset_;
           if (!variable_->Contains(value)) {
             boolvar->SetValue(0);
             RevRemove(pos);
@@ -751,7 +756,7 @@ class DomainIntVar : public IntVar {
       }
     }
 
-    void ProcessValueWatcher(int64 value, IntVar* boolvar) {
+    void ProcessValueWatcher(int64_t value, IntVar* boolvar) {
       if (boolvar->Min() == 0) {
         variable_->RemoveValue(value);
       } else {
@@ -774,7 +779,7 @@ class DomainIntVar : public IntVar {
     // Optimized case if the variable is bound.
     void VariableBound() {
       DCHECK(variable_->Bound());
-      const int64 value = variable_->Min();
+      const int64_t value = variable_->Min();
       for (int pos = 0; pos < watchers_.size(); ++pos) {
         IntVar* const boolvar = watchers_[pos];
         if (boolvar != nullptr) {
@@ -787,10 +792,10 @@ class DomainIntVar : public IntVar {
 
     // Scans all the watchers to check and assign them.
     void ScanWatchers() {
-      const int64 old_min_index = variable_->OldMin() - offset_;
-      const int64 old_max_index = variable_->OldMax() - offset_;
-      const int64 min_index = variable_->Min() - offset_;
-      const int64 max_index = variable_->Max() - offset_;
+      const int64_t old_min_index = variable_->OldMin() - offset_;
+      const int64_t old_max_index = variable_->OldMax() - offset_;
+      const int64_t min_index = variable_->Min() - offset_;
+      const int64_t max_index = variable_->Max() - offset_;
       for (int pos = old_min_index; pos < min_index; ++pos) {
         IntVar* const boolvar = watchers_[pos];
         if (boolvar != nullptr) {
@@ -808,7 +813,7 @@ class DomainIntVar : public IntVar {
       BitSet* const bitset = variable_->bitset();
       if (bitset != nullptr) {
         if (bitset->NumHoles() * 2 < active_watchers_.Value()) {
-          for (const int64 hole : InitAndGetValues(hole_iterator_)) {
+          for (const int64_t hole : InitAndGetValues(hole_iterator_)) {
             IntVar* const boolvar = watchers_[hole - offset_];
             if (boolvar != nullptr) {
               boolvar->SetValue(0);
@@ -843,7 +848,7 @@ class DomainIntVar : public IntVar {
       visitor->BeginVisitConstraint(ModelVisitor::kVarValueWatcher, this);
       visitor->VisitIntegerExpressionArgument(ModelVisitor::kVariableArgument,
                                               variable_);
-      std::vector<int64> all_coefficients;
+      std::vector<int64_t> all_coefficients;
       std::vector<IntVar*> all_bool_vars;
       for (int position = 0; position < watchers_.size(); ++position) {
         if (watchers_[position] != nullptr) {
@@ -867,7 +872,7 @@ class DomainIntVar : public IntVar {
     IntVarIterator* const hole_iterator_;
     RevSwitch posted_;
     Demon* var_demon_;
-    const int64 offset_;
+    const int64_t offset_;
     std::vector<IntVar*> watchers_;
     NumericalRev<int> active_watchers_;
   };
@@ -878,9 +883,9 @@ class DomainIntVar : public IntVar {
 
     ~BaseUpperBoundWatcher() override {}
 
-    virtual IntVar* GetOrMakeUpperBoundWatcher(int64 value) = 0;
+    virtual IntVar* GetOrMakeUpperBoundWatcher(int64_t value) = 0;
 
-    virtual void SetUpperBoundWatcher(IntVar* const boolvar, int64 value) = 0;
+    virtual void SetUpperBoundWatcher(IntVar* const boolvar, int64_t value) = 0;
   };
 
   // This class watches the bounds of the variable and updates the
@@ -890,7 +895,7 @@ class DomainIntVar : public IntVar {
    public:
     class WatchDemon : public Demon {
      public:
-      WatchDemon(UpperBoundWatcher* const watcher, int64 index,
+      WatchDemon(UpperBoundWatcher* const watcher, int64_t index,
                  IntVar* const var)
           : value_watcher_(watcher), index_(index), var_(var) {}
       ~WatchDemon() override {}
@@ -901,7 +906,7 @@ class DomainIntVar : public IntVar {
 
      private:
       UpperBoundWatcher* const value_watcher_;
-      const int64 index_;
+      const int64_t index_;
       IntVar* const var_;
     };
 
@@ -928,7 +933,7 @@ class DomainIntVar : public IntVar {
 
     ~UpperBoundWatcher() override {}
 
-    IntVar* GetOrMakeUpperBoundWatcher(int64 value) override {
+    IntVar* GetOrMakeUpperBoundWatcher(int64_t value) override {
       IntVar* const watcher = watchers_.FindPtrOrNull(value, nullptr);
       if (watcher != nullptr) {
         return watcher;
@@ -957,7 +962,7 @@ class DomainIntVar : public IntVar {
       }
     }
 
-    void SetUpperBoundWatcher(IntVar* const boolvar, int64 value) override {
+    void SetUpperBoundWatcher(IntVar* const boolvar, int64_t value) override {
       CHECK(watchers_.FindPtrOrNull(value, nullptr) == nullptr);
       watchers_.UnsafeRevInsert(value, boolvar);
       if (posted_.Switched() && !boolvar->Bound()) {
@@ -981,9 +986,9 @@ class DomainIntVar : public IntVar {
       }
 
       for (int pos = watchers_.start(); pos < watchers_.end(); ++pos) {
-        const std::pair<int64, IntVar*>& w = watchers_.At(pos);
+        const std::pair<int64_t, IntVar*>& w = watchers_.At(pos);
         IntVar* const boolvar = w.second;
-        const int64 value = w.first;
+        const int64_t value = w.first;
         if (!boolvar->Bound() && value > variable_->Min() &&
             value <= variable_->Max()) {
           boolvar->WhenBound(
@@ -994,11 +999,11 @@ class DomainIntVar : public IntVar {
     }
 
     void InitialPropagate() override {
-      const int64 var_min = variable_->Min();
-      const int64 var_max = variable_->Max();
+      const int64_t var_min = variable_->Min();
+      const int64_t var_max = variable_->Max();
       if (sorted_) {
         while (start_.Value() <= end_.Value()) {
-          const std::pair<int64, IntVar*>& w = watchers_.At(start_.Value());
+          const std::pair<int64_t, IntVar*>& w = watchers_.At(start_.Value());
           if (w.first <= var_min) {
             w.second->SetValue(1);
             start_.Incr(solver());
@@ -1007,7 +1012,7 @@ class DomainIntVar : public IntVar {
           }
         }
         while (end_.Value() >= start_.Value()) {
-          const std::pair<int64, IntVar*>& w = watchers_.At(end_.Value());
+          const std::pair<int64_t, IntVar*>& w = watchers_.At(end_.Value());
           if (w.first > var_max) {
             w.second->SetValue(0);
             end_.Decr(solver());
@@ -1016,7 +1021,7 @@ class DomainIntVar : public IntVar {
           }
         }
         for (int i = start_.Value(); i <= end_.Value(); ++i) {
-          const std::pair<int64, IntVar*>& w = watchers_.At(i);
+          const std::pair<int64_t, IntVar*>& w = watchers_.At(i);
           if (w.second->Bound()) {
             ProcessUpperBoundWatcher(w.first, w.second);
           }
@@ -1026,8 +1031,8 @@ class DomainIntVar : public IntVar {
         }
       } else {
         for (int pos = watchers_.start(); pos < watchers_.end(); ++pos) {
-          const std::pair<int64, IntVar*>& w = watchers_.At(pos);
-          const int64 value = w.first;
+          const std::pair<int64_t, IntVar*>& w = watchers_.At(pos);
+          const int64_t value = w.first;
           IntVar* const boolvar = w.second;
 
           if (value <= var_min) {
@@ -1048,10 +1053,10 @@ class DomainIntVar : public IntVar {
       visitor->BeginVisitConstraint(ModelVisitor::kVarBoundWatcher, this);
       visitor->VisitIntegerExpressionArgument(ModelVisitor::kVariableArgument,
                                               variable_);
-      std::vector<int64> all_coefficients;
+      std::vector<int64_t> all_coefficients;
       std::vector<IntVar*> all_bool_vars;
       for (int pos = watchers_.start(); pos < watchers_.end(); ++pos) {
-        const std::pair<int64, IntVar*>& w = watchers_.At(pos);
+        const std::pair<int64_t, IntVar*>& w = watchers_.At(pos);
         all_coefficients.push_back(w.first);
         all_bool_vars.push_back(w.second);
       }
@@ -1067,7 +1072,7 @@ class DomainIntVar : public IntVar {
     }
 
    private:
-    void ProcessUpperBoundWatcher(int64 value, IntVar* const boolvar) {
+    void ProcessUpperBoundWatcher(int64_t value, IntVar* const boolvar) {
       if (boolvar->Min() == 0) {
         variable_->SetMax(value - 1);
       } else {
@@ -1076,11 +1081,11 @@ class DomainIntVar : public IntVar {
     }
 
     void ProcessVar() {
-      const int64 var_min = variable_->Min();
-      const int64 var_max = variable_->Max();
+      const int64_t var_min = variable_->Min();
+      const int64_t var_max = variable_->Max();
       if (sorted_) {
         while (start_.Value() <= end_.Value()) {
-          const std::pair<int64, IntVar*>& w = watchers_.At(start_.Value());
+          const std::pair<int64_t, IntVar*>& w = watchers_.At(start_.Value());
           if (w.first <= var_min) {
             w.second->SetValue(1);
             start_.Incr(solver());
@@ -1089,7 +1094,7 @@ class DomainIntVar : public IntVar {
           }
         }
         while (end_.Value() >= start_.Value()) {
-          const std::pair<int64, IntVar*>& w = watchers_.At(end_.Value());
+          const std::pair<int64_t, IntVar*>& w = watchers_.At(end_.Value());
           if (w.first > var_max) {
             w.second->SetValue(0);
             end_.Decr(solver());
@@ -1102,8 +1107,8 @@ class DomainIntVar : public IntVar {
         }
       } else {
         for (int pos = watchers_.start(); pos < watchers_.end(); ++pos) {
-          const std::pair<int64, IntVar*>& w = watchers_.At(pos);
-          const int64 value = w.first;
+          const std::pair<int64_t, IntVar*>& w = watchers_.At(pos);
+          const int64_t value = w.first;
           IntVar* const boolvar = w.second;
 
           if (value <= var_min) {
@@ -1134,7 +1139,7 @@ class DomainIntVar : public IntVar {
    public:
     class WatchDemon : public Demon {
      public:
-      WatchDemon(DenseUpperBoundWatcher* const watcher, int64 value,
+      WatchDemon(DenseUpperBoundWatcher* const watcher, int64_t value,
                  IntVar* var)
           : value_watcher_(watcher), value_(value), var_(var) {}
       ~WatchDemon() override {}
@@ -1145,7 +1150,7 @@ class DomainIntVar : public IntVar {
 
      private:
       DenseUpperBoundWatcher* const value_watcher_;
-      const int64 value_;
+      const int64_t value_;
       IntVar* const var_;
     };
 
@@ -1172,7 +1177,7 @@ class DomainIntVar : public IntVar {
 
     ~DenseUpperBoundWatcher() override {}
 
-    IntVar* GetOrMakeUpperBoundWatcher(int64 value) override {
+    IntVar* GetOrMakeUpperBoundWatcher(int64_t value) override {
       if (variable_->Max() >= value) {
         if (variable_->Min() >= value) {
           return solver()->MakeIntConst(1);
@@ -1196,7 +1201,7 @@ class DomainIntVar : public IntVar {
       }
     }
 
-    void SetUpperBoundWatcher(IntVar* const boolvar, int64 value) override {
+    void SetUpperBoundWatcher(IntVar* const boolvar, int64_t value) override {
       const int index = value - offset_;
       CHECK(watchers_[index] == nullptr);
       if (!boolvar->Bound()) {
@@ -1213,7 +1218,7 @@ class DomainIntVar : public IntVar {
       var_demon_ = solver()->RevAlloc(new VarDemon(this));
       variable_->WhenRange(var_demon_);
       for (int pos = 0; pos < watchers_.size(); ++pos) {
-        const int64 value = pos + offset_;
+        const int64_t value = pos + offset_;
         IntVar* const boolvar = watchers_[pos];
         if (boolvar != nullptr && !boolvar->Bound() &&
             value > variable_->Min() && value <= variable_->Max()) {
@@ -1228,7 +1233,7 @@ class DomainIntVar : public IntVar {
       for (int pos = 0; pos < watchers_.size(); ++pos) {
         IntVar* const boolvar = watchers_[pos];
         if (boolvar == nullptr) continue;
-        const int64 value = pos + offset_;
+        const int64_t value = pos + offset_;
         if (value <= variable_->Min()) {
           boolvar->SetValue(1);
           RevRemove(pos);
@@ -1245,7 +1250,7 @@ class DomainIntVar : public IntVar {
       }
     }
 
-    void ProcessUpperBoundWatcher(int64 value, IntVar* boolvar) {
+    void ProcessUpperBoundWatcher(int64_t value, IntVar* boolvar) {
       if (boolvar->Min() == 0) {
         variable_->SetMax(value - 1);
       } else {
@@ -1254,10 +1259,10 @@ class DomainIntVar : public IntVar {
     }
 
     void ProcessVar() {
-      const int64 old_min_index = variable_->OldMin() - offset_;
-      const int64 old_max_index = variable_->OldMax() - offset_;
-      const int64 min_index = variable_->Min() - offset_;
-      const int64 max_index = variable_->Max() - offset_;
+      const int64_t old_min_index = variable_->OldMin() - offset_;
+      const int64_t old_max_index = variable_->OldMax() - offset_;
+      const int64_t min_index = variable_->Min() - offset_;
+      const int64_t max_index = variable_->Max() - offset_;
       for (int pos = old_min_index; pos <= min_index; ++pos) {
         IntVar* const boolvar = watchers_[pos];
         if (boolvar != nullptr) {
@@ -1294,7 +1299,7 @@ class DomainIntVar : public IntVar {
       visitor->BeginVisitConstraint(ModelVisitor::kVarBoundWatcher, this);
       visitor->VisitIntegerExpressionArgument(ModelVisitor::kVariableArgument,
                                               variable_);
-      std::vector<int64> all_coefficients;
+      std::vector<int64_t> all_coefficients;
       std::vector<IntVar*> all_bool_vars;
       for (int position = 0; position < watchers_.size(); ++position) {
         if (watchers_[position] != nullptr) {
@@ -1318,32 +1323,32 @@ class DomainIntVar : public IntVar {
     DomainIntVar* const variable_;
     RevSwitch posted_;
     Demon* var_demon_;
-    const int64 offset_;
+    const int64_t offset_;
     std::vector<IntVar*> watchers_;
     NumericalRev<int> active_watchers_;
   };
 
   // ----- Main Class -----
-  DomainIntVar(Solver* const s, int64 vmin, int64 vmax,
+  DomainIntVar(Solver* const s, int64_t vmin, int64_t vmax,
                const std::string& name);
-  DomainIntVar(Solver* const s, const std::vector<int64>& sorted_values,
+  DomainIntVar(Solver* const s, const std::vector<int64_t>& sorted_values,
                const std::string& name);
   ~DomainIntVar() override;
 
-  int64 Min() const override { return min_.Value(); }
-  void SetMin(int64 m) override;
-  int64 Max() const override { return max_.Value(); }
-  void SetMax(int64 m) override;
-  void SetRange(int64 mi, int64 ma) override;
-  void SetValue(int64 v) override;
+  int64_t Min() const override { return min_.Value(); }
+  void SetMin(int64_t m) override;
+  int64_t Max() const override { return max_.Value(); }
+  void SetMax(int64_t m) override;
+  void SetRange(int64_t mi, int64_t ma) override;
+  void SetValue(int64_t v) override;
   bool Bound() const override { return (min_.Value() == max_.Value()); }
-  int64 Value() const override {
+  int64_t Value() const override {
     CHECK_EQ(min_.Value(), max_.Value())
         << " variable " << DebugString() << " is not bound.";
     return min_.Value();
   }
-  void RemoveValue(int64 v) override;
-  void RemoveInterval(int64 l, int64 u) override;
+  void RemoveValue(int64_t v) override;
+  void RemoveInterval(int64_t l, int64_t u) override;
   void CreateBits();
   void WhenBound(Demon* d) override {
     if (min_.Value() != max_.Value()) {
@@ -1376,7 +1381,7 @@ class DomainIntVar : public IntVar {
     }
   }
 
-  IntVar* IsEqual(int64 constant) override {
+  IntVar* IsEqual(int64_t constant) override {
     Solver* const s = solver();
     if (constant == min_.Value() && value_watcher_ == nullptr) {
       return s->MakeIsLessOrEqualCstVar(this, constant);
@@ -1385,10 +1390,10 @@ class DomainIntVar : public IntVar {
       return s->MakeIsGreaterOrEqualCstVar(this, constant);
     }
     if (!Contains(constant)) {
-      return s->MakeIntConst(int64{0});
+      return s->MakeIntConst(int64_t{0});
     }
     if (Bound() && min_.Value() == constant) {
-      return s->MakeIntConst(int64{1});
+      return s->MakeIntConst(int64_t{1});
     }
     IntExpr* const cache = s->Cache()->FindExprConstantExpression(
         this, constant, ModelCache::EXPR_CONSTANT_IS_EQUAL);
@@ -1416,7 +1421,7 @@ class DomainIntVar : public IntVar {
     }
   }
 
-  Constraint* SetIsEqual(const std::vector<int64>& values,
+  Constraint* SetIsEqual(const std::vector<int64_t>& values,
                          const std::vector<IntVar*>& vars) {
     if (value_watcher_ == nullptr) {
       solver()->SaveAndSetValue(reinterpret_cast<void**>(&value_watcher_),
@@ -1429,7 +1434,7 @@ class DomainIntVar : public IntVar {
     return value_watcher_;
   }
 
-  IntVar* IsDifferent(int64 constant) override {
+  IntVar* IsDifferent(int64_t constant) override {
     Solver* const s = solver();
     if (constant == min_.Value() && value_watcher_ == nullptr) {
       return s->MakeIsGreaterOrEqualCstVar(this, constant + 1);
@@ -1438,10 +1443,10 @@ class DomainIntVar : public IntVar {
       return s->MakeIsLessOrEqualCstVar(this, constant - 1);
     }
     if (!Contains(constant)) {
-      return s->MakeIntConst(int64{1});
+      return s->MakeIntConst(int64_t{1});
     }
     if (Bound() && min_.Value() == constant) {
-      return s->MakeIntConst(int64{0});
+      return s->MakeIntConst(int64_t{0});
     }
     IntExpr* const cache = s->Cache()->FindExprConstantExpression(
         this, constant, ModelCache::EXPR_CONSTANT_IS_NOT_EQUAL);
@@ -1455,13 +1460,13 @@ class DomainIntVar : public IntVar {
     }
   }
 
-  IntVar* IsGreaterOrEqual(int64 constant) override {
+  IntVar* IsGreaterOrEqual(int64_t constant) override {
     Solver* const s = solver();
     if (max_.Value() < constant) {
-      return s->MakeIntConst(int64{0});
+      return s->MakeIntConst(int64_t{0});
     }
     if (min_.Value() >= constant) {
-      return s->MakeIntConst(int64{1});
+      return s->MakeIntConst(int64_t{1});
     }
     IntExpr* const cache = s->Cache()->FindExprConstantExpression(
         this, constant, ModelCache::EXPR_CONSTANT_IS_GREATER_OR_EQUAL);
@@ -1492,7 +1497,7 @@ class DomainIntVar : public IntVar {
     }
   }
 
-  Constraint* SetIsGreaterOrEqual(const std::vector<int64>& values,
+  Constraint* SetIsGreaterOrEqual(const std::vector<int64_t>& values,
                                   const std::vector<IntVar*>& vars) {
     if (bound_watcher_ == nullptr) {
       if (CapSub(Max(), Min()) <= 256) {
@@ -1514,7 +1519,7 @@ class DomainIntVar : public IntVar {
     return bound_watcher_;
   }
 
-  IntVar* IsLessOrEqual(int64 constant) override {
+  IntVar* IsLessOrEqual(int64_t constant) override {
     Solver* const s = solver();
     IntExpr* const cache = s->Cache()->FindExprConstantExpression(
         this, constant, ModelCache::EXPR_CONSTANT_IS_LESS_OR_EQUAL);
@@ -1532,19 +1537,19 @@ class DomainIntVar : public IntVar {
   void Process();
   void Push();
   void CleanInProcess();
-  uint64 Size() const override {
+  uint64_t Size() const override {
     if (bits_ != nullptr) return bits_->Size();
-    return (static_cast<uint64>(max_.Value()) -
-            static_cast<uint64>(min_.Value()) + 1);
+    return (static_cast<uint64_t>(max_.Value()) -
+            static_cast<uint64_t>(min_.Value()) + 1);
   }
-  bool Contains(int64 v) const override {
+  bool Contains(int64_t v) const override {
     if (v < min_.Value() || v > max_.Value()) return false;
     return (bits_ == nullptr ? true : bits_->Contains(v));
   }
   IntVarIterator* MakeHoleIterator(bool reversible) const override;
   IntVarIterator* MakeDomainIterator(bool reversible) const override;
-  int64 OldMin() const override { return std::min(old_min_, min_.Value()); }
-  int64 OldMax() const override { return std::max(old_max_, max_.Value()); }
+  int64_t OldMin() const override { return std::min(old_min_, min_.Value()); }
+  int64_t OldMax() const override { return std::max(old_max_, max_.Value()); }
 
   std::string DebugString() const override;
   BitSet* bitset() const { return bits_; }
@@ -1565,12 +1570,12 @@ class DomainIntVar : public IntVar {
       old_max_ = max_.Value();
     }
   }
-  Rev<int64> min_;
-  Rev<int64> max_;
-  int64 old_min_;
-  int64 old_max_;
-  int64 new_min_;
-  int64 new_max_;
+  Rev<int64_t> min_;
+  Rev<int64_t> max_;
+  int64_t old_min_;
+  int64_t old_max_;
+  int64_t new_min_;
+  int64_t new_max_;
   SimpleRevFIFO<Demon*> bound_demons_;
   SimpleRevFIFO<Demon*> range_demons_;
   SimpleRevFIFO<Demon*> domain_demons_;
@@ -1590,7 +1595,7 @@ class DomainIntVar : public IntVar {
 // K values, i.e. b - a < K, in a way that's robust to overflows.
 // For performance reasons, in opt mode it doesn't check that [a, b] is a
 // valid interval, nor that K is nonnegative.
-inline bool ClosedIntervalNoLargerThan(int64 a, int64 b, int64 K) {
+inline bool ClosedIntervalNoLargerThan(int64_t a, int64_t b, int64_t K) {
   DCHECK_LE(a, b);
   DCHECK_GE(K, 0);
   if (a > 0) {
@@ -1602,7 +1607,7 @@ inline bool ClosedIntervalNoLargerThan(int64 a, int64 b, int64 K) {
 
 class SimpleBitSet : public DomainIntVar::BitSet {
  public:
-  SimpleBitSet(Solver* const s, int64 vmin, int64 vmax)
+  SimpleBitSet(Solver* const s, int64_t vmin, int64_t vmax)
       : BitSet(s),
         bits_(nullptr),
         stamps_(nullptr),
@@ -1612,8 +1617,8 @@ class SimpleBitSet : public DomainIntVar::BitSet {
         bsize_(BitLength64(size_.Value())) {
     CHECK(ClosedIntervalNoLargerThan(vmin, vmax, 0xFFFFFFFF))
         << "Bitset too large: [" << vmin << ", " << vmax << "]";
-    bits_ = new uint64[bsize_];
-    stamps_ = new uint64[bsize_];
+    bits_ = new uint64_t[bsize_];
+    stamps_ = new uint64_t[bsize_];
     for (int i = 0; i < bsize_; ++i) {
       const int bs =
           (i == size_.Value() - 1) ? 63 - BitPos64(size_.Value()) : 0;
@@ -1622,8 +1627,8 @@ class SimpleBitSet : public DomainIntVar::BitSet {
     }
   }
 
-  SimpleBitSet(Solver* const s, const std::vector<int64>& sorted_values,
-               int64 vmin, int64 vmax)
+  SimpleBitSet(Solver* const s, const std::vector<int64_t>& sorted_values,
+               int64_t vmin, int64_t vmax)
       : BitSet(s),
         bits_(nullptr),
         stamps_(nullptr),
@@ -1633,14 +1638,14 @@ class SimpleBitSet : public DomainIntVar::BitSet {
         bsize_(BitLength64(vmax - vmin + 1)) {
     CHECK(ClosedIntervalNoLargerThan(vmin, vmax, 0xFFFFFFFF))
         << "Bitset too large: [" << vmin << ", " << vmax << "]";
-    bits_ = new uint64[bsize_];
-    stamps_ = new uint64[bsize_];
+    bits_ = new uint64_t[bsize_];
+    stamps_ = new uint64_t[bsize_];
     for (int i = 0; i < bsize_; ++i) {
-      bits_[i] = GG_ULONGLONG(0);
+      bits_[i] = uint64_t{0};
       stamps_[i] = s->stamp() - 1;
     }
     for (int i = 0; i < sorted_values.size(); ++i) {
-      const int64 val = sorted_values[i];
+      const int64_t val = sorted_values[i];
       DCHECK(!bit(val));
       const int offset = BitOffset64(val - omin_);
       const int pos = BitPos64(val - omin_);
@@ -1653,39 +1658,39 @@ class SimpleBitSet : public DomainIntVar::BitSet {
     delete[] stamps_;
   }
 
-  bool bit(int64 val) const { return IsBitSet64(bits_, val - omin_); }
+  bool bit(int64_t val) const { return IsBitSet64(bits_, val - omin_); }
 
-  int64 ComputeNewMin(int64 nmin, int64 cmin, int64 cmax) override {
+  int64_t ComputeNewMin(int64_t nmin, int64_t cmin, int64_t cmax) override {
     DCHECK_GE(nmin, cmin);
     DCHECK_LE(nmin, cmax);
     DCHECK_LE(cmin, cmax);
     DCHECK_GE(cmin, omin_);
     DCHECK_LE(cmax, omax_);
-    const int64 new_min =
+    const int64_t new_min =
         UnsafeLeastSignificantBitPosition64(bits_, nmin - omin_, cmax - omin_) +
         omin_;
-    const uint64 removed_bits =
+    const uint64_t removed_bits =
         BitCountRange64(bits_, cmin - omin_, new_min - omin_ - 1);
     size_.Add(solver_, -removed_bits);
     return new_min;
   }
 
-  int64 ComputeNewMax(int64 nmax, int64 cmin, int64 cmax) override {
+  int64_t ComputeNewMax(int64_t nmax, int64_t cmin, int64_t cmax) override {
     DCHECK_GE(nmax, cmin);
     DCHECK_LE(nmax, cmax);
     DCHECK_LE(cmin, cmax);
     DCHECK_GE(cmin, omin_);
     DCHECK_LE(cmax, omax_);
-    const int64 new_max =
+    const int64_t new_max =
         UnsafeMostSignificantBitPosition64(bits_, cmin - omin_, nmax - omin_) +
         omin_;
-    const uint64 removed_bits =
+    const uint64_t removed_bits =
         BitCountRange64(bits_, new_max - omin_ + 1, cmax - omin_);
     size_.Add(solver_, -removed_bits);
     return new_max;
   }
 
-  bool SetValue(int64 val) override {
+  bool SetValue(int64_t val) override {
     DCHECK_GE(val, omin_);
     DCHECK_LE(val, omax_);
     if (bit(val)) {
@@ -1695,20 +1700,20 @@ class SimpleBitSet : public DomainIntVar::BitSet {
     return false;
   }
 
-  bool Contains(int64 val) const override {
+  bool Contains(int64_t val) const override {
     DCHECK_GE(val, omin_);
     DCHECK_LE(val, omax_);
     return bit(val);
   }
 
-  bool RemoveValue(int64 val) override {
+  bool RemoveValue(int64_t val) override {
     if (val < omin_ || val > omax_ || !bit(val)) {
       return false;
     }
     // Bitset.
-    const int64 val_offset = val - omin_;
+    const int64_t val_offset = val - omin_;
     const int offset = BitOffset64(val_offset);
-    const uint64 current_stamp = solver_->stamp();
+    const uint64_t current_stamp = solver_->stamp();
     if (stamps_[offset] < current_stamp) {
       stamps_[offset] = current_stamp;
       solver_->SaveValue(&bits_[offset]);
@@ -1722,7 +1727,7 @@ class SimpleBitSet : public DomainIntVar::BitSet {
     AddHole(val);
     return true;
   }
-  uint64 Size() const override { return size_.Value(); }
+  uint64_t Size() const override { return size_.Value(); }
 
   std::string DebugString() const override {
     std::string out;
@@ -1734,11 +1739,11 @@ class SimpleBitSet : public DomainIntVar::BitSet {
     return out;
   }
 
-  void DelayRemoveValue(int64 val) override { removed_.push_back(val); }
+  void DelayRemoveValue(int64_t val) override { removed_.push_back(val); }
 
   void ApplyRemovedValues(DomainIntVar* var) override {
     std::sort(removed_.begin(), removed_.end());
-    for (std::vector<int64>::iterator it = removed_.begin();
+    for (std::vector<int64_t>::iterator it = removed_.begin();
          it != removed_.end(); ++it) {
       var->RemoveValue(*it);
     }
@@ -1746,14 +1751,14 @@ class SimpleBitSet : public DomainIntVar::BitSet {
 
   void ClearRemovedValues() override { removed_.clear(); }
 
-  std::string pretty_DebugString(int64 min, int64 max) const override {
+  std::string pretty_DebugString(int64_t min, int64_t max) const override {
     std::string out;
     DCHECK(bit(min));
     DCHECK(bit(max));
     if (max != min) {
       int cumul = true;
-      int64 start_cumul = min;
-      for (int64 v = min + 1; v < max; ++v) {
+      int64_t start_cumul = min;
+      for (int64_t v = min + 1; v < max; ++v) {
         if (bit(v)) {
           if (!cumul) {
             cumul = true;
@@ -1792,13 +1797,13 @@ class SimpleBitSet : public DomainIntVar::BitSet {
   }
 
  private:
-  uint64* bits_;
-  uint64* stamps_;
-  const int64 omin_;
-  const int64 omax_;
-  NumericalRev<int64> size_;
+  uint64_t* bits_;
+  uint64_t* stamps_;
+  const int64_t omin_;
+  const int64_t omax_;
+  NumericalRev<int64_t> size_;
   const int bsize_;
-  std::vector<int64> removed_;
+  std::vector<int64_t> removed_;
 };
 
 // This is a special case where the bitset fits into one 64 bit integer.
@@ -1806,9 +1811,9 @@ class SimpleBitSet : public DomainIntVar::BitSet {
 // Overflows are caught by the robust ClosedIntervalNoLargerThan() method.
 class SmallBitSet : public DomainIntVar::BitSet {
  public:
-  SmallBitSet(Solver* const s, int64 vmin, int64 vmax)
+  SmallBitSet(Solver* const s, int64_t vmin, int64_t vmax)
       : BitSet(s),
-        bits_(GG_ULONGLONG(0)),
+        bits_(uint64_t{0}),
         stamp_(s->stamp() - 1),
         omin_(vmin),
         omax_(vmax),
@@ -1817,10 +1822,10 @@ class SmallBitSet : public DomainIntVar::BitSet {
     bits_ = OneRange64(0, size_.Value() - 1);
   }
 
-  SmallBitSet(Solver* const s, const std::vector<int64>& sorted_values,
-              int64 vmin, int64 vmax)
+  SmallBitSet(Solver* const s, const std::vector<int64_t>& sorted_values,
+              int64_t vmin, int64_t vmax)
       : BitSet(s),
-        bits_(GG_ULONGLONG(0)),
+        bits_(uint64_t{0}),
         stamp_(s->stamp() - 1),
         omin_(vmin),
         omax_(vmax),
@@ -1828,7 +1833,7 @@ class SmallBitSet : public DomainIntVar::BitSet {
     CHECK(ClosedIntervalNoLargerThan(vmin, vmax, 64)) << vmin << ", " << vmax;
     // We know the array is sorted and does not contains duplicate values.
     for (int i = 0; i < sorted_values.size(); ++i) {
-      const int64 val = sorted_values[i];
+      const int64_t val = sorted_values[i];
       DCHECK_GE(val, vmin);
       DCHECK_LE(val, vmax);
       DCHECK(!IsBitSet64(&bits_, val - omin_));
@@ -1838,13 +1843,13 @@ class SmallBitSet : public DomainIntVar::BitSet {
 
   ~SmallBitSet() override {}
 
-  bool bit(int64 val) const {
+  bool bit(int64_t val) const {
     DCHECK_GE(val, omin_);
     DCHECK_LE(val, omax_);
     return (bits_ & OneBit64(val - omin_)) != 0;
   }
 
-  int64 ComputeNewMin(int64 nmin, int64 cmin, int64 cmax) override {
+  int64_t ComputeNewMin(int64_t nmin, int64_t cmin, int64_t cmax) override {
     DCHECK_GE(nmin, cmin);
     DCHECK_LE(nmin, cmax);
     DCHECK_LE(cmin, cmax);
@@ -1854,8 +1859,8 @@ class SmallBitSet : public DomainIntVar::BitSet {
     // But we use mask to look only at 'active' bits.
 
     // Create the mask and compute new bits
-    const uint64 new_bits = bits_ & OneRange64(nmin - omin_, cmax - omin_);
-    if (new_bits != GG_ULONGLONG(0)) {
+    const uint64_t new_bits = bits_ & OneRange64(nmin - omin_, cmax - omin_);
+    if (new_bits != uint64_t{0}) {
       // Compute new size and new min
       size_.SetValue(solver_, BitCount64(new_bits));
       if (bit(nmin)) {  // Common case, the new min is inside the bitset
@@ -1864,11 +1869,11 @@ class SmallBitSet : public DomainIntVar::BitSet {
       return LeastSignificantBitPosition64(new_bits) + omin_;
     } else {  // == 0 -> Fail()
       solver_->Fail();
-      return kint64max;
+      return std::numeric_limits<int64_t>::max();
     }
   }
 
-  int64 ComputeNewMax(int64 nmax, int64 cmin, int64 cmax) override {
+  int64_t ComputeNewMax(int64_t nmax, int64_t cmin, int64_t cmax) override {
     DCHECK_GE(nmax, cmin);
     DCHECK_LE(nmax, cmax);
     DCHECK_LE(cmin, cmax);
@@ -1878,8 +1883,8 @@ class SmallBitSet : public DomainIntVar::BitSet {
     // But we use mask to look only at 'active' bits.
 
     // Create the mask and compute new_bits
-    const uint64 new_bits = bits_ & OneRange64(cmin - omin_, nmax - omin_);
-    if (new_bits != GG_ULONGLONG(0)) {
+    const uint64_t new_bits = bits_ & OneRange64(cmin - omin_, nmax - omin_);
+    if (new_bits != uint64_t{0}) {
       // Compute new size and new min
       size_.SetValue(solver_, BitCount64(new_bits));
       if (bit(nmax)) {  // Common case, the new max is inside the bitset
@@ -1888,11 +1893,11 @@ class SmallBitSet : public DomainIntVar::BitSet {
       return MostSignificantBitPosition64(new_bits) + omin_;
     } else {  // == 0 -> Fail()
       solver_->Fail();
-      return kint64min;
+      return std::numeric_limits<int64_t>::min();
     }
   }
 
-  bool SetValue(int64 val) override {
+  bool SetValue(int64_t val) override {
     DCHECK_GE(val, omin_);
     DCHECK_LE(val, omax_);
     // We do not clean the bits. We will use masks to ignore the bits
@@ -1904,18 +1909,18 @@ class SmallBitSet : public DomainIntVar::BitSet {
     return false;
   }
 
-  bool Contains(int64 val) const override {
+  bool Contains(int64_t val) const override {
     DCHECK_GE(val, omin_);
     DCHECK_LE(val, omax_);
     return bit(val);
   }
 
-  bool RemoveValue(int64 val) override {
+  bool RemoveValue(int64_t val) override {
     DCHECK_GE(val, omin_);
     DCHECK_LE(val, omax_);
     if (bit(val)) {
       // Bitset.
-      const uint64 current_stamp = solver_->stamp();
+      const uint64_t current_stamp = solver_->stamp();
       if (stamp_ < current_stamp) {
         stamp_ = current_stamp;
         solver_->SaveValue(&bits_);
@@ -1933,13 +1938,13 @@ class SmallBitSet : public DomainIntVar::BitSet {
     }
   }
 
-  uint64 Size() const override { return size_.Value(); }
+  uint64_t Size() const override { return size_.Value(); }
 
   std::string DebugString() const override {
     return absl::StrFormat("SmallBitSet(%d..%d : %llx)", omin_, omax_, bits_);
   }
 
-  void DelayRemoveValue(int64 val) override {
+  void DelayRemoveValue(int64_t val) override {
     DCHECK_GE(val, omin_);
     DCHECK_LE(val, omax_);
     removed_.push_back(val);
@@ -1947,7 +1952,7 @@ class SmallBitSet : public DomainIntVar::BitSet {
 
   void ApplyRemovedValues(DomainIntVar* var) override {
     std::sort(removed_.begin(), removed_.end());
-    for (std::vector<int64>::iterator it = removed_.begin();
+    for (std::vector<int64_t>::iterator it = removed_.begin();
          it != removed_.end(); ++it) {
       var->RemoveValue(*it);
     }
@@ -1955,14 +1960,14 @@ class SmallBitSet : public DomainIntVar::BitSet {
 
   void ClearRemovedValues() override { removed_.clear(); }
 
-  std::string pretty_DebugString(int64 min, int64 max) const override {
+  std::string pretty_DebugString(int64_t min, int64_t max) const override {
     std::string out;
     DCHECK(bit(min));
     DCHECK(bit(max));
     if (max != min) {
       int cumul = true;
-      int64 start_cumul = min;
-      for (int64 v = min + 1; v < max; ++v) {
+      int64_t start_cumul = min;
+      for (int64_t v = min + 1; v < max; ++v) {
         if (bit(v)) {
           if (!cumul) {
             cumul = true;
@@ -2001,12 +2006,12 @@ class SmallBitSet : public DomainIntVar::BitSet {
   }
 
  private:
-  uint64 bits_;
-  uint64 stamp_;
-  const int64 omin_;
-  const int64 omax_;
-  NumericalRev<int64> size_;
-  std::vector<int64> removed_;
+  uint64_t bits_;
+  uint64_t stamp_;
+  const int64_t omin_;
+  const int64_t omax_;
+  NumericalRev<int64_t> size_;
+  std::vector<int64_t> removed_;
 };
 
 class EmptyIterator : public IntVarIterator {
@@ -2014,7 +2019,7 @@ class EmptyIterator : public IntVarIterator {
   ~EmptyIterator() override {}
   void Init() override {}
   bool Ok() const override { return false; }
-  int64 Value() const override {
+  int64_t Value() const override {
     LOG(FATAL) << "Should not be called";
     return 0LL;
   }
@@ -2024,7 +2029,10 @@ class EmptyIterator : public IntVarIterator {
 class RangeIterator : public IntVarIterator {
  public:
   explicit RangeIterator(const IntVar* const var)
-      : var_(var), min_(kint64max), max_(kint64min), current_(-1) {}
+      : var_(var),
+        min_(std::numeric_limits<int64_t>::max()),
+        max_(std::numeric_limits<int64_t>::min()),
+        current_(-1) {}
 
   ~RangeIterator() override {}
 
@@ -2036,15 +2044,15 @@ class RangeIterator : public IntVarIterator {
 
   bool Ok() const override { return current_ <= max_; }
 
-  int64 Value() const override { return current_; }
+  int64_t Value() const override { return current_; }
 
   void Next() override { current_++; }
 
  private:
   const IntVar* const var_;
-  int64 min_;
-  int64 max_;
-  int64 current_;
+  int64_t min_;
+  int64_t max_;
+  int64_t current_;
 };
 
 class DomainIntVarHoleIterator : public IntVarIterator {
@@ -2069,7 +2077,7 @@ class DomainIntVarHoleIterator : public IntVarIterator {
 
   bool Ok() const override { return index_ < size_; }
 
-  int64 Value() const override {
+  int64_t Value() const override {
     DCHECK(bits_ != nullptr);
     DCHECK(index_ < size_);
     return values_[index_];
@@ -2080,7 +2088,7 @@ class DomainIntVarHoleIterator : public IntVarIterator {
  private:
   const DomainIntVar* const var_;
   DomainIntVar::BitSet* bits_;
-  const int64* values_;
+  const int64_t* values_;
   int size_;
   int index_;
 };
@@ -2091,8 +2099,8 @@ class DomainIntVarDomainIterator : public IntVarIterator {
                                       bool reversible)
       : var_(v),
         bitset_iterator_(nullptr),
-        min_(kint64max),
-        max_(kint64min),
+        min_(std::numeric_limits<int64_t>::max()),
+        max_(std::numeric_limits<int64_t>::min()),
         current_(-1),
         reversible_(reversible) {}
 
@@ -2137,7 +2145,7 @@ class DomainIntVarDomainIterator : public IntVarIterator {
     return bitset_iterator_ ? bitset_iterator_->Ok() : (current_ <= max_);
   }
 
-  int64 Value() const override {
+  int64_t Value() const override {
     return bitset_iterator_ ? bitset_iterator_->Value() : current_;
   }
 
@@ -2152,9 +2160,9 @@ class DomainIntVarDomainIterator : public IntVarIterator {
  private:
   const DomainIntVar* const var_;
   DomainIntVar::BitSetIterator* bitset_iterator_;
-  int64 min_;
-  int64 max_;
-  int64 current_;
+  int64_t min_;
+  int64_t max_;
+  int64_t current_;
   const bool reversible_;
 };
 
@@ -2182,7 +2190,7 @@ class UnaryIterator : public IntVarIterator {
   const bool reversible_;
 };
 
-DomainIntVar::DomainIntVar(Solver* const s, int64 vmin, int64 vmax,
+DomainIntVar::DomainIntVar(Solver* const s, int64_t vmin, int64_t vmax,
                            const std::string& name)
     : IntVar(s, name),
       min_(vmin),
@@ -2198,15 +2206,15 @@ DomainIntVar::DomainIntVar(Solver* const s, int64 vmin, int64 vmax,
       bound_watcher_(nullptr) {}
 
 DomainIntVar::DomainIntVar(Solver* const s,
-                           const std::vector<int64>& sorted_values,
+                           const std::vector<int64_t>& sorted_values,
                            const std::string& name)
     : IntVar(s, name),
-      min_(kint64max),
-      max_(kint64min),
-      old_min_(kint64max),
-      old_max_(kint64min),
-      new_min_(kint64max),
-      new_max_(kint64min),
+      min_(std::numeric_limits<int64_t>::max()),
+      max_(std::numeric_limits<int64_t>::min()),
+      old_min_(std::numeric_limits<int64_t>::max()),
+      old_max_(std::numeric_limits<int64_t>::min()),
+      new_min_(std::numeric_limits<int64_t>::max()),
+      new_max_(std::numeric_limits<int64_t>::min()),
       handler_(this),
       in_process_(false),
       bits_(nullptr),
@@ -2214,8 +2222,8 @@ DomainIntVar::DomainIntVar(Solver* const s,
       bound_watcher_(nullptr) {
   CHECK_GE(sorted_values.size(), 1);
   // We know that the vector is sorted and does not have duplicate values.
-  const int64 vmin = sorted_values.front();
-  const int64 vmax = sorted_values.back();
+  const int64_t vmin = sorted_values.front();
+  const int64_t vmax = sorted_values.back();
   const bool contiguous = vmax - vmin + 1 == sorted_values.size();
 
   min_.SetValue(solver(), vmin);
@@ -2238,7 +2246,7 @@ DomainIntVar::DomainIntVar(Solver* const s,
 
 DomainIntVar::~DomainIntVar() {}
 
-void DomainIntVar::SetMin(int64 m) {
+void DomainIntVar::SetMin(int64_t m) {
   if (m <= min_.Value()) return;
   if (m > max_.Value()) solver()->Fail();
   if (in_process_) {
@@ -2250,7 +2258,7 @@ void DomainIntVar::SetMin(int64 m) {
     }
   } else {
     CheckOldMin();
-    const int64 new_min =
+    const int64_t new_min =
         (bits_ == nullptr
              ? m
              : bits_->ComputeNewMin(m, min_.Value(), max_.Value()));
@@ -2262,7 +2270,7 @@ void DomainIntVar::SetMin(int64 m) {
   }
 }
 
-void DomainIntVar::SetMax(int64 m) {
+void DomainIntVar::SetMax(int64_t m) {
   if (m >= max_.Value()) return;
   if (m < min_.Value()) solver()->Fail();
   if (in_process_) {
@@ -2274,7 +2282,7 @@ void DomainIntVar::SetMax(int64 m) {
     }
   } else {
     CheckOldMax();
-    const int64 new_max =
+    const int64_t new_max =
         (bits_ == nullptr
              ? m
              : bits_->ComputeNewMax(m, min_.Value(), max_.Value()));
@@ -2286,7 +2294,7 @@ void DomainIntVar::SetMax(int64 m) {
   }
 }
 
-void DomainIntVar::SetRange(int64 mi, int64 ma) {
+void DomainIntVar::SetRange(int64_t mi, int64_t ma) {
   if (mi == ma) {
     SetValue(mi);
   } else {
@@ -2305,7 +2313,7 @@ void DomainIntVar::SetRange(int64 mi, int64 ma) {
     } else {
       if (mi > min_.Value()) {
         CheckOldMin();
-        const int64 new_min =
+        const int64_t new_min =
             (bits_ == nullptr
                  ? mi
                  : bits_->ComputeNewMin(mi, min_.Value(), max_.Value()));
@@ -2316,7 +2324,7 @@ void DomainIntVar::SetRange(int64 mi, int64 ma) {
       }
       if (ma < max_.Value()) {
         CheckOldMax();
-        const int64 new_max =
+        const int64_t new_max =
             (bits_ == nullptr
                  ? ma
                  : bits_->ComputeNewMax(ma, min_.Value(), max_.Value()));
@@ -2330,7 +2338,7 @@ void DomainIntVar::SetRange(int64 mi, int64 ma) {
   }
 }
 
-void DomainIntVar::SetValue(int64 v) {
+void DomainIntVar::SetValue(int64_t v) {
   if (v != min_.Value() || v != max_.Value()) {
     if (v < min_.Value() || v > max_.Value()) {
       solver()->Fail();
@@ -2354,7 +2362,7 @@ void DomainIntVar::SetValue(int64 v) {
   }
 }
 
-void DomainIntVar::RemoveValue(int64 v) {
+void DomainIntVar::RemoveValue(int64_t v) {
   if (v < min_.Value() || v > max_.Value()) return;
   if (v == min_.Value()) {
     SetMin(v + 1);
@@ -2376,13 +2384,13 @@ void DomainIntVar::RemoveValue(int64 v) {
   }
 }
 
-void DomainIntVar::RemoveInterval(int64 l, int64 u) {
+void DomainIntVar::RemoveInterval(int64_t l, int64_t u) {
   if (l <= min_.Value()) {
     SetMin(u + 1);
   } else if (u >= max_.Value()) {
     SetMax(l - 1);
   } else {
-    for (int64 v = l; v <= u; ++v) {
+    for (int64_t v = l; v <= u; ++v) {
       RemoveValue(v);
     }
   }
@@ -2518,7 +2526,7 @@ class ConcreteBooleanVar : public BooleanVar {
 
   ~ConcreteBooleanVar() override {}
 
-  void SetValue(int64 v) override {
+  void SetValue(int64_t v) override {
     if (value_ == kUnboundBooleanVarValue) {
       if ((v & 0xfffffffffffffffe) == 0) {
         InternalSaveBooleanVarValue(solver(), this);
@@ -2541,8 +2549,8 @@ class ConcreteBooleanVar : public BooleanVar {
     }
   }
 
-  int64 OldMin() const override { return 0LL; }
-  int64 OldMax() const override { return 1LL; }
+  int64_t OldMin() const override { return 0LL; }
+  int64_t OldMax() const override { return 1LL; }
   void RestoreValue() override { value_ = kUnboundBooleanVarValue; }
 
  private:
@@ -2553,40 +2561,40 @@ class ConcreteBooleanVar : public BooleanVar {
 
 class IntConst : public IntVar {
  public:
-  IntConst(Solver* const s, int64 value, const std::string& name = "")
+  IntConst(Solver* const s, int64_t value, const std::string& name = "")
       : IntVar(s, name), value_(value) {}
   ~IntConst() override {}
 
-  int64 Min() const override { return value_; }
-  void SetMin(int64 m) override {
+  int64_t Min() const override { return value_; }
+  void SetMin(int64_t m) override {
     if (m > value_) {
       solver()->Fail();
     }
   }
-  int64 Max() const override { return value_; }
-  void SetMax(int64 m) override {
+  int64_t Max() const override { return value_; }
+  void SetMax(int64_t m) override {
     if (m < value_) {
       solver()->Fail();
     }
   }
-  void SetRange(int64 l, int64 u) override {
+  void SetRange(int64_t l, int64_t u) override {
     if (l > value_ || u < value_) {
       solver()->Fail();
     }
   }
-  void SetValue(int64 v) override {
+  void SetValue(int64_t v) override {
     if (v != value_) {
       solver()->Fail();
     }
   }
   bool Bound() const override { return true; }
-  int64 Value() const override { return value_; }
-  void RemoveValue(int64 v) override {
+  int64_t Value() const override { return value_; }
+  void RemoveValue(int64_t v) override {
     if (v == value_) {
       solver()->Fail();
     }
   }
-  void RemoveInterval(int64 l, int64 u) override {
+  void RemoveInterval(int64_t l, int64_t u) override {
     if (l <= value_ && value_ <= u) {
       solver()->Fail();
     }
@@ -2594,16 +2602,16 @@ class IntConst : public IntVar {
   void WhenBound(Demon* d) override {}
   void WhenRange(Demon* d) override {}
   void WhenDomain(Demon* d) override {}
-  uint64 Size() const override { return 1; }
-  bool Contains(int64 v) const override { return (v == value_); }
+  uint64_t Size() const override { return 1; }
+  bool Contains(int64_t v) const override { return (v == value_); }
   IntVarIterator* MakeHoleIterator(bool reversible) const override {
     return COND_REV_ALLOC(reversible, new EmptyIterator());
   }
   IntVarIterator* MakeDomainIterator(bool reversible) const override {
     return COND_REV_ALLOC(reversible, new RangeIterator(this));
   }
-  int64 OldMin() const override { return value_; }
-  int64 OldMax() const override { return value_; }
+  int64_t OldMin() const override { return value_; }
+  int64_t OldMax() const override { return value_; }
   std::string DebugString() const override {
     std::string out;
     if (solver()->HasName(this)) {
@@ -2617,7 +2625,7 @@ class IntConst : public IntVar {
 
   int VarType() const override { return CONST_VAR; }
 
-  IntVar* IsEqual(int64 constant) override {
+  IntVar* IsEqual(int64_t constant) override {
     if (constant == value_) {
       return solver()->MakeIntConst(1);
     } else {
@@ -2625,7 +2633,7 @@ class IntConst : public IntVar {
     }
   }
 
-  IntVar* IsDifferent(int64 constant) override {
+  IntVar* IsDifferent(int64_t constant) override {
     if (constant == value_) {
       return solver()->MakeIntConst(0);
     } else {
@@ -2633,11 +2641,11 @@ class IntConst : public IntVar {
     }
   }
 
-  IntVar* IsGreaterOrEqual(int64 constant) override {
+  IntVar* IsGreaterOrEqual(int64_t constant) override {
     return solver()->MakeIntConst(value_ >= constant);
   }
 
-  IntVar* IsLessOrEqual(int64 constant) override {
+  IntVar* IsLessOrEqual(int64_t constant) override {
     return solver()->MakeIntConst(value_ <= constant);
   }
 
@@ -2650,14 +2658,14 @@ class IntConst : public IntVar {
   }
 
  private:
-  int64 value_;
+  int64_t value_;
 };
 
 // ----- x + c variable, optimized case -----
 
 class PlusCstVar : public IntVar {
  public:
-  PlusCstVar(Solver* const s, IntVar* v, int64 c)
+  PlusCstVar(Solver* const s, IntVar* v, int64_t c)
       : IntVar(s), var_(v), cst_(c) {}
 
   ~PlusCstVar() override {}
@@ -2668,9 +2676,9 @@ class PlusCstVar : public IntVar {
 
   void WhenDomain(Demon* d) override { var_->WhenDomain(d); }
 
-  int64 OldMin() const override { return CapAdd(var_->OldMin(), cst_); }
+  int64_t OldMin() const override { return CapAdd(var_->OldMin(), cst_); }
 
-  int64 OldMax() const override { return CapAdd(var_->OldMax(), cst_); }
+  int64_t OldMax() const override { return CapAdd(var_->OldMax(), cst_); }
 
   std::string DebugString() const override {
     if (HasName()) {
@@ -2687,77 +2695,77 @@ class PlusCstVar : public IntVar {
                                   var_);
   }
 
-  IntVar* IsEqual(int64 constant) override {
+  IntVar* IsEqual(int64_t constant) override {
     return var_->IsEqual(constant - cst_);
   }
 
-  IntVar* IsDifferent(int64 constant) override {
+  IntVar* IsDifferent(int64_t constant) override {
     return var_->IsDifferent(constant - cst_);
   }
 
-  IntVar* IsGreaterOrEqual(int64 constant) override {
+  IntVar* IsGreaterOrEqual(int64_t constant) override {
     return var_->IsGreaterOrEqual(constant - cst_);
   }
 
-  IntVar* IsLessOrEqual(int64 constant) override {
+  IntVar* IsLessOrEqual(int64_t constant) override {
     return var_->IsLessOrEqual(constant - cst_);
   }
 
   IntVar* SubVar() const { return var_; }
 
-  int64 Constant() const { return cst_; }
+  int64_t Constant() const { return cst_; }
 
  protected:
   IntVar* const var_;
-  const int64 cst_;
+  const int64_t cst_;
 };
 
 class PlusCstIntVar : public PlusCstVar {
  public:
   class PlusCstIntVarIterator : public UnaryIterator {
    public:
-    PlusCstIntVarIterator(const IntVar* const v, int64 c, bool hole, bool rev)
+    PlusCstIntVarIterator(const IntVar* const v, int64_t c, bool hole, bool rev)
         : UnaryIterator(v, hole, rev), cst_(c) {}
 
     ~PlusCstIntVarIterator() override {}
 
-    int64 Value() const override { return iterator_->Value() + cst_; }
+    int64_t Value() const override { return iterator_->Value() + cst_; }
 
    private:
-    const int64 cst_;
+    const int64_t cst_;
   };
 
-  PlusCstIntVar(Solver* const s, IntVar* v, int64 c) : PlusCstVar(s, v, c) {}
+  PlusCstIntVar(Solver* const s, IntVar* v, int64_t c) : PlusCstVar(s, v, c) {}
 
   ~PlusCstIntVar() override {}
 
-  int64 Min() const override { return var_->Min() + cst_; }
+  int64_t Min() const override { return var_->Min() + cst_; }
 
-  void SetMin(int64 m) override { var_->SetMin(CapSub(m, cst_)); }
+  void SetMin(int64_t m) override { var_->SetMin(CapSub(m, cst_)); }
 
-  int64 Max() const override { return var_->Max() + cst_; }
+  int64_t Max() const override { return var_->Max() + cst_; }
 
-  void SetMax(int64 m) override { var_->SetMax(CapSub(m, cst_)); }
+  void SetMax(int64_t m) override { var_->SetMax(CapSub(m, cst_)); }
 
-  void SetRange(int64 l, int64 u) override {
+  void SetRange(int64_t l, int64_t u) override {
     var_->SetRange(CapSub(l, cst_), CapSub(u, cst_));
   }
 
-  void SetValue(int64 v) override { var_->SetValue(v - cst_); }
+  void SetValue(int64_t v) override { var_->SetValue(v - cst_); }
 
-  int64 Value() const override { return var_->Value() + cst_; }
+  int64_t Value() const override { return var_->Value() + cst_; }
 
   bool Bound() const override { return var_->Bound(); }
 
-  void RemoveValue(int64 v) override { var_->RemoveValue(v - cst_); }
+  void RemoveValue(int64_t v) override { var_->RemoveValue(v - cst_); }
 
-  void RemoveInterval(int64 l, int64 u) override {
+  void RemoveInterval(int64_t l, int64_t u) override {
     var_->RemoveInterval(l - cst_, u - cst_);
   }
 
-  uint64 Size() const override { return var_->Size(); }
+  uint64_t Size() const override { return var_->Size(); }
 
-  bool Contains(int64 v) const override { return var_->Contains(v - cst_); }
+  bool Contains(int64_t v) const override { return var_->Contains(v - cst_); }
 
   IntVarIterator* MakeHoleIterator(bool reversible) const override {
     return COND_REV_ALLOC(
@@ -2773,35 +2781,35 @@ class PlusCstDomainIntVar : public PlusCstVar {
  public:
   class PlusCstDomainIntVarIterator : public UnaryIterator {
    public:
-    PlusCstDomainIntVarIterator(const IntVar* const v, int64 c, bool hole,
+    PlusCstDomainIntVarIterator(const IntVar* const v, int64_t c, bool hole,
                                 bool reversible)
         : UnaryIterator(v, hole, reversible), cst_(c) {}
 
     ~PlusCstDomainIntVarIterator() override {}
 
-    int64 Value() const override { return iterator_->Value() + cst_; }
+    int64_t Value() const override { return iterator_->Value() + cst_; }
 
    private:
-    const int64 cst_;
+    const int64_t cst_;
   };
 
-  PlusCstDomainIntVar(Solver* const s, DomainIntVar* v, int64 c)
+  PlusCstDomainIntVar(Solver* const s, DomainIntVar* v, int64_t c)
       : PlusCstVar(s, v, c) {}
 
   ~PlusCstDomainIntVar() override {}
 
-  int64 Min() const override;
-  void SetMin(int64 m) override;
-  int64 Max() const override;
-  void SetMax(int64 m) override;
-  void SetRange(int64 l, int64 u) override;
-  void SetValue(int64 v) override;
+  int64_t Min() const override;
+  void SetMin(int64_t m) override;
+  int64_t Max() const override;
+  void SetMax(int64_t m) override;
+  void SetRange(int64_t l, int64_t u) override;
+  void SetValue(int64_t v) override;
   bool Bound() const override;
-  int64 Value() const override;
-  void RemoveValue(int64 v) override;
-  void RemoveInterval(int64 l, int64 u) override;
-  uint64 Size() const override;
-  bool Contains(int64 v) const override;
+  int64_t Value() const override;
+  void RemoveValue(int64_t v) override;
+  void RemoveInterval(int64_t l, int64_t u) override;
+  uint64_t Size() const override;
+  bool Contains(int64_t v) const override;
 
   DomainIntVar* domain_int_var() const {
     return reinterpret_cast<DomainIntVar*>(var_);
@@ -2817,27 +2825,27 @@ class PlusCstDomainIntVar : public PlusCstVar {
   }
 };
 
-int64 PlusCstDomainIntVar::Min() const {
+int64_t PlusCstDomainIntVar::Min() const {
   return domain_int_var()->min_.Value() + cst_;
 }
 
-void PlusCstDomainIntVar::SetMin(int64 m) {
+void PlusCstDomainIntVar::SetMin(int64_t m) {
   domain_int_var()->DomainIntVar::SetMin(m - cst_);
 }
 
-int64 PlusCstDomainIntVar::Max() const {
+int64_t PlusCstDomainIntVar::Max() const {
   return domain_int_var()->max_.Value() + cst_;
 }
 
-void PlusCstDomainIntVar::SetMax(int64 m) {
+void PlusCstDomainIntVar::SetMax(int64_t m) {
   domain_int_var()->DomainIntVar::SetMax(m - cst_);
 }
 
-void PlusCstDomainIntVar::SetRange(int64 l, int64 u) {
+void PlusCstDomainIntVar::SetRange(int64_t l, int64_t u) {
   domain_int_var()->DomainIntVar::SetRange(l - cst_, u - cst_);
 }
 
-void PlusCstDomainIntVar::SetValue(int64 v) {
+void PlusCstDomainIntVar::SetValue(int64_t v) {
   domain_int_var()->DomainIntVar::SetValue(v - cst_);
 }
 
@@ -2845,25 +2853,25 @@ bool PlusCstDomainIntVar::Bound() const {
   return domain_int_var()->min_.Value() == domain_int_var()->max_.Value();
 }
 
-int64 PlusCstDomainIntVar::Value() const {
+int64_t PlusCstDomainIntVar::Value() const {
   CHECK_EQ(domain_int_var()->min_.Value(), domain_int_var()->max_.Value())
       << " variable is not bound";
   return domain_int_var()->min_.Value() + cst_;
 }
 
-void PlusCstDomainIntVar::RemoveValue(int64 v) {
+void PlusCstDomainIntVar::RemoveValue(int64_t v) {
   domain_int_var()->DomainIntVar::RemoveValue(v - cst_);
 }
 
-void PlusCstDomainIntVar::RemoveInterval(int64 l, int64 u) {
+void PlusCstDomainIntVar::RemoveInterval(int64_t l, int64_t u) {
   domain_int_var()->DomainIntVar::RemoveInterval(l - cst_, u - cst_);
 }
 
-uint64 PlusCstDomainIntVar::Size() const {
+uint64_t PlusCstDomainIntVar::Size() const {
   return domain_int_var()->DomainIntVar::Size();
 }
 
-bool PlusCstDomainIntVar::Contains(int64 v) const {
+bool PlusCstDomainIntVar::Contains(int64_t v) const {
   return domain_int_var()->DomainIntVar::Contains(v - cst_);
 }
 
@@ -2873,31 +2881,31 @@ class SubCstIntVar : public IntVar {
  public:
   class SubCstIntVarIterator : public UnaryIterator {
    public:
-    SubCstIntVarIterator(const IntVar* const v, int64 c, bool hole, bool rev)
+    SubCstIntVarIterator(const IntVar* const v, int64_t c, bool hole, bool rev)
         : UnaryIterator(v, hole, rev), cst_(c) {}
     ~SubCstIntVarIterator() override {}
 
-    int64 Value() const override { return cst_ - iterator_->Value(); }
+    int64_t Value() const override { return cst_ - iterator_->Value(); }
 
    private:
-    const int64 cst_;
+    const int64_t cst_;
   };
 
-  SubCstIntVar(Solver* const s, IntVar* v, int64 c);
+  SubCstIntVar(Solver* const s, IntVar* v, int64_t c);
   ~SubCstIntVar() override;
 
-  int64 Min() const override;
-  void SetMin(int64 m) override;
-  int64 Max() const override;
-  void SetMax(int64 m) override;
-  void SetRange(int64 l, int64 u) override;
-  void SetValue(int64 v) override;
+  int64_t Min() const override;
+  void SetMin(int64_t m) override;
+  int64_t Max() const override;
+  void SetMax(int64_t m) override;
+  void SetRange(int64_t l, int64_t u) override;
+  void SetValue(int64_t v) override;
   bool Bound() const override;
-  int64 Value() const override;
-  void RemoveValue(int64 v) override;
-  void RemoveInterval(int64 l, int64 u) override;
-  uint64 Size() const override;
-  bool Contains(int64 v) const override;
+  int64_t Value() const override;
+  void RemoveValue(int64_t v) override;
+  void RemoveInterval(int64_t l, int64_t u) override;
+  uint64_t Size() const override;
+  bool Contains(int64_t v) const override;
   void WhenRange(Demon* d) override;
   void WhenBound(Demon* d) override;
   void WhenDomain(Demon* d) override;
@@ -2909,8 +2917,8 @@ class SubCstIntVar : public IntVar {
     return COND_REV_ALLOC(
         reversible, new SubCstIntVarIterator(var_, cst_, false, reversible));
   }
-  int64 OldMin() const override { return CapSub(cst_, var_->OldMax()); }
-  int64 OldMax() const override { return CapSub(cst_, var_->OldMin()); }
+  int64_t OldMin() const override { return CapSub(cst_, var_->OldMax()); }
+  int64_t OldMax() const override { return CapSub(cst_, var_->OldMin()); }
   std::string DebugString() const override;
   std::string name() const override;
   int VarType() const override { return CST_SUB_VAR; }
@@ -2920,58 +2928,58 @@ class SubCstIntVar : public IntVar {
                                   cst_, var_);
   }
 
-  IntVar* IsEqual(int64 constant) override {
+  IntVar* IsEqual(int64_t constant) override {
     return var_->IsEqual(cst_ - constant);
   }
 
-  IntVar* IsDifferent(int64 constant) override {
+  IntVar* IsDifferent(int64_t constant) override {
     return var_->IsDifferent(cst_ - constant);
   }
 
-  IntVar* IsGreaterOrEqual(int64 constant) override {
+  IntVar* IsGreaterOrEqual(int64_t constant) override {
     return var_->IsLessOrEqual(cst_ - constant);
   }
 
-  IntVar* IsLessOrEqual(int64 constant) override {
+  IntVar* IsLessOrEqual(int64_t constant) override {
     return var_->IsGreaterOrEqual(cst_ - constant);
   }
 
   IntVar* SubVar() const { return var_; }
-  int64 Constant() const { return cst_; }
+  int64_t Constant() const { return cst_; }
 
  private:
   IntVar* const var_;
-  const int64 cst_;
+  const int64_t cst_;
 };
 
-SubCstIntVar::SubCstIntVar(Solver* const s, IntVar* v, int64 c)
+SubCstIntVar::SubCstIntVar(Solver* const s, IntVar* v, int64_t c)
     : IntVar(s), var_(v), cst_(c) {}
 
 SubCstIntVar::~SubCstIntVar() {}
 
-int64 SubCstIntVar::Min() const { return cst_ - var_->Max(); }
+int64_t SubCstIntVar::Min() const { return cst_ - var_->Max(); }
 
-void SubCstIntVar::SetMin(int64 m) { var_->SetMax(CapSub(cst_, m)); }
+void SubCstIntVar::SetMin(int64_t m) { var_->SetMax(CapSub(cst_, m)); }
 
-int64 SubCstIntVar::Max() const { return cst_ - var_->Min(); }
+int64_t SubCstIntVar::Max() const { return cst_ - var_->Min(); }
 
-void SubCstIntVar::SetMax(int64 m) { var_->SetMin(CapSub(cst_, m)); }
+void SubCstIntVar::SetMax(int64_t m) { var_->SetMin(CapSub(cst_, m)); }
 
-void SubCstIntVar::SetRange(int64 l, int64 u) {
+void SubCstIntVar::SetRange(int64_t l, int64_t u) {
   var_->SetRange(CapSub(cst_, u), CapSub(cst_, l));
 }
 
-void SubCstIntVar::SetValue(int64 v) { var_->SetValue(cst_ - v); }
+void SubCstIntVar::SetValue(int64_t v) { var_->SetValue(cst_ - v); }
 
 bool SubCstIntVar::Bound() const { return var_->Bound(); }
 
 void SubCstIntVar::WhenRange(Demon* d) { var_->WhenRange(d); }
 
-int64 SubCstIntVar::Value() const { return cst_ - var_->Value(); }
+int64_t SubCstIntVar::Value() const { return cst_ - var_->Value(); }
 
-void SubCstIntVar::RemoveValue(int64 v) { var_->RemoveValue(cst_ - v); }
+void SubCstIntVar::RemoveValue(int64_t v) { var_->RemoveValue(cst_ - v); }
 
-void SubCstIntVar::RemoveInterval(int64 l, int64 u) {
+void SubCstIntVar::RemoveInterval(int64_t l, int64_t u) {
   var_->RemoveInterval(cst_ - u, cst_ - l);
 }
 
@@ -2979,9 +2987,11 @@ void SubCstIntVar::WhenBound(Demon* d) { var_->WhenBound(d); }
 
 void SubCstIntVar::WhenDomain(Demon* d) { var_->WhenDomain(d); }
 
-uint64 SubCstIntVar::Size() const { return var_->Size(); }
+uint64_t SubCstIntVar::Size() const { return var_->Size(); }
 
-bool SubCstIntVar::Contains(int64 v) const { return var_->Contains(cst_ - v); }
+bool SubCstIntVar::Contains(int64_t v) const {
+  return var_->Contains(cst_ - v);
+}
 
 std::string SubCstIntVar::DebugString() const {
   if (cst_ == 1 && var_->VarType() == BOOLEAN_VAR) {
@@ -3011,24 +3021,24 @@ class OppIntVar : public IntVar {
         : UnaryIterator(v, hole, reversible) {}
     ~OppIntVarIterator() override {}
 
-    int64 Value() const override { return -iterator_->Value(); }
+    int64_t Value() const override { return -iterator_->Value(); }
   };
 
   OppIntVar(Solver* const s, IntVar* v);
   ~OppIntVar() override;
 
-  int64 Min() const override;
-  void SetMin(int64 m) override;
-  int64 Max() const override;
-  void SetMax(int64 m) override;
-  void SetRange(int64 l, int64 u) override;
-  void SetValue(int64 v) override;
+  int64_t Min() const override;
+  void SetMin(int64_t m) override;
+  int64_t Max() const override;
+  void SetMax(int64_t m) override;
+  void SetRange(int64_t l, int64_t u) override;
+  void SetValue(int64_t v) override;
   bool Bound() const override;
-  int64 Value() const override;
-  void RemoveValue(int64 v) override;
-  void RemoveInterval(int64 l, int64 u) override;
-  uint64 Size() const override;
-  bool Contains(int64 v) const override;
+  int64_t Value() const override;
+  void RemoveValue(int64_t v) override;
+  void RemoveInterval(int64_t l, int64_t u) override;
+  uint64_t Size() const override;
+  bool Contains(int64_t v) const override;
   void WhenRange(Demon* d) override;
   void WhenBound(Demon* d) override;
   void WhenDomain(Demon* d) override;
@@ -3040,8 +3050,8 @@ class OppIntVar : public IntVar {
     return COND_REV_ALLOC(reversible,
                           new OppIntVarIterator(var_, false, reversible));
   }
-  int64 OldMin() const override { return CapOpp(var_->OldMax()); }
-  int64 OldMax() const override { return CapOpp(var_->OldMin()); }
+  int64_t OldMin() const override { return CapOpp(var_->OldMax()); }
+  int64_t OldMax() const override { return CapOpp(var_->OldMin()); }
   std::string DebugString() const override;
   int VarType() const override { return OPP_VAR; }
 
@@ -3050,17 +3060,19 @@ class OppIntVar : public IntVar {
                                   var_);
   }
 
-  IntVar* IsEqual(int64 constant) override { return var_->IsEqual(-constant); }
+  IntVar* IsEqual(int64_t constant) override {
+    return var_->IsEqual(-constant);
+  }
 
-  IntVar* IsDifferent(int64 constant) override {
+  IntVar* IsDifferent(int64_t constant) override {
     return var_->IsDifferent(-constant);
   }
 
-  IntVar* IsGreaterOrEqual(int64 constant) override {
+  IntVar* IsGreaterOrEqual(int64_t constant) override {
     return var_->IsLessOrEqual(-constant);
   }
 
-  IntVar* IsLessOrEqual(int64 constant) override {
+  IntVar* IsLessOrEqual(int64_t constant) override {
     return var_->IsGreaterOrEqual(-constant);
   }
 
@@ -3074,29 +3086,29 @@ OppIntVar::OppIntVar(Solver* const s, IntVar* v) : IntVar(s), var_(v) {}
 
 OppIntVar::~OppIntVar() {}
 
-int64 OppIntVar::Min() const { return -var_->Max(); }
+int64_t OppIntVar::Min() const { return -var_->Max(); }
 
-void OppIntVar::SetMin(int64 m) { var_->SetMax(CapOpp(m)); }
+void OppIntVar::SetMin(int64_t m) { var_->SetMax(CapOpp(m)); }
 
-int64 OppIntVar::Max() const { return -var_->Min(); }
+int64_t OppIntVar::Max() const { return -var_->Min(); }
 
-void OppIntVar::SetMax(int64 m) { var_->SetMin(CapOpp(m)); }
+void OppIntVar::SetMax(int64_t m) { var_->SetMin(CapOpp(m)); }
 
-void OppIntVar::SetRange(int64 l, int64 u) {
+void OppIntVar::SetRange(int64_t l, int64_t u) {
   var_->SetRange(CapOpp(u), CapOpp(l));
 }
 
-void OppIntVar::SetValue(int64 v) { var_->SetValue(CapOpp(v)); }
+void OppIntVar::SetValue(int64_t v) { var_->SetValue(CapOpp(v)); }
 
 bool OppIntVar::Bound() const { return var_->Bound(); }
 
 void OppIntVar::WhenRange(Demon* d) { var_->WhenRange(d); }
 
-int64 OppIntVar::Value() const { return -var_->Value(); }
+int64_t OppIntVar::Value() const { return -var_->Value(); }
 
-void OppIntVar::RemoveValue(int64 v) { var_->RemoveValue(-v); }
+void OppIntVar::RemoveValue(int64_t v) { var_->RemoveValue(-v); }
 
-void OppIntVar::RemoveInterval(int64 l, int64 u) {
+void OppIntVar::RemoveInterval(int64_t l, int64_t u) {
   var_->RemoveInterval(-u, -l);
 }
 
@@ -3104,9 +3116,9 @@ void OppIntVar::WhenBound(Demon* d) { var_->WhenBound(d); }
 
 void OppIntVar::WhenDomain(Demon* d) { var_->WhenDomain(d); }
 
-uint64 OppIntVar::Size() const { return var_->Size(); }
+uint64_t OppIntVar::Size() const { return var_->Size(); }
 
-bool OppIntVar::Contains(int64 v) const { return var_->Contains(-v); }
+bool OppIntVar::Contains(int64_t v) const { return var_->Contains(-v); }
 
 std::string OppIntVar::DebugString() const {
   return absl::StrFormat("-(%s)", var_->DebugString());
@@ -3118,19 +3130,19 @@ std::string OppIntVar::DebugString() const {
 
 class TimesCstIntVar : public IntVar {
  public:
-  TimesCstIntVar(Solver* const s, IntVar* v, int64 c)
+  TimesCstIntVar(Solver* const s, IntVar* v, int64_t c)
       : IntVar(s), var_(v), cst_(c) {}
   ~TimesCstIntVar() override {}
 
   IntVar* SubVar() const { return var_; }
-  int64 Constant() const { return cst_; }
+  int64_t Constant() const { return cst_; }
 
   void Accept(ModelVisitor* const visitor) const override {
     visitor->VisitIntegerVariable(this, ModelVisitor::kProductOperation, cst_,
                                   var_);
   }
 
-  IntVar* IsEqual(int64 constant) override {
+  IntVar* IsEqual(int64_t constant) override {
     if (constant % cst_ == 0) {
       return var_->IsEqual(constant / cst_);
     } else {
@@ -3138,7 +3150,7 @@ class TimesCstIntVar : public IntVar {
     }
   }
 
-  IntVar* IsDifferent(int64 constant) override {
+  IntVar* IsDifferent(int64_t constant) override {
     if (constant % cst_ == 0) {
       return var_->IsDifferent(constant / cst_);
     } else {
@@ -3146,7 +3158,7 @@ class TimesCstIntVar : public IntVar {
     }
   }
 
-  IntVar* IsGreaterOrEqual(int64 constant) override {
+  IntVar* IsGreaterOrEqual(int64_t constant) override {
     if (cst_ > 0) {
       return var_->IsGreaterOrEqual(PosIntDivUp(constant, cst_));
     } else {
@@ -3154,7 +3166,7 @@ class TimesCstIntVar : public IntVar {
     }
   }
 
-  IntVar* IsLessOrEqual(int64 constant) override {
+  IntVar* IsLessOrEqual(int64_t constant) override {
     if (cst_ > 0) {
       return var_->IsLessOrEqual(PosIntDivDown(constant, cst_));
     } else {
@@ -3170,39 +3182,39 @@ class TimesCstIntVar : public IntVar {
 
  protected:
   IntVar* const var_;
-  const int64 cst_;
+  const int64_t cst_;
 };
 
 class TimesPosCstIntVar : public TimesCstIntVar {
  public:
   class TimesPosCstIntVarIterator : public UnaryIterator {
    public:
-    TimesPosCstIntVarIterator(const IntVar* const v, int64 c, bool hole,
+    TimesPosCstIntVarIterator(const IntVar* const v, int64_t c, bool hole,
                               bool reversible)
         : UnaryIterator(v, hole, reversible), cst_(c) {}
     ~TimesPosCstIntVarIterator() override {}
 
-    int64 Value() const override { return iterator_->Value() * cst_; }
+    int64_t Value() const override { return iterator_->Value() * cst_; }
 
    private:
-    const int64 cst_;
+    const int64_t cst_;
   };
 
-  TimesPosCstIntVar(Solver* const s, IntVar* v, int64 c);
+  TimesPosCstIntVar(Solver* const s, IntVar* v, int64_t c);
   ~TimesPosCstIntVar() override;
 
-  int64 Min() const override;
-  void SetMin(int64 m) override;
-  int64 Max() const override;
-  void SetMax(int64 m) override;
-  void SetRange(int64 l, int64 u) override;
-  void SetValue(int64 v) override;
+  int64_t Min() const override;
+  void SetMin(int64_t m) override;
+  int64_t Max() const override;
+  void SetMax(int64_t m) override;
+  void SetRange(int64_t l, int64_t u) override;
+  void SetValue(int64_t v) override;
   bool Bound() const override;
-  int64 Value() const override;
-  void RemoveValue(int64 v) override;
-  void RemoveInterval(int64 l, int64 u) override;
-  uint64 Size() const override;
-  bool Contains(int64 v) const override;
+  int64_t Value() const override;
+  void RemoveValue(int64_t v) override;
+  void RemoveInterval(int64_t l, int64_t u) override;
+  uint64_t Size() const override;
+  bool Contains(int64_t v) const override;
   void WhenRange(Demon* d) override;
   void WhenBound(Demon* d) override;
   void WhenDomain(Demon* d) override;
@@ -3214,38 +3226,38 @@ class TimesPosCstIntVar : public TimesCstIntVar {
     return COND_REV_ALLOC(reversible, new TimesPosCstIntVarIterator(
                                           var_, cst_, false, reversible));
   }
-  int64 OldMin() const override { return CapProd(var_->OldMin(), cst_); }
-  int64 OldMax() const override { return CapProd(var_->OldMax(), cst_); }
+  int64_t OldMin() const override { return CapProd(var_->OldMin(), cst_); }
+  int64_t OldMax() const override { return CapProd(var_->OldMax(), cst_); }
 };
 
 // ----- TimesPosCstIntVar -----
 
-TimesPosCstIntVar::TimesPosCstIntVar(Solver* const s, IntVar* v, int64 c)
+TimesPosCstIntVar::TimesPosCstIntVar(Solver* const s, IntVar* v, int64_t c)
     : TimesCstIntVar(s, v, c) {}
 
 TimesPosCstIntVar::~TimesPosCstIntVar() {}
 
-int64 TimesPosCstIntVar::Min() const { return CapProd(var_->Min(), cst_); }
+int64_t TimesPosCstIntVar::Min() const { return CapProd(var_->Min(), cst_); }
 
-void TimesPosCstIntVar::SetMin(int64 m) {
-  if (m != kint64min) {
+void TimesPosCstIntVar::SetMin(int64_t m) {
+  if (m != std::numeric_limits<int64_t>::min()) {
     var_->SetMin(PosIntDivUp(m, cst_));
   }
 }
 
-int64 TimesPosCstIntVar::Max() const { return CapProd(var_->Max(), cst_); }
+int64_t TimesPosCstIntVar::Max() const { return CapProd(var_->Max(), cst_); }
 
-void TimesPosCstIntVar::SetMax(int64 m) {
-  if (m != kint64max) {
+void TimesPosCstIntVar::SetMax(int64_t m) {
+  if (m != std::numeric_limits<int64_t>::max()) {
     var_->SetMax(PosIntDivDown(m, cst_));
   }
 }
 
-void TimesPosCstIntVar::SetRange(int64 l, int64 u) {
+void TimesPosCstIntVar::SetRange(int64_t l, int64_t u) {
   var_->SetRange(PosIntDivUp(l, cst_), PosIntDivDown(u, cst_));
 }
 
-void TimesPosCstIntVar::SetValue(int64 v) {
+void TimesPosCstIntVar::SetValue(int64_t v) {
   if (v % cst_ != 0) {
     solver()->Fail();
   }
@@ -3256,16 +3268,18 @@ bool TimesPosCstIntVar::Bound() const { return var_->Bound(); }
 
 void TimesPosCstIntVar::WhenRange(Demon* d) { var_->WhenRange(d); }
 
-int64 TimesPosCstIntVar::Value() const { return CapProd(var_->Value(), cst_); }
+int64_t TimesPosCstIntVar::Value() const {
+  return CapProd(var_->Value(), cst_);
+}
 
-void TimesPosCstIntVar::RemoveValue(int64 v) {
+void TimesPosCstIntVar::RemoveValue(int64_t v) {
   if (v % cst_ == 0) {
     var_->RemoveValue(v / cst_);
   }
 }
 
-void TimesPosCstIntVar::RemoveInterval(int64 l, int64 u) {
-  for (int64 v = l; v <= u; ++v) {
+void TimesPosCstIntVar::RemoveInterval(int64_t l, int64_t u) {
+  for (int64_t v = l; v <= u; ++v) {
     RemoveValue(v);
   }
   // TODO(user) : Improve me
@@ -3275,9 +3289,9 @@ void TimesPosCstIntVar::WhenBound(Demon* d) { var_->WhenBound(d); }
 
 void TimesPosCstIntVar::WhenDomain(Demon* d) { var_->WhenDomain(d); }
 
-uint64 TimesPosCstIntVar::Size() const { return var_->Size(); }
+uint64_t TimesPosCstIntVar::Size() const { return var_->Size(); }
 
-bool TimesPosCstIntVar::Contains(int64 v) const {
+bool TimesPosCstIntVar::Contains(int64_t v) const {
   return (v % cst_ == 0 && var_->Contains(v / cst_));
 }
 
@@ -3288,32 +3302,32 @@ class TimesPosCstBoolVar : public TimesCstIntVar {
   class TimesPosCstBoolVarIterator : public UnaryIterator {
    public:
     // TODO(user) : optimize this.
-    TimesPosCstBoolVarIterator(const IntVar* const v, int64 c, bool hole,
+    TimesPosCstBoolVarIterator(const IntVar* const v, int64_t c, bool hole,
                                bool reversible)
         : UnaryIterator(v, hole, reversible), cst_(c) {}
     ~TimesPosCstBoolVarIterator() override {}
 
-    int64 Value() const override { return iterator_->Value() * cst_; }
+    int64_t Value() const override { return iterator_->Value() * cst_; }
 
    private:
-    const int64 cst_;
+    const int64_t cst_;
   };
 
-  TimesPosCstBoolVar(Solver* const s, BooleanVar* v, int64 c);
+  TimesPosCstBoolVar(Solver* const s, BooleanVar* v, int64_t c);
   ~TimesPosCstBoolVar() override;
 
-  int64 Min() const override;
-  void SetMin(int64 m) override;
-  int64 Max() const override;
-  void SetMax(int64 m) override;
-  void SetRange(int64 l, int64 u) override;
-  void SetValue(int64 v) override;
+  int64_t Min() const override;
+  void SetMin(int64_t m) override;
+  int64_t Max() const override;
+  void SetMax(int64_t m) override;
+  void SetRange(int64_t l, int64_t u) override;
+  void SetValue(int64_t v) override;
   bool Bound() const override;
-  int64 Value() const override;
-  void RemoveValue(int64 v) override;
-  void RemoveInterval(int64 l, int64 u) override;
-  uint64 Size() const override;
-  bool Contains(int64 v) const override;
+  int64_t Value() const override;
+  void RemoveValue(int64_t v) override;
+  void RemoveInterval(int64_t l, int64_t u) override;
+  uint64_t Size() const override;
+  bool Contains(int64_t v) const override;
   void WhenRange(Demon* d) override;
   void WhenBound(Demon* d) override;
   void WhenDomain(Demon* d) override;
@@ -3325,8 +3339,8 @@ class TimesPosCstBoolVar : public TimesCstIntVar {
         reversible,
         new TimesPosCstBoolVarIterator(boolean_var(), cst_, false, reversible));
   }
-  int64 OldMin() const override { return 0; }
-  int64 OldMax() const override { return cst_; }
+  int64_t OldMin() const override { return 0; }
+  int64_t OldMax() const override { return cst_; }
 
   BooleanVar* boolean_var() const {
     return reinterpret_cast<BooleanVar*>(var_);
@@ -3335,16 +3349,17 @@ class TimesPosCstBoolVar : public TimesCstIntVar {
 
 // ----- TimesPosCstBoolVar -----
 
-TimesPosCstBoolVar::TimesPosCstBoolVar(Solver* const s, BooleanVar* v, int64 c)
+TimesPosCstBoolVar::TimesPosCstBoolVar(Solver* const s, BooleanVar* v,
+                                       int64_t c)
     : TimesCstIntVar(s, v, c) {}
 
 TimesPosCstBoolVar::~TimesPosCstBoolVar() {}
 
-int64 TimesPosCstBoolVar::Min() const {
+int64_t TimesPosCstBoolVar::Min() const {
   return (boolean_var()->RawValue() == 1) * cst_;
 }
 
-void TimesPosCstBoolVar::SetMin(int64 m) {
+void TimesPosCstBoolVar::SetMin(int64_t m) {
   if (m > cst_) {
     solver()->Fail();
   } else if (m > 0) {
@@ -3352,11 +3367,11 @@ void TimesPosCstBoolVar::SetMin(int64 m) {
   }
 }
 
-int64 TimesPosCstBoolVar::Max() const {
+int64_t TimesPosCstBoolVar::Max() const {
   return (boolean_var()->RawValue() != 0) * cst_;
 }
 
-void TimesPosCstBoolVar::SetMax(int64 m) {
+void TimesPosCstBoolVar::SetMax(int64_t m) {
   if (m < 0) {
     solver()->Fail();
   } else if (m < cst_) {
@@ -3364,7 +3379,7 @@ void TimesPosCstBoolVar::SetMax(int64 m) {
   }
 }
 
-void TimesPosCstBoolVar::SetRange(int64 l, int64 u) {
+void TimesPosCstBoolVar::SetRange(int64_t l, int64_t u) {
   if (u < 0 || l > cst_ || l > u) {
     solver()->Fail();
   }
@@ -3375,7 +3390,7 @@ void TimesPosCstBoolVar::SetRange(int64 l, int64 u) {
   }
 }
 
-void TimesPosCstBoolVar::SetValue(int64 v) {
+void TimesPosCstBoolVar::SetValue(int64_t v) {
   if (v == 0) {
     boolean_var()->SetValue(0);
   } else if (v == cst_) {
@@ -3391,13 +3406,13 @@ bool TimesPosCstBoolVar::Bound() const {
 
 void TimesPosCstBoolVar::WhenRange(Demon* d) { boolean_var()->WhenRange(d); }
 
-int64 TimesPosCstBoolVar::Value() const {
+int64_t TimesPosCstBoolVar::Value() const {
   CHECK_NE(boolean_var()->RawValue(), BooleanVar::kUnboundBooleanVarValue)
       << " variable is not bound";
   return boolean_var()->RawValue() * cst_;
 }
 
-void TimesPosCstBoolVar::RemoveValue(int64 v) {
+void TimesPosCstBoolVar::RemoveValue(int64_t v) {
   if (v == 0) {
     boolean_var()->RemoveValue(0);
   } else if (v == cst_) {
@@ -3405,7 +3420,7 @@ void TimesPosCstBoolVar::RemoveValue(int64 v) {
   }
 }
 
-void TimesPosCstBoolVar::RemoveInterval(int64 l, int64 u) {
+void TimesPosCstBoolVar::RemoveInterval(int64_t l, int64_t u) {
   if (l <= 0 && u >= 0) {
     boolean_var()->RemoveValue(0);
   }
@@ -3418,12 +3433,12 @@ void TimesPosCstBoolVar::WhenBound(Demon* d) { boolean_var()->WhenBound(d); }
 
 void TimesPosCstBoolVar::WhenDomain(Demon* d) { boolean_var()->WhenDomain(d); }
 
-uint64 TimesPosCstBoolVar::Size() const {
+uint64_t TimesPosCstBoolVar::Size() const {
   return (1 +
           (boolean_var()->RawValue() == BooleanVar::kUnboundBooleanVarValue));
 }
 
-bool TimesPosCstBoolVar::Contains(int64 v) const {
+bool TimesPosCstBoolVar::Contains(int64_t v) const {
   if (v == 0) {
     return boolean_var()->RawValue() != 1;
   } else if (v == cst_) {
@@ -3438,32 +3453,32 @@ class TimesNegCstIntVar : public TimesCstIntVar {
  public:
   class TimesNegCstIntVarIterator : public UnaryIterator {
    public:
-    TimesNegCstIntVarIterator(const IntVar* const v, int64 c, bool hole,
+    TimesNegCstIntVarIterator(const IntVar* const v, int64_t c, bool hole,
                               bool reversible)
         : UnaryIterator(v, hole, reversible), cst_(c) {}
     ~TimesNegCstIntVarIterator() override {}
 
-    int64 Value() const override { return iterator_->Value() * cst_; }
+    int64_t Value() const override { return iterator_->Value() * cst_; }
 
    private:
-    const int64 cst_;
+    const int64_t cst_;
   };
 
-  TimesNegCstIntVar(Solver* const s, IntVar* v, int64 c);
+  TimesNegCstIntVar(Solver* const s, IntVar* v, int64_t c);
   ~TimesNegCstIntVar() override;
 
-  int64 Min() const override;
-  void SetMin(int64 m) override;
-  int64 Max() const override;
-  void SetMax(int64 m) override;
-  void SetRange(int64 l, int64 u) override;
-  void SetValue(int64 v) override;
+  int64_t Min() const override;
+  void SetMin(int64_t m) override;
+  int64_t Max() const override;
+  void SetMax(int64_t m) override;
+  void SetRange(int64_t l, int64_t u) override;
+  void SetValue(int64_t v) override;
   bool Bound() const override;
-  int64 Value() const override;
-  void RemoveValue(int64 v) override;
-  void RemoveInterval(int64 l, int64 u) override;
-  uint64 Size() const override;
-  bool Contains(int64 v) const override;
+  int64_t Value() const override;
+  void RemoveValue(int64_t v) override;
+  void RemoveInterval(int64_t l, int64_t u) override;
+  uint64_t Size() const override;
+  bool Contains(int64_t v) const override;
   void WhenRange(Demon* d) override;
   void WhenBound(Demon* d) override;
   void WhenDomain(Demon* d) override;
@@ -3475,38 +3490,38 @@ class TimesNegCstIntVar : public TimesCstIntVar {
     return COND_REV_ALLOC(reversible, new TimesNegCstIntVarIterator(
                                           var_, cst_, false, reversible));
   }
-  int64 OldMin() const override { return CapProd(var_->OldMax(), cst_); }
-  int64 OldMax() const override { return CapProd(var_->OldMin(), cst_); }
+  int64_t OldMin() const override { return CapProd(var_->OldMax(), cst_); }
+  int64_t OldMax() const override { return CapProd(var_->OldMin(), cst_); }
 };
 
 // ----- TimesNegCstIntVar -----
 
-TimesNegCstIntVar::TimesNegCstIntVar(Solver* const s, IntVar* v, int64 c)
+TimesNegCstIntVar::TimesNegCstIntVar(Solver* const s, IntVar* v, int64_t c)
     : TimesCstIntVar(s, v, c) {}
 
 TimesNegCstIntVar::~TimesNegCstIntVar() {}
 
-int64 TimesNegCstIntVar::Min() const { return CapProd(var_->Max(), cst_); }
+int64_t TimesNegCstIntVar::Min() const { return CapProd(var_->Max(), cst_); }
 
-void TimesNegCstIntVar::SetMin(int64 m) {
-  if (m != kint64min) {
+void TimesNegCstIntVar::SetMin(int64_t m) {
+  if (m != std::numeric_limits<int64_t>::min()) {
     var_->SetMax(PosIntDivDown(-m, -cst_));
   }
 }
 
-int64 TimesNegCstIntVar::Max() const { return CapProd(var_->Min(), cst_); }
+int64_t TimesNegCstIntVar::Max() const { return CapProd(var_->Min(), cst_); }
 
-void TimesNegCstIntVar::SetMax(int64 m) {
-  if (m != kint64max) {
+void TimesNegCstIntVar::SetMax(int64_t m) {
+  if (m != std::numeric_limits<int64_t>::max()) {
     var_->SetMin(PosIntDivUp(-m, -cst_));
   }
 }
 
-void TimesNegCstIntVar::SetRange(int64 l, int64 u) {
+void TimesNegCstIntVar::SetRange(int64_t l, int64_t u) {
   var_->SetRange(PosIntDivUp(-u, -cst_), PosIntDivDown(-l, -cst_));
 }
 
-void TimesNegCstIntVar::SetValue(int64 v) {
+void TimesNegCstIntVar::SetValue(int64_t v) {
   if (v % cst_ != 0) {
     solver()->Fail();
   }
@@ -3517,16 +3532,18 @@ bool TimesNegCstIntVar::Bound() const { return var_->Bound(); }
 
 void TimesNegCstIntVar::WhenRange(Demon* d) { var_->WhenRange(d); }
 
-int64 TimesNegCstIntVar::Value() const { return CapProd(var_->Value(), cst_); }
+int64_t TimesNegCstIntVar::Value() const {
+  return CapProd(var_->Value(), cst_);
+}
 
-void TimesNegCstIntVar::RemoveValue(int64 v) {
+void TimesNegCstIntVar::RemoveValue(int64_t v) {
   if (v % cst_ == 0) {
     var_->RemoveValue(v / cst_);
   }
 }
 
-void TimesNegCstIntVar::RemoveInterval(int64 l, int64 u) {
-  for (int64 v = l; v <= u; ++v) {
+void TimesNegCstIntVar::RemoveInterval(int64_t l, int64_t u) {
+  for (int64_t v = l; v <= u; ++v) {
     RemoveValue(v);
   }
   // TODO(user) : Improve me
@@ -3536,9 +3553,9 @@ void TimesNegCstIntVar::WhenBound(Demon* d) { var_->WhenBound(d); }
 
 void TimesNegCstIntVar::WhenDomain(Demon* d) { var_->WhenDomain(d); }
 
-uint64 TimesNegCstIntVar::Size() const { return var_->Size(); }
+uint64_t TimesNegCstIntVar::Size() const { return var_->Size(); }
 
-bool TimesNegCstIntVar::Contains(int64 v) const {
+bool TimesNegCstIntVar::Contains(int64_t v) const {
   return (v % cst_ == 0 && var_->Contains(v / cst_));
 }
 
@@ -3553,20 +3570,20 @@ class PlusIntExpr : public BaseIntExpr {
 
   ~PlusIntExpr() override {}
 
-  int64 Min() const override { return left_->Min() + right_->Min(); }
+  int64_t Min() const override { return left_->Min() + right_->Min(); }
 
-  void SetMin(int64 m) override {
+  void SetMin(int64_t m) override {
     if (m > left_->Min() + right_->Min()) {
       left_->SetMin(m - right_->Max());
       right_->SetMin(m - left_->Max());
     }
   }
 
-  void SetRange(int64 l, int64 u) override {
-    const int64 left_min = left_->Min();
-    const int64 right_min = right_->Min();
-    const int64 left_max = left_->Max();
-    const int64 right_max = right_->Max();
+  void SetRange(int64_t l, int64_t u) override {
+    const int64_t left_min = left_->Min();
+    const int64_t right_min = right_->Min();
+    const int64_t left_max = left_->Max();
+    const int64_t right_max = right_->Max();
     if (l > left_min + right_min) {
       left_->SetMin(l - right_max);
       right_->SetMin(l - left_max);
@@ -3577,9 +3594,9 @@ class PlusIntExpr : public BaseIntExpr {
     }
   }
 
-  int64 Max() const override { return left_->Max() + right_->Max(); }
+  int64_t Max() const override { return left_->Max() + right_->Max(); }
 
-  void SetMax(int64 m) override {
+  void SetMax(int64_t m) override {
     if (m < left_->Max() + right_->Max()) {
       left_->SetMax(m - right_->Min());
       right_->SetMax(m - left_->Min());
@@ -3588,7 +3605,7 @@ class PlusIntExpr : public BaseIntExpr {
 
   bool Bound() const override { return (left_->Bound() && right_->Bound()); }
 
-  void Range(int64* const mi, int64* const ma) override {
+  void Range(int64_t* const mi, int64_t* const ma) override {
     *mi = left_->Min() + right_->Min();
     *ma = left_->Max() + right_->Max();
   }
@@ -3654,18 +3671,18 @@ class SafePlusIntExpr : public BaseIntExpr {
 
   ~SafePlusIntExpr() override {}
 
-  int64 Min() const override { return CapAdd(left_->Min(), right_->Min()); }
+  int64_t Min() const override { return CapAdd(left_->Min(), right_->Min()); }
 
-  void SetMin(int64 m) override {
+  void SetMin(int64_t m) override {
     left_->SetMin(CapSub(m, right_->Max()));
     right_->SetMin(CapSub(m, left_->Max()));
   }
 
-  void SetRange(int64 l, int64 u) override {
-    const int64 left_min = left_->Min();
-    const int64 right_min = right_->Min();
-    const int64 left_max = left_->Max();
-    const int64 right_max = right_->Max();
+  void SetRange(int64_t l, int64_t u) override {
+    const int64_t left_min = left_->Min();
+    const int64_t right_min = right_->Min();
+    const int64_t left_max = left_->Max();
+    const int64_t right_max = right_->Max();
     if (l > CapAdd(left_min, right_min)) {
       left_->SetMin(CapSub(l, right_max));
       right_->SetMin(CapSub(l, left_max));
@@ -3676,9 +3693,9 @@ class SafePlusIntExpr : public BaseIntExpr {
     }
   }
 
-  int64 Max() const override { return CapAdd(left_->Max(), right_->Max()); }
+  int64_t Max() const override { return CapAdd(left_->Max(), right_->Max()); }
 
-  void SetMax(int64 m) override {
+  void SetMax(int64_t m) override {
     left_->SetMax(CapSub(m, right_->Min()));
     right_->SetMax(CapSub(m, left_->Min()));
   }
@@ -3716,13 +3733,13 @@ class SafePlusIntExpr : public BaseIntExpr {
 
 class PlusIntCstExpr : public BaseIntExpr {
  public:
-  PlusIntCstExpr(Solver* const s, IntExpr* const e, int64 v)
+  PlusIntCstExpr(Solver* const s, IntExpr* const e, int64_t v)
       : BaseIntExpr(s), expr_(e), value_(v) {}
   ~PlusIntCstExpr() override {}
-  int64 Min() const override { return CapAdd(expr_->Min(), value_); }
-  void SetMin(int64 m) override { expr_->SetMin(CapSub(m, value_)); }
-  int64 Max() const override { return CapAdd(expr_->Max(), value_); }
-  void SetMax(int64 m) override { expr_->SetMax(CapSub(m, value_)); }
+  int64_t Min() const override { return CapAdd(expr_->Min(), value_); }
+  void SetMin(int64_t m) override { expr_->SetMin(CapSub(m, value_)); }
+  int64_t Max() const override { return CapAdd(expr_->Max(), value_); }
+  void SetMax(int64_t m) override { expr_->SetMax(CapSub(m, value_)); }
   bool Bound() const override { return (expr_->Bound()); }
   std::string name() const override {
     return absl::StrFormat("(%s + %d)", expr_->name(), value_);
@@ -3742,7 +3759,7 @@ class PlusIntCstExpr : public BaseIntExpr {
 
  private:
   IntExpr* const expr_;
-  const int64 value_;
+  const int64_t value_;
 };
 
 IntVar* PlusIntCstExpr::CastToVar() {
@@ -3775,30 +3792,30 @@ class SubIntExpr : public BaseIntExpr {
 
   ~SubIntExpr() override {}
 
-  int64 Min() const override { return left_->Min() - right_->Max(); }
+  int64_t Min() const override { return left_->Min() - right_->Max(); }
 
-  void SetMin(int64 m) override {
+  void SetMin(int64_t m) override {
     left_->SetMin(CapAdd(m, right_->Min()));
     right_->SetMax(CapSub(left_->Max(), m));
   }
 
-  int64 Max() const override { return left_->Max() - right_->Min(); }
+  int64_t Max() const override { return left_->Max() - right_->Min(); }
 
-  void SetMax(int64 m) override {
+  void SetMax(int64_t m) override {
     left_->SetMax(CapAdd(m, right_->Max()));
     right_->SetMin(CapSub(left_->Min(), m));
   }
 
-  void Range(int64* mi, int64* ma) override {
+  void Range(int64_t* mi, int64_t* ma) override {
     *mi = left_->Min() - right_->Max();
     *ma = left_->Max() - right_->Min();
   }
 
-  void SetRange(int64 l, int64 u) override {
-    const int64 left_min = left_->Min();
-    const int64 right_min = right_->Min();
-    const int64 left_max = left_->Max();
-    const int64 right_max = right_->Max();
+  void SetRange(int64_t l, int64_t u) override {
+    const int64_t left_min = left_->Min();
+    const int64_t right_min = right_->Min();
+    const int64_t left_max = left_->Max();
+    const int64_t right_max = right_->Max();
     if (l > left_min - right_max) {
       left_->SetMin(CapAdd(l, right_min));
       right_->SetMax(CapSub(left_max, l));
@@ -3848,18 +3865,18 @@ class SafeSubIntExpr : public SubIntExpr {
 
   ~SafeSubIntExpr() override {}
 
-  int64 Min() const override { return CapSub(left_->Min(), right_->Max()); }
+  int64_t Min() const override { return CapSub(left_->Min(), right_->Max()); }
 
-  void SetMin(int64 m) override {
+  void SetMin(int64_t m) override {
     left_->SetMin(CapAdd(m, right_->Min()));
     right_->SetMax(CapSub(left_->Max(), m));
   }
 
-  void SetRange(int64 l, int64 u) override {
-    const int64 left_min = left_->Min();
-    const int64 right_min = right_->Min();
-    const int64 left_max = left_->Max();
-    const int64 right_max = right_->Max();
+  void SetRange(int64_t l, int64_t u) override {
+    const int64_t left_min = left_->Min();
+    const int64_t right_min = right_->Min();
+    const int64_t left_max = left_->Max();
+    const int64_t right_max = right_->Max();
     if (l > CapSub(left_min, right_max)) {
       left_->SetMin(CapAdd(l, right_min));
       right_->SetMax(CapSub(left_max, l));
@@ -3870,14 +3887,14 @@ class SafeSubIntExpr : public SubIntExpr {
     }
   }
 
-  void Range(int64* mi, int64* ma) override {
+  void Range(int64_t* mi, int64_t* ma) override {
     *mi = CapSub(left_->Min(), right_->Max());
     *ma = CapSub(left_->Max(), right_->Min());
   }
 
-  int64 Max() const override { return CapSub(left_->Max(), right_->Min()); }
+  int64_t Max() const override { return CapSub(left_->Max(), right_->Min()); }
 
-  void SetMax(int64 m) override {
+  void SetMax(int64_t m) override {
     left_->SetMax(CapAdd(m, right_->Max()));
     right_->SetMin(CapSub(left_->Min(), m));
   }
@@ -3889,13 +3906,13 @@ class SafeSubIntExpr : public SubIntExpr {
 
 class SubIntCstExpr : public BaseIntExpr {
  public:
-  SubIntCstExpr(Solver* const s, IntExpr* const e, int64 v)
+  SubIntCstExpr(Solver* const s, IntExpr* const e, int64_t v)
       : BaseIntExpr(s), expr_(e), value_(v) {}
   ~SubIntCstExpr() override {}
-  int64 Min() const override { return CapSub(value_, expr_->Max()); }
-  void SetMin(int64 m) override { expr_->SetMax(CapSub(value_, m)); }
-  int64 Max() const override { return CapSub(value_, expr_->Min()); }
-  void SetMax(int64 m) override { expr_->SetMin(CapSub(value_, m)); }
+  int64_t Min() const override { return CapSub(value_, expr_->Max()); }
+  void SetMin(int64_t m) override { expr_->SetMax(CapSub(value_, m)); }
+  int64_t Max() const override { return CapSub(value_, expr_->Min()); }
+  void SetMax(int64_t m) override { expr_->SetMin(CapSub(value_, m)); }
   bool Bound() const override { return (expr_->Bound()); }
   std::string name() const override {
     return absl::StrFormat("(%d - %s)", value_, expr_->name());
@@ -3916,7 +3933,7 @@ class SubIntCstExpr : public BaseIntExpr {
 
  private:
   IntExpr* const expr_;
-  const int64 value_;
+  const int64_t value_;
 };
 
 IntVar* SubIntCstExpr::CastToVar() {
@@ -3936,10 +3953,10 @@ class OppIntExpr : public BaseIntExpr {
  public:
   OppIntExpr(Solver* const s, IntExpr* const e) : BaseIntExpr(s), expr_(e) {}
   ~OppIntExpr() override {}
-  int64 Min() const override { return (-expr_->Max()); }
-  void SetMin(int64 m) override { expr_->SetMax(-m); }
-  int64 Max() const override { return (-expr_->Min()); }
-  void SetMax(int64 m) override { expr_->SetMin(-m); }
+  int64_t Min() const override { return (-expr_->Max()); }
+  void SetMin(int64_t m) override { expr_->SetMax(-m); }
+  int64_t Max() const override { return (-expr_->Min()); }
+  void SetMax(int64_t m) override { expr_->SetMin(-m); }
   bool Bound() const override { return (expr_->Bound()); }
   std::string name() const override {
     return absl::StrFormat("(-%s)", expr_->name());
@@ -3972,7 +3989,7 @@ IntVar* OppIntExpr::CastToVar() {
 
 class TimesIntCstExpr : public BaseIntExpr {
  public:
-  TimesIntCstExpr(Solver* const s, IntExpr* const e, int64 v)
+  TimesIntCstExpr(Solver* const s, IntExpr* const e, int64_t v)
       : BaseIntExpr(s), expr_(e), value_(v) {}
 
   ~TimesIntCstExpr() override {}
@@ -3991,7 +4008,7 @@ class TimesIntCstExpr : public BaseIntExpr {
 
   IntExpr* Expr() const { return expr_; }
 
-  int64 Constant() const { return value_; }
+  int64_t Constant() const { return value_; }
 
   void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kProduct, this);
@@ -4003,27 +4020,27 @@ class TimesIntCstExpr : public BaseIntExpr {
 
  protected:
   IntExpr* const expr_;
-  const int64 value_;
+  const int64_t value_;
 };
 
 // ----- TimesPosIntCstExpr -----
 
 class TimesPosIntCstExpr : public TimesIntCstExpr {
  public:
-  TimesPosIntCstExpr(Solver* const s, IntExpr* const e, int64 v)
+  TimesPosIntCstExpr(Solver* const s, IntExpr* const e, int64_t v)
       : TimesIntCstExpr(s, e, v) {
     CHECK_GT(v, 0);
   }
 
   ~TimesPosIntCstExpr() override {}
 
-  int64 Min() const override { return expr_->Min() * value_; }
+  int64_t Min() const override { return expr_->Min() * value_; }
 
-  void SetMin(int64 m) override { expr_->SetMin(PosIntDivUp(m, value_)); }
+  void SetMin(int64_t m) override { expr_->SetMin(PosIntDivUp(m, value_)); }
 
-  int64 Max() const override { return expr_->Max() * value_; }
+  int64_t Max() const override { return expr_->Max() * value_; }
 
-  void SetMax(int64 m) override { expr_->SetMax(PosIntDivDown(m, value_)); }
+  void SetMax(int64_t m) override { expr_->SetMax(PosIntDivDown(m, value_)); }
 
   IntVar* CastToVar() override {
     Solver* const s = solver();
@@ -4044,25 +4061,25 @@ class TimesPosIntCstExpr : public TimesIntCstExpr {
 // to the previous one.
 class SafeTimesPosIntCstExpr : public TimesIntCstExpr {
  public:
-  SafeTimesPosIntCstExpr(Solver* const s, IntExpr* const e, int64 v)
+  SafeTimesPosIntCstExpr(Solver* const s, IntExpr* const e, int64_t v)
       : TimesIntCstExpr(s, e, v) {
     CHECK_GT(v, 0);
   }
 
   ~SafeTimesPosIntCstExpr() override {}
 
-  int64 Min() const override { return CapProd(expr_->Min(), value_); }
+  int64_t Min() const override { return CapProd(expr_->Min(), value_); }
 
-  void SetMin(int64 m) override {
-    if (m != kint64min) {
+  void SetMin(int64_t m) override {
+    if (m != std::numeric_limits<int64_t>::min()) {
       expr_->SetMin(PosIntDivUp(m, value_));
     }
   }
 
-  int64 Max() const override { return CapProd(expr_->Max(), value_); }
+  int64_t Max() const override { return CapProd(expr_->Max(), value_); }
 
-  void SetMax(int64 m) override {
-    if (m != kint64max) {
+  void SetMax(int64_t m) override {
+    if (m != std::numeric_limits<int64_t>::max()) {
       expr_->SetMax(PosIntDivDown(m, value_));
     }
   }
@@ -4087,25 +4104,25 @@ class SafeTimesPosIntCstExpr : public TimesIntCstExpr {
 
 class TimesIntNegCstExpr : public TimesIntCstExpr {
  public:
-  TimesIntNegCstExpr(Solver* const s, IntExpr* const e, int64 v)
+  TimesIntNegCstExpr(Solver* const s, IntExpr* const e, int64_t v)
       : TimesIntCstExpr(s, e, v) {
     CHECK_LT(v, 0);
   }
 
   ~TimesIntNegCstExpr() override {}
 
-  int64 Min() const override { return CapProd(expr_->Max(), value_); }
+  int64_t Min() const override { return CapProd(expr_->Max(), value_); }
 
-  void SetMin(int64 m) override {
-    if (m != kint64min) {
+  void SetMin(int64_t m) override {
+    if (m != std::numeric_limits<int64_t>::min()) {
       expr_->SetMax(PosIntDivDown(-m, -value_));
     }
   }
 
-  int64 Max() const override { return CapProd(expr_->Min(), value_); }
+  int64_t Max() const override { return CapProd(expr_->Min(), value_); }
 
-  void SetMax(int64 m) override {
-    if (m != kint64max) {
+  void SetMax(int64_t m) override {
+    if (m != std::numeric_limits<int64_t>::max()) {
       expr_->SetMin(PosIntDivUp(-m, -value_));
     }
   }
@@ -4122,11 +4139,11 @@ class TimesIntNegCstExpr : public TimesIntCstExpr {
 // ----- Utilities for product expression -----
 
 // Propagates set_min on left * right, left and right >= 0.
-void SetPosPosMinExpr(IntExpr* const left, IntExpr* const right, int64 m) {
+void SetPosPosMinExpr(IntExpr* const left, IntExpr* const right, int64_t m) {
   DCHECK_GE(left->Min(), 0);
   DCHECK_GE(right->Min(), 0);
-  const int64 lmax = left->Max();
-  const int64 rmax = right->Max();
+  const int64_t lmax = left->Max();
+  const int64_t rmax = right->Max();
   if (m > CapProd(lmax, rmax)) {
     left->solver()->Fail();
   }
@@ -4142,11 +4159,11 @@ void SetPosPosMinExpr(IntExpr* const left, IntExpr* const right, int64 m) {
 }
 
 // Propagates set_max on left * right, left and right >= 0.
-void SetPosPosMaxExpr(IntExpr* const left, IntExpr* const right, int64 m) {
+void SetPosPosMaxExpr(IntExpr* const left, IntExpr* const right, int64_t m) {
   DCHECK_GE(left->Min(), 0);
   DCHECK_GE(right->Min(), 0);
-  const int64 lmin = left->Min();
-  const int64 rmin = right->Min();
+  const int64_t lmin = left->Min();
+  const int64_t rmin = right->Min();
   if (m < CapProd(lmin, rmin)) {
     left->solver()->Fail();
   }
@@ -4162,12 +4179,12 @@ void SetPosPosMaxExpr(IntExpr* const left, IntExpr* const right, int64 m) {
 }
 
 // Propagates set_min on left * right, left >= 0, right across 0.
-void SetPosGenMinExpr(IntExpr* const left, IntExpr* const right, int64 m) {
+void SetPosGenMinExpr(IntExpr* const left, IntExpr* const right, int64_t m) {
   DCHECK_GE(left->Min(), 0);
   DCHECK_GT(right->Max(), 0);
   DCHECK_LT(right->Min(), 0);
-  const int64 lmax = left->Max();
-  const int64 rmax = right->Max();
+  const int64_t lmax = left->Max();
+  const int64_t rmax = right->Max();
   if (m > CapProd(lmax, rmax)) {
     left->solver()->Fail();
   }
@@ -4179,12 +4196,12 @@ void SetPosGenMinExpr(IntExpr* const left, IntExpr* const right, int64 m) {
       left->SetMin(PosIntDivUp(m, rmax));
       right->SetMin(PosIntDivUp(m, lmax));
     } else if (m == 0) {
-      const int64 lmin = left->Min();
+      const int64_t lmin = left->Min();
       if (lmin > 0) {
         right->SetMin(0);
       }
     } else {  // m < 0
-      const int64 lmin = left->Min();
+      const int64_t lmin = left->Min();
       if (0 != lmin) {  // We cannot deduce anything if 0 is in the domain.
         right->SetMin(-PosIntDivDown(-m, lmin));
       }
@@ -4193,15 +4210,15 @@ void SetPosGenMinExpr(IntExpr* const left, IntExpr* const right, int64 m) {
 }
 
 // Propagates set_min on left * right, left and right across 0.
-void SetGenGenMinExpr(IntExpr* const left, IntExpr* const right, int64 m) {
+void SetGenGenMinExpr(IntExpr* const left, IntExpr* const right, int64_t m) {
   DCHECK_LT(left->Min(), 0);
   DCHECK_GT(left->Max(), 0);
   DCHECK_GT(right->Max(), 0);
   DCHECK_LT(right->Min(), 0);
-  const int64 lmin = left->Min();
-  const int64 lmax = left->Max();
-  const int64 rmin = right->Min();
-  const int64 rmax = right->Max();
+  const int64_t lmin = left->Min();
+  const int64_t lmax = left->Max();
+  const int64_t rmin = right->Min();
+  const int64_t rmax = right->Max();
   if (m > std::max(CapProd(lmin, rmin), CapProd(lmax, rmax))) {
     left->solver()->Fail();
   }
@@ -4216,7 +4233,7 @@ void SetGenGenMinExpr(IntExpr* const left, IntExpr* const right, int64 m) {
 
 void TimesSetMin(IntExpr* const left, IntExpr* const right,
                  IntExpr* const minus_left, IntExpr* const minus_right,
-                 int64 m) {
+                 int64_t m) {
   if (left->Min() >= 0) {
     if (right->Min() >= 0) {
       SetPosPosMinExpr(left, right, m);
@@ -4252,24 +4269,24 @@ class TimesIntExpr : public BaseIntExpr {
         minus_left_(s->MakeOpposite(left_)),
         minus_right_(s->MakeOpposite(right_)) {}
   ~TimesIntExpr() override {}
-  int64 Min() const override {
-    const int64 lmin = left_->Min();
-    const int64 lmax = left_->Max();
-    const int64 rmin = right_->Min();
-    const int64 rmax = right_->Max();
+  int64_t Min() const override {
+    const int64_t lmin = left_->Min();
+    const int64_t lmax = left_->Max();
+    const int64_t rmin = right_->Min();
+    const int64_t rmax = right_->Max();
     return std::min(std::min(CapProd(lmin, rmin), CapProd(lmax, rmax)),
                     std::min(CapProd(lmax, rmin), CapProd(lmin, rmax)));
   }
-  void SetMin(int64 m) override;
-  int64 Max() const override {
-    const int64 lmin = left_->Min();
-    const int64 lmax = left_->Max();
-    const int64 rmin = right_->Min();
-    const int64 rmax = right_->Max();
+  void SetMin(int64_t m) override;
+  int64_t Max() const override {
+    const int64_t lmin = left_->Min();
+    const int64_t lmax = left_->Max();
+    const int64_t rmin = right_->Min();
+    const int64_t rmax = right_->Max();
     return std::max(std::max(CapProd(lmin, rmin), CapProd(lmax, rmax)),
                     std::max(CapProd(lmax, rmin), CapProd(lmin, rmax)));
   }
-  void SetMax(int64 m) override;
+  void SetMax(int64_t m) override;
   bool Bound() const override;
   std::string name() const override {
     return absl::StrFormat("(%s * %s)", left_->name(), right_->name());
@@ -4298,14 +4315,14 @@ class TimesIntExpr : public BaseIntExpr {
   IntExpr* const minus_right_;
 };
 
-void TimesIntExpr::SetMin(int64 m) {
-  if (m != kint64min) {
+void TimesIntExpr::SetMin(int64_t m) {
+  if (m != std::numeric_limits<int64_t>::min()) {
     TimesSetMin(left_, right_, minus_left_, minus_right_, m);
   }
 }
 
-void TimesIntExpr::SetMax(int64 m) {
-  if (m != kint64max) {
+void TimesIntExpr::SetMax(int64_t m) {
+  if (m != std::numeric_limits<int64_t>::max()) {
     TimesSetMin(left_, minus_right_, minus_left_, right_, -m);
   }
 }
@@ -4324,10 +4341,10 @@ class TimesPosIntExpr : public BaseIntExpr {
   TimesPosIntExpr(Solver* const s, IntExpr* const l, IntExpr* const r)
       : BaseIntExpr(s), left_(l), right_(r) {}
   ~TimesPosIntExpr() override {}
-  int64 Min() const override { return (left_->Min() * right_->Min()); }
-  void SetMin(int64 m) override;
-  int64 Max() const override { return (left_->Max() * right_->Max()); }
-  void SetMax(int64 m) override;
+  int64_t Min() const override { return (left_->Min() * right_->Min()); }
+  void SetMin(int64_t m) override;
+  int64_t Max() const override { return (left_->Max() * right_->Max()); }
+  void SetMax(int64_t m) override;
   bool Bound() const override;
   std::string name() const override {
     return absl::StrFormat("(%s * %s)", left_->name(), right_->name());
@@ -4354,9 +4371,9 @@ class TimesPosIntExpr : public BaseIntExpr {
   IntExpr* const right_;
 };
 
-void TimesPosIntExpr::SetMin(int64 m) { SetPosPosMinExpr(left_, right_, m); }
+void TimesPosIntExpr::SetMin(int64_t m) { SetPosPosMinExpr(left_, right_, m); }
 
-void TimesPosIntExpr::SetMax(int64 m) { SetPosPosMaxExpr(left_, right_, m); }
+void TimesPosIntExpr::SetMax(int64_t m) { SetPosPosMaxExpr(left_, right_, m); }
 
 bool TimesPosIntExpr::Bound() const {
   return (left_->Max() == 0 || right_->Max() == 0 ||
@@ -4370,15 +4387,15 @@ class SafeTimesPosIntExpr : public BaseIntExpr {
   SafeTimesPosIntExpr(Solver* const s, IntExpr* const l, IntExpr* const r)
       : BaseIntExpr(s), left_(l), right_(r) {}
   ~SafeTimesPosIntExpr() override {}
-  int64 Min() const override { return CapProd(left_->Min(), right_->Min()); }
-  void SetMin(int64 m) override {
-    if (m != kint64min) {
+  int64_t Min() const override { return CapProd(left_->Min(), right_->Min()); }
+  void SetMin(int64_t m) override {
+    if (m != std::numeric_limits<int64_t>::min()) {
       SetPosPosMinExpr(left_, right_, m);
     }
   }
-  int64 Max() const override { return CapProd(left_->Max(), right_->Max()); }
-  void SetMax(int64 m) override {
-    if (m != kint64max) {
+  int64_t Max() const override { return CapProd(left_->Max(), right_->Max()); }
+  void SetMax(int64_t m) override {
+    if (m != std::numeric_limits<int64_t>::max()) {
       SetPosPosMaxExpr(left_, right_, m);
     }
   }
@@ -4418,16 +4435,16 @@ class TimesBooleanPosIntExpr : public BaseIntExpr {
   TimesBooleanPosIntExpr(Solver* const s, BooleanVar* const b, IntExpr* const e)
       : BaseIntExpr(s), boolvar_(b), expr_(e) {}
   ~TimesBooleanPosIntExpr() override {}
-  int64 Min() const override {
+  int64_t Min() const override {
     return (boolvar_->RawValue() == 1 ? expr_->Min() : 0);
   }
-  void SetMin(int64 m) override;
-  int64 Max() const override {
+  void SetMin(int64_t m) override;
+  int64_t Max() const override {
     return (boolvar_->RawValue() == 0 ? 0 : expr_->Max());
   }
-  void SetMax(int64 m) override;
-  void Range(int64* mi, int64* ma) override;
-  void SetRange(int64 mi, int64 ma) override;
+  void SetMax(int64_t m) override;
+  void Range(int64_t* mi, int64_t* ma) override;
+  void SetRange(int64_t mi, int64_t ma) override;
   bool Bound() const override;
   std::string name() const override {
     return absl::StrFormat("(%s * %s)", boolvar_->name(), expr_->name());
@@ -4455,14 +4472,14 @@ class TimesBooleanPosIntExpr : public BaseIntExpr {
   IntExpr* const expr_;
 };
 
-void TimesBooleanPosIntExpr::SetMin(int64 m) {
+void TimesBooleanPosIntExpr::SetMin(int64_t m) {
   if (m > 0) {
     boolvar_->SetValue(1);
     expr_->SetMin(m);
   }
 }
 
-void TimesBooleanPosIntExpr::SetMax(int64 m) {
+void TimesBooleanPosIntExpr::SetMax(int64_t m) {
   if (m < 0) {
     solver()->Fail();
   }
@@ -4474,7 +4491,7 @@ void TimesBooleanPosIntExpr::SetMax(int64 m) {
   }
 }
 
-void TimesBooleanPosIntExpr::Range(int64* mi, int64* ma) {
+void TimesBooleanPosIntExpr::Range(int64_t* mi, int64_t* ma) {
   const int value = boolvar_->RawValue();
   if (value == 0) {
     *mi = 0;
@@ -4487,7 +4504,7 @@ void TimesBooleanPosIntExpr::Range(int64* mi, int64* ma) {
   }
 }
 
-void TimesBooleanPosIntExpr::SetRange(int64 mi, int64 ma) {
+void TimesBooleanPosIntExpr::SetRange(int64_t mi, int64_t ma) {
   if (ma < 0 || mi > ma) {
     solver()->Fail();
   }
@@ -4516,7 +4533,7 @@ class TimesBooleanIntExpr : public BaseIntExpr {
   TimesBooleanIntExpr(Solver* const s, BooleanVar* const b, IntExpr* const e)
       : BaseIntExpr(s), boolvar_(b), expr_(e) {}
   ~TimesBooleanIntExpr() override {}
-  int64 Min() const override {
+  int64_t Min() const override {
     switch (boolvar_->RawValue()) {
       case 0: {
         return 0LL;
@@ -4526,12 +4543,12 @@ class TimesBooleanIntExpr : public BaseIntExpr {
       }
       default: {
         DCHECK_EQ(BooleanVar::kUnboundBooleanVarValue, boolvar_->RawValue());
-        return std::min(int64{0}, expr_->Min());
+        return std::min(int64_t{0}, expr_->Min());
       }
     }
   }
-  void SetMin(int64 m) override;
-  int64 Max() const override {
+  void SetMin(int64_t m) override;
+  int64_t Max() const override {
     switch (boolvar_->RawValue()) {
       case 0: {
         return 0LL;
@@ -4541,13 +4558,13 @@ class TimesBooleanIntExpr : public BaseIntExpr {
       }
       default: {
         DCHECK_EQ(BooleanVar::kUnboundBooleanVarValue, boolvar_->RawValue());
-        return std::max(int64{0}, expr_->Max());
+        return std::max(int64_t{0}, expr_->Max());
       }
     }
   }
-  void SetMax(int64 m) override;
-  void Range(int64* mi, int64* ma) override;
-  void SetRange(int64 mi, int64 ma) override;
+  void SetMax(int64_t m) override;
+  void Range(int64_t* mi, int64_t* ma) override;
+  void SetRange(int64_t mi, int64_t ma) override;
   bool Bound() const override;
   std::string name() const override {
     return absl::StrFormat("(%s * %s)", boolvar_->name(), expr_->name());
@@ -4575,7 +4592,7 @@ class TimesBooleanIntExpr : public BaseIntExpr {
   IntExpr* const expr_;
 };
 
-void TimesBooleanIntExpr::SetMin(int64 m) {
+void TimesBooleanIntExpr::SetMin(int64_t m) {
   switch (boolvar_->RawValue()) {
     case 0: {
       if (m > 0) {
@@ -4599,7 +4616,7 @@ void TimesBooleanIntExpr::SetMin(int64 m) {
   }
 }
 
-void TimesBooleanIntExpr::SetMax(int64 m) {
+void TimesBooleanIntExpr::SetMax(int64_t m) {
   switch (boolvar_->RawValue()) {
     case 0: {
       if (m < 0) {
@@ -4623,7 +4640,7 @@ void TimesBooleanIntExpr::SetMax(int64 m) {
   }
 }
 
-void TimesBooleanIntExpr::Range(int64* mi, int64* ma) {
+void TimesBooleanIntExpr::Range(int64_t* mi, int64_t* ma) {
   switch (boolvar_->RawValue()) {
     case 0: {
       *mi = 0;
@@ -4637,14 +4654,14 @@ void TimesBooleanIntExpr::Range(int64* mi, int64* ma) {
     }
     default: {
       DCHECK_EQ(BooleanVar::kUnboundBooleanVarValue, boolvar_->RawValue());
-      *mi = std::min(int64{0}, expr_->Min());
-      *ma = std::max(int64{0}, expr_->Max());
+      *mi = std::min(int64_t{0}, expr_->Min());
+      *ma = std::max(int64_t{0}, expr_->Max());
       break;
     }
   }
 }
 
-void TimesBooleanIntExpr::SetRange(int64 mi, int64 ma) {
+void TimesBooleanIntExpr::SetRange(int64_t mi, int64_t ma) {
   if (mi > ma) {
     solver()->Fail();
   }
@@ -4689,24 +4706,24 @@ bool TimesBooleanIntExpr::Bound() const {
 
 class DivPosIntCstExpr : public BaseIntExpr {
  public:
-  DivPosIntCstExpr(Solver* const s, IntExpr* const e, int64 v)
+  DivPosIntCstExpr(Solver* const s, IntExpr* const e, int64_t v)
       : BaseIntExpr(s), expr_(e), value_(v) {
     CHECK_GE(v, 0);
   }
   ~DivPosIntCstExpr() override {}
 
-  int64 Min() const override { return expr_->Min() / value_; }
+  int64_t Min() const override { return expr_->Min() / value_; }
 
-  void SetMin(int64 m) override {
+  void SetMin(int64_t m) override {
     if (m > 0) {
       expr_->SetMin(m * value_);
     } else {
       expr_->SetMin((m - 1) * value_ + 1);
     }
   }
-  int64 Max() const override { return expr_->Max() / value_; }
+  int64_t Max() const override { return expr_->Max() / value_; }
 
-  void SetMax(int64 m) override {
+  void SetMax(int64_t m) override {
     if (m >= 0) {
       expr_->SetMax((m + 1) * value_ - 1);
     } else {
@@ -4734,7 +4751,7 @@ class DivPosIntCstExpr : public BaseIntExpr {
 
  private:
   IntExpr* const expr_;
-  const int64 value_;
+  const int64_t value_;
 };
 
 // DivPosIntExpr
@@ -4749,30 +4766,30 @@ class DivPosIntExpr : public BaseIntExpr {
 
   ~DivPosIntExpr() override {}
 
-  int64 Min() const override {
+  int64_t Min() const override {
     return num_->Min() >= 0
                ? num_->Min() / denom_->Max()
                : (denom_->Min() == 0 ? num_->Min()
                                      : num_->Min() / denom_->Min());
   }
 
-  int64 Max() const override {
+  int64_t Max() const override {
     return num_->Max() >= 0 ? (denom_->Min() == 0 ? num_->Max()
                                                   : num_->Max() / denom_->Min())
                             : num_->Max() / denom_->Max();
   }
 
-  static void SetPosMin(IntExpr* const num, IntExpr* const denom, int64 m) {
+  static void SetPosMin(IntExpr* const num, IntExpr* const denom, int64_t m) {
     num->SetMin(m * denom->Min());
     denom->SetMax(num->Max() / m);
   }
 
-  static void SetPosMax(IntExpr* const num, IntExpr* const denom, int64 m) {
+  static void SetPosMax(IntExpr* const num, IntExpr* const denom, int64_t m) {
     num->SetMax((m + 1) * denom->Max() - 1);
     denom->SetMin(num->Min() / (m + 1) + 1);
   }
 
-  void SetMin(int64 m) override {
+  void SetMin(int64_t m) override {
     if (m > 0) {
       SetPosMin(num_, denom_, m);
     } else {
@@ -4780,7 +4797,7 @@ class DivPosIntExpr : public BaseIntExpr {
     }
   }
 
-  void SetMax(int64 m) override {
+  void SetMax(int64_t m) override {
     if (m >= 0) {
       SetPosMax(num_, denom_, m);
     } else {
@@ -4821,14 +4838,14 @@ class DivPosPosIntExpr : public BaseIntExpr {
 
   ~DivPosPosIntExpr() override {}
 
-  int64 Min() const override {
+  int64_t Min() const override {
     if (denom_->Max() == 0) {
       solver()->Fail();
     }
     return num_->Min() / denom_->Max();
   }
 
-  int64 Max() const override {
+  int64_t Max() const override {
     if (denom_->Min() == 0) {
       return num_->Max();
     } else {
@@ -4836,14 +4853,14 @@ class DivPosPosIntExpr : public BaseIntExpr {
     }
   }
 
-  void SetMin(int64 m) override {
+  void SetMin(int64_t m) override {
     if (m > 0) {
       num_->SetMin(m * denom_->Min());
       denom_->SetMax(num_->Max() / m);
     }
   }
 
-  void SetMax(int64 m) override {
+  void SetMax(int64_t m) override {
     if (m >= 0) {
       num_->SetMax((m + 1) * denom_->Max() - 1);
       denom_->SetMin(num_->Min() / (m + 1) + 1);
@@ -4891,46 +4908,48 @@ class DivIntExpr : public BaseIntExpr {
 
   ~DivIntExpr() override {}
 
-  int64 Min() const override {
-    const int64 num_min = num_->Min();
-    const int64 num_max = num_->Max();
-    const int64 denom_min = denom_->Min();
-    const int64 denom_max = denom_->Max();
+  int64_t Min() const override {
+    const int64_t num_min = num_->Min();
+    const int64_t num_max = num_->Max();
+    const int64_t denom_min = denom_->Min();
+    const int64_t denom_max = denom_->Max();
 
     if (denom_min == 0 && denom_max == 0) {
-      return kint64max;  // TODO(user): Check this convention.
+      return std::numeric_limits<int64_t>::max();  // TODO(user): Check this
+                                                   // convention.
     }
 
     if (denom_min >= 0) {  // Denominator strictly positive.
       DCHECK_GT(denom_max, 0);
-      const int64 adjusted_denom_min = denom_min == 0 ? 1 : denom_min;
+      const int64_t adjusted_denom_min = denom_min == 0 ? 1 : denom_min;
       return num_min >= 0 ? num_min / denom_max : num_min / adjusted_denom_min;
     } else if (denom_max <= 0) {  // Denominator strictly negative.
       DCHECK_LT(denom_min, 0);
-      const int64 adjusted_denom_max = denom_max == 0 ? -1 : denom_max;
+      const int64_t adjusted_denom_max = denom_max == 0 ? -1 : denom_max;
       return num_max >= 0 ? num_max / adjusted_denom_max : num_max / denom_min;
     } else {  // Denominator across 0.
       return std::min(num_min, -num_max);
     }
   }
 
-  int64 Max() const override {
-    const int64 num_min = num_->Min();
-    const int64 num_max = num_->Max();
-    const int64 denom_min = denom_->Min();
-    const int64 denom_max = denom_->Max();
+  int64_t Max() const override {
+    const int64_t num_min = num_->Min();
+    const int64_t num_max = num_->Max();
+    const int64_t denom_min = denom_->Min();
+    const int64_t denom_max = denom_->Max();
 
     if (denom_min == 0 && denom_max == 0) {
-      return kint64min;  // TODO(user): Check this convention.
+      return std::numeric_limits<int64_t>::min();  // TODO(user): Check this
+                                                   // convention.
     }
 
     if (denom_min >= 0) {  // Denominator strictly positive.
       DCHECK_GT(denom_max, 0);
-      const int64 adjusted_denom_min = denom_min == 0 ? 1 : denom_min;
+      const int64_t adjusted_denom_min = denom_min == 0 ? 1 : denom_min;
       return num_max >= 0 ? num_max / adjusted_denom_min : num_max / denom_max;
     } else if (denom_max <= 0) {  // Denominator strictly negative.
       DCHECK_LT(denom_min, 0);
-      const int64 adjusted_denom_max = denom_max == 0 ? -1 : denom_max;
+      const int64_t adjusted_denom_max = denom_max == 0 ? -1 : denom_max;
       return num_min >= 0 ? num_min / denom_min
                           : -num_min / -adjusted_denom_max;
     } else {  // Denominator across 0.
@@ -4947,12 +4966,12 @@ class DivIntExpr : public BaseIntExpr {
   }
 
   // m > 0.
-  static void SetPosMin(IntExpr* const num, IntExpr* const denom, int64 m) {
+  static void SetPosMin(IntExpr* const num, IntExpr* const denom, int64_t m) {
     DCHECK_GT(m, 0);
-    const int64 num_min = num->Min();
-    const int64 num_max = num->Max();
-    const int64 denom_min = denom->Min();
-    const int64 denom_max = denom->Max();
+    const int64_t num_min = num->Min();
+    const int64_t num_max = num->Max();
+    const int64_t denom_min = denom->Min();
+    const int64_t denom_max = denom->Max();
     DCHECK_NE(denom_min, 0);
     DCHECK_NE(denom_max, 0);
     if (denom_min > 0) {  // Denominator strictly positive.
@@ -4983,12 +5002,12 @@ class DivIntExpr : public BaseIntExpr {
   }
 
   // m >= 0.
-  static void SetPosMax(IntExpr* const num, IntExpr* const denom, int64 m) {
+  static void SetPosMax(IntExpr* const num, IntExpr* const denom, int64_t m) {
     DCHECK_GE(m, 0);
-    const int64 num_min = num->Min();
-    const int64 num_max = num->Max();
-    const int64 denom_min = denom->Min();
-    const int64 denom_max = denom->Max();
+    const int64_t num_min = num->Min();
+    const int64_t num_max = num->Max();
+    const int64_t denom_min = denom->Min();
+    const int64_t denom_max = denom->Max();
     DCHECK_NE(denom_min, 0);
     DCHECK_NE(denom_max, 0);
     if (denom_min > 0) {  // Denominator strictly positive.
@@ -5004,7 +5023,7 @@ class DivIntExpr : public BaseIntExpr {
     }
   }
 
-  void SetMin(int64 m) override {
+  void SetMin(int64_t m) override {
     AdjustDenominator();
     if (m > 0) {
       SetPosMin(num_, denom_, m);
@@ -5013,7 +5032,7 @@ class DivIntExpr : public BaseIntExpr {
     }
   }
 
-  void SetMax(int64 m) override {
+  void SetMax(int64_t m) override {
     AdjustDenominator();
     if (m >= 0) {
       SetPosMax(num_, denom_, m);
@@ -5072,8 +5091,8 @@ class IntAbsConstraint : public CastConstraint {
   }
 
   void PropagateSub() {
-    const int64 smin = sub_->Min();
-    const int64 smax = sub_->Max();
+    const int64_t smin = sub_->Min();
+    const int64_t smax = sub_->Max();
     if (smax <= 0) {
       target_var_->SetRange(-smax, -smin);
     } else if (smin >= 0) {
@@ -5084,9 +5103,9 @@ class IntAbsConstraint : public CastConstraint {
   }
 
   void PropagateTarget() {
-    const int64 target_max = target_var_->Max();
+    const int64_t target_max = target_var_->Max();
     sub_->SetRange(-target_max, target_max);
-    const int64 target_min = target_var_->Min();
+    const int64_t target_min = target_var_->Min();
     if (target_min > 0) {
       if (sub_->Min() > -target_min) {
         sub_->SetMin(target_min);
@@ -5120,9 +5139,9 @@ class IntAbs : public BaseIntExpr {
 
   ~IntAbs() override {}
 
-  int64 Min() const override {
-    int64 emin = 0;
-    int64 emax = 0;
+  int64_t Min() const override {
+    int64_t emin = 0;
+    int64_t emax = 0;
     expr_->Range(&emin, &emax);
     if (emin >= 0) {
       return emin;
@@ -5133,10 +5152,10 @@ class IntAbs : public BaseIntExpr {
     return 0;
   }
 
-  void SetMin(int64 m) override {
+  void SetMin(int64_t m) override {
     if (m > 0) {
-      int64 emin = 0;
-      int64 emax = 0;
+      int64_t emin = 0;
+      int64_t emax = 0;
       expr_->Range(&emin, &emax);
       if (emin > -m) {
         expr_->SetMin(m);
@@ -5146,20 +5165,20 @@ class IntAbs : public BaseIntExpr {
     }
   }
 
-  int64 Max() const override {
-    int64 emin = 0;
-    int64 emax = 0;
+  int64_t Max() const override {
+    int64_t emin = 0;
+    int64_t emax = 0;
     expr_->Range(&emin, &emax);
     return std::max(-emin, emax);
   }
 
-  void SetMax(int64 m) override { expr_->SetRange(-m, m); }
+  void SetMax(int64_t m) override { expr_->SetRange(-m, m); }
 
-  void SetRange(int64 mi, int64 ma) override {
+  void SetRange(int64_t mi, int64_t ma) override {
     expr_->SetRange(-ma, ma);
     if (mi > 0) {
-      int64 emin = 0;
-      int64 emax = 0;
+      int64_t emin = 0;
+      int64_t emax = 0;
       expr_->Range(&emin, &emax);
       if (emin > -mi) {
         expr_->SetMin(mi);
@@ -5169,9 +5188,9 @@ class IntAbs : public BaseIntExpr {
     }
   }
 
-  void Range(int64* mi, int64* ma) override {
-    int64 emin = 0;
-    int64 emax = 0;
+  void Range(int64_t* mi, int64_t* ma) override {
+    int64_t emin = 0;
+    int64_t emax = 0;
     expr_->Range(&emin, &emax);
     if (emin >= 0) {
       *mi = emin;
@@ -5205,8 +5224,8 @@ class IntAbs : public BaseIntExpr {
   }
 
   IntVar* CastToVar() override {
-    int64 min_value = 0;
-    int64 max_value = 0;
+    int64_t min_value = 0;
+    int64_t max_value = 0;
     Range(&min_value, &max_value);
     Solver* const s = solver();
     const std::string name = absl::StrFormat("AbsVar(%s)", expr_->name());
@@ -5229,25 +5248,30 @@ class IntSquare : public BaseIntExpr {
   IntSquare(Solver* const s, IntExpr* const e) : BaseIntExpr(s), expr_(e) {}
   ~IntSquare() override {}
 
-  int64 Min() const override {
-    const int64 emin = expr_->Min();
+  int64_t Min() const override {
+    const int64_t emin = expr_->Min();
     if (emin >= 0) {
-      return emin >= kint32max ? kint64max : emin * emin;
+      return emin >= std::numeric_limits<int32_t>::max()
+                 ? std::numeric_limits<int64_t>::max()
+                 : emin * emin;
     }
-    const int64 emax = expr_->Max();
+    const int64_t emax = expr_->Max();
     if (emax < 0) {
-      return emax <= -kint32max ? kint64max : emax * emax;
+      return emax <= -std::numeric_limits<int32_t>::max()
+                 ? std::numeric_limits<int64_t>::max()
+                 : emax * emax;
     }
     return 0LL;
   }
-  void SetMin(int64 m) override {
+  void SetMin(int64_t m) override {
     if (m <= 0) {
       return;
     }
     // TODO(user): What happens if m is kint64max?
-    const int64 emin = expr_->Min();
-    const int64 emax = expr_->Max();
-    const int64 root = static_cast<int64>(ceil(sqrt(static_cast<double>(m))));
+    const int64_t emin = expr_->Min();
+    const int64_t emax = expr_->Max();
+    const int64_t root =
+        static_cast<int64_t>(ceil(sqrt(static_cast<double>(m))));
     if (emin >= 0) {
       expr_->SetMin(root);
     } else if (emax <= 0) {
@@ -5256,22 +5280,24 @@ class IntSquare : public BaseIntExpr {
       reinterpret_cast<IntVar*>(expr_)->RemoveInterval(-root + 1, root - 1);
     }
   }
-  int64 Max() const override {
-    const int64 emax = expr_->Max();
-    const int64 emin = expr_->Min();
-    if (emax >= kint32max || emin <= -kint32max) {
-      return kint64max;
+  int64_t Max() const override {
+    const int64_t emax = expr_->Max();
+    const int64_t emin = expr_->Min();
+    if (emax >= std::numeric_limits<int32_t>::max() ||
+        emin <= -std::numeric_limits<int32_t>::max()) {
+      return std::numeric_limits<int64_t>::max();
     }
     return std::max(emin * emin, emax * emax);
   }
-  void SetMax(int64 m) override {
+  void SetMax(int64_t m) override {
     if (m < 0) {
       solver()->Fail();
     }
-    if (m == kint64max) {
+    if (m == std::numeric_limits<int64_t>::max()) {
       return;
     }
-    const int64 root = static_cast<int64>(floor(sqrt(static_cast<double>(m))));
+    const int64_t root =
+        static_cast<int64_t>(floor(sqrt(static_cast<double>(m))));
     expr_->SetRange(-root, root);
   }
   bool Bound() const override { return expr_->Bound(); }
@@ -5301,37 +5327,43 @@ class PosIntSquare : public IntSquare {
   PosIntSquare(Solver* const s, IntExpr* const e) : IntSquare(s, e) {}
   ~PosIntSquare() override {}
 
-  int64 Min() const override {
-    const int64 emin = expr_->Min();
-    return emin >= kint32max ? kint64max : emin * emin;
+  int64_t Min() const override {
+    const int64_t emin = expr_->Min();
+    return emin >= std::numeric_limits<int32_t>::max()
+               ? std::numeric_limits<int64_t>::max()
+               : emin * emin;
   }
-  void SetMin(int64 m) override {
+  void SetMin(int64_t m) override {
     if (m <= 0) {
       return;
     }
-    const int64 root = static_cast<int64>(ceil(sqrt(static_cast<double>(m))));
+    const int64_t root =
+        static_cast<int64_t>(ceil(sqrt(static_cast<double>(m))));
     expr_->SetMin(root);
   }
-  int64 Max() const override {
-    const int64 emax = expr_->Max();
-    return emax >= kint32max ? kint64max : emax * emax;
+  int64_t Max() const override {
+    const int64_t emax = expr_->Max();
+    return emax >= std::numeric_limits<int32_t>::max()
+               ? std::numeric_limits<int64_t>::max()
+               : emax * emax;
   }
-  void SetMax(int64 m) override {
+  void SetMax(int64_t m) override {
     if (m < 0) {
       solver()->Fail();
     }
-    if (m == kint64max) {
+    if (m == std::numeric_limits<int64_t>::max()) {
       return;
     }
-    const int64 root = static_cast<int64>(floor(sqrt(static_cast<double>(m))));
+    const int64_t root =
+        static_cast<int64_t>(floor(sqrt(static_cast<double>(m))));
     expr_->SetMax(root);
   }
 };
 
 // ----- EvenPower -----
 
-int64 IntPower(int64 value, int64 power) {
-  int64 result = value;
+int64_t IntPower(int64_t value, int64_t power) {
+  int64_t result = value;
   // TODO(user): Speed that up.
   for (int i = 1; i < power; ++i) {
     result *= value;
@@ -5339,14 +5371,14 @@ int64 IntPower(int64 value, int64 power) {
   return result;
 }
 
-int64 OverflowLimit(int64 power) {
-  return static_cast<int64>(
-      floor(exp(log(static_cast<double>(kint64max)) / power)));
+int64_t OverflowLimit(int64_t power) {
+  return static_cast<int64_t>(floor(exp(
+      log(static_cast<double>(std::numeric_limits<int64_t>::max())) / power)));
 }
 
 class BasePower : public BaseIntExpr {
  public:
-  BasePower(Solver* const s, IntExpr* const e, int64 n)
+  BasePower(Solver* const s, IntExpr* const e, int64_t n)
       : BaseIntExpr(s), expr_(e), pow_(n), limit_(OverflowLimit(n)) {
     CHECK_GT(n, 0);
   }
@@ -5357,7 +5389,7 @@ class BasePower : public BaseIntExpr {
 
   IntExpr* expr() const { return expr_; }
 
-  int64 exponant() const { return pow_; }
+  int64_t exponant() const { return pow_; }
 
   void WhenRange(Demon* d) override { expr_->WhenRange(d); }
 
@@ -5378,38 +5410,38 @@ class BasePower : public BaseIntExpr {
   }
 
  protected:
-  int64 Pown(int64 value) const {
+  int64_t Pown(int64_t value) const {
     if (value >= limit_) {
-      return kint64max;
+      return std::numeric_limits<int64_t>::max();
     }
     if (value <= -limit_) {
       if (pow_ % 2 == 0) {
-        return kint64max;
+        return std::numeric_limits<int64_t>::max();
       } else {
-        return kint64min;
+        return std::numeric_limits<int64_t>::min();
       }
     }
     return IntPower(value, pow_);
   }
 
-  int64 SqrnDown(int64 value) const {
-    if (value == kint64min) {
-      return kint64min;
+  int64_t SqrnDown(int64_t value) const {
+    if (value == std::numeric_limits<int64_t>::min()) {
+      return std::numeric_limits<int64_t>::min();
     }
-    if (value == kint64max) {
-      return kint64max;
+    if (value == std::numeric_limits<int64_t>::max()) {
+      return std::numeric_limits<int64_t>::max();
     }
-    int64 res = 0;
+    int64_t res = 0;
     const double d_value = static_cast<double>(value);
     if (value >= 0) {
       const double sq = exp(log(d_value) / pow_);
-      res = static_cast<int64>(floor(sq));
+      res = static_cast<int64_t>(floor(sq));
     } else {
       CHECK_EQ(1, pow_ % 2);
       const double sq = exp(log(-d_value) / pow_);
-      res = -static_cast<int64>(ceil(sq));
+      res = -static_cast<int64_t>(ceil(sq));
     }
-    const int64 pow_res = Pown(res + 1);
+    const int64_t pow_res = Pown(res + 1);
     if (pow_res <= value) {
       return res + 1;
     } else {
@@ -5417,24 +5449,24 @@ class BasePower : public BaseIntExpr {
     }
   }
 
-  int64 SqrnUp(int64 value) const {
-    if (value == kint64min) {
-      return kint64min;
+  int64_t SqrnUp(int64_t value) const {
+    if (value == std::numeric_limits<int64_t>::min()) {
+      return std::numeric_limits<int64_t>::min();
     }
-    if (value == kint64max) {
-      return kint64max;
+    if (value == std::numeric_limits<int64_t>::max()) {
+      return std::numeric_limits<int64_t>::max();
     }
-    int64 res = 0;
+    int64_t res = 0;
     const double d_value = static_cast<double>(value);
     if (value >= 0) {
       const double sq = exp(log(d_value) / pow_);
-      res = static_cast<int64>(ceil(sq));
+      res = static_cast<int64_t>(ceil(sq));
     } else {
       CHECK_EQ(1, pow_ % 2);
       const double sq = exp(log(-d_value) / pow_);
-      res = -static_cast<int64>(floor(sq));
+      res = -static_cast<int64_t>(floor(sq));
     }
-    const int64 pow_res = Pown(res - 1);
+    const int64_t pow_res = Pown(res - 1);
     if (pow_res >= value) {
       return res - 1;
     } else {
@@ -5443,22 +5475,22 @@ class BasePower : public BaseIntExpr {
   }
 
   IntExpr* const expr_;
-  const int64 pow_;
-  const int64 limit_;
+  const int64_t pow_;
+  const int64_t limit_;
 };
 
 class IntEvenPower : public BasePower {
  public:
-  IntEvenPower(Solver* const s, IntExpr* const e, int64 n)
+  IntEvenPower(Solver* const s, IntExpr* const e, int64_t n)
       : BasePower(s, e, n) {
     CHECK_EQ(0, n % 2);
   }
 
   ~IntEvenPower() override {}
 
-  int64 Min() const override {
-    int64 emin = 0;
-    int64 emax = 0;
+  int64_t Min() const override {
+    int64_t emin = 0;
+    int64_t emax = 0;
     expr_->Range(&emin, &emax);
     if (emin >= 0) {
       return Pown(emin);
@@ -5468,14 +5500,14 @@ class IntEvenPower : public BasePower {
     }
     return 0LL;
   }
-  void SetMin(int64 m) override {
+  void SetMin(int64_t m) override {
     if (m <= 0) {
       return;
     }
-    int64 emin = 0;
-    int64 emax = 0;
+    int64_t emin = 0;
+    int64_t emax = 0;
     expr_->Range(&emin, &emax);
-    const int64 root = SqrnUp(m);
+    const int64_t root = SqrnUp(m);
     if (emin > -root) {
       expr_->SetMin(root);
     } else if (emax < root) {
@@ -5485,46 +5517,46 @@ class IntEvenPower : public BasePower {
     }
   }
 
-  int64 Max() const override {
+  int64_t Max() const override {
     return std::max(Pown(expr_->Min()), Pown(expr_->Max()));
   }
 
-  void SetMax(int64 m) override {
+  void SetMax(int64_t m) override {
     if (m < 0) {
       solver()->Fail();
     }
-    if (m == kint64max) {
+    if (m == std::numeric_limits<int64_t>::max()) {
       return;
     }
-    const int64 root = SqrnDown(m);
+    const int64_t root = SqrnDown(m);
     expr_->SetRange(-root, root);
   }
 };
 
 class PosIntEvenPower : public BasePower {
  public:
-  PosIntEvenPower(Solver* const s, IntExpr* const e, int64 pow)
+  PosIntEvenPower(Solver* const s, IntExpr* const e, int64_t pow)
       : BasePower(s, e, pow) {
     CHECK_EQ(0, pow % 2);
   }
 
   ~PosIntEvenPower() override {}
 
-  int64 Min() const override { return Pown(expr_->Min()); }
+  int64_t Min() const override { return Pown(expr_->Min()); }
 
-  void SetMin(int64 m) override {
+  void SetMin(int64_t m) override {
     if (m <= 0) {
       return;
     }
     expr_->SetMin(SqrnUp(m));
   }
-  int64 Max() const override { return Pown(expr_->Max()); }
+  int64_t Max() const override { return Pown(expr_->Max()); }
 
-  void SetMax(int64 m) override {
+  void SetMax(int64_t m) override {
     if (m < 0) {
       solver()->Fail();
     }
-    if (m == kint64max) {
+    if (m == std::numeric_limits<int64_t>::max()) {
       return;
     }
     expr_->SetMax(SqrnDown(m));
@@ -5533,19 +5565,20 @@ class PosIntEvenPower : public BasePower {
 
 class IntOddPower : public BasePower {
  public:
-  IntOddPower(Solver* const s, IntExpr* const e, int64 n) : BasePower(s, e, n) {
+  IntOddPower(Solver* const s, IntExpr* const e, int64_t n)
+      : BasePower(s, e, n) {
     CHECK_EQ(1, n % 2);
   }
 
   ~IntOddPower() override {}
 
-  int64 Min() const override { return Pown(expr_->Min()); }
+  int64_t Min() const override { return Pown(expr_->Min()); }
 
-  void SetMin(int64 m) override { expr_->SetMin(SqrnUp(m)); }
+  void SetMin(int64_t m) override { expr_->SetMin(SqrnUp(m)); }
 
-  int64 Max() const override { return Pown(expr_->Max()); }
+  int64_t Max() const override { return Pown(expr_->Max()); }
 
-  void SetMax(int64 m) override { expr_->SetMax(SqrnDown(m)); }
+  void SetMax(int64_t m) override { expr_->SetMax(SqrnDown(m)); }
 };
 
 // ----- Min(expr, expr) -----
@@ -5555,21 +5588,21 @@ class MinIntExpr : public BaseIntExpr {
   MinIntExpr(Solver* const s, IntExpr* const l, IntExpr* const r)
       : BaseIntExpr(s), left_(l), right_(r) {}
   ~MinIntExpr() override {}
-  int64 Min() const override {
-    const int64 lmin = left_->Min();
-    const int64 rmin = right_->Min();
+  int64_t Min() const override {
+    const int64_t lmin = left_->Min();
+    const int64_t rmin = right_->Min();
     return std::min(lmin, rmin);
   }
-  void SetMin(int64 m) override {
+  void SetMin(int64_t m) override {
     left_->SetMin(m);
     right_->SetMin(m);
   }
-  int64 Max() const override {
-    const int64 lmax = left_->Max();
-    const int64 rmax = right_->Max();
+  int64_t Max() const override {
+    const int64_t lmax = left_->Max();
+    const int64_t rmax = right_->Max();
     return std::min(lmax, rmax);
   }
-  void SetMax(int64 m) override {
+  void SetMax(int64_t m) override {
     if (left_->Min() > m) {
       right_->SetMax(m);
     }
@@ -5606,23 +5639,23 @@ class MinIntExpr : public BaseIntExpr {
 
 class MinCstIntExpr : public BaseIntExpr {
  public:
-  MinCstIntExpr(Solver* const s, IntExpr* const e, int64 v)
+  MinCstIntExpr(Solver* const s, IntExpr* const e, int64_t v)
       : BaseIntExpr(s), expr_(e), value_(v) {}
 
   ~MinCstIntExpr() override {}
 
-  int64 Min() const override { return std::min(expr_->Min(), value_); }
+  int64_t Min() const override { return std::min(expr_->Min(), value_); }
 
-  void SetMin(int64 m) override {
+  void SetMin(int64_t m) override {
     if (m > value_) {
       solver()->Fail();
     }
     expr_->SetMin(m);
   }
 
-  int64 Max() const override { return std::min(expr_->Max(), value_); }
+  int64_t Max() const override { return std::min(expr_->Max(), value_); }
 
-  void SetMax(int64 m) override {
+  void SetMax(int64_t m) override {
     if (value_ > m) {
       expr_->SetMax(m);
     }
@@ -5653,7 +5686,7 @@ class MinCstIntExpr : public BaseIntExpr {
 
  private:
   IntExpr* const expr_;
-  const int64 value_;
+  const int64_t value_;
 };
 
 // ----- Max(expr, expr) -----
@@ -5665,9 +5698,9 @@ class MaxIntExpr : public BaseIntExpr {
 
   ~MaxIntExpr() override {}
 
-  int64 Min() const override { return std::max(left_->Min(), right_->Min()); }
+  int64_t Min() const override { return std::max(left_->Min(), right_->Min()); }
 
-  void SetMin(int64 m) override {
+  void SetMin(int64_t m) override {
     if (left_->Max() < m) {
       right_->SetMin(m);
     } else {
@@ -5677,9 +5710,9 @@ class MaxIntExpr : public BaseIntExpr {
     }
   }
 
-  int64 Max() const override { return std::max(left_->Max(), right_->Max()); }
+  int64_t Max() const override { return std::max(left_->Max(), right_->Max()); }
 
-  void SetMax(int64 m) override {
+  void SetMax(int64_t m) override {
     left_->SetMax(m);
     right_->SetMax(m);
   }
@@ -5715,22 +5748,22 @@ class MaxIntExpr : public BaseIntExpr {
 
 class MaxCstIntExpr : public BaseIntExpr {
  public:
-  MaxCstIntExpr(Solver* const s, IntExpr* const e, int64 v)
+  MaxCstIntExpr(Solver* const s, IntExpr* const e, int64_t v)
       : BaseIntExpr(s), expr_(e), value_(v) {}
 
   ~MaxCstIntExpr() override {}
 
-  int64 Min() const override { return std::max(expr_->Min(), value_); }
+  int64_t Min() const override { return std::max(expr_->Min(), value_); }
 
-  void SetMin(int64 m) override {
+  void SetMin(int64_t m) override {
     if (value_ < m) {
       expr_->SetMin(m);
     }
   }
 
-  int64 Max() const override { return std::max(expr_->Max(), value_); }
+  int64_t Max() const override { return std::max(expr_->Max(), value_); }
 
-  void SetMax(int64 m) override {
+  void SetMax(int64_t m) override {
     if (m < value_) {
       solver()->Fail();
     }
@@ -5762,7 +5795,7 @@ class MaxCstIntExpr : public BaseIntExpr {
 
  private:
   IntExpr* const expr_;
-  const int64 value_;
+  const int64_t value_;
 };
 
 // ----- Convex Piecewise -----
@@ -5775,16 +5808,16 @@ class MaxCstIntExpr : public BaseIntExpr {
 
 class SimpleConvexPiecewiseExpr : public BaseIntExpr {
  public:
-  SimpleConvexPiecewiseExpr(Solver* const s, IntExpr* const e, int64 ec,
-                            int64 ed, int64 ld, int64 lc)
+  SimpleConvexPiecewiseExpr(Solver* const s, IntExpr* const e, int64_t ec,
+                            int64_t ed, int64_t ld, int64_t lc)
       : BaseIntExpr(s),
         expr_(e),
         early_cost_(ec),
-        early_date_(ec == 0 ? kint64min : ed),
-        late_date_(lc == 0 ? kint64max : ld),
+        early_date_(ec == 0 ? std::numeric_limits<int64_t>::min() : ed),
+        late_date_(lc == 0 ? std::numeric_limits<int64_t>::max() : ld),
         late_cost_(lc) {
-    DCHECK_GE(ec, int64{0});
-    DCHECK_GE(lc, int64{0});
+    DCHECK_GE(ec, int64_t{0});
+    DCHECK_GE(lc, int64_t{0});
     DCHECK_GE(ld, ed);
 
     // If the penalty is 0, we can push the "confort zone or zone
@@ -5793,9 +5826,9 @@ class SimpleConvexPiecewiseExpr : public BaseIntExpr {
 
   ~SimpleConvexPiecewiseExpr() override {}
 
-  int64 Min() const override {
-    const int64 vmin = expr_->Min();
-    const int64 vmax = expr_->Max();
+  int64_t Min() const override {
+    const int64_t vmin = expr_->Min();
+    const int64_t vmax = expr_->Max();
     if (vmin >= late_date_) {
       return (vmin - late_date_) * late_cost_;
     } else if (vmax <= early_date_) {
@@ -5805,17 +5838,17 @@ class SimpleConvexPiecewiseExpr : public BaseIntExpr {
     }
   }
 
-  void SetMin(int64 m) override {
+  void SetMin(int64_t m) override {
     if (m <= 0) {
       return;
     }
-    int64 vmin = 0;
-    int64 vmax = 0;
+    int64_t vmin = 0;
+    int64_t vmax = 0;
     expr_->Range(&vmin, &vmax);
 
-    const int64 rb =
+    const int64_t rb =
         (late_cost_ == 0 ? vmax : late_date_ + PosIntDivUp(m, late_cost_) - 1);
-    const int64 lb =
+    const int64_t lb =
         (early_cost_ == 0 ? vmin
                           : early_date_ - PosIntDivUp(m, early_cost_) + 1);
 
@@ -5824,30 +5857,30 @@ class SimpleConvexPiecewiseExpr : public BaseIntExpr {
     }
   }
 
-  int64 Max() const override {
-    const int64 vmin = expr_->Min();
-    const int64 vmax = expr_->Max();
-    const int64 mr = vmax > late_date_ ? (vmax - late_date_) * late_cost_ : 0;
-    const int64 ml =
+  int64_t Max() const override {
+    const int64_t vmin = expr_->Min();
+    const int64_t vmax = expr_->Max();
+    const int64_t mr = vmax > late_date_ ? (vmax - late_date_) * late_cost_ : 0;
+    const int64_t ml =
         vmin < early_date_ ? (early_date_ - vmin) * early_cost_ : 0;
     return std::max(mr, ml);
   }
 
-  void SetMax(int64 m) override {
+  void SetMax(int64_t m) override {
     if (m < 0) {
       solver()->Fail();
     }
     if (late_cost_ != 0LL) {
-      const int64 rb = late_date_ + PosIntDivDown(m, late_cost_);
+      const int64_t rb = late_date_ + PosIntDivDown(m, late_cost_);
       if (early_cost_ != 0LL) {
-        const int64 lb = early_date_ - PosIntDivDown(m, early_cost_);
+        const int64_t lb = early_date_ - PosIntDivDown(m, early_cost_);
         expr_->SetRange(lb, rb);
       } else {
         expr_->SetMax(rb);
       }
     } else {
       if (early_cost_ != 0LL) {
-        const int64 lb = early_date_ - PosIntDivDown(m, early_cost_);
+        const int64_t lb = early_date_ - PosIntDivDown(m, early_cost_);
         expr_->SetMin(lb);
       }
     }
@@ -5882,26 +5915,26 @@ class SimpleConvexPiecewiseExpr : public BaseIntExpr {
 
  private:
   IntExpr* const expr_;
-  const int64 early_cost_;
-  const int64 early_date_;
-  const int64 late_date_;
-  const int64 late_cost_;
+  const int64_t early_cost_;
+  const int64_t early_date_;
+  const int64_t late_date_;
+  const int64_t late_cost_;
 };
 
 // ----- Semi Continuous -----
 
 class SemiContinuousExpr : public BaseIntExpr {
  public:
-  SemiContinuousExpr(Solver* const s, IntExpr* const e, int64 fixed_charge,
-                     int64 step)
+  SemiContinuousExpr(Solver* const s, IntExpr* const e, int64_t fixed_charge,
+                     int64_t step)
       : BaseIntExpr(s), expr_(e), fixed_charge_(fixed_charge), step_(step) {
-    DCHECK_GE(fixed_charge, int64{0});
-    DCHECK_GT(step, int64{0});
+    DCHECK_GE(fixed_charge, int64_t{0});
+    DCHECK_GT(step, int64_t{0});
   }
 
   ~SemiContinuousExpr() override {}
 
-  int64 Value(int64 x) const {
+  int64_t Value(int64_t x) const {
     if (x <= 0) {
       return 0;
     } else {
@@ -5909,30 +5942,30 @@ class SemiContinuousExpr : public BaseIntExpr {
     }
   }
 
-  int64 Min() const override { return Value(expr_->Min()); }
+  int64_t Min() const override { return Value(expr_->Min()); }
 
-  void SetMin(int64 m) override {
+  void SetMin(int64_t m) override {
     if (m >= CapAdd(fixed_charge_, step_)) {
-      const int64 y = PosIntDivUp(CapSub(m, fixed_charge_), step_);
+      const int64_t y = PosIntDivUp(CapSub(m, fixed_charge_), step_);
       expr_->SetMin(y);
     } else if (m > 0) {
       expr_->SetMin(1);
     }
   }
 
-  int64 Max() const override { return Value(expr_->Max()); }
+  int64_t Max() const override { return Value(expr_->Max()); }
 
-  void SetMax(int64 m) override {
+  void SetMax(int64_t m) override {
     if (m < 0) {
       solver()->Fail();
     }
-    if (m == kint64max) {
+    if (m == std::numeric_limits<int64_t>::max()) {
       return;
     }
     if (m < CapAdd(fixed_charge_, step_)) {
       expr_->SetMax(0);
     } else {
-      const int64 y = PosIntDivDown(CapSub(m, fixed_charge_), step_);
+      const int64_t y = PosIntDivDown(CapSub(m, fixed_charge_), step_);
       expr_->SetMax(y);
     }
   }
@@ -5961,21 +5994,21 @@ class SemiContinuousExpr : public BaseIntExpr {
 
  private:
   IntExpr* const expr_;
-  const int64 fixed_charge_;
-  const int64 step_;
+  const int64_t fixed_charge_;
+  const int64_t step_;
 };
 
 class SemiContinuousStepOneExpr : public BaseIntExpr {
  public:
   SemiContinuousStepOneExpr(Solver* const s, IntExpr* const e,
-                            int64 fixed_charge)
+                            int64_t fixed_charge)
       : BaseIntExpr(s), expr_(e), fixed_charge_(fixed_charge) {
-    DCHECK_GE(fixed_charge, int64{0});
+    DCHECK_GE(fixed_charge, int64_t{0});
   }
 
   ~SemiContinuousStepOneExpr() override {}
 
-  int64 Value(int64 x) const {
+  int64_t Value(int64_t x) const {
     if (x <= 0) {
       return 0;
     } else {
@@ -5983,9 +6016,9 @@ class SemiContinuousStepOneExpr : public BaseIntExpr {
     }
   }
 
-  int64 Min() const override { return Value(expr_->Min()); }
+  int64_t Min() const override { return Value(expr_->Min()); }
 
-  void SetMin(int64 m) override {
+  void SetMin(int64_t m) override {
     if (m >= fixed_charge_ + 1) {
       expr_->SetMin(m - fixed_charge_);
     } else if (m > 0) {
@@ -5993,9 +6026,9 @@ class SemiContinuousStepOneExpr : public BaseIntExpr {
     }
   }
 
-  int64 Max() const override { return Value(expr_->Max()); }
+  int64_t Max() const override { return Value(expr_->Max()); }
 
-  void SetMax(int64 m) override {
+  void SetMax(int64_t m) override {
     if (m < 0) {
       solver()->Fail();
     }
@@ -6030,20 +6063,20 @@ class SemiContinuousStepOneExpr : public BaseIntExpr {
 
  private:
   IntExpr* const expr_;
-  const int64 fixed_charge_;
+  const int64_t fixed_charge_;
 };
 
 class SemiContinuousStepZeroExpr : public BaseIntExpr {
  public:
   SemiContinuousStepZeroExpr(Solver* const s, IntExpr* const e,
-                             int64 fixed_charge)
+                             int64_t fixed_charge)
       : BaseIntExpr(s), expr_(e), fixed_charge_(fixed_charge) {
-    DCHECK_GT(fixed_charge, int64{0});
+    DCHECK_GT(fixed_charge, int64_t{0});
   }
 
   ~SemiContinuousStepZeroExpr() override {}
 
-  int64 Value(int64 x) const {
+  int64_t Value(int64_t x) const {
     if (x <= 0) {
       return 0;
     } else {
@@ -6051,9 +6084,9 @@ class SemiContinuousStepZeroExpr : public BaseIntExpr {
     }
   }
 
-  int64 Min() const override { return Value(expr_->Min()); }
+  int64_t Min() const override { return Value(expr_->Min()); }
 
-  void SetMin(int64 m) override {
+  void SetMin(int64_t m) override {
     if (m >= fixed_charge_) {
       solver()->Fail();
     } else if (m > 0) {
@@ -6061,9 +6094,9 @@ class SemiContinuousStepZeroExpr : public BaseIntExpr {
     }
   }
 
-  int64 Max() const override { return Value(expr_->Max()); }
+  int64_t Max() const override { return Value(expr_->Max()); }
 
-  void SetMax(int64 m) override {
+  void SetMax(int64_t m) override {
     if (m < 0) {
       solver()->Fail();
     }
@@ -6096,7 +6129,7 @@ class SemiContinuousStepZeroExpr : public BaseIntExpr {
 
  private:
   IntExpr* const expr_;
-  const int64 fixed_charge_;
+  const int64_t fixed_charge_;
 };
 
 // This constraints links an expression and the variable it is casted into
@@ -6116,7 +6149,7 @@ class LinkExprAndVar : public CastConstraint {
 
   void InitialPropagate() override {
     expr_->SetRange(target_var_->Min(), target_var_->Max());
-    int64 l, u;
+    int64_t l, u;
     expr_->Range(&l, &u);
     target_var_->SetRange(l, u);
   }
@@ -6144,7 +6177,7 @@ class LinkExprAndVar : public CastConstraint {
 class ExprWithEscapeValue : public BaseIntExpr {
  public:
   ExprWithEscapeValue(Solver* const s, IntVar* const c, IntExpr* const e,
-                      int64 unperformed_value)
+                      int64_t unperformed_value)
       : BaseIntExpr(s),
         condition_(c),
         expression_(e),
@@ -6152,7 +6185,7 @@ class ExprWithEscapeValue : public BaseIntExpr {
 
   ~ExprWithEscapeValue() override {}
 
-  int64 Min() const override {
+  int64_t Min() const override {
     if (condition_->Min() == 1) {
       return expression_->Min();
     } else if (condition_->Max() == 1) {
@@ -6162,7 +6195,7 @@ class ExprWithEscapeValue : public BaseIntExpr {
     }
   }
 
-  void SetMin(int64 m) override {
+  void SetMin(int64_t m) override {
     if (m > unperformed_value_) {
       condition_->SetValue(1);
       expression_->SetMin(m);
@@ -6173,7 +6206,7 @@ class ExprWithEscapeValue : public BaseIntExpr {
     }
   }
 
-  int64 Max() const override {
+  int64_t Max() const override {
     if (condition_->Min() == 1) {
       return expression_->Max();
     } else if (condition_->Max() == 1) {
@@ -6183,7 +6216,7 @@ class ExprWithEscapeValue : public BaseIntExpr {
     }
   }
 
-  void SetMax(int64 m) override {
+  void SetMax(int64_t m) override {
     if (m < unperformed_value_) {
       condition_->SetValue(1);
       expression_->SetMax(m);
@@ -6194,7 +6227,7 @@ class ExprWithEscapeValue : public BaseIntExpr {
     }
   }
 
-  void SetRange(int64 mi, int64 ma) override {
+  void SetRange(int64_t mi, int64_t ma) override {
     if (ma < unperformed_value_ || mi > unperformed_value_) {
       condition_->SetValue(1);
       expression_->SetRange(mi, ma);
@@ -6205,7 +6238,7 @@ class ExprWithEscapeValue : public BaseIntExpr {
     }
   }
 
-  void SetValue(int64 v) override {
+  void SetValue(int64_t v) override {
     if (v != unperformed_value_) {
       condition_->SetValue(1);
       expression_->SetValue(v);
@@ -6245,7 +6278,7 @@ class ExprWithEscapeValue : public BaseIntExpr {
  private:
   IntVar* const condition_;
   IntExpr* const expression_;
-  const int64 unperformed_value_;
+  const int64_t unperformed_value_;
   DISALLOW_COPY_AND_ASSIGN(ExprWithEscapeValue);
 };
 
@@ -6256,9 +6289,9 @@ class LinkExprAndDomainIntVar : public CastConstraint {
                           DomainIntVar* const var)
       : CastConstraint(s, var),
         expr_(expr),
-        cached_min_(kint64min),
-        cached_max_(kint64max),
-        fail_stamp_(GG_ULONGLONG(0)) {}
+        cached_min_(std::numeric_limits<int64_t>::min()),
+        cached_max_(std::numeric_limits<int64_t>::max()),
+        fail_stamp_(uint64_t{0}) {}
 
   ~LinkExprAndDomainIntVar() override {}
 
@@ -6306,9 +6339,9 @@ class LinkExprAndDomainIntVar : public CastConstraint {
 
  private:
   IntExpr* const expr_;
-  int64 cached_min_;
-  int64 cached_max_;
-  uint64 fail_stamp_;
+  int64_t cached_min_;
+  int64_t cached_max_;
+  uint64_t fail_stamp_;
 };
 }  //  namespace
 
@@ -6329,7 +6362,7 @@ void CleanVariableOnFail(IntVar* const var) {
   dvar->CleanInProcess();
 }
 
-Constraint* SetIsEqual(IntVar* const var, const std::vector<int64>& values,
+Constraint* SetIsEqual(IntVar* const var, const std::vector<int64_t>& values,
                        const std::vector<IntVar*>& vars) {
   DomainIntVar* const dvar = reinterpret_cast<DomainIntVar*>(var);
   CHECK(dvar != nullptr);
@@ -6337,7 +6370,7 @@ Constraint* SetIsEqual(IntVar* const var, const std::vector<int64>& values,
 }
 
 Constraint* SetIsGreaterOrEqual(IntVar* const var,
-                                const std::vector<int64>& values,
+                                const std::vector<int64_t>& values,
                                 const std::vector<IntVar*>& vars) {
   DomainIntVar* const dvar = reinterpret_cast<DomainIntVar*>(var);
   CHECK(dvar != nullptr);
@@ -6352,7 +6385,7 @@ void RestoreBoolValue(IntVar* const var) {
 
 // ----- API -----
 
-IntVar* Solver::MakeIntVar(int64 min, int64 max, const std::string& name) {
+IntVar* Solver::MakeIntVar(int64_t min, int64_t max, const std::string& name) {
   if (min == max) {
     return MakeIntConst(min, name);
   }
@@ -6368,7 +6401,7 @@ IntVar* Solver::MakeIntVar(int64 min, int64 max, const std::string& name) {
   }
 }
 
-IntVar* Solver::MakeIntVar(int64 min, int64 max) {
+IntVar* Solver::MakeIntVar(int64_t min, int64_t max) {
   return MakeIntVar(min, max, "");
 }
 
@@ -6380,13 +6413,13 @@ IntVar* Solver::MakeBoolVar() {
   return RegisterIntVar(RevAlloc(new ConcreteBooleanVar(this, "")));
 }
 
-IntVar* Solver::MakeIntVar(const std::vector<int64>& values,
+IntVar* Solver::MakeIntVar(const std::vector<int64_t>& values,
                            const std::string& name) {
   DCHECK(!values.empty());
   // Fast-track the case where we have a single value.
   if (values.size() == 1) return MakeIntConst(values[0], name);
   // Sort and remove duplicates.
-  std::vector<int64> unique_sorted_values = values;
+  std::vector<int64_t> unique_sorted_values = values;
   gtl::STLSortAndRemoveDuplicates(&unique_sorted_values);
   // Case when we have a single value, after clean-up.
   if (unique_sorted_values.size() == 1) return MakeIntConst(values[0], name);
@@ -6398,8 +6431,8 @@ IntVar* Solver::MakeIntVar(const std::vector<int64>& values,
   }
   // Compute the GCD: if it's not 1, we can express the variable's domain as
   // the product of the GCD and of a domain with smaller values.
-  int64 gcd = 0;
-  for (const int64 v : unique_sorted_values) {
+  int64_t gcd = 0;
+  for (const int64_t v : unique_sorted_values) {
     if (gcd == 0) {
       gcd = std::abs(v);
     } else {
@@ -6413,7 +6446,7 @@ IntVar* Solver::MakeIntVar(const std::vector<int64>& values,
     }
   }
   DCHECK_GT(gcd, 1);
-  for (int64& v : unique_sorted_values) {
+  for (int64_t& v : unique_sorted_values) {
     DCHECK_EQ(0, v % gcd);
     v /= gcd;
   }
@@ -6431,7 +6464,7 @@ IntVar* Solver::MakeIntVar(const std::vector<int64>& values,
   return MakeProd(inner_intvar, gcd)->Var();
 }
 
-IntVar* Solver::MakeIntVar(const std::vector<int64>& values) {
+IntVar* Solver::MakeIntVar(const std::vector<int64_t>& values) {
   return MakeIntVar(values, "");
 }
 
@@ -6444,7 +6477,7 @@ IntVar* Solver::MakeIntVar(const std::vector<int>& values) {
   return MakeIntVar(values, "");
 }
 
-IntVar* Solver::MakeIntConst(int64 val, const std::string& name) {
+IntVar* Solver::MakeIntConst(int64_t val, const std::string& name) {
   // If IntConst is going to be named after its creation,
   // cp_share_int_consts should be set to false otherwise names can potentially
   // be overwritten.
@@ -6455,7 +6488,7 @@ IntVar* Solver::MakeIntConst(int64 val, const std::string& name) {
   return RevAlloc(new IntConst(this, val, name));
 }
 
-IntVar* Solver::MakeIntConst(int64 val) { return MakeIntConst(val, ""); }
+IntVar* Solver::MakeIntConst(int64_t val) { return MakeIntConst(val, ""); }
 
 // ----- Int Var and associated methods -----
 
@@ -6476,7 +6509,7 @@ std::string IndexedName(const std::string& prefix, int index, int max_index) {
 }
 }  // namespace
 
-void Solver::MakeIntVarArray(int var_count, int64 vmin, int64 vmax,
+void Solver::MakeIntVarArray(int var_count, int64_t vmin, int64_t vmax,
                              const std::string& name,
                              std::vector<IntVar*>* vars) {
   for (int i = 0; i < var_count; ++i) {
@@ -6484,14 +6517,14 @@ void Solver::MakeIntVarArray(int var_count, int64 vmin, int64 vmax,
   }
 }
 
-void Solver::MakeIntVarArray(int var_count, int64 vmin, int64 vmax,
+void Solver::MakeIntVarArray(int var_count, int64_t vmin, int64_t vmax,
                              std::vector<IntVar*>* vars) {
   for (int i = 0; i < var_count; ++i) {
     vars->push_back(MakeIntVar(vmin, vmax));
   }
 }
 
-IntVar** Solver::MakeIntVarArray(int var_count, int64 vmin, int64 vmax,
+IntVar** Solver::MakeIntVarArray(int var_count, int64_t vmin, int64_t vmax,
                                  const std::string& name) {
   IntVar** vars = new IntVar*[var_count];
   for (int i = 0; i < var_count; ++i) {
@@ -6560,7 +6593,7 @@ IntExpr* Solver::MakeSum(IntExpr* const left, IntExpr* const right) {
   }
 }
 
-IntExpr* Solver::MakeSum(IntExpr* const expr, int64 value) {
+IntExpr* Solver::MakeSum(IntExpr* const expr, int64_t value) {
   CHECK_EQ(this, expr->solver());
   if (expr->Bound()) {
     return MakeIntConst(expr->Min() + value);
@@ -6587,7 +6620,7 @@ IntExpr* Solver::MakeSum(IntExpr* const expr, int64 value) {
         case VAR_ADD_CST: {
           PlusCstVar* const add_var = reinterpret_cast<PlusCstVar*>(var);
           IntVar* const sub_var = add_var->SubVar();
-          const int64 new_constant = value + add_var->Constant();
+          const int64_t new_constant = value + add_var->Constant();
           if (new_constant == 0) {
             result = sub_var;
           } else {
@@ -6606,7 +6639,7 @@ IntExpr* Solver::MakeSum(IntExpr* const expr, int64 value) {
         case CST_SUB_VAR: {
           SubCstIntVar* const add_var = reinterpret_cast<SubCstIntVar*>(var);
           IntVar* const sub_var = add_var->SubVar();
-          const int64 new_constant = value + add_var->Constant();
+          const int64_t new_constant = value + add_var->Constant();
           result = RegisterIntExpr(
               RevAlloc(new SubCstIntVar(this, sub_var, new_constant)));
           break;
@@ -6642,11 +6675,11 @@ IntExpr* Solver::MakeDifference(IntExpr* const left, IntExpr* const right) {
   }
   IntExpr* sub_left = nullptr;
   IntExpr* sub_right = nullptr;
-  int64 left_coef = 1;
-  int64 right_coef = 1;
+  int64_t left_coef = 1;
+  int64_t right_coef = 1;
   if (IsProduct(left, &sub_left, &left_coef) &&
       IsProduct(right, &sub_right, &right_coef)) {
-    const int64 abs_gcd =
+    const int64_t abs_gcd =
         MathUtil::GCD64(std::abs(left_coef), std::abs(right_coef));
     if (abs_gcd != 0 && abs_gcd != 1) {
       return MakeProd(MakeDifference(MakeProd(sub_left, left_coef / abs_gcd),
@@ -6671,7 +6704,7 @@ IntExpr* Solver::MakeDifference(IntExpr* const left, IntExpr* const right) {
 }
 
 // warning: this is 'value - expr'.
-IntExpr* Solver::MakeDifference(int64 value, IntExpr* const expr) {
+IntExpr* Solver::MakeDifference(int64_t value, IntExpr* const expr) {
   CHECK_EQ(this, expr->solver());
   if (expr->Bound()) {
     return MakeIntConst(value - expr->Min());
@@ -6682,7 +6715,7 @@ IntExpr* Solver::MakeDifference(int64 value, IntExpr* const expr) {
   IntExpr* result = Cache()->FindExprConstantExpression(
       expr, value, ModelCache::EXPR_CONSTANT_DIFFERENCE);
   if (result == nullptr) {
-    if (expr->IsVar() && expr->Min() != kint64min &&
+    if (expr->IsVar() && expr->Min() != std::numeric_limits<int64_t>::min() &&
         !SubOverflows(value, expr->Min()) &&
         !SubOverflows(value, expr->Max())) {
       IntVar* const var = expr->Var();
@@ -6690,7 +6723,7 @@ IntExpr* Solver::MakeDifference(int64 value, IntExpr* const expr) {
         case VAR_ADD_CST: {
           PlusCstVar* const add_var = reinterpret_cast<PlusCstVar*>(var);
           IntVar* const sub_var = add_var->SubVar();
-          const int64 new_constant = value - add_var->Constant();
+          const int64_t new_constant = value - add_var->Constant();
           if (new_constant == 0) {
             result = sub_var;
           } else {
@@ -6702,7 +6735,7 @@ IntExpr* Solver::MakeDifference(int64 value, IntExpr* const expr) {
         case CST_SUB_VAR: {
           SubCstIntVar* const add_var = reinterpret_cast<SubCstIntVar*>(var);
           IntVar* const sub_var = add_var->SubVar();
-          const int64 new_constant = value - add_var->Constant();
+          const int64_t new_constant = value - add_var->Constant();
           result = MakeSum(sub_var, new_constant);
           break;
         }
@@ -6743,7 +6776,7 @@ IntExpr* Solver::MakeOpposite(IntExpr* const expr) {
   return result;
 }
 
-IntExpr* Solver::MakeProd(IntExpr* const expr, int64 value) {
+IntExpr* Solver::MakeProd(IntExpr* const expr, int64_t value) {
   CHECK_EQ(this, expr->solver());
   IntExpr* result = Cache()->FindExprConstantExpression(
       expr, value, ModelCache::EXPR_CONSTANT_PROD);
@@ -6751,7 +6784,7 @@ IntExpr* Solver::MakeProd(IntExpr* const expr, int64 value) {
     return result;
   } else {
     IntExpr* m_expr = nullptr;
-    int64 coefficient = 1;
+    int64_t coefficient = 1;
     if (IsProduct(expr, &m_expr, &coefficient)) {
       coefficient *= value;
     } else {
@@ -6765,8 +6798,8 @@ IntExpr* Solver::MakeProd(IntExpr* const expr, int64 value) {
     } else if (coefficient == -1) {
       return MakeOpposite(m_expr);
     } else if (coefficient > 0) {
-      if (m_expr->Max() > kint64max / coefficient ||
-          m_expr->Min() < kint64min / coefficient) {
+      if (m_expr->Max() > std::numeric_limits<int64_t>::max() / coefficient ||
+          m_expr->Min() < std::numeric_limits<int64_t>::min() / coefficient) {
         result = RegisterIntExpr(
             RevAlloc(new SafeTimesPosIntCstExpr(this, m_expr, coefficient)));
       } else {
@@ -6790,7 +6823,7 @@ IntExpr* Solver::MakeProd(IntExpr* const expr, int64 value) {
 }
 
 namespace {
-void ExtractPower(IntExpr** const expr, int64* const exponant) {
+void ExtractPower(IntExpr** const expr, int64_t* const exponant) {
   if (dynamic_cast<BasePower*>(*expr) != nullptr) {
     BasePower* const power = dynamic_cast<BasePower*>(*expr);
     *expr = power->expr();
@@ -6817,7 +6850,7 @@ void ExtractPower(IntExpr** const expr, int64* const exponant) {
   }
 }
 
-void ExtractProduct(IntExpr** const expr, int64* const coefficient,
+void ExtractProduct(IntExpr** const expr, int64_t* const coefficient,
                     bool* modified) {
   if (dynamic_cast<TimesCstIntVar*>(*expr) != nullptr) {
     TimesCstIntVar* const left_prod = dynamic_cast<TimesCstIntVar*>(*expr);
@@ -6846,8 +6879,8 @@ IntExpr* Solver::MakeProd(IntExpr* const left, IntExpr* const right) {
 
   IntExpr* m_left = left;
   IntExpr* m_right = right;
-  int64 left_exponant = 1;
-  int64 right_exponant = 1;
+  int64_t left_exponant = 1;
+  int64_t right_exponant = 1;
   ExtractPower(&m_left, &left_exponant);
   ExtractPower(&m_right, &right_exponant);
 
@@ -6859,7 +6892,7 @@ IntExpr* Solver::MakeProd(IntExpr* const left, IntExpr* const right) {
 
   m_left = left;
   m_right = right;
-  int64 coefficient = 1;
+  int64_t coefficient = 1;
   bool modified = false;
 
   ExtractProduct(&m_left, &coefficient, &modified);
@@ -6900,7 +6933,7 @@ IntExpr* Solver::MakeProd(IntExpr* const left, IntExpr* const right) {
     }
   } else if (left->Min() >= 0 && right->Min() >= 0) {
     if (CapProd(left->Max(), right->Max()) ==
-        kint64max) {  // Potential overflow.
+        std::numeric_limits<int64_t>::max()) {  // Potential overflow.
       result =
           RegisterIntExpr(RevAlloc(new SafeTimesPosIntExpr(this, left, right)));
     } else {
@@ -6953,7 +6986,7 @@ IntExpr* Solver::MakeDiv(IntExpr* const numerator, IntExpr* const denominator) {
   return result;
 }
 
-IntExpr* Solver::MakeDiv(IntExpr* const expr, int64 value) {
+IntExpr* Solver::MakeDiv(IntExpr* const expr, int64_t value) {
   CHECK(expr != nullptr);
   CHECK_EQ(this, expr->solver());
   if (expr->Bound()) {
@@ -6990,7 +7023,7 @@ IntExpr* Solver::MakeAbs(IntExpr* const e) {
   }
   IntExpr* result = Cache()->FindExprExpression(e, ModelCache::EXPR_ABS);
   if (result == nullptr) {
-    int64 coefficient = 1;
+    int64_t coefficient = 1;
     IntExpr* expr = nullptr;
     if (IsProduct(e, &expr, &coefficient)) {
       result = MakeProd(MakeAbs(expr), std::abs(coefficient));
@@ -7005,7 +7038,7 @@ IntExpr* Solver::MakeAbs(IntExpr* const e) {
 IntExpr* Solver::MakeSquare(IntExpr* const expr) {
   CHECK_EQ(this, expr->solver());
   if (expr->Bound()) {
-    const int64 v = expr->Min();
+    const int64_t v = expr->Min();
     return MakeIntConst(v * v);
   }
   IntExpr* result = Cache()->FindExprExpression(expr, ModelCache::EXPR_SQUARE);
@@ -7020,13 +7053,13 @@ IntExpr* Solver::MakeSquare(IntExpr* const expr) {
   return result;
 }
 
-IntExpr* Solver::MakePower(IntExpr* const expr, int64 n) {
+IntExpr* Solver::MakePower(IntExpr* const expr, int64_t n) {
   CHECK_EQ(this, expr->solver());
   CHECK_GE(n, 0);
   if (expr->Bound()) {
-    const int64 v = expr->Min();
+    const int64_t v = expr->Min();
     if (v >= OverflowLimit(n)) {  // Overflow.
-      return MakeIntConst(kint64max);
+      return MakeIntConst(std::numeric_limits<int64_t>::max());
     }
     return MakeIntConst(IntPower(v, n));
   }
@@ -7072,7 +7105,7 @@ IntExpr* Solver::MakeMin(IntExpr* const left, IntExpr* const right) {
   return RegisterIntExpr(RevAlloc(new MinIntExpr(this, left, right)));
 }
 
-IntExpr* Solver::MakeMin(IntExpr* const expr, int64 value) {
+IntExpr* Solver::MakeMin(IntExpr* const expr, int64_t value) {
   CHECK_EQ(this, expr->solver());
   if (value <= expr->Min()) {
     return MakeIntConst(value);
@@ -7087,7 +7120,7 @@ IntExpr* Solver::MakeMin(IntExpr* const expr, int64 value) {
 }
 
 IntExpr* Solver::MakeMin(IntExpr* const expr, int value) {
-  return MakeMin(expr, static_cast<int64>(value));
+  return MakeMin(expr, static_cast<int64_t>(value));
 }
 
 IntExpr* Solver::MakeMax(IntExpr* const left, IntExpr* const right) {
@@ -7108,7 +7141,7 @@ IntExpr* Solver::MakeMax(IntExpr* const left, IntExpr* const right) {
   return RegisterIntExpr(RevAlloc(new MaxIntExpr(this, left, right)));
 }
 
-IntExpr* Solver::MakeMax(IntExpr* const expr, int64 value) {
+IntExpr* Solver::MakeMax(IntExpr* const expr, int64_t value) {
   CHECK_EQ(this, expr->solver());
   if (expr->Bound()) {
     return MakeIntConst(std::max(expr->Min(), value));
@@ -7123,21 +7156,21 @@ IntExpr* Solver::MakeMax(IntExpr* const expr, int64 value) {
 }
 
 IntExpr* Solver::MakeMax(IntExpr* const expr, int value) {
-  return MakeMax(expr, static_cast<int64>(value));
+  return MakeMax(expr, static_cast<int64_t>(value));
 }
 
-IntExpr* Solver::MakeConvexPiecewiseExpr(IntExpr* expr, int64 early_cost,
-                                         int64 early_date, int64 late_date,
-                                         int64 late_cost) {
+IntExpr* Solver::MakeConvexPiecewiseExpr(IntExpr* expr, int64_t early_cost,
+                                         int64_t early_date, int64_t late_date,
+                                         int64_t late_cost) {
   return RegisterIntExpr(RevAlloc(new SimpleConvexPiecewiseExpr(
       this, expr, early_cost, early_date, late_date, late_cost)));
 }
 
-IntExpr* Solver::MakeSemiContinuousExpr(IntExpr* const expr, int64 fixed_charge,
-                                        int64 step) {
+IntExpr* Solver::MakeSemiContinuousExpr(IntExpr* const expr,
+                                        int64_t fixed_charge, int64_t step) {
   if (step == 0) {
     if (fixed_charge == 0) {
-      return MakeIntConst(int64{0});
+      return MakeIntConst(int64_t{0});
     } else {
       return RegisterIntExpr(
           RevAlloc(new SemiContinuousStepZeroExpr(this, expr, fixed_charge)));
@@ -7161,26 +7194,26 @@ class PiecewiseLinearExpr : public BaseIntExpr {
                       const PiecewiseLinearFunction& f)
       : BaseIntExpr(solver), expr_(expr), f_(f) {}
   ~PiecewiseLinearExpr() override {}
-  int64 Min() const override {
+  int64_t Min() const override {
     return f_.GetMinimum(expr_->Min(), expr_->Max());
   }
-  void SetMin(int64 m) override {
+  void SetMin(int64_t m) override {
     const auto& range =
         f_.GetSmallestRangeGreaterThanValue(expr_->Min(), expr_->Max(), m);
     expr_->SetRange(range.first, range.second);
   }
 
-  int64 Max() const override {
+  int64_t Max() const override {
     return f_.GetMaximum(expr_->Min(), expr_->Max());
   }
 
-  void SetMax(int64 m) override {
+  void SetMax(int64_t m) override {
     const auto& range =
         f_.GetSmallestRangeLessThanValue(expr_->Min(), expr_->Max(), m);
     expr_->SetRange(range.first, range.second);
   }
 
-  void SetRange(int64 l, int64 u) override {
+  void SetRange(int64_t l, int64_t u) override {
     const auto& range =
         f_.GetSmallestRangeInValueRange(expr_->Min(), expr_->Max(), l, u);
     expr_->SetRange(range.first, range.second);
@@ -7215,7 +7248,7 @@ IntExpr* Solver::MakePiecewiseLinearExpr(IntExpr* expr,
 
 IntExpr* Solver::MakeConditionalExpression(IntVar* const condition,
                                            IntExpr* const expr,
-                                           int64 unperformed_value) {
+                                           int64_t unperformed_value) {
   if (condition->Min() == 1) {
     return expr;
   } else if (condition->Max() == 0) {
@@ -7237,7 +7270,7 @@ IntExpr* Solver::MakeConditionalExpression(IntVar* const condition,
 
 // ----- Modulo -----
 
-IntExpr* Solver::MakeModulo(IntExpr* const x, int64 mod) {
+IntExpr* Solver::MakeModulo(IntExpr* const x, int64_t mod) {
   IntVar* const result =
       MakeDifference(x, MakeProd(MakeDiv(x, mod), mod))->Var();
   if (mod >= 0) {
@@ -7263,7 +7296,7 @@ IntExpr* Solver::MakeModulo(IntExpr* const x, IntExpr* const mod) {
 
 int IntVar::VarType() const { return UNSPECIFIED; }
 
-void IntVar::RemoveValues(const std::vector<int64>& values) {
+void IntVar::RemoveValues(const std::vector<int64_t>& values) {
   // TODO(user): Check and maybe inline this code.
   const int size = values.size();
   DCHECK_GE(size, 0);
@@ -7290,7 +7323,7 @@ void IntVar::RemoveValues(const std::vector<int64>& values) {
       // 4 values, let's start doing some more clever things.
       // TODO(user) : Sort values!
       int start_index = 0;
-      int64 new_min = Min();
+      int64_t new_min = Min();
       if (values[start_index] <= new_min) {
         while (start_index < size - 1 &&
                values[start_index + 1] == values[start_index] + 1) {
@@ -7299,7 +7332,7 @@ void IntVar::RemoveValues(const std::vector<int64>& values) {
         }
       }
       int end_index = size - 1;
-      int64 new_max = Max();
+      int64_t new_max = Max();
       if (values[end_index] >= new_max) {
         while (end_index > start_index + 1 &&
                values[end_index - 1] == values[end_index] - 1) {
@@ -7320,7 +7353,7 @@ void IntVar::Accept(ModelVisitor* const visitor) const {
   visitor->VisitIntegerVariable(this, casted);
 }
 
-void IntVar::SetValues(const std::vector<int64>& values) {
+void IntVar::SetValues(const std::vector<int64_t>& values) {
   switch (values.size()) {
     case 0: {
       solver()->Fail();
@@ -7333,8 +7366,8 @@ void IntVar::SetValues(const std::vector<int64>& values) {
     case 2: {
       if (Contains(values[0])) {
         if (Contains(values[1])) {
-          const int64 l = std::min(values[0], values[1]);
-          const int64 u = std::max(values[0], values[1]);
+          const int64_t l = std::min(values[0], values[1]);
+          const int64_t u = std::max(values[0], values[1]);
           SetRange(l, u);
           if (u > l + 1) {
             RemoveInterval(l + 1, u - 1);
@@ -7354,14 +7387,14 @@ void IntVar::SetValues(const std::vector<int64>& values) {
       // STLSortAndRemoveDuplicates from ortools/base/stl_util.h to the
       // existing open_source/base/stl_util.h and using it here.
       // TODO(user): We could filter out values not in the var.
-      std::vector<int64>& tmp = solver()->tmp_vector_;
+      std::vector<int64_t>& tmp = solver()->tmp_vector_;
       tmp.clear();
       tmp.insert(tmp.end(), values.begin(), values.end());
       std::sort(tmp.begin(), tmp.end());
       tmp.erase(std::unique(tmp.begin(), tmp.end()), tmp.end());
       const int size = tmp.size();
-      const int64 vmin = Min();
-      const int64 vmax = Max();
+      const int64_t vmin = Min();
+      const int64_t vmax = Max();
       int first = 0;
       int last = size - 1;
       if (tmp.front() > vmax || tmp.back() < vmin) {
@@ -7381,8 +7414,8 @@ void IntVar::SetValues(const std::vector<int64>& values) {
       DCHECK_GE(last, first);
       SetRange(tmp[first], tmp[last]);
       while (first < last) {
-        const int64 start = tmp[first] + 1;
-        const int64 end = tmp[first + 1] - 1;
+        const int64_t start = tmp[first] + 1;
+        const int64_t end = tmp[first + 1] - 1;
         if (start <= end) {
           RemoveInterval(start, end);
         }
@@ -7415,7 +7448,7 @@ IntVar* BaseIntExpr::Var() {
 }
 
 IntVar* BaseIntExpr::CastToVar() {
-  int64 vmin, vmax;
+  int64_t vmin, vmax;
   Range(&vmin, &vmax);
   IntVar* const var = solver()->MakeIntVar(vmin, vmax);
   LinkVarExpr(solver(), this, var);
@@ -7459,7 +7492,7 @@ bool Solver::IsBooleanVar(IntExpr* const expr, IntVar** inner_var,
 }
 
 bool Solver::IsProduct(IntExpr* const expr, IntExpr** inner_expr,
-                       int64* coefficient) {
+                       int64_t* coefficient) {
   if (dynamic_cast<TimesCstIntVar*>(expr) != nullptr) {
     TimesCstIntVar* const var = dynamic_cast<TimesCstIntVar*>(expr);
     *coefficient = var->Constant();

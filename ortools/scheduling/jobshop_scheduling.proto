@@ -1,0 +1,170 @@
+// Copyright 2010-2021 Google LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// This protocol buffer is used to represent jobshop scheduling problems.
+//   https://en.wikipedia.org/wiki/Job_shop_scheduling
+//
+// In a jobshop, a job is a sequence of tasks. A task must be performed by a
+// machine for a given duration. A task cannot be interrupted.
+// All time are >= 0.
+//
+// Each task in a job must be performed in sequence. That is the second task
+// cannot start before the first one has finished.
+//
+// One machine can only execute one task at a time.
+//
+// Tasks can have alternative ways of being executed. Each way specifies the
+// machine that can perform it, the duration, and an optional cost.
+//
+// Each job can specify hard constraints on its start and end date, as well as
+// soft constraints on its end date. In the case of soft constraints, both
+// earliness and tardiness penalties can be specified.
+//
+// A makespan cost specifies a penalty based on the max ending time of all jobs.
+//
+// The objective to minimize is:
+//    the sum of task costs +
+//    the earliness-tardiness cost for all jobs +
+//    the weighted makespan.
+
+syntax = "proto3";
+
+option java_package = "com.google.ortools.scheduling.jssp";
+option java_multiple_files = true;
+option csharp_namespace = "Google.OrTools.scheduling.Jssp";
+
+package operations_research.scheduling.jssp;
+
+import "google/protobuf/wrappers.proto";
+
+// This message specifies a task inside a job.
+message Task {
+  // The alternative machines that can perform that task. Only one must
+  // be selected. We store the index of the machine in the main
+  // JsspInputProblem.
+  repeated int32 machine = 1;
+  // The corresponding duration for the alternative ways of performing this
+  // task. This list must have the same size as the machine_id list.
+  repeated int64 duration = 2;
+  // An optional cost for selecting one alternative way of performing the task
+  // against another. This list must either be empty, or has the same size as
+  // the above two lists.
+  repeated int64 cost = 3;
+}
+
+// A job is an ordered sequence of tasks, plus hard constraints on its earliest
+// start time, and its latest completion time. As well as optional
+// earliness-tardiness penalties on its end date. The job starts with the first
+// task in the list, and ends with the last.
+message Job {
+  // The ordered sequence of tasks.
+  repeated Task tasks = 1;
+  // This date, if set, specifies a hard constraint on when the job can start.
+  google.protobuf.Int64Value earliest_start = 2;
+  // This date specifies the earliest time the job should end. If
+  // this is set, then the earliness_cost_per_time_unit should be set
+  // too with a positive value.
+  int64 early_due_date = 3;
+  // This date specifies the latest time the job should end. If this
+  // is set, then the lateness_cost_per_time_unit should be set too
+  // with a positive value.  If both early_due_date and late_due_date
+  // are set, then early_due_date <= late_due_date must hold.
+  int64 late_due_date = 4;
+  // The cost model is a convex function
+  //    \            /
+  //     \          /
+  //      \________/
+  // The slopes of this shape are specified on the left by the earliness cost,
+  // and on the right by the lateness cost. These penalty parts start at the
+  // early and late due dates. For one penalty part to be active, both
+  // the date and a positive cost must be defined. All costs must be positive.
+  int64 earliness_cost_per_time_unit = 5;
+  int64 lateness_cost_per_time_unit = 6;
+  // This date, if set, specifies a hard constraint on when the job
+  // can end.  If both earliest_start and latest_end are specified,
+  // then earliest_start <= latest_end must hold.
+  google.protobuf.Int64Value latest_end = 7;
+  // Optional. A name for the job. This will only be used for logging purposes.
+  string name = 16;
+}
+
+// Stores the transition time matrix between jobs on a given machine.
+// If the initial job has n jobs, then time[i * n + j] will indicate the
+// minimum delay between the end of a task of a job i performed on this machine
+// and the start of a task of job j performed on the same machine.
+// Nothing can be executed on that machine during this delay.
+message TransitionTimeMatrix {
+  repeated int64 transition_time = 1;
+}
+
+message Machine {
+  // Optional transition time matrix for this machine.
+  TransitionTimeMatrix transition_time_matrix = 1;
+  // Optional. A name for a machine. This will only be used for logging
+  // purposes.
+  string name = 16;
+}
+
+// Specifies a precedence relation between jobs.
+// It states: start(second_job) >= end(first_job) + min_delay.
+message JobPrecedence {
+  int32 first_job_index = 1;
+  int32 second_job_index = 2;
+  int64 min_delay = 3;
+}
+
+// The input of a problem.
+message JsspInputProblem {
+  repeated Job jobs = 1;
+  repeated Machine machines = 2;
+  repeated JobPrecedence precedences = 3;
+  int64 makespan_cost_per_time_unit = 4;
+  // If set, the cost coefficients are multiplied by this factor.
+  // It is set to 1000 by the parser when reading early tardy taillard problems
+  // where the weight of a job is a floating point value.
+  google.protobuf.DoubleValue scaling_factor = 5;
+  // Sometimes, the academic data files contain extra information. We store it
+  // in the input problem message.
+  int32 seed = 24;
+  // Optional: Name of the problem.
+  string name = 16;
+}
+
+// Stores how a task is executed.
+message AssignedTask {
+  // Indicates which alternative was selected. It corresponds to the
+  // alternative_index-th machine in the 'machine' field in Tasks
+  int32 alternative_index = 1;
+  // The start time of that task.
+  int64 start_time = 2;
+}
+
+// Stores how a job is executed.
+message AssignedJob {
+  // How each task is executed.
+  repeated AssignedTask tasks = 1;
+  // Earliness-Tardiness cost of that job.
+  int64 due_date_cost = 2;
+  // Sum of all tasks costs for that job.
+  int64 sum_of_task_costs = 3;
+}
+
+// The output of solving a jobshop problem.
+message JsspOutputSolution {
+  // The solution for all jobs.
+  repeated AssignedJob jobs = 1;
+  // The makespan cost of that solution.
+  int64 makespan_cost = 2;
+  // The total cost of that solution.
+  int64 total_cost = 3;
+}

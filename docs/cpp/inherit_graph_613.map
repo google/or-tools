@@ -1,10 +1,4 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classoperations__research_1_1_m_p_solver_interface.html" title=" " alt="" coords="5,157,147,184"/>
-<area shape="rect" id="node2" href="$classoperations__research_1_1_bop_interface.html" title=" " alt="" coords="203,5,309,32"/>
-<area shape="rect" id="node3" href="$classoperations__research_1_1_c_b_c_interface.html" title=" " alt="" coords="203,56,309,83"/>
-<area shape="rect" id="node4" href="$classoperations__research_1_1_c_l_p_interface.html" title=" " alt="" coords="204,107,308,133"/>
-<area shape="rect" id="node5" href="$classoperations__research_1_1_g_l_o_p_interface.html" title=" " alt="" coords="199,157,313,184"/>
-<area shape="rect" id="node6" href="$classoperations__research_1_1_gurobi_interface.html" title=" " alt="" coords="195,208,317,235"/>
-<area shape="rect" id="node7" href="$classoperations__research_1_1_sat_interface.html" title=" " alt="" coords="205,259,307,285"/>
-<area shape="rect" id="node8" href="$classoperations__research_1_1_s_c_i_p_interface.html" title=" " alt="" coords="201,309,311,336"/>
+<area shape="rect" id="node1" href="$classoperations__research_1_1_rev_bit_set.html" title="This class represents a reversible bitset." alt="" coords="5,5,92,32"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1_rev_bit_matrix.html" title="Matrix version of the RevBitSet class." alt="" coords="140,5,247,32"/>
 </map>

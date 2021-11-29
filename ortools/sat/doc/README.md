@@ -3,6 +3,7 @@
 
 # Using the CP-SAT solver
 
+https://developers.google.com/optimization/cp/cp_solver
 
 
 <!--ts-->
@@ -14,7 +15,6 @@
          * [Java code samples](#java-code-samples)
          * [C# code samples](#c-code-samples-1)
 
-<!-- Added by: lperron, at: Tue Nov  3 17:33:06 CET 2020 -->
 
 <!--te-->
 

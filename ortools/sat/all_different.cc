@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,6 +14,8 @@
 #include "ortools/sat/all_different.h"
 
 #include <algorithm>
+#include <cstdint>
+#include <limits>
 #include <map>
 #include <memory>
 
@@ -94,8 +96,8 @@ AllDifferentConstraint::AllDifferentConstraint(
       trail_(trail),
       integer_trail_(integer_trail) {
   // Initialize literals cache.
-  int64 min_value = kint64max;
-  int64 max_value = kint64min;
+  int64_t min_value = std::numeric_limits<int64_t>::max();
+  int64_t max_value = std::numeric_limits<int64_t>::min();
   variable_min_value_.resize(num_variables_);
   variable_max_value_.resize(num_variables_);
   variable_literal_index_.resize(num_variables_);
@@ -122,10 +124,10 @@ AllDifferentConstraint::AllDifferentConstraint(
     }
 
     // Fill cache with literals, default value is kFalseLiteralIndex.
-    int64 size = variable_max_value_[x] - variable_min_value_[x] + 1;
+    int64_t size = variable_max_value_[x] - variable_min_value_[x] + 1;
     variable_literal_index_[x].resize(size, kFalseLiteralIndex);
     for (const auto& entry : encoder->FullDomainEncoding(variables_[x])) {
-      int64 value = entry.value.value();
+      int64_t value = entry.value.value();
       // Can happen because of initial propagation!
       if (value < variable_min_value_[x] || variable_max_value_[x] < value) {
         continue;
@@ -161,14 +163,14 @@ void AllDifferentConstraint::RegisterWith(GenericLiteralWatcher* watcher) {
 }
 
 LiteralIndex AllDifferentConstraint::VariableLiteralIndexOf(int x,
-                                                            int64 value) {
+                                                            int64_t value) {
   return (value < variable_min_value_[x] || variable_max_value_[x] < value)
              ? kFalseLiteralIndex
              : variable_literal_index_[x][value - variable_min_value_[x]];
 }
 
 inline bool AllDifferentConstraint::VariableHasPossibleValue(int x,
-                                                             int64 value) {
+                                                             int64_t value) {
   LiteralIndex li = VariableLiteralIndexOf(x, value);
   if (li == kFalseLiteralIndex) return false;
   if (li == kTrueLiteralIndex) return true;
@@ -241,9 +243,9 @@ bool AllDifferentConstraint::Propagate() {
   variable_to_value_.assign(num_variables_, -1);
   for (int x = 0; x < num_variables_; x++) {
     successor_[x].clear();
-    const int64 min_value = integer_trail_->LowerBound(variables_[x]).value();
-    const int64 max_value = integer_trail_->UpperBound(variables_[x]).value();
-    for (int64 value = min_value; value <= max_value; value++) {
+    const int64_t min_value = integer_trail_->LowerBound(variables_[x]).value();
+    const int64_t max_value = integer_trail_->UpperBound(variables_[x]).value();
+    for (int64_t value = min_value; value <= max_value; value++) {
       if (VariableHasPossibleValue(x, value)) {
         const int offset_value = value - min_all_values_;
         // Forward-checking should propagate x != value.

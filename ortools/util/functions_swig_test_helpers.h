@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -34,42 +34,44 @@ class FunctionSwigTestHelpers {
     return fun();
   }
 
-  static int64 NoOpInt64ToInt64(std::function<int64(int64)> fun, int64 x) {
+  static int64_t NoOpInt64ToInt64(std::function<int64_t(int64_t)> fun,
+                                  int64_t x) {
     return fun(x);
   }
 
-  static int64 NoOpInt64PairToInt64(std::function<int64(int64, int64)> fun,
-                                    int64 x, int64 y) {
+  static int64_t NoOpInt64PairToInt64(
+      std::function<int64_t(int64_t, int64_t)> fun, int64_t x, int64_t y) {
     return fun(x, y);
   }
 
-  static int64 NoOpIntToInt64(std::function<int64(int)> fun, int x) {
+  static int64_t NoOpIntToInt64(std::function<int64_t(int)> fun, int x) {
     return fun(x);
   }
 
-  static int64 NoOpIntPairToInt64(std::function<int64(int, int)> fun, int x,
-                                  int y) {
+  static int64_t NoOpIntPairToInt64(std::function<int64_t(int, int)> fun, int x,
+                                    int y) {
     return fun(x, y);
   }
 
-  static int64 NoOpInt64TripleToInt64(
-      std::function<int64(int64, int64, int64)> fun, int64 x, int64 y,
-      int64 z) {
+  static int64_t NoOpInt64TripleToInt64(
+      std::function<int64_t(int64_t, int64_t, int64_t)> fun, int64_t x,
+      int64_t y, int64_t z) {
     return fun(x, y, z);
   }
 
   static bool NoOpInt64TripleToBool(
-      std::function<bool(int64, int64, int64)> fun, int64 x, int64 y, int64 z) {
+      std::function<bool(int64_t, int64_t, int64_t)> fun, int64_t x, int64_t y,
+      int64_t z) {
     return fun(x, y, z);
   }
 
-  static bool NoOpInt64ToBool(std::function<bool(int64)> fun, int64 x) {
+  static bool NoOpInt64ToBool(std::function<bool(int64_t)> fun, int64_t x) {
     return fun(x);
   }
 
   static bool NoOpVoidToBool(std::function<bool()> fun) { return fun(); }
 
-  static void NoOpInt64ToVoid(std::function<void(int64)> fun, int64 x) {
+  static void NoOpInt64ToVoid(std::function<void(int64_t)> fun, int64_t x) {
     fun(x);
   }
 
@@ -84,13 +86,13 @@ class FunctionSwigTestHelpers {
 class DelayedFunctionSwigTestHelpers {
  public:
   explicit DelayedFunctionSwigTestHelpers(
-      std::function<int64(int64, int64)> fun)
+      std::function<int64_t(int64_t, int64_t)> fun)
       : fun_(fun) {}
 
-  int64 NoOpInt64PairToInt64(int64 x, int64 y) { return fun_(x, y); }
+  int64_t NoOpInt64PairToInt64(int64_t x, int64_t y) { return fun_(x, y); }
 
  private:
-  const std::function<int64(int64, int64)> fun_;
+  const std::function<int64_t(int64_t, int64_t)> fun_;
 };
 
 }  // namespace operations_research

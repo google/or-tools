@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,9 +14,11 @@
 #ifndef OR_TOOLS_SAT_RINS_H_
 #define OR_TOOLS_SAT_RINS_H_
 
+#include <cstdint>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/random/bit_gen_ref.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/types/optional.h"
 #include "ortools/sat/integer.h"
@@ -54,8 +56,9 @@ struct LPVariables {
 // relaxation ignore those.
 struct RINSNeighborhood {
   // A variable will appear only once and not in both vectors.
-  std::vector<std::pair</*model_var*/ int, /*value*/ int64>> fixed_vars;
-  std::vector<std::pair</*model_var*/ int, /*domain*/ std::pair<int64, int64>>>
+  std::vector<std::pair</*model_var*/ int, /*value*/ int64_t>> fixed_vars;
+  std::vector<
+      std::pair</*model_var*/ int, /*domain*/ std::pair<int64_t, int64_t>>>
       reduced_domain_vars;
 };
 
@@ -77,7 +80,7 @@ RINSNeighborhood GetRINSNeighborhood(
     const SharedRelaxationSolutionRepository* relaxation_solutions,
     const SharedLPSolutionRepository* lp_solutions,
     SharedIncompleteSolutionManager* incomplete_solutions,
-    random_engine_t* random);
+    absl::BitGenRef random);
 
 // Adds the current LP solution to the pool.
 void RecordLPRelaxationValues(Model* model);

@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -41,34 +41,38 @@ void MipVarArray() {
 
   // [START solver]
   // Create the mip solver with the SCIP backend.
-  MPSolver solver("mip_var_array", MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING);
+  std::unique_ptr<MPSolver> solver(MPSolver::CreateSolver("SCIP"));
+  if (!solver) {
+    LOG(WARNING) << "SCIP solver unavailable.";
+    return;
+  }
   // [END solver]
 
   // [START program_part2]
   // [START variables]
-  const double infinity = solver.infinity();
+  const double infinity = solver->infinity();
   // x[j] is an array of non-negative, integer variables.
   std::vector<const MPVariable*> x(data.num_vars);
   for (int j = 0; j < data.num_vars; ++j) {
-    x[j] = solver.MakeIntVar(0.0, infinity, "");
+    x[j] = solver->MakeIntVar(0.0, infinity, "");
   }
-  LOG(INFO) << "Number of variables = " << solver.NumVariables();
+  LOG(INFO) << "Number of variables = " << solver->NumVariables();
   // [END variables]
 
   // [START constraints]
   // Create the constraints.
   for (int i = 0; i < data.num_constraints; ++i) {
-    MPConstraint* constraint = solver.MakeRowConstraint(0, data.bounds[i], "");
+    MPConstraint* constraint = solver->MakeRowConstraint(0, data.bounds[i], "");
     for (int j = 0; j < data.num_vars; ++j) {
       constraint->SetCoefficient(x[j], data.constraint_coeffs[i][j]);
     }
   }
-  LOG(INFO) << "Number of constraints = " << solver.NumConstraints();
+  LOG(INFO) << "Number of constraints = " << solver->NumConstraints();
   // [END constraints]
 
   // [START objective]
   // Create the objective function.
-  MPObjective* const objective = solver.MutableObjective();
+  MPObjective* const objective = solver->MutableObjective();
   for (int j = 0; j < data.num_vars; ++j) {
     objective->SetCoefficient(x[j], data.obj_coeffs[j]);
   }
@@ -76,7 +80,7 @@ void MipVarArray() {
   // [END objective]
 
   // [START solve]
-  const MPSolver::ResultStatus result_status = solver.Solve();
+  const MPSolver::ResultStatus result_status = solver->Solve();
   // [END solve]
 
   // [START print_solution]

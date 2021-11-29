@@ -1,16 +1,11 @@
 var searchData=
 [
-  ['var_5fdomination_2ecc_24606',['var_domination.cc',['../var__domination_8cc.html',1,'']]],
-  ['var_5fdomination_2eh_24607',['var_domination.h',['../var__domination_8h.html',1,'']]],
-  ['variable_5fvalues_2ecc_24608',['variable_values.cc',['../variable__values_8cc.html',1,'']]],
-  ['variable_5fvalues_2eh_24609',['variable_values.h',['../variable__values_8h.html',1,'']]],
-  ['variables_5finfo_2ecc_24610',['variables_info.cc',['../variables__info_8cc.html',1,'']]],
-  ['variables_5finfo_2eh_24611',['variables_info.h',['../variables__info_8h.html',1,'']]],
-  ['vector_5fmap_2eh_24612',['vector_map.h',['../vector__map_8h.html',1,'']]],
-  ['vector_5for_5ffunction_2eh_24613',['vector_or_function.h',['../vector__or__function_8h.html',1,'']]],
-  ['version_2ecc_24614',['version.cc',['../version_8cc.html',1,'']]],
-  ['version_2eh_24615',['version.h',['../version_8h.html',1,'']]],
-  ['visitor_2ecc_24616',['visitor.cc',['../visitor_8cc.html',1,'']]],
-  ['vlog_5fis_5fon_2ecc_24617',['vlog_is_on.cc',['../vlog__is__on_8cc.html',1,'']]],
-  ['vlog_5fis_5fon_2eh_24618',['vlog_is_on.h',['../vlog__is__on_8h.html',1,'']]]
+  ['logging_2ecc_0',['logging.cc',['../util_2logging_8cc.html',1,'']]],
+  ['logging_2eh_1',['logging.h',['../util_2logging_8h.html',1,'']]],
+  ['permutation_2eh_2',['permutation.h',['../util_2permutation_8h.html',1,'']]],
+  ['update_5frow_2ecc_3',['update_row.cc',['../update__row_8cc.html',1,'']]],
+  ['update_5frow_2eh_4',['update_row.h',['../update__row_8h.html',1,'']]],
+  ['utf8_2eh_5',['utf8.h',['../utf8_8h.html',1,'']]],
+  ['util_5fjava_5fwrap_2ecc_6',['util_java_wrap.cc',['../util__java__wrap_8cc.html',1,'']]],
+  ['utilities_2ecc_7',['utilities.cc',['../utilities_8cc.html',1,'']]]
 ];

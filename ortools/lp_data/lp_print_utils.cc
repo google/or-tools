@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,6 +14,7 @@
 #include "ortools/lp_data/lp_print_utils.h"
 
 #include <cmath>
+#include <cstdint>
 #include <cstdio>
 #include <limits>
 
@@ -36,8 +37,8 @@ std::string StringifyRational(const double x, const double precision) {
     return "-inf";
   }
   Fraction fraction = RationalApproximation(x, precision);
-  const int64 numerator = fraction.first;
-  const int64 denominator = fraction.second;
+  const int64_t numerator = fraction.first;
+  const int64_t denominator = fraction.second;
   return denominator == 1 ? absl::StrCat(numerator)
                           : absl::StrCat(numerator, "/", denominator);
 }

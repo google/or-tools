@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,6 +14,7 @@
 #include "ortools/algorithms/knapsack_solver_for_cuts.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <queue>
 #include <utility>
 
@@ -342,7 +343,7 @@ double KnapsackSolverForCuts::Solve(TimeLimit* time_limit,
     search_queue.push(search_nodes_.back().get());
   }
 
-  int64 number_of_nodes_visited = 0;
+  int64_t number_of_nodes_visited = 0;
   while (!search_queue.empty() &&
          search_queue.top()->profit_upper_bound() > best_solution_profit_) {
     if (time_limit->LimitReached()) {

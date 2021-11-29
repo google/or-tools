@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,6 +13,8 @@
 
 #ifndef OR_TOOLS_GLOP_PRIMAL_EDGE_NORMS_H_
 #define OR_TOOLS_GLOP_PRIMAL_EDGE_NORMS_H_
+
+#include <cstdint>
 
 #include "ortools/glop/basis_representation.h"
 #include "ortools/glop/parameters.pb.h"
@@ -70,6 +72,10 @@ class PrimalEdgeNorms {
   // and speed.
   bool NeedsBasisRefactorization() const;
 
+  // Depending on the SetPricingRule(), this returns one of the "norms" vector
+  // below. Note that all norms are squared.
+  const DenseRow& GetSquaredNorms();
+
   // Returns the primal edge squared norms. This is only valid if the caller
   // properly called UpdateBeforeBasisPivot() before each basis pivot, or if
   // this is the first call to this function after a Clear(). Note that only the
@@ -110,6 +116,17 @@ class PrimalEdgeNorms {
   void SetParameters(const GlopParameters& parameters) {
     parameters_ = parameters;
   }
+
+  // This changes what GetSquaredNorms() returns.
+  void SetPricingRule(GlopParameters::PricingRule rule) {
+    pricing_rule_ = rule;
+  }
+
+  // Registers a boolean that will be set to true each time the norms are or
+  // will be recomputed. This allows anyone that depends on this to know that it
+  // cannot just assume an incremental changes and needs to updates its data.
+  // Important: UpdateBeforeBasisPivot() will not trigger this.
+  void AddRecomputationWatcher(bool* watcher) { watchers_.push_back(watcher); }
 
   // Returns a string with statistics about this class.
   std::string StatString() const { return stats_.StatString(); }
@@ -168,6 +185,7 @@ class PrimalEdgeNorms {
 
   // Internal data.
   GlopParameters parameters_;
+  GlopParameters::PricingRule pricing_rule_ = GlopParameters::DANTZIG;
   Stats stats_;
 
   // Booleans to control what happens on the next ChooseEnteringColumn() call.
@@ -197,7 +215,11 @@ class PrimalEdgeNorms {
   ScatteredRow direction_left_inverse_;
 
   // Used by DeterministicTime().
-  int64 num_operations_;
+  int64_t num_operations_;
+
+  // Boolean(s) to set to false when the norms are changed outside of the
+  // UpdateBeforeBasisPivot() function.
+  std::vector<bool*> watchers_;
 
   DISALLOW_COPY_AND_ASSIGN(PrimalEdgeNorms);
 };

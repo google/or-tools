@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -302,7 +302,7 @@ static const char* GetAnsiColorCode(GLogColor color) {
 #endif  // !_MSC_VER
 
 // Safely get max_log_size, overriding to 1 if it somehow gets defined as 0
-static int32 MaxLogSize() {
+static int32_t MaxLogSize() {
   return (absl::GetFlag(FLAGS_max_log_size) > 0
               ? absl::GetFlag(FLAGS_max_log_size)
               : 1);
@@ -350,7 +350,7 @@ struct LogMessage::LogMessageData {
 static absl::Mutex log_mutex;
 
 // Number of messages sent at each severity.  Under log_mutex.
-int64 LogMessage::num_messages_[NUM_SEVERITIES] = {0, 0, 0, 0};
+int64_t LogMessage::num_messages_[NUM_SEVERITIES] = {0, 0, 0, 0};
 
 // Globally disable log writing (if disk is full)
 static bool stop_writing = false;
@@ -389,7 +389,7 @@ class LogFileObject : public base::Logger {
 
   // It is the actual file length for the system loggers,
   // i.e., INFO, ERROR, etc.
-  virtual uint32 LogSize() {
+  virtual uint32_t LogSize() {
     absl::MutexLock l(&lock_);
     return file_length_;
   }
@@ -400,7 +400,7 @@ class LogFileObject : public base::Logger {
   void FlushUnlocked();
 
  private:
-  static const uint32 kRolloverAttemptFrequency = 0x20;
+  static const uint32_t kRolloverAttemptFrequency = 0x20;
 
   absl::Mutex lock_;
   bool base_filename_selected_;
@@ -409,11 +409,11 @@ class LogFileObject : public base::Logger {
   string filename_extension_;  // option users can specify (eg to add port#)
   FILE* file_;
   LogSeverity severity_;
-  uint32 bytes_since_flush_;
-  uint32 dropped_mem_length_;
-  uint32 file_length_;
+  uint32_t bytes_since_flush_;
+  uint32_t dropped_mem_length_;
+  uint32_t file_length_;
   unsigned int rollover_attempt_;
-  int64 next_flush_time_;  // cycle count at which to flush log
+  int64_t next_flush_time_;  // cycle count at which to flush log
 
   // Actually create a logfile using the value of base_filename_ and the
   // supplied argument time_pid_string
@@ -813,8 +813,8 @@ void LogFileObject::FlushUnlocked() {
     bytes_since_flush_ = 0;
   }
   // Figure out when we are due for another flush.
-  const int64 next = (absl::GetFlag(FLAGS_logbufsecs) *
-                      static_cast<int64>(1000000));  // in usec
+  const int64_t next = (absl::GetFlag(FLAGS_logbufsecs) *
+                        static_cast<int64_t>(1000000));  // in usec
   next_flush_time_ =
       logging_internal::CycleClock_Now() + logging_internal::UsecToCycles(next);
 }
@@ -1023,8 +1023,9 @@ void LogFileObject::Write(bool force_flush, time_t timestamp,
     if (absl::GetFlag(FLAGS_drop_log_memory) && file_length_ >= (3 << 20)) {
       // Don't evict the most recent 1-2MiB so as not to impact a tailer
       // of the log file and to avoid page rounding issue on linux < 4.7
-      uint32 total_drop_length = (file_length_ & ~((1 << 20) - 1)) - (1 << 20);
-      uint32 this_drop_length = total_drop_length - dropped_mem_length_;
+      uint32_t total_drop_length =
+          (file_length_ & ~((1 << 20) - 1)) - (1 << 20);
+      uint32_t this_drop_length = total_drop_length - dropped_mem_length_;
       if (this_drop_length >= (2 << 20)) {
         // Only advise when >= 2MiB to drop
         posix_fadvise(fileno(file_), dropped_mem_length_, this_drop_length,
@@ -1139,10 +1140,10 @@ void LogMessage::Init(const char* file, int line, LogSeverity severity,
   data_->send_method_ = send_method;
   data_->sink_ = NULL;
   data_->outvec_ = NULL;
-  double now = ToUDate(absl::Now());
-  data_->timestamp_ = static_cast<time_t>(now);
+  timespec now_ts = absl::ToTimespec(absl::Now());
+  data_->timestamp_ = now_ts.tv_sec;
   localtime_r(&data_->timestamp_, &data_->tm_time_);
-  int usecs = static_cast<int>((now - data_->timestamp_) * 1000000);
+  int usecs = now_ts.tv_nsec / 1000;
 
   data_->num_chars_to_log_ = 0;
   data_->num_chars_to_syslog_ = 0;
@@ -1471,7 +1472,7 @@ void base::SetLogger(LogSeverity severity, base::Logger* logger) {
 }
 
 // L < log_mutex.  Acquires and releases absl::Mutex_.
-int64 LogMessage::num_messages(int severity) {
+int64_t LogMessage::num_messages(int severity) {
   absl::MutexLock l(&log_mutex);
   return num_messages_[severity];
 }
@@ -1842,7 +1843,7 @@ void MakeCheckOpValueString(std::ostream* os, const char& v) {
   if (v >= 32 && v <= 126) {
     (*os) << "'" << v << "'";
   } else {
-    (*os) << "char value " << (int16)v;
+    (*os) << "char value " << (int16_t)v;
   }
 }
 
@@ -1851,7 +1852,7 @@ void MakeCheckOpValueString(std::ostream* os, const signed char& v) {
   if (v >= 32 && v <= 126) {
     (*os) << "'" << v << "'";
   } else {
-    (*os) << "signed char value " << (int16)v;
+    (*os) << "signed char value " << (int16_t)v;
   }
 }
 
@@ -1860,8 +1861,13 @@ void MakeCheckOpValueString(std::ostream* os, const unsigned char& v) {
   if (v >= 32 && v <= 126) {
     (*os) << "'" << v << "'";
   } else {
-    (*os) << "unsigned char value " << (uint16)v;
+    (*os) << "unsigned char value " << (uint16_t)v;
   }
+}
+
+template <>
+void MakeCheckOpValueString(std::ostream* os, const std::nullptr_t& v) {
+  (*os) << "nullptr";
 }
 
 void InitGoogleLogging(const char* argv0) {

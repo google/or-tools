@@ -1,0 +1,32 @@
+name: Make Linux .Net
+
+on: [push, pull_request]
+
+jobs:
+  # Building using the github runner environement directly.
+  make:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Check dotnet
+      run: dotnet --info
+    - name: Swig install
+      run: sudo apt install -y swig
+    - name: Check swig
+      run: swig -version
+    - name: Check make
+      run: make --version
+    - name: Check system
+      run: make detect_port
+    - name: Check .Net
+      run: make detect_dotnet
+    - name: Build third party
+      run: make third_party -j4
+    - name: Build C++
+      run: make cc -j4
+    - name: Build .Net
+      run: make dotnet -j4
+    - name: Test .Net
+      run: make test_dotnet -j4
+    - name: Create nuget packages
+      run: make package_dotnet

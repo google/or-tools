@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,7 +19,8 @@
 
 namespace operations_research {
 void SolveAndPrint(MPSolver& solver, std::vector<MPVariable*> variables,
-                   std::vector<MPConstraint*> constraints) {
+                   std::vector<MPConstraint*> constraints,
+                   bool is_continuous) {
   LOG(INFO) << "Number of variables = " << solver.NumVariables();
   LOG(INFO) << "Number of constraints = " << solver.NumConstraints();
 
@@ -36,15 +37,18 @@ void SolveAndPrint(MPSolver& solver, std::vector<MPVariable*> variables,
   LOG(INFO) << "";
   LOG(INFO) << "Advanced usage:";
   LOG(INFO) << "Problem solved in " << solver.wall_time() << " milliseconds";
-  LOG(INFO) << "Problem solved in " << solver.iterations() << " iterations";
-  for (const auto& i : variables) {
-    LOG(INFO) << i->name() << ": reduced cost " << i->reduced_cost();
-  }
+  if (solver.ProblemType() != MPSolver::BOP_INTEGER_PROGRAMMING)
+    LOG(INFO) << "Problem solved in " << solver.iterations() << " iterations";
+  if (is_continuous) {
+    for (const auto& i : variables) {
+      LOG(INFO) << i->name() << ": reduced cost " << i->reduced_cost();
+    }
 
-  const std::vector<double> activities = solver.ComputeConstraintActivities();
-  for (const auto& i : constraints) {
-    LOG(INFO) << i->name() << ": dual value = " << i->dual_value()
-              << " activity = " << activities[i->index()];
+    const std::vector<double> activities = solver.ComputeConstraintActivities();
+    for (const auto& i : constraints) {
+      LOG(INFO) << i->name() << ": dual value = " << i->dual_value()
+        << " activity = " << activities[i->index()];
+    }
   }
 }
 
@@ -77,7 +81,7 @@ void RunLinearProgrammingExample(
   c2->SetCoefficient(x, 1);
   c2->SetCoefficient(y, -1);
 
-  SolveAndPrint(solver, {x, y}, {c0, c1, c2});
+  SolveAndPrint(solver, {x, y}, {c0, c1, c2}, true);
 }
 
 void RunMixedIntegerProgrammingExample(
@@ -104,12 +108,12 @@ void RunMixedIntegerProgrammingExample(
   c1->SetCoefficient(x, 1);
   c1->SetCoefficient(y, 0);
 
-  SolveAndPrint(solver, {x, y}, {c0, c1});
+  SolveAndPrint(solver, {x, y}, {c0, c1}, false);
 }
 
 void RunBooleanProgrammingExample(
     MPSolver::OptimizationProblemType optimization_problem_type) {
-  MPSolver solver("MixedIntegerProgrammingExample", optimization_problem_type);
+  MPSolver solver("BooleanProgrammingExample", optimization_problem_type);
   const double infinity = solver.infinity();
   // x and y are boolean variables.
   MPVariable* const x = solver.MakeBoolVar("x");
@@ -126,7 +130,39 @@ void RunBooleanProgrammingExample(
   c0->SetCoefficient(x, 1);
   c0->SetCoefficient(y, 2);
 
-  SolveAndPrint(solver, {x, y}, {c0});
+  SolveAndPrint(solver, {x, y}, {c0}, false);
+}
+
+void MutableObjectiveCrash() {
+  LOG(INFO) << "MutableObjectiveCrash";
+  // Create the linear solver with the GLOP backend.
+  std::unique_ptr<MPSolver> solver(MPSolver::CreateSolver("GLOP"));
+
+  // Create the variables x and y.
+  MPVariable* const x = solver->MakeNumVar(0.0, 1, "x");
+  MPVariable* const y = solver->MakeNumVar(0.0, 2, "y");
+
+  LOG(INFO) << "Number of variables = " << solver->NumVariables();
+
+  // Create a linear constraint, 0 <= x + y <= 2.
+  MPConstraint* const ct = solver->MakeRowConstraint(0.0, 2.0, "ct");
+  ct->SetCoefficient(x, 1);
+  ct->SetCoefficient(y, 1);
+
+  LOG(INFO) << "Number of constraints = " << solver->NumConstraints();
+
+  // Create the objective function, 3 * x + y.
+  MPObjective* const objective = solver->MutableObjective();
+  objective->SetCoefficient(x, 3);
+  objective->SetCoefficient(y, 1);
+  objective->SetMaximization();
+
+  solver->Solve();
+
+  LOG(INFO) << "Solution:" << std::endl;
+  LOG(INFO) << "Objective value = " << objective->Value();
+  LOG(INFO) << "x = " << x->solution_value();
+  LOG(INFO) << "y = " << y->solution_value();
 }
 
 void RunAllExamples() {
@@ -179,6 +215,8 @@ void RunAllExamples() {
   LOG(INFO) << "---- Boolean Integer programming example with BOP ----";
   RunBooleanProgrammingExample(MPSolver::BOP_INTEGER_PROGRAMMING);
 #endif  // USE_BOP
+
+  MutableObjectiveCrash();
 }
 }  // namespace operations_research
 

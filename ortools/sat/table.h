@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_SAT_TABLE_H_
 #define OR_TOOLS_SAT_TABLE_H_
 
+#include <cstdint>
 #include <functional>
 #include <vector>
 
@@ -30,14 +31,14 @@ namespace sat {
 // tuples. All the tuples must have the same size as var.size(), this is
 // Checked.
 void AddTableConstraint(absl::Span<const IntegerVariable> vars,
-                        std::vector<std::vector<int64>> tuples, Model* model);
+                        std::vector<std::vector<int64_t>> tuples, Model* model);
 
 // Enforces that none of the given tuple appear.
 //
 // TODO(user): we could propagate more than what we currently do which is simply
 // adding one clause per tuples.
 void AddNegatedTableConstraint(absl::Span<const IntegerVariable> vars,
-                               std::vector<std::vector<int64>> tuples,
+                               std::vector<std::vector<int64_t>> tuples,
                                Model* model);
 
 // Enforces that exactly one literal in line_literals is true, and that
@@ -62,8 +63,8 @@ std::function<void(Model*)> LiteralTableConstraint(
 // See the test for some examples.
 std::function<void(Model*)> TransitionConstraint(
     const std::vector<IntegerVariable>& vars,
-    const std::vector<std::vector<int64>>& automaton, int64 initial_state,
-    const std::vector<int64>& final_states);
+    const std::vector<std::vector<int64_t>>& automaton, int64_t initial_state,
+    const std::vector<int64_t>& final_states);
 
 }  // namespace sat
 }  // namespace operations_research

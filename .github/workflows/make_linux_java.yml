@@ -1,0 +1,32 @@
+name: Make Linux Java
+
+on: [push, pull_request]
+
+jobs:
+  # Building using the github runner environement directly.
+  make:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Check java
+      run: java -version
+    - name: Swig install
+      run: sudo apt install -y swig
+    - name: Check swig
+      run: swig -version
+    - name: Check make
+      run: make --version
+    - name: Check system
+      run: make detect_port
+    - name: Check Java
+      run: make detect_java
+    - name: Build third party
+      run: make third_party -j4
+    - name: Build C++
+      run: make cc -j4
+    - name: Build Java
+      run: make java -j4
+    - name: Test Java
+      run: make test_java -j4
+    - name: Create maven package
+      run: make package_java

@@ -105,7 +105,7 @@ do
     print_paths "${all_deps[@]/.proto/.pb.cc}"
   fi
   echo -e " | \$(GEN_DIR)/ortools/${main_dir}"
-  echo -e "\t\$(PROTOC) --proto_path=\$(INC_DIR) \$(PROTOBUF_PROTOC_INC) --cpp_out=\$(GEN_PATH) \$(SRC_DIR)/ortools/${main_dir}/${name}.proto"
+  echo -e "\t\$(PROTOC) --experimental_allow_proto3_optional --proto_path=\$(INC_DIR) \$(PROTOBUF_PROTOC_INC) --cpp_out=\$(GEN_PATH) \$(SRC_DIR)/ortools/${main_dir}/${name}.proto"
   echo
   # Print makefile command for .pb.h.
   echo -e "\$(GEN_DIR)/ortools/${main_dir}/${name}.pb.h: \\"

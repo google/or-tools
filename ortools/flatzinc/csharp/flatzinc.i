@@ -1,4 +1,4 @@
-// Copyright 2010-2014 Google
+// Copyright 2010-2021 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -27,7 +27,7 @@ DECLARE_bool(fz_logging);
 %}
 
 %include "std_vector.i"
-%template(Int64Vector) std::vector<int64>;
+%template(Int64Vector) std::vector<int64_t>;
 %template(AnnotationVector) std::vector<operations_research::fz::Annotation>;
 %template(ArgumentVector) std::vector<operations_research::fz::Argument>;
 %template(ConstraintVector) std::vector<operations_research::fz::Constraint*>;

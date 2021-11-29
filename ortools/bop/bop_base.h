@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,10 +14,13 @@
 #ifndef OR_TOOLS_BOP_BOP_BASE_H_
 #define OR_TOOLS_BOP_BOP_BASE_H_
 
+#include <cstdint>
+#include <limits>
 #include <string>
 
 #include "absl/synchronization/mutex.h"
 #include "ortools/base/basictypes.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/bop/bop_parameters.pb.h"
 #include "ortools/bop/bop_solution.h"
 #include "ortools/lp_data/lp_types.h"
@@ -149,8 +152,8 @@ class ProblemState {
   // state has been updated. If the stamp changed since last time one has
   // checked the state, it's worth trying again as it might have changed
   // (no guarantee).
-  static const int64 kInitialStampValue;
-  int64 update_stamp() const { return update_stamp_; }
+  static const int64_t kInitialStampValue;
+  int64_t update_stamp() const { return update_stamp_; }
 
   // Marks the problem state as optimal.
   void MarkAsOptimal();
@@ -203,8 +206,8 @@ class ProblemState {
   // For internal use only: this is the unscaled version of the lower (resp.
   // upper) bound, and so should be compared only to the unscaled cost given by
   // solution.GetCost().
-  int64 lower_bound() const { return lower_bound_; }
-  int64 upper_bound() const { return upper_bound_; }
+  int64_t lower_bound() const { return lower_bound_; }
+  int64_t upper_bound() const { return upper_bound_; }
 
   // Returns the scaled lower bound of the original problem.
   double GetScaledLowerBound() const {
@@ -222,15 +225,15 @@ class ProblemState {
  private:
   const sat::LinearBooleanProblem& original_problem_;
   BopParameters parameters_;
-  int64 update_stamp_;
+  int64_t update_stamp_;
   absl::StrongVector<VariableIndex, bool> is_fixed_;
   absl::StrongVector<VariableIndex, bool> fixed_values_;
   glop::DenseRow lp_values_;
   BopSolution solution_;
   std::vector<bool> assignment_preference_;
 
-  int64 lower_bound_;
-  int64 upper_bound_;
+  int64_t lower_bound_;
+  int64_t upper_bound_;
 
   // Manage the set of the problem binary clauses (including the learned ones).
   sat::BinaryClauseManager binary_clause_manager_;
@@ -246,7 +249,7 @@ struct LearnedInfo {
   explicit LearnedInfo(const sat::LinearBooleanProblem& problem)
       : fixed_literals(),
         solution(problem, "AllZero"),
-        lower_bound(kint64min),
+        lower_bound(std::numeric_limits<int64_t>::min()),
         lp_values(),
         binary_clauses() {}
 
@@ -254,7 +257,7 @@ struct LearnedInfo {
   // to reduce the number of creation / deletion of objects.
   void Clear() {
     fixed_literals.clear();
-    lower_bound = kint64min;
+    lower_bound = std::numeric_limits<int64_t>::min();
     lp_values.clear();
     binary_clauses.clear();
   }
@@ -266,7 +269,7 @@ struct LearnedInfo {
   BopSolution solution;
 
   // A lower bound (for multi-threading purpose).
-  int64 lower_bound;
+  int64_t lower_bound;
 
   // An assignment for the relaxed linear programming problem (can be empty).
   // This is meant to be the optimal LP solution, but can just be a feasible

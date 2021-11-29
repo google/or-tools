@@ -1,4 +1,5 @@
-# Copyright 2010-2018 Google LLC
+#!/usr/bin/env python3
+# Copyright 2010-2021 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -106,6 +107,7 @@ def create_data_model():
 # [START solution_printer]
 def print_solution(data, manager, routing, assignment):
     """Prints assignment on console."""
+    print(f'Objective: {assignment.ObjectiveValue()}')
     # Display dropped nodes.
     dropped_nodes = 'Dropped nodes:'
     for node in range(routing.Size()):

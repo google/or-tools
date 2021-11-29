@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -22,13 +22,13 @@ namespace sat {
 class SelectedMinPropagator : public PropagatorInterface {
  public:
   explicit SelectedMinPropagator(Literal enforcement_literal,
-                                 IntegerVariable target,
-                                 const std::vector<IntegerVariable>& vars,
+                                 AffineExpression target,
+                                 const std::vector<AffineExpression>& exprs,
                                  const std::vector<Literal>& selectors,
                                  Model* model)
       : enforcement_literal_(enforcement_literal),
         target_(target),
-        vars_(vars),
+        exprs_(exprs),
         selectors_(selectors),
         trail_(model->GetOrCreate<Trail>()),
         integer_trail_(model->GetOrCreate<IntegerTrail>()),
@@ -39,8 +39,8 @@ class SelectedMinPropagator : public PropagatorInterface {
 
  private:
   const Literal enforcement_literal_;
-  const IntegerVariable target_;
-  const std::vector<IntegerVariable> vars_;
+  const AffineExpression target_;
+  const std::vector<AffineExpression> exprs_;
   const std::vector<Literal> selectors_;
   Trail* trail_;
   IntegerTrail* integer_trail_;
@@ -68,7 +68,7 @@ bool SelectedMinPropagator::Propagate() {
 
   // Push the given integer literal if lit is true. Note that if lit is still
   // not assigned, we may still be able to deduce something.
-  // TODO(user,user): Move this to integer_trail, and remove from here and
+  // TODO(user): Move this to integer_trail, and remove from here and
   // from scheduling helper.
   const auto push_bound = [&](Literal enforcement_lit, IntegerLiteral i_lit) {
     if (assignment.LiteralIsFalse(enforcement_lit)) return true;
@@ -99,7 +99,7 @@ bool SelectedMinPropagator::Propagate() {
   };
 
   // Propagation.
-  const int num_vars = vars_.size();
+  const int num_vars = exprs_.size();
   const IntegerValue target_min = integer_trail_->LowerBound(target_);
   const IntegerValue target_max = integer_trail_->UpperBound(target_);
 
@@ -115,9 +115,8 @@ bool SelectedMinPropagator::Propagate() {
   for (int i = 0; i < num_vars; ++i) {
     if (assignment.LiteralIsFalse(selectors_[i])) continue;
 
-    const IntegerVariable var = vars_[i];
-    const IntegerValue var_min = integer_trail_->LowerBound(var);
-    const IntegerValue var_max = integer_trail_->UpperBound(var);
+    const IntegerValue var_min = integer_trail_->LowerBound(exprs_[i]);
+    const IntegerValue var_max = integer_trail_->UpperBound(exprs_[i]);
 
     min_of_mins = std::min(min_of_mins, var_min);
 
@@ -144,13 +143,12 @@ bool SelectedMinPropagator::Propagate() {
     for (int i = 0; i < num_vars; ++i) {
       if (assignment.LiteralIsFalse(selectors_[i])) {
         add_var_non_selection_to_reason(i);
-      } else {
-        integer_reason_.push_back(
-            IntegerLiteral::GreaterOrEqual(vars_[i], min_of_mins));
+      } else if (exprs_[i].var != kNoIntegerVariable) {
+        integer_reason_.push_back(exprs_[i].GreaterOrEqual(min_of_mins));
       }
     }
     if (!push_bound(enforcement_literal_,
-                    IntegerLiteral::GreaterOrEqual(target_, min_of_mins))) {
+                    target_.GreaterOrEqual(min_of_mins))) {
       return false;
     }
   }
@@ -162,11 +160,13 @@ bool SelectedMinPropagator::Propagate() {
     literal_reason_.clear();
     integer_reason_.clear();
     add_var_selection_to_reason(min_of_selected_maxes_index);
-    integer_reason_.push_back(IntegerLiteral::LowerOrEqual(
-        vars_[min_of_selected_maxes_index], min_of_selected_maxes));
-    if (!integer_trail_->Enqueue(
-            IntegerLiteral::LowerOrEqual(target_, min_of_selected_maxes),
-            literal_reason_, integer_reason_)) {
+    if (exprs_[min_of_selected_maxes_index].var != kNoIntegerVariable) {
+      integer_reason_.push_back(
+          exprs_[min_of_selected_maxes_index].LowerOrEqual(
+              min_of_selected_maxes));
+    }
+    if (!integer_trail_->Enqueue(target_.LowerOrEqual(min_of_selected_maxes),
+                                 literal_reason_, integer_reason_)) {
       return false;
     }
   }
@@ -180,14 +180,13 @@ bool SelectedMinPropagator::Propagate() {
       for (int i = 0; i < num_vars; ++i) {
         if (assignment.LiteralIsFalse(selectors_[i])) {
           add_var_non_selection_to_reason(i);
-        } else {
+        } else if (exprs_[i].var != kNoIntegerVariable) {
           integer_reason_.push_back(
-              IntegerLiteral::LowerOrEqual(vars_[i], max_of_possible_maxes));
+              exprs_[i].LowerOrEqual(max_of_possible_maxes));
         }
       }
-      if (!push_bound(
-              enforcement_literal_,
-              IntegerLiteral::LowerOrEqual(target_, max_of_possible_maxes))) {
+      if (!push_bound(enforcement_literal_,
+                      target_.LowerOrEqual(max_of_possible_maxes))) {
         return false;
       }
     }
@@ -209,7 +208,7 @@ bool SelectedMinPropagator::Propagate() {
 
   DCHECK_NE(first_selected, -1);
   DCHECK(assignment.LiteralIsTrue(selectors_[first_selected]));
-  const IntegerVariable unique_selected_var = vars_[first_selected];
+  const AffineExpression unique_selected_var = exprs_[first_selected];
 
   // Propagate bound from target to the unique selected var.
   if (target_min > integer_trail_->LowerBound(unique_selected_var)) {
@@ -222,11 +221,11 @@ bool SelectedMinPropagator::Propagate() {
         add_var_selection_to_reason(i);
       }
     }
-    integer_reason_.push_back(
-        IntegerLiteral::GreaterOrEqual(target_, target_min));
-    if (!integer_trail_->Enqueue(
-            IntegerLiteral::GreaterOrEqual(unique_selected_var, target_min),
-            literal_reason_, integer_reason_)) {
+    if (target_.var != kNoIntegerVariable) {
+      integer_reason_.push_back(target_.GreaterOrEqual(target_min));
+    }
+    if (!integer_trail_->Enqueue(unique_selected_var.GreaterOrEqual(target_min),
+                                 literal_reason_, integer_reason_)) {
       return false;
     }
   }
@@ -241,11 +240,11 @@ bool SelectedMinPropagator::Propagate() {
         add_var_selection_to_reason(i);
       }
     }
-    integer_reason_.push_back(
-        IntegerLiteral::LowerOrEqual(target_, target_max));
-    if (!integer_trail_->Enqueue(
-            IntegerLiteral::LowerOrEqual(unique_selected_var, target_max),
-            literal_reason_, integer_reason_)) {
+    if (target_.var != kNoIntegerVariable) {
+      integer_reason_.push_back(target_.LowerOrEqual(target_max));
+    }
+    if (!integer_trail_->Enqueue(unique_selected_var.LowerOrEqual(target_max),
+                                 literal_reason_, integer_reason_)) {
       return false;
     }
   }
@@ -255,69 +254,68 @@ bool SelectedMinPropagator::Propagate() {
 
 int SelectedMinPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
-  for (int t = 0; t < vars_.size(); ++t) {
-    watcher->WatchLowerBound(vars_[t], id);
-    watcher->WatchUpperBound(vars_[t], id);
+  for (int t = 0; t < exprs_.size(); ++t) {
+    watcher->WatchAffineExpression(exprs_[t], id);
     watcher->WatchLiteral(selectors_[t], id);
   }
-  watcher->WatchLowerBound(target_, id);
-  watcher->WatchUpperBound(target_, id);
+  watcher->WatchAffineExpression(target_, id);
   watcher->WatchLiteral(enforcement_literal_, id);
   return id;
 }
 
 std::function<void(Model*)> EqualMinOfSelectedVariables(
-    Literal enforcement_literal, IntegerVariable target,
-    const std::vector<IntegerVariable>& vars,
+    Literal enforcement_literal, AffineExpression target,
+    const std::vector<AffineExpression>& exprs,
     const std::vector<Literal>& selectors) {
-  CHECK_EQ(vars.size(), selectors.size());
+  CHECK_EQ(exprs.size(), selectors.size());
   return [=](Model* model) {
     // If both a variable is selected and the enforcement literal is true, then
     // the var is always greater than the target.
-    for (int i = 0; i < vars.size(); ++i) {
-      std::vector<Literal> conditions = {enforcement_literal};
-      conditions.push_back(selectors[i]);
-      model->Add(ConditionalLowerOrEqual(target, vars[i], conditions));
+    for (int i = 0; i < exprs.size(); ++i) {
+      LinearConstraintBuilder builder(model, kMinIntegerValue, IntegerValue(0));
+      builder.AddTerm(target, IntegerValue(1));
+      builder.AddTerm(exprs[i], IntegerValue(-1));
+      LoadConditionalLinearConstraint({enforcement_literal, selectors[i]},
+                                      builder.Build(), model);
     }
 
     // Add the dedicated propagator.
     SelectedMinPropagator* constraint = new SelectedMinPropagator(
-        enforcement_literal, target, vars, selectors, model);
+        enforcement_literal, target, exprs, selectors, model);
     constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(constraint);
   };
 }
 
 std::function<void(Model*)> EqualMaxOfSelectedVariables(
-    Literal enforcement_literal, IntegerVariable target,
-    const std::vector<IntegerVariable>& vars,
+    Literal enforcement_literal, AffineExpression target,
+    const std::vector<AffineExpression>& exprs,
     const std::vector<Literal>& selectors) {
-  CHECK_EQ(vars.size(), selectors.size());
+  CHECK_EQ(exprs.size(), selectors.size());
   return [=](Model* model) {
-    std::vector<IntegerVariable> negations;
-    for (const IntegerVariable var : vars) {
-      negations.push_back(NegationOf(var));
+    std::vector<AffineExpression> negations;
+    for (const AffineExpression expr : exprs) {
+      negations.push_back(expr.Negated());
     }
     model->Add(EqualMinOfSelectedVariables(
-        enforcement_literal, NegationOf(target), negations, selectors));
+        enforcement_literal, target.Negated(), negations, selectors));
   };
 }
 
 std::function<void(Model*)> SpanOfIntervals(
     IntervalVariable span, const std::vector<IntervalVariable>& intervals) {
   return [=](Model* model) {
-    SatSolver* sat_solver = model->GetOrCreate<SatSolver>();
-    SchedulingConstraintHelper task_helper(intervals, model);
-    SchedulingConstraintHelper target_helper({span}, model);
+    auto* sat_solver = model->GetOrCreate<SatSolver>();
+    auto* repository = model->GetOrCreate<IntervalsRepository>();
 
     // If the target is absent, then all tasks are absent.
-    if (target_helper.IsAbsent(0)) {
-      for (int t = 0; t < task_helper.NumTasks(); ++t) {
-        if (task_helper.IsOptional(t)) {
+    if (repository->IsAbsent(span)) {
+      for (const IntervalVariable interval : intervals) {
+        if (repository->IsOptional(interval)) {
           sat_solver->AddBinaryClause(
-              target_helper.PresenceLiteral(0).Negated(),
-              task_helper.PresenceLiteral(t));
-        } else if (task_helper.IsPresent(t)) {
+              repository->PresenceLiteral(span).Negated(),
+              repository->PresenceLiteral(interval));
+        } else if (repository->IsPresent(interval)) {
           sat_solver->NotifyThatModelIsUnsat();
           return;
         }
@@ -328,54 +326,53 @@ std::function<void(Model*)> SpanOfIntervals(
     // The target is present iif at least one interval is present. This is a
     // strict equivalence.
     std::vector<Literal> presence_literals;
-    std::vector<IntegerVariable> starts;
-    std::vector<IntegerVariable> ends;
+    std::vector<AffineExpression> starts;
+    std::vector<AffineExpression> ends;
     std::vector<Literal> clause;
     bool at_least_one_interval_is_present = false;
     const Literal true_literal =
         model->GetOrCreate<IntegerEncoder>()->GetTrueLiteral();
 
-    for (int t = 0; t < task_helper.NumTasks(); ++t) {
-      if (task_helper.IsAbsent(t)) continue;
+    for (const IntervalVariable interval : intervals) {
+      if (repository->IsAbsent(interval)) continue;
 
-      if (task_helper.IsOptional(t)) {
-        const Literal task_lit = task_helper.PresenceLiteral(t);
+      if (repository->IsOptional(interval)) {
+        const Literal task_lit = repository->PresenceLiteral(interval);
         presence_literals.push_back(task_lit);
         clause.push_back(task_lit);
 
-        if (target_helper.IsOptional(0)) {
+        if (repository->IsOptional(span)) {
           // task is present => target is present.
           sat_solver->AddBinaryClause(task_lit.Negated(),
-                                      target_helper.PresenceLiteral(0));
+                                      repository->PresenceLiteral(span));
         }
 
       } else {
         presence_literals.push_back(true_literal);
         at_least_one_interval_is_present = true;
       }
-      starts.push_back(task_helper.StartVars()[t]);
-      ends.push_back(task_helper.EndVars()[t]);
+      starts.push_back(repository->Start(interval));
+      ends.push_back(repository->End(interval));
     }
 
     if (!at_least_one_interval_is_present) {
       // enforcement_literal is true => one of the task is present.
-      if (target_helper.IsOptional(0)) {
-        clause.push_back(target_helper.PresenceLiteral(0).Negated());
+      if (repository->IsOptional(span)) {
+        clause.push_back(repository->PresenceLiteral(span).Negated());
       }
       sat_solver->AddProblemClause(clause);
     }
 
     // Link target start and end to the starts and ends of the tasks.
     const Literal enforcement_literal =
-        target_helper.IsOptional(0)
-            ? target_helper.PresenceLiteral(0)
+        repository->IsOptional(span)
+            ? repository->PresenceLiteral(span)
             : model->GetOrCreate<IntegerEncoder>()->GetTrueLiteral();
     model->Add(EqualMinOfSelectedVariables(enforcement_literal,
-                                           target_helper.StartVars().front(),
-                                           starts, presence_literals));
-    model->Add(EqualMaxOfSelectedVariables(enforcement_literal,
-                                           target_helper.EndVars().front(),
-                                           ends, presence_literals));
+                                           repository->Start(span), starts,
+                                           presence_literals));
+    model->Add(EqualMaxOfSelectedVariables(
+        enforcement_literal, repository->End(span), ends, presence_literals));
   };
 }
 

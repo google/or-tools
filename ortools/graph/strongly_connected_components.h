@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -37,7 +37,8 @@
 //
 // IMPORTANT: num_nodes will be the number of nodes of the graph. Its type
 // is the type used internally by the algorithm. It is why it is better to
-// convert it to int or even int32 rather than using size_t which takes 64 bits.
+// convert it to int or even int32_t rather than using size_t which takes 64
+// bits.
 
 #ifndef UTIL_GRAPH_STRONGLY_CONNECTED_COMPONENTS_H_
 #define UTIL_GRAPH_STRONGLY_CONNECTED_COMPONENTS_H_

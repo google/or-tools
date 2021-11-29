@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,6 +18,8 @@
 
 #include <string>
 
+#include "absl/flags/parse.h"
+#include "absl/flags/usage.h"
 #include "absl/status/status.h"
 #include "absl/strings/match.h"
 #include "google/protobuf/descriptor.h"
@@ -74,8 +76,8 @@ void ReadGlopParameters(GlopParameters* parameters) {
         << absl::GetFlag(FLAGS_params);
   }
   if (absl::GetFlag(FLAGS_mps_verbose_result)) {
-    printf("GlopParameters {\n%s}\n",
-           FullProtocolMessageAsString(*parameters, 1).c_str());
+    absl::PrintF("GlopParameters {\n%s}\n",
+                 FullProtocolMessageAsString(*parameters, 1));
   }
 }
 
@@ -106,7 +108,7 @@ int main(int argc, char* argv[]) {
       MPModelProtoToLinearProgram(model_proto, &linear_program);
     }
     if (absl::GetFlag(FLAGS_mps_dump_problem)) {
-      printf("%s", linear_program.Dump().c_str());
+      absl::PrintF("%s", linear_program.Dump());
     }
 
     // Create the solver with the correct parameters.
@@ -126,29 +128,29 @@ int main(int argc, char* argv[]) {
 
     if (absl::GetFlag(FLAGS_mps_terse_result)) {
       if (absl::GetFlag(FLAGS_mps_display_full_path)) {
-        printf("%s,", file_name.c_str());
+        absl::PrintF("%s,", file_name);
       }
-      printf("%s,", linear_program.name().c_str());
+      absl::PrintF("%s,", linear_program.name());
       if (absl::GetFlag(FLAGS_mps_solve)) {
-        printf("%15.15e,%s,%-6.4g,", objective_value, status_string.c_str(),
-               solving_time_in_sec);
+        absl::PrintF("%15.15e,%s,%-6.4g,", objective_value, status_string,
+                     solving_time_in_sec);
       }
-      printf("%s,%s\n", linear_program.GetProblemStats().c_str(),
-             linear_program.GetNonZeroStats().c_str());
+      absl::PrintF("%s,%s\n", linear_program.GetProblemStats(),
+                   linear_program.GetNonZeroStats());
     }
 
     if (absl::GetFlag(FLAGS_mps_verbose_result)) {
       if (absl::GetFlag(FLAGS_mps_display_full_path)) {
-        printf("%-45s: %s\n", "File path", file_name.c_str());
+        absl::PrintF("%-45s: %s\n", "File path", file_name);
       }
-      printf("%-45s: %s\n", "Problem name", linear_program.name().c_str());
+      absl::PrintF("%-45s: %s\n", "Problem name", linear_program.name());
       if (absl::GetFlag(FLAGS_mps_solve)) {
-        printf("%-45s: %15.15e\n", "Objective value", objective_value);
-        printf("%-45s: %s\n", "Problem status", status_string.c_str());
-        printf("%-45s: %-6.4g\n", "Solving time", solving_time_in_sec);
+        absl::PrintF("%-45s: %15.15e\n", "Objective value", objective_value);
+        absl::PrintF("%-45s: %s\n", "Problem status", status_string);
+        absl::PrintF("%-45s: %-6.4g\n", "Solving time", solving_time_in_sec);
       }
-      printf("%s%s", linear_program.GetPrettyProblemStats().c_str(),
-             linear_program.GetPrettyNonZeroStats().c_str());
+      absl::PrintF("%s%s", linear_program.GetPrettyProblemStats(),
+                   linear_program.GetPrettyNonZeroStats());
     }
   }
   return EXIT_SUCCESS;

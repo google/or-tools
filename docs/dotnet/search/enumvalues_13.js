@@ -1,5 +1,7 @@
 var searchData=
 [
-  ['xpress_5flinear_5fprogramming_10246',['XPRESS_LINEAR_PROGRAMMING',['../classGoogle_1_1OrTools_1_1LinearSolver_1_1Solver.html#a76c87990aabadd148304b95332a60ff8a4b7c09c36f7a4f41403e2915423ec75f',1,'Google::OrTools::LinearSolver::Solver']]],
-  ['xpress_5fmixed_5finteger_5fprogramming_10247',['XPRESS_MIXED_INTEGER_PROGRAMMING',['../classGoogle_1_1OrTools_1_1LinearSolver_1_1Solver.html#a76c87990aabadd148304b95332a60ff8a596a3daf71f9f4da8a4e23465b9d25d3',1,'Google::OrTools::LinearSolver::Solver']]]
+  ['vardiffcst_0',['VarDiffCst',['../classGoogle_1_1OrTools_1_1Sat_1_1BoundedLinearExpression.html#a1d1cfd8ffb84e947f82999c682b666a7a6646e0f0d925c772e45efeb400845a2a',1,'Google::OrTools::Sat::BoundedLinearExpression']]],
+  ['vardiffvar_1',['VarDiffVar',['../classGoogle_1_1OrTools_1_1Sat_1_1BoundedLinearExpression.html#a1d1cfd8ffb84e947f82999c682b666a7a196fe66eb751ff977bbea7014c375e0b',1,'Google::OrTools::Sat::BoundedLinearExpression']]],
+  ['vareqcst_2',['VarEqCst',['../classGoogle_1_1OrTools_1_1Sat_1_1BoundedLinearExpression.html#a1d1cfd8ffb84e947f82999c682b666a7af1f0e9f30876ff42920fab3ca1ad4fab',1,'Google::OrTools::Sat::BoundedLinearExpression']]],
+  ['vareqvar_3',['VarEqVar',['../classGoogle_1_1OrTools_1_1Sat_1_1BoundedLinearExpression.html#a1d1cfd8ffb84e947f82999c682b666a7abeb649557a8390b04d2bed1d4cd3c559',1,'Google::OrTools::Sat::BoundedLinearExpression']]]
 ];

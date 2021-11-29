@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,7 +15,9 @@
 #define OR_TOOLS_SAT_SWIG_HELPER_H_
 
 #include <atomic>
+#include <cstdint>
 
+#include "absl/strings/match.h"
 #include "ortools/base/file.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_checker.h"
@@ -23,13 +25,14 @@
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/util/logging.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
 
 // Base class for SWIG director based on solution callbacks.
-// See http://www.swig.org/Doc3.0/SWIGDocumentation.html#CSharp_directors.
+// See http://www.swig.org/Doc4.0/SWIGDocumentation.html#CSharp_directors.
 class SolutionCallback {
  public:
   virtual ~SolutionCallback() {}
@@ -42,17 +45,17 @@ class SolutionCallback {
     OnSolutionCallback();
   }
 
-  int64 NumBooleans() const { return response_.num_booleans(); }
+  int64_t NumBooleans() const { return response_.num_booleans(); }
 
-  int64 NumBranches() const { return response_.num_branches(); }
+  int64_t NumBranches() const { return response_.num_branches(); }
 
-  int64 NumConflicts() const { return response_.num_conflicts(); }
+  int64_t NumConflicts() const { return response_.num_conflicts(); }
 
-  int64 NumBinaryPropagations() const {
+  int64_t NumBinaryPropagations() const {
     return response_.num_binary_propagations();
   }
 
-  int64 NumIntegerPropagations() const {
+  int64_t NumIntegerPropagations() const {
     return response_.num_integer_propagations();
   }
 
@@ -66,7 +69,7 @@ class SolutionCallback {
 
   double BestObjectiveBound() const { return response_.best_objective_bound(); }
 
-  int64 SolutionIntegerValue(int index) {
+  int64_t SolutionIntegerValue(int index) {
     return index >= 0 ? response_.solution(index)
                       : -response_.solution(-index - 1);
   }
@@ -76,15 +79,20 @@ class SolutionCallback {
                       : response_.solution(-index - 1) == 0;
   }
 
-  void StopSearch() { stopped_ = true; }
-
-  // Reset the shared atomic Boolean used to stop the search.
-  void ResetSharedBoolean() const { stopped_ = false; }
-
-  std::atomic<bool>* stopped() const { return &stopped_; }
+  // Stops the search.
+  void StopSearch() {
+    if (stopped_ptr_ != nullptr) {
+      (*stopped_ptr_) = true;
+    }
+  }
 
   operations_research::sat::CpSolverResponse Response() const {
     return response_;
+  }
+
+  // We use mutable and non const methods to overcome SWIG difficulties.
+  void SetAtomicBooleanToStopTheSearch(std::atomic<bool>* stopped_ptr) const {
+    stopped_ptr_ = stopped_ptr;
   }
 
   bool HasResponse() const { return has_response_; }
@@ -92,10 +100,18 @@ class SolutionCallback {
  private:
   mutable CpSolverResponse response_;
   mutable bool has_response_ = false;
-  mutable std::atomic<bool> stopped_;
+  mutable std::atomic<bool>* stopped_ptr_;
 };
 
-class SatHelper {
+// Simple director class for C#.
+class LogCallback {
+ public:
+  virtual ~LogCallback() {}
+  virtual void NewMessage(const std::string& message) = 0;
+};
+
+// This class is not meant to be reused after one solve.
+class SolveWrapper {
  public:
   // The arguments of the functions defined below must follow these rules
   // to be wrapped by swig correctly:
@@ -105,61 +121,62 @@ class SatHelper {
   //    file (see the python/ and java/ subdirectories).
   // 3) String variations of the parameters have been added for C# as
   //    C# protobufs do not support proto2.
-  static operations_research::sat::CpSolverResponse Solve(
+
+  void SetParameters(
+      const operations_research::sat::SatParameters& parameters) {
+    model_.Add(NewSatParameters(parameters));
+  }
+
+  void SetStringParameters(const std::string& string_parameters) {
+    model_.Add(NewSatParameters(string_parameters));
+  }
+
+  void AddSolutionCallback(const SolutionCallback& callback) {
+    // Overwrite the atomic bool.
+    callback.SetAtomicBooleanToStopTheSearch(&stopped_);
+    model_.Add(NewFeasibleSolutionObserver(
+        [&callback](const CpSolverResponse& r) { return callback.Run(r); }));
+  }
+
+  void ClearSolutionCallback(const SolutionCallback& callback) {
+    // cleanup the atomic bool.
+    callback.SetAtomicBooleanToStopTheSearch(nullptr);
+  }
+
+  void AddLogCallback(std::function<void(const std::string&)> log_callback) {
+    if (log_callback != nullptr) {
+      model_.GetOrCreate<SolverLogger>()->AddInfoLoggingCallback(log_callback);
+    }
+  }
+
+  // Workaround for C#.
+  void AddLogCallbackFromClass(LogCallback* log_callback) {
+    model_.GetOrCreate<SolverLogger>()->AddInfoLoggingCallback(
+        [log_callback](const std::string& message) {
+          log_callback->NewMessage(message);
+        });
+  }
+
+  operations_research::sat::CpSolverResponse Solve(
       const operations_research::sat::CpModelProto& model_proto) {
     FixFlagsAndEnvironmentForSwig();
-    return operations_research::sat::Solve(model_proto);
+    stopped_ = false;
+    model_.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(&stopped_);
+    return operations_research::sat::SolveCpModel(model_proto, &model_);
   }
 
-  static operations_research::sat::CpSolverResponse SolveWithParameters(
-      const operations_research::sat::CpModelProto& model_proto,
-      const operations_research::sat::SatParameters& parameters) {
-    FixFlagsAndEnvironmentForSwig();
-    return operations_research::sat::SolveWithParameters(model_proto,
-                                                         parameters);
-  }
+  void StopSearch() { stopped_ = true; }
 
-  static operations_research::sat::CpSolverResponse SolveWithStringParameters(
-      const operations_research::sat::CpModelProto& model_proto,
-      const std::string& parameters) {
-    FixFlagsAndEnvironmentForSwig();
-    return operations_research::sat::SolveWithParameters(model_proto,
-                                                         parameters);
-  }
+ private:
+  Model model_;
+  std::atomic<bool> stopped_;
+};
 
-  static operations_research::sat::CpSolverResponse
-  SolveWithParametersAndSolutionCallback(
-      const operations_research::sat::CpModelProto& model_proto,
-      const operations_research::sat::SatParameters& parameters,
-      const SolutionCallback& callback) {
-    FixFlagsAndEnvironmentForSwig();
-    callback.ResetSharedBoolean();
-    Model model;
-    model.Add(NewSatParameters(parameters));
-    model.Add(NewFeasibleSolutionObserver(
-        [&callback](const CpSolverResponse& r) { return callback.Run(r); }));
-    model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(
-        callback.stopped());
-
-    return SolveCpModel(model_proto, &model);
-  }
-
-  static operations_research::sat::CpSolverResponse
-  SolveWithStringParametersAndSolutionCallback(
-      const operations_research::sat::CpModelProto& model_proto,
-      const std::string& parameters, const SolutionCallback& callback) {
-    FixFlagsAndEnvironmentForSwig();
-    callback.ResetSharedBoolean();
-    Model model;
-    model.Add(NewSatParameters(parameters));
-    model.Add(NewFeasibleSolutionObserver(
-        [&callback](const CpSolverResponse& r) { return callback.Run(r); }));
-    model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(
-        callback.stopped());
-
-    return SolveCpModel(model_proto, &model);
-  }
-
+// Static methods are stored in a module which name can vary.
+// To avoid this issue, we put all global functions as a static method of the
+// CpSatHelper class.
+struct CpSatHelper {
+ public:
   // Returns a string with some statistics on the given CpModelProto.
   static std::string ModelStats(
       const operations_research::sat::CpModelProto& model_proto) {
@@ -184,11 +201,17 @@ class SatHelper {
     return ReadDomainFromProto(variable_proto);
   }
 
-  // Write the model proto to file.
+  // Write the model proto to file. If the filename ends with 'txt', the model
+  // will be written as a text file, otherwise, the binary format will be used.
+  // The functions returns true if the model was correctly written.
   static bool WriteModelToFile(
       const operations_research::sat::CpModelProto& model_proto,
       const std::string& filename) {
-    return file::SetTextProto(filename, model_proto, file::Defaults()).ok();
+    if (absl::EndsWith(filename, "txt")) {
+      return file::SetTextProto(filename, model_proto, file::Defaults()).ok();
+    } else {
+      return file::SetBinaryProto(filename, model_proto, file::Defaults()).ok();
+    }
   }
 };
 

@@ -1,3 +1,37 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classoperations__research_1_1sat_1_1_bool_var.html" title="A Boolean variable." alt="" coords="5,5,77,32"/>
+<area shape="rect" id="node1" title=" " alt="" coords="5,857,85,884"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1sat_1_1_all_different_constraint_proto.html" title=" " alt="" coords="139,5,338,32"/>
+<area shape="rect" id="node3" href="$classoperations__research_1_1sat_1_1_automaton_constraint_proto.html" title=" " alt="" coords="141,56,336,83"/>
+<area shape="rect" id="node4" href="$classoperations__research_1_1sat_1_1_bool_argument_proto.html" title=" " alt="" coords="164,107,313,133"/>
+<area shape="rect" id="node5" href="$classoperations__research_1_1sat_1_1_boolean_assignment.html" title=" " alt="" coords="163,157,315,184"/>
+<area shape="rect" id="node6" href="$classoperations__research_1_1sat_1_1_circuit_constraint_proto.html" title=" " alt="" coords="156,208,321,235"/>
+<area shape="rect" id="node7" href="$classoperations__research_1_1sat_1_1_constraint_proto.html" title=" " alt="" coords="177,259,300,285"/>
+<area shape="rect" id="node8" href="$classoperations__research_1_1sat_1_1_cp_model_proto.html" title=" " alt="" coords="182,309,295,336"/>
+<area shape="rect" id="node9" href="$classoperations__research_1_1sat_1_1_cp_objective_proto.html" title=" " alt="" coords="171,360,306,387"/>
+<area shape="rect" id="node10" href="$classoperations__research_1_1sat_1_1_cp_solver_response.html" title=" " alt="" coords="167,411,310,437"/>
+<area shape="rect" id="node11" href="$classoperations__research_1_1sat_1_1_cumulative_constraint_proto.html" title=" " alt="" coords="139,461,338,488"/>
+<area shape="rect" id="node12" href="$classoperations__research_1_1sat_1_1_decision_strategy_proto.html" title=" " alt="" coords="155,512,322,539"/>
+<area shape="rect" id="node13" href="$classoperations__research_1_1sat_1_1_decision_strategy_proto___affine_transformation.html" title=" " alt="" coords="155,563,322,605"/>
+<area shape="rect" id="node14" href="$classoperations__research_1_1sat_1_1_dense_matrix_proto.html" title=" " alt="" coords="169,629,308,656"/>
+<area shape="rect" id="node15" href="$classoperations__research_1_1sat_1_1_element_constraint_proto.html" title=" " alt="" coords="150,680,327,707"/>
+<area shape="rect" id="node16" href="$classoperations__research_1_1sat_1_1_integer_argument_proto.html" title=" " alt="" coords="155,731,322,757"/>
+<area shape="rect" id="node17" href="$classoperations__research_1_1sat_1_1_integer_variable_proto.html" title=" " alt="" coords="161,781,317,808"/>
+<area shape="rect" id="node18" href="$classoperations__research_1_1sat_1_1_interval_constraint_proto.html" title=" " alt="" coords="152,832,325,859"/>
+<area shape="rect" id="node19" href="$classoperations__research_1_1sat_1_1_inverse_constraint_proto.html" title=" " alt="" coords="153,883,324,909"/>
+<area shape="rect" id="node20" href="$classoperations__research_1_1sat_1_1_linear_argument_proto.html" title=" " alt="" coords="159,933,319,960"/>
+<area shape="rect" id="node21" href="$classoperations__research_1_1sat_1_1_linear_boolean_constraint.html" title=" " alt="" coords="147,984,330,1011"/>
+<area shape="rect" id="node22" href="$classoperations__research_1_1sat_1_1_linear_boolean_problem.html" title=" " alt="" coords="154,1035,323,1061"/>
+<area shape="rect" id="node23" href="$classoperations__research_1_1sat_1_1_linear_constraint_proto.html" title=" " alt="" coords="157,1085,320,1112"/>
+<area shape="rect" id="node24" href="$classoperations__research_1_1sat_1_1_linear_expression_proto.html" title=" " alt="" coords="155,1136,322,1163"/>
+<area shape="rect" id="node25" href="$classoperations__research_1_1sat_1_1_linear_objective.html" title=" " alt="" coords="177,1187,301,1213"/>
+<area shape="rect" id="node26" href="$classoperations__research_1_1sat_1_1_list_of_variables_proto.html" title=" " alt="" coords="161,1237,316,1264"/>
+<area shape="rect" id="node27" href="$classoperations__research_1_1sat_1_1_no_overlap2_d_constraint_proto.html" title=" " alt="" coords="133,1288,344,1315"/>
+<area shape="rect" id="node28" href="$classoperations__research_1_1sat_1_1_no_overlap_constraint_proto.html" title=" " alt="" coords="143,1339,335,1365"/>
+<area shape="rect" id="node29" href="$classoperations__research_1_1sat_1_1_partial_variable_assignment.html" title=" " alt="" coords="141,1389,336,1416"/>
+<area shape="rect" id="node30" href="$classoperations__research_1_1sat_1_1_reservoir_constraint_proto.html" title=" " alt="" coords="146,1440,331,1467"/>
+<area shape="rect" id="node31" href="$classoperations__research_1_1sat_1_1_routes_constraint_proto.html" title=" " alt="" coords="155,1491,323,1517"/>
+<area shape="rect" id="node32" href="$classoperations__research_1_1sat_1_1_sat_parameters.html" title=" " alt="" coords="179,1541,298,1568"/>
+<area shape="rect" id="node33" href="$classoperations__research_1_1sat_1_1_sparse_permutation_proto.html" title=" " alt="" coords="149,1592,329,1619"/>
+<area shape="rect" id="node34" href="$classoperations__research_1_1sat_1_1_symmetry_proto.html" title=" " alt="" coords="177,1643,301,1669"/>
+<area shape="rect" id="node35" href="$classoperations__research_1_1sat_1_1_table_constraint_proto.html" title=" " alt="" coords="160,1693,317,1720"/>
 </map>

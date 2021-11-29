@@ -1,0 +1,38 @@
+name: Make Windows Python
+
+on: [push, pull_request]
+
+jobs:
+  # Building using the github runner environement directly.
+  make:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: ilammy/msvc-dev-cmd@v1
+    - uses: actions/setup-python@v2
+      with:
+        python-version: '3.9'
+    - name: Install python3
+      run: python3 -m pip install --user mypy-protobuf absl-py setuptools wheel
+    - name: Clean sh.exe
+      run: |
+        where sh
+        rm 'C:\Program Files\Git\usr\bin\sh.exe'
+        rm 'C:\Program Files\Git\bin\sh.exe'
+      shell: bash
+    - name: Check make
+      run: tools\make --version
+    - name: Check system
+      run: tools\make detect_port
+    - name: Check Python
+      run: tools\make detect_python
+    - name: Build third party
+      run: tools\make third_party -j4
+    - name: Build C++
+      run: tools\make cc -j4
+    - name: Build Python
+      run: tools\make python -j4
+    - name: Test Python
+      run: tools\make test_python -j4
+    - name: Create wheel package
+      run: tools\make package_python

@@ -27,7 +27,9 @@ FZ_EX_DIR  = $(OR_ROOT)examples/flatzinc
 FZ_EX_PATH = $(subst /,$S,$(FZ_EX_DIR))
 # C++ relevant directory
 CC_EX_DIR  = $(OR_ROOT)examples/cpp
+CC_GEN_DIR  = $(GEN_DIR)/examples/cpp
 CC_EX_PATH = $(subst /,$S,$(CC_EX_DIR))
+CC_GEN_PATH = $(subst /,$S,$(CC_GEN_DIR))
 # Python relevant directory
 PYTHON_EX_DIR  = $(OR_ROOT)examples/python
 PYTHON_EX_PATH = $(subst /,$S,$(PYTHON_EX_DIR))
@@ -36,7 +38,6 @@ CLASS_DIR = $(OR_ROOT)classes
 JAVA_EX_DIR  = $(OR_ROOT)examples/java
 JAVA_EX_PATH = $(subst /,$S,$(JAVA_EX_DIR))
 # .Net relevant directory
-PACKAGE_DIR = $(OR_ROOT)packages
 DOTNET_EX_DIR  = $(OR_ROOT)examples/dotnet
 DOTNET_EX_PATH = $(subst /,$S,$(DOTNET_EX_DIR))
 # Contrib examples directory
@@ -118,7 +119,7 @@ endif
 ifdef WINDOWS_CPLEX_DIR
   CPLEX_INC = /I"$(WINDOWS_CPLEX_DIR)\\cplex\\include" /DUSE_CPLEX
   CPLEX_SWIG = -I"$(WINDOWS_CPLEX_DIR)/cplex/include" -DUSE_CPLEX
-  STATIC_CPLEX_LNK = "$(WINDOWS_CPLEX_DIR)\\cplex\\lib\\x64_windows_msvc14\\stat_mda\\cplex12100.lib"
+  STATIC_CPLEX_LNK = "$(WINDOWS_CPLEX_DIR)\\cplex\\lib\\x64_windows_msvc14\\stat_mda\\cplex$(WINDOWS_CPLEX_VERSION).lib"
   DYNAMIC_CPLEX_LNK = $(STATIC_CPLEX_LNK)
 endif
 ifdef WINDOWS_XPRESS_DIR

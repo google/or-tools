@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,9 +13,13 @@
 
 #include <math.h>
 
+#include <cstdint>
 #include <numeric>
 #include <vector>
 
+#include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
+#include "absl/flags/usage.h"
 #include "absl/strings/match.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_join.h"
@@ -39,9 +43,9 @@ namespace operations_research {
 namespace sat {
 
 // Solve a single machine problem with weighted tardiness cost.
-void Solve(const std::vector<int64>& durations,
-           const std::vector<int64>& due_dates,
-           const std::vector<int64>& weights) {
+void Solve(const std::vector<int64_t>& durations,
+           const std::vector<int64_t>& due_dates,
+           const std::vector<int64_t>& weights) {
   const int num_tasks = durations.size();
   CHECK_EQ(due_dates.size(), num_tasks);
   CHECK_EQ(weights.size(), num_tasks);
@@ -57,14 +61,15 @@ void Solve(const std::vector<int64>& durations,
   // An simple heuristic solution: We choose the tasks from last to first, and
   // always take the one with smallest cost.
   std::vector<bool> is_taken(num_tasks, false);
-  int64 heuristic_bound = 0;
-  int64 end = horizon;
+  int64_t heuristic_bound = 0;
+  int64_t end = horizon;
   for (int i = 0; i < num_tasks; ++i) {
     int next_task = -1;
-    int64 next_cost;
+    int64_t next_cost;
     for (int j = 0; j < num_tasks; ++j) {
       if (is_taken[j]) continue;
-      const int64 cost = weights[j] * std::max<int64>(0, end - due_dates[j]);
+      const int64_t cost =
+          weights[j] * std::max<int64_t>(0, end - due_dates[j]);
       if (next_task == -1 || cost < next_cost) {
         next_task = j;
         next_cost = cost;
@@ -98,11 +103,11 @@ void Solve(const std::vector<int64>& durations,
       tardiness_vars[i] = task_ends[i];
     } else {
       tardiness_vars[i] = cp_model.NewIntVar(
-          Domain(0, std::max<int64>(0, horizon - due_dates[i])));
+          Domain(0, std::max<int64_t>(0, horizon - due_dates[i])));
 
       // tardiness_vars >= end - due_date
       cp_model.AddGreaterOrEqual(tardiness_vars[i],
-                                 LinearExpr(end).AddConstant(-due_dates[i]));
+                                 task_ends[i].AddConstant(-due_dates[i]));
     }
   }
 
@@ -118,8 +123,7 @@ void Solve(const std::vector<int64>& durations,
 
   // TODO(user): We can't set an objective upper bound with the current cp_model
   // interface, so we can't use heuristic or absl::GetFlag(FLAGS_upper_bound)
-  // here. The best is
-  // probably to provide a "solution hint" instead.
+  // here. The best is probably to provide a "solution hint" instead.
   //
   // Set a known upper bound (or use the flag). This has a bigger impact than
   // can be expected at first:
@@ -166,17 +170,19 @@ void Solve(const std::vector<int64>& durations,
   // lower bound for the objective and the tardiness variables.
   Model model;
   model.Add(NewSatParameters(absl::GetFlag(FLAGS_params)));
+  model.GetOrCreate<SatParameters>()->set_log_search_progress(true);
   model.Add(NewFeasibleSolutionObserver([&](const CpSolverResponse& r) {
     // Note that we compute the "real" cost here and do not use the tardiness
     // variables. This is because in the core based approach, the tardiness
     // variable might be fixed before the end date, and we just have a >=
     // relation.
 
-    int64 objective = 0;
+    int64_t objective = 0;
     for (int i = 0; i < num_tasks; ++i) {
-      const int64 end = SolutionIntegerMin(r, task_ends[i]);
+      const int64_t end = SolutionIntegerMin(r, task_ends[i]);
       CHECK_EQ(end, SolutionIntegerMax(r, task_ends[i]));
-      objective += weights[i] * std::max<int64>(0ll, end - due_dates[i]);
+      objective +=
+          weights[i] * std::max<int64_t>(int64_t{0}, end - due_dates[i]);
     }
     LOG(INFO) << "Cost " << objective;
 
@@ -194,7 +200,8 @@ void Solve(const std::vector<int64>& durations,
     std::string solution = "0";
     int end = 0;
     for (const int i : sorted_tasks) {
-      const int64 cost = weights[i] * SolutionIntegerMin(r, tardiness_vars[i]);
+      const int64_t cost =
+          weights[i] * SolutionIntegerMin(r, tardiness_vars[i]);
       absl::StrAppend(&solution, "| #", i, " ");
       if (cost > 0) {
         // Display the cost in red.
@@ -210,7 +217,6 @@ void Solve(const std::vector<int64>& durations,
 
   // Solve.
   const CpSolverResponse response = SolveCpModel(cp_model.Build(), &model);
-  LOG(INFO) << CpSolverResponseStats(response);
 }
 
 void ParseAndSolve() {
@@ -235,13 +241,13 @@ void ParseAndSolve() {
 
   // The order in a wt file is: duration, tardiness weights and then due_dates.
   int index = (absl::GetFlag(FLAGS_n) - 1) * instance_size;
-  std::vector<int64> durations;
+  std::vector<int64_t> durations;
   for (int j = 0; j < absl::GetFlag(FLAGS_size); ++j)
     durations.push_back(numbers[index++]);
-  std::vector<int64> weights;
+  std::vector<int64_t> weights;
   for (int j = 0; j < absl::GetFlag(FLAGS_size); ++j)
     weights.push_back(numbers[index++]);
-  std::vector<int64> due_dates;
+  std::vector<int64_t> due_dates;
   for (int j = 0; j < absl::GetFlag(FLAGS_size); ++j)
     due_dates.push_back(numbers[index++]);
 
@@ -253,6 +259,7 @@ void ParseAndSolve() {
 
 int main(int argc, char** argv) {
   absl::SetFlag(&FLAGS_logtostderr, true);
+  google::InitGoogleLogging(argv[0]);
   absl::ParseCommandLine(argc, argv);
   if (absl::GetFlag(FLAGS_input).empty()) {
     LOG(FATAL) << "Please supply a data file with --input=";

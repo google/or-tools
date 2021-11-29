@@ -1,4 +1,5 @@
-# Copyright 2010-2018 Google LLC
+#!/usr/bin/env python3
+# Copyright 2010-2021 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -116,12 +117,14 @@ def main():
     # [START solve]
     solver = cp_model.CpSolver()
     solver.parameters.linearization_level = 0
+    # Enumerate all solutions.
+    solver.parameters.enumerate_all_solutions = True
     # Display the first five solutions.
     a_few_solutions = range(5)
     solution_printer = NursesPartialSolutionPrinter(shifts, num_nurses,
                                                     num_days, num_shifts,
                                                     a_few_solutions)
-    solver.SearchForAllSolutions(model, solution_printer)
+    solver.Solve(model, solution_printer)
     # [END solve]
 
     # Statistics.

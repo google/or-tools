@@ -17,7 +17,6 @@ target_link_libraries(${NAME} PRIVATE
   absl::any
   absl::memory
   absl::synchronization
-  absl::container
   absl::strings
   absl::str_format
   protobuf::libprotobuf

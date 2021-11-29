@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['trailcompression_10121',['TrailCompression',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ConstraintSolverParameters_1_1Types.html#a00935459e4b73bd96feed637daa08c81',1,'Google::OrTools::ConstraintSolver::ConstraintSolverParameters::Types']]],
-  ['type_10122',['Type',['../classGoogle_1_1OrTools_1_1Sat_1_1BoundedLinearExpression.html#a1d1cfd8ffb84e947f82999c682b666a7',1,'Google::OrTools::Sat::BoundedLinearExpression']]]
+  ['restartalgorithm_0',['RestartAlgorithm',['../classGoogle_1_1OrTools_1_1Sat_1_1SatParameters_1_1Types.html#adf8a2a2a76dbfbb97e7703f20f3a31e6',1,'Google::OrTools::Sat::SatParameters::Types']]],
+  ['resultstatus_1',['ResultStatus',['../classGoogle_1_1OrTools_1_1LinearSolver_1_1Solver.html#a573d479910e373f5d771d303e440587d',1,'Google::OrTools::LinearSolver::Solver']]]
 ];

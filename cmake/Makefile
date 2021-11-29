@@ -23,6 +23,7 @@ help:
 	@echo -e "\t${BOLD}save_<prestage>${RESET}: Save <prestage> docker images for ALL DISTROS."
 	@echo -e "\t${BOLD}save_<distro>_<prestage>${RESET}: Save the <prestage> docker image for a specific distro."
 	@echo -e "\t${BOLD}sh_<distro>_<prestage>${RESET}: run a container using the <prestage> docker image specified (debug purpose)."
+	@echo -e "\t${BOLD}clean_<distro>_<prestage>${RESET}: Remove the <prestage> docker image (and the save archive if any) for a specific distro."
 	@echo
 	@echo -e "\t${BOLD}<stage>${RESET}: build <stage> docker images for ALL DISTROS and ALL LANGUAGES."
 	@echo -e "\t${BOLD}<distro>_<stage>${RESET}: build <stage> docker images for a specific distro for ALL LANGUAGES."
@@ -33,6 +34,7 @@ help:
 	@echo -e "\t${BOLD}save_<lang>_<stage>${RESET}: Save <stage> docker images for ALL DISTRO for a specific language."
 	@echo -e "\t${BOLD}save_<distro>_<lang>_<stage>${RESET}: Save the <stage> docker image for a specific distro for a specific language."
 	@echo -e "\t${BOLD}sh_<distro>_<lang>_<stage>${RESET}: run a container using the <stage> docker image specified (debug purpose)."
+	@echo -e "\t${BOLD}clean_<distro>_<lang>_<prestage>${RESET}: Remove the <stage> docker image (and the save archive if any) for a specific distro."
 	@echo
 	@echo -e "\tWith ${BOLD}<distro>${RESET}:"
 	@echo -e "\t\t${BOLD}alpine${RESET} (edge)"
@@ -75,7 +77,26 @@ help:
 	@echo -e "\tWith ${BOLD}<vm>${RESET}:"
 	@echo -e "\t\t${BOLD}freebsd${RESET} (FreeBSD)"
 	@echo
-	@echo -e "\tWith ${BOLD}<glop>${RESET}:"
+	@echo
+	@echo -e "\t${BOLD}glop_<stage>${RESET}: Build Glop <stage> using an Ubuntu:rolling docker image."
+	@echo -e "\t${BOLD}save_glop_<stage>${RESET}: Save Glop <stage> using an Ubuntu:rolling docker image."
+	@echo -e "\t${BOLD}sh_glop_<stage>${RESET}: Run a Glop <stage> container using an Ubuntu:rolling docker image (debug purpose)."
+	@echo -e "\t${BOLD}clean_glop_<stage>${RESET}: Remove the Glop <stage> docker image (and the save archive if any) for a specific distro."
+	@echo
+	@echo
+	@echo -e "\t${BOLD}arm_<target>_<step>${RESET}: cross build for aarch64 the <target> <stage> docker image."
+	@echo -e "\t${BOLD}save_arm_<target>_<step>${RESET}: Save for aarch64 the <target> <step> docker images."
+	@echo -e "\t${BOLD}clean_arm_<target>_<step>${RESET}: Remove for aarch64 the <target> <step> docker image (and the save archive if any)."
+	@echo
+	@echo -e "\tWith ${BOLD}<target>${RESET}:"
+	@echo -e "\t\t${BOLD}glop${RESET} Build libglop"
+	@echo -e "\t\t${BOLD}or-tools${RESET} Build libortools"
+	@echo
+	@echo -e "\tWith ${BOLD}<step>${RESET}:"
+	@echo -e "\t\t${BOLD}env${RESET}"
+	@echo -e "\t\t${BOLD}devel${RESET}"
+	@echo -e "\t\t${BOLD}build${RESET}"
+	@echo -e "\t\t${BOLD}test${RESET}"
 	@echo
 	@echo -e "\t${BOLD}clean${RESET}: Remove cache and docker image."
 	@echo -e "\t${BOLD}clean_<distro>${RESET}: Remove cache and docker image for the specified distro."
@@ -311,12 +332,14 @@ targets_freebsd = $(addprefix freebsd_, $(LANGUAGES))
 freebsd: $(targets_freebsd)
 $(targets_freebsd): freebsd_%: vagrant/freebsd/%/Vagrantfile
 	@cd vagrant/freebsd/$* && vagrant destroy -f
+	cd vagrant/freebsd/$* && vagrant box update
 	cd vagrant/freebsd/$* && vagrant up
 
 # SSH to a freebsd_<lang> vagrant machine (debug).
 targets_freebsd = $(addprefix sh_freebsd_, $(LANGUAGES))
 .PHONY: $(targets_freebsd)
 $(targets_freebsd): sh_freebsd_%:
+	cd vagrant/freebsd/$* && vagrant up
 	cd vagrant/freebsd/$* && vagrant ssh
 
 # Clean FreeBSD vagrant machine
@@ -354,6 +377,42 @@ clean_glop_targets = $(addprefix clean_glop_, $(STAGES))
 $(clean_glop_targets): clean_glop_%
 	docker image rm -f ${IMAGE}:glop_$* 2>/dev/null
 	rm -f cache/glop/docker_$*.tar
+
+############
+## ARM 64 ##
+############
+TARGETS = glop or-tools
+STEPS = env devel build test
+define make-arm-target =
+#$$(info TARGET: $1)
+#$$(info Create targets: $(addprefix arm_$1_, $(STEPS)))
+arm_targets = $(addprefix arm_$1_, $(STEPS))
+.PHONY: $$(arm_targets)
+$$(arm_targets): arm_$1_%: docker/arm/$1.Dockerfile
+	#@docker image rm -f ${IMAGE}:$$@ 2>/dev/null
+	${DOCKER_BUILD_CMD} --target=$$* --tag ${IMAGE}:$$@ -f $$< ..
+
+save_arm_targets = $(addprefix save_arm_$1_, $(STEPS))
+.PHONY: $$(save_arm_targets)
+$$(save_arm_targets): save_arm_$1_%: cache/arm/docker_$1_%.tar
+cache/arm/docker_$1_%.tar: arm_$1_%
+	@rm -f $$@
+	mkdir -p cache/arm
+	docker save ${IMAGE}:$$< -o $$@
+
+sh_arm_targets = $(addprefix sh_arm_$1_, $(STEPS))
+.PHONY: $$(sh_arm_targets)
+$$(sh_arm_targets): sh_arm_$1_%: arm_$1_%
+	${DOCKER_RUN_CMD} -it --name ${PROJECT}_${BUILD_SYSTEM}_$$< ${IMAGE}:$$<
+
+clean_arm_targets = $(addprefix clean_arm_$1_, $(STEPS))
+.PHONY: $$(clean_arm_targets)
+$$(clean_arm_targets): clean_arm_$1_%
+	docker image rm -f ${IMAGE}:arm_$1_$$* 2>/dev/null
+	rm -f cache/arm/docker_$1_$$*.tar
+endef
+
+$(foreach target,$(TARGETS),$(eval $(call make-arm-target,$(target))))
 
 # CLEAN
 targets = $(addprefix clean_, $(DISTROS))

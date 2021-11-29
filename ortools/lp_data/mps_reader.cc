@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -12,6 +12,8 @@
 // limitations under the License.
 
 #include "ortools/lp_data/mps_reader.h"
+
+#include <cstdint>
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
@@ -125,8 +127,8 @@ class MPSReaderImpl {
     UPPER_BOUND,
     FIXED_VARIABLE,
     FREE_VARIABLE,
-    NEGATIVE,
-    POSITIVE,
+    INFINITE_LOWER_BOUND,
+    INFINITE_UPPER_BOUND,
     BINARY
   };
 
@@ -213,7 +215,7 @@ class MPSReaderImpl {
   absl::flat_hash_set<std::string> integer_type_names_set_;
 
   // The current line number in the file being parsed.
-  int64 line_num_;
+  int64_t line_num_;
 
   // The current line in the file being parsed.
   std::string line_;
@@ -464,7 +466,7 @@ absl::Status MPSReaderImpl::ProcessLine(const std::string& line,
   if (IsCommentOrBlank()) {
     return absl::OkStatus();  // Skip blank lines and comments.
   }
-  if (!free_form_ && line_.find('\t') != std::string::npos) {
+  if (!free_form_ && absl::StrContains(line_, '\t')) {
     return InvalidArgumentError("File contains tabs.");
   }
   std::string section;
@@ -487,7 +489,7 @@ absl::Status MPSReaderImpl::ProcessLine(const std::string& line,
       // fixed form, the name has at most 8 characters, and starts at a specific
       // position in the NAME line. For MIPLIB2010 problems (eg, air04, glass4),
       // the name in fixed form ends up being preceded with a whitespace.
-      // TODO(user,user): Return an error for fixed form if the problem name
+      // TODO(user): Return an error for fixed form if the problem name
       // does not fit.
       if (free_form_) {
         if (fields_.size() >= 2) {
@@ -857,12 +859,10 @@ absl::Status MPSReaderImpl::StoreBound(const std::string& bound_type_mnemonic,
       lower_bound = -kInfinity;
       upper_bound = +kInfinity;
       break;
-    case NEGATIVE:
+    case INFINITE_LOWER_BOUND:
       lower_bound = -kInfinity;
-      upper_bound = Fractional(0.0);
       break;
-    case POSITIVE:
-      lower_bound = Fractional(0.0);
+    case INFINITE_UPPER_BOUND:
       upper_bound = +kInfinity;
       break;
     case BINARY:
@@ -915,8 +915,8 @@ MPSReaderImpl::MPSReaderImpl()
   bound_name_to_id_map_["UP"] = UPPER_BOUND;
   bound_name_to_id_map_["FX"] = FIXED_VARIABLE;
   bound_name_to_id_map_["FR"] = FREE_VARIABLE;
-  bound_name_to_id_map_["MI"] = NEGATIVE;
-  bound_name_to_id_map_["PL"] = POSITIVE;
+  bound_name_to_id_map_["MI"] = INFINITE_LOWER_BOUND;
+  bound_name_to_id_map_["PL"] = INFINITE_UPPER_BOUND;
   bound_name_to_id_map_["BV"] = BINARY;
   bound_name_to_id_map_["LI"] = LOWER_BOUND;
   bound_name_to_id_map_["UI"] = UPPER_BOUND;

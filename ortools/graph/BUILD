@@ -8,6 +8,7 @@ cc_library(
     deps = [
         ":iterators",
         "//ortools/base",
+        "@com_google_absl//absl/debugging:leak_check",
     ],
 )
 
@@ -321,8 +322,8 @@ cc_library(
     deps = [
         "//ortools/base",
         "//ortools/base:map_util",
-        "//ortools/base:stl_util",
         "//ortools/base:ptr_util",
+        "//ortools/base:stl_util",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
     ],

@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,7 +15,9 @@
 #define OR_TOOLS_SAT_CP_MODEL_UTILS_H_
 
 #include <algorithm>
+#include <cstdint>
 #include <functional>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -79,7 +81,7 @@ std::vector<int> UsedIntervals(const ConstraintProto& ct);
 // Returns true if a proto.domain() contain the given value.
 // The domain is expected to be encoded as a sorted disjoint interval list.
 template <typename ProtoWithDomain>
-bool DomainInProtoContains(const ProtoWithDomain& proto, int64 value) {
+bool DomainInProtoContains(const ProtoWithDomain& proto, int64_t value) {
   for (int i = 0; i < proto.domain_size(); i += 2) {
     if (value >= proto.domain(i) && value <= proto.domain(i + 1)) return true;
   }
@@ -113,10 +115,10 @@ Domain ReadDomainFromProto(const ProtoWithDomain& proto) {
 //
 // TODO(user): work directly on the Domain class instead.
 template <typename ProtoWithDomain>
-std::vector<int64> AllValuesInDomain(const ProtoWithDomain& proto) {
-  std::vector<int64> result;
+std::vector<int64_t> AllValuesInDomain(const ProtoWithDomain& proto) {
+  std::vector<int64_t> result;
   for (int i = 0; i < proto.domain_size(); i += 2) {
-    for (int64 v = proto.domain(i); v <= proto.domain(i + 1); ++v) {
+    for (int64_t v = proto.domain(i); v <= proto.domain(i + 1); ++v) {
       CHECK_LE(result.size(), 1e6);
       result.push_back(v);
     }
@@ -125,10 +127,13 @@ std::vector<int64> AllValuesInDomain(const ProtoWithDomain& proto) {
 }
 
 // Scales back a objective value to a double value from the original model.
-inline double ScaleObjectiveValue(const CpObjectiveProto& proto, int64 value) {
+inline double ScaleObjectiveValue(const CpObjectiveProto& proto,
+                                  int64_t value) {
   double result = static_cast<double>(value);
-  if (value == kint64min) result = -std::numeric_limits<double>::infinity();
-  if (value == kint64max) result = std::numeric_limits<double>::infinity();
+  if (value == std::numeric_limits<int64_t>::min())
+    result = -std::numeric_limits<double>::infinity();
+  if (value == std::numeric_limits<int64_t>::max())
+    result = std::numeric_limits<double>::infinity();
   result += proto.offset();
   if (proto.scaling_factor() == 0) return result;
   return proto.scaling_factor() * result;
@@ -147,8 +152,8 @@ inline double UnscaleObjectiveValue(const CpObjectiveProto& proto,
 // Computes the "inner" objective of a response that contains a solution.
 // This is the objective without offset and scaling. Call ScaleObjectiveValue()
 // to get the user facing objective.
-int64 ComputeInnerObjective(const CpObjectiveProto& objective,
-                            const CpSolverResponse& response);
+int64_t ComputeInnerObjective(const CpObjectiveProto& objective,
+                              const CpSolverResponse& response);
 
 }  // namespace sat
 }  // namespace operations_research

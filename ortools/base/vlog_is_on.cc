@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -87,7 +87,7 @@ GOOGLE_GLOG_DLL_DECL bool SafeFNMatch_(const char* pattern, size_t patt_len,
 
 using logging_internal::SafeFNMatch_;
 
-int32 kLogSiteUninitialized = 1000;
+int32_t kLogSiteUninitialized = 1000;
 
 // List of per-module log levels from absl::GetFlag(FLAGS_vmodule).
 // Once created each element is never deleted/modified
@@ -98,9 +98,9 @@ int32 kLogSiteUninitialized = 1000;
 // when it's safe to delete/update it: other threads need to use it w/o locks.
 struct VModuleInfo {
   string module_pattern;
-  mutable int32 vlog_level;  // Conceptually this is an AtomicWord, but it's
-                             // too much work to use AtomicWord type here
-                             // w/o much actual benefit.
+  mutable int32_t vlog_level;  // Conceptually this is an AtomicWord, but it's
+                               // too much work to use AtomicWord type here
+                               // w/o much actual benefit.
   const VModuleInfo* next;
 };
 
@@ -183,8 +183,8 @@ int SetVLOGLevel(const char* module_pattern, int log_level) {
 
 // NOTE: Individual VLOG statements cache the integer log level pointers.
 // NOTE: This function must not allocate memory or require any locks.
-bool InitVLOG3__(int32** site_flag, int32* site_default, const char* fname,
-                 int32 verbose_level) {
+bool InitVLOG3__(int32_t** site_flag, int32_t* site_default, const char* fname,
+                 int32_t verbose_level) {
   absl::MutexLock l(&vmodule_lock);
   bool read_vmodule_flag = inited_vmodule;
   if (!read_vmodule_flag) {
@@ -196,7 +196,7 @@ bool InitVLOG3__(int32** site_flag, int32* site_default, const char* fname,
   int old_errno = errno;
 
   // site_default normally points to absl::GetFlag(FLAGS_v)
-  int32* site_flag_value = site_default;
+  int32_t* site_flag_value = site_default;
 
   // Get basename for file
   const char* base = strrchr(fname, '/');

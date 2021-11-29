@@ -97,11 +97,9 @@ class CplexInterface : public MPSolverInterface {
 
   // ------ Query statistics on the solution and the solve ------
   // Number of simplex iterations
-  virtual int64 iterations() const;
+  virtual int64_t iterations() const;
   // Number of branch-and-bound nodes. Only available for discrete problems.
-  virtual int64 nodes() const;
-  // Best objective bound. Only available for discrete problems.
-  virtual double best_objective_bound() const;
+  virtual int64_t nodes() const;
 
   // Returns the basis status of a row.
   virtual MPSolver::BasisStatus row_status(int constraint_index) const;
@@ -594,43 +592,22 @@ void CplexInterface::ClearObjective() {
 
 // ------ Query statistics on the solution and the solve ------
 
-int64 CplexInterface::iterations() const {
+int64_t CplexInterface::iterations() const {
   int iter;
   if (!CheckSolutionIsSynchronized()) return kUnknownNumberOfIterations;
   if (mMip)
-    return static_cast<int64>(CPXXgetmipitcnt(mEnv, mLp));
+    return static_cast<int64_t>(CPXXgetmipitcnt(mEnv, mLp));
   else
-    return static_cast<int64>(CPXXgetitcnt(mEnv, mLp));
+    return static_cast<int64_t>(CPXXgetitcnt(mEnv, mLp));
 }
 
-int64 CplexInterface::nodes() const {
+int64_t CplexInterface::nodes() const {
   if (mMip) {
     if (!CheckSolutionIsSynchronized()) return kUnknownNumberOfNodes;
-    return static_cast<int64>(CPXXgetnodecnt(mEnv, mLp));
+    return static_cast<int64_t>(CPXXgetnodecnt(mEnv, mLp));
   } else {
     LOG(DFATAL) << "Number of nodes only available for discrete problems";
     return kUnknownNumberOfNodes;
-  }
-}
-
-// Returns the best objective bound. Only available for discrete problems.
-double CplexInterface::best_objective_bound() const {
-  if (mMip) {
-    if (!CheckSolutionIsSynchronized() || !CheckBestObjectiveBoundExists())
-      // trivial_worst_objective_bound() returns sense*infinity,
-      // that is meaningful even for infeasible problems
-      return trivial_worst_objective_bound();
-    if (solver_->variables_.size() == 0 && solver_->constraints_.size() == 0) {
-      // For an empty model the best objective bound is just the offset.
-      return solver_->Objective().offset();
-    } else {
-      double value = CPX_NAN;
-      CHECK_STATUS(CPXXgetbestobjval(mEnv, mLp, &value));
-      return value;
-    }
-  } else {
-    LOG(DFATAL) << "Best objective bound only available for discrete problems";
-    return trivial_worst_objective_bound();
   }
 }
 
@@ -1182,13 +1159,20 @@ MPSolver::ResultStatus CplexInterface::Solve(MPSolverParameters const& param) {
 
   // Capture objective function value.
   objective_value_ = CPX_NAN;
-  if (pfeas) CHECK_STATUS(CPXXgetobjval(mEnv, mLp, &objective_value_));
-  VLOG(1) << "objective = " << objective_value_;
+  best_objective_bound_ = CPX_NAN;
+  if (feasible) {
+    CHECK_STATUS(CPXXgetobjval(mEnv, mLp, &objective_value_));
+    if (mMip) {
+      CHECK_STATUS(CPXXgetbestobjval(mEnv, mLp, &best_objective_bound_));
+    }
+  }
+  VLOG(1) << "objective=" << objective_value_
+          << ", bound=" << best_objective_bound_;
 
   // Capture primal and dual solutions
   if (mMip) {
     // If there is a primal feasible solution then capture it.
-    if (pfeas) {
+    if (feasible) {
       if (cols > 0) {
         unique_ptr<double[]> x(new double[cols]);
         CHECK_STATUS(CPXXgetx(mEnv, mLp, x.get(), 0, cols - 1));
@@ -1213,14 +1197,14 @@ MPSolver::ResultStatus CplexInterface::Solve(MPSolverParameters const& param) {
     if (cols > 0) {
       unique_ptr<double[]> x(new double[cols]);
       unique_ptr<double[]> dj(new double[cols]);
-      if (pfeas) CHECK_STATUS(CPXXgetx(mEnv, mLp, x.get(), 0, cols - 1));
+      if (feasible) CHECK_STATUS(CPXXgetx(mEnv, mLp, x.get(), 0, cols - 1));
       if (dfeas) CHECK_STATUS(CPXXgetdj(mEnv, mLp, dj.get(), 0, cols - 1));
       for (int i = 0; i < solver_->variables_.size(); ++i) {
         MPVariable* const var = solver_->variables_[i];
         var->set_solution_value(x[i]);
         bool value = false, dual = false;
 
-        if (pfeas) {
+        if (feasible) {
           var->set_solution_value(x[i]);
           value = true;
         } else

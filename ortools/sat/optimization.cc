@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,6 +14,7 @@
 #include "ortools/sat/optimization.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <deque>
@@ -76,7 +77,7 @@ std::string CnfObjectiveLine(const LinearBooleanProblem& problem,
                              Coefficient objective) {
   const double scaled_objective =
       AddOffsetAndScaleObjectiveValue(problem, objective);
-  return absl::StrFormat("o %d", static_cast<int64>(scaled_objective));
+  return absl::StrFormat("o %d", static_cast<int64_t>(scaled_objective));
 }
 
 struct LiteralWithCoreIndex {
@@ -104,7 +105,7 @@ void DeleteVectorIndices(const std::vector<int>& indices, Vector* v) {
 }
 
 // In the Fu & Malik algorithm (or in WPM1), when two cores overlap, we
-// artifically introduce symmetries. More precisely:
+// artificially introduce symmetries. More precisely:
 //
 // The picture below shows two cores with index 0 and 1, with one blocking
 // variable per '-' and with the variables ordered from left to right (by their
@@ -215,7 +216,7 @@ class FuMalikSymmetryBreaker {
 
 }  // namespace
 
-void MinimizeCoreWithPropagation(SatSolver* solver,
+void MinimizeCoreWithPropagation(TimeLimit* limit, SatSolver* solver,
                                  std::vector<Literal>* core) {
   if (solver->IsModelUnsat()) return;
   std::set<LiteralIndex> moved_last;
@@ -223,7 +224,8 @@ void MinimizeCoreWithPropagation(SatSolver* solver,
 
   solver->Backtrack(0);
   solver->SetAssumptionLevel(0);
-  while (true) {
+  if (!solver->FinishPropagation()) return;
+  while (!limit->LimitReached()) {
     // We want each literal in candidate to appear last once in our propagation
     // order. We want to do that while maximizing the reutilization of the
     // current assignment prefix, that is minimizing the number of
@@ -232,7 +234,7 @@ void MinimizeCoreWithPropagation(SatSolver* solver,
         moved_last, solver->CurrentDecisionLevel(), &candidate);
     if (target_level == -1) break;
     solver->Backtrack(target_level);
-    while (!solver->IsModelUnsat() &&
+    while (!solver->IsModelUnsat() && !limit->LimitReached() &&
            solver->CurrentDecisionLevel() < candidate.size()) {
       const Literal decision = candidate[solver->CurrentDecisionLevel()];
       if (solver->Assignment().LiteralIsTrue(decision)) {
@@ -471,8 +473,8 @@ SatSolver::Status SolveWithWPM1(LogBehavior log,
 
   // The current lower_bound on the cost.
   // It will be correct after the initialization.
-  Coefficient lower_bound(static_cast<int64>(problem.objective().offset()));
-  Coefficient upper_bound(kint64max);
+  Coefficient lower_bound(static_cast<int64_t>(problem.objective().offset()));
+  Coefficient upper_bound(std::numeric_limits<int64_t>::max());
 
   // The assumption literals and their associated cost.
   std::vector<Literal> assumptions;
@@ -572,7 +574,7 @@ SatSolver::Status SolveWithWPM1(LogBehavior log,
       ExtractAssignment(problem, *solver, solution);
       DCHECK(IsAssignmentValid(problem, *solution));
       const Coefficient objective_offset(
-          static_cast<int64>(problem.objective().offset()));
+          static_cast<int64_t>(problem.objective().offset()));
       const Coefficient objective = ComputeObjectiveValue(problem, *solution);
       if (objective + objective_offset < upper_bound) {
         logger.Log(CnfObjectiveLine(problem, objective));
@@ -699,7 +701,7 @@ SatSolver::Status SolveWithWPM1(LogBehavior log,
         // If the soft clause protected by old_a has a cost greater than
         // min_cost then:
         // - its cost is disminished by min_cost.
-        // - an identical clause with cost min_cost is artifically added to
+        // - an identical clause with cost min_cost is artificially added to
         //   the problem.
         CHECK_GE(costs[index], min_cost);
         if (costs[index] == min_cost) {
@@ -775,8 +777,8 @@ SatSolver::Status SolveWithRandomParameters(LogBehavior log,
   int max_number_of_conflicts = 5;
   parameters.set_log_search_progress(false);
 
-  Coefficient min_seen(std::numeric_limits<int64>::max());
-  Coefficient max_seen(std::numeric_limits<int64>::min());
+  Coefficient min_seen(std::numeric_limits<int64_t>::max());
+  Coefficient max_seen(std::numeric_limits<int64_t>::min());
   Coefficient best(min_seen);
   for (int i = 0; i < num_times; ++i) {
     solver->Backtrack(0);
@@ -968,7 +970,7 @@ SatSolver::Status SolveWithCardinalityEncodingAndCore(
   // Initialize the bounds.
   // This is in term of number of variables not at their minimal value.
   Coefficient lower_bound(0);
-  Coefficient upper_bound(kint64max);
+  Coefficient upper_bound(std::numeric_limits<int64_t>::max());
   if (!solution->empty()) {
     CHECK(IsAssignmentValid(problem, *solution));
     upper_bound = ComputeObjectiveValue(problem, *solution) + offset;
@@ -1006,7 +1008,7 @@ SatSolver::Status SolveWithCardinalityEncodingAndCore(
         absl::StrFormat("c iter:%d [%s] lb:%d%s assumptions:%u depth:%d", iter,
                         previous_core_info,
                         lower_bound.value() - offset.value() +
-                            static_cast<int64>(problem.objective().offset()),
+                            static_cast<int64_t>(problem.objective().offset()),
                         gap_string, nodes.size(), max_depth));
 
     // Solve under the assumptions.
@@ -1220,9 +1222,9 @@ SatSolver::Status FindCores(std::vector<Literal> assumptions,
     if (result != SatSolver::ASSUMPTIONS_UNSAT) return result;
     std::vector<Literal> core = sat_solver->GetLastIncompatibleDecisions();
     if (sat_solver->parameters().minimize_core()) {
-      MinimizeCoreWithPropagation(sat_solver, &core);
+      MinimizeCoreWithPropagation(limit, sat_solver, &core);
     }
-    CHECK(!core.empty());
+    if (core.empty()) return sat_solver->UnsatStatus();
     cores->push_back(core);
     if (!sat_solver->parameters().find_multiple_cores()) break;
 
@@ -1282,7 +1284,7 @@ SatSolver::Status FindMultipleCoresForMaxHs(
     if (result != SatSolver::ASSUMPTIONS_UNSAT) return result;
     std::vector<Literal> core = sat_solver->GetLastIncompatibleDecisions();
     if (sat_solver->parameters().minimize_core()) {
-      MinimizeCoreWithPropagation(sat_solver, &core);
+      MinimizeCoreWithPropagation(limit, sat_solver, &core);
     }
     CHECK(!core.empty());
     cores->push_back(core);
@@ -1606,7 +1608,7 @@ SatSolver::Status CoreBasedOptimizer::Optimize() {
       if (!already_switched_to_linear_scan_) {
         already_switched_to_linear_scan_ = true;
         std::vector<IntegerVariable> constraint_vars;
-        std::vector<int64> constraint_coeffs;
+        std::vector<int64_t> constraint_coeffs;
         for (const int index : term_indices) {
           constraint_vars.push_back(terms_[index].var);
           constraint_coeffs.push_back(terms_[index].weight.value());
@@ -1627,8 +1629,8 @@ SatSolver::Status CoreBasedOptimizer::Optimize() {
       for (const ObjectiveTerm& term : terms_) {
         max_depth = std::max(max_depth, term.depth);
       }
-      const int64 lb = integer_trail_->LowerBound(objective_var_).value();
-      const int64 ub = integer_trail_->UpperBound(objective_var_).value();
+      const int64_t lb = integer_trail_->LowerBound(objective_var_).value();
+      const int64_t ub = integer_trail_->UpperBound(objective_var_).value();
       const int gap =
           lb == ub
               ? 0
@@ -1660,7 +1662,7 @@ SatSolver::Status CoreBasedOptimizer::Optimize() {
 
     // Solve under the assumptions.
     //
-    // TODO(user): If the "search" is interupted while computing cores, we
+    // TODO(user): If the "search" is interrupted while computing cores, we
     // currently do not resume it flawlessly. We however add any cores we found
     // before aborting.
     std::vector<std::vector<Literal>> cores;
@@ -1730,7 +1732,7 @@ SatSolver::Status CoreBasedOptimizer::Optimize() {
       // Sum variables in the core <= new_var.
       {
         std::vector<IntegerVariable> constraint_vars;
-        std::vector<int64> constraint_coeffs;
+        std::vector<int64_t> constraint_coeffs;
         for (const Literal lit : core) {
           const int index = gtl::FindOrDie(literal_to_term_index, lit.Index());
           terms_[index].weight -= min_weight;
@@ -1843,7 +1845,7 @@ SatSolver::Status MinimizeWithHittingSetAndLazyEncoding(
     CHECK_EQ(response.status(), MPSolverResponseStatus::MPSOLVER_OPTIMAL);
 
     const IntegerValue mip_objective(
-        static_cast<int64>(std::round(response.objective_value())));
+        static_cast<int64_t>(std::round(response.objective_value())));
     VLOG(1) << "constraints: " << hs_model.constraint_size()
             << " variables: " << hs_model.variable_size() << " hs_lower_bound: "
             << objective_definition.ScaleIntegerObjective(mip_objective)
@@ -1867,7 +1869,7 @@ SatSolver::Status MinimizeWithHittingSetAndLazyEncoding(
     IntegerValue next_stratified_threshold(0);
     for (int i = 0; i < num_variables_in_objective; ++i) {
       const IntegerValue hs_value(
-          static_cast<int64>(response.variable_value(i)));
+          static_cast<int64_t>(response.variable_value(i)));
       if (hs_value == integer_trail->UpperBound(variables[i])) continue;
 
       // Only consider the terms above the threshold.

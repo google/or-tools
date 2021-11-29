@@ -7,7 +7,8 @@ WORKDIR /home/project
 COPY . .
 
 FROM devel AS build
-RUN cmake -S. -Bbuild -DBUILD_JAVA=ON -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
+RUN cmake -S. -Bbuild -DBUILD_JAVA=ON -DSKIP_GPG=ON \
+ -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
 RUN cmake --build build --target all -v
 RUN cmake --build build --target install
 

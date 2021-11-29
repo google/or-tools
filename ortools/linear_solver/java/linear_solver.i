@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -306,7 +306,6 @@ PROTO2_RETURN(
 // These aren't unit tested, as they only run on machines with a Gurobi license.
 %unignore operations_research::MPSolver::GUROBI_LINEAR_PROGRAMMING;
 %unignore operations_research::MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING;
-%rename (setGurobiLibraryPath) operations_research::MPSolver::SetGurobiLibraryPath;
 %unignore operations_research::MPSolver::CPLEX_LINEAR_PROGRAMMING;
 %unignore operations_research::MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING;
 %unignore operations_research::MPSolver::XPRESS_LINEAR_PROGRAMMING;
@@ -357,13 +356,16 @@ PROTO2_RETURN(
 // - loadSolutionFromProto;  // Use hand-written version.
 
 // Expose some of the more advanced MPSolver API.
+%rename (problemType) operations_research::MPSolver::ProblemType;  // no test
 %rename (supportsProblemType) operations_research::MPSolver::SupportsProblemType;  // no test
 %rename (setSolverSpecificParametersAsString)
     operations_research::MPSolver::SetSolverSpecificParametersAsString;  // no test
 %rename (interruptSolve) operations_research::MPSolver::InterruptSolve;  // no test
 %rename (wallTime) operations_research::MPSolver::wall_time;
 %rename (clear) operations_research::MPSolver::Clear;  // no test
+%unignore operations_research::MPSolver::constraint;
 %unignore operations_research::MPSolver::constraints;
+%unignore operations_research::MPSolver::variable;
 %unignore operations_research::MPSolver::variables;
 %rename (numVariables) operations_research::MPSolver::NumVariables;
 %rename (numConstraints) operations_research::MPSolver::NumConstraints;

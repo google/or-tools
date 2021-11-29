@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,6 +13,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <stack>
 #include <string>
 #include <utility>
@@ -45,27 +46,27 @@ class TraceIntVar : public IntVar {
 
   ~TraceIntVar() override {}
 
-  int64 Min() const override { return inner_->Min(); }
+  int64_t Min() const override { return inner_->Min(); }
 
-  void SetMin(int64 m) override {
+  void SetMin(int64_t m) override {
     if (m > inner_->Min()) {
       solver()->GetPropagationMonitor()->SetMin(inner_, m);
       inner_->SetMin(m);
     }
   }
 
-  int64 Max() const override { return inner_->Max(); }
+  int64_t Max() const override { return inner_->Max(); }
 
-  void SetMax(int64 m) override {
+  void SetMax(int64_t m) override {
     if (m < inner_->Max()) {
       solver()->GetPropagationMonitor()->SetMax(inner_, m);
       inner_->SetMax(m);
     }
   }
 
-  void Range(int64* l, int64* u) override { inner_->Range(l, u); }
+  void Range(int64_t* l, int64_t* u) override { inner_->Range(l, u); }
 
-  void SetRange(int64 l, int64 u) override {
+  void SetRange(int64_t l, int64_t u) override {
     if (l > inner_->Min() || u < inner_->Max()) {
       if (l == u) {
         solver()->GetPropagationMonitor()->SetValue(inner_, l);
@@ -83,31 +84,31 @@ class TraceIntVar : public IntVar {
 
   IntVar* Var() override { return this; }
 
-  int64 Value() const override { return inner_->Value(); }
+  int64_t Value() const override { return inner_->Value(); }
 
-  void RemoveValue(int64 v) override {
+  void RemoveValue(int64_t v) override {
     if (inner_->Contains(v)) {
       solver()->GetPropagationMonitor()->RemoveValue(inner_, v);
       inner_->RemoveValue(v);
     }
   }
 
-  void SetValue(int64 v) override {
+  void SetValue(int64_t v) override {
     solver()->GetPropagationMonitor()->SetValue(inner_, v);
     inner_->SetValue(v);
   }
 
-  void RemoveInterval(int64 l, int64 u) override {
+  void RemoveInterval(int64_t l, int64_t u) override {
     solver()->GetPropagationMonitor()->RemoveInterval(inner_, l, u);
     inner_->RemoveInterval(l, u);
   }
 
-  void RemoveValues(const std::vector<int64>& values) override {
+  void RemoveValues(const std::vector<int64_t>& values) override {
     solver()->GetPropagationMonitor()->RemoveValues(inner_, values);
     inner_->RemoveValues(values);
   }
 
-  void SetValues(const std::vector<int64>& values) override {
+  void SetValues(const std::vector<int64_t>& values) override {
     solver()->GetPropagationMonitor()->SetValues(inner_, values);
     inner_->SetValues(values);
   }
@@ -118,9 +119,9 @@ class TraceIntVar : public IntVar {
 
   void WhenDomain(Demon* d) override { inner_->WhenDomain(d); }
 
-  uint64 Size() const override { return inner_->Size(); }
+  uint64_t Size() const override { return inner_->Size(); }
 
-  bool Contains(int64 v) const override { return inner_->Contains(v); }
+  bool Contains(int64_t v) const override { return inner_->Contains(v); }
 
   IntVarIterator* MakeHoleIterator(bool reversible) const override {
     return inner_->MakeHoleIterator(reversible);
@@ -130,9 +131,9 @@ class TraceIntVar : public IntVar {
     return inner_->MakeDomainIterator(reversible);
   }
 
-  int64 OldMin() const override { return inner_->OldMin(); }
+  int64_t OldMin() const override { return inner_->OldMin(); }
 
-  int64 OldMax() const override { return inner_->OldMax(); }
+  int64_t OldMax() const override { return inner_->OldMax(); }
 
   int VarType() const override { return TRACE_VAR; }
 
@@ -149,17 +150,19 @@ class TraceIntVar : public IntVar {
 
   std::string DebugString() const override { return inner_->DebugString(); }
 
-  IntVar* IsEqual(int64 constant) override { return inner_->IsEqual(constant); }
+  IntVar* IsEqual(int64_t constant) override {
+    return inner_->IsEqual(constant);
+  }
 
-  IntVar* IsDifferent(int64 constant) override {
+  IntVar* IsDifferent(int64_t constant) override {
     return inner_->IsDifferent(constant);
   }
 
-  IntVar* IsGreaterOrEqual(int64 constant) override {
+  IntVar* IsGreaterOrEqual(int64_t constant) override {
     return inner_->IsGreaterOrEqual(constant);
   }
 
-  IntVar* IsLessOrEqual(int64 constant) override {
+  IntVar* IsLessOrEqual(int64_t constant) override {
     return inner_->IsLessOrEqual(constant);
   }
 
@@ -179,23 +182,23 @@ class TraceIntExpr : public IntExpr {
 
   ~TraceIntExpr() override {}
 
-  int64 Min() const override { return inner_->Min(); }
+  int64_t Min() const override { return inner_->Min(); }
 
-  void SetMin(int64 m) override {
+  void SetMin(int64_t m) override {
     solver()->GetPropagationMonitor()->SetMin(inner_, m);
     inner_->SetMin(m);
   }
 
-  int64 Max() const override { return inner_->Max(); }
+  int64_t Max() const override { return inner_->Max(); }
 
-  void SetMax(int64 m) override {
+  void SetMax(int64_t m) override {
     solver()->GetPropagationMonitor()->SetMax(inner_, m);
     inner_->SetMax(m);
   }
 
-  void Range(int64* l, int64* u) override { inner_->Range(l, u); }
+  void Range(int64_t* l, int64_t* u) override { inner_->Range(l, u); }
 
-  void SetRange(int64 l, int64 u) override {
+  void SetRange(int64_t l, int64_t u) override {
     if (l > inner_->Min() || u < inner_->Max()) {
       solver()->GetPropagationMonitor()->SetRange(inner_, l, u);
       inner_->SetRange(l, u);
@@ -236,25 +239,25 @@ class TraceIntervalVar : public IntervalVar {
   }
   ~TraceIntervalVar() override {}
 
-  int64 StartMin() const override { return inner_->StartMin(); }
+  int64_t StartMin() const override { return inner_->StartMin(); }
 
-  int64 StartMax() const override { return inner_->StartMax(); }
+  int64_t StartMax() const override { return inner_->StartMax(); }
 
-  void SetStartMin(int64 m) override {
+  void SetStartMin(int64_t m) override {
     if (inner_->MayBePerformed() && (m > inner_->StartMin())) {
       solver()->GetPropagationMonitor()->SetStartMin(inner_, m);
       inner_->SetStartMin(m);
     }
   }
 
-  void SetStartMax(int64 m) override {
+  void SetStartMax(int64_t m) override {
     if (inner_->MayBePerformed() && (m < inner_->StartMax())) {
       solver()->GetPropagationMonitor()->SetStartMax(inner_, m);
       inner_->SetStartMax(m);
     }
   }
 
-  void SetStartRange(int64 mi, int64 ma) override {
+  void SetStartRange(int64_t mi, int64_t ma) override {
     if (inner_->MayBePerformed() &&
         (mi > inner_->StartMin() || ma < inner_->StartMax())) {
       solver()->GetPropagationMonitor()->SetStartRange(inner_, mi, ma);
@@ -262,33 +265,33 @@ class TraceIntervalVar : public IntervalVar {
     }
   }
 
-  int64 OldStartMin() const override { return inner_->OldStartMin(); }
+  int64_t OldStartMin() const override { return inner_->OldStartMin(); }
 
-  int64 OldStartMax() const override { return inner_->OldStartMax(); }
+  int64_t OldStartMax() const override { return inner_->OldStartMax(); }
 
   void WhenStartRange(Demon* const d) override { inner_->WhenStartRange(d); }
 
   void WhenStartBound(Demon* const d) override { inner_->WhenStartBound(d); }
 
-  int64 EndMin() const override { return inner_->EndMin(); }
+  int64_t EndMin() const override { return inner_->EndMin(); }
 
-  int64 EndMax() const override { return inner_->EndMax(); }
+  int64_t EndMax() const override { return inner_->EndMax(); }
 
-  void SetEndMin(int64 m) override {
+  void SetEndMin(int64_t m) override {
     if (inner_->MayBePerformed() && (m > inner_->EndMin())) {
       solver()->GetPropagationMonitor()->SetEndMin(inner_, m);
       inner_->SetEndMin(m);
     }
   }
 
-  void SetEndMax(int64 m) override {
+  void SetEndMax(int64_t m) override {
     if (inner_->MayBePerformed() && (m < inner_->EndMax())) {
       solver()->GetPropagationMonitor()->SetEndMax(inner_, m);
       inner_->SetEndMax(m);
     }
   }
 
-  void SetEndRange(int64 mi, int64 ma) override {
+  void SetEndRange(int64_t mi, int64_t ma) override {
     if (inner_->MayBePerformed() &&
         (mi > inner_->EndMin() || ma < inner_->EndMax())) {
       solver()->GetPropagationMonitor()->SetEndRange(inner_, mi, ma);
@@ -296,33 +299,33 @@ class TraceIntervalVar : public IntervalVar {
     }
   }
 
-  int64 OldEndMin() const override { return inner_->OldEndMin(); }
+  int64_t OldEndMin() const override { return inner_->OldEndMin(); }
 
-  int64 OldEndMax() const override { return inner_->OldEndMax(); }
+  int64_t OldEndMax() const override { return inner_->OldEndMax(); }
 
   void WhenEndRange(Demon* const d) override { inner_->WhenEndRange(d); }
 
   void WhenEndBound(Demon* const d) override { inner_->WhenStartBound(d); }
 
-  int64 DurationMin() const override { return inner_->DurationMin(); }
+  int64_t DurationMin() const override { return inner_->DurationMin(); }
 
-  int64 DurationMax() const override { return inner_->DurationMax(); }
+  int64_t DurationMax() const override { return inner_->DurationMax(); }
 
-  void SetDurationMin(int64 m) override {
+  void SetDurationMin(int64_t m) override {
     if (inner_->MayBePerformed() && (m > inner_->DurationMin())) {
       solver()->GetPropagationMonitor()->SetDurationMin(inner_, m);
       inner_->SetDurationMin(m);
     }
   }
 
-  void SetDurationMax(int64 m) override {
+  void SetDurationMax(int64_t m) override {
     if (inner_->MayBePerformed() && (m < inner_->DurationMax())) {
       solver()->GetPropagationMonitor()->SetDurationMax(inner_, m);
       inner_->SetDurationMax(m);
     }
   }
 
-  void SetDurationRange(int64 mi, int64 ma) override {
+  void SetDurationRange(int64_t mi, int64_t ma) override {
     if (inner_->MayBePerformed() &&
         (mi > inner_->DurationMin() || ma < inner_->DurationMax())) {
       solver()->GetPropagationMonitor()->SetDurationRange(inner_, mi, ma);
@@ -330,9 +333,9 @@ class TraceIntervalVar : public IntervalVar {
     }
   }
 
-  int64 OldDurationMin() const override { return inner_->OldDurationMin(); }
+  int64_t OldDurationMin() const override { return inner_->OldDurationMin(); }
 
-  int64 OldDurationMax() const override { return inner_->OldDurationMax(); }
+  int64_t OldDurationMax() const override { return inner_->OldDurationMax(); }
 
   void WhenDurationRange(Demon* const d) override {
     inner_->WhenDurationRange(d);
@@ -366,13 +369,13 @@ class TraceIntervalVar : public IntervalVar {
   IntExpr* DurationExpr() override { return inner_->DurationExpr(); }
   IntExpr* EndExpr() override { return inner_->EndExpr(); }
   IntExpr* PerformedExpr() override { return inner_->PerformedExpr(); }
-  IntExpr* SafeStartExpr(int64 unperformed_value) override {
+  IntExpr* SafeStartExpr(int64_t unperformed_value) override {
     return inner_->SafeStartExpr(unperformed_value);
   }
-  IntExpr* SafeDurationExpr(int64 unperformed_value) override {
+  IntExpr* SafeDurationExpr(int64_t unperformed_value) override {
     return inner_->SafeDurationExpr(unperformed_value);
   }
-  IntExpr* SafeEndExpr(int64 unperformed_value) override {
+  IntExpr* SafeEndExpr(int64_t unperformed_value) override {
     return inner_->SafeEndExpr(unperformed_value);
   }
 
@@ -584,60 +587,62 @@ class PrintTrace : public PropagationMonitor {
 
   // ----- IntExpr modifiers -----
 
-  void SetMin(IntExpr* const expr, int64 new_min) override {
+  void SetMin(IntExpr* const expr, int64_t new_min) override {
     DisplayModification(
         absl::StrFormat("SetMin(%s, %d)", expr->DebugString(), new_min));
   }
 
-  void SetMax(IntExpr* const expr, int64 new_max) override {
+  void SetMax(IntExpr* const expr, int64_t new_max) override {
     DisplayModification(
         absl::StrFormat("SetMax(%s, %d)", expr->DebugString(), new_max));
   }
 
-  void SetRange(IntExpr* const expr, int64 new_min, int64 new_max) override {
+  void SetRange(IntExpr* const expr, int64_t new_min,
+                int64_t new_max) override {
     DisplayModification(absl::StrFormat("SetRange(%s, [%d .. %d])",
                                         expr->DebugString(), new_min, new_max));
   }
 
   // ----- IntVar modifiers -----
 
-  void SetMin(IntVar* const var, int64 new_min) override {
+  void SetMin(IntVar* const var, int64_t new_min) override {
     DisplayModification(
         absl::StrFormat("SetMin(%s, %d)", var->DebugString(), new_min));
   }
 
-  void SetMax(IntVar* const var, int64 new_max) override {
+  void SetMax(IntVar* const var, int64_t new_max) override {
     DisplayModification(
         absl::StrFormat("SetMax(%s, %d)", var->DebugString(), new_max));
   }
 
-  void SetRange(IntVar* const var, int64 new_min, int64 new_max) override {
+  void SetRange(IntVar* const var, int64_t new_min, int64_t new_max) override {
     DisplayModification(absl::StrFormat("SetRange(%s, [%d .. %d])",
                                         var->DebugString(), new_min, new_max));
   }
 
-  void RemoveValue(IntVar* const var, int64 value) override {
+  void RemoveValue(IntVar* const var, int64_t value) override {
     DisplayModification(
         absl::StrFormat("RemoveValue(%s, %d)", var->DebugString(), value));
   }
 
-  void SetValue(IntVar* const var, int64 value) override {
+  void SetValue(IntVar* const var, int64_t value) override {
     DisplayModification(
         absl::StrFormat("SetValue(%s, %d)", var->DebugString(), value));
   }
 
-  void RemoveInterval(IntVar* const var, int64 imin, int64 imax) override {
+  void RemoveInterval(IntVar* const var, int64_t imin, int64_t imax) override {
     DisplayModification(absl::StrFormat("RemoveInterval(%s, [%d .. %d])",
                                         var->DebugString(), imin, imax));
   }
 
-  void SetValues(IntVar* const var, const std::vector<int64>& values) override {
+  void SetValues(IntVar* const var,
+                 const std::vector<int64_t>& values) override {
     DisplayModification(absl::StrFormat("SetValues(%s, %s)", var->DebugString(),
                                         absl::StrJoin(values, ", ")));
   }
 
   void RemoveValues(IntVar* const var,
-                    const std::vector<int64>& values) override {
+                    const std::vector<int64_t>& values) override {
     DisplayModification(absl::StrFormat("RemoveValues(%s, %s)",
                                         var->DebugString(),
                                         absl::StrJoin(values, ", ")));
@@ -645,50 +650,50 @@ class PrintTrace : public PropagationMonitor {
 
   // ----- IntervalVar modifiers -----
 
-  void SetStartMin(IntervalVar* const var, int64 new_min) override {
+  void SetStartMin(IntervalVar* const var, int64_t new_min) override {
     DisplayModification(
         absl::StrFormat("SetStartMin(%s, %d)", var->DebugString(), new_min));
   }
 
-  void SetStartMax(IntervalVar* const var, int64 new_max) override {
+  void SetStartMax(IntervalVar* const var, int64_t new_max) override {
     DisplayModification(
         absl::StrFormat("SetStartMax(%s, %d)", var->DebugString(), new_max));
   }
 
-  void SetStartRange(IntervalVar* const var, int64 new_min,
-                     int64 new_max) override {
+  void SetStartRange(IntervalVar* const var, int64_t new_min,
+                     int64_t new_max) override {
     DisplayModification(absl::StrFormat("SetStartRange(%s, [%d .. %d])",
                                         var->DebugString(), new_min, new_max));
   }
 
-  void SetEndMin(IntervalVar* const var, int64 new_min) override {
+  void SetEndMin(IntervalVar* const var, int64_t new_min) override {
     DisplayModification(
         absl::StrFormat("SetEndMin(%s, %d)", var->DebugString(), new_min));
   }
 
-  void SetEndMax(IntervalVar* const var, int64 new_max) override {
+  void SetEndMax(IntervalVar* const var, int64_t new_max) override {
     DisplayModification(
         absl::StrFormat("SetEndMax(%s, %d)", var->DebugString(), new_max));
   }
 
-  void SetEndRange(IntervalVar* const var, int64 new_min,
-                   int64 new_max) override {
+  void SetEndRange(IntervalVar* const var, int64_t new_min,
+                   int64_t new_max) override {
     DisplayModification(absl::StrFormat("SetEndRange(%s, [%d .. %d])",
                                         var->DebugString(), new_min, new_max));
   }
 
-  void SetDurationMin(IntervalVar* const var, int64 new_min) override {
+  void SetDurationMin(IntervalVar* const var, int64_t new_min) override {
     DisplayModification(
         absl::StrFormat("SetDurationMin(%s, %d)", var->DebugString(), new_min));
   }
 
-  void SetDurationMax(IntervalVar* const var, int64 new_max) override {
+  void SetDurationMax(IntervalVar* const var, int64_t new_max) override {
     DisplayModification(
         absl::StrFormat("SetDurationMax(%s, %d)", var->DebugString(), new_max));
   }
 
-  void SetDurationRange(IntervalVar* const var, int64 new_min,
-                        int64 new_max) override {
+  void SetDurationRange(IntervalVar* const var, int64_t new_min,
+                        int64_t new_max) override {
     DisplayModification(absl::StrFormat("SetDurationRange(%s, [%d .. %d])",
                                         var->DebugString(), new_min, new_max));
   }

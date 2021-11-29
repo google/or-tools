@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,7 +13,7 @@
 
 // This library solves 0-1 one-dimensional knapsack problems with fractional
 // profits and weights using the branch and bound algorithm. Note that
-// algorithms/knapsack_solver uses 'int64' for the profits and the weights.
+// algorithms/knapsack_solver uses 'int64_t' for the profits and the weights.
 // TODO(user): Merge this code with algorithms/knapsack_solver.
 //
 // Given n items, each with a profit and a weight and a knapsack of
@@ -44,6 +44,8 @@
 #ifndef OR_TOOLS_ALGORITHMS_KNAPSACK_SOLVER_FOR_CUTS_H_
 #define OR_TOOLS_ALGORITHMS_KNAPSACK_SOLVER_FOR_CUTS_H_
 
+#include <cstdint>
+#include <limits>
 #include <memory>
 #include <string>
 #include <vector>
@@ -51,7 +53,6 @@
 #include "absl/memory/memory.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/strong_vector.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -333,7 +334,7 @@ class KnapsackSolverForCuts {
   }
 
   // Stops the knapsack solver after processing 'node_limit' nodes.
-  void set_node_limit(const int64 node_limit) { node_limit_ = node_limit; }
+  void set_node_limit(const int64_t node_limit) { node_limit_ = node_limit; }
 
   // Solves the problem and returns the profit of the best solution found.
   double Solve(TimeLimit* time_limit, bool* is_solution_optimal);
@@ -377,7 +378,7 @@ class KnapsackSolverForCuts {
       std::numeric_limits<double>::infinity();
   double solution_upper_bound_threshold_ =
       -std::numeric_limits<double>::infinity();
-  int64 node_limit_ = kint64max;
+  int64_t node_limit_ = std::numeric_limits<int64_t>::max();
 };
 // TODO(user) : Add reduction algorithm.
 

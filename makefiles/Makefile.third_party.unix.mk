@@ -20,8 +20,8 @@ UNIX_SWIG_BINARY ?= swig
 PROTOC_BINARY := $(shell $(WHICH) ${UNIX_PROTOC_BINARY})
 
 # Tags of dependencies to checkout.
-PROTOBUF_TAG = v3.14.0
-ABSL_TAG = 20200923.2
+PROTOBUF_TAG = v3.18.0
+ABSL_TAG = 20210324.2
 CBC_TAG = 2.10.5
 CGL_TAG = 0.60.3
 # Clp >= 1.17.5 is broken, so we must keep 1.17.4
@@ -30,7 +30,7 @@ CLP_TAG = 1.17.4
 OSI_TAG = 0.108.6
 COINUTILS_TAG = 2.11.4
 PATCHELF_TAG = 0.10
-SCIP_TAG = 7.0.1
+SCIP_TAG = master
 
 # Main target.
 .PHONY: third_party # Build OR-Tools Prerequisite
@@ -206,8 +206,9 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 .PHONY: install_protobuf
 install_protobuf: dependencies/install/lib/libprotobuf.a
 
-dependencies/install/lib/libprotobuf.a: dependencies/sources/protobuf-$(PROTOBUF_TAG) | dependencies/install
-	cd dependencies/sources/protobuf-$(PROTOBUF_TAG) && \
+PROTOBUF_SRCDIR = dependencies/sources/protobuf-$(PROTOBUF_TAG)
+dependencies/install/lib/libprotobuf.a: $(PROTOBUF_SRCDIR) | dependencies/install
+	cd $(PROTOBUF_SRCDIR) && \
   $(SET_COMPILER) $(CMAKE) -Hcmake -Bbuild_cmake \
     -DCMAKE_PREFIX_PATH="$(OR_TOOLS_TOP)/dependencies/install" \
     -DCMAKE_BUILD_TYPE=Release \
@@ -221,14 +222,13 @@ dependencies/install/lib/libprotobuf.a: dependencies/sources/protobuf-$(PROTOBUF
     -Dprotobuf_BUILD_EXAMPLES=OFF \
     -DCMAKE_CXX_FLAGS="$(MAC_VERSION)" \
     -DCMAKE_INSTALL_PREFIX=../../install && \
-  $(CMAKE) --build build_cmake --config Release -v -- -j 4 && \
+  $(CMAKE) --build build_cmake --config Release -v -- -j4 && \
   $(CMAKE) --build build_cmake --config Release --target install
 
-dependencies/sources/protobuf-$(PROTOBUF_TAG): patches/protobuf-$(PROTOBUF_TAG).patch | dependencies/sources
-	-$(DELREC) dependencies/sources/protobuf-$(PROTOBUF_TAG)
-	git clone --quiet -b $(PROTOBUF_TAG) https://github.com/google/protobuf.git dependencies/sources/protobuf-$(PROTOBUF_TAG)
-	cd dependencies/sources/protobuf-$(PROTOBUF_TAG) && \
-    git apply "$(OR_TOOLS_TOP)/patches/protobuf-$(PROTOBUF_TAG).patch"
+$(PROTOBUF_SRCDIR): patches/protobuf-$(PROTOBUF_TAG).patch | dependencies/sources
+	-$(DELREC) $(PROTOBUF_SRCDIR)
+	git clone --quiet -b $(PROTOBUF_TAG) https://github.com/google/protobuf.git $(PROTOBUF_SRCDIR)
+	cd $(PROTOBUF_SRCDIR) && git apply "$(OR_TOOLS_TOP)/patches/protobuf-$(PROTOBUF_TAG).patch"
 
 # This is needed to find protocol buffers.
 PROTOBUF_INC = -I$(UNIX_PROTOBUF_DIR)/include
@@ -247,7 +247,6 @@ PROTOBUF_LNK = $(STATIC_PROTOBUF_LNK)
 DEPENDENCIES_INC += $(PROTOBUF_INC)
 SWIG_INC += $(PROTOBUF_SWIG)
 DEPENDENCIES_LNK += $(PROTOBUF_LNK)
-OR_TOOLS_LNK += $(PROTOBUF_LNK)
 
 # Define Protoc
 ifeq ($(PLATFORM),LINUX)
@@ -375,6 +374,8 @@ $(_ABSL_STATIC_LIB_DIR)libabsl_flags_reflection.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_flags_usage.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_flags_usage_internal.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_base.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_city.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_wyhash.a
 
 ABSL_LNK = $(STATIC_ABSL_LNK)
 
@@ -604,7 +605,6 @@ COIN_LNK = \
 DEPENDENCIES_INC += $(COIN_INC)
 SWIG_INC += $(COIN_SWIG)
 DEPENDENCIES_LNK += $(COIN_LNK)
-OR_TOOLS_LNK += $(COIN_LNK)
 endif  # USE_COINOR
 
 #########################
@@ -614,67 +614,52 @@ endif  # USE_COINOR
 ifeq ($(USE_SCIP),OFF)
 install_scip: $(GEN_DIR)/ortools/linear_solver/lpi_glop.cc
 
-$(GEN_DIR)/ortools/linear_solver/lpi_glop.cc:
+$(GEN_DIR)/ortools/linear_solver/lpi_glop.cc: | $(GEN_DIR)/ortools/linear_solver
 	touch $(GEN_DIR)/ortools/linear_solver/lpi_glop.cc
 else
 install_scip: dependencies/install/lib/libscip.a $(GEN_DIR)/ortools/linear_solver/lpi_glop.cc
 
 SCIP_SRCDIR = dependencies/sources/scip-$(SCIP_TAG)
-dependencies/install/lib/libscip.a: $(SCIP_SRCDIR)
-ifeq ($(PLATFORM),LINUX)
+dependencies/install/lib/libscip.a: $(SCIP_SRCDIR) | dependencies/install
 	cd $(SCIP_SRCDIR) && \
-	$(SET_COMPILER) make install \
-		GMP=false \
-		ZIMPL=false \
-		READLINE=false \
-		TPI=none \
-		LPS=none \
-		USRCFLAGS="-fPIC" \
-		USRCXXFLAGS="-fPIC" \
-		USRCPPFLAGS="-fPIC" \
-		PARASCIP=false \
-		INSTALLDIR="$(OR_TOOLS_TOP)/dependencies/install"
-endif
-ifeq ($(PLATFORM),MACOSX)
-	cd $(SCIP_SRCDIR) && \
-	$(SET_COMPILER) make install \
-		GMP=false \
-		ZIMPL=false \
-		READLINE=false \
-		TPI=tny \
-		LPS=none \
-		USRCFLAGS="$(MAC_VERSION)" \
-		USRCXXFLAGS="$(MAC_VERSION)" \
-		USRCPPFLAGS="$(MAC_VERSION)" \
-		INSTALLDIR="$(OR_TOOLS_TOP)/dependencies/install"
-endif
-	ar d "$(OR_TOOLS_TOP)"/dependencies/install/lib/liblpinone.a lpi_none.o
+	$(SET_COMPILER) $(CMAKE) -H. -Bbuild_cmake \
+    -DCMAKE_PREFIX_PATH="$(OR_TOOLS_TOP)/dependencies/install" \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_CXX_STANDARD=17 \
+    -DCMAKE_CXX_STANDARD_REQUIRED=ON \
+    -DCMAKE_CXX_EXTENSIONS=OFF \
+    -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+    -DBUILD_SHARED_LIBS=OFF \
+    -DSHARED=OFF \
+    -DBUILD_STATIC_LIBS=ON \
+    -DBUILD_TESTING=OFF \
+    -DCMAKE_CXX_FLAGS="$(MAC_VERSION)" \
+    -DREADLINE=OFF \
+    -DGMP=OFF \
+    -DPAPILO=OFF \
+    -DZIMPL=OFF \
+    -DIPOPT=OFF \
+    -DAMPL=OFF \
+    -DTPI="tny" \
+    -DEXPRINT="none" \
+    -DLPS="none" \
+    -DSYM="none" \
+    -DCMAKE_INSTALL_PREFIX=../../install && \
+  $(CMAKE) --build build_cmake --config Release -v -- -j4 && \
+  $(CMAKE) --build build_cmake --config Release --target install
 
 $(SCIP_SRCDIR): | dependencies/sources
 	-$(DELREC) $(SCIP_SRCDIR)
-	tar xvzf dependencies/archives/scip-$(SCIP_TAG).tgz -C dependencies/sources
-	cd dependencies/sources/scip-$(SCIP_TAG) && git apply --ignore-whitespace ../../../patches/scip-$(SCIP_TAG).patch
+	git clone --quiet -b $(SCIP_TAG) https://github.com/scipopt/scip.git $(SCIP_SRCDIR)
+#	cd $(SCIP_SRCDIR) && git apply --ignore-whitespace "$(OR_TOOLS_TOP)/patches/scip-$(SCIP_TAG).patch"
 
 
 $(GEN_DIR)/ortools/linear_solver/lpi_glop.cc: $(SCIP_SRCDIR) | $(GEN_DIR)/ortools/linear_solver
-	$(COPY) dependencies/sources/scip-$(SCIP_TAG)/src/lpi/lpi_glop.cpp $(GEN_DIR)/ortools/linear_solver/lpi_glop.cc
+	$(COPY) $(SCIP_SRCDIR)/src/lpi/lpi_glop.cpp $(GEN_DIR)/ortools/linear_solver/lpi_glop.cc
 
 SCIP_INC = -I$(UNIX_SCIP_DIR)/include -DUSE_SCIP -DNO_CONFIG_HEADER
 SCIP_SWIG = $(SCIP_INC)
-ifeq ($(PLATFORM),LINUX)
-SCIP_LNK = \
-$(UNIX_SCIP_DIR)/lib/libscip.a \
-$(UNIX_SCIP_DIR)/lib/libnlpi.cppad.a \
-$(UNIX_SCIP_DIR)/lib/liblpinone.a \
-$(UNIX_SCIP_DIR)/lib/libtpinone-7.0.1.linux.x86_64.gnu.opt.a
-endif
-ifeq ($(PLATFORM),MACOSX)
-SCIP_LNK = \
-$(UNIX_SCIP_DIR)/lib/libscip.a \
-$(UNIX_SCIP_DIR)/lib/libnlpi.cppad.a \
-$(UNIX_SCIP_DIR)/lib/liblpinone.a \
-$(UNIX_SCIP_DIR)/lib/libtpitny-7.0.1.darwin.x86_64.gnu.opt.a
-endif
+SCIP_LNK = $(UNIX_SCIP_DIR)/lib/libscip.a
 
 DEPENDENCIES_INC += $(SCIP_INC)
 SWIG_INC += $(SCIP_SWIG)

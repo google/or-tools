@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,8 +13,12 @@
 
 #include "ortools/bop/bop_ls.h"
 
+#include <cstdint>
+#include <limits>
+
 #include "absl/memory/memory.h"
 #include "absl/strings/str_format.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/bop/bop_util.h"
 #include "ortools/sat/boolean_problem.h"
 
@@ -70,7 +74,7 @@ BopOptimizerBase::Status LocalSearchOptimizer::Optimize(
       parameters.use_transposition_table_in_ls());
   assignment_iterator_->UsePotentialOneFlipRepairs(
       parameters.use_potential_one_flip_repairs_in_ls());
-  int64 num_assignments_to_explore =
+  int64_t num_assignments_to_explore =
       parameters.max_number_of_explored_assignments_per_try_in_ls();
 
   while (!time_limit->LimitReached() && num_assignments_to_explore > 0 &&
@@ -194,13 +198,13 @@ AssignmentAndConstraintFeasibilityMaintainer::
     CHECK_NE(objective.coefficients(i), 0);
 
     const VariableIndex var(objective.literals(i) - 1);
-    const int64 weight = objective.coefficients(i);
+    const int64_t weight = objective.coefficients(i);
     by_variable_matrix_[var].push_back(
         ConstraintEntry(kObjectiveConstraint, weight));
   }
-  constraint_lower_bounds_.push_back(kint64min);
+  constraint_lower_bounds_.push_back(std::numeric_limits<int64_t>::min());
   constraint_values_.push_back(0);
-  constraint_upper_bounds_.push_back(kint64max);
+  constraint_upper_bounds_.push_back(std::numeric_limits<int64_t>::max());
 
   // Add each constraint.
   ConstraintIndex num_constraints_with_objective(1);
@@ -215,15 +219,17 @@ AssignmentAndConstraintFeasibilityMaintainer::
     CHECK_EQ(constraint.literals_size(), constraint.coefficients_size());
     for (int i = 0; i < constraint.literals_size(); ++i) {
       const VariableIndex var(constraint.literals(i) - 1);
-      const int64 weight = constraint.coefficients(i);
+      const int64_t weight = constraint.coefficients(i);
       by_variable_matrix_[var].push_back(
           ConstraintEntry(num_constraints_with_objective, weight));
     }
     constraint_lower_bounds_.push_back(
-        constraint.has_lower_bound() ? constraint.lower_bound() : kint64min);
+        constraint.has_lower_bound() ? constraint.lower_bound()
+                                     : std::numeric_limits<int64_t>::min());
     constraint_values_.push_back(0);
     constraint_upper_bounds_.push_back(
-        constraint.has_upper_bound() ? constraint.upper_bound() : kint64max);
+        constraint.has_upper_bound() ? constraint.upper_bound()
+                                     : std::numeric_limits<int64_t>::max());
 
     ++num_constraints_with_objective;
   }
@@ -351,9 +357,9 @@ AssignmentAndConstraintFeasibilityMaintainer::PotentialOneFlipRepairs() {
   //
   // TODO(user): If this starts to show-up in a performance profile, we can
   // easily maintain this hash incrementally.
-  uint64 hash = 0;
+  uint64_t hash = 0;
   for (const ConstraintIndex ci : PossiblyInfeasibleConstraints()) {
-    const int64 value = ConstraintValue(ci);
+    const int64_t value = ConstraintValue(ci);
     if (value > ConstraintUpperBound(ci)) {
       hash ^= constraint_set_hasher_.Hash(FromConstraintIndex(ci, false));
     } else if (value < ConstraintLowerBound(ci)) {
@@ -388,7 +394,7 @@ std::string AssignmentAndConstraintFeasibilityMaintainer::DebugString() const {
   }
   str += "\nmin  curr  max\n";
   for (ConstraintIndex ct(0); ct < constraint_values_.size(); ++ct) {
-    if (constraint_lower_bounds_[ct] == kint64min) {
+    if (constraint_lower_bounds_[ct] == std::numeric_limits<int64_t>::min()) {
       str += absl::StrFormat("-  %d  %d\n", constraint_values_[ct],
                              constraint_upper_bounds_[ct]);
     } else {
@@ -416,7 +422,7 @@ void AssignmentAndConstraintFeasibilityMaintainer::
     // We add two entries, one for a positive flip (from false to true) and one
     // for a negative flip (from true to false).
     for (const bool flip_is_positive : {true, false}) {
-      uint64 hash = 0;
+      uint64_t hash = 0;
       for (const ConstraintEntry& entry : by_variable_matrix_[var]) {
         const bool coeff_is_positive = entry.weight > 0;
         hash ^= constraint_set_hasher_.Hash(FromConstraintIndex(
@@ -454,7 +460,7 @@ OneFlipConstraintRepairer::OneFlipConstraintRepairer(
     CHECK_NE(objective.coefficients(i), 0);
 
     const VariableIndex var(objective.literals(i) - 1);
-    const int64 weight = objective.coefficients(i);
+    const int64_t weight = objective.coefficients(i);
     by_constraint_matrix_[num_constraint].push_back(
         ConstraintTerm(var, weight));
   }
@@ -472,7 +478,7 @@ OneFlipConstraintRepairer::OneFlipConstraintRepairer(
     CHECK_EQ(constraint.literals_size(), constraint.coefficients_size());
     for (int i = 0; i < constraint.literals_size(); ++i) {
       const VariableIndex var(constraint.literals(i) - 1);
-      const int64 weight = constraint.coefficients(i);
+      const int64_t weight = constraint.coefficients(i);
       by_constraint_matrix_[num_constraint].push_back(
           ConstraintTerm(var, weight));
     }
@@ -487,7 +493,7 @@ const TermIndex OneFlipConstraintRepairer::kInvalidTerm(-2);
 
 ConstraintIndex OneFlipConstraintRepairer::ConstraintToRepair() const {
   ConstraintIndex selected_ct = kInvalidConstraint;
-  int32 selected_num_branches = kint32max;
+  int32_t selected_num_branches = std::numeric_limits<int32_t>::max();
   int num_infeasible_constraints_left = maintainer_.NumInfeasibleConstraints();
 
   // Optimization: We inspect the constraints in reverse order because the
@@ -508,17 +514,17 @@ ConstraintIndex OneFlipConstraintRepairer::ConstraintToRepair() const {
       return i;
     }
 
-    const int64 constraint_value = maintainer_.ConstraintValue(i);
-    const int64 lb = maintainer_.ConstraintLowerBound(i);
-    const int64 ub = maintainer_.ConstraintUpperBound(i);
+    const int64_t constraint_value = maintainer_.ConstraintValue(i);
+    const int64_t lb = maintainer_.ConstraintLowerBound(i);
+    const int64_t ub = maintainer_.ConstraintUpperBound(i);
 
-    int32 num_branches = 0;
+    int32_t num_branches = 0;
     for (const ConstraintTerm& term : by_constraint_matrix_[i]) {
       if (sat_assignment_.VariableIsAssigned(
               sat::BooleanVariable(term.var.value()))) {
         continue;
       }
-      const int64 new_value =
+      const int64_t new_value =
           constraint_value +
           (maintainer_.Assignment(term.var) ? -term.weight : term.weight);
       if (new_value >= lb && new_value <= ub) {
@@ -543,9 +549,9 @@ TermIndex OneFlipConstraintRepairer::NextRepairingTerm(
     TermIndex start_term_index) const {
   const absl::StrongVector<TermIndex, ConstraintTerm>& terms =
       by_constraint_matrix_[ct_index];
-  const int64 constraint_value = maintainer_.ConstraintValue(ct_index);
-  const int64 lb = maintainer_.ConstraintLowerBound(ct_index);
-  const int64 ub = maintainer_.ConstraintUpperBound(ct_index);
+  const int64_t constraint_value = maintainer_.ConstraintValue(ct_index);
+  const int64_t lb = maintainer_.ConstraintLowerBound(ct_index);
+  const int64_t ub = maintainer_.ConstraintUpperBound(ct_index);
 
   const TermIndex end_term_index(terms.size() + init_term_index + 1);
   for (TermIndex loop_term_index(
@@ -558,7 +564,7 @@ TermIndex OneFlipConstraintRepairer::NextRepairingTerm(
             sat::BooleanVariable(term.var.value()))) {
       continue;
     }
-    const int64 new_value =
+    const int64_t new_value =
         constraint_value +
         (maintainer_.Assignment(term.var) ? -term.weight : term.weight);
     if (new_value >= lb && new_value <= ub) {
@@ -576,12 +582,12 @@ bool OneFlipConstraintRepairer::RepairIsValid(ConstraintIndex ct_index,
           sat::BooleanVariable(term.var.value()))) {
     return false;
   }
-  const int64 new_value =
+  const int64_t new_value =
       maintainer_.ConstraintValue(ct_index) +
       (maintainer_.Assignment(term.var) ? -term.weight : term.weight);
 
-  const int64 lb = maintainer_.ConstraintLowerBound(ct_index);
-  const int64 ub = maintainer_.ConstraintUpperBound(ct_index);
+  const int64_t lb = maintainer_.ConstraintLowerBound(ct_index);
+  const int64_t ub = maintainer_.ConstraintUpperBound(ct_index);
   return (new_value >= lb && new_value <= ub);
 }
 
@@ -593,7 +599,7 @@ sat::Literal OneFlipConstraintRepairer::GetFlip(ConstraintIndex ct_index,
 }
 
 void OneFlipConstraintRepairer::SortTermsOfEachConstraints(int num_variables) {
-  absl::StrongVector<VariableIndex, int64> objective(num_variables, 0);
+  absl::StrongVector<VariableIndex, int64_t> objective(num_variables, 0);
   for (const ConstraintTerm& term :
        by_constraint_matrix_[AssignmentAndConstraintFeasibilityMaintainer::
                                  kObjectiveConstraint]) {
@@ -852,7 +858,7 @@ void LocalSearchAssignmentIterator::ApplyDecision(sat::Literal literal) {
 }
 
 void LocalSearchAssignmentIterator::InitializeTranspositionTableKey(
-    std::array<int32, kStoredMaxDecisions>* a) {
+    std::array<int32_t, kStoredMaxDecisions>* a) {
   int i = 0;
   for (const SearchNode& n : search_nodes_) {
     // Negated because we already fliped this variable, so GetFlip() will
@@ -873,7 +879,7 @@ bool LocalSearchAssignmentIterator::NewStateIsInTranspositionTable(
   if (search_nodes_.size() + 1 > kStoredMaxDecisions) return false;
 
   // Fill the transposition table element, i.e the array 'a' of decisions.
-  std::array<int32, kStoredMaxDecisions> a;
+  std::array<int32_t, kStoredMaxDecisions> a;
   InitializeTranspositionTableKey(&a);
   a[search_nodes_.size()] = l.SignedValue();
   std::sort(a.begin(), a.begin() + 1 + search_nodes_.size());
@@ -891,7 +897,7 @@ void LocalSearchAssignmentIterator::InsertInTranspositionTable() {
   if (search_nodes_.size() > kStoredMaxDecisions) return;
 
   // Fill the transposition table element, i.e the array 'a' of decisions.
-  std::array<int32, kStoredMaxDecisions> a;
+  std::array<int32_t, kStoredMaxDecisions> a;
   InitializeTranspositionTableKey(&a);
   std::sort(a.begin(), a.begin() + search_nodes_.size());
 

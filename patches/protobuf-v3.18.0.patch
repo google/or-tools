@@ -1,0 +1,106 @@
+diff --git a/cmake/CMakeLists.txt b/cmake/CMakeLists.txt
+index 5c3b6e451..ad8e671aa 100644
+--- a/cmake/CMakeLists.txt
++++ b/cmake/CMakeLists.txt
+@@ -15,6 +15,14 @@ endif ()
+ if(POLICY CMP0048)
+   cmake_policy(SET CMP0048 NEW)
+ endif()
++# find_package() uses <PackageName>_ROOT variables.
++if(POLICY CMP0074)
++	cmake_policy(SET CMP0074 NEW)
++endif()
++# option() honors normal variables.
++if(POLICY CMP0077)
++	cmake_policy(SET CMP0077 NEW)
++endif()
+ 
+ # Project
+ project(protobuf C CXX)
+@@ -53,7 +61,7 @@ else (BUILD_SHARED_LIBS)
+ endif (BUILD_SHARED_LIBS)
+ option(protobuf_BUILD_SHARED_LIBS "Build Shared Libraries" ${protobuf_BUILD_SHARED_LIBS_DEFAULT})
+ include(CMakeDependentOption)
+-cmake_dependent_option(protobuf_MSVC_STATIC_RUNTIME "Link static runtime libraries" ON
++cmake_dependent_option(protobuf_MSVC_STATIC_RUNTIME "Link static runtime libraries" OFF
+   "NOT protobuf_BUILD_SHARED_LIBS" OFF)
+ set(protobuf_WITH_ZLIB_DEFAULT ON)
+ option(protobuf_WITH_ZLIB "Build with zlib support" ${protobuf_WITH_ZLIB_DEFAULT})
+@@ -129,24 +137,16 @@ endif (CMAKE_USE_PTHREADS_INIT)
+ 
+ set(_protobuf_FIND_ZLIB)
+ if (protobuf_WITH_ZLIB)
+-  find_package(ZLIB)
+-  if (ZLIB_FOUND)
+-    set(HAVE_ZLIB 1)
+-    # FindZLIB module define ZLIB_INCLUDE_DIRS variable
+-    # Set ZLIB_INCLUDE_DIRECTORIES for compatible
+-    set(ZLIB_INCLUDE_DIRECTORIES ${ZLIB_INCLUDE_DIRECTORIES} ${ZLIB_INCLUDE_DIRS})
+-    # Using imported target if exists
+-    if (TARGET ZLIB::ZLIB)
+-      set(ZLIB_LIBRARIES ZLIB::ZLIB)
+-      set(_protobuf_FIND_ZLIB "if(NOT ZLIB_FOUND)\n  find_package(ZLIB)\nendif()")
+-    endif (TARGET ZLIB::ZLIB)
+-  else (ZLIB_FOUND)
+-    set(HAVE_ZLIB 0)
+-    # Explicitly set these to empty (override NOT_FOUND) so cmake doesn't
+-    # complain when we use them later.
+-    set(ZLIB_INCLUDE_DIRECTORIES)
+-    set(ZLIB_LIBRARIES)
+-  endif (ZLIB_FOUND)
++  if (NOT TARGET ZLIB::ZLIB)
++    find_package(ZLIB REQUIRED)
++  endif()
++  set(HAVE_ZLIB 1)
++  # FindZLIB module define ZLIB_INCLUDE_DIRS variable
++  # Set ZLIB_INCLUDE_DIRECTORIES for compatible
++  set(ZLIB_INCLUDE_DIRECTORIES ${ZLIB_INCLUDE_DIRECTORIES} ${ZLIB_INCLUDE_DIRS})
++  # Using imported target if exists
++  set(ZLIB_LIBRARIES ZLIB::ZLIB)
++  set(_protobuf_FIND_ZLIB "if(NOT ZLIB_FOUND AND NOT TARGET ZLIB::ZLIB)\n  find_package(ZLIB REQUIRED)\nendif()")
+ endif (protobuf_WITH_ZLIB)
+ 
+ if (HAVE_ZLIB)
+@@ -236,7 +236,6 @@ endif (MSVC)
+ get_filename_component(protobuf_source_dir ${protobuf_SOURCE_DIR} PATH)
+ 
+ include_directories(
+-  ${ZLIB_INCLUDE_DIRECTORIES}
+   ${protobuf_BINARY_DIR}
+   ${protobuf_source_dir}/src)
+ 
+diff --git a/cmake/install.cmake b/cmake/install.cmake
+index ef5bb1306..c136c74db 100644
+--- a/cmake/install.cmake
++++ b/cmake/install.cmake
+@@ -126,17 +126,19 @@ configure_file(protobuf-options.cmake
+ 
+ # Allows the build directory to be used as a find directory.
+ 
+-if (protobuf_BUILD_PROTOC_BINARIES)
+-  export(TARGETS libprotobuf-lite libprotobuf libprotoc protoc
+-    NAMESPACE protobuf::
+-    FILE ${CMAKE_INSTALL_CMAKEDIR}/protobuf-targets.cmake
+-  )
+-else (protobuf_BUILD_PROTOC_BINARIES)
+-  export(TARGETS libprotobuf-lite libprotobuf
+-    NAMESPACE protobuf::
+-    FILE ${CMAKE_INSTALL_CMAKEDIR}/protobuf-targets.cmake
+-  )
+-endif (protobuf_BUILD_PROTOC_BINARIES)
++if(protobuf_BUILD_EXPORT)
++  if(protobuf_BUILD_PROTOC_BINARIES)
++    export(TARGETS libprotobuf-lite libprotobuf libprotoc protoc
++      NAMESPACE protobuf::
++      FILE ${CMAKE_INSTALL_CMAKEDIR}/protobuf-targets.cmake
++    )
++  else()
++    export(TARGETS libprotobuf-lite libprotobuf
++      NAMESPACE protobuf::
++      FILE ${CMAKE_INSTALL_CMAKEDIR}/protobuf-targets.cmake
++    )
++  endif()
++endif()
+ 
+ install(EXPORT protobuf-targets
+   DESTINATION "${CMAKE_INSTALL_CMAKEDIR}"

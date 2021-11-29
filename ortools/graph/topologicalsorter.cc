@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,6 +14,8 @@
 #include "ortools/graph/topologicalsorter.h"
 
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
 #include <map>
 #include <queue>
 #include <string>
@@ -42,8 +44,9 @@ void PopTop(std::priority_queue<int, C, F>* q, int* top) {
 template <bool stable_sort>
 void DenseIntTopologicalSorterTpl<stable_sort>::AddNode(int node_index) {
   CHECK(!TraversalStarted()) << "Cannot add nodes after starting traversal";
+  CHECK_GE(node_index, 0) << "Index must not be negative";
 
-  if (node_index >= adjacency_lists_.size()) {
+  if (static_cast<std::size_t>(node_index) >= adjacency_lists_.size()) {
     adjacency_lists_.resize(node_index + 1);
   }
 }
@@ -65,7 +68,7 @@ void DenseIntTopologicalSorterTpl<stable_sort>::AddEdge(int from, int to) {
   AddNode(std::max(from, to));
 
   AdjacencyList& adj_list = adjacency_lists_[from];
-  const uint32 adj_list_size = adj_list.size();
+  const uint32_t adj_list_size = adj_list.size();
   if (adj_list_size <= kLazyDuplicateDetectionSizeThreshold) {
     for (AdjacencyList::const_iterator it = adj_list.begin();
          it != adj_list.end(); ++it) {
@@ -122,7 +125,7 @@ bool DenseIntTopologicalSorterTpl<stable_sort>::GetNext(
   adj_list.swap(adjacency_lists_[*next_node_index]);
 
   // Add new orphan nodes to nodes_with_zero_indegree_.
-  for (int i = 0; i < adj_list.size(); ++i) {
+  for (std::size_t i = 0; i < adj_list.size(); ++i) {
     if (--indegree_[adj_list[i]] == 0) {
       nodes_with_zero_indegree_.push(adj_list[i]);
     }
@@ -175,7 +178,7 @@ int DenseIntTopologicalSorterTpl<stable_sort>::RemoveDuplicates(
   int num_duplicates_removed = 0;
   for (std::vector<AdjacencyList>::iterator list = lists->begin();
        list != lists->end(); ++list) {
-    if (list->size() < skip_lists_smaller_than) {
+    if (list->size() < static_cast<std::size_t>(skip_lists_smaller_than)) {
       continue;
     }
     num_duplicates_removed += list->size();
@@ -228,7 +231,7 @@ void DenseIntTopologicalSorterTpl<stable_sort>::ExtractCycle(
   struct DfsState {
     int node;
     // Points at the first child node that we did *not* yet look at.
-    int adj_list_index;
+    std::size_t adj_list_index;
     explicit DfsState(int _node) : node(_node), adj_list_index(0) {}
   };
   std::vector<DfsState> dfs_stack;

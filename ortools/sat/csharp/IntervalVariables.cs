@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,15 +18,15 @@ namespace Google.OrTools.Sat
 
     public class IntervalVar
     {
-        public IntervalVar(CpModelProto model, int start_index, int size_index, int end_index, int is_present_index,
-                           string name)
+        public IntervalVar(CpModelProto model, LinearExpressionProto start, LinearExpressionProto size,
+                           LinearExpressionProto end, int is_present_index, string name)
         {
             model_ = model;
             index_ = model.Constraints.Count;
             interval_ = new IntervalConstraintProto();
-            interval_.Start = start_index;
-            interval_.Size = size_index;
-            interval_.End = end_index;
+            interval_.StartView = start;
+            interval_.SizeView = size;
+            interval_.EndView = end;
 
             ConstraintProto ct = new ConstraintProto();
             ct.Interval = interval_;
@@ -35,14 +35,15 @@ namespace Google.OrTools.Sat
             model.Constraints.Add(ct);
         }
 
-        public IntervalVar(CpModelProto model, int start_index, int size_index, int end_index, string name)
+        public IntervalVar(CpModelProto model, LinearExpressionProto start, LinearExpressionProto size,
+                           LinearExpressionProto end, string name)
         {
             model_ = model;
             index_ = model.Constraints.Count;
             interval_ = new IntervalConstraintProto();
-            interval_.Start = start_index;
-            interval_.Size = size_index;
-            interval_.End = end_index;
+            interval_.StartView = start;
+            interval_.SizeView = size;
+            interval_.EndView = end;
 
             ConstraintProto ct = new ConstraintProto();
             ct.Interval = interval_;

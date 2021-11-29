@@ -1,4 +1,5 @@
-# Copyright 2010-2018 Google LLC
+#!/usr/bin/env python3
+# Copyright 2010-2021 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -11,7 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # [START program]
-"""Simple Vehicles Routing Problem."""
+"""Simple Vehicles Routing Problem (VRP).
+
+   This is a sample using the routing library python wrapper to solve a VRP
+   problem.
+   A description of the problem can be found here:
+   http://en.wikipedia.org/wiki/Vehicle_routing_problem.
+
+   Distances are in meters.
+"""
 
 # [START import]
 from ortools.constraint_solver import routing_enums_pb2
@@ -102,7 +111,7 @@ def create_data_model():
 # [START solution_printer]
 def print_solution(data, manager, routing, solution):
     """Prints solution on console."""
-    print('Objective: {}'.format(solution.ObjectiveValue()))
+    print(f'Objective: {solution.ObjectiveValue()}')
     total_distance = 0
     for vehicle_id in range(data['num_vehicles']):
         index = routing.Start(vehicle_id)
@@ -119,7 +128,8 @@ def print_solution(data, manager, routing, solution):
         print(plan_output)
         total_distance += route_distance
     print('Total Distance of all routes: {}m'.format(total_distance))
-    # [END solution_printer]
+
+# [END solution_printer]
 
 
 def main():
@@ -174,9 +184,11 @@ def main():
     # [START print_solution]
     if solution:
         print_solution(data, manager, routing, solution)
+    else:
+        print('No solution found !')
     # [END print_solution]
 
 
 if __name__ == '__main__':
     main()
-    # [END program]
+# [END program]

@@ -3,6 +3,7 @@
 
 # Channeling constraints
 
+https://developers.google.com/optimization/
 
 <!--ts-->
    * [Channeling constraints](#channeling-constraints)
@@ -17,7 +18,6 @@
          * [Java code](#java-code-1)
          * [C# code](#c-code-3)
 
-<!-- Added by: lperron, at: Tue Nov  3 17:33:07 CET 2020 -->
 
 <!--te-->
 
@@ -102,10 +102,12 @@ def ChannelingSampleSat():
 
   # Force the solver to follow the decision strategy exactly.
   solver.parameters.search_branching = cp_model.FIXED_SEARCH
+  # Enumerate all solutions.
+  solver.parameters.enumerate_all_solutions = True
 
   # Search and print out all solutions.
   solution_printer = VarArraySolutionPrinter([x, y, b])
-  solver.SearchForAllSolutions(model, solution_printer)
+  solver.Solve(model, solution_printer)
 
 
 ChannelingSampleSat()
@@ -219,9 +221,11 @@ public class ChannelingSampleSat {
 
     // Force the solver to follow the decision strategy exactly.
     solver.getParameters().setSearchBranching(SatParameters.SearchBranching.FIXED_SEARCH);
+    // Tell the solver to enumerate all solutions.
+    solver.getParameters().setEnumerateAllSolutions(true);
 
     // Solve the problem with the printer callback.
-    solver.searchAllSolutions(
+    solver.solve(
         model,
         new CpSolverSolutionCallback() {
           public CpSolverSolutionCallback init(IntVar[] variables) {
@@ -303,10 +307,11 @@ public class ChannelingSampleSat
         CpSolver solver = new CpSolver();
 
         // Force solver to follow the decision strategy exactly.
-        solver.StringParameters = "search_branching:FIXED_SEARCH";
+        // Tell the solver to search for all solutions.
+        solver.StringParameters = "search_branching:FIXED_SEARCH, enumerate_all_solutions:true";
 
         VarArraySolutionPrinter cb = new VarArraySolutionPrinter(new IntVar[] { x, y, b });
-        solver.SearchAllSolutions(model, cb);
+        solver.Solve(model, cb);
     }
 }
 ```

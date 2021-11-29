@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -20,7 +20,7 @@ namespace util_hash {
 // In the or-tools project, MurmurHash64 is just a redirection towards
 // ThoroughHash. Ideally, it is meant to be using the murmurhash
 // algorithm described in http://murmurhash.googlepages.com.
-inline uint64 MurmurHash64(const char* buf, const size_t len) {
+inline uint64_t MurmurHash64(const char* buf, const size_t len) {
   return ::operations_research::ThoroughHash(buf, len);
 }
 }  // namespace util_hash

@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <string>
 #include <utility>
 #include <vector>
@@ -36,11 +37,11 @@
 namespace operations_research {
 namespace {
 struct Container {
-  Container(const Constraint* ct_, int64 value_) : ct(ct_), value(value_) {}
+  Container(const Constraint* ct_, int64_t value_) : ct(ct_), value(value_) {}
   bool operator<(const Container& c) const { return value > c.value; }
 
   const Constraint* ct;
-  int64 value;
+  int64_t value;
 };
 }  // namespace
 
@@ -62,7 +63,7 @@ class DemonProfiler : public PropagationMonitor {
 
   // In microseconds.
   // TODO(user): rename and return nanoseconds.
-  int64 CurrentTime() const {
+  int64_t CurrentTime() const {
     return (absl::GetCurrentTimeNanos() - start_time_ns_) / 1000;
   }
 
@@ -204,33 +205,34 @@ class DemonProfiler : public PropagationMonitor {
   }
 
   // IntExpr modifiers.
-  void SetMin(IntExpr* const expr, int64 new_min) override {}
-  void SetMax(IntExpr* const expr, int64 new_max) override {}
-  void SetRange(IntExpr* const expr, int64 new_min, int64 new_max) override {}
+  void SetMin(IntExpr* const expr, int64_t new_min) override {}
+  void SetMax(IntExpr* const expr, int64_t new_max) override {}
+  void SetRange(IntExpr* const expr, int64_t new_min,
+                int64_t new_max) override {}
   // IntVar modifiers.
-  void SetMin(IntVar* const var, int64 new_min) override {}
-  void SetMax(IntVar* const var, int64 new_max) override {}
-  void SetRange(IntVar* const var, int64 new_min, int64 new_max) override {}
-  void RemoveValue(IntVar* const var, int64 value) override {}
-  void SetValue(IntVar* const var, int64 value) override {}
-  void RemoveInterval(IntVar* const var, int64 imin, int64 imax) override {}
-  void SetValues(IntVar* const var, const std::vector<int64>& values) override {
-  }
+  void SetMin(IntVar* const var, int64_t new_min) override {}
+  void SetMax(IntVar* const var, int64_t new_max) override {}
+  void SetRange(IntVar* const var, int64_t new_min, int64_t new_max) override {}
+  void RemoveValue(IntVar* const var, int64_t value) override {}
+  void SetValue(IntVar* const var, int64_t value) override {}
+  void RemoveInterval(IntVar* const var, int64_t imin, int64_t imax) override {}
+  void SetValues(IntVar* const var,
+                 const std::vector<int64_t>& values) override {}
   void RemoveValues(IntVar* const var,
-                    const std::vector<int64>& values) override {}
+                    const std::vector<int64_t>& values) override {}
   // IntervalVar modifiers.
-  void SetStartMin(IntervalVar* const var, int64 new_min) override {}
-  void SetStartMax(IntervalVar* const var, int64 new_max) override {}
-  void SetStartRange(IntervalVar* const var, int64 new_min,
-                     int64 new_max) override {}
-  void SetEndMin(IntervalVar* const var, int64 new_min) override {}
-  void SetEndMax(IntervalVar* const var, int64 new_max) override {}
-  void SetEndRange(IntervalVar* const var, int64 new_min,
-                   int64 new_max) override {}
-  void SetDurationMin(IntervalVar* const var, int64 new_min) override {}
-  void SetDurationMax(IntervalVar* const var, int64 new_max) override {}
-  void SetDurationRange(IntervalVar* const var, int64 new_min,
-                        int64 new_max) override {}
+  void SetStartMin(IntervalVar* const var, int64_t new_min) override {}
+  void SetStartMax(IntervalVar* const var, int64_t new_max) override {}
+  void SetStartRange(IntervalVar* const var, int64_t new_min,
+                     int64_t new_max) override {}
+  void SetEndMin(IntervalVar* const var, int64_t new_min) override {}
+  void SetEndMax(IntervalVar* const var, int64_t new_max) override {}
+  void SetEndRange(IntervalVar* const var, int64_t new_min,
+                   int64_t new_max) override {}
+  void SetDurationMin(IntervalVar* const var, int64_t new_min) override {}
+  void SetDurationMax(IntervalVar* const var, int64_t new_max) override {}
+  void SetDurationRange(IntervalVar* const var, int64_t new_min,
+                        int64_t new_max) override {}
   void SetPerformed(IntervalVar* const var, bool value) override {}
   void RankFirst(SequenceVar* const var, int index) override {}
   void RankNotFirst(SequenceVar* const var, int index) override {}
@@ -241,7 +243,7 @@ class DemonProfiler : public PropagationMonitor {
                     const std::vector<int>& unperformed) override {}
 
   // Useful for unit tests.
-  void AddFakeRun(Demon* const demon, int64 start_time, int64 end_time,
+  void AddFakeRun(Demon* const demon, int64_t start_time, int64_t end_time,
                   bool is_fail) {
     CHECK(demon != nullptr);
     DemonRuns* const demon_run = demon_map_[demon];
@@ -273,10 +275,10 @@ class DemonProfiler : public PropagationMonitor {
                constraint_map_.begin();
            it != constraint_map_.end(); ++it) {
         const Constraint* const ct = it->first;
-        int64 fails = 0;
-        int64 demon_invocations = 0;
-        int64 initial_propagation_runtime = 0;
-        int64 total_demon_runtime = 0;
+        int64_t fails = 0;
+        int64_t demon_invocations = 0;
+        int64_t initial_propagation_runtime = 0;
+        int64_t total_demon_runtime = 0;
         int demon_count = 0;
         ExportInformation(ct, &fails, &initial_propagation_runtime,
                           &demon_invocations, &total_demon_runtime,
@@ -288,10 +290,10 @@ class DemonProfiler : public PropagationMonitor {
 
       for (int i = 0; i < to_sort.size(); ++i) {
         const Constraint* const ct = to_sort[i].ct;
-        int64 fails = 0;
-        int64 demon_invocations = 0;
-        int64 initial_propagation_runtime = 0;
-        int64 total_demon_runtime = 0;
+        int64_t fails = 0;
+        int64_t demon_invocations = 0;
+        int64_t initial_propagation_runtime = 0;
+        int64_t total_demon_runtime = 0;
         int demon_count = 0;
         ExportInformation(ct, &fails, &initial_propagation_runtime,
                           &demon_invocations, &total_demon_runtime,
@@ -306,9 +308,9 @@ class DemonProfiler : public PropagationMonitor {
         const int demon_size = demons.size();
         for (int demon_index = 0; demon_index < demon_size; ++demon_index) {
           DemonRuns* const demon_runs = demons[demon_index];
-          int64 invocations = 0;
-          int64 fails = 0;
-          int64 runtime = 0;
+          int64_t invocations = 0;
+          int64_t fails = 0;
+          int64_t runtime = 0;
           double mean_runtime = 0;
           double median_runtime = 0;
           double standard_deviation = 0.0;
@@ -326,10 +328,11 @@ class DemonProfiler : public PropagationMonitor {
   }
 
   // Export Information
-  void ExportInformation(const Constraint* const constraint, int64* const fails,
-                         int64* const initial_propagation_runtime,
-                         int64* const demon_invocations,
-                         int64* const total_demon_runtime, int* demons) {
+  void ExportInformation(const Constraint* const constraint,
+                         int64_t* const fails,
+                         int64_t* const initial_propagation_runtime,
+                         int64_t* const demon_invocations,
+                         int64_t* const total_demon_runtime, int* demons) {
     CHECK(constraint != nullptr);
     ConstraintRuns* const ct_run = constraint_map_[constraint];
     CHECK(ct_run != nullptr);
@@ -352,7 +355,7 @@ class DemonProfiler : public PropagationMonitor {
       const int runs = demon_runs.start_time_size();
       *demon_invocations += runs;
       for (int run_index = 0; run_index < runs; ++run_index) {
-        const int64 demon_time =
+        const int64_t demon_time =
             demon_runs.end_time(run_index) - demon_runs.start_time(run_index);
         *total_demon_runtime += demon_time;
       }
@@ -360,8 +363,8 @@ class DemonProfiler : public PropagationMonitor {
   }
 
   void ExportInformation(const DemonRuns* const demon_runs,
-                         int64* const demon_invocations, int64* const fails,
-                         int64* const total_demon_runtime,
+                         int64_t* const demon_invocations, int64_t* const fails,
+                         int64_t* const total_demon_runtime,
                          double* const mean_demon_runtime,
                          double* const median_demon_runtime,
                          double* const stddev_demon_runtime) {
@@ -377,7 +380,7 @@ class DemonProfiler : public PropagationMonitor {
     *stddev_demon_runtime = 0.0;
     std::vector<double> runtimes;
     for (int run_index = 0; run_index < runs; ++run_index) {
-      const int64 demon_time =
+      const int64_t demon_time =
           demon_runs->end_time(run_index) - demon_runs->start_time(run_index);
       *total_demon_runtime += demon_time;
       runtimes.push_back(demon_time);
@@ -420,7 +423,7 @@ class DemonProfiler : public PropagationMonitor {
  private:
   Constraint* active_constraint_;
   Demon* active_demon_;
-  const int64 start_time_ns_;
+  const int64_t start_time_ns_;
   absl::flat_hash_map<const Constraint*, ConstraintRuns*> constraint_map_;
   absl::flat_hash_map<const Demon*, DemonRuns*> demon_map_;
   absl::flat_hash_map<const Constraint*, std::vector<DemonRuns*> >
@@ -463,16 +466,17 @@ void RegisterDemon(Solver* const solver, Demon* const demon,
 }
 
 void DemonProfilerAddFakeRun(DemonProfiler* const monitor, Demon* const demon,
-                             int64 start_time, int64 end_time, bool is_fail) {
+                             int64_t start_time, int64_t end_time,
+                             bool is_fail) {
   monitor->AddFakeRun(demon, start_time, end_time, is_fail);
 }
 
 void DemonProfilerExportInformation(DemonProfiler* const monitor,
                                     const Constraint* const constraint,
-                                    int64* const fails,
-                                    int64* const initial_propagation_runtime,
-                                    int64* const demon_invocations,
-                                    int64* const total_demon_runtime,
+                                    int64_t* const fails,
+                                    int64_t* const initial_propagation_runtime,
+                                    int64_t* const demon_invocations,
+                                    int64_t* const total_demon_runtime,
                                     int* const demon_count) {
   monitor->ExportInformation(constraint, fails, initial_propagation_runtime,
                              demon_invocations, total_demon_runtime,

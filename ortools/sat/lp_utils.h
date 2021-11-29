@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -22,6 +22,7 @@
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/util/logging.h"
 
 namespace operations_research {
 namespace sat {
@@ -57,7 +58,8 @@ std::vector<double> ScaleContinuousVariables(double scaling, double max_bound,
 // be set to zero. We need to do that before operations like
 // DetectImpliedIntegers(), becauses really low coefficients can cause issues
 // and might lead to less detection.
-void RemoveNearZeroTerms(const SatParameters& params, MPModelProto* mp_model);
+void RemoveNearZeroTerms(const SatParameters& params, MPModelProto* mp_model,
+                         SolverLogger* logger);
 
 // This will mark implied integer as such. Note that it can also discover
 // variable of the form coeff * Integer + offset, and will change the model
@@ -66,8 +68,8 @@ void RemoveNearZeroTerms(const SatParameters& params, MPModelProto* mp_model);
 //
 // TODO(user): Actually implement the offset part. This currently only happens
 // on the 3 neos-46470* miplib problems where we have a non-integer rhs.
-std::vector<double> DetectImpliedIntegers(bool log_info,
-                                          MPModelProto* mp_model);
+std::vector<double> DetectImpliedIntegers(MPModelProto* mp_model,
+                                          SolverLogger* logger);
 
 // Converts a MIP problem to a CpModel. Returns false if the coefficients
 // couldn't be converted to integers with a good enough precision.
@@ -76,7 +78,8 @@ std::vector<double> DetectImpliedIntegers(bool log_info,
 // SatParameters proto documentation for the mip_* parameters.
 bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
                                        const MPModelProto& mp_model,
-                                       CpModelProto* cp_model);
+                                       CpModelProto* cp_model,
+                                       SolverLogger* logger);
 
 // Converts an integer program with only binary variables to a Boolean
 // optimization problem. Returns false if the problem didn't contains only

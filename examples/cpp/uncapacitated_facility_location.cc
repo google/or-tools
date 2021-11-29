@@ -55,12 +55,12 @@ static double Distance(const Location& src, const Location& dst) {
 }
 
 static void UncapacitatedFacilityLocation(
-    int32 facilities, int32 clients, double fix_cost,
+    int32_t facilities, int32_t clients, double fix_cost,
     MPSolver::OptimizationProblemType optimization_problem_type) {
   LOG(INFO) << "Starting " << __func__;
   // Local Constants
-  const int32 kXMax = 1000;
-  const int32 kYMax = 1000;
+  const int32_t kXMax = 1000;
+  const int32_t kYMax = 1000;
   const double kMaxDistance = 6 * sqrt((kXMax * kYMax)) / facilities;
   const int kStrLen = 1024;
   // char buffer for names
@@ -186,7 +186,7 @@ static void UncapacitatedFacilityLocation(
   }
 }
 
-void RunAllExamples(int32 facilities, int32 clients, double fix_cost) {
+void RunAllExamples(int32_t facilities, int32_t clients, double fix_cost) {
 #if defined(USE_CBC)
   LOG(INFO) << "---- Integer programming example with CBC ----";
   UncapacitatedFacilityLocation(facilities, clients, fix_cost,

@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,6 +14,7 @@
 #include "ortools/algorithms/dynamic_partition.h"
 
 #include <algorithm>
+#include <cstdint>
 
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
@@ -22,7 +23,7 @@
 namespace operations_research {
 
 namespace {
-uint64 FprintOfInt32(int i) {
+uint64_t FprintOfInt32(int i) {
   return util_hash::MurmurHash64(reinterpret_cast<const char*>(&i),
                                  sizeof(int));
 }
@@ -37,7 +38,7 @@ DynamicPartition::DynamicPartition(int num_elements) {
     index_of_[i] = i;
   }
   part_of_.assign(num_elements, 0);
-  uint64 fprint = 0;
+  uint64_t fprint = 0;
   for (int i = 0; i < num_elements; ++i) fprint ^= FprintOfInt32(i);
   part_.push_back(Part(/*start_index=*/0, /*end_index=*/num_elements,
                        /*parent_part=*/0,
@@ -122,7 +123,7 @@ void DynamicPartition::Refine(const std::vector<int>& distinguished_subset) {
   }
 
   // Sort affected parts. This is important to behave as advertised in the .h.
-  // TODO(user,user): automatically switch to an O(N) sort when it's faster
+  // TODO(user): automatically switch to an O(N) sort when it's faster
   // than this one, which is O(K log K) with K = tmp_affected_parts_.size().
   std::sort(tmp_affected_parts_.begin(), tmp_affected_parts_.end());
 
@@ -140,7 +141,7 @@ void DynamicPartition::Refine(const std::vector<int>& distinguished_subset) {
     if (split_index == start_index) continue;
 
     // Compute the fingerprint of the new part.
-    uint64 new_fprint = 0;
+    uint64_t new_fprint = 0;
     for (int i = split_index; i < end_index; ++i) {
       new_fprint ^= FprintOfInt32(element_[i]);
     }

@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -42,14 +42,7 @@ void UpdateRow::Invalidate() {
   compute_update_row_ = true;
 }
 
-void UpdateRow::IgnoreUpdatePosition(ColIndex col) {
-  SCOPED_TIME_STAT(&stats_);
-  if (col >= coefficient_.size()) return;
-  coefficient_[col] = 0.0;
-}
-
 const ScatteredRow& UpdateRow::GetUnitRowLeftInverse() const {
-  DCHECK(!compute_update_row_);
   return unit_row_left_inverse_;
 }
 
@@ -72,7 +65,7 @@ void UpdateRow::ComputeUnitRowLeftInverse(RowIndex leaving_row) {
                                   unit_row_left_inverse_.values) -
       1.0));
   IF_STATS_ENABLED(stats_.unit_row_left_inverse_density.Add(
-      Density(unit_row_left_inverse_.values())));
+      Density(unit_row_left_inverse_.values)));
 }
 
 void UpdateRow::ComputeUpdateRow(RowIndex leaving_row) {
@@ -127,7 +120,11 @@ void UpdateRow::ComputeUpdateRow(RowIndex leaving_row) {
     if (row_wise < 0.5 * static_cast<double>(num_col_wise_entries.value())) {
       if (row_wise < 1.1 * static_cast<double>(matrix_.num_cols().value())) {
         ComputeUpdatesRowWiseHypersparse();
-        num_operations_ += num_row_wise_entries.value();
+
+        // We use a multiplicative factor because these entries are often widely
+        // spread in memory. There is also some overhead to each fp operations.
+        num_operations_ +=
+            5 * num_row_wise_entries.value() + matrix_.num_cols().value() / 64;
       } else {
         ComputeUpdatesRowWise();
         num_operations_ +=

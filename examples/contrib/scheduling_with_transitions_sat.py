@@ -271,8 +271,8 @@ def main(args):
         # of the tasks.
         model.Add(machine_starts[j] == machine_ends[i] +
                   transition_time).OnlyEnforceIf(lit)
-
-    model.AddCircuit(arcs)
+    if arcs:
+        model.AddCircuit(arcs)
 
   #----------------------------------------------------------------------------
   # Objective.
@@ -297,7 +297,7 @@ def main(args):
   if parameters:
     text_format.Merge(parameters, solver.parameters)
   solution_printer = SolutionPrinter(makespan)
-  status = solver.SolveWithSolutionCallback(model, solution_printer)
+  status = solver.Solve(model, solution_printer)
 
   #----------------------------------------------------------------------------
   # Print solution.
