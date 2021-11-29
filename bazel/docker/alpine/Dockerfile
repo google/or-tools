@@ -22,6 +22,7 @@ WORKDIR /home/lib
 COPY . .
 
 FROM devel as build
+RUN bazel version
 RUN bazel build --curses=no --host_javabase=@local_jdk//:jdk --cxxopt=-std=c++17 --copt='-Wno-sign-compare' //...:all
 
 FROM build as test
