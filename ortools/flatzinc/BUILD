@@ -12,6 +12,13 @@ config_setting(
 )
 
 config_setting(
+    name = "on_macos",
+    constraint_values = [
+        "@platforms//os:macos",
+    ],
+)
+
+config_setting(
     name = "on_windows",
     constraint_values = [
         "@platforms//os:windows",
@@ -67,8 +74,10 @@ cc_library(
     name = "parser_lex_lib",
     srcs = ["parser.yy.cc"],
     copts = select({
-        "on_windows": [""],
-        "//conditions:default": ["-Wno-unused-function"],  # parser.yy.cc
+        "on_linux": ["-Wno-unused-function"],  # parser.yy.cc
+        "on_macos": ["-Wno-unused-function"],  # parser.yy.cc
+        "on_windows": [],
+        "//conditions:default": [],
     }),
     deps = [
         ":parser_yacc_lib",

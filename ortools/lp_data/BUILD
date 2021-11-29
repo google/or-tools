@@ -8,15 +8,27 @@ config_setting(
 )
 
 config_setting(
+    name = "on_macos",
+    constraint_values = [
+        "@platforms//os:macos",
+    ],
+)
+
+config_setting(
     name = "on_windows",
     constraint_values = [
         "@platforms//os:windows",
     ],
 )
 
+# Floating-point code in this directory must not be compiled with
+# dangerous optimizations. For example do not assume that FP expressions
+# are associative. This is what -fno-fast-math is for.
 SAFE_FP_CODE = select({
     "on_linux": ["-fno-fast-math"],
-    "//conditions:default": [""],
+    "on_macos": [],  # no_fast_math is the default.
+    "on_windows": [],  # /fp:precise is the default.
+    "//conditions:default": [],
 })
 
 cc_library(

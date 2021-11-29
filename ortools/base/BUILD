@@ -8,6 +8,13 @@ config_setting(
 )
 
 config_setting(
+    name = "on_macos",
+    constraint_values = [
+        "@platforms//os:macos",
+    ],
+)
+
+config_setting(
     name = "on_windows",
     constraint_values = [
         "@platforms//os:windows",
@@ -39,12 +46,14 @@ cc_library(
         "vlog_is_on.h",
     ],
     copts = [
-        "-DOR_TOOLS_MAJOR=9",
-        "-DOR_TOOLS_MINOR=1",
-        "-DOR_TOOLS_PATCH=9999",
+        "-DOR_TOOLS_MAJOR=9999",
+        "-DOR_TOOLS_MINOR=0",
+        "-DOR_TOOLS_PATCH=0",
     ],
     defines = select({
-        "on_windows": ["OR_TOOLS_EXPORTS"],
+        "on_linux": [],
+        "on_macos": [],
+        "on_windows": ["OR_TOOLS_EXPORTS"],  # For logging_export.h
         "//conditions:default": [],
     }),
     deps = [
@@ -183,6 +192,8 @@ cc_library(
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
     ] + select({
+        "on_linux": [],
+        "on_macos": [],
         "on_windows": ["@zlib//:zlib"],
         "//conditions:default": [],
     }),
@@ -418,6 +429,8 @@ cc_library(
     hdrs = ["dynamic_library.h"],
     linkopts = select({
         "on_linux": ["-Wl,--no-as-needed -ldl"],
+        "on_macos": [],
+        "on_windows": [],
         "//conditions:default": [],
     }),
     deps = [":base"],
