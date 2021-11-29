@@ -460,9 +460,6 @@ void HungarianOptimizer::ReduceRows() {
 // Step 2.
 // Find a zero (Z) in the matrix.  If there is no starred zero in its row
 // or column, star Z.  Repeat for every element in the matrix.  Go to step 3.
-// Note (user): profiling shows this method to use 9.2%
-// of the CPU - the next slowest step takes 0.6%.  I can't think of a way
-// of speeding it up though.
 void HungarianOptimizer::StarZeroes() {
   // Since no rows or columns are covered on entry to this step, we use the
   // covers as a quick way of marking which rows & columns have stars in them.

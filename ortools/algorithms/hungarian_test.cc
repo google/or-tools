@@ -1,6 +1,21 @@
+// Copyright 2010-2021 Google LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 // Test file for hungarian.h
 
 #include "ortools/algorithms/hungarian.h"
+
+#include <cstdint>
 
 #include "absl/container/flat_hash_map.h"
 #include "gtest/gtest.h"
@@ -33,7 +48,7 @@ void GenericCheck(const int expected_assignment_size,
   }
 }
 
-void TestMinimization(const std::vector<std::vector<double> >& cost,
+void TestMinimization(const std::vector<std::vector<double>>& cost,
                       const int expected_assignment_size,
                       const int expected_agents[], const int expected_tasks[]) {
   absl::flat_hash_map<int, int> direct_assignment;
@@ -44,7 +59,7 @@ void TestMinimization(const std::vector<std::vector<double> >& cost,
                expected_agents, expected_tasks);
 }
 
-void TestMaximization(const std::vector<std::vector<double> >& cost,
+void TestMaximization(const std::vector<std::vector<double>>& cost,
                       const int expected_assignment_size,
                       const int expected_agents[], const int expected_tasks[]) {
   absl::flat_hash_map<int, int> direct_assignment;
@@ -58,16 +73,26 @@ void TestMaximization(const std::vector<std::vector<double> >& cost,
 // Test on an empty matrix
 
 TEST(LinearAssignmentTest, NullMatrix) {
-  std::vector<std::vector<double> > cost;
-  const int* expected_agents = NULL;
-  const int* expected_tasks = NULL;
+  std::vector<std::vector<double>> cost;
+  const int* expected_agents = nullptr;
+  const int* expected_tasks = nullptr;
   TestMinimization(cost, 0, expected_agents, expected_tasks);
   TestMaximization(cost, 0, expected_agents, expected_tasks);
 }
 
+// Testing with NaN value in the input.
+TEST(LinearAssignmentTest, InvalidMatrix) {
+  const std::vector<std::vector<double>> cost_nan = {{1, 2},
+                                                     {-std::sqrt(-1), 3}};
+  const int* expected_agents = nullptr;
+  const int* expected_tasks = nullptr;
+  TestMaximization(cost_nan, 0, expected_agents, expected_tasks);
+  TestMinimization(cost_nan, 0, expected_agents, expected_tasks);
+}
+
 #define MATRIX_TEST                                                  \
   {                                                                  \
-    std::vector<std::vector<double> > cost(kMatrixHeight);           \
+    std::vector<std::vector<double>> cost(kMatrixHeight);            \
     for (int row = 0; row < kMatrixHeight; ++row) {                  \
       cost[row].resize(kMatrixWidth);                                \
       for (int col = 0; col < kMatrixWidth; ++col) {                 \

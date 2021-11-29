@@ -24,15 +24,26 @@ config_setting(
 )
 
 PLATFORM_FLAGS = select({
-    "on_linux": ["-Wunknown-pragmas", "-fexceptions", "-DSYM=bliss"],
-    "on_macos": ["-Wunknown-pragmas", "-fexceptions", "-DSYM=bliss"],
-    "on_windows": ["-DSYM=none", "/DSCIP_NO_SIGACTION"], 
+    "on_linux": [
+        "-Wunknown-pragmas",
+        "-fexceptions",
+        "-DSYM=bliss"
+    ],
+    "on_macos": [
+        "-Wunknown-pragmas",
+        "-fexceptions",
+        "-DSYM=bliss"
+    ],
+    "on_windows": [
+        "/DSYM=none",
+        "/DSCIP_NO_SIGACTION"
+        ],
     "//conditions:default": [],
 })
 
 PLATFORM_DEPS = select({
-    "on_linux": [        "@bliss//:libbliss",],
-    "on_macos": [        "@bliss//:libbliss",],
+    "on_linux": ["@bliss//:libbliss"],
+    "on_macos": ["@bliss//:libbliss"],
     "on_windows": ["@zlib//:zlib"],
     "//conditions:default": [],
 })
