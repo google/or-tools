@@ -171,7 +171,7 @@ namespace operations_research {
 		virtual void SetRelativeMipGap(double value);
 		virtual void SetPrimalTolerance(double value);
 		virtual void SetDualTolerance(double value);
-		virtual void SetPresolveMode(int value);
+		virtual void SetPresolveMode(int value) override;
 		virtual void SetScalingMode(int value);
 		virtual void SetLpAlgorithm(int value);
 
@@ -305,16 +305,19 @@ namespace operations_research {
 		// (supportIncrementalExtraction is true) then we MUST perform the
 		// update here or we will lose it.
 
-		if (!supportIncrementalExtraction && !(slowUpdates & SlowSetVariableBounds)) {
-			InvalidateModelSynchronization();
-		}
-		else {
+		//if (!supportIncrementalExtraction && !(slowUpdates & SlowSetVariableBounds)) {
+		//	InvalidateModelSynchronization();
+		//}
+		//else
+		{
 			if (variable_is_extracted(var_index)) {
 				// Variable has already been extracted, so we must modify the
 				// modeling object.
 				DCHECK_LT(var_index, last_variable_index_);
 				int const idx[1] = { var_index };
-				CHECK_STATUS(SRSchgbds(mLp, 1, idx, &lb, &ub));
+				double lb_l = (lb == -MPSolver::infinity() ? -SRS_infinite : lb);
+				double ub_l = (ub == MPSolver::infinity() ? SRS_infinite : ub);
+				CHECK_STATUS(SRSchgbds(mLp, 1, idx, &lb_l, &ub_l));
 			}
 			else {
 				// Variable is not yet extracted. It is sufficient to just mark
@@ -438,7 +441,7 @@ namespace operations_research {
 				char sense;
 				double range, rhs;
 				MakeRhs(lb, ub, rhs, sense, range);
-				CHECK_STATUS(SRSchgrhs(mLp, 1, &index, &lb));
+				CHECK_STATUS(SRSchgrhs(mLp, 1, &index, &rhs));
 				CHECK_STATUS(SRSchgsens(mLp, 1, &index, &sense));
 				CHECK_STATUS(SRSchgrangeval(mLp, 1, &index, &range));
 			}
@@ -1072,10 +1075,10 @@ namespace operations_research {
 
 		switch (presolve) {
 		case MPSolverParameters::PRESOLVE_OFF:
-			//FIXME CHECK_STATUS(SRSsetintcontrol(mLp, SRS_PRESOLVE, 0));
+			SRSsetintparams(mLp, SRS_PARAM_PRESOLVE, 0);
 			return;
 		case MPSolverParameters::PRESOLVE_ON:
-			//FIXME CHECK_STATUS(SRSsetintcontrol(mLp, SRS_PRESOLVE, 1));
+			SRSsetintparams(mLp, SRS_PARAM_PRESOLVE, 1);
 			return;
 		}
 		SetIntegerParamToUnsupportedValue(MPSolverParameters::PRESOLVE, value);
@@ -1234,6 +1237,8 @@ namespace operations_research {
 			}
 
 		}
+		if (IsMIP())
+			SRSsetintparams(mLp, SRS_FORCE_PNE, 1);
 
 		status = SRSoptimize(mLp);
 
@@ -1289,8 +1294,23 @@ namespace operations_research {
 			// MIP does not have duals
 			for (int i = 0; i < solver_->variables_.size(); ++i)
 				solver_->variables_[i]->set_reduced_cost(SRS_NAN);
-			for (int i = 0; i < solver_->constraints_.size(); ++i)
-				solver_->constraints_[i]->set_dual_value(SRS_NAN);
+			unique_ptr<double[]> pi(new double[rows]);
+			if (feasible) {
+				double * dualValues = pi.get();
+				CHECK_STATUS(SRSgetdualvalues(mLp, &dualValues));
+			}
+			for (int i = 0; i < solver_->constraints_.size(); ++i) {
+				MPConstraint *const ct = solver_->constraints_[i];
+				bool dual = false;
+				if (feasible) {
+					ct->set_dual_value(pi[i]);
+					dual = true;
+				}
+				else
+					ct->set_dual_value(SRS_NAN);
+				VLOG(4) << "row " << ct->index() << ":"
+					<< (dual ? absl::StrFormat("  dual = %f", pi[i]) : "");
+			}
 		}
 		else {
 			// Continuous problem.
