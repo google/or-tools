@@ -26,10 +26,10 @@ cc_proto_library(
     deps = [":search_stats_proto"],
 )
 
-java_proto_library(
-    name = "search_stats_java_proto",
-    deps = [":search_stats_proto"],
-)
+# java_proto_library(
+#     name = "search_stats_java_proto",
+#     deps = [":search_stats_proto"],
+# )
 
 proto_library(
     name = "search_limit_proto",
@@ -41,10 +41,10 @@ cc_proto_library(
     deps = [":search_limit_proto"],
 )
 
-java_proto_library(
-    name = "search_limit_java_proto",
-    deps = [":search_limit_proto"],
-)
+# java_proto_library(
+#     name = "search_limit_java_proto",
+#     deps = [":search_limit_proto"],
+# )
 
 proto_library(
     name = "demon_profiler_proto",
@@ -66,10 +66,10 @@ cc_proto_library(
     deps = ["solver_parameters_proto"],
 )
 
-java_proto_library(
-    name = "solver_parameters_java_proto",
-    deps = [":solver_parameters_proto"],
-)
+# java_proto_library(
+#     name = "solver_parameters_java_proto",
+#     deps = [":solver_parameters_proto"],
+# )
 
 #py_proto_library(
 #    name = "assignment_py_pb2",
@@ -194,10 +194,10 @@ cc_proto_library(
     deps = [":routing_enums_proto"],
 )
 
-java_proto_library(
-    name = "routing_enums_java_proto",
-    deps = [":routing_enums_proto"],
-)
+# java_proto_library(
+#     name = "routing_enums_java_proto",
+#     deps = [":routing_enums_proto"],
+# )
 
 proto_library(
     name = "routing_parameters_proto",
@@ -216,10 +216,10 @@ cc_proto_library(
     deps = [":routing_parameters_proto"],
 )
 
-java_proto_library(
-    name = "routing_parameters_java_proto",
-    deps = [":routing_parameters_proto"],
-)
+# java_proto_library(
+#     name = "routing_parameters_java_proto",
+#     deps = [":routing_parameters_proto"],
+# )
 
 #py_proto_library(
 #    name = "routing_parameters_py_pb2",
