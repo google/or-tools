@@ -19,7 +19,7 @@ if(UNIX AND NOT APPLE)
   list(APPEND CMAKE_SWIG_FLAGS "-DSWIGWORDSIZE64")
 endif()
 
-# Find Java
+# Find Java and JNI
 find_package(Java 1.8 COMPONENTS Development REQUIRED)
 find_package(JNI REQUIRED)
 
@@ -171,7 +171,6 @@ file(GLOB_RECURSE java_files RELATIVE ${PROJECT_SOURCE_DIR}/ortools/java
   "ortools/java/*.java")
 list(REMOVE_ITEM java_files "CMakeTest.java")
 #message(WARNING "list: ${java_files}")
-
 set(JAVA_SRCS)
 foreach(JAVA_FILE IN LISTS java_files)
   #message(STATUS "java: ${JAVA_FILE}")
@@ -200,34 +199,6 @@ add_custom_target(java_package ALL
   WORKING_DIRECTORY ${JAVA_PROJECT_PATH})
 add_dependencies(java_package java_native_package Java${PROJECT_NAME}_proto)
 
-# TO REMOVE and use add_java_test() instead...
-if(BUILD_TESTING)
-  set(TEST_PATH ${PROJECT_BINARY_DIR}/java/tests/ortools-test)
-  file(MAKE_DIRECTORY ${TEST_PATH}/${JAVA_TEST_PATH})
-
-  file(COPY ${PROJECT_SOURCE_DIR}/ortools/java/CMakeTest.java
-    DESTINATION ${TEST_PATH}/${JAVA_TEST_PATH})
-
-  set(JAVA_TEST_PROJECT ortools-test)
-  configure_file(
-    ${PROJECT_SOURCE_DIR}/ortools/java/pom-test.xml.in
-    ${TEST_PATH}/pom.xml
-    @ONLY)
-
-  add_custom_target(java_tests_Test ALL
-    DEPENDS ${TEST_PATH}/pom.xml
-    COMMAND ${MAVEN_EXECUTABLE} compile -B
-    BYPRODUCTS
-      ${TEST_PATH}/target
-    WORKING_DIRECTORY ${TEST_PATH})
-  add_dependencies(java_tests_Test java_package)
-
-  add_test(
-    NAME java_tests_Test
-    COMMAND ${MAVEN_EXECUTABLE} test
-    WORKING_DIRECTORY ${TEST_PATH})
-endif()
-
 #################
 ##  Java Test  ##
 #################
@@ -236,7 +207,7 @@ endif()
 # Parameters:
 #  the java filename
 # e.g.:
-# add_java_test(Foo.java)
+# add_java_test(FooTests.java)
 function(add_java_test FILE_NAME)
   message(STATUS "Configuring test ${FILE_NAME}: ...")
   get_filename_component(TEST_NAME ${FILE_NAME} NAME_WE)
