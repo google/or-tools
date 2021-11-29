@@ -1,7 +1,9 @@
 FROM ortools/cmake:opensuse_swig AS env
+# Install Java JDK and Maven
 RUN zypper update -y \
-&& zypper install -y java-1_8_0-openjdk-devel maven \
+&& zypper install -y java-17-openjdk-devel maven \
 && zypper clean -a
+ENV PATH=/usr/share/maven/bin:$PATH
 
 FROM env AS devel
 WORKDIR /home/project
@@ -11,10 +13,10 @@ FROM devel AS build
 RUN cmake -S. -Bbuild -DBUILD_JAVA=ON -DSKIP_GPG=ON \
  -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
 RUN cmake --build build --target all -v
-RUN cmake --build build --target install
+RUN cmake --build build --target install -v
 
 FROM build AS test
-RUN CTEST_OUTPUT_ON_FAILURE=1 cmake --build build --target test
+RUN CTEST_OUTPUT_ON_FAILURE=1 cmake --build build --target test -v
 
 FROM env AS install_env
 COPY --from=build /usr/local /usr/local/
