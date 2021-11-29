@@ -625,9 +625,9 @@ static std::map<std::string, int>& getMapIntControls()
 		{"CPUPLATFORM", XPRS_CPUPLATFORM},
 		{"BARALG", XPRS_BARALG},
 		{"SIFTING", XPRS_SIFTING},
-		{"TREEPRESOLVE", XPRS_TREEPRESOLVE},
-		{"TREEPRESOLVE_KEEPBASIS", XPRS_TREEPRESOLVE_KEEPBASIS},
-		{"TREEPRESOLVEOPS", XPRS_TREEPRESOLVEOPS},
+		// {"TREEPRESOLVE", XPRS_TREEPRESOLVE},
+		// {"TREEPRESOLVE_KEEPBASIS", XPRS_TREEPRESOLVE_KEEPBASIS},
+		// {"TREEPRESOLVEOPS", XPRS_TREEPRESOLVEOPS},
 		{"LPLOGSTYLE", XPRS_LPLOGSTYLE},
 		{"RANDOMSEED", XPRS_RANDOMSEED},
 		{"TREEQCCUTS", XPRS_TREEQCCUTS},
@@ -1337,7 +1337,7 @@ void XpressInterface::ExtractNewConstraints() {
 
     int newCons = total - offset;
     int const cols = XPRSgetnumcols(mLp);
-    DCHECK_EQ(last_variable_index_, cols);
+    // DCHECK_EQ(last_variable_index_, cols);
     int const chunk = newCons;  // 10;  // max number of rows to add in one shot
 
     // Update indices of new constraints _before_ actually extracting
@@ -1426,7 +1426,7 @@ void XpressInterface::ExtractObjective() {
   //       any non-zero duplicates.
 
   int const cols = XPRSgetnumcols(mLp);
-  DCHECK_EQ(last_variable_index_, cols);
+  // DCHECK_EQ(last_variable_index_, cols);
 
   unique_ptr<int[]> ind(new int[cols]);
   unique_ptr<double[]> val(new double[cols]);
