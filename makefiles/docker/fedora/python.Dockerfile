@@ -1,6 +1,8 @@
 FROM ortools/make:fedora_swig AS env
 RUN dnf -y update \
-&& dnf -y install python3-devel python3-pip python3-wheel \
+&& dnf -y install python3-devel python3-pip \
+ python3-wheel \
+ python3-numpy python3-pandas \
 && dnf clean all
 RUN python3 -m pip install absl-py mypy-protobuf
 
