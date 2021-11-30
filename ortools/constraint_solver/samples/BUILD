@@ -1,3 +1,5 @@
+exports_files(["CMakeLists.txt"] + glob(["*.cc"]) + glob(["*.cs"]) + glob(["*.py"]))
+
 load(":code_samples.bzl", "code_sample_cc")
 
 code_sample_cc(name = "minimal_jobshop_cp")

@@ -184,7 +184,12 @@ cc_library(
     hdrs = [
         "recordio.h",
     ],
-    linkopts = ["-lz"],
+    linkopts = select({
+        "on_linux": ["-lz"],
+        "on_macos": ["-lz"],
+        "on_windows": [],
+        "//conditions:default": ["-lz"],
+    }),
     deps = [
         ":base",
         ":file",
