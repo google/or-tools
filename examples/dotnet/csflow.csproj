@@ -19,6 +19,6 @@
 
   <ItemGroup>
     <Compile Include="csflow.cs" />
-    <PackageReference Include="Google.OrTools" Version="9.1.*" />
+    <PackageReference Include="Google.OrTools" Version="9.2.*" />
   </ItemGroup>
 </Project>
