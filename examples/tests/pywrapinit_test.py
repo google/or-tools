@@ -26,12 +26,13 @@ class PyWrapInit(unittest.TestCase):
     def test_flags(self):
         print('test_cpp_flags')
         cpp_flags = pywrapinit.CppFlags()
-        cpp_flags.logtostderr = True
-        cpp_flags.log_prefix = True
-        cpp_flags.cp_model_dump_prefix = 'pywrapinit_test'
-        cpp_flags.cp_model_dump_model = True
-        cpp_flags.cp_model_dump_lns = True
-        cpp_flags.cp_model_dump_response = True
+        #print(f'{dir(cpp_flags)}')
+        assert hasattr(cpp_flags, "logtostderr")
+        assert hasattr(cpp_flags, "log_prefix")
+        assert hasattr(cpp_flags, "cp_model_dump_prefix")
+        assert hasattr(cpp_flags, "cp_model_dump_models")
+        assert hasattr(cpp_flags, "cp_model_dump_lns")
+        assert hasattr(cpp_flags, "cp_model_dump_response")
         pywrapinit.CppBridge.SetFlags(cpp_flags)
 
     def test_version(self):
