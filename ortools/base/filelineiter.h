@@ -20,7 +20,7 @@
 // * Consecutive '\n' result in empty lines being produced.
 // * If not empty, the string after the last '\n' is produced as the last line.
 // * Options are available to keep the trailing '\n' for each line, to remove
-//   carriage-return chararters ('\r'), and to remove blank lines.
+//   carriage-return characters ('\r'), and to remove blank lines.
 //
 #ifndef OR_TOOLS_UTIL_FILELINEITER_H_
 #define OR_TOOLS_UTIL_FILELINEITER_H_
@@ -115,7 +115,10 @@ class FileLineIterator {
 class FileLines {
  public:
   FileLines(const std::string& filename, int options) : options_(options) {
-    if (!file::Open(filename, "r", &file_, file::Defaults()).ok()) return;
+    if (!file::Open(filename, "r", &file_, file::Defaults()).ok()) {
+      LOG(WARNING) << "Could not open: " << filename;
+      return;
+    }
   }
 
   explicit FileLines(const std::string& filename)
