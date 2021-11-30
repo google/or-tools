@@ -1,20 +1,8 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 3a73f70..b583331 100644
+index 750a475..16ceca8 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -41,6 +41,11 @@ if (POLICY CMP0077)
-   cmake_policy(SET CMP0077 NEW)
- endif (POLICY CMP0077)
- 
-+# MSVC runtime library flags are selected by an abstraction.
-+if(POLICY CMP0091)
-+  cmake_policy(SET CMP0091 NEW)
-+endif()
-+
- # Set BUILD_TESTING to OFF by default.
- # This must come before the project() and include(CTest) lines.
- OPTION(BUILD_TESTING "Build tests" OFF)
-@@ -144,8 +149,6 @@ endif()
+@@ -175,8 +175,6 @@ endif()
  add_subdirectory(absl)
  
  if(ABSL_ENABLE_INSTALL)
