@@ -42,22 +42,24 @@ public final class InitTest {
   public void testFlags() {
      final CppFlags cpp_flags = new CppFlags();
      assertNotNull(cpp_flags);
-     cpp_flags.logtostderr = true;
-     cpp_flags.log_prefix = true;
-     cpp_flags.cp_model_dump_prefix = "init";
-     cpp_flags.cp_model_dump_model = true;
-     cpp_flags.cp_model_dump_lns = true;
-     cpp_flags.cp_model_dump_response = true;
+     cpp_flags.setLogtostderr(true);
+     cpp_flags.setLog_prefix(true);
+     cpp_flags.setCp_model_dump_prefix("init");
+     cpp_flags.setCp_model_dump_models(true);
+     cpp_flags.setCp_model_dump_lns(true);
+     cpp_flags.setCp_model_dump_response(true);
      CppBridge.setFlags(cpp_flags);
   }
 
   @Test
   public void testVersion() {
-    final OrToolsVersion version = new OrToolsVersion();
-    assertNotNull(version);
-    int major = version.getMajorNumber();
-    int minor = version.getMinorNumber();
-    int patch = version.getPatchNumber();
-    assertEquals(major + "." + minor + "." + patch, version.getVersionString());
+    final OrToolsVersion v = new OrToolsVersion();
+    assertNotNull(v);
+    final int major = v.getMajorNumber();
+    final int minor = v.getMinorNumber();
+    final int patch = v.getPatchNumber();
+    final String version =  v.getVersionString();
+    final String check = major + "." + minor + "." + patch;
+    assertEquals(check, version);
   }
 }
