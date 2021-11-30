@@ -6469,32 +6469,42 @@ void CpModelPresolver::TryToSimplifyDomain(int var) {
       // Update the objective if needed. Note that this operation can fail if
       // the new expression result in potential overflow.
       if (context_->VarToConstraints(var).contains(kObjectiveConstraint)) {
+        int64_t min_value;
+        const int64_t obj_coeff = context_->ObjectiveMap().at(var);
+        if (is_fully_encoded) {
+          // We substract the min_value from all coefficients.
+          // This should reduce the objective size and helps with the bounds.
+          min_value =
+              obj_coeff > 0 ? encoded_values.front() : encoded_values.back();
+        } else {
+          // Tricky: If the variable is not fully encoded, then when all
+          // partial encoding literal are false, it must take the "best" value
+          // in other_values. That depend on the sign of the objective coeff.
+          //
+          // We also restrict other value so that the postsolve code below
+          // will fix the variable to the correct value when this happen.
+          other_values =
+              Domain(obj_coeff > 0 ? other_values.Min() : other_values.Max());
+          min_value = other_values.FixedValue();
+        }
+
+        // Checks for overflow before trying to substitute the variable in the
+        // objective.
+        int64_t accumulated = std::abs(min_value);
+        for (const int64_t value : encoded_values) {
+          accumulated = CapAdd(accumulated, std::abs(CapSub(value, min_value)));
+          if (accumulated == std::numeric_limits<int64_t>::max()) {
+            context_->UpdateRuleStats(
+                "TODO variables: only used in objective and in encoding");
+            return;
+          }
+        }
+
         ConstraintProto encoding_ct;
         LinearConstraintProto* linear = encoding_ct.mutable_linear();
         const int64_t coeff_in_equality = -1;
         linear->add_vars(var);
         linear->add_coeffs(coeff_in_equality);
-
-        int64_t min_value;
-        if (is_fully_encoded) {
-          // We substract the min_value from all coefficients.
-          // This should reduce the objective size and helps with the bounds.
-          //
-          // TODO(user): If the objective coefficient is negative, then we
-          // should rather substract the max?
-          min_value = encoded_values[0];
-        } else {
-          // Tricky: If the variable is not fully encoded, then when all partial
-          // encoding literal are false, it must take the "best" value in
-          // other_values. That depend on the sign of the objective coeff.
-          //
-          // We also restrict other value so that the postsolve code below will
-          // fix the variable to the correct value when this happen.
-          const int64_t obj_coeff = context_->ObjectiveMap().at(var);
-          other_values =
-              Domain(obj_coeff > 0 ? other_values.Min() : other_values.Max());
-          min_value = other_values.FixedValue();
-        }
 
         linear->add_domain(-min_value);
         linear->add_domain(-min_value);
