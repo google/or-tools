@@ -18,6 +18,6 @@ jobs:
           choco install bazel
           bazel --version
       - name: Build
-        run: bazel build --cxxopt="-std:c++17" //...:all
+        run: bazel build --cxxopt="-std:c++17" //...:all -//ortools/math_opt/...
       - name: Test
-        run: bazel test --cxxopt="-std:c++17" //...:all
+        run: bazel test --cxxopt="-std:c++17" //...:all -//ortools/math_opt/...
