@@ -17,8 +17,8 @@
 namespace operations_research {
 void TestLogging() {
   LOG(INFO) << "Test Logging";
-  CppBridge.InitLogging("init");
-  CppBridge.ShutdownLogging();
+  CppBridge::InitLogging("init");
+  CppBridge::ShutdownLogging();
 }
 
 void TestFlags() {
@@ -27,25 +27,26 @@ void TestFlags() {
   cpp_flags.logtostderr = true;
   cpp_flags.log_prefix = true;
   cpp_flags.cp_model_dump_prefix = "init";
-  cpp_flags.cp_model_dump_model = true;
+  cpp_flags.cp_model_dump_models = true;
   cpp_flags.cp_model_dump_lns = true;
   cpp_flags.cp_model_dump_response = true;
-  CppBridge.SetFlags(cpp_flags);
+  CppBridge::SetFlags(cpp_flags);
 }
 
 void TestVersion() {
   LOG(INFO) << "Test Version";
   using version = OrToolsVersion;
-  int major = version.MajorNumber();
-  int minor = version.MinorNumber();
-  int patch = version.PatchNumber();
-  std::string = absl::StrCat(major, ".", minor, ".", patch);
-  assert(string == version::VersionString());
+  int major = version::MajorNumber();
+  int minor = version::MinorNumber();
+  int patch = version::PatchNumber();
+  std::string vers = absl::StrCat(major, ".", minor, ".", patch);
+  assert(vers == version::VersionString());
 }
 
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
+  operations_research::TestLogging();
   operations_research::TestFlags();
   operations_research::TestVersion();
   return 0;
