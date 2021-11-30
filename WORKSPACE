@@ -31,7 +31,7 @@ http_archive(
 # Protobuf
 git_repository(
     name = "com_google_protobuf",
-    commit = "89b14b1",  # release v3.18.0
+    commit = "7c40b2d",  # release v3.19.1
     remote = "https://github.com/protocolbuffers/protobuf.git",
 )
 # Load common dependencies.
@@ -40,8 +40,16 @@ protobuf_deps()
 
 git_repository(
     name = "com_google_absl",
-    commit = "278e0a0", # release 20210324.2
+    commit = "2151058", # release 20211102.0
     remote = "https://github.com/abseil/abseil-cpp.git",
+)
+
+# Bazel platform rules.
+http_archive(
+    name = "platforms",
+    sha256 = "b601beaf841244de5c5a50d2b2eddd34839788000fa1be4260ce6603ca0d8eb7",
+    strip_prefix = "platforms-98939346da932eef0b54cf808622f5bb0928f00b",
+    urls = ["https://github.com/bazelbuild/platforms/archive/98939346da932eef0b54cf808622f5bb0928f00b.zip"],
 )
 
 git_repository(

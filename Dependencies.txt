@@ -1,5 +1,5 @@
-Protobuf=3.18.0
-abseil-cpp=20210324.2
+Protobuf=3.9.1
+abseil-cpp=20211102.0
 Cbc=2.10.5
 Cgl=0.60.3
 Clp=1.17.4
