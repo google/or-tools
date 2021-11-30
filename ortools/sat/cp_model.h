@@ -734,12 +734,12 @@ class CpModelBuilder {
   IntVar NewConstant(int64_t value);
 
   /// Creates an always true Boolean variable.
-  /// If this is called multiple time, always the same variable will be
+  /// If this is called multiple times, the same variable will always be
   /// returned.
   BoolVar TrueVar();
 
   /// Creates an always false Boolean variable.
-  /// If this is called multiple time, always the same variable will be
+  /// If this is called multiple times, the same variable will always be
   /// returned.
   BoolVar FalseVar();
 
@@ -766,7 +766,7 @@ class CpModelBuilder {
   /// Adds the constraint that all literals must be true.
   Constraint AddBoolAnd(absl::Span<const BoolVar> literals);
 
-  /// Adds the constraint that a odd number of literal is true.
+  /// Adds the constraint that an odd number of literals is true.
   Constraint AddBoolXor(absl::Span<const BoolVar> literals);
 
   /// Adds a => b.
@@ -848,11 +848,11 @@ class CpModelBuilder {
    *
    * An AllowedAssignments constraint is a constraint on an array of variables
    * that forces, when all variables are fixed to a single value, that the
-   * corresponding list of values is equal to one of the tuple added to the
+   * corresponding list of values is equal to one of the tuples added to the
    * constraint.
    *
    * It returns a table constraint that allows adding tuples incrementally after
-   * construction,
+   * construction.
    */
   TableConstraint AddAllowedAssignments(absl::Span<const IntVar> vars);
 
@@ -864,11 +864,11 @@ class CpModelBuilder {
    * to the constraint.
    *
    * It returns a table constraint that allows adding tuples incrementally after
-   * construction,
+   * construction.
    */
   TableConstraint AddForbiddenAssignments(absl::Span<const IntVar> vars);
 
-  /** An inverse constraint
+  /** An inverse constraint.
    *
    * It enforces that if 'variables[i]' is assigned a value
    * 'j', then inverse_variables[j] is assigned a value 'i'. And vice versa.
@@ -899,8 +899,7 @@ class CpModelBuilder {
                                              int64_t max_level);
 
   /**
-   *
-   * An automaton constraint/
+   * An automaton constraint.
    *
    * An automaton constraint takes a list of variables (of size n), an initial
    * state, a set of final states, and a set of transitions. A transition is a
@@ -966,7 +965,7 @@ class CpModelBuilder {
                                        absl::Span<const IntVar> vars);
 
   /**
-   *  Adds a no-overlap constraint that ensures that all present intervals do
+   * Adds a no-overlap constraint that ensures that all present intervals do
    * not overlap in time.
    */
   Constraint AddNoOverlap(absl::Span<const IntervalVar> vars);
@@ -976,7 +975,8 @@ class CpModelBuilder {
    */
   NoOverlap2DConstraint AddNoOverlap2D();
 
-  /** The cumulative constraint
+  /**
+   * The cumulative constraint
    *
    * It ensures that for any integer point, the sum of the demands of the
    * intervals containing that point does not exceed the capacity.
@@ -1012,7 +1012,7 @@ class CpModelBuilder {
   /// Adds hinting to a variable.
   void AddHint(IntVar var, int64_t value);
 
-  /// Remove all hints.
+  /// Removes all hints.
   void ClearHints();
 
   /// Adds a literal to the model as assumptions.
@@ -1031,7 +1031,7 @@ class CpModelBuilder {
   const CpModelProto& Proto() const { return cp_model_; }
   CpModelProto* MutableProto() { return &cp_model_; }
 
-  /// Replace the current model with the one from the given proto.
+  /// Replaces the current model with the one from the given proto.
   void CopyFrom(const CpModelProto& model_proto);
 
   /// Returns the Boolean variable from its index in the proto.

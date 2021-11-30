@@ -723,6 +723,10 @@ std::string ValidateFloatingPointObjective(const CpModelProto& model,
                           ProtobufShortDebugString(obj));
     }
   }
+  if (!std::isfinite(obj.offset())) {
+    return absl::StrCat("Offset must be finite in objective: ",
+                        ProtobufShortDebugString(obj));
+  }
   return "";
 }
 
@@ -1048,7 +1052,7 @@ class ConstraintChecker {
     const int64_t prod = LinearExpressionValue(ct.int_prod().target());
     int64_t actual_prod = 1;
     for (const LinearExpressionProto& expr : ct.int_prod().exprs()) {
-      actual_prod *= LinearExpressionValue(expr);
+      actual_prod = CapProd(actual_prod, LinearExpressionValue(expr));
     }
     return prod == actual_prod;
   }

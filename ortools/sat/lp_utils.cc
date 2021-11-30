@@ -1339,12 +1339,14 @@ double ComputeTrueObjectiveLowerBound(
   }
 
   // Add the original problem floating point objective.
+  // This is user given, so we do need to deal with duplicate entries.
   const FloatObjectiveProto& float_obj = proto.floating_point_objective();
   lp.SetObjectiveOffset(float_obj.offset());
   lp.SetMaximizationProblem(float_obj.maximize());
   for (int i = 0; i < float_obj.vars().size(); ++i) {
-    lp.SetObjectiveCoefficient(glop::ColIndex(float_obj.vars(i)),
-                               float_obj.coeffs(i));
+    const glop::ColIndex col(float_obj.vars(i));
+    const double old_value = lp.objective_coefficients()[col];
+    lp.SetObjectiveCoefficient(col, old_value + float_obj.coeffs(i));
   }
 
   // Add a single constraint "integer_objective >= lower_bound".
@@ -1356,6 +1358,8 @@ double ComputeTrueObjectiveLowerBound(
     lp.SetCoefficient(ct, glop::ColIndex(integer_objective.vars(i)),
                       static_cast<double>(integer_objective.coeffs(i)));
   }
+
+  lp.CleanUp();
 
   // This should be fast.
   glop::LPSolver solver;
