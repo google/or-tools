@@ -18,32 +18,35 @@ from ortools.init import pywrapinit
 
 class PyWrapInit(unittest.TestCase):
 
-    def test_logging
+    def test_logging(self):
+        print('test_logging')
         pywrapinit.CppBridge.InitLogging('pywrapinit_test.py')
         pywrapinit.CppBridge.ShutdownLogging()
 
     def test_flags(self):
-        print('test_version')
+        print('test_cpp_flags')
         cpp_flags = pywrapinit.CppFlags()
-        cpp_flags.logtostderr = True
-        cpp_flags.log_prefix = True
-        cpp_flags.cp_model_dump_prefix = 'pywrapinit_test'
-        cpp_flags.cp_model_dump_model = True
-        cpp_flags.cp_model_dump_lns = True
-        cpp_flags.cp_model_dump_response = True
+        #print(f'{dir(cpp_flags)}')
+        assert hasattr(cpp_flags, "logtostderr")
+        assert hasattr(cpp_flags, "log_prefix")
+        assert hasattr(cpp_flags, "cp_model_dump_prefix")
+        assert hasattr(cpp_flags, "cp_model_dump_models")
+        assert hasattr(cpp_flags, "cp_model_dump_lns")
+        assert hasattr(cpp_flags, "cp_model_dump_response")
         pywrapinit.CppBridge.SetFlags(cpp_flags)
 
     def test_version(self):
         print('test_version')
-        version = pywrapinit.OrToolsVersion
-        self.assertEqual(9, version.MajorNumber())
-        self.assertEqual(1, version.MinorNumber())
-        self.assertTrue(isnumeric(version.PathNumber()))
-        major = version.MajorNumber()
-        minor = version.MinorNumber()
-        patch = version.PatchNumber()
+        major = pywrapinit.OrToolsVersion.MajorNumber()
+        self.assertIsInstance(major, int)
+        minor = pywrapinit.OrToolsVersion.MinorNumber()
+        self.assertIsInstance(minor, int)
+        patch = pywrapinit.OrToolsVersion.PatchNumber()
+        self.assertIsInstance(patch, int)
+        version = pywrapinit.OrToolsVersion.VersionString()
+        self.assertIsInstance(version, str)
         string = f'{major}.{minor}.{patch}'
-        self.assertEqual(string, version.VersionString())
+        self.assertEqual(version, string)
 
 if __name__ == '__main__':
     unittest.main()
