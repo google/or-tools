@@ -1,5 +1,7 @@
+workspace(name = "com_google_ortools")
+
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository", "new_git_repository")
 
 http_archive(
     name = "zlib",
@@ -29,7 +31,7 @@ http_archive(
 # Protobuf
 git_repository(
     name = "com_google_protobuf",
-    commit = "2514f0b",  # release v3.14.0
+    commit = "89b14b1",  # release v3.18.0
     remote = "https://github.com/protocolbuffers/protobuf.git",
 )
 
@@ -40,15 +42,14 @@ protobuf_deps()
 
 git_repository(
     name = "com_google_absl",
-    commit = "0f3bb46", # release 20200923.2
+    commit = "278e0a0", # release 20210324.2
     remote = "https://github.com/abseil/abseil-cpp.git",
 )
 
-http_archive(
-    name = "gtest",
-    build_file = "//bazel:gtest.BUILD",
-    strip_prefix = "googletest-release-1.8.0/googletest",
-    url = "https://github.com/google/googletest/archive/release-1.8.0.zip",
+git_repository(
+    name = "com_google_googletest",
+    commit = "703bd9c", # release-1.10.0
+    remote = "https://github.com/google/googletest.git",
 )
 
 http_archive(
@@ -63,14 +64,14 @@ http_archive(
     build_file = "//bazel:bliss.BUILD",
     patches = ["//bazel:bliss-0.73.patch"],
     sha256 = "f57bf32804140cad58b1240b804e0dbd68f7e6bf67eba8e0c0fa3a62fd7f0f84",
-    url = "http://www.tcs.hut.fi/Software/bliss/bliss-0.73.zip",
+    url = "https://github.com/google/or-tools/releases/download/v9.0/bliss-0.73.zip",
+    #url = "http://www.tcs.hut.fi/Software/bliss/bliss-0.73.zip",
 )
 
-http_archive(
+new_git_repository(
     name = "scip",
     build_file = "//bazel:scip.BUILD",
     patches = ["//bazel:scip.patch"],
-    sha256 = "033bf240298d3a1c92e8ddb7b452190e0af15df2dad7d24d0572f10ae8eec5aa",
-    url = "https://github.com/google/or-tools/releases/download/v7.7/scip-7.0.1.tgz",
+    commit = "6acb7222e1b871041445bee75fc05bd1bcaed089", # master from Jul 19, 2021
+    remote = "https://github.com/scipopt/scip.git",
 )
-

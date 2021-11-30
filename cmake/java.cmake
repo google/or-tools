@@ -42,7 +42,7 @@ set(JAVA_PACKAGE_PATH src/main/java/com/google/ortools)
 set(JAVA_TEST_PATH src/test/java/com/google/ortools)
 set(JAVA_RESOURCES_PATH src/main/resources)
 if(APPLE)
-  set(NATIVE_IDENTIFIER darwin)
+  set(NATIVE_IDENTIFIER darwin-x86-64)
 elseif(UNIX)
   set(NATIVE_IDENTIFIER linux-x86-64)
 elseif(WIN32)
@@ -85,12 +85,12 @@ foreach(PROTO_FILE IN LISTS proto_java_files)
   add_custom_command(
     OUTPUT ${PROTO_JAVA}
     COMMAND ${CMAKE_COMMAND} -E make_directory ${PROTO_OUT}
-    COMMAND protobuf::protoc
+    COMMAND ${PROTOC_PRG}
     "--proto_path=${PROJECT_SOURCE_DIR}"
     ${PROTO_DIRS}
     "--java_out=${PROJECT_BINARY_DIR}/java/${JAVA_PROJECT}/src/main/java"
     ${PROTO_FILE}
-    DEPENDS ${PROTO_FILE} protobuf::protoc
+    DEPENDS ${PROTO_FILE} ${PROTOC_PRG}
     COMMENT "Generate Java protocol buffer for ${PROTO_FILE}"
     VERBATIM)
   list(APPEND PROTO_JAVAS ${PROTO_JAVA})
@@ -116,7 +116,7 @@ elseif(UNIX)
 endif()
 
 # Swig wrap all libraries
-foreach(SUBPROJECT IN ITEMS algorithms graph linear_solver constraint_solver sat util)
+foreach(SUBPROJECT IN ITEMS algorithms graph init linear_solver constraint_solver sat util)
   add_subdirectory(ortools/${SUBPROJECT}/java)
   target_link_libraries(jniortools PRIVATE jni${SUBPROJECT})
 endforeach()
@@ -125,7 +125,7 @@ endforeach()
 ##  Java Native Maven Package  ##
 #################################
 set(JAVA_NATIVE_PROJECT_PATH ${PROJECT_BINARY_DIR}/java/${JAVA_NATIVE_PROJECT})
-file(MAKE_DIRECTORY ${JAVA_NATIVE_PROJECT_PATH}/${JAVA_RESOURCES_PATH}/${NATIVE_IDENTIFIER})
+file(MAKE_DIRECTORY ${JAVA_NATIVE_PROJECT_PATH}/${JAVA_RESOURCES_PATH}/${JAVA_NATIVE_PROJECT})
 
 configure_file(
   ${PROJECT_SOURCE_DIR}/ortools/java/pom-native.xml.in
@@ -138,10 +138,10 @@ add_custom_target(java_native_package
   COMMAND ${CMAKE_COMMAND} -E copy
     $<TARGET_FILE:jniortools>
     $<$<NOT:$<PLATFORM_ID:Windows>>:$<TARGET_SONAME_FILE:${PROJECT_NAME}>>
-    ${JAVA_RESOURCES_PATH}/${NATIVE_IDENTIFIER}/
-  COMMAND ${MAVEN_EXECUTABLE} compile
-  COMMAND ${MAVEN_EXECUTABLE} package
-  COMMAND ${MAVEN_EXECUTABLE} install
+    ${JAVA_RESOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
+  COMMAND ${MAVEN_EXECUTABLE} compile -B
+  COMMAND ${MAVEN_EXECUTABLE} package -B
+  COMMAND ${MAVEN_EXECUTABLE} install -B $<$<BOOL:${SKIP_GPG}>:-Dgpg.skip=true>
   BYPRODUCTS
     ${JAVA_NATIVE_PROJECT_PATH}/target
   WORKING_DIRECTORY ${JAVA_NATIVE_PROJECT_PATH})
@@ -152,10 +152,17 @@ add_custom_target(java_native_package
 set(JAVA_PROJECT_PATH ${PROJECT_BINARY_DIR}/java/${JAVA_PROJECT})
 file(MAKE_DIRECTORY ${JAVA_PROJECT_PATH}/${JAVA_PACKAGE_PATH})
 
-configure_file(
-  ${PROJECT_SOURCE_DIR}/ortools/java/pom-local.xml.in
-  ${JAVA_PROJECT_PATH}/pom.xml
-  @ONLY)
+if(UNIVERSAL_JAVA_PACKAGE)
+  configure_file(
+    ${PROJECT_SOURCE_DIR}/ortools/java/pom-full.xml.in
+    ${JAVA_PROJECT_PATH}/pom.xml
+    @ONLY)
+else()
+  configure_file(
+    ${PROJECT_SOURCE_DIR}/ortools/java/pom-local.xml.in
+    ${JAVA_PROJECT_PATH}/pom.xml
+    @ONLY)
+endif()
 
 file(GLOB_RECURSE java_files RELATIVE ${PROJECT_SOURCE_DIR}/ortools/java
   "ortools/java/*.java")
@@ -182,9 +189,9 @@ add_custom_target(java_package ALL
   DEPENDS
   ${JAVA_PROJECT_PATH}/pom.xml
   ${JAVA_SRCS}
-  COMMAND ${MAVEN_EXECUTABLE} compile
-  COMMAND ${MAVEN_EXECUTABLE} package
-  COMMAND ${MAVEN_EXECUTABLE} install
+  COMMAND ${MAVEN_EXECUTABLE} compile -B
+  COMMAND ${MAVEN_EXECUTABLE} package -B
+  COMMAND ${MAVEN_EXECUTABLE} install -B $<$<BOOL:${SKIP_GPG}>:-Dgpg.skip=true>
   BYPRODUCTS
     ${JAVA_PROJECT_PATH}/target
   WORKING_DIRECTORY ${JAVA_PROJECT_PATH})
@@ -208,7 +215,7 @@ if(BUILD_TESTING)
 
   add_custom_target(java_test_Test ALL
     DEPENDS ${TEST_PATH}/pom.xml
-    COMMAND ${MAVEN_EXECUTABLE} compile
+    COMMAND ${MAVEN_EXECUTABLE} compile -B
     BYPRODUCTS
       ${TEST_PATH}/target
     WORKING_DIRECTORY ${TEST_PATH})
@@ -227,7 +234,7 @@ endif()
 # e.g.:
 # add_java_sample(Foo.java)
 function(add_java_sample FILE_NAME)
-  message(STATUS "Building ${FILE_NAME}: ...")
+  message(STATUS "Configuring sample ${FILE_NAME}: ...")
   get_filename_component(SAMPLE_NAME ${FILE_NAME} NAME_WE)
   get_filename_component(SAMPLE_DIR ${FILE_NAME} DIRECTORY)
   get_filename_component(COMPONENT_DIR ${SAMPLE_DIR} DIRECTORY)
@@ -249,7 +256,7 @@ function(add_java_sample FILE_NAME)
 
   add_custom_target(java_sample_${SAMPLE_NAME} ALL
     DEPENDS ${SAMPLE_PATH}/pom.xml
-    COMMAND ${MAVEN_EXECUTABLE} compile
+    COMMAND ${MAVEN_EXECUTABLE} compile -B
     BYPRODUCTS
       ${SAMPLE_PATH}/target
     WORKING_DIRECTORY ${SAMPLE_PATH})
@@ -261,8 +268,7 @@ function(add_java_sample FILE_NAME)
       COMMAND ${MAVEN_EXECUTABLE} exec:java
       WORKING_DIRECTORY ${SAMPLE_PATH})
   endif()
-
-  message(STATUS "Building ${FILE_NAME}: ...DONE")
+  message(STATUS "Configuring sample ${FILE_NAME}: ...DONE")
 endfunction()
 
 # add_java_example()
@@ -272,7 +278,7 @@ endfunction()
 # e.g.:
 # add_java_example(Foo.java)
 function(add_java_example FILE_NAME)
-  message(STATUS "Building ${FILE_NAME}: ...")
+  message(STATUS "Configuring example ${FILE_NAME}: ...")
   get_filename_component(EXAMPLE_NAME ${FILE_NAME} NAME_WE)
   get_filename_component(COMPONENT_DIR ${FILE_NAME} DIRECTORY)
   get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
@@ -292,7 +298,7 @@ function(add_java_example FILE_NAME)
 
   add_custom_target(java_example_${EXAMPLE_NAME} ALL
     DEPENDS ${EXAMPLE_PATH}/pom.xml
-    COMMAND ${MAVEN_EXECUTABLE} compile
+    COMMAND ${MAVEN_EXECUTABLE} compile -B
     BYPRODUCTS
       ${EXAMPLE_PATH}/target
     WORKING_DIRECTORY ${EXAMPLE_PATH})
@@ -304,8 +310,7 @@ function(add_java_example FILE_NAME)
       COMMAND ${MAVEN_EXECUTABLE} exec:java
       WORKING_DIRECTORY ${EXAMPLE_PATH})
   endif()
-
-  message(STATUS "Building ${FILE_NAME}: ...DONE")
+  message(STATUS "Configuring example ${FILE_NAME}: ...DONE")
 endfunction()
 
 # add_java_test()
@@ -315,7 +320,7 @@ endfunction()
 # e.g.:
 # add_java_test(Foo.java)
 function(add_java_test FILE_NAME)
-  message(STATUS "Building ${FILE_NAME}: ...")
+  message(STATUS "Configuring test ${FILE_NAME}: ...")
   get_filename_component(TEST_NAME ${FILE_NAME} NAME_WE)
   get_filename_component(COMPONENT_DIR ${FILE_NAME} DIRECTORY)
   get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
@@ -333,7 +338,7 @@ function(add_java_test FILE_NAME)
 
   add_custom_target(java_test_${TEST_NAME} ALL
     DEPENDS ${TEST_PATH}/pom.xml
-    COMMAND ${MAVEN_EXECUTABLE} compile
+    COMMAND ${MAVEN_EXECUTABLE} compile -B
     BYPRODUCTS
       ${TEST_PATH}/target
     WORKING_DIRECTORY ${TEST_PATH})
@@ -345,6 +350,5 @@ function(add_java_test FILE_NAME)
       COMMAND ${MAVEN_EXECUTABLE} test
       WORKING_DIRECTORY ${TEST_PATH})
   endif()
-
-  message(STATUS "Building ${FILE_NAME}: ...DONE")
+  message(STATUS "Configuring test ${FILE_NAME}: ...DONE")
 endfunction()

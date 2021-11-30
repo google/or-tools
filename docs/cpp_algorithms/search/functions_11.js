@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['via_268',['via',['../classoperations__research_1_1_knapsack_search_path.html#a1dcc659f782497ac856c5223c0819713',1,'operations_research::KnapsackSearchPath']]]
+  ['via_0',['via',['../classoperations__research_1_1_knapsack_search_path.html#ab54cc176a72a1a03b18cb3f9649c773a',1,'operations_research::KnapsackSearchPath']]]
 ];

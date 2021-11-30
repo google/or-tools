@@ -1,4 +1,4 @@
-# Copyright 2010-2018 Google LLC
+# Copyright 2010-2021 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -10,7 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""OR-tools solution to the N-queens problem."""
+"""OR-Tools solution to the N-queens problem."""
 import time
 import sys
 from ortools.sat.python import cp_model
@@ -78,7 +78,8 @@ def main(board_size):
     ### Solve model.
     solver = cp_model.CpSolver()
     solution_printer = NQueenSolutionPrinter(queens)
-    status = solver.SearchForAllSolutions(model, solution_printer)
+    solver.parameters.enumerate_all_solutions = True
+    status = solver.Solve(model, solution_printer)
 
     print()
     print('Statistics')

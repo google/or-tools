@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -25,11 +25,14 @@ import com.google.ortools.sat.ElementConstraintProto;
 import com.google.ortools.sat.IntegerArgumentProto;
 import com.google.ortools.sat.InverseConstraintProto;
 import com.google.ortools.sat.LinearConstraintProto;
+import com.google.ortools.sat.LinearExpressionProto;
 import com.google.ortools.sat.NoOverlap2DConstraintProto;
 import com.google.ortools.sat.NoOverlapConstraintProto;
 import com.google.ortools.sat.ReservoirConstraintProto;
 import com.google.ortools.sat.TableConstraintProto;
 import com.google.ortools.util.Domain;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * Main modeling class.
@@ -37,10 +40,10 @@ import com.google.ortools.util.Domain;
  * <p>Proposes a factory to create all modeling objects understood by the SAT solver.
  */
 public final class CpModel {
-  static class CpModelException extends Exception {
+  static class CpModelException extends RuntimeException {
     public CpModelException(String methodName, String msg) {
       // Call constructor of parent Exception
-      super("CpModel." + methodName + ": " + msg);
+      super(methodName + ": " + msg);
     }
   }
 
@@ -57,9 +60,9 @@ public final class CpModel {
       super(methodName, msg);
     }
   }
-
   public CpModel() {
     modelBuilder = CpModelProto.newBuilder();
+    constantMap = new LinkedHashMap<>();
   }
 
   // Integer variables.
@@ -87,7 +90,22 @@ public final class CpModel {
 
   /** Creates a constant variable. */
   public IntVar newConstant(long value) {
-    return new IntVar(modelBuilder, new Domain(value), ""); // bounds and name.
+    if (constantMap.containsKey(value)) {
+      return constantMap.get(value);
+    }
+    IntVar cste = new IntVar(modelBuilder, new Domain(value), ""); // bounds and name.
+    constantMap.put(value, cste);
+    return cste;
+  }
+
+  /** Returns the true literal. */
+  public Literal trueLiteral() {
+    return newConstant(1);
+  }
+
+  /** Returns the false literal. */
+  public Literal falseLiteral() {
+    return newConstant(0);
   }
 
   // Boolean Constraints.
@@ -135,6 +153,10 @@ public final class CpModel {
     LinearConstraintProto.Builder lin = ct.getBuilder().getLinearBuilder();
     for (int i = 0; i < expr.numElements(); ++i) {
       lin.addVars(expr.getVariable(i).getIndex()).addCoeffs(expr.getCoefficient(i));
+    }
+    long offset = expr.getOffset();
+    if (offset != 0) {
+      lin.addVars(newConstant(1).getIndex()).addCoeffs(offset);
     }
     for (long b : domain.flattenedIntervals()) {
       lin.addDomain(b);
@@ -222,13 +244,13 @@ public final class CpModel {
   }
 
   /** Adds {@code left != right}. */
-  public Constraint addDifferent(IntVar left, IntVar right) {
+  public Constraint addDifferent(LinearExpr left, LinearExpr right) {
     return addLinearExpressionInDomain(new Difference(left, right),
         Domain.fromFlatIntervals(new long[] {Long.MIN_VALUE, -1, 1, Long.MAX_VALUE}));
   }
 
   /** Adds {@code left + offset != right}. */
-  public Constraint addDifferentWithOffset(IntVar left, IntVar right, long offset) {
+  public Constraint addDifferentWithOffset(LinearExpr left, LinearExpr right, long offset) {
     return addLinearExpressionInDomain(new Difference(left, right),
         Domain.fromFlatIntervals(
             new long[] {Long.MIN_VALUE, -offset - 1, -offset + 1, Long.MAX_VALUE}));
@@ -304,13 +326,12 @@ public final class CpModel {
    * @return an instance of the Constraint class
    * @throws MismatchedArrayLengths if the arrays have different sizes
    */
-  public Constraint addCircuit(int[] tails, int[] heads, Literal[] literals)
-      throws MismatchedArrayLengths {
+  public Constraint addCircuit(int[] tails, int[] heads, Literal[] literals) {
     if (tails.length != heads.length) {
-      throw new MismatchedArrayLengths("addCircuit", "tails", "heads");
+      throw new MismatchedArrayLengths("CpModel.addCircuit", "tails", "heads");
     }
     if (tails.length != literals.length) {
-      throw new MismatchedArrayLengths("addCircuit", "tails", "literals");
+      throw new MismatchedArrayLengths("CpModel.addCircuit", "tails", "literals");
     }
 
     Constraint ct = new Constraint(modelBuilder);
@@ -340,8 +361,7 @@ public final class CpModel {
    * @return an instance of the Constraint class
    * @throws WrongLength if one tuple does not have the same length as the variables
    */
-  public Constraint addAllowedAssignments(IntVar[] variables, long[][] tuplesList)
-      throws WrongLength {
+  public Constraint addAllowedAssignments(IntVar[] variables, long[][] tuplesList) {
     Constraint ct = new Constraint(modelBuilder);
     TableConstraintProto.Builder table = ct.getBuilder().getTableBuilder();
     for (IntVar var : variables) {
@@ -350,7 +370,7 @@ public final class CpModel {
     int numVars = variables.length;
     for (int t = 0; t < tuplesList.length; ++t) {
       if (tuplesList[t].length != numVars) {
-        throw new WrongLength("addAllowedAssignments",
+        throw new WrongLength("CpModel.addAllowedAssignments",
             "tuple " + t + " does not have the same length as the variables");
       }
       for (int i = 0; i < tuplesList[t].length; ++i) {
@@ -365,8 +385,7 @@ public final class CpModel {
    *
    * @see #addAllowedAssignments(IntVar[], long[][]) addAllowedAssignments
    */
-  public Constraint addAllowedAssignments(IntVar[] variables, int[][] tuplesList)
-      throws WrongLength {
+  public Constraint addAllowedAssignments(IntVar[] variables, int[][] tuplesList) {
     Constraint ct = new Constraint(modelBuilder);
     TableConstraintProto.Builder table = ct.getBuilder().getTableBuilder();
     for (IntVar var : variables) {
@@ -375,7 +394,7 @@ public final class CpModel {
     int numVars = variables.length;
     for (int t = 0; t < tuplesList.length; ++t) {
       if (tuplesList[t].length != numVars) {
-        throw new WrongLength("addAllowedAssignments",
+        throw new WrongLength("CpModel.addAllowedAssignments",
             "tuple " + t + " does not have the same length as the variables");
       }
       for (int i = 0; i < tuplesList[t].length; ++i) {
@@ -397,8 +416,7 @@ public final class CpModel {
    * @return an instance of the Constraint class
    * @throws WrongLength if one tuple does not have the same length as the variables
    */
-  public Constraint addForbiddenAssignments(IntVar[] variables, long[][] tuplesList)
-      throws WrongLength {
+  public Constraint addForbiddenAssignments(IntVar[] variables, long[][] tuplesList) {
     Constraint ct = addAllowedAssignments(variables, tuplesList);
     // Reverse the flag.
     ct.getBuilder().getTableBuilder().setNegated(true);
@@ -410,8 +428,7 @@ public final class CpModel {
    *
    * @see #addForbiddenAssignments(IntVar[], long[][]) addForbiddenAssignments
    */
-  public Constraint addForbiddenAssignments(IntVar[] variables, int[][] tuplesList)
-      throws WrongLength {
+  public Constraint addForbiddenAssignments(IntVar[] variables, int[][] tuplesList) {
     Constraint ct = addAllowedAssignments(variables, tuplesList);
     // Reverse the flag.
     ct.getBuilder().getTableBuilder().setNegated(true);
@@ -449,8 +466,8 @@ public final class CpModel {
    * @return an instance of the Constraint class
    * @throws WrongLength if one transition does not have a length of 3
    */
-  public Constraint addAutomaton(IntVar[] transitionVariables, long startingState,
-      long[] finalStates, long[][] transitions) throws WrongLength {
+  public Constraint addAutomaton(
+      IntVar[] transitionVariables, long startingState, long[] finalStates, long[][] transitions) {
     Constraint ct = new Constraint(modelBuilder);
     AutomatonConstraintProto.Builder automaton = ct.getBuilder().getAutomatonBuilder();
     for (IntVar var : transitionVariables) {
@@ -462,7 +479,7 @@ public final class CpModel {
     }
     for (long[] t : transitions) {
       if (t.length != 3) {
-        throw new WrongLength("addAutomaton", "transition does not have length 3");
+        throw new WrongLength("CpModel.addAutomaton", "transition does not have length 3");
       }
       automaton.addTransitionTail(t[0]).addTransitionLabel(t[1]).addTransitionHead(t[2]);
     }
@@ -480,10 +497,9 @@ public final class CpModel {
    * @return an instance of the Constraint class
    * @throws MismatchedArrayLengths if variables and inverseVariables have different length
    */
-  public Constraint addInverse(IntVar[] variables, IntVar[] inverseVariables)
-      throws MismatchedArrayLengths {
+  public Constraint addInverse(IntVar[] variables, IntVar[] inverseVariables) {
     if (variables.length != inverseVariables.length) {
-      throw new MismatchedArrayLengths("addInverse", "variables", "inverseVariables");
+      throw new MismatchedArrayLengths("CpModel.addInverse", "variables", "inverseVariables");
     }
     Constraint ct = new Constraint(modelBuilder);
     InverseConstraintProto.Builder inverse = ct.getBuilder().getInverseBuilder();
@@ -499,30 +515,36 @@ public final class CpModel {
   /**
    * Adds {@code Reservoir(times, demands, minLevel, maxLevel)}.
    *
-   * <p>Maintains a reservoir level within bounds. The water level starts at 0, and at any non
-   * negative time , it must be between minLevel and maxLevel. Furthermore, this constraints expect
-   * all times variables to be non negative. If the variable times[i] is assigned a value t, then
-   * the current level changes by demands[i] (which is constant) at the time t.
+   * <p>Maintains a reservoir level within bounds. The water level starts at 0, and at any times, it
+   * must be between minLevel and maxLevel. If the variable {@code times[i]} is assigned a value t,
+   * and if {@code actives[i]} is true, then the current level changes by {@code demands[i]} (which
+   * is constant) at the time t.
    *
-   * <p>Note that {@code minLevel} can be greater than 0, or {@code maxLevel} can be less than 0. It
-   * just forces some demands to be executed at time 0 to make sure that we are within those bounds
-   * with the executed demands. Therefore, {@code forall t >= 0: minLevel <= sum(demands[i] if
-   * times[i] <= t) <= maxLevel}.
+   * <p>Note that {@code minLevel} must be less than 0, and {@code maxLevel} must be greater than 0.
+   * Therefore, {@code forall t : minLevel <= sum(demands[i] if times[i] <= t) <= maxLevel}.
    *
-   * @param times a list of positive integer variables which specify the time of the filling or
-   *     emptying the reservoir
+   * @param times a list of integer variables which specify the time of the filling or emptying the
+   *     reservoir
    * @param demands a list of integer values that specifies the amount of the emptying or feeling
-   * @param minLevel at any non negative time, the level of the reservoir must be greater of equal
-   *     than the min level
-   * @param maxLevel at any non negative time, the level of the reservoir must be less or equal than
-   *     the max level
+   * @param minLevel at any time, the level of the reservoir must be greater of equal than the min
+   *     level. minLevel must me <= 0.
+   * @param maxLevel at any time, the level of the reservoir must be less or equal than the max
+   *     level. maxLevel must be >= 0.
    * @return an instance of the Constraint class
    * @throws MismatchedArrayLengths if times and demands have different length
+   * @throws IllegalArgumentException if minLevel > 0
+   * @throws IllegalArgumentException if maxLevel < 0
    */
   public Constraint addReservoirConstraint(
-      IntVar[] times, long[] demands, long minLevel, long maxLevel) throws MismatchedArrayLengths {
+      IntVar[] times, long[] demands, long minLevel, long maxLevel) {
     if (times.length != demands.length) {
-      throw new MismatchedArrayLengths("addReservoirConstraint", "times", "demands");
+      throw new MismatchedArrayLengths("CpModel.addReservoirConstraint", "times", "demands");
+    }
+    if (minLevel > 0) {
+      throw new IllegalArgumentException("CpModel.addReservoirConstraint: minLevel must be <= 0");
+    }
+    if (maxLevel < 0) {
+      throw new IllegalArgumentException("CpModel.addReservoirConstraint: maxLevel must be >= 0");
     }
     Constraint ct = new Constraint(modelBuilder);
     ReservoirConstraintProto.Builder reservoir = ct.getBuilder().getReservoirBuilder();
@@ -542,42 +564,50 @@ public final class CpModel {
    * @see #addReservoirConstraint(IntVar[], long[], long, long) Reservoir
    */
   public Constraint addReservoirConstraint(
-      IntVar[] times, int[] demands, long minLevel, long maxLevel) throws MismatchedArrayLengths {
+      IntVar[] times, int[] demands, long minLevel, long maxLevel) {
     return addReservoirConstraint(times, toLongArray(demands), minLevel, maxLevel);
   }
 
   /**
    * Adds {@code Reservoir(times, demands, actives, minLevel, maxLevel)}.
    *
-   * <p>Maintains a reservoir level within bounds. The water level starts at 0, and at any non
-   * negative time , it must be between minLevel and maxLevel. Furthermore, this constraints expect
-   * all times variables to be non negative. If actives[i] is true, and if times[i] is assigned a
-   * value t, then the current level changes by demands[i] (which is constant) at the time t.
+   * <p>Maintains a reservoir level within bounds. The water level starts at 0, and at any time, it
+   * must be between minLevel and maxLevel. If the variable {@code times[i]} is assigned a value t,
+   * then the current level changes by {@code demands[i]} (which is constant) at the time t.
    *
-   * <p>Note that {@code minLevel} can be greater than 0, or {@code maxLevel} can be less than 0. It
-   * just forces some demands to be executed at time 0 to make sure that we are within those bounds
-   * with the executed demands. Therefore, {@code forall t >= 0: minLevel <= sum(demands[i] *
-   * actives[i] if times[i] <= t) <= maxLevel}.
+   * <p>Note that {@code minLevel} must be less than 0, and {@code maxLevel} must be greater than 0.
+   * Therefore, {@code forall t : minLevel <= sum(demands[i] * actives[i] if times[i] <= t) <=
+   * maxLevel}.
    *
-   * @param times a list of positive integer variables which specify the time of the filling or
-   *     emptying the reservoir
+   * @param times a list of integer variables which specify the time of the filling or emptying the
+   *     reservoir
    * @param demands a list of integer values that specifies the amount of the emptying or feeling
-   * @param actives a list of integer variables that specifies if the operation actually takes
-   *     place.
-   * @param minLevel at any non negative time, the level of the reservoir must be greater of equal
-   *     than the min level
-   * @param maxLevel at any non negative time, the level of the reservoir must be less or equal than
-   *     the max level
+   * @param minLevel at any time, the level of the reservoir must be greater of equal than the min
+   *     level. minLevel must me <= 0.
+   * @param maxLevel at any time, the level of the reservoir must be less or equal than the max
+   *     level. maxLevel must be >= 0.
    * @return an instance of the Constraint class
    * @throws MismatchedArrayLengths if times, demands, or actives have different length
+   * @throws IllegalArgumentException if minLevel > 0
+   * @throws IllegalArgumentException if maxLevel < 0
    */
-  public Constraint addReservoirConstraintWithActive(IntVar[] times, long[] demands,
-      IntVar[] actives, long minLevel, long maxLevel) throws MismatchedArrayLengths {
+  public Constraint addReservoirConstraintWithActive(
+      IntVar[] times, long[] demands, IntVar[] actives, long minLevel, long maxLevel) {
     if (times.length != demands.length) {
-      throw new MismatchedArrayLengths("addReservoirConstraint", "times", "demands");
+      throw new MismatchedArrayLengths(
+          "CpModel.addReservoirConstraintWithActive", "times", "demands");
     }
     if (times.length != actives.length) {
-      throw new MismatchedArrayLengths("addReservoirConstraint", "times", "actives");
+      throw new MismatchedArrayLengths(
+          "CpModel.addReservoirConstraintWithActive", "times", "actives");
+    }
+    if (minLevel > 0) {
+      throw new IllegalArgumentException(
+          "CpModel.addReservoirConstraintWithActive: minLevel must be <= 0");
+    }
+    if (maxLevel < 0) {
+      throw new IllegalArgumentException(
+          "CpModel.addReservoirConstraintWithActive: maxLevel must be >= 0");
     }
 
     Constraint ct = new Constraint(modelBuilder);
@@ -600,8 +630,8 @@ public final class CpModel {
    *
    * @see #addReservoirConstraintWithActive(IntVar[], long[], IntVar[], long, long) Reservoir
    */
-  public Constraint addReservoirConstraintWithActive(IntVar[] times, int[] demands,
-      IntVar[] actives, long minLevel, long maxLevel) throws MismatchedArrayLengths {
+  public Constraint addReservoirConstraintWithActive(
+      IntVar[] times, int[] demands, IntVar[] actives, long minLevel, long maxLevel) {
     return addReservoirConstraintWithActive(
         times, toLongArray(demands), actives, minLevel, maxLevel);
   }
@@ -694,61 +724,54 @@ public final class CpModel {
   // Scheduling support.
 
   /**
-   * Creates an interval variable from start, size, and end.
+   * Creates an interval variable from three affine expressions start, size, and end.
    *
    * <p>An interval variable is a constraint, that is itself used in other constraints like
    * NoOverlap.
    *
    * <p>Internally, it ensures that {@code start + size == end}.
    *
-   * @param start the start of the interval
-   * @param size the size of the interval
-   * @param end the end of the interval
+   * @param start the start of the interval. It needs to be an affine or constant expression.
+   * @param size the size of the interval. It needs to be an affine or constant expression.
+   * @param end the end of the interval. It needs to be an affine or constant expression.
    * @param name the name of the interval variable
    * @return An IntervalVar object
    */
-  public IntervalVar newIntervalVar(IntVar start, IntVar size, IntVar end, String name) {
-    return new IntervalVar(modelBuilder, start.getIndex(), size.getIndex(), end.getIndex(), name);
+  public IntervalVar newIntervalVar(
+      LinearExpr start, LinearExpr size, LinearExpr end, String name) {
+    addEquality(new Sum(start, size), end);
+    return new IntervalVar(modelBuilder, getLinearExpressionProtoBuilderFromLinearExpr(start),
+        getLinearExpressionProtoBuilderFromLinearExpr(size),
+        getLinearExpressionProtoBuilderFromLinearExpr(end), name);
   }
 
   /**
-   * Creates an interval variable with a fixed end.
+   * Creates an interval variable from an affine expression start, and a fixed size.
    *
-   * @see #newIntervalVar(IntVar, IntVar, IntVar, String) newIntervalVar
-   */
-  public IntervalVar newIntervalVar(IntVar start, IntVar size, long end, String name) {
-    return new IntervalVar(
-        modelBuilder, start.getIndex(), size.getIndex(), indexFromConstant(end), name);
-  }
-
-  /**
-   * Creates an interval variable with a fixed size.
+   * <p>An interval variable is a constraint, that is itself used in other constraints like
+   * NoOverlap.
    *
-   * @see #newIntervalVar(IntVar, IntVar, IntVar, String) newIntervalVar
+   * @param start the start of the interval. It needs to be an affine or constant expression.
+   * @param size the fixed size of the interval.
+   * @param name the name of the interval variable.
+   * @return An IntervalVar object
    */
-  public IntervalVar newIntervalVar(IntVar start, long size, IntVar end, String name) {
-    return new IntervalVar(
-        modelBuilder, start.getIndex(), indexFromConstant(size), end.getIndex(), name);
-  }
-
-  /**
-   * Creates an interval variable with a fixed start.
-   *
-   * @see #newIntervalVar(IntVar, IntVar, IntVar, String) newIntervalVar
-   */
-  public IntervalVar newIntervalVar(long start, IntVar size, IntVar end, String name) {
-    return new IntervalVar(
-        modelBuilder, indexFromConstant(start), size.getIndex(), end.getIndex(), name);
+  public IntervalVar newFixedSizeIntervalVar(LinearExpr start, long size, String name) {
+    return new IntervalVar(modelBuilder, getLinearExpressionProtoBuilderFromLinearExpr(start),
+        getLinearExpressionProtoBuilderFromLong(size),
+        getLinearExpressionProtoBuilderFromLinearExpr(new Sum(start, size)), name);
   }
 
   /** Creates a fixed interval from its start and its size. */
   public IntervalVar newFixedInterval(long start, long size, String name) {
-    return new IntervalVar(modelBuilder, indexFromConstant(start), indexFromConstant(size),
-        indexFromConstant(start + size), name);
+    return new IntervalVar(modelBuilder, getLinearExpressionProtoBuilderFromLong(start),
+        getLinearExpressionProtoBuilderFromLong(size),
+        getLinearExpressionProtoBuilderFromLong(start + size), name);
   }
 
   /**
-   * Creates an optional interval variable from start, size, end, and isPresent.
+   * Creates an optional interval variable from three affine expressions start, size, end, and
+   * isPresent.
    *
    * <p>An optional interval variable is a constraint, that is itself used in other constraints like
    * NoOverlap. This constraint is protected by an {@code isPresent} literal that indicates if it is
@@ -756,58 +779,49 @@ public final class CpModel {
    *
    * <p>Internally, it ensures that {@code isPresent => start + size == end}.
    *
-   * @param start the start of the interval. It can be an integer value, or an integer variable.
-   * @param size the size of the interval. It can be an integer value, or an integer variable.
-   * @param end the end of the interval. It can be an integer value, or an integer variable.
+   * @param start the start of the interval. It needs to be an affine or constant expression.
+   * @param size the size of the interval. It needs to be an affine or constant expression.
+   * @param end the end of the interval. It needs to be an affine or constant expression.
    * @param isPresent a literal that indicates if the interval is active or not. A inactive interval
    *     is simply ignored by all constraints.
    * @param name The name of the interval variable
    * @return an IntervalVar object
    */
   public IntervalVar newOptionalIntervalVar(
-      IntVar start, IntVar size, IntVar end, Literal isPresent, String name) {
-    return new IntervalVar(modelBuilder, start.getIndex(), size.getIndex(), end.getIndex(),
-        isPresent.getIndex(), name);
+      LinearExpr start, LinearExpr size, LinearExpr end, Literal isPresent, String name) {
+    addEquality(new Sum(start, size), end).onlyEnforceIf(isPresent);
+    return new IntervalVar(modelBuilder, getLinearExpressionProtoBuilderFromLinearExpr(start),
+        getLinearExpressionProtoBuilderFromLinearExpr(size),
+        getLinearExpressionProtoBuilderFromLinearExpr(end), isPresent.getIndex(), name);
   }
 
   /**
-   * Creates an optional interval with a fixed end.
+   * Creates an optional interval variable from an affine expression start, and a fixed size.
    *
-   * @see #newOptionalIntervalVar(IntVar, IntVar, IntVar, Literal, String) newOptionalIntervalVar
+   * <p>An interval variable is a constraint, that is itself used in other constraints like
+   * NoOverlap.
+   *
+   * @param start the start of the interval. It needs to be an affine or constant expression.
+   * @param size the fixed size of the interval.
+   * @param isPresent a literal that indicates if the interval is active or not. A inactive interval
+   *     is simply ignored by all constraints.
+   * @param name the name of the interval variable.
+   * @return An IntervalVar object
    */
-  public IntervalVar newOptionalIntervalVar(
-      IntVar start, IntVar size, long end, Literal isPresent, String name) {
-    return new IntervalVar(modelBuilder, start.getIndex(), size.getIndex(), indexFromConstant(end),
-        isPresent.getIndex(), name);
+  public IntervalVar newOptionalFixedSizeIntervalVar(
+      LinearExpr start, long size, Literal isPresent, String name) {
+    return new IntervalVar(modelBuilder, getLinearExpressionProtoBuilderFromLinearExpr(start),
+        getLinearExpressionProtoBuilderFromLong(size),
+        getLinearExpressionProtoBuilderFromLinearExpr(new Sum(start, size)), isPresent.getIndex(),
+        name);
   }
 
-  /**
-   * Creates an optional interval with a fixed size.
-   *
-   * @see #newOptionalIntervalVar(IntVar, IntVar, IntVar, Literal, String) newOptionalIntervalVar
-   */
-  public IntervalVar newOptionalIntervalVar(
-      IntVar start, long size, IntVar end, Literal isPresent, String name) {
-    return new IntervalVar(modelBuilder, start.getIndex(), indexFromConstant(size), end.getIndex(),
-        isPresent.getIndex(), name);
-  }
-
-  /** Creates an optional interval with a fixed start. */
-  public IntervalVar newOptionalIntervalVar(
-      long start, IntVar size, IntVar end, Literal isPresent, String name) {
-    return new IntervalVar(modelBuilder, indexFromConstant(start), size.getIndex(), end.getIndex(),
-        isPresent.getIndex(), name);
-  }
-
-  /**
-   * Creates an optional fixed interval from start and size.
-   *
-   * @see #newOptionalIntervalVar(IntVar, IntVar, IntVar, Literal, String) newOptionalIntervalVar
-   */
+  /** Creates an optional fixed interval from start and size, and an isPresent literal. */
   public IntervalVar newOptionalFixedInterval(
       long start, long size, Literal isPresent, String name) {
-    return new IntervalVar(modelBuilder, indexFromConstant(start), indexFromConstant(size),
-        indexFromConstant(start + size), isPresent.getIndex(), name);
+    return new IntervalVar(modelBuilder, getLinearExpressionProtoBuilderFromLong(start),
+        getLinearExpressionProtoBuilderFromLong(size),
+        getLinearExpressionProtoBuilderFromLong(start + size), isPresent.getIndex(), name);
   }
 
   /**
@@ -956,6 +970,28 @@ public final class CpModel {
     modelBuilder.getSolutionHintBuilder().addValues(value);
   }
 
+  /** Remove all solution hints */
+  public void clearHints() {
+    modelBuilder.clearSolutionHint();
+  }
+
+  /** Adds a literal to the model as assumption */
+  public void addAssumption(Literal lit) {
+    modelBuilder.addAssumptions(lit.getIndex());
+  }
+
+  /** Adds multiple literals to the model as assumptions */
+  public void addAssumptions(Literal[] literals) {
+    for (Literal lit : literals) {
+      addAssumption(lit);
+    }
+  }
+
+  /** Remove all assumptions from the model */
+  public void clearAssumptions() {
+    modelBuilder.clearAssumptions();
+  }
+
   // Objective.
 
   /** Adds a minimization objective of a linear expression. */
@@ -964,6 +1000,7 @@ public final class CpModel {
     for (int i = 0; i < expr.numElements(); ++i) {
       obj.addVars(expr.getVariable(i).getIndex()).addCoeffs(expr.getCoefficient(i));
     }
+    obj.setOffset(expr.getOffset());
   }
 
   /** Adds a maximization objective of a linear expression. */
@@ -972,6 +1009,7 @@ public final class CpModel {
     for (int i = 0; i < expr.numElements(); ++i) {
       obj.addVars(expr.getVariable(i).getIndex()).addCoeffs(-expr.getCoefficient(i));
     }
+    obj.setOffset(-expr.getOffset());
     obj.setScalingFactor(-1.0);
   }
 
@@ -990,17 +1028,24 @@ public final class CpModel {
 
   /** Returns some statistics on model as a string. */
   public String modelStats() {
-    return SatHelper.modelStats(model());
+    return CpSatHelper.modelStats(model());
   }
 
   /** Returns a non empty string explaining the issue if the model is invalid. */
   public String validate() {
-    return SatHelper.validateModel(model());
+    return CpSatHelper.validateModel(model());
   }
 
-  /** Write the model as a ascii protocol buffer to 'file'. */
+  /**
+   * Write the model as a protocol buffer to 'file'.
+   *
+   * @param file file to write the model to. If the filename ends with 'txt', the
+   *    model will be written as a text file, otherwise, the binary format will be used.
+   *
+   * @return true if the model was correctly written.
+   */
   public Boolean exportToFile(String file) {
-    return SatHelper.writeModelToFile(model(), file);
+    return CpSatHelper.writeModelToFile(model(), file);
   }
 
   // Helpers
@@ -1014,9 +1059,25 @@ public final class CpModel {
   }
 
   int indexFromConstant(long constant) {
-    int index = modelBuilder.getVariablesCount();
-    modelBuilder.addVariablesBuilder().addDomain(constant).addDomain(constant);
-    return index;
+    IntVar constVar = newConstant(constant);
+    return constVar.getIndex();
+  }
+
+  LinearExpressionProto.Builder getLinearExpressionProtoBuilderFromLinearExpr(LinearExpr expr) {
+    LinearExpressionProto.Builder builder = LinearExpressionProto.newBuilder();
+    final int numVariables = expr.numElements();
+    for (int i = 0; i < numVariables; ++i) {
+      builder.addVars(expr.getVariable(i).getIndex());
+      builder.addCoeffs(expr.getCoefficient(i));
+    }
+    builder.setOffset(expr.getOffset());
+    return builder;
+  }
+
+  LinearExpressionProto.Builder getLinearExpressionProtoBuilderFromLong(long value) {
+    LinearExpressionProto.Builder builder = LinearExpressionProto.newBuilder();
+    builder.setOffset(value);
+    return builder;
   }
 
   // Getters.
@@ -1035,4 +1096,5 @@ public final class CpModel {
   }
 
   private final CpModelProto.Builder modelBuilder;
+  private final Map<Long, IntVar> constantMap;
 }

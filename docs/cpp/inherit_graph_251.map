@@ -1,3 +1,11 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$structoperations__research_1_1glop_1_1_doubleton_equality_row_preprocessor_1_1_restore_info_1_1_col_choice_and_status.html" title=" " alt="" coords="5,5,260,47"/>
+<area shape="rect" id="node1" title=" " alt="" coords="5,242,89,269"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1_g_scip_parameters___bool_params_entry___do_not_use.html" title=" " alt="" coords="142,5,361,47"/>
+<area shape="rect" id="node3" href="$classoperations__research_1_1_g_scip_parameters___char_params_entry___do_not_use.html" title=" " alt="" coords="141,71,361,112"/>
+<area shape="rect" id="node4" href="$classoperations__research_1_1_g_scip_parameters___int_params_entry___do_not_use.html" title=" " alt="" coords="148,136,355,177"/>
+<area shape="rect" id="node5" href="$classoperations__research_1_1_g_scip_parameters___long_params_entry___do_not_use.html" title=" " alt="" coords="141,201,362,243"/>
+<area shape="rect" id="node6" href="$classoperations__research_1_1_g_scip_parameters___real_params_entry___do_not_use.html" title=" " alt="" coords="142,267,361,308"/>
+<area shape="rect" id="node7" href="$classoperations__research_1_1_g_scip_parameters___string_params_entry___do_not_use.html" title=" " alt="" coords="137,332,365,373"/>
+<area shape="rect" id="node8" href="$classoperations__research_1_1_m_p_model_delta_proto___constraint_overrides_entry___do_not_use.html" title=" " alt="" coords="139,397,364,439"/>
+<area shape="rect" id="node9" href="$classoperations__research_1_1_m_p_model_delta_proto___variable_overrides_entry___do_not_use.html" title=" " alt="" coords="145,463,357,504"/>
 </map>

@@ -205,6 +205,7 @@ proto_library(
     deps = [
         ":routing_enums_proto",
         ":solver_parameters_proto",
+        "//ortools/sat:sat_parameters_proto",
         "//ortools/util:optional_boolean_proto",
         "@com_google_protobuf//:duration_proto",
     ],
@@ -284,8 +285,8 @@ cc_library(
     deps = [
         ":routing_types",
         "//ortools/base",
-        "//ortools/base:strong_vector",
         "//ortools/base:map_util",
+        "//ortools/base:strong_vector",
         "@com_google_absl//absl/container:flat_hash_set",
     ],
 )
@@ -295,6 +296,7 @@ cc_library(
     srcs = [
         "routing.cc",
         "routing_breaks.cc",
+        "routing_filters.cc",
         "routing_flow.cc",
         "routing_lp_scheduling.cc",
         "routing_neighborhoods.cc",
@@ -303,8 +305,10 @@ cc_library(
     ],
     hdrs = [
         "routing.h",
+        "routing_filters.h",
         "routing_lp_scheduling.h",
         "routing_neighborhoods.h",
+        "routing_search.h",
     ],
     visibility = ["//visibility:public"],
     deps = [

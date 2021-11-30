@@ -1,0 +1,36 @@
+name: Make MacOS Python
+
+on: [push, pull_request]
+
+jobs:
+  # Building using the github runner environement directly.
+  make:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install brew Make
+      run: |
+        brew install make
+        echo "/usr/local/opt/make/libexec/gnubin" >> $GITHUB_PATH
+    - name: Install python3 packages
+      run: python3 -m pip install --user mypy-protobuf absl-py
+    - name: Swig install
+      run: brew install swig
+    - name: Check swig
+      run: swig -version
+    - name: Check make
+      run: make --version
+    - name: Check system
+      run: make detect_port
+    - name: Check Python
+      run: make detect_python
+    - name: Build third party
+      run: make third_party -j4
+    - name: Build C++
+      run: make cc -j4
+    - name: Build Python
+      run: make python -j4
+    - name: Test Python
+      run: make test_python -j4
+    - name: Create wheel package
+      run: make package_python

@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -31,6 +31,9 @@
 #include <string>
 #include <vector>
 
+#include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
+#include "absl/flags/usage.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
 #include "ortools/base/commandlineflags.h"
@@ -63,10 +66,10 @@ class ShiftMinimizationParser {
         num_workers_read_(0) {}
 
   const std::vector<Job>& jobs() const { return jobs_; }
-  const std::vector<std::vector<int> >& possible_jobs_per_worker() const {
+  const std::vector<std::vector<int>>& possible_jobs_per_worker() const {
     return possible_jobs_per_worker_;
   }
-  const std::vector<std::vector<Assignment> >& possible_assignments_per_job()
+  const std::vector<std::vector<Assignment>>& possible_assignments_per_job()
       const {
     return possible_assignments_per_job_;
   }
@@ -160,8 +163,8 @@ class ShiftMinimizationParser {
   }
 
   std::vector<Job> jobs_;
-  std::vector<std::vector<int> > possible_jobs_per_worker_;
-  std::vector<std::vector<Assignment> > possible_assignments_per_job_;
+  std::vector<std::vector<int>> possible_jobs_per_worker_;
+  std::vector<std::vector<Assignment>> possible_assignments_per_job_;
   LoadStatus load_status_;
   int declared_num_jobs_;
   int declared_num_workers_;
@@ -186,8 +189,8 @@ void LoadAndSolve(const std::string& file_name) {
   const int num_jobs = jobs.size();
 
   std::vector<BoolVar> active_workers(num_workers);
-  std::vector<std::vector<BoolVar> > worker_job_vars(num_workers);
-  std::vector<std::vector<BoolVar> > possible_workers_per_job(num_jobs);
+  std::vector<std::vector<BoolVar>> worker_job_vars(num_workers);
+  std::vector<std::vector<BoolVar>> possible_workers_per_job(num_jobs);
 
   for (int w = 0; w < num_workers; ++w) {
     // Status variables for workers, are they active or not?
@@ -235,7 +238,7 @@ void LoadAndSolve(const std::string& file_name) {
   //   then the number of active workers on these jobs is equal to the number of
   //   active jobs.
   std::set<int> time_points;
-  std::set<std::vector<int> > visited_job_lists;
+  std::set<std::vector<int>> visited_job_lists;
 
   for (int j = 0; j < num_jobs; ++j) {
     time_points.insert(parser.jobs()[j].start);
@@ -302,7 +305,9 @@ void LoadAndSolve(const std::string& file_name) {
 
 int main(int argc, char** argv) {
   absl::SetFlag(&FLAGS_logtostderr, true);
+  google::InitGoogleLogging(argv[0]);
   absl::ParseCommandLine(argc, argv);
+
   if (absl::GetFlag(FLAGS_input).empty()) {
     LOG(FATAL) << "Please supply a data file with --input=";
   }

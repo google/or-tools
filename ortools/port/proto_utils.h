@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,51 +16,37 @@
 
 #include <string>
 
-#ifndef __PORTABLE_PLATFORM__
+#if !defined(__PORTABLE_PLATFORM__)
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/text_format.h"
-#endif
+#endif  // !defined(__PORTABLE_PLATFORM__)
 
 #include "absl/strings/str_cat.h"
 
 namespace operations_research {
+template <class P>
+std::string ProtobufDebugString(const P& message) {
 #if defined(__PORTABLE_PLATFORM__)
-template <class P>
-std::string ProtobufDebugString(const P& message) {
   return message.GetTypeName();
-}
-
-template <class P>
-std::string ProtobufShortDebugString(const P& message) {
-  return message.GetTypeName();
-}
-
-template <typename ProtoEnumType>
-std::string ProtoEnumToString(ProtoEnumType enum_value) {
-  return absl::StrCat(enum_value);
-}
-
-template <typename ProtoType>
-bool ProtobufTextFormatMergeFromString(const std::string& proto_text_string
-                                           ABSL_ATTRIBUTE_UNUSED,
-                                       ProtoType* proto ABSL_ATTRIBUTE_UNUSED) {
-  return false;
-}
-
-#else  // __PORTABLE_PLATFORM__
-
-template <class P>
-std::string ProtobufDebugString(const P& message) {
+#else   // defined(__PORTABLE_PLATFORM__)
   return message.DebugString();
+#endif  // !defined(__PORTABLE_PLATFORM__)
 }
 
 template <class P>
 std::string ProtobufShortDebugString(const P& message) {
+#if defined(__PORTABLE_PLATFORM__)
+  return message.GetTypeName();
+#else   // defined(__PORTABLE_PLATFORM__)
   return message.ShortDebugString();
+#endif  // !defined(__PORTABLE_PLATFORM__)
 }
 
 template <typename ProtoEnumType>
 std::string ProtoEnumToString(ProtoEnumType enum_value) {
+#if defined(__PORTABLE_PLATFORM__)
+  return absl::StrCat(enum_value);
+#else   // defined(__PORTABLE_PLATFORM__)
   auto enum_descriptor = google::protobuf::GetEnumDescriptor<ProtoEnumType>();
   auto enum_value_descriptor = enum_descriptor->FindValueByNumber(enum_value);
   if (enum_value_descriptor == nullptr) {
@@ -69,16 +55,19 @@ std::string ProtoEnumToString(ProtoEnumType enum_value) {
         google::protobuf::GetEnumDescriptor<ProtoEnumType>()->name());
   }
   return enum_value_descriptor->name();
+#endif  // !defined(__PORTABLE_PLATFORM__)
 }
 
 template <typename ProtoType>
 bool ProtobufTextFormatMergeFromString(const std::string& proto_text_string,
                                        ProtoType* proto) {
+#if defined(__PORTABLE_PLATFORM__)
+  return false;
+#else   // defined(__PORTABLE_PLATFORM__)
   return google::protobuf::TextFormat::MergeFromString(proto_text_string,
                                                        proto);
+#endif  // !defined(__PORTABLE_PLATFORM__)
 }
-
-#endif  // !__PORTABLE_PLATFORM__
 
 }  // namespace operations_research
 

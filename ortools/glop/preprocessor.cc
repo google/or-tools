@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,9 +13,12 @@
 
 #include "ortools/glop/preprocessor.h"
 
+#include <cstdint>
 #include <limits>
 
 #include "absl/strings/str_format.h"
+#include "ortools/base/iterator_adaptors.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/glop/revised_simplex.h"
 #include "ortools/glop/status.h"
 #include "ortools/lp_data/lp_data_utils.h"
@@ -85,7 +88,9 @@ bool MainLpPreprocessor::Run(LinearProgram* lp) {
       // which has exactly the same meaning for these particular preprocessors.
       if (preprocessors_.size() == old_stack_size) {
         // We use i here because the last pass did nothing.
-        VLOG(1) << "Reached fixed point after presolve pass #" << i;
+        if (parameters_.log_search_progress() || VLOG_IS_ON(1)) {
+          LOG(INFO) << "Reached fixed point after presolve pass #" << i;
+        }
         break;
       }
     }
@@ -116,11 +121,9 @@ bool MainLpPreprocessor::Run(LinearProgram* lp) {
     RUN_PREPROCESSOR(SingletonColumnSignPreprocessor);
   }
 
-  // The scaling is controled by use_scaling, not use_preprocessing.
+  // The scaling is controlled by use_scaling, not use_preprocessing.
   RUN_PREPROCESSOR(ScalingPreprocessor);
 
-  // This one must always run. It is needed by the revised simplex code.
-  RUN_PREPROCESSOR(AddSlackVariablesPreprocessor);
   return !preprocessors_.empty();
 }
 
@@ -143,19 +146,23 @@ void MainLpPreprocessor::RunAndPushIfRelevant(
     return;
   }
 
+  const bool log_info = parameters_.log_search_progress() || VLOG_IS_ON(1);
   if (preprocessor->Run(lp)) {
     const EntryIndex new_num_entries = lp->num_entries();
     const double preprocess_time = time_limit->GetElapsedTime() - start_time;
-    VLOG(1) << absl::StrFormat(
-        "%s(%fs): %d(%d) rows, %d(%d) columns, %d(%d) entries.", name,
-        preprocess_time, lp->num_constraints().value(),
-        (lp->num_constraints() - initial_num_rows_).value(),
-        lp->num_variables().value(),
-        (lp->num_variables() - initial_num_cols_).value(),
-        // static_cast<int64> is needed because the Android port uses int32.
-        static_cast<int64>(new_num_entries.value()),
-        static_cast<int64>(new_num_entries.value() -
-                           initial_num_entries_.value()));
+    if (log_info) {
+      LOG(INFO) << absl::StrFormat(
+          "%s(%fs): %d(%d) rows, %d(%d) columns, %d(%d) entries.", name,
+          preprocess_time, lp->num_constraints().value(),
+          (lp->num_constraints() - initial_num_rows_).value(),
+          lp->num_variables().value(),
+          (lp->num_variables() - initial_num_cols_).value(),
+          // static_cast<int64_t> is needed because the Android port uses
+          // int32_t.
+          static_cast<int64_t>(new_num_entries.value()),
+          static_cast<int64_t>(new_num_entries.value() -
+                               initial_num_entries_.value()));
+    }
     status_ = preprocessor->status();
     preprocessors_.push_back(std::move(preprocessor));
     return;
@@ -163,14 +170,21 @@ void MainLpPreprocessor::RunAndPushIfRelevant(
     // Even if a preprocessor returns false (i.e. no need for postsolve), it
     // can detect an issue with the problem.
     status_ = preprocessor->status();
-    if (status_ != ProblemStatus::INIT) {
-      VLOG(1) << name << " detected that the problem is "
-              << GetProblemStatusString(status_);
+    if (status_ != ProblemStatus::INIT && log_info) {
+      LOG(INFO) << name << " detected that the problem is "
+                << GetProblemStatusString(status_);
     }
   }
 }
 
 void MainLpPreprocessor::RecoverSolution(ProblemSolution* solution) const {
+  SCOPED_INSTRUCTION_COUNT(time_limit_);
+  for (const auto& p : gtl::reversed_view(preprocessors_)) {
+    p->RecoverSolution(solution);
+  }
+}
+
+void MainLpPreprocessor::DestructiveRecoverSolution(ProblemSolution* solution) {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   while (!preprocessors_.empty()) {
     preprocessors_.back()->RecoverSolution(solution);
@@ -181,6 +195,31 @@ void MainLpPreprocessor::RecoverSolution(ProblemSolution* solution) const {
 // --------------------------------------------------------
 // ColumnDeletionHelper
 // --------------------------------------------------------
+
+void ColumnsSaver::SaveColumn(ColIndex col, const SparseColumn& column) {
+  const int index = saved_columns_.size();
+  CHECK(saved_columns_index_.insert({col, index}).second);
+  saved_columns_.push_back(column);
+}
+
+void ColumnsSaver::SaveColumnIfNotAlreadyDone(ColIndex col,
+                                              const SparseColumn& column) {
+  const int index = saved_columns_.size();
+  const bool inserted = saved_columns_index_.insert({col, index}).second;
+  if (inserted) saved_columns_.push_back(column);
+}
+
+const SparseColumn& ColumnsSaver::SavedColumn(ColIndex col) const {
+  const auto it = saved_columns_index_.find(col);
+  CHECK(it != saved_columns_index_.end());
+  return saved_columns_[it->second];
+}
+
+const SparseColumn& ColumnsSaver::SavedOrEmptyColumn(ColIndex col) const {
+  const auto it = saved_columns_index_.find(col);
+  return it == saved_columns_index_.end() ? empty_column_
+                                          : saved_columns_[it->second];
+}
 
 void ColumnDeletionHelper::Clear() {
   is_column_deleted_.clear();
@@ -397,15 +436,17 @@ namespace {
 
 // Subtracts 'multiple' times the column col of the given linear program from
 // the constraint bounds. That is, for a non-zero entry of coefficient c,
-// c * multiple is substracted from both the constraint upper and lower bound.
+// c * multiple is subtracted from both the constraint upper and lower bound.
 void SubtractColumnMultipleFromConstraintBound(ColIndex col,
                                                Fractional multiple,
                                                LinearProgram* lp) {
+  DenseColumn* lbs = lp->mutable_constraint_lower_bounds();
+  DenseColumn* ubs = lp->mutable_constraint_upper_bounds();
   for (const SparseColumn::Entry e : lp->GetSparseColumn(col)) {
     const RowIndex row = e.row();
     const Fractional delta = multiple * e.coefficient();
-    lp->SetConstraintBounds(row, lp->constraint_lower_bounds()[row] - delta,
-                            lp->constraint_upper_bounds()[row] - delta);
+    (*lbs)[row] -= delta;
+    (*ubs)[row] -= delta;
   }
   // While not needed for correctness, this allows the presolved problem to
   // have the same objective value as the original one.
@@ -1150,7 +1191,6 @@ bool ForcingAndImpliedFreeConstraintPreprocessor::Run(LinearProgram* lp) {
   if (num_forcing_constraints > 0) {
     VLOG(1) << num_forcing_constraints << " forcing constraints.";
     lp_is_maximization_problem_ = lp->IsMaximizationProblem();
-    deleted_columns_.PopulateFromZero(num_rows, num_cols);
     costs_.resize(num_cols, 0.0);
     for (ColIndex col(0); col < num_cols; ++col) {
       const SparseColumn& column = lp->GetSparseColumn(col);
@@ -1207,7 +1247,7 @@ bool ForcingAndImpliedFreeConstraintPreprocessor::Run(LinearProgram* lp) {
         column_deletion_helper_.MarkColumnForDeletionWithState(
             col, target_bound,
             ComputeVariableStatus(target_bound, lower, upper));
-        deleted_columns_.mutable_column(col)->PopulateFromSparseVector(column);
+        columns_saver_.SaveColumn(col, column);
         costs_[col] = lp->objective_coefficients()[col];
       }
     }
@@ -1236,18 +1276,38 @@ void ForcingAndImpliedFreeConstraintPreprocessor::RecoverSolution(
   column_deletion_helper_.RestoreDeletedColumns(solution);
   row_deletion_helper_.RestoreDeletedRows(solution);
 
+  struct DeletionEntry {
+    RowIndex row;
+    ColIndex col;
+    Fractional coefficient;
+  };
+  std::vector<DeletionEntry> entries;
+
   // Compute for each deleted columns the last deleted row in which it appears.
-  const ColIndex num_cols = deleted_columns_.num_cols();
-  ColToRowMapping last_deleted_row(num_cols, kInvalidRow);
-  for (ColIndex col(0); col < num_cols; ++col) {
+  const ColIndex size = column_deletion_helper_.GetMarkedColumns().size();
+  for (ColIndex col(0); col < size; ++col) {
     if (!column_deletion_helper_.IsColumnMarked(col)) continue;
-    for (const SparseColumn::Entry e : deleted_columns_.column(col)) {
+
+    RowIndex last_row = kInvalidRow;
+    Fractional last_coefficient;
+    for (const SparseColumn::Entry e : columns_saver_.SavedColumn(col)) {
       const RowIndex row = e.row();
       if (row_deletion_helper_.IsRowMarked(row)) {
-        last_deleted_row[col] = row;
+        last_row = row;
+        last_coefficient = e.coefficient();
       }
     }
+    if (last_row != kInvalidRow) {
+      entries.push_back({last_row, col, last_coefficient});
+    }
   }
+
+  // Sort by row first and then col.
+  std::sort(entries.begin(), entries.end(),
+            [](const DeletionEntry& a, const DeletionEntry& b) {
+              if (a.row == b.row) return a.col < b.col;
+              return a.row < b.row;
+            });
 
   // For each deleted row (in order), compute a bound on the dual values so
   // that all the deleted columns for which this row is the last deleted row are
@@ -1259,39 +1319,39 @@ void ForcingAndImpliedFreeConstraintPreprocessor::RecoverSolution(
   //    reduced cost of 0.0. This column becomes VariableStatus::BASIC, and the
   //    constraint status is changed to ConstraintStatus::AT_LOWER_BOUND,
   //    ConstraintStatus::AT_UPPER_BOUND or ConstraintStatus::FIXED_VALUE.
-  SparseMatrix transpose;
-  transpose.PopulateFromTranspose(deleted_columns_);
-  const RowIndex num_rows = solution->dual_values.size();
-  for (RowIndex row(0); row < num_rows; ++row) {
-    if (row_deletion_helper_.IsRowMarked(row)) {
-      Fractional new_dual_value = 0.0;
-      ColIndex new_basic_column = kInvalidCol;
-      for (const SparseColumn::Entry e : transpose.column(RowToColIndex(row))) {
-        const ColIndex col = RowToColIndex(e.row());
-        if (last_deleted_row[col] != row) continue;
-        const Fractional scalar_product =
-            ScalarProduct(solution->dual_values, deleted_columns_.column(col));
-        const Fractional reduced_cost = costs_[col] - scalar_product;
-        const Fractional bound = reduced_cost / e.coefficient();
-        if (is_forcing_up_[row] == !lp_is_maximization_problem_) {
-          if (bound < new_dual_value) {
-            new_dual_value = bound;
-            new_basic_column = col;
-          }
-        } else {
-          if (bound > new_dual_value) {
-            new_dual_value = bound;
-            new_basic_column = col;
-          }
+  for (int i = 0; i < entries.size();) {
+    const RowIndex row = entries[i].row;
+    DCHECK(row_deletion_helper_.IsRowMarked(row));
+
+    // Process column with this last deleted row.
+    Fractional new_dual_value = 0.0;
+    ColIndex new_basic_column = kInvalidCol;
+    for (; i < entries.size(); ++i) {
+      if (entries[i].row != row) break;
+      const ColIndex col = entries[i].col;
+
+      const Fractional scalar_product =
+          ScalarProduct(solution->dual_values, columns_saver_.SavedColumn(col));
+      const Fractional reduced_cost = costs_[col] - scalar_product;
+      const Fractional bound = reduced_cost / entries[i].coefficient;
+      if (is_forcing_up_[row] == !lp_is_maximization_problem_) {
+        if (bound < new_dual_value) {
+          new_dual_value = bound;
+          new_basic_column = col;
+        }
+      } else {
+        if (bound > new_dual_value) {
+          new_dual_value = bound;
+          new_basic_column = col;
         }
       }
-      if (new_basic_column != kInvalidCol) {
-        solution->dual_values[row] = new_dual_value;
-        solution->variable_statuses[new_basic_column] = VariableStatus::BASIC;
-        solution->constraint_statuses[row] =
-            is_forcing_up_[row] ? ConstraintStatus::AT_UPPER_BOUND
-                                : ConstraintStatus::AT_LOWER_BOUND;
-      }
+    }
+    if (new_basic_column != kInvalidCol) {
+      solution->dual_values[row] = new_dual_value;
+      solution->variable_statuses[new_basic_column] = VariableStatus::BASIC;
+      solution->constraint_statuses[row] =
+          is_forcing_up_[row] ? ConstraintStatus::AT_UPPER_BOUND
+                              : ConstraintStatus::AT_LOWER_BOUND;
     }
   }
 }
@@ -1391,7 +1451,7 @@ bool ImpliedFreePreprocessor::Run(LinearProgram* lp) {
   for (ColWithDegree col_with_degree : col_by_degree) {
     const ColIndex col = col_with_degree.col;
 
-    // If the variable is alreay free or fixed, we do nothing.
+    // If the variable is already free or fixed, we do nothing.
     const Fractional lower_bound = lp->variable_lower_bounds()[col];
     const Fractional upper_bound = lp->variable_upper_bounds()[col];
     if (!IsFinite(lower_bound) && !IsFinite(upper_bound)) {
@@ -1418,9 +1478,17 @@ bool ImpliedFreePreprocessor::Run(LinearProgram* lp) {
       // variables and of (-activity), then coeff * X + Y = 0. Since Y's bounds
       // are [lb_sum without X, ub_sum without X], it is easy to derive the
       // implied bounds on X.
-      Fractional implied_lb = -ub_sums[e.row()].SumWithout(entry_ub) / coeff;
-      Fractional implied_ub = -lb_sums[e.row()].SumWithout(entry_lb) / coeff;
-      if (coeff < 0.0) std::swap(implied_lb, implied_ub);
+      //
+      // Important: If entry_lb (resp. entry_ub) are large, we cannot have a
+      // good precision on the sum without. So we do add a defensive tolerance
+      // that depends on these magnitude.
+      const Fractional implied_lb =
+          coeff > 0.0 ? -ub_sums[e.row()].SumWithoutUb(entry_ub) / coeff
+                      : -lb_sums[e.row()].SumWithoutLb(entry_lb) / coeff;
+      const Fractional implied_ub =
+          coeff > 0.0 ? -lb_sums[e.row()].SumWithoutLb(entry_lb) / coeff
+                      : -ub_sums[e.row()].SumWithoutUb(entry_ub) / coeff;
+
       overall_implied_lb = std::max(overall_implied_lb, implied_lb);
       overall_implied_ub = std::min(overall_implied_ub, implied_ub);
     }
@@ -1500,6 +1568,7 @@ bool ImpliedFreePreprocessor::Run(LinearProgram* lp) {
   VLOG(1) << num_already_free_variables << " free variables in the problem.";
   VLOG(1) << num_implied_free_variables << " implied free columns.";
   VLOG(1) << num_fixed_variables << " variables can be fixed.";
+
   return num_implied_free_variables > 0;
 }
 
@@ -1714,12 +1783,7 @@ bool IsConstraintBlockingVariable(const LinearProgram& lp, Fractional direction,
 void UnconstrainedVariablePreprocessor::RemoveZeroCostUnconstrainedVariable(
     ColIndex col, Fractional target_bound, LinearProgram* lp) {
   DCHECK_EQ(0.0, lp->objective_coefficients()[col]);
-  if (deleted_rows_as_column_.IsEmpty()) {
-    deleted_columns_.PopulateFromZero(lp->num_constraints(),
-                                      lp->num_variables());
-    deleted_rows_as_column_.PopulateFromZero(
-        ColToRowIndex(lp->num_variables()),
-        RowToColIndex(lp->num_constraints()));
+  if (rhs_.empty()) {
     rhs_.resize(lp->num_constraints(), 0.0);
     activity_sign_correction_.resize(lp->num_constraints(), 1.0);
     is_unbounded_.resize(lp->num_variables(), false);
@@ -1730,10 +1794,9 @@ void UnconstrainedVariablePreprocessor::RemoveZeroCostUnconstrainedVariable(
     const RowIndex row = e.row();
     if (!row_deletion_helper_.IsRowMarked(row)) {
       row_deletion_helper_.MarkRowForDeletion(row);
-      const ColIndex row_as_col = RowToColIndex(row);
-      deleted_rows_as_column_.mutable_column(row_as_col)
-          ->PopulateFromSparseVector(
-              lp->GetTransposeSparseMatrix().column(row_as_col));
+      rows_saver_.SaveColumn(
+          RowToColIndex(row),
+          lp->GetTransposeSparseMatrix().column(RowToColIndex(row)));
     }
     const bool is_constraint_upper_bound_relevant =
         e.coefficient() > 0.0 ? !is_unbounded_up : is_unbounded_up;
@@ -1750,7 +1813,6 @@ void UnconstrainedVariablePreprocessor::RemoveZeroCostUnconstrainedVariable(
   is_unbounded_[col] = true;
   Fractional initial_feasible_value = MinInMagnitudeOrZeroIfInfinite(
       lp->variable_lower_bounds()[col], lp->variable_upper_bounds()[col]);
-  deleted_columns_.mutable_column(col)->PopulateFromSparseVector(column);
   column_deletion_helper_.MarkColumnForDeletionWithState(
       col, initial_feasible_value,
       ComputeVariableStatus(initial_feasible_value,
@@ -1919,14 +1981,16 @@ bool UnconstrainedVariablePreprocessor::Run(LinearProgram* lp) {
       const RowIndex row = e.row();
       if (col_ub == kInfinity) {
         if (c > 0.0) {
-          const Fractional candidate = rc_ub.SumWithout(-c * dual_lb_[row]) / c;
+          const Fractional candidate =
+              rc_ub.SumWithoutUb(-c * dual_lb_[row]) / c;
           if (candidate < dual_ub_[row]) {
             dual_ub_[row] = candidate;
             may_have_participated_lb_[col] = true;
             changed_rows.push_back(row);
           }
         } else {
-          const Fractional candidate = rc_ub.SumWithout(-c * dual_ub_[row]) / c;
+          const Fractional candidate =
+              rc_ub.SumWithoutUb(-c * dual_ub_[row]) / c;
           if (candidate > dual_lb_[row]) {
             dual_lb_[row] = candidate;
             may_have_participated_lb_[col] = true;
@@ -1936,14 +2000,16 @@ bool UnconstrainedVariablePreprocessor::Run(LinearProgram* lp) {
       }
       if (col_lb == -kInfinity) {
         if (c > 0.0) {
-          const Fractional candidate = rc_lb.SumWithout(-c * dual_ub_[row]) / c;
+          const Fractional candidate =
+              rc_lb.SumWithoutLb(-c * dual_ub_[row]) / c;
           if (candidate > dual_lb_[row]) {
             dual_lb_[row] = candidate;
             may_have_participated_ub_[col] = true;
             changed_rows.push_back(row);
           }
         } else {
-          const Fractional candidate = rc_lb.SumWithout(-c * dual_lb_[row]) / c;
+          const Fractional candidate =
+              rc_lb.SumWithoutLb(-c * dual_lb_[row]) / c;
           if (candidate < dual_ub_[row]) {
             dual_ub_[row] = candidate;
             may_have_participated_ub_[col] = true;
@@ -1993,37 +2059,62 @@ void UnconstrainedVariablePreprocessor::RecoverSolution(
   column_deletion_helper_.RestoreDeletedColumns(solution);
   row_deletion_helper_.RestoreDeletedRows(solution);
 
+  struct DeletionEntry {
+    RowIndex row;
+    ColIndex col;
+    Fractional coefficient;
+  };
+  std::vector<DeletionEntry> entries;
+
   // Compute the last deleted column index for each deleted rows.
   const RowIndex num_rows = solution->dual_values.size();
   RowToColMapping last_deleted_column(num_rows, kInvalidCol);
   for (RowIndex row(0); row < num_rows; ++row) {
-    if (row_deletion_helper_.IsRowMarked(row)) {
-      for (const SparseColumn::Entry e :
-           deleted_rows_as_column_.column(RowToColIndex(row))) {
-        const ColIndex col = RowToColIndex(e.row());
-        if (is_unbounded_[col]) {
-          last_deleted_column[row] = col;
-        }
+    if (!row_deletion_helper_.IsRowMarked(row)) continue;
+
+    ColIndex last_col = kInvalidCol;
+    Fractional last_coefficient;
+    for (const SparseColumn::Entry e :
+         rows_saver_.SavedColumn(RowToColIndex(row))) {
+      const ColIndex col = RowToColIndex(e.row());
+      if (is_unbounded_[col]) {
+        last_col = col;
+        last_coefficient = e.coefficient();
       }
+    }
+    if (last_col != kInvalidCol) {
+      entries.push_back({row, last_col, last_coefficient});
     }
   }
 
+  // Sort by col first and then row.
+  std::sort(entries.begin(), entries.end(),
+            [](const DeletionEntry& a, const DeletionEntry& b) {
+              if (a.col == b.col) return a.row < b.row;
+              return a.col < b.col;
+            });
+
   // Note that this will be empty if there were no deleted rows.
-  const ColIndex num_cols = is_unbounded_.size();
-  for (ColIndex col(0); col < num_cols; ++col) {
-    if (!is_unbounded_[col]) continue;
+  for (int i = 0; i < entries.size();) {
+    const ColIndex col = entries[i].col;
+    CHECK(is_unbounded_[col]);
+
     Fractional primal_value_shift = 0.0;
     RowIndex row_at_bound = kInvalidRow;
-    for (const SparseColumn::Entry e : deleted_columns_.column(col)) {
-      const RowIndex row = e.row();
-      // The second condition is for VariableStatus::FREE rows.
-      // TODO(user): In presense of free row, we must move them to 0.
+    for (; i < entries.size(); ++i) {
+      if (entries[i].col != col) break;
+      const RowIndex row = entries[i].row;
+
+      // This is for VariableStatus::FREE rows.
+      //
+      // TODO(user): In presence of free row, we must move them to 0.
       // Note that currently VariableStatus::FREE rows should be removed before
       // this is called.
       DCHECK(IsFinite(rhs_[row]));
-      if (last_deleted_column[row] != col || !IsFinite(rhs_[row])) continue;
+      if (!IsFinite(rhs_[row])) continue;
+
       const SparseColumn& row_as_column =
-          deleted_rows_as_column_.column(RowToColIndex(row));
+          rows_saver_.SavedColumn(RowToColIndex(row));
       const Fractional activity =
           rhs_[row] - ScalarProduct(solution->primal_values, row_as_column);
 
@@ -2032,7 +2123,7 @@ void UnconstrainedVariablePreprocessor::RecoverSolution(
       // Note that by construction, the variable value will move towards its
       // unbounded direction.
       if (activity * activity_sign_correction_[row] < 0.0) {
-        const Fractional bound = activity / e.coefficient();
+        const Fractional bound = activity / entries[i].coefficient;
         if (std::abs(bound) > std::abs(primal_value_shift)) {
           primal_value_shift = bound;
           row_at_bound = row;
@@ -2141,18 +2232,18 @@ SingletonUndo::SingletonUndo(OperationType type, const LinearProgram& lp,
       constraint_status_(status) {}
 
 void SingletonUndo::Undo(const GlopParameters& parameters,
-                         const SparseMatrix& deleted_columns,
-                         const SparseMatrix& deleted_rows,
+                         const SparseColumn& saved_column,
+                         const SparseColumn& saved_row,
                          ProblemSolution* solution) const {
   switch (type_) {
     case SINGLETON_ROW:
-      SingletonRowUndo(deleted_columns, solution);
+      SingletonRowUndo(saved_column, solution);
       break;
     case ZERO_COST_SINGLETON_COLUMN:
-      ZeroCostSingletonColumnUndo(parameters, deleted_rows, solution);
+      ZeroCostSingletonColumnUndo(parameters, saved_row, solution);
       break;
     case SINGLETON_COLUMN_IN_EQUALITY:
-      SingletonColumnInEqualityUndo(parameters, deleted_rows, solution);
+      SingletonColumnInEqualityUndo(parameters, saved_row, solution);
       break;
     case MAKE_CONSTRAINT_AN_EQUALITY:
       MakeConstraintAnEqualityUndo(solution);
@@ -2206,16 +2297,13 @@ void SingletonPreprocessor::DeleteSingletonRow(MatrixEntry e,
   row_deletion_helper_.MarkRowForDeletion(e.row);
   undo_stack_.push_back(SingletonUndo(SingletonUndo::SINGLETON_ROW, *lp, e,
                                       ConstraintStatus::FREE));
-  if (deleted_columns_.column(e.col).IsEmpty()) {
-    deleted_columns_.mutable_column(e.col)->PopulateFromSparseVector(
-        lp->GetSparseColumn(e.col));
-  }
+  columns_saver_.SaveColumnIfNotAlreadyDone(e.col, lp->GetSparseColumn(e.col));
 
   lp->SetVariableBounds(e.col, new_lower_bound, new_upper_bound);
 }
 
 // The dual value of the row needs to be corrected to stay at the optimal.
-void SingletonUndo::SingletonRowUndo(const SparseMatrix& deleted_columns,
+void SingletonUndo::SingletonRowUndo(const SparseColumn& saved_column,
                                      ProblemSolution* solution) const {
   DCHECK_EQ(0, solution->dual_values[e_.row]);
 
@@ -2241,8 +2329,7 @@ void SingletonUndo::SingletonRowUndo(const SparseMatrix& deleted_columns,
   // This is the reduced cost of the variable before the singleton constraint is
   // added back.
   const Fractional reduced_cost =
-      cost_ -
-      ScalarProduct(solution->dual_values, deleted_columns.column(e_.col));
+      cost_ - ScalarProduct(solution->dual_values, saved_column);
   const Fractional reduced_cost_for_minimization =
       is_maximization_ ? -reduced_cost : reduced_cost;
 
@@ -2338,20 +2425,17 @@ bool SingletonPreprocessor::IntegerSingletonColumnIsRemovable(
 void SingletonPreprocessor::DeleteZeroCostSingletonColumn(
     const SparseMatrix& transpose, MatrixEntry e, LinearProgram* lp) {
   const ColIndex transpose_col = RowToColIndex(e.row);
-  const SparseColumn& column = transpose.column(transpose_col);
   undo_stack_.push_back(SingletonUndo(SingletonUndo::ZERO_COST_SINGLETON_COLUMN,
                                       *lp, e, ConstraintStatus::FREE));
-  if (deleted_rows_.column(transpose_col).IsEmpty()) {
-    deleted_rows_.mutable_column(transpose_col)
-        ->PopulateFromSparseVector(column);
-  }
+  const SparseColumn& row_as_col = transpose.column(transpose_col);
+  rows_saver_.SaveColumnIfNotAlreadyDone(RowToColIndex(e.row), row_as_col);
   UpdateConstraintBoundsWithVariableBounds(e, lp);
   column_deletion_helper_.MarkColumnForDeletion(e.col);
 }
 
 // We need to restore the variable value in order to satisfy the constraint.
 void SingletonUndo::ZeroCostSingletonColumnUndo(
-    const GlopParameters& parameters, const SparseMatrix& deleted_rows,
+    const GlopParameters& parameters, const SparseColumn& saved_row,
     ProblemSolution* solution) const {
   // If the variable was fixed, this is easy. Note that this is the only
   // possible case if the current constraint status is FIXED.
@@ -2383,9 +2467,7 @@ void SingletonUndo::ZeroCostSingletonColumnUndo(
 
   // This is the activity of the constraint before the singleton variable is
   // added back to it.
-  const ColIndex row_as_col = RowToColIndex(e_.row);
-  const Fractional activity =
-      ScalarProduct(solution->primal_values, deleted_rows.column(row_as_col));
+  const Fractional activity = ScalarProduct(solution->primal_values, saved_row);
 
   // First we try to fix the variable at its lower or upper bound and leave the
   // constraint VariableStatus::BASIC. Note that we use the same logic as in
@@ -2407,10 +2489,10 @@ void SingletonUndo::ZeroCostSingletonColumnUndo(
     }
   }
   if (variable_upper_bound_ != kInfinity) {
-    const Fractional actibity_at_ub =
+    const Fractional activity_at_ub =
         activity + e_.coeff * variable_upper_bound_;
-    if (is_smaller_with_tolerance(constraint_lower_bound_, actibity_at_ub) &&
-        is_smaller_with_tolerance(actibity_at_ub, constraint_upper_bound_)) {
+    if (is_smaller_with_tolerance(constraint_lower_bound_, activity_at_ub) &&
+        is_smaller_with_tolerance(activity_at_ub, constraint_upper_bound_)) {
       solution->primal_values[e_.col] = variable_upper_bound_;
       solution->variable_statuses[e_.col] = VariableStatus::AT_UPPER_BOUND;
       return;
@@ -2471,13 +2553,12 @@ void SingletonPreprocessor::DeleteSingletonColumnInEquality(
   undo_stack_.push_back(
       SingletonUndo(SingletonUndo::SINGLETON_COLUMN_IN_EQUALITY, *lp, e,
                     ConstraintStatus::FREE));
-  deleted_rows_.mutable_column(transpose_col)
-      ->PopulateFromSparseVector(row_as_column);
+  rows_saver_.SaveColumnIfNotAlreadyDone(RowToColIndex(e.row), row_as_column);
 
   // Update the objective function using the equality constraint. We have
   //     v_col*coeff + expression = rhs,
   // so the contribution of this variable to the cost function (v_col * cost)
-  // can be rewrited as:
+  // can be rewritten as:
   //     (rhs * cost - expression * cost) / coeff.
   const Fractional rhs = lp->constraint_upper_bounds()[e.row];
   const Fractional cost = lp->objective_coefficients()[e.col];
@@ -2507,10 +2588,10 @@ void SingletonPreprocessor::DeleteSingletonColumnInEquality(
 }
 
 void SingletonUndo::SingletonColumnInEqualityUndo(
-    const GlopParameters& parameters, const SparseMatrix& deleted_rows,
+    const GlopParameters& parameters, const SparseColumn& saved_row,
     ProblemSolution* solution) const {
   // First do the same as a zero-cost singleton column.
-  ZeroCostSingletonColumnUndo(parameters, deleted_rows, solution);
+  ZeroCostSingletonColumnUndo(parameters, saved_row, solution);
 
   // Then, restore the dual optimal value taking into account the cost
   // modification.
@@ -2580,11 +2661,11 @@ bool SingletonPreprocessor::MakeConstraintAnEqualityIfPossible(
   // variables.
   const Fractional c = e.coeff;
   const Fractional lb =
-      c > 0.0 ? row_lb_sum_[e.row].SumWithout(-c * variable_ubs[e.col]) / c
-              : row_ub_sum_[e.row].SumWithout(-c * variable_ubs[e.col]) / c;
+      c > 0.0 ? row_lb_sum_[e.row].SumWithoutLb(-c * variable_ubs[e.col]) / c
+              : row_ub_sum_[e.row].SumWithoutUb(-c * variable_ubs[e.col]) / c;
   const Fractional ub =
-      c > 0.0 ? row_ub_sum_[e.row].SumWithout(-c * variable_lbs[e.col]) / c
-              : row_lb_sum_[e.row].SumWithout(-c * variable_lbs[e.col]) / c;
+      c > 0.0 ? row_ub_sum_[e.row].SumWithoutUb(-c * variable_lbs[e.col]) / c
+              : row_lb_sum_[e.row].SumWithoutLb(-c * variable_lbs[e.col]) / c;
 
   // Note that we could do the same for singleton variables with a cost of
   // 0.0, but such variable are already dealt with by
@@ -2688,9 +2769,6 @@ bool SingletonPreprocessor::Run(LinearProgram* lp) {
   // Initialize column_to_process with the current singleton columns.
   ColIndex num_cols(matrix.num_cols());
   RowIndex num_rows(matrix.num_rows());
-  deleted_columns_.PopulateFromZero(num_rows, num_cols);
-  deleted_rows_.PopulateFromZero(ColToRowIndex(num_cols),
-                                 RowToColIndex(num_rows));
   StrictITIVector<ColIndex, EntryIndex> column_degree(num_cols, EntryIndex(0));
   std::vector<ColIndex> column_to_process;
   for (ColIndex col(0); col < num_cols; ++col) {
@@ -2773,7 +2851,11 @@ void SingletonPreprocessor::RecoverSolution(ProblemSolution* solution) const {
   // It is important to undo the operations in the correct order, i.e. in the
   // reverse order in which they were done.
   for (int i = undo_stack_.size() - 1; i >= 0; --i) {
-    undo_stack_[i].Undo(parameters_, deleted_columns_, deleted_rows_, solution);
+    const SparseColumn& saved_col =
+        columns_saver_.SavedOrEmptyColumn(undo_stack_[i].Entry().col);
+    const SparseColumn& saved_row = rows_saver_.SavedOrEmptyColumn(
+        RowToColIndex(undo_stack_[i].Entry().row));
+    undo_stack_[i].Undo(parameters_, saved_col, saved_row, solution);
   }
 }
 
@@ -2943,13 +3025,18 @@ bool DoubletonEqualityRowPreprocessor::Run(LinearProgram* lp) {
   saved_row_lower_bounds_ = lp->constraint_lower_bounds();
   saved_row_upper_bounds_ = lp->constraint_upper_bounds();
 
+  // This is needed for postsolving dual.
+  saved_objective_ = lp->objective_coefficients();
+
   // Note that we don't update the transpose during this preprocessor run.
   const SparseMatrix& original_transpose = lp->GetTransposeSparseMatrix();
 
-  // Iterate over the rows that were already doubletons before this preprocessor
-  // run, and whose items don't belong to a column that we deleted during this
-  // run. This implies that the rows are only ever touched once per run, because
-  // we only modify rows that have an item on a deleted column.
+  // Heuristic: We try to subtitute sparse columns first to avoid a complexity
+  // explosion. Note that if we do long chain of substitution, we can still end
+  // up with a complexity of O(num_rows x num_cols) instead of O(num_entries).
+  //
+  // TODO(user): There is probably some more robust ways.
+  std::vector<std::pair<int64_t, RowIndex>> sorted_rows;
   const RowIndex num_rows(lp->num_constraints());
   for (RowIndex row(0); row < num_rows; ++row) {
     const SparseColumn& original_row =
@@ -2959,6 +3046,23 @@ bool DoubletonEqualityRowPreprocessor::Run(LinearProgram* lp) {
             lp->constraint_upper_bounds()[row]) {
       continue;
     }
+    int64_t score = 0;
+    for (const SparseColumn::Entry e : original_row) {
+      const ColIndex col = RowToColIndex(e.row());
+      score += lp->GetSparseColumn(col).num_entries().value();
+    }
+    sorted_rows.push_back({score, row});
+  }
+  std::sort(sorted_rows.begin(), sorted_rows.end());
+
+  // Iterate over the rows that were already doubletons before this preprocessor
+  // run, and whose items don't belong to a column that we deleted during this
+  // run. This implies that the rows are only ever touched once per run, because
+  // we only modify rows that have an item on a deleted column.
+  for (const auto p : sorted_rows) {
+    const RowIndex row = p.second;
+    const SparseColumn& original_row =
+        original_transpose.column(RowToColIndex(row));
 
     // Collect the two row items. Skip the ones involving a deleted column.
     // Note: we filled r.col[] and r.coeff[] by item order, and currently we
@@ -2990,7 +3094,6 @@ bool DoubletonEqualityRowPreprocessor::Run(LinearProgram* lp) {
       r.lb[col_choice] = lp->variable_lower_bounds()[col];
       r.ub[col_choice] = lp->variable_upper_bounds()[col];
       r.objective_coefficient[col_choice] = lp->objective_coefficients()[col];
-      r.column[col_choice].PopulateFromSparseVector(lp->GetSparseColumn(col));
     }
 
     // 2) One of the columns is fixed: don't bother, it will be treated
@@ -3078,9 +3181,19 @@ bool DoubletonEqualityRowPreprocessor::Run(LinearProgram* lp) {
       status_ = ProblemStatus::ABNORMAL;
       break;
     }
-    r.column[DELETED].AddMultipleToSparseVectorAndDeleteCommonIndex(
-        substitution_factor, row, parameters_.drop_tolerance(),
-        lp->GetMutableSparseColumn(r.col[MODIFIED]));
+
+    // Note that we do not save again a saved column, so that we only save
+    // columns from the initial LP. This is important to limit the memory usage.
+    // It complexify a bit the postsolve though.
+    for (const int col_choice : {DELETED, MODIFIED}) {
+      const ColIndex col = r.col[col_choice];
+      columns_saver_.SaveColumnIfNotAlreadyDone(col, lp->GetSparseColumn(col));
+    }
+
+    lp->GetSparseColumn(r.col[DELETED])
+        .AddMultipleToSparseVectorAndDeleteCommonIndex(
+            substitution_factor, r.row, parameters_.drop_tolerance(),
+            lp->GetMutableSparseColumn(r.col[MODIFIED]));
 
     // Apply similar operations on the objective coefficients.
     // Note that the offset is being updated by
@@ -3102,13 +3215,20 @@ bool DoubletonEqualityRowPreprocessor::Run(LinearProgram* lp) {
     SubtractColumnMultipleFromConstraintBound(r.col[DELETED],
                                               constant_offset_factor, lp);
 
+    // If we keep substituing the same "dense" columns over and over, we can
+    // have a memory in O(num_rows * num_cols) which can be order of magnitude
+    // larger than the original problem. It is important to reclaim the memory
+    // of the deleted column right away.
+    lp->GetMutableSparseColumn(r.col[DELETED])->ClearAndRelease();
+
     // Mark the column and the row for deletion.
     column_deletion_helper_.MarkColumnForDeletion(r.col[DELETED]);
-    row_deletion_helper_.MarkRowForDeletion(row);
+    row_deletion_helper_.MarkRowForDeletion(r.row);
   }
   if (status_ != ProblemStatus::INIT) return false;
   lp->DeleteColumns(column_deletion_helper_.GetMarkedColumns());
   lp->DeleteRows(row_deletion_helper_.GetMarkedRows());
+
   return !column_deletion_helper_.IsEmpty();
 }
 
@@ -3118,6 +3238,10 @@ void DoubletonEqualityRowPreprocessor::RecoverSolution(
   RETURN_IF_NULL(solution);
   column_deletion_helper_.RestoreDeletedColumns(solution);
   row_deletion_helper_.RestoreDeletedRows(solution);
+
+  const ColIndex num_cols = solution->variable_statuses.size();
+  StrictITIVector<ColIndex, bool> new_basic_columns(num_cols, false);
+
   for (const RestoreInfo& r : Reverse(restore_stack_)) {
     switch (solution->variable_statuses[r.col[MODIFIED]]) {
       case VariableStatus::FIXED_VALUE:
@@ -3133,6 +3257,7 @@ void DoubletonEqualityRowPreprocessor::RecoverSolution(
         // Several code paths set the deleted column as basic. The code that
         // sets its value in that case is below, after the switch() block.
         solution->variable_statuses[r.col[DELETED]] = VariableStatus::BASIC;
+        new_basic_columns[r.col[DELETED]] = true;
         break;
       case VariableStatus::AT_LOWER_BOUND:
         ABSL_FALLTHROUGH_INTENDED;
@@ -3151,10 +3276,10 @@ void DoubletonEqualityRowPreprocessor::RecoverSolution(
         solution->variable_statuses[bounded_var] = bound_backtracking.status;
         solution->primal_values[bounded_var] = bound_backtracking.value;
         solution->variable_statuses[basic_var] = VariableStatus::BASIC;
+        new_basic_columns[basic_var] = true;
         // If the modified column is VariableStatus::BASIC, then its value is
-        // already set
-        // correctly. If it's the deleted column that is basic, its value is
-        // set below the switch() block.
+        // already set correctly. If it's the deleted column that is basic, its
+        // value is set below the switch() block.
       }
     }
 
@@ -3168,23 +3293,69 @@ void DoubletonEqualityRowPreprocessor::RecoverSolution(
 
     // Make the deleted constraint status FIXED.
     solution->constraint_statuses[r.row] = ConstraintStatus::FIXED_VALUE;
+  }
 
-    // Adjust the dual value of the deleted constraint so that the
-    // VariableStatus::BASIC column have a reduced cost of zero (if the two
-    // are VariableStatus::BASIC, just pick one).
-    // The reduced cost of the other variable will then automatically be
-    // correct: zero if it's VariableStatus::BASIC, and with the correct sign if
-    // it's bounded.
-    const ColChoice col_choice =
-        solution->variable_statuses[r.col[DELETED]] == VariableStatus::BASIC
-            ? DELETED
-            : MODIFIED;
-    // To compute the reduced cost properly (i.e. without the restored row).
-    solution->dual_values[r.row] = 0.0;
+  // Now we need to reconstruct the dual. This is a bit tricky and is basically
+  // the same as inverting a really structed and easy to invert matrix. For n
+  // doubleton rows, looking only at the new_basic_columns, there is exactly n
+  // by construction (one per row). We consider only this n x n matrix, and we
+  // must choose dual row values so that we make the reduced costs zero on all
+  // these columns.
+  //
+  // There is always an order that make this matrix triangular. We start with a
+  // singleton column which fix its corresponding row and then work on the
+  // square submatrix left. We can always start and continue, because if we take
+  // the first substitued row of the current submatrix, if its deleted column
+  // was in the submatrix we have a singleton column. If it is outside, we have
+  // 2 n - 1 entries for a matrix with n columns, so one must be singleton.
+  //
+  // Note(user): Another advantage of working on the "original" matrix before
+  // this presolve is an increased precision.
+  //
+  // TODO(user): We can probably use something better than a vector of set,
+  // but the number of entry is really sparse though. And the size of a set<int>
+  // is 24 bytes, same as a std::vector<int>.
+  StrictITIVector<ColIndex, std::set<int>> col_to_index(num_cols);
+  for (int i = 0; i < restore_stack_.size(); ++i) {
+    const RestoreInfo& r = restore_stack_[i];
+    col_to_index[r.col[MODIFIED]].insert(i);
+    col_to_index[r.col[DELETED]].insert(i);
+  }
+  std::vector<ColIndex> singleton_col;
+  for (ColIndex col(0); col < num_cols; ++col) {
+    if (!new_basic_columns[col]) continue;
+    if (col_to_index[col].size() == 1) singleton_col.push_back(col);
+  }
+  while (!singleton_col.empty()) {
+    const ColIndex col = singleton_col.back();
+    singleton_col.pop_back();
+    if (!new_basic_columns[col]) continue;
+    if (col_to_index[col].empty()) continue;
+    CHECK_EQ(col_to_index[col].size(), 1);
+    const int index = *col_to_index[col].begin();
+    const RestoreInfo& r = restore_stack_[index];
+
+    const ColChoice col_choice = r.col[MODIFIED] == col ? MODIFIED : DELETED;
+
+    // Adjust the dual value of the deleted constraint so that col have a
+    // reduced costs of zero.
+    CHECK_EQ(solution->dual_values[r.row], 0.0);
+    const SparseColumn& saved_col =
+        columns_saver_.SavedColumn(r.col[col_choice]);
     const Fractional current_reduced_cost =
-        r.objective_coefficient[col_choice] -
-        PreciseScalarProduct(solution->dual_values, r.column[col_choice]);
+        saved_objective_[r.col[col_choice]] -
+        PreciseScalarProduct(solution->dual_values, saved_col);
     solution->dual_values[r.row] = current_reduced_cost / r.coeff[col_choice];
+
+    // Update singleton
+    col_to_index[r.col[DELETED]].erase(index);
+    col_to_index[r.col[MODIFIED]].erase(index);
+    if (col_to_index[r.col[DELETED]].size() == 1) {
+      singleton_col.push_back(r.col[DELETED]);
+    }
+    if (col_to_index[r.col[MODIFIED]].size() == 1) {
+      singleton_col.push_back(r.col[MODIFIED]);
+    }
   }
 
   // Fix potential bad ConstraintStatus::FIXED_VALUE statuses.
@@ -3221,7 +3392,6 @@ void DoubletonEqualityRowPreprocessor::
   swap(r->coeff[DELETED], r->coeff[MODIFIED]);
   swap(r->lb[DELETED], r->lb[MODIFIED]);
   swap(r->ub[DELETED], r->ub[MODIFIED]);
-  swap(r->column[DELETED], r->column[MODIFIED]);
   swap(r->objective_coefficient[DELETED], r->objective_coefficient[MODIFIED]);
 }
 

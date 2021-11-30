@@ -35,8 +35,8 @@ SWIG_BINARY = $(WINDOWS_SWIG_BINARY)
 # tags of dependencies to checkout.
 ZLIB_TAG = 1.2.11
 ZLIB_ARCHIVE_TAG = 1211
-PROTOBUF_TAG = v3.14.0
-ABSL_TAG = 20200923.2
+PROTOBUF_TAG = v3.18.0
+ABSL_TAG = 20210324.2
 # We are using a CBC archive containing all coin-or project
 # since Clp 2.17.5+ is broken we need to stick with Cbc 2.10.4
 # which is shipped with Clp 1.17.4
@@ -46,7 +46,7 @@ CLP_TAG = 1.17.4
 OSI_TAG = 0.108.6
 COINUTILS_TAG = 2.11.4
 SWIG_TAG = 4.0.2
-SCIP_TAG=7.0.1
+SCIP_TAG = master
 
 # Added in support of clean third party targets
 TSVNCACHE_EXE = TSVNCache.exe
@@ -178,7 +178,10 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo # >> Makefile.local
 	@echo ## OPTIONAL DEPENDENCIES ## >> Makefile.local
 	@echo # Define WINDOWS_CPLEX_DIR to point to a installation directory of the CPLEX Studio >> Makefile.local
-	@echo #   e.g.: WINDOWS_CPLEX_DIR = C:\Progra~1\CPLEX_STUDIO1210 >> Makefile.local
+	@echo #   e.g.: WINDOWS_CPLEX_DIR = C:\Progra~1\CPLEX_STUDIO2010\IBM\ILOG\CPLEX_STUDIO2010 >> Makefile.local
+	@echo # >> Makefile.local
+	@echo # Define WINDOWS_CPLEX_VERSION to specify the suffix of the library >> Makefile.local
+	@echo #   e.g.: WINDOWS_CPLEX_VERSION = 2010 >> Makefile.local
 	@echo # >> Makefile.local
 	@echo # Define WINDOWS_XPRESS_DIR to point to a installation directory of the XPRESS-MP >> Makefile.local
 	@echo #   e.g.: WINDOWS_XPRESS_DIR = C:\xpressmp>> Makefile.local
@@ -255,10 +258,11 @@ DEPENDENCIES_LNK += $(ZLIB_LNK)
 # Install protocol buffers.
 install_protobuf: dependencies/install/lib/libprotobuf.lib
 
-dependencies/install/lib/libprotobuf.lib: dependencies/sources/protobuf-$(PROTOBUF_TAG) install_zlib
-	cd dependencies\sources\protobuf-$(PROTOBUF_TAG) && \
-  set MAKEFLAGS= && \
-  "$(CMAKE)" -Hcmake -Bbuild_cmake \
+PROTOBUF_SRCDIR = dependencies/sources/protobuf-$(PROTOBUF_TAG)
+PROTOBUF_SRCPATH = dependencies\sources\protobuf-$(PROTOBUF_TAG)
+dependencies/install/lib/libprotobuf.lib: $(PROTOBUF_SRCDIR) install_zlib
+	cd $(PROTOBUF_SRCPATH) && \
+  set MAKEFLAGS= && "$(CMAKE)" -Hcmake -Bbuild_cmake \
     -DCMAKE_PREFIX_PATH=..\..\install \
     -DCMAKE_BUILD_TYPE=Release \
     -Dprotobuf_BUILD_TESTS=OFF \
@@ -269,10 +273,10 @@ dependencies/install/lib/libprotobuf.lib: dependencies/sources/protobuf-$(PROTOB
   "$(CMAKE)" --build build_cmake --config Release && \
   "$(CMAKE)" --build build_cmake --config Release --target install
 
-dependencies/sources/protobuf-$(PROTOBUF_TAG): | dependencies/sources
-	-$(DELREC) dependencies/sources/protobuf-$(PROTOBUF_TAG)
-	git clone --quiet -b $(PROTOBUF_TAG) https://github.com/protocolbuffers/protobuf.git dependencies\sources\protobuf-$(PROTOBUF_TAG)
-	cd dependencies\sources\protobuf-$(PROTOBUF_TAG) && git apply "$(OR_TOOLS_TOP)\patches\protobuf-$(PROTOBUF_TAG).patch"
+$(PROTOBUF_SRCDIR): | dependencies/sources
+	-$(DELREC) $(PROTOBUF_SRCDIR)
+	git clone --quiet -b $(PROTOBUF_TAG) https://github.com/protocolbuffers/protobuf.git $(PROTOBUF_SRCPATH)
+	cd $(PROTOBUF_SRCPATH) && git apply "$(OR_TOOLS_TOP)\patches\protobuf-$(PROTOBUF_TAG).patch"
 
 PROTOBUF_INC = /I"$(WINDOWS_PROTOBUF_PATH)\\include"
 PROTOBUF_SWIG = -I"$(WINDOWS_PROTOBUF_DIR)/include"
@@ -450,17 +454,17 @@ DEPENDENCIES_LNK += $(COIN_LNK)
 ifeq ($(USE_SCIP),OFF)
 build_scip: $(GEN_DIR)/ortools/linear_solver/lpi_glop.cc
 
-$(GEN_DIR)/ortools/linear_solver/lpi_glop.cc:
-	$(TOUCH) $(GEN_DIR)/ortools/linear_solver/lpi_glop.cc
+$(GEN_DIR)/ortools/linear_solver/lpi_glop.cc: | $(GEN_DIR)/ortools/linear_solver
+	$(TOUCH) $(GEN_PATH)$Sortools$Slinear_solver$Slpi_glop.cc
 else
 build_scip: dependencies/install/lib/libscip.lib $(GEN_DIR)/ortools/linear_solver/lpi_glop.cc
 
 SCIP_SRCDIR = dependencies/sources/scip-$(SCIP_TAG)
+SCIP_SRCPATH = dependencies\sources\scip-$(SCIP_TAG)
 dependencies/install/lib/libscip.lib: $(SCIP_SRCDIR)
 	-tools\win\rm -rf $(SCIP_SRCDIR)\build_cmake
-	cd dependencies\sources\scip-$(SCIP_TAG) && \
-  set MAKEFLAGS= && \
-  "$(CMAKE)" -H. -Bbuild_cmake \
+	cd $(SCIP_SRCPATH) && \
+  set MAKEFLAGS= && "$(CMAKE)" -H. -Bbuild_cmake \
     -DCMAKE_CXX_STANDARD=17 \
     -DCMAKE_CXX_STANDARD_REQUIRED=ON \
     -DCMAKE_PREFIX_PATH=..\..\install \
@@ -474,7 +478,8 @@ dependencies/install/lib/libscip.lib: $(SCIP_SRCDIR)
     -DPAPILO=OFF \
     -DZIMPL=OFF \
     -DIPOPT=OFF \
-    -DTPI="none" \
+    -DAMPL=OFF \
+    -DTPI="tny" \
     -DEXPRINT="none" \
     -DLPS="none" \
     -DSYM="none" \
@@ -485,11 +490,12 @@ dependencies/install/lib/libscip.lib: $(SCIP_SRCDIR)
 
 $(SCIP_SRCDIR): | dependencies/sources
 	-$(DELREC) $(SCIP_SRCDIR)
-	-tools\win\gzip.exe -dc dependencies\archives\scip-$(SCIP_TAG).tgz | tools\win\tar.exe -x -v -m -C dependencies\\sources -f -
-	cd dependencies\sources\scip-$(SCIP_TAG) && git apply --ignore-whitespace "$(OR_TOOLS_TOP)\patches\scip-$(SCIP_TAG).patch"
+	git clone --quiet -b $(SCIP_TAG) https://github.com/scipopt/scip.git $(SCIP_SRCPATH)
+#	cd $(SCIP_SRCPATH) && git apply "$(OR_TOOLS_TOP)\patches\scip-$(SCIP_TAG).patch"
 
 $(GEN_DIR)/ortools/linear_solver/lpi_glop.cc: $(SCIP_SRCDIR) | $(GEN_DIR)/ortools/linear_solver
-	copy dependencies\sources\scip-$(SCIP_TAG)\src\lpi\lpi_glop.cpp $(GEN_PATH)\ortools\linear_solver\lpi_glop.cc
+	copy $(SCIP_SRCPATH)\src\lpi\lpi_glop.cpp $(GEN_PATH)\ortools\linear_solver\lpi_glop.cc
+	$(TOUCH) $(GEN_PATH)$Sortools$Slinear_solver$Slpi_glop.cc
 
 SCIP_INC = /I"$(WINDOWS_SCIP_PATH)\\include" /DUSE_SCIP /DNO_CONFIG_HEADER
 SCIP_SWIG = -I"$(WINDOWS_SCIP_DIR)/include" -DUSE_SCIP -DNO_CONFIG_HEADER

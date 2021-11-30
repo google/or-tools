@@ -1,4 +1,5 @@
-# Copyright 2010-2018 Google LLC
+#!/usr/bin/env python3
+# Copyright 2010-2021 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -35,7 +36,8 @@ def BooleanProductSampleSat():
     # Create a solver and solve.
     solver = cp_model.CpSolver()
     solution_printer = cp_model.VarArraySolutionPrinter([x, y, p])
-    solver.SearchForAllSolutions(model, solution_printer)
+    solver.parameters.enumerate_all_solutions = True
+    solver.Solve(model, solution_printer)
 
 
 BooleanProductSampleSat()

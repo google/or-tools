@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,6 +18,7 @@
 #ifndef OR_TOOLS_EXAMPLES_FAP_UTILITIES_H_
 #define OR_TOOLS_EXAMPLES_FAP_UTILITIES_H_
 
+#include <cstdint>
 #include <map>
 #include <set>
 #include <vector>
@@ -47,7 +48,7 @@ bool CheckVariablePosition(const std::map<int, FapVariable>& data_variables,
 int NumberOfAssignedValues(const std::vector<int>& variables);
 
 // Prints the duration of the solving process.
-void PrintElapsedTime(const int64 time1, const int64 time2);
+void PrintElapsedTime(const int64_t time1, const int64_t time2);
 
 // Prints the solution found by the Hard Solver for feasible instances.
 void PrintResultsHard(SolutionCollector* const collector,
@@ -125,7 +126,7 @@ int NumberOfAssignedValues(const std::vector<int>& variables) {
   return static_cast<int>(assigned.size());
 }
 
-void PrintElapsedTime(const int64 time1, const int64 time2) {
+void PrintElapsedTime(const int64_t time1, const int64_t time2) {
   LOG(INFO) << "End of solving process.";
   LOG(INFO) << "The Solve method took " << (time2 - time1) / 1000.0
             << " seconds.";

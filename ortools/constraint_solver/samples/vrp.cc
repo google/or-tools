@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,6 +13,7 @@
 
 // [START program]
 // [START import]
+#include <cstdint>
 #include <vector>
 
 #include "ortools/constraint_solver/routing.h"
@@ -24,7 +25,7 @@
 namespace operations_research {
 // [START data_model]
 struct DataModel {
-  const std::vector<std::vector<int64>> distance_matrix{
+  const std::vector<std::vector<int64_t>> distance_matrix{
       {0, 548, 776, 696, 582, 274, 502, 194, 308, 194, 536, 502, 388, 354, 468,
        776, 662},
       {548, 0, 684, 308, 194, 502, 730, 354, 696, 742, 1084, 594, 480, 674,
@@ -74,18 +75,18 @@ struct DataModel {
 void PrintSolution(const DataModel& data, const RoutingIndexManager& manager,
                    const RoutingModel& routing, const Assignment& solution) {
   LOG(INFO) << "Objective: " << solution.ObjectiveValue();
-  int64 total_distance{0};
+  int64_t total_distance{0};
   for (int vehicle_id = 0; vehicle_id < data.num_vehicles; ++vehicle_id) {
-    int64 index = routing.Start(vehicle_id);
+    int64_t index = routing.Start(vehicle_id);
     LOG(INFO) << "Route for Vehicle " << vehicle_id << ":";
-    int64 distance{0};
+    int64_t distance{0};
     std::stringstream route;
     while (routing.IsEnd(index) == false) {
       route << manager.IndexToNode(index).value() << " -> ";
-      int64 previous_index = index;
+      int64_t previous_index = index;
       index = solution.Value(routing.NextVar(index));
       distance += routing.GetArcCostForVehicle(previous_index, index,
-                                               int64{vehicle_id});
+                                               int64_t{vehicle_id});
     }
     LOG(INFO) << route.str() << manager.IndexToNode(index).value();
     LOG(INFO) << "Distance of the route: " << distance << "m";
@@ -118,7 +119,7 @@ void Vrp() {
   // Create and register a transit callback.
   // [START transit_callback]
   const int transit_callback_index = routing.RegisterTransitCallback(
-      [&data, &manager](int64 from_index, int64 to_index) -> int64 {
+      [&data, &manager](int64_t from_index, int64_t to_index) -> int64_t {
         // Convert from routing variable Index to distance matrix NodeIndex.
         auto from_node = manager.IndexToNode(from_index).value();
         auto to_node = manager.IndexToNode(to_index).value();

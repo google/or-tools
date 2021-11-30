@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,16 +13,17 @@
 
 // [START program]
 package com.google.ortools.linearsolver.samples;
-
+// [START import]
 import com.google.ortools.Loader;
 import com.google.ortools.linearsolver.MPConstraint;
 import com.google.ortools.linearsolver.MPObjective;
 import com.google.ortools.linearsolver.MPSolver;
 import com.google.ortools.linearsolver.MPVariable;
+// [END import]
 
-/** Simple linear programming example.*/
-public class LinearProgrammingExample {
-  public static void main(String[] args) throws Exception {
+/** Simple linear programming example. */
+public final class LinearProgrammingExample {
+  public static void main(String[] args) {
     Loader.loadNativeLibraries();
     // [START solver]
     MPSolver solver = MPSolver.createSolver("GLOP");
@@ -64,22 +65,26 @@ public class LinearProgrammingExample {
 
     // [START solve]
     final MPSolver.ResultStatus resultStatus = solver.solve();
-    // Check that the problem has an optimal solution.
-    if (resultStatus != MPSolver.ResultStatus.OPTIMAL) {
-      System.err.println("The problem does not have an optimal solution!");
-      return;
-    }
     // [END solve]
 
     // [START print_solution]
-    // The value of each variable in the solution.
-    System.out.println("Solution");
-    System.out.println("x = " + x.solutionValue());
-    System.out.println("y = " + y.solutionValue());
-
-    // The objective value of the solution.
-    System.out.println("Optimal objective value = " + solver.objective().value());
+    if (resultStatus == MPSolver.ResultStatus.OPTIMAL) {
+      System.out.println("Solution:");
+      System.out.println("Objective value = " + objective.value());
+      System.out.println("x = " + x.solutionValue());
+      System.out.println("y = " + y.solutionValue());
+    } else {
+      System.err.println("The problem does not have an optimal solution!");
+    }
     // [END print_solution]
+
+    // [START advanced]
+    System.out.println("\nAdvanced usage:");
+    System.out.println("Problem solved in " + solver.wallTime() + " milliseconds");
+    System.out.println("Problem solved in " + solver.iterations() + " iterations");
+    // [END advanced]
   }
+
+  private LinearProgrammingExample() {}
 }
 // [END program]

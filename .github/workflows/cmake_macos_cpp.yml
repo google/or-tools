@@ -1,0 +1,33 @@
+name: CMake MacOS C++
+
+on: [push, pull_request]
+
+jobs:
+  cmake_make:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Check cmake
+      run: cmake --version
+    - name: Configure
+      run: cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release -DBUILD_DEPS=ON
+    - name: Build
+      run: cmake --build build --target all -v
+    - name: Test
+      run: CTEST_OUTPUT_ON_FAILURE=1 cmake --build build --target test -v
+    - name: Install
+      run: cmake --build build --target install -v -- DESTDIR=install
+  cmake_xcode:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Check cmake
+      run: cmake --version
+    - name: Configure
+      run: cmake -S. -Bbuild -G "Xcode" -DCMAKE_CONFIGURATION_TYPES=Release -DBUILD_DEPS=ON
+    - name: Build
+      run: cmake --build build --config Release --target ALL_BUILD -v
+    - name: Test
+      run: cmake --build build --config Release --target RUN_TESTS -v
+    - name: Install
+      run: cmake --build build --config Release --target install -v -- DESTDIR=install

@@ -1,3 +1,10 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classoperations__research_1_1sat_1_1_cp_model_builder.html" title="Wrapper class around the cp_model proto." alt="" coords="5,5,131,32"/>
+<area shape="rect" id="node1" href="$classoperations__research_1_1sat_1_1_constraint.html" title="A constraint." alt="" coords="5,157,95,184"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1sat_1_1_automaton_constraint.html" title="Specialized automaton constraint." alt="" coords="154,5,315,32"/>
+<area shape="rect" id="node3" href="$classoperations__research_1_1sat_1_1_circuit_constraint.html" title="Specialized circuit constraint." alt="" coords="169,56,300,83"/>
+<area shape="rect" id="node4" href="$classoperations__research_1_1sat_1_1_cumulative_constraint.html" title="Specialized cumulative constraint." alt="" coords="153,107,317,133"/>
+<area shape="rect" id="node5" href="$classoperations__research_1_1sat_1_1_multiple_circuit_constraint.html" title="Specialized circuit constraint." alt="" coords="143,157,327,184"/>
+<area shape="rect" id="node6" href="$classoperations__research_1_1sat_1_1_no_overlap2_d_constraint.html" title="Specialized no_overlap2D constraint." alt="" coords="147,208,323,235"/>
+<area shape="rect" id="node7" href="$classoperations__research_1_1sat_1_1_reservoir_constraint.html" title="Specialized reservoir constraint." alt="" coords="159,259,310,285"/>
+<area shape="rect" id="node8" href="$classoperations__research_1_1sat_1_1_table_constraint.html" title="Specialized assignment constraint." alt="" coords="173,309,296,336"/>
 </map>

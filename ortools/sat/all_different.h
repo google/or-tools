@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_SAT_ALL_DIFFERENT_H_
 #define OR_TOOLS_SAT_ALL_DIFFERENT_H_
 
+#include <cstdint>
 #include <functional>
 #include <utility>
 #include <vector>
@@ -80,8 +81,8 @@ class AllDifferentConstraint : PropagatorInterface {
   bool MakeAugmentingPath(int start);
 
   // Accessors to the cache of literals.
-  inline LiteralIndex VariableLiteralIndexOf(int x, int64 value);
-  inline bool VariableHasPossibleValue(int x, int64 value);
+  inline LiteralIndex VariableLiteralIndexOf(int x, int64_t value);
+  inline bool VariableHasPossibleValue(int x, int64_t value);
 
   // This caches all literals of the fully encoded variables.
   // Values of a given variable are 0-indexed using offsets variable_min_value_,
@@ -89,10 +90,10 @@ class AllDifferentConstraint : PropagatorInterface {
   // TODO(user): compare this encoding to a sparser hash_map encoding.
   const int num_variables_;
   const std::vector<IntegerVariable> variables_;
-  int64 min_all_values_;
-  int64 num_all_values_;
-  std::vector<int64> variable_min_value_;
-  std::vector<int64> variable_max_value_;
+  int64_t min_all_values_;
+  int64_t num_all_values_;
+  std::vector<int64_t> variable_min_value_;
+  std::vector<int64_t> variable_max_value_;
   std::vector<std::vector<LiteralIndex>> variable_literal_index_;
 
   // Internal state of MakeAugmentingPath().

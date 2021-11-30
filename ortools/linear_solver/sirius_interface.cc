@@ -123,9 +123,9 @@ namespace operations_research {
 
 		// ------ Query statistics on the solution and the solve ------
 		// Number of simplex iterations
-		virtual int64 iterations() const;
+		virtual int64_t iterations() const;
 		// Number of branch-and-bound nodes. Only available for discrete problems.
-		virtual int64 nodes() const;
+		virtual int64_t nodes() const;
 
 		// Returns the basis status of a row.
 		virtual MPSolver::BasisStatus row_status(int constraint_index) const;
@@ -611,19 +611,19 @@ namespace operations_research {
 
 	// ------ Query statistics on the solution and the solve ------
 
-	int64 SiriusInterface::iterations() const {
+	int64_t SiriusInterface::iterations() const {
 		int iter = 0;
 		if (!CheckSolutionIsSynchronized()) return kUnknownNumberOfIterations;
 		CHECK_STATUS(SRSgetspxitercount(mLp, &iter));
-		return static_cast<int64>(iter);
+		return static_cast<int64_t>(iter);
 	}
 
-	int64 SiriusInterface::nodes() const {
+	int64_t SiriusInterface::nodes() const {
 		if (mMip) {
 			int nodes = 0;
 			if (!CheckSolutionIsSynchronized()) return kUnknownNumberOfNodes;
 			CHECK_STATUS(SRSgetmipnodecount(mLp, &nodes));
-			return static_cast<int64>(nodes);
+			return static_cast<int64_t>(nodes);
 		}
 		else {
 			LOG(DFATAL) << "Number of nodes only available for discrete problems";

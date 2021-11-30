@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_SAT_TIMETABLE_H_
 #define OR_TOOLS_SAT_TIMETABLE_H_
 
+#include <cstdint>
 #include <vector>
 
 #include "ortools/base/macros.h"
@@ -23,6 +24,80 @@
 
 namespace operations_research {
 namespace sat {
+
+// Adds a reservoir constraint to the model. Note that to account for level not
+// containing zero at time zero, we might needs to create an artificial fixed
+// event.
+//
+// This instantiate one or more ReservoirTimeTabling class to perform the
+// propagation.
+void AddReservoirConstraint(std::vector<AffineExpression> times,
+                            std::vector<IntegerValue> deltas,
+                            std::vector<Literal> presences, int64_t min_level,
+                            int64_t max_level, Model* model);
+
+// The piecewise constant function must be below the given capacity. The initial
+// function value is zero. Note that a negative capacity will thus be trivially
+// infeasible.
+//
+// Note that we take for the definition of the function at time t to be the sum
+// of all delta with time <= t. But because we check for the capacity over the
+// full horizon, we could have taken < t with no behavior change.
+class ReservoirTimeTabling : public PropagatorInterface {
+ public:
+  ReservoirTimeTabling(const std::vector<AffineExpression>& times,
+                       const std::vector<IntegerValue>& deltas,
+                       const std::vector<Literal>& presences,
+                       IntegerValue capacity, Model* model);
+
+  bool Propagate() final;
+
+ private:
+  // The rectangle will be ordered by start, and the end of each rectangle
+  // will be equal to the start of the next one. The height correspond to the
+  // one from start (inclusive) until the next one (exclusive).
+  struct ProfileRectangle {
+    ProfileRectangle() {}
+    ProfileRectangle(IntegerValue start, IntegerValue height)
+        : start(start), height(height) {}
+
+    bool operator<(const ProfileRectangle& other) const {
+      return start < other.start;
+    }
+
+    /* const */ IntegerValue start = IntegerValue(0);
+    /* const */ IntegerValue height = IntegerValue(0);
+  };
+
+  // Builds the profile and increases the lower bound of the capacity
+  // variable accordingly.
+  bool BuildProfile();
+
+  // Explanation of the profile minimum value at time t, eventually ignoring the
+  // given event.
+  void FillReasonForProfileAtGivenTime(IntegerValue t,
+                                       int event_to_ignore = -1);
+
+  // Tries to tighten the min/max time of the given event depending on the sign
+  // of the delta associated with this event.
+  bool TryToIncreaseMin(int event);
+  bool TryToDecreaseMax(int event);
+
+  // Input.
+  std::vector<AffineExpression> times_;
+  std::vector<IntegerValue> deltas_;
+  std::vector<Literal> presences_;
+  IntegerValue capacity_;
+
+  // Model class.
+  const VariablesAssignment& assignment_;
+  IntegerTrail* integer_trail_;
+
+  // Temporary data.
+  std::vector<Literal> literal_reason_;
+  std::vector<IntegerLiteral> integer_reason_;
+  std::vector<ProfileRectangle> profile_;
+};
 
 // A strongly quadratic version of Time Tabling filtering. This propagator
 // is similar to the CumulativeTimeTable propagator of the constraint solver.
@@ -38,7 +113,8 @@ class TimeTablingPerTask : public PropagatorInterface {
 
  private:
   // The rectangle will be ordered by start, and the end of each rectangle
-  // will be equal to the start of the next one.
+  // will be equal to the start of the next one. The height correspond to the
+  // one from start (inclusive) until the next one (exclusive).
   struct ProfileRectangle {
     /* const */ IntegerValue start;
     /* const */ IntegerValue height;

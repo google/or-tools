@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,12 +14,14 @@
 #ifndef OR_TOOLS_SAT_LINEAR_PROGRAMMING_CONSTRAINT_H_
 #define OR_TOOLS_SAT_LINEAR_PROGRAMMING_CONSTRAINT_H_
 
+#include <cstdint>
 #include <limits>
 #include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
 #include "ortools/base/int_type.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/glop/revised_simplex.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_data_utils.h"
@@ -94,6 +96,8 @@ class ScatteredIntegerVector {
     return dense_vector_[col];
   }
 
+  const bool IsSparse() const { return is_sparse_; }
+
  private:
   // If is_sparse is true we maintain the non_zeros positions and bool vector
   // of dense_vector_. Otherwise we don't. Note that we automatically switch
@@ -130,7 +134,6 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   typedef glop::RowIndex ConstraintIndex;
 
   explicit LinearProgrammingConstraint(Model* model);
-  ~LinearProgrammingConstraint() override;
 
   // Add a new linear constraint to this LP.
   void AddLinearConstraint(const LinearConstraint& ct);
@@ -214,9 +217,12 @@ class LinearProgrammingConstraint : public PropagatorInterface,
     return average_degeneracy_.CurrentAverage();
   }
 
-  int64 total_num_simplex_iterations() const {
+  int64_t total_num_simplex_iterations() const {
     return total_num_simplex_iterations_;
   }
+
+  // Returns some statistics about this LP.
+  std::string Statistics() const;
 
  private:
   // Helper methods for branching. Returns true if branching on the given
@@ -278,7 +284,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   bool FillExactDualRayReason();
 
   // Returns number of non basic variables with zero reduced costs.
-  int64 CalculateDegeneracy();
+  int64_t CalculateDegeneracy();
 
   // From a set of row multipliers (at LP scale), scale them back to the CP
   // world and then make them integer (eventually multiplying them by a new
@@ -288,8 +294,8 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // will still be exact as it will work for any set of multiplier.
   std::vector<std::pair<glop::RowIndex, IntegerValue>> ScaleLpMultiplier(
       bool take_objective_into_account,
-      const glop::DenseColumn& dense_lp_multipliers, glop::Fractional* scaling,
-      int max_pow = 62) const;
+      const std::vector<std::pair<glop::RowIndex, double>>& lp_multipliers,
+      glop::Fractional* scaling, int max_pow = 62) const;
 
   // Computes from an integer linear combination of the integer rows of the LP a
   // new constraint of the form "sum terms <= upper_bound". All computation are
@@ -313,7 +319,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // Shortcut for an integer linear expression type.
   using LinearExpression = std::vector<std::pair<glop::ColIndex, IntegerValue>>;
 
-  // Converts a dense represenation of a linear constraint to a sparse one
+  // Converts a dense representation of a linear constraint to a sparse one
   // expressed in terms of IntegerVariable.
   void ConvertToLinearConstraint(
       const absl::StrongVector<glop::ColIndex, IntegerValue>& dense_vector,
@@ -366,15 +372,20 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // DUAL_FEASIBLE status as a signal to correct the prediction. The next limit
   // is capped by 'min_iter' and 'max_iter'. Note that this is enabled only for
   // linearization level 2 and above.
-  void UpdateSimplexIterationLimit(const int64 min_iter, const int64 max_iter);
+  void UpdateSimplexIterationLimit(const int64_t min_iter,
+                                   const int64_t max_iter);
 
   // This epsilon is related to the precision of the value/reduced_cost returned
   // by the LP once they have been scaled back into the CP domain. So for large
   // domain or cost coefficient, we may have some issues.
-  static const double kCpEpsilon;
+  static constexpr double kCpEpsilon = 1e-4;
 
   // Same but at the LP scale.
-  static const double kLpEpsilon;
+  static constexpr double kLpEpsilon = 1e-6;
+
+  // Anything coming from the LP with a magnitude below that will be assumed to
+  // be zero.
+  static constexpr double kZeroTolerance = 1e-12;
 
   // Class responsible for managing all possible constraints that may be part
   // of the LP.
@@ -396,7 +407,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // Underlying LP solver API.
   glop::LinearProgram lp_data_;
   glop::RevisedSimplex simplex_;
-  int64 next_simplex_iter_ = 500;
+  int64_t next_simplex_iter_ = 500;
 
   // For the scaling.
   glop::LpScalingHelper scaler_;
@@ -414,6 +425,9 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   std::vector<IntegerValue> tmp_var_ubs_;
   std::vector<glop::RowIndex> tmp_slack_rows_;
   std::vector<IntegerValue> tmp_slack_bounds_;
+
+  // Used by ScaleLpMultiplier().
+  mutable std::vector<std::pair<glop::RowIndex, double>> tmp_cp_multipliers_;
 
   // Structures used for mirroring IntegerVariables inside the underlying LP
   // solver: an integer variable var is mirrored by mirror_lp_variable_[var].
@@ -506,14 +520,15 @@ class LinearProgrammingConstraint : public PropagatorInterface,
 
   // Used by the strong branching heuristic.
   int branching_frequency_ = 1;
-  int64 count_since_last_branching_ = 0;
+  int64_t count_since_last_branching_ = 0;
 
   // Sum of all simplex iterations performed by this class. This is useful to
   // test the incrementality and compare to other solvers.
-  int64 total_num_simplex_iterations_ = 0;
+  int64_t total_num_simplex_iterations_ = 0;
 
   // Some stats on the LP statuses encountered.
-  std::vector<int64> num_solves_by_status_;
+  int64_t num_solves_ = 0;
+  std::vector<int64_t> num_solves_by_status_;
 };
 
 // A class that stores which LP propagator is associated to each variable.
@@ -554,8 +569,8 @@ CutGenerator CreateCVRPCutGenerator(int num_nodes,
                                     const std::vector<int>& tails,
                                     const std::vector<int>& heads,
                                     const std::vector<Literal>& literals,
-                                    const std::vector<int64>& demands,
-                                    int64 capacity, Model* model);
+                                    const std::vector<int64_t>& demands,
+                                    int64_t capacity, Model* model);
 }  // namespace sat
 }  // namespace operations_research
 

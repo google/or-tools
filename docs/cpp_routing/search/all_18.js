@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['zero_2767',['Zero',['../namespaceoperations__research.html#a009f247167f32509baf749083e4bc984',1,'operations_research']]]
+  ['zero_0',['Zero',['../namespaceoperations__research.html#a5a9881f8a07b166ef2cbde572cea27b6',1,'operations_research']]]
 ];

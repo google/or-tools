@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -31,17 +31,13 @@
 // - examples/python/sudoku.py
 // - examples/python/zebra.py
 
-%include "stdint.i"
-
 %include "ortools/base/base.i"
 %include "ortools/util/python/proto.i"
 
 // PY_CONVERT_HELPER_* macros.
 %include "ortools/constraint_solver/python/constraint_solver_helpers.i"
 
-// std::function utilities.
 %include "ortools/util/python/functions.i"
-
 %include "ortools/util/python/vector.i"
 
 // We *do* need to use SWIGTYPE_... type names directly, because the
@@ -56,6 +52,7 @@
 namespace operations_research {
 class AssignmentProto;
 class ConstraintSolverParameters;
+class IntTupleSet;
 class RegularLimitParameters;
 }  // namespace operations_research
 
@@ -193,13 +190,13 @@ Constraint* PythonMethodName(IntervalVar* other) {
       $self, operations_research::Solver::CppEnumName, other);
 }
 
-Constraint* PythonMethodName##WithDelay(IntervalVar* other, int64 delay) {
+Constraint* PythonMethodName##WithDelay(IntervalVar* other, int64_t delay) {
   return $self->solver()->MakeIntervalVarRelationWithDelay(
       $self, operations_research::Solver::CppEnumName, other, delay);
 }
 %enddef
 %define SCHEDULING_CONSTRAINT(PythonMethodName, CppEnumName)
-Constraint* PythonMethodName(int64 date) {
+Constraint* PythonMethodName(int64_t date) {
   return $self->solver()->MakeIntervalVarRelation(
       $self, operations_research::Solver::CppEnumName, date);
 }
@@ -263,7 +260,7 @@ PY_STRINGIFY_DEBUGSTRING(Decision);
     return $self->MakeSearchLog(period, callback);
   }
 
-  IntExpr* ElementFunction(std::function<int64(int64)> values,
+  IntExpr* ElementFunction(std::function<int64_t(int64_t)> values,
                            IntVar* const index) {
     return $self->MakeElement(values, index);
   }
@@ -271,7 +268,7 @@ PY_STRINGIFY_DEBUGSTRING(Decision);
 
   DecisionBuilder* VarEvalValStrPhase(
       const std::vector<IntVar*>& vars,
-      std::function<int64(int64)> var_evaluator,
+      std::function<int64_t(int64_t)> var_evaluator,
       operations_research::Solver::IntValueStrategy val_str) {
     return $self->MakePhase(vars, var_evaluator, val_str);
   }
@@ -285,7 +282,7 @@ PY_STRINGIFY_DEBUGSTRING(Decision);
 
   DecisionBuilder* VarEvalValEvalPhase(
       const std::vector<IntVar*>& vars,
-      std::function<int64(int64)> var_eval,
+      std::function<int64_t(int64_t)> var_eval,
       Solver::IndexEvaluator2 val_eval) {
     return $self->MakePhase(vars, var_eval, val_eval);
   }
@@ -294,15 +291,15 @@ PY_STRINGIFY_DEBUGSTRING(Decision);
       const std::vector<IntVar*>& vars,
       operations_research::Solver::IntVarStrategy var_str,
       Solver::IndexEvaluator2 val_eval,
-      std::function<int64(int64)> tie_breaker) {
+      std::function<int64_t(int64_t)> tie_breaker) {
     return $self->MakePhase(vars, var_str, val_eval, tie_breaker);
   }
 
   DecisionBuilder* VarEvalValEvalTieBreakPhase(
       const std::vector<IntVar*>& vars,
-      std::function<int64(int64)> var_eval,
+      std::function<int64_t(int64_t)> var_eval,
       Solver::IndexEvaluator2 val_eval,
-      std::function<int64(int64)> tie_breaker) {
+      std::function<int64_t(int64_t)> tie_breaker) {
     return $self->MakePhase(vars, var_eval, val_eval, tie_breaker);
   }
 
@@ -325,7 +322,7 @@ PY_STRINGIFY_DEBUGSTRING(Decision);
       bool maximize,
       IntVar* const objective,
       Solver::IndexEvaluator2 objective_function,
-      int64 step,
+      int64_t step,
       const std::vector<IntVar*>& vars,
       double penalty_factor) {
     return $self->MakeGuidedLocalSearch(maximize,
@@ -354,10 +351,10 @@ PY_STRINGIFY_DEBUGSTRING(Decision);
   IntExpr* __add__(Constraint* other) {
     return $self->solver()->MakeSum($self, other->Var());
   }
-  IntExpr* __add__(int64 v) {
+  IntExpr* __add__(int64_t v) {
     return $self->solver()->MakeSum($self, v);
   }
-  IntExpr* __radd__(int64 v) {
+  IntExpr* __radd__(int64_t v) {
     return $self->solver()->MakeSum($self, v);
   }
   IntExpr* __sub__(IntExpr* other) {
@@ -366,10 +363,10 @@ PY_STRINGIFY_DEBUGSTRING(Decision);
   IntExpr* __sub__(Constraint* other) {
     return $self->solver()->MakeDifference($self, other->Var());
   }
-  IntExpr* __sub__(int64 v) {
+  IntExpr* __sub__(int64_t v) {
     return $self->solver()->MakeSum($self, -v);
   }
-  IntExpr* __rsub__(int64 v) {
+  IntExpr* __rsub__(int64_t v) {
     return $self->solver()->MakeDifference(v, $self);
   }
   IntExpr* __mul__(IntExpr* other) {
@@ -378,19 +375,19 @@ PY_STRINGIFY_DEBUGSTRING(Decision);
   IntExpr* __mul__(Constraint* other) {
     return $self->solver()->MakeProd($self, other->Var());
   }
-  IntExpr* __mul__(int64 v) {
+  IntExpr* __mul__(int64_t v) {
     return $self->solver()->MakeProd($self, v);
   }
-  IntExpr* __rmul__(int64 v) {
+  IntExpr* __rmul__(int64_t v) {
     return $self->solver()->MakeProd($self, v);
   }
-  IntExpr* __floordiv__(int64 v) {
+  IntExpr* __floordiv__(int64_t v) {
     return $self->solver()->MakeDiv($self, v);
   }
   IntExpr* __floordiv__(IntExpr* e) {
     return $self->solver()->MakeDiv($self, e);
   }
-  IntExpr* __mod__(int64 v) {
+  IntExpr* __mod__(int64_t v) {
     return $self->solver()->MakeModulo($self, v);
   }
   IntExpr* __mod__(IntExpr* e) {
@@ -406,22 +403,22 @@ PY_STRINGIFY_DEBUGSTRING(Decision);
     return $self->solver()->MakeSquare($self);
   }
 
-  Constraint* __eq__(int64 v) {
+  Constraint* __eq__(int64_t v) {
     return $self->solver()->MakeEquality($self, v);
   }
-  Constraint* __ne__(int64 v) {
+  Constraint* __ne__(int64_t v) {
     return $self->solver()->MakeNonEquality($self->Var(), v);
   }
-  Constraint* __ge__(int64 v) {
+  Constraint* __ge__(int64_t v) {
     return $self->solver()->MakeGreaterOrEqual($self, v);
   }
-  Constraint* __gt__(int64 v) {
+  Constraint* __gt__(int64_t v) {
     return $self->solver()->MakeGreater($self, v);
   }
-  Constraint* __le__(int64 v) {
+  Constraint* __le__(int64_t v) {
     return $self->solver()->MakeLessOrEqual($self, v);
   }
-  Constraint* __lt__(int64 v) {
+  Constraint* __lt__(int64_t v) {
     return $self->solver()->MakeLess($self, v);
   }
   Constraint* __eq__(IntExpr* other) {
@@ -463,20 +460,20 @@ PY_STRINGIFY_DEBUGSTRING(Decision);
   Constraint* MapTo(const std::vector<IntVar*>& vars) {
     return $self->solver()->MakeMapDomain($self->Var(), vars);
   }
-  IntExpr* IndexOf(const std::vector<int64>& vars) {
+  IntExpr* IndexOf(const std::vector<int64_t>& vars) {
     return $self->solver()->MakeElement(vars, $self->Var());
   }
   IntExpr* IndexOf(const std::vector<IntVar*>& vars) {
     return $self->solver()->MakeElement(vars, $self->Var());
   }
-  IntVar* IsMember(const std::vector<int64>& values) {
+  IntVar* IsMember(const std::vector<int64_t>& values) {
     return $self->solver()->MakeIsMemberVar($self->Var(), values);
   }
-  Constraint* Member(const std::vector<int64>& values) {
+  Constraint* Member(const std::vector<int64_t>& values) {
     return $self->solver()->MakeMemberCt($self->Var(), values);
   }
-  Constraint* NotMember(const std::vector<int64>& starts,
-                        const std::vector<int64>& ends) {
+  Constraint* NotMember(const std::vector<int64_t>& starts,
+                        const std::vector<int64_t>& ends) {
     return $self->solver()->MakeNotMemberCt($self, starts, ends);
   }
 }
@@ -489,10 +486,10 @@ PY_STRINGIFY_DEBUGSTRING(Decision);
   IntExpr* __add__(Constraint* other) {
     return $self->solver()->MakeSum($self->Var(), other->Var());
   }
-  IntExpr* __add__(int64 v) {
+  IntExpr* __add__(int64_t v) {
     return $self->solver()->MakeSum($self->Var(), v);
   }
-  IntExpr* __radd__(int64 v) {
+  IntExpr* __radd__(int64_t v) {
     return $self->solver()->MakeSum($self->Var(), v);
   }
   IntExpr* __sub__(IntExpr* other) {
@@ -501,10 +498,10 @@ PY_STRINGIFY_DEBUGSTRING(Decision);
   IntExpr* __sub__(Constraint* other) {
     return $self->solver()->MakeDifference($self->Var(), other->Var());
   }
-  IntExpr* __sub__(int64 v) {
+  IntExpr* __sub__(int64_t v) {
     return $self->solver()->MakeSum($self->Var(), -v);
   }
-  IntExpr* __rsub__(int64 v) {
+  IntExpr* __rsub__(int64_t v) {
     return $self->solver()->MakeDifference(v, $self->Var());
   }
   IntExpr* __mul__(IntExpr* other) {
@@ -513,13 +510,13 @@ PY_STRINGIFY_DEBUGSTRING(Decision);
   IntExpr* __mul__(Constraint* other) {
     return $self->solver()->MakeProd($self->Var(), other->Var());
   }
-  IntExpr* __mul__(int64 v) {
+  IntExpr* __mul__(int64_t v) {
     return $self->solver()->MakeProd($self->Var(), v);
   }
-  IntExpr* __rmul__(int64 v) {
+  IntExpr* __rmul__(int64_t v) {
     return $self->solver()->MakeProd($self->Var(), v);
   }
-  IntExpr* __floordiv__(int64 v) {
+  IntExpr* __floordiv__(int64_t v) {
     return $self->solver()->MakeDiv($self->Var(), v);
   }
 
@@ -533,22 +530,22 @@ PY_STRINGIFY_DEBUGSTRING(Decision);
     return $self->solver()->MakeSquare($self->Var());
   }
 
-  Constraint* __eq__(int64 v) {
+  Constraint* __eq__(int64_t v) {
     return $self->solver()->MakeEquality($self->Var(), v);
   }
-  Constraint* __ne__(int64 v) {
+  Constraint* __ne__(int64_t v) {
     return $self->solver()->MakeNonEquality($self->Var(), v);
   }
-  Constraint* __ge__(int64 v) {
+  Constraint* __ge__(int64_t v) {
     return $self->solver()->MakeGreaterOrEqual($self->Var(), v);
   }
-  Constraint* __gt__(int64 v) {
+  Constraint* __gt__(int64_t v) {
     return $self->solver()->MakeGreater($self->Var(), v);
   }
-  Constraint* __le__(int64 v) {
+  Constraint* __le__(int64_t v) {
     return $self->solver()->MakeLessOrEqual($self->Var(), v);
   }
-  Constraint* __lt__(int64 v) {
+  Constraint* __lt__(int64_t v) {
     return $self->solver()->MakeLess($self->Var(), v);
   }
   Constraint* __eq__(IntExpr* other) {
@@ -590,7 +587,7 @@ PY_STRINGIFY_DEBUGSTRING(Decision);
   Constraint* MapTo(const std::vector<IntVar*>& vars) {
     return $self->solver()->MakeMapDomain($self->Var(), vars);
   }
-  IntExpr* IndexOf(const std::vector<int64>& vars) {
+  IntExpr* IndexOf(const std::vector<int64_t>& vars) {
     return $self->solver()->MakeElement(vars, $self->Var());
   }
   IntExpr* IndexOf(const std::vector<IntVar*>& vars) {
@@ -600,7 +597,7 @@ PY_STRINGIFY_DEBUGSTRING(Decision);
 
 // Add easy variable getters to BaseLns ([i] gets the value of variable #i).
 %extend operations_research::BaseLns {
-  int64 __getitem__(int index) {
+  int64_t __getitem__(int index) {
     return $self->Value(index);
   }
 
@@ -641,8 +638,8 @@ PY_STRINGIFY_DEBUGSTRING(Decision);
 }
 
 %extend operations_research::IntVarLocalSearchFilter {
-  int64 IndexFromVar(IntVar* const var) const {
-    int64 index = -1;
+  int64_t IndexFromVar(IntVar* const var) const {
+    int64_t index = -1;
     $self->FindIndex(var, &index);
     return index;
   }
@@ -677,24 +674,24 @@ PY_STRINGIFY_DEBUGSTRING(Decision);
 %enddef
 
 namespace operations_research {
-PROTECT_FROM_FAILURE(IntExpr::SetValue(int64 v), arg1->solver());
-PROTECT_FROM_FAILURE(IntExpr::SetMin(int64 v), arg1->solver());
-PROTECT_FROM_FAILURE(IntExpr::SetMax(int64 v), arg1->solver());
-PROTECT_FROM_FAILURE(IntExpr::SetRange(int64 l, int64 u), arg1->solver());
-PROTECT_FROM_FAILURE(IntVar::RemoveValue(int64 v), arg1->solver());
-PROTECT_FROM_FAILURE(IntVar::RemoveValues(const std::vector<int64>& values),
+PROTECT_FROM_FAILURE(IntExpr::SetValue(int64_t v), arg1->solver());
+PROTECT_FROM_FAILURE(IntExpr::SetMin(int64_t v), arg1->solver());
+PROTECT_FROM_FAILURE(IntExpr::SetMax(int64_t v), arg1->solver());
+PROTECT_FROM_FAILURE(IntExpr::SetRange(int64_t l, int64_t u), arg1->solver());
+PROTECT_FROM_FAILURE(IntVar::RemoveValue(int64_t v), arg1->solver());
+PROTECT_FROM_FAILURE(IntVar::RemoveValues(const std::vector<int64_t>& values),
                      arg1->solver());
-PROTECT_FROM_FAILURE(IntervalVar::SetStartMin(int64 m), arg1->solver());
-PROTECT_FROM_FAILURE(IntervalVar::SetStartMax(int64 m), arg1->solver());
-PROTECT_FROM_FAILURE(IntervalVar::SetStartRange(int64 mi, int64 ma),
+PROTECT_FROM_FAILURE(IntervalVar::SetStartMin(int64_t m), arg1->solver());
+PROTECT_FROM_FAILURE(IntervalVar::SetStartMax(int64_t m), arg1->solver());
+PROTECT_FROM_FAILURE(IntervalVar::SetStartRange(int64_t mi, int64_t ma),
                      arg1->solver());
-PROTECT_FROM_FAILURE(IntervalVar::SetDurationMin(int64 m), arg1->solver());
-PROTECT_FROM_FAILURE(IntervalVar::SetDurationMax(int64 m), arg1->solver());
-PROTECT_FROM_FAILURE(IntervalVar::SetDurationRange(int64 mi, int64 ma),
+PROTECT_FROM_FAILURE(IntervalVar::SetDurationMin(int64_t m), arg1->solver());
+PROTECT_FROM_FAILURE(IntervalVar::SetDurationMax(int64_t m), arg1->solver());
+PROTECT_FROM_FAILURE(IntervalVar::SetDurationRange(int64_t mi, int64_t ma),
                      arg1->solver());
-PROTECT_FROM_FAILURE(IntervalVar::SetEndMin(int64 m), arg1->solver());
-PROTECT_FROM_FAILURE(IntervalVar::SetEndMax(int64 m), arg1->solver());
-PROTECT_FROM_FAILURE(IntervalVar::SetEndRange(int64 mi, int64 ma),
+PROTECT_FROM_FAILURE(IntervalVar::SetEndMin(int64_t m), arg1->solver());
+PROTECT_FROM_FAILURE(IntervalVar::SetEndMax(int64_t m), arg1->solver());
+PROTECT_FROM_FAILURE(IntervalVar::SetEndRange(int64_t mi, int64_t ma),
                      arg1->solver());
 PROTECT_FROM_FAILURE(IntervalVar::SetPerformed(bool val), arg1->solver());
 PROTECT_FROM_FAILURE(Solver::AddConstraint(Constraint* const c), arg1);
@@ -1866,20 +1863,20 @@ PY_PROTO_TYPEMAP(ortools.constraint_solver.search_limit_pb2,
 
 // Define templates instantiation after wrapping.
 namespace operations_research {
-%rename (RevInteger) Rev<int64>;
-%rename (RevInteger) Rev<int64>::Rev;
-%unignore Rev<int64>::Value;
-%unignore Rev<int64>::SetValue;
-%template(RevInteger) Rev<int64>;
+%rename (RevInteger) Rev<int64_t>;
+%rename (RevInteger) Rev<int64_t>::Rev;
+%unignore Rev<int64_t>::Value;
+%unignore Rev<int64_t>::SetValue;
+%template(RevInteger) Rev<int64_t>;
 
-%rename (NumericalRevInteger) NumericalRev<int64>;
-%rename (NumericalRevInteger) NumericalRev<int64>::NumericalRev;
-%unignore NumericalRev<int64>::Add;
-%unignore NumericalRev<int64>::Decr;
-%unignore NumericalRev<int64>::Incr;
-%unignore NumericalRev<int64>::SetValue;
-%unignore NumericalRev<int64>::Value;
-%template(NumericalRevInteger) NumericalRev<int64>;
+%rename (NumericalRevInteger) NumericalRev<int64_t>;
+%rename (NumericalRevInteger) NumericalRev<int64_t>::NumericalRev;
+%unignore NumericalRev<int64_t>::Add;
+%unignore NumericalRev<int64_t>::Decr;
+%unignore NumericalRev<int64_t>::Incr;
+%unignore NumericalRev<int64_t>::SetValue;
+%unignore NumericalRev<int64_t>::Value;
+%template(NumericalRevInteger) NumericalRev<int64_t>;
 
 %rename (RevBool) Rev<bool>;
 %rename (RevBool) Rev<bool>::Rev;

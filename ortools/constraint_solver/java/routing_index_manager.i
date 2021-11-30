@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -23,12 +23,6 @@
 DEFINE_INDEX_TYPE_TYPEDEF(operations_research::RoutingNodeIndex,
                           operations_research::RoutingIndexManager::NodeIndex);
 
-%rename (getStartIndex) GetStartIndex;
-%rename (getEndIndex) GetEndIndex;
-%rename (indexToNode) IndexToNode;
-%rename (nodeToIndex) NodeToIndex;
-%rename (nodesToIndices) NodesToIndices;
-
 %ignoreall
 
 %unignore operations_research;
@@ -36,17 +30,22 @@ DEFINE_INDEX_TYPE_TYPEDEF(operations_research::RoutingNodeIndex,
 namespace operations_research {
 
 %unignore RoutingIndexManager;
-%unignore RoutingIndexManager::GetStartIndex(int);
-%unignore RoutingIndexManager::GetEndIndex(int);
-%unignore RoutingIndexManager::IndexToNode(int64);
-%unignore RoutingIndexManager::NodeToIndex(NodeIndex);
-%unignore RoutingIndexManager::NodesToIndices(const std::vector<NodeIndex>&);
-%unignore RoutingIndexManager::RoutingIndexManager(int, int, NodeIndex);
-%unignore RoutingIndexManager::RoutingIndexManager(int, int, const std::vector<NodeIndex>&, const std::vector<NodeIndex>&);
+%unignore RoutingIndexManager::~RoutingIndexManager;
+%unignore RoutingIndexManager::RoutingIndexManager(
+    int, int,
+    NodeIndex);
+%unignore RoutingIndexManager::RoutingIndexManager(
+    int, int,
+    const std::vector<NodeIndex>&,
+    const std::vector<NodeIndex>&);
+%rename (getStartIndex) RoutingIndexManager::GetStartIndex;
+%rename (getEndIndex) RoutingIndexManager::GetEndIndex;
 %rename (getNumberOfNodes) RoutingIndexManager::num_nodes;
 %rename (getNumberOfVehicles) RoutingIndexManager::num_vehicles;
 %rename (getNumberOfIndices) RoutingIndexManager::num_indices;
-%unignore RoutingIndexManager::~RoutingIndexManager;
+%rename (indexToNode) RoutingIndexManager::IndexToNode;
+%rename (nodeToIndex) RoutingIndexManager::NodeToIndex;
+%rename (nodesToIndices) RoutingIndexManager::NodesToIndices;
 
 }  // namespace operations_research
 

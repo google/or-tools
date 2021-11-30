@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -30,13 +30,18 @@ DEFINE_INDEX_TYPE_TYPEDEF(operations_research::RoutingNodeIndex,
 namespace operations_research {
 
 %unignore RoutingIndexManager;
-%unignore RoutingIndexManager::GetStartIndex(int);
-%unignore RoutingIndexManager::GetEndIndex(int);
+%unignore RoutingIndexManager::GetStartIndex;
+%unignore RoutingIndexManager::GetEndIndex;
 %unignore RoutingIndexManager::IndexToNode;
 %unignore RoutingIndexManager::NodeToIndex;
 %unignore RoutingIndexManager::NodesToIndices;
-%unignore RoutingIndexManager::RoutingIndexManager(int, int, NodeIndex);
-%unignore RoutingIndexManager::RoutingIndexManager(int, int, const std::vector<NodeIndex>&, const std::vector<NodeIndex>&);
+%unignore RoutingIndexManager::RoutingIndexManager(
+    int, int,
+    NodeIndex);
+%unignore RoutingIndexManager::RoutingIndexManager(
+    int, int,
+    const std::vector<NodeIndex>&,
+    const std::vector<NodeIndex>&);
 %rename (GetNumberOfNodes) RoutingIndexManager::num_nodes;
 %rename (GetNumberOfVehicles) RoutingIndexManager::num_vehicles;
 %rename (GetNumberOfIndices) RoutingIndexManager::num_indices;

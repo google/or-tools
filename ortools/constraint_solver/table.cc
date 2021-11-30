@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,6 +15,8 @@
 // This file implements the table constraints.
 
 #include <algorithm>
+#include <cstdint>
+#include <limits>
 #include <memory>
 #include <string>
 #include <vector>
@@ -38,12 +40,14 @@ namespace {
 // TODO(user): Move this out of this file.
 struct AffineTransformation {  // y == a*x + b.
   AffineTransformation() : a(1), b(0) {}
-  AffineTransformation(int64 aa, int64 bb) : a(aa), b(bb) { CHECK_NE(a, 0); }
-  int64 a;
-  int64 b;
+  AffineTransformation(int64_t aa, int64_t bb) : a(aa), b(bb) {
+    CHECK_NE(a, 0);
+  }
+  int64_t a;
+  int64_t b;
 
-  bool Reverse(int64 value, int64* const reverse) const {
-    const int64 temp = value - b;
+  bool Reverse(int64_t value, int64_t* const reverse) const {
+    const int64_t temp = value - b;
     if (temp % a == 0) {
       *reverse = temp / a;
       DCHECK_EQ(Forward(*reverse), value);
@@ -53,9 +57,9 @@ struct AffineTransformation {  // y == a*x + b.
     }
   }
 
-  int64 Forward(int64 value) const { return value * a + b; }
+  int64_t Forward(int64_t value) const { return value * a + b; }
 
-  int64 UnsafeReverse(int64 value) const { return (value - b) / a; }
+  int64_t UnsafeReverse(int64_t value) const { return (value - b) / a; }
 
   void Clear() {
     a = 1;
@@ -74,7 +78,7 @@ class VarLinearizer : public ModelParser {
   ~VarLinearizer() override {}
 
   void VisitIntegerVariable(const IntVar* const variable,
-                            const std::string& operation, int64 value,
+                            const std::string& operation, int64_t value,
                             IntVar* const delegate) override {
     if (operation == ModelVisitor::kSumOperation) {
       AddConstant(value);
@@ -114,11 +118,11 @@ class VarLinearizer : public ModelParser {
   std::string DebugString() const override { return "VarLinearizer"; }
 
  private:
-  void AddConstant(int64 constant) {
+  void AddConstant(int64_t constant) {
     transformation_->b += constant * multipliers_.back();
   }
 
-  void PushMultiplier(int64 multiplier) {
+  void PushMultiplier(int64_t multiplier) {
     if (multipliers_.empty()) {
       multipliers_.push_back(multiplier);
     } else {
@@ -128,7 +132,7 @@ class VarLinearizer : public ModelParser {
 
   void PopMultiplier() { multipliers_.pop_back(); }
 
-  std::vector<int64> multipliers_;
+  std::vector<int64_t> multipliers_;
   IntVar** target_var_;
   AffineTransformation* transformation_;
 };
@@ -197,19 +201,19 @@ class BasePositiveTableConstraint : public Constraint {
   }
 
  protected:
-  bool TupleValue(int tuple_index, int var_index, int64* const value) const {
+  bool TupleValue(int tuple_index, int var_index, int64_t* const value) const {
     return transformations_[var_index].Reverse(
         tuples_.Value(tuple_index, var_index), value);
   }
 
-  int64 UnsafeTupleValue(int tuple_index, int var_index) const {
+  int64_t UnsafeTupleValue(int tuple_index, int var_index) const {
     return transformations_[var_index].UnsafeReverse(
         tuples_.Value(tuple_index, var_index));
   }
 
   bool IsTupleSupported(int tuple_index) {
     for (int var_index = 0; var_index < arity_; ++var_index) {
-      int64 value = 0;
+      int64_t value = 0;
       if (!TupleValue(tuple_index, var_index, &value) ||
           !vars_[var_index]->Contains(value)) {
         return false;
@@ -223,7 +227,7 @@ class BasePositiveTableConstraint : public Constraint {
   std::vector<IntVar*> vars_;
   std::vector<IntVarIterator*> holes_;
   std::vector<IntVarIterator*> iterators_;
-  std::vector<int64> to_remove_;
+  std::vector<int64_t> to_remove_;
 
  private:
   // All allowed tuples.
@@ -235,7 +239,7 @@ class BasePositiveTableConstraint : public Constraint {
 
 class PositiveTableConstraint : public BasePositiveTableConstraint {
  public:
-  typedef absl::flat_hash_map<int, std::vector<uint64>> ValueBitset;
+  typedef absl::flat_hash_map<int, std::vector<uint64_t>> ValueBitset;
 
   PositiveTableConstraint(Solver* const s, const std::vector<IntVar*>& vars,
                           const IntTupleSet& tuples)
@@ -261,7 +265,7 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
       InitializeMask(i);
     }
     // Initialize the active tuple bitset.
-    std::vector<uint64> actives(word_length_, 0);
+    std::vector<uint64_t> actives(word_length_, 0);
     for (int tuple_index = 0; tuple_index < tuple_count_; ++tuple_index) {
       if (IsTupleSupported(tuple_index)) {
         SetBit64(actives.data(), tuple_index);
@@ -287,7 +291,7 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
       const ValueBitset& mask = masks_[var_index];
       IntVar* const var = vars_[var_index];
       to_remove_.clear();
-      for (const int64 value : InitAndGetValues(iterators_[var_index])) {
+      for (const int64_t value : InitAndGetValues(iterators_[var_index])) {
         if (!gtl::ContainsKey(mask, value)) {
           to_remove_.push_back(value);
         }
@@ -302,7 +306,7 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
     for (int var_index = 0; var_index < arity_; ++var_index) {
       IntVar* const var = vars_[var_index];
       to_remove_.clear();
-      for (const int64 value : InitAndGetValues(iterators_[var_index])) {
+      for (const int64_t value : InitAndGetValues(iterators_[var_index])) {
         if (!Supported(var_index, value)) {
           to_remove_.push_back(value);
         }
@@ -316,22 +320,22 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
   void Update(int index) {
     const ValueBitset& var_masks = masks_[index];
     IntVar* const var = vars_[index];
-    const int64 old_max = var->OldMax();
-    const int64 vmin = var->Min();
-    const int64 vmax = var->Max();
-    for (int64 value = var->OldMin(); value < vmin; ++value) {
+    const int64_t old_max = var->OldMax();
+    const int64_t vmin = var->Min();
+    const int64_t vmax = var->Max();
+    for (int64_t value = var->OldMin(); value < vmin; ++value) {
       const auto& it = var_masks.find(value);
       if (it != var_masks.end()) {
         BlankActives(it->second);
       }
     }
-    for (const int64 value : InitAndGetValues(holes_[index])) {
+    for (const int64_t value : InitAndGetValues(holes_[index])) {
       const auto& it = var_masks.find(value);
       if (it != var_masks.end()) {
         BlankActives(it->second);
       }
     }
-    for (int64 value = vmax + 1; value <= old_max; ++value) {
+    for (int64_t value = vmax + 1; value <= old_max; ++value) {
       const auto& it = var_masks.find(value);
       if (it != var_masks.end()) {
         BlankActives(it->second);
@@ -339,7 +343,7 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
     }
   }
 
-  void BlankActives(const std::vector<uint64>& mask) {
+  void BlankActives(const std::vector<uint64_t>& mask) {
     if (!mask.empty()) {
       active_tuples_.RevSubtract(solver(), mask);
       if (active_tuples_.Empty()) {
@@ -348,11 +352,11 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
     }
   }
 
-  bool Supported(int var_index, int64 value) {
+  bool Supported(int var_index, int64_t value) {
     DCHECK_GE(var_index, 0);
     DCHECK_LT(var_index, arity_);
     DCHECK(gtl::ContainsKey(masks_[var_index], value));
-    const std::vector<uint64>& mask = masks_[var_index][value];
+    const std::vector<uint64_t>& mask = masks_[var_index][value];
     int tmp = 0;
     return active_tuples_.Intersects(mask, &tmp);
   }
@@ -364,15 +368,15 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
 
  protected:
   void InitializeMask(int tuple_index) {
-    std::vector<int64> cache(arity_);
+    std::vector<int64_t> cache(arity_);
     for (int var_index = 0; var_index < arity_; ++var_index) {
       if (!TupleValue(tuple_index, var_index, &cache[var_index])) {
         return;
       }
     }
     for (int var_index = 0; var_index < arity_; ++var_index) {
-      const int64 value = cache[var_index];
-      std::vector<uint64>& mask = masks_[var_index][value];
+      const int64_t value = cache[var_index];
+      std::vector<uint64_t>& mask = masks_[var_index][value];
       if (mask.empty()) {
         mask.assign(word_length_, 0);
       }
@@ -383,7 +387,7 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
   const int word_length_;
   UnsortedNullableRevBitset active_tuples_;
   std::vector<ValueBitset> masks_;
-  std::vector<uint64> temp_mask_;
+  std::vector<uint64_t> temp_mask_;
 };
 
 // ----- Compact Tables -----
@@ -451,8 +455,8 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
         continue;
       }
       IntVar* const var = vars_[var_index];
-      const int64 original_min = original_min_[var_index];
-      const int64 var_size = var->Size();
+      const int64_t original_min = original_min_[var_index];
+      const int64_t var_size = var->Size();
       // The domain iterator is very slow, let's try to see if we can
       // work our way around.
       switch (var_size) {
@@ -463,8 +467,8 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
           break;
         }
         case 2: {
-          const int64 var_min = var->Min();
-          const int64 var_max = var->Max();
+          const int64_t var_min = var->Min();
+          const int64_t var_max = var->Max();
           const bool min_support = Supported(var_index, var_min - original_min);
           const bool max_support = Supported(var_index, var_max - original_min);
           if (!min_support) {
@@ -482,10 +486,10 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
         }
         default: {
           to_remove_.clear();
-          const int64 var_min = var->Min();
-          const int64 var_max = var->Max();
-          int64 new_min = var_min;
-          int64 new_max = var_max;
+          const int64_t var_min = var->Min();
+          const int64_t var_max = var->Max();
+          int64_t new_min = var_min;
+          int64_t new_max = var_max;
           // If the domain of a variable is an interval, it is much
           // faster to iterate on that interval instead of using the
           // iterator.
@@ -501,7 +505,7 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
               }
             }
             var->SetRange(new_min, new_max);
-            for (int64 value = new_min + 1; value < new_max; ++value) {
+            for (int64_t value = new_min + 1; value < new_max; ++value) {
               if (!Supported(var_index, value - original_min)) {
                 to_remove_.push_back(value);
               }
@@ -510,12 +514,13 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
                     // Let's not collect all values below the first supported
                     // value as this can easily and more rapidly be taken care
                     // of by a SetRange() call.
-            new_min = kint64max;  // escape value.
-            for (const int64 value : InitAndGetValues(iterators_[var_index])) {
+            new_min = std::numeric_limits<int64_t>::max();  // escape value.
+            for (const int64_t value :
+                 InitAndGetValues(iterators_[var_index])) {
               if (!Supported(var_index, value - original_min)) {
                 to_remove_.push_back(value);
               } else {
-                if (new_min == kint64max) {
+                if (new_min == std::numeric_limits<int64_t>::max()) {
                   new_min = value;
                   // This will be covered by the SetRange.
                   to_remove_.clear();
@@ -548,10 +553,10 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
     // We first collect the complete set of tuples to blank out in temp_mask_.
     IntVar* const var = vars_[var_index];
     bool changed = false;
-    const int64 omin = original_min_[var_index];
-    const int64 var_size = var->Size();
-    const int64 var_min = var->Min();
-    const int64 var_max = var->Max();
+    const int64_t omin = original_min_[var_index];
+    const int64_t var_size = var->Size();
+    const int64_t var_min = var->Min();
+    const int64_t var_max = var->Max();
 
     switch (var_size) {
       case 1: {
@@ -565,23 +570,23 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
         break;
       }
       default: {
-        const int64 estimated_hole_size =
+        const int64_t estimated_hole_size =
             var_sizes_.Value(var_index) - var_size;
-        const int64 old_min = var->OldMin();
-        const int64 old_max = var->OldMax();
+        const int64_t old_min = var->OldMin();
+        const int64_t old_max = var->OldMax();
         // Rough estimation of the number of operation if we scan
         // deltas in the domain of the variable.
-        const int64 number_of_operations =
+        const int64_t number_of_operations =
             estimated_hole_size + var_min - old_min + old_max - var_max;
         if (number_of_operations < var_size) {
           // Let's scan the removed values since last run.
-          for (int64 value = old_min; value < var_min; ++value) {
+          for (int64_t value = old_min; value < var_min; ++value) {
             changed |= SubtractMaskFromActive(masks_[var_index][value - omin]);
           }
-          for (const int64 value : InitAndGetValues(holes_[var_index])) {
+          for (const int64_t value : InitAndGetValues(holes_[var_index])) {
             changed |= SubtractMaskFromActive(masks_[var_index][value - omin]);
           }
-          for (int64 value = var_max + 1; value <= old_max; ++value) {
+          for (int64_t value = var_max + 1; value <= old_max; ++value) {
             changed |= SubtractMaskFromActive(masks_[var_index][value - omin]);
           }
         } else {
@@ -589,11 +594,12 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
           // Let's build the mask of supported tuples from the current
           // domain.
           if (var_max - var_min + 1 == var_size) {  // Contiguous.
-            for (int64 value = var_min; value <= var_max; ++value) {
+            for (int64_t value = var_min; value <= var_max; ++value) {
               OrTempMask(var_index, value - omin);
             }
           } else {
-            for (const int64 value : InitAndGetValues(iterators_[var_index])) {
+            for (const int64_t value :
+                 InitAndGetValues(iterators_[var_index])) {
               OrTempMask(var_index, value - omin);
             }
           }
@@ -628,20 +634,20 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
     // Build masks.
     for (int i = 0; i < arity_; ++i) {
       original_min_[i] = vars_[i]->Min();
-      const int64 span = vars_[i]->Max() - original_min_[i] + 1;
+      const int64_t span = vars_[i]->Max() - original_min_[i] + 1;
       masks_[i].resize(span);
     }
   }
 
   void FillMasksAndActiveTuples() {
-    std::vector<uint64> actives(word_length_, 0);
+    std::vector<uint64_t> actives(word_length_, 0);
     for (int tuple_index = 0; tuple_index < tuple_count_; ++tuple_index) {
       if (IsTupleSupported(tuple_index)) {
         SetBit64(actives.data(), tuple_index);
         // Fill in all masks.
         for (int var_index = 0; var_index < arity_; ++var_index) {
-          const int64 value = UnsafeTupleValue(tuple_index, var_index);
-          const int64 value_index = value - original_min_[var_index];
+          const int64_t value = UnsafeTupleValue(tuple_index, var_index);
+          const int64_t value_index = value - original_min_[var_index];
           DCHECK_GE(value_index, 0);
           DCHECK_LT(value_index, masks_[var_index].size());
           if (masks_[var_index][value_index].empty()) {
@@ -659,7 +665,7 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
     for (int var_index = 0; var_index < arity_; ++var_index) {
       IntVar* const var = vars_[var_index];
       to_remove_.clear();
-      for (const int64 value : InitAndGetValues(iterators_[var_index])) {
+      for (const int64_t value : InitAndGetValues(iterators_[var_index])) {
         if (masks_[var_index][value - original_min_[var_index]].empty()) {
           to_remove_.push_back(value);
         }
@@ -676,7 +682,7 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
       mask_ends_[var_index].resize(masks_[var_index].size());
       for (int value_index = 0; value_index < masks_[var_index].size();
            ++value_index) {
-        const std::vector<uint64>& mask = masks_[var_index][value_index];
+        const std::vector<uint64_t>& mask = masks_[var_index][value_index];
         if (mask.empty()) {
           continue;
         }
@@ -706,7 +712,7 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
 
   // ----- Helpers during propagation -----
 
-  bool AndMaskWithActive(const std::vector<uint64>& mask) {
+  bool AndMaskWithActive(const std::vector<uint64_t>& mask) {
     const bool result = active_tuples_.RevAnd(solver(), mask);
     if (active_tuples_.Empty()) {
       solver()->Fail();
@@ -714,7 +720,7 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
     return result;
   }
 
-  bool SubtractMaskFromActive(const std::vector<uint64>& mask) {
+  bool SubtractMaskFromActive(const std::vector<uint64_t>& mask) {
     const bool result = active_tuples_.RevSubtract(solver(), mask);
     if (active_tuples_.Empty()) {
       solver()->Fail();
@@ -722,18 +728,18 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
     return result;
   }
 
-  bool Supported(int var_index, int64 value_index) {
+  bool Supported(int var_index, int64_t value_index) {
     DCHECK_GE(var_index, 0);
     DCHECK_LT(var_index, arity_);
     DCHECK_GE(value_index, 0);
     DCHECK_LT(value_index, masks_[var_index].size());
-    const std::vector<uint64>& mask = masks_[var_index][value_index];
+    const std::vector<uint64_t>& mask = masks_[var_index][value_index];
     DCHECK(!mask.empty());
     return active_tuples_.Intersects(mask, &supports_[var_index][value_index]);
   }
 
-  void OrTempMask(int var_index, int64 value_index) {
-    const std::vector<uint64>& mask = masks_[var_index][value_index];
+  void OrTempMask(int var_index, int64_t value_index) {
+    const std::vector<uint64_t>& mask = masks_[var_index][value_index];
     if (!mask.empty()) {
       const int mask_span = mask_ends_[var_index][value_index] -
                             mask_starts_[var_index][value_index] + 1;
@@ -750,7 +756,7 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
     }
   }
 
-  void SetTempMask(int var_index, int64 value_index) {
+  void SetTempMask(int var_index, int64_t value_index) {
     // We assume memset is much faster that looping and assigning.
     // Still we do want to stay sparse if possible.
     // Thus we switch between dense and sparse initialization by
@@ -777,24 +783,24 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
   }
 
   // The length in 64 bit words of the number of tuples.
-  int64 word_length_;
+  int64_t word_length_;
   // The active bitset.
   UnsortedNullableRevBitset active_tuples_;
   // The masks per value per variable.
-  std::vector<std::vector<std::vector<uint64>>> masks_;
+  std::vector<std::vector<std::vector<uint64_t>>> masks_;
   // The range of active indices in the masks.
   std::vector<std::vector<int>> mask_starts_;
   std::vector<std::vector<int>> mask_ends_;
   // The min on the vars at creation time.
-  std::vector<int64> original_min_;
+  std::vector<int64_t> original_min_;
   // A temporary mask use for computation.
-  std::vector<uint64> temp_mask_;
+  std::vector<uint64_t> temp_mask_;
   // The index of the word in the active bitset supporting each value per
   // variable.
   std::vector<std::vector<int>> supports_;
   Demon* demon_;
   int touched_var_;
-  RevArray<int64> var_sizes_;
+  RevArray<int64_t> var_sizes_;
 };
 
 // ----- Small Compact Table. -----
@@ -839,14 +845,14 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
     // Build masks.
     for (int i = 0; i < arity_; ++i) {
       original_min_[i] = vars_[i]->Min();
-      const int64 span = vars_[i]->Max() - original_min_[i] + 1;
+      const int64_t span = vars_[i]->Max() - original_min_[i] + 1;
       masks_[i].assign(span, 0);
     }
   }
 
   bool IsTupleSupported(int tuple_index) {
     for (int var_index = 0; var_index < arity_; ++var_index) {
-      int64 value = 0;
+      int64_t value = 0;
       if (!TupleValue(tuple_index, var_index, &value) ||
           !vars_[var_index]->Contains(value)) {
         return false;
@@ -860,10 +866,10 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
     // Compute active_tuples_ and update masks.
     for (int tuple_index = 0; tuple_index < tuple_count_; ++tuple_index) {
       if (IsTupleSupported(tuple_index)) {
-        const uint64 local_mask = OneBit64(tuple_index);
+        const uint64_t local_mask = OneBit64(tuple_index);
         active_tuples_ |= local_mask;
         for (int var_index = 0; var_index < arity_; ++var_index) {
-          const int64 value = UnsafeTupleValue(tuple_index, var_index);
+          const int64_t value = UnsafeTupleValue(tuple_index, var_index);
           masks_[var_index][value - original_min_[var_index]] |= local_mask;
         }
       }
@@ -877,9 +883,9 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
     // remove unreached values.
     for (int var_index = 0; var_index < arity_; ++var_index) {
       IntVar* const var = vars_[var_index];
-      const int64 original_min = original_min_[var_index];
+      const int64_t original_min = original_min_[var_index];
       to_remove_.clear();
-      for (const int64 value : InitAndGetValues(iterators_[var_index])) {
+      for (const int64_t value : InitAndGetValues(iterators_[var_index])) {
         if (masks_[var_index][value - original_min] == 0) {
           to_remove_.push_back(value);
         }
@@ -908,7 +914,7 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
     }
 
     // We cache active_tuples_.
-    const uint64 actives = active_tuples_;
+    const uint64_t actives = active_tuples_;
 
     // We scan all variables and check their domains.
     for (int var_index = 0; var_index < arity_; ++var_index) {
@@ -920,10 +926,10 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
         touched_var_ = -1;  // Clean it, it is a one time flag.
         continue;
       }
-      const std::vector<uint64>& var_mask = masks_[var_index];
-      const int64 original_min = original_min_[var_index];
+      const std::vector<uint64_t>& var_mask = masks_[var_index];
+      const int64_t original_min = original_min_[var_index];
       IntVar* const var = vars_[var_index];
-      const int64 var_size = var->Size();
+      const int64_t var_size = var->Size();
       switch (var_size) {
         case 1: {
           if ((var_mask[var->Min() - original_min] & actives) == 0) {
@@ -936,8 +942,8 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
           break;
         }
         case 2: {
-          const int64 var_min = var->Min();
-          const int64 var_max = var->Max();
+          const int64_t var_min = var->Min();
+          const int64_t var_max = var->Max();
           const bool min_support =
               (var_mask[var_min - original_min] & actives) != 0;
           const bool max_support =
@@ -953,10 +959,10 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
         }
         default: {
           to_remove_.clear();
-          const int64 var_min = var->Min();
-          const int64 var_max = var->Max();
-          int64 new_min = var_min;
-          int64 new_max = var_max;
+          const int64_t var_min = var->Min();
+          const int64_t var_max = var->Max();
+          int64_t new_min = var_min;
+          int64_t new_max = var_max;
           if (var_max - var_min + 1 == var_size) {
             // Contiguous case.
             for (; new_min <= var_max; ++new_min) {
@@ -970,7 +976,7 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
               }
             }
             var->SetRange(new_min, new_max);
-            for (int64 value = new_min + 1; value < new_max; ++value) {
+            for (int64_t value = new_min + 1; value < new_max; ++value) {
               if ((var_mask[value - original_min] & actives) == 0) {
                 to_remove_.push_back(value);
               }
@@ -978,7 +984,8 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
           } else {
             bool min_set = false;
             int last_size = 0;
-            for (const int64 value : InitAndGetValues(iterators_[var_index])) {
+            for (const int64_t value :
+                 InitAndGetValues(iterators_[var_index])) {
               // The iterator is not safe w.r.t. deletion. Thus we
               // postpone all value removals.
               if ((var_mask[value - original_min] & actives) == 0) {
@@ -1012,8 +1019,8 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
     // tuples attached to values of the variables that have been removed.
 
     IntVar* const var = vars_[var_index];
-    const int64 original_min = original_min_[var_index];
-    const int64 var_size = var->Size();
+    const int64_t original_min = original_min_[var_index];
+    const int64_t var_size = var->Size();
     switch (var_size) {
       case 1: {
         ApplyMask(var_index, masks_[var_index][var->Min() - original_min]);
@@ -1027,11 +1034,11 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
       default: {
         // We first collect the complete set of tuples to blank out in
         // temp_mask.
-        const std::vector<uint64>& var_mask = masks_[var_index];
-        const int64 old_min = var->OldMin();
-        const int64 old_max = var->OldMax();
-        const int64 var_min = var->Min();
-        const int64 var_max = var->Max();
+        const std::vector<uint64_t>& var_mask = masks_[var_index];
+        const int64_t old_min = var->OldMin();
+        const int64_t old_max = var->OldMax();
+        const int64_t var_min = var->Min();
+        const int64_t var_max = var->Max();
         const bool contiguous = var_size == var_max - var_min + 1;
         const bool nearly_contiguous =
             var_size > (var_max - var_min + 1) * 7 / 10;
@@ -1041,38 +1048,39 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
         // TODO(user): Implement HolesSize() on IntVar* and use it
         // to remove this code and the var_sizes in the non_small
         // version.
-        uint64 hole_mask = 0;
+        uint64_t hole_mask = 0;
         if (!contiguous) {
-          for (const int64 value : InitAndGetValues(holes_[var_index])) {
+          for (const int64_t value : InitAndGetValues(holes_[var_index])) {
             hole_mask |= var_mask[value - original_min];
           }
         }
-        const int64 hole_operations = var_min - old_min + old_max - var_max;
+        const int64_t hole_operations = var_min - old_min + old_max - var_max;
         // We estimate the domain iterator to be 4x slower.
-        const int64 domain_operations = contiguous ? var_size : 4 * var_size;
+        const int64_t domain_operations = contiguous ? var_size : 4 * var_size;
         if (hole_operations < domain_operations) {
-          for (int64 value = old_min; value < var_min; ++value) {
+          for (int64_t value = old_min; value < var_min; ++value) {
             hole_mask |= var_mask[value - original_min];
           }
-          for (int64 value = var_max + 1; value <= old_max; ++value) {
+          for (int64_t value = var_max + 1; value <= old_max; ++value) {
             hole_mask |= var_mask[value - original_min];
           }
           // We reverse the mask as this was negative information.
           ApplyMask(var_index, ~hole_mask);
         } else {
-          uint64 domain_mask = 0;
+          uint64_t domain_mask = 0;
           if (contiguous) {
-            for (int64 value = var_min; value <= var_max; ++value) {
+            for (int64_t value = var_min; value <= var_max; ++value) {
               domain_mask |= var_mask[value - original_min];
             }
           } else if (nearly_contiguous) {
-            for (int64 value = var_min; value <= var_max; ++value) {
+            for (int64_t value = var_min; value <= var_max; ++value) {
               if (var->Contains(value)) {
                 domain_mask |= var_mask[value - original_min];
               }
             }
           } else {
-            for (const int64 value : InitAndGetValues(iterators_[var_index])) {
+            for (const int64_t value :
+                 InitAndGetValues(iterators_[var_index])) {
               domain_mask |= var_mask[value - original_min];
             }
           }
@@ -1089,10 +1097,10 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
   }
 
  private:
-  void ApplyMask(int var_index, uint64 mask) {
+  void ApplyMask(int var_index, uint64_t mask) {
     if ((~mask & active_tuples_) != 0) {
       // Check if we need to save the active_tuples in this node.
-      const uint64 current_stamp = solver()->stamp();
+      const uint64_t current_stamp = solver()->stamp();
       if (stamp_ < current_stamp) {
         stamp_ = current_stamp;
         solver()->SaveValue(&active_tuples_);
@@ -1115,13 +1123,13 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
   }
 
   // Bitset of active tuples.
-  uint64 active_tuples_;
+  uint64_t active_tuples_;
   // Stamp of the active_tuple bitset.
-  uint64 stamp_;
+  uint64_t stamp_;
   // The masks per value per variable.
-  std::vector<std::vector<uint64>> masks_;
+  std::vector<std::vector<uint64_t>> masks_;
   // The min on the vars at creation time.
-  std::vector<int64> original_min_;
+  std::vector<int64_t> original_min_;
   Demon* demon_;
   int touched_var_;
 };
@@ -1143,8 +1151,9 @@ class TransitionConstraint : public Constraint {
   static const int kNextStatePosition;
   static const int kTransitionTupleSize;
   TransitionConstraint(Solver* const s, const std::vector<IntVar*>& vars,
-                       const IntTupleSet& transition_table, int64 initial_state,
-                       const std::vector<int64>& final_states)
+                       const IntTupleSet& transition_table,
+                       int64_t initial_state,
+                       const std::vector<int64_t>& final_states)
       : Constraint(s),
         vars_(vars),
         transition_table_(transition_table),
@@ -1152,7 +1161,8 @@ class TransitionConstraint : public Constraint {
         final_states_(final_states) {}
 
   TransitionConstraint(Solver* const s, const std::vector<IntVar*>& vars,
-                       const IntTupleSet& transition_table, int64 initial_state,
+                       const IntTupleSet& transition_table,
+                       int64_t initial_state,
                        const std::vector<int>& final_states)
       : Constraint(s),
         vars_(vars),
@@ -1168,8 +1178,8 @@ class TransitionConstraint : public Constraint {
 
   void Post() override {
     Solver* const s = solver();
-    int64 state_min = kint64max;
-    int64 state_max = kint64min;
+    int64_t state_min = std::numeric_limits<int64_t>::max();
+    int64_t state_max = std::numeric_limits<int64_t>::min();
     const int nb_vars = vars_.size();
     for (int i = 0; i < transition_table_.NumTuples(); ++i) {
       state_max =
@@ -1236,9 +1246,9 @@ class TransitionConstraint : public Constraint {
   // The transition as tuples (state, value, next_state).
   const IntTupleSet transition_table_;
   // The initial state before the first transition.
-  const int64 initial_state_;
+  const int64_t initial_state_;
   // Vector of final state after the last transision.
-  std::vector<int64> final_states_;
+  std::vector<int64_t> final_states_;
 };
 
 const int TransitionConstraint::kStatePosition = 0;
@@ -1263,14 +1273,14 @@ Constraint* Solver::MakeAllowedAssignments(const std::vector<IntVar*>& vars,
 
 Constraint* Solver::MakeTransitionConstraint(
     const std::vector<IntVar*>& vars, const IntTupleSet& transition_table,
-    int64 initial_state, const std::vector<int64>& final_states) {
+    int64_t initial_state, const std::vector<int64_t>& final_states) {
   return RevAlloc(new TransitionConstraint(this, vars, transition_table,
                                            initial_state, final_states));
 }
 
 Constraint* Solver::MakeTransitionConstraint(
     const std::vector<IntVar*>& vars, const IntTupleSet& transition_table,
-    int64 initial_state, const std::vector<int>& final_states) {
+    int64_t initial_state, const std::vector<int>& final_states) {
   return RevAlloc(new TransitionConstraint(this, vars, transition_table,
                                            initial_state, final_states));
 }

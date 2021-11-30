@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,6 +14,8 @@
 #if defined(USE_SCIP)
 
 #include "ortools/linear_solver/scip_callback.h"
+
+#include <cstdint>
 
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
@@ -77,11 +79,11 @@ double ScipConstraintHandlerContext::VariableValue(
   return SCIPgetSolVal(scip_, solution_, ScipGetVar(scip_, variable->index()));
 }
 
-int64 ScipConstraintHandlerContext::NumNodesProcessed() const {
+int64_t ScipConstraintHandlerContext::NumNodesProcessed() const {
   return SCIPgetNNodes(scip_);
 }
 
-int64 ScipConstraintHandlerContext::CurrentNodeId() const {
+int64_t ScipConstraintHandlerContext::CurrentNodeId() const {
   return SCIPgetCurrentNode(scip_)->number;
 }
 

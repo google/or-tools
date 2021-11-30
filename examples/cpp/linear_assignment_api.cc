@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -11,7 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/base/commandlineflags.h"
+#include <cstdlib>
+
+#include "absl/flags/parse.h"
+#include "absl/flags/usage.h"
 #include "ortools/base/logging.h"
 #include "ortools/graph/ebert_graph.h"
 #include "ortools/graph/linear_assignment.h"
@@ -46,7 +49,7 @@ void AssignmentOn4x4Matrix() {
 
 void AnotherAssignment() {
   LOG(INFO) << "Another assignment on 4x4 matrix";
-  std::vector<std::vector<int> > matrice(
+  std::vector<std::vector<int>> matrice(
       {{8, 7, 9, 9}, {5, 2, 7, 8}, {6, 1, 4, 9}, {2, 3, 2, 6}});
   const int kSize = matrice.size();
   ForwardStarGraph graph(2 * kSize, kSize * kSize);
@@ -66,6 +69,7 @@ void AnotherAssignment() {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
+  google::InitGoogleLogging(argv[0]);
   absl::ParseCommandLine(argc, argv);
   operations_research::AssignmentOn4x4Matrix();
   operations_research::AnotherAssignment();

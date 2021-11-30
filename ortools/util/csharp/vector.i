@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,8 +19,10 @@
 #include "ortools/base/integral_types.h"
 %}
 
-// Typemaps to represent arguments of types "const std::vector<TYPE>&" or
-// "std::vector<TYPE>" as CSHARPTYPE[].
+// Typemaps to represent arguments of types:
+// - "const std::vector<TYPE>&" or
+// - "std::vector<TYPE>"
+// as CSHARPTYPE[].
 // note: TYPE must be a primitive data type (PDT).
 %define VECTOR_AS_CSHARP_ARRAY(TYPE, CTYPE, CSHARPTYPE, ARRAYTYPE)
 // This part is for const std::vector<>&.
@@ -80,11 +82,14 @@
 }
 %enddef // VECTOR_AS_CSHARP_ARRAY
 
-// Typemaps to represent arguments of types "const std::vector<std::vector<TYPE>>&" or
-// "std::vector<std::vector<TYPE>>*" as CSHARPTYPE[][].
+// Typemaps to represent arguments of types:
+// - "const std::vector<std::vector<TYPE> >&" or
+// - "std::vector<std::vector<TYPE> >*" or
+// - "std::vector<std::vector<TYPE> >" or
+// as CSHARPTYPE[][].
 // note: TYPE must be a primitive data type (PDT).
 %define JAGGED_MATRIX_AS_CSHARP_ARRAY(TYPE, CTYPE, CSHARPTYPE, ARRAYTYPE)
-// This part is for const std::vector<std::vector<>>&.
+// This part is for const std::vector<std::vector<TYPE> >&.
 %typemap(cstype) const std::vector<std::vector<TYPE> >&  %{ CSHARPTYPE[][] %}
 %typemap(csin)   const std::vector<std::vector<TYPE> >&  %{
   $csinput.GetLength(0),
@@ -114,7 +119,7 @@
 
   $1 = &result;
 %}
-// Now, we do it for std::vector<std::vector<>>*.
+// Now, we do it for std::vector<std::vector<TYPE> >*.
 %typemap(cstype) std::vector<std::vector<TYPE> >*  %{ CSHARPTYPE[][] %}
 %typemap(csin)   std::vector<std::vector<TYPE> >*  %{
   $csinput.GetLength(0),
@@ -143,9 +148,40 @@
   }
   $1 = &result;
 %}
+// Now, we do it for std::vector<std::vector<TYPE> >.
+%typemap(cstype) std::vector<std::vector<TYPE> >  %{ CSHARPTYPE[][] %}
+%typemap(csin)   std::vector<std::vector<TYPE> >  %{
+  $csinput.GetLength(0),
+  NestedArrayHelper.GetArraySecondSize($csinput),
+  NestedArrayHelper.GetFlatArray($csinput)
+%}
+%typemap(imtype, out="global::System.IntPtr") std::vector<std::vector<TYPE> >  %{
+  int len$argnum##_1, int[] len$argnum##_2, CSHARPTYPE[]
+%}
+%typemap(ctype, out="void*")  std::vector<std::vector<TYPE> >  %{
+  int len$argnum##_1, int len$argnum##_2[], CTYPE*
+%}
+%typemap(in) std::vector<std::vector<TYPE> > %{
+  $1.clear();
+  $1.resize(len$argnum##_1);
+
+  TYPE* inner_array = reinterpret_cast<TYPE*>($input);
+  int actualIndex = 0;
+  for (int index1 = 0; index1 < len$argnum##_1; ++index1) {
+    $1[index1].reserve(len$argnum##_2[index1]);
+    for (int index2 = 0; index2 < len$argnum##_2[index1]; ++index2) {
+      const TYPE value = inner_array[actualIndex];
+      $1[index1].emplace_back(value);
+      actualIndex++;
+    }
+  }
+%}
 %enddef // JAGGED_MATRIX_AS_CSHARP_ARRAY
 
-// "std::vector<std::vector<TYPE>>*" as CSHARPTYPE[,].
+// Typemaps to represent arguments of types:
+// - "const std::vector<std::vector<TYPE> >&" or
+// - "std::vector<std::vector<TYPE> >*" or
+// as CSHARPTYPE[,].
 // note: TYPE must be a primitive data type (PDT).
 %define REGULAR_MATRIX_AS_CSHARP_ARRAY(TYPE, CTYPE, CSHARPTYPE, ARRAYTYPE)
 // This part is for const std::vector<std::vector<>>&.
@@ -221,8 +257,8 @@ VECTOR_AS_CSHARP_ARRAY(int, int, int, IntVector);
 JAGGED_MATRIX_AS_CSHARP_ARRAY(int, int, int, IntVectorVector);
 //REGULAR_MATRIX_AS_CSHARP_ARRAY(int, int, int, IntVectorVector);
 
-%template(Int64Vector) std::vector<int64>;
-%template(Int64VectorVector) std::vector<std::vector<int64> >;
-VECTOR_AS_CSHARP_ARRAY(int64, int64, long, Int64Vector);
-JAGGED_MATRIX_AS_CSHARP_ARRAY(int64, int64, long, Int64VectorVector);
-//REGULAR_MATRIX_AS_CSHARP_ARRAY(int64, int64, long, Int64VectorVector);
+%template(Int64Vector) std::vector<int64_t>;
+%template(Int64VectorVector) std::vector<std::vector<int64_t> >;
+VECTOR_AS_CSHARP_ARRAY(int64_t, int64_t, long, Int64Vector);
+JAGGED_MATRIX_AS_CSHARP_ARRAY(int64_t, int64_t, long, Int64VectorVector);
+//REGULAR_MATRIX_AS_CSHARP_ARRAY(int64_t, int64_t, long, Int64VectorVector);

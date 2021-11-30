@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -25,7 +25,7 @@
 // solver and the routing library.
 %{
 template<>
-PyObject* PyObjFrom<int64>(const int64& c) { return PyLong_FromLongLong(c); }
+PyObject* PyObjFrom<int64_t>(const int64_t& c) { return PyLong_FromLongLong(c); }
 %}
 
 // Conversion of IntExpr* and IntVar* are a bit special because of the two

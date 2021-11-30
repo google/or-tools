@@ -3,6 +3,7 @@
 
 # Model manipulation
 
+https://developers.google.com/optimization/
 
 <!--ts-->
    * [Model manipulation](#model-manipulation)
@@ -12,8 +13,10 @@
          * [C   code](#c-code)
          * [Java code](#java-code)
          * [C# code](#c-code-1)
+      * [Model copy](#model-copy)
+         * [Python code](#python-code-1)
+         * [C   code](#c-code-2)
 
-<!-- Added by: lperron, at: Tue Nov  3 17:33:08 CET 2020 -->
 
 <!--te-->
 
@@ -21,6 +24,7 @@
 ## Introduction
 
 In all languages, the CpModel class is a thin wrapper around a
+[protocol buffer](http://developers.google.com/protocol-buffers/) object
 [cp_model.proto](../cp_model.proto).
 
 Some functionalities require using the cp_model protobuf directly. To write code
@@ -113,7 +117,7 @@ def SolutionHintingSampleSat():
   # Creates a solver and solves.
   solver = cp_model.CpSolver()
   solution_printer = cp_model.VarArrayAndObjectiveSolutionPrinter([x, y, z])
-  status = solver.SolveWithSolutionCallback(model, solution_printer)
+  status = solver.Solve(model, solution_printer)
 
   print('Status = %s' % solver.StatusName(status))
   print('Number of solutions found: %i' % solution_printer.solution_count())
@@ -212,7 +216,7 @@ public class SolutionHintingSampleSat {
     CpSolver solver = new CpSolver();
     VarArraySolutionPrinterWithObjective cb =
         new VarArraySolutionPrinterWithObjective(new IntVar[] {x, y, z});
-    solver.solveWithSolutionCallback(model, cb);
+    solver.solve(model, cb);
   }
 
   static class VarArraySolutionPrinterWithObjective extends CpSolverSolutionCallback {
@@ -296,7 +300,113 @@ public class SolutionHintingSampleSat
         // Creates a solver and solves the model.
         CpSolver solver = new CpSolver();
         VarArraySolutionPrinter cb = new VarArraySolutionPrinter(new IntVar[] { x, y, z });
-        CpSolverStatus status = solver.SolveWithSolutionCallback(model, cb);
+        CpSolverStatus status = solver.Solve(model, cb);
     }
+}
+```
+
+## Model copy
+
+The CpModel classes supports deep copy from a previous model. This is useful to
+solve variations of a base model. The trick is to recover the copies of the
+variables in the original model to be able to manipulate the new model. This is
+illustrated in the following examples.
+
+### Python code
+
+```python
+"""Showcases deep copying of a model."""
+
+from ortools.sat.python import cp_model
+
+
+def CopyModelSat():
+  """Showcases printing intermediate solutions found during search."""
+  # Creates the model.
+  model = cp_model.CpModel()
+
+  # Creates the variables.
+  num_vals = 3
+  x = model.NewIntVar(0, num_vals - 1, 'x')
+  y = model.NewIntVar(0, num_vals - 1, 'y')
+  z = model.NewIntVar(0, num_vals - 1, 'z')
+
+  # Creates the constraints.
+  model.Add(x != y)
+
+  model.Maximize(x + 2 * y + 3 * z)
+
+  # Creates a solver and solves.
+  solver = cp_model.CpSolver()
+  status = solver.Solve(model)
+
+  if status == cp_model.OPTIMAL:
+    print('Optimal value of the original model: {}'.format(
+        solver.ObjectiveValue()))
+
+  # Copy the model.
+  copy = cp_model.CpModel()
+  copy.CopyFrom(model)
+
+  copy_x = copy.GetIntVarFromProtoIndex(x.Index())
+  copy_y = copy.GetIntVarFromProtoIndex(y.Index())
+
+  copy.Add(copy_x + copy_y <= 1)
+  status = solver.Solve(copy)
+
+  if status == cp_model.OPTIMAL:
+    print('Optimal value of the modified model: {}'.format(
+        solver.ObjectiveValue()))
+
+
+CopyModelSat()
+```
+
+### C++ code
+
+```cpp
+#include "ortools/sat/cp_model.h"
+#include "ortools/sat/model.h"
+
+namespace operations_research {
+namespace sat {
+
+void CopyModelSat() {
+  CpModelBuilder cp_model;
+
+  const Domain domain(0, 2);
+  const IntVar x = cp_model.NewIntVar(domain).WithName("x");
+  const IntVar y = cp_model.NewIntVar(domain).WithName("y");
+  const IntVar z = cp_model.NewIntVar(domain).WithName("z");
+
+  cp_model.AddNotEqual(x, y);
+
+  cp_model.Maximize(LinearExpr::ScalProd({x, y, z}, {1, 2, 3}));
+
+  const CpSolverResponse initial_response = Solve(cp_model.Build());
+  LOG(INFO) << "Optimal value of the original model: "
+            << initial_response.objective_value();
+
+  CpModelBuilder copy;
+  copy.CopyFrom(cp_model.Proto());
+
+  // Add new constraint: copy_of_x + copy_of_y == 1.
+  IntVar copy_of_x = copy.GetIntVarFromProtoIndex(x.index());
+  IntVar copy_of_y = copy.GetIntVarFromProtoIndex(y.index());
+
+  copy.AddLessOrEqual(LinearExpr::Sum({copy_of_x, copy_of_y}), 1);
+
+  const CpSolverResponse modified_response = Solve(copy.Build());
+  LOG(INFO) << "Optimal value of the modified model: "
+            << modified_response.objective_value();
+}
+
+}  // namespace sat
+}  // namespace operations_research
+
+int main() {
+  operations_research::sat::CopyModelSat();
+
+  return EXIT_SUCCESS;
 }
 ```

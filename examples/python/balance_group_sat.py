@@ -1,4 +1,4 @@
-# Copyright 2010-2018 Google LLC
+# Copyright 2010-2021 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -158,10 +158,12 @@ def main():
     # Minimize epsilon
     model.Minimize(e)
 
+    model.ExportToFile('balance_group_sat.pbtxt')
+
     solver = cp_model.CpSolver()
     solution_printer = SolutionPrinter(values, colors, all_groups, all_items,
                                        item_in_group)
-    status = solver.SolveWithSolutionCallback(model, solution_printer)
+    status = solver.Solve(model, solution_printer)
 
     if status == cp_model.OPTIMAL:
         print('Optimal epsilon: %i' % solver.ObjectiveValue())

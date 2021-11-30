@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -50,6 +50,14 @@ void GScipSetRandomSeed(GScipParameters* parameters, int random_seed);
 // Returns -1 if unset.
 int GScipRandomSeed(const GScipParameters& parameters);
 bool GScipRandomSeedSet(const GScipParameters& parameters);
+
+// Sets the misc/catchctrlc property.
+void GScipSetCatchCtrlC(bool catch_ctrl_c, GScipParameters* parameters);
+// Returns the misc/catchctrlc property; true if not set (the default SCIP
+// behavior).
+bool GScipCatchCtrlC(const GScipParameters& parameters);
+// Returns true when the misc/catchctrlc property is set.
+bool GScipCatchCtrlCSet(const GScipParameters& parameters);
 
 }  // namespace operations_research
 

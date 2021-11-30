@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,6 +13,8 @@
 
 #ifndef OR_TOOLS_GLOP_UPDATE_ROW_H_
 #define OR_TOOLS_GLOP_UPDATE_ROW_H_
+
+#include <cstdint>
 
 #include "ortools/glop/basis_representation.h"
 #include "ortools/glop/parameters.pb.h"
@@ -55,9 +57,11 @@ class UpdateRow {
   void ComputeUpdateRow(RowIndex leaving_row);
 
   // Returns the left inverse of the unit row as computed by the last call to
-  // ComputeUpdateRow(). In debug mode, we check that ComputeUpdateRow() was
-  // called since the last Invalidate().
+  // ComputeUpdateRow().
   const ScatteredRow& GetUnitRowLeftInverse() const;
+
+  // Returns true if ComputeUpdateRow() was called since the last Invalidate().
+  const bool IsComputed() const { return !compute_update_row_; }
 
   // Returns the update coefficients and non-zero positions corresponding to the
   // last call to ComputeUpdateRow().
@@ -70,9 +74,6 @@ class UpdateRow {
   // This must be called after a call to ComputeUpdateRow(). It will fill
   // all the non-relevant positions that where not filled by ComputeUpdateRow().
   void RecomputeFullUpdateRow(RowIndex leaving_row);
-
-  // Sets to zero the coefficient for column col.
-  void IgnoreUpdatePosition(ColIndex col);
 
   // Sets the algorithm parameters.
   void SetParameters(const GlopParameters& parameters);
@@ -97,11 +98,13 @@ class UpdateRow {
   // the class state by calling Invalidate().
   const ScatteredRow& ComputeAndGetUnitRowLeftInverse(RowIndex leaving_row);
 
- private:
+  // Advanced usage. This has side effects and should be used with care.
+  //
   // Computes the left inverse of the given unit row, and stores it in
   // unit_row_left_inverse_.
   void ComputeUnitRowLeftInverse(RowIndex leaving_row);
 
+ private:
   // ComputeUpdateRow() does the common work and calls one of these functions
   // depending on the situation.
   void ComputeUpdatesRowWise();
@@ -147,7 +150,7 @@ class UpdateRow {
 
   // Track the number of basic floating point multiplication.
   // Used by DeterministicTime().
-  int64 num_operations_;
+  int64_t num_operations_;
 
   // Glop standard classes.
   GlopParameters parameters_;

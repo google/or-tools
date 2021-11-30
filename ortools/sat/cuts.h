@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,13 +14,15 @@
 #ifndef OR_TOOLS_SAT_CUTS_H_
 #define OR_TOOLS_SAT_CUTS_H_
 
+#include <functional>
+#include <string>
 #include <utility>
 #include <vector>
 
 #include "ortools/base/int_type.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
-#include "ortools/sat/intervals.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/linear_constraint_manager.h"
 #include "ortools/sat/model.h"
@@ -39,7 +41,7 @@ namespace sat {
 // - Only add cuts in term of the same variables or their negation.
 struct CutGenerator {
   std::vector<IntegerVariable> vars;
-  std::function<void(
+  std::function<bool(
       const absl::StrongVector<IntegerVariable, double>& lp_values,
       LinearConstraintManager* manager)>
       generate_cuts;
@@ -61,6 +63,14 @@ class ImpliedBoundsProcessor {
       : lp_vars_(lp_vars_.begin(), lp_vars_.end()),
         integer_trail_(integer_trail),
         implied_bounds_(implied_bounds) {}
+
+  // See if some of the implied bounds equation are violated and add them to
+  // the IB cut pool if it is the case.
+  //
+  // Important: This must be called before we process any constraints with a
+  // different lp_values or level zero bounds.
+  void RecomputeCacheAndSeparateSomeImpliedBoundCuts(
+      const absl::StrongVector<IntegerVariable, double>& lp_values);
 
   // Processes and updates the given cut.
   void ProcessUpperBoundedConstraint(
@@ -89,11 +99,6 @@ class ImpliedBoundsProcessor {
       const absl::StrongVector<IntegerVariable, double>& lp_values,
       LinearConstraint* cut, std::vector<SlackInfo>* slack_infos);
 
-  // See if some of the implied bounds equation are violated and add them to
-  // the IB cut pool if it is the case.
-  void SeparateSomeImpliedBoundCuts(
-      const absl::StrongVector<IntegerVariable, double>& lp_values);
-
   // Only used for debugging.
   //
   // Substituting back the slack created by the function above should give
@@ -104,12 +109,11 @@ class ImpliedBoundsProcessor {
                   const std::vector<SlackInfo>& info);
 
   // Add a new variable that could be used in the new cuts.
+  // Note that the cache must be computed to take this into account.
   void AddLpVariable(IntegerVariable var) { lp_vars_.insert(var); }
 
-  // Must be called before we process any constraints with a different
-  // lp_values or level zero bounds.
-  void ClearCache() const { cache_.clear(); }
-
+  // Once RecomputeCacheAndSeparateSomeImpliedBoundCuts() has been called,
+  // we can get the best implied bound for each variables.
   struct BestImpliedBoundInfo {
     double bool_lp_value = 0.0;
     double slack_lp_value = std::numeric_limits<double>::infinity();
@@ -414,12 +418,13 @@ CutGenerator CreateKnapsackCoverCutGenerator(
 CutGenerator CreatePositiveMultiplicationCutGenerator(IntegerVariable z,
                                                       IntegerVariable x,
                                                       IntegerVariable y,
+                                                      int linearization_level,
                                                       Model* model);
 
 // A cut generator for y = x ^ 2 (x >= 0).
 // It will dynamically add a linear inequality to push y closer to the parabola.
 CutGenerator CreateSquareCutGenerator(IntegerVariable y, IntegerVariable x,
-                                      Model* model);
+                                      int linearization_level, Model* model);
 
 // A cut generator for all_diff(xi). Let the united domain of all xi be D. Sum
 // of any k-sized subset of xi need to be greater or equal to the sum of
@@ -471,55 +476,20 @@ CutGenerator CreateLinMaxCutGenerator(
     const IntegerVariable target, const std::vector<LinearExpression>& exprs,
     const std::vector<IntegerVariable>& z_vars, Model* model);
 
-// For a given set of intervals and demands, we compute the maximum energy of
-// each task and make sure it is less than the span of the intervals * its
-// capacity.
-//
-// If an interval is optional, it contributes
-//    min_demand * min_size * presence_literal
-// amount of total energy.
-//
-// If an interval is performed, it contributes either min_demand * size or
-// demand * min_size. We choose the most violated formulation.
-//
-// The maximum energy is capacity * span of intervals at level 0.
-CutGenerator CreateCumulativeCutGenerator(
-    const std::vector<IntervalVariable>& intervals,
-    const IntegerVariable capacity, const std::vector<IntegerVariable>& demands,
+// Helper for the affine max constraint.
+LinearConstraint BuildMaxAffineUpConstraint(
+    const LinearExpression& target, IntegerVariable var,
+    const std::vector<std::pair<IntegerValue, IntegerValue>>& affines,
     Model* model);
 
-// For a given set of intervals and demands, we first compute the mandatory part
-// of the interval as [start_max , end_min]. We use this to calculate mandatory
-// demands for each start_max time points for eligible intervals.
-// Since the sum of these mandatory demands must be smaller or equal to the
-// capacity, we create a cut representing that.
-//
-// If an interval is optional, it contributes min_demand * presence_literal
-// amount of demand to the mandatory demands sum. So the final cut is generated
-// as follows:
-//   sum(demands of always present intervals)
-//   + sum(presence_literal * min_of_demand) <= capacity.
-CutGenerator CreateOverlappingCumulativeCutGenerator(
-    const std::vector<IntervalVariable>& intervals,
-    const IntegerVariable capacity, const std::vector<IntegerVariable>& demands,
-    Model* model);
-
-// For a given set of intervals, we first compute the min and max of all
-// intervals. Then we create a cut that indicates that all intervals must fit
-// in that span.
-//
-// If an interval is optional, it contributes min_size * presence_literal
-// amount of demand to the mandatory demands sum. So the final cut is generated
-// as follows:
-//   sum(sizes of always present intervals)
-//   + sum(presence_literal * min_of_size) <= span of all intervals.
-CutGenerator CreateNoOverlapCutGenerator(
-    const std::vector<IntervalVariable>& intervals, Model* model);
-
-// For a given set of intervals in a no_overlap constraint, we detect violated
-// mandatory precedences and create a cut for these.
-CutGenerator CreateNoOverlapPrecedenceCutGenerator(
-    const std::vector<IntervalVariable>& intervals, Model* model);
+// By definition, the Max of affine functions is convex. The linear polytope is
+// bounded by all affine functions on the bottom, and by a single hyperplane
+// that join the two points at the extreme of the var domain, and their y-values
+// of the max of the affine functions.
+CutGenerator CreateMaxAffineCutGenerator(
+    LinearExpression target, IntegerVariable var,
+    std::vector<std::pair<IntegerValue, IntegerValue>> affines,
+    const std::string cut_name, Model* model);
 
 // Extracts the variables that have a Literal view from base variables and
 // create a generator that will returns constraint of the form "at_most_one"

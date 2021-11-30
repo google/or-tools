@@ -1,11 +1,21 @@
---- scip-7.0.1/src/scip/buildflags.c.new	1970-01-01 01:00:00.000000000 +0100
-+++ scip-7.0.1/src/scip/buildflags.c	2020-06-30 18:23:41.479773668 +0200
+diff --git a/src/scip/buildflags.c b/src/scip/buildflags.c
+index 4fbbc0e3b..3dc550347 100644
+--- src/scip/buildflags.c
++++ src/scip/buildflags.c
 @@ -0,0 +1,2 @@
 +#define SCIP_BUILDFLAGS " ARCH=x86_64\n COMP=gnu\n DEBUGSOL=false\n EXPRINT=none\n GAMS=false\n SYM=bliss\n GMP=false\n IPOPT=false\n IPOPTOPT=opt\n WORHP=false\n WORHPOPT=opt\n LPS=spx2\n LPSCHECK=false\n LPSOPT=opt\n NOBLKBUFMEM=false\n NOBLKMEM=false\n NOBUFMEM=false\n OPT=opt\n OSTYPE=linux\n PARASCIP=true\n READLINE=false\n SANITIZE=\n SHARED=false\n USRARFLAGS=\n USRCFLAGS=-fPIC\n USRCXXFLAGS=-fPIC\n USRDFLAGS=\n USRFLAGS=\n USRLDFLAGS=\n USROFLAGS=\n VERSION=7.0.1\n ZIMPL=false\n ZIMPLOPT=opt\n ZLIB=true"
 +
-
---- scip-7.0.1-orig/src/symmetry/compute_symmetry_bliss.cpp	2020-06-23 10:40:57.000000000 +0200
-+++ scip-7.0.1/src/symmetry/compute_symmetry_bliss.cpp	2020-07-03 10:15:20.016687707 +0200
+diff --git a/src/scip/githash.c b/src/scip/githash.c
+new file mode 100644
+index 000000000..660dc1976
+--- /dev/null
++++ src/scip/githash.c
+@@ -0,0 +1 @@
++#define SCIP_GITHASH "b41d526acf"
+diff --git a/src/symmetry/compute_symmetry_bliss.cpp b/src/symmetry/compute_symmetry_bliss.cpp
+index db734cb18..2fda08fd4 100644
+--- src/symmetry/compute_symmetry_bliss.cpp
++++ src/symmetry/compute_symmetry_bliss.cpp
 @@ -24,8 +24,8 @@
  #include "compute_symmetry.h"
 
@@ -17,47 +27,3 @@
 
  #include <vector>
  #include <list>
-
---- scip-7.0.1-orig/src/lpi/lpi_glop.cpp	2020-06-23 10:40:54.000000000 +0200
-+++ scip-7.0.1/src/lpi/lpi_glop.cpp	2020-10-21 19:10:35.514260597 +0200
-@@ -41,8 +41,8 @@
- #include "ortools/util/stats.h"
- #include "ortools/util/time_limit.h"
- 
--#include "glog/logging.h"
--#include "glog/vlog_is_on.h"
-+#include "ortools/base/logging.h"
-+#include "ortools/base/vlog_is_on.h"
- 
- #include "lpi/lpi.h"
- #include "scip/pub_message.h"
-@@ -2985,9 +2985,9 @@
-       assert( 0 <= ival && ival <= 2 );
-       lpi->timing = ival;
-       if ( ival == 1 )
--         FLAGS_time_limit_use_usertime = true;
-+         absl::SetFlag(&FLAGS_time_limit_use_usertime, true);
-       else
--         FLAGS_time_limit_use_usertime = false;
-+         absl::SetFlag(&FLAGS_time_limit_use_usertime, false);
-       break;
-    case SCIP_LPPAR_RANDOMSEED:
-       SCIPdebugMessage("SCIPlpiSetIntpar: SCIP_LPPAR_RANDOMSEED -> %d.\n", ival);
-@@ -3030,7 +3030,7 @@
-       SCIPdebugMessage("SCIPlpiGetRealpar: SCIP_LPPAR_OBJLIM = %f.\n", *dval);
-       break;
-    case SCIP_LPPAR_LPTILIM:
--      if ( FLAGS_time_limit_use_usertime )
-+      if ( absl::GetFlag(FLAGS_time_limit_use_usertime) )
-          *dval = lpi->parameters->max_time_in_seconds();
-       else
-          *dval = lpi->parameters->max_deterministic_time();
-@@ -3082,7 +3082,7 @@
-       break;
-    case SCIP_LPPAR_LPTILIM:
-       SCIPdebugMessage("SCIPlpiSetRealpar: SCIP_LPPAR_LPTILIM -> %f.\n", dval);
--      if ( FLAGS_time_limit_use_usertime )
-+      if ( absl::GetFlag(FLAGS_time_limit_use_usertime) )
-          lpi->parameters->set_max_time_in_seconds(dval);
-       else
-          lpi->parameters->set_max_deterministic_time(dval);

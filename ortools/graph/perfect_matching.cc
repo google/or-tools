@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,6 +13,9 @@
 
 #include "ortools/graph/perfect_matching.h"
 
+#include <cstdint>
+#include <limits>
+
 #include "absl/memory/memory.h"
 #include "ortools/util/saturated_arithmetic.h"
 
@@ -24,7 +27,7 @@ void MinCostPerfectMatching::Reset(int num_nodes) {
   matches_.assign(num_nodes, -1);
 }
 
-void MinCostPerfectMatching::AddEdgeWithCost(int tail, int head, int64 cost) {
+void MinCostPerfectMatching::AddEdgeWithCost(int tail, int head, int64_t cost) {
   CHECK_GE(cost, 0) << "Not supported for now, just shift your costs.";
   if (tail == head) {
     VLOG(1) << "Ignoring self-arc: " << tail << " <-> " << head
@@ -50,7 +53,7 @@ MinCostPerfectMatching::Status MinCostPerfectMatching::Solve() {
   //
   // TODO(user): Improve the overflow detection if needed. The current one seems
   // ok though.
-  int64 overflow_detection = CapAdd(maximum_edge_cost_, maximum_edge_cost_);
+  int64_t overflow_detection = CapAdd(maximum_edge_cost_, maximum_edge_cost_);
   if (overflow_detection >= BlossomGraph::kMaxCostValue) {
     return Status::INTEGER_OVERFLOW;
   }
@@ -99,7 +102,8 @@ MinCostPerfectMatching::Status MinCostPerfectMatching::Solve() {
 
   optimal_solution_found_ = true;
   optimal_cost_ = graph_->DualObjective().value();
-  if (optimal_cost_ == kint64max) return Status::COST_OVERFLOW;
+  if (optimal_cost_ == std::numeric_limits<int64_t>::max())
+    return Status::COST_OVERFLOW;
   return Status::OPTIMAL;
 }
 
@@ -111,7 +115,7 @@ const BlossomGraph::NodeIndex BlossomGraph::kNoNodeIndex =
 const BlossomGraph::EdgeIndex BlossomGraph::kNoEdgeIndex =
     BlossomGraph::EdgeIndex(-1);
 const BlossomGraph::CostValue BlossomGraph::kMaxCostValue =
-    BlossomGraph::CostValue(kint64max);
+    BlossomGraph::CostValue(std::numeric_limits<int64_t>::max());
 
 BlossomGraph::BlossomGraph(int num_nodes) {
   graph_.resize(num_nodes);
@@ -768,7 +772,7 @@ void BlossomGraph::Shrink(EdgeIndex e) {
           continue;
         }
 
-        // This is a new-internal edge that we didn't proccess yet.
+        // This is a new-internal edge that we didn't process yet.
         //
         // TODO(user): It would be nicer to not to have to read the memory of
         // the other node at all. It might be possible once we store the
@@ -1253,7 +1257,8 @@ CostValue BlossomGraph::Dual(const Node& node) const {
 }
 
 CostValue BlossomGraph::DualObjective() const {
-  if (dual_objective_ == kint64max) return CostValue(kint64max);
+  if (dual_objective_ == std::numeric_limits<int64_t>::max())
+    return CostValue(std::numeric_limits<int64_t>::max());
   CHECK_EQ(dual_objective_ % 2, 0);
   return dual_objective_ / 2;
 }

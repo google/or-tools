@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -24,6 +24,7 @@ option csharp_namespace = "Google.OrTools.ConstraintSolver";
 import "google/protobuf/duration.proto";
 import "ortools/constraint_solver/routing_enums.proto";
 import "ortools/constraint_solver/solver_parameters.proto";
+import "ortools/sat/sat_parameters.proto";
 import "ortools/util/optional_boolean.proto";
 
 package operations_research;
@@ -34,7 +35,7 @@ package operations_research;
 // then the routing library will pick its preferred value for that parameter
 // automatically: this should be the case for most parameters.
 // To see those "default" parameters, call GetDefaultRoutingSearchParameters().
-// Next ID: 44
+// Next ID: 49
 message RoutingSearchParameters {
   // First solution strategies, used as starting point of local search.
   FirstSolutionStrategy.Value first_solution_strategy = 1;
@@ -77,14 +78,30 @@ message RoutingSearchParameters {
   // cheapest insertion heuristic.
   // If not overridden, its default value is 1, meaning all neighbors will be
   // considered.
+  // The neighborhood ratio is coupled with the corresponding min_neighbors
+  // integer, indicating the minimum number of neighbors to consider for each
+  // node:
+  // num_closest_neighbors =
+  //        max(min_neighbors, neighbors_ratio * NUM_NON_START_END_NODES)
+  // This minimum number of neighbors must be greater or equal to 1, its
+  // default value.
   //
-  // Neighbors ratio for the first solution heuristic.
+  // Neighbors ratio and minimum number of neighbors for the first solution
+  // heuristic.
   double cheapest_insertion_first_solution_neighbors_ratio = 21;
-  // Neighbors ratio for the heuristic when used in a local search operator (see
+  int32 cheapest_insertion_first_solution_min_neighbors = 44;
+  // Neighbors ratio and minimum number of neighbors for the heuristic when used
+  // in a local search operator (see
   // local_search_operators.use_global_cheapest_insertion_path_lns and
   // local_search_operators.use_global_cheapest_insertion_chain_lns below).
   double cheapest_insertion_ls_operator_neighbors_ratio = 31;
+  int32 cheapest_insertion_ls_operator_min_neighbors = 45;
 
+  // Whether or not to only consider closest neighbors when initializing the
+  // assignment for the first solution.
+  bool
+      cheapest_insertion_first_solution_use_neighbors_ratio_for_initialization =
+          46;
   // Whether or not to consider entries making the nodes/pairs unperformed in
   // the GlobalCheapestInsertion heuristic.
   bool cheapest_insertion_add_unperformed_entries = 40;
@@ -407,6 +424,14 @@ message RoutingSearchParameters {
   // remaining and will use the CP solution as a hint for the CP-SAT search.
   // As of 5/2019, only TSP models can be solved.
   OptionalBoolean use_cp_sat = 27;
+  // If true, use the CP-SAT solver to find a solution on generalized routing
+  // model. If use_cp is also true, the CP-SAT solver will be run after the CP
+  // solver if there is time remaining and will use the CP solution as a hint
+  // for the CP-SAT search.
+  OptionalBoolean use_generalized_cp_sat = 47;
+  // If use_cp_sat or use_generalized_cp_sat is true, contains the SAT algorithm
+  // parameters which will be used.
+  sat.SatParameters sat_parameters = 48;
   // Underlying solver to use in dimension scheduling, respectively for
   // continuous and mixed models.
   enum SchedulingSolver {

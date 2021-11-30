@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,56 +13,80 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace Google.OrTools.Sat
 {
     public class CpSolver
     {
-        public CpSolverStatus Solve(CpModel model)
+        public CpSolverStatus Solve(CpModel model, SolutionCallback cb = null)
         {
+            // Setup search.
+            CreateSolveWrapper();
             if (string_parameters_ != null)
             {
-                response_ = SatHelper.SolveWithStringParameters(model.Model, string_parameters_);
+                solve_wrapper_.SetStringParameters(string_parameters_);
             }
-            else
+            if (log_callback_ != null)
             {
-                response_ = SatHelper.Solve(model.Model);
+                solve_wrapper_.AddLogCallbackFromClass(log_callback_);
             }
+            if (cb != null)
+            {
+                solve_wrapper_.AddSolutionCallback(cb);
+            }
+
+            response_ = solve_wrapper_.Solve(model.Model);
+
+            // Cleanup search.
+            if (cb != null)
+            {
+                solve_wrapper_.ClearSolutionCallback(cb);
+            }
+            ReleaseSolveWrapper();
+
             return response_.Status;
         }
 
+        [ObsoleteAttribute("This method is obsolete. Call Solve instead.", false)]
         public CpSolverStatus SolveWithSolutionCallback(CpModel model, SolutionCallback cb)
         {
-            if (string_parameters_ != null)
-            {
-                response_ = SatHelper.SolveWithStringParametersAndSolutionCallback(model.Model, string_parameters_, cb);
-            }
-            else
-            {
-                response_ = SatHelper.SolveWithStringParametersAndSolutionCallback(model.Model, "", cb);
-            }
-            return response_.Status;
+            return Solve(model, cb);
         }
 
         public CpSolverStatus SearchAllSolutions(CpModel model, SolutionCallback cb)
         {
-            if (string_parameters_ != null)
-            {
-                string extra_parameters = " enumerate_all_solutions:true";
-                response_ = SatHelper.SolveWithStringParametersAndSolutionCallback(
-                    model.Model, string_parameters_ + extra_parameters, cb);
-            }
-            else
-            {
-                string parameters = "enumerate_all_solutions:true";
-                response_ = SatHelper.SolveWithStringParametersAndSolutionCallback(model.Model, parameters, cb);
-            }
+            string old_parameters = string_parameters_;
+            string_parameters_ += " enumerate_all_solutions:true";
+            Solve(model, cb);
+            string_parameters_ = old_parameters;
             return response_.Status;
+        }
+
+        [MethodImpl(MethodImplOptions.Synchronized)]
+        public void StopSearch()
+        {
+            if (solve_wrapper_ != null)
+            {
+                solve_wrapper_.StopSearch();
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.Synchronized)]
+        private void CreateSolveWrapper()
+        {
+            solve_wrapper_ = new SolveWrapper();
+        }
+
+        [MethodImpl(MethodImplOptions.Synchronized)]
+        private void ReleaseSolveWrapper()
+        {
+            solve_wrapper_ = null;
         }
 
         public String ResponseStats()
         {
-            return SatHelper.SolverResponseStats(response_);
+            return CpSatHelper.SolverResponseStats(response_);
         }
 
         public double ObjectiveValue
@@ -87,6 +111,11 @@ namespace Google.OrTools.Sat
             set {
                 string_parameters_ = value;
             }
+        }
+
+        public void SetLogCallback(StringToVoidDelegate del)
+        {
+            log_callback_ = new LogCallbackDelegate(del);
         }
 
         public CpSolverResponse Response
@@ -125,7 +154,7 @@ namespace Google.OrTools.Sat
                 else if (expr is SumArray)
                 {
                     SumArray a = (SumArray)expr;
-                    constant += coeff * a.Constant;
+                    constant += coeff * a.Offset;
                     foreach (LinearExpr sub in a.Expressions)
                     {
                         exprs.Add(sub);
@@ -185,9 +214,30 @@ namespace Google.OrTools.Sat
             return response_.WallTime;
         }
 
-        private CpModelProto model_;
+        public IList<int> SufficientAssumptionsForInfeasibility()
+        {
+            return response_.SufficientAssumptionsForInfeasibility;
+        }
+
         private CpSolverResponse response_;
-        string string_parameters_;
+        private LogCallback log_callback_;
+        private string string_parameters_;
+        private SolveWrapper solve_wrapper_;
+    }
+
+    class LogCallbackDelegate : LogCallback
+    {
+        public LogCallbackDelegate(StringToVoidDelegate del)
+        {
+            this.delegate_ = del;
+        }
+
+        public override void NewMessage(string message)
+        {
+            delegate_(message);
+        }
+
+        private StringToVoidDelegate delegate_;
     }
 
 } // namespace Google.OrTools.Sat

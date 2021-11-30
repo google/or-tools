@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -23,37 +23,6 @@
 %include "stdint.i"
 %include "std_string.i"
 
-// Google typedef
-typedef int32_t int32;
-typedef uint32_t uint32;
-typedef int64_t int64;
-typedef uint64_t uint64;
-
-// Typedefs and typemaps do not interact the way one would expect.
-// E.g., "typedef int int32;" alone does *not* mean that typemap
-// "int * OUTPUT" also applies to "int32 * OUTPUT".  We must say
-// "%apply int * OUTPUT { int32 * OUTPUT };" explicitly.  Therefore,
-// all typemaps in this file operate on C++ type names, not Google
-// type names.  Google typedefs are placed at the very end along with
-// the necessary %apply macros.  See COPY_TYPEMAPS below for details.
-
-%define COPY_TYPEMAPS(oldtype, newtype)
-typedef oldtype newtype;
-%apply oldtype * OUTPUT { newtype * OUTPUT };
-%apply oldtype & OUTPUT { newtype & OUTPUT };
-%apply oldtype * INPUT { newtype * INPUT };
-%apply oldtype & INPUT { newtype & INPUT };
-%apply oldtype * INOUT { newtype * INOUT };
-%apply oldtype & INOUT { newtype & INOUT };
-%apply std::vector<oldtype> * OUTPUT { std::vector<newtype> * OUTPUT };
-%enddef
-
-COPY_TYPEMAPS(int32_t, int32);
-COPY_TYPEMAPS(uint32_t, uint32);
-COPY_TYPEMAPS(int64_t, int64);
-COPY_TYPEMAPS(uint64_t, uint64);
-#undef COPY_TYPEMAPS
-
 #ifdef SWIGPYTHON
 
 #pragma SWIG nowarn=312,451,454,503,362
@@ -75,8 +44,8 @@ COPY_TYPEMAPS(uint64_t, uint64);
 
 #if defined(SWIGJAVA)
 // swig/java/typenames.i and swig/java/java.swg typemap C++ 'long int' as Java 'int'
-// but in C++ 'int64' aka 'int64_t' is defined as "long int" and we have
-// overload functions int/int64 in routing...
+// but in C++ 'int64_t' aka 'int64_t' is defined as "long int" and we have
+// overload functions int/int64_t in routing...
 // So we need to force C++ 'long int' to map to Java 'long' instead of 'int' reusing the
 // typemap for C++ `long long`
 // note: there is no `ulong` in java so we map both on Java `long` type.

@@ -43,13 +43,12 @@ using operations_research::fz::Argument;
 using operations_research::fz::Constraint;
 using operations_research::fz::ConvertAsIntegerOrDie;
 using operations_research::fz::Domain;
-using operations_research::fz::IntegerVariable;
+using operations_research::fz::Variable;
 using operations_research::fz::Lookup;
 using operations_research::fz::Model;
 using operations_research::fz::SolutionOutputSpecs;
 using operations_research::fz::ParserContext;
-using operations_research::fz::VariableRefOrValue;
-using operations_research::fz::VariableRefOrValueArray;
+using operations_research::fz::VarRefOrValue;
 }  // code
 
 %define parse.error verbose
@@ -114,7 +113,7 @@ predicates:
 | predicates error ';' { yyerrok; }  // Minimal error recovery.
 | /* empty */
 
-// TODO(lperron): Implement better error recovery.
+// TODO(user): Implement better error recovery.
 
 predicate:
   PREDICATE IDENTIFIER '(' predicate_arguments ')'
@@ -156,10 +155,10 @@ variable_or_constant_declaration:
 
 
   if (!assignment.HasOneValue()) {
-    // TODO(lperron): Check that the assignment is included in the domain.
+    // TODO(user): Check that the assignment is included in the domain.
     context->domain_map[identifier] = assignment;
   } else {
-    const int64 value = assignment.values.front();
+    const int64_t value = assignment.values.front();
     CHECK(domain.Contains(value));
     context->integer_map[identifier] = value;
   }
@@ -170,12 +169,12 @@ variable_or_constant_declaration:
   std::vector<Annotation>* const annotations = $11;
   // Declaration of a (named) constant array. See rule right above.
   CHECK_EQ($3, 1) << "Only [1..n] array are supported here.";
-  const int64 num_constants = $5;
+  const int64_t num_constants = $5;
   const std::string& identifier = $10;
-  const std::vector<int64>* const assignments = $14;
+  const std::vector<int64_t>* const assignments = $14;
   CHECK(assignments != nullptr);
   CHECK_EQ(num_constants, assignments->size());
-  // TODO(lperron): CHECK all values within domain.
+  // TODO(user): CHECK all values within domain.
   context->integer_array_map[identifier] = *assignments;
   delete assignments;
   delete annotations;
@@ -185,10 +184,10 @@ variable_or_constant_declaration:
   std::vector<Annotation>* const annotations = $11;
   // Declaration of a (named) constant array. See rule right above.
   CHECK_EQ($3, 1) << "Only [1..n] array are supported here.";
-  const int64 num_constants = $5;
+  const int64_t num_constants = $5;
   CHECK_EQ(num_constants, 0) << "Empty arrays should have a size of 0";
   const std::string& identifier = $10;
-  context->integer_array_map[identifier] = std::vector<int64>();
+  context->integer_array_map[identifier] = std::vector<int64_t>();
   delete annotations;
 }
 | ARRAY '[' IVALUE DOTDOT IVALUE ']' OF float_domain ':' IDENTIFIER
@@ -196,12 +195,12 @@ variable_or_constant_declaration:
   std::vector<Annotation>* const annotations = $11;
   // Declaration of a (named) constant array. See rule right above.
   CHECK_EQ($3, 1) << "Only [1..n] array are supported here.";
-  const int64 num_constants = $5;
+  const int64_t num_constants = $5;
   const std::string& identifier = $10;
   const std::vector<double>* const assignments = $14;
   CHECK(assignments != nullptr);
   CHECK_EQ(num_constants, assignments->size());
-  // TODO(lperron): CHECK all values within domain.
+  // TODO(user): CHECK all values within domain.
   context->float_array_map[identifier] = *assignments;
   delete assignments;
   delete annotations;
@@ -211,7 +210,7 @@ variable_or_constant_declaration:
   std::vector<Annotation>* const annotations = $11;
   // Declaration of a (named) constant array. See rule right above.
   CHECK_EQ($3, 1) << "Only [1..n] array are supported here.";
-  const int64 num_constants = $5;
+  const int64_t num_constants = $5;
   CHECK_EQ(num_constants, 0) << "Empty arrays should have a size of 0";
   const std::string& identifier = $10;
   context->float_array_map[identifier] = std::vector<double>();
@@ -221,7 +220,7 @@ variable_or_constant_declaration:
     annotations '=' '[' const_literals ']' {
   // Declaration of a (named) constant array: See rule above.
   CHECK_EQ($3, 1) << "Only [1..n] array are supported here.";
-  const int64 num_constants = $5;
+  const int64_t num_constants = $5;
   const Domain& domain = $8;
   const std::string& identifier = $10;
   const std::vector<Domain>* const assignments = $14;
@@ -231,9 +230,9 @@ variable_or_constant_declaration:
 
   if (!AllDomainsHaveOneValue(*assignments)) {
     context->domain_array_map[identifier] = *assignments;
-    // TODO(lperron): check that all assignments are included in the domain.
+    // TODO(user): check that all assignments are included in the domain.
   } else {
-    std::vector<int64> values(num_constants);
+    std::vector<int64_t> values(num_constants);
     for (int i = 0; i < num_constants; ++i) {
       values[i] = (*assignments)[i].values.front();
       CHECK(domain.Contains(values[i]));
@@ -251,10 +250,10 @@ variable_or_constant_declaration:
   const Domain& domain = $2;
   const std::string& identifier = $4;
   std::vector<Annotation>* const annotations = $5;
-  const VariableRefOrValue& assignment = $6;
+  const VarRefOrValue& assignment = $6;
   const bool introduced = ContainsId(annotations, "var_is_introduced") ||
       absl::StartsWith(identifier, "X_INTRODUCED");
-  IntegerVariable* var = nullptr;
+  Variable* var = nullptr;
   if (!assignment.defined) {
     var = model->AddVariable(identifier, domain, introduced);
   } else if (assignment.variable == nullptr) {  // just an integer constant.
@@ -282,30 +281,37 @@ variable_or_constant_declaration:
   // variable declarations, where the identifier for declaration #i is
   // IDENTIFIER[i] (1-based index).
   CHECK_EQ($3, 1);
-  const int64 num_vars = $5;
+  const int64_t num_vars = $5;
   const Domain& domain = $9;
   const std::string& identifier = $11;
   std::vector<Annotation>* const annotations = $12;
-  VariableRefOrValueArray* const assignments = $13;
-  CHECK(assignments == nullptr || assignments->variables.size() == num_vars);
-  CHECK(assignments == nullptr || assignments->values.size() == num_vars);
+  std::vector<VarRefOrValue>* const assignments = $13;
+  CHECK(assignments == nullptr || assignments->size() == num_vars);
   const bool introduced = ContainsId(annotations, "var_is_introduced") ||
       absl::StartsWith(identifier, "X_INTRODUCED");
 
-  std::vector<IntegerVariable*> vars(num_vars, nullptr);
+  std::vector<Variable*> vars(num_vars, nullptr);
 
   for (int i = 0; i < num_vars; ++i) {
     const std::string var_name = absl::StrFormat("%s[%d]", identifier, i + 1);
     if (assignments == nullptr) {
       vars[i] = model->AddVariable(var_name, domain, introduced);
-    } else if (assignments->variables[i] == nullptr) {
-      // Assigned to an integer constant.
-      const int64 value = assignments->values[i];
-      CHECK(domain.Contains(value));
-      vars[i] =
-          model->AddVariable(var_name, Domain::IntegerValue(value), introduced);
+    } else if ((*assignments)[i].variable == nullptr) {
+      if ((*assignments)[i].is_float) {
+        // Assigned to an float constant.
+        const double value = (*assignments)[i].float_value;
+        //CHECK(domain.Contains(value));
+        vars[i] =
+            model->AddVariable(var_name, Domain::FloatValue(value), introduced);
+      } else {
+        // Assigned to an integer constant.
+        const int64_t value = (*assignments)[i].value;
+        CHECK(domain.Contains(value));
+        vars[i] = model->AddVariable(
+            var_name, Domain::IntegerValue(value), introduced);
+      }
     } else {
-      IntegerVariable* const var = assignments->variables[i];
+      Variable* const var = (*assignments)[i].variable;
       CHECK(var != nullptr);
       vars[i] = var;
       vars[i]->Merge(var_name, domain, introduced);
@@ -347,7 +353,7 @@ variable_or_constant_declaration:
 
 optional_var_or_value:
   '=' var_or_value { $$ = $2; }
-| /*empty*/ { $$ = VariableRefOrValue::Undefined(); }
+| /*empty*/ { $$ = VarRefOrValue::Undefined(); }
 
 optional_var_or_value_array:
   '=' '[' var_or_value_array ']' { $$ = $3; }
@@ -357,41 +363,47 @@ optional_var_or_value_array:
 var_or_value_array:  // Cannot be empty.
   var_or_value_array ',' var_or_value {
   $$ = $1;
-  $$->PushBack($3);
+  $$->push_back($3);
 }
 | var_or_value {
-  $$ = new VariableRefOrValueArray();
-  $$->PushBack($1);
+  $$ = new std::vector<VarRefOrValue>();
+  $$->push_back($1);
 }
 
 var_or_value:
-  IVALUE { $$ = VariableRefOrValue::Value($1); }  // An integer value.
+  IVALUE { $$ = VarRefOrValue::Value($1); }  // An integer value.
+| DVALUE { $$ = VarRefOrValue::FloatValue($1); } // A float value.  
 | IDENTIFIER {
   // A reference to an existing integer constant or variable.
   const std::string& id = $1;
   if (gtl::ContainsKey(context->integer_map, id)) {
-    $$ = VariableRefOrValue::Value(gtl::FindOrDie(context->integer_map, id));
+    $$ = VarRefOrValue::Value(gtl::FindOrDie(context->integer_map, id));
+  } else if (gtl::ContainsKey(context->float_map, id)) {
+    $$ = VarRefOrValue::FloatValue(gtl::FindOrDie(context->float_map, id));
   } else if (gtl::ContainsKey(context->variable_map, id)) {
-    $$ = VariableRefOrValue::VariableRef(gtl::FindOrDie(context->variable_map, id));
+    $$ = VarRefOrValue::VarRef(gtl::FindOrDie(context->variable_map, id));
   } else {
     LOG(ERROR) << "Unknown symbol " << id;
-    $$ = VariableRefOrValue::Undefined();
+    $$ = VarRefOrValue::Undefined();
     *ok = false;
   }
 }
 | IDENTIFIER '[' IVALUE ']' {
   // A given element of an existing constant array or variable array.
   const std::string& id = $1;
-  const int64 value = $3;
+  const int64_t value = $3;
   if (gtl::ContainsKey(context->integer_array_map, id)) {
-    $$ = VariableRefOrValue::Value(
+    $$ = VarRefOrValue::Value(
         Lookup(gtl::FindOrDie(context->integer_array_map, id), value));
+  } else if (gtl::ContainsKey(context->float_array_map, id)) {
+    $$ = VarRefOrValue::FloatValue(
+        Lookup(gtl::FindOrDie(context->float_array_map, id), value));
   } else if (gtl::ContainsKey(context->variable_array_map, id)) {
-    $$ = VariableRefOrValue::VariableRef(
+    $$ = VarRefOrValue::VarRef(
         Lookup(gtl::FindOrDie(context->variable_array_map, id), value));
   } else {
     LOG(ERROR) << "Unknown symbol " << id;
-    $$ = VariableRefOrValue::Undefined();
+    $$ = VarRefOrValue::Undefined();
     *ok = false;
   }
 }
@@ -417,12 +429,10 @@ set_domain:
 }
 
 float_domain:
-  TOKEN_FLOAT { $$ = Domain::AllInt64(); }  // TODO(lperron): implement floats.
+  TOKEN_FLOAT { $$ = Domain::AllFloats(); }
 | DVALUE DOTDOT DVALUE {
-  const int64 lb = ConvertAsIntegerOrDie($1);
-  const int64 ub = ConvertAsIntegerOrDie($3);
-  $$ = Domain::Interval(lb, ub);
-}  // TODO(lperron): floats.
+  $$ = Domain::FloatInterval($1, $3);
+}
 
 domain:
   int_domain { $$ = $1; }
@@ -431,7 +441,7 @@ domain:
 
 integers:
   integers ',' integer { $$ = $1; $$->emplace_back($3); }
-| integer { $$ = new std::vector<int64>(); $$->emplace_back($1); }
+| integer { $$ = new std::vector<int64_t>(); $$->emplace_back($1); }
 
 integer:
   IVALUE { $$ = $1; }
@@ -461,9 +471,8 @@ const_literal:
 }
 | '{' '}' { $$ = Domain::EmptyDomain(); }
 | DVALUE {
-  CHECK_EQ(std::round($1), $1);
-  $$ = Domain::IntegerValue(static_cast<int64>($1));
-}  // TODO(lperron): floats.
+  $$ = Domain::FloatValue($1);
+}
 | IDENTIFIER { $$ = Domain::IntegerValue(gtl::FindOrDie(context->integer_map, $1)); }
 | IDENTIFIER '[' IVALUE ']' {
   $$ = Domain::IntegerValue(
@@ -502,7 +511,7 @@ arguments:
 
 argument:
   IVALUE { $$ = Argument::IntegerValue($1); }
-| DVALUE { $$ = Argument::IntegerValue(ConvertAsIntegerOrDie($1)); }
+| DVALUE { $$ = Argument::FloatValue($1); }
 | SVALUE { $$ = Argument::VoidArgument(); }
 | IVALUE DOTDOT IVALUE { $$ = Argument::Interval($1, $3); }
 | '{' integers '}' {
@@ -518,19 +527,14 @@ argument:
     $$ = Argument::IntegerList(gtl::FindOrDie(context->integer_array_map, id));
   } else if (gtl::ContainsKey(context->float_map, id)) {
     const double d = gtl::FindOrDie(context->float_map, id);
-    $$ = Argument::IntegerValue(ConvertAsIntegerOrDie(d));
+    $$ = Argument::FloatValue(d);
   } else if (gtl::ContainsKey(context->float_array_map, id)) {
     const auto& double_values = gtl::FindOrDie(context->float_array_map, id);
-    std::vector<int64> integer_values;
-    for (const double d : double_values) {
-      const int64 i = ConvertAsIntegerOrDie(d);
-      integer_values.push_back(i);
-    }
-    $$ = Argument::IntegerList(std::move(integer_values));
+    $$ = Argument::FloatList(std::move(double_values));
   } else if (gtl::ContainsKey(context->variable_map, id)) {
-    $$ = Argument::IntVarRef(gtl::FindOrDie(context->variable_map, id));
+    $$ = Argument::VarRef(gtl::FindOrDie(context->variable_map, id));
   } else if (gtl::ContainsKey(context->variable_array_map, id)) {
-    $$ = Argument::IntVarRefArray(gtl::FindOrDie(context->variable_array_map, id));
+    $$ = Argument::VarRefArray(gtl::FindOrDie(context->variable_array_map, id));
   } else if (gtl::ContainsKey(context->domain_map, id)) {
     const Domain& d = gtl::FindOrDie(context->domain_map, id);
     $$ = Argument::FromDomain(d);
@@ -543,12 +547,12 @@ argument:
 }
 | IDENTIFIER '[' IVALUE ']' {
   const std::string& id = $1;
-  const int64 index = $3;
+  const int64_t index = $3;
   if (gtl::ContainsKey(context->integer_array_map, id)) {
     $$ = Argument::IntegerValue(
         Lookup(gtl::FindOrDie(context->integer_array_map, id), index));
   } else if (gtl::ContainsKey(context->variable_array_map, id)) {
-    $$ = Argument::IntVarRef(
+    $$ = Argument::VarRef(
         Lookup(gtl::FindOrDie(context->variable_array_map, id), index));
   } else {
     CHECK(gtl::ContainsKey(context->domain_array_map, id))
@@ -559,27 +563,50 @@ argument:
   }
 }
 | '[' var_or_value_array ']' {
-  VariableRefOrValueArray* const arguments = $2;
+  std::vector<VarRefOrValue>* const arguments = $2;
   CHECK(arguments != nullptr);
   bool has_variables = false;
-  for (int i = 0; i < arguments->Size(); ++i) {
-    if (arguments->variables[i] != nullptr) {
+  bool has_floats = false;
+  for (int i = 0; i < arguments->size(); ++i) {
+    if ((*arguments)[i].variable != nullptr) {
       has_variables = true;
-      break;
+    }
+    if ((*arguments)[i].is_float) {
+      has_floats = true;
     }
   }
   if (has_variables) {
-    $$ = Argument::IntVarRefArray(std::vector<IntegerVariable*>());
-    $$.variables.reserve(arguments->Size());
-    for (int i = 0; i < arguments->Size(); ++i) {
-      if (arguments->variables[i] != nullptr) {
-         $$.variables.emplace_back(arguments->variables[i]);
+    std::vector<Variable*> vars;
+    vars.reserve(arguments->size());
+    for (int i = 0; i < arguments->size(); ++i) {
+      const VarRefOrValue data = (*arguments)[i];
+      if (data.variable != nullptr) {
+         vars.push_back(data.variable);
+      } else if (!data.is_float) {
+        vars.push_back(model->AddConstant(data.value));
       } else {
-         $$.variables.emplace_back(model->AddConstant(arguments->values[i]));
+         vars.push_back(model->AddFloatConstant(data.float_value));
       }
     }
+    $$ = Argument::VarRefArray(std::move(vars));
+  } else if (has_floats) {
+    std::vector<double> values;
+    values.reserve(arguments->size());
+    for (const VarRefOrValue& data : *arguments) {
+      if (data.is_float) {
+        values.push_back(data.float_value);
+      } else {
+        values.push_back(data.value);
+      }
+    }
+    $$ = Argument::FloatList(std::move(values));
   } else {
-    $$ = Argument::IntegerList(arguments->values);
+    std::vector<int64_t> values;
+    values.reserve(arguments->size());
+    for (const VarRefOrValue& data : *arguments) {
+      values.push_back(data.value);
+    }
+    $$ = Argument::IntegerList(std::move(values));
   }
   delete arguments;
 }
@@ -609,9 +636,9 @@ annotation:
 | IDENTIFIER {
   const std::string& id = $1;
   if (gtl::ContainsKey(context->variable_map, id)) {
-    $$ = Annotation::Variable(gtl::FindOrDie(context->variable_map, id));
+    $$ = Annotation::VarRef(gtl::FindOrDie(context->variable_map, id));
   } else if (gtl::ContainsKey(context->variable_array_map, id)) {
-    $$ = Annotation::VariableList(gtl::FindOrDie(context->variable_array_map, id));
+    $$ = Annotation::VarRefArray(gtl::FindOrDie(context->variable_array_map, id));
   } else {
     $$ = Annotation::Identifier(id);
   }
@@ -628,7 +655,7 @@ annotation:
 | IDENTIFIER '[' IVALUE ']' {
   CHECK(gtl::ContainsKey(context->variable_array_map, $1))
       << "Unknown identifier: " << $1;
-  $$ = Annotation::Variable(
+  $$ = Annotation::VarRef(
       Lookup(gtl::FindOrDie(context->variable_array_map, $1), $3));
 }
 | '[' annotation_arguments ']' {
@@ -655,21 +682,25 @@ solve:
   }
 }
 | SOLVE annotations MINIMIZE argument {
-  CHECK_EQ(Argument::INT_VAR_REF, $4.type);
+  Variable* obj_var = $4.type == Argument::VAR_REF
+      ? $4.Var()
+      : model->AddConstant($4.Value());
   if ($2 != nullptr) {
-    model->Minimize($4.Var(), std::move(*$2));
+    model->Minimize(obj_var, std::move(*$2));
     delete $2;
   } else {
-    model->Minimize($4.Var(), std::vector<Annotation>());
+    model->Minimize(obj_var, std::vector<Annotation>());
   }
 }
 | SOLVE annotations MAXIMIZE argument {
-  CHECK_EQ(Argument::INT_VAR_REF, $4.type);
+  Variable* obj_var = $4.type == Argument::VAR_REF
+      ? $4.Var()
+      : model->AddConstant($4.Value());
   if ($2 != nullptr) {
-    model->Maximize($4.Var(), std::move(*$2));
+    model->Maximize(obj_var, std::move(*$2));
     delete $2;
   } else {
-    model->Maximize($4.Var(), std::vector<Annotation>());
+    model->Maximize(obj_var, std::vector<Annotation>());
   }
 }
 

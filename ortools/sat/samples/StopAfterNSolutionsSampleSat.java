@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -64,7 +64,10 @@ public class StopAfterNSolutionsSampleSat {
     CpSolver solver = new CpSolver();
     VarArraySolutionPrinterWithLimit cb =
         new VarArraySolutionPrinterWithLimit(new IntVar[] {x, y, z}, 5);
-    solver.searchAllSolutions(model, cb);
+    // Tell the solver to enumerate all solutions.
+    solver.getParameters().setEnumerateAllSolutions(true);
+    // And solve.
+    solver.solve(model, cb);
 
     System.out.println(cb.getSolutionCount() + " solutions found.");
     if (cb.getSolutionCount() != 5) {

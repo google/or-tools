@@ -1,4 +1,4 @@
-# Copyright 2010-2018 Google
+# Copyright 2010-2021 Google
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -95,8 +95,7 @@ def jobshop_with_maintenance():
     # Solve model.
     solver = cp_model.CpSolver()
     solution_printer = SolutionPrinter()
-    status = solver.SolveWithSolutionCallback(model, solution_printer)
-    #status = solver.Solve(model)
+    status = solver.Solve(model, solution_printer)
 
     # Output solution.
     if status == cp_model.OPTIMAL:

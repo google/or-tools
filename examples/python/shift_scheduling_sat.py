@@ -1,4 +1,5 @@
-# Copyright 2010-2018 Google LLC
+#!/usr/bin/env python3
+# Copyright 2010-2021 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -89,13 +90,13 @@ def add_soft_sequence_constraint(model, works, hard_min, soft_min, min_cost,
 
     # Forbid sequences that are too short.
     for length in range(1, hard_min):
-        for start in range(len(works) - length - 1):
+        for start in range(len(works) - length + 1):
             model.AddBoolOr(negated_bounded_span(works, start, length))
 
     # Penalize sequences that are below the soft limit.
     if min_cost > 0:
         for length in range(hard_min, soft_min):
-            for start in range(len(works) - length - 1):
+            for start in range(len(works) - length + 1):
                 span = negated_bounded_span(works, start, length)
                 name = ': under_span(start=%i, length=%i)' % (start, length)
                 lit = model.NewBoolVar(prefix + name)
@@ -109,7 +110,7 @@ def add_soft_sequence_constraint(model, works, hard_min, soft_min, min_cost,
     # Penalize sequences that are above the soft limit.
     if max_cost > 0:
         for length in range(soft_max + 1, hard_max + 1):
-            for start in range(len(works) - length - 1):
+            for start in range(len(works) - length + 1):
                 span = negated_bounded_span(works, start, length)
                 name = ': over_span(start=%i, length=%i)' % (start, length)
                 lit = model.NewBoolVar(prefix + name)
@@ -120,7 +121,7 @@ def add_soft_sequence_constraint(model, works, hard_min, soft_min, min_cost,
                 cost_coefficients.append(max_cost * (length - soft_max))
 
     # Just forbid any sequence of true variables with length hard_max + 1
-    for start in range(len(works) - hard_max - 1):
+    for start in range(len(works) - hard_max):
         model.AddBoolOr(
             [works[i].Not() for i in range(start, start + hard_max + 1)])
     return cost_literals, cost_coefficients
@@ -218,7 +219,7 @@ def solve_shift_scheduling(params, output_proto):
         (3, 0, 5, -2),
         # Employee 5 wants a night shift on the second Thursday.
         (5, 3, 10, -2),
-        # Employee 2 does not want a night shift on the third Friday.
+        # Employee 2 does not want a night shift on the first Friday.
         (2, 3, 4, 4)
     ]
 
@@ -378,7 +379,7 @@ def solve_shift_scheduling(params, output_proto):
     if params:
         text_format.Parse(params, solver.parameters)
     solution_printer = cp_model.ObjectiveSolutionPrinter()
-    status = solver.SolveWithSolutionCallback(model, solution_printer)
+    status = solver.Solve(model, solution_printer)
 
     # Print solution.
     if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:

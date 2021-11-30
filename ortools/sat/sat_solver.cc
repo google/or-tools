@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <random>
 #include <string>
@@ -79,15 +80,15 @@ void SatSolver::SetNumVariables(int num_variables) {
   decisions_.resize(num_variables + 1);
 }
 
-int64 SatSolver::num_branches() const { return counters_.num_branches; }
+int64_t SatSolver::num_branches() const { return counters_.num_branches; }
 
-int64 SatSolver::num_failures() const { return counters_.num_failures; }
+int64_t SatSolver::num_failures() const { return counters_.num_failures; }
 
-int64 SatSolver::num_propagations() const {
+int64_t SatSolver::num_propagations() const {
   return trail_->NumberOfEnqueues() - counters_.num_branches;
 }
 
-int64 SatSolver::num_restarts() const { return counters_.num_restarts; }
+int64_t SatSolver::num_restarts() const { return counters_.num_restarts; }
 
 double SatSolver::deterministic_time() const {
   // Each of these counters mesure really basic operations. The weight are just
@@ -120,9 +121,9 @@ void SatSolver::SetParameters(const SatParameters& parameters) {
 }
 
 bool SatSolver::IsMemoryLimitReached() const {
-  const int64 memory_usage =
+  const int64_t memory_usage =
       ::operations_research::sysinfo::MemoryUsageProcess();
-  const int64 kMegaByte = 1024 * 1024;
+  const int64_t kMegaByte = 1024 * 1024;
   return memory_usage > kMegaByte * parameters_->max_memory_in_mb();
 }
 
@@ -556,7 +557,7 @@ bool SatSolver::ReapplyAssumptionsIfNeeded() {
   if (CurrentDecisionLevel() >= assumption_level_) return true;
 
   int unused = 0;
-  const int64 old_num_branches = counters_.num_branches;
+  const int64_t old_num_branches = counters_.num_branches;
   const SatSolver::Status status =
       ReapplyDecisionsUpTo(assumption_level_ - 1, &unused);
   counters_.num_branches = old_num_branches;
@@ -736,7 +737,7 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
                    BINARY_MINIMIZATION_FIRST_WITH_TRANSITIVE_REDUCTION) {
       binary_implication_graph_->MinimizeConflictFirstWithTransitiveReduction(
           *trail_, &learned_conflict_, &is_marked_,
-          model_->GetOrCreate<ModelRandomGenerator>());
+          *model_->GetOrCreate<ModelRandomGenerator>());
     }
     DCHECK(IsConflictValid(learned_conflict_));
   }
@@ -939,7 +940,7 @@ void SatSolver::ClearNewlyAddedBinaryClauses() {
 
 namespace {
 // Return the next value that is a multiple of interval.
-int64 NextMultipleOf(int64 value, int64 interval) {
+int64_t NextMultipleOf(int64_t value, int64_t interval) {
   return interval * (1 + value / interval);
 }
 }  // namespace
@@ -1141,27 +1142,27 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit) {
   }
 
   // Used to trigger clause minimization via propagation.
-  int64 next_minimization_num_restart =
+  int64_t next_minimization_num_restart =
       restart_->NumRestarts() +
       parameters_->minimize_with_propagation_restart_period();
 
   // Variables used to show the search progress.
-  const int64 kDisplayFrequency = 10000;
-  int64 next_display = parameters_->log_search_progress()
-                           ? NextMultipleOf(num_failures(), kDisplayFrequency)
-                           : std::numeric_limits<int64>::max();
+  const int64_t kDisplayFrequency = 10000;
+  int64_t next_display = parameters_->log_search_progress()
+                             ? NextMultipleOf(num_failures(), kDisplayFrequency)
+                             : std::numeric_limits<int64_t>::max();
 
   // Variables used to check the memory limit every kMemoryCheckFrequency.
-  const int64 kMemoryCheckFrequency = 10000;
-  int64 next_memory_check =
+  const int64_t kMemoryCheckFrequency = 10000;
+  int64_t next_memory_check =
       NextMultipleOf(num_failures(), kMemoryCheckFrequency);
 
   // The max_number_of_conflicts is per solve but the counter is for the whole
   // solver.
-  const int64 kFailureLimit =
+  const int64_t kFailureLimit =
       parameters_->max_number_of_conflicts() ==
-              std::numeric_limits<int64>::max()
-          ? std::numeric_limits<int64>::max()
+              std::numeric_limits<int64_t>::max()
+          ? std::numeric_limits<int64_t>::max()
           : counters_.num_failures + parameters_->max_number_of_conflicts();
 
   // Starts search.
@@ -1249,7 +1250,7 @@ void SatSolver::MinimizeSomeClauses(int decisions_budget) {
   // while we are processing it.
   block_clause_deletion_ = true;
 
-  const int64 target_num_branches = counters_.num_branches + decisions_budget;
+  const int64_t target_num_branches = counters_.num_branches + decisions_budget;
   while (counters_.num_branches < target_num_branches &&
          (time_limit_ == nullptr || !time_limit_->LimitReached())) {
     SatClause* to_minimize = clauses_propagator_->NextClauseToMinimize();
@@ -1381,7 +1382,7 @@ void SatSolver::BumpClauseActivity(SatClause* clause) {
       // This one is similar to the one used by the Glucose SAT solver.
       //
       // TODO(user): why the +1? one reason may be that the LBD of a conflict
-      // decrease by 1 just afer the backjump...
+      // decrease by 1 just after the backjump...
       if (new_lbd + 1 < it->second.lbd) {
         it->second.protected_during_next_cleanup = true;
         it->second.lbd = new_lbd;
@@ -2066,7 +2067,7 @@ void SatSolver::ComputePBConflict(int max_trail_index,
     }
   }
 
-  // Compute the cummulative version.
+  // Compute the cumulative version.
   for (int i = 1; i < sum_for_le_level.size(); ++i) {
     sum_for_le_level[i] += sum_for_le_level[i - 1];
   }
@@ -2163,7 +2164,7 @@ void SatSolver::MinimizeConflictSimple(std::vector<Literal>* conflict) {
 // the conflict, the literals of its reason are recursively expanded using their
 // reason and so on. The recusion stop until we show that the initial literal
 // can be infered from the conflict variables alone, or if we show that this is
-// not the case. The result of any variable expension will be cached in order
+// not the case. The result of any variable expansion will be cached in order
 // not to be expended again.
 void SatSolver::MinimizeConflictRecursively(std::vector<Literal>* conflict) {
   SCOPED_TIME_STAT(&stats_);
@@ -2267,8 +2268,8 @@ bool SatSolver::CanBeInferedFromConflictVariables(BooleanVariable variable) {
     const int level = DecisionLevel(var);
     if (level == 0) {
       // Note that this is not needed if the solver is not configured to produce
-      // an unsat proof. However, the (level == 0) test shoud always be false in
-      // this case because there will never be literals of level zero in any
+      // an unsat proof. However, the (level == 0) test should always be false
+      // in this case because there will never be literals of level zero in any
       // reason when we don't want a proof.
       is_marked_.Set(var);
       continue;
@@ -2491,8 +2492,13 @@ void SatSolver::CleanClauseDatabaseIfNeeded() {
   }
 
   // The clause we want to keep are at the end of the vector.
-  int num_kept_clauses = std::min(static_cast<int>(entries.size()),
-                                  parameters_->clause_cleanup_target());
+  int num_kept_clauses =
+      (parameters_->clause_cleanup_target() > 0)
+          ? std::min(static_cast<int>(entries.size()),
+                     parameters_->clause_cleanup_target())
+          : static_cast<int>(parameters_->clause_cleanup_ratio() *
+                             static_cast<double>(entries.size()));
+
   int num_deleted_clauses = entries.size() - num_kept_clauses;
 
   // Tricky: Because the order of the clauses_info iteration is NOT

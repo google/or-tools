@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -106,80 +106,80 @@ static ReturnT InvokePythonCallableReturning(PyObject* pyfunc) {
   $1 = [input]() { return InvokePythonCallableReturning<std::string>(input.get()); };
 }
 
-// Wrap std::function<int64(int64)>
+// Wrap std::function<int64_t(int64_t)>
 
-%typecheck(SWIG_TYPECHECK_POINTER) std::function<int64(int64)> {
+%typecheck(SWIG_TYPECHECK_POINTER) std::function<int64_t(int64_t)> {
   $1 = PyCallable_Check($input);
 }
 
-%typemap(in) std::function<int64(int64)> {
+%typemap(in) std::function<int64_t(int64_t)> {
   SharedPyPtr input($input);
-  $1 = [input](int64 index) {
-    return InvokePythonCallableReturning<int64>(input.get(), "(L)", index);
+  $1 = [input](int64_t index) {
+    return InvokePythonCallableReturning<int64_t>(input.get(), "(L)", index);
   };
 }
 
-// Wrap std::function<int64(int64, int64)>
+// Wrap std::function<int64_t(int64_t, int64_t)>
 
-%typecheck(SWIG_TYPECHECK_POINTER) std::function<int64(int64, int64)> {
+%typecheck(SWIG_TYPECHECK_POINTER) std::function<int64_t(int64_t, int64_t)> {
   $1 = PyCallable_Check($input);
 }
 
-%typemap(in) std::function<int64(int64, int64)> {
+%typemap(in) std::function<int64_t(int64_t, int64_t)> {
   SharedPyPtr input($input);
-  $1 = [input](int64 i, int64 j) {
-    return InvokePythonCallableReturning<int64>(input.get(), "LL", i, j);
+  $1 = [input](int64_t i, int64_t j) {
+    return InvokePythonCallableReturning<int64_t>(input.get(), "LL", i, j);
   };
 }
 
-// Wrap std::function<int64(int64, int64, int64)>
+// Wrap std::function<int64_t(int64_t, int64_t, int64_t)>
 
-%typecheck(SWIG_TYPECHECK_POINTER) std::function<int64(int64, int64, int64)> {
+%typecheck(SWIG_TYPECHECK_POINTER) std::function<int64_t(int64_t, int64_t, int64_t)> {
   $1 = PyCallable_Check($input);
 }
 
-%typemap(in) std::function<int64(int64, int64, int64)> {
+%typemap(in) std::function<int64_t(int64_t, int64_t, int64_t)> {
   SharedPyPtr input($input);
-  $1 = [input](int64 i, int64 j, int64 k) {
-    return InvokePythonCallableReturning<int64>(input.get(), "LLL", i, j, k);
+  $1 = [input](int64_t i, int64_t j, int64_t k) {
+    return InvokePythonCallableReturning<int64_t>(input.get(), "LLL", i, j, k);
   };
 }
 
-// Wrap std::function<int64(int)>
+// Wrap std::function<int64_t(int)>
 
-%typecheck(SWIG_TYPECHECK_POINTER) std::function<int64(int)> {
+%typecheck(SWIG_TYPECHECK_POINTER) std::function<int64_t(int)> {
   $1 = PyCallable_Check($input);
 }
 
-%typemap(in) std::function<int64(int)> {
+%typemap(in) std::function<int64_t(int)> {
   SharedPyPtr input($input);
   $1 = [input](int index) {
-    return InvokePythonCallableReturning<int64>(input.get(), "(i)", index);
+    return InvokePythonCallableReturning<int64_t>(input.get(), "(i)", index);
   };
 }
 
-// Wrap std::function<int64(int, int)>
+// Wrap std::function<int64_t(int, int)>
 
-%typecheck(SWIG_TYPECHECK_POINTER) std::function<int64(int, int)> {
+%typecheck(SWIG_TYPECHECK_POINTER) std::function<int64_t(int, int)> {
   $1 = PyCallable_Check($input);
 }
 
-%typemap(in) std::function<int64(int, int)> {
+%typemap(in) std::function<int64_t(int, int)> {
   SharedPyPtr input($input);
   $1 = [input](int i, int j) {
-    return InvokePythonCallableReturning<int64>(input.get(), "ii", i, j);
+    return InvokePythonCallableReturning<int64_t>(input.get(), "ii", i, j);
   };
 }
 
-// Wrap std::function<bool(int64)>
+// Wrap std::function<bool(int64_t)>
 
-%typecheck(SWIG_TYPECHECK_POINTER) std::function<bool(int64)> {
+%typecheck(SWIG_TYPECHECK_POINTER) std::function<bool(int64_t)> {
   $1 = PyCallable_Check($input);
 }
 
-%typemap(in) std::function<bool(int64)> {
+%typemap(in) std::function<bool(int64_t)> {
   SharedPyPtr input($input);
-  $1 = [input](int64 index) {
+  $1 = [input](int64_t index) {
     return InvokePythonCallableReturning<bool>(input.get(), "(L)", index);
   };
 }
@@ -204,4 +204,23 @@ static ReturnT InvokePythonCallableReturning(PyObject* pyfunc) {
 %typemap(in) std::function<void()> {
   SharedPyPtr input($input);
   $1 = [input]() { return InvokePythonCallableReturning<void>(input.get()); };
+}
+
+// Wrap std::function<void(std::string)>
+
+%typecheck(SWIG_TYPECHECK_POINTER) std::function<void(const std::string&)> {
+  $1 = PyCallable_Check($input);
+}
+
+%typemap(in) std::function<void(const std::string&)> {
+  SharedPyPtr input($input);
+  $1 = [input](const std::string& str) {
+    PyObject* py_str = PyUnicode_FromStringAndSize(str.c_str(), str.size());
+    PyObject* result;
+    SWIG_PYTHON_THREAD_BEGIN_BLOCK;
+    result = PyObject_CallFunction(input.get(), "O", py_str);
+    SWIG_PYTHON_THREAD_END_BLOCK;
+    Py_DECREF(py_str);
+    return result;
+  };
 }

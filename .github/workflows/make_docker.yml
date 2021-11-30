@@ -1,0 +1,29 @@
+name: Make Docker
+
+on: [push, pull_request]
+
+jobs:
+  Distros:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        distro: [alpine, archlinux, centos, debian, fedora, opensuse, ubuntu]
+        lang: [cpp, python, dotnet, java]
+      fail-fast: false
+    env:
+      DISTRO: ${{ matrix.distro }}
+      LANG: ${{ matrix.lang }}
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build base image
+      run: make --directory=makefiles ${DISTRO}_base
+    - name: Build env image
+      run: make --directory=makefiles ${DISTRO}_${LANG}_env
+    - name: Build devel image
+      run: make --directory=makefiles ${DISTRO}_${LANG}_devel
+    - name: Build project
+      run: make --directory=makefiles ${DISTRO}_${LANG}_build
+    - name: Test project
+      run: make --directory=makefiles ${DISTRO}_${LANG}_test
+    - name: Package project
+      run: make --directory=makefiles ${DISTRO}_${LANG}_package

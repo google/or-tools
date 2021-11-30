@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -59,6 +59,8 @@
 #include <utility>
 #include <vector>
 
+#include "absl/flags/parse.h"
+#include "absl/flags/usage.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/logging.h"
@@ -241,8 +243,8 @@ const int kInstanceCount = 10;
 
 class Box {
  public:
-  static const int kAreaCost = 1;
-  static const int kFixedCost = 10;
+  static constexpr int kAreaCost = 1;
+  static constexpr int kFixedCost = 10;
 
   Box() {}
   Box(int x_min, int x_max, int y_min, int y_max)
@@ -602,6 +604,7 @@ int main(int argc, char** argv) {
   usage += "  --colgen_max_iterations <n>  max columns to generate\n";
   usage += "  --colgen_complete            generate all columns at start\n";
 
+  google::InitGoogleLogging(usage.c_str());
   absl::ParseCommandLine(argc, argv);
 
   operations_research::MPSolver::OptimizationProblemType solver_type;

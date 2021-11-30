@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -47,7 +47,7 @@
 //        type
 // @param param_name the parameter name
 %define PROTO_INPUT(CppProtoType, CSharpProtoType, param_name)
-%typemap(ctype)  PROTO_TYPE* INPUT, PROTO_TYPE& INPUT "int " #param_name "_size, uint8*"
+%typemap(ctype)  PROTO_TYPE* INPUT, PROTO_TYPE& INPUT "int " #param_name "_size, uint8_t*"
 %typemap(imtype) PROTO_TYPE* INPUT, PROTO_TYPE& INPUT "int " #param_name "_size, byte[]"
 %typemap(cstype) PROTO_TYPE* INPUT, PROTO_TYPE& INPUT "CSharpProtoType"
 %typemap(csin)   PROTO_TYPE* INPUT, PROTO_TYPE& INPUT "$csinput.CalculateSize(), ProtoHelper.ProtoToByteArray($csinput)"
@@ -70,7 +70,7 @@
 %enddef // end PROTO_INPUT
 
 %define PROTO2_RETURN(CppProtoType, CSharpProtoType)
-%typemap(ctype)  CppProtoType "uint8*"
+%typemap(ctype)  CppProtoType "uint8_t*"
 %typemap(imtype) CppProtoType "System.IntPtr"
 %typemap(cstype) CppProtoType "CSharpProtoType"
 %typemap(csout)  CppProtoType {
@@ -94,7 +94,7 @@
 }
 %typemap(out) CppProtoType {
   const long size = $1.ByteSizeLong();
-  $result = new uint8[size + 4];
+  $result = new uint8_t[size + 4];
   $1.SerializeWithCachedSizesToArray($result + 4);
   $result[0] = size & 0xFF;
   $result[1] = (size >> 8) & 0xFF;

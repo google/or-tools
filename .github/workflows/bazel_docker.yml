@@ -1,0 +1,25 @@
+name: Bazel Docker
+
+on: [push, pull_request]
+
+jobs:
+  Distros:
+    runs-on: ubuntu-latest
+    continue-on-error: ${{ matrix.allow_failure }}
+    strategy:
+      fail-fast: false
+      matrix:
+        distro: [alpine, archlinux, centos, debian, fedora, opensuse, ubuntu]
+        allow_failure: [false]
+    env:
+      DISTRO: ${{ matrix.distro }}
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build env image
+      run: make --directory=bazel ${DISTRO}_env
+    - name: Build devel image
+      run: make --directory=bazel ${DISTRO}_devel
+    - name: Build project
+      run: make --directory=bazel ${DISTRO}_build
+    - name: Test project
+      run: make --directory=bazel ${DISTRO}_test

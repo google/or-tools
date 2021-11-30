@@ -1,0 +1,158 @@
+// Copyright 2010-2021 Google LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Configures the behavior of a MathOpt solver.
+syntax = "proto3";
+
+package operations_research.math_opt;
+
+import "google/protobuf/duration.proto";
+
+import "ortools/glop/parameters.proto";
+import "ortools/gscip/gscip.proto";
+import "ortools/sat/sat_parameters.proto";
+
+enum SolverType {
+  SOLVER_TYPE_UNSPECIFIED = 0;
+  SOLVER_TYPE_GSCIP = 1;
+  SOLVER_TYPE_GUROBI = 2;
+  SOLVER_TYPE_GLOP = 3;
+  SOLVER_TYPE_CP_SAT = 4;
+  SOLVER_TYPE_GLPK = 6;
+}
+
+enum LPAlgorithm {
+  LP_ALGORITHM_UNSPECIFIED = 0;
+  LP_ALGORITHM_PRIMAL_SIMPLEX = 1;
+  LP_ALGORITHM_DUAL_SIMPLEX = 2;
+  LP_ALGORITHM_BARRIER = 3;
+}
+
+// How these are mapped onto underlying solvers:
+//  * If a solver doesn't support the feature, only UNSPECIFIED and OFF are
+//    valid, any other setting will give either a warning or error (as
+//    configured for Strictness).
+//  * If the solver supports the feature:
+//    - When set to UNSPECIFIED, the underlying default is used.
+//    - When the feature cannot be turned off, OFF will a warning/error.
+//    - If the feature is enabled by default, the solver default is typically
+//      mapped to MEDIUM.
+//    - If the feature is supported, LOW, MEDIUM, HIGH, and VERY HIGH will never
+//      give a warning or error, and will map onto their best match.
+enum Emphasis {
+  EMPHASIS_UNSPECIFIED = 0;
+  EMPHASIS_OFF = 1;
+  EMPHASIS_LOW = 2;
+  EMPHASIS_MEDIUM = 3;
+  EMPHASIS_HIGH = 4;
+  EMPHASIS_VERY_HIGH = 5;
+}
+
+message StrictnessProto {
+  // If true, warnings on bad parameters are converted to Status errors.
+  bool bad_parameter = 1;
+}
+
+message CommonSolveParametersProto {
+  StrictnessProto strictness = 1;
+
+  // Enables printing the solver implementation traces. The location of those
+  // traces depend on the solver. For SCIP and Gurobi this will be the standard
+  // output streams. For Glop and CP-SAT this will LOG(INFO).
+  //
+  // When not set, the default solver behavior is used, which can be enabled or
+  // disabled.
+  //
+  // Note that if the solver supports CALLBACK_EVENT_MESSAGE and the user
+  // registers a callback for it, then this parameter value is ignored and no
+  // traces are printed. The traces are only available through the
+  // CallbackDataProto.
+  optional bool enable_output = 2;
+
+  // If not set, the time limit is infinite. This parameter is always passed
+  // to the underlying solver.
+  google.protobuf.Duration time_limit = 3;
+
+  // If set, it must be >= 1.
+  optional int32 threads = 4;
+
+  // Seed for the pseudo-random number generator in the underlying
+  // solver. Note that all solvers use pseudo-random numbers to select things
+  // such as perturbation in the LP algorithm, for tie-break-up rules, and for
+  // heuristic fixings. Varying this can have a noticeable impact on solver
+  // behavior.
+  //
+  // Although all solvers have a concept of seeds, note that valid values
+  // depend on the actual solver.
+  // - Gurobi: [0:GRB_MAXINT] (which as of Gurobi 9.0 is 2x10^9).
+  // - GSCIP:  [0:2147483647] (which is MAX_INT or kint32max or 2^31-1).
+  // - GLOP:   [0:2147483647] (same as above)
+  // In all cases, the solver will receive a value equal to:
+  // MAX(0, MIN(MAX_VALID_VALUE_FOR_SOLVER, random_seed)).
+  optional int32 random_seed = 5;
+
+  // If unspecified, used the solver default algorithm.
+  LPAlgorithm lp_algorithm = 6;
+
+  Emphasis presolve = 7;
+  // NOTE: disabling cuts may prevent callbacks from having a chance to add cuts
+  // at MIP_NODE, this behavior is solver specific.
+  Emphasis cuts = 8;
+  Emphasis heuristics = 9;
+  Emphasis scaling = 10;
+}
+
+// This message contains solver specific data that are used when the solver is
+// instantiated.
+message SolverInitializerProto {}
+
+// Gurobi's parameters have types (int, double, string), but they also support
+// a simpler interface through
+// `GRBsetparam(GRBenv* env,
+//              const char* paramname,
+//              const char* value)`
+//
+// Moreover, Gurobi also has a long list of `private` and `extended`
+// parameters, which are better handled through this generic interface. Given
+// these constraints, we store parameter changes as a sequence of strings of
+// the form "paramname=value".
+//
+// Note that final behavior is order-dependent of the sequence of parameters
+// used, so we apply parameter changes one at a time. Note that when merging
+// Gurobi parameters with common solver parameters, the common parameters will
+// be pre-pended to the list of Gurobi parameters.
+message GurobiParametersProto {
+  message Parameter {
+    string name = 1;
+    string value = 2;
+  }
+  repeated Parameter parameters = 1;
+}
+
+// Parameters to control a single solve.
+//
+// Parameters that depends on the model (parameters about variables, ...) are
+// passed in ModelSolveParametersProto proto.
+message SolveParametersProto {
+  CommonSolveParametersProto common_parameters = 1;
+  // Values in solver_specific_parameters may overlap with values in
+  // common_parameters. In that case, the value in solver_specific_parameters is
+  // the one taken into account.
+  oneof solver_specific_parameters {
+    GScipParameters gscip_parameters = 2;
+    GurobiParametersProto gurobi_parameters = 3;
+    glop.GlopParameters glop_parameters = 4;
+    sat.SatParameters cp_sat_parameters = 5;
+  }
+  reserved 6;
+}

@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -42,7 +42,7 @@ public class AssignFirstUnboundToMin : NetDecisionBuilder
 public class CsRabbitsPheasants
 {
     /**
-     * Solves the rabbits + pheasants problem.  We are seing 20 heads
+     * Solves the rabbits + pheasants problem.  We are seeing 20 heads
      * and 56 legs. How many rabbits and how many pheasants are we thus
      * seeing?
      */

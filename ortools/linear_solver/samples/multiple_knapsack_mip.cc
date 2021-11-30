@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -44,8 +44,11 @@ void MultipleKnapsackMip() {
 
   // [START solver]
   // Create the mip solver with the SCIP backend.
-  MPSolver solver("multiple_knapsack_mip",
-                  MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING);
+  std::unique_ptr<MPSolver> solver(MPSolver::CreateSolver("SCIP"));
+  if (!solver) {
+    LOG(WARNING) << "SCIP solver unavailable.";
+    return;
+  }
   // [END solver]
 
   // [START program_part2]
@@ -54,7 +57,7 @@ void MultipleKnapsackMip() {
       data.num_items, std::vector<const MPVariable*>(data.num_bins));
   for (int i = 0; i < data.num_items; ++i) {
     for (int j = 0; j < data.num_bins; ++j) {
-      x[i][j] = solver.MakeIntVar(0.0, 1.0, "");
+      x[i][j] = solver->MakeIntVar(0.0, 1.0, "");
     }
   }
   // [END variables]
@@ -67,7 +70,7 @@ void MultipleKnapsackMip() {
     for (int j = 0; j < data.num_bins; ++j) {
       sum += x[i][j];
     }
-    solver.MakeRowConstraint(sum <= 1.0);
+    solver->MakeRowConstraint(sum <= 1.0);
   }
   // For each bin that is used, the total packed weight can be at most
   // the bin capacity.
@@ -76,13 +79,13 @@ void MultipleKnapsackMip() {
     for (int i = 0; i < data.num_items; ++i) {
       weight += data.weights[i] * LinearExpr(x[i][j]);
     }
-    solver.MakeRowConstraint(weight <= data.bin_capacities[j]);
+    solver->MakeRowConstraint(weight <= data.bin_capacities[j]);
   }
   // [END constraints]
 
   // [START objective]
   // Create the objective function.
-  MPObjective* const objective = solver.MutableObjective();
+  MPObjective* const objective = solver->MutableObjective();
   LinearExpr value;
   for (int i = 0; i < data.num_items; ++i) {
     for (int j = 0; j < data.num_bins; ++j) {
@@ -93,7 +96,7 @@ void MultipleKnapsackMip() {
   // [END objective]
 
   // [START solve]
-  const MPSolver::ResultStatus result_status = solver.Solve();
+  const MPSolver::ResultStatus result_status = solver->Solve();
   // [END solve]
 
   // [START print_solution]

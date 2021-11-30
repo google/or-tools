@@ -1,4 +1,5 @@
-# Copyright 2010-2018 Google LLC
+#!/usr/bin/env python3
+# Copyright 2010-2021 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -42,7 +43,7 @@ def main():
     for i in range(num_workers):
         t = []
         for j in range(num_tasks):
-            t.append(model.NewBoolVar('x[%i,%i]' % (i, j)))
+            t.append(model.NewBoolVar(f'x[{i},{j}]'))
         x.append(t)
     # [END variables]
 
@@ -75,13 +76,13 @@ def main():
     # Print solution.
     # [START print_solution]
     if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
-        print('Total cost = %i' % solver.ObjectiveValue())
+        print(f'Total cost = {solver.ObjectiveValue()}')
         print()
         for i in range(num_workers):
             for j in range(num_tasks):
                 if solver.BooleanValue(x[i][j]):
-                    print('Worker ', i, ' assigned to task ', j, '  Cost = ',
-                          costs[i][j])
+                    print(
+                        f'Worker {i} assigned to task {j} Cost = {costs[i][j]}')
     else:
         print('No solution found.')
     # [END print_solution]

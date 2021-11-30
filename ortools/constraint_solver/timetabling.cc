@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <cstdint>
 #include <string>
 
 #include "absl/strings/str_format.h"
@@ -37,7 +38,7 @@ const char* kBinaryNames[] = {
 
 class IntervalUnaryRelation : public Constraint {
  public:
-  IntervalUnaryRelation(Solver* const s, IntervalVar* const t, int64 d,
+  IntervalUnaryRelation(Solver* const s, IntervalVar* const t, int64_t d,
                         Solver::UnaryIntervalRelation rel)
       : Constraint(s), t_(t), d_(d), rel_(rel) {}
   ~IntervalUnaryRelation() override {}
@@ -61,7 +62,7 @@ class IntervalUnaryRelation : public Constraint {
 
  private:
   IntervalVar* const t_;
-  const int64 d_;
+  const int64_t d_;
   const Solver::UnaryIntervalRelation rel_;
 };
 
@@ -112,7 +113,7 @@ void IntervalUnaryRelation::InitialPropagate() {
 
 Constraint* Solver::MakeIntervalVarRelation(IntervalVar* const t,
                                             Solver::UnaryIntervalRelation r,
-                                            int64 d) {
+                                            int64_t d) {
   return RevAlloc(new IntervalUnaryRelation(this, t, d, r));
 }
 
@@ -123,7 +124,7 @@ class IntervalBinaryRelation : public Constraint {
  public:
   IntervalBinaryRelation(Solver* const s, IntervalVar* const t1,
                          IntervalVar* const t2,
-                         Solver::BinaryIntervalRelation rel, int64 delay)
+                         Solver::BinaryIntervalRelation rel, int64_t delay)
       : Constraint(s), t1_(t1), t2_(t2), rel_(rel), delay_(delay) {}
   ~IntervalBinaryRelation() override {}
 
@@ -148,7 +149,7 @@ class IntervalBinaryRelation : public Constraint {
   IntervalVar* const t1_;
   IntervalVar* const t2_;
   const Solver::BinaryIntervalRelation rel_;
-  const int64 delay_;
+  const int64_t delay_;
 };
 
 void IntervalBinaryRelation::Post() {
@@ -237,7 +238,7 @@ Constraint* Solver::MakeIntervalVarRelation(IntervalVar* const t1,
 
 Constraint* Solver::MakeIntervalVarRelationWithDelay(
     IntervalVar* const t1, Solver::BinaryIntervalRelation r,
-    IntervalVar* const t2, int64 delay) {
+    IntervalVar* const t2, int64_t delay) {
   return RevAlloc(new IntervalBinaryRelation(this, t1, t2, r, delay));
 }
 

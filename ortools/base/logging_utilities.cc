@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -228,12 +228,12 @@ unsigned int GetTID() {
   return static_cast<unsigned int>(absl::base_internal::GetTID());
 }
 
-int64 CycleClock_Now() { return absl::ToUnixMicros(absl::Now()); }
+int64_t CycleClock_Now() { return absl::ToUnixMicros(absl::Now()); }
 
-int64 UsecToCycles(int64 usec) { return usec; }
+int64_t UsecToCycles(int64_t usec) { return usec; }
 
-static int32 g_main_thread_pid = getpid();
-int32 GetMainThreadPid() { return g_main_thread_pid; }
+static int32_t g_main_thread_pid = getpid();
+int32_t GetMainThreadPid() { return g_main_thread_pid; }
 
 const char* const_basename(const char* filepath) {
   const char* base = strrchr(filepath, '/');

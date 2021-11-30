@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,6 +15,8 @@
 //  Count constraints
 
 #include <algorithm>
+#include <cstdint>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -27,8 +29,8 @@
 #include "ortools/util/string_array.h"
 
 namespace operations_research {
-Constraint* Solver::MakeCount(const std::vector<IntVar*>& vars, int64 value,
-                              int64 max_count) {
+Constraint* Solver::MakeCount(const std::vector<IntVar*>& vars, int64_t value,
+                              int64_t max_count) {
   std::vector<IntVar*> tmp_sum;
   for (int i = 0; i < vars.size(); ++i) {
     if (vars[i]->Contains(value)) {
@@ -42,13 +44,13 @@ Constraint* Solver::MakeCount(const std::vector<IntVar*>& vars, int64 value,
   return MakeSumEquality(tmp_sum, max_count);
 }
 
-Constraint* Solver::MakeCount(const std::vector<IntVar*>& vars, int64 value,
+Constraint* Solver::MakeCount(const std::vector<IntVar*>& vars, int64_t value,
                               IntVar* max_count) {
   if (max_count->Bound()) {
     return MakeCount(vars, value, max_count->Min());
   } else {
     std::vector<IntVar*> tmp_sum;
-    int64 num_vars_bound_to_v = 0;
+    int64_t num_vars_bound_to_v = 0;
     for (int i = 0; i < vars.size(); ++i) {
       if (vars[i]->Contains(value)) {
         if (vars[i]->Bound()) {
@@ -68,8 +70,8 @@ Constraint* Solver::MakeCount(const std::vector<IntVar*>& vars, int64 value,
 namespace {
 class AtMost : public Constraint {
  public:
-  AtMost(Solver* const s, std::vector<IntVar*> vars, int64 value,
-         int64 max_count)
+  AtMost(Solver* const s, std::vector<IntVar*> vars, int64_t value,
+         int64_t max_count)
       : Constraint(s),
         vars_(std::move(vars)),
         value_(value),
@@ -141,15 +143,15 @@ class AtMost : public Constraint {
 
  private:
   const std::vector<IntVar*> vars_;
-  const int64 value_;
-  const int64 max_count_;
+  const int64_t value_;
+  const int64_t max_count_;
   NumericalRev<int> current_count_;
 };
 
 class Distribute : public Constraint {
  public:
   Distribute(Solver* const s, const std::vector<IntVar*>& vars,
-             const std::vector<int64>& values,
+             const std::vector<int64_t>& values,
              const std::vector<IntVar*>& cards)
       : Constraint(s),
         vars_(vars),
@@ -186,11 +188,11 @@ class Distribute : public Constraint {
   }
 
  private:
-  int64 var_size() const { return vars_.size(); }
-  int64 card_size() const { return cards_.size(); }
+  int64_t var_size() const { return vars_.size(); }
+  int64_t card_size() const { return cards_.size(); }
 
   const std::vector<IntVar*> vars_;
-  const std::vector<int64> values_;
+  const std::vector<int64_t> values_;
   const std::vector<IntVar*> cards_;
   RevBitMatrix undecided_;
   NumericalRevArray<int> min_;
@@ -333,7 +335,7 @@ class FastDistribute : public Constraint {
   void CardMin(int card_index);
   void CardMax(int card_index);
   std::string DebugString() const override;
-  void SetRevCannotContribute(int64 var_index, int64 card_index) {
+  void SetRevCannotContribute(int64_t var_index, int64_t card_index) {
     Solver* const s = solver();
     undecided_.SetToZero(s, var_index, card_index);
     max_.Decr(s, card_index);
@@ -342,7 +344,7 @@ class FastDistribute : public Constraint {
       CardMax(card_index);
     }
   }
-  void SetRevDoContribute(int64 var_index, int64 card_index) {
+  void SetRevDoContribute(int64_t var_index, int64_t card_index) {
     Solver* const s = solver();
     undecided_.SetToZero(s, var_index, card_index);
     min_.Incr(s, card_index);
@@ -362,8 +364,8 @@ class FastDistribute : public Constraint {
   }
 
  private:
-  int64 var_size() const { return vars_.size(); }
-  int64 card_size() const { return cards_.size(); }
+  int64_t var_size() const { return vars_.size(); }
+  int64_t card_size() const { return cards_.size(); }
 
   const std::vector<IntVar*> vars_;
   const std::vector<IntVar*> cards_;
@@ -451,23 +453,23 @@ void FastDistribute::OneBound(int index) {
 
 void FastDistribute::OneDomain(int index) {
   IntVar* const var = vars_[index];
-  const int64 oldmin = var->OldMin();
-  const int64 oldmax = var->OldMax();
-  const int64 vmin = var->Min();
-  const int64 vmax = var->Max();
-  for (int64 card_index = std::max(oldmin, int64{0});
+  const int64_t oldmin = var->OldMin();
+  const int64_t oldmax = var->OldMax();
+  const int64_t vmin = var->Min();
+  const int64_t vmax = var->Max();
+  for (int64_t card_index = std::max(oldmin, int64_t{0});
        card_index < std::min(vmin, card_size()); ++card_index) {
     if (undecided_.IsSet(index, card_index)) {
       SetRevCannotContribute(index, card_index);
     }
   }
-  for (const int64 card_index : InitAndGetValues(holes_[index])) {
+  for (const int64_t card_index : InitAndGetValues(holes_[index])) {
     if (card_index >= 0 && card_index < card_size() &&
         undecided_.IsSet(index, card_index)) {
       SetRevCannotContribute(index, card_index);
     }
   }
-  for (int64 card_index = std::max(vmax + 1, int64{0});
+  for (int64_t card_index = std::max(vmax + 1, int64_t{0});
        card_index <= std::min(oldmax, card_size() - 1); ++card_index) {
     if (undecided_.IsSet(index, card_index)) {
       SetRevCannotContribute(index, card_index);
@@ -476,8 +478,8 @@ void FastDistribute::OneDomain(int index) {
 }
 
 void FastDistribute::CountVar(int card_index) {
-  const int64 stored_min = min_[card_index];
-  const int64 stored_max = max_[card_index];
+  const int64_t stored_min = min_[card_index];
+  const int64_t stored_max = max_[card_index];
   cards_[card_index]->SetRange(min_[card_index], max_[card_index]);
   if (cards_[card_index]->Min() == stored_max) {
     CardMax(card_index);
@@ -508,9 +510,9 @@ void FastDistribute::CardMax(int card_index) {
 class BoundedDistribute : public Constraint {
  public:
   BoundedDistribute(Solver* const s, const std::vector<IntVar*>& vars,
-                    const std::vector<int64>& values,
-                    const std::vector<int64>& card_min,
-                    const std::vector<int64>& card_max);
+                    const std::vector<int64_t>& values,
+                    const std::vector<int64_t>& card_min,
+                    const std::vector<int64_t>& card_max);
   ~BoundedDistribute() override {}
 
   void Post() override;
@@ -521,7 +523,7 @@ class BoundedDistribute : public Constraint {
   void CardMin(int card_index);
   void CardMax(int card_index);
   std::string DebugString() const override;
-  void SetRevCannotContribute(int64 var_index, int64 card_index) {
+  void SetRevCannotContribute(int64_t var_index, int64_t card_index) {
     Solver* const s = solver();
     undecided_.SetToZero(s, var_index, card_index);
     max_.Decr(s, card_index);
@@ -532,7 +534,7 @@ class BoundedDistribute : public Constraint {
       CardMax(card_index);
     }
   }
-  void SetRevDoContribute(int64 var_index, int64 card_index) {
+  void SetRevDoContribute(int64_t var_index, int64_t card_index) {
     Solver* const s = solver();
     undecided_.SetToZero(s, var_index, card_index);
     min_.Incr(s, card_index);
@@ -555,13 +557,13 @@ class BoundedDistribute : public Constraint {
   }
 
  private:
-  int64 var_size() const { return vars_.size(); }
-  int64 card_size() const { return values_.size(); }
+  int64_t var_size() const { return vars_.size(); }
+  int64_t card_size() const { return values_.size(); }
 
   const std::vector<IntVar*> vars_;
-  const std::vector<int64> values_;
-  const std::vector<int64> card_min_;
-  const std::vector<int64> card_max_;
+  const std::vector<int64_t> values_;
+  const std::vector<int64_t> card_min_;
+  const std::vector<int64_t> card_max_;
   RevBitMatrix undecided_;
   NumericalRevArray<int> min_;
   NumericalRevArray<int> max_;
@@ -570,9 +572,9 @@ class BoundedDistribute : public Constraint {
 
 BoundedDistribute::BoundedDistribute(Solver* const s,
                                      const std::vector<IntVar*>& vars,
-                                     const std::vector<int64>& values,
-                                     const std::vector<int64>& card_min,
-                                     const std::vector<int64>& card_max)
+                                     const std::vector<int64_t>& values,
+                                     const std::vector<int64_t>& card_min,
+                                     const std::vector<int64_t>& card_max)
     : Constraint(s),
       vars_(vars),
       values_(values),
@@ -612,7 +614,7 @@ void BoundedDistribute::Post() {
 void BoundedDistribute::InitialPropagate() {
   Solver* const s = solver();
 
-  int64 sum_card_min = 0;
+  int64_t sum_card_min = 0;
   for (int i = 0; i < card_size(); ++i) {
     if (card_max_[i] < card_min_[i]) {
       solver()->Fail();
@@ -629,7 +631,7 @@ void BoundedDistribute::InitialPropagate() {
   }
 
   for (int card_index = 0; card_index < card_size(); ++card_index) {
-    const int64 value = values_[card_index];
+    const int64_t value = values_[card_index];
     int min = 0;
     int max = 0;
     for (int i = 0; i < var_size(); ++i) {
@@ -652,7 +654,7 @@ void BoundedDistribute::InitialPropagate() {
 
 void BoundedDistribute::OneBound(int index) {
   IntVar* const var = vars_[index];
-  const int64 var_min = var->Min();
+  const int64_t var_min = var->Min();
   for (int card_index = 0; card_index < card_size(); ++card_index) {
     if (undecided_.IsSet(index, card_index)) {
       if (var_min == values_[card_index]) {
@@ -676,8 +678,8 @@ void BoundedDistribute::OneDomain(int index) {
 }
 
 void BoundedDistribute::CountVar(int card_index) {
-  const int64 stored_min = min_[card_index];
-  const int64 stored_max = max_[card_index];
+  const int64_t stored_min = min_[card_index];
+  const int64_t stored_max = max_[card_index];
   if (card_min_[card_index] > stored_max ||
       card_max_[card_index] < stored_min) {
     solver()->Fail();
@@ -711,8 +713,8 @@ void BoundedDistribute::CardMax(int card_index) {
 class BoundedFastDistribute : public Constraint {
  public:
   BoundedFastDistribute(Solver* const s, const std::vector<IntVar*>& vars,
-                        const std::vector<int64>& card_min,
-                        const std::vector<int64>& card_max);
+                        const std::vector<int64_t>& card_min,
+                        const std::vector<int64_t>& card_max);
   ~BoundedFastDistribute() override {}
 
   void Post() override;
@@ -723,7 +725,7 @@ class BoundedFastDistribute : public Constraint {
   void CardMin(int card_index);
   void CardMax(int card_index);
   std::string DebugString() const override;
-  void SetRevCannotContribute(int64 var_index, int64 card_index) {
+  void SetRevCannotContribute(int64_t var_index, int64_t card_index) {
     Solver* const s = solver();
     undecided_.SetToZero(s, var_index, card_index);
     max_.Decr(s, card_index);
@@ -734,7 +736,7 @@ class BoundedFastDistribute : public Constraint {
       CardMax(card_index);
     }
   }
-  void SetRevDoContribute(int64 var_index, int64 card_index) {
+  void SetRevDoContribute(int64_t var_index, int64_t card_index) {
     Solver* const s = solver();
     undecided_.SetToZero(s, var_index, card_index);
     min_.Incr(s, card_index);
@@ -756,22 +758,21 @@ class BoundedFastDistribute : public Constraint {
   }
 
  private:
-  int64 var_size() const { return vars_.size(); }
-  int64 card_size() const { return card_min_.size(); }
+  int64_t var_size() const { return vars_.size(); }
+  int64_t card_size() const { return card_min_.size(); }
 
   const std::vector<IntVar*> vars_;
-  const std::vector<int64> card_min_;
-  const std::vector<int64> card_max_;
+  const std::vector<int64_t> card_min_;
+  const std::vector<int64_t> card_max_;
   RevBitMatrix undecided_;
   NumericalRevArray<int> min_;
   NumericalRevArray<int> max_;
   std::vector<IntVarIterator*> holes_;
 };
 
-BoundedFastDistribute::BoundedFastDistribute(Solver* const s,
-                                             const std::vector<IntVar*>& vars,
-                                             const std::vector<int64>& card_min,
-                                             const std::vector<int64>& card_max)
+BoundedFastDistribute::BoundedFastDistribute(
+    Solver* const s, const std::vector<IntVar*>& vars,
+    const std::vector<int64_t>& card_min, const std::vector<int64_t>& card_max)
     : Constraint(s),
       vars_(vars),
       card_min_(card_min),
@@ -811,7 +812,7 @@ void BoundedFastDistribute::Post() {
 void BoundedFastDistribute::InitialPropagate() {
   Solver* const s = solver();
 
-  int64 sum_card_min = 0;
+  int64_t sum_card_min = 0;
   for (int i = 0; i < card_size(); ++i) {
     if (card_max_[i] < card_min_[i]) {
       solver()->Fail();
@@ -850,7 +851,7 @@ void BoundedFastDistribute::InitialPropagate() {
 
 void BoundedFastDistribute::OneBound(int index) {
   IntVar* const var = vars_[index];
-  const int64 var_min = var->Min();
+  const int64_t var_min = var->Min();
   for (int card_index = 0; card_index < card_size(); ++card_index) {
     if (undecided_.IsSet(index, card_index)) {
       if (var_min == card_index) {
@@ -864,23 +865,23 @@ void BoundedFastDistribute::OneBound(int index) {
 
 void BoundedFastDistribute::OneDomain(int index) {
   IntVar* const var = vars_[index];
-  const int64 oldmin = var->OldMin();
-  const int64 oldmax = var->OldMax();
-  const int64 vmin = var->Min();
-  const int64 vmax = var->Max();
-  for (int64 card_index = std::max(oldmin, int64{0});
+  const int64_t oldmin = var->OldMin();
+  const int64_t oldmax = var->OldMax();
+  const int64_t vmin = var->Min();
+  const int64_t vmax = var->Max();
+  for (int64_t card_index = std::max(oldmin, int64_t{0});
        card_index < std::min(vmin, card_size()); ++card_index) {
     if (undecided_.IsSet(index, card_index)) {
       SetRevCannotContribute(index, card_index);
     }
   }
-  for (const int64 card_index : InitAndGetValues(holes_[index])) {
+  for (const int64_t card_index : InitAndGetValues(holes_[index])) {
     if (card_index >= 0 && card_index < card_size() &&
         undecided_.IsSet(index, card_index)) {
       SetRevCannotContribute(index, card_index);
     }
   }
-  for (int64 card_index = std::max(vmax + 1, int64{0});
+  for (int64_t card_index = std::max(vmax + 1, int64_t{0});
        card_index <= std::min(oldmax, card_size() - 1); ++card_index) {
     if (undecided_.IsSet(index, card_index)) {
       SetRevCannotContribute(index, card_index);
@@ -889,8 +890,8 @@ void BoundedFastDistribute::OneDomain(int index) {
 }
 
 void BoundedFastDistribute::CountVar(int card_index) {
-  const int64 stored_min = min_[card_index];
-  const int64 stored_max = max_[card_index];
+  const int64_t stored_min = min_[card_index];
+  const int64_t stored_max = max_[card_index];
   if (card_min_[card_index] > stored_max ||
       card_max_[card_index] < stored_min) {
     solver()->Fail();
@@ -952,8 +953,8 @@ class SetAllToZero : public Constraint {
 
 // ----- Factory -----
 
-Constraint* Solver::MakeAtMost(std::vector<IntVar*> vars, int64 value,
-                               int64 max_count) {
+Constraint* Solver::MakeAtMost(std::vector<IntVar*> vars, int64_t value,
+                               int64_t max_count) {
   CHECK_GE(max_count, 0);
   if (max_count >= vars.size()) {
     return MakeTrueConstraint();
@@ -962,7 +963,7 @@ Constraint* Solver::MakeAtMost(std::vector<IntVar*> vars, int64 value,
 }
 
 Constraint* Solver::MakeDistribute(const std::vector<IntVar*>& vars,
-                                   const std::vector<int64>& values,
+                                   const std::vector<int64_t>& values,
                                    const std::vector<IntVar*>& cards) {
   if (vars.empty()) {
     return RevAlloc(new SetAllToZero(this, cards));
@@ -1011,8 +1012,8 @@ Constraint* Solver::MakeDistribute(const std::vector<IntVar*>& vars,
 }
 
 Constraint* Solver::MakeDistribute(const std::vector<IntVar*>& vars,
-                                   int64 card_min, int64 card_max,
-                                   int64 card_size) {
+                                   int64_t card_min, int64_t card_max,
+                                   int64_t card_size) {
   const int vsize = vars.size();
   CHECK_NE(vsize, 0);
   for (IntVar* const var : vars) {
@@ -1023,19 +1024,19 @@ Constraint* Solver::MakeDistribute(const std::vector<IntVar*>& vars,
   } else if (card_min > vsize || card_max < 0 || card_max < card_min) {
     return MakeFalseConstraint();
   } else {
-    std::vector<int64> mins(card_size, card_min);
-    std::vector<int64> maxes(card_size, card_max);
+    std::vector<int64_t> mins(card_size, card_min);
+    std::vector<int64_t> maxes(card_size, card_max);
     return RevAlloc(new BoundedFastDistribute(this, vars, mins, maxes));
   }
 }
 
 Constraint* Solver::MakeDistribute(const std::vector<IntVar*>& vars,
-                                   const std::vector<int64>& card_min,
-                                   const std::vector<int64>& card_max) {
+                                   const std::vector<int64_t>& card_min,
+                                   const std::vector<int64_t>& card_max) {
   const int vsize = vars.size();
   CHECK_NE(vsize, 0);
-  int64 cmax = kint64max;
-  int64 cmin = kint64min;
+  int64_t cmax = std::numeric_limits<int64_t>::max();
+  int64_t cmin = std::numeric_limits<int64_t>::min();
   for (int i = 0; i < card_max.size(); ++i) {
     cmax = std::min(cmax, card_max[i]);
     cmin = std::max(cmin, card_min[i]);
@@ -1056,9 +1057,9 @@ Constraint* Solver::MakeDistribute(const std::vector<IntVar*>& vars,
 }
 
 Constraint* Solver::MakeDistribute(const std::vector<IntVar*>& vars,
-                                   const std::vector<int64>& values,
-                                   const std::vector<int64>& card_min,
-                                   const std::vector<int64>& card_max) {
+                                   const std::vector<int64_t>& values,
+                                   const std::vector<int64_t>& card_min,
+                                   const std::vector<int64_t>& card_max) {
   CHECK_NE(vars.size(), 0);
   CHECK_EQ(card_min.size(), values.size());
   CHECK_EQ(card_min.size(), card_max.size());

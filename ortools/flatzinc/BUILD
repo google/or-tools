@@ -9,15 +9,6 @@ package(default_visibility = ["//visibility:public"])
 # ---------------------------------------------------------------------------
 
 cc_library(
-    name = "logging",
-    srcs = ["logging.cc"],
-    hdrs = ["logging.h"],
-    deps = [
-        "//ortools/base",
-    ],
-)
-
-cc_library(
     name = "model",
     srcs = ["model.cc"],
     hdrs = ["model.h"],
@@ -27,8 +18,8 @@ cc_library(
         "//ortools/base:map_util",
         "//ortools/base:stl_util",
         "//ortools/graph:iterators",
+        "//ortools/util:logging",
         "//ortools/util:string_array",
-        ":logging",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/strings",
@@ -92,9 +83,9 @@ cc_library(
         "//ortools/base:hash",
         "//ortools/base:map_util",
         "//ortools/graph:cliques",
+        "//ortools/util:logging",
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:vector_map",
-        ":logging",
         ":model",
         "@com_google_absl//absl/strings",
     ],
@@ -108,7 +99,7 @@ cc_library(
         "//ortools/base",
         "//ortools/base:hash",
         "//ortools/base:map_util",
-        ":logging",
+        "//ortools/util:logging",
         ":model",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/strings",
@@ -136,8 +127,8 @@ cc_library(
         "//ortools/sat:optimization",
         "//ortools/sat:sat_solver",
         "//ortools/sat:table",
+        "//ortools/util:logging",
         ":checker",
-        ":logging",
         ":model",
         "@com_google_absl//absl/strings",
     ],
@@ -149,8 +140,8 @@ cc_binary(
     deps = [
         "//ortools/base",
         "//ortools/base:threadpool",
+        "//ortools/util:logging",
         ":cp_model_fz_solver",
-        ":logging",
         ":model",
         ":parser_lib",
         ":presolve",

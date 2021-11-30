@@ -23,7 +23,7 @@ cc_test(
         "//ortools/base:map_util",
         "//ortools/base:random",
         "@com_google_absl//absl/strings",
-        "@gtest//:main",
+        "@com_google_googletest//:gtest_main",
     ],
 )
 
@@ -69,8 +69,8 @@ cc_library(
     deps = [
         "//ortools/base",
         "//ortools/base:int_type",
-        "//ortools/base:strong_vector",
         "//ortools/base:ptr_util",
+        "//ortools/base:strong_vector",
         "//ortools/util:time_limit",
     ],
 )

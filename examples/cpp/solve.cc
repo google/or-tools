@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,6 +18,8 @@
 #include <cstdio>
 #include <string>
 
+#include "absl/flags/parse.h"
+#include "absl/flags/usage.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/commandlineflags.h"
@@ -42,7 +44,7 @@ ABSL_FLAG(std::string, params_file, "",
           "Solver specific parameters file. "
           "If this flag is set, the --params flag is ignored.");
 ABSL_FLAG(std::string, params, "", "Solver specific parameters");
-ABSL_FLAG(int64, time_limit_ms, 0,
+ABSL_FLAG(int64_t, time_limit_ms, 0,
           "If strictly positive, specifies a limit in ms on the solving "
           "time. Otherwise, no time limit will be imposed.");
 
@@ -175,7 +177,7 @@ bool Run() {
                                                     &error_message);
   if (request_proto.has_solver_time_limit_seconds()) {
     solver.set_time_limit(
-        static_cast<int64>(1000.0 * request_proto.solver_time_limit_seconds()));
+        static_cast<int64_t>(1000.0 * request_proto.solver_time_limit_seconds()));
   }
   // Note, the underlying MPSolver treats time limit equal to 0 as no limit.
   if (absl::GetFlag(FLAGS_time_limit_ms) >= 0) {

@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,6 +14,8 @@
 #include "ortools/sat/table.h"
 
 #include <algorithm>
+#include <cstdint>
+#include <limits>
 #include <memory>
 #include <set>
 #include <utility>
@@ -95,8 +97,8 @@ void ProcessOneColumn(
 // Simpler encoding for table constraints with 2 variables.
 void AddSizeTwoTable(
     absl::Span<const IntegerVariable> vars,
-    const std::vector<std::vector<int64>>& tuples,
-    const std::vector<absl::flat_hash_set<int64>>& values_per_var,
+    const std::vector<std::vector<int64_t>>& tuples,
+    const std::vector<absl::flat_hash_set<int64_t>>& values_per_var,
     Model* model) {
   const int n = vars.size();
   CHECK_EQ(n, 2);
@@ -104,8 +106,8 @@ void AddSizeTwoTable(
 
   std::vector<absl::flat_hash_map<IntegerValue, Literal>> encodings(n);
   for (int i = 0; i < n; ++i) {
-    const std::vector<int64> reached_values(values_per_var[i].begin(),
-                                            values_per_var[i].end());
+    const std::vector<int64_t> reached_values(values_per_var[i].begin(),
+                                              values_per_var[i].end());
     integer_trail->UpdateInitialDomain(vars[i],
                                        Domain::FromValues(reached_values));
     if (values_per_var.size() > 1) {
@@ -175,21 +177,21 @@ void AddSizeTwoTable(
 // In that case, it creates the complement of the projected tuples and add that
 // as a forbidden assignment constraint.
 void ExploreSubsetOfVariablesAndAddNegatedTables(
-    const std::vector<std::vector<int64>>& tuples,
-    const std::vector<std::vector<int64>>& var_domains,
+    const std::vector<std::vector<int64_t>>& tuples,
+    const std::vector<std::vector<int64_t>>& var_domains,
     absl::Span<const IntegerVariable> vars, Model* model) {
   const int num_vars = var_domains.size();
   for (int start = 0; start < num_vars; ++start) {
     const int limit = start == 0 ? num_vars : std::min(num_vars, start + 3);
     for (int end = start + 1; end < limit; ++end) {
-      // TODO(user,user): If we add negated table for more than one value of
+      // TODO(user): If we add negated table for more than one value of
       // end, because the set of variables will be included in each other, we
       // could reduce the number of clauses added. I.e if we excluded
       // (x=2, y=3) there is no need to exclude any of the tuples
       // (x=2, y=3, z=*).
 
       // Compute the maximum number of such prefix tuples.
-      int64 max_num_prefix_tuples = 1;
+      int64_t max_num_prefix_tuples = 1;
       for (int i = start; i <= end; ++i) {
         max_num_prefix_tuples =
             CapProd(max_num_prefix_tuples, var_domains[i].size());
@@ -198,9 +200,9 @@ void ExploreSubsetOfVariablesAndAddNegatedTables(
       // Abort early.
       if (max_num_prefix_tuples > 2 * tuples.size()) break;
 
-      absl::flat_hash_set<absl::Span<const int64>> prefixes;
+      absl::flat_hash_set<absl::Span<const int64_t>> prefixes;
       bool skip = false;
-      for (const std::vector<int64>& tuple : tuples) {
+      for (const std::vector<int64_t>& tuple : tuples) {
         prefixes.insert(absl::MakeSpan(&tuple[start], end - start + 1));
         if (prefixes.size() == max_num_prefix_tuples) {
           // Nothing to add with this range [start..end].
@@ -211,12 +213,12 @@ void ExploreSubsetOfVariablesAndAddNegatedTables(
       if (skip) continue;
       const int num_prefix_tuples = prefixes.size();
 
-      std::vector<std::vector<int64>> negated_tuples;
+      std::vector<std::vector<int64_t>> negated_tuples;
 
       int created = 0;
       if (num_prefix_tuples < max_num_prefix_tuples &&
           max_num_prefix_tuples < num_prefix_tuples * 2) {
-        std::vector<int64> tmp_tuple;
+        std::vector<int64_t> tmp_tuple;
         for (int i = 0; i < max_num_prefix_tuples; ++i) {
           tmp_tuple.clear();
           int index = i;
@@ -246,19 +248,20 @@ void ExploreSubsetOfVariablesAndAddNegatedTables(
 // the decomposition uses clauses corresponding to the equivalence:
 // (\/_{row | tuples[row][col] = val} tuple_literals[row]) <=> (vars[col] = val)
 void AddTableConstraint(absl::Span<const IntegerVariable> vars,
-                        std::vector<std::vector<int64>> tuples, Model* model) {
+                        std::vector<std::vector<int64_t>> tuples,
+                        Model* model) {
   const int n = vars.size();
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
   const int num_original_tuples = tuples.size();
 
   // Compute the set of possible values for each variable (from the table).
   // Remove invalid tuples along the way.
-  std::vector<absl::flat_hash_set<int64>> values_per_var(n);
+  std::vector<absl::flat_hash_set<int64_t>> values_per_var(n);
   int index = 0;
   for (int tuple_index = 0; tuple_index < num_original_tuples; ++tuple_index) {
     bool keep = true;
     for (int i = 0; i < n; ++i) {
-      const int64 value = tuples[tuple_index][i];
+      const int64_t value = tuples[tuple_index][i];
       if (!values_per_var[i].contains(value) /* cached */ &&
           !integer_trail->InitialVariableDomain(vars[i]).Contains(value)) {
         keep = false;
@@ -290,14 +293,14 @@ void AddTableConstraint(absl::Span<const IntegerVariable> vars,
   // tuples.
   int num_prefix_tuples = 0;
   {
-    absl::flat_hash_set<absl::Span<const int64>> prefixes;
-    for (const std::vector<int64>& tuple : tuples) {
+    absl::flat_hash_set<absl::Span<const int64_t>> prefixes;
+    for (const std::vector<int64_t>& tuple : tuples) {
       prefixes.insert(absl::MakeSpan(tuple.data(), n - 1));
     }
     num_prefix_tuples = prefixes.size();
   }
 
-  std::vector<std::vector<int64>> var_domains(n);
+  std::vector<std::vector<int64_t>> var_domains(n);
   for (int j = 0; j < n; ++j) {
     var_domains[j].assign(values_per_var[j].begin(), values_per_var[j].end());
     std::sort(var_domains[j].begin(), var_domains[j].end());
@@ -312,8 +315,8 @@ void AddTableConstraint(absl::Span<const IntegerVariable> vars,
   // point here.
   std::vector<absl::flat_hash_map<IntegerValue, Literal>> encodings(n);
   for (int i = 0; i < n; ++i) {
-    const std::vector<int64> reached_values(values_per_var[i].begin(),
-                                            values_per_var[i].end());
+    const std::vector<int64_t> reached_values(values_per_var[i].begin(),
+                                              values_per_var[i].end());
     integer_trail->UpdateInitialDomain(vars[i],
                                        Domain::FromValues(reached_values));
     if (values_per_var.size() > 1) {
@@ -323,8 +326,8 @@ void AddTableConstraint(absl::Span<const IntegerVariable> vars,
   }
 
   // Compress tuples.
-  const int64 any_value = kint64min;
-  std::vector<int64> domain_sizes;
+  const int64_t any_value = std::numeric_limits<int64_t>::min();
+  std::vector<int64_t> domain_sizes;
   for (int i = 0; i < n; ++i) {
     domain_sizes.push_back(values_per_var[i].size());
   }
@@ -335,7 +338,7 @@ void AddTableConstraint(absl::Span<const IntegerVariable> vars,
   const bool prefixes_are_all_different = num_prefix_tuples == num_valid_tuples;
   if (VLOG_IS_ON(2)) {
     // Compute the maximum number of prefix tuples.
-    int64 max_num_prefix_tuples = 1;
+    int64_t max_num_prefix_tuples = 1;
     for (int i = 0; i + 1 < n; ++i) {
       max_num_prefix_tuples =
           CapProd(max_num_prefix_tuples, values_per_var[i].size());
@@ -401,7 +404,7 @@ void AddTableConstraint(absl::Span<const IntegerVariable> vars,
     active_values.clear();
     any_tuple_literals.clear();
     for (int j = 0; j < tuple_literals.size(); ++j) {
-      const int64 v = tuples[j][i];
+      const int64_t v = tuples[j][i];
 
       if (v == any_value) {
         any_tuple_literals.push_back(tuple_literals[j]);
@@ -430,7 +433,7 @@ void AddTableConstraint(absl::Span<const IntegerVariable> vars,
         // Ignore fixed variables.
         if (values_per_var[i].size() == 1) continue;
 
-        const int64 v = tuples[j][i];
+        const int64_t v = tuples[j][i];
         // Ignored 'any' created during compression.
         if (v == any_value) continue;
 
@@ -455,7 +458,7 @@ void AddTableConstraint(absl::Span<const IntegerVariable> vars,
 }
 
 void AddNegatedTableConstraint(absl::Span<const IntegerVariable> vars,
-                               std::vector<std::vector<int64>> tuples,
+                               std::vector<std::vector<int64_t>> tuples,
                                Model* model) {
   const int n = vars.size();
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
@@ -485,8 +488,8 @@ void AddNegatedTableConstraint(absl::Span<const IntegerVariable> vars,
   }
 
   // Compress tuples.
-  const int64 any_value = kint64min;
-  std::vector<int64> domain_sizes;
+  const int64_t any_value = std::numeric_limits<int64_t>::min();
+  std::vector<int64_t> domain_sizes;
   for (int i = 0; i < n; ++i) {
     domain_sizes.push_back(
         integer_trail->InitialVariableDomain(vars[i]).Size());
@@ -494,7 +497,7 @@ void AddNegatedTableConstraint(absl::Span<const IntegerVariable> vars,
   CompressTuples(domain_sizes, any_value, &tuples);
 
   // Collect all relevant var == value literal.
-  std::vector<absl::flat_hash_map<int64, Literal>> mapping(n);
+  std::vector<absl::flat_hash_map<int64_t, Literal>> mapping(n);
   for (int i = 0; i < n; ++i) {
     for (const auto pair : integer_encoder->PartialDomainEncoding(vars[i])) {
       mapping[i][pair.value.value()] = pair.literal;
@@ -503,11 +506,11 @@ void AddNegatedTableConstraint(absl::Span<const IntegerVariable> vars,
 
   // For each tuple, forbid the variables values to be this tuple.
   std::vector<Literal> clause;
-  for (const std::vector<int64>& tuple : tuples) {
+  for (const std::vector<int64_t>& tuple : tuples) {
     bool add_tuple = true;
     clause.clear();
     for (int i = 0; i < n; ++i) {
-      const int64 value = tuple[i];
+      const int64_t value = tuple[i];
       if (value == any_value) continue;
 
       // If a literal associated to var == value exist, use it, otherwise
@@ -516,8 +519,8 @@ void AddNegatedTableConstraint(absl::Span<const IntegerVariable> vars,
       if (mapping[i].contains(value)) {
         clause.push_back(gtl::FindOrDie(mapping[i], value).Negated());
       } else {
-        const int64 lb = model->Get(LowerBound(vars[i]));
-        const int64 ub = model->Get(UpperBound(vars[i]));
+        const int64_t lb = model->Get(LowerBound(vars[i]));
+        const int64_t ub = model->Get(UpperBound(vars[i]));
 
         // TODO(user): test the full initial domain instead of just checking
         // the bounds. That shouldn't change too much since the literals added
@@ -590,8 +593,8 @@ std::function<void(Model*)> LiteralTableConstraint(
 
 std::function<void(Model*)> TransitionConstraint(
     const std::vector<IntegerVariable>& vars,
-    const std::vector<std::vector<int64>>& automaton, int64 initial_state,
-    const std::vector<int64>& final_states) {
+    const std::vector<std::vector<int64_t>>& automaton, int64_t initial_state,
+    const std::vector<int64_t>& final_states) {
   return [=](Model* model) {
     IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
     const int n = vars.size();
@@ -599,10 +602,10 @@ std::function<void(Model*)> TransitionConstraint(
 
     // Test precondition.
     {
-      std::set<std::pair<int64, int64>> unique_transition_checker;
-      for (const std::vector<int64>& transition : automaton) {
+      std::set<std::pair<int64_t, int64_t>> unique_transition_checker;
+      for (const std::vector<int64_t>& transition : automaton) {
         CHECK_EQ(transition.size(), 3);
-        const std::pair<int64, int64> p{transition[0], transition[1]};
+        const std::pair<int64_t, int64_t> p{transition[0], transition[1]};
         CHECK(!gtl::ContainsKey(unique_transition_checker, p))
             << "Duplicate outgoing transitions with value " << transition[1]
             << " from state " << transition[0] << ".";
@@ -611,10 +614,10 @@ std::function<void(Model*)> TransitionConstraint(
     }
 
     // Construct a table with the possible values of each vars.
-    std::vector<absl::flat_hash_set<int64>> possible_values(n);
+    std::vector<absl::flat_hash_set<int64_t>> possible_values(n);
     for (int time = 0; time < n; ++time) {
       const auto domain = integer_trail->InitialVariableDomain(vars[time]);
-      for (const std::vector<int64>& transition : automaton) {
+      for (const std::vector<int64_t>& transition : automaton) {
         // TODO(user): quadratic algo, improve!
         if (domain.Contains(transition[1])) {
           possible_values[time].insert(transition[1]);
@@ -623,7 +626,7 @@ std::function<void(Model*)> TransitionConstraint(
     }
 
     // Compute the set of reachable state at each time point.
-    std::vector<std::set<int64>> reachable_states(n + 1);
+    std::vector<std::set<int64_t>> reachable_states(n + 1);
     reachable_states[0].insert(initial_state);
     reachable_states[n] = {final_states.begin(), final_states.end()};
 
@@ -632,7 +635,7 @@ std::function<void(Model*)> TransitionConstraint(
     // TODO(user): filter using the domain of vars[time] that may not contain
     // all the possible transitions.
     for (int time = 0; time + 1 < n; ++time) {
-      for (const std::vector<int64>& transition : automaton) {
+      for (const std::vector<int64_t>& transition : automaton) {
         if (!gtl::ContainsKey(reachable_states[time], transition[0])) continue;
         if (!gtl::ContainsKey(possible_values[time], transition[1])) continue;
         reachable_states[time + 1].insert(transition[2]);
@@ -641,8 +644,8 @@ std::function<void(Model*)> TransitionConstraint(
 
     // Backward.
     for (int time = n - 1; time > 0; --time) {
-      std::set<int64> new_set;
-      for (const std::vector<int64>& transition : automaton) {
+      std::set<int64_t> new_set;
+      for (const std::vector<int64_t>& transition : automaton) {
         if (!gtl::ContainsKey(reachable_states[time], transition[0])) continue;
         if (!gtl::ContainsKey(possible_values[time], transition[1])) continue;
         if (!gtl::ContainsKey(reachable_states[time + 1], transition[2]))
@@ -668,7 +671,7 @@ std::function<void(Model*)> TransitionConstraint(
       std::vector<IntegerValue> in_states;
       std::vector<IntegerValue> transition_values;
       std::vector<IntegerValue> out_states;
-      for (const std::vector<int64>& transition : automaton) {
+      for (const std::vector<int64_t>& transition : automaton) {
         if (!gtl::ContainsKey(reachable_states[time], transition[0])) continue;
         if (!gtl::ContainsKey(possible_values[time], transition[1])) continue;
         if (!gtl::ContainsKey(reachable_states[time + 1], transition[2]))
@@ -699,7 +702,7 @@ std::function<void(Model*)> TransitionConstraint(
 
         encoding.clear();
         if (s.size() > 1) {
-          std::vector<int64> values;
+          std::vector<int64_t> values;
           values.reserve(s.size());
           for (IntegerValue v : s) values.push_back(v.value());
           integer_trail->UpdateInitialDomain(vars[time],
@@ -709,7 +712,7 @@ std::function<void(Model*)> TransitionConstraint(
         } else {
           // Fix vars[time] to its unique possible value.
           CHECK_EQ(s.size(), 1);
-          const int64 unique_value = s.begin()->value();
+          const int64_t unique_value = s.begin()->value();
           model->Add(LowerOrEqual(vars[time], unique_value));
           model->Add(GreaterOrEqual(vars[time], unique_value));
         }

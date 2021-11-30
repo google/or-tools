@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -12,6 +12,8 @@
 // limitations under the License.
 
 #include "ortools/bop/complete_optimizer.h"
+
+#include <cstdint>
 
 #include "ortools/bop/bop_util.h"
 #include "ortools/sat/boolean_problem.h"
@@ -92,7 +94,7 @@ BopOptimizerBase::Status SatCoreBasedOptimizer::Optimize(
     return sync_status;
   }
 
-  int64 conflict_limit = parameters.max_number_of_conflicts_in_random_lns();
+  int64_t conflict_limit = parameters.max_number_of_conflicts_in_random_lns();
   double deterministic_time_at_last_sync = solver_.deterministic_time();
   while (!time_limit->LimitReached()) {
     sat::SatParameters sat_params = solver_.parameters();
@@ -103,7 +105,7 @@ BopOptimizerBase::Status SatCoreBasedOptimizer::Optimize(
     sat_params.set_max_number_of_conflicts(conflict_limit);
     solver_.SetParameters(sat_params);
 
-    const int64 old_num_conflicts = solver_.num_failures();
+    const int64_t old_num_conflicts = solver_.num_failures();
     const sat::SatSolver::Status sat_status =
         assumptions_already_added_ ? solver_.Solve() : SolveWithAssumptions();
     time_limit->AdvanceDeterministicTime(solver_.deterministic_time() -

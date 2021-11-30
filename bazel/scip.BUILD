@@ -1,50 +1,57 @@
 exports_files(
-    ["scip-7.0.1/src/lpi/lpi_glop.cpp"],
+    ["src/lpi/lpi_glop.cpp"],
 )
 
 cc_library(
     name = "libscip",
     srcs = glob(
         [
-            "scip-7.0.1/src/*/*.c",
+            "src/*/*.c",
         ],
         exclude = [
-            "scip-7.0.1/src/lpi/lpi_*.c",
-            "scip-7.0.1/src/tpi/tpi_*.c",
-            "scip-7.0.1/src/nlpi/nlpi_filtersqp.c",
-            "scip-7.0.1/src/nlpi/nlpi_worhp.c",
-            "scip-7.0.1/src/scip/compr_xyz.c",
-            "scip-7.0.1/src/scip/sorttpl.c",
-            "scip-7.0.1/src/nlpi/exprinterpret_*.c",
-            "scip-7.0.1/src/symmetry/compute_symmetry_*.cpp",
+            "src/lpi/lpi_*.c",
+            "src/nlpi/exprinterpret_*.c",
+            "src/nlpi/nlpi_filtersqp.c",
+            "src/nlpi/nlpi_worhp.c",
+            "src/scip/compr_xyz.c",
+            "src/scip/sorttpl.c",
+            "src/symmetry/compute_symmetry_*.cpp",
+            "src/tpi/tpi_*.c",
         ],
     ) + [
-        "scip-7.0.1/src/symmetry/compute_symmetry_bliss.cpp",
-        "scip-7.0.1/src/nlpi/exprinterpret_none.c",
-        "scip-7.0.1/src/tpi/tpi_tnycthrd.c",
+        #"src/symmetry/compute_symmetry_none.cpp",
+        "src/symmetry/compute_symmetry_bliss.cpp",
+        "src/nlpi/exprinterpret_none.c",
+        "src/tpi/tpi_tnycthrd.c",
     ],
-    hdrs = glob([
-        "scip-7.0.1/src/*/*.h",
-        "scip-7.0.1/src/*/*.hpp",
-        "scip-7.0.1/src/scip/githash.c",
-        "scip-7.0.1/src/scip/sorttpl.c",
-        "scip-7.0.1/src/scip/buildflags.c",
-    ]),
-    copts = [
+    hdrs = glob(
+        [
+            "src/*/*.h",
+            "src/*/*.hpp",
+            "src/scip/githash.c",
+            "src/scip/sorttpl.c",
+            "src/scip/buildflags.c",
+        ],
+        exclude =
+        [
+            #"src/scip/prop_symmetry.h",
+        ]),
+        copts = [
         "-Wunknown-pragmas",
         "-fexceptions",
         "$(STACK_FRAME_UNLIMITED)",  # src/scip/reader_cnf.c
         "-DSCIP_WITH_ZLIB",
         "-DWITH_SCIPDEF",
         "-DSCIP_ROUNDING_FE",
-        "-DTPI_TNYC",  # src/tpi/tpi_type_tny.h
+        "-DTPI_TNYC",  # src/tpi/type_tpi_tnycthrd.h
+        #"-DSYM=none",
         "-DSYM=bliss",
         # Compile in thead-safe mode (required since we use TPI_TNYC). Note,
         # one does not technically need to add this, as SCIP code always
         # uses syntax like "#ifndef NPARASCIP". But let's be explicit here.
         "-DPARASCIP",
-        "-Iscip-7.0.1/src",
-        "-Iscip-7.0.1/src/scip",
+        "-Isrc",
+        "-Isrc/scip",
     ],
     defines = [
         # Scip 7.0.1 optionally depends on scip/config.h and
@@ -57,7 +64,7 @@ cc_library(
     ],
     features = ["-parse_headers"],
     includes = [
-        "scip-7.0.1/src",
+        "src",
     ],
     visibility = ["//visibility:public"],
     deps = [

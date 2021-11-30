@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -61,7 +61,7 @@ class MoveOneVar : public IntVarLocalSearchOperator {
  protected:
   // Make a neighbor assigning one variable to its target value.
   bool MakeOneNeighbor() override {
-    const int64 current_value = OldValue(variable_index_);
+    const int64_t current_value = OldValue(variable_index_);
     if (move_up_) {
       SetValue(variable_index_, current_value + 1);
       variable_index_ = (variable_index_ + 1) % Size();
@@ -79,7 +79,7 @@ class MoveOneVar : public IntVarLocalSearchOperator {
   }
 
   // Index of the next variable to try to restore
-  int64 variable_index_;
+  int64_t variable_index_;
   // Direction of the modification.
   bool move_up_;
 };
@@ -99,7 +99,7 @@ class SumFilter : public IntVarLocalSearchFilter {
   }
 
   bool Accept(const Assignment* delta, const Assignment* unused_deltadelta,
-              int64 objective_min, int64 objective_max) override {
+              int64_t objective_min, int64_t objective_max) override {
     const Assignment::IntContainer& solution_delta = delta->IntVarContainer();
     const int solution_delta_size = solution_delta.Size();
 
@@ -130,13 +130,13 @@ class SumFilter : public IntVarLocalSearchFilter {
         return true;
       }
     }
-    int64 new_sum = sum_;
+    int64_t new_sum = sum_;
     VLOG(1) << "No LNS, size = " << solution_delta_size;
     for (int index = 0; index < solution_delta_size; ++index) {
-      int64 touched_var = -1;
+      int64_t touched_var = -1;
       FindIndex(solution_delta.Element(index).Var(), &touched_var);
-      const int64 old_value = Value(touched_var);
-      const int64 new_value = solution_delta.Element(index).Value();
+      const int64_t old_value = Value(touched_var);
+      const int64_t new_value = solution_delta.Element(index).Value();
       new_sum += new_value - old_value;
     }
     VLOG(1) << "new sum = " << new_sum << ", old sum = " << sum_;
@@ -144,7 +144,7 @@ class SumFilter : public IntVarLocalSearchFilter {
   }
 
  private:
-  int64 sum_;
+  int64_t sum_;
 };
 
 enum SolveType { LNS, LS, LS_WITH_FILTER };

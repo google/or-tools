@@ -1,0 +1,35 @@
+name: Make Windows Java
+
+on: [push, pull_request]
+
+jobs:
+  # Building using the github runner environement directly.
+  make:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: ilammy/msvc-dev-cmd@v1
+    - name: Check java
+      run: java -version
+    - name: Clean sh.exe
+      run: |
+        where sh
+        rm 'C:\Program Files\Git\usr\bin\sh.exe'
+        rm 'C:\Program Files\Git\bin\sh.exe'
+      shell: bash
+    - name: Check make
+      run: tools\make --version
+    - name: Check system
+      run: tools\make detect_port
+    - name: Check Java
+      run: tools\make detect_java
+    - name: Build third party
+      run: tools\make third_party -j4
+    - name: Build C++
+      run: tools\make cc -j4
+    - name: Build Java
+      run: tools\make java -j4
+    - name: Test Java
+      run: tools\make test_java -j4
+    - name: Create maven package
+      run: tools\make package_java

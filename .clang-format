@@ -1,7 +1,7 @@
 ---
 Language:        Cpp
 BasedOnStyle:  Google
-# Forse pointer to the type for C++
+# Force pointer to align on the type for C++
 DerivePointerAlignment: false
 PointerAlignment: Left
 ---

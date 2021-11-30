@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,6 +14,8 @@
 #ifndef OR_TOOLS_BOP_BOP_TYPES_H_
 #define OR_TOOLS_BOP_BOP_TYPES_H_
 
+#include <cstdint>
+
 #include "ortools/base/basictypes.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/strong_vector.h"
@@ -25,7 +27,7 @@ DEFINE_INT_TYPE(EntryIndex, int);
 DEFINE_INT_TYPE(SearchIndex, int);
 DEFINE_INT_TYPE(TermIndex, int);
 DEFINE_INT_TYPE(VariableIndex, int);
-DEFINE_INT_TYPE(SolverTimeStamp, int64);
+DEFINE_INT_TYPE(SolverTimeStamp, int64_t);
 
 // Status of the solve of Bop.
 enum class BopSolveStatus {
@@ -71,12 +73,12 @@ inline std::ostream& operator<<(std::ostream& os, BopSolveStatus status) {
 // TODO(user): Remove.
 DEFINE_INT_TYPE(SparseIndex, int);
 struct BopConstraintTerm {
-  BopConstraintTerm(VariableIndex _var_id, int64 _weight)
+  BopConstraintTerm(VariableIndex _var_id, int64_t _weight)
       : var_id(_var_id), search_id(0), weight(_weight) {}
 
   VariableIndex var_id;
   SearchIndex search_id;
-  int64 weight;
+  int64_t weight;
 
   bool operator<(const BopConstraintTerm& other) const {
     return search_id < other.search_id;

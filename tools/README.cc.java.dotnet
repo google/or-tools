@@ -1,9 +1,11 @@
 # Introduction
+
 This file describes how to install the OR-Tools C++, Java and .Net binary archive.
 
 OR-Tools is located at https://developers.google.com/optimization
 
 These modules have been tested under:
+
   - Ubuntu 14.04, 16.04, 17.10 and 18.04 (64-bit).
   - macOS 10.13 High Sierra with Xcode 9.4 (64 bit).
   - Microsoft Windows with Visual Studio 2015 and 2017 (64-bit)
@@ -30,18 +32,23 @@ Running the examples will involve compiling them, then running them.
 We have provided a makefile target to help you.
 
 Use Makefile:
+
 ```shell
 make run SOURCE=examples/cpp/golomb.cc
 ```
 
 **OR** this is equivalent to compiling and running
 `examples/cpp/golomb.cc`.
+
 - on Unix:
+
   ```shell
   make bin/golomb
   ./bin/golomb
   ```
+
 - on Windows:
+
   ```shell
   make bin\\golomb.exe
   bin\\golomb.exe
@@ -54,11 +61,13 @@ We have provided a makefile target to help you. You need to have the
 java and javac tools accessible from the command line.
 
 Use Makefile:
+
 ```shell
 make run SOURCE=examples/java/LinearProgramming/src/main/java/com/google/ortools/LinearProgramming.java
 ```
 
 **OR** this is equivalent to compiling and running `examples/java/LinearProgramming`.
+
 ```shell
 cd examples/java/LinearProgramming
 mvn compile
@@ -72,18 +81,23 @@ We have provided a makefile target to help you. You need to have the
 dotnet/cli tools accessible from the command line.
 
 Use Makefile:
+
 ```shell
 make run SOURCE=examples/dotnet/csflow.cs
 ```
 
 **OR** this is equivalent to compiling and running
 `examples/dotnet/csflow.cs`.
+
 - on Unix:
+
   ```shell
   dotnet build examples/dotnet/csflow.csproj
   dotnet run --no-build --project examples/dotnet/csflow.csproj
   ```
+
 - on Windows:
+
   ```shell
   dotnet build examples\dotnet\csflow.csproj
   dotnet run --no-build --project examples\dotnet\csflow.csproj

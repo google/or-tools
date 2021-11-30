@@ -1,4 +1,5 @@
-# Copyright 2010-2018 Google LLC
+#!/usr/bin/env python3
+# Copyright 2010-2021 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -25,9 +26,9 @@ Constraints:
 import collections
 import math
 
-from google.protobuf import text_format
 from absl import app
 from absl import flags
+from google.protobuf import text_format
 from ortools.sat.python import cp_model
 
 FLAGS = flags.FLAGS

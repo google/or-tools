@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -28,7 +28,9 @@
 #include "absl/types/optional.h"
 #include "ortools/base/cleanup.h"
 #include "ortools/base/status_macros.h"
-#include "ortools/linear_solver/gurobi_environment.h"
+#include "ortools/base/timer.h"
+#include "ortools/gurobi/environment.h"
+#include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_validator.h"
 #include "ortools/util/lazy_mutable_copy.h"
@@ -277,11 +279,8 @@ absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
     }
   });
   if (gurobi_env == nullptr) {
-    // We activate the deletion of `gurobi_env` before making the call to
-    // `LoadGurobiEnvironment()` since this function still returns a non null
-    // value even when it fails.
+    ASSIGN_OR_RETURN(gurobi_env, GetGurobiEnv());
     gurobi_env_was_created = true;
-    RETURN_IF_ERROR(LoadGurobiEnvironment(&gurobi_env));
   }
 
   GRBmodel* gurobi_model = nullptr;
@@ -305,10 +304,11 @@ absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
                                      /*ub=*/nullptr,
                                      /*vtype=*/nullptr,
                                      /*varnames=*/nullptr));
+  GRBenv* const model_env = GRBgetenv(gurobi_model);
 
   if (request.has_solver_specific_parameters()) {
     const auto parameters_status = SetSolverSpecificParameters(
-        request.solver_specific_parameters(), GRBgetenv(gurobi_model));
+        request.solver_specific_parameters(), model_env);
     if (!parameters_status.ok()) {
       response.set_status(MPSOLVER_MODEL_INVALID_SOLVER_PARAMETERS);
       response.set_status_str(
@@ -317,12 +317,11 @@ absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
     }
   }
   if (request.solver_time_limit_seconds() > 0) {
-    RETURN_IF_GUROBI_ERROR(GRBsetdblparam(GRBgetenv(gurobi_model),
-                                          GRB_DBL_PAR_TIMELIMIT,
+    RETURN_IF_GUROBI_ERROR(GRBsetdblparam(model_env, GRB_DBL_PAR_TIMELIMIT,
                                           request.solver_time_limit_seconds()));
   }
   RETURN_IF_GUROBI_ERROR(
-      GRBsetintparam(GRBgetenv(gurobi_model), GRB_INT_PAR_OUTPUTFLAG,
+      GRBsetintparam(model_env, GRB_INT_PAR_OUTPUTFLAG,
                      request.enable_internal_solver_output()));
 
   const int variable_size = model.variable_size();
@@ -338,7 +337,9 @@ absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
       obj_coeffs[v] = variable.objective_coefficient();
       lb[v] = variable.lower_bound();
       ub[v] = variable.upper_bound();
-      ctype[v] = variable.is_integer() ? GRB_INTEGER : GRB_CONTINUOUS;
+      ctype[v] = variable.is_integer() && SolverTypeIsMip(request.solver_type())
+                     ? GRB_INTEGER
+                     : GRB_CONTINUOUS;
       if (variable.is_integer()) has_integer_variables = true;
       if (!variable.name().empty()) varnames[v] = variable.name().c_str();
     }
@@ -470,7 +471,21 @@ absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
   }
 
   RETURN_IF_GUROBI_ERROR(GRBupdatemodel(gurobi_model));
+
+  const absl::Time time_before = absl::Now();
+  UserTimer user_timer;
+  user_timer.Start();
+
   RETURN_IF_GUROBI_ERROR(GRBoptimize(gurobi_model));
+
+  const absl::Duration solving_duration = absl::Now() - time_before;
+  user_timer.Stop();
+  VLOG(1) << "Finished solving in GurobiSolveProto(), walltime = "
+          << solving_duration << ", usertime = " << user_timer.GetDuration();
+  response.mutable_solve_info()->set_solve_wall_time_seconds(
+      absl::ToDoubleSeconds(solving_duration));
+  response.mutable_solve_info()->set_solve_user_time_seconds(
+      absl::ToDoubleSeconds(user_timer.GetDuration()));
 
   int optimization_status = 0;
   RETURN_IF_GUROBI_ERROR(
@@ -532,17 +547,38 @@ absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
     // NOTE, GurobiSolveProto() is exposed to external clients via MPSolver API,
     // which assumes the solution values of integer variables are rounded to
     // integer values.
-    for (int v = 0; v < variable_size; ++v) {
-      if (model.variable(v).is_integer()) {
-        (*response.mutable_variable_value())[v] =
-            std::round(response.variable_value(v));
-      }
-    }
+    auto round_values_of_integer_variables_fn =
+        [&](google::protobuf::RepeatedField<double>* values) {
+          for (int v = 0; v < variable_size; ++v) {
+            if (model.variable(v).is_integer()) {
+              (*values)[v] = std::round((*values)[v]);
+            }
+          }
+        };
+    round_values_of_integer_variables_fn(response.mutable_variable_value());
     if (!has_integer_variables && model.general_constraint_size() == 0) {
       response.mutable_dual_value()->Resize(model.constraint_size(), 0);
       RETURN_IF_GUROBI_ERROR(GRBgetdblattrarray(
           gurobi_model, GRB_DBL_ATTR_PI, 0, model.constraint_size(),
           response.mutable_dual_value()->mutable_data()));
+    }
+    const int additional_solutions = std::min(
+        solution_count, std::min(request.populate_additional_solutions_up_to(),
+                                 std::numeric_limits<int32_t>::max() - 1) +
+                            1);
+    for (int i = 1; i < additional_solutions; ++i) {
+      RETURN_IF_GUROBI_ERROR(
+          GRBsetintparam(model_env, GRB_INT_PAR_SOLUTIONNUMBER, i));
+      MPSolution* solution = response.add_additional_solutions();
+      solution->mutable_variable_value()->Resize(variable_size, 0);
+      double objective_value = 0;
+      RETURN_IF_GUROBI_ERROR(GRBgetdblattr(
+          gurobi_model, GRB_DBL_ATTR_POOLOBJVAL, &objective_value));
+      solution->set_objective_value(objective_value);
+      RETURN_IF_GUROBI_ERROR(GRBgetdblattrarray(
+          gurobi_model, GRB_DBL_ATTR_XN, 0, variable_size,
+          solution->mutable_variable_value()->mutable_data()));
+      round_values_of_integer_variables_fn(solution->mutable_variable_value());
     }
   }
 #undef RETURN_IF_GUROBI_ERROR

@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -12,6 +12,7 @@
 // limitations under the License.
 
 #include <cstddef>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -35,12 +36,12 @@ void ArgumentHolder::SetTypeName(const std::string& type_name) {
 }
 
 void ArgumentHolder::SetIntegerArgument(const std::string& arg_name,
-                                        int64 value) {
+                                        int64_t value) {
   integer_argument_[arg_name] = value;
 }
 
-void ArgumentHolder::SetIntegerArrayArgument(const std::string& arg_name,
-                                             const std::vector<int64>& values) {
+void ArgumentHolder::SetIntegerArrayArgument(
+    const std::string& arg_name, const std::vector<int64_t>& values) {
   integer_array_argument_[arg_name] = values;
 }
 
@@ -91,17 +92,17 @@ bool ArgumentHolder::HasIntegerVariableArrayArgument(
   return gtl::ContainsKey(integer_variable_array_argument_, arg_name);
 }
 
-int64 ArgumentHolder::FindIntegerArgumentWithDefault(
-    const std::string& arg_name, int64 def) const {
+int64_t ArgumentHolder::FindIntegerArgumentWithDefault(
+    const std::string& arg_name, int64_t def) const {
   return gtl::FindWithDefault(integer_argument_, arg_name, def);
 }
 
-int64 ArgumentHolder::FindIntegerArgumentOrDie(
+int64_t ArgumentHolder::FindIntegerArgumentOrDie(
     const std::string& arg_name) const {
   return gtl::FindOrDie(integer_argument_, arg_name);
 }
 
-const std::vector<int64>& ArgumentHolder::FindIntegerArrayArgumentOrDie(
+const std::vector<int64_t>& ArgumentHolder::FindIntegerArrayArgumentOrDie(
     const std::string& arg_name) const {
   return gtl::FindOrDie(integer_array_argument_, arg_name);
 }
@@ -165,14 +166,14 @@ void ModelParser::VisitIntegerVariable(const IntVar* const variable,
 
 void ModelParser::VisitIntegerVariable(const IntVar* const variable,
                                        const std::string& operation,
-                                       int64 value, IntVar* const delegate) {
+                                       int64_t value, IntVar* const delegate) {
   delegate->Accept(this);
   // Usual place for parsing.
 }
 
 void ModelParser::VisitIntervalVariable(const IntervalVar* const variable,
                                         const std::string& operation,
-                                        int64 value,
+                                        int64_t value,
                                         IntervalVar* const delegate) {
   if (delegate != nullptr) {
     delegate->Accept(this);
@@ -186,12 +187,12 @@ void ModelParser::VisitSequenceVariable(const SequenceVar* const variable) {
 
 // Integer arguments
 void ModelParser::VisitIntegerArgument(const std::string& arg_name,
-                                       int64 value) {
+                                       int64_t value) {
   Top()->SetIntegerArgument(arg_name, value);
 }
 
-void ModelParser::VisitIntegerArrayArgument(const std::string& arg_name,
-                                            const std::vector<int64>& values) {
+void ModelParser::VisitIntegerArrayArgument(
+    const std::string& arg_name, const std::vector<int64_t>& values) {
   Top()->SetIntegerArrayArgument(arg_name, values);
 }
 

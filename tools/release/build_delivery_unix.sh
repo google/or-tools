@@ -1,123 +1,168 @@
 #!/usr/bin/env bash
-set -euxo pipefail
+set -eo pipefail
 
-if [[ -z "${DOTNET_SNK}" ]]; then
-  echo "DOTNET_SNK: not found !" | tee build.log
-  exit 1
-fi
+function help() {
+  local -r NAME=$(basename "$0")
+  local -r BOLD="\e[1m"
+  local -r RESET="\e[0m"
+  local -r help=$(cat << EOF
+${BOLD}NAME${RESET}
+\t$NAME - Build delivery using an ${BOLD}Centos 7 docker image${RESET}.
+${BOLD}SYNOPSIS${RESET}
+\t$NAME [-h|--help] [examples|dotnet|java|python|all|reset]
+${BOLD}DESCRIPTION${RESET}
+\tBuild Google OR-Tools deliveries.
+\tYou ${BOLD}MUST${RESET} define the following variables before running this script:
+\t* ORTOOLS_TOKEN: secret use to decrypt keys to sign .Net and Java packages.
 
-# Clean everything
-make clean
-make clean_third_party
+${BOLD}OPTIONS${RESET}
+\t-h --help: display this help text
+\tdotnet: build all .Net packages
+\tjava: build all Java packages
+\tpython: build all Pyhon packages
+\texamples: build examples archives
+\tall: build everything (default)
 
-# Print version
-make print-OR_TOOLS_VERSION | tee build.log
+${BOLD}EXAMPLES${RESET}
+Using export to define the ${BOLD}ORTOOLS_TOKEN${RESET} env and only building the Java packages:
+export ORTOOLS_TOKEN=SECRET
+$0 java
 
-# Check all prerequisite
-# cc
-command -v gcc | xargs echo "gcc: " | tee -a build.log
-command -v cmake | xargs echo "cmake: " | tee -a build.log
-command -v make | xargs echo "make: " | tee -a build.log
-command -v swig | xargs echo "swig: " | tee -a build.log
+note: the 'export ...' should be placed in your bashrc to avoid any leak
+of the secret in your bash history
+EOF
+)
+echo -e "$help"
+}
 
-# python
-command -v python3 | xargs echo "python3: " | tee -a build.log
+function assert_defined(){
+  if [[ -z "${!1}" ]]; then
+    >&2 echo "Variable '${1}' must be defined"
+    exit 1
+  fi
+}
 
-# java
-# maven require JAVA_HOME
-if [[ -z "${JAVA_HOME}" ]]; then
-  echo "JAVA_HOME: not found !" | tee build.log
-  exit 1
-else
-  echo "JAVA_HOME: ${JAVA_HOME}" | tee -a build.log
-  command -v java | xargs echo "java: " | tee -a build.log
-  command -v javac | xargs echo "javac: " | tee -a build.log
-  command -v jar | xargs echo "jar: " | tee -a build.log
-  command -v mvn | xargs echo "mvn: " | tee -a build.log
-fi
+function build_devel() {
+  # Check all prerequisite
+  command -v docker
 
-# dotnet
-command -v dotnet | xargs echo "dotnet: " | tee -a build.log
+  # Clean
+  #docker image rm -f ortools:linux_devel 2>/dev/null
+  #docker image rm -f ortools:linux_env 2>/dev/null
 
-###############################
-##  Build Examples Archives  ##
-###############################
-rm -rf temp ./*.tar.gz
-echo -n "Build examples archives..." | tee -a build.log
-echo -n "  C++ examples archive..." | tee -a build.log
-make cc_examples_archive UNIX_PYTHON_VER=3
-echo -n "  Python examples archive..." | tee -a build.log
-make python_examples_archive UNIX_PYTHON_VER=3
-echo -n "  Java examples archive..." | tee -a build.log
-make java_examples_archive UNIX_PYTHON_VER=3
-echo -n "  .Net examples archive..." | tee -a build.log
-make dotnet_examples_archive UNIX_PYTHON_VER=3
-echo "DONE" | tee -a build.log
+  cd "${RELEASE_DIR}" || exit 2
 
-#########################
-##  Build Third Party  ##
-#########################
-echo -n "Build Third Party..." | tee -a build.log
-make third_party UNIX_PYTHON_VER=3
-echo "DONE" | tee -a build.log
+  # Build env
+  docker build --tag ortools:linux_env \
+    --target=env \
+    -f "${RELEASE_DIR}/Dockerfile" "${RELEASE_DIR}"
 
-#####################
-##  C++/Java/.Net  ##
-#####################
-echo -n "Build C++..." | tee -a build.log
-make cc -l 4 UNIX_PYTHON_VER=3
-echo "DONE" | tee -a build.log
-#make test_cc -l 4 UNIX_PYTHON_VER=3
-#echo "make test_cc: DONE" | tee -a build.log
+  # Build devel
+  assert_defined ORTOOLS_BRANCH
+  assert_defined ORTOOLS_SHA1
 
-echo -n "Build flatzinc..." | tee -a build.log
-make fz -l 4 UNIX_PYTHON_VER=3
-echo "DONE" | tee -a build.log
+  docker build --tag ortools:linux_devel \
+    --build-arg ORTOOLS_GIT_BRANCH="${ORTOOLS_BRANCH}" \
+    --build-arg ORTOOLS_GIT_SHA1="${ORTOOLS_SHA1}" \
+    --target=devel \
+    -f Dockerfile .
+}
 
-echo -n "Build Java..." | tee -a build.log
-make java -l 4 UNIX_PYTHON_VER=3
-echo "DONE" | tee -a build.log
-#make test_java -l 4 UNIX_PYTHON_VER=3
-#echo "make test_java: DONE" | tee -a build.log
+function build_delivery() {
+  assert_defined ORTOOLS_BRANCH
+  assert_defined ORTOOLS_SHA1
+  assert_defined ORTOOLS_TOKEN
+  assert_defined ORTOOLS_DELIVERY
 
-echo -n "Build .Net..." | tee -a build.log
-make dotnet -l 4 UNIX_PYTHON_VER=3
-echo "DONE" | tee -a build.log
-#make test_dotnet -l 4 UNIX_PYTHON_VER=3
-#echo "make test_dotnet: DONE" | tee -a build.log
+  # Clean
+  docker image rm -f ortools:linux_delivery 2>/dev/null
 
-# Create Archive
-echo -n "Make archive..." | tee -a build.log
-make archive UNIX_PYTHON_VER=3
-echo "DONE" | tee -a build.log
-echo -n "Test archive..." | tee -a build.log
-make test_archive UNIX_PYTHON_VER=3
-echo "DONE" | tee -a build.log
+  cd "${RELEASE_DIR}" || exit 2
 
-echo -n "Make flatzinc archive..." | tee -a build.log
-make fz_archive UNIX_PYTHON_VER=3
-echo "DONE" | tee -a build.log
-echo -n "Test flatzinc archive..." | tee -a build.log
-make test_fz_archive UNIX_PYTHON_VER=3
-echo "DONE" | tee -a build.log
+  # Build delivery
+  docker build --tag ortools:linux_delivery \
+    --build-arg ORTOOLS_GIT_BRANCH="${ORTOOLS_BRANCH}" \
+    --build-arg ORTOOLS_GIT_SHA1="${ORTOOLS_SHA1}" \
+    --build-arg ORTOOLS_TOKEN="${ORTOOLS_TOKEN}" \
+    --build-arg ORTOOLS_DELIVERY="${ORTOOLS_DELIVERY}" \
+    --target=delivery \
+    -f Dockerfile .
+}
 
-################
-##  Python 3  ##
-################
-echo -n "Cleaning Python..." | tee -a build.log
-make clean_python UNIX_PYTHON_VER=3
-echo "DONE" | tee -a build.log
+function build_examples() {
+  local -r ORTOOLS_DELIVERY=examples
+  build_delivery
+}
 
-echo -n "Build Python 3..." | tee -a build.log
-make python -l 4 UNIX_PYTHON_VER=3
-echo "DONE" | tee -a build.log
-#make test_python UNIX_PYTHON_VER=3
-#echo "make test_python3: DONE" | tee -a build.log
-echo -n "Build Python 3 wheel archive..." | tee -a build.log
-make package_python UNIX_PYTHON_VER=3
-echo "DONE" | tee -a build.log
-echo -n "Test Python 3 wheel archive..." | tee -a build.log
-make test_package_python UNIX_PYTHON_VER=3
-echo "DONE" | tee -a build.log
+function build_dotnet() {
+  local -r ORTOOLS_DELIVERY=dotnet
+  build_delivery
 
-cp temp_python3/ortools/dist/*.whl .
+  docker run --rm --init \
+  -w /root/or-tools \
+  -v "${ROOT_DIR}/export":/export \
+  ortools:linux_delivery /bin/bash -c \
+  "cp export/*nupkg /export/"
+}
+
+# Java build
+function build_java() {
+  local -r ORTOOLS_DELIVERY=java
+  build_delivery
+
+  docker run --rm --init \
+  -w /root/or-tools \
+  -v "${ROOT_DIR}/export":/export \
+  ortools:linux_delivery /bin/bash -c \
+  "cp export/*.jar* /export/"
+}
+
+function build_archive() {
+  local -r ORTOOLS_DELIVERY=archive
+  build_delivery
+}
+
+function build_python() {
+  local -r ORTOOLS_DELIVERY=python
+  build_delivery
+}
+
+# Main
+function main() {
+  case ${1} in
+    -h | --help)
+      help; exit ;;
+  esac
+
+  assert_defined ORTOOLS_TOKEN
+  echo "ORTOOLS_TOKEN: FOUND"
+
+  local -r ROOT_DIR="$(cd -P -- "$(dirname -- "$0")/../.." && pwd -P)"
+  echo "ROOT_DIR: '${ROOT_DIR}'"
+
+  local -r RELEASE_DIR="$(cd -P -- "$(dirname -- "$0")" && pwd -P)"
+  echo "RELEASE_DIR: '${RELEASE_DIR}'"
+
+  local -r ORTOOLS_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+  local -r ORTOOLS_SHA1=$(git rev-parse --verify HEAD)
+  build_devel
+
+  mkdir -p export
+  case ${1} in
+    cxx|dotnet|java|python|archive|examples)
+      "build_$1"
+      exit ;;
+    all)
+      build_dotnet
+      build_java
+      #build_python
+      build_examples
+      exit ;;
+    *)
+      >&2 echo "Target '${1}' unknown"
+      exit 1
+  esac
+  exit 0
+}
+
+main "${1:-all}"

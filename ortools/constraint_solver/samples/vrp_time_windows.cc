@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,6 +13,7 @@
 
 // [START program]
 // [START import]
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -26,7 +27,7 @@
 namespace operations_research {
 // [START data_model]
 struct DataModel {
-  const std::vector<std::vector<int64>> time_matrix{
+  const std::vector<std::vector<int64_t>> time_matrix{
       {0, 6, 9, 8, 7, 3, 6, 2, 3, 2, 6, 6, 4, 4, 5, 9, 7},
       {6, 0, 8, 3, 2, 6, 8, 4, 8, 8, 13, 7, 5, 8, 12, 10, 14},
       {9, 8, 0, 11, 10, 6, 3, 9, 5, 8, 4, 15, 14, 13, 9, 18, 9},
@@ -45,7 +46,7 @@ struct DataModel {
       {9, 10, 18, 6, 8, 12, 15, 8, 13, 9, 13, 3, 4, 5, 9, 0, 9},
       {7, 14, 9, 16, 14, 8, 5, 10, 6, 5, 4, 10, 8, 6, 2, 9, 0},
   };
-  const std::vector<std::pair<int64, int64>> time_windows{
+  const std::vector<std::pair<int64_t, int64_t>> time_windows{
       {0, 5},    // depot
       {7, 12},   // 1
       {10, 15},  // 2
@@ -78,9 +79,9 @@ struct DataModel {
 void PrintSolution(const DataModel& data, const RoutingIndexManager& manager,
                    const RoutingModel& routing, const Assignment& solution) {
   const RoutingDimension& time_dimension = routing.GetDimensionOrDie("Time");
-  int64 total_time{0};
+  int64_t total_time{0};
   for (int vehicle_id = 0; vehicle_id < data.num_vehicles; ++vehicle_id) {
-    int64 index = routing.Start(vehicle_id);
+    int64_t index = routing.Start(vehicle_id);
     LOG(INFO) << "Route for vehicle " << vehicle_id << ":";
     std::ostringstream route;
     while (routing.IsEnd(index) == false) {
@@ -124,7 +125,7 @@ void VrpTimeWindows() {
   // Create and register a transit callback.
   // [START transit_callback]
   const int transit_callback_index = routing.RegisterTransitCallback(
-      [&data, &manager](int64 from_index, int64 to_index) -> int64 {
+      [&data, &manager](int64_t from_index, int64_t to_index) -> int64_t {
         // Convert from routing variable Index to time matrix NodeIndex.
         auto from_node = manager.IndexToNode(from_index).value();
         auto to_node = manager.IndexToNode(to_index).value();
@@ -141,20 +142,20 @@ void VrpTimeWindows() {
   // [START time_constraint]
   std::string time{"Time"};
   routing.AddDimension(transit_callback_index,  // transit callback index
-                       int64{30},               // allow waiting time
-                       int64{30},               // maximum time per vehicle
+                       int64_t{30},             // allow waiting time
+                       int64_t{30},             // maximum time per vehicle
                        false,  // Don't force start cumul to zero
                        time);
   const RoutingDimension& time_dimension = routing.GetDimensionOrDie(time);
   // Add time window constraints for each location except depot.
   for (int i = 1; i < data.time_windows.size(); ++i) {
-    int64 index = manager.NodeToIndex(RoutingIndexManager::NodeIndex(i));
+    int64_t index = manager.NodeToIndex(RoutingIndexManager::NodeIndex(i));
     time_dimension.CumulVar(index)->SetRange(data.time_windows[i].first,
                                              data.time_windows[i].second);
   }
   // Add time window constraints for each vehicle start node.
   for (int i = 0; i < data.num_vehicles; ++i) {
-    int64 index = routing.Start(i);
+    int64_t index = routing.Start(i);
     time_dimension.CumulVar(index)->SetRange(data.time_windows[0].first,
                                              data.time_windows[0].second);
   }

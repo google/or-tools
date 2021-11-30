@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <limits>
 
 #include "absl/strings/str_format.h"
@@ -26,7 +27,7 @@
 
 // TODO(user): Remove these flags and expose the parameters in the API.
 // New clients, please do not use these flags!
-ABSL_FLAG(int64, min_cost_flow_alpha, 5,
+ABSL_FLAG(int64_t, min_cost_flow_alpha, 5,
           "Divide factor for epsilon at each refine step.");
 ABSL_FLAG(bool, min_cost_flow_check_feasibility, true,
           "Check that the graph has enough capacity to send all supplies "
@@ -161,13 +162,14 @@ template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
 bool GenericMinCostFlow<Graph, ArcFlowType,
                         ArcScaledCostType>::CheckInputConsistency() const {
   FlowQuantity total_supply = 0;
-  uint64 max_capacity = 0;  // uint64 because it is positive and will be used
-                            // to check against FlowQuantity overflows.
+  uint64_t max_capacity = 0;  // uint64_t because it is positive and will be
+                              // used to check against FlowQuantity overflows.
   for (ArcIndex arc = 0; arc < graph_->num_arcs(); ++arc) {
-    const uint64 capacity = static_cast<uint64>(residual_arc_capacity_[arc]);
+    const uint64_t capacity =
+        static_cast<uint64_t>(residual_arc_capacity_[arc]);
     max_capacity = std::max(capacity, max_capacity);
   }
-  uint64 total_flow = 0;  // uint64 for the same reason as max_capacity.
+  uint64_t total_flow = 0;  // uint64_t for the same reason as max_capacity.
   for (NodeIndex node = 0; node < graph_->num_nodes(); ++node) {
     const FlowQuantity excess = node_excess_[node];
     total_supply += excess;
@@ -415,7 +417,7 @@ template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
 CostValue GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::UnitCost(
     ArcIndex arc) const {
   DCHECK(IsArcValid(arc));
-  DCHECK_EQ(uint64{1}, cost_scaling_factor_);
+  DCHECK_EQ(uint64_t{1}, cost_scaling_factor_);
   return scaled_arc_unit_cost_[arc];
 }
 
@@ -985,12 +987,14 @@ template class GenericMinCostFlow<StarGraph>;
 template class GenericMinCostFlow<::util::ReverseArcListGraph<>>;
 template class GenericMinCostFlow<::util::ReverseArcStaticGraph<>>;
 template class GenericMinCostFlow<::util::ReverseArcMixedGraph<>>;
-template class GenericMinCostFlow<::util::ReverseArcStaticGraph<uint16, int32>>;
+template class GenericMinCostFlow<
+    ::util::ReverseArcStaticGraph<uint16_t, int32_t>>;
 
 // A more memory-efficient version for large graphs.
-template class GenericMinCostFlow<::util::ReverseArcStaticGraph<uint16, int32>,
-                                  /*ArcFlowType=*/int16,
-                                  /*ArcScaledCostType=*/int32>;
+template class GenericMinCostFlow<
+    ::util::ReverseArcStaticGraph<uint16_t, int32_t>,
+    /*ArcFlowType=*/int16_t,
+    /*ArcScaledCostType=*/int32_t>;
 
 SimpleMinCostFlow::SimpleMinCostFlow(NodeIndex reserve_num_nodes,
                                      ArcIndex reserve_num_arcs) {

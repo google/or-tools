@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -23,9 +23,9 @@
 #include "ortools/algorithms/knapsack_solver.h"
 %}
 
-// by default vector<vector<int64>> is mapped to a jagged array i.e. .Net type long[][]
+// by default vector<vector<int64_t>> is mapped to a jagged array i.e. .Net type long[][]
 // but here we want a regular matrix i.e. .Net type long[,]
-REGULAR_MATRIX_AS_CSHARP_ARRAY(int64, int64, long, Int64VectorVector);
+REGULAR_MATRIX_AS_CSHARP_ARRAY(int64_t, int64_t, long, Int64VectorVector);
 
 %rename (UseReduction) operations_research::KnapsackSolver::use_reduction;
 %rename (SetUseReduction) operations_research::KnapsackSolver::set_use_reduction;

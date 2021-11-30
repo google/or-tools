@@ -28,7 +28,7 @@ nbook = v3.reads_py('')
 nbook = v4.upgrade(nbook)  # Upgrade v3 to v4
 
 print('Adding copyright cell...')
-google = '##### Copyright 2020 Google LLC.'
+google = '##### Copyright 2021 Google LLC.'
 nbook['cells'].append(v4.new_markdown_cell(google))
 
 print('Adding license cell...')

@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -62,11 +62,11 @@ class File {
 
   // Reads a line from file to a string.
   // Each line must be no more than max_length bytes.
-  char* ReadLine(char* const output, uint64 max_length);
+  char* ReadLine(char* const output, uint64_t max_length);
 
   // Reads the whole file to a string, with a maximum length of 'max_length'.
   // Returns the number of bytes read.
-  int64 ReadToString(std::string* const line, uint64 max_length);
+  int64_t ReadToString(std::string* const line, uint64_t max_length);
 
   // Writes "size" bytes of buff to file, buff should be pre-allocated.
   size_t Write(const void* const buff, size_t size);

@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -157,11 +157,13 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <cstdlib>
 #include <limits>
 #include <new>
 #include <vector>
 
+#include "absl/debugging/leak_check.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
@@ -174,12 +176,12 @@ template <typename T>
 class SVector;
 
 // Base class of all Graphs implemented here. The default value for the graph
-// index types is int32 since allmost all graphs that fit into memory do not
+// index types is int32_t since almost all graphs that fit into memory do not
 // need bigger indices.
 //
 // Note: The type can be unsigned, except for the graphs with reverse arcs
 // where the ArcIndexType must be signed, but not necessarly the NodeIndexType.
-template <typename NodeIndexType = int32, typename ArcIndexType = int32,
+template <typename NodeIndexType = int32_t, typename ArcIndexType = int32_t,
           bool HasReverseArcs = false>
 class BaseGraph {
  public:
@@ -293,7 +295,7 @@ class BaseGraph {
 // - Has an efficient Tail() but need an extra NodeIndexType/arc memory for it.
 // - Never changes the initial arc index returned by AddArc().
 //
-template <typename NodeIndexType = int32, typename ArcIndexType = int32>
+template <typename NodeIndexType = int32_t, typename ArcIndexType = int32_t>
 class ListGraph : public BaseGraph<NodeIndexType, ArcIndexType, false> {
   typedef BaseGraph<NodeIndexType, ArcIndexType, false> Base;
   using Base::arc_capacity_;
@@ -392,7 +394,7 @@ class ListGraph : public BaseGraph<NodeIndexType, ArcIndexType, false> {
 // with a similar class that doesn't support Tail(), i.e.
 // StaticGraphWithoutTail<>. This almost corresponds to a past implementation
 // of StaticGraph<> @CL 116144340.
-template <typename NodeIndexType = int32, typename ArcIndexType = int32>
+template <typename NodeIndexType = int32_t, typename ArcIndexType = int32_t>
 class StaticGraph : public BaseGraph<NodeIndexType, ArcIndexType, false> {
   typedef BaseGraph<NodeIndexType, ArcIndexType, false> Base;
   using Base::arc_capacity_;
@@ -455,7 +457,7 @@ class StaticGraph : public BaseGraph<NodeIndexType, ArcIndexType, false> {
 // - It has most of the same advantanges and disadvantages as ListGraph.
 // - It takes 2 * ArcIndexType * node_capacity()
 //   + 2 * (ArcIndexType + NodeIndexType) * arc_capacity() memory.
-template <typename NodeIndexType = int32, typename ArcIndexType = int32>
+template <typename NodeIndexType = int32_t, typename ArcIndexType = int32_t>
 class ReverseArcListGraph
     : public BaseGraph<NodeIndexType, ArcIndexType, true> {
   typedef BaseGraph<NodeIndexType, ArcIndexType, true> Base;
@@ -543,7 +545,7 @@ class ReverseArcListGraph
 //   arc_capacity() is needed for it.
 // - The reverse arcs from a node are sorted by head (so we could add a log()
 //   time lookup function).
-template <typename NodeIndexType = int32, typename ArcIndexType = int32>
+template <typename NodeIndexType = int32_t, typename ArcIndexType = int32_t>
 class ReverseArcStaticGraph
     : public BaseGraph<NodeIndexType, ArcIndexType, true> {
   typedef BaseGraph<NodeIndexType, ArcIndexType, true> Base;
@@ -631,7 +633,7 @@ class ReverseArcStaticGraph
 //   + (2 * NodeIndexType + ArcIndexType) * arc_capacity() memory.
 // - If the ArcIndexPermutation is needed, then an extra ArcIndexType *
 //   arc_capacity() is needed for it.
-template <typename NodeIndexType = int32, typename ArcIndexType = int32>
+template <typename NodeIndexType = int32_t, typename ArcIndexType = int32_t>
 class ReverseArcMixedGraph
     : public BaseGraph<NodeIndexType, ArcIndexType, true> {
   typedef BaseGraph<NodeIndexType, ArcIndexType, true> Base;
@@ -783,7 +785,7 @@ class SVector {
       // NOTE(user): Alternatively, our capacity could inherit from the other
       // vector's capacity, which can be (much) greater than its size.
       capacity_ = other.size_;
-      base_ = static_cast<T*>(malloc(2LL * capacity_ * sizeof(T)));
+      base_ = Allocate(capacity_);
       CHECK(base_ != nullptr);
       base_ += capacity_;
     } else {  // capacity_ >= other.size
@@ -852,7 +854,7 @@ class SVector {
     DCHECK_LE(n, max_size());
     if (n > capacity_) {
       const int new_capacity = std::min(n, max_size());
-      T* new_storage = static_cast<T*>(malloc(2LL * new_capacity * sizeof(T)));
+      T* new_storage = Allocate(new_capacity);
       CHECK(new_storage != nullptr);
       T* new_base = new_storage + new_capacity;
       // TODO(user): in C++17 we could use std::uninitialized_move instead
@@ -904,6 +906,11 @@ class SVector {
   }
 
  private:
+  T* Allocate(int capacity) const {
+    return absl::IgnoreLeak(
+        static_cast<T*>(malloc(2LL * capacity * sizeof(T))));
+  }
+
   int NewCapacity(int delta) {
     // TODO(user): check validity.
     double candidate = 1.3 * static_cast<double>(capacity_);
@@ -971,7 +978,7 @@ void BaseGraph<NodeIndexType, ArcIndexType,
   arc_capacity_ = std::max(arc_capacity_, num_arcs_);
 }
 
-// Computes the cummulative sum of the entry in v. We only use it with
+// Computes the cumulative sum of the entry in v. We only use it with
 // in/out degree distribution, hence the Check() at the end.
 template <typename NodeIndexType, typename ArcIndexType, bool HasReverseArcs>
 void BaseGraph<NodeIndexType, ArcIndexType, HasReverseArcs>::
@@ -2166,7 +2173,7 @@ class ReverseArcMixedGraph<
 // CompleteGraph implementation ------------------------------------------------
 // Nodes and arcs are implicit and not stored.
 
-template <typename NodeIndexType = int32, typename ArcIndexType = int32>
+template <typename NodeIndexType = int32_t, typename ArcIndexType = int32_t>
 class CompleteGraph : public BaseGraph<NodeIndexType, ArcIndexType, false> {
   typedef BaseGraph<NodeIndexType, ArcIndexType, false> Base;
   using Base::arc_capacity_;
@@ -2243,7 +2250,7 @@ CompleteGraph<NodeIndexType, ArcIndexType>::operator[](
 // CompleteBipartiteGraph implementation ---------------------------------------
 // Nodes and arcs are implicit and not stored.
 
-template <typename NodeIndexType = int32, typename ArcIndexType = int32>
+template <typename NodeIndexType = int32_t, typename ArcIndexType = int32_t>
 class CompleteBipartiteGraph
     : public BaseGraph<NodeIndexType, ArcIndexType, false> {
   typedef BaseGraph<NodeIndexType, ArcIndexType, false> Base;

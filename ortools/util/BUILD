@@ -233,6 +233,7 @@ cc_library(
         "//ortools/base:hash",
         "//ortools/base:recordio",
         "//ortools/base:status_macros",
+        "//ortools/base:gzipstring",
         #        "//net/proto2/io/public",
         #        "//net/proto2/io/public:io",
         #        "//net/proto2/public",
@@ -385,5 +386,16 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//ortools/base",
+    ],
+)
+
+cc_library(
+    name = "logging",
+    srcs = ["logging.cc"],
+    hdrs = ["logging.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//ortools/base",
+        "@com_google_absl//absl/strings",
     ],
 )

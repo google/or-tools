@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -97,7 +97,7 @@ class DratProofHandler {
   // We need to keep track of the variable newly created.
   int variable_index_;
 
-  // Temporary vector used for sorting the outputed clauses.
+  // Temporary vector used for sorting the outputted clauses.
   std::vector<Literal> values_;
 
   // This mapping will be applied to all clause passed to AddClause() or

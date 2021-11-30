@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_BOP_BOP_LNS_H_
 #define OR_TOOLS_BOP_BOP_LNS_H_
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -55,7 +56,7 @@ class BopCompleteLNSOptimizer : public BopOptimizerBase {
   BopOptimizerBase::Status SynchronizeIfNeeded(
       const ProblemState& problem_state, int num_relaxed_vars);
 
-  int64 state_update_stamp_;
+  int64_t state_update_stamp_;
   std::unique_ptr<sat::SatSolver> sat_solver_;
   const BopConstraintTerms& objective_terms_;
 };

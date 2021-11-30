@@ -1,4 +1,5 @@
-# Copyright 2010-2018 Google LLC
+#!/usr/bin/env python3
+# Copyright 2010-2021 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -70,6 +71,7 @@ def create_data_model():
 # [START solution_printer]
 def print_solution(data, manager, routing, solution):
     """Prints solution on console."""
+    print(f'Objective: {solution.ObjectiveValue()}')
     time_dimension = routing.GetDimensionOrDie('Time')
     total_time = 0
     for vehicle_id in range(data['num_vehicles']):
@@ -141,15 +143,17 @@ def main():
     time_dimension = routing.GetDimensionOrDie(time)
     # Add time window constraints for each location except depot.
     for location_idx, time_window in enumerate(data['time_windows']):
-        if location_idx == 0:
+        if location_idx == data['depot']:
             continue
         index = manager.NodeToIndex(location_idx)
         time_dimension.CumulVar(index).SetRange(time_window[0], time_window[1])
     # Add time window constraints for each vehicle start node.
+    depot_idx = data['depot']
     for vehicle_id in range(data['num_vehicles']):
         index = routing.Start(vehicle_id)
-        time_dimension.CumulVar(index).SetRange(data['time_windows'][0][0],
-                                                data['time_windows'][0][1])
+        time_dimension.CumulVar(index).SetRange(
+            data['time_windows'][depot_idx][0],
+            data['time_windows'][depot_idx][1])
     # [END time_windows_constraint]
 
     # Instantiate route start and end times to produce feasible times.

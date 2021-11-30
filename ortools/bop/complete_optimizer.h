@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -27,6 +27,7 @@
 #ifndef OR_TOOLS_BOP_COMPLETE_OPTIMIZER_H_
 #define OR_TOOLS_BOP_COMPLETE_OPTIMIZER_H_
 
+#include <cstdint>
 #include <deque>
 
 #include "ortools/bop/bop_base.h"
@@ -56,7 +57,7 @@ class SatCoreBasedOptimizer : public BopOptimizerBase {
       const ProblemState& problem_state);
   sat::SatSolver::Status SolveWithAssumptions();
 
-  int64 state_update_stamp_;
+  int64_t state_update_stamp_;
   bool initialized_;
   bool assumptions_already_added_;
   sat::SatSolver solver_;

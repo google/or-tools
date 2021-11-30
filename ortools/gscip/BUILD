@@ -34,7 +34,7 @@ cc_library(
 #        ":gscip_cc_proto",
 #        ":gscip_parameters",
 #        "@com_google_absl//absl/time",
-#        "@gtest//:main",
+#        "@com_google_googletest//:gtest_main",
 #    ],
 #)
 
@@ -44,32 +44,35 @@ cc_library(
     hdrs = ["legacy_scip_params.h"],
     deps = [
         "//ortools/linear_solver:scip_helper_macros",
+        "//ortools/linear_solver:scip_with_glop",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
-        "@scip//:libscip",
     ],
 )
 
 cc_library(
     name = "gscip",
-    srcs = ["gscip.cc"],
+    srcs = [
+        "gscip.cc",
+    ],
     hdrs = ["gscip.h"],
     deps = [
         ":gscip_cc_proto",
+        ":gscip_message_handler",
         ":gscip_parameters",
         ":legacy_scip_params",
         "//ortools/base",
         "//ortools/base:status_builder",
         "//ortools/base:status_macros",
         "//ortools/linear_solver:scip_helper_macros",
+        "//ortools/linear_solver:scip_with_glop",
         "//ortools/port:proto_utils",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
-        "@scip//:libscip",
     ],
 )
 
@@ -82,7 +85,7 @@ cc_library(
 #    deps = [
 #        ":gscip",
 #        ":gscip_parameters",
-#        "@gtest//:main",
+#        "@com_google_googletest//:gtest_main",
 #    ],
 #)
 
@@ -125,8 +128,8 @@ cc_library(
     deps = [
         ":gscip",
         "//ortools/base:status_macros",
+        "//ortools/linear_solver:scip_with_glop",
         "@com_google_absl//absl/status",
-        "@scip//:libscip",
     ],
 )
 
@@ -147,3 +150,30 @@ cc_library(
 #        "@scip//:libscip",
 #    ],
 #)
+
+cc_library(
+    name = "gscip_event_handler",
+    srcs = ["gscip_event_handler.cc"],
+    hdrs = ["gscip_event_handler.h"],
+    deps = [
+        ":gscip",
+        "//ortools/base",
+        "//ortools/base:status_macros",
+        "//ortools/linear_solver:scip_helper_macros",
+        "//ortools/linear_solver:scip_with_glop",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "gscip_message_handler",
+    srcs = ["gscip_message_handler.cc"],
+    hdrs = ["gscip_message_handler.h"],
+    deps = [
+        "//ortools/base",
+        "//ortools/linear_solver:scip_helper_macros",
+        "//ortools/linear_solver:scip_with_glop",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+    ],
+)

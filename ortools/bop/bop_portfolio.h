@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,6 +14,9 @@
 #ifndef OR_TOOLS_BOP_BOP_PORTFOLIO_H_
 #define OR_TOOLS_BOP_BOP_PORTFOLIO_H_
 
+#include <cstdint>
+
+#include "ortools/base/strong_vector.h"
 #include "ortools/bop/bop_base.h"
 #include "ortools/bop/bop_lns.h"
 #include "ortools/bop/bop_parameters.pb.h"
@@ -83,7 +86,7 @@ class PortfolioOptimizer : public BopOptimizerBase {
                         const BopSolverOptimizerSet& optimizer_set);
 
   std::unique_ptr<MTRandom> random_;
-  int64 state_update_stamp_;
+  int64_t state_update_stamp_;
   BopConstraintTerms objective_terms_;
   std::unique_ptr<OptimizerSelector> selector_;
   absl::StrongVector<OptimizerIndex, BopOptimizerBase*> optimizers_;
@@ -132,7 +135,7 @@ class OptimizerSelector {
   //
   // The optimizers are sorted based on their score each time a new solution is
   // found.
-  void UpdateScore(int64 gain, double time_spent);
+  void UpdateScore(int64_t gain, double time_spent);
 
   // Marks the given optimizer as not selectable until UpdateScore() is called
   // with a positive gain. In which case, all optimizer will become selectable
@@ -157,7 +160,7 @@ class OptimizerSelector {
  private:
   // Updates internals when a solution has been found using the selected
   // optimizer.
-  void NewSolutionFound(int64 gain);
+  void NewSolutionFound(int64_t gain);
 
   // Updates the deterministic time spent by the selected optimizer.
   void UpdateDeterministicTime(double time_spent);
@@ -184,7 +187,7 @@ class OptimizerSelector {
     std::string name;
     int num_successes;
     int num_calls;
-    int64 total_gain;
+    int64_t total_gain;
     double time_spent;
     double time_spent_since_last_solution;
     bool runnable;

@@ -1,0 +1,126 @@
+// Copyright 2010-2021 Google LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Vector Bin Packing Problem.
+//
+// The problem description is as follows:
+//
+// Given:
+//   - a fixed number of resources,
+//   - a set of equivalent multidimentional bins with max capacity on each
+//     resource.
+//   - a set of items, with fixed usage for all resources, and a number of
+//     copies for each item.
+//
+// The goal is either:
+// - optimization: minimizing the number of bins needed to fit all items, or
+// - feasibility: checking if all items can be packed using at most a given
+//   number of bins.
+//
+// In both cases we must ensure that for each bin and each resource, the sum of
+// sizes of each assigned item is less than the capacity of the resource of the
+// bin.
+//
+// An optional integer imposes an upper bound on how many copies of the same
+// item are allowed in a single bin, regardless of resource utilization.
+
+syntax = "proto3";
+
+option java_package = "com.google.ortools.packing.vbp";
+option java_multiple_files = true;
+option csharp_namespace = "Google.OrTools.Packing.Vbp";
+
+package operations_research.packing.vbp;
+
+message Item {
+  // Optional name. This is only used for display/debugging purposes.
+  string name = 1;
+
+  // Resource usages for this item. All usages must be non-negative.
+  // Should be the same size as resource_capacity in the
+  // VectorBinPackingProblem.
+  repeated int64 resource_usage = 2;
+
+  // Number of identical copies of this item.
+  int32 num_copies = 3;
+
+  // An optional upper bound on how many copies of the same item are allowed in
+  // a single bin, regardless of resource utilization. A value of 0 is
+  // interpreted as no limit.
+  int32 max_number_of_copies_per_bin = 4;
+}
+
+message VectorBinPackingProblem {
+  // Optional name.
+  string name = 1;
+
+  // Max capacity of each resource.
+  // All bins have the same resource capacities.
+  repeated int64 resource_capacity = 2;
+
+  // Resources names. This can either be left empty or
+  // must be of the same size as resource_capacity.
+  repeated string resource_name = 3;
+
+  // The list of items which are to be assigned to bins.
+  repeated Item item = 4;
+
+  // The maximum number of bins available. A value of 0 is interpreted as no
+  // limit. Nonzero values are used to encode feasibility problems.
+  int32 max_bins = 5;
+}
+
+// Describe one filled bin in the solution.
+message VectorBinPackingOneBinInSolution {
+  // Which items are in this bin. They are supposed to be unique.
+  repeated int32 item_indices = 1;
+  // How many of each items are in this bins.
+  repeated int32 item_copies = 2;
+}
+
+// Solve status
+enum VectorBinPackingSolveStatus {
+  // Default state.
+  VECTOR_BIN_PACKING_SOLVE_STATUS_UNSPECIFIED = 0;
+
+  // The optimal solution was found and proven.
+  OPTIMAL = 1;
+
+  // A feasible solution has been found.
+  FEASIBLE = 2;
+
+  // The problem is infeasible.
+  INFEASIBLE = 3;
+}
+
+message VectorBinPackingSolution {
+  // Optional info from the solver.
+  string solver_info = 1;
+
+  // Filled bins.
+  repeated VectorBinPackingOneBinInSolution bins = 2;
+
+  // Solve status.
+  VectorBinPackingSolveStatus status = 3;
+
+  // Objective value.
+  double objective_value = 4;
+
+  // Solve time in seconds.
+  double solve_time_in_seconds = 5;
+
+  // Time to create the Arc-Flow graph.
+  double arc_flow_time_in_seconds = 6;
+
+  // TODO(user): Do we add copies of bins?
+}

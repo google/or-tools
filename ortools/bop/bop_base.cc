@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,6 +13,7 @@
 
 #include "ortools/bop/bop_base.h"
 
+#include <cstdint>
 #include <limits>
 #include <string>
 #include <vector>
@@ -61,7 +62,7 @@ std::string BopOptimizerBase::GetStatusString(Status status) {
 //------------------------------------------------------------------------------
 // ProblemState
 //------------------------------------------------------------------------------
-const int64 ProblemState::kInitialStampValue(0);
+const int64_t ProblemState::kInitialStampValue(0);
 
 ProblemState::ProblemState(const LinearBooleanProblem& problem)
     : original_problem_(problem),
@@ -72,17 +73,18 @@ ProblemState::ProblemState(const LinearBooleanProblem& problem)
       lp_values_(),
       solution_(problem, "AllZero"),
       assignment_preference_(),
-      lower_bound_(kint64min),
-      upper_bound_(kint64max) {
+      lower_bound_(std::numeric_limits<int64_t>::min()),
+      upper_bound_(std::numeric_limits<int64_t>::max()) {
   // TODO(user): Extract to a function used by all solvers.
   // Compute trivial unscaled lower bound.
   const LinearObjective& objective = problem.objective();
   lower_bound_ = 0;
   for (int i = 0; i < objective.coefficients_size(); ++i) {
     // Fix template version for or-tools.
-    lower_bound_ += std::min<int64>(int64{0}, objective.coefficients(i));
+    lower_bound_ += std::min<int64_t>(int64_t{0}, objective.coefficients(i));
   }
-  upper_bound_ = solution_.IsFeasible() ? solution_.GetCost() : kint64max;
+  upper_bound_ = solution_.IsFeasible() ? solution_.GetCost()
+                                        : std::numeric_limits<int64_t>::max();
 }
 
 // TODO(user): refactor this to not rely on the optimization status.
@@ -235,9 +237,9 @@ void ProblemState::MarkAsOptimal() {
 void ProblemState::MarkAsInfeasible() {
   // Mark as infeasible, i.e. set a lower_bound greater than the upper_bound.
   CHECK(!solution_.IsFeasible());
-  if (upper_bound() == kint64max) {
-    lower_bound_ = kint64max;
-    upper_bound_ = kint64max - 1;
+  if (upper_bound() == std::numeric_limits<int64_t>::max()) {
+    lower_bound_ = std::numeric_limits<int64_t>::max();
+    upper_bound_ = std::numeric_limits<int64_t>::max() - 1;
   } else {
     lower_bound_ = upper_bound_ - 1;
   }

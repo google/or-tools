@@ -1,0 +1,28 @@
+name: Make MacOS C++
+
+on: [push, pull_request]
+
+jobs:
+  # Building using the github runner environement directly.
+  make:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install brew Make
+      run: |
+        brew install make
+        echo "/usr/local/opt/make/libexec/gnubin" >> $GITHUB_PATH
+    - name: Check make
+      run: make --version
+    - name: Check system
+      run: make detect_port
+    - name: Check C++
+      run: make detect_cc
+    - name: Build third party
+      run: make third_party -j4
+    - name: Build C++
+      run: make cc -j4
+    - name: Test C++
+      run: make test_cc
+    - name: Install
+      run: make install_cc DESTDIR=install

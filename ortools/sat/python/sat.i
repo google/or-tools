@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -12,8 +12,6 @@
 // limitations under the License.
 
 // This .i file exposes the sat cp_model API.
-
-%include "stdint.i"
 
 %include "ortools/base/base.i"
 %include "ortools/util/python/proto.i"
@@ -30,11 +28,11 @@
 #include "ortools/sat/swig_helper.h"
 %}
 
+%module(directors="1", threads="1") operations_research_sat
+
 %pythoncode {
 import numbers
 }
-
-%module(directors="1", threads="1") operations_research_sat
 
 PY_PROTO_TYPEMAP(ortools.sat.cp_model_pb2,
                  CpModelProto,
@@ -53,15 +51,23 @@ PY_PROTO_TYPEMAP(ortools.sat.sat_parameters_pb2,
 
 %unignore operations_research;
 %unignore operations_research::sat;
-%unignore operations_research::sat::SatHelper;
-%unignore operations_research::sat::SatHelper::Solve;
-%unignore operations_research::sat::SatHelper::SolveWithParameters;
-%unignore operations_research::sat::SatHelper::SolveWithParametersAndSolutionCallback;
-%unignore operations_research::sat::SatHelper::ModelStats;
-%unignore operations_research::sat::SatHelper::SolverResponseStats;
-%unignore operations_research::sat::SatHelper::ValidateModel;
-%unignore operations_research::sat::SatHelper::VariableDomain;
-%unignore operations_research::sat::SatHelper::WriteModelToFile;
+
+// Wrap the SolveWrapper class.
+%unignore operations_research::sat::SolveWrapper;
+%unignore operations_research::sat::SolveWrapper::AddLogCallback;
+%unignore operations_research::sat::SolveWrapper::AddSolutionCallback;
+%unignore operations_research::sat::SolveWrapper::ClearSolutionCallback;
+%unignore operations_research::sat::SolveWrapper::SetParameters;
+%unignore operations_research::sat::SolveWrapper::Solve;
+%unignore operations_research::sat::SolveWrapper::StopSearch;
+
+// Wrap the CpSatHelper class.
+%unignore operations_research::sat::CpSatHelper;
+%unignore operations_research::sat::CpSatHelper::ModelStats;
+%unignore operations_research::sat::CpSatHelper::SolverResponseStats;
+%unignore operations_research::sat::CpSatHelper::ValidateModel;
+%unignore operations_research::sat::CpSatHelper::VariableDomain;
+%unignore operations_research::sat::CpSatHelper::WriteModelToFile;
 
 %feature("director") operations_research::sat::SolutionCallback;
 %unignore operations_research::sat::SolutionCallback;

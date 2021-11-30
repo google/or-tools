@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,7 +14,6 @@
 // Utilities for container logging.
 // TODO(user): Broaden the scope and rename to "stream_util.h"
 //
-// Maintainers: This file is part of portable google3 (go/pg3).
 //
 // The typical use looks like this:
 //
@@ -64,7 +63,7 @@ namespace gtl {
 //   void LogSeparator(ostream &out) const;
 //
 // Returns the maximum number of elements to print:
-//   int64 MaxElements() const;
+//   int64_t MaxElements() const;
 //
 // Called to print an indication that MaximumElements() was reached:
 //   void LogEllipsis(ostream &out) const;
@@ -107,18 +106,18 @@ struct LogLegacyBase : public LogBase {
 // LogShort uses [] braces and separates items with comma-spaces.  For
 // example "[1, 2, 3]".
 struct LogShort : public internal::LogShortBase {
-  int64 MaxElements() const { return std::numeric_limits<int64>::max(); }
+  int64_t MaxElements() const { return std::numeric_limits<int64_t>::max(); }
 };
 
 // LogShortUpToN(max_elements) formats the same as LogShort but prints no more
 // than the max_elements elements.
 class LogShortUpToN : public internal::LogShortBase {
  public:
-  explicit LogShortUpToN(int64 max_elements) : max_elements_(max_elements) {}
-  int64 MaxElements() const { return max_elements_; }
+  explicit LogShortUpToN(int64_t max_elements) : max_elements_(max_elements) {}
+  int64_t MaxElements() const { return max_elements_; }
 
  private:
-  int64 max_elements_;
+  int64_t max_elements_;
 };
 
 // LogShortUpTo100 formats the same as LogShort but prints no more
@@ -134,19 +133,19 @@ struct LogShortUpTo100 : public LogShortUpToN {
 // 3
 // ]".
 struct LogMultiline : public internal::LogMultilineBase {
-  int64 MaxElements() const { return std::numeric_limits<int64>::max(); }
+  int64_t MaxElements() const { return std::numeric_limits<int64_t>::max(); }
 };
 
 // LogMultilineUpToN(max_elements) formats the same as LogMultiline but
 // prints no more than max_elements elements.
 class LogMultilineUpToN : public internal::LogMultilineBase {
  public:
-  explicit LogMultilineUpToN(int64 max_elements)
+  explicit LogMultilineUpToN(int64_t max_elements)
       : max_elements_(max_elements) {}
-  int64 MaxElements() const { return max_elements_; }
+  int64_t MaxElements() const { return max_elements_; }
 
  private:
-  int64 max_elements_;
+  int64_t max_elements_;
 };
 
 // LogMultilineUpTo100 formats the same as LogMultiline but
@@ -158,10 +157,10 @@ struct LogMultilineUpTo100 : public LogMultilineUpToN {
 // The legacy behavior of LogSequence() does not use braces and
 // separates items with spaces.  For example "1 2 3".
 struct LogLegacyUpTo100 : public internal::LogLegacyBase {
-  int64 MaxElements() const { return 100; }
+  int64_t MaxElements() const { return 100; }
 };
 struct LogLegacy : public internal::LogLegacyBase {
-  int64 MaxElements() const { return std::numeric_limits<int64>::max(); }
+  int64_t MaxElements() const { return std::numeric_limits<int64_t>::max(); }
 };
 
 // The default policy for new code.
@@ -174,7 +173,7 @@ inline void LogRangeToStream(std::ostream& out,  // NOLINT
                              IteratorT begin, IteratorT end,
                              const PolicyT& policy) {
   policy.LogOpening(out);
-  for (int64 i = 0; begin != end && i < policy.MaxElements(); ++i, ++begin) {
+  for (int64_t i = 0; begin != end && i < policy.MaxElements(); ++i, ++begin) {
     if (i == 0) {
       policy.LogFirstSeparator(out);
     } else {

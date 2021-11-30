@@ -1,0 +1,48 @@
+name: CMake MacOS Java
+
+on: [push, pull_request]
+
+jobs:
+  # Building using the github runner environement directly.
+  cmake_make:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Check cmake
+      run: cmake --version
+    - name: Swig install
+      run: brew install swig
+    - name: Check swig
+      run: swig -version
+    - name: Check java
+      run: java -version
+    - name: Configure
+      run: cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release -DBUILD_JAVA=ON -DSKIP_GPG=ON -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
+    - name: Build
+      run: cmake --build build --target all -v
+    - name: Test
+      run: CTEST_OUTPUT_ON_FAILURE=1 cmake --build build --target test -v
+    - name: Install
+      run: cmake --build build --target install -v -- DESTDIR=install
+  cmake_xcode:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Check cmake
+      run: cmake --version
+    - name: Swig install
+      run: brew install swig
+    - name: Check swig
+      run: swig -version
+    - name: Check java
+      run: java -version
+    - name: Configure
+      run: cmake -S. -Bbuild -G "Xcode" -DCMAKE_CONFIGURATION_TYPES=Release -DBUILD_JAVA=ON -DSKIP_GPG=ON -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
+    - name: Build
+      run: cmake --build build --config Release --target ALL_BUILD -v
+    - name: Test
+      # note: can't use the target RUN_TESTS which seems to conflict with maven run command
+      #run: cmake --build build --config Release --target RUN_TESTS -v
+      run: cd build && ctest -C Release --verbose --extra-verbose --output-on-failure
+    - name: Install
+      run: cmake --build build --config Release --target install -v -- DESTDIR=install

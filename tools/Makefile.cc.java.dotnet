@@ -125,7 +125,7 @@ ifeq ($(SYSTEM),win)
   DEBUG = /O2 -DNDEBUG
   CXXFLAGS = /std:c++17 /EHsc /MD /nologo /D_SILENCE_STDEXT_HASH_DEPRECATION_WARNINGS -nologo $(DEBUG) \
     /DPSAPI_VERSION=1 /D__WIN32__ /DNOMINMAX /DWIN32_LEAN_AND_MEAN=1 /D_CRT_SECURE_NO_WARNINGS \
-    /DGFLAGS_DLL_DECL= /DGFLAGS_DLL_DECLARE_FLAG= /DGFLAGS_DLL_DEFINE_FLAG= /DGOOGLE_GLOG_DLL_DECL= \
+    /DGOOGLE_GLOG_DLL_DECL= \
     /I$(INC_DIR)\\src\\windows /I$(INC_DIR) /I. \
     /DUSE_BOP /DUSE_GLOP \
     /DUSE_CBC /DUSE_CLP \
@@ -284,7 +284,14 @@ test_cc: detect_cc
 ##################
 ##  C++ SOURCE  ##
 ##################
-ifeq ($(SOURCE_SUFFIX),.cc) # Those rules will be used if SOURCE contain a .cc file
+IS_CPP =
+ifeq ($(SOURCE_SUFFIX),.cc)
+    IS_CPP = true
+endif
+ifeq ($(SOURCE_SUFFIX),.cpp)
+    IS_CPP = true
+endif
+ifdef IS_CPP # Those rules will be used if SOURCE contain a .cc or .cpp file
 $(OBJ_DIR)/$(SOURCE_NAME).$O: $(SOURCE) | $(OBJ_DIR)
 	$(CXX) $(CXXFLAGS) \
  -c $(SOURCE_PATH) \
@@ -302,8 +309,7 @@ build: $(BIN_DIR)/$(SOURCE_NAME)$E
 .PHONY: run # Run a C++ program.
 run: build
 	$(BIN_DIR)$S$(SOURCE_NAME)$E $(ARGS)
-endif # ifeq ($(SOURCE_SUFFIX),.cc)
-
+endif # ifeq IS_CPP
 endif # ifndef CXX_BIN
 
 $(OBJ_DIR):
@@ -436,7 +442,7 @@ else
   JAVA_NATIVE_IDENTIFIER=linux-x86-64
   else
     ifeq ($(OS),Darwin)
-    JAVA_NATIVE_IDENTIFIER=darwin
+    JAVA_NATIVE_IDENTIFIER=darwin-x86-64
     else
     $(error OS unknown !)
     endif

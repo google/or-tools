@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,6 +16,7 @@
 #ifndef OR_TOOLS_EXAMPLES_CVRPTW_LIB_H_
 #define OR_TOOLS_EXAMPLES_CVRPTW_LIB_H_
 
+#include <cstdint>
 #include <memory>
 #include <set>
 
@@ -26,48 +27,50 @@
 
 namespace operations_research {
 
-typedef std::function<int64(RoutingNodeIndex, RoutingNodeIndex)>
+typedef std::function<int64_t(RoutingNodeIndex, RoutingNodeIndex)>
     RoutingNodeEvaluator2;
 
 // Random seed generator.
-int32 GetSeed(bool deterministic);
+int32_t GetSeed(bool deterministic);
 
 // Location container, contains positions of orders and can be used to obtain
 // Manhattan distances/times between locations.
 class LocationContainer {
  public:
-  LocationContainer(int64 speed, bool use_deterministic_seed);
-  void AddLocation(int64 x, int64 y) { locations_.push_back(Location(x, y)); }
-  void AddRandomLocation(int64 x_max, int64 y_max);
-  void AddRandomLocation(int64 x_max, int64 y_max, int duplicates);
-  int64 ManhattanDistance(RoutingIndexManager::NodeIndex from,
-                          RoutingIndexManager::NodeIndex to) const;
-  int64 NegManhattanDistance(RoutingIndexManager::NodeIndex from,
-                             RoutingIndexManager::NodeIndex to) const;
-  int64 ManhattanTime(RoutingIndexManager::NodeIndex from,
-                      RoutingIndexManager::NodeIndex to) const;
+  LocationContainer(int64_t speed, bool use_deterministic_seed);
+  void AddLocation(int64_t x, int64_t y) {
+    locations_.push_back(Location(x, y));
+  }
+  void AddRandomLocation(int64_t x_max, int64_t y_max);
+  void AddRandomLocation(int64_t x_max, int64_t y_max, int duplicates);
+  int64_t ManhattanDistance(RoutingIndexManager::NodeIndex from,
+                            RoutingIndexManager::NodeIndex to) const;
+  int64_t NegManhattanDistance(RoutingIndexManager::NodeIndex from,
+                               RoutingIndexManager::NodeIndex to) const;
+  int64_t ManhattanTime(RoutingIndexManager::NodeIndex from,
+                        RoutingIndexManager::NodeIndex to) const;
 
   bool SameLocation(RoutingIndexManager::NodeIndex node1,
                     RoutingIndexManager::NodeIndex node2) const;
-  int64 SameLocationFromIndex(int64 node1, int64 node2) const;
+  int64_t SameLocationFromIndex(int64_t node1, int64_t node2) const;
 
  private:
   class Location {
    public:
     Location();
-    Location(int64 x, int64 y);
-    int64 DistanceTo(const Location& location) const;
+    Location(int64_t x, int64_t y);
+    int64_t DistanceTo(const Location& location) const;
     bool IsAtSameLocation(const Location& location) const;
 
    private:
-    static int64 Abs(int64 value);
+    static int64_t Abs(int64_t value);
 
-    int64 x_;
-    int64 y_;
+    int64_t x_;
+    int64_t y_;
   };
 
   MTRandom randomizer_;
-  const int64 speed_;
+  const int64_t speed_;
   absl::StrongVector<RoutingIndexManager::NodeIndex, Location> locations_;
 };
 
@@ -77,11 +80,11 @@ class RandomDemand {
   RandomDemand(int size, RoutingIndexManager::NodeIndex depot,
                bool use_deterministic_seed);
   void Initialize();
-  int64 Demand(RoutingIndexManager::NodeIndex from,
-               RoutingIndexManager::NodeIndex to) const;
+  int64_t Demand(RoutingIndexManager::NodeIndex from,
+                 RoutingIndexManager::NodeIndex to) const;
 
  private:
-  std::unique_ptr<int64[]> demand_;
+  std::unique_ptr<int64_t[]> demand_;
   const int size_;
   const RoutingIndexManager::NodeIndex depot_;
   const bool use_deterministic_seed_;
@@ -90,32 +93,33 @@ class RandomDemand {
 // Service time (proportional to demand) + transition time callback.
 class ServiceTimePlusTransition {
  public:
-  ServiceTimePlusTransition(int64 time_per_demand_unit,
-                            RoutingNodeEvaluator2 demand,
-                            RoutingNodeEvaluator2 transition_time);
-  int64 Compute(RoutingIndexManager::NodeIndex from,
-                RoutingIndexManager::NodeIndex to) const;
+  ServiceTimePlusTransition(
+      int64_t time_per_demand_unit,
+      operations_research::RoutingNodeEvaluator2 demand,
+      operations_research::RoutingNodeEvaluator2 transition_time);
+  int64_t Compute(RoutingIndexManager::NodeIndex from,
+                  RoutingIndexManager::NodeIndex to) const;
 
  private:
-  const int64 time_per_demand_unit_;
-  RoutingNodeEvaluator2 demand_;
-  RoutingNodeEvaluator2 transition_time_;
+  const int64_t time_per_demand_unit_;
+  operations_research::RoutingNodeEvaluator2 demand_;
+  operations_research::RoutingNodeEvaluator2 transition_time_;
 };
 
 // Stop service time + transition time callback.
 class StopServiceTimePlusTransition {
  public:
-  StopServiceTimePlusTransition(int64 stop_time,
-                                const LocationContainer& location_container,
-                                RoutingNodeEvaluator2 transition_time);
-  int64 Compute(RoutingIndexManager::NodeIndex from,
-                RoutingIndexManager::NodeIndex to) const;
+  StopServiceTimePlusTransition(
+      int64_t stop_time, const LocationContainer& location_container,
+      operations_research::RoutingNodeEvaluator2 transition_time);
+  int64_t Compute(RoutingIndexManager::NodeIndex from,
+                  RoutingIndexManager::NodeIndex to) const;
 
  private:
-  const int64 stop_time_;
+  const int64_t stop_time_;
   const LocationContainer& location_container_;
-  RoutingNodeEvaluator2 demand_;
-  RoutingNodeEvaluator2 transition_time_;
+  operations_research::RoutingNodeEvaluator2 demand_;
+  operations_research::RoutingNodeEvaluator2 transition_time_;
 };
 
 // Route plan displayer.
@@ -124,13 +128,13 @@ void DisplayPlan(
     const operations_research::RoutingIndexManager& manager,
     const operations_research::RoutingModel& routing,
     const operations_research::Assignment& plan, bool use_same_vehicle_costs,
-    int64 max_nodes_per_group, int64 same_vehicle_cost,
+    int64_t max_nodes_per_group, int64_t same_vehicle_cost,
     const operations_research::RoutingDimension& capacity_dimension,
     const operations_research::RoutingDimension& time_dimension);
 
 using NodeIndex = RoutingIndexManager::NodeIndex;
 
-int32 GetSeed(bool deterministic) {
+int32_t GetSeed(bool deterministic) {
   if (deterministic) {
     return ACMRandom::DeterministicSeed();
   } else {
@@ -138,34 +142,34 @@ int32 GetSeed(bool deterministic) {
   }
 }
 
-LocationContainer::LocationContainer(int64 speed, bool use_deterministic_seed)
+LocationContainer::LocationContainer(int64_t speed, bool use_deterministic_seed)
     : randomizer_(GetSeed(use_deterministic_seed)), speed_(speed) {
   CHECK_LT(0, speed_);
 }
 
-void LocationContainer::AddRandomLocation(int64 x_max, int64 y_max) {
+void LocationContainer::AddRandomLocation(int64_t x_max, int64_t y_max) {
   AddRandomLocation(x_max, y_max, 1);
 }
 
-void LocationContainer::AddRandomLocation(int64 x_max, int64 y_max,
+void LocationContainer::AddRandomLocation(int64_t x_max, int64_t y_max,
                                           int duplicates) {
-  const int64 x = randomizer_.Uniform(x_max + 1);
-  const int64 y = randomizer_.Uniform(y_max + 1);
+  const int64_t x = randomizer_.Uniform(x_max + 1);
+  const int64_t y = randomizer_.Uniform(y_max + 1);
   for (int i = 0; i < duplicates; ++i) {
     AddLocation(x, y);
   }
 }
 
-int64 LocationContainer::ManhattanDistance(NodeIndex from, NodeIndex to) const {
+int64_t LocationContainer::ManhattanDistance(NodeIndex from, NodeIndex to) const {
   return locations_[from].DistanceTo(locations_[to]);
 }
 
-int64 LocationContainer::NegManhattanDistance(NodeIndex from,
+int64_t LocationContainer::NegManhattanDistance(NodeIndex from,
                                               NodeIndex to) const {
   return -ManhattanDistance(from, to);
 }
 
-int64 LocationContainer::ManhattanTime(NodeIndex from, NodeIndex to) const {
+int64_t LocationContainer::ManhattanTime(NodeIndex from, NodeIndex to) const {
   return ManhattanDistance(from, to) / speed_;
 }
 
@@ -175,7 +179,7 @@ bool LocationContainer::SameLocation(NodeIndex node1, NodeIndex node2) const {
   }
   return false;
 }
-int64 LocationContainer::SameLocationFromIndex(int64 node1, int64 node2) const {
+int64_t LocationContainer::SameLocationFromIndex(int64_t node1, int64_t node2) const {
   // The direct conversion from constraint model indices to routing model
   // nodes is correct because the depot is node 0.
   // TODO(user): Fetch proper indices from routing model.
@@ -184,9 +188,9 @@ int64 LocationContainer::SameLocationFromIndex(int64 node1, int64 node2) const {
 
 LocationContainer::Location::Location() : x_(0), y_(0) {}
 
-LocationContainer::Location::Location(int64 x, int64 y) : x_(x), y_(y) {}
+LocationContainer::Location::Location(int64_t x, int64_t y) : x_(x), y_(y) {}
 
-int64 LocationContainer::Location::DistanceTo(const Location& location) const {
+int64_t LocationContainer::Location::DistanceTo(const Location& location) const {
   return Abs(x_ - location.x_) + Abs(y_ - location.y_);
 }
 
@@ -195,7 +199,7 @@ bool LocationContainer::Location::IsAtSameLocation(
   return x_ == location.x_ && y_ == location.y_;
 }
 
-int64 LocationContainer::Location::Abs(int64 value) {
+int64_t LocationContainer::Location::Abs(int64_t value) {
   return std::max(value, -value);
 }
 
@@ -208,9 +212,9 @@ RandomDemand::RandomDemand(int size, NodeIndex depot,
 }
 
 void RandomDemand::Initialize() {
-  const int64 kDemandMax = 5;
-  const int64 kDemandMin = 1;
-  demand_ = absl::make_unique<int64[]>(size_);
+  const int64_t kDemandMax = 5;
+  const int64_t kDemandMin = 1;
+  demand_ = absl::make_unique<int64_t[]>(size_);
   MTRandom randomizer(GetSeed(use_deterministic_seed_));
   for (int order = 0; order < size_; ++order) {
     if (order == depot_) {
@@ -222,29 +226,29 @@ void RandomDemand::Initialize() {
   }
 }
 
-int64 RandomDemand::Demand(NodeIndex from, NodeIndex /*to*/) const {
+int64_t RandomDemand::Demand(NodeIndex from, NodeIndex /*to*/) const {
   return demand_[from.value()];
 }
 
 ServiceTimePlusTransition::ServiceTimePlusTransition(
-    int64 time_per_demand_unit, RoutingNodeEvaluator2 demand,
+    int64_t time_per_demand_unit, RoutingNodeEvaluator2 demand,
     RoutingNodeEvaluator2 transition_time)
     : time_per_demand_unit_(time_per_demand_unit),
       demand_(std::move(demand)),
       transition_time_(std::move(transition_time)) {}
 
-int64 ServiceTimePlusTransition::Compute(NodeIndex from, NodeIndex to) const {
+int64_t ServiceTimePlusTransition::Compute(NodeIndex from, NodeIndex to) const {
   return time_per_demand_unit_ * demand_(from, to) + transition_time_(from, to);
 }
 
 StopServiceTimePlusTransition::StopServiceTimePlusTransition(
-    int64 stop_time, const LocationContainer& location_container,
+    int64_t stop_time, const LocationContainer& location_container,
     RoutingNodeEvaluator2 transition_time)
     : stop_time_(stop_time),
       location_container_(location_container),
       transition_time_(std::move(transition_time)) {}
 
-int64 StopServiceTimePlusTransition::Compute(NodeIndex from,
+int64_t StopServiceTimePlusTransition::Compute(NodeIndex from,
                                              NodeIndex to) const {
   return location_container_.SameLocation(from, to)
              ? 0
@@ -254,7 +258,7 @@ int64 StopServiceTimePlusTransition::Compute(NodeIndex from,
 void DisplayPlan(
     const RoutingIndexManager& manager, const RoutingModel& routing,
     const operations_research::Assignment& plan, bool use_same_vehicle_costs,
-    int64 max_nodes_per_group, int64 same_vehicle_cost,
+    int64_t max_nodes_per_group, int64_t same_vehicle_cost,
     const operations_research::RoutingDimension& capacity_dimension,
     const operations_research::RoutingDimension& time_dimension) {
   // Display plan cost.
@@ -262,7 +266,7 @@ void DisplayPlan(
 
   // Display dropped orders.
   std::string dropped;
-  for (int64 order = 0; order < routing.Size(); ++order) {
+  for (int64_t order = 0; order < routing.Size(); ++order) {
     if (routing.IsStart(order) || routing.IsEnd(order)) continue;
     if (plan.Value(routing.NextVar(order)) == order) {
       if (dropped.empty()) {
@@ -280,9 +284,9 @@ void DisplayPlan(
 
   if (use_same_vehicle_costs) {
     int group_size = 0;
-    int64 group_same_vehicle_cost = 0;
+    int64_t group_same_vehicle_cost = 0;
     std::set<int> visited;
-    for (int64 order = 0; order < routing.Size(); ++order) {
+    for (int64_t order = 0; order < routing.Size(); ++order) {
       if (routing.IsStart(order) || routing.IsEnd(order)) continue;
       ++group_size;
       visited.insert(plan.Value(routing.VehicleVar(order)));
@@ -303,7 +307,7 @@ void DisplayPlan(
   // Display actual output for each vehicle.
   for (int route_number = 0; route_number < routing.vehicles();
        ++route_number) {
-    int64 order = routing.Start(route_number);
+    int64_t order = routing.Start(route_number);
     absl::StrAppendFormat(&plan_output, "Route %d: ", route_number);
     if (routing.IsEnd(plan.Value(routing.NextVar(order)))) {
       plan_output += "Empty\n";

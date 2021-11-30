@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -17,6 +17,7 @@
 #define OR_TOOLS_LP_DATA_LP_TYPES_H_
 
 #include <cmath>
+#include <cstdint>
 #include <limits>
 
 #include "ortools/base/basictypes.h"
@@ -33,8 +34,8 @@ namespace glop {
 
 // This type is defined to avoid cast issues during index conversions,
 // e.g. converting ColIndex into RowIndex.
-// All types should use 'Index' instead of int32.
-typedef int32 Index;
+// All types should use 'Index' instead of int32_t.
+typedef int32_t Index;
 
 // ColIndex is the type for integers representing column/variable indices.
 // int32s are enough for handling even the largest problems.
@@ -60,9 +61,9 @@ inline Index RowToIntIndex(RowIndex row) { return row.value(); }
 // An entry in a sparse matrix is a pair (row, value) for a given known column.
 // See classes SparseColumn and SparseMatrix.
 #if defined(__ANDROID__)
-DEFINE_INT_TYPE(EntryIndex, int32);
+DEFINE_INT_TYPE(EntryIndex, int32_t);
 #else
-DEFINE_INT_TYPE(EntryIndex, int64);
+DEFINE_INT_TYPE(EntryIndex, int64_t);
 #endif
 
 static inline double ToDouble(double f) { return f; }
@@ -98,7 +99,7 @@ const RowIndex kInvalidRow(-1);
 const ColIndex kInvalidCol(-1);
 
 // Different statuses for a given problem.
-enum class ProblemStatus : int8 {
+enum class ProblemStatus : int8_t {
   // The problem has been solved to optimality. Both the primal and dual have
   // a feasible solution.
   OPTIMAL,
@@ -171,7 +172,7 @@ inline std::ostream& operator<<(std::ostream& os, ProblemStatus status) {
 }
 
 // Different types of variables.
-enum class VariableType : int8 {
+enum class VariableType : int8_t {
   UNCONSTRAINED,
   LOWER_BOUNDED,
   UPPER_BOUNDED,
@@ -193,7 +194,7 @@ inline std::ostream& operator<<(std::ostream& os, VariableType type) {
 // execution of the revised simplex algorithm, except that because of
 // bound-shifting, the variable may not be at their exact bounds until the
 // shifts are removed.
-enum class VariableStatus : int8 {
+enum class VariableStatus : int8_t {
   // The basic status is special and takes precedence over all the other
   // statuses. It means that the variable is part of the basis.
   BASIC,
@@ -207,6 +208,9 @@ enum class VariableStatus : int8 {
   AT_UPPER_BOUND,
   // Only possible status of an UNCONSTRAINED non-basic variable.
   // Its value should be zero.
+  //
+  // Note that during crossover, this status is relaxed, and any variable that
+  // can currently move in both directions can be marked as free.
   FREE,
 };
 
@@ -224,7 +228,7 @@ inline std::ostream& operator<<(std::ostream& os, VariableStatus status) {
 // VariableStatus of the slack variable associated to a constraint modulo a
 // change of sign. The difference is that because of precision error, a
 // constraint activity cannot exactly be equal to one of its bounds or to zero.
-enum class ConstraintStatus : int8 {
+enum class ConstraintStatus : int8_t {
   BASIC,
   FIXED_VALUE,
   AT_LOWER_BOUND,
@@ -251,7 +255,7 @@ ConstraintStatus VariableToConstraintStatus(VariableStatus status);
 template <typename IntType, typename T>
 class StrictITIVector : public absl::StrongVector<IntType, T> {
  public:
-  typedef IntType IndexType;  // g++ 4.8.1 needs this.
+  typedef IntType IndexType;
   typedef absl::StrongVector<IntType, T> ParentType;
 // This allows for brace initialization, which is really useful in tests.
 // It is not 'explicit' by design, so one can do vector = {...};
@@ -376,7 +380,7 @@ class VectorIterator : EntryType {
 // This is used during the deterministic time computation to convert a given
 // number of floating-point operations to something in the same order of
 // magnitude as a second (on a 2014 desktop).
-static inline double DeterministicTimeForFpOperations(int64 n) {
+static inline double DeterministicTimeForFpOperations(int64_t n) {
   const double kConversionFactor = 2e-9;
   return kConversionFactor * static_cast<double>(n);
 }

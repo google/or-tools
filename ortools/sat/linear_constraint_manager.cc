@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,6 +19,7 @@
 #include <utility>
 
 #include "absl/container/flat_hash_set.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/linear_constraint.h"
 
@@ -42,29 +43,38 @@ size_t ComputeHashOfTerms(const LinearConstraint& ct) {
 
 }  // namespace
 
-LinearConstraintManager::~LinearConstraintManager() {
+std::string LinearConstraintManager::Statistics() const {
+  std::string result;
+  absl::StrAppend(&result, "  managed constraints: ", constraint_infos_.size(),
+                  "\n");
   if (num_merged_constraints_ > 0) {
-    VLOG(2) << "num_merged_constraints: " << num_merged_constraints_;
+    absl::StrAppend(&result, "  merged constraints: ", num_merged_constraints_,
+                    "\n");
   }
   if (num_shortened_constraints_ > 0) {
-    VLOG(2) << "num_shortened_constraints: " << num_shortened_constraints_;
+    absl::StrAppend(
+        &result, "  shortened constraints: ", num_shortened_constraints_, "\n");
   }
   if (num_splitted_constraints_ > 0) {
-    VLOG(2) << "num_splitted_constraints: " << num_splitted_constraints_;
+    absl::StrAppend(
+        &result, "  splitted constraints: ", num_splitted_constraints_, "\n");
   }
   if (num_coeff_strenghtening_ > 0) {
-    VLOG(2) << "num_coeff_strenghtening: " << num_coeff_strenghtening_;
+    absl::StrAppend(&result,
+                    "  coefficient strenghtenings: ", num_coeff_strenghtening_,
+                    "\n");
   }
-  if (sat_parameters_.log_search_progress() && num_cuts_ > 0) {
-    LOG(INFO) << "Total cuts added: " << num_cuts_ << " (out of "
-              << num_add_cut_calls_ << " calls) worker: '" << model_->Name()
-              << "'";
-    LOG(INFO) << "Num simplifications: " << num_simplifications_;
-    for (const auto& entry : type_to_num_cuts_) {
-      LOG(INFO) << "Added " << entry.second << " cuts of type '" << entry.first
-                << "'.";
-    }
+  if (num_simplifications_ > 0) {
+    absl::StrAppend(&result, "  num simplifications: ", num_simplifications_,
+                    "\n");
   }
+  absl::StrAppend(&result, "  total cuts added: ", num_cuts_, " (out of ",
+                  num_add_cut_calls_, " calls)\n");
+  for (const auto& entry : type_to_num_cuts_) {
+    absl::StrAppend(&result, "    - '", entry.first, "': ", entry.second, "\n");
+  }
+  if (!result.empty()) result.pop_back();  // Remove last \n.
+  return result;
 }
 
 void LinearConstraintManager::RescaleActiveCounts(const double scaling_factor) {
@@ -169,11 +179,7 @@ void LinearConstraintManager::ComputeObjectiveParallelism(
   CHECK(objective_is_defined_);
   // lazy computation of objective norm.
   if (!objective_norm_computed_) {
-    double sum = 0.0;
-    for (const double coeff : dense_objective_coeffs_) {
-      sum += coeff * coeff;
-    }
-    objective_l2_norm_ = std::sqrt(sum);
+    objective_l2_norm_ = std::sqrt(sum_of_squared_objective_coeffs_);
     objective_norm_computed_ = true;
   }
   CHECK_GT(objective_l2_norm_, 0.0);
@@ -188,11 +194,9 @@ void LinearConstraintManager::ComputeObjectiveParallelism(
   double unscaled_objective_parallelism = 0.0;
   for (int i = 0; i < lc.vars.size(); ++i) {
     const IntegerVariable var = lc.vars[i];
-    DCHECK(VariableIsPositive(var));
-    if (var < dense_objective_coeffs_.size()) {
-      unscaled_objective_parallelism +=
-          ToDouble(lc.coeffs[i]) * dense_objective_coeffs_[var];
-    }
+    const auto it = objective_map_.find(var);
+    if (it == objective_map_.end()) continue;
+    unscaled_objective_parallelism += it->second * ToDouble(lc.coeffs[i]);
   }
   const double objective_parallelism =
       unscaled_objective_parallelism /
@@ -306,10 +310,11 @@ void LinearConstraintManager::SetObjectiveCoefficient(IntegerVariable var,
     var = NegationOf(var);
     coeff = -coeff;
   }
-  if (var.value() >= dense_objective_coeffs_.size()) {
-    dense_objective_coeffs_.resize(var.value() + 1, 0.0);
-  }
-  dense_objective_coeffs_[var] = ToDouble(coeff);
+  const double coeff_as_double = ToDouble(coeff);
+  const auto insert = objective_map_.insert({var, coeff_as_double});
+  CHECK(insert.second)
+      << "SetObjectiveCoefficient() called twice with same variable";
+  sum_of_squared_objective_coeffs_ += coeff_as_double * coeff_as_double;
 }
 
 bool LinearConstraintManager::SimplifyConstraint(LinearConstraint* ct) {
