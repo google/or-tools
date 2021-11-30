@@ -66,8 +66,8 @@ if(BUILD_absl)
   FetchContent_Declare(
     absl
     GIT_REPOSITORY "https://github.com/abseil/abseil-cpp.git"
-    GIT_TAG "20210324.2"
-    PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/abseil-cpp-20210324.2.patch")
+    GIT_TAG "20211102.0"
+    PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/abseil-cpp-20211102.0.patch")
   FetchContent_MakeAvailable(absl)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
   message(CHECK_PASS "fetched")
@@ -87,17 +87,17 @@ if(BUILD_Protobuf)
     FetchContent_Declare(
       protobuf
       GIT_REPOSITORY "https://github.com/protocolbuffers/protobuf.git"
-      GIT_TAG "v3.18.0"
+      GIT_TAG "v3.19.1"
       GIT_SUBMODULES ""
-      PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/protobuf-v3.18.0.patch"
+      PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/protobuf-v3.19.1.patch"
       SOURCE_SUBDIR cmake)
     FetchContent_MakeAvailable(protobuf)
   else()
     fetch_git_dependency(
       NAME Protobuf
       REPOSITORY "https://github.com/protocolbuffers/protobuf.git"
-      TAG "v3.18.0"
-      PATCH_COMMAND "git apply --ignore-whitespace \"${CMAKE_CURRENT_LIST_DIR}/../../patches/protobuf-v3.18.0.patch\""
+      TAG "v3.19.1"
+      PATCH_COMMAND "git apply --ignore-whitespace \"${CMAKE_CURRENT_LIST_DIR}/../../patches/protobuf-v3.19.1.patch\""
       SOURCE_SUBDIR cmake
       )
   endif()
