@@ -15,7 +15,9 @@
 // Example of a simple nurse scheduling problem.
 // [START import]
 #include <atomic>
+#include <map>
 #include <numeric>
+#include <tuple>
 #include <vector>
 
 #include "absl/strings/str_format.h"
