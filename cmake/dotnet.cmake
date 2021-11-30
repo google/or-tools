@@ -122,22 +122,27 @@ configure_file(ortools/dotnet/Directory.Build.props.in dotnet/Directory.Build.pr
 ############################
 # Build or retrieve .snk file
 if(DEFINED ENV{DOTNET_SNK})
-  add_custom_command(OUTPUT dotnet/or-tools.snk
+  add_custom_command(
+    OUTPUT ${PROJECT_BINARY_DIR}/dotnet/or-tools.snk
     COMMAND ${CMAKE_COMMAND} -E copy $ENV{DOTNET_SNK} .
     COMMENT "Copy or-tools.snk from ENV:DOTNET_SNK"
     WORKING_DIRECTORY dotnet
     VERBATIM
     )
 else()
-  set(OR_TOOLS_DOTNET_SNK CreateSigningKey)
-  add_custom_command(OUTPUT dotnet/or-tools.snk
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${PROJECT_SOURCE_DIR}/ortools/dotnet/${OR_TOOLS_DOTNET_SNK} ${OR_TOOLS_DOTNET_SNK}
+  set(DOTNET_SNK_PROJECT CreateSigningKey)
+  set(DOTNET_SNK_PROJECT_PATH ${PROJECT_BINARY_DIR}/dotnet/${DOTNET_SNK_PROJECT})
+  add_custom_command(
+    OUTPUT ${PROJECT_BINARY_DIR}/dotnet/or-tools.snk
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+      ${PROJECT_SOURCE_DIR}/ortools/dotnet/${DOTNET_SNK_PROJECT}
+      ${DOTNET_SNK_PROJECT}
     COMMAND ${DOTNET_EXECUTABLE} run
-    --project ${OR_TOOLS_DOTNET_SNK}/${OR_TOOLS_DOTNET_SNK}.csproj
+    --project ${DOTNET_SNK_PROJECT}/${DOTNET_SNK_PROJECT}.csproj
     /or-tools.snk
     BYPRODUCTS
-      dotnet/${OR_TOOLS_DOTNET_SNK}/bin
-      dotnet/${OR_TOOLS_DOTNET_SNK}/obj
+      ${DOTNET_SNK_PROJECT_PATH}/bin
+      ${DOTNET_SNK_PROJECT_PATH}/obj
     COMMENT "Generate or-tools.snk using CreateSigningKey project"
     WORKING_DIRECTORY dotnet
     VERBATIM
@@ -148,89 +153,92 @@ endif()
 ##  .Net Runtime Package  ##
 ############################
 message(STATUS ".Net runtime project: ${DOTNET_NATIVE_PROJECT}")
-set(DOTNET_NATIVE_PATH ${PROJECT_BINARY_DIR}/dotnet/${DOTNET_NATIVE_PROJECT})
-message(STATUS ".Net runtime project build path: ${DOTNET_NATIVE_PATH}")
+set(DOTNET_NATIVE_PROJECT_PATH ${PROJECT_BINARY_DIR}/dotnet/${DOTNET_NATIVE_PROJECT})
+message(STATUS ".Net runtime project build path: ${DOTNET_NATIVE_PROJECT_PATH}")
+
+file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/dotnet/packages)
 
 # *.csproj.in contains:
 # CMake variable(s) (@PROJECT_NAME@) that configure_file() can manage and
 # generator expression ($<TARGET_FILE:...>) that file(GENERATE) can manage.
 configure_file(
   ${PROJECT_SOURCE_DIR}/ortools/dotnet/${DOTNET_PACKAGE}.runtime.csproj.in
-  ${DOTNET_NATIVE_PATH}/${DOTNET_NATIVE_PROJECT}.csproj.in
+  ${DOTNET_NATIVE_PROJECT_PATH}/${DOTNET_NATIVE_PROJECT}.csproj.in
   @ONLY)
 file(GENERATE
-  OUTPUT ${DOTNET_NATIVE_PATH}/$<CONFIG>/${DOTNET_NATIVE_PROJECT}.csproj.in
-  INPUT ${DOTNET_NATIVE_PATH}/${DOTNET_NATIVE_PROJECT}.csproj.in)
+  OUTPUT ${DOTNET_NATIVE_PROJECT_PATH}/$<CONFIG>/${DOTNET_NATIVE_PROJECT}.csproj.in
+  INPUT ${DOTNET_NATIVE_PROJECT_PATH}/${DOTNET_NATIVE_PROJECT}.csproj.in)
 
 add_custom_command(
-  OUTPUT ${DOTNET_NATIVE_PATH}/${DOTNET_NATIVE_PROJECT}.csproj
-  DEPENDS ${DOTNET_NATIVE_PATH}/$<CONFIG>/${DOTNET_NATIVE_PROJECT}.csproj.in
+  OUTPUT ${DOTNET_NATIVE_PROJECT_PATH}/${DOTNET_NATIVE_PROJECT}.csproj
+  DEPENDS ${DOTNET_NATIVE_PROJECT_PATH}/$<CONFIG>/${DOTNET_NATIVE_PROJECT}.csproj.in
   COMMAND ${CMAKE_COMMAND} -E copy ./$<CONFIG>/${DOTNET_NATIVE_PROJECT}.csproj.in ${DOTNET_NATIVE_PROJECT}.csproj
-  WORKING_DIRECTORY ${DOTNET_NATIVE_PATH}
+  WORKING_DIRECTORY ${DOTNET_NATIVE_PROJECT_PATH}
 )
 
-#if(WIN32)
-#add_custom_command(
-#  OUTPUT dotnet/${DOTNET_NATIVE_PROJECT}/${DOTNET_NATIVE_PROJECT}.targets
-#  COMMAND ${CMAKE_COMMAND} -E make_directory ${DOTNET_NATIVE_PROJECT}
-#  COMMAND ${CMAKE_COMMAND} -E copy
-#    ${PROJECT_SOURCE_DIR}/ortools/dotnet/${DOTNET_NATIVE_PROJECT}/${DOTNET_NATIVE_PROJECT}.targets
-#    ${DOTNET_NATIVE_PROJECT}/${DOTNET_NATIVE_PROJECT}.targets
-#  WORKING_DIRECTORY dotnet
-#  )
-#  set(DOTNET_TARGETS dotnet/${DOTNET_NATIVE_PROJECT}/${DOTNET_NATIVE_PROJECT}.targets)
-#endif()
+add_custom_command(
+  OUTPUT ${DOTNET_NATIVE_PROJECT_PATH}/timestamp
+  COMMAND ${DOTNET_EXECUTABLE} build -c Release /p:Platform=x64 ${DOTNET_NATIVE_PROJECT}.csproj
+  COMMAND ${DOTNET_EXECUTABLE} pack -c Release ${DOTNET_NATIVE_PROJECT}.csproj
+  COMMAND ${CMAKE_COMMAND} -E touch ${DOTNET_NATIVE_PROJECT_PATH}/timestamp
+  DEPENDS
+    ${DOTNET_NATIVE_PROJECT_PATH}/${DOTNET_NATIVE_PROJECT}.csproj
+    ${PROJECT_BINARY_DIR}/dotnet/or-tools.snk
+    Dotnet${PROJECT_NAME}_proto
+    google-ortools-native
+  BYPRODUCTS
+    ${DOTNET_NATIVE_PROJECT_PATH}/bin
+    ${DOTNET_NATIVE_PROJECT_PATH}/obj
+  COMMENT "Generate .Net native package ${DOTNET_NATIVE_PROJECT} (${DOTNET_NATIVE_PROJECT_PATH}/timestamp)"
+  WORKING_DIRECTORY ${DOTNET_NATIVE_PROJECT_PATH}
+)
 
 add_custom_target(dotnet_native_package
   DEPENDS
-    dotnet/or-tools.snk
-    Dotnet${PROJECT_NAME}_proto
-    ${DOTNET_NATIVE_PATH}/${DOTNET_NATIVE_PROJECT}.csproj
-    ${DOTNET_TARGETS}
-  COMMAND ${CMAKE_COMMAND} -E make_directory packages
-  COMMAND ${DOTNET_EXECUTABLE} build -c Release /p:Platform=x64 ${DOTNET_NATIVE_PROJECT}/${DOTNET_NATIVE_PROJECT}.csproj
-  COMMAND ${DOTNET_EXECUTABLE} pack -c Release ${DOTNET_NATIVE_PROJECT}/${DOTNET_NATIVE_PROJECT}.csproj
-  BYPRODUCTS
-    dotnet/${DOTNET_NATIVE_PROJECT}/bin
-    dotnet/${DOTNET_NATIVE_PROJECT}/obj
-  WORKING_DIRECTORY dotnet
-)
-add_dependencies(dotnet_native_package google-ortools-native)
+    ${DOTNET_NATIVE_PROJECT_PATH}/timestamp
+  WORKING_DIRECTORY dotnet)
 
 ####################
 ##  .Net Package  ##
 ####################
 message(STATUS ".Net project: ${DOTNET_PROJECT}")
-set(DOTNET_PATH ${PROJECT_BINARY_DIR}/dotnet/${DOTNET_PROJECT})
-message(STATUS ".Net project build path: ${DOTNET_PATH}")
+set(DOTNET_PROJECT_PATH ${PROJECT_BINARY_DIR}/dotnet/${DOTNET_PROJECT})
+message(STATUS ".Net project build path: ${DOTNET_PROJECT_PATH}")
 
 set(PROJECT_DOTNET_DIR ${PROJECT_BINARY_DIR}/dotnet)
 
 configure_file(
   ${PROJECT_SOURCE_DIR}/ortools/dotnet/${DOTNET_PROJECT}.csproj.in
-  ${DOTNET_PATH}/${DOTNET_PROJECT}.csproj.in
+  ${DOTNET_PROJECT_PATH}/${DOTNET_PROJECT}.csproj.in
   @ONLY)
 
 add_custom_command(
-  OUTPUT ${DOTNET_PATH}/${DOTNET_PROJECT}.csproj
-  DEPENDS ${DOTNET_PATH}/${DOTNET_PROJECT}.csproj.in
+  OUTPUT ${DOTNET_PROJECT_PATH}/${DOTNET_PROJECT}.csproj
+  DEPENDS ${DOTNET_PROJECT_PATH}/${DOTNET_PROJECT}.csproj.in
   COMMAND ${CMAKE_COMMAND} -E copy ${DOTNET_PROJECT}.csproj.in ${DOTNET_PROJECT}.csproj
-  WORKING_DIRECTORY ${DOTNET_PATH}
+  WORKING_DIRECTORY ${DOTNET_PROJECT_PATH}
+)
+
+add_custom_command(
+  OUTPUT ${DOTNET_PROJECT_PATH}/timestamp
+  COMMAND ${DOTNET_EXECUTABLE} build -c Release /p:Platform=x64 ${DOTNET_PROJECT}.csproj
+  COMMAND ${DOTNET_EXECUTABLE} pack -c Release ${DOTNET_PROJECT}.csproj
+  COMMAND ${CMAKE_COMMAND} -E touch ${DOTNET_PROJECT_PATH}/timestamp
+  DEPENDS
+    ${PROJECT_BINARY_DIR}/dotnet/or-tools.snk
+    ${DOTNET_PROJECT_PATH}/${DOTNET_PROJECT}.csproj
+    dotnet_native_package
+  BYPRODUCTS
+    dotnet/${DOTNET_PROJECT}/bin
+    dotnet/${DOTNET_PROJECT}/obj
+  COMMENT "Generate .Net package ${DOTNET_PROJECT} (${DOTNET_PROJECT_PATH}/timestamp)"
+  WORKING_DIRECTORY ${DOTNET_PROJECT_PATH}
 )
 
 add_custom_target(dotnet_package ALL
   DEPENDS
-    dotnet/or-tools.snk
-    ${DOTNET_PATH}/${DOTNET_PROJECT}.csproj
-  COMMAND ${DOTNET_EXECUTABLE} build -c Release /p:Platform=x64 ${DOTNET_PROJECT}/${DOTNET_PROJECT}.csproj
-  COMMAND ${DOTNET_EXECUTABLE} pack -c Release ${DOTNET_PROJECT}/${DOTNET_PROJECT}.csproj
-  BYPRODUCTS
-    dotnet/${DOTNET_PROJECT}/bin
-    dotnet/${DOTNET_PROJECT}/obj
-    dotnet/packages
-  WORKING_DIRECTORY dotnet
-)
-add_dependencies(dotnet_package dotnet_native_package)
+    ${DOTNET_PROJECT_PATH}/timestamp
+  WORKING_DIRECTORY dotnet)
 
 #################
 ##  .Net Test  ##
@@ -264,16 +272,24 @@ function(add_dotnet_test FILE_NAME)
     ${DOTNET_TEST_PATH}/${TEST_NAME}.csproj
     @ONLY)
 
-  add_custom_target(dotnet_${COMPONENT_NAME}_${TEST_NAME} ALL
+  add_custom_command(
+    OUTPUT ${DOTNET_TEST_PATH}/timestamp
+    COMMAND ${DOTNET_EXECUTABLE} build -c Release
+    COMMAND ${CMAKE_COMMAND} -E touch ${DOTNET_TEST_PATH}/timestamp
     DEPENDS
       ${DOTNET_TEST_PATH}/${TEST_NAME}.csproj
       ${DOTNET_TEST_PATH}/${TEST_NAME}.cs
-    COMMAND ${DOTNET_EXECUTABLE} build -c Release
+      dotnet_package
     BYPRODUCTS
       ${DOTNET_TEST_PATH}/bin
       ${DOTNET_TEST_PATH}/obj
+      COMMENT "Compiling .Net ${COMPONENT_NAME}/${TEST_NAME}.cs (${DOTNET_TEST_PATH}/timestamp)"
     WORKING_DIRECTORY ${DOTNET_TEST_PATH})
-  add_dependencies(dotnet_${COMPONENT_NAME}_${TEST_NAME} dotnet_package)
+
+  add_custom_target(dotnet_${COMPONENT_NAME}_${TEST_NAME} ALL
+    DEPENDS
+      ${DOTNET_TEST_PATH}/timestamp
+    WORKING_DIRECTORY dotnet)
 
   if(BUILD_TESTING)
     add_test(
@@ -317,17 +333,25 @@ function(add_dotnet_sample FILE_NAME)
     ${DOTNET_SAMPLE_PATH}/${SAMPLE_NAME}.csproj
     @ONLY)
 
-  add_custom_target(dotnet_${COMPONENT_NAME}_${SAMPLE_NAME} ALL
+  add_custom_command(
+    OUTPUT ${DOTNET_SAMPLE_PATH}/timestamp
+    COMMAND ${DOTNET_EXECUTABLE} build -c Release
+    COMMAND ${DOTNET_EXECUTABLE} pack -c Release
+    COMMAND ${CMAKE_COMMAND} -E touch ${DOTNET_SAMPLE_PATH}/timestamp
     DEPENDS
       ${DOTNET_SAMPLE_PATH}/${SAMPLE_NAME}.csproj
       ${DOTNET_SAMPLE_PATH}/${SAMPLE_NAME}.cs
-    COMMAND ${DOTNET_EXECUTABLE} build -c Release
-    COMMAND ${DOTNET_EXECUTABLE} pack -c Release
+      dotnet_package
     BYPRODUCTS
       ${DOTNET_SAMPLE_PATH}/bin
       ${DOTNET_SAMPLE_PATH}/obj
+    COMMENT "Compiling .Net ${COMPONENT_NAME}/${SAMPLE_NAME}.cs (${DOTNET_SAMPLE_PATH}/timestamp)"
     WORKING_DIRECTORY ${DOTNET_SAMPLE_PATH})
-  add_dependencies(dotnet_${COMPONENT_NAME}_${SAMPLE_NAME} dotnet_package)
+
+  add_custom_target(dotnet_${COMPONENT_NAME}_${SAMPLE_NAME} ALL
+    DEPENDS
+      ${DOTNET_SAMPLE_PATH}/timestamp
+    WORKING_DIRECTORY dotnet)
 
   if(BUILD_TESTING)
     add_test(
@@ -371,17 +395,25 @@ function(add_dotnet_example FILE_NAME)
     ${DOTNET_EXAMPLE_PATH}/${EXAMPLE_NAME}.csproj
     @ONLY)
 
-  add_custom_target(dotnet_${COMPONENT_NAME}_${EXAMPLE_NAME} ALL
+  add_custom_command(
+    OUTPUT ${DOTNET_EXAMPLE_PATH}/timestamp
+    COMMAND ${DOTNET_EXECUTABLE} build -c Release
+    COMMAND ${DOTNET_EXECUTABLE} pack -c Release
+    COMMAND ${CMAKE_COMMAND} -E touch ${DOTNET_EXAMPLE_PATH}/timestamp
     DEPENDS
       ${DOTNET_EXAMPLE_PATH}/${EXAMPLE_NAME}.csproj
       ${DOTNET_EXAMPLE_PATH}/${EXAMPLE_NAME}.cs
-    COMMAND ${DOTNET_EXECUTABLE} build -c Release
-    COMMAND ${DOTNET_EXECUTABLE} pack -c Release
+      dotnet_package
     BYPRODUCTS
       ${DOTNET_EXAMPLE_PATH}/bin
       ${DOTNET_EXAMPLE_PATH}/obj
+      COMMENT "Compiling .Net ${COMPONENT_NAME}/${EXAMPLE_NAME}.cs (${DOTNET_EXAMPLE_PATH}/timestamp)"
     WORKING_DIRECTORY ${DOTNET_EXAMPLE_PATH})
-  add_dependencies(dotnet_${COMPONENT_NAME}_${EXAMPLE_NAME} dotnet_package)
+
+  add_custom_target(dotnet_${COMPONENT_NAME}_${EXAMPLE_NAME} ALL
+    DEPENDS
+      ${DOTNET_EXAMPLE_PATH}/timestamp
+    WORKING_DIRECTORY dotnet)
 
   if(BUILD_TESTING)
     add_test(
