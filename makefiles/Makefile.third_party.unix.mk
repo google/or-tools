@@ -20,8 +20,8 @@ UNIX_SWIG_BINARY ?= swig
 PROTOC_BINARY := $(shell $(WHICH) ${UNIX_PROTOC_BINARY})
 
 # Tags of dependencies to checkout.
-PROTOBUF_TAG = v3.19.1
-ABSL_TAG = 20211102.0
+PROTOBUF_TAG = v3.18.0
+ABSL_TAG = 20210324.2
 CBC_TAG = 2.10.5
 CGL_TAG = 0.60.3
 # Clp >= 1.17.5 is broken, so we must keep 1.17.4
