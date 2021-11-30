@@ -117,6 +117,32 @@ void NeighborhoodGeneratorHelper::Synchronize() {
   }
 }
 
+bool NeighborhoodGeneratorHelper::ObjectiveDomainIsConstraining() const {
+  if (!model_proto_.has_objective()) return false;
+  if (model_proto_.objective().domain().empty()) return false;
+
+  int64_t min_activity = 0;
+  int64_t max_activity = 0;
+  const int num_terms = model_proto_.objective().vars().size();
+  for (int i = 0; i < num_terms; ++i) {
+    const int var = PositiveRef(model_proto_.objective().vars(i));
+    const int64_t coeff = model_proto_.objective().coeffs(i);
+    const auto& var_domain =
+        model_proto_with_only_variables_.variables(var).domain();
+    const int64_t v1 = coeff * var_domain[0];
+    const int64_t v2 = coeff * var_domain[var_domain.size() - 1];
+    min_activity += std::min(v1, v2);
+    max_activity += std::max(v1, v2);
+  }
+
+  const Domain obj_domain = ReadDomainFromProto(model_proto_.objective());
+  const Domain inferred_domain =
+      Domain(min_activity, max_activity)
+          .IntersectionWith(
+              Domain(std::numeric_limits<int64_t>::min(), obj_domain.Max()));
+  return !inferred_domain.IsIncludedIn(obj_domain);
+}
+
 void NeighborhoodGeneratorHelper::InitializeHelperData() {
   type_to_constraints_.clear();
   const int num_constraints = model_proto_.constraints_size();
@@ -231,6 +257,16 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
     if (var_in_constraint.size() <= 1) continue;
     for (int i = 1; i < var_in_constraint.size(); ++i) {
       union_find.AddEdge(var_in_constraint[0], var_in_constraint[i]);
+    }
+  }
+
+  // If we have a lower bound on the objective, then this "objective constraint"
+  // might link components together.
+  if (ObjectiveDomainIsConstraining()) {
+    const auto& refs = model_proto_.objective().vars();
+    const int num_terms = refs.size();
+    for (int i = 1; i < num_terms; ++i) {
+      union_find.AddEdge(PositiveRef(refs[0]), PositiveRef(refs[i]));
     }
   }
 

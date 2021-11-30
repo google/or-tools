@@ -225,6 +225,11 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   // Indicates if a variable is fixed in the model.
   bool IsConstant(int var) const ABSL_SHARED_LOCKS_REQUIRED(domain_mutex_);
 
+  // Returns true if the domain on the objective is constraining and we might
+  // get a lower objective value at optimum without it.
+  bool ObjectiveDomainIsConstraining() const
+      ABSL_SHARED_LOCKS_REQUIRED(domain_mutex_);
+
   const SatParameters& parameters_;
   const CpModelProto& model_proto_;
   int shared_bounds_id_;
