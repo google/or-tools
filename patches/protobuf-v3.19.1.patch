@@ -1,5 +1,5 @@
 diff --git a/cmake/CMakeLists.txt b/cmake/CMakeLists.txt
-index 5c3b6e451..ad8e671aa 100644
+index 51e8478f6..0b18ea348 100644
 --- a/cmake/CMakeLists.txt
 +++ b/cmake/CMakeLists.txt
 @@ -15,6 +15,14 @@ endif ()
@@ -14,10 +14,10 @@ index 5c3b6e451..ad8e671aa 100644
 +if(POLICY CMP0077)
 +	cmake_policy(SET CMP0077 NEW)
 +endif()
- 
- # Project
- project(protobuf C CXX)
-@@ -53,7 +61,7 @@ else (BUILD_SHARED_LIBS)
+ # MSVC runtime library flags are selected by an abstraction.
+ if(POLICY CMP0091)
+   cmake_policy(SET CMP0091 NEW)
+@@ -57,7 +65,7 @@ else (BUILD_SHARED_LIBS)
  endif (BUILD_SHARED_LIBS)
  option(protobuf_BUILD_SHARED_LIBS "Build Shared Libraries" ${protobuf_BUILD_SHARED_LIBS_DEFAULT})
  include(CMakeDependentOption)
@@ -26,7 +26,7 @@ index 5c3b6e451..ad8e671aa 100644
    "NOT protobuf_BUILD_SHARED_LIBS" OFF)
  set(protobuf_WITH_ZLIB_DEFAULT ON)
  option(protobuf_WITH_ZLIB "Build with zlib support" ${protobuf_WITH_ZLIB_DEFAULT})
-@@ -129,24 +137,16 @@ endif (CMAKE_USE_PTHREADS_INIT)
+@@ -130,24 +138,16 @@ find_package(Threads REQUIRED)
  
  set(_protobuf_FIND_ZLIB)
  if (protobuf_WITH_ZLIB)
@@ -61,7 +61,7 @@ index 5c3b6e451..ad8e671aa 100644
  endif (protobuf_WITH_ZLIB)
  
  if (HAVE_ZLIB)
-@@ -236,7 +236,6 @@ endif (MSVC)
+@@ -251,7 +251,6 @@ endif (MSVC)
  get_filename_component(protobuf_source_dir ${protobuf_SOURCE_DIR} PATH)
  
  include_directories(
@@ -70,10 +70,10 @@ index 5c3b6e451..ad8e671aa 100644
    ${protobuf_source_dir}/src)
  
 diff --git a/cmake/install.cmake b/cmake/install.cmake
-index ef5bb1306..c136c74db 100644
+index 4e1c5deb3..59a730d24 100644
 --- a/cmake/install.cmake
 +++ b/cmake/install.cmake
-@@ -126,17 +126,19 @@ configure_file(protobuf-options.cmake
+@@ -125,17 +125,19 @@ configure_file(protobuf-options.cmake
  
  # Allows the build directory to be used as a find directory.
  
