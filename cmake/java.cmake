@@ -242,11 +242,14 @@ function(add_java_test FILE_NAME)
 
   set(TEST_PATH ${PROJECT_BINARY_DIR}/java/${COMPONENT_NAME}/${TEST_NAME})
   message(STATUS "build path: ${TEST_PATH}")
-  file(MAKE_DIRECTORY ${TEST_PATH}/${JAVA_TEST_PATH})
 
   add_custom_command(
     OUTPUT ${TEST_PATH}/${JAVA_TEST_PATH}/${TEST_NAME}.java
-    COMMAND ${CMAKE_COMMAND} -E copy ${FILE_NAME} ${TEST_PATH}/${JAVA_TEST_PATH}
+    COMMAND ${CMAKE_COMMAND} -E make_directory
+      ${TEST_PATH}/${JAVA_TEST_PATH}
+    COMMAND ${CMAKE_COMMAND} -E copy
+      ${FILE_NAME}
+      ${TEST_PATH}/${JAVA_TEST_PATH}/
     MAIN_DEPENDENCY ${FILE_NAME}
     VERBATIM
   )
@@ -264,7 +267,6 @@ function(add_java_test FILE_NAME)
     DEPENDS
       ${TEST_PATH}/pom.xml
       ${TEST_PATH}/${JAVA_TEST_PATH}/${TEST_NAME}.java
-      #${PROJECT_BINARY_DIR}/java/${JAVA_PROJECT}/timestamp
       java_package
     BYPRODUCTS
       ${TEST_PATH}/target
@@ -304,12 +306,14 @@ function(add_java_sample FILE_NAME)
 
   set(SAMPLE_PATH ${PROJECT_BINARY_DIR}/java/${COMPONENT_NAME}/${SAMPLE_NAME})
   message(STATUS "build path: ${SAMPLE_PATH}")
-  file(MAKE_DIRECTORY ${SAMPLE_PATH}/${JAVA_PACKAGE_PATH})
 
   add_custom_command(
-    OUTPUT ${SAMPLE_PATH}/${JAVA_PACKAGE_PATH}/${SAMPLE_NAME}.java
-    COMMAND ${CMAKE_COMMAND} -E copy ${FILE_NAME} ${SAMPLE_PATH}/${JAVA_PACKAGE_PATH}
-    #COMMAND ${CMAKE_COMMAND} -E touch ${SAMPLE_PATH}/${JAVA_PACKAGE_PATH}/${SAMPLE_NAME}.java
+    OUTPUT ${SAMPLE_PATH}/${JAVA_PACKAGE_PATH}/${COMPONENT_NAME_LOWER}/samples/${SAMPLE_NAME}.java
+    COMMAND ${CMAKE_COMMAND} -E make_directory
+      ${SAMPLE_PATH}/${JAVA_PACKAGE_PATH}/${COMPONENT_NAME_LOWER}/samples
+    COMMAND ${CMAKE_COMMAND} -E copy
+      ${FILE_NAME}
+      ${SAMPLE_PATH}/${JAVA_PACKAGE_PATH}/${COMPONENT_NAME_LOWER}/samples/
     MAIN_DEPENDENCY ${FILE_NAME}
     VERBATIM
   )
@@ -324,13 +328,11 @@ function(add_java_sample FILE_NAME)
 
   add_custom_command(
     OUTPUT ${SAMPLE_PATH}/timestamp
-    COMMAND ${CMAKE_COMMAND} -E echo "compiling ${SAMPLE_NAME}.java"
-    #COMMAND ${MAVEN_EXECUTABLE} compile -B
+    COMMAND ${MAVEN_EXECUTABLE} compile -B
     COMMAND ${CMAKE_COMMAND} -E touch ${SAMPLE_PATH}/timestamp
     DEPENDS
       ${SAMPLE_PATH}/pom.xml
-      ${SAMPLE_PATH}/${JAVA_PACKAGE_PATH}/${SAMPLE_NAME}.java
-      #${PROJECT_BINARY_DIR}/java/${JAVA_PROJECT}/timestamp
+      ${SAMPLE_PATH}/${JAVA_PACKAGE_PATH}/${COMPONENT_NAME_LOWER}/samples/${SAMPLE_NAME}.java
       java_package
     BYPRODUCTS
       ${SAMPLE_PATH}/target
@@ -368,11 +370,14 @@ function(add_java_example FILE_NAME)
 
   set(EXAMPLE_PATH ${PROJECT_BINARY_DIR}/java/${COMPONENT_NAME}/${EXAMPLE_NAME})
   message(STATUS "build path: ${EXAMPLE_PATH}")
-  file(MAKE_DIRECTORY ${EXAMPLE_PATH}/${JAVA_PACKAGE_PATH})
 
   add_custom_command(
-    OUTPUT ${EXAMPLE_PATH}/${JAVA_PACKAGE_PATH}/${EXAMPLE_NAME}.java
-    COMMAND ${CMAKE_COMMAND} -E copy ${FILE_NAME} ${EXAMPLE_PATH}/${JAVA_PACKAGE_PATH}
+    OUTPUT ${EXAMPLE_PATH}/${JAVA_PACKAGE_PATH}/${COMPONENT_NAME}/${EXAMPLE_NAME}.java
+    COMMAND ${CMAKE_COMMAND} -E make_directory
+      ${EXAMPLE_PATH}/${JAVA_PACKAGE_PATH}/${COMPONENT_NAME}
+    COMMAND ${CMAKE_COMMAND} -E copy
+      ${FILE_NAME}
+      ${EXAMPLE_PATH}/${JAVA_PACKAGE_PATH}/${COMPONENT_NAME}/
     MAIN_DEPENDENCY ${FILE_NAME}
     VERBATIM
   )
@@ -391,8 +396,7 @@ function(add_java_example FILE_NAME)
     COMMAND ${CMAKE_COMMAND} -E touch ${EXAMPLE_PATH}/timestamp
     DEPENDS
       ${EXAMPLE_PATH}/pom.xml
-      ${EXAMPLE_PATH}/${JAVA_PACKAGE_PATH}/${EXAMPLE_NAME}.java
-      #${PROJECT_BINARY_DIR}/java/${JAVA_PROJECT}/timestamp
+      ${EXAMPLE_PATH}/${JAVA_PACKAGE_PATH}/${COMPONENT_NAME}/${EXAMPLE_NAME}.java
       java_package
     BYPRODUCTS
       ${EXAMPLE_PATH}/target
