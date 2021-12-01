@@ -261,7 +261,7 @@ function(add_dotnet_test FILE_NAME)
 
   add_custom_command(
     OUTPUT ${DOTNET_TEST_PATH}/${TEST_NAME}.cs
-    COMMAND ${CMAKE_COMMAND} -E copy ${FILE_NAME} ${DOTNET_TEST_PATH}
+    COMMAND ${CMAKE_COMMAND} -E copy ${FILE_NAME} ${DOTNET_TEST_PATH}/
     MAIN_DEPENDENCY ${FILE_NAME}
     VERBATIM
   )
@@ -322,7 +322,7 @@ function(add_dotnet_sample FILE_NAME)
 
   add_custom_command(
     OUTPUT ${DOTNET_SAMPLE_PATH}/${SAMPLE_NAME}.cs
-    COMMAND ${CMAKE_COMMAND} -E copy ${FILE_NAME} ${DOTNET_SAMPLE_PATH}
+    COMMAND ${CMAKE_COMMAND} -E copy ${FILE_NAME} ${DOTNET_SAMPLE_PATH}/
     MAIN_DEPENDENCY ${FILE_NAME}
     VERBATIM
   )
@@ -383,7 +383,7 @@ function(add_dotnet_example FILE_NAME)
 
   add_custom_command(
     OUTPUT ${DOTNET_EXAMPLE_PATH}/${EXAMPLE_NAME}.cs
-    COMMAND ${CMAKE_COMMAND} -E copy ${FILE_NAME} ${DOTNET_EXAMPLE_PATH}
+    COMMAND ${CMAKE_COMMAND} -E copy ${FILE_NAME} ${DOTNET_EXAMPLE_PATH}/
     MAIN_DEPENDENCY ${FILE_NAME}
     VERBATIM
   )
