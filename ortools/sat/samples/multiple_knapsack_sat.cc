@@ -12,6 +12,7 @@
 // limitations under the License.
 
 // [START program]
+// Solves a multiple knapsack problem using the CP-SAT solver.
 // [START import]
 #include <map>
 #include <numeric>
@@ -31,13 +32,12 @@ void MultipleKnapsackSat() {
       {48, 30, 42, 36, 36, 48, 42, 42, 36, 24, 30, 30, 42, 36, 36}};
   const std::vector<int> values = {
       {10, 30, 25, 50, 35, 30, 15, 40, 30, 35, 45, 10, 20, 30, 25}};
-  const int total_value = std::accumulate(values.begin(), values.end(), 0);
-  const int num_items = weights.size();
+  const int num_items = static_cast<int>(weights.size());
   std::vector<int> all_items(num_items);
   std::iota(all_items.begin(), all_items.end(), 0);
 
   const std::vector<int> bin_capacities = {{100, 100, 100, 100, 100}};
-  const int num_bins = bin_capacities.size();
+  const int num_bins = static_cast<int>(bin_capacities.size());
   std::vector<int> all_bins(num_bins);
   std::iota(all_bins.begin(), all_bins.end(), 0);
   // [END data]
@@ -53,17 +53,8 @@ void MultipleKnapsackSat() {
   for (int i : all_items) {
     for (int b : all_bins) {
       auto key = std::make_tuple(i, b);
-      x[key] = cp_model.NewBoolVar().WithName(
-          absl::StrFormat("x_%d_%d", i, b));
+      x[key] = cp_model.NewBoolVar().WithName(absl::StrFormat("x_%d_%d", i, b));
     }
-  }
-
-  // Load variables.
-  std::vector<IntVar> load(num_bins);
-  std::vector<IntVar> value(num_bins);
-  for (int b : all_bins) {
-    load[b] = cp_model.NewIntVar({0, bin_capacities[b]});
-    value[b] = cp_model.NewIntVar({0, total_value});
   }
   // [END variables]
 
@@ -119,15 +110,14 @@ void MultipleKnapsackSat() {
       for (int i : all_items) {
         auto key = std::make_tuple(i, b);
         if (SolutionIntegerValue(response, x[key]) > 0) {
-          LOG(INFO) << "Item " << i
-            << " weight: " << weights[i]
-            << " value: " << values[i];
+          LOG(INFO) << "Item " << i << " weight: " << weights[i]
+                    << " value: " << values[i];
           bin_weight += weights[i];
           bin_value += values[i];
         }
       }
       LOG(INFO) << "Packed bin weight: " << bin_weight;
-      LOG(INFO) << "Packed bin value: "  << bin_value;
+      LOG(INFO) << "Packed bin value: " << bin_value;
       total_weight += bin_weight;
     }
     LOG(INFO) << "Total packed weight: " << total_weight;

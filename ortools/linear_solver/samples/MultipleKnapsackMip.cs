@@ -12,28 +12,28 @@
 // limitations under the License.
 
 // [START program]
+// Solve a multiple knapsack problem using a MIP solver.
 // [START import]
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Google.OrTools.LinearSolver;
 // [END import]
 
 public class MultipleKnapsackMip
 {
-    // [START data_model]
-    class DataModel
-    {
-        public static double[] Weights = { 48, 30, 42, 36, 36, 48, 42, 42, 36, 24, 30, 30, 42, 36, 36 };
-        public static double[] Values = { 10, 30, 25, 50, 35, 30, 15, 40, 30, 35, 45, 10, 20, 30, 25 };
-        public double[] BinCapacities = { 100, 100, 100, 100, 100 };
-        public int NumItems = Weights.Length;
-        public int NumBins = 5;
-    }
-    // [END data_model]
-
     public static void Main()
     {
+        // Instantiate the data problem.
         // [START data]
-        DataModel data = new DataModel();
+        double[] Weights = { 48, 30, 42, 36, 36, 48, 42, 42, 36, 24, 30, 30, 42, 36, 36 };
+        double[] Values = { 10, 30, 25, 50, 35, 30, 15, 40, 30, 35, 45, 10, 20, 30, 25 };
+        int NumItems = Weights.Length;
+        int[] allItems = Enumerable.Range(0, NumItems).ToArray();
+
+        double[] BinCapacities = { 100, 100, 100, 100, 100 };
+        int NumBins = BinCapacities.Length;
+        int[] allBins = Enumerable.Range(0, NumBins).ToArray();
         // [END data]
 
         // [START solver]
@@ -41,49 +41,49 @@ public class MultipleKnapsackMip
         Solver solver = Solver.CreateSolver("SCIP");
         // [END solver]
 
-        // Variables
+        // Variables.
         // [START variables]
-        Variable[,] x = new Variable[data.NumItems, data.NumBins];
-        for (int i = 0; i < data.NumItems; i++)
+        Variable[,] x = new Variable[NumItems, NumBins];
+        foreach (int i in allItems)
         {
-            for (int b = 0; b < data.NumBins; b++)
+            foreach (int b in allBins)
             {
                 x[i, b] = solver.MakeBoolVar($"x_{i}_{b}");
             }
         }
         // [END variables]
 
-        // Constraints
+        // Constraints.
         // [START constraints]
         // Each item is assigned to at most one bin.
-        for (int i = 0; i < data.NumItems; ++i)
+        foreach (int i in allItems)
         {
             Constraint constraint = solver.MakeConstraint(0, 1, "");
-            for (int b = 0; b < data.NumBins; ++b)
+            foreach (int b in allBins)
             {
                 constraint.SetCoefficient(x[i, b], 1);
             }
         }
 
         // The amount packed in each bin cannot exceed its capacity.
-        for (int b = 0; b < data.NumBins; ++b)
+        foreach (int b in allBins)
         {
-            Constraint constraint = solver.MakeConstraint(0, data.BinCapacities[b], "");
-            for (int i = 0; i < data.NumItems; ++i)
+            Constraint constraint = solver.MakeConstraint(0, BinCapacities[b], "");
+            foreach (int i in allItems)
             {
-                constraint.SetCoefficient(x[i, b], DataModel.Weights[i]);
+                constraint.SetCoefficient(x[i, b], Weights[i]);
             }
         }
         // [END constraints]
 
-        // Objective
+        // Objective.
         // [START objective]
         Objective objective = solver.Objective();
-        for (int i = 0; i < data.NumItems; ++i)
+        foreach (int i in allItems)
         {
-            for (int b = 0; b < data.NumBins; ++b)
+            foreach (int b in allBins)
             {
-                objective.SetCoefficient(x[i, b], DataModel.Values[i]);
+                objective.SetCoefficient(x[i, b], Values[i]);
             }
         }
         objective.SetMaximization();
@@ -99,18 +99,18 @@ public class MultipleKnapsackMip
         {
             Console.WriteLine($"Total packed value: {solver.Objective().Value()}");
             double TotalWeight = 0.0;
-            for (int b = 0; b < data.NumBins; ++b)
+            foreach (int b in allBins)
             {
                 double BinWeight = 0.0;
                 double BinValue = 0.0;
                 Console.WriteLine("Bin " + b);
-                for (int i = 0; i < data.NumItems; ++i)
+                foreach (int i in allItems)
                 {
                     if (x[i, b].SolutionValue() == 1)
                     {
-                        Console.WriteLine($"Item {i} weight: {DataModel.Weights[i]} values: {DataModel.Values[i]}");
-                        BinWeight += DataModel.Weights[i];
-                        BinValue += DataModel.Values[i];
+                        Console.WriteLine($"Item {i} weight: {Weights[i]} values: {Values[i]}");
+                        BinWeight += Weights[i];
+                        BinValue += Values[i];
                     }
                 }
                 Console.WriteLine("Packed bin weight: " + BinWeight);

@@ -18,25 +18,22 @@ from ortools.sat.python import cp_model
 # [END import]
 
 
-# [START data_model]
-def create_data_model():
-    """Create the data for the example."""
+def main():
+    # [START data]
     data = {}
-    data['weights'] = [48, 30, 42, 36, 36, 48, 42, 42, 36, 24, 30, 30, 42, 36, 36]
-    data['values'] = [10, 30, 25, 50, 35, 30, 15, 40, 30, 35, 45, 10, 20, 30, 25]
+    data['weights'] = [
+        48, 30, 42, 36, 36, 48, 42, 42, 36, 24, 30, 30, 42, 36, 36
+    ]
+    data['values'] = [
+        10, 30, 25, 50, 35, 30, 15, 40, 30, 35, 45, 10, 20, 30, 25
+    ]
     assert len(data['weights']) == len(data['values'])
     data['num_items'] = len(data['weights'])
     data['all_items'] = range(data['num_items'])
+
     data['bin_capacities'] = [100, 100, 100, 100, 100]
     data['num_bins'] = len(data['bin_capacities'])
     data['all_bins'] = range(data['num_bins'])
-    return data
-# [END data_model]
-
-
-def main():
-    # [START data]
-    data = create_data_model()
     # [END data]
 
     # [START model]
@@ -71,7 +68,8 @@ def main():
     objective = []
     for i in data['all_items']:
         for b in data['all_bins']:
-            objective.append(cp_model.LinearExpr.Term(x[i, b], data['values'][i]))
+            objective.append(
+                cp_model.LinearExpr.Term(x[i, b], data['values'][i]))
     model.Maximize(cp_model.LinearExpr.Sum(objective))
     # [END objective]
 
@@ -90,7 +88,9 @@ def main():
             bin_value = 0
             for i in data['all_items']:
                 if solver.Value(x[i, b]) > 0:
-                    print(f"Item {i} weight: {data['weights'][i]} value: {data['values'][i]}")
+                    print(
+                        f"Item {i} weight: {data['weights'][i]} value: {data['values'][i]}"
+                    )
                     bin_weight += data['weights'][i]
                     bin_value += data['values'][i]
             print(f'Packed bin weight: {bin_weight}')

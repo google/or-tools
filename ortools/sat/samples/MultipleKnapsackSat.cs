@@ -12,6 +12,7 @@
 // limitations under the License.
 
 // [START program]
+// Solves a multiple knapsack problem using the CP-SAT solver.
 // [START import]
 using System;
 using System.Collections.Generic;
@@ -23,12 +24,14 @@ public class MultipleKnapsackSat
 {
     public static void Main(String[] args)
     {
+        // Instantiate the data problem.
         // [START data]
-        long[] Weights = { 48, 30, 42, 36, 36, 48, 42, 42, 36, 24, 30, 30, 42, 36, 36 };
-        long[] Values = { 10, 30, 25, 50, 35, 30, 15, 40, 30, 35, 45, 10, 20, 30, 25 };
+        int[] Weights = { 48, 30, 42, 36, 36, 48, 42, 42, 36, 24, 30, 30, 42, 36, 36 };
+        int[] Values = { 10, 30, 25, 50, 35, 30, 15, 40, 30, 35, 45, 10, 20, 30, 25 };
         int NumItems = Weights.Length;
         int[] allItems = Enumerable.Range(0, NumItems).ToArray();
-        long[] BinCapacities = { 100, 100, 100, 100, 100 };
+
+        int[] BinCapacities = { 100, 100, 100, 100, 100 };
         int NumBins = BinCapacities.Length;
         int[] allBins = Enumerable.Range(0, NumBins).ToArray();
         // [END data]
@@ -38,25 +41,25 @@ public class MultipleKnapsackSat
         CpModel model = new CpModel();
         // [END model]
 
-        // Variables
+        // Variables.
         // [START variables]
         IntVar[,] x = new IntVar[NumItems, NumBins];
-        for (int i = 0; i < NumItems; ++i)
+        foreach (int i in allItems)
         {
-            for (int j = 0; j < NumBins; ++j)
+            foreach (int b in allBins)
             {
-                x[i, j] = model.NewBoolVar($"x_{i}_{j}");
+                x[i, b] = model.NewBoolVar($"x_{i}_{b}");
             }
         }
         // [END variables]
 
-        // Constraints
+        // Constraints.
         // [START constraints]
         // Each item is assigned to at most one bin.
-        for (int i = 0; i < NumItems; ++i)
+        foreach (int i in allItems)
         {
             IntVar[] vars = new IntVar[NumBins];
-            for (int b = 0; b < NumBins; ++b)
+            foreach (int b in allBins)
             {
                 vars[b] = x[i, b];
             }
@@ -64,36 +67,35 @@ public class MultipleKnapsackSat
         }
 
         // The amount packed in each bin cannot exceed its capacity.
-        for (int b = 0; b < NumBins; ++b)
+        foreach (int b in allBins)
         {
-            LinearExpr[] exprs = new LinearExpr[NumItems];
-            for (int i = 0; i < NumItems; ++i)
+            LinearExpr[] binWeights = new LinearExpr[NumItems];
+            foreach (int i in allItems)
             {
-                exprs[i] = LinearExpr.Affine(x[i, b], /*coeff=*/Weights[i], /*offset=*/0);
+                binWeights[i] = LinearExpr.Term(x[i, b], /*coeff=*/Weights[i]);
             }
-            model.Add(LinearExpr.Sum(exprs) <= 1);
+            model.Add(LinearExpr.Sum(binWeights) <= 1);
         }
         // [END constraints]
 
-        // Objective
+        // Objective.
         // [START objective]
-        LinearExpr[] obj = new LinearExpr[NumItems * NumBins];
-        for (int i = 0; i < NumItems; ++i)
+        LinearExpr[] objective = new LinearExpr[NumItems * NumBins];
+        foreach (int i in allItems)
         {
-            for (int b = 0; b < NumBins; ++b)
+            foreach (int b in allBins)
             {
                 int k = i * NumBins + b;
-                obj[i] = LinearExpr.Affine(x[i, b], /*coeff=*/Values[i], /*offset=*/0);
+                objective[k] = LinearExpr.Term(x[i, b], /*coeff=*/Values[i]);
             }
         }
-        model.Maximize(LinearExpr.Sum(obj));
+        model.Maximize(LinearExpr.Sum(objective));
         //  [END objective]
 
         // Solve
         // [START solve]
         CpSolver solver = new CpSolver();
         CpSolverStatus status = solver.Solve(model);
-        Console.WriteLine($"Solve status: {status}");
         // [END solve]
 
         // Print solution.
@@ -103,12 +105,12 @@ public class MultipleKnapsackSat
         {
             Console.WriteLine($"Total packed value: {solver.ObjectiveValue}");
             double TotalWeight = 0.0;
-            for (int b = 0; b < NumBins; ++b)
+            foreach (int b in allBins)
             {
                 double BinWeight = 0.0;
                 double BinValue = 0.0;
                 Console.WriteLine($"Bin {b}");
-                for (int i = 0; i < NumItems; ++i)
+                foreach (int i in allItems)
                 {
                     if (solver.Value(x[i, b]) == 1)
                     {
@@ -137,5 +139,4 @@ public class MultipleKnapsackSat
         // [END statistics]
     }
 }
-
 // [END program]

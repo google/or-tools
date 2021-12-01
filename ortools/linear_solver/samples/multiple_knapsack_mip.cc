@@ -57,8 +57,7 @@ void MultipleKnapsackMip() {
       num_items, std::vector<const MPVariable*>(num_bins));
   for (int i : all_items) {
     for (int b : all_bins) {
-      x[i][b] = solver->MakeBoolVar(
-          absl::StrFormat("x_%d_%d", i, b));
+      x[i][b] = solver->MakeBoolVar(absl::StrFormat("x_%d_%d", i, b));
     }
   }
   // [END variables]
@@ -73,7 +72,6 @@ void MultipleKnapsackMip() {
     }
     solver->MakeRowConstraint(sum <= 1.0);
   }
-
   // The amount packed in each bin cannot exceed its capacity.
   for (int b : all_bins) {
     LinearExpr bin_weight;
@@ -111,9 +109,8 @@ void MultipleKnapsackMip() {
       double bin_value = 0.0;
       for (int i : all_items) {
         if (x[i][b]->solution_value() > 0) {
-          LOG(INFO) << "Item " << i
-            << " weight: " << weights[i]
-            << " value: " << values[i];
+          LOG(INFO) << "Item " << i << " weight: " << weights[i]
+                    << " value: " << values[i];
           bin_weight += weights[i];
           bin_value += values[i];
         }
