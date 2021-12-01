@@ -97,7 +97,7 @@ def main():
                     bin_weight += data['weights'][i]
                     bin_value += data['values'][i]
             print(f'Packed bin weight: {bin_weight}')
-            print(f'Packed bin value: {bin_value}')
+            print(f'Packed bin value: {bin_value}\n')
             total_weight += bin_weight
         print(f'Total packed weight: {total_weight}')
     else:
