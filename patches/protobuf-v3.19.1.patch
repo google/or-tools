@@ -61,6 +61,15 @@ index 51e8478f6..0b18ea348 100644
  endif (protobuf_WITH_ZLIB)
  
  if (HAVE_ZLIB)
+@@ -182,7 +182,7 @@ else (protobuf_BUILD_SHARED_LIBS)
+   # making programmatic control difficult.  Prefer the functionality in newer
+   # CMake versions when available.
+   if(CMAKE_VERSION VERSION_GREATER 3.15 OR CMAKE_VERSION VERSION_EQUAL 3.15)
+-    set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded$<$<CONFIG:Debug>:Debug>)
++    set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded$<$<CONFIG:Debug>:Debug>DLL)
+   else()
+     # In case we are building static libraries, link also the runtime library statically
+     # so that MSVCR*.DLL is not required at runtime.
 @@ -251,7 +251,6 @@ endif (MSVC)
  get_filename_component(protobuf_source_dir ${protobuf_SOURCE_DIR} PATH)
  
