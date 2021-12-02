@@ -5,7 +5,7 @@ set_property(SOURCE graph.i PROPERTY COMPILE_DEFINITIONS
 swig_add_library(pywrapgraph
   TYPE SHARED
   LANGUAGE python
-  OUTPUT_DIR  ${PROJECT_BINARY_DIR}/python/${PROJECT_NAME}/graph
+  OUTPUT_DIR ${PYTHON_PROJECT_DIR}/graph
   SOURCES graph.i)
 
 target_include_directories(pywrapgraph PRIVATE ${Python3_INCLUDE_DIRS})
