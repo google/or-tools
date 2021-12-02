@@ -67,25 +67,27 @@ public class MultipleKnapsackSat {
 
     // The amount packed in each bin cannot exceed its capacity.
     for (int b : allBins) {
-      IntVar[] binWeights = new IntVar[numItems];
+      IntVar[] vars = new IntVar[numItems];
       for (int i : allItems) {
-        binWeights[i] = LinearExpr.term(x[i][b], weights[i]);
+        vars[i] = x[i][b];
       }
-      model.addLessOrEqual(LinearExpr.sum(binWeights), 1);
+      model.addLessOrEqual(LinearExpr.scalProd(vars, weights), binCapacities[b]);
     }
     // [END constraints]
 
     // Objective.
     // [START objective]
     // Maximize total value of packed items.
-    IntVar[] objective = new IntVar[numItems * numBins];
+    IntVar[] objectiveVars = new IntVar[numItems * numBins];
+    int[] objectiveValues = new int[numItems * numBins];
     for (int i : allItems) {
       for (int b : allBins) {
         int k = i * numBins + b;
-        objective[k] = LinearExpr.term(x[i][b], values[i]);
+        objectiveVars[k] = x[i][b];
+        objectiveValues[k] = values[i];
       }
     }
-    model.maximize(LinearExpr.sum(objective));
+    model.maximize(LinearExpr.scalProd(objectiveVars, objectiveValues));
     // [END objective]
 
     // [START solve]

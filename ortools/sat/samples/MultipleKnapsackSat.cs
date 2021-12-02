@@ -69,27 +69,29 @@ public class MultipleKnapsackSat
         // The amount packed in each bin cannot exceed its capacity.
         foreach (int b in allBins)
         {
-            LinearExpr[] binWeights = new LinearExpr[NumItems];
+            IntVar[] vars = new IntVar[NumItems];
             foreach (int i in allItems)
             {
-                binWeights[i] = LinearExpr.Term(x[i, b], /*coeff=*/Weights[i]);
+                vars[i] = x[i, b];
             }
-            model.Add(LinearExpr.Sum(binWeights) <= 1);
+            model.Add(LinearExpr.ScalProd(vars, Weights) <= BinCapacities[b]);
         }
         // [END constraints]
 
         // Objective.
         // [START objective]
-        LinearExpr[] objective = new LinearExpr[NumItems * NumBins];
+        IntVar[] objectiveVars = new IntVar[NumItems * NumBins];
+        int[] objectiveValues = new int[NumItems * NumBins];
         foreach (int i in allItems)
         {
             foreach (int b in allBins)
             {
                 int k = i * NumBins + b;
-                objective[k] = LinearExpr.Term(x[i, b], /*coeff=*/Values[i]);
+                objectiveVars[k] = x[i, b];
+                objectiveValues[k] = Values[i];
             }
         }
-        model.Maximize(LinearExpr.Sum(objective));
+        model.Maximize(LinearExpr.ScalProd(objectiveVars, objectiveValues));
         //  [END objective]
 
         // Solve
