@@ -34,7 +34,7 @@ namespace operations_research {
     std::vector<IntVar*> queens;
     queens.reserve(board_size);
     for (int i=0; i < board_size; ++i) {
-      queens.push_back(solver.MakeIntVar(0, board_size - 1, "x"+i));
+      queens.push_back(solver.MakeIntVar(0, board_size - 1, absl::StrCat("x",i)));
     }
     // [END variables]
 
@@ -109,4 +109,3 @@ int main(int argc, char** argv) {
   return EXIT_SUCCESS;
 }
 // [END program]
-
