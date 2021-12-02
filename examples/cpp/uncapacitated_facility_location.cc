@@ -39,14 +39,14 @@ ABSL_FLAG(double, fix_cost, 5000, "Cost of opening a facility.");
 namespace operations_research {
 
 typedef struct {
-  double x{0};
-  double y{0};
+  double x = 0.0;
+  double y = 0.0;
 } Location;
 
 typedef struct {
-  int f{-1};
-  int c{-1};
-  MPVariable* x{nullptr};
+  int f = -1;
+  int c = -1;
+  MPVariable* x = nullptr;
 } Edge;
 
 static double Distance(const Location& src, const Location& dst) {
