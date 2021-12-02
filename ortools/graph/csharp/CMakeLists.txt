@@ -8,7 +8,7 @@ set_property(SOURCE graph.i PROPERTY COMPILE_OPTIONS
 swig_add_library(dotnet_graph
   TYPE OBJECT
   LANGUAGE csharp
-  OUTPUT_DIR ${PROJECT_BINARY_DIR}/dotnet/${PROJECT_NAME}/graph
+  OUTPUT_DIR ${DOTNET_PROJECT_DIR}/graph
   SOURCES graph.i)
 
 #target_include_directories(dotnet_graph PRIVATE ${DOTNET_INCLUDE_DIRS})

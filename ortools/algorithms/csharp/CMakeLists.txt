@@ -8,7 +8,7 @@ set_property(SOURCE knapsack_solver.i PROPERTY COMPILE_OPTIONS
 swig_add_library(dotnet_algorithms
   TYPE OBJECT
   LANGUAGE csharp
-  OUTPUT_DIR ${PROJECT_BINARY_DIR}/dotnet/${PROJECT_NAME}/algorithms
+  OUTPUT_DIR ${DOTNET_PROJECT_DIR}/${PROJECT_NAME}/algorithms
   SOURCES knapsack_solver.i)
 
 #target_include_directories(dotnet_algorithms PRIVATE ${DOTNET_INCLUDE_DIRS})

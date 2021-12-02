@@ -8,7 +8,7 @@ set_property(SOURCE linear_solver.i PROPERTY COMPILE_OPTIONS
 swig_add_library(dotnet_linear_solver
   TYPE OBJECT
   LANGUAGE csharp
-  OUTPUT_DIR ${PROJECT_BINARY_DIR}/dotnet/${PROJECT_NAME}/linear_solver
+  OUTPUT_DIR ${DOTNET_PROJECT_DIR}/linear_solver
   SOURCES linear_solver.i)
 
 #target_include_directories(dotnet_linear_solver PRIVATE ${DOTNET_INCLUDE_DIRS})

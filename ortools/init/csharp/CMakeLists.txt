@@ -8,7 +8,7 @@ set_property(SOURCE init.i PROPERTY COMPILE_OPTIONS
 swig_add_library(dotnet_init
   TYPE OBJECT
   LANGUAGE csharp
-  OUTPUT_DIR ${PROJECT_BINARY_DIR}/dotnet/${PROJECT_NAME}/init
+  OUTPUT_DIR ${DOTNET_PROJECT_DIR}/init
   SOURCES init.i)
 
 #target_include_directories(dotnet_init PRIVATE ${DOTNET_INCLUDE_DIRS})
