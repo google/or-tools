@@ -220,7 +220,7 @@ dependencies/install/lib/libprotobuf.a: $(PROTOBUF_SRCDIR) | dependencies/instal
     -DBUILD_TESTING=OFF \
     -Dprotobuf_BUILD_TESTS=OFF \
     -Dprotobuf_BUILD_EXAMPLES=OFF \
-    -DCMAKE_CXX_FLAGS="$(MAC_VERSION)" \
+    -DCMAKE_OSX_DEPLOYMENT_TARGET="$(MAC_MIN_VERSION)" \
     -DCMAKE_INSTALL_PREFIX=../../install && \
   $(CMAKE) --build build_cmake --config Release -v -- -j4 && \
   $(CMAKE) --build build_cmake --config Release --target install
@@ -289,7 +289,7 @@ dependencies/install/lib/libabsl.a: dependencies/sources/abseil-cpp-$(ABSL_TAG) 
     -DCMAKE_PREFIX_PATH="$(OR_TOOLS_TOP)/dependencies/install" \
     -DBUILD_SHARED_LIBS=OFF \
     -DBUILD_STATIC_LIBS=ON \
-    -DCMAKE_CXX_FLAGS="$(MAC_VERSION)" \
+    -DCMAKE_OSX_DEPLOYMENT_TARGET="$(MAC_MIN_VERSION)" \
     -DBUILD_TESTING=OFF \
     -DCMAKE_INSTALL_PREFIX=../../install && \
   $(CMAKE) --build build_cmake --config Release -v -- -j4 && \
@@ -622,7 +622,7 @@ dependencies/install/lib/libscip.a: $(SCIP_SRCDIR) | dependencies/install
     -DSHARED=OFF \
     -DBUILD_STATIC_LIBS=ON \
     -DBUILD_TESTING=OFF \
-    -DCMAKE_CXX_FLAGS="$(MAC_VERSION)" \
+    -DCMAKE_OSX_DEPLOYMENT_TARGET="$(MAC_MIN_VERSION)" \
     -DREADLINE=OFF \
     -DGMP=OFF \
     -DPAPILO=OFF \
