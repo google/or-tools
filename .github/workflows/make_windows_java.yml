@@ -25,6 +25,8 @@ jobs:
       run: tools\make detect_java
     - name: Build third party
       run: tools\make third_party -j4
+    - name: Generate protos
+      run: tools\make all_protos
     - name: Build C++
       run: tools\make cc -j4
     - name: Build Java
