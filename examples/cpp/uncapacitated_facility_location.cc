@@ -140,8 +140,11 @@ static void UncapacitatedFacilityLocation(
     std::cout << "LP-Model:\n" << lp_string << std::endl;
   }
   // Set options and solve
-  if (optimization_problem_type != MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING)
-    solver.SetNumThreads(8);
+  if (optimization_problem_type != MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING) {
+    if (!solver.SetNumThreads(8)) {
+      LOG(INFO) << "Could not set parallelism for " << optimization_problem_type;
+    }
+  }
   solver.EnableOutput();
   const MPSolver::ResultStatus result_status = solver.Solve();
   // Check that the problem has an optimal solution.
