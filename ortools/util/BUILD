@@ -1,6 +1,27 @@
-load("@rules_cc//cc:defs.bzl", "cc_proto_library")
-
 package(default_visibility = ["//visibility:public"])
+
+config_setting(
+    name = "on_linux",
+    constraint_values = [
+        "@platforms//os:linux",
+    ],
+)
+
+config_setting(
+    name = "on_macos",
+    constraint_values = [
+        "@platforms//os:macos",
+    ],
+)
+
+config_setting(
+    name = "on_windows",
+    constraint_values = [
+        "@platforms//os:windows",
+    ],
+)
+
+load("@rules_cc//cc:defs.bzl", "cc_proto_library")
 
 cc_library(
     name = "adaptative_parameter_value",
@@ -196,7 +217,12 @@ cc_library(
     # -frounding-math is needed for code that uses IEEE-754 rounding modes.
     # You must also set this flag if you depend on this target and use
     # its methods related to IEEE-754 rounding modes.
-    copts = ["-frounding-math"],
+    copts = select({
+        "on_linux": ["-frounding-math"],
+        "on_macos": ["-frounding-math"],
+        "on_windows": [],
+        "//conditions:default": ["-frounding-math"],
+    }),
     deps = [
         ":bitset",
         "//ortools/base",
