@@ -8,7 +8,7 @@ set_property(SOURCE routing.i PROPERTY COMPILE_OPTIONS
 swig_add_library(dotnet_constraint_solver
   TYPE OBJECT
   LANGUAGE csharp
-  OUTPUT_DIR ${DOTNET_PROJECT_DIR}/constraint_solver
+  OUTPUT_DIR ${DOTNET_PROJECT_DIR}/ortools/constraint_solver
   SOURCES routing.i)
 
 #target_include_directories(dotnet_constraint_solver PRIVATE ${DOTNET_INCLUDE_DIRS})

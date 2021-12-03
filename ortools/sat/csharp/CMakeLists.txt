@@ -8,7 +8,7 @@ set_property(SOURCE sat.i PROPERTY COMPILE_OPTIONS
 swig_add_library(dotnet_sat
   TYPE OBJECT
   LANGUAGE csharp
-  OUTPUT_DIR ${DOTNET_PROJECT_DIR}/sat
+  OUTPUT_DIR ${DOTNET_PROJECT_DIR}/ortools/sat
   SOURCES sat.i)
 
 #target_include_directories(dotnet_sat PRIVATE ${DOTNET_INCLUDE_DIRS})

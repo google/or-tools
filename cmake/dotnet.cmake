@@ -27,38 +27,6 @@ else()
   message(STATUS "Found dotnet Program: ${DOTNET_EXECUTABLE}")
 endif()
 
-# Generate Protobuf .Net sources
-set(PROTO_DOTNETS)
-file(GLOB_RECURSE proto_dotnet_files RELATIVE ${PROJECT_SOURCE_DIR}
-  "ortools/constraint_solver/*.proto"
-  "ortools/linear_solver/*.proto"
-  "ortools/sat/*.proto"
-  "ortools/util/*.proto"
-  )
-list(REMOVE_ITEM proto_dotnet_files "ortools/constraint_solver/demon_profiler.proto")
-list(REMOVE_ITEM proto_dotnet_files "ortools/constraint_solver/assignment.proto")
-foreach(PROTO_FILE IN LISTS proto_dotnet_files)
-  #message(STATUS "protoc proto(dotnet): ${PROTO_FILE}")
-  get_filename_component(PROTO_DIR ${PROTO_FILE} DIRECTORY)
-  get_filename_component(PROTO_NAME ${PROTO_FILE} NAME_WE)
-  set(PROTO_DOTNET ${PROJECT_BINARY_DIR}/dotnet/${PROTO_DIR}/${PROTO_NAME}.pb.cs)
-  #message(STATUS "protoc dotnet: ${PROTO_DOTNET}")
-  add_custom_command(
-    OUTPUT ${PROTO_DOTNET}
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_BINARY_DIR}/dotnet/${PROTO_DIR}
-    COMMAND ${PROTOC_PRG}
-    "--proto_path=${PROJECT_SOURCE_DIR}"
-    ${PROTO_DIRS}
-    "--csharp_out=${PROJECT_BINARY_DIR}/dotnet/${PROTO_DIR}"
-    "--csharp_opt=file_extension=.pb.cs"
-    ${PROTO_FILE}
-    DEPENDS ${PROTO_FILE} ${PROTOC_PRG}
-    COMMENT "Generate C# protocol buffer for ${PROTO_FILE}"
-    VERBATIM)
-  list(APPEND PROTO_DOTNETS ${PROTO_DOTNET})
-endforeach()
-add_custom_target(Dotnet${PROJECT_NAME}_proto DEPENDS ${PROTO_DOTNETS} ${PROJECT_NAMESPACE}::ortools)
-
 # Create the native library
 add_library(google-ortools-native SHARED "")
 set_target_properties(google-ortools-native PROPERTIES
@@ -123,6 +91,38 @@ endforeach()
 file(COPY tools/doc/orLogo.png DESTINATION dotnet)
 set(DOTNET_LOGO_DIR "${PROJECT_BINARY_DIR}/dotnet")
 configure_file(ortools/dotnet/Directory.Build.props.in dotnet/Directory.Build.props)
+
+# Generate Protobuf .Net sources
+set(PROTO_DOTNETS)
+file(GLOB_RECURSE proto_dotnet_files RELATIVE ${PROJECT_SOURCE_DIR}
+  "ortools/constraint_solver/*.proto"
+  "ortools/linear_solver/*.proto"
+  "ortools/sat/*.proto"
+  "ortools/util/*.proto"
+  )
+list(REMOVE_ITEM proto_dotnet_files "ortools/constraint_solver/demon_profiler.proto")
+list(REMOVE_ITEM proto_dotnet_files "ortools/constraint_solver/assignment.proto")
+foreach(PROTO_FILE IN LISTS proto_dotnet_files)
+  #message(STATUS "protoc proto(dotnet): ${PROTO_FILE}")
+  get_filename_component(PROTO_DIR ${PROTO_FILE} DIRECTORY)
+  get_filename_component(PROTO_NAME ${PROTO_FILE} NAME_WE)
+  set(PROTO_DOTNET ${DOTNET_PROJECT_DIR}/${PROTO_DIR}/${PROTO_NAME}.pb.cs)
+  #message(STATUS "protoc dotnet: ${PROTO_DOTNET}")
+  add_custom_command(
+    OUTPUT ${PROTO_DOTNET}
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_BINARY_DIR}/dotnet/${PROTO_DIR}
+    COMMAND ${PROTOC_PRG}
+    "--proto_path=${PROJECT_SOURCE_DIR}"
+    ${PROTO_DIRS}
+    "--csharp_out=${DOTNET_PROJECT_DIR}/${PROTO_DIR}"
+    "--csharp_opt=file_extension=.pb.cs"
+    ${PROTO_FILE}
+    DEPENDS ${PROTO_FILE} ${PROTOC_PRG}
+    COMMENT "Generate C# protocol buffer for ${PROTO_FILE}"
+    VERBATIM)
+  list(APPEND PROTO_DOTNETS ${PROTO_DOTNET})
+endforeach()
+add_custom_target(Dotnet${PROJECT_NAME}_proto DEPENDS ${PROTO_DOTNETS} ${PROJECT_NAMESPACE}::ortools)
 
 ############################
 ##  .Net SNK file  ##
