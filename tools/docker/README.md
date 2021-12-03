@@ -1,8 +1,11 @@
 # CI: Makefile/Docker testing
-To test the build on various distro, we are using docker containers and a Makefile for orchestration.
+
+To test the build on various distro, we are using docker containers and a
+Makefile for orchestration.
 
 pros:
-* You are independent of third party CI runner config (e.g. github actions runners or Travis-CI VM images).
+* You are independent of third party CI runner config (e.g. github actions
+  runners or Travis-CI VM images).
 * You can run it locally on any unix system.
 * Most CI provide runner with docker and Makefile installed.
 
@@ -12,7 +15,8 @@ cons:
   * ~500MiB OS + C++/CMake tools,
   * ~150 MiB Python, wheel,
 
-# Usage
+## Usage
+
 To get the help simply type:
 ```sh
 make
@@ -23,19 +27,23 @@ note: you can also use from top directory
 make --directory=tools/docker
 ```
 
-## Example
+### Example
+
 For example to test inside an `Alpine` container:
 ```sh
 make alpine-edge_test
 ```
 
-# Docker layers
+## Docker layers
+
 Dockerfile is splitted in several stages.
 
 ![docker](doc/deps.svg)
 
-## Docker aarch64 on x86_64 machine
-You can build and run aarch64 docker container on a x86_64 by enabling qemu support:
+### Docker aarch64 on x86_64 machine
+
+You can build and run aarch64 docker container on a x86_64 by enabling qemu
+support:
 
 ```sh
 docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
