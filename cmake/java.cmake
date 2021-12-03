@@ -271,7 +271,7 @@ function(add_java_test FILE_NAME)
   add_custom_command(
     OUTPUT ${JAVA_TEST_DIR}/timestamp
     COMMAND ${MAVEN_EXECUTABLE} compile -B
-    COMMAND ${CMAKE_COMMAND} -E touch ${TEST_DIR}/timestamp
+    COMMAND ${CMAKE_COMMAND} -E touch ${JAVA_TEST_DIR}/timestamp
     DEPENDS
       ${JAVA_TEST_DIR}/pom.xml
       ${JAVA_TEST_DIR}/${JAVA_TEST_PATH}/${TEST_NAME}.java
