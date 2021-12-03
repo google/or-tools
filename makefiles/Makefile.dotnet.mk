@@ -624,7 +624,7 @@ $$(TEMP_DOTNET_DIR)/$1/%/%.csproj: \
 $$(TEMP_DOTNET_DIR)/$1/%/%.cs: \
  $$(SRC_DIR)/examples/$1/%.cs \
  | $$(TEMP_DOTNET_DIR)/$1/%
-	$$(COPY) $$(SRC_DIR)$$Sortools$$S$1$$Ssamples$$S$$*.cs \
+	$$(COPY) $$(SRC_DIR)$$Sexamples$$S$1$$S$$*.cs \
  $$(TEMP_DOTNET_DIR)$$S$1$$S$$*
 
 rdotnet_%: \
