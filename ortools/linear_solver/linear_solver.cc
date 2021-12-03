@@ -1883,7 +1883,7 @@ double MPSolverInterface::best_objective_bound() const {
       maximize_ ? -std::numeric_limits<double>::infinity()
                 : std::numeric_limits<double>::infinity();
   if (!IsMIP()) {
-    LOG(DFATAL) << "Best objective bound only available for discrete problems.";
+    VLOG(1) << "Best objective bound only available for discrete problems.";
     return trivial_worst_bound;
   }
   if (!CheckSolutionIsSynchronized()) {

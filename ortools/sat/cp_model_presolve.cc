@@ -2913,6 +2913,28 @@ bool CpModelPresolver::PresolveInverse(ConstraintProto* ct) {
     }
   }
 
+  // Detect duplicated variable.
+  // Even with negated variables, the reduced domain in [0..size - 1]
+  // implies that the constraint is infeasible if ref and its negation
+  // appear together.
+  {
+    absl::flat_hash_set<int> direct_vars;
+    for (const int ref : ct->inverse().f_direct()) {
+      const auto [it, inserted] = direct_vars.insert(PositiveRef(ref));
+      if (!inserted) {
+        return context_->NotifyThatModelIsUnsat("inverse: duplicated variable");
+      }
+    }
+
+    absl::flat_hash_set<int> inverse_vars;
+    for (const int ref : ct->inverse().f_inverse()) {
+      const auto [it, inserted] = inverse_vars.insert(PositiveRef(ref));
+      if (!inserted) {
+        return context_->NotifyThatModelIsUnsat("inverse: duplicated variable");
+      }
+    }
+  }
+
   // Propagate from one vector to its counterpart.
   // Note this reaches the fixpoint as there is a one to one mapping between
   // (variable-value) pairs in each vector.

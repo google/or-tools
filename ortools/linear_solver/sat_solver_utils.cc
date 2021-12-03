@@ -73,13 +73,7 @@ glop::ProblemStatus ApplyMipPresolveSteps(
       names[i].resize(header.size(), ' ');  // padding.
       SOLVER_LOG(logger, names[i], lp.GetDimensionString());
       const glop::ProblemStatus status = preprocessor->status();
-      if (status != glop::ProblemStatus::INIT) {
-        if (status == glop::ProblemStatus::PRIMAL_INFEASIBLE ||
-            status == glop::ProblemStatus::INFEASIBLE_OR_UNBOUNDED) {
-          return status;
-        }
-        return glop::ProblemStatus::ABNORMAL;
-      }
+      if (status != glop::ProblemStatus::INIT) return status;
       if (need_postsolve) for_postsolve->push_back(std::move(preprocessor));
     }
   }
@@ -89,7 +83,11 @@ glop::ProblemStatus ApplyMipPresolveSteps(
     auto shift_bounds =
         absl::make_unique<glop::ShiftVariableBoundsPreprocessor>(&glop_params);
     shift_bounds->UseInMipContext();
-    if (shift_bounds->Run(&lp)) {
+    const bool need_postsolve = shift_bounds->Run(&lp);
+    if (shift_bounds->status() != glop::ProblemStatus::INIT) {
+      return shift_bounds->status();
+    }
+    if (need_postsolve) {
       for_postsolve->push_back(std::move(shift_bounds));
     }
   }

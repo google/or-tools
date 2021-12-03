@@ -3726,9 +3726,24 @@ bool ShiftVariableBoundsPreprocessor::Run(LinearProgram* lp) {
 
   // Apply the changes to the constraint bound and objective offset.
   for (RowIndex row(0); row < num_rows; ++row) {
+    if (!std::isfinite(row_offsets[row].Value())) {
+      // This can happen for bad input where we get floating point overflow.
+      // We can even get nan if we have two overflow in opposite direction.
+      VLOG(1) << "Shifting variable bounds causes a floating point overflow "
+                 "for constraint "
+              << row << ".";
+      status_ = ProblemStatus::INVALID_PROBLEM;
+      return false;
+    }
     lp->SetConstraintBounds(
         row, lp->constraint_lower_bounds()[row] - row_offsets[row].Value(),
         lp->constraint_upper_bounds()[row] - row_offsets[row].Value());
+  }
+  if (!std::isfinite(objective_offset.Value())) {
+    VLOG(1) << "Shifting variable bounds causes a floating point overflow "
+               "for the objective.";
+    status_ = ProblemStatus::INVALID_PROBLEM;
+    return false;
   }
   lp->SetObjectiveOffset(lp->objective_offset() + objective_offset.Value());
   return true;

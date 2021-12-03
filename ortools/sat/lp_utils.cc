@@ -731,6 +731,11 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
     cp_var->set_name(mp_var.name());
 
     // Deal with the corner case of a domain far away from zero.
+    //
+    // TODO(user): We could avoid these cases by shifting the domain of
+    // all variables to contain zero. This should also lead to a better scaling,
+    // but it has some complications with integer variables and require some
+    // post-solve.
     if (mp_var.lower_bound() > static_cast<double>(kMaxVariableBound) ||
         mp_var.upper_bound() < static_cast<double>(-kMaxVariableBound)) {
       SOLVER_LOG(logger, "Error: variable ", mp_var.DebugString(),

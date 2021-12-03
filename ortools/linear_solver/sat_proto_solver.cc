@@ -64,16 +64,44 @@ MPSolverResponseStatus ToMPSolverResponseStatus(sat::CpSolverStatus status,
   return MPSOLVER_ABNORMAL;
 }
 
-MPSolutionResponse InfeasibleResponse(const SolverLogger& logger,
+sat::CpSolverStatus FromMPSolverResponseStatus(MPSolverResponseStatus status) {
+  switch (status) {
+    case MPSolverResponseStatus::MPSOLVER_OPTIMAL:
+      return sat::OPTIMAL;
+    case MPSolverResponseStatus::MPSOLVER_INFEASIBLE:
+      return sat::INFEASIBLE;
+    case MPSolverResponseStatus::MPSOLVER_MODEL_INVALID:
+      return sat::MODEL_INVALID;
+    default: {
+    }
+  }
+  return sat::UNKNOWN;
+}
+
+MPSolutionResponse InfeasibleResponse(SolverLogger& logger,
                                       std::string message) {
   // This is needed for our benchmark scripts.
   MPSolutionResponse response;
   if (logger.LoggingIsEnabled()) {
     sat::CpSolverResponse cp_response;
     cp_response.set_status(sat::CpSolverStatus::INFEASIBLE);
-    LOG(INFO) << CpSolverResponseStats(cp_response);
+    SOLVER_LOG(&logger, CpSolverResponseStats(cp_response));
   }
   response.set_status(MPSolverResponseStatus::MPSOLVER_INFEASIBLE);
+  response.set_status_str(message);
+  return response;
+}
+
+MPSolutionResponse ModelInvalidResponse(SolverLogger& logger,
+                                        std::string message) {
+  // This is needed for our benchmark scripts.
+  MPSolutionResponse response;
+  if (logger.LoggingIsEnabled()) {
+    sat::CpSolverResponse cp_response;
+    cp_response.set_status(sat::CpSolverStatus::MODEL_INVALID);
+    SOLVER_LOG(&logger, CpSolverResponseStats(cp_response));
+  }
+  response.set_status(MPSolverResponseStatus::MPSOLVER_MODEL_INVALID);
   response.set_status_str(message);
   return response;
 }
@@ -125,17 +153,40 @@ absl::StatusOr<MPSolutionResponse> SatSolveProto(
   MPSolutionResponse response;
   if (!ExtractValidMPModelInPlaceOrPopulateResponseStatus(&request,
                                                           &response)) {
+    // Note that the ExtractValidMPModelInPlaceOrPopulateResponseStatus() can
+    // also close trivial model (empty or trivially infeasible). So this is not
+    // always the MODEL_INVALID status.
+    //
+    // The logging is only needed for our benchmark script, so we use UNKNOWN
+    // here, but we could log the proper status instead.
     if (logger.LoggingIsEnabled()) {
-      // This is needed for our benchmark scripts.
       sat::CpSolverResponse cp_response;
-      cp_response.set_status(sat::CpSolverStatus::MODEL_INVALID);
+      cp_response.set_status(FromMPSolverResponseStatus(response.status()));
       SOLVER_LOG(&logger, CpSolverResponseStats(cp_response));
     }
     return response;
   }
-
-  // This good to do before any presolve.
   MPModelProto* const mp_model = request.mutable_model();
+
+  // Abort if there is constraint type we don't currently support.
+  for (const MPGeneralConstraintProto& general_constraint :
+       mp_model->general_constraint()) {
+    switch (general_constraint.general_constraint_case()) {
+      case MPGeneralConstraintProto::kIndicatorConstraint:
+        break;
+      case MPGeneralConstraintProto::kAndConstraint:
+        break;
+      case MPGeneralConstraintProto::kOrConstraint:
+        break;
+      default:
+        SOLVER_LOG(&logger, "General constraints of type ",
+                   general_constraint.general_constraint_case(),
+                   " are not supported.");
+        return ModelInvalidResponse(logger, "Unsupported constraint type");
+    }
+  }
+
+  // This is good to do before any presolve.
   if (!sat::MakeBoundsOfIntegerVariablesInteger(params, mp_model, &logger)) {
     return InfeasibleResponse(logger,
                               "An integer variable has an empty domain");
@@ -155,6 +206,9 @@ absl::StatusOr<MPSolutionResponse> SatSolveProto(
       case glop::ProblemStatus::PRIMAL_INFEASIBLE:
         return InfeasibleResponse(
             logger, "Problem proven infeasible during MIP presolve");
+      case glop::ProblemStatus::INVALID_PROBLEM:
+        return ModelInvalidResponse(
+            logger, "Problem detected invalid during MIP presolve");
       default:
         // TODO(user): We put the INFEASIBLE_OR_UNBOUNBED case here since there
         // is no return status that exactly matches it.
