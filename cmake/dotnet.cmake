@@ -88,9 +88,9 @@ foreach(SUBPROJECT IN ITEMS algorithms graph init linear_solver constraint_solve
   target_link_libraries(google-ortools-native PRIVATE dotnet_${SUBPROJECT})
 endforeach()
 
-file(COPY tools/doc/orLogo.png DESTINATION dotnet)
+file(COPY ${PROJECT_SOURCE_DIR}/tools/doc/orLogo.png DESTINATION dotnet)
 set(DOTNET_LOGO_DIR "${PROJECT_BINARY_DIR}/dotnet")
-configure_file(ortools/dotnet/Directory.Build.props.in dotnet/Directory.Build.props)
+configure_file(${PROJECT_SOURCE_DIR}/ortools/dotnet/Directory.Build.props.in dotnet/Directory.Build.props)
 
 # Generate Protobuf .Net sources
 set(PROTO_DOTNETS)
@@ -225,8 +225,8 @@ add_custom_command(
     ${DOTNET_PROJECT_DIR}/${DOTNET_PROJECT}.csproj
     dotnet_native_package
   BYPRODUCTS
-    dotnet/${DOTNET_PROJECT}/bin
-    dotnet/${DOTNET_PROJECT}/obj
+    ${DOTNET_PROJECT_DIR}/bin
+    ${DOTNET_PROJECT_DIR}/obj
   COMMENT "Generate .Net package ${DOTNET_PROJECT} (${DOTNET_PROJECT_DIR}/timestamp)"
   WORKING_DIRECTORY ${DOTNET_PROJECT_DIR}
 )
