@@ -5,7 +5,7 @@ set_property(SOURCE sorted_interval_list.i PROPERTY COMPILE_DEFINITIONS
 swig_add_library(sorted_interval_list
   TYPE SHARED
   LANGUAGE python
-  OUTPUT_DIR ${PROJECT_BINARY_DIR}/python/${PROJECT_NAME}/util
+  OUTPUT_DIR ${PYTHON_PROJECT_DIR}/util
   SOURCES sorted_interval_list.i)
 
 target_include_directories(sorted_interval_list PRIVATE ${Python3_INCLUDE_DIRS})

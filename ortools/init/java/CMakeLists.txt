@@ -7,8 +7,7 @@ set_property(SOURCE init.i PROPERTY COMPILE_OPTIONS
 swig_add_library(jniinit
   TYPE OBJECT
   LANGUAGE java
-  OUTPUT_DIR
-  ${PROJECT_BINARY_DIR}/java/${JAVA_PROJECT}/${JAVA_PACKAGE_PATH}/init
+  OUTPUT_DIR ${JAVA_PROJECT_DIR}/${JAVA_SRC_PATH}/init
   SOURCES init.i)
 
 target_include_directories(jniinit PRIVATE ${JNI_INCLUDE_DIRS})

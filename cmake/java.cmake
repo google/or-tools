@@ -37,10 +37,13 @@ else()
 endif()
 
 # Needed by java/CMakeLists.txt
-set(JAVA_PACKAGE com.google.ortools)
-set(JAVA_PACKAGE_PATH src/main/java/com/google/ortools)
-set(JAVA_TEST_PATH src/test/java/com/google/ortools)
-set(JAVA_RESOURCES_PATH src/main/resources)
+set(JAVA_DOMAIN_NAME "google")
+set(JAVA_DOMAIN_EXTENSION "com")
+
+set(JAVA_GROUP "${JAVA_DOMAIN_EXTENSION}.${JAVA_DOMAIN_NAME}")
+set(JAVA_ARTIFACT "ortools")
+
+set(JAVA_PACKAGE "${JAVA_GROUP}.${JAVA_ARTIFACT}")
 if(APPLE)
   set(NATIVE_IDENTIFIER darwin-x86-64)
 elseif(UNIX)
@@ -50,8 +53,15 @@ elseif(WIN32)
 else()
   message(FATAL_ERROR "Unsupported system !")
 endif()
-set(JAVA_NATIVE_PROJECT ortools-${NATIVE_IDENTIFIER})
-set(JAVA_PROJECT ortools-java)
+set(JAVA_NATIVE_PROJECT ${JAVA_ARTIFACT}-${NATIVE_IDENTIFIER})
+message(STATUS "Java runtime project: ${JAVA_NATIVE_PROJECT}")
+set(JAVA_NATIVE_PROJECT_DIR ${PROJECT_BINARY_DIR}/java/${JAVA_NATIVE_PROJECT})
+message(STATUS "Java runtime project build path: ${JAVA_NATIVE_PROJECT_DIR}")
+
+set(JAVA_PROJECT ${JAVA_ARTIFACT}-java)
+message(STATUS "Java project: ${JAVA_PROJECT}")
+set(JAVA_PROJECT_DIR ${PROJECT_BINARY_DIR}/java/${JAVA_PROJECT})
+message(STATUS "Java project build path: ${JAVA_PROJECT_DIR}")
 
 # CMake will remove all '-D' prefix (i.e. -DUSE_FOO become USE_FOO)
 #get_target_property(FLAGS ${PROJECT_NAMESPACE}::ortools COMPILE_DEFINITIONS)
@@ -108,90 +118,88 @@ add_custom_target(Java${PROJECT_NAME}_proto
     ${PROJECT_NAMESPACE}::ortools)
 
 # Create the native library
-add_library(jniortools SHARED "")
-set_target_properties(jniortools PROPERTIES
+add_library(jni${JAVA_ARTIFACT} SHARED "")
+set_target_properties(jni${JAVA_ARTIFACT} PROPERTIES
   POSITION_INDEPENDENT_CODE ON)
 # note: macOS is APPLE and also UNIX !
 if(APPLE)
-  set_target_properties(jniortools PROPERTIES INSTALL_RPATH "@loader_path")
+  set_target_properties(jni${JAVA_ARTIFACT} PROPERTIES INSTALL_RPATH "@loader_path")
   # Xcode fails to build if library doesn't contains at least one source file.
   if(XCODE)
     file(GENERATE
-      OUTPUT ${PROJECT_BINARY_DIR}/jniortools/version.cpp
+      OUTPUT ${PROJECT_BINARY_DIR}/jni${JAVA_ARTIFACT}/version.cpp
       CONTENT "namespace {char* version = \"${PROJECT_VERSION}\";}")
-    target_sources(jniortools PRIVATE ${PROJECT_BINARY_DIR}/jniortools/version.cpp)
+    target_sources(jni${JAVA_ARTIFACT} PRIVATE ${PROJECT_BINARY_DIR}/jni${JAVA_ARTIFACT}/version.cpp)
   endif()
 elseif(UNIX)
-  set_target_properties(jniortools PROPERTIES INSTALL_RPATH "$ORIGIN")
+  set_target_properties(jni${JAVA_ARTIFACT} PROPERTIES INSTALL_RPATH "$ORIGIN")
 endif()
 
 # Swig wrap all libraries
+set(JAVA_SRC_PATH src/main/java/${JAVA_DOMAIN_EXTENSION}/${JAVA_DOMAIN_NAME}/${JAVA_ARTIFACT})
+set(JAVA_TEST_PATH src/test/java/${JAVA_DOMAIN_EXTENSION}/${JAVA_DOMAIN_NAME}/${JAVA_ARTIFACT})
+set(JAVA_RESSOURCES_PATH src/main/resources)
 foreach(SUBPROJECT IN ITEMS algorithms graph init linear_solver constraint_solver sat util)
   add_subdirectory(ortools/${SUBPROJECT}/java)
-  target_link_libraries(jniortools PRIVATE jni${SUBPROJECT})
+  target_link_libraries(jni${JAVA_ARTIFACT} PRIVATE jni${SUBPROJECT})
 endforeach()
 
 #################################
 ##  Java Native Maven Package  ##
 #################################
-message(STATUS "Java runtime project: ${JAVA_NATIVE_PROJECT}")
-set(JAVA_NATIVE_PROJECT_PATH ${PROJECT_BINARY_DIR}/java/${JAVA_NATIVE_PROJECT})
-message(STATUS "Java runtime project build path: ${JAVA_NATIVE_PROJECT_PATH}")
-
-file(MAKE_DIRECTORY ${JAVA_NATIVE_PROJECT_PATH}/${JAVA_RESOURCES_PATH}/${JAVA_NATIVE_PROJECT})
+file(MAKE_DIRECTORY ${JAVA_NATIVE_PROJECT_DIR}/${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT})
 
 configure_file(
   ${PROJECT_SOURCE_DIR}/ortools/java/pom-native.xml.in
-  ${JAVA_NATIVE_PROJECT_PATH}/pom.xml
+  ${JAVA_NATIVE_PROJECT_DIR}/pom.xml
   @ONLY)
 
 add_custom_command(
-  OUTPUT ${JAVA_NATIVE_PROJECT_PATH}/timestamp
+  OUTPUT ${JAVA_NATIVE_PROJECT_DIR}/timestamp
   COMMAND ${CMAKE_COMMAND} -E copy
-    $<TARGET_FILE:jniortools>
+    $<TARGET_FILE:jni${JAVA_ARTIFACT}>
     $<$<NOT:$<PLATFORM_ID:Windows>>:$<TARGET_SONAME_FILE:${PROJECT_NAME}>>
-    ${JAVA_RESOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
+    ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
   COMMAND ${MAVEN_EXECUTABLE} compile -B
   COMMAND ${MAVEN_EXECUTABLE} package -B $<$<BOOL:${BUILD_FAT_JAR}>:-Dfatjar=true>
   COMMAND ${MAVEN_EXECUTABLE} install -B $<$<BOOL:${SKIP_GPG}>:-Dgpg.skip=true>
-  COMMAND ${CMAKE_COMMAND} -E touch ${JAVA_NATIVE_PROJECT_PATH}/timestamp
+  COMMAND ${CMAKE_COMMAND} -E touch ${JAVA_NATIVE_PROJECT_DIR}/timestamp
   DEPENDS
-    ${JAVA_NATIVE_PROJECT_PATH}/pom.xml
+    ${JAVA_NATIVE_PROJECT_DIR}/pom.xml
   BYPRODUCTS
-    ${JAVA_NATIVE_PROJECT_PATH}/target
-  COMMENT "Generate Java native package ${JAVA_NATIVE_PROJECT} (${JAVA_NATIVE_PROJECT_PATH}/timestamp)"
-  WORKING_DIRECTORY ${JAVA_NATIVE_PROJECT_PATH})
+    ${JAVA_NATIVE_PROJECT_DIR}/target
+  COMMENT "Generate Java native package ${JAVA_NATIVE_PROJECT} (${JAVA_NATIVE_PROJECT_DIR}/timestamp)"
+  WORKING_DIRECTORY ${JAVA_NATIVE_PROJECT_DIR})
 
 add_custom_target(java_native_package
   DEPENDS
-    ${JAVA_NATIVE_PROJECT_PATH}/timestamp
+    ${JAVA_NATIVE_PROJECT_DIR}/timestamp
   WORKING_DIRECTORY java)
 
 ##########################
 ##  Java Maven Package  ##
 ##########################
-set(JAVA_PROJECT_PATH ${PROJECT_BINARY_DIR}/java/${JAVA_PROJECT})
-file(MAKE_DIRECTORY ${JAVA_PROJECT_PATH}/${JAVA_PACKAGE_PATH})
+file(MAKE_DIRECTORY ${JAVA_PROJECT_DIR}/${JAVA_SRC_PATH})
 
 if(UNIVERSAL_JAVA_PACKAGE)
   configure_file(
     ${PROJECT_SOURCE_DIR}/ortools/java/pom-full.xml.in
-    ${JAVA_PROJECT_PATH}/pom.xml
+    ${JAVA_PROJECT_DIR}/pom.xml
     @ONLY)
 else()
   configure_file(
     ${PROJECT_SOURCE_DIR}/ortools/java/pom-local.xml.in
-    ${JAVA_PROJECT_PATH}/pom.xml
+    ${JAVA_PROJECT_DIR}/pom.xml
     @ONLY)
 endif()
 
 file(GLOB_RECURSE java_files RELATIVE ${PROJECT_SOURCE_DIR}/ortools/java
   "ortools/java/*.java")
-message(WARNING "list: ${java_files}")
+#message(WARNING "list: ${java_files}")
 set(JAVA_SRCS)
 foreach(JAVA_FILE IN LISTS java_files)
   #message(STATUS "java: ${JAVA_FILE}")
-  set(JAVA_OUT ${JAVA_PROJECT_PATH}/src/main/java/${JAVA_FILE})
+  set(JAVA_OUT ${JAVA_PROJECT_DIR}/${JAVA_SRC_PATH}/${JAVA_FILE})
   #message(STATUS "java out: ${JAVA_OUT}")
   add_custom_command(
     OUTPUT ${JAVA_OUT}
@@ -205,24 +213,24 @@ foreach(JAVA_FILE IN LISTS java_files)
 endforeach()
 
 add_custom_command(
-  OUTPUT ${JAVA_PROJECT_PATH}/timestamp
+  OUTPUT ${JAVA_PROJECT_DIR}/timestamp
   COMMAND ${MAVEN_EXECUTABLE} compile -B
   COMMAND ${MAVEN_EXECUTABLE} package -B $<$<BOOL:${BUILD_FAT_JAR}>:-Dfatjar=true>
   COMMAND ${MAVEN_EXECUTABLE} install -B $<$<BOOL:${SKIP_GPG}>:-Dgpg.skip=true>
-  COMMAND ${CMAKE_COMMAND} -E touch ${JAVA_PROJECT_PATH}/timestamp
+  COMMAND ${CMAKE_COMMAND} -E touch ${JAVA_PROJECT_DIR}/timestamp
   DEPENDS
-  ${JAVA_PROJECT_PATH}/pom.xml
+  ${JAVA_PROJECT_DIR}/pom.xml
   ${JAVA_SRCS}
   Java${PROJECT_NAME}_proto
   java_native_package
   BYPRODUCTS
-    ${JAVA_PROJECT_PATH}/target
-  COMMENT "Generate Java package ${JAVA_PROJECT} (${JAVA_PROJECT_PATH}/timestamp)"
-  WORKING_DIRECTORY ${JAVA_PROJECT_PATH})
+    ${JAVA_PROJECT_DIR}/target
+  COMMENT "Generate Java package ${JAVA_PROJECT} (${JAVA_PROJECT_DIR}/timestamp)"
+  WORKING_DIRECTORY ${JAVA_PROJECT_DIR})
 
 add_custom_target(java_package ALL
   DEPENDS
-    ${JAVA_PROJECT_PATH}/timestamp
+    ${JAVA_PROJECT_DIR}/timestamp
   WORKING_DIRECTORY java)
 
 #################
@@ -240,16 +248,16 @@ function(add_java_test FILE_NAME)
   get_filename_component(COMPONENT_DIR ${FILE_NAME} DIRECTORY)
   get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
 
-  set(TEST_PATH ${PROJECT_BINARY_DIR}/java/${COMPONENT_NAME}/${TEST_NAME})
-  message(STATUS "build path: ${TEST_PATH}")
+  set(JAVA_TEST_DIR ${PROJECT_BINARY_DIR}/java/${COMPONENT_NAME}/${TEST_NAME})
+  message(STATUS "build path: ${JAVA_TEST_DIR}")
 
   add_custom_command(
-    OUTPUT ${TEST_PATH}/${JAVA_TEST_PATH}/${TEST_NAME}.java
+    OUTPUT ${JAVA_TEST_DIR}/${JAVA_TEST_PATH}/${TEST_NAME}.java
     COMMAND ${CMAKE_COMMAND} -E make_directory
-      ${TEST_PATH}/${JAVA_TEST_PATH}
+      ${JAVA_TEST_DIR}/${JAVA_TEST_PATH}
     COMMAND ${CMAKE_COMMAND} -E copy
       ${FILE_NAME}
-      ${TEST_PATH}/${JAVA_TEST_PATH}/
+      ${JAVA_TEST_DIR}/${JAVA_TEST_PATH}/
     MAIN_DEPENDENCY ${FILE_NAME}
     VERBATIM
   )
@@ -257,32 +265,32 @@ function(add_java_test FILE_NAME)
   string(TOLOWER ${TEST_NAME} JAVA_TEST_PROJECT)
   configure_file(
     ${PROJECT_SOURCE_DIR}/ortools/java/pom-test.xml.in
-    ${TEST_PATH}/pom.xml
+    ${JAVA_TEST_DIR}/pom.xml
     @ONLY)
 
   add_custom_command(
-    OUTPUT ${TEST_PATH}/timestamp
+    OUTPUT ${JAVA_TEST_DIR}/timestamp
     COMMAND ${MAVEN_EXECUTABLE} compile -B
-    COMMAND ${CMAKE_COMMAND} -E touch ${TEST_PATH}/timestamp
+    COMMAND ${CMAKE_COMMAND} -E touch ${TEST_DIR}/timestamp
     DEPENDS
-      ${TEST_PATH}/pom.xml
-      ${TEST_PATH}/${JAVA_TEST_PATH}/${TEST_NAME}.java
+      ${JAVA_TEST_DIR}/pom.xml
+      ${JAVA_TEST_DIR}/${JAVA_TEST_PATH}/${TEST_NAME}.java
       java_package
     BYPRODUCTS
-      ${TEST_PATH}/target
-    COMMENT "Compiling Java ${COMPONENT_NAME}/${TEST_NAME}.java (${TEST_PATH}/timestamp)"
-    WORKING_DIRECTORY ${TEST_PATH})
+      ${JAVA_TEST_DIR}/target
+    COMMENT "Compiling Java ${COMPONENT_NAME}/${TEST_NAME}.java (${JAVA_TEST_DIR}/timestamp)"
+    WORKING_DIRECTORY ${JAVA_TEST_DIR})
 
   add_custom_target(java_${COMPONENT_NAME}_${TEST_NAME} ALL
     DEPENDS
-      ${TEST_PATH}/timestamp
+      ${JAVA_TEST_DIR}/timestamp
     WORKING_DIRECTORY java)
 
   if(BUILD_TESTING)
     add_test(
       NAME java_${COMPONENT_NAME}_${TEST_NAME}
       COMMAND ${MAVEN_EXECUTABLE} test
-      WORKING_DIRECTORY ${TEST_PATH})
+      WORKING_DIRECTORY ${JAVA_TEST_DIR})
   endif()
   message(STATUS "Configuring test ${FILE_NAME}: ...DONE")
 endfunction()
@@ -304,16 +312,16 @@ function(add_java_sample FILE_NAME)
   get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
   string(REPLACE "_" "" COMPONENT_NAME_LOWER ${COMPONENT_NAME})
 
-  set(SAMPLE_PATH ${PROJECT_BINARY_DIR}/java/${COMPONENT_NAME}/${SAMPLE_NAME})
-  message(STATUS "build path: ${SAMPLE_PATH}")
+  set(SAMPLE_DIR ${PROJECT_BINARY_DIR}/java/${COMPONENT_NAME}/${SAMPLE_NAME})
+  message(STATUS "build path: ${SAMPLE_DIR}")
 
   add_custom_command(
-    OUTPUT ${SAMPLE_PATH}/${JAVA_PACKAGE_PATH}/${COMPONENT_NAME_LOWER}/samples/${SAMPLE_NAME}.java
+    OUTPUT ${SAMPLE_DIR}/${JAVA_SRC_PATH}/${COMPONENT_NAME_LOWER}/samples/${SAMPLE_NAME}.java
     COMMAND ${CMAKE_COMMAND} -E make_directory
-      ${SAMPLE_PATH}/${JAVA_PACKAGE_PATH}/${COMPONENT_NAME_LOWER}/samples
+      ${SAMPLE_DIR}/${JAVA_SRC_PATH}/${COMPONENT_NAME_LOWER}/samples
     COMMAND ${CMAKE_COMMAND} -E copy
       ${FILE_NAME}
-      ${SAMPLE_PATH}/${JAVA_PACKAGE_PATH}/${COMPONENT_NAME_LOWER}/samples/
+      ${SAMPLE_DIR}/${JAVA_SRC_PATH}/${COMPONENT_NAME_LOWER}/samples/
     MAIN_DEPENDENCY ${FILE_NAME}
     VERBATIM
   )
@@ -323,32 +331,32 @@ function(add_java_sample FILE_NAME)
     "${JAVA_PACKAGE}.${COMPONENT_NAME_LOWER}.samples.${SAMPLE_NAME}")
   configure_file(
     ${PROJECT_SOURCE_DIR}/ortools/java/pom-sample.xml.in
-    ${SAMPLE_PATH}/pom.xml
+    ${SAMPLE_DIR}/pom.xml
     @ONLY)
 
   add_custom_command(
-    OUTPUT ${SAMPLE_PATH}/timestamp
+    OUTPUT ${SAMPLE_DIR}/timestamp
     COMMAND ${MAVEN_EXECUTABLE} compile -B
-    COMMAND ${CMAKE_COMMAND} -E touch ${SAMPLE_PATH}/timestamp
+    COMMAND ${CMAKE_COMMAND} -E touch ${SAMPLE_DIR}/timestamp
     DEPENDS
-      ${SAMPLE_PATH}/pom.xml
-      ${SAMPLE_PATH}/${JAVA_PACKAGE_PATH}/${COMPONENT_NAME_LOWER}/samples/${SAMPLE_NAME}.java
+      ${SAMPLE_DIR}/pom.xml
+      ${SAMPLE_DIR}/${JAVA_SRC_PATH}/${COMPONENT_NAME_LOWER}/samples/${SAMPLE_NAME}.java
       java_package
     BYPRODUCTS
-      ${SAMPLE_PATH}/target
-    COMMENT "Compiling Java sample ${COMPONENT_NAME}/${SAMPLE_NAME}.java (${SAMPLE_PATH}/timestamp)"
-    WORKING_DIRECTORY ${SAMPLE_PATH})
+      ${SAMPLE_DIR}/target
+    COMMENT "Compiling Java sample ${COMPONENT_NAME}/${SAMPLE_NAME}.java (${SAMPLE_DIR}/timestamp)"
+    WORKING_DIRECTORY ${SAMPLE_DIR})
 
   add_custom_target(java_${COMPONENT_NAME}_${SAMPLE_NAME} ALL
     DEPENDS
-      ${SAMPLE_PATH}/timestamp
+      ${SAMPLE_DIR}/timestamp
     WORKING_DIRECTORY java)
 
   if(BUILD_TESTING)
     add_test(
       NAME java_${COMPONENT_NAME}_${SAMPLE_NAME}
       COMMAND ${MAVEN_EXECUTABLE} exec:java
-      WORKING_DIRECTORY ${SAMPLE_PATH})
+      WORKING_DIRECTORY ${SAMPLE_DIR})
   endif()
   message(STATUS "Configuring sample ${FILE_NAME}: ...DONE")
 endfunction()
@@ -368,16 +376,16 @@ function(add_java_example FILE_NAME)
   get_filename_component(COMPONENT_DIR ${FILE_NAME} DIRECTORY)
   get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
 
-  set(EXAMPLE_PATH ${PROJECT_BINARY_DIR}/java/${COMPONENT_NAME}/${EXAMPLE_NAME})
-  message(STATUS "build path: ${EXAMPLE_PATH}")
+  set(JAVA_EXAMPLE_DIR ${PROJECT_BINARY_DIR}/java/${COMPONENT_NAME}/${EXAMPLE_NAME})
+  message(STATUS "build path: ${JAVA_EXAMPLE_DIR}")
 
   add_custom_command(
-    OUTPUT ${EXAMPLE_PATH}/${JAVA_PACKAGE_PATH}/${COMPONENT_NAME}/${EXAMPLE_NAME}.java
+    OUTPUT ${JAVA_EXAMPLE_DIR}/${JAVA_SRC_PATH}/${COMPONENT_NAME}/${EXAMPLE_NAME}.java
     COMMAND ${CMAKE_COMMAND} -E make_directory
-      ${EXAMPLE_PATH}/${JAVA_PACKAGE_PATH}/${COMPONENT_NAME}
+      ${JAVA_EXAMPLE_DIR}/${JAVA_SRC_PATH}/${COMPONENT_NAME}
     COMMAND ${CMAKE_COMMAND} -E copy
       ${FILE_NAME}
-      ${EXAMPLE_PATH}/${JAVA_PACKAGE_PATH}/${COMPONENT_NAME}/
+      ${JAVA_EXAMPLE_DIR}/${JAVA_SRC_PATH}/${COMPONENT_NAME}/
     MAIN_DEPENDENCY ${FILE_NAME}
     VERBATIM
   )
@@ -387,32 +395,32 @@ function(add_java_example FILE_NAME)
     "${JAVA_PACKAGE}.${COMPONENT_NAME}.${EXAMPLE_NAME}")
   configure_file(
     ${PROJECT_SOURCE_DIR}/ortools/java/pom-sample.xml.in
-    ${EXAMPLE_PATH}/pom.xml
+    ${JAVA_EXAMPLE_DIR}/pom.xml
     @ONLY)
 
   add_custom_command(
-    OUTPUT ${EXAMPLE_PATH}/timestamp
+    OUTPUT ${JAVA_EXAMPLE_DIR}/timestamp
     COMMAND ${MAVEN_EXECUTABLE} compile -B
-    COMMAND ${CMAKE_COMMAND} -E touch ${EXAMPLE_PATH}/timestamp
+    COMMAND ${CMAKE_COMMAND} -E touch ${JAVA_EXAMPLE_DIR}/timestamp
     DEPENDS
-      ${EXAMPLE_PATH}/pom.xml
-      ${EXAMPLE_PATH}/${JAVA_PACKAGE_PATH}/${COMPONENT_NAME}/${EXAMPLE_NAME}.java
+      ${JAVA_EXAMPLE_DIR}/pom.xml
+      ${JAVA_EXAMPLE_DIR}/${JAVA_SRC_PATH}/${COMPONENT_NAME}/${EXAMPLE_NAME}.java
       java_package
     BYPRODUCTS
-      ${EXAMPLE_PATH}/target
-    COMMENT "Compiling Java ${COMPONENT_NAME}/${EXAMPLE_NAME}.java (${EXAMPLE_PATH}/timestamp)"
-    WORKING_DIRECTORY ${EXAMPLE_PATH})
+      ${JAVA_EXAMPLE_DIR}/target
+    COMMENT "Compiling Java ${COMPONENT_NAME}/${EXAMPLE_NAME}.java (${JAVA_EXAMPLE_DIR}/timestamp)"
+    WORKING_DIRECTORY ${JAVA_EXAMPLE_DIR})
 
   add_custom_target(java_${COMPONENT_NAME}_${EXAMPLE_NAME} ALL
     DEPENDS
-      ${EXAMPLE_PATH}/timestamp
+      ${JAVA_EXAMPLE_DIR}/timestamp
     WORKING_DIRECTORY java)
 
   if(BUILD_TESTING)
     add_test(
       NAME java_${COMPONENT_NAME}_${EXAMPLE_NAME}
       COMMAND ${MAVEN_EXECUTABLE} exec:java
-      WORKING_DIRECTORY ${EXAMPLE_PATH})
+      WORKING_DIRECTORY ${JAVA_EXAMPLE_DIR})
   endif()
   message(STATUS "Configuring example ${FILE_NAME}: ...DONE")
 endfunction()

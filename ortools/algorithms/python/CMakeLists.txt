@@ -5,7 +5,7 @@ set_property(SOURCE knapsack_solver.i PROPERTY COMPILE_DEFINITIONS
 swig_add_library(pywrapknapsack_solver
   TYPE SHARED
   LANGUAGE python
-  OUTPUT_DIR  ${PROJECT_BINARY_DIR}/python/${PROJECT_NAME}/algorithms
+  OUTPUT_DIR  ${PYTHON_PROJECT_DIR}/algorithms
   SOURCES knapsack_solver.i)
 
 target_include_directories(pywrapknapsack_solver PRIVATE ${Python3_INCLUDE_DIRS})

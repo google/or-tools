@@ -5,7 +5,7 @@ set_property(SOURCE rcpsp.i PROPERTY COMPILE_DEFINITIONS
 swig_add_library(pywraprcpsp
   TYPE SHARED
   LANGUAGE python
-  OUTPUT_DIR  ${PROJECT_BINARY_DIR}/python/${PROJECT_NAME}/scheduling
+  OUTPUT_DIR ${PYTHON_PROJECT_DIR}/scheduling
   SOURCES rcpsp.i)
 
 target_include_directories(pywraprcpsp PRIVATE ${Python3_INCLUDE_DIRS})

@@ -7,8 +7,7 @@ set_property(SOURCE graph.i PROPERTY COMPILE_OPTIONS
 swig_add_library(jnigraph
   TYPE OBJECT
   LANGUAGE java
-  OUTPUT_DIR
-  ${PROJECT_BINARY_DIR}/java/${JAVA_PROJECT}/${JAVA_PACKAGE_PATH}/graph
+  OUTPUT_DIR ${JAVA_PROJECT_DIR}/${JAVA_SRC_PATH}/graph
   SOURCES graph.i)
 
 target_include_directories(jnigraph PRIVATE ${JNI_INCLUDE_DIRS})

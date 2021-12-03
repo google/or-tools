@@ -6,7 +6,7 @@ set_property(SOURCE routing.i PROPERTY COMPILE_OPTIONS -nofastunpack)
 swig_add_library(pywrapcp
   TYPE SHARED
   LANGUAGE python
-  OUTPUT_DIR ${PROJECT_BINARY_DIR}/python/${PROJECT_NAME}/constraint_solver
+  OUTPUT_DIR ${PYTHON_PROJECT_DIR}/constraint_solver
   SOURCES routing.i)
 
 target_include_directories(pywrapcp PRIVATE ${Python3_INCLUDE_DIRS})

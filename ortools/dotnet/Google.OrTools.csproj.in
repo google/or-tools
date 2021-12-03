@@ -31,43 +31,43 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="@PROJECT_DOTNET_DIR@/ortools/algorithms/*.cs">
+    <Compile Include="@DOTNET_PROJECT_DIR@/ortools/algorithms/*.cs">
       <Link>algorithms/%(Filename)%(Extension)</Link>
     </Compile>
 
-    <Compile Include="@PROJECT_DOTNET_DIR@/ortools/graph/*.cs">
+    <Compile Include="@DOTNET_PROJECT_DIR@/ortools/graph/*.cs">
       <Link>graph/%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="@PROJECT_SOURCE_DIR@/ortools/graph/csharp/*.cs">
       <Link>graph/%(Filename)%(Extension)</Link>
     </Compile>
 
-    <Compile Include="@PROJECT_DOTNET_DIR@/ortools/linear_solver/*.cs">
+    <Compile Include="@DOTNET_PROJECT_DIR@/ortools/linear_solver/*.cs">
       <Link>linear_solver/%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="@PROJECT_SOURCE_DIR@/ortools/linear_solver/csharp/*.cs">
       <Link>linear_solver/%(Filename)%(Extension)</Link>
     </Compile>
 
-    <Compile Include="@PROJECT_DOTNET_DIR@/ortools/constraint_solver/*.cs">
+    <Compile Include="@DOTNET_PROJECT_DIR@/ortools/constraint_solver/*.cs">
       <Link>constraint_solver/%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="@PROJECT_SOURCE_DIR@/ortools/constraint_solver/csharp/*.cs">
       <Link>constraint_solver/%(Filename)%(Extension)</Link>
     </Compile>
 
-    <Compile Include="@PROJECT_DOTNET_DIR@/ortools/init/*.cs">
+    <Compile Include="@DOTNET_PROJECT_DIR@/ortools/init/*.cs">
       <Link>init/%(Filename)%(Extension)</Link>
     </Compile>
 
-    <Compile Include="@PROJECT_DOTNET_DIR@/ortools/sat/*.cs">
+    <Compile Include="@DOTNET_PROJECT_DIR@/ortools/sat/*.cs">
       <Link>sat/%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="@PROJECT_SOURCE_DIR@/ortools/sat/csharp/*.cs">
       <Link>sat/%(Filename)%(Extension)</Link>
     </Compile>
 
-    <Compile Include="@PROJECT_DOTNET_DIR@/ortools/util/*.cs">
+    <Compile Include="@DOTNET_PROJECT_DIR@/ortools/util/*.cs">
       <Link>util/%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="@PROJECT_SOURCE_DIR@/ortools/util/csharp/*.cs">
