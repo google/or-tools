@@ -5620,16 +5620,13 @@ bool CpModelPresolver::PresolveOneConstraint(int c) {
       if (CanonicalizeLinear(ct)) {
         context_->UpdateConstraintVariableUsage(c);
       }
-      if (PresolveSmallLinear(ct)) {
-        context_->UpdateConstraintVariableUsage(c);
-      }
-      if (PresolveLinearEqualityWithModulo(ct)) {
-        context_->UpdateConstraintVariableUsage(c);
-      }
       if (PropagateDomainsInLinear(c, ct)) {
         context_->UpdateConstraintVariableUsage(c);
       }
       if (PresolveSmallLinear(ct)) {
+        context_->UpdateConstraintVariableUsage(c);
+      }
+      if (PresolveLinearEqualityWithModulo(ct)) {
         context_->UpdateConstraintVariableUsage(c);
       }
       // We first propagate the domains before calling this presolve rule.
@@ -5641,6 +5638,9 @@ bool CpModelPresolver::PresolveOneConstraint(int c) {
         if (PresolveSmallLinear(ct)) {
           context_->UpdateConstraintVariableUsage(c);
         }
+      }
+      if (PresolveSmallLinear(ct)) {
+        context_->UpdateConstraintVariableUsage(c);
       }
       if (PresolveLinearOnBooleans(ct)) {
         context_->UpdateConstraintVariableUsage(c);

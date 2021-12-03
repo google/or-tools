@@ -731,32 +731,17 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
     cp_var->set_name(mp_var.name());
 
     // Deal with the corner case of a domain far away from zero.
-    //
-    // TODO(user): We should deal with these case by shifting the domain so
-    // that it includes zero instead of just fixing the variable. But that is a
-    // bit of work as it requires some postsolve.
-    if (mp_var.lower_bound() > kMaxVariableBound) {
-      // Fix var to its lower bound.
-      ++num_truncated_bounds;
-      const int64_t value =
-          static_cast<int64_t>(std::round(mp_var.lower_bound()));
-      cp_var->add_domain(value);
-      cp_var->add_domain(value);
-      continue;
-    } else if (mp_var.upper_bound() < -kMaxVariableBound) {
-      // Fix var to its upper_bound.
-      ++num_truncated_bounds;
-      const int64_t value =
-          static_cast<int64_t>(std::round(mp_var.upper_bound()));
-      cp_var->add_domain(value);
-      cp_var->add_domain(value);
-      continue;
+    if (mp_var.lower_bound() > static_cast<double>(kMaxVariableBound) ||
+        mp_var.upper_bound() < static_cast<double>(-kMaxVariableBound)) {
+      SOLVER_LOG(logger, "Error: variable ", mp_var.DebugString(),
+                 " is outside [-mip_max_bound..mip_max_bound]");
+      return false;
     }
 
     // Note that we must process the lower bound first.
     for (const bool lower : {true, false}) {
       const double bound = lower ? mp_var.lower_bound() : mp_var.upper_bound();
-      if (std::abs(bound) >= kMaxVariableBound) {
+      if (std::abs(bound) >= static_cast<double>(kMaxVariableBound)) {
         ++num_truncated_bounds;
         cp_var->add_domain(bound < 0 ? -kMaxVariableBound : kMaxVariableBound);
         continue;
