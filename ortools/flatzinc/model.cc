@@ -749,6 +749,9 @@ int Argument::Size() const {
     case VAR_REF_ARRAY: {
       return variables.size();
     }
+    case VOID_ARGUMENT: {
+      return 0;
+    }
     default: {
       LOG(FATAL) << "Should not be here";
       return 0;
