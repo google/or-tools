@@ -323,9 +323,15 @@ class SumWithOneMissing {
   SumWithOneMissing() : num_infinities_(0), sum_() {}
 
   void Add(Fractional x) {
+    DCHECK(!std::isnan(x));
     if (num_infinities_ > 1) return;
     if (IsFinite(x)) {
       sum_.Add(x);
+
+      // If we overflow, then there is not much we can do. This is needed
+      // because KahanSum seems to give nan if we try to add stuff to an
+      // infinite sum.
+      if (!IsFinite(sum_.Value())) num_infinities_ = 2;
       return;
     }
     DCHECK_EQ(Infinity(), x);
