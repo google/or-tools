@@ -383,7 +383,7 @@ install_cbc: dependencies/install/lib/libCbc.a
 
 CBC_SRCDIR = dependencies/sources/Cbc-$(CBC_TAG)
 dependencies/install/lib/libCbc.a: install_cgl $(CBC_SRCDIR)
-	cd $(CBC_SRCDIR) && $(SET_COMPILER) ./configure \
+	cd $(CBC_SRCDIR) && $(SET_COMPILER) $(SET_COIN_OPT) ./configure \
     --prefix=$(OR_ROOT_FULL)/dependencies/install \
     --enable-static --disable-shared \
     --disable-debug \
@@ -395,8 +395,8 @@ dependencies/install/lib/libCbc.a: install_cgl $(CBC_SRCDIR)
     --enable-dependency-linking \
     --enable-cbc-parallel \
     ADD_CXXFLAGS="-w -DCBC_THREAD_SAFE -DCBC_NO_INTERRUPT $(MAC_VERSION) -std=c++11"
-	$(SET_COMPILER) make -C $(CBC_SRCDIR)
-	$(SET_COMPILER) make install -C $(CBC_SRCDIR)
+	$(SET_COMPILER) $(SET_COIN_OPT) make -C $(CBC_SRCDIR)
+	$(SET_COMPILER) $(SET_COIN_OPT) make install -C $(CBC_SRCDIR)
 
 $(CBC_SRCDIR): | dependencies/sources
 	-$(DELREC) $(CBC_SRCDIR)
@@ -423,7 +423,7 @@ install_cgl: dependencies/install/lib/libCgl.a
 
 CGL_SRCDIR = dependencies/sources/Cgl-$(CGL_TAG)
 dependencies/install/lib/libCgl.a: install_clp $(CGL_SRCDIR)
-	cd $(CGL_SRCDIR) && $(SET_COMPILER) ./configure \
+	cd $(CGL_SRCDIR) && $(SET_COMPILER) $(SET_COIN_OPT) ./configure \
     --prefix=$(OR_ROOT_FULL)/dependencies/install \
     --enable-static --disable-shared \
     --disable-debug \
@@ -434,8 +434,8 @@ dependencies/install/lib/libCgl.a: install_clp $(CGL_SRCDIR)
     --disable-dependency-tracking \
     --enable-dependency-linking \
     ADD_CXXFLAGS="-w $(MAC_VERSION) -std=c++11"
-	$(SET_COMPILER) make -C $(CGL_SRCDIR)
-	$(SET_COMPILER) make install -C $(CGL_SRCDIR)
+	$(SET_COMPILER) $(SET_COIN_OPT) make -C $(CGL_SRCDIR)
+	$(SET_COMPILER) $(SET_COIN_OPT) make install -C $(CGL_SRCDIR)
 
 $(CGL_SRCDIR): | dependencies/sources
 	-$(DELREC) $(CGL_SRCDIR)
@@ -460,7 +460,7 @@ install_clp: dependencies/install/lib/libClp.a
 
 CLP_SRCDIR = dependencies/sources/Clp-$(CLP_TAG)
 dependencies/install/lib/libClp.a: install_osi $(CLP_SRCDIR)
-	cd $(CLP_SRCDIR) && $(SET_COMPILER) ./configure \
+	cd $(CLP_SRCDIR) && $(SET_COMPILER) $(SET_COIN_OPT) ./configure \
     --prefix=$(OR_ROOT_FULL)/dependencies/install \
     --enable-static --disable-shared \
     --disable-debug \
@@ -471,8 +471,8 @@ dependencies/install/lib/libClp.a: install_osi $(CLP_SRCDIR)
     --disable-dependency-tracking \
     --enable-dependency-linking \
     ADD_CXXFLAGS="-w $(MAC_VERSION) -std=c++11"
-	$(SET_COMPILER) make -C $(CLP_SRCDIR)
-	$(SET_COMPILER) make install -C $(CLP_SRCDIR)
+	$(SET_COMPILER) $(SET_COIN_OPT) make -C $(CLP_SRCDIR)
+	$(SET_COMPILER) $(SET_COIN_OPT) make install -C $(CLP_SRCDIR)
 
 $(CLP_SRCDIR): | dependencies/sources
 	-$(DELREC) $(CLP_SRCDIR)
@@ -499,7 +499,7 @@ install_osi: dependencies/install/lib/libOsi.a
 
 OSI_SRCDIR = dependencies/sources/Osi-$(OSI_TAG)
 dependencies/install/lib/libOsi.a: install_coinutils $(OSI_SRCDIR)
-	cd $(OSI_SRCDIR) && $(SET_COMPILER) ./configure \
+	cd $(OSI_SRCDIR) && $(SET_COMPILER) $(SET_COIN_OPT) ./configure \
     --prefix=$(OR_ROOT_FULL)/dependencies/install \
     --enable-static --disable-shared \
     --disable-debug \
@@ -511,8 +511,8 @@ dependencies/install/lib/libOsi.a: install_coinutils $(OSI_SRCDIR)
     --disable-dependency-tracking \
     --enable-dependency-linking \
     ADD_CXXFLAGS="-w $(MAC_VERSION) -std=c++11"
-	$(SET_COMPILER) make -C $(OSI_SRCDIR)
-	$(SET_COMPILER) make install -C $(OSI_SRCDIR)
+	$(SET_COMPILER) $(SET_COIN_OPT) make -C $(OSI_SRCDIR)
+	$(SET_COMPILER) $(SET_COIN_OPT) make install -C $(OSI_SRCDIR)
 
 $(OSI_SRCDIR): | dependencies/sources
 	-$(DELREC) $(OSI_SRCDIR)
@@ -538,7 +538,7 @@ install_coinutils: dependencies/install/lib/libCoinUtils.a
 COINUTILS_SRCDIR = dependencies/sources/CoinUtils-$(COINUTILS_TAG)
 dependencies/install/lib/libCoinUtils.a: $(COINUTILS_SRCDIR) | \
  dependencies/install/lib/pkgconfig dependencies/install/include/coin
-	cd $(COINUTILS_SRCDIR) && $(SET_COMPILER) ./configure \
+	cd $(COINUTILS_SRCDIR) && $(SET_COMPILER) $(SET_COIN_OPT) ./configure \
     --prefix=$(OR_ROOT_FULL)/dependencies/install \
     --enable-static --disable-shared \
     --disable-bzlib \
@@ -550,8 +550,8 @@ dependencies/install/lib/libCoinUtils.a: $(COINUTILS_SRCDIR) | \
     --disable-dependency-tracking \
     --enable-dependency-linking \
     ADD_CXXFLAGS="-w $(MAC_VERSION) -std=c++11"
-	$(SET_COMPILER) make -C $(COINUTILS_SRCDIR)
-	$(SET_COMPILER) make install -C $(COINUTILS_SRCDIR)
+	$(SET_COMPILER) $(SET_COIN_OPT) make -C $(COINUTILS_SRCDIR)
+	$(SET_COMPILER) $(SET_COIN_OPT) make install -C $(COINUTILS_SRCDIR)
 
 $(COINUTILS_SRCDIR): | dependencies/sources
 	-$(DELREC) $(COINUTILS_SRCDIR)
