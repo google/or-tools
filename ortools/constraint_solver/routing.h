@@ -186,6 +186,7 @@
 #include "ortools/constraint_solver/routing_types.h"
 #include "ortools/graph/graph.h"
 #include "ortools/sat/theta_tree.h"
+#include "ortools/util/bitset.h"
 #include "ortools/util/piecewise_linear_function.h"
 #include "ortools/util/range_query_function.h"
 #include "ortools/util/saturated_arithmetic.h"
@@ -322,6 +323,8 @@ class RoutingModel {
     CostClassIndex cost_class_index;
     /// Contrarily to CostClass, here we need strict equivalence.
     int64_t fixed_cost;
+    /// Whether or not the vehicle is used when empty.
+    bool used_when_empty;
     /// Vehicle start and end equivalence classes. Currently if two vehicles
     /// have different start/end nodes which are "physically" located at the
     /// same place, these two vehicles will be considered as non-equivalent
@@ -342,6 +345,8 @@ class RoutingModel {
     absl::StrongVector<DimensionIndex, int64_t> dimension_evaluator_classes;
     /// Fingerprint of unvisitable non-start/end nodes.
     uint64_t unvisitable_nodes_fprint;
+    /// Sorted set of resource groups for which the vehicle requires a resource.
+    std::vector<int> required_resource_group_indices;
 
     /// Comparator for STL containers and algorithms.
     static bool LessThan(const VehicleClass& a, const VehicleClass& b);
@@ -376,17 +381,17 @@ class RoutingModel {
     // clang-format on
   };
 
-#ifndef SWIG
   /// A ResourceGroup defines a set of available Resources with attributes on
   /// one or multiple dimensions.
   /// For every ResourceGroup in the model, each (used) vehicle in the solution
-  /// must be assigned to exactly 1 resource, and each resource can in turn be
-  /// assigned to at most 1 vehicle. This vehicle-to-resource assignment will
-  /// apply the corresponding Attributes to the dimensions affected by the
-  /// resource group.
-  /// NOTE: As of 2021/07, each ResourceGroup can only affect a single
-  /// RoutingDimension at a time, i.e. all Resources in a group must apply
-  /// attributes to the same single dimension.
+  /// which requires a resource (see NotifyVehicleRequiresResource()) from this
+  /// group must be assigned to exactly 1 resource, and each resource can in
+  /// turn be assigned to at most 1 vehicle requiring it. This
+  /// vehicle-to-resource assignment will apply the corresponding Attributes to
+  /// the dimensions affected by the resource group. NOTE: As of 2021/07, each
+  /// ResourceGroup can only affect a single RoutingDimension at a time, i.e.
+  /// all Resources in a group must apply attributes to the same single
+  /// dimension.
   class ResourceGroup {
    public:
     /// Attributes for a dimension.
@@ -414,6 +419,8 @@ class RoutingModel {
           const RoutingDimension* dimension) const;
 
      private:
+      using Attributes = ResourceGroup::Attributes;
+
       explicit Resource(const RoutingModel* model) : model_(model) {}
 
       void SetDimensionAttributes(Attributes attributes,
@@ -426,13 +433,31 @@ class RoutingModel {
       friend class ResourceGroup;
     };
 
-    explicit ResourceGroup(const RoutingModel* model) : model_(model) {}
+    explicit ResourceGroup(const RoutingModel* model)
+        : model_(model), vehicle_requires_resource_(model->vehicles(), false) {}
 
-    /// Add a Resource with the given attributes for the corresponding
-    /// dimension.
-    void AddResource(Attributes attributes, const RoutingDimension* dimension);
+    /// Adds a Resource with the given attributes for the corresponding
+    /// dimension. Returns the index of the added resource in resources_.
+    int AddResource(Attributes attributes, const RoutingDimension* dimension);
+
+    /// Notifies that the given vehicle index requires a resource from this
+    /// group if the vehicle is used (i.e. if its route is non-empty or
+    /// vehicle_used_when_empty_[vehicle] is true).
+    void NotifyVehicleRequiresAResource(int vehicle);
+
+    const std::vector<int>& GetVehiclesRequiringAResource() const {
+      return vehicles_requiring_resource_;
+    }
+
+    bool VehicleRequiresAResource(int vehicle) const {
+      return vehicle_requires_resource_[vehicle];
+    }
 
     const std::vector<Resource>& GetResources() const { return resources_; }
+    const Resource& GetResource(int resource_index) const {
+      DCHECK_LT(resource_index, resources_.size());
+      return resources_[resource_index];
+    }
     const absl::flat_hash_set<DimensionIndex>& GetAffectedDimensionIndices()
         const {
       return affected_dimension_indices_;
@@ -442,10 +467,11 @@ class RoutingModel {
    private:
     const RoutingModel* const model_;
     std::vector<Resource> resources_;
+    std::vector<bool> vehicle_requires_resource_;
+    std::vector<int> vehicles_requiring_resource_;
     /// All indices of dimensions affected by this resource group.
     absl::flat_hash_set<DimensionIndex> affected_dimension_indices_;
   };
-#endif  // SWIG
 
   /// Constant used to express a hard constraint instead of a soft penalty.
   static const int64_t kNoPenalty;
@@ -682,19 +708,31 @@ class RoutingModel {
     return primary_constrained_dimension_;
   }
 
-#ifndef SWIG
-  ResourceGroup* const AddResourceGroup();
+  /// Adds a resource group to the routing model. Returns its index in
+  /// resource_groups_.
+  int AddResourceGroup();
   // clang-format off
   const std::vector<std::unique_ptr<ResourceGroup> >& GetResourceGroups()
       const {
     return resource_groups_;
   }
-#endif  // SWIG
   // clang-format on
+  ResourceGroup* GetResourceGroup(int rg_index) const {
+    DCHECK_LT(rg_index, resource_groups_.size());
+    return resource_groups_[rg_index].get();
+  }
+
   /// Returns the indices of resource groups for this dimension. This method can
   /// only be called after the model has been closed.
   const std::vector<int>& GetDimensionResourceGroupIndices(
       const RoutingDimension* dimension) const;
+
+  /// Returns the index of the resource group attached to the dimension.
+  /// DCHECKS that there's exactly one resource group for this dimension.
+  int GetDimensionResourceGroupIndex(const RoutingDimension* dimension) const {
+    DCHECK_EQ(GetDimensionResourceGroupIndices(dimension).size(), 1);
+    return GetDimensionResourceGroupIndices(dimension)[0];
+  }
 
   /// Adds a disjunction constraint on the indices: exactly 'max_cardinality' of
   /// the indices are active. Start and end indices of any vehicle cannot be
@@ -753,6 +791,12 @@ class RoutingModel {
   }
   /// Returns the number of node disjunctions in the model.
   int GetNumberOfDisjunctions() const { return disjunctions_.size(); }
+  /// Returns true if the model contains mandatory disjunctions (ones with
+  /// kNoPenalty as penalty).
+  bool HasMandatoryDisjunctions() const;
+  /// Returns true if the model contains at least one disjunction which is
+  /// constrained by its max_cardinality.
+  bool HasMaxCardinalityConstrainedDisjunctions() const;
   /// Returns the list of all perfect binary disjunctions, as pairs of variable
   /// indices: a disjunction is "perfect" when its variables do not appear in
   /// any other disjunction. Each pair is sorted (lowest variable index first),
@@ -1037,14 +1081,14 @@ class RoutingModel {
     return quadratic_cost_factor_of_vehicle_;
   }
 
-  void ConsiderEmptyRouteCostsForVehicle(bool consider_costs, int vehicle) {
+  void SetVehicleUsedWhenEmpty(bool is_used, int vehicle) {
     DCHECK_LT(vehicle, vehicles_);
-    consider_empty_route_costs_[vehicle] = consider_costs;
+    vehicle_used_when_empty_[vehicle] = is_used;
   }
 
-  bool AreEmptyRouteCostsConsideredForVehicle(int vehicle) const {
+  bool IsVehicleUsedWhenEmpty(int vehicle) const {
     DCHECK_LT(vehicle, vehicles_);
-    return consider_empty_route_costs_[vehicle];
+    return vehicle_used_when_empty_[vehicle];
   }
 
 /// Gets/sets the evaluator used during the search. Only relevant when
@@ -1298,6 +1342,12 @@ class RoutingModel {
   /// Returns all vehicle variables of the model,  such that VehicleVars(i) is
   /// the vehicle variable of the node corresponding to i.
   const std::vector<IntVar*>& VehicleVars() const { return vehicle_vars_; }
+  /// Returns vehicle resource variables for a given resource group, such that
+  /// ResourceVars(r_g)[v] is the resource variable for vehicle 'v' in resource
+  /// group 'r_g'.
+  const std::vector<IntVar*>& ResourceVars(int resource_group) const {
+    return resource_vars_[resource_group];
+  }
 #endif  /// !defined(SWIGPYTHON)
   /// Returns the next variable of the node corresponding to index. Note that
   /// NextVar(index) == index is equivalent to ActiveVar(index) == 0.
@@ -1309,14 +1359,23 @@ class RoutingModel {
   IntVar* ActiveVehicleVar(int vehicle) const {
     return vehicle_active_[vehicle];
   }
-  /// Returns the variable specifying whether or not costs are considered for
-  /// vehicle.
-  IntVar* VehicleCostsConsideredVar(int vehicle) const {
-    return vehicle_costs_considered_[vehicle];
+  /// Returns the variable specifying whether or not the given vehicle route is
+  /// considered for costs and constraints. It will be equal to 1 iff the route
+  /// of the vehicle is not empty OR vehicle_used_when_empty_[vehicle] is true.
+  IntVar* VehicleRouteConsideredVar(int vehicle) const {
+    return vehicle_route_considered_[vehicle];
   }
   /// Returns the vehicle variable of the node corresponding to index. Note that
   /// VehicleVar(index) == -1 is equivalent to ActiveVar(index) == 0.
   IntVar* VehicleVar(int64_t index) const { return vehicle_vars_[index]; }
+  /// Returns the resource variable for the given vehicle index in the given
+  /// resource group. If a vehicle doesn't require a resource from the
+  /// corresponding resource group, then ResourceVar(v, r_g) == -1.
+  IntVar* ResourceVar(int vehicle, int resource_group) const {
+    DCHECK_LT(resource_group, resource_vars_.size());
+    DCHECK_LT(vehicle, resource_vars_[resource_group].size());
+    return resource_vars_[resource_group][vehicle];
+  }
   /// Returns the global cost variable which is being minimized.
   IntVar* CostVar() const { return cost_; }
 
@@ -1507,6 +1566,10 @@ class RoutingModel {
   /// away in each possible dimension.
   static std::unique_ptr<LocalSearchOperator> MakeGreedyDescentLSOperator(
       std::vector<IntVar*> variables);
+  // Read access to currently registered search monitors.
+  const std::vector<SearchMonitor*>& GetSearchMonitors() const {
+    return monitors_;
+  }
 #endif  /// __SWIG__
   /// MakeSelfDependentDimensionFinalizer is a finalizer for the slacks of a
   /// self-dependent dimension. It makes an extensive use of the caches of the
@@ -1728,7 +1791,7 @@ class RoutingModel {
                    const std::string& description, int64_t solution_cost,
                    int64_t start_time_ms);
   /// See CompactAssignment. Checks the final solution if
-  /// check_compact_assignement is true.
+  /// check_compact_assignment is true.
   Assignment* CompactAssignmentInternal(const Assignment& assignment,
                                         bool check_compact_assignment) const;
   /// Checks that the current search parameters are valid for the current
@@ -1759,7 +1822,7 @@ class RoutingModel {
   }
   template <class T>
   LocalSearchOperator* CreateCPOperator() {
-    return CreateCPOperator(absl::bind_front(MakeLocalSearchOperator<T>));
+    return CreateCPOperator(MakeLocalSearchOperator<T>);
   }
   template <class T, class Arg>
   LocalSearchOperator* CreateOperator(const Arg& arg) {
@@ -1840,9 +1903,14 @@ class RoutingModel {
   std::vector<IntVar*> nexts_;
   std::vector<IntVar*> vehicle_vars_;
   std::vector<IntVar*> active_;
+  /// Resource variables, indexed first by resource group index and then by
+  /// vehicle index.
+  // clang-format off
+  std::vector<std::vector<IntVar*> > resource_vars_;
+  // clang-format on
   // The following vectors are indexed by vehicle index.
   std::vector<IntVar*> vehicle_active_;
-  std::vector<IntVar*> vehicle_costs_considered_;
+  std::vector<IntVar*> vehicle_route_considered_;
   /// is_bound_to_end_[i] will be true iff the path starting at var #i is fully
   /// bound and reaches the end of a route, i.e. either:
   /// - IsEnd(i) is true
@@ -1886,17 +1954,18 @@ class RoutingModel {
   std::vector<int64_t> linear_cost_factor_of_vehicle_;
   std::vector<int64_t> quadratic_cost_factor_of_vehicle_;
   bool vehicle_amortized_cost_factors_set_;
-  /// consider_empty_route_costs_[vehicle] determines if "vehicle" should be
-  /// taken into account for costs (arc costs, span costs, etc.) even when the
-  /// route of the vehicle is empty (i.e. goes straight from its start to its
-  /// end).
+  /// vehicle_used_when_empty_[vehicle] determines if "vehicle" should be
+  /// taken into account for costs (arc costs, span costs, etc.) and constraints
+  /// (eg. resources) even when the route of the vehicle is empty (i.e. goes
+  /// straight from its start to its end).
   ///
   /// NOTE1: A vehicle's fixed cost is added iff the vehicle serves nodes on its
   /// route, regardless of this variable's value.
   ///
   /// NOTE2: The default value for this boolean is 'false' for all vehicles,
-  /// i.e. by default empty routes will not contribute to the cost.
-  std::vector<bool> consider_empty_route_costs_;
+  /// i.e. by default empty routes will not contribute to the cost nor be
+  /// considered for constraints.
+  std::vector<bool> vehicle_used_when_empty_;
 #ifndef SWIG
   absl::StrongVector<CostClassIndex, CostClass> cost_classes_;
 #endif  // SWIG
@@ -3029,6 +3098,19 @@ bool SolveModelWithSat(const RoutingModel& model,
 #if !defined(SWIG)
 IntVarLocalSearchFilter* MakeVehicleBreaksFilter(
     const RoutingModel& routing_model, const RoutingDimension& dimension);
+
+// A decision builder that monitors solutions, and tries to fix dimension
+// variables whose route did not change in the candidate solution.
+// Dimension variables are Cumul, Slack and break variables of all dimensions.
+// The user must make sure that those variables will be always be fixed at
+// solution, typically by composing another DecisionBuilder after this one.
+// If this DecisionBuilder returns a non-nullptr value at some node of the
+// search tree, it will always return nullptr in the subtree of that node.
+// Moreover, the decision will be a simultaneous assignment of the dimension
+// variables of unchanged routes on the left branch, and an empty decision on
+// the right branch.
+DecisionBuilder* MakeRestoreDimensionValuesForUnchangedRoutes(
+    RoutingModel* model);
 #endif
 
 }  // namespace operations_research

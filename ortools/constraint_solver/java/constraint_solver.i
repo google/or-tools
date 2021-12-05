@@ -1120,6 +1120,7 @@ import java.util.HashSet;
 %rename (updateLimits) Solver::UpdateLimits;
 %rename (wallTime) Solver::wall_time;
 
+
 // BaseIntExpr
 %unignore BaseIntExpr;
 %rename (castToVar) BaseIntExpr::CastToVar;

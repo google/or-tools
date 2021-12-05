@@ -80,7 +80,7 @@ void RoutingIndexManager::Initialize(
   vehicle_to_end_.resize(num_vehicles_);
   int64_t index = 0;
   for (NodeIndex i = kZeroNode; i < num_nodes_; ++i) {
-    if (gtl::ContainsKey(starts, i) || !gtl::ContainsKey(ends, i)) {
+    if (starts.contains(i) || !ends.contains(i)) {
       index_to_node_[index] = i;
       node_to_index_[i] = index;
       ++index;
@@ -89,7 +89,7 @@ void RoutingIndexManager::Initialize(
   absl::flat_hash_set<NodeIndex> seen_starts;
   for (int i = 0; i < num_vehicles_; ++i) {
     const NodeIndex start = starts_ends[i].first;
-    if (!gtl::ContainsKey(seen_starts, start)) {
+    if (!seen_starts.contains(start)) {
       seen_starts.insert(start);
       const int64_t start_index = node_to_index_[start];
       vehicle_to_start_[i] = start_index;
