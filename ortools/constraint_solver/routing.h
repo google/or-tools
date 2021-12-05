@@ -415,20 +415,19 @@ class RoutingModel {
     /// A Resource sets attributes (costs/constraints) for a set of dimensions.
     class Resource {
      public:
-      const Attributes& GetDimensionAttributes(
+      const ResourceGroup::Attributes& GetDimensionAttributes(
           const RoutingDimension* dimension) const;
 
      private:
-      using Attributes = ResourceGroup::Attributes;
-
       explicit Resource(const RoutingModel* model) : model_(model) {}
 
-      void SetDimensionAttributes(Attributes attributes,
+      void SetDimensionAttributes(ResourceGroup::Attributes attributes,
                                   const RoutingDimension* dimension);
-      const Attributes& GetDefaultAttributes() const;
+      const ResourceGroup::Attributes& GetDefaultAttributes() const;
 
       const RoutingModel* const model_;
-      absl::flat_hash_map<DimensionIndex, Attributes> dimension_attributes_;
+      absl::flat_hash_map<DimensionIndex, ResourceGroup::Attributes>
+          dimension_attributes_;
 
       friend class ResourceGroup;
     };
