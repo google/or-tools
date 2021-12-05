@@ -188,7 +188,7 @@ ifeq ($(PLATFORM),MACOSX)
   endif
   SYS_LNK =
   SET_COMPILER = CXX="$(CCC)"
-  SET_COIN_OPT = OPT_CXXFLAGS="-O2 -DNDEBUG" OPT_CFLAGS="-O2 -DNDEBUG"
+  SET_COIN_OPT = OPT_CXXFLAGS="-O1 -DNDEBUG" OPT_CFLAGS="-O1 -DNDEBUG"
   JAVA_INC = -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/darwin
   JAVAC_BIN = $(shell $(WHICH) $(JAVA_HOME)/bin/javac)
   JAVA_BIN = $(shell $(WHICH) $(JAVA_HOME)/bin/java)
