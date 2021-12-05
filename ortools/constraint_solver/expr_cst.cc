@@ -1318,7 +1318,7 @@ class IsMemberCt : public Constraint {
     DCHECK(v != nullptr);
     DCHECK(s != nullptr);
     DCHECK(b != nullptr);
-    while (gtl::ContainsKey(values_as_set_, neg_support_)) {
+    while (values_as_set_.contains(neg_support_)) {
       neg_support_++;
     }
   }
@@ -1382,7 +1382,7 @@ class IsMemberCt : public Constraint {
           } else {
             // Look for a new negative support.
             for (const int64_t value : InitAndGetValues(domain_)) {
-              if (!gtl::ContainsKey(values_as_set_, value)) {
+              if (!values_as_set_.contains(value)) {
                 neg_support_ = value;
                 return;
               }

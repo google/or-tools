@@ -392,7 +392,7 @@ class ImpactRecorder : public SearchMonitor {
     }
     d->Accept(&find_var_);
     if (find_var_.operation() == FindVar::ASSIGN &&
-        gtl::ContainsKey(var_map_, find_var_.var())) {
+        var_map_.contains(find_var_.var())) {
       current_var_ = var_map_[find_var_.var()];
       current_value_ = find_var_.value();
       current_log_space_ = domain_watcher_->LogSearchSpaceSize();

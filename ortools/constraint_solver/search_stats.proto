@@ -23,6 +23,15 @@ package operations_research;
 
 // Statistics on local search.
 message LocalSearchStatistics {
+  // First solution statistics collected during search.
+  message FirstSolutionStatistics {
+    // Name of the strategy used.
+    string strategy = 1;
+    // Time spent in the decision builder.
+    double duration_seconds = 2;
+  }
+  // Statistics for each first solution called during the search.
+  repeated FirstSolutionStatistics first_solution_statistics = 6;
   // Statistics on local search operators called during the search.
   message LocalSearchOperatorStatistics {
     // Name of the operator.
@@ -67,7 +76,7 @@ message ConstraintSolverStatistics {
   int64 num_solutions = 3;
   // Memory usage of the solver.
   int64 bytes_used = 4;
-  // Time spent in the filter.
+  // Total time spent in the solver.
   double duration_seconds = 5;
 }
 

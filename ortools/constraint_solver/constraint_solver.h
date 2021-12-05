@@ -80,6 +80,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/attributes.h"
 #include "absl/base/log_severity.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
@@ -136,6 +137,7 @@ class ModelCache;
 class ModelVisitor;
 class OptimizeVar;
 class Pack;
+class ProfiledDecisionBuilder;
 class PropagationBaseObject;
 class PropagationMonitor;
 class Queue;
@@ -2200,11 +2202,11 @@ class Solver {
   SearchMonitor* MakeConstantRestart(int frequency);
 
   /// Creates a search limit that constrains the running time.
-  RegularLimit* MakeTimeLimit(absl::Duration time);
+  ABSL_MUST_USE_RESULT RegularLimit* MakeTimeLimit(absl::Duration time);
 #if !defined(SWIG)
   ABSL_DEPRECATED("Use the version taking absl::Duration() as argument")
 #endif  // !defined(SWIG)
-  RegularLimit* MakeTimeLimit(int64_t time_in_ms) {
+  ABSL_MUST_USE_RESULT RegularLimit* MakeTimeLimit(int64_t time_in_ms) {
     return MakeTimeLimit(time_in_ms == kint64max
                              ? absl::InfiniteDuration()
                              : absl::Milliseconds(time_in_ms));
@@ -2212,33 +2214,38 @@ class Solver {
 
   /// Creates a search limit that constrains the number of branches
   /// explored in the search tree.
-  RegularLimit* MakeBranchesLimit(int64_t branches);
+  ABSL_MUST_USE_RESULT RegularLimit* MakeBranchesLimit(int64_t branches);
 
   /// Creates a search limit that constrains the number of failures
   /// that can happen when exploring the search tree.
-  RegularLimit* MakeFailuresLimit(int64_t failures);
+  ABSL_MUST_USE_RESULT RegularLimit* MakeFailuresLimit(int64_t failures);
 
   /// Creates a search limit that constrains the number of solutions found
   /// during the search.
-  RegularLimit* MakeSolutionsLimit(int64_t solutions);
+  ABSL_MUST_USE_RESULT RegularLimit* MakeSolutionsLimit(int64_t solutions);
 
   /// Limits the search with the 'time', 'branches', 'failures' and
   /// 'solutions' limits. 'smart_time_check' reduces the calls to the wall
   // timer by estimating the number of remaining calls, and 'cumulative' means
   // that the limit applies cumulatively, instead of search-by-search.
-  RegularLimit* MakeLimit(absl::Duration time, int64_t branches,
-                          int64_t failures, int64_t solutions,
-                          bool smart_time_check = false,
-                          bool cumulative = false);
+  ABSL_MUST_USE_RESULT RegularLimit* MakeLimit(absl::Duration time,
+                                               int64_t branches,
+                                               int64_t failures,
+                                               int64_t solutions,
+                                               bool smart_time_check = false,
+                                               bool cumulative = false);
   /// Creates a search limit from its protobuf description
-  RegularLimit* MakeLimit(const RegularLimitParameters& proto);
+  ABSL_MUST_USE_RESULT RegularLimit* MakeLimit(
+      const RegularLimitParameters& proto);
 
 #if !defined(SWIG)
   ABSL_DEPRECATED("Use other MakeLimit() versions")
 #endif  // !defined(SWIG)
-  RegularLimit* MakeLimit(int64_t time, int64_t branches, int64_t failures,
-                          int64_t solutions, bool smart_time_check = false,
-                          bool cumulative = false);
+  ABSL_MUST_USE_RESULT RegularLimit* MakeLimit(int64_t time, int64_t branches,
+                                               int64_t failures,
+                                               int64_t solutions,
+                                               bool smart_time_check = false,
+                                               bool cumulative = false);
 
   /// Creates a regular limit proto containing default values.
   RegularLimitParameters MakeDefaultRegularLimitParameters() const;
@@ -2246,21 +2253,22 @@ class Solver {
   /// Creates a search limit that is reached when either of the underlying limit
   /// is reached. That is, the returned limit is more stringent than both
   /// argument limits.
-  SearchLimit* MakeLimit(SearchLimit* const limit_1,
-                         SearchLimit* const limit_2);
+  ABSL_MUST_USE_RESULT SearchLimit* MakeLimit(SearchLimit* const limit_1,
+                                              SearchLimit* const limit_2);
 
   /// Limits the search based on the improvements of 'objective_var'. Stops the
   /// search when the improvement rate gets lower than a threshold value. This
   /// threshold value is computed based on the improvement rate during the first
   /// phase of the search.
-  ImprovementSearchLimit* MakeImprovementLimit(
+  ABSL_MUST_USE_RESULT ImprovementSearchLimit* MakeImprovementLimit(
       IntVar* objective_var, bool maximize, double objective_scaling_factor,
       double objective_offset, double improvement_rate_coefficient,
       int improvement_rate_solutions_distance);
 
   /// Callback-based search limit. Search stops when limiter returns true; if
   /// this happens at a leaf the corresponding solution will be rejected.
-  SearchLimit* MakeCustomLimit(std::function<bool()> limiter);
+  ABSL_MUST_USE_RESULT SearchLimit* MakeCustomLimit(
+      std::function<bool()> limiter);
 
   // TODO(user): DEPRECATE API of MakeSearchLog(.., IntVar* var,..).
 
@@ -2358,6 +2366,10 @@ class Solver {
                                                int64_t value);
   Decision* MakeAssignVariablesValues(const std::vector<IntVar*>& vars,
                                       const std::vector<int64_t>& values);
+  Decision* MakeAssignVariablesValuesOrDoNothing(
+      const std::vector<IntVar*>& vars, const std::vector<int64_t>& values);
+  Decision* MakeAssignVariablesValuesOrFail(const std::vector<IntVar*>& vars,
+                                            const std::vector<int64_t>& values);
   Decision* MakeFailDecision();
   Decision* MakeDecision(Action apply, Action refute);
 
@@ -2991,6 +3003,9 @@ class Solver {
     Fail();
   }
 
+  /// Activates profiling on a decision builder.
+  DecisionBuilder* MakeProfiledDecisionBuilderWrapper(DecisionBuilder* db);
+
  private:
   void Init();  /// Initialization. To be called by the constructors only.
   void PushState(MarkerType t, const StateInfo& info);
@@ -3286,10 +3301,34 @@ class DecisionBuilder : public BaseObject {
                               std::vector<SearchMonitor*>* const extras);
   virtual void Accept(ModelVisitor* const visitor) const;
 #endif
+  void set_name(const std::string& name) { name_ = name; }
+  std::string GetName() const;
 
  private:
+  std::string name_;
   DISALLOW_COPY_AND_ASSIGN(DecisionBuilder);
 };
+
+#if !defined(SWIG)
+class ProfiledDecisionBuilder : public DecisionBuilder {
+ public:
+  explicit ProfiledDecisionBuilder(DecisionBuilder* db);
+  ~ProfiledDecisionBuilder() override {}
+  const std::string& name() const { return name_; }
+  double seconds() const { return seconds_; }
+  Decision* Next(Solver* const solver) override;
+  std::string DebugString() const override;
+  void AppendMonitors(Solver* const solver,
+                      std::vector<SearchMonitor*>* const extras) override;
+  void Accept(ModelVisitor* const visitor) const override;
+
+ private:
+  DecisionBuilder* const db_;
+  const std::string name_;
+  SimpleCycleTimer timer_;
+  double seconds_;
+};
+#endif
 
 /// A Demon is the base element of a propagation queue. It is the main
 ///   object responsible for implementing the actual propagation

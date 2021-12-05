@@ -28,7 +28,9 @@ def main(board_size):
     # Creates the variables.
     # [START variables]
     # The array index is the column, and the value is the row.
-    queens = [solver.IntVar(0, board_size - 1, f'x{i}') for i in range(board_size)]
+    queens = [
+        solver.IntVar(0, board_size - 1, f'x{i}') for i in range(board_size)
+    ]
     # [END variables]
 
     # Creates the constraints.
@@ -36,7 +38,6 @@ def main(board_size):
     # All rows must be different.
     solver.Add(solver.AllDifferent(queens))
 
-    # All columns must be different because the indices of queens are all different.
     # No two queens can be on the same diagonal.
     solver.Add(solver.AllDifferent([queens[i] + i for i in range(board_size)]))
     solver.Add(solver.AllDifferent([queens[i] - i for i in range(board_size)]))
@@ -57,9 +58,9 @@ def main(board_size):
             for j in range(board_size):
                 if queens[j].Value() == i:
                     # There is a queen in column j, row i.
-                    print("Q", end=" ")
+                    print('Q', end=' ')
                 else:
-                    print("_", end=" ")
+                    print('_', end=' ')
             print()
         print()
         num_solutions += 1
