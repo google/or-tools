@@ -11,6 +11,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+%typemap(csimports) SWIGTYPE %{
+using System;
+using System.Runtime.InteropServices;
+using System.Collections;
+using System.Collections.Generic;
+%}
+
 // TODO(user): Refactor this file to adhere to the SWIG style guide.
 %include "std_pair.i"
 %template(IntBoolPair) std::pair<int, bool>;
@@ -57,6 +64,11 @@ namespace operations_research {
 
 // RoutingModel
 %unignore RoutingModel;
+%typemap(csimports) RoutingModel
+%{
+using System;
+using System.Collections.Generic;
+%}
 %typemap(cscode) RoutingModel %{
   // Keep reference to delegate to avoid GC to collect them early.
   private List<LongToLong> unaryTransitCallbacks;
@@ -126,6 +138,11 @@ namespace operations_research {
 
 // RoutingDimension
 %unignore RoutingDimension;
+%typemap(csimports) RoutingDimension
+%{
+using System;
+using System.Collections.Generic;
+%}
 %typemap(cscode) RoutingDimension %{
   // Keep reference to delegate to avoid GC to collect them early.
   private List<IntIntToLong> limitCallbacks;
