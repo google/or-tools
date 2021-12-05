@@ -512,10 +512,7 @@ CheapestInsertionFilteredHeuristic::ComputeStartEndDistanceForVehicles(
       const int64_t distance =
           CapAdd(model()->GetArcCostForVehicle(start, node, vehicle),
                  model()->GetArcCostForVehicle(node, end, vehicle));
-      start_end_distances.push_back(
-          {.num_allowed_vehicles = num_allowed_vehicles,
-           .distance = distance,
-           .vehicle = vehicle});
+      start_end_distances.push_back({num_allowed_vehicles, distance, vehicle});
     };
     // Iterating over an IntVar domain is faster than calling Contains.
     // Therefore we iterate on 'vehicles' only if it's smaller than the domain
