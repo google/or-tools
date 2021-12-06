@@ -212,7 +212,7 @@ BopOptimizerBase::Status GuidedSatFirstSolutionGenerator::Optimize(
 //------------------------------------------------------------------------------
 BopRandomFirstSolutionGenerator::BopRandomFirstSolutionGenerator(
     const std::string& name, const BopParameters& parameters,
-    sat::SatSolver* sat_propagator, MTRandom* random)
+    sat::SatSolver* sat_propagator, absl::BitGenRef random)
     : BopOptimizerBase(name),
       random_(random),
       sat_propagator_(sat_propagator) {}
@@ -275,7 +275,7 @@ BopOptimizerBase::Status BopRandomFirstSolutionGenerator::Optimize(
     }
 
     // Special assignment preference parameters.
-    const int preference = random_->Uniform(4);
+    const int preference = absl::Uniform(random_, 0, 4);
     if (preference == 0) {
       UseObjectiveForSatAssignmentPreference(problem_state.original_problem(),
                                              sat_propagator_);

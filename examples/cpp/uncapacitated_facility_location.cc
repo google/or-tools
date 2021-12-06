@@ -24,12 +24,13 @@
 #include <cstdio>
 #include <vector>
 
+#include "absl/random/random.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/random.h"
 #include "ortools/linear_solver/linear_solver.h"
+#include "ortools/util/random_engine.h"
 
 ABSL_FLAG(int, verbose, 0, "Verbosity level.");
 ABSL_FLAG(int, facilities, 20, "Candidate facilities to consider.");
@@ -69,16 +70,16 @@ static void UncapacitatedFacilityLocation(
   LOG(INFO) << "Facilities/Clients/Fix cost/MaxDist: " << facilities << "/"
             << clients << "/" << fix_cost << "/" << kMaxDistance;
   // Setting up facilities and demand points
-  MTRandom randomizer(/*fixed seed*/ 20191029);
+  random_engine_t randomizer;  // Deterministic random generator.
   std::vector<Location> facility(facilities);
   std::vector<Location> client(clients);
   for (int i = 0; i < facilities; ++i) {
-    facility[i].x = randomizer.Uniform(kXMax + 1);
-    facility[i].y = randomizer.Uniform(kYMax + 1);
+    facility[i].x = absl::Uniform(randomizer, 0, kXMax + 1);
+    facility[i].y = absl::Uniform(randomizer, 0, kYMax + 1);
   }
   for (int i = 0; i < clients; ++i) {
-    client[i].x = randomizer.Uniform(kXMax + 1);
-    client[i].y = randomizer.Uniform(kYMax + 1);
+    client[i].x = absl::Uniform(randomizer, 0, kXMax + 1);
+    client[i].y = absl::Uniform(randomizer, 0, kYMax + 1);
   }
 
   // Setup uncapacitated facility location model:

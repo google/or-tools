@@ -22,7 +22,6 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/random.h"
 #include "ortools/bop/bop_base.h"
 #include "ortools/bop/bop_parameters.pb.h"
 #include "ortools/bop/bop_solution.h"
@@ -85,7 +84,7 @@ class BopRandomFirstSolutionGenerator : public BopOptimizerBase {
   BopRandomFirstSolutionGenerator(const std::string& name,
                                   const BopParameters& parameters,
                                   sat::SatSolver* sat_propagator,
-                                  MTRandom* random);
+                                  absl::BitGenRef random);
   ~BopRandomFirstSolutionGenerator() override;
 
   bool ShouldBeRun(const ProblemState& problem_state) const override;
@@ -98,7 +97,7 @@ class BopRandomFirstSolutionGenerator : public BopOptimizerBase {
       const ProblemState& problem_state);
 
   int random_seed_;
-  MTRandom* random_;
+  absl::BitGenRef random_;
   sat::SatSolver* sat_propagator_;
 };
 

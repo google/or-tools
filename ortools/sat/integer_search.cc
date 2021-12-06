@@ -535,7 +535,7 @@ std::function<BooleanOrIntegerLiteral()> RandomizeOnRestartHeuristic(
   return [=]() mutable {
     if (sat_solver->CurrentDecisionLevel() == 0) {
       auto* random = model->GetOrCreate<ModelRandomGenerator>();
-      RandomizeDecisionHeuristic(random, model->GetOrCreate<SatParameters>());
+      RandomizeDecisionHeuristic(*random, model->GetOrCreate<SatParameters>());
       decision_policy->ResetDecisionHeuristic();
 
       // Select the variable selection heuristic.

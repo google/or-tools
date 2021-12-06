@@ -52,6 +52,7 @@ cc_library(
         ":base",
         "//ortools/base",
         "//ortools/util:return_macros",
+        "@com_google_absl//absl/random:random",
     ],
 )
 
@@ -92,7 +93,6 @@ cc_library(
         ":base",
         ":sparse_vector",
         "//ortools/base",
-        "//ortools/base:random",
     ],
 )
 
@@ -123,7 +123,6 @@ cc_library(
         "//ortools/base",
         "//ortools/base:hash",
         "//ortools/base:int_type",
-        "//ortools/base:random",
         "//ortools/base:strong_vector",
         "//ortools/util:fp_utils",
         "//ortools/util:return_macros",

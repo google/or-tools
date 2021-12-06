@@ -22,8 +22,8 @@
 
 #include "absl/strings/str_format.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/random.h"
 #include "ortools/constraint_solver/routing.h"
+#include "ortools/util/random_engine.h"
 
 namespace operations_research {
 
@@ -69,7 +69,7 @@ class LocationContainer {
     int64_t y_;
   };
 
-  MTRandom randomizer_;
+  random_engine_t randomizer_;
   const int64_t speed_;
   absl::StrongVector<RoutingIndexManager::NodeIndex, Location> locations_;
 };
@@ -136,9 +136,9 @@ using NodeIndex = RoutingIndexManager::NodeIndex;
 
 int32_t GetSeed(bool deterministic) {
   if (deterministic) {
-    return ACMRandom::DeterministicSeed();
+    return 0;
   } else {
-    return ACMRandom::HostnamePidTimeSeed();
+    return std::random_device()();
   }
 }
 
@@ -153,8 +153,8 @@ void LocationContainer::AddRandomLocation(int64_t x_max, int64_t y_max) {
 
 void LocationContainer::AddRandomLocation(int64_t x_max, int64_t y_max,
                                           int duplicates) {
-  const int64_t x = randomizer_.Uniform(x_max + 1);
-  const int64_t y = randomizer_.Uniform(y_max + 1);
+  const int64_t x = absl::Uniform(randomizer_, 0, x_max + 1);
+  const int64_t y = absl::Uniform(randomizer_, 0, y_max + 1);
   for (int i = 0; i < duplicates; ++i) {
     AddLocation(x, y);
   }
@@ -215,13 +215,13 @@ void RandomDemand::Initialize() {
   const int64_t kDemandMax = 5;
   const int64_t kDemandMin = 1;
   demand_ = absl::make_unique<int64_t[]>(size_);
-  MTRandom randomizer(GetSeed(use_deterministic_seed_));
+  random_engine_t randomizer;
   for (int order = 0; order < size_; ++order) {
     if (order == depot_) {
       demand_[order] = 0;
     } else {
       demand_[order] =
-          kDemandMin + randomizer.Uniform(kDemandMax - kDemandMin + 1);
+          kDemandMin + absl::Uniform(randomizer, 0, kDemandMax - kDemandMin + 1);
     }
   }
 }

@@ -283,7 +283,6 @@ cc_library(
         ":update_row",
         ":variables_info",
         "//ortools/base",
-        "//ortools/base:random",
         "//ortools/lp_data",
         "//ortools/lp_data:base",
         "//ortools/lp_data:lp_utils",
@@ -329,7 +328,6 @@ cc_library(
         ":update_row",
         ":variables_info",
         "//ortools/base",
-        "//ortools/base:random",
         "//ortools/lp_data",
         "//ortools/lp_data:base",
         "//ortools/lp_data:lp_utils",
@@ -337,6 +335,7 @@ cc_library(
         "//ortools/util:bitset",
         "//ortools/util:random_engine",
         "//ortools/util:stats",
+        "@com_google_absl//absl/random:random",
         "@com_google_absl//absl/random:bit_gen_ref",
     ],
 )

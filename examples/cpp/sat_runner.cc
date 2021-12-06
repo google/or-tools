@@ -325,8 +325,9 @@ int Run() {
     if (absl::GetFlag(FLAGS_randomize) > 0 &&
         (absl::GetFlag(FLAGS_linear_scan) || absl::GetFlag(FLAGS_qmaxsat))) {
       CHECK(!absl::GetFlag(FLAGS_reduce_memory_usage)) << "incompatible";
+      absl::BitGen bitgen;
       result = SolveWithRandomParameters(STDOUT_LOG, problem,
-                                         absl::GetFlag(FLAGS_randomize),
+                                         absl::GetFlag(FLAGS_randomize), bitgen,
                                          solver.get(), &solution);
     }
     if (result == SatSolver::LIMIT_REACHED) {

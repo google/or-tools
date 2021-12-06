@@ -12,7 +12,6 @@ cc_binary(
     srcs = ["costas_array_sat.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/base:random",
         "//ortools/sat:cp_model",
         "//ortools/sat:model",
     ],
@@ -23,9 +22,9 @@ cc_library(
     hdrs = ["cvrptw_lib.h"],
     deps = [
         "//ortools/base",
-        "//ortools/base:random",
         "//ortools/constraint_solver:routing",
         "//ortools/constraint_solver:routing_flags",
+        "//ortools/util:random_engine"
     ],
 )
 
@@ -35,7 +34,6 @@ cc_binary(
     deps = [
         ":cvrptw_lib",
         "//ortools/base",
-        "//ortools/base:random",
         "//ortools/constraint_solver:routing",
         "//ortools/constraint_solver:routing_flags",
     ],
@@ -58,7 +56,6 @@ cc_binary(
     deps = [
         ":cvrptw_lib",
         "//ortools/base",
-        "//ortools/base:random",
         "@com_google_absl//absl/strings",
         "//ortools/constraint_solver:routing",
         "//ortools/constraint_solver:routing_enums_cc_proto",
@@ -72,7 +69,6 @@ cc_binary(
     deps = [
         ":cvrptw_lib",
         "//ortools/base",
-        "//ortools/base:random",
         "//ortools/constraint_solver:routing",
         "//ortools/constraint_solver:routing_flags",
     ],
@@ -84,7 +80,6 @@ cc_binary(
     deps = [
         ":cvrptw_lib",
         "//ortools/base",
-        "//ortools/base:random",
         "@com_google_absl//absl/strings",
         "//ortools/constraint_solver:routing",
         "//ortools/constraint_solver:routing_flags",
@@ -97,7 +92,6 @@ cc_binary(
     deps = [
         ":cvrptw_lib",
         "//ortools/base",
-        "//ortools/base:random",
         "//ortools/constraint_solver:routing",
         "//ortools/constraint_solver:routing_flags",
     ],
@@ -146,7 +140,6 @@ cc_binary(
     deps = [
         "//ortools/base",
         "//ortools/base:map_util",
-        "//ortools/base:random",
         "//ortools/constraint_solver:cp",
         "//ortools/util:bitset",
     ],
@@ -357,7 +350,6 @@ cc_binary(
         "//ortools/base",
         "//ortools/base:hash",
         "//ortools/base:map_util",
-        "//ortools/base:random",
         "@com_google_absl//absl/strings",
         "//ortools/graph:shortestpaths",
         "//ortools/sat:cp_model",
@@ -394,10 +386,10 @@ cc_binary(
     srcs = ["random_tsp.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/base:random",
         "@com_google_absl//absl/strings",
         "//ortools/constraint_solver:routing",
         "//ortools/constraint_solver:routing_flags",
+        "//ortools/util:random_engine",
         "@com_google_protobuf//:protobuf",
     ],
 )
@@ -414,7 +406,6 @@ cc_binary(
         "//ortools/base",
         "//ortools/base:file",
         "//ortools/base:filelineiter",
-        "//ortools/base:random",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
         "//ortools/base:threadpool",

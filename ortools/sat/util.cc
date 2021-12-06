@@ -34,6 +34,32 @@ void QuotientAndRemainder(int64_t a, int64_t b, int64_t& q, int64_t& r) {
 }
 }  // namespace
 
+void RandomizeDecisionHeuristic(absl::BitGenRef random,
+                                SatParameters* parameters) {
+#if !defined(__PORTABLE_PLATFORM__)
+  // Random preferred variable order.
+  const google::protobuf::EnumDescriptor* order_d =
+      SatParameters::VariableOrder_descriptor();
+  parameters->set_preferred_variable_order(
+      static_cast<SatParameters::VariableOrder>(
+          order_d->value(absl::Uniform(random, 0, order_d->value_count()))
+              ->number()));
+
+  // Random polarity initial value.
+  const google::protobuf::EnumDescriptor* polarity_d =
+      SatParameters::Polarity_descriptor();
+  parameters->set_initial_polarity(static_cast<SatParameters::Polarity>(
+      polarity_d->value(absl::Uniform(random, 0, polarity_d->value_count()))
+          ->number()));
+#endif  // __PORTABLE_PLATFORM__
+  // Other random parameters.
+  parameters->set_use_phase_saving(absl::Bernoulli(random, 0.5));
+  parameters->set_random_polarity_ratio(absl::Bernoulli(random, 0.5) ? 0.01
+                                                                     : 0.0);
+  parameters->set_random_branches_ratio(absl::Bernoulli(random, 0.5) ? 0.01
+                                                                     : 0.0);
+}
+
 // Using the extended Euclidian algo, we find a and b such that a x + b m = gcd.
 // https://en.wikipedia.org/wiki/Extended_Euclidean_algorithm
 int64_t ModularInverse(int64_t x, int64_t m) {

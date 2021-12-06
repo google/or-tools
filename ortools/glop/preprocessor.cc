@@ -2293,16 +2293,26 @@ void SingletonPreprocessor::DeleteSingletonRow(MatrixEntry e,
           ? implied_upper_bound
           : old_upper_bound;
 
+  // This can happen if we ask for 1e-300 * x to be >= 1e9.
+  if (new_upper_bound == -kInfinity || new_lower_bound == kInfinity) {
+    VLOG(1) << "Problem ProblemStatus::PRIMAL_INFEASIBLE, singleton "
+               "row causes the bound of the variable "
+            << e.col << " to go to infinity.";
+    status_ = ProblemStatus::PRIMAL_INFEASIBLE;
+    return;
+  }
+
   if (new_upper_bound < new_lower_bound) {
     if (!IsSmallerWithinFeasibilityTolerance(new_lower_bound,
                                              new_upper_bound)) {
-      VLOG(1) << "Problem ProblemStatus::INFEASIBLE_OR_UNBOUNDED, singleton "
+      VLOG(1) << "Problem ProblemStatus::PRIMAL_INFEASIBLE, singleton "
                  "row causes the bound of the variable "
               << e.col << " to be infeasible by "
               << new_lower_bound - new_upper_bound;
       status_ = ProblemStatus::PRIMAL_INFEASIBLE;
       return;
     }
+
     // Otherwise, fix the variable to one of its bounds.
     if (new_lower_bound == lp->variable_lower_bounds()[e.col]) {
       new_upper_bound = new_lower_bound;
@@ -2310,7 +2320,15 @@ void SingletonPreprocessor::DeleteSingletonRow(MatrixEntry e,
     if (new_upper_bound == lp->variable_upper_bounds()[e.col]) {
       new_lower_bound = new_upper_bound;
     }
-    DCHECK_EQ(new_lower_bound, new_upper_bound);
+
+    // When both new bounds are coming from the constraint and are crossing, it
+    // means the constraint bounds where originally crossing too. We arbitrarily
+    // choose one of the bound in this case.
+    //
+    // TODO(user): The code in this file shouldn't create crossing bounds at
+    // any point, so we could decide which bound to use directly on the user
+    // given problem before running any presolve.
+    new_upper_bound = new_lower_bound;
   }
   row_deletion_helper_.MarkRowForDeletion(e.row);
   undo_stack_.push_back(SingletonUndo(SingletonUndo::SINGLETON_ROW, *lp, e,

@@ -238,21 +238,6 @@ cc_library(
 )
 
 cc_library(
-    name = "random",
-    srcs = [
-        "random.cc",
-    ],
-    hdrs = [
-        "random.h",
-    ],
-    deps = [
-        ":base",
-        ":hash",
-        "@com_google_absl//absl/random",
-    ],
-)
-
-cc_library(
     name = "cleanup",
     hdrs = [
         "cleanup.h",

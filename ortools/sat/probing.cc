@@ -326,7 +326,7 @@ bool LookForTrivialSatSolution(double deterministic_time_limit, Model* model) {
 
     // We randomize at the end so that the default params is executed
     // at least once.
-    RandomizeDecisionHeuristic(random, &new_params);
+    RandomizeDecisionHeuristic(*random, &new_params);
     new_params.set_random_seed(i);
     new_params.set_max_deterministic_time(deterministic_time_limit -
                                           elapsed_dtime);
