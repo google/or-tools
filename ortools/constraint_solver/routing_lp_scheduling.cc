@@ -509,7 +509,7 @@ DimensionSchedulingStatus DimensionCumulOptimizerCore::OptimizeSingleRoute(
   InitOptimizer(solver);
   // Make sure SetRouteCumulConstraints will properly set the cumul bounds by
   // looking at this route only.
-  DCHECK(propagator_ == nullptr);
+  DCHECK_EQ(propagator_.get(), nullptr);
 
   RoutingModel* const model = dimension()->model();
   const bool optimize_vehicle_costs =
