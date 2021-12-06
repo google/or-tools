@@ -7,13 +7,21 @@ namespace operations_research {
   public:
     using InterfaceGetter::InterfaceGetter;
 
+    int getNumVariables() override {
+      int cols;
+      XPRSgetintattrib(prob(), XPRS_COLS, &cols);
+      return cols;
+    }
+
     double getLb(int n) override {
+      assert(n < getNumVariables());
       double lb;
       XPRSgetlb(prob(), &lb, n, n);
       return lb;
     }
 
     double getUb(int n) override {
+      assert(n < getNumVariables());
       double ub;
       XPRSgetub(prob(), &ub, n, n);
       return ub;
@@ -38,6 +46,8 @@ namespace operations_research {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
+  google::InitGoogleLogging(argv[0]);
+  absl::SetFlag(&FLAGS_logtostderr, 1);
   operations_research::runAllTests();
   return 0;
 }

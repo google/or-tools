@@ -8,6 +8,7 @@ namespace operations_research {
   public:
     InterfaceGetter(MPSolver* solver) : solver_(solver) {}
 
+    virtual int getNumVariables() = 0;
     virtual double getLb(int n) = 0;
     virtual double getUb(int n) = 0;
 
