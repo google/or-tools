@@ -5,7 +5,8 @@ LABEL maintainer="corentinl@google.com"
 # Install system build dependencies
 ENV PATH=/usr/local/bin:$PATH
 RUN apt-get update -qq \
-&& DEBIAN_FRONTEND=noninteractive apt-get install -yq git wget libssl-dev build-essential \
+&& DEBIAN_FRONTEND=noninteractive apt-get install -yq \
+ git wget libssl-dev build-essential \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
