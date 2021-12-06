@@ -268,3 +268,5 @@ endforeach()
 
 # Add tests in examples/tests
 add_subdirectory(examples/tests)
+
+add_subdirectory(ortools/linear_solver/unittests)

@@ -1,0 +1,10 @@
+if(NOT BUILD_EXAMPLES)
+	return()
+endif()
+
+if(BUILD_CXX_EXAMPLES)
+  file(GLOB CXX_SRCS "*.cc")
+  foreach(FILE_NAME IN LISTS CXX_SRCS)
+    add_cxx_test(${FILE_NAME})
+  endforeach()
+endif()

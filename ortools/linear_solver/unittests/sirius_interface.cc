@@ -1,5 +1,7 @@
-#include "examples/tests/linear_programming_unittests.h"
+#define CATCH_CONFIG_RUNNER
+
 #include "ortools/linear_solver/sirius_interface.cc"
+#include "ortools/linear_solver/unittests/common.h"
 
 namespace operations_research {
 
@@ -12,12 +14,12 @@ namespace operations_research {
     }
 
     double getLb(int n) override {
-      assert(n < getNumVariables());
+      REQUIRE(n < getNumVariables());
       return prob()->problem_mip->Xmin[n];
     }
 
     double getUb(int n) override {
-      assert(n < getNumVariables());
+      REQUIRE(n < getNumVariables());
       return prob()->problem_mip->Xmax[n];
     }
 
@@ -27,14 +29,12 @@ namespace operations_research {
     }
   };
 
-  void runAllTests() {
+  TEST_CASE("makeVar") {
     MPSolver solver("SIRIUS_MIP", MPSolver::SIRIUS_MIXED_INTEGER_PROGRAMMING);
     SRSGetter getter(&solver);
-    LinearProgrammingTests tests(&solver, &getter);
+    LinearSolverTests tests(&solver, &getter);
 
     tests.testMakeVar(1, 10);
-    // tests.testMakeVar(0, 1);
-    // tests.testMakeVar(-10, 140);
   }
 
 }  // namespace operations_research
@@ -42,6 +42,6 @@ namespace operations_research {
 int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);
   absl::SetFlag(&FLAGS_logtostderr, 1);
-  operations_research::runAllTests();
-  return 0;
+  int result = Catch::Session().run(argc, argv);
+  return result < 0xff ? result : 0xff;
 }

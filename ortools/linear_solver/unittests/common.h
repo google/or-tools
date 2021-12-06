@@ -1,6 +1,6 @@
 #include "ortools/linear_solver/linear_solver.h"
 
-#include <cassert>
+#include "ortools/linear_solver/unittests/catch.hpp"
 
 namespace operations_research {
 
@@ -16,16 +16,16 @@ namespace operations_research {
     MPSolver* solver_;
   };
 
-  class LinearProgrammingTests {
+  class LinearSolverTests {
   public:
-    LinearProgrammingTests(MPSolver* solver, InterfaceGetter* getter)
+    LinearSolverTests(MPSolver* solver, InterfaceGetter* getter)
       : solver_(solver), getter_(getter) {}
 
     void testMakeVar(double lb, double ub, bool incremental=false, bool clear=true) {
       MPVariable* x = solver_->MakeIntVar(lb, ub, "x");
       if (!incremental) solver_->Solve();
-      assert(getter_->getLb(0) == lb);
-      assert(getter_->getUb(0) == ub);
+      REQUIRE(getter_->getLb(0) == lb);
+      REQUIRE(getter_->getUb(0) == ub);
       if (clear) solver_->Clear();
     }
 
