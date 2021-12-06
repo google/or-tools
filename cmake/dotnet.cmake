@@ -27,6 +27,28 @@ else()
   message(STATUS "Found dotnet Program: ${DOTNET_EXECUTABLE}")
 endif()
 
+# Needed by dotnet/CMakeLists.txt
+set(DOTNET_PACKAGE Google.OrTools)
+set(DOTNET_PACKAGES_DIR "${PROJECT_BINARY_DIR}/dotnet/packages")
+if(APPLE)
+  set(RUNTIME_IDENTIFIER osx-x64)
+elseif(UNIX)
+  set(RUNTIME_IDENTIFIER linux-x64)
+elseif(WIN32)
+  set(RUNTIME_IDENTIFIER win-x64)
+else()
+  message(FATAL_ERROR "Unsupported system !")
+endif()
+set(DOTNET_NATIVE_PROJECT ${DOTNET_PACKAGE}.runtime.${RUNTIME_IDENTIFIER})
+message(STATUS ".Net runtime project: ${DOTNET_NATIVE_PROJECT}")
+set(DOTNET_NATIVE_PROJECT_DIR ${PROJECT_BINARY_DIR}/dotnet/${DOTNET_NATIVE_PROJECT})
+message(STATUS ".Net runtime project build path: ${DOTNET_NATIVE_PROJECT_DIR}")
+
+set(DOTNET_PROJECT ${DOTNET_PACKAGE})
+message(STATUS ".Net project: ${DOTNET_PROJECT}")
+set(DOTNET_PROJECT_DIR ${PROJECT_BINARY_DIR}/dotnet/${DOTNET_PROJECT})
+message(STATUS ".Net project build path: ${DOTNET_PROJECT_DIR}")
+
 # Create the native library
 add_library(google-ortools-native SHARED "")
 set_target_properties(google-ortools-native PROPERTIES
@@ -59,28 +81,6 @@ if(USE_SCIP)
   list(APPEND FLAGS "-DUSE_SCIP")
 endif()
 list(APPEND CMAKE_SWIG_FLAGS ${FLAGS} "-I${PROJECT_SOURCE_DIR}")
-
-# Needed by dotnet/CMakeLists.txt
-set(DOTNET_PACKAGE Google.OrTools)
-set(DOTNET_PACKAGES_DIR "${PROJECT_BINARY_DIR}/dotnet/packages")
-if(APPLE)
-  set(RUNTIME_IDENTIFIER osx-x64)
-elseif(UNIX)
-  set(RUNTIME_IDENTIFIER linux-x64)
-elseif(WIN32)
-  set(RUNTIME_IDENTIFIER win-x64)
-else()
-  message(FATAL_ERROR "Unsupported system !")
-endif()
-set(DOTNET_NATIVE_PROJECT ${DOTNET_PACKAGE}.runtime.${RUNTIME_IDENTIFIER})
-message(STATUS ".Net runtime project: ${DOTNET_NATIVE_PROJECT}")
-set(DOTNET_NATIVE_PROJECT_DIR ${PROJECT_BINARY_DIR}/dotnet/${DOTNET_NATIVE_PROJECT})
-message(STATUS ".Net runtime project build path: ${DOTNET_NATIVE_PROJECT_DIR}")
-
-set(DOTNET_PROJECT ${DOTNET_PACKAGE})
-message(STATUS ".Net project: ${DOTNET_PROJECT}")
-set(DOTNET_PROJECT_DIR ${PROJECT_BINARY_DIR}/dotnet/${DOTNET_PROJECT})
-message(STATUS ".Net project build path: ${DOTNET_PROJECT_DIR}")
 
 # Swig wrap all libraries
 foreach(SUBPROJECT IN ITEMS algorithms graph init linear_solver constraint_solver sat util)
@@ -173,10 +173,10 @@ file(GENERATE
 
 add_custom_command(
   OUTPUT ${DOTNET_NATIVE_PROJECT_DIR}/${DOTNET_NATIVE_PROJECT}.csproj
-  DEPENDS ${DOTNET_NATIVE_PROJECT_DIR}/$<CONFIG>/${DOTNET_NATIVE_PROJECT}.csproj.in
   COMMAND ${CMAKE_COMMAND} -E copy ./$<CONFIG>/${DOTNET_NATIVE_PROJECT}.csproj.in ${DOTNET_NATIVE_PROJECT}.csproj
-  WORKING_DIRECTORY ${DOTNET_NATIVE_PROJECT_DIR}
-)
+  DEPENDS
+    ${DOTNET_NATIVE_PROJECT_DIR}/$<CONFIG>/${DOTNET_NATIVE_PROJECT}.csproj.in
+  WORKING_DIRECTORY ${DOTNET_NATIVE_PROJECT_DIR})
 
 add_custom_command(
   OUTPUT ${DOTNET_NATIVE_PROJECT_DIR}/timestamp
@@ -192,13 +192,12 @@ add_custom_command(
     ${DOTNET_NATIVE_PROJECT_DIR}/bin
     ${DOTNET_NATIVE_PROJECT_DIR}/obj
   COMMENT "Generate .Net native package ${DOTNET_NATIVE_PROJECT} (${DOTNET_NATIVE_PROJECT_DIR}/timestamp)"
-  WORKING_DIRECTORY ${DOTNET_NATIVE_PROJECT_DIR}
-)
+  WORKING_DIRECTORY ${DOTNET_NATIVE_PROJECT_DIR})
 
 add_custom_target(dotnet_native_package
   DEPENDS
     ${DOTNET_NATIVE_PROJECT_DIR}/timestamp
-  WORKING_DIRECTORY dotnet)
+  WORKING_DIRECTORY ${DOTNET_NATIVE_PROJECT_DIR})
 
 ####################
 ##  .Net Package  ##
@@ -210,10 +209,10 @@ configure_file(
 
 add_custom_command(
   OUTPUT ${DOTNET_PROJECT_DIR}/${DOTNET_PROJECT}.csproj
-  DEPENDS ${DOTNET_PROJECT_DIR}/${DOTNET_PROJECT}.csproj.in
   COMMAND ${CMAKE_COMMAND} -E copy ${DOTNET_PROJECT}.csproj.in ${DOTNET_PROJECT}.csproj
-  WORKING_DIRECTORY ${DOTNET_PROJECT_DIR}
-)
+  DEPENDS
+    ${DOTNET_PROJECT_DIR}/${DOTNET_PROJECT}.csproj.in
+  WORKING_DIRECTORY ${DOTNET_PROJECT_DIR})
 
 add_custom_command(
   OUTPUT ${DOTNET_PROJECT_DIR}/timestamp
@@ -228,13 +227,12 @@ add_custom_command(
     ${DOTNET_PROJECT_DIR}/bin
     ${DOTNET_PROJECT_DIR}/obj
   COMMENT "Generate .Net package ${DOTNET_PROJECT} (${DOTNET_PROJECT_DIR}/timestamp)"
-  WORKING_DIRECTORY ${DOTNET_PROJECT_DIR}
-)
+  WORKING_DIRECTORY ${DOTNET_PROJECT_DIR})
 
 add_custom_target(dotnet_package ALL
   DEPENDS
     ${DOTNET_PROJECT_DIR}/timestamp
-  WORKING_DIRECTORY dotnet)
+  WORKING_DIRECTORY ${DOTNET_PROJECT_DIR})
 
 #################
 ##  .Net Test  ##
@@ -253,19 +251,21 @@ function(add_dotnet_test FILE_NAME)
 
   set(DOTNET_TEST_DIR ${PROJECT_BINARY_DIR}/dotnet/${COMPONENT_NAME}/${TEST_NAME})
   message(STATUS "build path: ${DOTNET_TEST_DIR}")
-  file(MAKE_DIRECTORY ${DOTNET_TEST_DIR})
-
-  add_custom_command(
-    OUTPUT ${DOTNET_TEST_DIR}/${TEST_NAME}.cs
-    COMMAND ${CMAKE_COMMAND} -E copy ${FILE_NAME} ${DOTNET_TEST_DIR}/
-    MAIN_DEPENDENCY ${FILE_NAME}
-    VERBATIM
-  )
 
   configure_file(
     ${PROJECT_SOURCE_DIR}/ortools/dotnet/Test.csproj.in
     ${DOTNET_TEST_DIR}/${TEST_NAME}.csproj
     @ONLY)
+
+  add_custom_command(
+    OUTPUT ${DOTNET_TEST_DIR}/${TEST_NAME}.cs
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${DOTNET_TEST_DIR}
+    COMMAND ${CMAKE_COMMAND} -E copy
+      ${FILE_NAME}
+      ${DOTNET_TEST_DIR}/
+    MAIN_DEPENDENCY ${FILE_NAME}
+    VERBATIM
+    WORKING_DIRECTORY ${DOTNET_TEST_DIR})
 
   add_custom_command(
     OUTPUT ${DOTNET_TEST_DIR}/timestamp
@@ -284,7 +284,7 @@ function(add_dotnet_test FILE_NAME)
   add_custom_target(dotnet_${COMPONENT_NAME}_${TEST_NAME} ALL
     DEPENDS
       ${DOTNET_TEST_DIR}/timestamp
-    WORKING_DIRECTORY dotnet)
+    WORKING_DIRECTORY ${DOTNET_TEST_DIR})
 
   if(BUILD_TESTING)
     add_test(
@@ -313,19 +313,21 @@ function(add_dotnet_sample FILE_NAME)
 
   set(DOTNET_SAMPLE_DIR ${PROJECT_BINARY_DIR}/dotnet/${COMPONENT_NAME}/${SAMPLE_NAME})
   message(STATUS "build path: ${DOTNET_SAMPLE_DIR}")
-  file(MAKE_DIRECTORY ${DOTNET_SAMPLE_DIR})
-
-  add_custom_command(
-    OUTPUT ${DOTNET_SAMPLE_DIR}/${SAMPLE_NAME}.cs
-    COMMAND ${CMAKE_COMMAND} -E copy ${FILE_NAME} ${DOTNET_SAMPLE_DIR}/
-    MAIN_DEPENDENCY ${FILE_NAME}
-    VERBATIM
-  )
 
   configure_file(
     ${PROJECT_SOURCE_DIR}/ortools/dotnet/Sample.csproj.in
     ${DOTNET_SAMPLE_DIR}/${SAMPLE_NAME}.csproj
     @ONLY)
+
+  add_custom_command(
+    OUTPUT ${DOTNET_SAMPLE_DIR}/${SAMPLE_NAME}.cs
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${DOTNET_SAMPLE_DIR}
+    COMMAND ${CMAKE_COMMAND} -E copy
+      ${FILE_NAME}
+      ${DOTNET_SAMPLE_DIR}/
+    MAIN_DEPENDENCY ${FILE_NAME}
+    VERBATIM
+    WORKING_DIRECTORY ${DOTNET_SAMPLE_DIR})
 
   add_custom_command(
     OUTPUT ${DOTNET_SAMPLE_DIR}/timestamp
@@ -345,7 +347,7 @@ function(add_dotnet_sample FILE_NAME)
   add_custom_target(dotnet_${COMPONENT_NAME}_${SAMPLE_NAME} ALL
     DEPENDS
       ${DOTNET_SAMPLE_DIR}/timestamp
-    WORKING_DIRECTORY dotnet)
+    WORKING_DIRECTORY ${DOTNET_SAMPLE_DIR})
 
   if(BUILD_TESTING)
     add_test(
@@ -373,20 +375,22 @@ function(add_dotnet_example FILE_NAME)
 
   set(DOTNET_EXAMPLE_DIR ${PROJECT_BINARY_DIR}/dotnet/${COMPONENT_NAME}/${EXAMPLE_NAME})
   message(STATUS "build path: ${DOTNET_EXAMPLE_DIR}")
-  file(MAKE_DIRECTORY ${DOTNET_EXAMPLE_DIR})
-
-  add_custom_command(
-    OUTPUT ${DOTNET_EXAMPLE_DIR}/${EXAMPLE_NAME}.cs
-    COMMAND ${CMAKE_COMMAND} -E copy ${FILE_NAME} ${DOTNET_EXAMPLE_DIR}/
-    MAIN_DEPENDENCY ${FILE_NAME}
-    VERBATIM
-  )
 
   set(SAMPLE_NAME ${EXAMPLE_NAME})
   configure_file(
     ${PROJECT_SOURCE_DIR}/ortools/dotnet/Sample.csproj.in
     ${DOTNET_EXAMPLE_DIR}/${EXAMPLE_NAME}.csproj
     @ONLY)
+
+  add_custom_command(
+    OUTPUT ${DOTNET_EXAMPLE_DIR}/${EXAMPLE_NAME}.cs
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${DOTNET_EXAMPLE_DIR}
+    COMMAND ${CMAKE_COMMAND} -E copy
+      ${FILE_NAME}
+      ${DOTNET_EXAMPLE_DIR}/
+    MAIN_DEPENDENCY ${FILE_NAME}
+    VERBATIM
+    WORKING_DIRECTORY ${DOTNET_EXAMPLE_DIR})
 
   add_custom_command(
     OUTPUT ${DOTNET_EXAMPLE_DIR}/timestamp
@@ -406,7 +410,7 @@ function(add_dotnet_example FILE_NAME)
   add_custom_target(dotnet_${COMPONENT_NAME}_${EXAMPLE_NAME} ALL
     DEPENDS
       ${DOTNET_EXAMPLE_DIR}/timestamp
-    WORKING_DIRECTORY dotnet)
+    WORKING_DIRECTORY ${DOTNET_EXAMPLE_DIR})
 
   if(BUILD_TESTING)
     add_test(
