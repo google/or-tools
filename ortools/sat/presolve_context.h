@@ -193,7 +193,7 @@ class PresolveContext {
   ABSL_MUST_USE_RESULT bool NotifyThatModelIsUnsat(
       const std::string& message = "") {
     // TODO(user): Report any explanation for the client in a nicer way?
-    VLOG(1) << "INFEASIBLE: '" << message << "'";
+    SOLVER_LOG(logger_, "INFEASIBLE: '", message, "'");
     DCHECK(!is_unsat_);
     is_unsat_ = true;
     return false;
@@ -238,11 +238,11 @@ class PresolveContext {
   // Given the relation (X * coeff % mod = rhs % mod), this creates a new
   // variable so that X = mod * Y + cte.
   //
-  // This assumes mod > 1 and coeff % mod != 0 (CHECKed).
+  // This requires mod != 0 and coeff != 0.
   //
   // Note that the new variable will have a canonical domain (i.e. min == 0).
-  // We also do not create anything if this fixes the given variable.
-  // Returns false if the model is infeasible.
+  // We also do not create anything if this fixes the given variable or the
+  // relation simplifies. Returns false if the model is infeasible.
   bool CanonicalizeAffineVariable(int ref, int64_t coeff, int64_t mod,
                                   int64_t rhs);
 

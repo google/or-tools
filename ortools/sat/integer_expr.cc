@@ -1001,14 +1001,14 @@ bool SquarePropagator::Propagate() {
   const IntegerValue min_s = integer_trail_->LowerBound(s_);
   const IntegerValue min_x_square(CapProd(min_x.value(), min_x.value()));
   if (min_x_square > min_s) {
-    if (!integer_trail_->Enqueue(s_.GreaterOrEqual(min_x_square), {},
-                                 {x_.GreaterOrEqual(min_x)})) {
+    if (!integer_trail_->SafeEnqueue(s_.GreaterOrEqual(min_x_square),
+                                     {x_.GreaterOrEqual(min_x)})) {
       return false;
     }
   } else if (min_x_square < min_s) {
     const IntegerValue new_min = CeilSquareRoot(min_s);
-    if (!integer_trail_->Enqueue(
-            x_.GreaterOrEqual(new_min), {},
+    if (!integer_trail_->SafeEnqueue(
+            x_.GreaterOrEqual(new_min),
             {s_.GreaterOrEqual((new_min - 1) * (new_min - 1) + 1)})) {
       return false;
     }
@@ -1018,14 +1018,14 @@ bool SquarePropagator::Propagate() {
   const IntegerValue max_s = integer_trail_->UpperBound(s_);
   const IntegerValue max_x_square(CapProd(max_x.value(), max_x.value()));
   if (max_x_square < max_s) {
-    if (!integer_trail_->Enqueue(s_.LowerOrEqual(max_x_square), {},
-                                 {x_.LowerOrEqual(max_x)})) {
+    if (!integer_trail_->SafeEnqueue(s_.LowerOrEqual(max_x_square),
+                                     {x_.LowerOrEqual(max_x)})) {
       return false;
     }
   } else if (max_x_square > max_s) {
     const IntegerValue new_max = FloorSquareRoot(max_s);
-    if (!integer_trail_->Enqueue(
-            x_.LowerOrEqual(new_max), {},
+    if (!integer_trail_->SafeEnqueue(
+            x_.LowerOrEqual(new_max),
             {s_.LowerOrEqual(IntegerValue(CapProd(new_max.value() + 1,
                                                   new_max.value() + 1)) -
                              1)})) {

@@ -804,14 +804,30 @@ bool PresolveContext::ScaleFloatingPointObjective() {
 
 bool PresolveContext::CanonicalizeAffineVariable(int ref, int64_t coeff,
                                                  int64_t mod, int64_t rhs) {
-  CHECK_GT(mod, 1);
-  CHECK_NE(coeff % mod, 0);
+  CHECK_NE(mod, 0);
+  CHECK_NE(coeff, 0);
+
+  const int64_t gcd = std::gcd(coeff, mod);
+  if (gcd != 1) {
+    if (rhs % gcd != 0) {
+      return NotifyThatModelIsUnsat(
+          absl::StrCat("Infeasible ", coeff, " * X = ", rhs, " % ", mod));
+    }
+    coeff /= gcd;
+    mod /= gcd;
+    rhs /= gcd;
+  }
+
+  // We just abort in this case as there is no point introducing a new variable.
+  if (std::abs(mod) == 1) return true;
+
   int var = ref;
   if (!RefIsPositive(var)) {
     var = NegatedRef(ref);
     coeff = -coeff;
     rhs = -rhs;
   }
+
   // From var * coeff % mod = rhs
   // We have var = mod * X + offset.
   const int64_t offset = ProductWithModularInverse(coeff, mod, rhs);
@@ -820,7 +836,8 @@ bool PresolveContext::CanonicalizeAffineVariable(int ref, int64_t coeff,
   const Domain new_domain =
       DomainOf(var).AdditionWith(Domain(-offset)).InverseMultiplicationBy(mod);
   if (new_domain.IsEmpty()) {
-    return NotifyThatModelIsUnsat();
+    return NotifyThatModelIsUnsat(
+        "Empty domain in CanonicalizeAffineVariable()");
   }
   if (new_domain.IsFixed()) {
     UpdateRuleStats("variables: fixed value due to affine relation");

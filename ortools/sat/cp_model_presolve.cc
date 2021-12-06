@@ -937,184 +937,137 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
     changed |= CanonicalizeLinearExpression(*ct, &exp);
   }
 
-  // Remove constant terms.
-  {
-    int64_t constant_factor = 1;
-    int new_size = 0;
-    for (int i = 0; i < ct->int_prod().exprs_size(); ++i) {
-      LinearExpressionProto expr = ct->int_prod().exprs(i);
-      if (context_->IsFixed(expr)) {
-        constant_factor = CapProd(constant_factor, context_->FixedValue(expr));
-        continue;
-      } else {
-        *proto->mutable_exprs(new_size++) = expr;
-      }
-    }
-
-    if (new_size < ct->int_prod().exprs_size()) {
+  // Remove constant expressions.
+  int64_t constant_factor = 1;
+  int new_size = 0;
+  for (int i = 0; i < ct->int_prod().exprs().size(); ++i) {
+    LinearExpressionProto expr = ct->int_prod().exprs(i);
+    if (context_->IsFixed(expr)) {
       context_->UpdateRuleStats("int_prod: removed constant expressions.");
-      proto->mutable_exprs()->erase(proto->mutable_exprs()->begin() + new_size,
-                                    proto->mutable_exprs()->end());
-    }
-
-    if (constant_factor == 0) {
-      context_->UpdateRuleStats("int_prod: multiplication by zero");
-      if (!context_->IntersectDomainWith(ct->int_prod().target(), Domain(0))) {
-        return false;
+      changed = true;
+      constant_factor = CapProd(constant_factor, context_->FixedValue(expr));
+      continue;
+    } else {
+      const int64_t coeff = expr.coeffs(0);
+      const int64_t offset = expr.offset();
+      const int64_t gcd =
+          MathUtil::GCD64(static_cast<uint64_t>(std::abs(coeff)),
+                          static_cast<uint64_t>(std::abs(offset)));
+      if (gcd != 1) {
+        constant_factor = CapProd(constant_factor, gcd);
+        expr.set_coeffs(0, coeff / gcd);
+        expr.set_offset(offset / gcd);
       }
-      return RemoveConstraint(ct);
     }
+    *proto->mutable_exprs(new_size++) = expr;
+  }
+  proto->mutable_exprs()->erase(proto->mutable_exprs()->begin() + new_size,
+                                proto->mutable_exprs()->end());
 
-    if (ct->int_prod().exprs().empty()) {
-      if (!context_->IntersectDomainWith(ct->int_prod().target(),
-                                         Domain(constant_factor))) {
-        return false;
-      }
-      context_->UpdateRuleStats("int_prod: constant product");
-      return RemoveConstraint(ct);
+  if (ct->int_prod().exprs().empty()) {
+    if (!context_->IntersectDomainWith(ct->int_prod().target(),
+                                       Domain(constant_factor))) {
+      return false;
     }
-
-    // We cannot have a int_max or int_min constant factor as this would have
-    // been prevented by the checker.
-    DCHECK_NE(constant_factor, std::numeric_limits<int64_t>::min());
-    DCHECK_NE(constant_factor, std::numeric_limits<int64_t>::max());
-
-    // Replace by linear!
-    if (ct->int_prod().exprs().size() == 1) {
-      LinearConstraintProto* const lin =
-          context_->working_model->add_constraints()->mutable_linear();
-      lin->add_domain(0);
-      lin->add_domain(0);
-      AddLinearExpressionToLinearConstraint(ct->int_prod().target(), 1, lin);
-      AddLinearExpressionToLinearConstraint(ct->int_prod().exprs(0),
-                                            -constant_factor, lin);
-      context_->UpdateNewConstraintsVariableUsage();
-      context_->UpdateRuleStats("int_prod: linearize product by constant.");
-      return RemoveConstraint(ct);
-    }
+    context_->UpdateRuleStats("int_prod: constant product");
+    return RemoveConstraint(ct);
   }
 
-  // Currently, the product only supports 2 terms. If one or both are fixed,
-  // this should have been taken care of.
-  CHECK_EQ(2, proto->exprs_size());
-
-  int64_t product_of_expr_gcds = 1;
-  std::vector<int64_t> expr_gcds;
-  for (const LinearExpressionProto& expr : ct->int_prod().exprs()) {
-    const int64_t gcd =
-        MathUtil::GCD64(static_cast<uint64_t>(std::abs(expr.coeffs(0))),
-                        static_cast<uint64_t>(std::abs(expr.offset())));
-    product_of_expr_gcds = CapProd(product_of_expr_gcds, gcd);
-    expr_gcds.push_back(gcd);
+  if (constant_factor == 0) {
+    context_->UpdateRuleStats("int_prod: multiplication by zero");
+    if (!context_->IntersectDomainWith(ct->int_prod().target(), Domain(0))) {
+      return false;
+    }
+    return RemoveConstraint(ct);
   }
 
   // In this case, the only possible value that fit in the domains is zero.
   // We will check for UNSAT if zero is not achievable by the rhs below.
-  if (product_of_expr_gcds == std::numeric_limits<int64_t>::min() ||
-      product_of_expr_gcds == std::numeric_limits<int64_t>::max()) {
+  if (constant_factor == std::numeric_limits<int64_t>::min() ||
+      constant_factor == std::numeric_limits<int64_t>::max()) {
+    context_->UpdateRuleStats("int_prod: overflow if non zero");
     if (!context_->IntersectDomainWith(ct->int_prod().target(), Domain(0))) {
       return false;
     }
-    // Make sure the target is 0.
-    proto->clear_target();
-    proto->mutable_target()->set_offset(0);
-
-    // Simplify all terms. Actually, we just want one of them to be zero.
-    for (int i = 0; i < proto->exprs_size(); ++i) {
-      const int64_t expr_gcd = expr_gcds[i];
-      if (expr_gcd == 1) continue;
-
-      LinearExpressionProto* expr = proto->mutable_exprs(i);
-      DCHECK_EQ(1, expr->coeffs_size());
-      expr->set_coeffs(0, expr->coeffs(0) / expr_gcd);
-      expr->set_offset(expr->offset() / expr_gcd);
-    }
-    product_of_expr_gcds = 1;
-    context_->UpdateRuleStats("int_prod: overflow if non zero");
+    constant_factor = 1;
   }
 
-  if (product_of_expr_gcds > 1) {
+  // Replace by linear!
+  if (ct->int_prod().exprs().size() == 1) {
+    LinearConstraintProto* const lin =
+        context_->working_model->add_constraints()->mutable_linear();
+    lin->add_domain(0);
+    lin->add_domain(0);
+    AddLinearExpressionToLinearConstraint(ct->int_prod().target(), 1, lin);
+    AddLinearExpressionToLinearConstraint(ct->int_prod().exprs(0),
+                                          -constant_factor, lin);
+    context_->UpdateNewConstraintsVariableUsage();
+    context_->UpdateRuleStats("int_prod: linearize product by constant.");
+    return RemoveConstraint(ct);
+  }
+
+  if (constant_factor != 1) {
+    // Lets canonicalize the target by introducing a new variable if necessary.
+    //
+    // coeff * X + offset must be a multiple of constant_factor, so
+    // we can rewrite X so that this property is clear.
     const LinearExpressionProto old_target = ct->int_prod().target();
+    if (!context_->IsFixed(old_target)) {
+      const int ref = old_target.vars(0);
+      const int64_t coeff = old_target.coeffs(0);
+      const int64_t offset = old_target.offset();
+      if (!context_->CanonicalizeAffineVariable(ref, coeff, constant_factor,
+                                                -offset)) {
+        return false;
+      }
+    }
+
+    // This can happen during CanonicalizeAffineVariable().
     if (context_->IsFixed(old_target)) {
       const int64_t target_value = context_->FixedValue(old_target);
-      if (target_value % product_of_expr_gcds != 0) {
+      if (target_value % constant_factor != 0) {
         return context_->NotifyThatModelIsUnsat(
             "int_prod: constant factor does not divide constant target");
       }
-
-      // Divide target and terms by product_of_expr_gcds.
       proto->clear_target();
-      proto->mutable_target()->set_offset(target_value / product_of_expr_gcds);
-      for (int i = 0; i < proto->exprs_size(); ++i) {
-        const int64_t expr_gcd = expr_gcds[i];
-        if (expr_gcd == 1) continue;
-
-        LinearExpressionProto* expr = proto->mutable_exprs(i);
-        DCHECK_EQ(1, expr->coeffs_size());
-        expr->set_coeffs(0, expr->coeffs(0) / expr_gcd);
-        expr->set_offset(expr->offset() / expr_gcd);
-      }
+      proto->mutable_target()->set_offset(target_value / constant_factor);
       context_->UpdateRuleStats(
           "int_prod: divide product and fixed target by constant factor");
-    } else {  // Target is not fixed.
-      int64_t target_coeff = ct->int_prod().target().coeffs(0);
-      int64_t target_offset = ct->int_prod().target().offset();
-      int64_t target_gcd =
-          MathUtil::GCD64(static_cast<uint64_t>(std::abs(target_coeff)),
-                          static_cast<uint64_t>(std::abs(target_offset)));
-      if (target_gcd % product_of_expr_gcds == 0) {  // Easy case.
-        // Divide target by product_of_expr_gcds.
-        proto->mutable_target()->set_coeffs(
-            0, target_coeff / product_of_expr_gcds);
-        proto->mutable_target()->set_offset(target_offset /
-                                            product_of_expr_gcds);
-        // Divide all terms of the product by their respective gcds.
-        for (int i = 0; i < proto->exprs_size(); ++i) {
-          const int64_t expr_gcd = expr_gcds[i];
-          if (expr_gcd == 1) continue;
+    } else {
+      // We use absl::int128 to be resistant to overflow here.
+      const AffineRelation::Relation r =
+          context_->GetAffineRelation(old_target.vars(0));
+      const absl::int128 temp_coeff =
+          absl::int128(old_target.coeffs(0)) * absl::int128(r.coeff);
+      CHECK_EQ(temp_coeff % absl::int128(constant_factor), 0);
+      const absl::int128 temp_offset =
+          absl::int128(old_target.coeffs(0)) * absl::int128(r.offset) +
+          absl::int128(old_target.offset());
+      CHECK_EQ(temp_offset % absl::int128(constant_factor), 0);
+      const absl::int128 new_coeff = temp_coeff / absl::int128(constant_factor);
+      const absl::int128 new_offset =
+          temp_offset / absl::int128(constant_factor);
 
-          LinearExpressionProto* expr = proto->mutable_exprs(i);
-          DCHECK_EQ(1, expr->coeffs_size());
-          expr->set_coeffs(0, expr->coeffs(0) / expr_gcd);
-          expr->set_offset(expr->offset() / expr_gcd);
-        }
-        context_->UpdateRuleStats("int_prod: constant factor divides target");
-      } else {
-        const int64_t global_gcd = MathUtil::GCD64(
-            static_cast<uint64_t>(target_gcd),
-            static_cast<uint64_t>(std::abs(product_of_expr_gcds)));
-        // target_gcd * (coeff * target_var * offset) ==
-        //     product_of_expr_gcds * PRODUCT.
-        // Let's divide the target by global_gcd and spread global_gcd
-        // across the product terms.
-        if (global_gcd > 1) {
-          proto->mutable_target()->set_coeffs(0, target_coeff / global_gcd);
-          proto->mutable_target()->set_offset(target_offset / global_gcd);
-          int64_t remainder_gcd = global_gcd;
-          for (int i = 0; i < proto->exprs_size(); ++i) {
-            const int64_t expr_gcd = expr_gcds[i];
-            if (expr_gcd == 1) continue;
-            int64_t local_gcd =
-                MathUtil::GCD64(static_cast<uint64_t>(std::abs(remainder_gcd)),
-                                static_cast<uint64_t>(std::abs(expr_gcd)));
-            if (local_gcd == 1) continue;
-
-            remainder_gcd /= local_gcd;
-
-            LinearExpressionProto* expr = proto->mutable_exprs(i);
-            DCHECK_EQ(1, expr->coeffs_size());
-            expr->set_coeffs(0, expr->coeffs(0) / local_gcd);
-            expr->set_offset(expr->offset() / local_gcd);
-          }
-          CHECK_EQ(1, remainder_gcd);  //  We have consumed global_gcd.
-          context_->UpdateRuleStats(
-              "int_prod: divide product and target by gcd");
-        }
-        // TODO(user, fdid): Instead we could "canonicalize" the target by
-        // creating a new variable such that
-        //    target = product_of_expr_gcds * new_var
-        // and use new_var here.
+      // TODO(user): We try to keep coeff/offset small, if this happens, it
+      // probably means there is no feasible solution involving int64_t and that
+      // do not causes overflow while evaluating it, but it is hard to be
+      // exactly sure we are correct here since it depends on the evaluation
+      // order. Similarly, by introducing intermediate variable we might loose
+      // solution if this intermediate variable value do not fit on an int64_t.
+      if (new_coeff > absl::int128(std::numeric_limits<int64_t>::max()) ||
+          new_coeff < absl::int128(std::numeric_limits<int64_t>::min()) ||
+          new_offset > absl::int128(std::numeric_limits<int64_t>::max()) ||
+          new_offset < absl::int128(std::numeric_limits<int64_t>::min())) {
+        return context_->NotifyThatModelIsUnsat(
+            "int_prod: overflow during simplification.");
       }
+
+      // Rewrite the target.
+      proto->mutable_target()->set_coeffs(0, static_cast<int64_t>(new_coeff));
+      proto->mutable_target()->set_vars(0, r.representative);
+      proto->mutable_target()->set_offset(static_cast<int64_t>(new_offset));
+      context_->UpdateRuleStats("int_prod: divide product by constant factor");
+      changed = true;
     }
   }
 
@@ -1124,12 +1077,12 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
     implied =
         implied.ContinuousMultiplicationBy(context_->DomainSuperSetOf(expr));
   }
-  bool modified = false;
+  bool domain_modified = false;
   if (!context_->IntersectDomainWith(ct->int_prod().target(), implied,
-                                     &modified)) {
+                                     &domain_modified)) {
     return false;
   }
-  if (modified) {
+  if (domain_modified) {
     context_->UpdateRuleStats("int_prod: reduced target domain.");
   }
 
@@ -7591,6 +7544,9 @@ CpSolverStatus CpModelPresolver::Presolve() {
     }
 
     // Exit the loop if the reduction is not so large.
+    // Hack: to facilitate experiments, if the requested number of iterations
+    // is large, we always execute all of them.
+    if (context_->params().max_presolve_iterations() >= 5) continue;
     if (context_->num_presolve_operations - old_num_presolve_op <
         0.8 * (context_->working_model->variables_size() +
                old_num_non_empty_constraints)) {
