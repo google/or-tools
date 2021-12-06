@@ -174,7 +174,7 @@ add_custom_command(
 add_custom_target(java_native_package
   DEPENDS
     ${JAVA_NATIVE_PROJECT_DIR}/timestamp
-  WORKING_DIRECTORY java)
+  WORKING_DIRECTORY ${JAVA_NATIVE_PROJECT_DIR})
 
 ##########################
 ##  Java Maven Package  ##
@@ -219,9 +219,9 @@ add_custom_command(
   COMMAND ${MAVEN_EXECUTABLE} install -B $<$<BOOL:${SKIP_GPG}>:-Dgpg.skip=true>
   COMMAND ${CMAKE_COMMAND} -E touch ${JAVA_PROJECT_DIR}/timestamp
   DEPENDS
-  ${JAVA_PROJECT_DIR}/pom.xml
-  ${JAVA_SRCS}
-  Java${PROJECT_NAME}_proto
+    ${JAVA_PROJECT_DIR}/pom.xml
+    ${JAVA_SRCS}
+    Java${PROJECT_NAME}_proto
   java_native_package
   BYPRODUCTS
     ${JAVA_PROJECT_DIR}/target
@@ -231,7 +231,7 @@ add_custom_command(
 add_custom_target(java_package ALL
   DEPENDS
     ${JAVA_PROJECT_DIR}/timestamp
-  WORKING_DIRECTORY java)
+  WORKING_DIRECTORY ${JAVA_PROJECT_DIR})
 
 #################
 ##  Java Test  ##
@@ -284,7 +284,7 @@ function(add_java_test FILE_NAME)
   add_custom_target(java_${COMPONENT_NAME}_${TEST_NAME} ALL
     DEPENDS
       ${JAVA_TEST_DIR}/timestamp
-    WORKING_DIRECTORY java)
+    WORKING_DIRECTORY ${JAVA_TEST_DIR})
 
   if(BUILD_TESTING)
     add_test(
@@ -350,7 +350,7 @@ function(add_java_sample FILE_NAME)
   add_custom_target(java_${COMPONENT_NAME}_${SAMPLE_NAME} ALL
     DEPENDS
       ${SAMPLE_DIR}/timestamp
-    WORKING_DIRECTORY java)
+    WORKING_DIRECTORY ${SAMPLE_DIR})
 
   if(BUILD_TESTING)
     add_test(
@@ -414,7 +414,7 @@ function(add_java_example FILE_NAME)
   add_custom_target(java_${COMPONENT_NAME}_${EXAMPLE_NAME} ALL
     DEPENDS
       ${JAVA_EXAMPLE_DIR}/timestamp
-    WORKING_DIRECTORY java)
+    WORKING_DIRECTORY ${JAVA_EXAMPLE_DIR})
 
   if(BUILD_TESTING)
     add_test(
