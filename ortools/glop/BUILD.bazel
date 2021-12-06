@@ -335,7 +335,7 @@ cc_library(
         "//ortools/util:bitset",
         "//ortools/util:random_engine",
         "//ortools/util:stats",
-        "@com_google_absl//absl/random:random",
+        "@com_google_absl//absl/random",
         "@com_google_absl//absl/random:bit_gen_ref",
     ],
 )

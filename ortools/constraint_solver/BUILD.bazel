@@ -177,7 +177,7 @@ cc_library(
         #        "//util/textprogressbar",
         "//ortools/base:timer",
         #        "//util/zippy",
-        "@com_google_absl//absl/random:random",
+        "@com_google_absl//absl/random",
     ],
 )
 

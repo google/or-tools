@@ -624,7 +624,7 @@ DimensionCumulOptimizerCore::OptimizeSingleRouteWithResources(
   InitOptimizer(solver);
   // Make sure SetRouteCumulConstraints will properly set the cumul bounds by
   // looking at this route only.
-  DCHECK(propagator_ == nullptr);
+  DCHECK_EQ(propagator_.get(), nullptr);
   DCHECK_NE(costs_without_transits, nullptr);
   costs_without_transits->clear();
 

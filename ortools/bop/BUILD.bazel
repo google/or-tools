@@ -102,7 +102,7 @@ cc_library(
         "//ortools/util:bitset",
         "//ortools/util:stats",
         "//ortools/util:time_limit",
-        "@com_google_absl//absl/random:random",
+        "@com_google_absl//absl/random",
         "@com_google_protobuf//:protobuf",
     ],
 )
@@ -132,7 +132,7 @@ cc_library(
         "//ortools/util:bitset",
         "//ortools/util:stats",
         "//ortools/util:time_limit",
-        "@com_google_absl//absl/random:random",
+        "@com_google_absl//absl/random",
         "@com_google_protobuf//:protobuf",
     ],
 )
@@ -175,7 +175,7 @@ cc_library(
         "//ortools/sat:boolean_problem",
         "//ortools/sat:boolean_problem_cc_proto",
         "//ortools/sat:sat_solver",
-        "@com_google_absl//absl/random:random",
+        "@com_google_absl//absl/random",
         "@com_google_absl//absl/status:statusor",
     ],
 )
@@ -240,9 +240,9 @@ cc_library(
         "//ortools/sat:sat_solver",
         "//ortools/base:threadpool",
         "//ortools/util:bitset",
-        "//ortools/util:stats",
         "//ortools/util:time_limit",
         "@com_google_protobuf//:protobuf",
+        "//ortools/util:stats",
     ],
 )
 
