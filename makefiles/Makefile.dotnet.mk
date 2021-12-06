@@ -590,7 +590,7 @@ rdotnet_%: \
  $$(TEMP_DOTNET_DIR)/$1/%/%.cs \
  FORCE
 	cd $$(TEMP_DOTNET_DIR)$$S$1$$S$$* && "$$(DOTNET_BIN)" build -c Release
-	cd $$(TEMP_DOTNET_DIR)$$S$1$$S$$* && "$$(DOTNET_BIN)" run --no-build -c Release $$(ARGS)
+	cd $$(TEMP_DOTNET_DIR)$$S$1$$S$$* && "$$(DOTNET_BIN)" run --no-build --framework net6.0 -c Release $$(ARGS)
 endef
 
 $(foreach sample,$(DOTNET_SAMPLES),$(eval $(call dotnet-sample-target,$(sample))))
@@ -639,7 +639,7 @@ rdotnet_%: \
  $$(TEMP_DOTNET_DIR)/$1/%/%.cs \
  FORCE
 	cd $$(TEMP_DOTNET_DIR)$$S$1$$S$$* && "$$(DOTNET_BIN)" build -c Release
-	cd $$(TEMP_DOTNET_DIR)$$S$1$$S$$* && "$$(DOTNET_BIN)" test --no-build -c Release $$(ARGS)
+	cd $$(TEMP_DOTNET_DIR)$$S$1$$S$$* && "$$(DOTNET_BIN)" run --no-build --framework net6.0 -c Release $$(ARGS)
 endef
 
 $(foreach example,$(DOTNET_EXAMPLES),$(eval $(call dotnet-example-target,$(example))))

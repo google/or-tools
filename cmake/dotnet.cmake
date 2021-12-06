@@ -350,7 +350,7 @@ function(add_dotnet_sample FILE_NAME)
   if(BUILD_TESTING)
     add_test(
       NAME dotnet_${COMPONENT_NAME}_${SAMPLE_NAME}
-      COMMAND ${DOTNET_EXECUTABLE} run --no-build -c Release
+      COMMAND ${DOTNET_EXECUTABLE} run --no-build --framework net6.0 -c Release
       WORKING_DIRECTORY ${DOTNET_SAMPLE_DIR})
   endif()
   message(STATUS "Configuring sample ${FILE_NAME} done")
@@ -411,7 +411,7 @@ function(add_dotnet_example FILE_NAME)
   if(BUILD_TESTING)
     add_test(
       NAME dotnet_${COMPONENT_NAME}_${EXAMPLE_NAME}
-      COMMAND ${DOTNET_EXECUTABLE} run --no-build -c Release
+      COMMAND ${DOTNET_EXECUTABLE} run --no-build --framework net6.0 -c Release
       WORKING_DIRECTORY ${DOTNET_EXAMPLE_DIR})
   endif()
   message(STATUS "Configuring example ${FILE_NAME} done")
