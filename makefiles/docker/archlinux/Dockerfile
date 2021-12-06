@@ -4,8 +4,7 @@ FROM archlinux:latest AS base
 LABEL maintainer="corentinl@google.com"
 # Install system build dependencies
 ENV PATH=/usr/local/bin:$PATH
-RUN pacman -Syu --noconfirm \
- git base-devel cmake lsb-release
+RUN pacman -Syu --noconfirm git base-devel cmake lsb-release
 CMD [ "/bin/bash" ]
 
 FROM base AS swig
