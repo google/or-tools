@@ -269,4 +269,6 @@ endforeach()
 # Add tests in examples/tests
 add_subdirectory(examples/tests)
 
+
+option(BUILD_LINEAR_SOLVER_UNITTESTS "Build linear solver unittests" ON)
 add_subdirectory(ortools/linear_solver/unittests)

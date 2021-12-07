@@ -1,6 +1,6 @@
 #include "ortools/linear_solver/linear_solver.h"
 
-#include "ortools/linear_solver/unittests/catch.hpp"
+#include "gtest/gtest.h"
 
 namespace operations_research {
 
@@ -24,8 +24,8 @@ namespace operations_research {
     void testMakeVar(double lb, double ub, bool incremental=false, bool clear=true) {
       MPVariable* x = solver_->MakeIntVar(lb, ub, "x");
       if (!incremental) solver_->Solve();
-      REQUIRE(getter_->getLb(0) == lb);
-      REQUIRE(getter_->getUb(0) == ub);
+      EXPECT_EQ(getter_->getLb(0), lb);
+      EXPECT_EQ(getter_->getUb(0), ub);
       if (clear) solver_->Clear();
     }
 

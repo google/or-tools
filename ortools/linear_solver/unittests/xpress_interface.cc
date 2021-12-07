@@ -1,7 +1,5 @@
-#define CATCH_CONFIG_RUNNER
-
-#include "ortools/linear_solver/xpress_interface.cc"
 #include "ortools/linear_solver/unittests/common.h"
+#include "ortools/linear_solver/xpress_interface.cc"
 
 namespace operations_research {
 
@@ -16,14 +14,14 @@ namespace operations_research {
     }
 
     double getLb(int n) override {
-      REQUIRE(n < getNumVariables());
+      EXPECT_LT(n, getNumVariables());
       double lb;
       XPRSgetlb(prob(), &lb, n, n);
       return lb;
     }
 
     double getUb(int n) override {
-      REQUIRE(n < getNumVariables());
+      EXPECT_LT(n, getNumVariables());
       double ub;
       XPRSgetub(prob(), &ub, n, n);
       return ub;
@@ -35,7 +33,7 @@ namespace operations_research {
     }
   };
 
-  TEST_CASE("makeVar") {
+  TEST(XpressInterface, MakeVar) {
     MPSolver solver("XPRESS_MIP", MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING);
     XPRSGetter getter(&solver);
     LinearSolverTests tests(&solver, &getter);
@@ -48,6 +46,6 @@ namespace operations_research {
 int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);
   absl::SetFlag(&FLAGS_logtostderr, 1);
-  int result = Catch::Session().run(argc, argv);
-  return result < 0xff ? result : 0xff;
+  testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
 }
