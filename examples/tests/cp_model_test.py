@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """Tests for ortools.sat.python.cp_model."""
 
 import unittest

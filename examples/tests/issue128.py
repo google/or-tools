@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from ortools.constraint_solver import pywrapcp
 
 def test_v0():

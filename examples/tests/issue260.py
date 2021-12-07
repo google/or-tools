@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 #from ortools.constraint_solver import pywrapcp
 from ortools.sat.python import cp_model
 
