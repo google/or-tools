@@ -185,7 +185,9 @@ if(BUILD_CoinUtils)
   FetchContent_Declare(
     CoinUtils
     GIT_REPOSITORY "https://github.com/Mizux/CoinUtils.git"
-    GIT_TAG "stable/2.11")
+    GIT_TAG "stable/2.11"
+    PATCH_COMMAND git apply --ignore-whitespace
+    "${CMAKE_CURRENT_LIST_DIR}/../../patches/coinutils-2.11.patch")
   FetchContent_MakeAvailable(CoinUtils)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
   message(CHECK_PASS "fetched")
@@ -200,7 +202,9 @@ if(BUILD_Osi)
   FetchContent_Declare(
     Osi
     GIT_REPOSITORY "https://github.com/Mizux/Osi.git"
-    GIT_TAG "stable/0.108")
+    GIT_TAG "stable/0.108"
+    PATCH_COMMAND git apply --ignore-whitespace
+    "${CMAKE_CURRENT_LIST_DIR}/../../patches/osi-0.108.patch")
   FetchContent_MakeAvailable(Osi)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
   message(CHECK_PASS "fetched")
@@ -215,7 +219,9 @@ if(BUILD_Clp)
   FetchContent_Declare(
     Clp
     GIT_REPOSITORY "https://github.com/Mizux/Clp.git"
-    GIT_TAG "stable/1.17.4")
+    GIT_TAG "stable/1.17.4"
+    PATCH_COMMAND git apply --ignore-whitespace
+    "${CMAKE_CURRENT_LIST_DIR}/../../patches/clp-1.17.4.patch")
   FetchContent_MakeAvailable(Clp)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
   message(CHECK_PASS "fetched")
@@ -230,7 +236,9 @@ if(BUILD_Cgl)
   FetchContent_Declare(
     Cgl
     GIT_REPOSITORY "https://github.com/Mizux/Cgl.git"
-    GIT_TAG "stable/0.60")
+    GIT_TAG "stable/0.60"
+    PATCH_COMMAND git apply --ignore-whitespace
+    "${CMAKE_CURRENT_LIST_DIR}/../../patches/cgl-0.60.patch")
   FetchContent_MakeAvailable(Cgl)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
   message(CHECK_PASS "fetched")
@@ -245,7 +253,9 @@ if(BUILD_Cbc)
   FetchContent_Declare(
     Cbc
     GIT_REPOSITORY "https://github.com/Mizux/Cbc.git"
-    GIT_TAG "stable/2.10")
+    GIT_TAG "stable/2.10"
+    PATCH_COMMAND git apply --ignore-whitespace
+    "${CMAKE_CURRENT_LIST_DIR}/../../patches/cbc-2.10.patch")
   FetchContent_MakeAvailable(Cbc)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
   message(CHECK_PASS "fetched")
