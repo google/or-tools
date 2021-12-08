@@ -1,7 +1,7 @@
 # Create a virtual environment with all tools installed
-# Latest rolling aka 21.04
+# Latest rolling aka 21.10
 # ref: https://hub.docker.com/_/ubuntu
-FROM ubuntu:21.04 AS env
+FROM ubuntu:21.10 AS env
 
 #############
 ##  SETUP  ##
@@ -29,13 +29,13 @@ RUN apt-get update -qq \
 ENV JAVA_HOME=/usr/lib/jvm/default-java
 
 # Dotnet Install
-# see: https://docs.microsoft.com/en-us/dotnet/core/install/linux-ubuntu#2104-
+# see: https://docs.microsoft.com/en-us/dotnet/core/install/linux-ubuntu
 RUN apt-get update -qq \
 && apt-get install -yq apt-transport-https \
 && wget -q https://packages.microsoft.com/config/ubuntu/21.04/packages-microsoft-prod.deb \
 && dpkg -i packages-microsoft-prod.deb \
 && apt-get update -qq \
-&& apt-get install -yq dotnet-sdk-3.1 dotnet-sdk-5.0 \
+&& apt-get install -yq dotnet-sdk-3.1 dotnet-sdk-6.0 \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 # Trigger first run experience by running arbitrary cmd
