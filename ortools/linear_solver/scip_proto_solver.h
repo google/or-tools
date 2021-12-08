@@ -14,6 +14,8 @@
 #ifndef OR_TOOLS_LINEAR_SOLVER_SCIP_PROTO_SOLVER_H_
 #define OR_TOOLS_LINEAR_SOLVER_SCIP_PROTO_SOLVER_H_
 
+#include <string>
+
 #include "absl/status/statusor.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "scip/type_scip.h"

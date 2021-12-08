@@ -166,24 +166,13 @@ absl::StatusOr<MPSolutionResponse> SatSolveProto(
     }
     return response;
   }
-  MPModelProto* const mp_model = request.mutable_model();
 
-  // Abort if there is constraint type we don't currently support.
-  for (const MPGeneralConstraintProto& general_constraint :
-       mp_model->general_constraint()) {
-    switch (general_constraint.general_constraint_case()) {
-      case MPGeneralConstraintProto::kIndicatorConstraint:
-        break;
-      case MPGeneralConstraintProto::kAndConstraint:
-        break;
-      case MPGeneralConstraintProto::kOrConstraint:
-        break;
-      default:
-        SOLVER_LOG(&logger, "General constraints of type ",
-                   general_constraint.general_constraint_case(),
-                   " are not supported.");
-        return ModelInvalidResponse(logger, "Unsupported constraint type");
-    }
+  // We start by some extra validation since our code do not accept any kind
+  // of input.
+  MPModelProto* const mp_model = request.mutable_model();
+  if (!sat::MPModelProtoValidationBeforeConversion(params, *mp_model,
+                                                   &logger)) {
+    return ModelInvalidResponse(logger, "Extra CP-SAT validation failed.");
   }
 
   // This is good to do before any presolve.
