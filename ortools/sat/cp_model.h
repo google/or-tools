@@ -59,7 +59,7 @@ class LinearExpr;
 class IntVar;
 
 /**
- *  A Boolean variable.
+ * A Boolean variable.
  *
  * This class wraps an IntegerVariableProto with domain [0, 1].
  * It supports the logical negation (Not).
@@ -131,7 +131,7 @@ class BoolVar {
 std::ostream& operator<<(std::ostream& os, const BoolVar& var);
 
 /**
- *  A convenient wrapper so we can write Not(x) instead of x.Not() which is
+ * A convenient wrapper so we can write Not(x) instead of x.Not() which is
  * sometimes clearer.
  */
 BoolVar Not(BoolVar x);
@@ -226,8 +226,8 @@ std::ostream& operator<<(std::ostream& os, const IntVar& var);
  * Usage:
  * \code
   CpModelBuilder cp_model;
-  IntVar x = model.NewIntVar(0, 10, "x");
-  IntVar y = model.NewIntVar(0, 10, "y");
+  IntVar x = model.NewIntVar({0, 10}).WithName("x");
+  IntVar y = model.NewIntVar({0, 10}).WithName("y");
   BoolVar b = model.NewBoolVar().WithName("b");
   BoolVar c = model.NewBoolVar().WithName("c");
   LinearExpr e1(x);  // e1 = x.
@@ -331,8 +331,8 @@ std::ostream& operator<<(std::ostream& os, const LinearExpr& e);
  * Usage:
  * \code
   CpModelBuilder cp_model;
-  IntVar x = model.NewIntVar(0, 10, "x");
-  IntVar y = model.NewIntVar(0, 10, "y");
+  IntVar x = model.NewIntVar({0, 10}).WithName("x");
+  IntVar y = model.NewIntVar({0, 10}).WithName("y");
   BoolVar b = model.NewBoolVar().WithName("b");
   BoolVar c = model.NewBoolVar().WithName("c");
   DoubleLinearExpr e1(x);  // e1 = x.
@@ -448,7 +448,7 @@ class IntervalVar {
   IntervalVar WithName(const std::string& name);
 
   /// Returns the name of the interval (or the empty string if not set).
-  std::string Name() const;
+  const std::string& Name() const;
 
   /// Returns the start linear expression. Note that this rebuilds the
   /// expression each time this method is called.
@@ -933,16 +933,36 @@ class CpModelBuilder {
                             absl::Span<const IntVar> vars);
 
   /// Adds target == min(exprs).
+  Constraint AddMinEquality(const LinearExpr& target,
+                            absl::Span<const LinearExpr> exprs);
+
+  /// Adds target == min(exprs).
+  Constraint AddMinEquality(const LinearExpr& target,
+                            std::initializer_list<LinearExpr> exprs);
+
+  // Deprecated, use AddMinEquality.
   Constraint AddLinMinEquality(const LinearExpr& target,
-                               absl::Span<const LinearExpr> exprs);
+                               absl::Span<const LinearExpr> exprs) {
+    return AddMinEquality(target, exprs);
+  }
 
   /// Adds target == max(vars).
   Constraint AddMaxEquality(const LinearExpr& target,
                             absl::Span<const IntVar> vars);
 
   /// Adds target == max(exprs).
+  Constraint AddMaxEquality(const LinearExpr& target,
+                            absl::Span<const LinearExpr> exprs);
+
+  /// Adds target == max(exprs).
+  Constraint AddMaxEquality(const LinearExpr& target,
+                            std::initializer_list<LinearExpr> exprs);
+
+  // Deprecated, use AddMaxEquality.
   Constraint AddLinMaxEquality(const LinearExpr& target,
-                               absl::Span<const LinearExpr> exprs);
+                               absl::Span<const LinearExpr> exprs) {
+    return AddMaxEquality(target, exprs);
+  }
 
   /// Adds target = num / denom (integer division rounded towards 0).
   Constraint AddDivisionEquality(const LinearExpr& target,
@@ -963,6 +983,10 @@ class CpModelBuilder {
   /// Adds target == prod(vars).
   Constraint AddMultiplicationEquality(const LinearExpr& target,
                                        absl::Span<const IntVar> vars);
+
+  /// Adds target == prod(vars).
+  Constraint AddMultiplicationEquality(const LinearExpr& target,
+                                       std::initializer_list<LinearExpr> exprs);
 
   /**
    * Adds a no-overlap constraint that ensures that all present intervals do
@@ -1023,8 +1047,6 @@ class CpModelBuilder {
 
   /// Remove all assumptions from the model.
   void ClearAssumptions();
-
-  // TODO(user) : add MapDomain?
 
   const CpModelProto& Build() const { return Proto(); }
 

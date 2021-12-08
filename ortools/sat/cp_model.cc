@@ -14,6 +14,7 @@
 #include "ortools/sat/cp_model.h"
 
 #include <cstdint>
+#include <initializer_list>
 #include <limits>
 
 #include "absl/strings/str_format.h"
@@ -507,7 +508,7 @@ BoolVar IntervalVar::PresenceBoolVar() const {
                  cp_model_);
 }
 
-std::string IntervalVar::Name() const {
+const std::string& IntervalVar::Name() const {
   return cp_model_->constraints(index_).name();
 }
 
@@ -899,8 +900,20 @@ Constraint CpModelBuilder::AddMinEquality(const LinearExpr& target,
   return Constraint(ct);
 }
 
-Constraint CpModelBuilder::AddLinMinEquality(
-    const LinearExpr& target, absl::Span<const LinearExpr> exprs) {
+Constraint CpModelBuilder::AddMinEquality(const LinearExpr& target,
+                                          absl::Span<const LinearExpr> exprs) {
+  ConstraintProto* ct = cp_model_.add_constraints();
+  *ct->mutable_lin_max()->mutable_target() =
+      LinearExprToProto(target, /*negate=*/true);
+  for (const LinearExpr& expr : exprs) {
+    *ct->mutable_lin_max()->add_exprs() =
+        LinearExprToProto(expr, /*negate=*/true);
+  }
+  return Constraint(ct);
+}
+
+Constraint CpModelBuilder::AddMinEquality(
+    const LinearExpr& target, std::initializer_list<LinearExpr> exprs) {
   ConstraintProto* ct = cp_model_.add_constraints();
   *ct->mutable_lin_max()->mutable_target() =
       LinearExprToProto(target, /*negate=*/true);
@@ -921,8 +934,18 @@ Constraint CpModelBuilder::AddMaxEquality(const LinearExpr& target,
   return Constraint(ct);
 }
 
-Constraint CpModelBuilder::AddLinMaxEquality(
-    const LinearExpr& target, absl::Span<const LinearExpr> exprs) {
+Constraint CpModelBuilder::AddMaxEquality(const LinearExpr& target,
+                                          absl::Span<const LinearExpr> exprs) {
+  ConstraintProto* ct = cp_model_.add_constraints();
+  *ct->mutable_lin_max()->mutable_target() = LinearExprToProto(target);
+  for (const LinearExpr& expr : exprs) {
+    *ct->mutable_lin_max()->add_exprs() = LinearExprToProto(expr);
+  }
+  return Constraint(ct);
+}
+
+Constraint CpModelBuilder::AddMaxEquality(
+    const LinearExpr& target, std::initializer_list<LinearExpr> exprs) {
   ConstraintProto* ct = cp_model_.add_constraints();
   *ct->mutable_lin_max()->mutable_target() = LinearExprToProto(target);
   for (const LinearExpr& expr : exprs) {
@@ -973,6 +996,16 @@ Constraint CpModelBuilder::AddMultiplicationEquality(
 
 Constraint CpModelBuilder::AddMultiplicationEquality(
     const LinearExpr& target, absl::Span<const LinearExpr> exprs) {
+  ConstraintProto* const proto = cp_model_.add_constraints();
+  *proto->mutable_int_prod()->mutable_target() = LinearExprToProto(target);
+  for (const LinearExpr& expr : exprs) {
+    *proto->mutable_int_prod()->add_exprs() = LinearExprToProto(expr);
+  }
+  return Constraint(proto);
+}
+
+Constraint CpModelBuilder::AddMultiplicationEquality(
+    const LinearExpr& target, std::initializer_list<LinearExpr> exprs) {
   ConstraintProto* const proto = cp_model_.add_constraints();
   *proto->mutable_int_prod()->mutable_target() = LinearExprToProto(target);
   for (const LinearExpr& expr : exprs) {

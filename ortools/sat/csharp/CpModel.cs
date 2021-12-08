@@ -486,7 +486,7 @@ namespace Google.OrTools.Sat
             return ct;
         }
 
-        public Constraint AddLinMinEquality(LinearExpr target, IEnumerable<LinearExpr> exprs)
+        public Constraint AddMinEquality(LinearExpr target, IEnumerable<LinearExpr> exprs)
         {
             Constraint ct = new Constraint(model_);
             LinearArgumentProto args = new LinearArgumentProto();
@@ -512,7 +512,7 @@ namespace Google.OrTools.Sat
             return ct;
         }
 
-        public Constraint AddLinMaxEquality(LinearExpr target, IEnumerable<LinearExpr> exprs)
+        public Constraint AddMaxEquality(LinearExpr target, IEnumerable<LinearExpr> exprs)
         {
             Constraint ct = new Constraint(model_);
             LinearArgumentProto args = new LinearArgumentProto();

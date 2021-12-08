@@ -1713,6 +1713,7 @@ bool PresolveContext::SubstituteVariableInObjective(
       gtl::FindOrDie(objective_map_, var_in_equality);
   CHECK_NE(coeff_in_equality, 0);
   CHECK_EQ(coeff_in_objective % coeff_in_equality, 0);
+
   const int64_t multiplier = coeff_in_objective / coeff_in_equality;
 
   // Abort if the new objective seems to violate our overflow preconditions.
@@ -1733,6 +1734,25 @@ bool PresolveContext::SubstituteVariableInObjective(
   if (new_value == std::numeric_limits<int64_t>::max()) return false;
   objective_overflow_detection_ = new_value;
 
+  // Compute the objective offset change.
+  Domain offset = ReadDomainFromProto(equality.linear());
+  DCHECK_EQ(offset.Min(), offset.Max());
+  bool exact = true;
+  offset = offset.MultiplicationBy(multiplier, &exact);
+  CHECK(exact);
+  CHECK(!offset.IsEmpty());
+
+  // We also need to make sure the integer_offset will not overflow.
+  {
+    int64_t temp = CapProd(offset.Min(), objective_integer_scaling_factor_);
+    if (temp == std::numeric_limits<int64_t>::max()) return false;
+    if (temp == std::numeric_limits<int64_t>::min()) return false;
+    temp = CapAdd(temp, objective_integer_offset_);
+    if (temp == std::numeric_limits<int64_t>::max()) return false;
+    if (temp == std::numeric_limits<int64_t>::min()) return false;
+  }
+
+  // Perform the substitution.
   for (int i = 0; i < equality.linear().vars().size(); ++i) {
     int var = equality.linear().vars(i);
     int64_t coeff = equality.linear().coeffs(i);
@@ -1758,14 +1778,6 @@ bool PresolveContext::SubstituteVariableInObjective(
 
   objective_map_.erase(var_in_equality);
   var_to_constraints_[var_in_equality].erase(kObjectiveConstraint);
-
-  // Deal with the offset.
-  Domain offset = ReadDomainFromProto(equality.linear());
-  DCHECK_EQ(offset.Min(), offset.Max());
-  bool exact = true;
-  offset = offset.MultiplicationBy(multiplier, &exact);
-  CHECK(exact);
-  CHECK(!offset.IsEmpty());
 
   // Tricky: The objective domain is without the offset, so we need to shift it.
   objective_offset_ += static_cast<double>(offset.Min());

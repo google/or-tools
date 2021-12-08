@@ -803,7 +803,7 @@ public final class CpModel {
   }
 
   /** Adds {@code target == Min(exprs)}. */
-  public Constraint addLinMinEquality(LinearExpr target, LinearExpr[] exprs) {
+  public Constraint addMinEquality(LinearExpr target, LinearExpr[] exprs) {
     Constraint ct = new Constraint(modelBuilder);
     LinearArgumentProto.Builder linMax = ct.getBuilder().getLinMaxBuilder();
     linMax.setTarget(getLinearExpressionProtoBuilderFromLinearExpr(target, /*negate=*/true));
@@ -825,7 +825,7 @@ public final class CpModel {
   }
 
   /** Adds {@code target == Max(exprs)}. */
-  public Constraint addLinMaxEquality(LinearExpr target, LinearExpr[] exprs) {
+  public Constraint addMaxEquality(LinearExpr target, LinearExpr[] exprs) {
     Constraint ct = new Constraint(modelBuilder);
     LinearArgumentProto.Builder linMax = ct.getBuilder().getLinMaxBuilder();
     linMax.setTarget(getLinearExpressionProtoBuilderFromLinearExpr(target, /*negate=*/false));
