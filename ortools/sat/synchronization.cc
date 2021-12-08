@@ -441,6 +441,7 @@ void SharedResponseManager::FillObjectiveValuesInBestResponse() {
   if (best_response_.status() == CpSolverStatus::INFEASIBLE) {
     best_response_.clear_objective_value();
     best_response_.clear_best_objective_bound();
+    best_response_.clear_inner_objective_lower_bound();
     return;
   }
 
@@ -455,6 +456,8 @@ void SharedResponseManager::FillObjectiveValuesInBestResponse() {
   }
 
   // Update the best bound in the response.
+  best_response_.set_inner_objective_lower_bound(
+      ScaleInnerObjectiveValue(obj, inner_objective_lower_bound_));
   best_response_.set_best_objective_bound(
       ScaleObjectiveValue(obj, inner_objective_lower_bound_));
 

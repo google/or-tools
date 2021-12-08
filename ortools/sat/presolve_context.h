@@ -590,6 +590,8 @@ class PresolveContext {
   Domain objective_domain_;
   double objective_offset_;
   double objective_scaling_factor_;
+  int64_t objective_integer_offset_;
+  int64_t objective_integer_scaling_factor_;
 
   // Constraints <-> Variables graph.
   std::vector<std::vector<int>> constraint_to_vars_;

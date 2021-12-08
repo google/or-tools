@@ -1020,6 +1020,9 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
                                                 -offset)) {
         return false;
       }
+      if (context_->IsFixed(ref)) {
+        changed = true;
+      }
     }
 
     // This can happen during CanonicalizeAffineVariable().

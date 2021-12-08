@@ -60,6 +60,13 @@ bool MakeBoundsOfIntegerVariablesInteger(const SatParameters& params,
                                          MPModelProto* mp_model,
                                          SolverLogger* logger);
 
+// Performs some extra tests on the given MPModelProto and returns false if one
+// is not satisfied. These are needed before trying to convert it to the native
+// CP-SAT format.
+bool MPModelProtoValidationBeforeConversion(const SatParameters& params,
+                                            const MPModelProto& mp_model,
+                                            SolverLogger* logger);
+
 // To satisfy our scaling requirements, any terms that is almost zero can just
 // be set to zero. We need to do that before operations like
 // DetectImpliedIntegers(), becauses really low coefficients can cause issues

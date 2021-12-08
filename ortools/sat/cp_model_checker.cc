@@ -311,6 +311,11 @@ std::string ValidateIntModConstraint(const CpModelProto& model,
     return absl::StrCat("An int_mod constraint should have exactly 2 terms: ",
                         ProtobufShortDebugString(ct));
   }
+  if (!ct.int_mod().has_target()) {
+    return absl::StrCat("An int_mod constraint should have a target: ",
+                        ProtobufShortDebugString(ct));
+  }
+
   RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, ct.int_mod().exprs(0)));
   RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, ct.int_mod().exprs(1)));
   RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, ct.int_mod().target()));
@@ -329,6 +334,10 @@ std::string ValidateIntProdConstraint(const CpModelProto& model,
                                       const ConstraintProto& ct) {
   if (ct.int_prod().exprs().size() != 2) {
     return absl::StrCat("An int_prod constraint should have exactly 2 terms: ",
+                        ProtobufShortDebugString(ct));
+  }
+  if (!ct.int_prod().has_target()) {
+    return absl::StrCat("An int_prod constraint should have a target: ",
                         ProtobufShortDebugString(ct));
   }
 
@@ -357,6 +366,10 @@ std::string ValidateIntDivConstraint(const CpModelProto& model,
                                      const ConstraintProto& ct) {
   if (ct.int_div().exprs().size() != 2) {
     return absl::StrCat("An int_div constraint should have exactly 2 terms: ",
+                        ProtobufShortDebugString(ct));
+  }
+  if (!ct.int_div().has_target()) {
+    return absl::StrCat("An int_div constraint should have a target: ",
                         ProtobufShortDebugString(ct));
   }
 

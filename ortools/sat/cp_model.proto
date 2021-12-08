@@ -434,12 +434,10 @@ message ConstraintProto {
 }
 
 // Optimization objective.
-//
-// This is in a message because decision problems don't have any objective.
 message CpObjectiveProto {
   // The linear terms of the objective to minimize.
   // For a maximization problem, one can negate all coefficients in the
-  // objective and set a scaling_factor to -1.
+  // objective and set scaling_factor to -1.
   repeated int32 vars = 1;
   repeated int64 coeffs = 4;
 
@@ -464,6 +462,17 @@ message CpObjectiveProto {
   //
   // TODO(user): Put the error bounds we computed instead?
   bool scaling_was_exact = 6;
+
+  // Internal field. This is only useful for inner_objective_lower_bound, It
+  // should never be set in most cases, so we have the simple:
+  //   sum(coefficients[i] * objective_vars[i]) >= inner_objective_lower_bound.
+  //
+  // This is similar to offset/scaling_factor but allows to stay in the integer
+  // domain. Note that the formula is not the same than for the floating point
+  // objective. If this is set, we have
+  //    linear_expression * scaling + offset >= inner_objective_lower_bound
+  int64 integer_offset = 7;
+  int64 integer_scaling_factor = 8;
 }
 
 // A linear floating point objective: sum coeffs[i] * vars[i] + offset.
@@ -691,7 +700,7 @@ message CpSolverSolution {
 //
 // TODO(user): support returning multiple solutions. Look at the Stubby
 // streaming API as we probably wants to get them as they are found.
-// Next id: 29
+// Next id: 30
 message CpSolverResponse {
   // The status of the solve.
   CpSolverStatus status = 1;
@@ -760,6 +769,14 @@ message CpSolverResponse {
   // the problem had a floating point objective, and on the final response, not
   // the ones given to callbacks.
   CpObjectiveProto integer_objective = 28;
+
+  // Advanced usage.
+  //
+  // A lower bound on the inner integer expression of the objective. This is
+  // either a bound on the expression in the returned integer_objective or on
+  // the integer expression of the original objective if the problem already has
+  // an integer objective.
+  int64 inner_objective_lower_bound = 29;
 
   // Some statistics about the solve.
   // TODO(user): These are broken in multi-thread.

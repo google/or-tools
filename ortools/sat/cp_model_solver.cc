@@ -3184,9 +3184,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
           // scaling algorithm.
           if (params.mip_compute_true_objective_bound() &&
               !integer_obj.scaling_was_exact()) {
-            const int64_t integer_lb =
-                static_cast<int64_t>(std::round(UnscaleObjectiveValue(
-                    integer_obj, response->best_objective_bound())));
+            const int64_t integer_lb = response->inner_objective_lower_bound();
             const double lb = ComputeTrueObjectiveLowerBound(
                 model_proto, integer_obj, integer_lb);
             SOLVER_LOG(logger, "[Scaling] scaled_objective_bound: ",

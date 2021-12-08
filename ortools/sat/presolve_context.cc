@@ -1500,6 +1500,13 @@ void PresolveContext::ReadObjectiveFromProto() {
   if (objective_scaling_factor_ == 0.0) {
     objective_scaling_factor_ = 1.0;
   }
+
+  objective_integer_offset_ = obj.integer_offset();
+  objective_integer_scaling_factor_ = obj.integer_scaling_factor();
+  if (objective_integer_scaling_factor_ == 0) {
+    objective_integer_scaling_factor_ = 1;
+  }
+
   if (!obj.domain().empty()) {
     // We might relax this in CanonicalizeObjective() when we will compute
     // the possible objective domain from the domains of the variables.
@@ -1640,8 +1647,10 @@ bool PresolveContext::CanonicalizeObjective(bool simplify_domain) {
         objective_domain_.SimplifyUsingImpliedDomain(implied_domain);
   }
 
-  // Updat the offset.
+  // Update the offset.
   objective_offset_ += offset_change;
+  objective_integer_offset_ +=
+      offset_change * objective_integer_scaling_factor_;
 
   // Maybe divide by GCD.
   if (gcd > 1) {
@@ -1651,6 +1660,7 @@ bool PresolveContext::CanonicalizeObjective(bool simplify_domain) {
     objective_domain_ = objective_domain_.InverseMultiplicationBy(gcd);
     objective_offset_ /= static_cast<double>(gcd);
     objective_scaling_factor_ *= static_cast<double>(gcd);
+    objective_integer_scaling_factor_ *= gcd;
   }
 
   if (objective_domain_.IsEmpty()) return false;
@@ -1685,6 +1695,7 @@ void PresolveContext::AddToObjective(int var, int64_t value) {
 void PresolveContext::AddToObjectiveOffset(int64_t value) {
   // Tricky: The objective domain is without the offset, so we need to shift it.
   objective_offset_ += static_cast<double>(value);
+  objective_integer_offset_ += value * objective_integer_scaling_factor_;
   objective_domain_ = objective_domain_.AdditionWith(Domain(-value));
 }
 
@@ -1758,6 +1769,7 @@ bool PresolveContext::SubstituteVariableInObjective(
 
   // Tricky: The objective domain is without the offset, so we need to shift it.
   objective_offset_ += static_cast<double>(offset.Min());
+  objective_integer_offset_ += offset.Min() * objective_integer_scaling_factor_;
   objective_domain_ = objective_domain_.AdditionWith(Domain(-offset.Min()));
 
   // Because we can assume that the constraint we used was constraining
@@ -1816,6 +1828,7 @@ bool PresolveContext::ExploitExactlyOneInObjective(
   // Note that the domain never include the offset, so we need to update it.
   if (offset != 0) {
     objective_offset_ += offset;
+    objective_integer_offset_ += offset * objective_integer_scaling_factor_;
     objective_domain_ = objective_domain_.AdditionWith(Domain(-offset));
   }
 
@@ -1833,6 +1846,12 @@ void PresolveContext::WriteObjectiveToProto() const {
   CpObjectiveProto* mutable_obj = working_model->mutable_objective();
   mutable_obj->set_offset(objective_offset_);
   mutable_obj->set_scaling_factor(objective_scaling_factor_);
+  mutable_obj->set_integer_offset(objective_integer_offset_);
+  if (objective_integer_scaling_factor_ == 1) {
+    mutable_obj->set_integer_scaling_factor(0);  // Default.
+  } else {
+    mutable_obj->set_integer_scaling_factor(objective_integer_scaling_factor_);
+  }
   FillDomainInProto(objective_domain_, mutable_obj);
   mutable_obj->clear_vars();
   mutable_obj->clear_coeffs();

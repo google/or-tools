@@ -139,6 +139,15 @@ inline double ScaleObjectiveValue(const CpObjectiveProto& proto,
   return proto.scaling_factor() * result;
 }
 
+// Similar to ScaleObjectiveValue() but uses the integer version.
+inline int64_t ScaleInnerObjectiveValue(const CpObjectiveProto& proto,
+                                        int64_t value) {
+  if (proto.integer_scaling_factor() == 0) {
+    return value + proto.integer_offset();
+  }
+  return value * proto.integer_scaling_factor() + proto.integer_offset();
+}
+
 // Removes the objective scaling and offset from the given value.
 inline double UnscaleObjectiveValue(const CpObjectiveProto& proto,
                                     double value) {

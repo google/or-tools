@@ -272,6 +272,70 @@ void RemoveNearZeroTerms(const SatParameters& params, MPModelProto* mp_model,
   }
 }
 
+bool MPModelProtoValidationBeforeConversion(const SatParameters& params,
+                                            const MPModelProto& mp_model,
+                                            SolverLogger* logger) {
+  // Abort if there is constraint type we don't currently support.
+  for (const MPGeneralConstraintProto& general_constraint :
+       mp_model.general_constraint()) {
+    switch (general_constraint.general_constraint_case()) {
+      case MPGeneralConstraintProto::kIndicatorConstraint:
+        break;
+      case MPGeneralConstraintProto::kAndConstraint:
+        break;
+      case MPGeneralConstraintProto::kOrConstraint:
+        break;
+      default:
+        SOLVER_LOG(logger, "General constraints of type ",
+                   general_constraint.general_constraint_case(),
+                   " are not supported.");
+        return false;
+    }
+  }
+
+  // Abort if finite variable bounds or objective is too large.
+  const double threshold = params.mip_max_valid_magnitude();
+  const int num_variables = mp_model.variable_size();
+  for (int i = 0; i < num_variables; ++i) {
+    const MPVariableProto& var = mp_model.variable(i);
+    if ((std::isfinite(var.lower_bound()) &&
+         std::abs(var.lower_bound()) > threshold) ||
+        (std::isfinite(var.upper_bound()) &&
+         std::abs(var.upper_bound()) > threshold)) {
+      SOLVER_LOG(logger, "Variable bounds are too large [", var.lower_bound(),
+                 ",", var.upper_bound(), "]");
+      return false;
+    }
+    if (std::abs(var.objective_coefficient()) > threshold) {
+      SOLVER_LOG(logger, "Objective coefficient is too large: ",
+                 var.objective_coefficient());
+      return false;
+    }
+  }
+
+  // Abort if finite constraint bounds or coefficients are too large.
+  const int num_constraints = mp_model.constraint_size();
+  for (int c = 0; c < num_constraints; ++c) {
+    const MPConstraintProto& ct = mp_model.constraint(c);
+    if ((std::isfinite(ct.lower_bound()) &&
+         std::abs(ct.lower_bound()) > threshold) ||
+        (std::isfinite(ct.upper_bound()) &&
+         std::abs(ct.upper_bound()) > threshold)) {
+      SOLVER_LOG(logger, "Constraint bounds are too large [", ct.lower_bound(),
+                 ",", ct.upper_bound(), "]");
+      return false;
+    }
+    for (const double coeff : ct.coefficient()) {
+      if (std::abs(coeff) > threshold) {
+        SOLVER_LOG(logger, "Constraint coefficient is too large: ", coeff);
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
 std::vector<double> DetectImpliedIntegers(MPModelProto* mp_model,
                                           SolverLogger* logger) {
   const int num_variables = mp_model->variable_size();
