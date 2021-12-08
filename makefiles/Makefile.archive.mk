@@ -226,7 +226,7 @@ endif
 ##  TESTING  ##
 ###############
 TEMP_TEST_DIR = temp_test
-.PHONY: test_archive
+.PHONY: test_archive # Test OR-Tools archive is OK.
 test_archive: $(INSTALL_DIR)$(ARCHIVE_EXT)
 	-$(DELREC) $(TEMP_TEST_DIR)
 	-$(MKDIR) $(TEMP_TEST_DIR)
@@ -249,7 +249,7 @@ else
 endif
 
 TEMP_FZ_TEST_DIR = temp_fz_test
-.PHONY: test_fz_archive
+.PHONY: test_fz_archive # Test OR-Tools flatzinc archive is OK.
 test_fz_archive: $(FZ_INSTALL_DIR)$(ARCHIVE_EXT)
 	-$(DELREC) $(TEMP_FZ_TEST_DIR)
 	-$(MKDIR) $(TEMP_FZ_TEST_DIR)
