@@ -32,6 +32,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
@@ -233,8 +234,8 @@ class NetworkRoutingDataBuilder {
       AddEdge(i, j);
     }
 
-    std::set<int> to_complete;
-    std::set<int> not_full;
+    absl::btree_set<int> to_complete;
+    absl::btree_set<int> not_full;
     for (int i = 0; i < num_backbones_; ++i) {
       if (degrees_[i] < min_backbone_degree_) {
         to_complete.insert(i);

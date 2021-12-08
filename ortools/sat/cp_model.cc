@@ -152,12 +152,49 @@ LinearExpr LinearExpr::Sum(absl::Span<const IntVar> vars) {
   return result;
 }
 
+LinearExpr LinearExpr::Sum(absl::Span<const BoolVar> vars) {
+  LinearExpr result;
+  for (const BoolVar& var : vars) {
+    result.AddVar(var);
+  }
+  return result;
+}
+
+LinearExpr LinearExpr::Sum(std::initializer_list<IntVar> vars) {
+  LinearExpr result;
+  for (const IntVar& var : vars) {
+    result.AddVar(var);
+  }
+  return result;
+}
+
 LinearExpr LinearExpr::ScalProd(absl::Span<const IntVar> vars,
                                 absl::Span<const int64_t> coeffs) {
   CHECK_EQ(vars.size(), coeffs.size());
   LinearExpr result;
   for (int i = 0; i < vars.size(); ++i) {
     result.AddTerm(vars[i], coeffs[i]);
+  }
+  return result;
+}
+
+LinearExpr LinearExpr::ScalProd(absl::Span<const BoolVar> vars,
+                                absl::Span<const int64_t> coeffs) {
+  CHECK_EQ(vars.size(), coeffs.size());
+  LinearExpr result;
+  for (int i = 0; i < vars.size(); ++i) {
+    result.AddTerm(vars[i], coeffs[i]);
+  }
+  return result;
+}
+
+LinearExpr LinearExpr::ScalProd(std::initializer_list<IntVar> vars,
+                                absl::Span<const int64_t> coeffs) {
+  CHECK_EQ(vars.size(), coeffs.size());
+  LinearExpr result;
+  int count = 0;
+  for (const IntVar& var : vars) {
+    result.AddTerm(var, coeffs[count++]);
   }
   return result;
 }
@@ -288,6 +325,22 @@ DoubleLinearExpr DoubleLinearExpr::Sum(absl::Span<const IntVar> vars) {
   return result;
 }
 
+DoubleLinearExpr DoubleLinearExpr::Sum(absl::Span<const BoolVar> vars) {
+  DoubleLinearExpr result;
+  for (const BoolVar& var : vars) {
+    result.AddVar(var);
+  }
+  return result;
+}
+
+DoubleLinearExpr DoubleLinearExpr::Sum(std::initializer_list<IntVar> vars) {
+  DoubleLinearExpr result;
+  for (const IntVar& var : vars) {
+    result.AddVar(var);
+  }
+  return result;
+}
+
 DoubleLinearExpr DoubleLinearExpr::ScalProd(absl::Span<const IntVar> vars,
                                             absl::Span<const double> coeffs) {
   CHECK_EQ(vars.size(), coeffs.size());
@@ -298,27 +351,30 @@ DoubleLinearExpr DoubleLinearExpr::ScalProd(absl::Span<const IntVar> vars,
   return result;
 }
 
-DoubleLinearExpr DoubleLinearExpr::Term(IntVar var, double coefficient) {
-  DoubleLinearExpr result;
-  result.AddTerm(var, coefficient);
-  return result;
-}
-
-DoubleLinearExpr DoubleLinearExpr::BooleanSum(absl::Span<const BoolVar> vars) {
-  DoubleLinearExpr result;
-  for (const BoolVar& var : vars) {
-    result.AddVar(var);
-  }
-  return result;
-}
-
-DoubleLinearExpr DoubleLinearExpr::BooleanScalProd(
-    absl::Span<const BoolVar> vars, absl::Span<const double> coeffs) {
+DoubleLinearExpr DoubleLinearExpr::ScalProd(absl::Span<const BoolVar> vars,
+                                            absl::Span<const double> coeffs) {
   CHECK_EQ(vars.size(), coeffs.size());
   DoubleLinearExpr result;
   for (int i = 0; i < vars.size(); ++i) {
     result.AddTerm(vars[i], coeffs[i]);
   }
+  return result;
+}
+
+DoubleLinearExpr DoubleLinearExpr::ScalProd(std::initializer_list<IntVar> vars,
+                                            absl::Span<const double> coeffs) {
+  CHECK_EQ(vars.size(), coeffs.size());
+  DoubleLinearExpr result;
+  int count = 0;
+  for (const IntVar& var : vars) {
+    result.AddTerm(var, coeffs[count++]);
+  }
+  return result;
+}
+
+DoubleLinearExpr DoubleLinearExpr::Term(IntVar var, double coefficient) {
+  DoubleLinearExpr result;
+  result.AddTerm(var, coefficient);
   return result;
 }
 

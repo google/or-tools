@@ -39,6 +39,7 @@
 #define OR_TOOLS_SAT_CP_MODEL_H_
 
 #include <cstdint>
+#include <initializer_list>
 #include <limits>
 #include <string>
 
@@ -237,9 +238,9 @@ std::ostream& operator<<(std::ostream& os, const IntVar& var);
   LinearExpr e5(b.Not());  // e5 = 1 - b.
   // If passing a std::vector<BoolVar>, a specialized method must be called.
   std::vector<BoolVar> bools = {b, Not(c)};
-  LinearExpr e6 = LinearExpr::BooleanSum(bools);  // e6 = b + 1 - c;
+  LinearExpr e6 = LinearExpr::Sum(bools);  // e6 = b + 1 - c;
   // e7 = -3 * b + 1 - c;
-  LinearExpr e7 = LinearExpr::BooleanScalProd(bools, {-3, 1});
+  LinearExpr e7 = LinearExpr::ScalProd(bools, {-3, 1});
   \endcode
  *  This can be used implicitly in some of the CpModelBuilder methods.
  * \code
@@ -279,16 +280,33 @@ class LinearExpr {
   /// Constructs the sum of a list of variables.
   static LinearExpr Sum(absl::Span<const IntVar> vars);
 
+  /// Constructs the sum of a list of Boolean variables.
+  static LinearExpr Sum(absl::Span<const BoolVar> vars);
+
+  /// Constructs the sum of a list of Boolean variables.
+  // TODO(user): Remove when the operators + and * are implemented.
+  static LinearExpr Sum(std::initializer_list<IntVar> vars);
+
   /// Constructs the scalar product of variables and coefficients.
   static LinearExpr ScalProd(absl::Span<const IntVar> vars,
                              absl::Span<const int64_t> coeffs);
 
-  /// Constructs the sum of a list of Booleans.
+  /// Constructs the scalar product of Boolean variables and coefficients.
+  static LinearExpr ScalProd(absl::Span<const BoolVar> vars,
+                             absl::Span<const int64_t> coeffs);
+
+  /// Constructs the scalar product of variables and coefficients.
+  // TODO(user): Remove when the operators + and * are implemented.
+  static LinearExpr ScalProd(std::initializer_list<IntVar> vars,
+                             absl::Span<const int64_t> coeffs);
+
+  /// Deprecated. Use Sum() instead.
   static LinearExpr BooleanSum(absl::Span<const BoolVar> vars);
 
-  /// Constructs the scalar product of Booleans and coefficients.
+  /// Deprecated. Use ScalProd() instead.
   static LinearExpr BooleanScalProd(absl::Span<const BoolVar> vars,
                                     absl::Span<const int64_t> coeffs);
+
   /// Constructs var * coefficient.
   static LinearExpr Term(IntVar var, int64_t coefficient);
 
@@ -344,9 +362,9 @@ std::ostream& operator<<(std::ostream& os, const LinearExpr& e);
   DoubleLinearExpr e5(b.Not());  // e5 = 1 - b.
   // If passing a std::vector<BoolVar>, a specialized method must be called.
   std::vector<BoolVar> bools = {b, Not(c)};
-  DoubleLinearExpr e6 = DoubleLinearExpr::BooleanSum(bools);  // e6 = b + 1 - c;
+  DoubleLinearExpr e6 = DoubleLinearExpr::Sum(bools);  // e6 = b + 1 - c;
   // e7 = -3.0 * b + 1.5 - 1.5 * c;
-  DoubleLinearExpr e7 = DoubleLinearExpr::BooleanScalProd(bools, {-3.0, 1.5});
+  DoubleLinearExpr e7 = DoubleLinearExpr::ScalProd(bools, {-3.0, 1.5});
   \endcode
  *  This can be used in the objective definition.
  * \code
@@ -386,16 +404,24 @@ class DoubleLinearExpr {
   /// Constructs the sum of a list of variables.
   static DoubleLinearExpr Sum(absl::Span<const IntVar> vars);
 
+  /// Constructs the sum of a list of Boolean variables.
+  static DoubleLinearExpr Sum(absl::Span<const BoolVar> vars);
+
+  /// Constructs the sum of a list of variables.
+  static DoubleLinearExpr Sum(std::initializer_list<IntVar> vars);
+
   /// Constructs the scalar product of variables and coefficients.
   static DoubleLinearExpr ScalProd(absl::Span<const IntVar> vars,
                                    absl::Span<const double> coeffs);
 
-  /// Constructs the sum of a list of Booleans.
-  static DoubleLinearExpr BooleanSum(absl::Span<const BoolVar> vars);
+  /// Constructs the scalar product of Boolean variables and coefficients.
+  static DoubleLinearExpr ScalProd(absl::Span<const BoolVar> vars,
+                                   absl::Span<const double> coeffs);
 
-  /// Constructs the scalar product of Booleans and coefficients.
-  static DoubleLinearExpr BooleanScalProd(absl::Span<const BoolVar> vars,
-                                          absl::Span<const double> coeffs);
+  /// Constructs the scalar product of variables and coefficients.
+  static DoubleLinearExpr ScalProd(std::initializer_list<IntVar> vars,
+                                   absl::Span<const double> coeffs);
+
   /// Constructs var * coefficient.
   static DoubleLinearExpr Term(IntVar var, double coefficient);
 

@@ -47,7 +47,7 @@ void MagicSequence(int size) {
 
   // Domain constraint on each position.
   for (int i = 0; i < size; ++i) {
-    cp_model.AddEquality(LinearExpr::BooleanSum(var_domains[i]), 1);
+    cp_model.AddEquality(LinearExpr::Sum(var_domains[i]), 1);
   }
 
   // The number of variables equal to j shall be the value of vars[j].
@@ -60,8 +60,8 @@ void MagicSequence(int size) {
     for (int i = 0; i < size; ++i) {
       vars_equal_to_j.push_back(var_domains[i][j]);
     }
-    cp_model.AddEquality(LinearExpr::BooleanScalProd(var_domains[j], values),
-                         LinearExpr::BooleanSum(vars_equal_to_j));
+    cp_model.AddEquality(LinearExpr::ScalProd(var_domains[j], values),
+                         LinearExpr::Sum(vars_equal_to_j));
   }
 
   const CpSolverResponse response =

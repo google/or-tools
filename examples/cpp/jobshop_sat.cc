@@ -252,7 +252,7 @@ void CreateAlternativeTasks(
         for (const AlternativeTaskData& alternative : alternatives) {
           interval_presences.push_back(alternative.presence);
         }
-        cp_model.AddEquality(LinearExpr::BooleanSum(interval_presences), 1);
+        cp_model.AddEquality(LinearExpr::Sum(interval_presences), 1);
       }
     }
   }
@@ -303,7 +303,7 @@ void AddAlternativeTaskDurationRelaxation(
       //        sum(shifted_duration[i] * presence_literals[i])
       cp_model.AddEquality(
           LinearExpr::ScalProd({tasks[t].end, tasks[t].start}, {1, -1}),
-          LinearExpr::BooleanScalProd(presence_literals, shifted_durations)
+          LinearExpr::ScalProd(presence_literals, shifted_durations)
               .AddConstant(min_duration));
     }
   }
@@ -442,7 +442,7 @@ void CreateMachines(
       // Add a linear equation to define the size of the tail interval.
       if (absl::GetFlag(FLAGS_use_variable_duration_to_encode_transition)) {
         cp_model.AddEquality(tail.interval.SizeExpr(),
-                             LinearExpr::BooleanScalProd(literals, transitions)
+                             LinearExpr::ScalProd(literals, transitions)
                                  .AddConstant(tail.fixed_duration));
       }
     }
@@ -493,8 +493,8 @@ void CreateObjective(
         objective_coeffs.push_back(lateness_penalty);
       } else {
         const IntVar lateness_var = cp_model.NewIntVar(Domain(0, horizon));
-        cp_model.AddLinMaxEquality(
-            lateness_var, {LinearExpr(0), job_end.AddConstant(-due_date)});
+        cp_model.AddMaxEquality(lateness_var,
+                                {0, job_end.AddConstant(-due_date)});
         objective_vars.push_back(lateness_var);
         objective_coeffs.push_back(lateness_penalty);
       }
@@ -508,10 +508,9 @@ void CreateObjective(
 
       if (due_date > 0) {
         const IntVar earliness_var = cp_model.NewIntVar(Domain(0, horizon));
-        cp_model.AddLinMaxEquality(
+        cp_model.AddMaxEquality(
             earliness_var,
-            {LinearExpr(0),
-             LinearExpr::Term(job_end, -1).AddConstant(due_date)});
+            {0, LinearExpr::Term(job_end, -1).AddConstant(due_date)});
         objective_vars.push_back(earliness_var);
         objective_coeffs.push_back(earliness_penalty);
       }

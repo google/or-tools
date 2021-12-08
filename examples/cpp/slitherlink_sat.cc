@@ -168,7 +168,7 @@ void SlitherLink(const std::vector<std::vector<int> >& data) {
       const int right_arc = undirected_vertical_arc(x + 1, y);
       neighbors.push_back(vertical_arcs[2 * right_arc]);
       neighbors.push_back(vertical_arcs[2 * right_arc + 1]);
-      builder.AddEquality(LinearExpr::BooleanSum(neighbors), data[y][x]);
+      builder.AddEquality(LinearExpr::Sum(neighbors), data[y][x]);
     }
   }
 

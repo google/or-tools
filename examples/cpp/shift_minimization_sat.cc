@@ -31,6 +31,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/container/btree_set.h"
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
 #include "absl/flags/usage.h"
@@ -237,8 +238,8 @@ void LoadAndSolve(const std::string& file_name) {
   //   For each time point, count the number of active jobs at that time,
   //   then the number of active workers on these jobs is equal to the number of
   //   active jobs.
-  std::set<int> time_points;
-  std::set<std::vector<int>> visited_job_lists;
+  absl::btree_set<int> time_points;
+  absl::btree_set<std::vector<int>> visited_job_lists;
 
   for (int j = 0; j < num_jobs; ++j) {
     time_points.insert(parser.jobs()[j].start);
@@ -275,8 +276,7 @@ void LoadAndSolve(const std::string& file_name) {
 
     // Add the count constraints: We have as many active workers as jobs.
     const int num_jobs = intersecting_jobs.size();
-    cp_model.AddEquality(LinearExpr::BooleanSum(overlapping_worker_jobs),
-                         num_jobs);
+    cp_model.AddEquality(LinearExpr::Sum(overlapping_worker_jobs), num_jobs);
     // Book keeping.
     max_intersection_size = std::max(max_intersection_size, num_jobs);
     num_count_constraints++;
@@ -290,7 +290,7 @@ void LoadAndSolve(const std::string& file_name) {
   // Objective.
   const IntVar objective_var =
       cp_model.NewIntVar(Domain(max_intersection_size, num_workers));
-  cp_model.AddEquality(LinearExpr::BooleanSum(active_workers), objective_var);
+  cp_model.AddEquality(LinearExpr::Sum(active_workers), objective_var);
   cp_model.Minimize(objective_var);
 
   // Solve.
