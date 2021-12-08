@@ -2474,7 +2474,9 @@ void SingletonUndo::ZeroCostSingletonColumnUndo(
     const GlopParameters& parameters, const SparseColumn& saved_row,
     ProblemSolution* solution) const {
   // If the variable was fixed, this is easy. Note that this is the only
-  // possible case if the current constraint status is FIXED.
+  // possible case if the current constraint status is FIXED, except if the
+  // variable bounds are small compared to the constraint bounds, like adding
+  // 1e-100 to a fixed == 1 constraint.
   if (variable_upper_bound_ == variable_lower_bound_) {
     solution->primal_values[e_.col] = variable_lower_bound_;
     solution->variable_statuses[e_.col] = VariableStatus::FIXED_VALUE;
@@ -2482,9 +2484,22 @@ void SingletonUndo::ZeroCostSingletonColumnUndo(
   }
 
   const ConstraintStatus ct_status = solution->constraint_statuses[e_.row];
-  DCHECK_NE(ct_status, ConstraintStatus::FIXED_VALUE);
-  if (ct_status == ConstraintStatus::AT_LOWER_BOUND ||
-      ct_status == ConstraintStatus::AT_UPPER_BOUND) {
+  if (ct_status == ConstraintStatus::FIXED_VALUE) {
+    const Fractional corrected_dual = is_maximization_
+                                          ? -solution->dual_values[e_.row]
+                                          : solution->dual_values[e_.row];
+    if (corrected_dual > 0) {
+      DCHECK(IsFinite(variable_lower_bound_));
+      solution->primal_values[e_.col] = variable_lower_bound_;
+      solution->variable_statuses[e_.col] = VariableStatus::AT_LOWER_BOUND;
+    } else {
+      DCHECK(IsFinite(variable_upper_bound_));
+      solution->primal_values[e_.col] = variable_upper_bound_;
+      solution->variable_statuses[e_.col] = VariableStatus::AT_UPPER_BOUND;
+    }
+    return;
+  } else if (ct_status == ConstraintStatus::AT_LOWER_BOUND ||
+             ct_status == ConstraintStatus::AT_UPPER_BOUND) {
     if ((ct_status == ConstraintStatus::AT_UPPER_BOUND && e_.coeff > 0.0) ||
         (ct_status == ConstraintStatus::AT_LOWER_BOUND && e_.coeff < 0.0)) {
       DCHECK(IsFinite(variable_lower_bound_));
