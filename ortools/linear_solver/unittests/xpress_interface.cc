@@ -1,26 +1,26 @@
-#include "ortools/linear_solver/unittests/common.h"
 #include "ortools/linear_solver/xpress_interface.cc"
+#include "gtest/gtest.h"
 
 namespace operations_research {
 
-  class XPRSGetter : public InterfaceGetter {
+  class XPRSGetter {
   public:
-    using InterfaceGetter::InterfaceGetter;
+    XPRSGetter(MPSolver* solver) : solver_(solver) {}
 
-    int getNumVariables() override {
+    int getNumVariables() {
       int cols;
       XPRSgetintattrib(prob(), XPRS_COLS, &cols);
       return cols;
     }
 
-    double getLb(int n) override {
+    double getLb(int n) {
       EXPECT_LT(n, getNumVariables());
       double lb;
       XPRSgetlb(prob(), &lb, n, n);
       return lb;
     }
 
-    double getUb(int n) override {
+    double getUb(int n) {
       EXPECT_LT(n, getNumVariables());
       double ub;
       XPRSgetub(prob(), &ub, n, n);
@@ -28,6 +28,8 @@ namespace operations_research {
     }
 
   private:
+    MPSolver* solver_;
+
     XPRSprob prob() {
       return (XPRSprob)solver_->underlying_solver();
     }
@@ -36,9 +38,12 @@ namespace operations_research {
   TEST(XpressInterface, MakeVar) {
     MPSolver solver("XPRESS_MIP", MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING);
     XPRSGetter getter(&solver);
-    LinearSolverTests tests(&solver, &getter);
 
-    tests.testMakeVar(1, 10);
+    int lb = 0, ub = 10;
+    MPVariable* x = solver.MakeIntVar(lb, ub, "x");
+    solver.Solve();
+    EXPECT_EQ(getter.getLb(0), lb);
+    EXPECT_EQ(getter.getUb(0), ub);
   }
 
 }  // namespace operations_research

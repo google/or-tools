@@ -1,27 +1,29 @@
-#include "ortools/linear_solver/unittests/common.h"
 #include "ortools/linear_solver/sirius_interface.cc"
+#include "gtest/gtest.h"
 
 namespace operations_research {
 
-  class SRSGetter : public InterfaceGetter {
+  class SRSGetter {
   public:
-    using InterfaceGetter::InterfaceGetter;
+    SRSGetter(MPSolver* solver) : solver_(solver) {}
 
-    int getNumVariables() override {
+    int getNumVariables() {
       return prob()->problem_mip->NombreDeVariables;
     }
 
-    double getLb(int n) override {
+    double getLb(int n) {
       EXPECT_LT(n, getNumVariables());
       return prob()->problem_mip->Xmin[n];
     }
 
-    double getUb(int n) override {
+    double getUb(int n) {
       EXPECT_LT(n, getNumVariables());
       return prob()->problem_mip->Xmax[n];
     }
 
   private:
+    MPSolver* solver_;
+
     SRS_PROBLEM* prob() {
       return (SRS_PROBLEM*)solver_->underlying_solver();
     }
@@ -30,9 +32,12 @@ namespace operations_research {
   TEST(SiriusInterface, MakeVar) {
     MPSolver solver("SIRIUS_MIP", MPSolver::SIRIUS_MIXED_INTEGER_PROGRAMMING);
     SRSGetter getter(&solver);
-    LinearSolverTests tests(&solver, &getter);
 
-    tests.testMakeVar(1, 10);
+    int lb = 0, ub = 10;
+    MPVariable* x = solver.MakeIntVar(lb, ub, "x");
+    solver.Solve();
+    EXPECT_EQ(getter.getLb(0), lb);
+    EXPECT_EQ(getter.getUb(0), ub);
   }
 
 }  // namespace operations_research
