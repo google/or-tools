@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from google.protobuf import text_format
 from ortools.linear_solver import pywraplp
 from ortools.linear_solver import linear_solver_pb2

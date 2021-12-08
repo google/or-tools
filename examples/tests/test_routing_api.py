@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Various calls to CP api from python to verify they work.
 '''Test routing API'''
 
