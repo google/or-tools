@@ -1,0 +1,50 @@
+name: CMake linux unittest
+
+on: workflow_dispatch
+
+jobs:
+  cmake:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Sirius repo
+        uses: actions/checkout@v2
+        with:
+          repository: rte-france/sirius-solver
+          path: ./sirius-solver
+          ref: antares_integration
+      - name: Configure Sirius
+        working-directory: ./sirius-solver
+        run: |
+          cmake -S src \
+                -B build \
+                -DCMAKE_BUILD_TYPE=Release \
+                -DCMAKE_INSTALL_PREFIX=SiriusInstall
+      - name: Build & Install Sirius
+        working-directory: ./sirius-solver
+        run: cmake --build build/ --config Release --target install -j14
+      - name: Checkout or-tools
+        uses: actions/checkout@v2
+        with:
+          path: ./or-tools
+      - name: Configure or-tools
+        working-directory: ./or-tools
+        run: |
+          cmake -S. \
+                -Bbuild \
+                -DCMAKE_BUILD_TYPE=Release \
+                -DBUILD_DEPS=ON \
+                -DUSE_SIRIUS=ON \
+                -Dsirius_solver_DIR="${{ github.workspace }}/sirius-solver/SiriusInstall/cmake" \
+                -DBUILD_LINEAR_SOLVER_UNITTESTS=ON \
+                -DBUILD_TESTING=ON
+      - name: Build tests
+        working-directory: ./or-tools
+        run: |
+          cmake --build build \
+                --target sirius_interface \
+                -j14
+      - name: Run tests
+        working-directory: ./or-tools/build
+        run: ctest -V -R cxx_unittests_sirius_interface
+        env:
+          LD_LIBRARY_PATH: ${{ github.workspace }}/sirius-solver/SiriusInstall/lib/
