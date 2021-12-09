@@ -650,7 +650,7 @@ build: $(SOURCE) $(SOURCE)proj
 
 .PHONY: run # Run a .Net C# program.
 run: build
-	"$(DOTNET_BIN)" run --no-build --project $(SOURCE_PATH)proj -- $(ARGS)
+	"$(DOTNET_BIN)" run --no-build --framework net6.0 --project $(SOURCE_PATH)proj -- $(ARGS)
 endif # ifeq ($(SOURCE_SUFFIX),.cs)
 
 # .Net F#
@@ -665,7 +665,7 @@ build: $(SOURCE) $(SOURCE)proj
 
 .PHONY: run # Run a .Net F# program.
 run: build
-	"$(DOTNET_BIN)" run --no-build --project $(SOURCE_PATH)proj -- $(ARGS)
+	"$(DOTNET_BIN)" run --no-build --framework net6.0 --project $(SOURCE_PATH)proj -- $(ARGS)
 endif # ifeq ($(SOURCE_SUFFIX),.fs)
 
 endif # ifndef DOTNET_BIN

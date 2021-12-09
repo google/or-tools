@@ -6,9 +6,9 @@ OR-Tools is located at https://developers.google.com/optimization
 
 These modules have been tested under:
 
-  - Ubuntu 14.04, 16.04, 17.10 and 18.04 (64-bit).
-  - macOS 10.13 High Sierra with Xcode 9.4 (64 bit).
-  - Microsoft Windows with Visual Studio 2015 and 2017 (64-bit)
+  - Ubuntu 16.04, 18.04 and 20.04 (64-bit).
+  - macOS 12 Monterey (64 bit).
+  - Microsoft Windows with Visual Studio Community 2019 (64-bit)
 
 Upon decompressing the archive, you will get the following structure:
 
@@ -83,22 +83,22 @@ dotnet/cli tools accessible from the command line.
 Use Makefile:
 
 ```shell
-make run SOURCE=examples/dotnet/csflow.cs
+make run SOURCE=examples/dotnet/Vrp/Vrp.cs
 ```
 
 **OR** this is equivalent to compiling and running
-`examples/dotnet/csflow.cs`.
+`examples/dotnet/Vrp/Vrp.cs`.
 
 - on Unix:
 
   ```shell
-  dotnet build examples/dotnet/csflow.csproj
-  dotnet run --no-build --project examples/dotnet/csflow.csproj
+  dotnet build examples/dotnet/Vrp/Vrp.csproj
+  dotnet run --no-build --framework net6.0 --project examples/dotnet/Vrp/Vrp.csproj
   ```
 
 - on Windows:
 
   ```shell
-  dotnet build examples\dotnet\csflow.csproj
-  dotnet run --no-build --project examples\dotnet\csflow.csproj
+  dotnet build examples\dotnet\Vrp\Vrp.csproj
+  dotnet run --no-build --framework net6.0 --project examples\dotnet\Vrp\Vrp.csproj
   ```
