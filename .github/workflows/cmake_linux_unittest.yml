@@ -43,6 +43,11 @@ jobs:
           cmake --build build \
                 --target sirius_interface \
                 -j14
+      - name: Upload libortools
+        uses: actions/upload-artifact@v2
+        with:
+          name: libortools
+          path: ./or-tools/build/lib/libortools.so
       - name: Run tests
         working-directory: ./or-tools/build
         run: ctest -V -R cxx_unittests_sirius_interface
