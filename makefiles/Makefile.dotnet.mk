@@ -691,6 +691,52 @@ rdotnet_%: \
 	cd $(TEMP_DOTNET_DIR)$Stests$S$* && "$(DOTNET_BIN)" build -c Release
 	cd $(TEMP_DOTNET_DIR)$Stests$S$* && "$(DOTNET_BIN)" test --no-build -c Release $(ARGS)
 
+DOTNET_FS_EXAMPLES := contrib dotnet
+
+define dotnet-fs-example-target =
+$$(TEMP_DOTNET_DIR)/$1/%: \
+ $$(SRC_DIR)/examples/$1/%.fs \
+ | $$(TEMP_DOTNET_DIR)/$1
+	-$$(MKDIR) $$(TEMP_DOTNET_DIR)$$S$1$$S$$*
+
+$$(TEMP_DOTNET_DIR)/$1/%/%.fsproj: \
+ $${SRC_DIR}/ortools/dotnet/Sample.fsproj.in \
+ | $$(TEMP_DOTNET_DIR)/$1/%
+	$$(SED) -e "s/@DOTNET_PACKAGES_DIR@/..\/..\/packages/" \
+ ortools$$Sdotnet$$SSample.fsproj.in \
+ > $$(TEMP_DOTNET_DIR)$$S$1$$S$$*$$S$$*.fsproj
+	$$(SED) -i -e 's/@DOTNET_PROJECT@/$$(DOTNET_ORTOOLS_ASSEMBLY_NAME)/' \
+ $$(TEMP_DOTNET_DIR)$$S$1$$S$$*$$S$$*.fsproj
+	$$(SED) -i -e 's/@SAMPLE_NAME@/$$*/' \
+ $$(TEMP_DOTNET_DIR)$$S$1$$S$$*$$S$$*.fsproj
+	$$(SED) -i -e 's/@PROJECT_VERSION@/$$(OR_TOOLS_VERSION)/' \
+ $$(TEMP_DOTNET_DIR)$$S$1$$S$$*$$S$$*.fsproj
+	$$(SED) -i -e 's/@PROJECT_VERSION_MAJOR@/$$(OR_TOOLS_MAJOR)/' \
+ $$(TEMP_DOTNET_DIR)$$S$1$$S$$*$$S$$*.fsproj
+	$$(SED) -i -e 's/@PROJECT_VERSION_MINOR@/$$(OR_TOOLS_MINOR)/' \
+ $$(TEMP_DOTNET_DIR)$$S$1$$S$$*$$S$$*.fsproj
+	$$(SED) -i -e 's/@PROJECT_VERSION_PATCH@/$$(GIT_REVISION)/' \
+ $$(TEMP_DOTNET_DIR)$$S$1$$S$$*$$S$$*.fsproj
+	$$(SED) -i -e 's/@FILE_NAME@/$$*.fs/' \
+ $$(TEMP_DOTNET_DIR)$$S$1$$S$$*$$S$$*.fsproj
+
+$$(TEMP_DOTNET_DIR)/$1/%/%.fs: \
+ $$(SRC_DIR)/examples/$1/%.fs \
+ | $$(TEMP_DOTNET_DIR)/$1/%
+	$$(COPY) $$(SRC_DIR)$$Sexamples$$S$1$$S$$*.fs \
+ $$(TEMP_DOTNET_DIR)$$S$1$$S$$*
+
+rdotnet_%: \
+ $(FSHARP_ORTOOLS_NUPKG) \
+ $$(TEMP_DOTNET_DIR)/$1/%/%.fsproj \
+ $$(TEMP_DOTNET_DIR)/$1/%/%.fs \
+ FORCE
+	cd $$(TEMP_DOTNET_DIR)$$S$1$$S$$* && "$$(DOTNET_BIN)" build -c Release
+	cd $$(TEMP_DOTNET_DIR)$$S$1$$S$$* && "$$(DOTNET_BIN)" run --no-build --framework net6.0 -c Release $$(ARGS)
+endef
+
+$(foreach example,$(DOTNET_FS_EXAMPLES),$(eval $(call dotnet-fs-example-target,$(example))))
+
 #############################
 ##  .NET Examples/Samples  ##
 #############################
@@ -877,24 +923,24 @@ test_dotnet_contrib: \
 	rdotnet_who_killed_agatha \
 	rdotnet_xkcd \
 	rdotnet_young_tableaux \
-	rdotnet_zebra
+	rdotnet_zebra \
+	rdotnet_fsdiet \
+	rdotnet_fsequality-inequality \
+	rdotnet_fsequality \
+	rdotnet_fsinteger-linear-program \
+	rdotnet_fsintegerprogramming \
+	rdotnet_fsknapsack \
+	rdotnet_fslinearprogramming \
+	rdotnet_fsnetwork-max-flow-lpSolve \
+	rdotnet_fsnetwork-max-flow \
+	rdotnet_fsnetwork-min-cost-flow \
+	rdotnet_fsProgram \
+	rdotnet_fsrabbit-pheasant \
+	rdotnet_fsvolsay \
+	rdotnet_fsvolsay3-lpSolve \
+	rdotnet_fsvolsay3 \
+	rdotnet_SimpleProgramFSharp
 #	rdotnet_coins_grid ARGS="5 2" \
-#	rdotnet_fsdiet.fs
-#	rdotnet_fsequality-inequality.fs
-#	rdotnet_fsequality.fs
-#	rdotnet_fsinteger-linear-program.fs
-#	rdotnet_fsintegerprogramming.fs
-#	rdotnet_fsknapsack.fs
-#	rdotnet_fslinearprogramming.fs
-#	rdotnet_fsnetwork-max-flow-lpSolve.fs
-#	rdotnet_fsnetwork-max-flow.fs
-#	rdotnet_fsnetwork-min-cost-flow.fs
-#	rdotnet_fsProgram.fs
-#	rdotnet_fsrabbit-pheasant.fs
-#	rdotnet_fsvolsay.fs
-#	rdotnet_fsvolsay3-lpSolve.fs
-#	rdotnet_fsvolsay3.fs
-#	rdotnet_SimpleProgramFSharp.fs
 #	rdotnet_nontransitive_dice \ # too long
 #	rdotnet_partition \ # too long
 #	rdotnet_secret_santa \ # too long
