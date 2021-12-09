@@ -1150,12 +1150,18 @@ void IntegerRoundingCutHelper::ComputeCut(
     coeff = f(coeff);
     if (coeff == 0) continue;
     if (change_sign_at_postprocessing_[i]) {
-      cut->ub = IntegerValue(
-          CapAdd((coeff * -upper_bounds[i]).value(), cut->ub.value()));
+      if (!AddProductTo(coeff, -upper_bounds[i], &cut->ub)) {
+        // Abort with a trivially satisfied cut.
+        cut->Clear();
+        return;
+      }
       tmp_terms_.push_back({cut->vars[i], -coeff});
     } else {
-      cut->ub = IntegerValue(
-          CapAdd((coeff * lower_bounds[i]).value(), cut->ub.value()));
+      if (!AddProductTo(coeff, lower_bounds[i], &cut->ub)) {
+        // Abort with a trivially satisfied cut.
+        cut->Clear();
+        return;
+      }
       tmp_terms_.push_back({cut->vars[i], coeff});
     }
   }
