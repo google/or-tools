@@ -97,8 +97,7 @@ void OpponentModel(int num_teams) {
 
       // Link opponent, home_away, and signed_opponent.
       builder.AddEquality(opp, signed_opp).OnlyEnforceIf(Not(home));
-      builder.AddEquality(LinearExpr(opp).AddConstant(num_teams), signed_opp)
-          .OnlyEnforceIf(home);
+      builder.AddEquality(opp + num_teams, signed_opp).OnlyEnforceIf(home);
     }
   }
 
@@ -118,7 +117,7 @@ void OpponentModel(int num_teams) {
       IntVar second_home = builder.NewBoolVar();
       builder.AddVariableElement(day_opponents[first_team], day_home_aways,
                                  second_home);
-      builder.AddEquality(LinearExpr::Sum({first_home, second_home}), 1);
+      builder.AddEquality(first_home + second_home, 1);
     }
 
     builder.AddEquality(LinearExpr::Sum(day_home_aways), num_teams / 2);

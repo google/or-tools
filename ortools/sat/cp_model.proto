@@ -796,7 +796,8 @@ message CpSolverResponse {
   // The integral of log(1 + absolute_objective_gap) over time.
   double gap_integral = 22;
 
-  // Additional information about how the solution was found.
+  // Additional information about how the solution was found. It also stores
+  // model or parameters errors that caused the model to be invalid.
   string solution_info = 20;
 
   // The solve log will be filled if the parameter log_to_response is set to

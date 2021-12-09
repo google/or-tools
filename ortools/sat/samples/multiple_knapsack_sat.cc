@@ -64,8 +64,7 @@ void MultipleKnapsackSat() {
   for (int i : all_items) {
     LinearExpr expr;
     for (int b : all_bins) {
-      auto key = std::make_tuple(i, b);
-      expr.AddTerm(x[key], 1);
+      expr += x[std::make_tuple(i, b)];
     }
     cp_model.AddLessOrEqual(expr, 1);
   }
@@ -74,8 +73,7 @@ void MultipleKnapsackSat() {
   for (int b : all_bins) {
     LinearExpr bin_weight;
     for (int i : all_items) {
-      auto key = std::make_tuple(i, b);
-      bin_weight.AddTerm(x[key], weights[i]);
+      bin_weight += x[std::make_tuple(i, b)] * weights[i];
     }
     cp_model.AddLessOrEqual(bin_weight, bin_capacities[b]);
   }
@@ -87,8 +85,7 @@ void MultipleKnapsackSat() {
   LinearExpr objective;
   for (int i : all_items) {
     for (int b : all_bins) {
-      auto key = std::make_tuple(i, b);
-      objective.AddTerm(x[key], values[i]);
+      objective += x[std::make_tuple(i, b)] * values[i];
     }
   }
   cp_model.Maximize(objective);

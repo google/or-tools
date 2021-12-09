@@ -2990,6 +2990,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       // when it become needed. Or rename to INVALID_INPUT ?
       shared_response_manager->MutableResponse()->set_status(
           CpSolverStatus::MODEL_INVALID);
+      shared_response_manager->MutableResponse()->set_solution_info(error);
       return shared_response_manager->GetResponse();
     }
   }
@@ -3037,6 +3038,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       SOLVER_LOG(logger, "Invalid model: ", error);
       shared_response_manager->MutableResponse()->set_status(
           CpSolverStatus::MODEL_INVALID);
+      shared_response_manager->MutableResponse()->set_solution_info(error);
       return shared_response_manager->GetResponse();
     }
   }

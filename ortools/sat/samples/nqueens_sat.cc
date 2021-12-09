@@ -54,8 +54,8 @@ void NQueensSat(const int board_size) {
   std::vector<LinearExpr> diag_2;
   diag_2.reserve(board_size);
   for (int i = 0; i < board_size; ++i) {
-    diag_1.push_back(queens[i].AddConstant(i));
-    diag_2.push_back(queens[i].AddConstant(-i));
+    diag_1.push_back(queens[i] + i);
+    diag_2.push_back(queens[i] - i);
   }
   cp_model.AddAllDifferentExpr(diag_1);
   cp_model.AddAllDifferentExpr(diag_2);

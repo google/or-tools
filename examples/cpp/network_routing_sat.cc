@@ -601,8 +601,7 @@ class NetworkRoutingSolver {
       LinearExpr traffic_expr;
       for (int i = 0; i < path_vars.size(); ++i) {
         sum_of_traffic += demands_array_[i].traffic;
-        traffic_expr.AddTerm(path_vars[i][arc_index],
-                             demands_array_[i].traffic);
+        traffic_expr += path_vars[i][arc_index] * demands_array_[i].traffic;
       }
       const IntVar traffic_var = cp_model.NewIntVar(Domain(0, sum_of_traffic));
       traffic_vars[arc_index] = traffic_var;
@@ -611,8 +610,7 @@ class NetworkRoutingSolver {
       const int64_t capacity = arc_capacity_[arc_index];
       IntVar scaled_traffic =
           cp_model.NewIntVar(Domain(0, sum_of_traffic * 1000));
-      cp_model.AddEquality(LinearExpr::ScalProd({traffic_var}, {1000}),
-                           scaled_traffic);
+      cp_model.AddEquality(traffic_var * 1000, scaled_traffic);
       IntVar normalized_traffic =
           cp_model.NewIntVar(Domain(0, sum_of_traffic * 1000 / capacity));
       max_normalized_traffic =
@@ -634,12 +632,8 @@ class NetworkRoutingSolver {
         cp_model.NewIntVar(Domain(0, max_normalized_traffic));
     cp_model.AddMaxEquality(max_usage_cost, normalized_traffic_vars);
 
-    LinearExpr objective_expr;
-    objective_expr.AddVar(max_usage_cost);
-    for (const BoolVar var : comfortable_traffic_vars) {
-      objective_expr.AddVar(var);
-    }
-    cp_model.Minimize(objective_expr);
+    cp_model.Minimize(LinearExpr::Sum(comfortable_traffic_vars) +
+                      max_usage_cost);
 
     Model model;
     if (!absl::GetFlag(FLAGS_params).empty()) {

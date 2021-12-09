@@ -54,7 +54,7 @@ void BinpackingProblemSat() {
   for (int b = 0; b < kNumBins; ++b) {
     LinearExpr expr;
     for (int i = 0; i < num_items; ++i) {
-      expr.AddTerm(x[i][b], items[i][0]);
+      expr += x[i][b] * items[i][0];
     }
     cp_model.AddEquality(expr, load[b]);
   }

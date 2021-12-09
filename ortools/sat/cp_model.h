@@ -216,10 +216,10 @@ std::ostream& operator<<(std::ostream& os, const IntVar& var);
 /**
  * A dedicated container for linear expressions.
  *
- * This class helps building and manipulating linear expressions.
  * With the use of implicit constructors, it can accept integer values, Boolean
- * and Integer variables. Note that Not(x) will be silently transformed into
- * 1 - x when added to the linear expression.
+ * and Integer variables. Note that Not(x) will be silently transformed into 1 -
+ * x when added to the linear expression. It also support operator overloads to
+ * construct the linear expression naturally.
  *
  * Furthermore, static methods allows sums and scalar products, with or without
  * an additional constant.
@@ -231,31 +231,29 @@ std::ostream& operator<<(std::ostream& os, const IntVar& var);
   IntVar y = model.NewIntVar({0, 10}).WithName("y");
   BoolVar b = model.NewBoolVar().WithName("b");
   BoolVar c = model.NewBoolVar().WithName("c");
-  LinearExpr e1(x);  // e1 = x.
-  LinearExpr e2 = LinearExpr::Sum({x, y}).AddConstant(5);  // e2 = x + y + 5;
-  LinearExpr e3 = LinearExpr::ScalProd({x, y}, {2, -1});  // e3 = 2 * x - y.
-  LinearExpr e4(b);  // e4 = b.
-  LinearExpr e5(b.Not());  // e5 = 1 - b.
-  // If passing a std::vector<BoolVar>, a specialized method must be called.
+  LinearExpr e1(x);  // Or e1 = x.
+  LinearExpr e2 = x + y + 5;
+  LinearExpr e3 = 2 * x - y;
+  LinearExpr e4 = b;
+  LinearExpr e5 = b.Not();  // 1 - b.
   std::vector<BoolVar> bools = {b, Not(c)};
-  LinearExpr e6 = LinearExpr::Sum(bools);  // e6 = b + 1 - c;
-  // e7 = -3 * b + 1 - c;
-  LinearExpr e7 = LinearExpr::ScalProd(bools, {-3, 1});
+  LinearExpr e6 = LinearExpr::Sum(bools);   // b + 1 - c;
+  LinearExpr e7 = -3 * b + Not(c);  // -3 * b + 1 - c;
   \endcode
  *  This can be used implicitly in some of the CpModelBuilder methods.
  * \code
-  cp_model.AddGreaterThan(x, 5);  // x > 5
-  cp_model.AddEquality(x, LinearExpr(y).AddConstant(5));  // x == y + 5
+  cp_model.AddGreaterThan(x, 5);
+  cp_model.AddEquality(x, y + 5);
   \endcode
   */
 class LinearExpr {
  public:
-  LinearExpr();
+  LinearExpr() = default;
 
   /**
    * Constructs a linear expression from a Boolean variable.
    *
-   *  It deals with logical negation correctly.
+   * It deals with logical negation correctly.
    */
   LinearExpr(BoolVar var);  // NOLINT(runtime/explicit)
 
@@ -264,18 +262,6 @@ class LinearExpr {
 
   /// Constructs a constant linear expression.
   LinearExpr(int64_t constant);  // NOLINT(runtime/explicit)
-
-  /// Adds a constant value to the linear expression.
-  LinearExpr& AddConstant(int64_t value);
-
-  /// Adds a single integer variable to the linear expression.
-  LinearExpr& AddVar(IntVar var);
-
-  /// Adds a term (var * coeff) to the linear expression.
-  LinearExpr& AddTerm(IntVar var, int64_t coeff);
-
-  /// Adds another linear expression to the linear expression.
-  LinearExpr& AddExpression(const LinearExpr& expr);
 
   /// Constructs the sum of a list of variables.
   static LinearExpr Sum(absl::Span<const IntVar> vars);
@@ -309,6 +295,17 @@ class LinearExpr {
 
   /// Constructs var * coefficient.
   static LinearExpr Term(IntVar var, int64_t coefficient);
+
+  // Operators.
+  LinearExpr& operator+=(const LinearExpr& other);
+  LinearExpr& operator-=(const LinearExpr& other);
+  LinearExpr& operator*=(int64_t factor);
+
+  // Deprecated. Use operators instead.
+  LinearExpr& AddConstant(int64_t value);
+  LinearExpr& AddVar(IntVar var);
+  LinearExpr& AddTerm(IntVar var, int64_t coeff);
+  LinearExpr& AddExpression(const LinearExpr& expr) { return *this += expr; }
 
   /// Returns the vector of variables.
   const std::vector<IntVar>& variables() const { return variables_; }
@@ -390,16 +387,31 @@ class DoubleLinearExpr {
   explicit DoubleLinearExpr(double constant);
 
   /// Adds a constant value to the linear expression.
-  DoubleLinearExpr& AddConstant(double value);
+  DoubleLinearExpr& operator+=(double value);
 
   /// Adds a single integer variable to the linear expression.
-  DoubleLinearExpr& AddVar(IntVar var);
+  DoubleLinearExpr& operator+=(IntVar var);
+
+  /// Adds another linear expression to the linear expression.
+  DoubleLinearExpr& operator+=(const DoubleLinearExpr& expr);
 
   /// Adds a term (var * coeff) to the linear expression.
   DoubleLinearExpr& AddTerm(IntVar var, double coeff);
 
+  /// Deprecated. Use +=.
+  DoubleLinearExpr& AddConstant(double constant);
+
+  /// Adds a constant value to the linear expression.
+  DoubleLinearExpr& operator-=(double value);
+
+  /// Adds a single integer variable to the linear expression.
+  DoubleLinearExpr& operator-=(IntVar var);
+
   /// Adds another linear expression to the linear expression.
-  DoubleLinearExpr& AddExpression(const DoubleLinearExpr& expr);
+  DoubleLinearExpr& operator-=(const DoubleLinearExpr& expr);
+
+  /// Multiply the linear expression by a constant.
+  DoubleLinearExpr& operator*=(double coeff);
 
   /// Constructs the sum of a list of variables.
   static DoubleLinearExpr Sum(absl::Span<const IntVar> vars);
@@ -1129,6 +1141,180 @@ int64_t SolutionIntegerValue(const CpSolverResponse& r, const LinearExpr& expr);
 
 /// Evaluates the value of a Boolean literal in a solver response.
 bool SolutionBooleanValue(const CpSolverResponse& r, BoolVar x);
+
+// ============================================================================
+// Minimal support for "natural" API to create LinearExpr.
+//
+// Note(user): This might be optimized further by optimizing LinearExpr for
+// holding one term, or introducing an LinearTerm class, but these should mainly
+// be used to construct small expressions. Revisit if we run into performance
+// issues. Note that if perf become a bottleneck for a client, then probably
+// directly writing the proto will be even faster.
+// ============================================================================
+
+inline LinearExpr operator-(LinearExpr expr) { return expr *= -1; }
+
+inline LinearExpr operator+(const LinearExpr& lhs, const LinearExpr& rhs) {
+  LinearExpr temp(lhs);
+  temp += rhs;
+  return temp;
+}
+inline LinearExpr operator+(LinearExpr&& lhs, const LinearExpr& rhs) {
+  lhs += rhs;
+  return std::move(lhs);
+}
+inline LinearExpr operator+(const LinearExpr& lhs, LinearExpr&& rhs) {
+  rhs += lhs;
+  return std::move(rhs);
+}
+inline LinearExpr operator+(LinearExpr&& lhs, LinearExpr&& rhs) {
+  if (lhs.variables().size() < rhs.variables().size()) {
+    rhs += lhs;
+    return std::move(rhs);
+  } else {
+    lhs += rhs;
+    return std::move(lhs);
+  }
+}
+
+inline LinearExpr operator-(const LinearExpr& lhs, const LinearExpr& rhs) {
+  LinearExpr temp(lhs);
+  temp -= rhs;
+  return temp;
+}
+inline LinearExpr operator-(LinearExpr&& lhs, const LinearExpr& rhs) {
+  lhs -= rhs;
+  return std::move(lhs);
+}
+inline LinearExpr operator-(const LinearExpr& lhs, LinearExpr&& rhs) {
+  rhs -= lhs;
+  return std::move(rhs);
+}
+inline LinearExpr operator-(LinearExpr&& lhs, LinearExpr&& rhs) {
+  if (lhs.variables().size() < rhs.variables().size()) {
+    rhs -= lhs;
+    return std::move(rhs);
+  } else {
+    lhs -= rhs;
+    return std::move(lhs);
+  }
+}
+
+inline LinearExpr operator*(LinearExpr expr, int64_t factor) {
+  expr *= factor;
+  return expr;
+}
+inline LinearExpr operator*(int64_t factor, LinearExpr expr) {
+  expr *= factor;
+  return expr;
+}
+
+// For DoubleLinearExpr.
+
+inline DoubleLinearExpr operator-(DoubleLinearExpr expr) { return expr *= -1; }
+
+inline DoubleLinearExpr operator+(const DoubleLinearExpr& lhs,
+                                  const DoubleLinearExpr& rhs) {
+  DoubleLinearExpr temp(lhs);
+  temp += rhs;
+  return temp;
+}
+inline DoubleLinearExpr operator+(DoubleLinearExpr&& lhs,
+                                  const DoubleLinearExpr& rhs) {
+  lhs += rhs;
+  return std::move(lhs);
+}
+inline DoubleLinearExpr operator+(const DoubleLinearExpr& lhs,
+                                  DoubleLinearExpr&& rhs) {
+  rhs += lhs;
+  return std::move(rhs);
+}
+inline DoubleLinearExpr operator+(DoubleLinearExpr&& lhs,
+                                  DoubleLinearExpr&& rhs) {
+  if (lhs.variables().size() < rhs.variables().size()) {
+    rhs += lhs;
+    return std::move(rhs);
+  } else {
+    lhs += rhs;
+    return std::move(lhs);
+  }
+}
+
+inline DoubleLinearExpr operator+(const DoubleLinearExpr& lhs, double rhs) {
+  DoubleLinearExpr temp(lhs);
+  temp += rhs;
+  return temp;
+}
+inline DoubleLinearExpr operator+(DoubleLinearExpr&& lhs, double rhs) {
+  lhs += rhs;
+  return std::move(lhs);
+}
+inline DoubleLinearExpr operator+(double lhs, DoubleLinearExpr&& rhs) {
+  rhs += lhs;
+  return std::move(rhs);
+}
+inline DoubleLinearExpr operator+(double lhs, const DoubleLinearExpr& rhs) {
+  DoubleLinearExpr temp(rhs);
+  temp += lhs;
+  return temp;
+}
+
+inline DoubleLinearExpr operator-(const DoubleLinearExpr& lhs,
+                                  const DoubleLinearExpr& rhs) {
+  DoubleLinearExpr temp(lhs);
+  temp -= rhs;
+  return temp;
+}
+inline DoubleLinearExpr operator-(DoubleLinearExpr&& lhs,
+                                  const DoubleLinearExpr& rhs) {
+  lhs -= rhs;
+  return std::move(lhs);
+}
+inline DoubleLinearExpr operator-(const DoubleLinearExpr& lhs,
+                                  DoubleLinearExpr&& rhs) {
+  rhs -= lhs;
+  return std::move(rhs);
+}
+inline DoubleLinearExpr operator-(DoubleLinearExpr&& lhs,
+                                  DoubleLinearExpr&& rhs) {
+  if (lhs.variables().size() < rhs.variables().size()) {
+    rhs -= lhs;
+    return std::move(rhs);
+  } else {
+    lhs -= rhs;
+    return std::move(lhs);
+  }
+}
+
+inline DoubleLinearExpr operator-(const DoubleLinearExpr& lhs, double rhs) {
+  DoubleLinearExpr temp(lhs);
+  temp -= rhs;
+  return temp;
+}
+inline DoubleLinearExpr operator-(DoubleLinearExpr&& lhs, double rhs) {
+  lhs -= rhs;
+  return std::move(lhs);
+}
+inline DoubleLinearExpr operator-(double lhs, DoubleLinearExpr&& rhs) {
+  rhs *= -1;
+  rhs += lhs;
+  return std::move(rhs);
+}
+inline DoubleLinearExpr operator-(double lhs, const DoubleLinearExpr& rhs) {
+  DoubleLinearExpr temp = -rhs;
+  temp += lhs;
+  return temp;
+}
+
+inline DoubleLinearExpr operator*(DoubleLinearExpr expr, double factor) {
+  expr *= factor;
+  return expr;
+}
+
+inline DoubleLinearExpr operator*(double factor, DoubleLinearExpr expr) {
+  expr *= factor;
+  return expr;
+}
 
 }  // namespace sat
 }  // namespace operations_research

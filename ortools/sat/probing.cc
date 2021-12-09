@@ -690,12 +690,14 @@ bool FailedLiteralProbingRound(ProbingOptions options, Model* model) {
           // even better reasony. Maybe it is just better to change all the
           // reason above to a binary one so we don't have an issue here.
           if (trail.AssignmentType(w.blocking_literal.Variable()) != id) {
-            ++num_new_binary;
-            implication_graph->AddBinaryClause(last_decision.Negated(),
-                                               w.blocking_literal);
-
+            // If the variable was true at level zero, there is no point
+            // adding the clause.
             const auto& info = trail.Info(w.blocking_literal.Variable());
             if (info.level > 0) {
+              ++num_new_binary;
+              implication_graph->AddBinaryClause(last_decision.Negated(),
+                                                 w.blocking_literal);
+
               const Literal d = sat_solver->Decisions()[info.level - 1].literal;
               if (d != w.blocking_literal) {
                 implication_graph->ChangeReason(info.trail_index, d);

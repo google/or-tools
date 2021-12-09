@@ -35,7 +35,7 @@ void ChannelingSampleSat() {
 
   // Create our two half-reified constraints.
   // First, b implies (y == 10 - x).
-  cp_model.AddEquality(LinearExpr::Sum({x, y}), 10).OnlyEnforceIf(b);
+  cp_model.AddEquality(x + y, 10).OnlyEnforceIf(b);
   // Second, not(b) implies y == 0.
   cp_model.AddEquality(y, 0).OnlyEnforceIf(Not(b));
 

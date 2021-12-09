@@ -67,7 +67,7 @@ void RankingSampleSat() {
     for (int i = 0; i < num_tasks; ++i) {
       LinearExpr sum_of_predecessors(-1);
       for (int j = 0; j < num_tasks; ++j) {
-        sum_of_predecessors.AddVar(precedences[j][i]);
+        sum_of_predecessors += precedences[j][i];
       }
       cp_model.AddEquality(ranks[i], sum_of_predecessors);
     }
@@ -116,10 +116,9 @@ void RankingSampleSat() {
 
   // Create objective: minimize 2 * makespan - 7 * sum of presences.
   // That is you gain 7 by interval performed, but you pay 2 by day of delays.
-  LinearExpr objective;
-  objective.AddTerm(makespan, 2);
+  LinearExpr objective = 2 * makespan;
   for (int t = 0; t < kNumTasks; ++t) {
-    objective.AddTerm(presences[t], -7);
+    objective -= 7 * presences[t];
   }
   cp_model.Minimize(objective);
 

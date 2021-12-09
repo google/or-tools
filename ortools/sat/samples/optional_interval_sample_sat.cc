@@ -29,9 +29,7 @@ void OptionalIntervalSampleSat() {
   const BoolVar presence_var = cp_model.NewBoolVar().WithName("presence");
 
   const IntervalVar interval_var =
-      cp_model
-          .NewOptionalIntervalVar(x, y, LinearExpr(z).AddConstant(2),
-                                  presence_var)
+      cp_model.NewOptionalIntervalVar(x, y, z + 2, presence_var)
           .WithName("interval");
   LOG(INFO) << "start = " << interval_var.StartExpr()
             << ", size = " << interval_var.SizeExpr()

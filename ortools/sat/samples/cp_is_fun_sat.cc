@@ -61,10 +61,8 @@ void CPIsFunSat() {
 
   // CP + IS + FUN = TRUE
   cp_model.AddEquality(
-      LinearExpr::ScalProd({c, p, i, s, f, u, n},
-                           {kBase, 1, kBase, 1, kBase * kBase, kBase, 1}),
-      LinearExpr::ScalProd({t, r, u, e},
-                           {kBase * kBase * kBase, kBase * kBase, kBase, 1}));
+      c * kBase + p + i * kBase + s + f * kBase * kBase + u * kBase + n,
+      kBase * kBase * kBase * t + kBase * kBase * r + kBase * u + e);
   // [END constraints]
 
   // [START solution_printer]

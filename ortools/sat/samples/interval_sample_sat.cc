@@ -27,8 +27,7 @@ void IntervalSampleSat() {
   const IntVar z = cp_model.NewIntVar(horizon).WithName("z");
 
   const IntervalVar interval_var =
-      cp_model.NewIntervalVar(x, y, LinearExpr(z).AddConstant(2))
-          .WithName("interval");
+      cp_model.NewIntervalVar(x, y, z + 2).WithName("interval");
   LOG(INFO) << "start = " << interval_var.StartExpr()
             << ", size = " << interval_var.SizeExpr()
             << ", end = " << interval_var.EndExpr()

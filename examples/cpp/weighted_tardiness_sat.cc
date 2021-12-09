@@ -107,7 +107,7 @@ void Solve(const std::vector<int64_t>& durations,
 
       // tardiness_vars >= end - due_date
       cp_model.AddGreaterOrEqual(tardiness_vars[i],
-                                 task_ends[i].AddConstant(-due_dates[i]));
+                                 task_ends[i] - due_dates[i]);
     }
   }
 

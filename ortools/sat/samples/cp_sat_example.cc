@@ -35,13 +35,13 @@ void CpSatExample() {
   // [END variables]
 
   // [START constraints]
-  cp_model.AddLessOrEqual(LinearExpr::ScalProd({x, y, z}, {2, 7, 3}), 50);
-  cp_model.AddLessOrEqual(LinearExpr::ScalProd({x, y, z}, {3, -5, 7}), 45);
-  cp_model.AddLessOrEqual(LinearExpr::ScalProd({x, y, z}, {5, 2, -6}), 37);
+  cp_model.AddLessOrEqual(2 * x + 7 * y + 3 * z, 50);
+  cp_model.AddLessOrEqual(3 * x - 5 * y + 7 * z, 45);
+  cp_model.AddLessOrEqual(5 * x + 2 * y - 6 * z, 37);
   // [END constraints]
 
   // [START objective]
-  cp_model.Maximize(LinearExpr::ScalProd({x, y, z}, {2, 2, 3}));
+  cp_model.Maximize(2 * x + 2 * y + 3 * z);
   // [END objective]
 
   // Solving part.

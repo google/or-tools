@@ -41,21 +41,9 @@ void EarlinessTardinessCostSampleSat() {
   const int64_t kLargeConstant = 1000;
   const IntVar expr = cp_model.NewIntVar({0, kLargeConstant});
 
-  // First segment.
-  const IntVar s1 = cp_model.NewIntVar({-kLargeConstant, kLargeConstant});
-  cp_model.AddEquality(s1, LinearExpr::ScalProd({x}, {-kEarlinessCost})
-                               .AddConstant(kEarlinessCost * kEarlinessDate));
-
-  // Second segment.
-  const IntVar s2 = cp_model.NewConstant(0);
-
-  // Third segment.
-  const IntVar s3 = cp_model.NewIntVar({-kLargeConstant, kLargeConstant});
-  cp_model.AddEquality(s3, LinearExpr::ScalProd({x}, {kLatenessCost})
-                               .AddConstant(-kLatenessCost * kLatenessDate));
-
-  // Link together expr and x through s1, s2, and s3.
-  cp_model.AddMaxEquality(expr, {s1, s2, s3});
+  // Link together expr and x through the 3 segments.
+  cp_model.AddMaxEquality(expr, {(kEarlinessDate - x) * kEarlinessCost, 0,
+                                 (x - kLatenessDate) * kLatenessCost});
 
   // Search for x values in increasing order.
   cp_model.AddDecisionStrategy({x}, DecisionStrategyProto::CHOOSE_FIRST,

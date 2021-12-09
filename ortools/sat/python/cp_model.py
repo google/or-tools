@@ -2251,6 +2251,14 @@ class CpSolver(object):
         """Returns the indices of the infeasible assumptions."""
         return self.__solution.sufficient_assumptions_for_infeasibility
 
+    def SolutionInfo(self):
+        """Returns some information on the solve process.
+
+    Returns some information on how the solution was found, or the reason
+    why the model or the parameters are invalid.
+    """
+        return self.__solution.solution_info
+
 
 class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
     """Solution callback.

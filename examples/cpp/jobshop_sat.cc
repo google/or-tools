@@ -302,9 +302,10 @@ void AddAlternativeTaskDurationRelaxation(
       // end == start + min_duration +
       //        sum(shifted_duration[i] * presence_literals[i])
       cp_model.AddEquality(
-          LinearExpr::ScalProd({tasks[t].end, tasks[t].start}, {1, -1}),
-          LinearExpr::ScalProd(presence_literals, shifted_durations)
-              .AddConstant(min_duration));
+          tasks[t].end,
+          tasks[t].start +
+              LinearExpr::ScalProd(presence_literals, shifted_durations) +
+              min_duration);
     }
   }
 }
@@ -432,18 +433,18 @@ void CreateMachines(
           // Note that we use the start + duration + transition  as this is more
           // precise than the non-propagated end.
           cp_model
-              .AddLessOrEqual(tail.interval.StartExpr().AddConstant(
-                                  tail.fixed_duration + transition),
-                              head.interval.StartExpr())
+              .AddLessOrEqual(
+                  tail.interval.StartExpr() + tail.fixed_duration + transition,
+                  head.interval.StartExpr())
               .OnlyEnforceIf(lit);
         }
       }
 
       // Add a linear equation to define the size of the tail interval.
       if (absl::GetFlag(FLAGS_use_variable_duration_to_encode_transition)) {
-        cp_model.AddEquality(tail.interval.SizeExpr(),
-                             LinearExpr::ScalProd(literals, transitions)
-                                 .AddConstant(tail.fixed_duration));
+        cp_model.AddEquality(
+            tail.interval.SizeExpr(),
+            LinearExpr::ScalProd(literals, transitions) + tail.fixed_duration);
       }
     }
     LOG(INFO) << "Machine " << m
@@ -493,8 +494,7 @@ void CreateObjective(
         objective_coeffs.push_back(lateness_penalty);
       } else {
         const IntVar lateness_var = cp_model.NewIntVar(Domain(0, horizon));
-        cp_model.AddMaxEquality(lateness_var,
-                                {0, job_end.AddConstant(-due_date)});
+        cp_model.AddMaxEquality(lateness_var, {0, job_end - due_date});
         objective_vars.push_back(lateness_var);
         objective_coeffs.push_back(lateness_penalty);
       }
@@ -508,9 +508,7 @@ void CreateObjective(
 
       if (due_date > 0) {
         const IntVar earliness_var = cp_model.NewIntVar(Domain(0, horizon));
-        cp_model.AddMaxEquality(
-            earliness_var,
-            {0, LinearExpr::Term(job_end, -1).AddConstant(due_date)});
+        cp_model.AddMaxEquality(earliness_var, {0, due_date - job_end});
         objective_vars.push_back(earliness_var);
         objective_coeffs.push_back(earliness_penalty);
       }
@@ -531,11 +529,11 @@ void CreateObjective(
                                         problem.scaling_factor().value());
     }
     cp_model.Minimize(
-        DoubleLinearExpr::ScalProd(objective_vars, double_objective_coeffs)
-            .AddConstant(objective_offset));
+        DoubleLinearExpr::ScalProd(objective_vars, double_objective_coeffs) +
+        static_cast<double>(objective_offset));
   } else {
-    cp_model.Minimize(LinearExpr::ScalProd(objective_vars, objective_coeffs)
-                          .AddConstant(objective_offset));
+    cp_model.Minimize(LinearExpr::ScalProd(objective_vars, objective_coeffs) +
+                      objective_offset);
   }
 }
 
@@ -627,7 +625,7 @@ void AddMakespanRedundantConstraints(
     }
   }
   cp_model.AddLessOrEqual(LinearExpr::Sum(all_task_durations),
-                          LinearExpr::Term(makespan, num_machines));
+                          makespan * num_machines);
 }
 
 void DisplayJobStatistics(
@@ -749,7 +747,7 @@ void Solve(const JsspInputProblem& problem) {
     const IntVar start =
         job_to_tasks[precedence.second_job_index()].front().start;
     const IntVar end = job_to_tasks[precedence.first_job_index()].back().end;
-    cp_model.AddLessOrEqual(end.AddConstant(precedence.min_delay()), start);
+    cp_model.AddLessOrEqual(end + precedence.min_delay(), start);
   }
 
   // Objective.

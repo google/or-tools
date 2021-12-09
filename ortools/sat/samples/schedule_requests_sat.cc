@@ -168,21 +168,18 @@ void ScheduleRequestsSat() {
   // [END assign_nurses_evenly]
 
   // [START objective]
-  std::vector<IntVar> tmp;
+  LinearExpr objective_expr;
   for (int n : all_nurses) {
     for (int d : all_days) {
       for (int s : all_shifts) {
         if (shift_requests[n][d][s] == 1) {
           auto key = std::make_tuple(n, d, s);
-          // tmp.push_back(shifts[key]);
-          tmp.push_back(
-              LinearExpr::ScalProd({shifts[key]}, {shift_requests[n][d][s]})
-                  .Var());
+          objective_expr += shifts[key] * shift_requests[n][d][s];
         }
       }
     }
   }
-  cp_model.Maximize(LinearExpr::Sum(tmp));
+  cp_model.Maximize(objective_expr);
   // [END objective]
 
   // [START solve]

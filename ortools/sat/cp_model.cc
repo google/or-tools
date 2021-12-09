@@ -115,15 +115,16 @@ std::string IntVar::DebugString() const {
   } else {
     std::string output;
     if (var_proto.name().empty()) {
-      absl::StrAppend(&output, "IntVar", index_, "(");
+      absl::StrAppend(&output, "V", index_, "(");
     } else {
       absl::StrAppend(&output, var_proto.name(), "(");
     }
+
+    // TODO(user): Use domain pretty print function.
     if (var_proto.domain_size() == 2 &&
         var_proto.domain(0) == var_proto.domain(1)) {
       absl::StrAppend(&output, var_proto.domain(0), ")");
     } else {
-      // TODO(user): Use domain pretty print function.
       absl::StrAppend(&output, var_proto.domain(0), ", ", var_proto.domain(1),
                       ")");
     }
@@ -135,8 +136,6 @@ std::ostream& operator<<(std::ostream& os, const IntVar& var) {
   os << var.DebugString();
   return os;
 }
-
-LinearExpr::LinearExpr() {}
 
 LinearExpr::LinearExpr(BoolVar var) { AddVar(var); }
 
@@ -246,12 +245,28 @@ LinearExpr& LinearExpr::AddTerm(IntVar var, int64_t coeff) {
   return *this;
 }
 
-LinearExpr& LinearExpr::AddExpression(const LinearExpr& expr) {
-  constant_ += expr.constant_;
-  variables_.insert(variables_.end(), expr.variables_.begin(),
-                    expr.variables_.end());
-  coefficients_.insert(coefficients_.end(), expr.coefficients_.begin(),
-                       expr.coefficients_.end());
+LinearExpr& LinearExpr::operator+=(const LinearExpr& other) {
+  constant_ += other.constant_;
+  variables_.insert(variables_.end(), other.variables_.begin(),
+                    other.variables_.end());
+  coefficients_.insert(coefficients_.end(), other.coefficients_.begin(),
+                       other.coefficients_.end());
+  return *this;
+}
+
+LinearExpr& LinearExpr::operator-=(const LinearExpr& other) {
+  constant_ -= other.constant_;
+  variables_.insert(variables_.end(), other.variables_.begin(),
+                    other.variables_.end());
+  for (const int64_t coeff : other.coefficients_) {
+    coefficients_.push_back(-coeff);
+  }
+  return *this;
+}
+
+LinearExpr& LinearExpr::operator*=(int64_t factor) {
+  constant_ *= factor;
+  for (int64_t& coeff : coefficients_) coeff *= factor;
   return *this;
 }
 
@@ -311,16 +326,16 @@ std::ostream& operator<<(std::ostream& os, const LinearExpr& e) {
 
 DoubleLinearExpr::DoubleLinearExpr() {}
 
-DoubleLinearExpr::DoubleLinearExpr(BoolVar var) { AddVar(var); }
+DoubleLinearExpr::DoubleLinearExpr(BoolVar var) { AddTerm(var, 1.0); }
 
-DoubleLinearExpr::DoubleLinearExpr(IntVar var) { AddVar(var); }
+DoubleLinearExpr::DoubleLinearExpr(IntVar var) { AddTerm(var, 1); }
 
 DoubleLinearExpr::DoubleLinearExpr(double constant) { constant_ = constant; }
 
 DoubleLinearExpr DoubleLinearExpr::Sum(absl::Span<const IntVar> vars) {
   DoubleLinearExpr result;
   for (const IntVar& var : vars) {
-    result.AddVar(var);
+    result.AddTerm(var, 1.0);
   }
   return result;
 }
@@ -328,7 +343,7 @@ DoubleLinearExpr DoubleLinearExpr::Sum(absl::Span<const IntVar> vars) {
 DoubleLinearExpr DoubleLinearExpr::Sum(absl::Span<const BoolVar> vars) {
   DoubleLinearExpr result;
   for (const BoolVar& var : vars) {
-    result.AddVar(var);
+    result.AddTerm(var, 1.0);
   }
   return result;
 }
@@ -336,7 +351,7 @@ DoubleLinearExpr DoubleLinearExpr::Sum(absl::Span<const BoolVar> vars) {
 DoubleLinearExpr DoubleLinearExpr::Sum(std::initializer_list<IntVar> vars) {
   DoubleLinearExpr result;
   for (const IntVar& var : vars) {
-    result.AddVar(var);
+    result.AddTerm(var, 1.0);
   }
   return result;
 }
@@ -378,13 +393,27 @@ DoubleLinearExpr DoubleLinearExpr::Term(IntVar var, double coefficient) {
   return result;
 }
 
-DoubleLinearExpr& DoubleLinearExpr::AddConstant(double value) {
+DoubleLinearExpr& DoubleLinearExpr::operator+=(double value) {
   constant_ += value;
   return *this;
 }
 
-DoubleLinearExpr& DoubleLinearExpr::AddVar(IntVar var) {
+DoubleLinearExpr& DoubleLinearExpr::AddConstant(double constant) {
+  constant_ += constant;
+  return *this;
+}
+
+DoubleLinearExpr& DoubleLinearExpr::operator+=(IntVar var) {
   AddTerm(var, 1);
+  return *this;
+}
+
+DoubleLinearExpr& DoubleLinearExpr::operator+=(const DoubleLinearExpr& expr) {
+  constant_ += expr.constant_;
+  variables_.insert(variables_.end(), expr.variables_.begin(),
+                    expr.variables_.end());
+  coefficients_.insert(coefficients_.end(), expr.coefficients_.begin(),
+                       expr.coefficients_.end());
   return *this;
 }
 
@@ -401,13 +430,31 @@ DoubleLinearExpr& DoubleLinearExpr::AddTerm(IntVar var, double coeff) {
   return *this;
 }
 
-DoubleLinearExpr& DoubleLinearExpr::AddExpression(
-    const DoubleLinearExpr& expr) {
-  constant_ += expr.constant_;
+DoubleLinearExpr& DoubleLinearExpr::operator-=(double value) {
+  constant_ -= value;
+  return *this;
+}
+
+DoubleLinearExpr& DoubleLinearExpr::operator-=(IntVar var) {
+  AddTerm(var, -1.0);
+  return *this;
+}
+
+DoubleLinearExpr& DoubleLinearExpr::operator-=(const DoubleLinearExpr& expr) {
+  constant_ -= expr.constant_;
   variables_.insert(variables_.end(), expr.variables_.begin(),
                     expr.variables_.end());
-  coefficients_.insert(coefficients_.end(), expr.coefficients_.begin(),
-                       expr.coefficients_.end());
+  for (const double coeff : expr.coefficients()) {
+    coefficients_.push_back(-coeff);
+  }
+  return *this;
+}
+
+DoubleLinearExpr& DoubleLinearExpr::operator*=(double coeff) {
+  constant_ *= coeff;
+  for (double& c : coefficients_) {
+    c *= coeff;
+  }
   return *this;
 }
 
