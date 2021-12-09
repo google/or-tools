@@ -1747,9 +1747,7 @@ void MPSolver::GenerateConstraintNameIndex() const {
   }
 }
 
-#if defined(USE_GUROBI)
 bool MPSolver::NextSolution() { return interface_->NextSolution(); }
-#endif
 
 void MPSolver::SetCallback(MPCallback* mp_callback) {
   interface_->SetCallback(mp_callback);
