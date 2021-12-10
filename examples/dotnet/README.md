@@ -2,7 +2,7 @@
 The following examples showcase how to use OrTools.<br>
 The project solution has examples for both C# and F#.
 
-We recommend that all projects you create target `netcoreapp3.1`,
+We recommend that all projects you create target `net6.0`,
 as this allows you to compile for various frameworks and
 keep up-to-date with the latest frameworks.
 
