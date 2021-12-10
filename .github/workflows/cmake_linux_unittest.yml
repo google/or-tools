@@ -22,6 +22,13 @@ jobs:
       - name: Build & Install Sirius
         working-directory: ./sirius-solver
         run: cmake --build build/ --config Release --target install -j14
+      - name: Checkout xpressmp813
+        uses: actions/checkout@v2
+        with:
+          repository: jdarlay/xpressmp813
+          path: ./xpressmp813
+          ref: master
+          token: ${{ secrets.ACCESS_TOKEN }}
       - name: Checkout or-tools
         uses: actions/checkout@v2
         with:
@@ -35,21 +42,36 @@ jobs:
                 -DBUILD_DEPS=ON \
                 -DUSE_SIRIUS=ON \
                 -Dsirius_solver_DIR="${{ github.workspace }}/sirius-solver/SiriusInstall/cmake" \
-                -DBUILD_LINEAR_SOLVER_UNITTESTS=ON \
+                -DUSE_XPRESS=ON \
+                -DUSE_XPRESS=ON \
+                -DXPRESS_ROOT="${{ github.workspace }}/xpressmp813" \
+                -DBUILD_PYTHON=ON \
                 -DBUILD_TESTING=ON
       - name: Build tests
         working-directory: ./or-tools
         run: |
           cmake --build build \
                 --target sirius_interface \
+                         xpress_interface \
+                         python_package \
                 -j14
       - name: Upload libortools
         uses: actions/upload-artifact@v2
         with:
           name: libortools
           path: ./or-tools/build/lib/libortools.so
-      - name: Run tests
+      - name: Upload ortools wheel
+        uses: actions/upload-artifact@v2
+        with:
+          name: ortools_wheel
+          path: './or-tools/build/python/dist/*.whl'
+      - name: Run interface tests
         working-directory: ./or-tools/build
-        run: ctest -V -R cxx_unittests_sirius_interface
+        run: ctest -V -R 'cxx_unittests_*'
         env:
-          LD_LIBRARY_PATH: ${{ github.workspace }}/sirius-solver/SiriusInstall/lib/
+          LD_LIBRARY_PATH: "${{ github.workspace }}/sirius-solver/SiriusInstall/lib/:${{ github.workspace }}/xpressmp813/lib/"
+      - name: Run python tests
+        working-directory: ./or-tools/build
+        run: ctest -V -R python_python_linear_programming_sirius_xpress
+        env:
+          LD_LIBRARY_PATH: "${{ github.workspace }}/sirius-solver/SiriusInstall/lib/:${{ github.workspace }}/xpressmp813/lib/"
