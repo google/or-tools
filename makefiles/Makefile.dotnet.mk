@@ -40,7 +40,7 @@ dotnet: dotnet_csharp dotnet_fsharp
 check_dotnet: check_dotnet_pimpl
 test_dotnet: test_dotnet_pimpl
 package_dotnet: dotnet
-BUILT_LANGUAGES +=, dotnet \(netstandard2.0\)
+BUILT_LANGUAGES +=, dotnet \(net6.0\)
 endif
 
 # Detect RuntimeIDentifier
@@ -1076,10 +1076,10 @@ endif
 ######################
 .PHONY: nuget_archive # Build .Net "Google.OrTools" Nuget Package
 nuget_archive: dotnet | $(TEMP_DOTNET_DIR)
-	"$(DOTNET_BIN)" publish $(DOTNET_BUILD_ARGS) --no-build --no-dependencies --no-restore -f netstandard2.0 \
+	"$(DOTNET_BIN)" publish $(DOTNET_BUILD_ARGS) --no-build --no-dependencies --no-restore -f net6.0 \
  -o "..$S..$S..$S$(TEMP_DOTNET_DIR)" \
  ortools$Sdotnet$S$(DOTNET_ORTOOLS_ASSEMBLY_NAME)$S$(DOTNET_ORTOOLS_ASSEMBLY_NAME).csproj
-	"$(DOTNET_BIN)" publish $(DOTNET_BUILD_ARGS) --no-build --no-dependencies --no-restore -f netstandard2.0 \
+	"$(DOTNET_BIN)" publish $(DOTNET_BUILD_ARGS) --no-build --no-dependencies --no-restore -f net6.0 \
  -o "..$S..$S..$S$(TEMP_DOTNET_DIR)" \
  ortools$Sdotnet$S$(FSHARP_ORTOOLS_ASSEMBLY_NAME)$S$(FSHARP_ORTOOLS_ASSEMBLY_NAME).fsproj
 	"$(DOTNET_BIN)" pack -c Release $(NUGET_PACK_ARGS) --no-build \
@@ -1088,7 +1088,7 @@ nuget_archive: dotnet | $(TEMP_DOTNET_DIR)
 
 .PHONY: nuget_upload # Upload Nuget Package
 nuget_upload: nuget_archive
-	@echo Uploading Nuget package for "netstandard2.0".
+	@echo Uploading Nuget package for "net6.0".
 	$(warning Not Implemented)
 
 ################
