@@ -13,7 +13,6 @@ ENTRYPOINT ["/usr/bin/bash", "-c"]
 CMD ["/usr/bin/bash"]
 
 # Swig Install
-FROM base AS swig
 RUN zypper update -y \
 && zypper install -y swig \
 && zypper clean -a
