@@ -2821,7 +2821,7 @@ void RoutingModel::CloseModelWithParameters(
     }
   }
 
-  // Setup resource vars and consraints.
+  // Setup resource vars and constraints.
   resource_vars_.resize(resource_groups_.size());
   for (int rg = 0; rg < resource_groups_.size(); rg++) {
     const ResourceGroup* const resource_group = resource_groups_[rg].get();
