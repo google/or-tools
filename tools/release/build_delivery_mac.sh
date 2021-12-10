@@ -253,7 +253,7 @@ function build_python() {
 
   command -v swig
   command -v swig | xargs echo "swig: " | tee -a build.log
-  PY=(3.6 3.7 3.8 3.9)
+  PY=(3.6 3.7 3.8 3.9, 3.10)
   for i in "${PY[@]}"; do
     command -v "python$i"
     command -v "python$i" | xargs echo "python$i: " | tee -a build.log
