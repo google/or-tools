@@ -149,6 +149,8 @@ $$(TEMP_ARCHIVE_DIR)/$$(INSTALL_DIR)/examples/dotnet/%/plop: \
  $$(TEMP_ARCHIVE_DIR)$$S$$(INSTALL_DIR)$$Sexamples$$Sdotnet$$S$$*
 	$$(COPY) $$(TEMP_DOTNET_DIR)$$S$1$$S$$*$$S$$*.csproj \
  $$(TEMP_ARCHIVE_DIR)$$S$$(INSTALL_DIR)$$Sexamples$$Sdotnet$$S$$*
+	-$$(SED) -i -e 's/..\/..\/packages/..\/..\/..\/packages/' \
+ $$(TEMP_ARCHIVE_DIR)$$S$$(INSTALL_DIR)$$Sexamples$$Sdotnet$$S$$*$$S$$*.csproj
 endef
 
 $(foreach sample,$(DOTNET_SAMPLES),$(eval $(call dotnet-sample-archive,$(sample))))
@@ -166,6 +168,8 @@ $$(TEMP_ARCHIVE_DIR)/$$(INSTALL_DIR)/examples/dotnet/%/plop: \
  $$(TEMP_ARCHIVE_DIR)$$S$$(INSTALL_DIR)$$Sexamples$$Sdotnet$$S$$*
 	$$(COPY) $$(TEMP_DOTNET_DIR)$$S$1$$S$$*$$S$$*.csproj \
  $$(TEMP_ARCHIVE_DIR)$$S$$(INSTALL_DIR)$$Sexamples$$Sdotnet$$S$$*
+	-$$(SED) -i -e 's/..\/..\/packages/..\/..\/..\/packages/' \
+ $$(TEMP_ARCHIVE_DIR)$$S$$(INSTALL_DIR)$$Sexamples$$Sdotnet$$S$$*$$S$$*.csproj
 endef
 
 $(foreach example,$(DOTNET_EXAMPLES),$(eval $(call dotnet-example-archive,$(example))))
@@ -184,6 +188,8 @@ $$(TEMP_ARCHIVE_DIR)/$$(INSTALL_DIR)/examples/dotnet/%/plop: \
  $$(TEMP_ARCHIVE_DIR)$$S$$(INSTALL_DIR)$$Sexamples$$Sdotnet$$S$$*
 	$$(COPY) $$(TEMP_DOTNET_DIR)$$S$1$$S$$*$$S$$*.fsproj \
  $$(TEMP_ARCHIVE_DIR)$$S$$(INSTALL_DIR)$$Sexamples$$Sdotnet$$S$$*
+	-$$(SED) -i -e 's/..\/..\/packages/..\/..\/..\/packages/' \
+ $$(TEMP_ARCHIVE_DIR)$$S$$(INSTALL_DIR)$$Sexamples$$Sdotnet$$S$$*$$S$$*.fsproj
 endef
 
 $(foreach example,$(DOTNET_FS_EXAMPLES),$(eval $(call dotnet-fs-example-archive,$(example))))
@@ -201,7 +207,6 @@ archive_dotnet: dotnet \
 	-$(MKDIR_P) $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Spackages
 	$(COPY) $(TEMP_DOTNET_DIR)$Spackages$S*.nupkg $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Spackages
 	-$(COPY) $(DOTNET_EX_PATH)$SREADME.md $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sdotnet
-	-$(SED) -i -e 's/..\/..\/packages/..\/..\/..\/packages/' $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sdotnet$S*$S*.*proj
 
 ################
 ##  FLATZINC  ##
