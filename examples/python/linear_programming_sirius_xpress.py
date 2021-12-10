@@ -18,11 +18,13 @@ from __future__ import print_function
 from ortools.linear_solver import pywraplp
 
 
-def main():
+def main(name, problem_type):
     """Entry point of the program"""
-    # Instantiate a Glop solver, naming it LinearExample.
+    # Instantiate the solver, naming it LinearExample.
+    
+    print('------------ {} ------------'.format(name))
     solver = pywraplp.Solver('LinearExample',
-                             pywraplp.Solver.SIRIUS_LINEAR_PROGRAMMING)
+                             problem_type)
 
     # Create the two variables and let them take on any value.
     x = solver.NumVar(-solver.infinity(), solver.infinity(), 'x')
@@ -82,4 +84,7 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    main("SIRIUS_LINEAR_PROGRAMMING",
+         pywraplp.Solver.SIRIUS_LINEAR_PROGRAMMING)
+    main("XPRESS_LINEAR_PROGRAMMING",
+         pywraplp.Solver.XPRESS_LINEAR_PROGRAMMING)
