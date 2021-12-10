@@ -19,8 +19,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.google.ortools.Loader;
 import com.google.common.collect.Iterables;
+import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.ConstraintSolverParameters;
 import com.google.ortools.constraintsolver.RegularLimitParameters;
 import java.util.ArrayList;
@@ -168,10 +168,8 @@ public final class ConstraintSolverTest {
 
   @Test
   public void testSolverParameters() {
-    final ConstraintSolverParameters parameters = ConstraintSolverParameters.newBuilder()
-                                                      .mergeFrom(Solver.defaultSolverParameters())
-                                                      .setTraceSearch(true)
-                                                      .build();
+    final ConstraintSolverParameters parameters =
+        Solver.defaultSolverParameters().toBuilder().setTraceSearch(true).build();
     final Solver solver = new Solver("testSolverParameters", parameters);
     final ConstraintSolverParameters stored = solver.parameters();
     assertTrue(stored.getTraceSearch());
@@ -181,10 +179,7 @@ public final class ConstraintSolverTest {
   public void testRegularLimitParameters() {
     final Solver solver = new Solver("testRegularLimitParameters");
     final RegularLimitParameters protoLimit =
-        RegularLimitParameters.newBuilder()
-            .mergeFrom(solver.makeDefaultRegularLimitParameters())
-            .setFailures(20000)
-            .build();
+        solver.makeDefaultRegularLimitParameters().toBuilder().setFailures(20000).build();
     assertEquals(20000, protoLimit.getFailures());
     final SearchLimit limit = solver.makeLimit(protoLimit);
     assertNotNull(limit);

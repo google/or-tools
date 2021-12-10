@@ -189,6 +189,14 @@ public final class CpSolver {
     return CpSatHelper.solverResponseStats(solveResponse);
   }
 
+  /**
+   * Returns some information on how the solution was found, or the reason why the model or the
+   * parameters are invalid.
+   */
+  public String getSolutionInfo() {
+    return solveResponse.getSolutionInfo();
+  }
+
   private CpSolverResponse solveResponse;
   private final SatParameters.Builder solveParameters;
   private Consumer<String> logCallback;
