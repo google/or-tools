@@ -29,6 +29,6 @@ jobs:
     - name: Build
       run: cmake --build build --config Release --target ALL_BUILD -v -- /maxcpucount
     - name: Test
-      run: cmake --build build --config Release --target RUN_TESTS -v -- --rerun-failed --output-on-failure
+      run: cmake --build build --config Release --target RUN_TESTS -v -- /maxcpucount
     - name: Install
       run: cmake --build build --config Release --target INSTALL -v -- /maxcpucount
