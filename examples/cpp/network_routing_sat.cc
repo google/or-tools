@@ -616,7 +616,7 @@ class NetworkRoutingSolver {
       max_normalized_traffic =
           std::max(max_normalized_traffic, sum_of_traffic * 1000 / capacity);
       cp_model.AddDivisionEquality(normalized_traffic, scaled_traffic,
-                                   cp_model.NewConstant(capacity));
+                                   capacity);
       normalized_traffic_vars[arc_index] = normalized_traffic;
       const BoolVar comfort = cp_model.NewBoolVar();
       const int64_t safe_capacity =

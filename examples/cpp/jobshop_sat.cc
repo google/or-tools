@@ -597,14 +597,12 @@ void AddCumulativeRelaxation(
     // Ignore trivial case with all intervals.
     if (intervals.size() == 1 || intervals.size() == num_tasks) continue;
 
-    const IntVar capacity = cp_model.NewConstant(component.size());
-    const IntVar one = cp_model.NewConstant(1);
-    CumulativeConstraint cumul = cp_model.AddCumulative(capacity);
+    CumulativeConstraint cumul = cp_model.AddCumulative(component.size());
     for (int i = 0; i < intervals.size(); ++i) {
-      cumul.AddDemand(intervals[i], one);
+      cumul.AddDemand(intervals[i], 1);
     }
     if (absl::GetFlag(FLAGS_use_interval_makespan)) {
-      cumul.AddDemand(makespan_interval, capacity);
+      cumul.AddDemand(makespan_interval, component.size());
     }
   }
 }

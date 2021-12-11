@@ -25,35 +25,29 @@ void NoOverlapSampleSat() {
   const Domain horizon(0, kHorizon);
   // Task 0, duration 2.
   const IntVar start_0 = cp_model.NewIntVar(horizon);
-  const IntVar duration_0 = cp_model.NewConstant(2);
+  const int64_t duration_0 = 2;
   const IntVar end_0 = cp_model.NewIntVar(horizon);
   const IntervalVar task_0 =
       cp_model.NewIntervalVar(start_0, duration_0, end_0);
 
   // Task 1, duration 4.
   const IntVar start_1 = cp_model.NewIntVar(horizon);
-  const IntVar duration_1 = cp_model.NewConstant(4);
+  const int64_t duration_1 = 4;
   const IntVar end_1 = cp_model.NewIntVar(horizon);
   const IntervalVar task_1 =
       cp_model.NewIntervalVar(start_1, duration_1, end_1);
 
   // Task 2, duration 3.
   const IntVar start_2 = cp_model.NewIntVar(horizon);
-  const IntVar duration_2 = cp_model.NewConstant(3);
+  const int64_t duration_2 = 3;
   const IntVar end_2 = cp_model.NewIntVar(horizon);
   const IntervalVar task_2 =
       cp_model.NewIntervalVar(start_2, duration_2, end_2);
 
   // Week ends.
-  const IntervalVar weekend_0 =
-      cp_model.NewIntervalVar(cp_model.NewConstant(5), cp_model.NewConstant(2),
-                              cp_model.NewConstant(7));
-  const IntervalVar weekend_1 =
-      cp_model.NewIntervalVar(cp_model.NewConstant(12), cp_model.NewConstant(2),
-                              cp_model.NewConstant(14));
-  const IntervalVar weekend_2 =
-      cp_model.NewIntervalVar(cp_model.NewConstant(19), cp_model.NewConstant(2),
-                              cp_model.NewConstant(21));
+  const IntervalVar weekend_0 = cp_model.NewIntervalVar(5, 2, 7);
+  const IntervalVar weekend_1 = cp_model.NewIntervalVar(12, 2, 14);
+  const IntervalVar weekend_2 = cp_model.NewIntervalVar(19, 2, 21);
 
   // No Overlap constraint.
   cp_model.AddNoOverlap(

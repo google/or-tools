@@ -15,6 +15,7 @@
 
 #include <cstdint>
 #include <numeric>
+#include <string>
 #include <vector>
 
 #include "absl/flags/flag.h"
@@ -89,26 +90,25 @@ void Solve(const std::vector<int64_t>& durations,
 
   std::vector<IntervalVar> task_intervals(num_tasks);
   std::vector<IntVar> task_starts(num_tasks);
-  std::vector<IntVar> task_durations(num_tasks);
-  std::vector<IntVar> task_ends(num_tasks);
-  std::vector<IntVar> tardiness_vars(num_tasks);
+  std::vector<LinearExpr> tardiness_expressions(num_tasks);
+  LinearExpr objective;
 
   for (int i = 0; i < num_tasks; ++i) {
     task_starts[i] = cp_model.NewIntVar(Domain(0, horizon - durations[i]));
-    task_durations[i] = cp_model.NewConstant(durations[i]);
-    task_ends[i] = cp_model.NewIntVar(Domain(durations[i], horizon));
-    task_intervals[i] = cp_model.NewIntervalVar(
-        task_starts[i], task_durations[i], task_ends[i]);
+    task_intervals[i] =
+        cp_model.NewFixedSizeIntervalVar(task_starts[i], durations[i]);
+
     if (due_dates[i] == 0) {
-      tardiness_vars[i] = task_ends[i];
+      tardiness_expressions[i] = task_starts[i] + durations[i];
     } else {
-      tardiness_vars[i] = cp_model.NewIntVar(
+      tardiness_expressions[i] = cp_model.NewIntVar(
           Domain(0, std::max<int64_t>(0, horizon - due_dates[i])));
 
       // tardiness_vars >= end - due_date
-      cp_model.AddGreaterOrEqual(tardiness_vars[i],
-                                 task_ends[i] - due_dates[i]);
+      cp_model.AddGreaterOrEqual(tardiness_expressions[i],
+                                 task_starts[i] + durations[i] - due_dates[i]);
     }
+    objective += weights[i] * tardiness_expressions[i];
   }
 
   // Decision heuristic. Note that we don't instantiate all the variables. As a
@@ -134,7 +134,7 @@ void Solve(const std::vector<int64_t>& durations,
   //
   // Note however than for big problem, this will drastically augment the time
   // to get a first feasible solution (but then the heuristic gave one to us).
-  cp_model.Minimize(LinearExpr::ScalProd(tardiness_vars, weights));
+  cp_model.Minimize(objective);
 
   // Optional preprocessing: add precedences that don't change the optimal
   // solution value.
@@ -157,7 +157,7 @@ void Solve(const std::vector<int64_t>& durations,
         }
 
         ++num_added_precedences;
-        cp_model.AddLessOrEqual(task_ends[i], task_starts[j]);
+        cp_model.AddLessOrEqual(task_starts[i] + durations[i], task_starts[j]);
       }
     }
   }
@@ -179,9 +179,9 @@ void Solve(const std::vector<int64_t>& durations,
 
     int64_t objective = 0;
     for (int i = 0; i < num_tasks; ++i) {
-      const int64_t end = SolutionIntegerValue(r, task_ends[i]);
-      objective +=
-          weights[i] * std::max<int64_t>(int64_t{0}, end - due_dates[i]);
+      const int64_t end =
+          SolutionIntegerValue(r, task_starts[i]) + durations[i];
+      objective += weights[i] * std::max<int64_t>(0, end - due_dates[i]);
     }
     LOG(INFO) << "Cost " << objective;
 
@@ -196,13 +196,14 @@ void Solve(const std::vector<int64_t>& durations,
     int end = 0;
     for (const int i : sorted_tasks) {
       const int64_t cost =
-          weights[i] * SolutionIntegerValue(r, tardiness_vars[i]);
+          weights[i] * SolutionIntegerValue(r, tardiness_expressions[i]);
       absl::StrAppend(&solution, "| #", i, " ");
       if (cost > 0) {
         // Display the cost in red.
         absl::StrAppend(&solution, "\033[1;31m(+", cost, ") \033[0m");
       }
-      absl::StrAppend(&solution, "|", SolutionIntegerValue(r, task_ends[i]));
+      absl::StrAppend(&solution, "|",
+                      SolutionIntegerValue(r, task_starts[i]) + durations[i]);
       end += durations[i];
     }
     LOG(INFO) << "solution: " << solution;

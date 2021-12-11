@@ -84,7 +84,7 @@ void RankingSampleSat() {
 
   for (int t = 0; t < kNumTasks; ++t) {
     const IntVar start = cp_model.NewIntVar(horizon);
-    const IntVar duration = cp_model.NewConstant(t + 1);
+    const int64_t duration = t + 1;
     const IntVar end = cp_model.NewIntVar(horizon);
     const BoolVar presence =
         t < kNumTasks / 2 ? cp_model.TrueVar() : cp_model.NewBoolVar();

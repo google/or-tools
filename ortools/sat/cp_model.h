@@ -72,42 +72,33 @@ class BoolVar {
   BoolVar();
 
   /// Sets the name of the variable.
+  /// Note that this will always set the "positive" version of this Boolean.
   BoolVar WithName(const std::string& name);
 
   /// Returns the name of the variable.
-  const std::string& Name() const { return Proto().name(); }
+  std::string Name() const;
 
   /// Returns the logical negation of the current Boolean variable.
-  BoolVar Not() const { return BoolVar(NegatedRef(index_), cp_model_); }
+  BoolVar Not() const { return BoolVar(NegatedRef(index_), builder_); }
 
   /// Equality test with another boolvar.
   bool operator==(const BoolVar& other) const {
-    return other.cp_model_ == cp_model_ && other.index_ == index_;
+    return other.builder_ == builder_ && other.index_ == index_;
   }
 
   /// Dis-Equality test.
   bool operator!=(const BoolVar& other) const {
-    return other.cp_model_ != cp_model_ || other.index_ != index_;
+    return other.builder_ != builder_ || other.index_ != index_;
   }
 
   /// Debug string.
   std::string DebugString() const;
 
-  /// Returns the underlying protobuf object (useful for testing).
-  const IntegerVariableProto& Proto() const {
-    return cp_model_->variables(index_);
-  }
-
-  /// Returns the mutable underlying protobuf object (useful for model edition).
-  IntegerVariableProto* MutableProto() const {
-    return cp_model_->mutable_variables(index_);
-  }
-
   /**
    * Returns the index of the variable in the model.
    *
-   * If the variable is the negation of another variable v, its index is
-   * -v.index() - 1.
+   * Warning: If the variable is the negation of another variable v, its index
+   * is -v.index() - 1. So this can be negative.
    */
   int index() const { return index_; }
 
@@ -123,9 +114,9 @@ class BoolVar {
   friend class ReservoirConstraint;
   friend bool SolutionBooleanValue(const CpSolverResponse& r, BoolVar x);
 
-  BoolVar(int index, CpModelProto* cp_model);
+  BoolVar(int index, CpModelBuilder* builder);
 
-  CpModelProto* cp_model_ = nullptr;
+  CpModelBuilder* builder_ = nullptr;
   int index_ = std::numeric_limits<int32_t>::min();
 };
 
@@ -152,10 +143,15 @@ class IntVar {
   IntVar();
 
   /// Implicit cast BoolVar -> IntVar.
+  ///
+  /// Warning: If you construct an IntVar from a negated BoolVar, this might
+  /// create a new variable in the model.
   IntVar(const BoolVar& var);  // NOLINT(runtime/explicit)
 
-  /// Cast  IntVar -> BoolVar.
-  /// Checks that the domain of the var is within {0,1}.
+  /// Cast IntVar -> BoolVar.
+  ///
+  /// Warning: This checks that the domain of the var is within {0,1} and
+  /// crash if it is not the case. Use at your own risk.
   BoolVar ToBoolVar() const;
 
   /// Sets the name of the variable.
@@ -170,28 +166,24 @@ class IntVar {
 
   /// Equality test with another IntVar.
   bool operator==(const IntVar& other) const {
-    return other.cp_model_ == cp_model_ && other.index_ == index_;
+    return other.builder_ == builder_ && other.index_ == index_;
   }
 
-  /// Difference test with anpther IntVar.
+  /// Difference test with another IntVar.
   bool operator!=(const IntVar& other) const {
-    return other.cp_model_ != cp_model_ || other.index_ != index_;
+    return other.builder_ != builder_ || other.index_ != index_;
   }
 
   /// Returns a debug string.
   std::string DebugString() const;
 
   /// Returns the underlying protobuf object (useful for testing).
-  const IntegerVariableProto& Proto() const {
-    return cp_model_->variables(index_);
-  }
+  const IntegerVariableProto& Proto() const;
 
   /// Returns the mutable underlying protobuf object (useful for model edition).
-  IntegerVariableProto* MutableProto() const {
-    return cp_model_->mutable_variables(index_);
-  }
+  IntegerVariableProto* MutableProto() const;
 
-  /// Returns the index of the variable in the model.
+  /// Returns the index of the variable in the model. This will be non-negative.
   int index() const { return index_; }
 
  private:
@@ -205,9 +197,9 @@ class IntVar {
   friend int64_t SolutionIntegerValue(const CpSolverResponse& r,
                                       const LinearExpr& expr);
 
-  IntVar(int index, CpModelProto* cp_model);
+  IntVar(int index, CpModelBuilder* builder);
 
-  CpModelProto* cp_model_ = nullptr;
+  CpModelBuilder* builder_ = nullptr;
   int index_ = std::numeric_limits<int32_t>::min();
 };
 
@@ -286,6 +278,12 @@ class LinearExpr {
   static LinearExpr ScalProd(std::initializer_list<IntVar> vars,
                              absl::Span<const int64_t> coeffs);
 
+  /// Constructs var * coefficient.
+  static LinearExpr Term(IntVar var, int64_t coefficient);
+
+  /// Constructs bool * coefficient.
+  static LinearExpr Term(BoolVar var, int64_t coefficient);
+
   /// Deprecated. Use Sum() instead.
   static LinearExpr BooleanSum(absl::Span<const BoolVar> vars);
 
@@ -293,8 +291,8 @@ class LinearExpr {
   static LinearExpr BooleanScalProd(absl::Span<const BoolVar> vars,
                                     absl::Span<const int64_t> coeffs);
 
-  /// Constructs var * coefficient.
-  static LinearExpr Term(IntVar var, int64_t coefficient);
+  /// Constructs a linear expr from its proto representation.
+  static LinearExpr FromProto(const LinearExpressionProto& proto);
 
   // Operators.
   LinearExpr& operator+=(const LinearExpr& other);
@@ -304,11 +302,13 @@ class LinearExpr {
   // Deprecated. Use operators instead.
   LinearExpr& AddConstant(int64_t value);
   LinearExpr& AddVar(IntVar var);
+  LinearExpr& AddVar(BoolVar var);
+  LinearExpr& AddTerm(BoolVar var, int64_t coeff);
   LinearExpr& AddTerm(IntVar var, int64_t coeff);
   LinearExpr& AddExpression(const LinearExpr& expr) { return *this += expr; }
 
-  /// Returns the vector of variables.
-  const std::vector<IntVar>& variables() const { return variables_; }
+  /// Returns the vector of variable indices.
+  const std::vector<int>& variables() const { return variables_; }
 
   /// Returns the vector of coefficients.
   const std::vector<int64_t>& coefficients() const { return coefficients_; }
@@ -316,17 +316,15 @@ class LinearExpr {
   /// Returns the constant term.
   int64_t constant() const { return constant_; }
 
-  /// Checks that the expression is 1 * var + 0, and returns var.
-  IntVar Var() const;
-
-  /// Checks that the expression is constant and returns its value.
-  int64_t Value() const;
-
-  /// Debug string.
-  std::string DebugString() const;
+  /**
+   * Debug string. If the CpModelBuilder is passed, the string will include
+   * variable names and domains. Otherwise, you will get a shorter string with
+   * only variable indices.
+   */
+  std::string DebugString(const CpModelProto* proto = nullptr) const;
 
  private:
-  std::vector<IntVar> variables_;
+  std::vector<int> variables_;
   std::vector<int64_t> coefficients_;
   int64_t constant_ = 0;
 };
@@ -376,7 +374,7 @@ class DoubleLinearExpr {
   /**
    * Constructs a linear expression from a Boolean variable.
    *
-   *  It deals with logical negation correctly.
+   * It deals with logical negation correctly.
    */
   explicit DoubleLinearExpr(BoolVar var);
 
@@ -391,12 +389,14 @@ class DoubleLinearExpr {
 
   /// Adds a single integer variable to the linear expression.
   DoubleLinearExpr& operator+=(IntVar var);
+  DoubleLinearExpr& operator+=(BoolVar var);
 
   /// Adds another linear expression to the linear expression.
   DoubleLinearExpr& operator+=(const DoubleLinearExpr& expr);
 
   /// Adds a term (var * coeff) to the linear expression.
   DoubleLinearExpr& AddTerm(IntVar var, double coeff);
+  DoubleLinearExpr& AddTerm(BoolVar var, double coeff);
 
   /// Deprecated. Use +=.
   DoubleLinearExpr& AddConstant(double constant);
@@ -434,11 +434,8 @@ class DoubleLinearExpr {
   static DoubleLinearExpr ScalProd(std::initializer_list<IntVar> vars,
                                    absl::Span<const double> coeffs);
 
-  /// Constructs var * coefficient.
-  static DoubleLinearExpr Term(IntVar var, double coefficient);
-
-  /// Returns the vector of variables.
-  const std::vector<IntVar>& variables() const { return variables_; }
+  /// Returns the vector of variable indices.
+  const std::vector<int>& variables() const { return variables_; }
 
   /// Returns the vector of coefficients.
   const std::vector<double>& coefficients() const { return coefficients_; }
@@ -446,11 +443,11 @@ class DoubleLinearExpr {
   /// Returns the constant term.
   double constant() const { return constant_; }
 
-  /// Debug string.
-  std::string DebugString() const;
+  /// Debug string. See the documentation for LinearExpr::DebugString().
+  std::string DebugString(const CpModelProto* proto = nullptr) const;
 
  private:
-  std::vector<IntVar> variables_;
+  std::vector<int> variables_;
   std::vector<double> coefficients_;
   double constant_ = 0;
 };
@@ -509,26 +506,22 @@ class IntervalVar {
 
   /// Equality test with another interval variable.
   bool operator==(const IntervalVar& other) const {
-    return other.cp_model_ == cp_model_ && other.index_ == index_;
+    return other.builder_ == builder_ && other.index_ == index_;
   }
 
   /// Difference test with another interval variable.
   bool operator!=(const IntervalVar& other) const {
-    return other.cp_model_ != cp_model_ || other.index_ != index_;
+    return other.builder_ != builder_ || other.index_ != index_;
   }
 
   /// Returns a debug string.
   std::string DebugString() const;
 
   /// Returns the underlying protobuf object (useful for testing).
-  const IntervalConstraintProto& Proto() const {
-    return cp_model_->constraints(index_).interval();
-  }
+  const IntervalConstraintProto& Proto() const;
 
   /// Returns the mutable underlying protobuf object (useful for model edition).
-  IntervalConstraintProto* MutableProto() const {
-    return cp_model_->mutable_constraints(index_)->mutable_interval();
-  }
+  IntervalConstraintProto* MutableProto() const;
 
   /// Returns the index of the interval constraint in the model.
   int index() const { return index_; }
@@ -539,9 +532,9 @@ class IntervalVar {
   friend class NoOverlap2DConstraint;
   friend std::ostream& operator<<(std::ostream& os, const IntervalVar& var);
 
-  IntervalVar(int index, CpModelProto* cp_model);
+  IntervalVar(int index, CpModelBuilder* builder);
 
-  CpModelProto* cp_model_ = nullptr;
+  CpModelBuilder* builder_ = nullptr;
   int index_ = std::numeric_limits<int32_t>::min();
 };
 
@@ -768,7 +761,9 @@ class CpModelBuilder {
   /// Creates a Boolean variable.
   BoolVar NewBoolVar();
 
-  /// Creates a constant variable.
+  /// Creates a constant variable. This is a shortcut for
+  /// NewVariable(Domain(value)).but it will return the same variable if used
+  /// twice with the same constant.
   IntVar NewConstant(int64_t value);
 
   /// Creates an always true Boolean variable.
@@ -1107,16 +1102,11 @@ class CpModelBuilder {
   friend class CumulativeConstraint;
   friend class ReservoirConstraint;
   friend class IntervalVar;
+  friend class IntVar;
 
   // Fills the 'expr_proto' with the linear expression represented by 'expr'.
   LinearExpressionProto LinearExprToProto(const LinearExpr& expr,
                                           bool negate = false);
-
-  // Rebuilds a LinearExpr from a LinearExpressionProto.
-  // This method is a member of CpModelBuilder because it needs to be friend
-  // with IntVar.
-  static LinearExpr LinearExprFromProto(const LinearExpressionProto& expr_proto,
-                                        CpModelProto* model_proto_);
 
   // Returns a (cached) integer variable index with a constant value.
   int IndexFromConstant(int64_t value);
@@ -1141,6 +1131,11 @@ int64_t SolutionIntegerValue(const CpSolverResponse& r, const LinearExpr& expr);
 
 /// Evaluates the value of a Boolean literal in a solver response.
 bool SolutionBooleanValue(const CpSolverResponse& r, BoolVar x);
+
+// Returns a more readable and compact DebugString() than
+// proto.variables(index).DebugString(). This is used by IntVar::DebugString()
+// but also allow to get the same string from a const proto.
+std::string VarDebugString(const CpModelProto& proto, int index);
 
 // ============================================================================
 // Minimal support for "natural" API to create LinearExpr.
@@ -1169,10 +1164,10 @@ inline LinearExpr operator+(const LinearExpr& lhs, LinearExpr&& rhs) {
 }
 inline LinearExpr operator+(LinearExpr&& lhs, LinearExpr&& rhs) {
   if (lhs.variables().size() < rhs.variables().size()) {
-    rhs += lhs;
+    rhs += std::move(lhs);
     return std::move(rhs);
   } else {
-    lhs += rhs;
+    lhs += std::move(rhs);
     return std::move(lhs);
   }
 }
@@ -1192,10 +1187,10 @@ inline LinearExpr operator-(const LinearExpr& lhs, LinearExpr&& rhs) {
 }
 inline LinearExpr operator-(LinearExpr&& lhs, LinearExpr&& rhs) {
   if (lhs.variables().size() < rhs.variables().size()) {
-    rhs -= lhs;
+    rhs -= std::move(lhs);
     return std::move(rhs);
   } else {
-    lhs -= rhs;
+    lhs -= std::move(rhs);
     return std::move(lhs);
   }
 }
@@ -1232,10 +1227,10 @@ inline DoubleLinearExpr operator+(const DoubleLinearExpr& lhs,
 inline DoubleLinearExpr operator+(DoubleLinearExpr&& lhs,
                                   DoubleLinearExpr&& rhs) {
   if (lhs.variables().size() < rhs.variables().size()) {
-    rhs += lhs;
+    rhs += std::move(lhs);
     return std::move(rhs);
   } else {
-    lhs += rhs;
+    lhs += std::move(rhs);
     return std::move(lhs);
   }
 }
@@ -1278,10 +1273,10 @@ inline DoubleLinearExpr operator-(const DoubleLinearExpr& lhs,
 inline DoubleLinearExpr operator-(DoubleLinearExpr&& lhs,
                                   DoubleLinearExpr&& rhs) {
   if (lhs.variables().size() < rhs.variables().size()) {
-    rhs -= lhs;
+    rhs -= std::move(lhs);
     return std::move(rhs);
   } else {
-    lhs -= rhs;
+    lhs -= std::move(rhs);
     return std::move(lhs);
   }
 }
