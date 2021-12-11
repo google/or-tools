@@ -14,7 +14,10 @@
 #ifndef OR_TOOLS_BASE_PROTOBUF_UTIL_H_
 #define OR_TOOLS_BASE_PROTOBUF_UTIL_H_
 
+#include <string>
+
 #include "google/protobuf/repeated_field.h"
+#include "google/protobuf/text_format.h"
 #include "ortools/base/logging.h"
 
 namespace google {
@@ -62,6 +65,14 @@ int RemoveAt(RepeatedType* array, const IndexContainer& indices) {
   Truncate(array, write_index);
   return num_indices;
 }
+
+template <typename T>
+T ParseTextOrDie(const std::string& input) {
+  T result;
+  CHECK(TextFormat::MergeFromString(input, &result));
+  return result;
+}
+
 }  // namespace util
 }  // namespace protobuf
 }  // namespace google
