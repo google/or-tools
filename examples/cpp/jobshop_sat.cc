@@ -383,6 +383,12 @@ void CreateMachines(
     // Create circuit constraint on a machine. Node 0 is both the source and
     // sink, i.e. the first and last job.
     CircuitConstraint circuit = cp_model.AddCircuitConstraint();
+
+    // If all intervals are optional, a solution without any performed
+    // interval in this resource requires an empty circuit.
+    BoolVar empty_circuit = cp_model.NewBoolVar();
+    circuit.AddArc(0, 0, empty_circuit);
+
     for (int i = 0; i < num_intervals; ++i) {
       const int job_i = machine_to_tasks[m][i].job;
       const MachineTaskData& tail = machine_to_tasks[m][i];
@@ -394,6 +400,10 @@ void CreateMachines(
       circuit.AddArc(0, i + 1, cp_model.NewBoolVar());
       // Node to sink.
       circuit.AddArc(i + 1, 0, cp_model.NewBoolVar());
+
+      // If the circuit is empty, the interval cannot be performed.
+      cp_model.AddImplication(empty_circuit,
+                              Not(tail.interval.PresenceBoolVar()));
 
       // Used to constrain the size of the tail interval.
       std::vector<BoolVar> literals;
