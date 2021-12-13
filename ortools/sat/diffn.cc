@@ -228,6 +228,8 @@ bool NonOverlappingRectanglesEnergyPropagator::FailWhenEnergyIsTooLarge(
   const auto add_box_energy_in_rectangle_reason = [&](int b) {
     x_.AddEnergyMinInIntervalReason(b, area.x_min, area.x_max);
     y_.AddEnergyMinInIntervalReason(b, area.y_min, area.y_max);
+    x_.AddPresenceReason(b);
+    y_.AddPresenceReason(b);
   };
 
   for (int i = 0; i < neighbors_.size(); ++i) {
@@ -508,6 +510,8 @@ bool NonOverlappingRectanglesDisjunctivePropagator::Propagate() {
         global_x_.AddReasonForBeingBefore(box1, box2);
         global_x_.AddReasonForBeingBefore(box2, box1);
         global_y_.ClearReason();
+        global_y_.AddPresenceReason(box1);
+        global_y_.AddPresenceReason(box2);
         global_y_.AddReasonForBeingBefore(box1, box2);
         global_y_.AddReasonForBeingBefore(box2, box1);
         global_x_.ImportOtherReasons(global_y_);
@@ -531,6 +535,8 @@ bool NonOverlappingRectanglesDisjunctivePropagator::PropagateTwoBoxes() {
     const IntegerValue left_end_min = x_.EndMin(left);
     if (left_end_min > x_.StartMin(right)) {
       x_.ClearReason();
+      x_.AddPresenceReason(left);
+      x_.AddPresenceReason(right);
       x_.AddReasonForBeingBefore(left, right);
       x_.AddEndMinReason(left, left_end_min);
       RETURN_IF_FALSE(x_.IncreaseStartMin(right, left_end_min));
@@ -540,6 +546,8 @@ bool NonOverlappingRectanglesDisjunctivePropagator::PropagateTwoBoxes() {
     const IntegerValue right_start_max = x_.StartMax(right);
     if (right_start_max < x_.EndMax(left)) {
       x_.ClearReason();
+      x_.AddPresenceReason(left);
+      x_.AddPresenceReason(right);
       x_.AddReasonForBeingBefore(left, right);
       x_.AddStartMaxReason(right, right_start_max);
       RETURN_IF_FALSE(x_.DecreaseEndMax(left, right_start_max));
@@ -551,6 +559,8 @@ bool NonOverlappingRectanglesDisjunctivePropagator::PropagateTwoBoxes() {
   switch (state) {
     case 0: {  // Conflict.
       x_.ClearReason();
+      x_.AddPresenceReason(0);
+      x_.AddPresenceReason(1);
       x_.AddReasonForBeingBefore(0, 1);
       x_.AddReasonForBeingBefore(1, 0);
       return x_.ReportConflict();

@@ -1074,5 +1074,229 @@ CutGenerator CreateNoOverlap2dCompletionTimeCutGenerator(
   return result;
 }
 
+void GenerateNoOverlap2dEnergyCut(
+    const absl::StrongVector<IntegerVariable, double>& lp_values, Model* model,
+    IntegerTrail* integer_trail, IntegerEncoder* encoder,
+    LinearConstraintManager* manager,
+    const std::vector<LinearExpression>& energies, absl::Span<int> boxes,
+    const std::string& cut_name, SchedulingConstraintHelper* x_helper,
+    SchedulingConstraintHelper* y_helper) {
+  // Sort tasks by StartMin, tie breaked by EndMax.
+  std::sort(boxes.begin(), boxes.end(), [x_helper](int a, int b) {
+    return x_helper->StartMin(a) < x_helper->StartMin(b) ||
+           (x_helper->StartMin(a) == x_helper->StartMin(b) &&
+            x_helper->EndMax(a) < x_helper->EndMax(b));
+  });
+
+  for (int i1 = 0; i1 + 1 < boxes.size(); ++i1) {
+    // For each start time, we will keep the most violated cut
+    // generated while scanning the residual intervals.
+    int end_index_of_max_violation = -1;
+    double max_relative_violation = 1.01;
+    IntegerValue x_min_of_max_violation(0);
+    IntegerValue x_max_of_max_violation(0);
+    IntegerValue y_min_of_max_violation(0);
+    IntegerValue y_max_of_max_violation(0);
+
+    // Accumulates intervals and check for potential cuts.
+    double energy_lp = 0.0;
+    IntegerValue x_min = kMaxIntegerValue;
+    IntegerValue x_max = kMinIntegerValue;
+    IntegerValue y_min = kMaxIntegerValue;
+    IntegerValue y_max = kMinIntegerValue;
+
+    // We sort all tasks (start_min(task) >= start_min(start_index) by
+    // increasing end max.
+    std::vector<int> residual_intervals(boxes.begin() + i1, boxes.end());
+    std::sort(residual_intervals.begin(), residual_intervals.end(),
+              [&](int a, int b) {
+                return x_helper->EndMax(a) < x_helper->EndMax(b);
+              });
+
+    // Let's process residual tasks and evaluate the cut violation of
+    // the cut at each step. We follow the same structure as the cut
+    // creation code below.
+    for (int i2 = 0; i2 < residual_intervals.size(); ++i2) {
+      const int t = residual_intervals[i2];
+      if (x_helper->IsPresent(t) && y_helper->IsPresent(t)) {
+        if (EnergyIsDefined(energies[t])) {
+          energy_lp += energies[t].LpValue(lp_values);
+        } else {  // demand and size are not fixed.
+          energy_lp += x_helper->Sizes()[t].LpValue(lp_values) *
+                       ToDouble(y_helper->SizeMin(t));
+          energy_lp += y_helper->Sizes()[t].LpValue(lp_values) *
+                       ToDouble(x_helper->SizeMin(t));
+          energy_lp -= ToDouble(x_helper->SizeMin(t) * y_helper->SizeMin(t));
+        }
+      } else {
+        const Literal lit = x_helper->IsOptional(t)
+                                ? x_helper->PresenceLiteral(t)
+                                : y_helper->PresenceLiteral(t);
+        // TODO(user): Use the energy min if better than size_min *
+        // demand_min, here and when building the cut.
+        energy_lp += GetLiteralLpValue(lit, lp_values, encoder) *
+                     ToDouble(x_helper->SizeMin(t) * y_helper->SizeMin(t));
+      }
+
+      // Update bounding box.
+      x_min = std::min(x_min, x_helper->StartMin(t));
+      x_max = std::max(x_max, x_helper->EndMax(t));
+      y_min = std::min(y_min, y_helper->StartMin(t));
+      y_max = std::max(y_max, y_helper->EndMax(t));
+
+      // Compute the violation of the potential cut.
+      const double relative_violation =
+          energy_lp / ToDouble((x_max - x_min) * (y_max - y_min));
+      if (relative_violation > max_relative_violation) {
+        end_index_of_max_violation = i2;
+        max_relative_violation = relative_violation;
+        x_min_of_max_violation = x_min;
+        x_max_of_max_violation = x_max;
+        y_min_of_max_violation = y_min;
+        y_max_of_max_violation = y_max;
+      }
+    }
+    if (end_index_of_max_violation == -1) return;
+
+    // A maximal violated cut has been found.
+    bool cut_generated = true;
+    bool has_opt_cuts = false;
+    bool has_quadratic_cuts = false;
+    bool use_energy = false;
+
+    LinearConstraintBuilder cut(
+        model, kMinIntegerValue,
+        (x_max_of_max_violation - x_min_of_max_violation) *
+            (y_max_of_max_violation - y_min_of_max_violation));
+
+    // Build the cut.
+    for (int i2 = 0; i2 <= end_index_of_max_violation; ++i2) {
+      const int t = residual_intervals[i2];
+      if (x_helper->IsPresent(t) && y_helper->IsPresent(t)) {
+        if (EnergyIsDefined(energies[t])) {
+          // We favor the energy info instead of the McCormick relaxation.
+          cut.AddLinearExpression(energies[t]);
+          use_energy = true;
+        } else {
+          // This will add linear term if the size is fixed.
+          cut.AddQuadraticLowerBound(x_helper->Sizes()[t], y_helper->Sizes()[t],
+                                     integer_trail);
+          has_quadratic_cuts = true;
+        }
+      } else {
+        // TODO(user): use the offset of the energy expression if better
+        // than size_min * demand_min.
+        has_opt_cuts = true;
+        if (!x_helper->SizeIsFixed(t) && !y_helper->SizeIsFixed(t)) {
+          has_quadratic_cuts = true;
+        }
+        const Literal lit = x_helper->IsOptional(t)
+                                ? x_helper->PresenceLiteral(t)
+                                : y_helper->PresenceLiteral(t);
+        if (!cut.AddLiteralTerm(lit,
+                                x_helper->SizeMin(t) * y_helper->SizeMin(t))) {
+          cut_generated = false;
+          break;
+        }
+      }
+    }
+
+    if (cut_generated) {
+      std::string full_name = cut_name;
+      if (has_opt_cuts) full_name.append("_opt");
+      if (has_quadratic_cuts) full_name.append("_quad");
+      if (use_energy) full_name.append("_energy");
+
+      manager->AddCut(cut.Build(), full_name, lp_values);
+    }
+  }
+}
+
+CutGenerator CreateNoOverlap2dEnergyCutGenerator(
+    const std::vector<IntervalVariable>& x_intervals,
+    const std::vector<IntervalVariable>& y_intervals,
+    const std::vector<LinearExpression>& energies, Model* model) {
+  CutGenerator result;
+
+  SchedulingConstraintHelper* x_helper =
+      new SchedulingConstraintHelper(x_intervals, model);
+  model->TakeOwnership(x_helper);
+
+  SchedulingConstraintHelper* y_helper =
+      new SchedulingConstraintHelper(y_intervals, model);
+  model->TakeOwnership(y_helper);
+  AddIntegerVariableFromIntervals(x_helper, model, &result.vars);
+  AddIntegerVariableFromIntervals(y_helper, model, &result.vars);
+
+  Trail* trail = model->GetOrCreate<Trail>();
+  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+  IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
+
+  result.generate_cuts =
+      [integer_trail, trail, encoder, x_helper, y_helper, model, energies](
+          const absl::StrongVector<IntegerVariable, double>& lp_values,
+          LinearConstraintManager* manager) {
+        if (trail->CurrentDecisionLevel() > 0) return true;
+
+        if (!x_helper->SynchronizeAndSetTimeDirection(true)) return false;
+        if (!y_helper->SynchronizeAndSetTimeDirection(true)) return false;
+
+        const int num_boxes = x_helper->NumTasks();
+        std::vector<int> active_boxes;
+        std::vector<Rectangle> cached_rectangles(num_boxes);
+        for (int box = 0; box < num_boxes; ++box) {
+          if (y_helper->IsAbsent(box) || y_helper->IsAbsent(box)) continue;
+          // We cannot consider boxes controlled by 2 enforcement literals.
+          if (x_helper->IsOptional(box) && y_helper->IsOptional(box) &&
+              x_helper->PresenceLiteral(box) !=
+                  y_helper->PresenceLiteral(box)) {
+            continue;
+          }
+
+          // TODO(user): It might be possible/better to use some shifted value
+          // here, but for now this code is not in the hot spot, so better be
+          // defensive and only do connected components on really disjoint
+          // boxes.
+          Rectangle& rectangle = cached_rectangles[box];
+          rectangle.x_min = x_helper->StartMin(box);
+          rectangle.x_max = x_helper->EndMax(box);
+          rectangle.y_min = y_helper->StartMin(box);
+          rectangle.y_max = y_helper->EndMax(box);
+
+          active_boxes.push_back(box);
+        }
+
+        if (active_boxes.size() <= 1) return true;
+
+        std::vector<absl::Span<int>> components =
+            GetOverlappingRectangleComponents(cached_rectangles,
+                                              absl::MakeSpan(active_boxes));
+
+        for (absl::Span<int> boxes : components) {
+          if (boxes.size() <= 1) continue;
+
+          if (!x_helper->SynchronizeAndSetTimeDirection(true)) return false;
+          if (!y_helper->SynchronizeAndSetTimeDirection(true)) return false;
+          GenerateNoOverlap2dEnergyCut(
+              lp_values, model, integer_trail, encoder, manager, energies,
+              boxes, "NoOverlap2dXEnergy", x_helper, y_helper);
+          GenerateNoOverlap2dEnergyCut(
+              lp_values, model, integer_trail, encoder, manager, energies,
+              boxes, "NoOverlap2dYEnergy", y_helper, x_helper);
+
+          if (!x_helper->SynchronizeAndSetTimeDirection(false)) return false;
+          if (!y_helper->SynchronizeAndSetTimeDirection(false)) return false;
+          GenerateNoOverlap2dEnergyCut(
+              lp_values, model, integer_trail, encoder, manager, energies,
+              boxes, "NoOverlap2dXEnergyMirror", x_helper, y_helper);
+          GenerateNoOverlap2dEnergyCut(
+              lp_values, model, integer_trail, encoder, manager, energies,
+              boxes, "NoOverlap2dYEnergyMirror", y_helper, x_helper);
+        }
+        return true;
+      };
+  return result;
+}
+
 }  // namespace sat
 }  // namespace operations_research

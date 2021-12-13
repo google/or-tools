@@ -1213,7 +1213,9 @@ void LoadNoOverlap2dConstraint(const ConstraintProto& ct, Model* m) {
       mapping->Intervals(ct.no_overlap_2d().y_intervals());
   m->Add(NonOverlappingRectangles(
       x_intervals, y_intervals,
-      !ct.no_overlap_2d().boxes_with_null_area_can_overlap()));
+      !ct.no_overlap_2d().boxes_with_null_area_can_overlap(),
+      m->GetOrCreate<SatParameters>()
+          ->use_cumulative_constraint_in_no_overlap_2d_constraint()));
 }
 
 void LoadCumulativeConstraint(const ConstraintProto& ct, Model* m) {

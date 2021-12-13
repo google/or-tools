@@ -32,8 +32,8 @@
 namespace operations_research {
 namespace sat {
 
-// For a given set of intervals and demands, we compute the maximum energy of
-// each task and make sure it is less than the span of the intervals * its
+// For a given set of intervals and demands, we compute the energy of
+// each task and make sure their sum fits in the span of the intervals * its
 // capacity.
 //
 // If an interval is optional, it contributes
@@ -88,6 +88,26 @@ CutGenerator CreateCumulativePrecedenceCutGenerator(
 CutGenerator CreateNoOverlap2dCompletionTimeCutGenerator(
     const std::vector<IntervalVariable>& x_intervals,
     const std::vector<IntervalVariable>& y_intervals, Model* model);
+
+// Energetic cuts for the no_overlap_2d constraint.
+//
+// For a given set of rectangles, we compute the area of each rectangle
+// and make sure their sum is less than the area of the bounding interval.
+//
+// If an interval is optional, it contributes
+//    min_size_x * min_size_y * presence_literal
+// amount of total area.
+//
+// If an interval is performed, we use the linear area formulation (if
+// defined, that is if different from a constant -1), or the McCormick
+// relaxation of the size_x * size_y if not defined.
+//
+// The maximum area is the area of the bounding rectangle of each intervals
+// at level 0.
+CutGenerator CreateNoOverlap2dEnergyCutGenerator(
+    const std::vector<IntervalVariable>& x_intervals,
+    const std::vector<IntervalVariable>& y_intervals,
+    const std::vector<LinearExpression>& energies, Model* model);
 
 // For a given set of intervals, we first compute the min and max of all
 // intervals. Then we create a cut that indicates that all intervals must fit

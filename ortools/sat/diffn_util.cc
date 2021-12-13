@@ -66,6 +66,9 @@ bool ReportEnergyConflict(Rectangle bounding_box, absl::Span<const int> boxes,
     x->AddEnergyMinInIntervalReason(b, bounding_box.x_min, bounding_box.x_max);
     y->AddEnergyMinInIntervalReason(b, bounding_box.y_min, bounding_box.y_max);
 
+    x->AddPresenceReason(b);
+    y->AddPresenceReason(b);
+
     total_energy += x->SizeMin(b) * y->SizeMin(b);
 
     // We abort early if a subset of boxes is enough.

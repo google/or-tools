@@ -24,7 +24,7 @@ option csharp_namespace = "Google.OrTools.Sat";
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 200
+// NEXT TAG: 201
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -614,6 +614,14 @@ message SatParameters {
   // depending on the problem, turning this off may lead to a faster solution.
   optional bool use_disjunctive_constraint_in_cumulative_constraint = 80
       [default = true];
+
+  // When this is true, the no_overlap_2d constraint is reinforced with
+  // propagators from the cumulative constraints. It consists of ignoring the
+  // position of rectangles in one position and projecting the no_overlap_2d on
+  // the other dimension to create a cumulative constraint. This is done on both
+  // axis.This additional level supplements the default level of reasoning.
+  optional bool use_cumulative_constraint_in_no_overlap_2d_constraint = 200
+      [default = false];
 
   // A non-negative level indicating the type of constraints we consider in the
   // LP relaxation. At level zero, no LP relaxation is used. At level 1, only

@@ -1760,6 +1760,9 @@ class CpModel(object):
     on a plane. Each rectangle is aligned with the X and Y axis, and is defined
     by two intervals which represent its projection onto the X and Y axis.
 
+    Furthermore, one box is optional if at least one of the x or y interval is
+    optional.
+
     Args:
       x_intervals: The X coordinates of the rectangles.
       y_intervals: The Y coordinates of the rectangles.
@@ -1782,8 +1785,8 @@ class CpModel(object):
 
         for all t:
           sum(demands[i]
-            if (start(intervals[t]) <= t < end(intervals[t])) and
-            (t is present)) <= capacity
+            if (start(intervals[i]) <= t < end(intervals[i])) and
+            (intervals[i] is present)) <= capacity
 
     Args:
       intervals: The list of intervals.

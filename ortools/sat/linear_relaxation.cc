@@ -28,6 +28,7 @@
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_expr.h"
+#include "ortools/sat/intervals.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/sat_base.h"
@@ -802,14 +803,30 @@ void AppendNoOverlap2dRelaxation(const ConstraintProto& ct, Model* model,
 
   LinearConstraintBuilder lc(model, IntegerValue(0), max_area);
   for (int i = 0; i < ct.no_overlap_2d().x_intervals_size(); ++i) {
-    DCHECK(!intervals_repository->IsOptional(x_intervals[i]));
-    DCHECK(!intervals_repository->IsOptional(y_intervals[i]));
-    LinearConstraintBuilder linear_energy(model);
-    if (DetectLinearEncodingOfProducts(x_sizes[i], y_sizes[i], model,
-                                       &linear_energy)) {
-      lc.AddLinearExpression(linear_energy.BuildExpression());
-    } else {
-      lc.AddQuadraticLowerBound(x_sizes[i], y_sizes[i], integer_trail);
+    if (intervals_repository->IsPresent(x_intervals[i]) &&
+        intervals_repository->IsPresent(y_intervals[i])) {
+      LinearConstraintBuilder linear_energy(model);
+      if (DetectLinearEncodingOfProducts(x_sizes[i], y_sizes[i], model,
+                                         &linear_energy)) {
+        lc.AddLinearExpression(linear_energy.BuildExpression());
+      } else {
+        lc.AddQuadraticLowerBound(x_sizes[i], y_sizes[i], integer_trail);
+      }
+    } else if ((intervals_repository->PresenceLiteral(x_intervals[i]) ==
+                intervals_repository->PresenceLiteral(y_intervals[i])) ||
+               intervals_repository->IsPresent(x_intervals[i]) ||
+               intervals_repository->IsPresent(y_intervals[i])) {
+      // We have only one active literal.
+      const Literal presence_literal =
+          intervals_repository->IsPresent(x_intervals[i])
+              ? intervals_repository->PresenceLiteral(y_intervals[i])
+              : intervals_repository->PresenceLiteral(x_intervals[i]);
+      const IntegerValue area_min =
+          integer_trail->LevelZeroLowerBound(x_sizes[i]) *
+          integer_trail->LevelZeroLowerBound(y_sizes[i]);
+      if (area_min != 0 && !lc.AddLiteralTerm(presence_literal, area_min)) {
+        return;
+      }
     }
   }
   relaxation->linear_constraints.push_back(lc.Build());
@@ -1114,8 +1131,7 @@ void TryToLinearizeConstraint(const CpModelProto& model_proto,
       // Adds an energetic relaxation (sum of areas fits in bounding box).
       AppendNoOverlap2dRelaxation(ct, model, relaxation);
       if (linearization_level > 1) {
-        // Adds a completion time cut generator.
-        // TODO(user): investigate adding an energetic cut generator.
+        // Adds a completion time cut generator and an energetic cut generator.
         AddNoOverlap2dCutGenerator(ct, model, relaxation);
       }
       break;
@@ -1291,10 +1307,39 @@ void AddNoOverlap2dCutGenerator(const ConstraintProto& ct, Model* m,
       mapping->Intervals(ct.no_overlap_2d().x_intervals());
   std::vector<IntervalVariable> y_intervals =
       mapping->Intervals(ct.no_overlap_2d().y_intervals());
-  // TODO(user): We can add CumulativeEnergyCuts for no_overlap_2d if boxes
-  // do not have a fixed size.
   relaxation->cut_generators.push_back(
       CreateNoOverlap2dCompletionTimeCutGenerator(x_intervals, y_intervals, m));
+
+  // Checks if at least one rectangle has a variable dimension or is optional.
+  IntervalsRepository* intervals_repository =
+      m->GetOrCreate<IntervalsRepository>();
+  bool has_variable_part = false;
+  for (int i = 0; i < x_intervals.size(); ++i) {
+    if (intervals_repository->IsOptional(x_intervals[i]) ||
+        intervals_repository->IsOptional(y_intervals[i])) {
+      has_variable_part = true;
+      break;
+    }
+    if (intervals_repository->MinSize(x_intervals[i]) !=
+            intervals_repository->MaxSize(x_intervals[i]) ||
+        intervals_repository->MinSize(y_intervals[i]) !=
+            intervals_repository->MaxSize(y_intervals[i])) {
+      has_variable_part = true;
+      break;
+    }
+  }
+  if (has_variable_part) {
+    std::vector<LinearExpression> energies;
+    std::vector<AffineExpression> x_sizes;
+    std::vector<AffineExpression> y_sizes;
+    for (int i = 0; i < x_intervals.size(); ++i) {
+      x_sizes.push_back(intervals_repository->Size(x_intervals[i]));
+      y_sizes.push_back(intervals_repository->Size(y_intervals[i]));
+    }
+    FillEnergies(x_sizes, y_sizes, m, &energies);
+    relaxation->cut_generators.push_back(CreateNoOverlap2dEnergyCutGenerator(
+        x_intervals, y_intervals, energies, m));
+  }
 }
 
 void AddLinMaxCutGenerator(const ConstraintProto& ct, Model* m,
