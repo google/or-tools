@@ -219,14 +219,14 @@ int Run() {
     response.set_status(CpSolverStatus::MODEL_INVALID);
     return EXIT_SUCCESS;
   }
-  if (absl::GetFlag(FLAGS_use_cp_model) && cp_model.variables_size() == 0) {
+  if (!absl::GetFlag(FLAGS_use_cp_model)) {
     LOG(INFO) << "Converting to CpModelProto ...";
     cp_model = BooleanProblemToCpModelproto(problem);
   }
 
   // TODO(user): clean this hack. Ideally LinearBooleanProblem should be
   // completely replaced by the more general CpModelProto.
-  if (!cp_model.variables().empty()) {
+  if (absl::GetFlag(FLAGS_use_cp_model)) {
     problem.Clear();  // We no longer need it, release memory.
     Model model;
     model.Add(NewSatParameters(parameters));
