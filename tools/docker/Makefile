@@ -300,8 +300,8 @@ ${alpine_export_targets}: python_%_alpine_export: python_%_alpine_build | export
 	${DOCKER_RUN_CMD} \
  -v `pwd`/export:/export \
  -it \
- --name ortools_$$< \
- ${IMAGE}:$$< \
+ --name ortools_$< \
+ ${IMAGE}:$< \
  "cp build*/python/dist/*.whl /export/python"
 
 ## MERGE DISTRO ##
