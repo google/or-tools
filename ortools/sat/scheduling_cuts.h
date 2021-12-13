@@ -99,15 +99,13 @@ CutGenerator CreateNoOverlap2dCompletionTimeCutGenerator(
 // amount of total area.
 //
 // If an interval is performed, we use the linear area formulation (if
-// defined, that is if different from a constant -1), or the McCormick
-// relaxation of the size_x * size_y if not defined.
+// possible), or the McCormick relaxation of the size_x * size_y.
 //
 // The maximum area is the area of the bounding rectangle of each intervals
 // at level 0.
 CutGenerator CreateNoOverlap2dEnergyCutGenerator(
     const std::vector<IntervalVariable>& x_intervals,
-    const std::vector<IntervalVariable>& y_intervals,
-    const std::vector<LinearExpression>& energies, Model* model);
+    const std::vector<IntervalVariable>& y_intervals, Model* model);
 
 // For a given set of intervals, we first compute the min and max of all
 // intervals. Then we create a cut that indicates that all intervals must fit

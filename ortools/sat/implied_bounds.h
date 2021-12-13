@@ -214,6 +214,18 @@ bool DetectLinearEncodingOfProducts(const AffineExpression& left,
                                     const AffineExpression& right, Model* model,
                                     LinearConstraintBuilder* builder);
 
+// Try to linearize each term of the inner product of left and right.
+// If the linearization not possible at position i, then
+// ProductIsLinearized(energies[i]) will return false.
+void LinearizeInnerProduct(const std::vector<AffineExpression>& left,
+                           const std::vector<AffineExpression>& right,
+                           Model* model,
+                           std::vector<LinearExpression>* energies);
+
+// Returns whether the corresponding expression is a valid linearization of
+// the product of two affine expressions.
+bool ProductIsLinearized(const LinearExpression& expr);
+
 }  // namespace sat
 }  // namespace operations_research
 

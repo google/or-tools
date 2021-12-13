@@ -430,5 +430,38 @@ bool DetectLinearEncodingOfProducts(const AffineExpression& left,
   return true;
 }
 
+LinearExpression NotLinearizedEnergy() {
+  LinearExpression result;
+  result.offset = std::numeric_limits<int64_t>::min();
+  return result;
+}
+
+bool ProductIsLinearized(const LinearExpression& expr) {
+  return !expr.vars.empty() ||
+         expr.offset >= std::numeric_limits<int64_t>::min();
+}
+
+void LinearizeInnerProduct(const std::vector<AffineExpression>& left,
+                           const std::vector<AffineExpression>& right,
+                           Model* model,
+                           std::vector<LinearExpression>* energies) {
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  for (int i = 0; i < left.size(); ++i) {
+    LinearConstraintBuilder builder(model);
+    if (DetectLinearEncodingOfProducts(left[i], right[i], model, &builder)) {
+      VLOG(3) << "linearized energy: "
+              << builder.BuildExpression().DebugString();
+      energies->push_back(builder.BuildExpression());
+    } else {
+      VLOG(2) << "Product is not linearizable: demands "
+              << left[i].DebugString() << " with var domain "
+              << integer_trail->InitialVariableDomain(left[i].var)
+              << ", size = " << right[i].DebugString() << " with var domain "
+              << integer_trail->InitialVariableDomain(right[i].var);
+      energies->push_back(NotLinearizedEnergy());
+    }
+  }
+}
+
 }  // namespace sat
 }  // namespace operations_research

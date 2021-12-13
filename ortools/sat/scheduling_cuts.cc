@@ -91,10 +91,6 @@ void AddIntegerVariableFromIntervals(SchedulingConstraintHelper* helper,
   gtl::STLSortAndRemoveDuplicates(vars);
 }
 
-bool EnergyIsDefined(const LinearExpression& energy) {
-  return !energy.vars.empty() || energy.offset >= 0;
-}
-
 }  // namespace
 
 std::function<bool(const absl::StrongVector<IntegerVariable, double>&,
@@ -188,7 +184,7 @@ GenerateCumulativeEnergyCuts(const std::string& cut_name,
         const int t = residual_intervals[i2];
         intervals_not_visited.erase(t);
         if (helper->IsPresent(t)) {
-          if (EnergyIsDefined(energies[t])) {
+          if (ProductIsLinearized(energies[t])) {
             energy_lp += energies[t].LpValue(lp_values);
           } else {  // demand and size are not fixed.
             DCHECK(!demands.empty());
@@ -284,7 +280,7 @@ GenerateCumulativeEnergyCuts(const std::string& cut_name,
       for (int i2 = 0; i2 <= end_index_of_max_violation; ++i2) {
         const int t = residual_intervals[i2];
         if (helper->IsPresent(t)) {
-          if (EnergyIsDefined(energies[t])) {
+          if (ProductIsLinearized(energies[t])) {
             // We favor the energy info instead of the McCormick relaxation.
             cut.AddLinearExpression(energies[t]);
             use_energy = true;
@@ -956,7 +952,7 @@ CutGenerator CreateCumulativeCompletionTimeCutGenerator(
               event.energy_min = size_min * demand_min;
               // TODO(user): Investigate and re-enable a correct version.
               if (/*DISABLES_CODE*/ (false) &&
-                  EnergyIsDefined(energies[index])) {
+                  ProductIsLinearized(energies[index])) {
                 const IntegerValue linearized_energy =
                     LinExprLowerBound(energies[index], *integer_trail);
                 if (linearized_energy > event.energy_min) {
@@ -1010,9 +1006,10 @@ CutGenerator CreateNoOverlap2dCompletionTimeCutGenerator(
         std::vector<IntegerValue> cached_areas(num_boxes);
         std::vector<Rectangle> cached_rectangles(num_boxes);
         for (int box = 0; box < num_boxes; ++box) {
+          if (!y_helper->IsPresent(box) || !y_helper->IsPresent(box)) continue;
+
           cached_areas[box] = x_helper->SizeMin(box) * y_helper->SizeMin(box);
           if (cached_areas[box] == 0) continue;
-          if (!y_helper->IsPresent(box) || !y_helper->IsPresent(box)) continue;
 
           // TODO(user): It might be possible/better to use some shifted value
           // here, but for now this code is not in the hot spot, so better be
@@ -1119,7 +1116,7 @@ void GenerateNoOverlap2dEnergyCut(
     for (int i2 = 0; i2 < residual_intervals.size(); ++i2) {
       const int t = residual_intervals[i2];
       if (x_helper->IsPresent(t) && y_helper->IsPresent(t)) {
-        if (EnergyIsDefined(energies[t])) {
+        if (ProductIsLinearized(energies[t])) {
           energy_lp += energies[t].LpValue(lp_values);
         } else {  // demand and size are not fixed.
           energy_lp += x_helper->Sizes()[t].LpValue(lp_values) *
@@ -1159,7 +1156,6 @@ void GenerateNoOverlap2dEnergyCut(
     if (end_index_of_max_violation == -1) return;
 
     // A maximal violated cut has been found.
-    bool cut_generated = true;
     bool has_opt_cuts = false;
     bool has_quadratic_cuts = false;
     bool use_energy = false;
@@ -1173,7 +1169,7 @@ void GenerateNoOverlap2dEnergyCut(
     for (int i2 = 0; i2 <= end_index_of_max_violation; ++i2) {
       const int t = residual_intervals[i2];
       if (x_helper->IsPresent(t) && y_helper->IsPresent(t)) {
-        if (EnergyIsDefined(energies[t])) {
+        if (ProductIsLinearized(energies[t])) {
           // We favor the energy info instead of the McCormick relaxation.
           cut.AddLinearExpression(energies[t]);
           use_energy = true;
@@ -1186,37 +1182,45 @@ void GenerateNoOverlap2dEnergyCut(
       } else {
         // TODO(user): use the offset of the energy expression if better
         // than size_min * demand_min.
-        has_opt_cuts = true;
-        if (!x_helper->SizeIsFixed(t) && !y_helper->SizeIsFixed(t)) {
-          has_quadratic_cuts = true;
-        }
-        const Literal lit = x_helper->IsOptional(t)
+        DCHECK(!x_helper->IsPresent(t) || !y_helper->IsPresent(t));
+        const Literal lit = x_helper->IsOptional(t) && !x_helper->IsPresent(t)
                                 ? x_helper->PresenceLiteral(t)
                                 : y_helper->PresenceLiteral(t);
-        if (!cut.AddLiteralTerm(lit,
-                                x_helper->SizeMin(t) * y_helper->SizeMin(t))) {
-          cut_generated = false;
-          break;
+        if (cut.AddLiteralTerm(lit,
+                               x_helper->SizeMin(t) * y_helper->SizeMin(t))) {
+          has_opt_cuts = true;
+          if (!x_helper->SizeIsFixed(t) && !y_helper->SizeIsFixed(t)) {
+            has_quadratic_cuts = true;
+          }
         }
       }
     }
 
-    if (cut_generated) {
-      std::string full_name = cut_name;
-      if (has_opt_cuts) full_name.append("_opt");
-      if (has_quadratic_cuts) full_name.append("_quad");
-      if (use_energy) full_name.append("_energy");
+    std::string full_name = cut_name;
+    if (has_opt_cuts) full_name.append("_opt");
+    if (has_quadratic_cuts) full_name.append("_quad");
+    if (use_energy) full_name.append("_energy");
 
-      manager->AddCut(cut.Build(), full_name, lp_values);
-    }
+    manager->AddCut(cut.Build(), full_name, lp_values);
   }
 }
 
 CutGenerator CreateNoOverlap2dEnergyCutGenerator(
     const std::vector<IntervalVariable>& x_intervals,
-    const std::vector<IntervalVariable>& y_intervals,
-    const std::vector<LinearExpression>& energies, Model* model) {
+    const std::vector<IntervalVariable>& y_intervals, Model* model) {
   CutGenerator result;
+  IntervalsRepository* intervals_repository =
+      model->GetOrCreate<IntervalsRepository>();
+  const int num_boxes = x_intervals.size();
+
+  std::vector<LinearExpression> energies;
+  std::vector<AffineExpression> x_sizes;
+  std::vector<AffineExpression> y_sizes;
+  for (int i = 0; i < num_boxes; ++i) {
+    x_sizes.push_back(intervals_repository->Size(x_intervals[i]));
+    y_sizes.push_back(intervals_repository->Size(y_intervals[i]));
+  }
+  LinearizeInnerProduct(x_sizes, y_sizes, model, &energies);
 
   SchedulingConstraintHelper* x_helper =
       new SchedulingConstraintHelper(x_intervals, model);
@@ -1246,8 +1250,10 @@ CutGenerator CreateNoOverlap2dEnergyCutGenerator(
         std::vector<Rectangle> cached_rectangles(num_boxes);
         for (int box = 0; box < num_boxes; ++box) {
           if (y_helper->IsAbsent(box) || y_helper->IsAbsent(box)) continue;
-          // We cannot consider boxes controlled by 2 enforcement literals.
+          // We cannot consider boxes controlled by 2 active enforcement
+          // literals.
           if (x_helper->IsOptional(box) && y_helper->IsOptional(box) &&
+              !x_helper->IsPresent(box) && !y_helper->IsPresent(box) &&
               x_helper->PresenceLiteral(box) !=
                   y_helper->PresenceLiteral(box)) {
             continue;
@@ -1272,20 +1278,26 @@ CutGenerator CreateNoOverlap2dEnergyCutGenerator(
             GetOverlappingRectangleComponents(cached_rectangles,
                                               absl::MakeSpan(active_boxes));
 
+        // Forward pass.
+        if (!x_helper->SynchronizeAndSetTimeDirection(true)) return false;
+        if (!y_helper->SynchronizeAndSetTimeDirection(true)) return false;
         for (absl::Span<int> boxes : components) {
           if (boxes.size() <= 1) continue;
 
-          if (!x_helper->SynchronizeAndSetTimeDirection(true)) return false;
-          if (!y_helper->SynchronizeAndSetTimeDirection(true)) return false;
           GenerateNoOverlap2dEnergyCut(
               lp_values, model, integer_trail, encoder, manager, energies,
               boxes, "NoOverlap2dXEnergy", x_helper, y_helper);
           GenerateNoOverlap2dEnergyCut(
               lp_values, model, integer_trail, encoder, manager, energies,
               boxes, "NoOverlap2dYEnergy", y_helper, x_helper);
+        }
 
-          if (!x_helper->SynchronizeAndSetTimeDirection(false)) return false;
-          if (!y_helper->SynchronizeAndSetTimeDirection(false)) return false;
+        // Backward pass.
+        if (!x_helper->SynchronizeAndSetTimeDirection(false)) return false;
+        if (!y_helper->SynchronizeAndSetTimeDirection(false)) return false;
+        for (absl::Span<int> boxes : components) {
+          if (boxes.size() <= 1) continue;
+
           GenerateNoOverlap2dEnergyCut(
               lp_values, model, integer_trail, encoder, manager, energies,
               boxes, "NoOverlap2dXEnergyMirror", x_helper, y_helper);

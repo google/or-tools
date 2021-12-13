@@ -692,33 +692,6 @@ void AddCumulativeRelaxation(const std::vector<IntervalVariable>& intervals,
   relaxation->linear_constraints.push_back(lc.Build());
 }
 
-LinearExpression NotLinearizedEnergy() {
-  LinearExpression result;
-  result.offset = -1;
-  return result;
-}
-
-void FillEnergies(const std::vector<AffineExpression>& demands,
-                  const std::vector<AffineExpression>& sizes, Model* model,
-                  std::vector<LinearExpression>* energies) {
-  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
-  for (int i = 0; i < demands.size(); ++i) {
-    LinearConstraintBuilder builder(model);
-    if (DetectLinearEncodingOfProducts(demands[i], sizes[i], model, &builder)) {
-      VLOG(3) << "linearized energy: "
-              << builder.BuildExpression().DebugString();
-      energies->push_back(builder.BuildExpression());
-    } else {
-      VLOG(2) << "Product is not linearizable: demands "
-              << demands[i].DebugString() << " with var domain "
-              << integer_trail->InitialVariableDomain(demands[i].var)
-              << ", size = " << sizes[i].DebugString() << " with var domain "
-              << integer_trail->InitialVariableDomain(sizes[i].var);
-      energies->push_back(NotLinearizedEnergy());
-    }
-  }
-}
-
 void AppendCumulativeRelaxation(const CpModelProto& model_proto,
                                 const ConstraintProto& ct, Model* model,
                                 LinearRelaxation* relaxation) {
@@ -743,7 +716,7 @@ void AppendCumulativeRelaxation(const CpModelProto& model_proto,
     demands.push_back(mapping->Affine(ct.cumulative().demands(i)));
     sizes.push_back(intervals_repository->Size(intervals[i]));
   }
-  FillEnergies(demands, sizes, model, &energies);
+  LinearizeInnerProduct(demands, sizes, model, &energies);
   AddCumulativeRelaxation(intervals, demands, energies, capacity_upper_bound,
                           model, relaxation);
 }
@@ -812,10 +785,10 @@ void AppendNoOverlap2dRelaxation(const ConstraintProto& ct, Model* model,
       } else {
         lc.AddQuadraticLowerBound(x_sizes[i], y_sizes[i], integer_trail);
       }
-    } else if ((intervals_repository->PresenceLiteral(x_intervals[i]) ==
-                intervals_repository->PresenceLiteral(y_intervals[i])) ||
-               intervals_repository->IsPresent(x_intervals[i]) ||
-               intervals_repository->IsPresent(y_intervals[i])) {
+    } else if (intervals_repository->IsPresent(x_intervals[i]) ||
+               intervals_repository->IsPresent(y_intervals[i]) ||
+               (intervals_repository->PresenceLiteral(x_intervals[i]) ==
+                intervals_repository->PresenceLiteral(y_intervals[i]))) {
       // We have only one active literal.
       const Literal presence_literal =
           intervals_repository->IsPresent(x_intervals[i])
@@ -824,8 +797,8 @@ void AppendNoOverlap2dRelaxation(const ConstraintProto& ct, Model* model,
       const IntegerValue area_min =
           integer_trail->LevelZeroLowerBound(x_sizes[i]) *
           integer_trail->LevelZeroLowerBound(y_sizes[i]);
-      if (area_min != 0 && !lc.AddLiteralTerm(presence_literal, area_min)) {
-        return;
+      if (area_min != 0) {
+        (void)lc.AddLiteralTerm(presence_literal, area_min);
       }
     }
   }
@@ -1270,7 +1243,7 @@ void AddCumulativeCutGenerator(const ConstraintProto& ct, Model* m,
     demands.push_back(mapping->Affine(ct.cumulative().demands(i)));
     sizes.push_back(intervals_repository->Size(intervals[i]));
   }
-  FillEnergies(demands, sizes, m, &energies);
+  LinearizeInnerProduct(demands, sizes, m, &energies);
 
   relaxation->cut_generators.push_back(
       CreateCumulativeTimeTableCutGenerator(intervals, capacity, demands, m));
@@ -1315,11 +1288,22 @@ void AddNoOverlap2dCutGenerator(const ConstraintProto& ct, Model* m,
       m->GetOrCreate<IntervalsRepository>();
   bool has_variable_part = false;
   for (int i = 0; i < x_intervals.size(); ++i) {
-    if (intervals_repository->IsOptional(x_intervals[i]) ||
-        intervals_repository->IsOptional(y_intervals[i])) {
+    // Ignore absent intervals.
+    if (intervals_repository->IsAbsent(x_intervals[i]) ||
+        intervals_repository->IsAbsent(y_intervals[i])) {
+      continue;
+    }
+
+    // Checks non-present intervals.
+    if ((intervals_repository->IsOptional(x_intervals[i]) &&
+         !intervals_repository->IsPresent(x_intervals[i])) ||
+        (intervals_repository->IsOptional(y_intervals[i]) &&
+         !intervals_repository->IsPresent(y_intervals[i]))) {
       has_variable_part = true;
       break;
     }
+
+    // Checks variable sized intervals.
     if (intervals_repository->MinSize(x_intervals[i]) !=
             intervals_repository->MaxSize(x_intervals[i]) ||
         intervals_repository->MinSize(y_intervals[i]) !=
@@ -1329,16 +1313,8 @@ void AddNoOverlap2dCutGenerator(const ConstraintProto& ct, Model* m,
     }
   }
   if (has_variable_part) {
-    std::vector<LinearExpression> energies;
-    std::vector<AffineExpression> x_sizes;
-    std::vector<AffineExpression> y_sizes;
-    for (int i = 0; i < x_intervals.size(); ++i) {
-      x_sizes.push_back(intervals_repository->Size(x_intervals[i]));
-      y_sizes.push_back(intervals_repository->Size(y_intervals[i]));
-    }
-    FillEnergies(x_sizes, y_sizes, m, &energies);
-    relaxation->cut_generators.push_back(CreateNoOverlap2dEnergyCutGenerator(
-        x_intervals, y_intervals, energies, m));
+    relaxation->cut_generators.push_back(
+        CreateNoOverlap2dEnergyCutGenerator(x_intervals, y_intervals, m));
   }
 }
 

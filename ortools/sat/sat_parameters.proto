@@ -619,9 +619,8 @@ message SatParameters {
   // propagators from the cumulative constraints. It consists of ignoring the
   // position of rectangles in one position and projecting the no_overlap_2d on
   // the other dimension to create a cumulative constraint. This is done on both
-  // axis.This additional level supplements the default level of reasoning.
-  optional bool use_cumulative_constraint_in_no_overlap_2d_constraint = 200
-      [default = false];
+  // axis. This additional level supplements the default level of reasoning.
+  optional bool use_cumulative_in_no_overlap_2d = 200 [default = false];
 
   // A non-negative level indicating the type of constraints we consider in the
   // LP relaxation. At level zero, no LP relaxation is used. At level 1, only
