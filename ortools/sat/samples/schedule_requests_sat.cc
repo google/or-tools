@@ -99,7 +99,7 @@ void ScheduleRequestsSat() {
   // Creates shift variables.
   // shifts[(n, d, s)]: nurse 'n' works shift 's' on day 'd'.
   // [START variables]
-  std::map<std::tuple<int, int, int>, IntVar> shifts;
+  std::map<std::tuple<int, int, int>, BoolVar> shifts;
   for (int n : all_nurses) {
     for (int d : all_days) {
       for (int s : all_shifts) {
@@ -115,12 +115,12 @@ void ScheduleRequestsSat() {
   // [START exactly_one_nurse]
   for (int d : all_days) {
     for (int s : all_shifts) {
-      std::vector<IntVar> x;
+      LinearExpr sum;
       for (int n : all_nurses) {
         auto key = std::make_tuple(n, d, s);
-        x.push_back(shifts[key]);
+        sum += shifts[key];
       }
-      cp_model.AddEquality(LinearExpr::Sum(x), 1);
+      cp_model.AddEquality(sum, 1);
     }
   }
   // [END exactly_one_nurse]
@@ -129,12 +129,12 @@ void ScheduleRequestsSat() {
   // [START at_most_one_shift]
   for (int n : all_nurses) {
     for (int d : all_days) {
-      std::vector<IntVar> x;
+      LinearExpr sum;
       for (int s : all_shifts) {
         auto key = std::make_tuple(n, d, s);
-        x.push_back(shifts[key]);
+        sum += shifts[key];
       }
-      cp_model.AddLessOrEqual(LinearExpr::Sum(x), 1);
+      cp_model.AddLessOrEqual(sum, 1);
     }
   }
   // [END at_most_one_shift]
@@ -152,18 +152,15 @@ void ScheduleRequestsSat() {
     max_shifts_per_nurse = min_shifts_per_nurse + 1;
   }
   for (int n : all_nurses) {
-    std::vector<IntVar> num_shifts_worked;
-    // int num_shifts_worked = 0;
+    LinearExpr num_worked_shifts;
     for (int d : all_days) {
       for (int s : all_shifts) {
         auto key = std::make_tuple(n, d, s);
-        num_shifts_worked.push_back(shifts[key]);
+        num_worked_shifts += shifts[key];
       }
     }
-    cp_model.AddLessOrEqual(min_shifts_per_nurse,
-                            LinearExpr::Sum(num_shifts_worked));
-    cp_model.AddLessOrEqual(LinearExpr::Sum(num_shifts_worked),
-                            max_shifts_per_nurse);
+    cp_model.AddLessOrEqual(min_shifts_per_nurse, num_worked_shifts);
+    cp_model.AddLessOrEqual(num_worked_shifts, max_shifts_per_nurse);
   }
   // [END assign_nurses_evenly]
 

@@ -49,7 +49,7 @@ void MultipleKnapsackSat() {
   // Variables.
   // [START variables]
   // x[i, b] = 1 if item i is packed in bin b.
-  std::map<std::tuple<int, int>, IntVar> x;
+  std::map<std::tuple<int, int>, BoolVar> x;
   for (int i : all_items) {
     for (int b : all_bins) {
       auto key = std::make_tuple(i, b);
