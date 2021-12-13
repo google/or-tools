@@ -13,6 +13,7 @@
 # limitations under the License.
 """Solves the Hidato problem with the CP-SAT solver."""
 
+from absl import app
 from ortools.sat.python import visualization
 from ortools.sat.python import cp_model
 
@@ -188,5 +189,10 @@ def solve_hidato(puzzle, index):
             print('  - wall time : %f s' % solver.WallTime())
 
 
-for pb in range(1, 7):
-    solve_hidato(build_puzzle(pb), pb)
+def main(_):
+    for pb in range(1, 7):
+        solve_hidato(build_puzzle(pb), pb)
+
+
+if __name__ == '__main__':
+    app.run(main)

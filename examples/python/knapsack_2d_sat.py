@@ -34,7 +34,8 @@ flags.DEFINE_string('output_proto', '',
                     'Output file to write the cp_model proto to.')
 flags.DEFINE_string('params', 'num_search_workers:16,log_search_progress:true',
                     'Sat solver parameters.')
-flags.DEFINE_string('model', 'rotation', '\'duplicate\' or \'rotation\'')
+flags.DEFINE_string('model', 'rotation',
+                    '\'duplicate\' or \'rotation\' or \'optional\'')
 
 
 def build_data():
@@ -156,6 +157,98 @@ def solve_with_duplicate_items(data, max_height, max_width):
         print(data)
 
 
+def solve_with_duplicate_optional_items(data, max_height, max_width):
+    """Solve the problem by building 2 optional items (rotated or not) for each item."""
+    # Derived data (expanded to individual items).
+    data_widths = data['width'].to_numpy()
+    data_heights = data['height'].to_numpy()
+    data_availability = data['available'].to_numpy()
+    data_values = data['value'].to_numpy()
+
+    # Non duplicated items data.
+    base_item_widths = np.repeat(data_widths, data_availability)
+    base_item_heights = np.repeat(data_heights, data_availability)
+    base_item_values = np.repeat(data_values, data_availability)
+    num_data_items = len(base_item_values)
+
+    # Create rotated items by duplicating.
+    item_widths = np.concatenate((base_item_widths, base_item_heights))
+    item_heights = np.concatenate((base_item_heights, base_item_widths))
+    item_values = np.concatenate((base_item_values, base_item_values))
+
+    num_items = len(item_values)
+
+    # OR-Tools model
+    model = cp_model.CpModel()
+
+    # Variables
+    x_starts = []
+    y_starts = []
+    is_used = []
+    x_intervals = []
+    y_intervals = []
+
+    for i in range(num_items):
+        ## Is the item used?
+        is_used.append(model.NewBoolVar(f'is_used{i}'))
+
+        ## Item coordinates.
+        x_starts.append(
+            model.NewIntVar(0, max_width - int(item_widths[i]), f'x_start{i}'))
+        y_starts.append(
+            model.NewIntVar(0, max_height - int(item_heights[i]),
+                            f'y_start{i}'))
+
+        ## Interval variables.
+        x_intervals.append(
+            model.NewOptionalFixedSizeIntervalVar(x_starts[i], item_widths[i],
+                                                  is_used[i], f'x_interval{i}'))
+        y_intervals.append(
+            model.NewOptionalFixedSizeIntervalVar(y_starts[i], item_heights[i],
+                                                  is_used[i], f'y_interval{i}'))
+
+    # Constraints.
+
+    ## Only one of non-rotated/rotated pair can be used.
+    for i in range(num_data_items):
+        model.Add(is_used[i] + is_used[i + num_data_items] <= 1)
+
+    ## 2D no overlap.
+    model.AddNoOverlap2D(x_intervals, y_intervals)
+
+    ## Objective.
+    model.Maximize(cp_model.DoubleLinearExpr.ScalProd(is_used, item_values))
+
+    # Output proto to file.
+    if FLAGS.output_proto:
+        print('Writing proto to %s' % FLAGS.output_proto)
+        with open(FLAGS.output_proto, 'w') as text_file:
+            text_file.write(str(model))
+
+    # Solve model.
+    solver = cp_model.CpSolver()
+    if FLAGS.params:
+        text_format.Parse(FLAGS.params, solver.parameters)
+
+    status = solver.Solve(model)
+
+    # Report solution.
+    if status == cp_model.OPTIMAL:
+        used = {i for i in range(num_items) if solver.BooleanValue(is_used[i])}
+        data = pd.DataFrame({
+            'x_start': [solver.Value(x_starts[i]) for i in used],
+            'y_start': [solver.Value(y_starts[i]) for i in used],
+            'item_width': [item_widths[i] for i in used],
+            'item_height': [item_heights[i] for i in used],
+            'x_end': [solver.Value(x_starts[i]) + item_widths[i] for i in used],
+            'y_end': [
+                solver.Value(y_starts[i]) + item_heights[i] for i in used
+            ],
+            'item_value': [item_values[i] for i in used]
+        })
+        print(data)
+
+
 def solve_with_rotations(data, max_height, max_width):
     """Solve the problem by rotating items."""
     # Derived data (expanded to individual items).
@@ -272,6 +365,8 @@ def main(_):
     data, max_height, max_width = build_data()
     if FLAGS.model == 'duplicate':
         solve_with_duplicate_items(data, max_height, max_width)
+    elif FLAGS.model == 'optional':
+        solve_with_duplicate_optional_items(data, max_height, max_width)
     else:
         solve_with_rotations(data, max_height, max_width)
 
