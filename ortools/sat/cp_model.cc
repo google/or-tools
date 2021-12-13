@@ -922,8 +922,16 @@ Constraint CpModelBuilder::AddAllDifferent(absl::Span<const IntVar> vars) {
   return Constraint(proto);
 }
 
-Constraint CpModelBuilder::AddAllDifferentExpr(
-    absl::Span<const LinearExpr> exprs) {
+Constraint CpModelBuilder::AddAllDifferent(absl::Span<const LinearExpr> exprs) {
+  ConstraintProto* const proto = cp_model_.add_constraints();
+  for (const LinearExpr& expr : exprs) {
+    *proto->mutable_all_diff()->add_exprs() = LinearExprToProto(expr);
+  }
+  return Constraint(proto);
+}
+
+Constraint CpModelBuilder::AddAllDifferent(
+    std::initializer_list<LinearExpr> exprs) {
   ConstraintProto* const proto = cp_model_.add_constraints();
   for (const LinearExpr& expr : exprs) {
     *proto->mutable_all_diff()->add_exprs() = LinearExprToProto(expr);

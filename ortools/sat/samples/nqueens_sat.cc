@@ -57,8 +57,8 @@ void NQueensSat(const int board_size) {
     diag_1.push_back(queens[i] + i);
     diag_2.push_back(queens[i] - i);
   }
-  cp_model.AddAllDifferentExpr(diag_1);
-  cp_model.AddAllDifferentExpr(diag_2);
+  cp_model.AddAllDifferent(diag_1);
+  cp_model.AddAllDifferent(diag_2);
   // [END constraints]
 
   // [START solution_printer]
