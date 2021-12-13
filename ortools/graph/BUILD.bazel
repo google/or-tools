@@ -75,6 +75,7 @@ cc_library(
 cc_library(
     name = "shortestpaths",
     srcs = [
+        "astar.cc",
         "bellman_ford.cc",
         "dijkstra.cc",
         "shortestpaths.cc",
