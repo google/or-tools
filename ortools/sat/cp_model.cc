@@ -130,7 +130,7 @@ LinearExpr IntVar::AddConstant(int64_t value) const {
   return LinearExpr(*this).AddConstant(value);
 }
 
-Domain IntVar::Domain() const {
+  ::operations_research::Domain IntVar::Domain() const {
   if (builder_ == nullptr) return Domain();
   return ReadDomainFromProto(builder_->Proto().variables(index_));
 }
