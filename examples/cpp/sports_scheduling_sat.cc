@@ -107,14 +107,14 @@ void OpponentModel(int num_teams) {
     std::vector<IntVar> day_home_aways;
     for (int t = 0; t < num_teams; ++t) {
       day_opponents.push_back(opponents[t][d]);
-      day_home_aways.push_back(home_aways[t][d]);
+      day_home_aways.push_back(IntVar(home_aways[t][d]));
     }
 
     builder.AddInverseConstraint(day_opponents, day_opponents);
 
     for (int first_team = 0; first_team < num_teams; ++first_team) {
-      IntVar first_home = day_home_aways[first_team];
-      IntVar second_home = builder.NewBoolVar();
+      const IntVar first_home = IntVar(day_home_aways[first_team]);
+      const IntVar second_home = IntVar(builder.NewBoolVar());
       builder.AddVariableElement(day_opponents[first_team], day_home_aways,
                                  second_home);
       builder.AddEquality(first_home + second_home, 1);

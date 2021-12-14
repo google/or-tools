@@ -1033,6 +1033,8 @@ public final class CpModel {
    * rectangle is aligned with the X and Y axis, and is defined by two intervals which represent its
    * projection onto the X and Y axis.
    *
+   * <p>Furthermore, one box is optional if at least one of the x or y interval is optional.
+   *
    * @param xIntervals the X coordinates of the rectangles
    * @param yIntervals the Y coordinates of the rectangles
    * @return an instance of the Constraint class

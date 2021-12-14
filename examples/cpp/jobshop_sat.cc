@@ -106,7 +106,7 @@ int64_t ComputeHorizon(const JsspInputProblem& problem) {
 struct JobTaskData {
   IntervalVar interval;
   IntVar start;
-  IntVar duration;
+  LinearExpr duration;
   IntVar end;
 };
 
@@ -488,7 +488,8 @@ void CreateObjective(
       for (int a = 0; a < num_alternatives; ++a) {
         // Add cost if present.
         if (task.cost_size() > 0) {
-          objective_vars.push_back(job_task_to_alternatives[j][t][a].presence);
+          objective_vars.push_back(
+              IntVar(job_task_to_alternatives[j][t][a].presence));
           objective_coeffs.push_back(task.cost(a));
         }
       }
@@ -626,14 +627,13 @@ void AddMakespanRedundantConstraints(
   const int num_machines = problem.machines_size();
 
   // Global energetic reasoning.
-  std::vector<IntVar> all_task_durations;
+  LinearExpr sum_of_duration;
   for (const std::vector<JobTaskData>& tasks : job_to_tasks) {
     for (const JobTaskData& task : tasks) {
-      all_task_durations.push_back(task.duration);
+      sum_of_duration += task.duration;
     }
   }
-  cp_model.AddLessOrEqual(LinearExpr::Sum(all_task_durations),
-                          makespan * num_machines);
+  cp_model.AddLessOrEqual(sum_of_duration, makespan * num_machines);
 }
 
 void DisplayJobStatistics(
@@ -648,8 +648,7 @@ void DisplayJobStatistics(
   for (const std::vector<JobTaskData>& job : job_to_tasks) {
     num_tasks += job.size();
     for (const JobTaskData& task : job) {
-      if (task.duration.Proto().domain_size() != 2 ||
-          task.duration.Proto().domain(0) != task.duration.Proto().domain(1)) {
+      if (!task.duration.IsConstant()) {
         num_tasks_with_variable_duration++;
       }
     }

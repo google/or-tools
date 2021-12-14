@@ -578,7 +578,7 @@ class NetworkRoutingSolver {
     // Node - Graph Constraint.
     for (int demand_index = 0; demand_index < num_demands; ++demand_index) {
       for (int arc = 0; arc < num_arcs; ++arc) {
-        path_vars[demand_index].push_back(cp_model.NewBoolVar());
+        path_vars[demand_index].push_back(IntVar(cp_model.NewBoolVar()));
       }
       // Fill Tuple Set for AllowedAssignment constraint.
       TableConstraint path_ct =

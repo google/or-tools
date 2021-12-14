@@ -1183,7 +1183,7 @@ void GenerateNoOverlap2dEnergyCut(
         // TODO(user): use the offset of the energy expression if better
         // than size_min * demand_min.
         DCHECK(!x_helper->IsPresent(t) || !y_helper->IsPresent(t));
-        const Literal lit = x_helper->IsOptional(t) && !x_helper->IsPresent(t)
+        const Literal lit = !x_helper->IsPresent(t)
                                 ? x_helper->PresenceLiteral(t)
                                 : y_helper->PresenceLiteral(t);
         if (cut.AddLiteralTerm(lit,
@@ -1252,8 +1252,7 @@ CutGenerator CreateNoOverlap2dEnergyCutGenerator(
           if (y_helper->IsAbsent(box) || y_helper->IsAbsent(box)) continue;
           // We cannot consider boxes controlled by 2 active enforcement
           // literals.
-          if (x_helper->IsOptional(box) && y_helper->IsOptional(box) &&
-              !x_helper->IsPresent(box) && !y_helper->IsPresent(box) &&
+          if (!x_helper->IsPresent(box) && !y_helper->IsPresent(box) &&
               x_helper->PresenceLiteral(box) !=
                   y_helper->PresenceLiteral(box)) {
             continue;

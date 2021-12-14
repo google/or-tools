@@ -62,13 +62,17 @@ class IntVar;
 /**
  * A Boolean variable.
  *
- * This class wraps an IntegerVariableProto with domain [0, 1].
- * It supports the logical negation (Not).
+ * This class refer to an IntegerVariableProto with domain [0, 1] or to its
+ * logical negation (Not). This is called a Boolean Literal in other context.
  *
  * This can only be constructed via \c CpModelBuilder.NewBoolVar().
  */
 class BoolVar {
  public:
+  /// A default constructed BoolVar can be used to mean not defined yet.
+  /// However, it shouldn't be passed to any of the functions in this file.
+  /// Doing so will crash in debug mode and will result in an invalid model in
+  /// opt mode.
   BoolVar();
 
   /// Sets the name of the variable.
@@ -81,17 +85,14 @@ class BoolVar {
   /// Returns the logical negation of the current Boolean variable.
   BoolVar Not() const { return BoolVar(NegatedRef(index_), builder_); }
 
-  /// Equality test with another boolvar.
   bool operator==(const BoolVar& other) const {
     return other.builder_ == builder_ && other.index_ == index_;
   }
 
-  /// Dis-Equality test.
   bool operator!=(const BoolVar& other) const {
     return other.builder_ != builder_ || other.index_ != index_;
   }
 
-  /// Debug string.
   std::string DebugString() const;
 
   /**
@@ -133,58 +134,54 @@ BoolVar Not(BoolVar x);
  *
  * This class wraps an IntegerVariableProto.
  * This can only be constructed via \c CpModelBuilder.NewIntVar().
- *
- * Note that a BoolVar can be used in any place that accept an
- * IntVar via an implicit cast. It will simply take the value
- * 0 (when false) or 1 (when true).
  */
 class IntVar {
  public:
+  /// A default constructed IntVar can be used to mean not defined yet.
+  /// However, it shouldn't be passed to any of the functions in this file.
+  /// Doing so will crash in debug mode and will result in an invalid model in
+  /// opt mode.
   IntVar();
 
-  /// Implicit cast BoolVar -> IntVar.
+  /// Cast BoolVar -> IntVar.
+  /// The IntVar will take the value 1 (when the bool is true) and 0 otherwise.
   ///
   /// Warning: If you construct an IntVar from a negated BoolVar, this might
-  /// create a new variable in the model.
+  /// create a new variable in the model. Otherwise this just point to the same
+  /// underlying variable.
   IntVar(const BoolVar& var);  // NOLINT(runtime/explicit)
 
   /// Cast IntVar -> BoolVar.
   ///
-  /// Warning: This checks that the domain of the var is within {0,1} and
-  /// crash if it is not the case. Use at your own risk.
+  /// Warning: The domain of the var must be within {0,1}. If not, we crash
+  /// in debug mode, and in opt mode you will get an invalid model if you use
+  /// this BoolVar anywhere since it will not have a valid domain.
   BoolVar ToBoolVar() const;
 
   /// Sets the name of the variable.
   IntVar WithName(const std::string& name);
 
   /// Returns the name of the variable (or the empty string if not set).
-  const std::string& Name() const { return Proto().name(); }
+  std::string Name() const;
 
-  /// Adds a constant value to an integer variable and returns a linear
-  /// expression.
-  LinearExpr AddConstant(int64_t value) const;
-
-  /// Equality test with another IntVar.
   bool operator==(const IntVar& other) const {
     return other.builder_ == builder_ && other.index_ == index_;
   }
 
-  /// Difference test with another IntVar.
   bool operator!=(const IntVar& other) const {
     return other.builder_ != builder_ || other.index_ != index_;
   }
 
-  /// Returns a debug string.
+  // Returns the domain of the variable.
+  Domain Domain() const;
+
   std::string DebugString() const;
-
-  /// Returns the underlying protobuf object (useful for testing).
-  const IntegerVariableProto& Proto() const;
-
-  /// Returns the mutable underlying protobuf object (useful for model edition).
-  IntegerVariableProto* MutableProto() const;
 
   /// Returns the index of the variable in the model. This will be non-negative.
   int index() const { return index_; }
+
+  /// Deprecated. Just do var + cte where needed.
+  LinearExpr AddConstant(int64_t value) const;
 
  private:
   friend class BoolVar;
@@ -213,8 +210,8 @@ std::ostream& operator<<(std::ostream& os, const IntVar& var);
  * x when added to the linear expression. It also support operator overloads to
  * construct the linear expression naturally.
  *
- * Furthermore, static methods allows sums and scalar products, with or without
- * an additional constant.
+ * Furthermore, static methods allow to construct a linear expression from sums
+ * or scalar products.
  *
  * Usage:
  * \code
@@ -240,13 +237,11 @@ std::ostream& operator<<(std::ostream& os, const IntVar& var);
   */
 class LinearExpr {
  public:
+  /// Creates an empty linear expression with value zero.
   LinearExpr() = default;
 
-  /**
-   * Constructs a linear expression from a Boolean variable.
-   *
-   * It deals with logical negation correctly.
-   */
+  /// Constructs a linear expression from a Boolean variable.
+  /// It deals with logical negation correctly.
   LinearExpr(BoolVar var);  // NOLINT(runtime/explicit)
 
   /// Constructs a linear expression from an integer variable.
@@ -261,7 +256,7 @@ class LinearExpr {
   /// Constructs the sum of a list of Boolean variables.
   static LinearExpr Sum(absl::Span<const BoolVar> vars);
 
-  /// Constructs the sum of a list of Boolean variables.
+  /// Constructs the sum of a list of variables.
   // TODO(user): Remove when the operators + and * are implemented.
   static LinearExpr Sum(std::initializer_list<IntVar> vars);
 
@@ -312,6 +307,9 @@ class LinearExpr {
 
   /// Returns the vector of coefficients.
   const std::vector<int64_t>& coefficients() const { return coefficients_; }
+
+  /// Returns true if the expression has no variables.
+  const bool IsConstant() const { return variables_.empty(); }
 
   /// Returns the constant term.
   int64_t constant() const { return constant_; }
@@ -371,11 +369,8 @@ class DoubleLinearExpr {
  public:
   DoubleLinearExpr();
 
-  /**
-   * Constructs a linear expression from a Boolean variable.
-   *
-   * It deals with logical negation correctly.
-   */
+  /// Constructs a linear expression from a Boolean variable.
+  /// It deals with logical negation correctly.
   explicit DoubleLinearExpr(BoolVar var);
 
   /// Constructs a linear expression from an integer variable.
@@ -440,6 +435,9 @@ class DoubleLinearExpr {
   /// Returns the vector of coefficients.
   const std::vector<double>& coefficients() const { return coefficients_; }
 
+  // Returns true if the expression has no variable.
+  const bool IsConstant() const { return variables_.empty(); }
+
   /// Returns the constant term.
   double constant() const { return constant_; }
 
@@ -476,14 +474,17 @@ std::ostream& operator<<(std::ostream& os, const DoubleLinearExpr& e);
  */
 class IntervalVar {
  public:
-  /// Default ctor.
+  /// A default constructed IntervalVar can be used to mean not defined yet.
+  /// However, it shouldn't be passed to any of the functions in this file.
+  /// Doing so will crash in debug mode and will result in an invalid model in
+  /// opt mode.
   IntervalVar();
 
   /// Sets the name of the variable.
   IntervalVar WithName(const std::string& name);
 
   /// Returns the name of the interval (or the empty string if not set).
-  const std::string& Name() const;
+  std::string Name() const;
 
   /// Returns the start linear expression. Note that this rebuilds the
   /// expression each time this method is called.
@@ -516,12 +517,6 @@ class IntervalVar {
 
   /// Returns a debug string.
   std::string DebugString() const;
-
-  /// Returns the underlying protobuf object (useful for testing).
-  const IntervalConstraintProto& Proto() const;
-
-  /// Returns the mutable underlying protobuf object (useful for model edition).
-  IntervalConstraintProto* MutableProto() const;
 
   /// Returns the index of the interval constraint in the model.
   int index() const { return index_; }
@@ -1072,6 +1067,9 @@ class CpModelBuilder {
   /// Adds hinting to a variable.
   void AddHint(IntVar var, int64_t value);
 
+  /// Adds hinting to a Boolean variable.
+  void AddHint(BoolVar var, bool value);
+
   /// Removes all hints.
   void ClearHints();
 
@@ -1209,7 +1207,10 @@ inline LinearExpr operator*(int64_t factor, LinearExpr expr) {
 
 // For DoubleLinearExpr.
 
-inline DoubleLinearExpr operator-(DoubleLinearExpr expr) { return expr *= -1; }
+inline DoubleLinearExpr operator-(DoubleLinearExpr expr) {
+  expr *= -1;
+  return expr;
+}
 
 inline DoubleLinearExpr operator+(const DoubleLinearExpr& lhs,
                                   const DoubleLinearExpr& rhs) {
@@ -1238,23 +1239,13 @@ inline DoubleLinearExpr operator+(DoubleLinearExpr&& lhs,
   }
 }
 
-inline DoubleLinearExpr operator+(const DoubleLinearExpr& lhs, double rhs) {
-  DoubleLinearExpr temp(lhs);
-  temp += rhs;
-  return temp;
+inline DoubleLinearExpr operator+(DoubleLinearExpr expr, double rhs) {
+  expr += rhs;
+  return expr;
 }
-inline DoubleLinearExpr operator+(DoubleLinearExpr&& lhs, double rhs) {
-  lhs += rhs;
-  return std::move(lhs);
-}
-inline DoubleLinearExpr operator+(double lhs, DoubleLinearExpr&& rhs) {
-  rhs += lhs;
-  return std::move(rhs);
-}
-inline DoubleLinearExpr operator+(double lhs, const DoubleLinearExpr& rhs) {
-  DoubleLinearExpr temp(rhs);
-  temp += lhs;
-  return temp;
+inline DoubleLinearExpr operator+(double lhs, DoubleLinearExpr expr) {
+  expr += lhs;
+  return expr;
 }
 
 inline DoubleLinearExpr operator-(const DoubleLinearExpr& lhs,
@@ -1284,24 +1275,14 @@ inline DoubleLinearExpr operator-(DoubleLinearExpr&& lhs,
   }
 }
 
-inline DoubleLinearExpr operator-(const DoubleLinearExpr& lhs, double rhs) {
-  DoubleLinearExpr temp(lhs);
-  temp -= rhs;
-  return temp;
+inline DoubleLinearExpr operator-(DoubleLinearExpr epxr, double rhs) {
+  epxr -= rhs;
+  return epxr;
 }
-inline DoubleLinearExpr operator-(DoubleLinearExpr&& lhs, double rhs) {
-  lhs -= rhs;
-  return std::move(lhs);
-}
-inline DoubleLinearExpr operator-(double lhs, DoubleLinearExpr&& rhs) {
-  rhs *= -1;
-  rhs += lhs;
-  return std::move(rhs);
-}
-inline DoubleLinearExpr operator-(double lhs, const DoubleLinearExpr& rhs) {
-  DoubleLinearExpr temp = -rhs;
-  temp += lhs;
-  return temp;
+inline DoubleLinearExpr operator-(double lhs, DoubleLinearExpr expr) {
+  expr *= -1;
+  expr += lhs;
+  return expr;
 }
 
 inline DoubleLinearExpr operator*(DoubleLinearExpr expr, double factor) {

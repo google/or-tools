@@ -33,6 +33,8 @@ BoolVar::BoolVar(int index, CpModelBuilder* builder)
     : builder_(builder), index_(index) {}
 
 BoolVar BoolVar::WithName(const std::string& name) {
+  DCHECK(builder_ != nullptr);
+  if (builder_ == nullptr) return *this;
   builder_->MutableProto()
       ->mutable_variables(PositiveRef(index_))
       ->set_name(name);
@@ -40,6 +42,7 @@ BoolVar BoolVar::WithName(const std::string& name) {
 }
 
 std::string BoolVar::Name() const {
+  if (builder_ == nullptr) return "null";
   const std::string& name =
       builder_->Proto().variables(PositiveRef(index_)).name();
   if (RefIsPositive(index_)) {
@@ -50,6 +53,7 @@ std::string BoolVar::Name() const {
 }
 
 std::string BoolVar::DebugString() const {
+  if (builder_ == nullptr) return "null";
   if (index_ < 0) {
     return absl::StrFormat("Not(%s)", Not().DebugString());
   } else {
@@ -91,28 +95,48 @@ IntVar::IntVar(int index, CpModelBuilder* builder)
 }
 
 IntVar::IntVar(const BoolVar& var) {
+  if (var.builder_ == nullptr) {
+    *this = IntVar();
+    return;
+  }
   builder_ = var.builder_;
   index_ = builder_->GetOrCreateIntegerIndex(var.index_);
   DCHECK(RefIsPositive(index_));
 }
 
 BoolVar IntVar::ToBoolVar() const {
-  CHECK_EQ(2, Proto().domain_size());
-  CHECK_GE(Proto().domain(0), 0);
-  CHECK_LE(Proto().domain(1), 1);
+  if (builder_ != nullptr) {
+    const IntegerVariableProto& proto = builder_->Proto().variables(index_);
+    DCHECK_EQ(2, proto.domain_size());
+    DCHECK_GE(proto.domain(0), 0);
+    DCHECK_LE(proto.domain(1), 1);
+  }
   return BoolVar(index_, builder_);
 }
 
 IntVar IntVar::WithName(const std::string& name) {
+  DCHECK(builder_ != nullptr);
+  if (builder_ == nullptr) return *this;
   builder_->MutableProto()->mutable_variables(index_)->set_name(name);
   return *this;
+}
+
+std::string IntVar::Name() const {
+  if (builder_ == nullptr) return "null";
+  return builder_->Proto().variables(index_).name();
 }
 
 LinearExpr IntVar::AddConstant(int64_t value) const {
   return LinearExpr(*this).AddConstant(value);
 }
 
+Domain IntVar::Domain() const {
+  if (builder_ == nullptr) return Domain();
+  return ReadDomainFromProto(builder_->Proto().variables(index_));
+}
+
 std::string IntVar::DebugString() const {
+  if (builder_ == nullptr) return "null";
   return VarDebugString(builder_->Proto(), index_);
 }
 
@@ -144,14 +168,6 @@ std::string VarDebugString(const CpModelProto& proto, int index) {
   }
 
   return output;
-}
-
-const IntegerVariableProto& IntVar::Proto() const {
-  return builder_->Proto().variables(index_);
-}
-
-IntegerVariableProto* IntVar::MutableProto() const {
-  return builder_->MutableProto()->mutable_variables(index_);
 }
 
 std::ostream& operator<<(std::ostream& os, const IntVar& var) {
@@ -269,12 +285,14 @@ LinearExpr& LinearExpr::AddVar(IntVar var) { return AddTerm(var, 1); }
 LinearExpr& LinearExpr::AddVar(BoolVar var) { return AddTerm(var, 1); }
 
 LinearExpr& LinearExpr::AddTerm(IntVar var, int64_t coeff) {
+  DCHECK(var.builder_ != nullptr);
   variables_.push_back(var.index_);
   coefficients_.push_back(coeff);
   return *this;
 }
 
 LinearExpr& LinearExpr::AddTerm(BoolVar var, int64_t coeff) {
+  DCHECK(var.builder_ != nullptr);
   const int index = var.index_;
   if (RefIsPositive(index)) {
     variables_.push_back(index);
@@ -628,32 +646,48 @@ IntervalVar::IntervalVar(int index, CpModelBuilder* builder)
     : builder_(builder), index_(index) {}
 
 IntervalVar IntervalVar::WithName(const std::string& name) {
+  DCHECK(builder_ != nullptr);
+  if (builder_ == nullptr) return *this;
   builder_->MutableProto()->mutable_constraints(index_)->set_name(name);
   return *this;
 }
 
 LinearExpr IntervalVar::StartExpr() const {
-  return LinearExpr::FromProto(Proto().start());
+  DCHECK(builder_ != nullptr);
+  if (builder_ == nullptr) return LinearExpr();
+  return LinearExpr::FromProto(
+      builder_->Proto().constraints(index_).interval().start());
 }
 
 LinearExpr IntervalVar::SizeExpr() const {
-  return LinearExpr::FromProto(Proto().size());
+  DCHECK(builder_ != nullptr);
+  if (builder_ == nullptr) return LinearExpr();
+  return LinearExpr::FromProto(
+      builder_->Proto().constraints(index_).interval().size());
 }
 
 LinearExpr IntervalVar::EndExpr() const {
-  return LinearExpr::FromProto(Proto().end());
+  DCHECK(builder_ != nullptr);
+  if (builder_ == nullptr) return LinearExpr();
+  return LinearExpr::FromProto(
+      builder_->Proto().constraints(index_).interval().end());
 }
 
 BoolVar IntervalVar::PresenceBoolVar() const {
+  DCHECK(builder_ != nullptr);
+  if (builder_ == nullptr) return BoolVar();
   return BoolVar(builder_->Proto().constraints(index_).enforcement_literal(0),
                  builder_);
 }
 
-const std::string& IntervalVar::Name() const {
+std::string IntervalVar::Name() const {
+  if (builder_ == nullptr) return "null";
   return builder_->Proto().constraints(index_).name();
 }
 
 std::string IntervalVar::DebugString() const {
+  if (builder_ == nullptr) return "null";
+
   CHECK_GE(index_, 0);
   const CpModelProto& proto = builder_->Proto();
   const ConstraintProto& ct_proto = proto.constraints(index_);
@@ -668,16 +702,6 @@ std::string IntervalVar::DebugString() const {
                   EndExpr().DebugString(&proto), ", ",
                   PresenceBoolVar().DebugString(), ")");
   return output;
-}
-
-const IntervalConstraintProto& IntervalVar::Proto() const {
-  return builder_->Proto().constraints(index_).interval();
-}
-
-IntervalConstraintProto* IntervalVar::MutableProto() const {
-  return builder_->MutableProto()
-      ->mutable_constraints(index_)
-      ->mutable_interval();
 }
 
 std::ostream& operator<<(std::ostream& os, const IntervalVar& var) {
@@ -1259,6 +1283,16 @@ void CpModelBuilder::AddDecisionStrategy(
 void CpModelBuilder::AddHint(IntVar var, int64_t value) {
   cp_model_.mutable_solution_hint()->add_vars(var.index_);
   cp_model_.mutable_solution_hint()->add_values(value);
+}
+
+void CpModelBuilder::AddHint(BoolVar var, bool value) {
+  if (var.index_ >= 0) {
+    cp_model_.mutable_solution_hint()->add_vars(var.index_);
+    cp_model_.mutable_solution_hint()->add_values(value);
+  } else {
+    cp_model_.mutable_solution_hint()->add_vars(PositiveRef(var.index_));
+    cp_model_.mutable_solution_hint()->add_values(!value);
+  }
 }
 
 void CpModelBuilder::ClearHints() {

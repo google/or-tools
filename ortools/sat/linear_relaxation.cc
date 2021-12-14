@@ -798,6 +798,7 @@ void AppendNoOverlap2dRelaxation(const ConstraintProto& ct, Model* model,
           integer_trail->LevelZeroLowerBound(x_sizes[i]) *
           integer_trail->LevelZeroLowerBound(y_sizes[i]);
       if (area_min != 0) {
+        // Not including the term if we don't have a view is ok.
         (void)lc.AddLiteralTerm(presence_literal, area_min);
       }
     }
@@ -1288,17 +1289,15 @@ void AddNoOverlap2dCutGenerator(const ConstraintProto& ct, Model* m,
       m->GetOrCreate<IntervalsRepository>();
   bool has_variable_part = false;
   for (int i = 0; i < x_intervals.size(); ++i) {
-    // Ignore absent intervals.
+    // Ignore absent rectangles.
     if (intervals_repository->IsAbsent(x_intervals[i]) ||
         intervals_repository->IsAbsent(y_intervals[i])) {
       continue;
     }
 
     // Checks non-present intervals.
-    if ((intervals_repository->IsOptional(x_intervals[i]) &&
-         !intervals_repository->IsPresent(x_intervals[i])) ||
-        (intervals_repository->IsOptional(y_intervals[i]) &&
-         !intervals_repository->IsPresent(y_intervals[i]))) {
+    if (!intervals_repository->IsPresent(x_intervals[i]) ||
+        !intervals_repository->IsPresent(y_intervals[i])) {
       has_variable_part = true;
       break;
     }

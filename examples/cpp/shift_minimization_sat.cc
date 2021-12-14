@@ -262,7 +262,7 @@ void LoadAndSolve(const std::string& file_name) {
     }
 
     // Check that we have not already visited this exact set of candidate jobs.
-    if (gtl::ContainsKey(visited_job_lists, intersecting_jobs)) continue;
+    if (visited_job_lists.contains(intersecting_jobs)) continue;
     visited_job_lists.insert(intersecting_jobs);
 
     // Collect the relevant worker job vars.

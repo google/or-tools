@@ -54,7 +54,7 @@ void NurseSat() {
   // Creates shift variables.
   // shifts[(n, d, s)]: nurse 'n' works shift 's' on day 'd'.
   // [START variables]
-  std::map<std::tuple<int, int, int>, IntVar> shifts;
+  std::map<std::tuple<int, int, int>, BoolVar> shifts;
   for (int n : all_nurses) {
     for (int d : all_days) {
       for (int s : all_shifts) {
@@ -70,12 +70,12 @@ void NurseSat() {
   // [START exactly_one_nurse]
   for (int d : all_days) {
     for (int s : all_shifts) {
-      std::vector<IntVar> x;
+      LinearExpr sum;
       for (int n : all_nurses) {
         auto key = std::make_tuple(n, d, s);
-        x.push_back(shifts[key]);
+        sum += shifts[key];
       }
-      cp_model.AddEquality(LinearExpr::Sum(x), 1);
+      cp_model.AddEquality(sum, 1);
     }
   }
   // [END exactly_one_nurse]
@@ -84,12 +84,12 @@ void NurseSat() {
   // [START at_most_one_shift]
   for (int n : all_nurses) {
     for (int d : all_days) {
-      std::vector<IntVar> x;
+      LinearExpr sum;
       for (int s : all_shifts) {
         auto key = std::make_tuple(n, d, s);
-        x.push_back(shifts[key]);
+        sum += shifts[key];
       }
-      cp_model.AddLessOrEqual(LinearExpr::Sum(x), 1);
+      cp_model.AddLessOrEqual(sum, 1);
     }
   }
   // [END at_most_one_shift]
@@ -107,7 +107,7 @@ void NurseSat() {
     max_shifts_per_nurse = min_shifts_per_nurse + 1;
   }
   for (int n : all_nurses) {
-    std::vector<IntVar> num_shifts_worked;
+    std::vector<BoolVar> num_shifts_worked;
     // int num_shifts_worked = 0;
     for (int d : all_days) {
       for (int s : all_shifts) {

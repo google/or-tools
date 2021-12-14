@@ -196,7 +196,7 @@ class LinearExpr(object):
     @classmethod
     def Term(cls, expression, coefficient):
         """Creates `expression * coefficient`."""
-        if coefficient == 0:
+        if cmh.is_zero(coefficient):
             return 0
         else:
             return expression * coefficient
@@ -204,7 +204,7 @@ class LinearExpr(object):
     @classmethod
     def IsEmptyOrAllNull(cls, coefficients):
         for c in coefficients:
-            if c != 0:
+            if not cmh.is_zero(c):
                 return False
         return True
 
@@ -224,40 +224,91 @@ class LinearExpr(object):
             for index, coeff in zip(proto.vars(), proto.coeffs()):
                 variables.append(IntVar(model, index, None))
                 coeffs.append(coeff)
-                if coeff != 1:
+                if not cmh.is_one(coeff):
                     all_ones = False
             if all_ones:
                 return _SumArray(variables, offset)
             else:
                 return _ScalProd(variables, coeffs, offset)
 
-    def GetVarValueMap(self):
-        """Scans the expression, and return a list of (var_coef_map, constant)."""
+    def GetIntegerVarValueMap(self):
+        """Scans the expression, and returns (var_coef_map, constant)."""
         coeffs = collections.defaultdict(int)
         constant = 0
         to_process = [(self, 1)]
         while to_process:  # Flatten to avoid recursion.
-            expr, coef = to_process.pop()
-            if isinstance(expr, _ProductCst):
+            expr, coeff = to_process.pop()
+            if cmh.is_integral(expr):
+                constant += coeff * int(expr)
+            elif isinstance(expr, _ProductCst):
                 to_process.append(
-                    (expr.Expression(), coef * expr.Coefficient()))
+                    (expr.Expression(), coeff * expr.Coefficient()))
+            elif isinstance(expr, _Sum):
+                to_process.append((expr.Left(), coeff))
+                to_process.append((expr.Right(), coeff))
             elif isinstance(expr, _SumArray):
                 for e in expr.Expressions():
-                    to_process.append((e, coef))
-                constant += expr.Constant() * coef
+                    to_process.append((e, coeff))
+                constant += expr.Constant() * coeff
             elif isinstance(expr, _ScalProd):
                 for e, c in zip(expr.Expressions(), expr.Coefficients()):
-                    to_process.append((e, coef * c))
-                constant += expr.Constant() * coef
+                    to_process.append((e, coeff * c))
+                constant += expr.Constant() * coeff
             elif isinstance(expr, IntVar):
-                coeffs[expr] += coef
+                coeffs[expr] += coeff
             elif isinstance(expr, _NotBooleanVariable):
-                constant += coef
-                coeffs[expr.Not()] -= coef
+                constant += coeff
+                coeffs[expr.Not()] -= coeff
             else:
                 raise TypeError('Unrecognized linear expression: ' + str(expr))
 
         return coeffs, constant
+
+    def GetFloatVarValueMap(self):
+        """Scans the expression. Returns (var_coef_map, constant, is_integer)."""
+        coeffs = {}
+        constant = 0
+        to_process = [(self, 1)]
+        while to_process:  # Flatten to avoid recursion.
+            expr, coeff = to_process.pop()
+            if cmh.is_integral(expr):  # Keep integrality.
+                constant += coeff * int(expr)
+            elif cmh.is_a_number(expr):
+                constant += coeff * float(expr)
+            elif isinstance(expr, _ProductCst):
+                to_process.append(
+                    (expr.Expression(), coeff * expr.Coefficient()))
+            elif isinstance(expr, _Sum):
+                to_process.append((expr.Left(), coeff))
+                to_process.append((expr.Right(), coeff))
+            elif isinstance(expr, _SumArray):
+                for e in expr.Expressions():
+                    to_process.append((e, coeff))
+                constant += expr.Constant() * coeff
+            elif isinstance(expr, _ScalProd):
+                for e, c in zip(expr.Expressions(), expr.Coefficients()):
+                    to_process.append((e, coeff * c))
+                constant += expr.Constant() * coeff
+            elif isinstance(expr, IntVar):
+                if expr in coeffs:
+                    coeffs[expr] += coeff
+                else:
+                    coeffs[expr] = coeff
+            elif isinstance(expr, _NotBooleanVariable):
+                constant += coeff
+                if expr.Not() in coeffs:
+                    coeffs[expr.Not()] -= coeff
+                else:
+                    coeffs[expr.Not()] = -coeff
+            else:
+                raise TypeError('Unrecognized linear expression: ' + str(expr))
+        is_integer = cmh.is_integral(constant)
+        if is_integer:
+            for coeff in coeffs.values():
+                if not cmh.is_integral(coeff):
+                    is_integer = False
+                    break
+        return coeffs, constant, is_integer
 
     def __hash__(self):
         return object.__hash__(self)
@@ -268,36 +319,36 @@ class LinearExpr(object):
             'please use CpModel.AddAbsEquality')
 
     def __add__(self, arg):
-        if cmh.IsIntegral(arg) and int(arg) == 0:
+        if cmh.is_zero(arg):
             return self
-        return _SumArray([self, arg])
+        return _Sum(self, arg)
 
     def __radd__(self, arg):
-        if cmh.IsIntegral(arg) and int(arg) == 0:
+        if cmh.is_zero(arg):
             return self
-        return _SumArray([self, arg])
+        return _Sum(self, arg)
 
     def __sub__(self, arg):
-        if cmh.IsIntegral(arg) and int(arg) == 0:
+        if cmh.is_zero(arg):
             return self
-        return _SumArray([self, -arg])
+        return _Sum(self, -arg)
 
     def __rsub__(self, arg):
-        return _SumArray([-self, arg])
+        return _Sum(-self, arg)
 
     def __mul__(self, arg):
-        arg = cmh.AssertIsInt64(arg)
-        if arg == 1:
+        arg = cmh.assert_is_a_number(arg)
+        if cmh.is_one(arg):
             return self
-        elif arg == 0:
+        elif cmh.is_zero(arg):
             return 0
         return _ProductCst(self, arg)
 
     def __rmul__(self, arg):
-        arg = cmh.AssertIsInt64(arg)
-        if arg == 1:
+        arg = cmh.assert_is_a_number(arg)
+        if cmh.is_one(arg):
             return self
-        elif arg == 0:
+        elif cmh.is_zero(arg):
             return 0
         return _ProductCst(self, arg)
 
@@ -354,29 +405,29 @@ class LinearExpr(object):
     def __eq__(self, arg):
         if arg is None:
             return False
-        if cmh.IsIntegral(arg):
-            arg = cmh.AssertIsInt64(arg)
+        if cmh.is_integral(arg):
+            arg = cmh.assert_is_int64(arg)
             return BoundedLinearExpression(self, [arg, arg])
         else:
             return BoundedLinearExpression(self - arg, [0, 0])
 
     def __ge__(self, arg):
-        if cmh.IsIntegral(arg):
-            arg = cmh.AssertIsInt64(arg)
+        if cmh.is_integral(arg):
+            arg = cmh.assert_is_int64(arg)
             return BoundedLinearExpression(self, [arg, INT_MAX])
         else:
             return BoundedLinearExpression(self - arg, [0, INT_MAX])
 
     def __le__(self, arg):
-        if cmh.IsIntegral(arg):
-            arg = cmh.AssertIsInt64(arg)
+        if cmh.is_integral(arg):
+            arg = cmh.assert_is_int64(arg)
             return BoundedLinearExpression(self, [INT_MIN, arg])
         else:
             return BoundedLinearExpression(self - arg, [INT_MIN, 0])
 
     def __lt__(self, arg):
-        if cmh.IsIntegral(arg):
-            arg = cmh.AssertIsInt64(arg)
+        if cmh.is_integral(arg):
+            arg = cmh.assert_is_int64(arg)
             if arg == INT_MIN:
                 raise ArithmeticError('< INT_MIN is not supported')
             return BoundedLinearExpression(self, [INT_MIN, arg - 1])
@@ -384,8 +435,8 @@ class LinearExpr(object):
             return BoundedLinearExpression(self - arg, [INT_MIN, -1])
 
     def __gt__(self, arg):
-        if cmh.IsIntegral(arg):
-            arg = cmh.AssertIsInt64(arg)
+        if cmh.is_integral(arg):
+            arg = cmh.assert_is_int64(arg)
             if arg == INT_MAX:
                 raise ArithmeticError('> INT_MAX is not supported')
             return BoundedLinearExpression(self, [arg + 1, INT_MAX])
@@ -395,8 +446,8 @@ class LinearExpr(object):
     def __ne__(self, arg):
         if arg is None:
             return True
-        if cmh.IsIntegral(arg):
-            arg = cmh.AssertIsInt64(arg)
+        if cmh.is_integral(arg):
+            arg = cmh.assert_is_int64(arg)
             if arg == INT_MAX:
                 return BoundedLinearExpression(self, [INT_MIN, INT_MAX - 1])
             elif arg == INT_MIN:
@@ -409,17 +460,40 @@ class LinearExpr(object):
                                            [INT_MIN, -1, 1, INT_MAX])
 
 
+class _Sum(LinearExpr):
+    """Represents the sum of two LinearExprs."""
+
+    def __init__(self, left, right):
+        for x in [left, right]:
+            if not cmh.is_a_number(x) and not isinstance(x, LinearExpr):
+                raise TypeError('Not an linear expression: ' + str(x))
+        self.__left = left
+        self.__right = right
+
+    def Left(self):
+        return self.__left
+
+    def Right(self):
+        return self.__right
+
+    def __str__(self):
+        return f'({self.__left} + {self.__right})'
+
+    def __repr__(self):
+        return f'Sum({repr(self.__left)}, {repr(self.__right)})'
+
+
 class _ProductCst(LinearExpr):
     """Represents the product of a LinearExpr by a constant."""
 
-    def __init__(self, expr, coef):
-        coef = cmh.AssertIsInt64(coef)
+    def __init__(self, expr, coeff):
+        coeff = cmh.assert_is_a_number(coeff)
         if isinstance(expr, _ProductCst):
             self.__expr = expr.Expression()
-            self.__coef = expr.Coefficient() * coef
+            self.__coef = expr.Coefficient() * coeff
         else:
             self.__expr = expr
-            self.__coef = coef
+            self.__coef = coeff
 
     def __str__(self):
         if self.__coef == -1:
@@ -445,8 +519,10 @@ class _SumArray(LinearExpr):
         self.__expressions = []
         self.__constant = constant
         for x in expressions:
-            if cmh.IsIntegral(x):
-                x = cmh.AssertIsInt64(x)
+            if cmh.is_a_number(x):
+                if cmh.is_zero(x):
+                    continue
+                x = cmh.assert_is_a_number(x)
                 self.__constant += x
             elif isinstance(x, LinearExpr):
                 self.__expressions.append(x)
@@ -483,11 +559,11 @@ class _ScalProd(LinearExpr):
                 'In the LinearExpr.ScalProd method, the expression array and the '
                 ' coefficient array must have the same length.')
         for e, c in zip(expressions, coefficients):
-            c = cmh.AssertIsInt64(c)
-            if c == 0:
+            c = cmh.assert_is_a_number(c)
+            if cmh.is_zero(c):
                 continue
-            if cmh.IsIntegral(e):
-                e = cmh.AssertIsInt64(e)
+            if cmh.is_a_number(e):
+                e = cmh.assert_is_a_number(e)
                 self.__constant += e * c
             elif isinstance(e, LinearExpr):
                 self.__expressions.append(e)
@@ -498,15 +574,15 @@ class _ScalProd(LinearExpr):
     def __str__(self):
         output = None
         for expr, coeff in zip(self.__expressions, self.__coefficients):
-            if not output and coeff == 1:
+            if not output and cmh.is_one(coeff):
                 output = str(expr)
-            elif not output and coeff == -1:
+            elif not output and cmh.is_minus_one(coeff):
                 output = '-' + str(expr)
             elif not output:
                 output = '{} * {}'.format(coeff, str(expr))
-            elif coeff == 1:
+            elif cmh.is_one(coeff):
                 output += ' + {}'.format(str(expr))
-            elif coeff == -1:
+            elif cmh.is_minus_one(coeff):
                 output += ' - {}'.format(str(expr))
             elif coeff > 1:
                 output += ' + {} * {}'.format(coeff, str(expr))
@@ -560,7 +636,7 @@ class IntVar(LinearExpr):
         #     model is a CpModelProto, domain is a Domain, and name is a string.
         # case 2:
         #     model is a CpModelProto, domain is an index (int), and name is None.
-        if cmh.IsIntegral(domain) and name is None:
+        if cmh.is_integral(domain) and name is None:
             self.__index = int(domain)
             self.__var = model.variables[domain]
         else:
@@ -681,7 +757,7 @@ class BoundedLinearExpression(object):
         return self.__bounds
 
     def __bool__(self):
-        coeffs_map, constant = self.__expr.GetVarValueMap()
+        coeffs_map, constant = self.__expr.GetIntegerVarValueMap()
         all_coeffs = set(coeffs_map.values())
         same_var = set([0])
         eq_bounds = [0, 0]
@@ -699,136 +775,6 @@ class BoundedLinearExpression(object):
         raise NotImplementedError(
             f'Evaluating a BoundedLinearExpression \'{self}\' as a Boolean value'
             + ' is not supported.')
-
-
-class DoubleLinearExpr(object):
-    """Holds an double linear expression.
-
-  * In CP-SAT, the objective can be a linear expression with double
-    coefficients:
-
-  ```
-  model.Minimize(cp_model.DoubleLinearExpr.Sum(expressions))
-  model.Maximize(cp_model.DoubleLinearExpr.ScalProd(expressions, coefficients))
-  ```
-  """
-
-    @classmethod
-    def Sum(cls, expressions):
-        """Creates the expression sum(expressions)."""
-        if len(expressions) == 1:
-            return expressions[0]
-        coefficients = [1.0] * len(expressions)
-        return DoubleLinearExpr(expressions, coefficients)
-
-    @classmethod
-    def ScalProd(cls, expressions, coefficients):
-        """Creates the expression sum(expressions[i] * coefficients[i])."""
-        if LinearExpr.IsEmptyOrAllNull(coefficients):
-            return 0.0
-        else:
-            return DoubleLinearExpr(expressions, coefficients)
-
-    @classmethod
-    def Term(cls, expression, coefficient):
-        """Creates `expression * coefficient`."""
-        if coefficient == 0:
-            return 0
-        else:
-            return DoubleLinearExpr([expression], [coefficient])
-
-    @classmethod
-    def IsEmptyOrAllNull(cls, coefficients):
-        for c in coefficients:
-            if c != 0.0:
-                return False
-        return True
-
-    def Expressions(self):
-        return self.__expressions
-
-    def Coefficients(self):
-        return self.__coefficients
-
-    def Constant(self):
-        return self.__constant
-
-    def GetVarValueMap(self):
-        """Scans the expression, and return a list of (var_coef_map, constant)."""
-        coeffs = collections.defaultdict(int)
-        constant = 0.0
-        to_process = [(self, 1.0)]
-        while to_process:  # Flatten to avoid recursion.
-            expr, coef = to_process.pop()
-            if isinstance(expr, IntVar):
-                coeffs[expr] += coef
-            elif isinstance(expr, _NotBooleanVariable):
-                constant += coef
-                coeffs[expr.Not()] -= coef
-            elif isinstance(expr, DoubleLinearExpr):
-                for e, c in zip(expr.Expressions(), expr.Coefficients()):
-                    to_process.append((e, coef * c))
-                constant += expr.Constant() * coef
-            else:
-                raise TypeError('Unrecognized linear expression: ' + str(expr))
-
-        return coeffs, constant
-
-    def __init__(self, expressions, coefficients, constant=0):
-        self.__expressions = []
-        self.__coefficients = []
-        self.__constant = constant
-        if len(expressions) != len(coefficients):
-            raise TypeError(
-                'In the DoubleLinearExpr builders, the expression array and the '
-                ' coefficient array must have the same length.')
-        for e, c in zip(expressions, coefficients):
-            c = cmh.AssertIsNumber(c)
-            if c == 0.0:
-                continue
-            if cmh.IsNumber(e):
-                e = cmh.AssertIsNumber(e)
-                self.__constant += e * c
-            elif isinstance(e, DoubleLinearExpr):
-                self.__constant += c * e.Constant()
-                for ee, cc in zip(e.Expressions(), e.Coefficients()):
-                    self.__expressions.append(ee)
-                    self.__coefficients.append(cc)
-            elif isinstance(e, IntVar) or isinstance(e, _NotBooleanVariable):
-                self.__expressions.append(e)
-                self.__coefficients.append(c)
-            else:
-                raise TypeError('Not a double linear expression: ' + str(e))
-
-    def __str__(self):
-        output = None
-        for expr, coeff in zip(self.__expressions, self.__coefficients):
-            if not output and coeff == 1.0:
-                output = str(expr)
-            elif not output and coeff == -1.0:
-                output = '-' + str(expr)
-            elif not output:
-                output = '{} * {}'.format(coeff, str(expr))
-            elif coeff == 1.0:
-                output += ' + {}'.format(str(expr))
-            elif coeff == -1.0:
-                output += ' - {}'.format(str(expr))
-            elif coeff > 1.0:
-                output += ' + {} * {}'.format(coeff, str(expr))
-            elif coeff < -1.0:
-                output += ' - {} * {}'.format(-coeff, str(expr))
-        if self.__constant > 0.0:
-            output += ' + {}'.format(self.__constant)
-        elif self.__constant < 0.0:
-            output += ' - {}'.format(-self.__constant)
-        if output is None:
-            output = '0.0'
-        return output
-
-    def __repr__(self):
-        return 'DoubleLinearExpr([{}], [{}], {})'.format(
-            ', '.join(map(repr, self.__expressions)),
-            ', '.join(map(repr, self.__coefficients)), self.__constant)
 
 
 class Constraint(object):
@@ -868,12 +814,12 @@ class Constraint(object):
       self.
     """
 
-        if cmh.IsIntegral(boolvar) and int(boolvar) == 1:
+        if cmh.is_integral(boolvar) and int(boolvar) == 1:
             # Always true. Do nothing.
             pass
         elif isinstance(boolvar, list):
             for b in boolvar:
-                if cmh.IsIntegral(b) and int(b) == 1:
+                if cmh.is_integral(b) and int(b) == 1:
                     pass
                 else:
                     self.__constraint.enforcement_literal.append(b.Index())
@@ -983,7 +929,7 @@ def ObjectIsATrueLiteral(literal):
         proto = literal.Not().Proto()
         return (len(proto.domain) == 2 and proto.domain[0] == 0 and
                 proto.domain[1] == 0)
-    if cmh.IsIntegral(literal):
+    if cmh.is_integral(literal):
         return int(literal) == 1
     return False
 
@@ -998,7 +944,7 @@ def ObjectIsAFalseLiteral(literal):
         proto = literal.Not().Proto()
         return (len(proto.domain) == 2 and proto.domain[0] == 1 and
                 proto.domain[1] == 1)
-    if cmh.IsIntegral(literal):
+    if cmh.is_integral(literal):
         return int(literal) == 0
     return False
 
@@ -1072,17 +1018,19 @@ class CpModel(object):
         if isinstance(linear_expr, LinearExpr):
             ct = Constraint(self.__model.constraints)
             model_ct = self.__model.constraints[ct.Index()]
-            coeffs_map, constant = linear_expr.GetVarValueMap()
+            coeffs_map, constant = linear_expr.GetIntegerVarValueMap()
             for t in coeffs_map.items():
                 if not isinstance(t[0], IntVar):
                     raise TypeError('Wrong argument' + str(t))
-                c = cmh.AssertIsInt64(t[1])
+                c = cmh.assert_is_int64(t[1])
                 model_ct.linear.vars.append(t[0].Index())
                 model_ct.linear.coeffs.append(c)
-            model_ct.linear.domain.extend(
-                [cmh.CapSub(x, constant) for x in domain.FlattenedIntervals()])
+            model_ct.linear.domain.extend([
+                cmh.capped_subtraction(x, constant)
+                for x in domain.FlattenedIntervals()
+            ])
             return ct
-        elif cmh.IsIntegral(linear_expr):
+        elif cmh.is_integral(linear_expr):
             if not domain.Contains(int(linear_expr)):
                 return self.AddBoolOr([])  # Evaluate to false.
             # Nothing to do otherwise.
@@ -1135,7 +1083,7 @@ class CpModel(object):
         if not variables:
             raise ValueError('AddElement expects a non-empty variables array')
 
-        if cmh.IsIntegral(index):
+        if cmh.is_integral(index):
             return self.Add(list(variables)[int(index)] == target)
 
         ct = Constraint(self.__model.constraints)
@@ -1173,8 +1121,8 @@ class CpModel(object):
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
         for arc in arcs:
-            tail = cmh.AssertIsInt32(arc[0])
-            head = cmh.AssertIsInt32(arc[1])
+            tail = cmh.assert_is_int32(arc[0])
+            head = cmh.assert_is_int32(arc[1])
             lit = self.GetOrMakeBooleanIndex(arc[2])
             model_ct.circuit.tails.append(tail)
             model_ct.circuit.heads.append(head)
@@ -1217,7 +1165,7 @@ class CpModel(object):
                 raise TypeError('Tuple ' + str(t) + ' has the wrong arity')
             ar = []
             for v in t:
-                ar.append(cmh.AssertIsInt64(v))
+                ar.append(cmh.assert_is_int64(v))
             model_ct.table.values.extend(ar)
         return ct
 
@@ -1308,18 +1256,18 @@ class CpModel(object):
         model_ct = self.__model.constraints[ct.Index()]
         model_ct.automaton.vars.extend(
             [self.GetOrMakeIndex(x) for x in transition_variables])
-        starting_state = cmh.AssertIsInt64(starting_state)
+        starting_state = cmh.assert_is_int64(starting_state)
         model_ct.automaton.starting_state = starting_state
         for v in final_states:
-            v = cmh.AssertIsInt64(v)
+            v = cmh.assert_is_int64(v)
             model_ct.automaton.final_states.append(v)
         for t in transition_triples:
             if len(t) != 3:
                 raise TypeError('Tuple ' + str(t) +
                                 ' has the wrong arity (!= 3)')
-            tail = cmh.AssertIsInt64(t[0])
-            label = cmh.AssertIsInt64(t[1])
-            head = cmh.AssertIsInt64(t[2])
+            tail = cmh.assert_is_int64(t[0])
+            label = cmh.assert_is_int64(t[1])
+            head = cmh.assert_is_int64(t[2])
             model_ct.automaton.transition_tail.append(tail)
             model_ct.automaton.transition_label.append(label)
             model_ct.automaton.transition_head.append(head)
@@ -1653,7 +1601,7 @@ class CpModel(object):
     Returns:
       An `IntervalVar` object.
     """
-        size = cmh.AssertIsInt64(size)
+        size = cmh.assert_is_int64(size)
         start_expr = self.ParseLinearExpression(start)
         size_expr = self.ParseLinearExpression(size)
         end_expr = self.ParseLinearExpression(start + size)
@@ -1724,7 +1672,7 @@ class CpModel(object):
     Returns:
       An `IntervalVar` object.
     """
-        size = cmh.AssertIsInt64(size)
+        size = cmh.assert_is_int64(size)
         start_expr = self.ParseLinearExpression(start)
         size_expr = self.ParseLinearExpression(size)
         end_expr = self.ParseLinearExpression(start + size)
@@ -1871,8 +1819,8 @@ class CpModel(object):
         elif (isinstance(arg, _ProductCst) and
               isinstance(arg.Expression(), IntVar) and arg.Coefficient() == -1):
             return -arg.Expression().Index() - 1
-        elif cmh.IsIntegral(arg):
-            arg = cmh.AssertIsInt64(arg)
+        elif cmh.is_integral(arg):
+            arg = cmh.assert_is_int64(arg)
             return self.GetOrMakeIndexFromConstant(arg)
         else:
             raise TypeError('NotSupported: model.GetOrMakeIndex(' + str(arg) +
@@ -1886,8 +1834,8 @@ class CpModel(object):
         elif isinstance(arg, _NotBooleanVariable):
             self.AssertIsBooleanVariable(arg.Not())
             return arg.Index()
-        elif cmh.IsIntegral(arg):
-            cmh.AssertIsBoolean(arg)
+        elif cmh.is_integral(arg):
+            cmh.assert_is_boolean(arg)
             return self.GetOrMakeIndexFromConstant(int(arg))
         else:
             raise TypeError('NotSupported: model.GetOrMakeBooleanIndex(' +
@@ -1917,7 +1865,7 @@ class CpModel(object):
         """Returns a LinearExpressionProto built from a LinearExpr instance."""
         result = cp_model_pb2.LinearExpressionProto()
         mult = -1 if negate else 1
-        if cmh.IsIntegral(linear_expr):
+        if cmh.is_integral(linear_expr):
             result.offset = int(linear_expr) * mult
             return result
 
@@ -1926,12 +1874,12 @@ class CpModel(object):
             result.coeffs.append(mult)
             return result
 
-        coeffs_map, constant = linear_expr.GetVarValueMap()
+        coeffs_map, constant = linear_expr.GetIntegerVarValueMap()
         result.offset = constant * mult
         for t in coeffs_map.items():
             if not isinstance(t[0], IntVar):
                 raise TypeError('Wrong argument' + str(t))
-            c = cmh.AssertIsInt64(t[1])
+            c = cmh.assert_is_int64(t[1])
             result.vars.append(t[0].Index())
             result.coeffs.append(c * mult)
         return result
@@ -1949,28 +1897,29 @@ class CpModel(object):
             else:
                 self.__model.objective.vars.append(self.Negated(obj.Index()))
                 self.__model.objective.scaling_factor = -1
-        elif isinstance(obj, DoubleLinearExpr):
-            coeffs_map, constant = obj.GetVarValueMap()
-            self.__model.floating_point_objective.maximize = not minimize
-            self.__model.floating_point_objective.offset = constant
-            for v, c, in coeffs_map.items():
-                self.__model.floating_point_objective.coeffs.append(c)
-                self.__model.floating_point_objective.vars.append(v.Index())
         elif isinstance(obj, LinearExpr):
-            coeffs_map, constant = obj.GetVarValueMap()
-            if minimize:
-                self.__model.objective.scaling_factor = 1
-                self.__model.objective.offset = constant
-            else:
-                self.__model.objective.scaling_factor = -1
-                self.__model.objective.offset = -constant
-            for v, c, in coeffs_map.items():
-                self.__model.objective.coeffs.append(c)
+            coeffs_map, constant, is_integer = obj.GetFloatVarValueMap()
+            if is_integer:
                 if minimize:
-                    self.__model.objective.vars.append(v.Index())
+                    self.__model.objective.scaling_factor = 1
+                    self.__model.objective.offset = constant
                 else:
-                    self.__model.objective.vars.append(self.Negated(v.Index()))
-        elif cmh.IsIntegral(obj):
+                    self.__model.objective.scaling_factor = -1
+                    self.__model.objective.offset = -constant
+                for v, c, in coeffs_map.items():
+                    self.__model.objective.coeffs.append(c)
+                    if minimize:
+                        self.__model.objective.vars.append(v.Index())
+                    else:
+                        self.__model.objective.vars.append(
+                            self.Negated(v.Index()))
+            else:
+                self.__model.floating_point_objective.maximize = not minimize
+                self.__model.floating_point_objective.offset = constant
+                for v, c, in coeffs_map.items():
+                    self.__model.floating_point_objective.coeffs.append(c)
+                    self.__model.floating_point_objective.vars.append(v.Index())
+        elif cmh.is_integral(obj):
             self.__model.objective.offset = int(obj)
             self.__model.objective.scaling_factor = 1
         else:
@@ -2062,7 +2011,7 @@ class CpModel(object):
 
 def EvaluateLinearExpr(expression, solution):
     """Evaluate a linear expression against a solution."""
-    if cmh.IsIntegral(expression):
+    if cmh.is_integral(expression):
         return int(expression)
     if not isinstance(expression, LinearExpr):
         raise TypeError('Cannot interpret %s as a linear expression.' %
@@ -2071,27 +2020,35 @@ def EvaluateLinearExpr(expression, solution):
     value = 0
     to_process = [(expression, 1)]
     while to_process:
-        expr, coef = to_process.pop()
-        if isinstance(expr, _ProductCst):
-            to_process.append((expr.Expression(), coef * expr.Coefficient()))
+        expr, coeff = to_process.pop()
+        if cmh.is_integral(expr):
+            value += int(expr) * coeff
+        elif isinstance(expr, _ProductCst):
+            to_process.append((expr.Expression(), coeff * expr.Coefficient()))
+        elif isinstance(expr, _Sum):
+            to_process.append((expr.Left(), coeff))
+            to_process.append((expr.Right(), coeff))
         elif isinstance(expr, _SumArray):
             for e in expr.Expressions():
-                to_process.append((e, coef))
-            value += expr.Constant() * coef
+                to_process.append((e, coeff))
+            value += expr.Constant() * coeff
         elif isinstance(expr, _ScalProd):
             for e, c in zip(expr.Expressions(), expr.Coefficients()):
-                to_process.append((e, coef * c))
-            value += expr.Constant() * coef
+                to_process.append((e, coeff * c))
+            value += expr.Constant() * coeff
         elif isinstance(expr, IntVar):
-            value += coef * solution.solution[expr.Index()]
+            value += coeff * solution.solution[expr.Index()]
         elif isinstance(expr, _NotBooleanVariable):
-            value += coef * (1 - solution.solution[expr.Not().Index()])
+            value += coeff * (1 - solution.solution[expr.Not().Index()])
+        else:
+            raise TypeError(f'Cannot interpret {expr} as a linear expression.')
+
     return value
 
 
 def EvaluateBooleanExpression(literal, solution):
     """Evaluate a boolean expression against a solution."""
-    if cmh.IsIntegral(literal):
+    if cmh.is_integral(literal):
         return bool(literal)
     elif isinstance(literal, IntVar) or isinstance(literal,
                                                    _NotBooleanVariable):
@@ -2101,8 +2058,7 @@ def EvaluateBooleanExpression(literal, solution):
         else:
             return not solution.solution[-index - 1]
     else:
-        raise TypeError('Cannot interpret %s as a boolean expression.' %
-                        literal)
+        raise TypeError(f'Cannot interpret {literal} as a boolean expression.')
 
 
 class CpSolver(object):
@@ -2308,14 +2264,13 @@ class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
     """
         if not self.HasResponse():
             raise RuntimeError('Solve() has not be called.')
-        if cmh.IsIntegral(lit):
+        if cmh.is_integral(lit):
             return bool(lit)
         elif isinstance(lit, IntVar) or isinstance(lit, _NotBooleanVariable):
             index = lit.Index()
             return self.SolutionBooleanValue(index)
         else:
-            raise TypeError('Cannot interpret %s as a boolean expression.' %
-                            lit)
+            raise TypeError(f'Cannot interpret {lit} as a boolean expression.')
 
     def Value(self, expression):
         """Evaluates an linear expression in the current solution.
@@ -2332,32 +2287,36 @@ class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
     """
         if not self.HasResponse():
             raise RuntimeError('Solve() has not be called.')
-        if cmh.IsIntegral(expression):
-            return int(expression)
-        if not isinstance(expression, LinearExpr):
-            raise TypeError('Cannot interpret %s as a linear expression.' %
-                            expression)
 
         value = 0
         to_process = [(expression, 1)]
         while to_process:
-            expr, coef = to_process.pop()
-            if isinstance(expr, _ProductCst):
+            expr, coeff = to_process.pop()
+            if cmh.is_integral(expr):
+                value += int(expr) * coeff
+            elif isinstance(expr, _ProductCst):
                 to_process.append(
-                    (expr.Expression(), coef * expr.Coefficient()))
+                    (expr.Expression(), coeff * expr.Coefficient()))
+            elif isinstance(expr, _Sum):
+                to_process.append((expr.Left(), coeff))
+                to_process.append((expr.Right(), coeff))
             elif isinstance(expr, _SumArray):
                 for e in expr.Expressions():
-                    to_process.append((e, coef))
-                    value += expr.Constant() * coef
+                    to_process.append((e, coeff))
+                    value += expr.Constant() * coeff
             elif isinstance(expr, _ScalProd):
                 for e, c in zip(expr.Expressions(), expr.Coefficients()):
-                    to_process.append((e, coef * c))
-                value += expr.Constant() * coef
+                    to_process.append((e, coeff * c))
+                value += expr.Constant() * coeff
             elif isinstance(expr, IntVar):
-                value += coef * self.SolutionIntegerValue(expr.Index())
+                value += coeff * self.SolutionIntegerValue(expr.Index())
             elif isinstance(expr, _NotBooleanVariable):
-                value += coef * (1 -
-                                 self.SolutionIntegerValue(expr.Not().Index()))
+                value += coeff * (1 -
+                                  self.SolutionIntegerValue(expr.Not().Index()))
+            else:
+                raise TypeError(
+                    f'Cannot interpret {expression} as a linear expression.')
+
         return value
 
 

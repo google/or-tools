@@ -466,37 +466,37 @@ class CpModelTest(unittest.TestCase):
 
     def testAssertIsInt64(self):
         print('testAssertIsInt64')
-        cp_model_helper.AssertIsInt64(123)
-        cp_model_helper.AssertIsInt64(2**63 - 1)
-        cp_model_helper.AssertIsInt64(-2**63)
+        cp_model_helper.assert_is_int64(123)
+        cp_model_helper.assert_is_int64(2**63 - 1)
+        cp_model_helper.assert_is_int64(-2**63)
 
     def testCapInt64(self):
         print('testCapInt64')
         self.assertEqual(
-            cp_model_helper.CapInt64(cp_model.INT_MAX), cp_model.INT_MAX)
+            cp_model_helper.to_capped_int64(cp_model.INT_MAX), cp_model.INT_MAX)
         self.assertEqual(
-            cp_model_helper.CapInt64(cp_model.INT_MAX + 1), cp_model.INT_MAX)
+            cp_model_helper.to_capped_int64(cp_model.INT_MAX + 1), cp_model.INT_MAX)
         self.assertEqual(
-            cp_model_helper.CapInt64(cp_model.INT_MIN), cp_model.INT_MIN)
+            cp_model_helper.to_capped_int64(cp_model.INT_MIN), cp_model.INT_MIN)
         self.assertEqual(
-            cp_model_helper.CapInt64(cp_model.INT_MIN - 1), cp_model.INT_MIN)
-        self.assertEqual(cp_model_helper.CapInt64(15), 15)
+            cp_model_helper.to_capped_int64(cp_model.INT_MIN - 1), cp_model.INT_MIN)
+        self.assertEqual(cp_model_helper.to_capped_int64(15), 15)
 
     def testCapSub(self):
         print('testCapSub')
-        self.assertEqual(cp_model_helper.CapSub(10, 5), 5)
+        self.assertEqual(cp_model_helper.capped_subtraction(10, 5), 5)
         self.assertEqual(
-            cp_model_helper.CapSub(cp_model.INT_MIN, 5), cp_model.INT_MIN)
+            cp_model_helper.capped_subtraction(cp_model.INT_MIN, 5), cp_model.INT_MIN)
         self.assertEqual(
-            cp_model_helper.CapSub(cp_model.INT_MIN, -5), cp_model.INT_MIN)
+            cp_model_helper.capped_subtraction(cp_model.INT_MIN, -5), cp_model.INT_MIN)
         self.assertEqual(
-            cp_model_helper.CapSub(cp_model.INT_MAX, 5), cp_model.INT_MAX)
+            cp_model_helper.capped_subtraction(cp_model.INT_MAX, 5), cp_model.INT_MAX)
         self.assertEqual(
-            cp_model_helper.CapSub(cp_model.INT_MAX, -5), cp_model.INT_MAX)
+            cp_model_helper.capped_subtraction(cp_model.INT_MAX, -5), cp_model.INT_MAX)
         self.assertEqual(
-            cp_model_helper.CapSub(2, cp_model.INT_MIN), cp_model.INT_MAX)
+            cp_model_helper.capped_subtraction(2, cp_model.INT_MIN), cp_model.INT_MAX)
         self.assertEqual(
-            cp_model_helper.CapSub(2, cp_model.INT_MAX), cp_model.INT_MIN)
+            cp_model_helper.capped_subtraction(2, cp_model.INT_MAX), cp_model.INT_MIN)
 
     def testGetOrMakeIndexFromConstant(self):
         print('testGetOrMakeIndexFromConstant')
@@ -539,8 +539,8 @@ class CpModelTest(unittest.TestCase):
         y = model.NewIntVar(0, 3, 'y')
         self.assertEqual(repr(x), 'x(0..4)')
         self.assertEqual(repr(x * 2), 'ProductCst(x(0..4), 2)')
-        self.assertEqual(repr(x + y), 'SumArray(x(0..4), y(0..3), 0)')
-        self.assertEqual(repr(x + 5), 'SumArray(x(0..4), 5)')
+        self.assertEqual(repr(x + y), 'Sum(x(0..4), y(0..3))')
+        self.assertEqual(repr(x + 5), 'Sum(x(0..4), 5)')
 
     def testDisplayBounds(self):
         print('testDisplayBounds')

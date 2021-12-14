@@ -21,48 +21,70 @@ INT32_MIN = -2147483648
 INT32_MAX = 2147483647
 
 
-def IsIntegral(x):
+def is_integral(x):
     """Checks if x has either a number.Integral or a np.integer type."""
     return isinstance(x, numbers.Integral) or isinstance(x, np.integer)
 
 
-def IsNumber(x):
+def is_a_number(x):
     """Checks if x has either a number.Number or a np.double type."""
-    return isinstance(x, numbers.Number) or isinstance(x, np.double)
+    return isinstance(x, numbers.Number) or isinstance(
+        x, np.double) or isinstance(x, np.integer)
 
 
-def AssertIsInt64(x):
+def is_zero(x):
+    """Checks if the x is 0 or 0.0."""
+    return (is_integral(x) and int(x) == 0) or (is_a_number(x) and
+                                                float(x) == 0.0)
+
+
+def is_one(x):
+    """Checks if x is 1 or 1.0."""
+    return (is_integral(x) and int(x) == 1) or (is_a_number(x) and
+                                                float(x) == 1.0)
+
+
+def is_minus_one(x):
+    """Checks if x is -1 or -1.0."""
+    return (is_integral(x) and int(x) == -1) or (is_a_number(x) and
+                                                 float(x) == -1.0)
+
+
+def assert_is_int64(x):
     """Asserts that x is integer and x is in [min_int_64, max_int_64]."""
-    if not IsIntegral(x):
+    if not is_integral(x):
         raise TypeError('Not an integer: %s' % x)
     if x < INT_MIN or x > INT_MAX:
         raise OverflowError('Does not fit in an int64_t: %s' % x)
     return int(x)
 
 
-def AssertIsInt32(x):
+def assert_is_int32(x):
     """Asserts that x is integer and x is in [min_int_32, max_int_32]."""
-    if not IsIntegral(x):
+    if not is_integral(x):
         raise TypeError('Not an integer: %s' % x)
     if x < INT32_MIN or x > INT32_MAX:
         raise OverflowError('Does not fit in an int32_t: %s' % x)
     return int(x)
 
 
-def AssertIsBoolean(x):
+def assert_is_boolean(x):
     """Asserts that x is 0 or 1."""
-    if not IsIntegral(x) or x < 0 or x > 1:
+    if not is_integral(x) or x < 0 or x > 1:
         raise TypeError('Not an boolean: %s' % x)
 
 
-def AssertIsNumber(x):
+def assert_is_a_number(x):
     """Asserts that x is a number and returns it."""
-    if not IsNumber(x):
+    if not is_a_number(x):
         raise TypeError('Not an number: %s' % x)
-    return float(x)
+    elif is_integral(x):
+        return int(x)
+    else:
+        return float(x)
 
 
-def CapInt64(v):
+def to_capped_int64(v):
     """Restrict v within [INT_MIN..INT_MAX] range."""
     if v > INT_MAX:
         return INT_MAX
@@ -71,10 +93,10 @@ def CapInt64(v):
     return v
 
 
-def CapSub(x, y):
+def capped_subtraction(x, y):
     """Saturated arithmetics. Returns x - y truncated to the int64_t range."""
-    AssertIsInt64(x)
-    AssertIsInt64(y)
+    assert_is_int64(x)
+    assert_is_int64(y)
     if y == 0:
         return x
     if x == y:
@@ -88,4 +110,4 @@ def CapSub(x, y):
         return INT_MIN
     if y == INT_MIN:
         return INT_MAX
-    return CapInt64(x - y)
+    return to_capped_int64(x - y)
