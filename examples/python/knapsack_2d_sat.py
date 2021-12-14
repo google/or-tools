@@ -127,7 +127,7 @@ def solve_with_duplicate_items(data, max_height, max_width):
     model.AddNoOverlap2D(x_intervals, y_intervals)
 
     ## Objective.
-    model.Maximize(cp_model.DoubleLinearExpr.ScalProd(is_used, item_values))
+    model.Maximize(cp_model.LinearExpr.ScalProd(is_used, item_values))
 
     # Output proto to file.
     if FLAGS.output_proto:
@@ -217,7 +217,7 @@ def solve_with_duplicate_optional_items(data, max_height, max_width):
     model.AddNoOverlap2D(x_intervals, y_intervals)
 
     ## Objective.
-    model.Maximize(cp_model.DoubleLinearExpr.ScalProd(is_used, item_values))
+    model.Maximize(cp_model.LinearExpr.ScalProd(is_used, item_values))
 
     # Output proto to file.
     if FLAGS.output_proto:
@@ -330,7 +330,7 @@ def solve_with_rotations(data, max_height, max_width):
     model.AddNoOverlap2D(x_intervals, y_intervals)
 
     # Objective.
-    model.Maximize(cp_model.DoubleLinearExpr.ScalProd(is_used, item_values))
+    model.Maximize(cp_model.LinearExpr.ScalProd(is_used, item_values))
 
     # Output proto to file.
     if FLAGS.output_proto:
