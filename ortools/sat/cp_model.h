@@ -173,7 +173,7 @@ class IntVar {
   }
 
   // Returns the domain of the variable.
-  Domain Domain() const;
+  ::operations_research::Domain Domain() const;
 
   std::string DebugString() const;
 
