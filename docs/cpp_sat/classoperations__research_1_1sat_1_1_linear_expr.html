@@ -90,7 +90,7 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1sat_1_1_l
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p >A dedicated container for linear expressions. </p>
 <p >With the use of implicit constructors, it can accept integer values, Boolean and Integer variables. Note that Not(x) will be silently transformed into 1 - x when added to the linear expression. It also support operator overloads to construct the linear expression naturally.</p>
-<p >Furthermore, static methods allows sums and scalar products, with or without an additional constant.</p>
+<p >Furthermore, static methods allow to construct a linear expression from sums or scalar products.</p>
 <p >Usage: </p><div class="fragment"><div class="line">CpModelBuilder cp_model;</div>
 <div class="line">IntVar x = model.NewIntVar({0, 10}).WithName(<span class="stringliteral">&quot;x&quot;</span>);</div>
 <div class="line">IntVar y = model.NewIntVar({0, 10}).WithName(<span class="stringliteral">&quot;y&quot;</span>);</div>
@@ -105,16 +105,17 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1sat_1_1_l
 <div class="line"><a class="code hl_function" href="classoperations__research_1_1sat_1_1_linear_expr.html#a9e3df3927a2358f35ac00297c03080eb">LinearExpr</a> e6 = <a class="code hl_function" href="classoperations__research_1_1sat_1_1_linear_expr.html#a899dd96359ab1e4f8a0589439db9c619">LinearExpr::Sum</a>(bools);   <span class="comment">// b + 1 - c;</span></div>
 <div class="line"><a class="code hl_function" href="classoperations__research_1_1sat_1_1_linear_expr.html#a9e3df3927a2358f35ac00297c03080eb">LinearExpr</a> e7 = -3 * b + <a class="code hl_function" href="namespaceoperations__research_1_1sat.html#a5e3de118c1f8dd5a7ec21704e05684b9">Not</a>(c);  <span class="comment">// -3 * b + 1 - c;</span></div>
 <div class="ttc" id="aclassoperations__research_1_1sat_1_1_linear_expr_html_a899dd96359ab1e4f8a0589439db9c619"><div class="ttname"><a href="classoperations__research_1_1sat_1_1_linear_expr.html#a899dd96359ab1e4f8a0589439db9c619">operations_research::sat::LinearExpr::Sum</a></div><div class="ttdeci">static LinearExpr Sum(absl::Span&lt; const IntVar &gt; vars)</div><div class="ttdoc">Constructs the sum of a list of variables.</div></div>
-<div class="ttc" id="aclassoperations__research_1_1sat_1_1_linear_expr_html_a9e3df3927a2358f35ac00297c03080eb"><div class="ttname"><a href="classoperations__research_1_1sat_1_1_linear_expr.html#a9e3df3927a2358f35ac00297c03080eb">operations_research::sat::LinearExpr::LinearExpr</a></div><div class="ttdeci">LinearExpr()=default</div></div>
+<div class="ttc" id="aclassoperations__research_1_1sat_1_1_linear_expr_html_a9e3df3927a2358f35ac00297c03080eb"><div class="ttname"><a href="classoperations__research_1_1sat_1_1_linear_expr.html#a9e3df3927a2358f35ac00297c03080eb">operations_research::sat::LinearExpr::LinearExpr</a></div><div class="ttdeci">LinearExpr()=default</div><div class="ttdoc">Creates an empty linear expression with value zero.</div></div>
 <div class="ttc" id="anamespaceoperations__research_1_1sat_html_a5e3de118c1f8dd5a7ec21704e05684b9"><div class="ttname"><a href="namespaceoperations__research_1_1sat.html#a5e3de118c1f8dd5a7ec21704e05684b9">operations_research::sat::Not</a></div><div class="ttdeci">BoolVar Not(BoolVar x)</div><div class="ttdoc">A convenient wrapper so we can write Not(x) instead of x.Not() which is sometimes clearer.</div></div>
 </div><!-- fragment --><p> This can be used implicitly in some of the <a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html" title="Wrapper class around the cp_model proto.">CpModelBuilder</a> methods. </p><div class="fragment"><div class="line">cp_model.AddGreaterThan(x, 5);</div>
 <div class="line">cp_model.AddEquality(x, y + 5);</div>
 </div><!-- fragment --> 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00241">241</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00238">238</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a9e3df3927a2358f35ac00297c03080eb"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html#a9e3df3927a2358f35ac00297c03080eb">LinearExpr</a> ()=default</td></tr>
+<tr class="memdesc:a9e3df3927a2358f35ac00297c03080eb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates an empty linear expression with value zero.  <a href="classoperations__research_1_1sat_1_1_linear_expr.html#a9e3df3927a2358f35ac00297c03080eb">More...</a><br /></td></tr>
 <tr class="separator:a9e3df3927a2358f35ac00297c03080eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9556910050b0975ea15c090d9f0ae801"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html#a9556910050b0975ea15c090d9f0ae801">LinearExpr</a> (<a class="el" href="classoperations__research_1_1sat_1_1_bool_var.html">BoolVar</a> var)</td></tr>
 <tr class="memdesc:a9556910050b0975ea15c090d9f0ae801"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructs a linear expression from a Boolean variable.  <a href="classoperations__research_1_1sat_1_1_linear_expr.html#a9556910050b0975ea15c090d9f0ae801">More...</a><br /></td></tr>
@@ -149,6 +150,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a4f4f37b1d40147f9f9667e2e466b642e"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; int64_t &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html#a4f4f37b1d40147f9f9667e2e466b642e">coefficients</a> () const</td></tr>
 <tr class="memdesc:a4f4f37b1d40147f9f9667e2e466b642e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the vector of coefficients.  <a href="classoperations__research_1_1sat_1_1_linear_expr.html#a4f4f37b1d40147f9f9667e2e466b642e">More...</a><br /></td></tr>
 <tr class="separator:a4f4f37b1d40147f9f9667e2e466b642e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2ae4e760d86ea13ee9289372c8cbb635"><td class="memItemLeft" align="right" valign="top">const bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html#a2ae4e760d86ea13ee9289372c8cbb635">IsConstant</a> () const</td></tr>
+<tr class="memdesc:a2ae4e760d86ea13ee9289372c8cbb635"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if the expression has no variables.  <a href="classoperations__research_1_1sat_1_1_linear_expr.html#a2ae4e760d86ea13ee9289372c8cbb635">More...</a><br /></td></tr>
+<tr class="separator:a2ae4e760d86ea13ee9289372c8cbb635"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9bd86ece9cd5f04a8d39b6ebd32f6725"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html#a9bd86ece9cd5f04a8d39b6ebd32f6725">constant</a> () const</td></tr>
 <tr class="memdesc:a9bd86ece9cd5f04a8d39b6ebd32f6725"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the constant term.  <a href="classoperations__research_1_1sat_1_1_linear_expr.html#a9bd86ece9cd5f04a8d39b6ebd32f6725">More...</a><br /></td></tr>
 <tr class="separator:a9bd86ece9cd5f04a8d39b6ebd32f6725"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -165,7 +169,7 @@ Static Public Member Functions</h2></td></tr>
 <tr class="memdesc:a9e41187c813a408c04700406c4a044f1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructs the sum of a list of Boolean variables.  <a href="classoperations__research_1_1sat_1_1_linear_expr.html#a9e41187c813a408c04700406c4a044f1">More...</a><br /></td></tr>
 <tr class="separator:a9e41187c813a408c04700406c4a044f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2613f08a869f50435f428e50005eb493"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html#a2613f08a869f50435f428e50005eb493">Sum</a> (std::initializer_list&lt; <a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a> &gt; vars)</td></tr>
-<tr class="memdesc:a2613f08a869f50435f428e50005eb493"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructs the sum of a list of Boolean variables.  <a href="classoperations__research_1_1sat_1_1_linear_expr.html#a2613f08a869f50435f428e50005eb493">More...</a><br /></td></tr>
+<tr class="memdesc:a2613f08a869f50435f428e50005eb493"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructs the sum of a list of variables.  <a href="classoperations__research_1_1sat_1_1_linear_expr.html#a2613f08a869f50435f428e50005eb493">More...</a><br /></td></tr>
 <tr class="separator:a2613f08a869f50435f428e50005eb493"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7db84b5f004d2a56928744ee421930bd"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html#a7db84b5f004d2a56928744ee421930bd">ScalProd</a> (absl::Span&lt; const <a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a> &gt; vars, absl::Span&lt; const int64_t &gt; coeffs)</td></tr>
 <tr class="memdesc:a7db84b5f004d2a56928744ee421930bd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructs the scalar product of variables and coefficients.  <a href="classoperations__research_1_1sat_1_1_linear_expr.html#a7db84b5f004d2a56928744ee421930bd">More...</a><br /></td></tr>
@@ -215,6 +219,8 @@ Static Public Member Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Creates an empty linear expression with value zero. </p>
 
 </div>
 </div>
@@ -322,7 +328,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00308">308</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00303">303</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
@@ -509,7 +515,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Returns the vector of coefficients. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00314">314</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00309">309</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
@@ -538,7 +544,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Returns the constant term. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00317">317</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00315">315</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
@@ -588,6 +594,35 @@ Static Public Member Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Constructs a linear expr from its proto representation. </p>
+
+</div>
+</div>
+<a id="a2ae4e760d86ea13ee9289372c8cbb635" name="a2ae4e760d86ea13ee9289372c8cbb635"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2ae4e760d86ea13ee9289372c8cbb635">&#9670;&nbsp;</a></span>IsConstant()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const bool IsConstant </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Returns true if the expression has no variables. </p>
+
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00312">312</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
@@ -839,7 +874,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Constructs the sum of a list of Boolean variables. </p>
+<p>Constructs the sum of a list of variables. </p>
 
 </div>
 </div>
@@ -944,7 +979,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Returns the vector of variable indices. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00311">311</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00306">306</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>

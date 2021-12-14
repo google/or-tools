@@ -88,7 +88,7 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1sat_1_1_b
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p >A Boolean variable. </p>
-<p >This class wraps an <a class="el" href="classoperations__research_1_1sat_1_1_integer_variable_proto.html">IntegerVariableProto</a> with domain [0, 1]. It supports the logical negation (Not).</p>
+<p >This class refer to an <a class="el" href="classoperations__research_1_1sat_1_1_integer_variable_proto.html">IntegerVariableProto</a> with domain [0, 1] or to its logical negation (Not). This is called a Boolean Literal in other context.</p>
 <p >This can only be constructed via <code><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a580af67c82c83176a2938fb24b3b0c98" title="Creates a Boolean variable.">CpModelBuilder.NewBoolVar()</a></code>. </p>
 
 <p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00070">70</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
@@ -96,6 +96,7 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1sat_1_1_b
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a8d34e06a33d1de52331eef3732b509cf"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_bool_var.html#a8d34e06a33d1de52331eef3732b509cf">BoolVar</a> ()</td></tr>
+<tr class="memdesc:a8d34e06a33d1de52331eef3732b509cf"><td class="mdescLeft">&#160;</td><td class="mdescRight">A default constructed <a class="el" href="classoperations__research_1_1sat_1_1_bool_var.html" title="A Boolean variable.">BoolVar</a> can be used to mean not defined yet.  <a href="classoperations__research_1_1sat_1_1_bool_var.html#a8d34e06a33d1de52331eef3732b509cf">More...</a><br /></td></tr>
 <tr class="separator:a8d34e06a33d1de52331eef3732b509cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5faa887b5cfc205902474ccd69223870"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_bool_var.html">BoolVar</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_bool_var.html#a5faa887b5cfc205902474ccd69223870">WithName</a> (const std::string &amp;name)</td></tr>
 <tr class="memdesc:a5faa887b5cfc205902474ccd69223870"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the name of the variable.  <a href="classoperations__research_1_1sat_1_1_bool_var.html#a5faa887b5cfc205902474ccd69223870">More...</a><br /></td></tr>
@@ -107,13 +108,10 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:acf0b12c4598ff0e9badb80795341e1ce"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the logical negation of the current Boolean variable.  <a href="classoperations__research_1_1sat_1_1_bool_var.html#acf0b12c4598ff0e9badb80795341e1ce">More...</a><br /></td></tr>
 <tr class="separator:acf0b12c4598ff0e9badb80795341e1ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac007930625d02938b9440eafdd23dcdc"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_bool_var.html#ac007930625d02938b9440eafdd23dcdc">operator==</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_bool_var.html">BoolVar</a> &amp;other) const</td></tr>
-<tr class="memdesc:ac007930625d02938b9440eafdd23dcdc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Equality test with another boolvar.  <a href="classoperations__research_1_1sat_1_1_bool_var.html#ac007930625d02938b9440eafdd23dcdc">More...</a><br /></td></tr>
 <tr class="separator:ac007930625d02938b9440eafdd23dcdc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa2a46716066eef222aee80da07fb7fda"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_bool_var.html#aa2a46716066eef222aee80da07fb7fda">operator!=</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_bool_var.html">BoolVar</a> &amp;other) const</td></tr>
-<tr class="memdesc:aa2a46716066eef222aee80da07fb7fda"><td class="mdescLeft">&#160;</td><td class="mdescRight">Dis-Equality test.  <a href="classoperations__research_1_1sat_1_1_bool_var.html#aa2a46716066eef222aee80da07fb7fda">More...</a><br /></td></tr>
 <tr class="separator:aa2a46716066eef222aee80da07fb7fda"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a764be64f3029f8b8e23511061d8de355"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_bool_var.html#a764be64f3029f8b8e23511061d8de355">DebugString</a> () const</td></tr>
-<tr class="memdesc:a764be64f3029f8b8e23511061d8de355"><td class="mdescLeft">&#160;</td><td class="mdescRight">Debug string.  <a href="classoperations__research_1_1sat_1_1_bool_var.html#a764be64f3029f8b8e23511061d8de355">More...</a><br /></td></tr>
 <tr class="separator:a764be64f3029f8b8e23511061d8de355"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acca41811e8aaab0112b987749c0ecb93"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_bool_var.html#acca41811e8aaab0112b987749c0ecb93">index</a> () const</td></tr>
 <tr class="memdesc:acca41811e8aaab0112b987749c0ecb93"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the index of the variable in the model.  <a href="classoperations__research_1_1sat_1_1_bool_var.html#acca41811e8aaab0112b987749c0ecb93">More...</a><br /></td></tr>
@@ -135,6 +133,9 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
+<p>A default constructed <a class="el" href="classoperations__research_1_1sat_1_1_bool_var.html" title="A Boolean variable.">BoolVar</a> can be used to mean not defined yet. </p>
+<p >However, it shouldn't be passed to any of the functions in this file. Doing so will crash in debug mode and will result in an invalid model in opt mode. </p>
+
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
@@ -152,8 +153,6 @@ Public Member Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p>Debug string. </p>
 
 </div>
 </div>
@@ -183,7 +182,7 @@ Public Member Functions</h2></td></tr>
 <p>Returns the index of the variable in the model. </p>
 <p >Warning: If the variable is the negation of another variable v, its index is -v.index() - 1. So this can be negative. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00103">103</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00104">104</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
@@ -231,7 +230,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns the logical negation of the current Boolean variable. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00082">82</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00086">86</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
@@ -259,9 +258,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Dis-Equality test. </p>
-
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00090">90</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00092">92</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
@@ -289,9 +286,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Equality test with another boolvar. </p>
-
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00085">85</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00088">88</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>

@@ -93,7 +93,7 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1sat_1_1_c
 <li>AddXXX to create new constraints and add them to the model. </li>
 </ul>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00753">753</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00748">748</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -266,6 +266,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a0a6a19ee5a4f0b894f3ac87438aeede5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a0a6a19ee5a4f0b894f3ac87438aeede5">AddHint</a> (<a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a> var, int64_t value)</td></tr>
 <tr class="memdesc:a0a6a19ee5a4f0b894f3ac87438aeede5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds hinting to a variable.  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a0a6a19ee5a4f0b894f3ac87438aeede5">More...</a><br /></td></tr>
 <tr class="separator:a0a6a19ee5a4f0b894f3ac87438aeede5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a59832da63a617fe3b1a25002e4447731"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a59832da63a617fe3b1a25002e4447731">AddHint</a> (<a class="el" href="classoperations__research_1_1sat_1_1_bool_var.html">BoolVar</a> var, bool value)</td></tr>
+<tr class="memdesc:a59832da63a617fe3b1a25002e4447731"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds hinting to a Boolean variable.  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a59832da63a617fe3b1a25002e4447731">More...</a><br /></td></tr>
+<tr class="separator:a59832da63a617fe3b1a25002e4447731"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a485bca08c27e5705acb26db873aba498"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a485bca08c27e5705acb26db873aba498">ClearHints</a> ()</td></tr>
 <tr class="memdesc:a485bca08c27e5705acb26db873aba498"><td class="mdescLeft">&#160;</td><td class="mdescRight">Removes all hints.  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a485bca08c27e5705acb26db873aba498">More...</a><br /></td></tr>
 <tr class="separator:a485bca08c27e5705acb26db873aba498"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -849,8 +852,38 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="a59832da63a617fe3b1a25002e4447731" name="a59832da63a617fe3b1a25002e4447731"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a59832da63a617fe3b1a25002e4447731">&#9670;&nbsp;</a></span>AddHint() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void AddHint </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_bool_var.html">BoolVar</a>&#160;</td>
+          <td class="paramname"><em>var</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>value</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Adds hinting to a Boolean variable. </p>
+
+</div>
+</div>
 <a id="a0a6a19ee5a4f0b894f3ac87438aeede5" name="a0a6a19ee5a4f0b894f3ac87438aeede5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0a6a19ee5a4f0b894f3ac87438aeede5">&#9670;&nbsp;</a></span>AddHint()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a0a6a19ee5a4f0b894f3ac87438aeede5">&#9670;&nbsp;</a></span>AddHint() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -915,7 +948,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Adds a =&gt; b. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00806">806</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00801">801</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
@@ -1074,7 +1107,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00998">998</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00993">993</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
@@ -1112,7 +1145,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00980">980</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00975">975</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
@@ -1610,7 +1643,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l01087">1087</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l01085">1085</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
@@ -1855,7 +1888,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l01090">1090</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l01088">1088</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
@@ -2086,7 +2119,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l01089">1089</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l01087">1087</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>

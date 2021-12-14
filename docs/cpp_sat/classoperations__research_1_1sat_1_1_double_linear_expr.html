@@ -116,7 +116,7 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1sat_1_1_d
 </div><!-- fragment --><p> This can be used in the objective definition. </p><div class="fragment"><div class="line"><span class="comment">// Minimize 3.4 * y + 5.2</span></div>
 <div class="line">cp_model.Minimize(DoubleLinearExpr::Term(y, 3.4).<a class="code hl_function" href="classoperations__research_1_1sat_1_1_double_linear_expr.html#ac89b559465fb3260a4d640fcee5d73ed">AddConstant</a>(5.2));</div>
 </div><!-- fragment --> 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00370">370</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00368">368</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -168,6 +168,8 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a5df4fb1b6e3135a3567b545e3e68c8d3"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; double &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html#a5df4fb1b6e3135a3567b545e3e68c8d3">coefficients</a> () const</td></tr>
 <tr class="memdesc:a5df4fb1b6e3135a3567b545e3e68c8d3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the vector of coefficients.  <a href="classoperations__research_1_1sat_1_1_double_linear_expr.html#a5df4fb1b6e3135a3567b545e3e68c8d3">More...</a><br /></td></tr>
 <tr class="separator:a5df4fb1b6e3135a3567b545e3e68c8d3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2ae4e760d86ea13ee9289372c8cbb635"><td class="memItemLeft" align="right" valign="top">const bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html#a2ae4e760d86ea13ee9289372c8cbb635">IsConstant</a> () const</td></tr>
+<tr class="separator:a2ae4e760d86ea13ee9289372c8cbb635"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a479c8a04031e138d0f5c9b801aa8d9cc"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html#a479c8a04031e138d0f5c9b801aa8d9cc">constant</a> () const</td></tr>
 <tr class="memdesc:a479c8a04031e138d0f5c9b801aa8d9cc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the constant term.  <a href="classoperations__research_1_1sat_1_1_double_linear_expr.html#a479c8a04031e138d0f5c9b801aa8d9cc">More...</a><br /></td></tr>
 <tr class="separator:a479c8a04031e138d0f5c9b801aa8d9cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -403,7 +405,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Returns the vector of coefficients. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00441">441</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00436">436</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
@@ -432,7 +434,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Returns the constant term. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00444">444</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00442">442</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
@@ -453,6 +455,33 @@ Static Public Member Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Debug string. See the documentation for <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html#a4e4f23756794edbd6f351de7f0a144d9" title="Debug string.">LinearExpr::DebugString()</a>. </p>
+
+</div>
+</div>
+<a id="a2ae4e760d86ea13ee9289372c8cbb635" name="a2ae4e760d86ea13ee9289372c8cbb635"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2ae4e760d86ea13ee9289372c8cbb635">&#9670;&nbsp;</a></span>IsConstant()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const bool IsConstant </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00439">439</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
@@ -837,7 +866,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Returns the vector of variable indices. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00438">438</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00433">433</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
