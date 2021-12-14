@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 9.1</span>
+                <span id="sfml">Google OR-Tools 9.2</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -93,7 +93,7 @@ $(document).ready(function(){initNavTree('classcom_1_1google_1_1ortools_1_1sat_1
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><pre>
-All variables must take different values.
+All affine expressions must take different values.
 </pre><p >Protobuf type </p><div class="fragment"><div class="line">operations_research.sat.AllDifferentConstraintProto </div>
 </div><!-- fragment --> 
 <p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00013">13</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
@@ -107,15 +107,21 @@ Classes</h2></td></tr>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a9595e84f1a265789b99af6f10e024e33"><td class="memItemLeft" align="right" valign="top">.lang.Override final com.google.protobuf.UnknownFieldSet&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1AllDifferentConstraintProto.html#a9595e84f1a265789b99af6f10e024e33">getUnknownFields</a> ()</td></tr>
 <tr class="separator:a9595e84f1a265789b99af6f10e024e33"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0f620a8c284a3c18f5fa4e3ae588df82"><td class="memItemLeft" align="right" valign="top">.lang.Override java.util.List&lt; java.lang.Integer &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1AllDifferentConstraintProto.html#a0f620a8c284a3c18f5fa4e3ae588df82">getVarsList</a> ()</td></tr>
-<tr class="memdesc:a0f620a8c284a3c18f5fa4e3ae588df82"><td class="mdescLeft">&#160;</td><td class="mdescRight"><code>repeated int32 vars = 1;</code>  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1AllDifferentConstraintProto.html#a0f620a8c284a3c18f5fa4e3ae588df82">More...</a><br /></td></tr>
-<tr class="separator:a0f620a8c284a3c18f5fa4e3ae588df82"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a92e7e3731c3c44467cadeb9038dd4cb9"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1AllDifferentConstraintProto.html#a92e7e3731c3c44467cadeb9038dd4cb9">getVarsCount</a> ()</td></tr>
-<tr class="memdesc:a92e7e3731c3c44467cadeb9038dd4cb9"><td class="mdescLeft">&#160;</td><td class="mdescRight"><code>repeated int32 vars = 1;</code>  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1AllDifferentConstraintProto.html#a92e7e3731c3c44467cadeb9038dd4cb9">More...</a><br /></td></tr>
-<tr class="separator:a92e7e3731c3c44467cadeb9038dd4cb9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae3cee168001d8e3fa49e4f6481702050"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1AllDifferentConstraintProto.html#ae3cee168001d8e3fa49e4f6481702050">getVars</a> (int index)</td></tr>
-<tr class="memdesc:ae3cee168001d8e3fa49e4f6481702050"><td class="mdescLeft">&#160;</td><td class="mdescRight"><code>repeated int32 vars = 1;</code>  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1AllDifferentConstraintProto.html#ae3cee168001d8e3fa49e4f6481702050">More...</a><br /></td></tr>
-<tr class="separator:ae3cee168001d8e3fa49e4f6481702050"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a52df9d7d7027e3ab8fabee35eadcc771"><td class="memItemLeft" align="right" valign="top">.lang.Override java.util.List&lt; <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProto.html">com.google.ortools.sat.LinearExpressionProto</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1AllDifferentConstraintProto.html#a52df9d7d7027e3ab8fabee35eadcc771">getExprsList</a> ()</td></tr>
+<tr class="memdesc:a52df9d7d7027e3ab8fabee35eadcc771"><td class="mdescLeft">&#160;</td><td class="mdescRight"><code>repeated .operations_research.sat.LinearExpressionProto exprs = 1;</code>  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1AllDifferentConstraintProto.html#a52df9d7d7027e3ab8fabee35eadcc771">More...</a><br /></td></tr>
+<tr class="separator:a52df9d7d7027e3ab8fabee35eadcc771"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7a20f84ad1dbdc5db84e0b8466eb5284"><td class="memItemLeft" align="right" valign="top">.lang.Override java.util.List&lt;? extends <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProtoOrBuilder.html">com.google.ortools.sat.LinearExpressionProtoOrBuilder</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1AllDifferentConstraintProto.html#a7a20f84ad1dbdc5db84e0b8466eb5284">getExprsOrBuilderList</a> ()</td></tr>
+<tr class="memdesc:a7a20f84ad1dbdc5db84e0b8466eb5284"><td class="mdescLeft">&#160;</td><td class="mdescRight"><code>repeated .operations_research.sat.LinearExpressionProto exprs = 1;</code>  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1AllDifferentConstraintProto.html#a7a20f84ad1dbdc5db84e0b8466eb5284">More...</a><br /></td></tr>
+<tr class="separator:a7a20f84ad1dbdc5db84e0b8466eb5284"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac73bb11518b66b47c3d432284b240ff8"><td class="memItemLeft" align="right" valign="top">.lang.Override int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1AllDifferentConstraintProto.html#ac73bb11518b66b47c3d432284b240ff8">getExprsCount</a> ()</td></tr>
+<tr class="memdesc:ac73bb11518b66b47c3d432284b240ff8"><td class="mdescLeft">&#160;</td><td class="mdescRight"><code>repeated .operations_research.sat.LinearExpressionProto exprs = 1;</code>  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1AllDifferentConstraintProto.html#ac73bb11518b66b47c3d432284b240ff8">More...</a><br /></td></tr>
+<tr class="separator:ac73bb11518b66b47c3d432284b240ff8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a76befc34f4b046fa92b9e33047ac4eec"><td class="memItemLeft" align="right" valign="top">.lang.Override <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProto.html">com.google.ortools.sat.LinearExpressionProto</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1AllDifferentConstraintProto.html#a76befc34f4b046fa92b9e33047ac4eec">getExprs</a> (int index)</td></tr>
+<tr class="memdesc:a76befc34f4b046fa92b9e33047ac4eec"><td class="mdescLeft">&#160;</td><td class="mdescRight"><code>repeated .operations_research.sat.LinearExpressionProto exprs = 1;</code>  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1AllDifferentConstraintProto.html#a76befc34f4b046fa92b9e33047ac4eec">More...</a><br /></td></tr>
+<tr class="separator:a76befc34f4b046fa92b9e33047ac4eec"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a12101fd16dd881df894932e42f6d93ca"><td class="memItemLeft" align="right" valign="top">.lang.Override <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProtoOrBuilder.html">com.google.ortools.sat.LinearExpressionProtoOrBuilder</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1AllDifferentConstraintProto.html#a12101fd16dd881df894932e42f6d93ca">getExprsOrBuilder</a> (int index)</td></tr>
+<tr class="memdesc:a12101fd16dd881df894932e42f6d93ca"><td class="mdescLeft">&#160;</td><td class="mdescRight"><code>repeated .operations_research.sat.LinearExpressionProto exprs = 1;</code>  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1AllDifferentConstraintProto.html#a12101fd16dd881df894932e42f6d93ca">More...</a><br /></td></tr>
+<tr class="separator:a12101fd16dd881df894932e42f6d93ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a968cb605190759c690e5a97cdc0bb4a1"><td class="memItemLeft" align="right" valign="top">.lang.Override final boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1AllDifferentConstraintProto.html#a968cb605190759c690e5a97cdc0bb4a1">isInitialized</a> ()</td></tr>
 <tr class="separator:a968cb605190759c690e5a97cdc0bb4a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a813eab1fc00c769aad910c480868972b"><td class="memItemLeft" align="right" valign="top">.lang.Override void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1AllDifferentConstraintProto.html#a813eab1fc00c769aad910c480868972b">writeTo</a> (com.google.protobuf.CodedOutputStream output)  throws java.io.IOException </td></tr>
@@ -174,8 +180,8 @@ Static Public Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-attribs" name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
-<tr class="memitem:a35118c951c6d8457624b951ce852bf37"><td class="memItemLeft" align="right" valign="top">static final int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1AllDifferentConstraintProto.html#a35118c951c6d8457624b951ce852bf37">VARS_FIELD_NUMBER</a> = 1</td></tr>
-<tr class="separator:a35118c951c6d8457624b951ce852bf37"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab5644f069209f82bb9fffca2ddf7ad7e"><td class="memItemLeft" align="right" valign="top">static final int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1AllDifferentConstraintProto.html#ab5644f069209f82bb9fffca2ddf7ad7e">EXPRS_FIELD_NUMBER</a> = 1</td></tr>
+<tr class="separator:ab5644f069209f82bb9fffca2ddf7ad7e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-methods" name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
@@ -203,7 +209,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00192">192</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00177">177</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -230,7 +236,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00577">577</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00748">748</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -249,7 +255,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00602">602</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00773">773</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -276,7 +282,124 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00101">101</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00089">89</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
+
+</div>
+</div>
+<a id="a76befc34f4b046fa92b9e33047ac4eec" name="a76befc34f4b046fa92b9e33047ac4eec"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a76befc34f4b046fa92b9e33047ac4eec">&#9670;&nbsp;</a></span>getExprs()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">.lang.Override <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProto.html">com.google.ortools.sat.LinearExpressionProto</a> getExprs </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>index</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>repeated .operations_research.sat.LinearExpressionProto exprs = 1;</code> </p>
+
+<p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1AllDifferentConstraintProtoOrBuilder.html#a1056a1f2bddb9370c625220993d280f9">AllDifferentConstraintProtoOrBuilder</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00129">129</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
+
+</div>
+</div>
+<a id="ac73bb11518b66b47c3d432284b240ff8" name="ac73bb11518b66b47c3d432284b240ff8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac73bb11518b66b47c3d432284b240ff8">&#9670;&nbsp;</a></span>getExprsCount()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">.lang.Override int getExprsCount </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>repeated .operations_research.sat.LinearExpressionProto exprs = 1;</code> </p>
+
+<p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1AllDifferentConstraintProtoOrBuilder.html#ab7f088bbf34dcba8caf35c456d580fb7">AllDifferentConstraintProtoOrBuilder</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00122">122</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
+
+</div>
+</div>
+<a id="a52df9d7d7027e3ab8fabee35eadcc771" name="a52df9d7d7027e3ab8fabee35eadcc771"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a52df9d7d7027e3ab8fabee35eadcc771">&#9670;&nbsp;</a></span>getExprsList()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">.lang.Override java.util.List&lt; <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProto.html">com.google.ortools.sat.LinearExpressionProto</a> &gt; getExprsList </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>repeated .operations_research.sat.LinearExpressionProto exprs = 1;</code> </p>
+
+<p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1AllDifferentConstraintProtoOrBuilder.html#a5b7217d1728f0d749cc8414427aa5577">AllDifferentConstraintProtoOrBuilder</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00107">107</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
+
+</div>
+</div>
+<a id="a12101fd16dd881df894932e42f6d93ca" name="a12101fd16dd881df894932e42f6d93ca"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a12101fd16dd881df894932e42f6d93ca">&#9670;&nbsp;</a></span>getExprsOrBuilder()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">.lang.Override <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProtoOrBuilder.html">com.google.ortools.sat.LinearExpressionProtoOrBuilder</a> getExprsOrBuilder </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>index</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>repeated .operations_research.sat.LinearExpressionProto exprs = 1;</code> </p>
+
+<p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1AllDifferentConstraintProtoOrBuilder.html#a2eca1310b216be881edcf009124dca70">AllDifferentConstraintProtoOrBuilder</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00136">136</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
+
+</div>
+</div>
+<a id="a7a20f84ad1dbdc5db84e0b8466eb5284" name="a7a20f84ad1dbdc5db84e0b8466eb5284"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7a20f84ad1dbdc5db84e0b8466eb5284">&#9670;&nbsp;</a></span>getExprsOrBuilderList()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">.lang.Override java.util.List&lt;? extends <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProtoOrBuilder.html">com.google.ortools.sat.LinearExpressionProtoOrBuilder</a> &gt; getExprsOrBuilderList </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>repeated .operations_research.sat.LinearExpressionProto exprs = 1;</code> </p>
+
+<p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1AllDifferentConstraintProtoOrBuilder.html#a3805f98b96585726baa98f81e0d0cf04">AllDifferentConstraintProtoOrBuilder</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00115">115</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -295,7 +418,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00597">597</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00768">768</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -314,7 +437,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00167">167</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00162">162</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -337,85 +460,6 @@ Protected Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ae3cee168001d8e3fa49e4f6481702050" name="ae3cee168001d8e3fa49e4f6481702050"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae3cee168001d8e3fa49e4f6481702050">&#9670;&nbsp;</a></span>getVars()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int getVars </td>
-          <td>(</td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>index</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p><code>repeated int32 vars = 1;</code> </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">index</td><td>The index of the element to return. </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>The vars at the given index. </dd></dl>
-
-<p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1AllDifferentConstraintProtoOrBuilder.html#ae3cee168001d8e3fa49e4f6481702050">AllDifferentConstraintProtoOrBuilder</a>.</p>
-
-<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00136">136</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
-
-</div>
-</div>
-<a id="a92e7e3731c3c44467cadeb9038dd4cb9" name="a92e7e3731c3c44467cadeb9038dd4cb9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a92e7e3731c3c44467cadeb9038dd4cb9">&#9670;&nbsp;</a></span>getVarsCount()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int getVarsCount </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p><code>repeated int32 vars = 1;</code> </p>
-<dl class="section return"><dt>Returns</dt><dd>The count of vars. </dd></dl>
-
-<p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1AllDifferentConstraintProtoOrBuilder.html#a92e7e3731c3c44467cadeb9038dd4cb9">AllDifferentConstraintProtoOrBuilder</a>.</p>
-
-<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00128">128</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
-
-</div>
-</div>
-<a id="a0f620a8c284a3c18f5fa4e3ae588df82" name="a0f620a8c284a3c18f5fa4e3ae588df82"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0f620a8c284a3c18f5fa4e3ae588df82">&#9670;&nbsp;</a></span>getVarsList()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">.lang.Override java.util.List&lt; java.lang.Integer &gt; getVarsList </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p><code>repeated int32 vars = 1;</code> </p>
-<dl class="section return"><dt>Returns</dt><dd>A list containing the vars. </dd></dl>
-
-<p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1AllDifferentConstraintProtoOrBuilder.html#ae77fc3e0d615b8fa393697a8968ed797">AllDifferentConstraintProtoOrBuilder</a>.</p>
-
-<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00121">121</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
-
-</div>
-</div>
 <a id="ab55eefa0b7ba9d1dec56bf8bb2b996b3" name="ab55eefa0b7ba9d1dec56bf8bb2b996b3"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ab55eefa0b7ba9d1dec56bf8bb2b996b3">&#9670;&nbsp;</a></span>hashCode()</h2>
 
@@ -431,7 +475,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00208">208</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00193">193</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -458,7 +502,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00107">107</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00095">95</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -504,7 +548,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00295">295</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00280">280</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -532,7 +576,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00298">298</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00283">283</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -551,7 +595,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00294">294</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00279">279</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -579,7 +623,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00308">308</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00293">293</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -635,7 +679,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00267">267</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00252">252</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -673,7 +717,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00272">272</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00257">257</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -701,7 +745,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00245">245</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00230">230</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -739,7 +783,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00249">249</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00234">234</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -767,7 +811,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00234">234</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00219">219</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -805,7 +849,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00239">239</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00224">224</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -833,7 +877,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00279">279</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00264">264</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -871,7 +915,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00285">285</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00270">270</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -899,7 +943,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00255">255</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00240">240</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -937,7 +981,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00260">260</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00245">245</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -965,7 +1009,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00223">223</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00208">208</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -1003,7 +1047,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00228">228</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00213">213</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -1030,7 +1074,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00592">592</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00763">763</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -1049,7 +1093,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00302">302</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00287">287</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -1074,8 +1118,8 @@ Protected Member Functions</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
-<a id="a35118c951c6d8457624b951ce852bf37" name="a35118c951c6d8457624b951ce852bf37"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a35118c951c6d8457624b951ce852bf37">&#9670;&nbsp;</a></span>VARS_FIELD_NUMBER</h2>
+<a id="ab5644f069209f82bb9fffca2ddf7ad7e" name="ab5644f069209f82bb9fffca2ddf7ad7e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab5644f069209f82bb9fffca2ddf7ad7e">&#9670;&nbsp;</a></span>EXPRS_FIELD_NUMBER</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1084,7 +1128,7 @@ Protected Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">final int VARS_FIELD_NUMBER = 1</td>
+          <td class="memname">final int EXPRS_FIELD_NUMBER = 1</td>
         </tr>
       </table>
   </td>
@@ -1094,7 +1138,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00113">113</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AllDifferentConstraintProto_8java_source.html#l00101">101</a> of file <a class="el" href="AllDifferentConstraintProto_8java_source.html">AllDifferentConstraintProto.java</a>.</p>
 
 </div>
 </div>

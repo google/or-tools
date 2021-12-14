@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['flowmodel_5fproblemtype_0',['FlowModel_ProblemType',['../namespaceoperations__research.html#a4f683c5103a92e63d9df46f2652d476c',1,'operations_research']]]
+  ['flowmodelproto_5fproblemtype_0',['FlowModelProto_ProblemType',['../namespaceoperations__research.html#aa0bfd11b8b2a86b10f42bd489ed72319',1,'operations_research']]]
 ];

@@ -10,7 +10,8 @@ var searchData=
   ['densematrixproto_7',['DenseMatrixProto',['../classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto.html',1,'com::google::ortools::sat']]],
   ['densematrixprotoorbuilder_8',['DenseMatrixProtoOrBuilder',['../interfacecom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProtoOrBuilder.html',1,'com::google::ortools::sat']]],
   ['disjunctiveconstraint_9',['DisjunctiveConstraint',['../classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DisjunctiveConstraint.html',1,'com::google::ortools::constraintsolver']]],
-  ['domain_10',['Domain',['../classcom_1_1google_1_1ortools_1_1util_1_1Domain.html',1,'com::google::ortools::util']]],
+  ['domain_10',['Domain',['../classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Domain.html',1,'Domain'],['../classcom_1_1google_1_1ortools_1_1util_1_1Domain.html',1,'Domain']]],
   ['domainreductionstrategy_11',['DomainReductionStrategy',['../enumcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1DomainReductionStrategy.html',1,'com::google::ortools::sat::DecisionStrategyProto']]],
-  ['doubleparam_12',['DoubleParam',['../enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolverParameters_1_1DoubleParam.html',1,'com::google::ortools::linearsolver::MPSolverParameters']]]
+  ['doublelinearexpr_12',['DoubleLinearExpr',['../classcom_1_1google_1_1ortools_1_1sat_1_1DoubleLinearExpr.html',1,'com::google::ortools::sat']]],
+  ['doubleparam_13',['DoubleParam',['../enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolverParameters_1_1DoubleParam.html',1,'com::google::ortools::linearsolver::MPSolverParameters']]]
 ];

@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.1</span>
+   &#160;<span id="projectnumber">9.2</span>
    </div>
   </td>
  </tr>
@@ -108,8 +108,8 @@ Classes</h2></td></tr>
 Functions</h2></td></tr>
 <tr class="memitem:a43c15c357e1f59a9ff10700a5ac7b63e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structoperations__research_1_1packing_1_1_arc_flow_graph.html">ArcFlowGraph</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1packing.html#a43c15c357e1f59a9ff10700a5ac7b63e">BuildArcFlowGraph</a> (const std::vector&lt; int &gt; &amp;bin_dimensions, const std::vector&lt; std::vector&lt; int &gt; &gt; &amp;item_dimensions_by_type, const std::vector&lt; int &gt; &amp;demand_by_type)</td></tr>
 <tr class="separator:a43c15c357e1f59a9ff10700a5ac7b63e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a029a51e0cb60b92d22e7fc788d794390"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1packing_1_1vbp_1_1_vector_bin_packing_solution.html">vbp::VectorBinPackingSolution</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1packing.html#a029a51e0cb60b92d22e7fc788d794390">SolveVectorBinPackingWithArcFlow</a> (const <a class="el" href="classoperations__research_1_1packing_1_1vbp_1_1_vector_bin_packing_problem.html">vbp::VectorBinPackingProblem</a> &amp;problem, <a class="el" href="classoperations__research_1_1_m_p_solver.html#a76c87990aabadd148304b95332a60ff8">MPSolver::OptimizationProblemType</a> solver_type, const std::string &amp;mip_params, double <a class="el" href="cp__model__solver_8cc.html#aec8af5c1be4e1b6d4330e1161028de21">time_limit</a>, int num_threads, bool log_statistics)</td></tr>
-<tr class="separator:a029a51e0cb60b92d22e7fc788d794390"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a36688ca99be485c512316b4d27ccd409"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1packing_1_1vbp_1_1_vector_bin_packing_solution.html">vbp::VectorBinPackingSolution</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1packing.html#a36688ca99be485c512316b4d27ccd409">SolveVectorBinPackingWithArcFlow</a> (const <a class="el" href="classoperations__research_1_1packing_1_1vbp_1_1_vector_bin_packing_problem.html">vbp::VectorBinPackingProblem</a> &amp;problem, <a class="el" href="classoperations__research_1_1_m_p_solver.html#a76c87990aabadd148304b95332a60ff8">MPSolver::OptimizationProblemType</a> solver_type, const std::string &amp;mip_params, double <a class="el" href="cp__model__solver_8cc.html#aec8af5c1be4e1b6d4330e1161028de21">time_limit</a>, int num_threads, int max_bins)</td></tr>
+<tr class="separator:a36688ca99be485c512316b4d27ccd409"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Function Documentation</h2>
 <a id="a43c15c357e1f59a9ff10700a5ac7b63e" name="a43c15c357e1f59a9ff10700a5ac7b63e"></a>
@@ -148,8 +148,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a029a51e0cb60b92d22e7fc788d794390" name="a029a51e0cb60b92d22e7fc788d794390"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a029a51e0cb60b92d22e7fc788d794390">&#9670;&nbsp;</a></span>SolveVectorBinPackingWithArcFlow()</h2>
+<a id="a36688ca99be485c512316b4d27ccd409" name="a36688ca99be485c512316b4d27ccd409"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a36688ca99be485c512316b4d27ccd409">&#9670;&nbsp;</a></span>SolveVectorBinPackingWithArcFlow()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -187,8 +187,8 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>log_statistics</em>&#160;</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>max_bins</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -198,7 +198,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="arc__flow__solver_8cc_source.html#l00071">71</a> of file <a class="el" href="arc__flow__solver_8cc_source.html">arc_flow_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="arc__flow__solver_8cc_source.html#l00075">75</a> of file <a class="el" href="arc__flow__solver_8cc_source.html">arc_flow_solver.cc</a>.</p>
 
 </div>
 </div>

@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 9.1</span>
+                <span id="sfml">Google OR-Tools 9.2</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -94,10 +94,9 @@ $(document).ready(function(){initNavTree('classcom_1_1google_1_1ortools_1_1sat_1
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><pre>
 Optimization objective.
-This is in a message because decision problems don't have any objective.
 </pre><p >Protobuf type </p><div class="fragment"><div class="line">operations_research.sat.CpObjectiveProto </div>
 </div><!-- fragment --> 
-<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00014">14</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00013">13</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Classes</h2></td></tr>
@@ -134,6 +133,13 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ae9f258b56f01bdb264283370dcc93d48"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad29be11efaa82c1951878c794298769e"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpObjectiveProto.html#ad29be11efaa82c1951878c794298769e">getDomain</a> (int index)</td></tr>
 <tr class="separator:ad29be11efaa82c1951878c794298769e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a07c87697fce1b986180b7d205381f248"><td class="memItemLeft" align="right" valign="top">.lang.Override boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpObjectiveProto.html#a07c87697fce1b986180b7d205381f248">getScalingWasExact</a> ()</td></tr>
+<tr class="separator:a07c87697fce1b986180b7d205381f248"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a84763fb86504e0861af65b0d86b67bca"><td class="memItemLeft" align="right" valign="top">.lang.Override long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpObjectiveProto.html#a84763fb86504e0861af65b0d86b67bca">getIntegerOffset</a> ()</td></tr>
+<tr class="separator:a84763fb86504e0861af65b0d86b67bca"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a195a86ad25ab02324c4d2f15a9bb98da"><td class="memItemLeft" align="right" valign="top">.lang.Override long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpObjectiveProto.html#a195a86ad25ab02324c4d2f15a9bb98da">getIntegerScalingFactor</a> ()</td></tr>
+<tr class="memdesc:a195a86ad25ab02324c4d2f15a9bb98da"><td class="mdescLeft">&#160;</td><td class="mdescRight"><code>int64 integer_scaling_factor = 8;</code>  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpObjectiveProto.html#a195a86ad25ab02324c4d2f15a9bb98da">More...</a><br /></td></tr>
+<tr class="separator:a195a86ad25ab02324c4d2f15a9bb98da"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a968cb605190759c690e5a97cdc0bb4a1"><td class="memItemLeft" align="right" valign="top">.lang.Override final boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpObjectiveProto.html#a968cb605190759c690e5a97cdc0bb4a1">isInitialized</a> ()</td></tr>
 <tr class="separator:a968cb605190759c690e5a97cdc0bb4a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a813eab1fc00c769aad910c480868972b"><td class="memItemLeft" align="right" valign="top">.lang.Override void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpObjectiveProto.html#a813eab1fc00c769aad910c480868972b">writeTo</a> (com.google.protobuf.CodedOutputStream output)  throws java.io.IOException </td></tr>
@@ -202,6 +208,12 @@ Static Public Attributes</h2></td></tr>
 <tr class="separator:a9bf698a6a3724efedf1867ffbd03b941"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a393f2f03c7f571f2c7777d65bf579a74"><td class="memItemLeft" align="right" valign="top">static final int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpObjectiveProto.html#a393f2f03c7f571f2c7777d65bf579a74">DOMAIN_FIELD_NUMBER</a> = 5</td></tr>
 <tr class="separator:a393f2f03c7f571f2c7777d65bf579a74"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af124299dcb55e0bf6d9ca24e50dd6f0a"><td class="memItemLeft" align="right" valign="top">static final int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpObjectiveProto.html#af124299dcb55e0bf6d9ca24e50dd6f0a">SCALING_WAS_EXACT_FIELD_NUMBER</a> = 6</td></tr>
+<tr class="separator:af124299dcb55e0bf6d9ca24e50dd6f0a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a67fb3f96df68342906f0d96c5ab86178"><td class="memItemLeft" align="right" valign="top">static final int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpObjectiveProto.html#a67fb3f96df68342906f0d96c5ab86178">INTEGER_OFFSET_FIELD_NUMBER</a> = 7</td></tr>
+<tr class="separator:a67fb3f96df68342906f0d96c5ab86178"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a845bdd0b4355efa443a405002c905000"><td class="memItemLeft" align="right" valign="top">static final int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpObjectiveProto.html#a845bdd0b4355efa443a405002c905000">INTEGER_SCALING_FACTOR_FIELD_NUMBER</a> = 8</td></tr>
+<tr class="separator:a845bdd0b4355efa443a405002c905000"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-methods" name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
@@ -229,7 +241,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00432">432</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00517">517</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
 
 </div>
 </div>
@@ -260,7 +272,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpObjectiveProtoOrBuilder.html#af6a057060690a9cb244029220050de15">CpObjectiveProtoOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00243">243</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00257">257</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
 
 </div>
 </div>
@@ -284,7 +296,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpObjectiveProtoOrBuilder.html#a5659fb14ad0cfa4889f1fba3d51c6534">CpObjectiveProtoOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00235">235</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00249">249</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
 
 </div>
 </div>
@@ -308,7 +320,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpObjectiveProtoOrBuilder.html#a228da5f07caf74ff4ee6eaf772d41232">CpObjectiveProtoOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00228">228</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00242">242</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
 
 </div>
 </div>
@@ -335,7 +347,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l01219">1219</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l01480">1480</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
 
 </div>
 </div>
@@ -354,7 +366,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l01244">1244</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l01505">1505</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
 
 </div>
 </div>
@@ -381,7 +393,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00162">162</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00176">176</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
 
 </div>
 </div>
@@ -414,7 +426,7 @@ domain on the sum of the objective terms only.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpObjectiveProtoOrBuilder.html#ad29be11efaa82c1951878c794298769e">CpObjectiveProtoOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00320">320</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00334">334</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
 
 </div>
 </div>
@@ -440,7 +452,7 @@ domain on the sum of the objective terms only.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpObjectiveProtoOrBuilder.html#ae9f258b56f01bdb264283370dcc93d48">CpObjectiveProtoOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00306">306</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00320">320</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
 
 </div>
 </div>
@@ -466,7 +478,61 @@ domain on the sum of the objective terms only.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpObjectiveProtoOrBuilder.html#ade80438246d0f3e5d00a1b03f436ce4e">CpObjectiveProtoOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00293">293</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00307">307</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+
+</div>
+</div>
+<a id="a84763fb86504e0861af65b0d86b67bca" name="a84763fb86504e0861af65b0d86b67bca"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a84763fb86504e0861af65b0d86b67bca">&#9670;&nbsp;</a></span>getIntegerOffset()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">.lang.Override long getIntegerOffset </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre>
+Internal field. This is only useful for inner_objective_lower_bound, It
+should never be set in most cases, so we have the simple:
+  sum(coefficients[i] * objective_vars[i]) &gt;= inner_objective_lower_bound.
+This is similar to offset/scaling_factor but allows to stay in the integer
+domain. Note that the formula is not the same than for the floating point
+objective. If this is set, we have
+   linear_expression * scaling + offset &gt;= inner_objective_lower_bound
+</pre><p ><code>int64 integer_offset = 7;</code> </p><dl class="section return"><dt>Returns</dt><dd>The integerOffset. </dd></dl>
+
+<p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpObjectiveProtoOrBuilder.html#aaec94fd78fee244fde477497a039e01f">CpObjectiveProtoOrBuilder</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00374">374</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+
+</div>
+</div>
+<a id="a195a86ad25ab02324c4d2f15a9bb98da" name="a195a86ad25ab02324c4d2f15a9bb98da"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a195a86ad25ab02324c4d2f15a9bb98da">&#9670;&nbsp;</a></span>getIntegerScalingFactor()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">.lang.Override long getIntegerScalingFactor </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>int64 integer_scaling_factor = 8;</code> </p>
+<dl class="section return"><dt>Returns</dt><dd>The integerScalingFactor. </dd></dl>
+
+<p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpObjectiveProtoOrBuilder.html#aa08fbfa71261f93e7de32aa34987f3fb">CpObjectiveProtoOrBuilder</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00385">385</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
 
 </div>
 </div>
@@ -495,7 +561,7 @@ default these fields have no effect.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpObjectiveProtoOrBuilder.html#ac832bdb8a12317239ec2111a4f101937">CpObjectiveProtoOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00264">264</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00278">278</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
 
 </div>
 </div>
@@ -514,7 +580,7 @@ default these fields have no effect.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l01239">1239</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l01500">1500</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
 
 </div>
 </div>
@@ -538,7 +604,34 @@ default these fields have no effect.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpObjectiveProtoOrBuilder.html#a3e15fea973b601d06bad75aba05a8554">CpObjectiveProtoOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00275">275</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00289">289</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+
+</div>
+</div>
+<a id="a07c87697fce1b986180b7d205381f248" name="a07c87697fce1b986180b7d205381f248"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a07c87697fce1b986180b7d205381f248">&#9670;&nbsp;</a></span>getScalingWasExact()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">.lang.Override boolean getScalingWasExact </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre>
+Internal field. Do not set. When we scale a <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1FloatObjectiveProto.html">FloatObjectiveProto</a> to a
+integer version, we set this to true if the scaling was exact (i.e. all
+original coeff were integer for instance).
+TODO(user): Put the error bounds we computed instead?
+</pre><p ><code>bool scaling_was_exact = 6;</code> </p><dl class="section return"><dt>Returns</dt><dd>The scalingWasExact. </dd></dl>
+
+<p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpObjectiveProtoOrBuilder.html#a19bdd621a9fb7fee0463bd169b04d04f">CpObjectiveProtoOrBuilder</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00353">353</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
 
 </div>
 </div>
@@ -557,7 +650,7 @@ default these fields have no effect.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00371">371</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00444">444</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
 
 </div>
 </div>
@@ -576,7 +669,7 @@ default these fields have no effect.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00038">38</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00037">37</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
 
 </div>
 </div>
@@ -598,7 +691,7 @@ default these fields have no effect.
 <pre>
 The linear terms of the objective to minimize.
 For a maximization problem, one can negate all coefficients in the
-objective and set a scaling_factor to -1.
+objective and set scaling_factor to -1.
 </pre><p ><code>repeated int32 vars = 1;</code> </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">index</td><td>The index of the element to return. </td></tr>
@@ -609,7 +702,7 @@ objective and set a scaling_factor to -1.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpObjectiveProtoOrBuilder.html#ae3cee168001d8e3fa49e4f6481702050">CpObjectiveProtoOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00215">215</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00229">229</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
 
 </div>
 </div>
@@ -630,12 +723,12 @@ objective and set a scaling_factor to -1.
 <pre>
 The linear terms of the objective to minimize.
 For a maximization problem, one can negate all coefficients in the
-objective and set a scaling_factor to -1.
+objective and set scaling_factor to -1.
 </pre><p ><code>repeated int32 vars = 1;</code> </p><dl class="section return"><dt>Returns</dt><dd>The count of vars. </dd></dl>
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpObjectiveProtoOrBuilder.html#a92e7e3731c3c44467cadeb9038dd4cb9">CpObjectiveProtoOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00201">201</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00215">215</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
 
 </div>
 </div>
@@ -656,12 +749,12 @@ objective and set a scaling_factor to -1.
 <pre>
 The linear terms of the objective to minimize.
 For a maximization problem, one can negate all coefficients in the
-objective and set a scaling_factor to -1.
+objective and set scaling_factor to -1.
 </pre><p ><code>repeated int32 vars = 1;</code> </p><dl class="section return"><dt>Returns</dt><dd>A list containing the vars. </dd></dl>
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpObjectiveProtoOrBuilder.html#ae77fc3e0d615b8fa393697a8968ed797">CpObjectiveProtoOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00188">188</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00202">202</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
 
 </div>
 </div>
@@ -680,7 +773,7 @@ objective and set a scaling_factor to -1.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00458">458</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00549">549</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
 
 </div>
 </div>
@@ -707,7 +800,7 @@ objective and set a scaling_factor to -1.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00168">168</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00182">182</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
 
 </div>
 </div>
@@ -726,7 +819,7 @@ objective and set a scaling_factor to -1.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00327">327</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00391">391</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
 
 </div>
 </div>
@@ -753,7 +846,7 @@ objective and set a scaling_factor to -1.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00559">559</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00659">659</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
 
 </div>
 </div>
@@ -781,7 +874,7 @@ objective and set a scaling_factor to -1.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00562">562</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00662">662</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
 
 </div>
 </div>
@@ -800,7 +893,7 @@ objective and set a scaling_factor to -1.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00558">558</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00658">658</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
 
 </div>
 </div>
@@ -828,7 +921,7 @@ objective and set a scaling_factor to -1.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00572">572</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00672">672</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
 
 </div>
 </div>
@@ -856,7 +949,7 @@ objective and set a scaling_factor to -1.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00031">31</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00030">30</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
 
 </div>
 </div>
@@ -884,7 +977,7 @@ objective and set a scaling_factor to -1.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00531">531</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00631">631</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
 
 </div>
 </div>
@@ -922,7 +1015,7 @@ objective and set a scaling_factor to -1.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00536">536</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00636">636</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
 
 </div>
 </div>
@@ -950,7 +1043,7 @@ objective and set a scaling_factor to -1.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00509">509</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00609">609</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
 
 </div>
 </div>
@@ -988,7 +1081,7 @@ objective and set a scaling_factor to -1.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00513">513</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00613">613</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
 
 </div>
 </div>
@@ -1016,7 +1109,7 @@ objective and set a scaling_factor to -1.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00498">498</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00598">598</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
 
 </div>
 </div>
@@ -1054,7 +1147,7 @@ objective and set a scaling_factor to -1.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00503">503</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00603">603</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
 
 </div>
 </div>
@@ -1082,7 +1175,7 @@ objective and set a scaling_factor to -1.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00543">543</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00643">643</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
 
 </div>
 </div>
@@ -1120,7 +1213,7 @@ objective and set a scaling_factor to -1.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00549">549</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00649">649</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
 
 </div>
 </div>
@@ -1148,7 +1241,7 @@ objective and set a scaling_factor to -1.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00519">519</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00619">619</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
 
 </div>
 </div>
@@ -1186,7 +1279,7 @@ objective and set a scaling_factor to -1.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00524">524</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00624">624</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
 
 </div>
 </div>
@@ -1214,7 +1307,7 @@ objective and set a scaling_factor to -1.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00487">487</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00587">587</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
 
 </div>
 </div>
@@ -1252,7 +1345,7 @@ objective and set a scaling_factor to -1.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00492">492</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00592">592</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
 
 </div>
 </div>
@@ -1279,7 +1372,7 @@ objective and set a scaling_factor to -1.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l01234">1234</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l01495">1495</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
 
 </div>
 </div>
@@ -1298,7 +1391,7 @@ objective and set a scaling_factor to -1.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00566">566</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00666">666</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
 
 </div>
 </div>
@@ -1318,7 +1411,7 @@ objective and set a scaling_factor to -1.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00337">337</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00401">401</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
 
 </div>
 </div>
@@ -1343,7 +1436,7 @@ objective and set a scaling_factor to -1.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00220">220</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00234">234</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
 
 </div>
 </div>
@@ -1367,7 +1460,55 @@ objective and set a scaling_factor to -1.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00279">279</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00293">293</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+
+</div>
+</div>
+<a id="a67fb3f96df68342906f0d96c5ab86178" name="a67fb3f96df68342906f0d96c5ab86178"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a67fb3f96df68342906f0d96c5ab86178">&#9670;&nbsp;</a></span>INTEGER_OFFSET_FIELD_NUMBER</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">final int INTEGER_OFFSET_FIELD_NUMBER = 7</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00357">357</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+
+</div>
+</div>
+<a id="a845bdd0b4355efa443a405002c905000" name="a845bdd0b4355efa443a405002c905000"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a845bdd0b4355efa443a405002c905000">&#9670;&nbsp;</a></span>INTEGER_SCALING_FACTOR_FIELD_NUMBER</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">final int INTEGER_SCALING_FACTOR_FIELD_NUMBER = 8</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00378">378</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
 
 </div>
 </div>
@@ -1391,7 +1532,7 @@ objective and set a scaling_factor to -1.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00248">248</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00262">262</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
 
 </div>
 </div>
@@ -1415,7 +1556,31 @@ objective and set a scaling_factor to -1.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00268">268</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00282">282</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+
+</div>
+</div>
+<a id="af124299dcb55e0bf6d9ca24e50dd6f0a" name="af124299dcb55e0bf6d9ca24e50dd6f0a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af124299dcb55e0bf6d9ca24e50dd6f0a">&#9670;&nbsp;</a></span>SCALING_WAS_EXACT_FIELD_NUMBER</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">final int SCALING_WAS_EXACT_FIELD_NUMBER = 6</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00339">339</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
 
 </div>
 </div>
@@ -1439,7 +1604,7 @@ objective and set a scaling_factor to -1.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00174">174</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpObjectiveProto_8java_source.html#l00188">188</a> of file <a class="el" href="CpObjectiveProto_8java_source.html">CpObjectiveProto.java</a>.</p>
 
 </div>
 </div>

@@ -152,6 +152,7 @@ var NAVTREE =
       [ "MakeDelayedConstraintDemon2", "namespaceoperations__research.html#a6c0bc84812eed9d626b00bc8fb5b9ae1", null ],
       [ "MakeLocalSearchOperator", "namespaceoperations__research.html#a5a2c92a28ee59ab17dfb5885ab3e20c8", null ],
       [ "MakePathStateFilter", "namespaceoperations__research.html#a6cdc2ad7aac33203a04919652bd0a916", null ],
+      [ "MakeRestoreDimensionValuesForUnchangedRoutes", "namespaceoperations__research.html#a5ccb557dd21c73b6bcd5470476201cb8", null ],
       [ "MakeSetValuesFromTargets", "namespaceoperations__research.html#afbea4d6dff74754bcb65e6d432d71ebe", null ],
       [ "MakeUnaryDimensionFilter", "namespaceoperations__research.html#acc7429aa3368c33f6444304ad8669259", null ],
       [ "MakeVehicleBreaksFilter", "namespaceoperations__research.html#a4ea29fb0eedce9f806f0e0f5fbaff870", null ],

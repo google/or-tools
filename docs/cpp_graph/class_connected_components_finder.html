@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 9.1</span>
+                <span id="sfml">Google OR-Tools 9.2</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -81,16 +81,22 @@ $(document).ready(function(){initNavTree('class_connected_components_finder.html
 
 <div class="header">
   <div class="summary">
+<a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="class_connected_components_finder-members.html">List of all members</a>  </div>
-  <div class="headertitle"><div class="title">ConnectedComponentsFinder&lt; T, CompareOrHashT &gt;</div></div>
+  <div class="headertitle"><div class="title">ConnectedComponentsFinder&lt; T, CompareOrHashT, Eq &gt;</div></div>
 </div><!--header-->
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><div class="compoundTemplParams">template&lt;typename T, typename CompareOrHashT = std::less&lt;T&gt;&gt;<br />
-class ConnectedComponentsFinder&lt; T, CompareOrHashT &gt;</div>
-<p class="definition">Definition at line <a class="el" href="connected__components_8h_source.html#l00202">202</a> of file <a class="el" href="connected__components_8h_source.html">connected_components.h</a>.</p>
+<div class="textblock"><div class="compoundTemplParams">template&lt;typename T, typename CompareOrHashT = std::less&lt;T&gt;, typename Eq = void&gt;<br />
+class ConnectedComponentsFinder&lt; T, CompareOrHashT, Eq &gt;</div>
+<p class="definition">Definition at line <a class="el" href="connected__components_8h_source.html#l00222">222</a> of file <a class="el" href="connected__components_8h_source.html">connected_components.h</a>.</p>
 </div><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
+Public Types</h2></td></tr>
+<tr class="memitem:aef2ff963b33a729831f48e9102785e99"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_connected_components_finder.html#aef2ff963b33a729831f48e9102785e99">Set</a> = typename <a class="el" href="structinternal_1_1_connected_components_type_helper.html">internal::ConnectedComponentsTypeHelper</a>&lt; T, CompareOrHashT, Eq &gt;::<a class="el" href="class_connected_components_finder.html#aef2ff963b33a729831f48e9102785e99">Set</a></td></tr>
+<tr class="separator:aef2ff963b33a729831f48e9102785e99"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a9d3b69f74c9aa5e8ddbf4e4056320a66"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_connected_components_finder.html#a9d3b69f74c9aa5e8ddbf4e4056320a66">ConnectedComponentsFinder</a> ()</td></tr>
@@ -109,13 +115,30 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a8c22d56c6bcad754b70f626de84070a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4361d2493d16cf506091e88190604ebf"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::vector&lt; T &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_connected_components_finder.html#a4361d2493d16cf506091e88190604ebf">FindConnectedComponents</a> ()</td></tr>
 <tr class="separator:a4361d2493d16cf506091e88190604ebf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac0d3efb0bf815ede0da31097a11c4a27"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_connected_components_finder.html#ac0d3efb0bf815ede0da31097a11c4a27">FindConnectedComponents</a> (std::vector&lt; typename <a class="el" href="structinternal_1_1_connected_components_type_helper.html">internal::ConnectedComponentsTypeHelper</a>&lt; T, CompareOrHashT &gt;::Set &gt; *components)</td></tr>
-<tr class="separator:ac0d3efb0bf815ede0da31097a11c4a27"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afda6ee20c3c31153322022a67a31ee00"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_connected_components_finder.html#afda6ee20c3c31153322022a67a31ee00">FindConnectedComponents</a> (std::vector&lt; <a class="el" href="class_connected_components_finder.html#aef2ff963b33a729831f48e9102785e99">Set</a> &gt; *components)</td></tr>
+<tr class="separator:afda6ee20c3c31153322022a67a31ee00"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af1a300e659dbc3041b1485f12855bd31"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_connected_components_finder.html#af1a300e659dbc3041b1485f12855bd31">GetNumberOfComponents</a> () const</td></tr>
 <tr class="separator:af1a300e659dbc3041b1485f12855bd31"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aeeb8b88902830cab41c69ef944b5694f"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_connected_components_finder.html#aeeb8b88902830cab41c69ef944b5694f">GetNumberOfNodes</a> () const</td></tr>
 <tr class="separator:aeeb8b88902830cab41c69ef944b5694f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<h2 class="groupheader">Member Typedef Documentation</h2>
+<a id="aef2ff963b33a729831f48e9102785e99" name="aef2ff963b33a729831f48e9102785e99"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aef2ff963b33a729831f48e9102785e99">&#9670;&nbsp;</a></span>Set</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="class_connected_components_finder.html#aef2ff963b33a729831f48e9102785e99">Set</a> =  typename <a class="el" href="structinternal_1_1_connected_components_type_helper.html">internal::ConnectedComponentsTypeHelper</a>&lt;T, CompareOrHashT, Eq&gt;::<a class="el" href="class_connected_components_finder.html#aef2ff963b33a729831f48e9102785e99">Set</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="connected__components_8h_source.html#l00224">224</a> of file <a class="el" href="connected__components_8h_source.html">connected_components.h</a>.</p>
+
+</div>
+</div>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a9d3b69f74c9aa5e8ddbf4e4056320a66" name="a9d3b69f74c9aa5e8ddbf4e4056320a66"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a9d3b69f74c9aa5e8ddbf4e4056320a66">&#9670;&nbsp;</a></span>ConnectedComponentsFinder() <span class="overload">[1/2]</span></h2>
@@ -140,7 +163,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="connected__components_8h_source.html#l00205">205</a> of file <a class="el" href="connected__components_8h_source.html">connected_components.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="connected__components_8h_source.html#l00229">229</a> of file <a class="el" href="connected__components_8h_source.html">connected_components.h</a>.</p>
 
 </div>
 </div>
@@ -156,7 +179,7 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="class_connected_components_finder.html">ConnectedComponentsFinder</a> </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="class_connected_components_finder.html">ConnectedComponentsFinder</a>&lt; T, CompareOrHashT &gt; &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="class_connected_components_finder.html">ConnectedComponentsFinder</a>&lt; T, CompareOrHashT, Eq &gt; &amp;&#160;</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
         </tr>
@@ -205,7 +228,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="connected__components_8h_source.html#l00219">219</a> of file <a class="el" href="connected__components_8h_source.html">connected_components.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="connected__components_8h_source.html#l00243">243</a> of file <a class="el" href="connected__components_8h_source.html">connected_components.h</a>.</p>
 
 </div>
 </div>
@@ -233,7 +256,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="connected__components_8h_source.html#l00213">213</a> of file <a class="el" href="connected__components_8h_source.html">connected_components.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="connected__components_8h_source.html#l00237">237</a> of file <a class="el" href="connected__components_8h_source.html">connected_components.h</a>.</p>
 
 </div>
 </div>
@@ -271,7 +294,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="connected__components_8h_source.html#l00226">226</a> of file <a class="el" href="connected__components_8h_source.html">connected_components.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="connected__components_8h_source.html#l00250">250</a> of file <a class="el" href="connected__components_8h_source.html">connected_components.h</a>.</p>
 
 </div>
 </div>
@@ -298,12 +321,12 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="connected__components_8h_source.html#l00247">247</a> of file <a class="el" href="connected__components_8h_source.html">connected_components.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="connected__components_8h_source.html#l00271">271</a> of file <a class="el" href="connected__components_8h_source.html">connected_components.h</a>.</p>
 
 </div>
 </div>
-<a id="ac0d3efb0bf815ede0da31097a11c4a27" name="ac0d3efb0bf815ede0da31097a11c4a27"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac0d3efb0bf815ede0da31097a11c4a27">&#9670;&nbsp;</a></span>FindConnectedComponents() <span class="overload">[2/2]</span></h2>
+<a id="afda6ee20c3c31153322022a67a31ee00" name="afda6ee20c3c31153322022a67a31ee00"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afda6ee20c3c31153322022a67a31ee00">&#9670;&nbsp;</a></span>FindConnectedComponents() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -314,7 +337,7 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="memname">void FindConnectedComponents </td>
           <td>(</td>
-          <td class="paramtype">std::vector&lt; typename <a class="el" href="structinternal_1_1_connected_components_type_helper.html">internal::ConnectedComponentsTypeHelper</a>&lt; T, CompareOrHashT &gt;::Set &gt; *&#160;</td>
+          <td class="paramtype">std::vector&lt; <a class="el" href="class_connected_components_finder.html#aef2ff963b33a729831f48e9102785e99">Set</a> &gt; *&#160;</td>
           <td class="paramname"><em>components</em></td><td>)</td>
           <td></td>
         </tr>
@@ -326,7 +349,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="connected__components_8h_source.html#l00255">255</a> of file <a class="el" href="connected__components_8h_source.html">connected_components.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="connected__components_8h_source.html#l00279">279</a> of file <a class="el" href="connected__components_8h_source.html">connected_components.h</a>.</p>
 
 </div>
 </div>
@@ -353,7 +376,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="connected__components_8h_source.html#l00268">268</a> of file <a class="el" href="connected__components_8h_source.html">connected_components.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="connected__components_8h_source.html#l00290">290</a> of file <a class="el" href="connected__components_8h_source.html">connected_components.h</a>.</p>
 
 </div>
 </div>
@@ -380,7 +403,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="connected__components_8h_source.html#l00276">276</a> of file <a class="el" href="connected__components_8h_source.html">connected_components.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="connected__components_8h_source.html#l00298">298</a> of file <a class="el" href="connected__components_8h_source.html">connected_components.h</a>.</p>
 
 </div>
 </div>
@@ -408,7 +431,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="connected__components_8h_source.html#l00234">234</a> of file <a class="el" href="connected__components_8h_source.html">connected_components.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="connected__components_8h_source.html#l00258">258</a> of file <a class="el" href="connected__components_8h_source.html">connected_components.h</a>.</p>
 
 </div>
 </div>
@@ -424,7 +447,7 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="class_connected_components_finder.html">ConnectedComponentsFinder</a> &amp; operator= </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="class_connected_components_finder.html">ConnectedComponentsFinder</a>&lt; T, CompareOrHashT &gt; &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="class_connected_components_finder.html">ConnectedComponentsFinder</a>&lt; T, CompareOrHashT, Eq &gt; &amp;&#160;</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
         </tr>

@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.1</span>
+   &#160;<span id="projectnumber">9.2</span>
    </div>
   </td>
  </tr>
@@ -105,7 +105,7 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1_nested_t
 </div><!-- fragment --><p >Note that remaining wall time in the base time limit is decreasing "automatically", but the deterministic time needs to be updated manually. This update is done only once, during the destruction of the nested time limit object. To track the deterministic time properly, the user must avoid modifying the base time limit object when a nested time limit exists.</p>
 <p >The nested time limits supports the external time limit condition in the sense, that if the overall time limit has an external boolean registered, the nested time limit object will use the same boolean value as an external time limit too. </p>
 
-<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00426">426</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00427">427</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -225,7 +225,7 @@ Static Public Member Functions</h2></td></tr>
 <p>Creates a time limit object initialized from a base time limit and an object that provides methods max_time_in_seconds() and max_deterministic_time(). </p>
 <p >This method is designed specifically to work with solver parameter protos, e.g. BopParameters, MipParameters and SatParameters. </p>
 
-<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00448">448</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00449">449</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
 
 </div>
 </div>
@@ -255,7 +255,7 @@ Static Public Member Functions</h2></td></tr>
 <p>Returns a time limit object that represents the combination of the overall time limit and the part-specific time limit. </p>
 <p >The returned time limit object is owned by the nested time limit object that returns it, and it will remain valid until the nested time limit object is destroyed. </p>
 
-<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00461">461</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00462">462</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
 
 </div>
 </div>

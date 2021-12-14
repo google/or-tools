@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 9.1</span>
+                <span id="sfml">Google OR-Tools 9.2</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -107,7 +107,7 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1_solver.h
 </ul>
 <p >For the time being, <a class="el" href="classoperations__research_1_1_solver.html" title="Solver Class.">Solver</a> is neither MT_SAFE nor MT_HOT. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00243">243</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00245">245</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Classes</h2></td></tr>
@@ -1114,40 +1114,40 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a860294d137e8364921c233dccb725ace"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_search_monitor.html">SearchMonitor</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_solver.html#a860294d137e8364921c233dccb725ace">MakeConstantRestart</a> (int frequency)</td></tr>
 <tr class="memdesc:a860294d137e8364921c233dccb725ace"><td class="mdescLeft">&#160;</td><td class="mdescRight">This search monitor will restart the search periodically after 'frequency' failures.  <a href="classoperations__research_1_1_solver.html#a860294d137e8364921c233dccb725ace">More...</a><br /></td></tr>
 <tr class="separator:a860294d137e8364921c233dccb725ace"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa039067a5797a91839f3b445d58d331e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_regular_limit.html">RegularLimit</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_solver.html#aa039067a5797a91839f3b445d58d331e">MakeTimeLimit</a> (absl::Duration time)</td></tr>
-<tr class="memdesc:aa039067a5797a91839f3b445d58d331e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a search limit that constrains the running time.  <a href="classoperations__research_1_1_solver.html#aa039067a5797a91839f3b445d58d331e">More...</a><br /></td></tr>
-<tr class="separator:aa039067a5797a91839f3b445d58d331e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8b9283747d5ccfb691bdb77bc6b7060d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_regular_limit.html">RegularLimit</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_solver.html#a8b9283747d5ccfb691bdb77bc6b7060d">MakeTimeLimit</a> (int64_t time_in_ms)</td></tr>
-<tr class="separator:a8b9283747d5ccfb691bdb77bc6b7060d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a41fc22cdc41350726e6c44f07140fdcb"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_regular_limit.html">RegularLimit</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_solver.html#a41fc22cdc41350726e6c44f07140fdcb">MakeBranchesLimit</a> (int64_t <a class="el" href="classoperations__research_1_1_solver.html#a14f1aa725d9c4497296b233dbcb28402">branches</a>)</td></tr>
-<tr class="memdesc:a41fc22cdc41350726e6c44f07140fdcb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a search limit that constrains the number of branches explored in the search tree.  <a href="classoperations__research_1_1_solver.html#a41fc22cdc41350726e6c44f07140fdcb">More...</a><br /></td></tr>
-<tr class="separator:a41fc22cdc41350726e6c44f07140fdcb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a319e02509ec3f9937d35e28e6b0e030d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_regular_limit.html">RegularLimit</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_solver.html#a319e02509ec3f9937d35e28e6b0e030d">MakeFailuresLimit</a> (int64_t <a class="el" href="classoperations__research_1_1_solver.html#a7dcb440a607b4b39979280ee21621473">failures</a>)</td></tr>
-<tr class="memdesc:a319e02509ec3f9937d35e28e6b0e030d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a search limit that constrains the number of failures that can happen when exploring the search tree.  <a href="classoperations__research_1_1_solver.html#a319e02509ec3f9937d35e28e6b0e030d">More...</a><br /></td></tr>
-<tr class="separator:a319e02509ec3f9937d35e28e6b0e030d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0a6069cef9fe87b649dd6e7f20d4d070"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_regular_limit.html">RegularLimit</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_solver.html#a0a6069cef9fe87b649dd6e7f20d4d070">MakeSolutionsLimit</a> (int64_t <a class="el" href="classoperations__research_1_1_solver.html#af1315bc614fc71a3c90729398d208289">solutions</a>)</td></tr>
-<tr class="memdesc:a0a6069cef9fe87b649dd6e7f20d4d070"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a search limit that constrains the number of solutions found during the search.  <a href="classoperations__research_1_1_solver.html#a0a6069cef9fe87b649dd6e7f20d4d070">More...</a><br /></td></tr>
-<tr class="separator:a0a6069cef9fe87b649dd6e7f20d4d070"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4b036bdcee269e854a096e9baf60b014"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_regular_limit.html">RegularLimit</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_solver.html#a4b036bdcee269e854a096e9baf60b014">MakeLimit</a> (absl::Duration time, int64_t <a class="el" href="classoperations__research_1_1_solver.html#a14f1aa725d9c4497296b233dbcb28402">branches</a>, int64_t <a class="el" href="classoperations__research_1_1_solver.html#a7dcb440a607b4b39979280ee21621473">failures</a>, int64_t <a class="el" href="classoperations__research_1_1_solver.html#af1315bc614fc71a3c90729398d208289">solutions</a>, bool smart_time_check=false, bool cumulative=false)</td></tr>
-<tr class="memdesc:a4b036bdcee269e854a096e9baf60b014"><td class="mdescLeft">&#160;</td><td class="mdescRight">Limits the search with the 'time', 'branches', 'failures' and 'solutions' limits.  <a href="classoperations__research_1_1_solver.html#a4b036bdcee269e854a096e9baf60b014">More...</a><br /></td></tr>
-<tr class="separator:a4b036bdcee269e854a096e9baf60b014"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6b8b05ce53cd01dcb08d7430bcfbe17f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_regular_limit.html">RegularLimit</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_solver.html#a6b8b05ce53cd01dcb08d7430bcfbe17f">MakeLimit</a> (const <a class="el" href="classoperations__research_1_1_regular_limit_parameters.html">RegularLimitParameters</a> &amp;proto)</td></tr>
-<tr class="memdesc:a6b8b05ce53cd01dcb08d7430bcfbe17f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a search limit from its protobuf description.  <a href="classoperations__research_1_1_solver.html#a6b8b05ce53cd01dcb08d7430bcfbe17f">More...</a><br /></td></tr>
-<tr class="separator:a6b8b05ce53cd01dcb08d7430bcfbe17f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae88435ff06bd3a1180de433ac6e78ad2"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_regular_limit.html">RegularLimit</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_solver.html#ae88435ff06bd3a1180de433ac6e78ad2">MakeLimit</a> (int64_t time, int64_t <a class="el" href="classoperations__research_1_1_solver.html#a14f1aa725d9c4497296b233dbcb28402">branches</a>, int64_t <a class="el" href="classoperations__research_1_1_solver.html#a7dcb440a607b4b39979280ee21621473">failures</a>, int64_t <a class="el" href="classoperations__research_1_1_solver.html#af1315bc614fc71a3c90729398d208289">solutions</a>, bool smart_time_check=false, bool cumulative=false)</td></tr>
-<tr class="separator:ae88435ff06bd3a1180de433ac6e78ad2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acdeae37255ed2f47076a5eaf5a441f08"><td class="memItemLeft" align="right" valign="top">ABSL_MUST_USE_RESULT <a class="el" href="classoperations__research_1_1_regular_limit.html">RegularLimit</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_solver.html#acdeae37255ed2f47076a5eaf5a441f08">MakeTimeLimit</a> (absl::Duration time)</td></tr>
+<tr class="memdesc:acdeae37255ed2f47076a5eaf5a441f08"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a search limit that constrains the running time.  <a href="classoperations__research_1_1_solver.html#acdeae37255ed2f47076a5eaf5a441f08">More...</a><br /></td></tr>
+<tr class="separator:acdeae37255ed2f47076a5eaf5a441f08"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a42055bf5670c2272eaa5ac6cbf984fe9"><td class="memItemLeft" align="right" valign="top">ABSL_MUST_USE_RESULT <a class="el" href="classoperations__research_1_1_regular_limit.html">RegularLimit</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_solver.html#a42055bf5670c2272eaa5ac6cbf984fe9">MakeTimeLimit</a> (int64_t time_in_ms)</td></tr>
+<tr class="separator:a42055bf5670c2272eaa5ac6cbf984fe9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa9315b9e849db7bef0b50168cdd017ac"><td class="memItemLeft" align="right" valign="top">ABSL_MUST_USE_RESULT <a class="el" href="classoperations__research_1_1_regular_limit.html">RegularLimit</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_solver.html#aa9315b9e849db7bef0b50168cdd017ac">MakeBranchesLimit</a> (int64_t <a class="el" href="classoperations__research_1_1_solver.html#a14f1aa725d9c4497296b233dbcb28402">branches</a>)</td></tr>
+<tr class="memdesc:aa9315b9e849db7bef0b50168cdd017ac"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a search limit that constrains the number of branches explored in the search tree.  <a href="classoperations__research_1_1_solver.html#aa9315b9e849db7bef0b50168cdd017ac">More...</a><br /></td></tr>
+<tr class="separator:aa9315b9e849db7bef0b50168cdd017ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae6a26e644ab0fc0e92841bf54b5a11f7"><td class="memItemLeft" align="right" valign="top">ABSL_MUST_USE_RESULT <a class="el" href="classoperations__research_1_1_regular_limit.html">RegularLimit</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_solver.html#ae6a26e644ab0fc0e92841bf54b5a11f7">MakeFailuresLimit</a> (int64_t <a class="el" href="classoperations__research_1_1_solver.html#a7dcb440a607b4b39979280ee21621473">failures</a>)</td></tr>
+<tr class="memdesc:ae6a26e644ab0fc0e92841bf54b5a11f7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a search limit that constrains the number of failures that can happen when exploring the search tree.  <a href="classoperations__research_1_1_solver.html#ae6a26e644ab0fc0e92841bf54b5a11f7">More...</a><br /></td></tr>
+<tr class="separator:ae6a26e644ab0fc0e92841bf54b5a11f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a339117ca4cc88d137549202c541e3ab7"><td class="memItemLeft" align="right" valign="top">ABSL_MUST_USE_RESULT <a class="el" href="classoperations__research_1_1_regular_limit.html">RegularLimit</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_solver.html#a339117ca4cc88d137549202c541e3ab7">MakeSolutionsLimit</a> (int64_t <a class="el" href="classoperations__research_1_1_solver.html#af1315bc614fc71a3c90729398d208289">solutions</a>)</td></tr>
+<tr class="memdesc:a339117ca4cc88d137549202c541e3ab7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a search limit that constrains the number of solutions found during the search.  <a href="classoperations__research_1_1_solver.html#a339117ca4cc88d137549202c541e3ab7">More...</a><br /></td></tr>
+<tr class="separator:a339117ca4cc88d137549202c541e3ab7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab9eb11186f72ffbb1dd788a15191d770"><td class="memItemLeft" align="right" valign="top">ABSL_MUST_USE_RESULT <a class="el" href="classoperations__research_1_1_regular_limit.html">RegularLimit</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_solver.html#ab9eb11186f72ffbb1dd788a15191d770">MakeLimit</a> (absl::Duration time, int64_t <a class="el" href="classoperations__research_1_1_solver.html#a14f1aa725d9c4497296b233dbcb28402">branches</a>, int64_t <a class="el" href="classoperations__research_1_1_solver.html#a7dcb440a607b4b39979280ee21621473">failures</a>, int64_t <a class="el" href="classoperations__research_1_1_solver.html#af1315bc614fc71a3c90729398d208289">solutions</a>, bool smart_time_check=false, bool cumulative=false)</td></tr>
+<tr class="memdesc:ab9eb11186f72ffbb1dd788a15191d770"><td class="mdescLeft">&#160;</td><td class="mdescRight">Limits the search with the 'time', 'branches', 'failures' and 'solutions' limits.  <a href="classoperations__research_1_1_solver.html#ab9eb11186f72ffbb1dd788a15191d770">More...</a><br /></td></tr>
+<tr class="separator:ab9eb11186f72ffbb1dd788a15191d770"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3c94a0c37a23ce7ed226b75e0838e2f5"><td class="memItemLeft" align="right" valign="top">ABSL_MUST_USE_RESULT <a class="el" href="classoperations__research_1_1_regular_limit.html">RegularLimit</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_solver.html#a3c94a0c37a23ce7ed226b75e0838e2f5">MakeLimit</a> (const <a class="el" href="classoperations__research_1_1_regular_limit_parameters.html">RegularLimitParameters</a> &amp;proto)</td></tr>
+<tr class="memdesc:a3c94a0c37a23ce7ed226b75e0838e2f5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a search limit from its protobuf description.  <a href="classoperations__research_1_1_solver.html#a3c94a0c37a23ce7ed226b75e0838e2f5">More...</a><br /></td></tr>
+<tr class="separator:a3c94a0c37a23ce7ed226b75e0838e2f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae645e8df0cf59088cfdd7de26775247f"><td class="memItemLeft" align="right" valign="top">ABSL_MUST_USE_RESULT <a class="el" href="classoperations__research_1_1_regular_limit.html">RegularLimit</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_solver.html#ae645e8df0cf59088cfdd7de26775247f">MakeLimit</a> (int64_t time, int64_t <a class="el" href="classoperations__research_1_1_solver.html#a14f1aa725d9c4497296b233dbcb28402">branches</a>, int64_t <a class="el" href="classoperations__research_1_1_solver.html#a7dcb440a607b4b39979280ee21621473">failures</a>, int64_t <a class="el" href="classoperations__research_1_1_solver.html#af1315bc614fc71a3c90729398d208289">solutions</a>, bool smart_time_check=false, bool cumulative=false)</td></tr>
+<tr class="separator:ae645e8df0cf59088cfdd7de26775247f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9f52516c4ad3aced15492b20a58dc2d9"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_regular_limit_parameters.html">RegularLimitParameters</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_solver.html#a9f52516c4ad3aced15492b20a58dc2d9">MakeDefaultRegularLimitParameters</a> () const</td></tr>
 <tr class="memdesc:a9f52516c4ad3aced15492b20a58dc2d9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a regular limit proto containing default values.  <a href="classoperations__research_1_1_solver.html#a9f52516c4ad3aced15492b20a58dc2d9">More...</a><br /></td></tr>
 <tr class="separator:a9f52516c4ad3aced15492b20a58dc2d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3180a362d6614f161a58f9576ddcb1c1"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_search_limit.html">SearchLimit</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_solver.html#a3180a362d6614f161a58f9576ddcb1c1">MakeLimit</a> (<a class="el" href="classoperations__research_1_1_search_limit.html">SearchLimit</a> *const limit_1, <a class="el" href="classoperations__research_1_1_search_limit.html">SearchLimit</a> *const limit_2)</td></tr>
-<tr class="memdesc:a3180a362d6614f161a58f9576ddcb1c1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a search limit that is reached when either of the underlying limit is reached.  <a href="classoperations__research_1_1_solver.html#a3180a362d6614f161a58f9576ddcb1c1">More...</a><br /></td></tr>
-<tr class="separator:a3180a362d6614f161a58f9576ddcb1c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a81a5a99611b97e96056b325e46f31b8e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_improvement_search_limit.html">ImprovementSearchLimit</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_solver.html#a81a5a99611b97e96056b325e46f31b8e">MakeImprovementLimit</a> (<a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> *objective_var, bool maximize, double objective_scaling_factor, double objective_offset, double improvement_rate_coefficient, int improvement_rate_solutions_distance)</td></tr>
-<tr class="memdesc:a81a5a99611b97e96056b325e46f31b8e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Limits the search based on the improvements of 'objective_var'.  <a href="classoperations__research_1_1_solver.html#a81a5a99611b97e96056b325e46f31b8e">More...</a><br /></td></tr>
-<tr class="separator:a81a5a99611b97e96056b325e46f31b8e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1700b6f2ca4da7c3f532916d650a817e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_search_limit.html">SearchLimit</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_solver.html#a1700b6f2ca4da7c3f532916d650a817e">MakeCustomLimit</a> (std::function&lt; bool()&gt; limiter)</td></tr>
-<tr class="memdesc:a1700b6f2ca4da7c3f532916d650a817e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Callback-based search limit.  <a href="classoperations__research_1_1_solver.html#a1700b6f2ca4da7c3f532916d650a817e">More...</a><br /></td></tr>
-<tr class="separator:a1700b6f2ca4da7c3f532916d650a817e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abb8e2fda6869954bba10036a5cdf6ec8"><td class="memItemLeft" align="right" valign="top">ABSL_MUST_USE_RESULT <a class="el" href="classoperations__research_1_1_search_limit.html">SearchLimit</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_solver.html#abb8e2fda6869954bba10036a5cdf6ec8">MakeLimit</a> (<a class="el" href="classoperations__research_1_1_search_limit.html">SearchLimit</a> *const limit_1, <a class="el" href="classoperations__research_1_1_search_limit.html">SearchLimit</a> *const limit_2)</td></tr>
+<tr class="memdesc:abb8e2fda6869954bba10036a5cdf6ec8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a search limit that is reached when either of the underlying limit is reached.  <a href="classoperations__research_1_1_solver.html#abb8e2fda6869954bba10036a5cdf6ec8">More...</a><br /></td></tr>
+<tr class="separator:abb8e2fda6869954bba10036a5cdf6ec8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad664fb0d69f84f5b35739481ebeaf105"><td class="memItemLeft" align="right" valign="top">ABSL_MUST_USE_RESULT <a class="el" href="classoperations__research_1_1_improvement_search_limit.html">ImprovementSearchLimit</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_solver.html#ad664fb0d69f84f5b35739481ebeaf105">MakeImprovementLimit</a> (<a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> *objective_var, bool maximize, double objective_scaling_factor, double objective_offset, double improvement_rate_coefficient, int improvement_rate_solutions_distance)</td></tr>
+<tr class="memdesc:ad664fb0d69f84f5b35739481ebeaf105"><td class="mdescLeft">&#160;</td><td class="mdescRight">Limits the search based on the improvements of 'objective_var'.  <a href="classoperations__research_1_1_solver.html#ad664fb0d69f84f5b35739481ebeaf105">More...</a><br /></td></tr>
+<tr class="separator:ad664fb0d69f84f5b35739481ebeaf105"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a39e788fb623ab65293219d67b75cab19"><td class="memItemLeft" align="right" valign="top">ABSL_MUST_USE_RESULT <a class="el" href="classoperations__research_1_1_search_limit.html">SearchLimit</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_solver.html#a39e788fb623ab65293219d67b75cab19">MakeCustomLimit</a> (std::function&lt; bool()&gt; limiter)</td></tr>
+<tr class="memdesc:a39e788fb623ab65293219d67b75cab19"><td class="mdescLeft">&#160;</td><td class="mdescRight">Callback-based search limit.  <a href="classoperations__research_1_1_solver.html#a39e788fb623ab65293219d67b75cab19">More...</a><br /></td></tr>
+<tr class="separator:a39e788fb623ab65293219d67b75cab19"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a44df25a1775b3d0f19f70bdf00c99727"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_search_monitor.html">SearchMonitor</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_solver.html#a44df25a1775b3d0f19f70bdf00c99727">MakeSearchLog</a> (int branch_period)</td></tr>
 <tr class="memdesc:a44df25a1775b3d0f19f70bdf00c99727"><td class="mdescLeft">&#160;</td><td class="mdescRight">The SearchMonitors below will display a periodic search log on LOG(INFO) every branch_period branches explored.  <a href="classoperations__research_1_1_solver.html#a44df25a1775b3d0f19f70bdf00c99727">More...</a><br /></td></tr>
 <tr class="separator:a44df25a1775b3d0f19f70bdf00c99727"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1213,6 +1213,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a123f8b1f425860ad4b38ca840ea844fe"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5a025adefdc10aafc0503ca7d0b2f628"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_decision.html">Decision</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_solver.html#a5a025adefdc10aafc0503ca7d0b2f628">MakeAssignVariablesValues</a> (const std::vector&lt; <a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> * &gt; &amp;vars, const std::vector&lt; int64_t &gt; &amp;values)</td></tr>
 <tr class="separator:a5a025adefdc10aafc0503ca7d0b2f628"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6973359c0392b393b0f30694a4771ab8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_decision.html">Decision</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_solver.html#a6973359c0392b393b0f30694a4771ab8">MakeAssignVariablesValuesOrDoNothing</a> (const std::vector&lt; <a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> * &gt; &amp;vars, const std::vector&lt; int64_t &gt; &amp;values)</td></tr>
+<tr class="separator:a6973359c0392b393b0f30694a4771ab8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a265f3eb309cb6e32df85fe08c0227b15"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_decision.html">Decision</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_solver.html#a265f3eb309cb6e32df85fe08c0227b15">MakeAssignVariablesValuesOrFail</a> (const std::vector&lt; <a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> * &gt; &amp;vars, const std::vector&lt; int64_t &gt; &amp;values)</td></tr>
+<tr class="separator:a265f3eb309cb6e32df85fe08c0227b15"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aeb4b40e28341f9c71198a6c9f0a78c06"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_decision.html">Decision</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_solver.html#aeb4b40e28341f9c71198a6c9f0a78c06">MakeFailDecision</a> ()</td></tr>
 <tr class="separator:aeb4b40e28341f9c71198a6c9f0a78c06"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a00f78f79ea5ff448caa08cba62054859"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_decision.html">Decision</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_solver.html#a00f78f79ea5ff448caa08cba62054859">MakeDecision</a> (<a class="el" href="classoperations__research_1_1_solver.html#ad7946514ee3dd6cb3ab993dc9e98b33b">Action</a> apply, <a class="el" href="classoperations__research_1_1_solver.html#ad7946514ee3dd6cb3ab993dc9e98b33b">Action</a> refute)</td></tr>
@@ -1563,6 +1567,9 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a64e3df5cecd4de1a3d052795458f7069"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6d5ff1ccb832c9d27fa7a579248f8084"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_solver.html#a6d5ff1ccb832c9d27fa7a579248f8084">CheckFail</a> ()</td></tr>
 <tr class="separator:a6d5ff1ccb832c9d27fa7a579248f8084"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0a0fa138e73ae39159c557c6356d055f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_decision_builder.html">DecisionBuilder</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_solver.html#a0a0fa138e73ae39159c557c6356d055f">MakeProfiledDecisionBuilderWrapper</a> (<a class="el" href="classoperations__research_1_1_decision_builder.html">DecisionBuilder</a> *db)</td></tr>
+<tr class="memdesc:a0a0fa138e73ae39159c557c6356d055f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Activates profiling on a decision builder.  <a href="classoperations__research_1_1_solver.html#a0a0fa138e73ae39159c557c6356d055f">More...</a><br /></td></tr>
+<tr class="separator:a0a0fa138e73ae39159c557c6356d055f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr><td colspan="2"><div class="groupHeader"></div></td></tr>
 <tr class="memitem:a946780dfafc8faa3dd2d345850213be5"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_solver.html#a946780dfafc8faa3dd2d345850213be5">Solve</a> (<a class="el" href="classoperations__research_1_1_decision_builder.html">DecisionBuilder</a> *const db, const std::vector&lt; <a class="el" href="classoperations__research_1_1_search_monitor.html">SearchMonitor</a> * &gt; &amp;monitors)</td></tr>
 <tr class="separator:a946780dfafc8faa3dd2d345850213be5"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1630,7 +1637,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00752">752</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00754">754</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1646,7 +1653,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00750">750</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00752">752</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1662,7 +1669,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00753">753</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00755">755</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1680,7 +1687,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Callback typedefs. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00733">733</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00735">735</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1696,7 +1703,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00734">734</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00736">736</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1712,7 +1719,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00735">735</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00737">737</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1728,7 +1735,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00737">737</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00739">739</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1744,7 +1751,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00739">739</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00741">741</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1760,7 +1767,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00744">744</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00746">746</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1776,7 +1783,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00749">749</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00751">751</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1792,7 +1799,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00747">747</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00749">749</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1832,7 +1839,7 @@ Static Public Attributes</h2></td></tr>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00617">617</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00619">619</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1868,7 +1875,7 @@ Static Public Attributes</h2></td></tr>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00685">685</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00687">687</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1895,7 +1902,7 @@ Static Public Attributes</h2></td></tr>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00603">603</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00605">605</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1924,7 +1931,7 @@ Static Public Attributes</h2></td></tr>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00562">562</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00564">564</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1951,7 +1958,7 @@ Static Public Attributes</h2></td></tr>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00385">385</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00387">387</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1979,7 +1986,7 @@ Static Public Attributes</h2></td></tr>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00409">409</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00411">411</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2016,7 +2023,7 @@ Static Public Attributes</h2></td></tr>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00345">345</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00347">347</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2073,7 +2080,7 @@ Static Public Attributes</h2></td></tr>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00264">264</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00266">266</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2101,7 +2108,7 @@ Static Public Attributes</h2></td></tr>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00590">590</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00592">592</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2168,7 +2175,7 @@ Static Public Attributes</h2></td></tr>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00424">424</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00426">426</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2192,7 +2199,7 @@ Static Public Attributes</h2></td></tr>
 <tr><td class="fieldname"><a id="ade22213fff69cfb37d8238e8fd3073dfaddfacd8981a3f651982bf9a0c82f0995" name="ade22213fff69cfb37d8238e8fd3073dfaddfacd8981a3f651982bf9a0c82f0995"></a>REVERSIBLE_ACTION&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00711">711</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00713">713</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2215,7 +2222,7 @@ Static Public Attributes</h2></td></tr>
 <tr><td class="fieldname"><a id="a39a89fa3de66d68071c66a936f17fd2ba34d4bc092ef084ef376537320f95bc13" name="a39a89fa3de66d68071c66a936f17fd2ba34d4bc092ef084ef376537320f95bc13"></a>MINIMIZATION&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00730">730</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00732">732</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2239,7 +2246,7 @@ Static Public Attributes</h2></td></tr>
 <tr><td class="fieldname"><a id="aba5c5dc6467e097f4972d7776541482bae46a3641c46e09a29875fe4067773615" name="aba5c5dc6467e097f4972d7776541482bae46a3641c46e09a29875fe4067773615"></a>CHOOSE_RANDOM_RANK_FORWARD&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00400">400</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00402">402</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2271,7 +2278,7 @@ Static Public Attributes</h2></td></tr>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00714">714</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00716">716</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2309,7 +2316,7 @@ Static Public Attributes</h2></td></tr>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00650">650</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00652">652</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2433,7 +2440,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>The number of accepted neighbors. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l01001">1001</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l01003">1003</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2615,7 +2622,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02871">2871</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02883">2883</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2644,7 +2651,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>The number of branches explored since the creation of the solver. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00980">980</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00982">982</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2752,7 +2759,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02988">2988</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03000">3000</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2779,7 +2786,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02879">2879</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02891">2891</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2808,7 +2815,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Clears the local search state. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02935">2935</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02947">2947</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -3042,7 +3049,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Counts the number of constraints that have been added to the solver before the search. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02866">2866</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02878">2878</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -3138,7 +3145,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Access to demon profiler. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02881">2881</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02893">2893</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -3168,7 +3175,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>The number of demons executed during search for a given priority. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00989">989</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00991">991</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -3273,7 +3280,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>The number of failures encountered since the creation of the solver. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00992">992</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00994">994</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -3302,7 +3309,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>The number of filtered neighbors (neighbors accepted by filters). </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00998">998</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l01000">1000</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -3938,6 +3945,62 @@ Static Public Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="a6973359c0392b393b0f30694a4771ab8" name="a6973359c0392b393b0f30694a4771ab8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6973359c0392b393b0f30694a4771ab8">&#9670;&nbsp;</a></span>MakeAssignVariablesValuesOrDoNothing()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1_decision.html">Decision</a> * MakeAssignVariablesValuesOrDoNothing </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; <a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> * &gt; &amp;&#160;</td>
+          <td class="paramname"><em>vars</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; int64_t &gt; &amp;&#160;</td>
+          <td class="paramname"><em>values</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a265f3eb309cb6e32df85fe08c0227b15" name="a265f3eb309cb6e32df85fe08c0227b15"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a265f3eb309cb6e32df85fe08c0227b15">&#9670;&nbsp;</a></span>MakeAssignVariablesValuesOrFail()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1_decision.html">Decision</a> * MakeAssignVariablesValuesOrFail </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; <a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> * &gt; &amp;&#160;</td>
+          <td class="paramname"><em>vars</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; int64_t &gt; &amp;&#160;</td>
+          <td class="paramname"><em>values</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a56d3301a8504e69e51c16d3d98079e5f" name="a56d3301a8504e69e51c16d3d98079e5f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a56d3301a8504e69e51c16d3d98079e5f">&#9670;&nbsp;</a></span>MakeAssignVariableValue()</h2>
 
@@ -4301,14 +4364,14 @@ Static Public Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a41fc22cdc41350726e6c44f07140fdcb" name="a41fc22cdc41350726e6c44f07140fdcb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a41fc22cdc41350726e6c44f07140fdcb">&#9670;&nbsp;</a></span>MakeBranchesLimit()</h2>
+<a id="aa9315b9e849db7bef0b50168cdd017ac" name="aa9315b9e849db7bef0b50168cdd017ac"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa9315b9e849db7bef0b50168cdd017ac">&#9670;&nbsp;</a></span>MakeBranchesLimit()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classoperations__research_1_1_regular_limit.html">RegularLimit</a> * MakeBranchesLimit </td>
+          <td class="memname">ABSL_MUST_USE_RESULT <a class="el" href="classoperations__research_1_1_regular_limit.html">RegularLimit</a> * MakeBranchesLimit </td>
           <td>(</td>
           <td class="paramtype">int64_t&#160;</td>
           <td class="paramname"><em>branches</em></td><td>)</td>
@@ -4873,14 +4936,14 @@ Static Public Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a1700b6f2ca4da7c3f532916d650a817e" name="a1700b6f2ca4da7c3f532916d650a817e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1700b6f2ca4da7c3f532916d650a817e">&#9670;&nbsp;</a></span>MakeCustomLimit()</h2>
+<a id="a39e788fb623ab65293219d67b75cab19" name="a39e788fb623ab65293219d67b75cab19"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a39e788fb623ab65293219d67b75cab19">&#9670;&nbsp;</a></span>MakeCustomLimit()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classoperations__research_1_1_search_limit.html">SearchLimit</a> * MakeCustomLimit </td>
+          <td class="memname">ABSL_MUST_USE_RESULT <a class="el" href="classoperations__research_1_1_search_limit.html">SearchLimit</a> * MakeCustomLimit </td>
           <td>(</td>
           <td class="paramtype">std::function&lt; bool()&gt;&#160;</td>
           <td class="paramname"><em>limiter</em></td><td>)</td>
@@ -6106,14 +6169,14 @@ Static Public Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a319e02509ec3f9937d35e28e6b0e030d" name="a319e02509ec3f9937d35e28e6b0e030d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a319e02509ec3f9937d35e28e6b0e030d">&#9670;&nbsp;</a></span>MakeFailuresLimit()</h2>
+<a id="ae6a26e644ab0fc0e92841bf54b5a11f7" name="ae6a26e644ab0fc0e92841bf54b5a11f7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae6a26e644ab0fc0e92841bf54b5a11f7">&#9670;&nbsp;</a></span>MakeFailuresLimit()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classoperations__research_1_1_regular_limit.html">RegularLimit</a> * MakeFailuresLimit </td>
+          <td class="memname">ABSL_MUST_USE_RESULT <a class="el" href="classoperations__research_1_1_regular_limit.html">RegularLimit</a> * MakeFailuresLimit </td>
           <td>(</td>
           <td class="paramtype">int64_t&#160;</td>
           <td class="paramname"><em>failures</em></td><td>)</td>
@@ -7182,14 +7245,14 @@ Static Public Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a81a5a99611b97e96056b325e46f31b8e" name="a81a5a99611b97e96056b325e46f31b8e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a81a5a99611b97e96056b325e46f31b8e">&#9670;&nbsp;</a></span>MakeImprovementLimit()</h2>
+<a id="ad664fb0d69f84f5b35739481ebeaf105" name="ad664fb0d69f84f5b35739481ebeaf105"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad664fb0d69f84f5b35739481ebeaf105">&#9670;&nbsp;</a></span>MakeImprovementLimit()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classoperations__research_1_1_improvement_search_limit.html">ImprovementSearchLimit</a> * MakeImprovementLimit </td>
+          <td class="memname">ABSL_MUST_USE_RESULT <a class="el" href="classoperations__research_1_1_improvement_search_limit.html">ImprovementSearchLimit</a> * MakeImprovementLimit </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> *&#160;</td>
           <td class="paramname"><em>objective_var</em>, </td>
@@ -9330,14 +9393,14 @@ Static Public Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a4b036bdcee269e854a096e9baf60b014" name="a4b036bdcee269e854a096e9baf60b014"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4b036bdcee269e854a096e9baf60b014">&#9670;&nbsp;</a></span>MakeLimit() <span class="overload">[1/4]</span></h2>
+<a id="ab9eb11186f72ffbb1dd788a15191d770" name="ab9eb11186f72ffbb1dd788a15191d770"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab9eb11186f72ffbb1dd788a15191d770">&#9670;&nbsp;</a></span>MakeLimit() <span class="overload">[1/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classoperations__research_1_1_regular_limit.html">RegularLimit</a> * MakeLimit </td>
+          <td class="memname">ABSL_MUST_USE_RESULT <a class="el" href="classoperations__research_1_1_regular_limit.html">RegularLimit</a> * MakeLimit </td>
           <td>(</td>
           <td class="paramtype">absl::Duration&#160;</td>
           <td class="paramname"><em>time</em>, </td>
@@ -9385,14 +9448,14 @@ Static Public Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a6b8b05ce53cd01dcb08d7430bcfbe17f" name="a6b8b05ce53cd01dcb08d7430bcfbe17f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6b8b05ce53cd01dcb08d7430bcfbe17f">&#9670;&nbsp;</a></span>MakeLimit() <span class="overload">[2/4]</span></h2>
+<a id="a3c94a0c37a23ce7ed226b75e0838e2f5" name="a3c94a0c37a23ce7ed226b75e0838e2f5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3c94a0c37a23ce7ed226b75e0838e2f5">&#9670;&nbsp;</a></span>MakeLimit() <span class="overload">[2/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classoperations__research_1_1_regular_limit.html">RegularLimit</a> * MakeLimit </td>
+          <td class="memname">ABSL_MUST_USE_RESULT <a class="el" href="classoperations__research_1_1_regular_limit.html">RegularLimit</a> * MakeLimit </td>
           <td>(</td>
           <td class="paramtype">const <a class="el" href="classoperations__research_1_1_regular_limit_parameters.html">RegularLimitParameters</a> &amp;&#160;</td>
           <td class="paramname"><em>proto</em></td><td>)</td>
@@ -9405,14 +9468,14 @@ Static Public Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="ae88435ff06bd3a1180de433ac6e78ad2" name="ae88435ff06bd3a1180de433ac6e78ad2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae88435ff06bd3a1180de433ac6e78ad2">&#9670;&nbsp;</a></span>MakeLimit() <span class="overload">[3/4]</span></h2>
+<a id="ae645e8df0cf59088cfdd7de26775247f" name="ae645e8df0cf59088cfdd7de26775247f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae645e8df0cf59088cfdd7de26775247f">&#9670;&nbsp;</a></span>MakeLimit() <span class="overload">[3/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classoperations__research_1_1_regular_limit.html">RegularLimit</a> * MakeLimit </td>
+          <td class="memname">ABSL_MUST_USE_RESULT <a class="el" href="classoperations__research_1_1_regular_limit.html">RegularLimit</a> * MakeLimit </td>
           <td>(</td>
           <td class="paramtype">int64_t&#160;</td>
           <td class="paramname"><em>time</em>, </td>
@@ -9457,14 +9520,14 @@ Static Public Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a3180a362d6614f161a58f9576ddcb1c1" name="a3180a362d6614f161a58f9576ddcb1c1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3180a362d6614f161a58f9576ddcb1c1">&#9670;&nbsp;</a></span>MakeLimit() <span class="overload">[4/4]</span></h2>
+<a id="abb8e2fda6869954bba10036a5cdf6ec8" name="abb8e2fda6869954bba10036a5cdf6ec8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abb8e2fda6869954bba10036a5cdf6ec8">&#9670;&nbsp;</a></span>MakeLimit() <span class="overload">[4/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classoperations__research_1_1_search_limit.html">SearchLimit</a> * MakeLimit </td>
+          <td class="memname">ABSL_MUST_USE_RESULT <a class="el" href="classoperations__research_1_1_search_limit.html">SearchLimit</a> * MakeLimit </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classoperations__research_1_1_search_limit.html">SearchLimit</a> *const&#160;</td>
           <td class="paramname"><em>limit_1</em>, </td>
@@ -12813,6 +12876,26 @@ Static Public Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="a0a0fa138e73ae39159c557c6356d055f" name="a0a0fa138e73ae39159c557c6356d055f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0a0fa138e73ae39159c557c6356d055f">&#9670;&nbsp;</a></span>MakeProfiledDecisionBuilderWrapper()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1_decision_builder.html">DecisionBuilder</a> * MakeProfiledDecisionBuilderWrapper </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1_decision_builder.html">DecisionBuilder</a> *&#160;</td>
+          <td class="paramname"><em>db</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Activates profiling on a decision builder. </p>
+
+</div>
+</div>
 <a id="a609ad11d842b8b7b4a8b0d2028818d31" name="a609ad11d842b8b7b4a8b0d2028818d31"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a609ad11d842b8b7b4a8b0d2028818d31">&#9670;&nbsp;</a></span>MakeRandomLnsOperator() <span class="overload">[1/2]</span></h2>
 
@@ -13680,14 +13763,14 @@ Static Public Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a0a6069cef9fe87b649dd6e7f20d4d070" name="a0a6069cef9fe87b649dd6e7f20d4d070"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0a6069cef9fe87b649dd6e7f20d4d070">&#9670;&nbsp;</a></span>MakeSolutionsLimit()</h2>
+<a id="a339117ca4cc88d137549202c541e3ab7" name="a339117ca4cc88d137549202c541e3ab7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a339117ca4cc88d137549202c541e3ab7">&#9670;&nbsp;</a></span>MakeSolutionsLimit()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classoperations__research_1_1_regular_limit.html">RegularLimit</a> * MakeSolutionsLimit </td>
+          <td class="memname">ABSL_MUST_USE_RESULT <a class="el" href="classoperations__research_1_1_regular_limit.html">RegularLimit</a> * MakeSolutionsLimit </td>
           <td>(</td>
           <td class="paramtype">int64_t&#160;</td>
           <td class="paramname"><em>solutions</em></td><td>)</td>
@@ -14616,14 +14699,14 @@ Static Public Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="aa039067a5797a91839f3b445d58d331e" name="aa039067a5797a91839f3b445d58d331e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa039067a5797a91839f3b445d58d331e">&#9670;&nbsp;</a></span>MakeTimeLimit() <span class="overload">[1/2]</span></h2>
+<a id="acdeae37255ed2f47076a5eaf5a441f08" name="acdeae37255ed2f47076a5eaf5a441f08"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acdeae37255ed2f47076a5eaf5a441f08">&#9670;&nbsp;</a></span>MakeTimeLimit() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classoperations__research_1_1_regular_limit.html">RegularLimit</a> * MakeTimeLimit </td>
+          <td class="memname">ABSL_MUST_USE_RESULT <a class="el" href="classoperations__research_1_1_regular_limit.html">RegularLimit</a> * MakeTimeLimit </td>
           <td>(</td>
           <td class="paramtype">absl::Duration&#160;</td>
           <td class="paramname"><em>time</em></td><td>)</td>
@@ -14636,8 +14719,8 @@ Static Public Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a8b9283747d5ccfb691bdb77bc6b7060d" name="a8b9283747d5ccfb691bdb77bc6b7060d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8b9283747d5ccfb691bdb77bc6b7060d">&#9670;&nbsp;</a></span>MakeTimeLimit() <span class="overload">[2/2]</span></h2>
+<a id="a42055bf5670c2272eaa5ac6cbf984fe9" name="a42055bf5670c2272eaa5ac6cbf984fe9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a42055bf5670c2272eaa5ac6cbf984fe9">&#9670;&nbsp;</a></span>MakeTimeLimit() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -14646,7 +14729,7 @@ Static Public Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classoperations__research_1_1_regular_limit.html">RegularLimit</a> * MakeTimeLimit </td>
+          <td class="memname">ABSL_MUST_USE_RESULT <a class="el" href="classoperations__research_1_1_regular_limit.html">RegularLimit</a> * MakeTimeLimit </td>
           <td>(</td>
           <td class="paramtype">int64_t&#160;</td>
           <td class="paramname"><em>time_in_ms</em></td><td>)</td>
@@ -14660,7 +14743,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02207">2207</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02209">2209</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -15226,7 +15309,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>The number of neighbors created. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00995">995</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00997">997</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -15487,7 +15570,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>The direction of optimization, getter and setter. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l01011">1011</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l01013">1013</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -15516,7 +15599,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Stored Parameters. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00761">761</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00763">763</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -15583,7 +15666,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Returns a random value between 0 and 'size' - 1;. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02835">2835</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02847">2847</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -15613,7 +15696,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Returns a random value between 0 and 'size' - 1;. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02829">2829</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02841">2841</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -15774,7 +15857,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Reseed the solver random generator. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02841">2841</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02853">2853</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -15841,7 +15924,7 @@ Static Public Attributes</h2></td></tr>
 <p >Returns the argument for convenience: this way, the caller may directly invoke a constructor in the argument, without having to store the pointer first.</p>
 <p >This function is only for users that define their own subclasses of <a class="el" href="classoperations__research_1_1_base_object.html" title="A BaseObject is the root of all reversibly allocated objects.">BaseObject</a>: for all subclasses predefined in the library, the corresponding factory methods (e.g., MakeIntVar(...), MakeAllDifferent(...) already take care of the registration. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00789">789</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00791">791</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -15873,7 +15956,7 @@ Static Public Attributes</h2></td></tr>
 <p >The entire array will be deleted when backtracking out of the current state.</p>
 <p >This method is valid for arrays of int, int64_t, uint64_t, bool, BaseObject*, IntVar*, IntExpr*, and Constraint*. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00800">800</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00802">802</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -15913,7 +15996,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>All-in-one SaveAndAdd_value. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02821">2821</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02833">2833</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -15953,7 +16036,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>All-in-one SaveAndSetValue. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02812">2812</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02824">2824</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -15984,7 +16067,7 @@ Static Public Attributes</h2></td></tr>
 <p>reversibility </p>
 <p ><a class="el" href="classoperations__research_1_1_solver.html#a0544697ab645219c7ed34fd2c19e5033" title="reversibility">SaveValue()</a> saves the value of the corresponding object. It must be called before modifying the object. The value will be restored upon backtrack. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00772">772</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00774">774</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -16089,7 +16172,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Internal. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02875">2875</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02887">2887</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -16117,7 +16200,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l01014">1014</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l01016">1016</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -16196,7 +16279,7 @@ Static Public Attributes</h2></td></tr>
 <p>enabled for metaheuristics. </p>
 <p >Disables/enables fast local search. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02885">2885</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02897">2897</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -16225,7 +16308,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>These methods are only useful for the SWIG wrappers, which need a way to externally cause the <a class="el" href="classoperations__research_1_1_solver.html" title="Solver Class.">Solver</a> to fail. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02987">2987</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02999">2999</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -16677,7 +16760,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>State of the solver. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00950">950</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00952">952</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -16887,7 +16970,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Returns true if fast local search is enabled. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02889">2889</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02901">2901</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -16934,7 +17017,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Number of priorities for demons. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00260">260</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00262">262</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -16953,7 +17036,7 @@ Static Public Attributes</h2></td></tr>
 <p>Unsafe temporary vector. </p>
 <p >It is used to avoid leaks in operations that need storage and that may fail. See <a class="el" href="classoperations__research_1_1_int_var.html#aa12c746d088d4b8f5eb2608335ab9886" title="This method intersects the current domain with the values in the array.">IntVar::SetValues()</a> for instance. It is not locked; do not use in a multi-threaded or reentrant setup. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02941">2941</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02953">2953</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>

@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 9.1</span>
+                <span id="sfml">Google OR-Tools 9.2</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -3325,7 +3325,7 @@ $(document).ready(function(){initNavTree('RoutingSearchParameters_8java_source.h
 <div class="line"><a id="l07451" name="l07451"></a><span class="lineno"> 7451</span>    @java.lang.Override</div>
 <div class="line"><a id="l07452" name="l07452"></a><span class="lineno"><a class="line" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1ImprovementSearchLimitParameters.html#a813eab1fc00c769aad910c480868972b"> 7452</a></span>    <span class="keyword">public</span> <span class="keywordtype">void</span> <a class="code hl_function" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1ImprovementSearchLimitParameters.html#a813eab1fc00c769aad910c480868972b">writeTo</a>(com.google.protobuf.CodedOutputStream output)</div>
 <div class="line"><a id="l07453" name="l07453"></a><span class="lineno"> 7453</span>                        <span class="keywordflow">throws</span> java.io.IOException {</div>
-<div class="line"><a id="l07454" name="l07454"></a><span class="lineno"> 7454</span>      <span class="keywordflow">if</span> (improvementRateCoefficient_ != 0D) {</div>
+<div class="line"><a id="l07454" name="l07454"></a><span class="lineno"> 7454</span>      <span class="keywordflow">if</span> (java.lang.Double.doubleToRawLongBits(improvementRateCoefficient_) != 0) {</div>
 <div class="line"><a id="l07455" name="l07455"></a><span class="lineno"> 7455</span>        output.writeDouble(38, improvementRateCoefficient_);</div>
 <div class="line"><a id="l07456" name="l07456"></a><span class="lineno"> 7456</span>      }</div>
 <div class="line"><a id="l07457" name="l07457"></a><span class="lineno"> 7457</span>      <span class="keywordflow">if</span> (improvementRateSolutionsDistance_ != 0) {</div>
@@ -3340,7 +3340,7 @@ $(document).ready(function(){initNavTree('RoutingSearchParameters_8java_source.h
 <div class="line"><a id="l07466" name="l07466"></a><span class="lineno"> 7466</span>      <span class="keywordflow">if</span> (size != -1) <span class="keywordflow">return</span> size;</div>
 <div class="line"><a id="l07467" name="l07467"></a><span class="lineno"> 7467</span> </div>
 <div class="line"><a id="l07468" name="l07468"></a><span class="lineno"> 7468</span>      size = 0;</div>
-<div class="line"><a id="l07469" name="l07469"></a><span class="lineno"> 7469</span>      <span class="keywordflow">if</span> (improvementRateCoefficient_ != 0D) {</div>
+<div class="line"><a id="l07469" name="l07469"></a><span class="lineno"> 7469</span>      <span class="keywordflow">if</span> (java.lang.Double.doubleToRawLongBits(improvementRateCoefficient_) != 0) {</div>
 <div class="line"><a id="l07470" name="l07470"></a><span class="lineno"> 7470</span>        size += com.google.protobuf.CodedOutputStream</div>
 <div class="line"><a id="l07471" name="l07471"></a><span class="lineno"> 7471</span>          .computeDoubleSize(38, improvementRateCoefficient_);</div>
 <div class="line"><a id="l07472" name="l07472"></a><span class="lineno"> 7472</span>      }</div>
@@ -4128,13 +4128,13 @@ $(document).ready(function(){initNavTree('RoutingSearchParameters_8java_source.h
 <div class="line"><a id="l08871" name="l08871"></a><span class="lineno"> 8871</span>    <span class="keywordflow">if</span> (localSearchMetaheuristic_ != com.google.ortools.constraintsolver.LocalSearchMetaheuristic.Value.UNSET.getNumber()) {</div>
 <div class="line"><a id="l08872" name="l08872"></a><span class="lineno"> 8872</span>      output.writeEnum(4, localSearchMetaheuristic_);</div>
 <div class="line"><a id="l08873" name="l08873"></a><span class="lineno"> 8873</span>    }</div>
-<div class="line"><a id="l08874" name="l08874"></a><span class="lineno"> 8874</span>    <span class="keywordflow">if</span> (guidedLocalSearchLambdaCoefficient_ != 0D) {</div>
+<div class="line"><a id="l08874" name="l08874"></a><span class="lineno"> 8874</span>    <span class="keywordflow">if</span> (java.lang.Double.doubleToRawLongBits(guidedLocalSearchLambdaCoefficient_) != 0) {</div>
 <div class="line"><a id="l08875" name="l08875"></a><span class="lineno"> 8875</span>      output.writeDouble(5, guidedLocalSearchLambdaCoefficient_);</div>
 <div class="line"><a id="l08876" name="l08876"></a><span class="lineno"> 8876</span>    }</div>
 <div class="line"><a id="l08877" name="l08877"></a><span class="lineno"> 8877</span>    <span class="keywordflow">if</span> (useDepthFirstSearch_ != <span class="keyword">false</span>) {</div>
 <div class="line"><a id="l08878" name="l08878"></a><span class="lineno"> 8878</span>      output.writeBool(6, useDepthFirstSearch_);</div>
 <div class="line"><a id="l08879" name="l08879"></a><span class="lineno"> 8879</span>    }</div>
-<div class="line"><a id="l08880" name="l08880"></a><span class="lineno"> 8880</span>    <span class="keywordflow">if</span> (optimizationStep_ != 0D) {</div>
+<div class="line"><a id="l08880" name="l08880"></a><span class="lineno"> 8880</span>    <span class="keywordflow">if</span> (java.lang.Double.doubleToRawLongBits(optimizationStep_) != 0) {</div>
 <div class="line"><a id="l08881" name="l08881"></a><span class="lineno"> 8881</span>      output.writeDouble(7, optimizationStep_);</div>
 <div class="line"><a id="l08882" name="l08882"></a><span class="lineno"> 8882</span>    }</div>
 <div class="line"><a id="l08883" name="l08883"></a><span class="lineno"> 8883</span>    <span class="keywordflow">if</span> (solutionLimit_ != 0L) {</div>
@@ -4152,19 +4152,19 @@ $(document).ready(function(){initNavTree('RoutingSearchParameters_8java_source.h
 <div class="line"><a id="l08895" name="l08895"></a><span class="lineno"> 8895</span>    <span class="keywordflow">if</span> (logSearch_ != <span class="keyword">false</span>) {</div>
 <div class="line"><a id="l08896" name="l08896"></a><span class="lineno"> 8896</span>      output.writeBool(13, logSearch_);</div>
 <div class="line"><a id="l08897" name="l08897"></a><span class="lineno"> 8897</span>    }</div>
-<div class="line"><a id="l08898" name="l08898"></a><span class="lineno"> 8898</span>    <span class="keywordflow">if</span> (savingsNeighborsRatio_ != 0D) {</div>
+<div class="line"><a id="l08898" name="l08898"></a><span class="lineno"> 8898</span>    <span class="keywordflow">if</span> (java.lang.Double.doubleToRawLongBits(savingsNeighborsRatio_) != 0) {</div>
 <div class="line"><a id="l08899" name="l08899"></a><span class="lineno"> 8899</span>      output.writeDouble(14, savingsNeighborsRatio_);</div>
 <div class="line"><a id="l08900" name="l08900"></a><span class="lineno"> 8900</span>    }</div>
 <div class="line"><a id="l08901" name="l08901"></a><span class="lineno"> 8901</span>    <span class="keywordflow">if</span> (savingsAddReverseArcs_ != <span class="keyword">false</span>) {</div>
 <div class="line"><a id="l08902" name="l08902"></a><span class="lineno"> 8902</span>      output.writeBool(15, savingsAddReverseArcs_);</div>
 <div class="line"><a id="l08903" name="l08903"></a><span class="lineno"> 8903</span>    }</div>
-<div class="line"><a id="l08904" name="l08904"></a><span class="lineno"> 8904</span>    <span class="keywordflow">if</span> (cheapestInsertionFarthestSeedsRatio_ != 0D) {</div>
+<div class="line"><a id="l08904" name="l08904"></a><span class="lineno"> 8904</span>    <span class="keywordflow">if</span> (java.lang.Double.doubleToRawLongBits(cheapestInsertionFarthestSeedsRatio_) != 0) {</div>
 <div class="line"><a id="l08905" name="l08905"></a><span class="lineno"> 8905</span>      output.writeDouble(16, cheapestInsertionFarthestSeedsRatio_);</div>
 <div class="line"><a id="l08906" name="l08906"></a><span class="lineno"> 8906</span>    }</div>
 <div class="line"><a id="l08907" name="l08907"></a><span class="lineno"> 8907</span>    <span class="keywordflow">if</span> (numberOfSolutionsToCollect_ != 0) {</div>
 <div class="line"><a id="l08908" name="l08908"></a><span class="lineno"> 8908</span>      output.writeInt32(17, numberOfSolutionsToCollect_);</div>
 <div class="line"><a id="l08909" name="l08909"></a><span class="lineno"> 8909</span>    }</div>
-<div class="line"><a id="l08910" name="l08910"></a><span class="lineno"> 8910</span>    <span class="keywordflow">if</span> (savingsArcCoefficient_ != 0D) {</div>
+<div class="line"><a id="l08910" name="l08910"></a><span class="lineno"> 8910</span>    <span class="keywordflow">if</span> (java.lang.Double.doubleToRawLongBits(savingsArcCoefficient_) != 0) {</div>
 <div class="line"><a id="l08911" name="l08911"></a><span class="lineno"> 8911</span>      output.writeDouble(18, savingsArcCoefficient_);</div>
 <div class="line"><a id="l08912" name="l08912"></a><span class="lineno"> 8912</span>    }</div>
 <div class="line"><a id="l08913" name="l08913"></a><span class="lineno"> 8913</span>    <span class="keywordflow">if</span> (savingsParallelRoutes_ != <span class="keyword">false</span>) {</div>
@@ -4173,13 +4173,13 @@ $(document).ready(function(){initNavTree('RoutingSearchParameters_8java_source.h
 <div class="line"><a id="l08916" name="l08916"></a><span class="lineno"> 8916</span>    <span class="keywordflow">if</span> (relocateExpensiveChainNumArcsToConsider_ != 0) {</div>
 <div class="line"><a id="l08917" name="l08917"></a><span class="lineno"> 8917</span>      output.writeInt32(20, relocateExpensiveChainNumArcsToConsider_);</div>
 <div class="line"><a id="l08918" name="l08918"></a><span class="lineno"> 8918</span>    }</div>
-<div class="line"><a id="l08919" name="l08919"></a><span class="lineno"> 8919</span>    <span class="keywordflow">if</span> (cheapestInsertionFirstSolutionNeighborsRatio_ != 0D) {</div>
+<div class="line"><a id="l08919" name="l08919"></a><span class="lineno"> 8919</span>    <span class="keywordflow">if</span> (java.lang.Double.doubleToRawLongBits(cheapestInsertionFirstSolutionNeighborsRatio_) != 0) {</div>
 <div class="line"><a id="l08920" name="l08920"></a><span class="lineno"> 8920</span>      output.writeDouble(21, cheapestInsertionFirstSolutionNeighborsRatio_);</div>
 <div class="line"><a id="l08921" name="l08921"></a><span class="lineno"> 8921</span>    }</div>
-<div class="line"><a id="l08922" name="l08922"></a><span class="lineno"> 8922</span>    <span class="keywordflow">if</span> (logCostScalingFactor_ != 0D) {</div>
+<div class="line"><a id="l08922" name="l08922"></a><span class="lineno"> 8922</span>    <span class="keywordflow">if</span> (java.lang.Double.doubleToRawLongBits(logCostScalingFactor_) != 0) {</div>
 <div class="line"><a id="l08923" name="l08923"></a><span class="lineno"> 8923</span>      output.writeDouble(22, logCostScalingFactor_);</div>
 <div class="line"><a id="l08924" name="l08924"></a><span class="lineno"> 8924</span>    }</div>
-<div class="line"><a id="l08925" name="l08925"></a><span class="lineno"> 8925</span>    <span class="keywordflow">if</span> (savingsMaxMemoryUsageBytes_ != 0D) {</div>
+<div class="line"><a id="l08925" name="l08925"></a><span class="lineno"> 8925</span>    <span class="keywordflow">if</span> (java.lang.Double.doubleToRawLongBits(savingsMaxMemoryUsageBytes_) != 0) {</div>
 <div class="line"><a id="l08926" name="l08926"></a><span class="lineno"> 8926</span>      output.writeDouble(23, savingsMaxMemoryUsageBytes_);</div>
 <div class="line"><a id="l08927" name="l08927"></a><span class="lineno"> 8927</span>    }</div>
 <div class="line"><a id="l08928" name="l08928"></a><span class="lineno"> 8928</span>    <span class="keywordflow">if</span> (useCpSat_ != com.google.ortools.util.OptionalBoolean.BOOL_UNSPECIFIED.getNumber()) {</div>
@@ -4188,13 +4188,13 @@ $(document).ready(function(){initNavTree('RoutingSearchParameters_8java_source.h
 <div class="line"><a id="l08931" name="l08931"></a><span class="lineno"> 8931</span>    <span class="keywordflow">if</span> (useCp_ != com.google.ortools.util.OptionalBoolean.BOOL_UNSPECIFIED.getNumber()) {</div>
 <div class="line"><a id="l08932" name="l08932"></a><span class="lineno"> 8932</span>      output.writeEnum(28, useCp_);</div>
 <div class="line"><a id="l08933" name="l08933"></a><span class="lineno"> 8933</span>    }</div>
-<div class="line"><a id="l08934" name="l08934"></a><span class="lineno"> 8934</span>    <span class="keywordflow">if</span> (logCostOffset_ != 0D) {</div>
+<div class="line"><a id="l08934" name="l08934"></a><span class="lineno"> 8934</span>    <span class="keywordflow">if</span> (java.lang.Double.doubleToRawLongBits(logCostOffset_) != 0) {</div>
 <div class="line"><a id="l08935" name="l08935"></a><span class="lineno"> 8935</span>      output.writeDouble(29, logCostOffset_);</div>
 <div class="line"><a id="l08936" name="l08936"></a><span class="lineno"> 8936</span>    }</div>
 <div class="line"><a id="l08937" name="l08937"></a><span class="lineno"> 8937</span>    <span class="keywordflow">if</span> (christofidesUseMinimumMatching_ != <span class="keyword">false</span>) {</div>
 <div class="line"><a id="l08938" name="l08938"></a><span class="lineno"> 8938</span>      output.writeBool(30, christofidesUseMinimumMatching_);</div>
 <div class="line"><a id="l08939" name="l08939"></a><span class="lineno"> 8939</span>    }</div>
-<div class="line"><a id="l08940" name="l08940"></a><span class="lineno"> 8940</span>    <span class="keywordflow">if</span> (cheapestInsertionLsOperatorNeighborsRatio_ != 0D) {</div>
+<div class="line"><a id="l08940" name="l08940"></a><span class="lineno"> 8940</span>    <span class="keywordflow">if</span> (java.lang.Double.doubleToRawLongBits(cheapestInsertionLsOperatorNeighborsRatio_) != 0) {</div>
 <div class="line"><a id="l08941" name="l08941"></a><span class="lineno"> 8941</span>      output.writeDouble(31, cheapestInsertionLsOperatorNeighborsRatio_);</div>
 <div class="line"><a id="l08942" name="l08942"></a><span class="lineno"> 8942</span>    }</div>
 <div class="line"><a id="l08943" name="l08943"></a><span class="lineno"> 8943</span>    <span class="keywordflow">if</span> (heuristicExpensiveChainLnsNumArcsToConsider_ != 0) {</div>
@@ -4221,10 +4221,10 @@ $(document).ready(function(){initNavTree('RoutingSearchParameters_8java_source.h
 <div class="line"><a id="l08964" name="l08964"></a><span class="lineno"> 8964</span>    <span class="keywordflow">if</span> (useMultiArmedBanditConcatenateOperators_ != <span class="keyword">false</span>) {</div>
 <div class="line"><a id="l08965" name="l08965"></a><span class="lineno"> 8965</span>      output.writeBool(41, useMultiArmedBanditConcatenateOperators_);</div>
 <div class="line"><a id="l08966" name="l08966"></a><span class="lineno"> 8966</span>    }</div>
-<div class="line"><a id="l08967" name="l08967"></a><span class="lineno"> 8967</span>    <span class="keywordflow">if</span> (multiArmedBanditCompoundOperatorMemoryCoefficient_ != 0D) {</div>
+<div class="line"><a id="l08967" name="l08967"></a><span class="lineno"> 8967</span>    <span class="keywordflow">if</span> (java.lang.Double.doubleToRawLongBits(multiArmedBanditCompoundOperatorMemoryCoefficient_) != 0) {</div>
 <div class="line"><a id="l08968" name="l08968"></a><span class="lineno"> 8968</span>      output.writeDouble(42, multiArmedBanditCompoundOperatorMemoryCoefficient_);</div>
 <div class="line"><a id="l08969" name="l08969"></a><span class="lineno"> 8969</span>    }</div>
-<div class="line"><a id="l08970" name="l08970"></a><span class="lineno"> 8970</span>    <span class="keywordflow">if</span> (multiArmedBanditCompoundOperatorExplorationCoefficient_ != 0D) {</div>
+<div class="line"><a id="l08970" name="l08970"></a><span class="lineno"> 8970</span>    <span class="keywordflow">if</span> (java.lang.Double.doubleToRawLongBits(multiArmedBanditCompoundOperatorExplorationCoefficient_) != 0) {</div>
 <div class="line"><a id="l08971" name="l08971"></a><span class="lineno"> 8971</span>      output.writeDouble(43, multiArmedBanditCompoundOperatorExplorationCoefficient_);</div>
 <div class="line"><a id="l08972" name="l08972"></a><span class="lineno"> 8972</span>    }</div>
 <div class="line"><a id="l08973" name="l08973"></a><span class="lineno"> 8973</span>    <span class="keywordflow">if</span> (cheapestInsertionFirstSolutionMinNeighbors_ != 0) {</div>
@@ -4267,7 +4267,7 @@ $(document).ready(function(){initNavTree('RoutingSearchParameters_8java_source.h
 <div class="line"><a id="l09010" name="l09010"></a><span class="lineno"> 9010</span>      size += com.google.protobuf.CodedOutputStream</div>
 <div class="line"><a id="l09011" name="l09011"></a><span class="lineno"> 9011</span>        .computeEnumSize(4, localSearchMetaheuristic_);</div>
 <div class="line"><a id="l09012" name="l09012"></a><span class="lineno"> 9012</span>    }</div>
-<div class="line"><a id="l09013" name="l09013"></a><span class="lineno"> 9013</span>    <span class="keywordflow">if</span> (guidedLocalSearchLambdaCoefficient_ != 0D) {</div>
+<div class="line"><a id="l09013" name="l09013"></a><span class="lineno"> 9013</span>    <span class="keywordflow">if</span> (java.lang.Double.doubleToRawLongBits(guidedLocalSearchLambdaCoefficient_) != 0) {</div>
 <div class="line"><a id="l09014" name="l09014"></a><span class="lineno"> 9014</span>      size += com.google.protobuf.CodedOutputStream</div>
 <div class="line"><a id="l09015" name="l09015"></a><span class="lineno"> 9015</span>        .computeDoubleSize(5, guidedLocalSearchLambdaCoefficient_);</div>
 <div class="line"><a id="l09016" name="l09016"></a><span class="lineno"> 9016</span>    }</div>
@@ -4275,7 +4275,7 @@ $(document).ready(function(){initNavTree('RoutingSearchParameters_8java_source.h
 <div class="line"><a id="l09018" name="l09018"></a><span class="lineno"> 9018</span>      size += com.google.protobuf.CodedOutputStream</div>
 <div class="line"><a id="l09019" name="l09019"></a><span class="lineno"> 9019</span>        .computeBoolSize(6, useDepthFirstSearch_);</div>
 <div class="line"><a id="l09020" name="l09020"></a><span class="lineno"> 9020</span>    }</div>
-<div class="line"><a id="l09021" name="l09021"></a><span class="lineno"> 9021</span>    <span class="keywordflow">if</span> (optimizationStep_ != 0D) {</div>
+<div class="line"><a id="l09021" name="l09021"></a><span class="lineno"> 9021</span>    <span class="keywordflow">if</span> (java.lang.Double.doubleToRawLongBits(optimizationStep_) != 0) {</div>
 <div class="line"><a id="l09022" name="l09022"></a><span class="lineno"> 9022</span>      size += com.google.protobuf.CodedOutputStream</div>
 <div class="line"><a id="l09023" name="l09023"></a><span class="lineno"> 9023</span>        .computeDoubleSize(7, optimizationStep_);</div>
 <div class="line"><a id="l09024" name="l09024"></a><span class="lineno"> 9024</span>    }</div>
@@ -4299,7 +4299,7 @@ $(document).ready(function(){initNavTree('RoutingSearchParameters_8java_source.h
 <div class="line"><a id="l09042" name="l09042"></a><span class="lineno"> 9042</span>      size += com.google.protobuf.CodedOutputStream</div>
 <div class="line"><a id="l09043" name="l09043"></a><span class="lineno"> 9043</span>        .computeBoolSize(13, logSearch_);</div>
 <div class="line"><a id="l09044" name="l09044"></a><span class="lineno"> 9044</span>    }</div>
-<div class="line"><a id="l09045" name="l09045"></a><span class="lineno"> 9045</span>    <span class="keywordflow">if</span> (savingsNeighborsRatio_ != 0D) {</div>
+<div class="line"><a id="l09045" name="l09045"></a><span class="lineno"> 9045</span>    <span class="keywordflow">if</span> (java.lang.Double.doubleToRawLongBits(savingsNeighborsRatio_) != 0) {</div>
 <div class="line"><a id="l09046" name="l09046"></a><span class="lineno"> 9046</span>      size += com.google.protobuf.CodedOutputStream</div>
 <div class="line"><a id="l09047" name="l09047"></a><span class="lineno"> 9047</span>        .computeDoubleSize(14, savingsNeighborsRatio_);</div>
 <div class="line"><a id="l09048" name="l09048"></a><span class="lineno"> 9048</span>    }</div>
@@ -4307,7 +4307,7 @@ $(document).ready(function(){initNavTree('RoutingSearchParameters_8java_source.h
 <div class="line"><a id="l09050" name="l09050"></a><span class="lineno"> 9050</span>      size += com.google.protobuf.CodedOutputStream</div>
 <div class="line"><a id="l09051" name="l09051"></a><span class="lineno"> 9051</span>        .computeBoolSize(15, savingsAddReverseArcs_);</div>
 <div class="line"><a id="l09052" name="l09052"></a><span class="lineno"> 9052</span>    }</div>
-<div class="line"><a id="l09053" name="l09053"></a><span class="lineno"> 9053</span>    <span class="keywordflow">if</span> (cheapestInsertionFarthestSeedsRatio_ != 0D) {</div>
+<div class="line"><a id="l09053" name="l09053"></a><span class="lineno"> 9053</span>    <span class="keywordflow">if</span> (java.lang.Double.doubleToRawLongBits(cheapestInsertionFarthestSeedsRatio_) != 0) {</div>
 <div class="line"><a id="l09054" name="l09054"></a><span class="lineno"> 9054</span>      size += com.google.protobuf.CodedOutputStream</div>
 <div class="line"><a id="l09055" name="l09055"></a><span class="lineno"> 9055</span>        .computeDoubleSize(16, cheapestInsertionFarthestSeedsRatio_);</div>
 <div class="line"><a id="l09056" name="l09056"></a><span class="lineno"> 9056</span>    }</div>
@@ -4315,7 +4315,7 @@ $(document).ready(function(){initNavTree('RoutingSearchParameters_8java_source.h
 <div class="line"><a id="l09058" name="l09058"></a><span class="lineno"> 9058</span>      size += com.google.protobuf.CodedOutputStream</div>
 <div class="line"><a id="l09059" name="l09059"></a><span class="lineno"> 9059</span>        .computeInt32Size(17, numberOfSolutionsToCollect_);</div>
 <div class="line"><a id="l09060" name="l09060"></a><span class="lineno"> 9060</span>    }</div>
-<div class="line"><a id="l09061" name="l09061"></a><span class="lineno"> 9061</span>    <span class="keywordflow">if</span> (savingsArcCoefficient_ != 0D) {</div>
+<div class="line"><a id="l09061" name="l09061"></a><span class="lineno"> 9061</span>    <span class="keywordflow">if</span> (java.lang.Double.doubleToRawLongBits(savingsArcCoefficient_) != 0) {</div>
 <div class="line"><a id="l09062" name="l09062"></a><span class="lineno"> 9062</span>      size += com.google.protobuf.CodedOutputStream</div>
 <div class="line"><a id="l09063" name="l09063"></a><span class="lineno"> 9063</span>        .computeDoubleSize(18, savingsArcCoefficient_);</div>
 <div class="line"><a id="l09064" name="l09064"></a><span class="lineno"> 9064</span>    }</div>
@@ -4327,15 +4327,15 @@ $(document).ready(function(){initNavTree('RoutingSearchParameters_8java_source.h
 <div class="line"><a id="l09070" name="l09070"></a><span class="lineno"> 9070</span>      size += com.google.protobuf.CodedOutputStream</div>
 <div class="line"><a id="l09071" name="l09071"></a><span class="lineno"> 9071</span>        .computeInt32Size(20, relocateExpensiveChainNumArcsToConsider_);</div>
 <div class="line"><a id="l09072" name="l09072"></a><span class="lineno"> 9072</span>    }</div>
-<div class="line"><a id="l09073" name="l09073"></a><span class="lineno"> 9073</span>    <span class="keywordflow">if</span> (cheapestInsertionFirstSolutionNeighborsRatio_ != 0D) {</div>
+<div class="line"><a id="l09073" name="l09073"></a><span class="lineno"> 9073</span>    <span class="keywordflow">if</span> (java.lang.Double.doubleToRawLongBits(cheapestInsertionFirstSolutionNeighborsRatio_) != 0) {</div>
 <div class="line"><a id="l09074" name="l09074"></a><span class="lineno"> 9074</span>      size += com.google.protobuf.CodedOutputStream</div>
 <div class="line"><a id="l09075" name="l09075"></a><span class="lineno"> 9075</span>        .computeDoubleSize(21, cheapestInsertionFirstSolutionNeighborsRatio_);</div>
 <div class="line"><a id="l09076" name="l09076"></a><span class="lineno"> 9076</span>    }</div>
-<div class="line"><a id="l09077" name="l09077"></a><span class="lineno"> 9077</span>    <span class="keywordflow">if</span> (logCostScalingFactor_ != 0D) {</div>
+<div class="line"><a id="l09077" name="l09077"></a><span class="lineno"> 9077</span>    <span class="keywordflow">if</span> (java.lang.Double.doubleToRawLongBits(logCostScalingFactor_) != 0) {</div>
 <div class="line"><a id="l09078" name="l09078"></a><span class="lineno"> 9078</span>      size += com.google.protobuf.CodedOutputStream</div>
 <div class="line"><a id="l09079" name="l09079"></a><span class="lineno"> 9079</span>        .computeDoubleSize(22, logCostScalingFactor_);</div>
 <div class="line"><a id="l09080" name="l09080"></a><span class="lineno"> 9080</span>    }</div>
-<div class="line"><a id="l09081" name="l09081"></a><span class="lineno"> 9081</span>    <span class="keywordflow">if</span> (savingsMaxMemoryUsageBytes_ != 0D) {</div>
+<div class="line"><a id="l09081" name="l09081"></a><span class="lineno"> 9081</span>    <span class="keywordflow">if</span> (java.lang.Double.doubleToRawLongBits(savingsMaxMemoryUsageBytes_) != 0) {</div>
 <div class="line"><a id="l09082" name="l09082"></a><span class="lineno"> 9082</span>      size += com.google.protobuf.CodedOutputStream</div>
 <div class="line"><a id="l09083" name="l09083"></a><span class="lineno"> 9083</span>        .computeDoubleSize(23, savingsMaxMemoryUsageBytes_);</div>
 <div class="line"><a id="l09084" name="l09084"></a><span class="lineno"> 9084</span>    }</div>
@@ -4347,7 +4347,7 @@ $(document).ready(function(){initNavTree('RoutingSearchParameters_8java_source.h
 <div class="line"><a id="l09090" name="l09090"></a><span class="lineno"> 9090</span>      size += com.google.protobuf.CodedOutputStream</div>
 <div class="line"><a id="l09091" name="l09091"></a><span class="lineno"> 9091</span>        .computeEnumSize(28, useCp_);</div>
 <div class="line"><a id="l09092" name="l09092"></a><span class="lineno"> 9092</span>    }</div>
-<div class="line"><a id="l09093" name="l09093"></a><span class="lineno"> 9093</span>    <span class="keywordflow">if</span> (logCostOffset_ != 0D) {</div>
+<div class="line"><a id="l09093" name="l09093"></a><span class="lineno"> 9093</span>    <span class="keywordflow">if</span> (java.lang.Double.doubleToRawLongBits(logCostOffset_) != 0) {</div>
 <div class="line"><a id="l09094" name="l09094"></a><span class="lineno"> 9094</span>      size += com.google.protobuf.CodedOutputStream</div>
 <div class="line"><a id="l09095" name="l09095"></a><span class="lineno"> 9095</span>        .computeDoubleSize(29, logCostOffset_);</div>
 <div class="line"><a id="l09096" name="l09096"></a><span class="lineno"> 9096</span>    }</div>
@@ -4355,7 +4355,7 @@ $(document).ready(function(){initNavTree('RoutingSearchParameters_8java_source.h
 <div class="line"><a id="l09098" name="l09098"></a><span class="lineno"> 9098</span>      size += com.google.protobuf.CodedOutputStream</div>
 <div class="line"><a id="l09099" name="l09099"></a><span class="lineno"> 9099</span>        .computeBoolSize(30, christofidesUseMinimumMatching_);</div>
 <div class="line"><a id="l09100" name="l09100"></a><span class="lineno"> 9100</span>    }</div>
-<div class="line"><a id="l09101" name="l09101"></a><span class="lineno"> 9101</span>    <span class="keywordflow">if</span> (cheapestInsertionLsOperatorNeighborsRatio_ != 0D) {</div>
+<div class="line"><a id="l09101" name="l09101"></a><span class="lineno"> 9101</span>    <span class="keywordflow">if</span> (java.lang.Double.doubleToRawLongBits(cheapestInsertionLsOperatorNeighborsRatio_) != 0) {</div>
 <div class="line"><a id="l09102" name="l09102"></a><span class="lineno"> 9102</span>      size += com.google.protobuf.CodedOutputStream</div>
 <div class="line"><a id="l09103" name="l09103"></a><span class="lineno"> 9103</span>        .computeDoubleSize(31, cheapestInsertionLsOperatorNeighborsRatio_);</div>
 <div class="line"><a id="l09104" name="l09104"></a><span class="lineno"> 9104</span>    }</div>
@@ -4390,11 +4390,11 @@ $(document).ready(function(){initNavTree('RoutingSearchParameters_8java_source.h
 <div class="line"><a id="l09133" name="l09133"></a><span class="lineno"> 9133</span>      size += com.google.protobuf.CodedOutputStream</div>
 <div class="line"><a id="l09134" name="l09134"></a><span class="lineno"> 9134</span>        .computeBoolSize(41, useMultiArmedBanditConcatenateOperators_);</div>
 <div class="line"><a id="l09135" name="l09135"></a><span class="lineno"> 9135</span>    }</div>
-<div class="line"><a id="l09136" name="l09136"></a><span class="lineno"> 9136</span>    <span class="keywordflow">if</span> (multiArmedBanditCompoundOperatorMemoryCoefficient_ != 0D) {</div>
+<div class="line"><a id="l09136" name="l09136"></a><span class="lineno"> 9136</span>    <span class="keywordflow">if</span> (java.lang.Double.doubleToRawLongBits(multiArmedBanditCompoundOperatorMemoryCoefficient_) != 0) {</div>
 <div class="line"><a id="l09137" name="l09137"></a><span class="lineno"> 9137</span>      size += com.google.protobuf.CodedOutputStream</div>
 <div class="line"><a id="l09138" name="l09138"></a><span class="lineno"> 9138</span>        .computeDoubleSize(42, multiArmedBanditCompoundOperatorMemoryCoefficient_);</div>
 <div class="line"><a id="l09139" name="l09139"></a><span class="lineno"> 9139</span>    }</div>
-<div class="line"><a id="l09140" name="l09140"></a><span class="lineno"> 9140</span>    <span class="keywordflow">if</span> (multiArmedBanditCompoundOperatorExplorationCoefficient_ != 0D) {</div>
+<div class="line"><a id="l09140" name="l09140"></a><span class="lineno"> 9140</span>    <span class="keywordflow">if</span> (java.lang.Double.doubleToRawLongBits(multiArmedBanditCompoundOperatorExplorationCoefficient_) != 0) {</div>
 <div class="line"><a id="l09141" name="l09141"></a><span class="lineno"> 9141</span>      size += com.google.protobuf.CodedOutputStream</div>
 <div class="line"><a id="l09142" name="l09142"></a><span class="lineno"> 9142</span>        .computeDoubleSize(43, multiArmedBanditCompoundOperatorExplorationCoefficient_);</div>
 <div class="line"><a id="l09143" name="l09143"></a><span class="lineno"> 9143</span>    }</div>

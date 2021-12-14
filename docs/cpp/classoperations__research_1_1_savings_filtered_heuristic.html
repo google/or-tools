@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.1</span>
+   &#160;<span id="projectnumber">9.2</span>
    </div>
   </td>
  </tr>
@@ -100,7 +100,7 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1_savings_
 <div class="textblock"><p >Filter-based decision builder which builds a solution by using Clarke &amp; Wright's Savings heuristic. </p>
 <p >For each pair of nodes, the savings value is the difference between the cost of two routes visiting one node each and one route visiting both nodes. Routes are built sequentially, each route being initialized from the pair with the best available savings value then extended by selecting the nodes with best savings on both ends of the partial route. Cost is based on the arc cost function of the routing model and cost classes are taken into account. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00801">801</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00861">861</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Classes</h2></td></tr>
@@ -111,8 +111,8 @@ Classes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:ac4bf3a386c437ec559509f20d6475e85"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_savings_filtered_heuristic.html#ac4bf3a386c437ec559509f20d6475e85">SavingsFilteredHeuristic</a> (<a class="el" href="classoperations__research_1_1_routing_model.html">RoutingModel</a> *<a class="el" href="classoperations__research_1_1_routing_filtered_heuristic.html#a90dcdb4d66f8781421f5913150a85a06">model</a>, const <a class="el" href="classoperations__research_1_1_routing_index_manager.html">RoutingIndexManager</a> *manager, <a class="el" href="structoperations__research_1_1_savings_filtered_heuristic_1_1_savings_parameters.html">SavingsParameters</a> <a class="el" href="cp__model__fz__solver_8cc.html#a10a1eab179b472c030bdc2a2efef7219">parameters</a>, <a class="el" href="classoperations__research_1_1_local_search_filter_manager.html">LocalSearchFilterManager</a> *filter_manager)</td></tr>
-<tr class="separator:ac4bf3a386c437ec559509f20d6475e85"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a04f0558b5828ce46108dca7e5a3a8504"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_savings_filtered_heuristic.html#a04f0558b5828ce46108dca7e5a3a8504">SavingsFilteredHeuristic</a> (<a class="el" href="classoperations__research_1_1_routing_model.html">RoutingModel</a> *<a class="el" href="classoperations__research_1_1_routing_filtered_heuristic.html#a90dcdb4d66f8781421f5913150a85a06">model</a>, <a class="el" href="structoperations__research_1_1_savings_filtered_heuristic_1_1_savings_parameters.html">SavingsParameters</a> <a class="el" href="cp__model__fz__solver_8cc.html#a10a1eab179b472c030bdc2a2efef7219">parameters</a>, <a class="el" href="classoperations__research_1_1_local_search_filter_manager.html">LocalSearchFilterManager</a> *filter_manager)</td></tr>
+<tr class="separator:a04f0558b5828ce46108dca7e5a3a8504"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a69f73ddf69522d81d6dd919c316cae8a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_savings_filtered_heuristic.html#a69f73ddf69522d81d6dd919c316cae8a">~SavingsFilteredHeuristic</a> () override</td></tr>
 <tr class="separator:a69f73ddf69522d81d6dd919c316cae8a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2bc82055bf34be9162ce82b5d87b0289"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_savings_filtered_heuristic.html#a2bc82055bf34be9162ce82b5d87b0289">BuildSolutionInternal</a> () override</td></tr>
@@ -239,13 +239,13 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00826">826</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00884">884</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="ac4bf3a386c437ec559509f20d6475e85" name="ac4bf3a386c437ec559509f20d6475e85"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac4bf3a386c437ec559509f20d6475e85">&#9670;&nbsp;</a></span>SavingsFilteredHeuristic()</h2>
+<a id="a04f0558b5828ce46108dca7e5a3a8504" name="a04f0558b5828ce46108dca7e5a3a8504"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a04f0558b5828ce46108dca7e5a3a8504">&#9670;&nbsp;</a></span>SavingsFilteredHeuristic()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -255,12 +255,6 @@ Protected Attributes</h2></td></tr>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classoperations__research_1_1_routing_model.html">RoutingModel</a> *&#160;</td>
           <td class="paramname"><em>model</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="classoperations__research_1_1_routing_index_manager.html">RoutingIndexManager</a> *&#160;</td>
-          <td class="paramname"><em>manager</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -282,7 +276,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l02754">2754</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l02939">2939</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
 
 </div>
 </div>
@@ -309,7 +303,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l02769">2769</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l02953">2953</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
 
 </div>
 </div>
@@ -365,7 +359,7 @@ Protected Attributes</h2></td></tr>
 <p>Builds a solution. </p>
 <p >Returns the resulting assignment if a solution was found, and nullptr otherwise. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l00244">244</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l00257">257</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
 
 </div>
 </div>
@@ -395,7 +389,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Builds a solution starting from the routes formed by the next accessor. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l00256">256</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l00269">269</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
 
 </div>
 </div>
@@ -426,7 +420,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classoperations__research_1_1_int_var_filtered_heuristic.html#a0c46fa4dcc0fed2329041bbe90fc575a">IntVarFilteredHeuristic</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l02771">2771</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l02955">2955</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
 
 </div>
 </div>
@@ -455,7 +449,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Commits the modifications to the current solution if these modifications are "filter-feasible", returns false otherwise; in any case discards all modifications. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l00289">289</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l00302">302</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
 
 </div>
 </div>
@@ -485,7 +479,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns true if the variable of index 'index' is in the current solution. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00204">204</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00210">210</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
 
 </div>
 </div>
@@ -514,7 +508,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classoperations__research_1_1_global_cheapest_insertion_filtered_heuristic.html#aed804747c45a7e1caf81461f9e45dd91">GlobalCheapestInsertionFilteredHeuristic</a>, <a class="el" href="classoperations__research_1_1_local_cheapest_insertion_filtered_heuristic.html#aed804747c45a7e1caf81461f9e45dd91">LocalCheapestInsertionFilteredHeuristic</a>, <a class="el" href="classoperations__research_1_1_evaluator_cheapest_addition_filtered_heuristic.html#aed804747c45a7e1caf81461f9e45dd91">EvaluatorCheapestAdditionFilteredHeuristic</a>, <a class="el" href="classoperations__research_1_1_comparator_cheapest_addition_filtered_heuristic.html#aed804747c45a7e1caf81461f9e45dd91">ComparatorCheapestAdditionFilteredHeuristic</a>, <a class="el" href="classoperations__research_1_1_sequential_savings_filtered_heuristic.html#aed804747c45a7e1caf81461f9e45dd91">SequentialSavingsFilteredHeuristic</a>, <a class="el" href="classoperations__research_1_1_parallel_savings_filtered_heuristic.html#aed804747c45a7e1caf81461f9e45dd91">ParallelSavingsFilteredHeuristic</a>, and <a class="el" href="classoperations__research_1_1_christofides_filtered_heuristic.html#aed804747c45a7e1caf81461f9e45dd91">ChristofidesFilteredHeuristic</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00172">172</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00178">178</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
 
 </div>
 </div>
@@ -569,7 +563,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns the "after node" from a saving. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00844">844</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00902">902</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
 
 </div>
 </div>
@@ -599,7 +593,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns the "before node" from a saving. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00840">840</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00898">898</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
 
 </div>
 </div>
@@ -629,7 +623,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns the start of the end chain of vehicle,. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00247">247</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00253">253</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
 
 </div>
 </div>
@@ -659,7 +653,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns the saving value from a saving. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00848">848</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00906">906</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
 
 </div>
 </div>
@@ -689,7 +683,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns the end of the start chain of vehicle,. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00245">245</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00251">251</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
 
 </div>
 </div>
@@ -719,7 +713,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns the cost class from a saving. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00836">836</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00894">894</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
 
 </div>
 </div>
@@ -750,7 +744,7 @@ Protected Attributes</h2></td></tr>
 <p>Make nodes in the same disjunction as 'node' unperformed. </p>
 <p >'node' is a variable index corresponding to a node. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l00412">412</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l00425">425</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
 
 </div>
 </div>
@@ -780,7 +774,7 @@ Protected Attributes</h2></td></tr>
 <p>Make all partially performed pickup and delivery pairs unperformed. </p>
 <p >A pair is partially unperformed if one element of the pair has one of its alternatives performed in the solution and the other has no alternatives in the solution or none performed. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l00429">429</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l00442">442</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
 
 </div>
 </div>
@@ -809,7 +803,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Make all unassigned nodes unperformed. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l00421">421</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l00434">434</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
 
 </div>
 </div>
@@ -836,7 +830,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00243">243</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00249">249</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
 
 </div>
 </div>
@@ -865,7 +859,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns statistics on search, number of decisions sent to filters, number of decisions rejected by filters. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00169">169</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00175">175</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
 
 </div>
 </div>
@@ -892,7 +886,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00170">170</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00176">176</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
 
 </div>
 </div>
@@ -921,7 +915,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Resets the data members for a new solution. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l00234">234</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l00247">247</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
 
 </div>
 </div>
@@ -948,7 +942,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00262">262</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00268">268</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
 
 </div>
 </div>
@@ -988,7 +982,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Modifies the current solution by setting the variable of index 'index' to value 'value'. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00189">189</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00195">195</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
 
 </div>
 </div>
@@ -1026,7 +1020,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00261">261</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00267">267</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
 
 </div>
 </div>
@@ -1055,7 +1049,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns the number of variables the decision builder is trying to instantiate. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00209">209</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00215">215</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
 
 </div>
 </div>
@@ -1102,7 +1096,7 @@ Protected Attributes</h2></td></tr>
 <p>Finds the best available vehicle of type "type" to start a new route to serve the arc before_node--&gt;after_node. </p>
 <p >Since there are different vehicle classes for each vehicle type, each vehicle class having its own capacity constraints, we go through all vehicle types (in each case only studying the first available vehicle) to make sure this Saving is inserted if possible. If possible, the arc is committed to the best vehicle, and the vehicle index is returned. If this arc can't be served by any vehicle of this type, the function returns -1. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l02789">2789</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l02973">2973</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
 
 </div>
 </div>
@@ -1133,7 +1127,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classoperations__research_1_1_int_var_filtered_heuristic.html#a64b348f1f572b9ea470c453a027e6d25">IntVarFilteredHeuristic</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00260">260</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00266">266</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
 
 </div>
 </div>
@@ -1162,7 +1156,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Synchronizes filters with an assignment (the current solution). </p>
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l00317">317</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l00330">330</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
 
 </div>
 </div>
@@ -1192,7 +1186,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns the value of the variable of index 'index' in the last committed solution. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00200">200</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00206">206</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
 
 </div>
 </div>
@@ -1222,7 +1216,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns the variable of index 'index'. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00211">211</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00217">217</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
 
 </div>
 </div>
@@ -1250,7 +1244,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00263">263</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00269">269</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
 
 </div>
 </div>
@@ -1275,7 +1269,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00215">215</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00221">221</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
 
 </div>
 </div>
@@ -1299,7 +1293,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00863">863</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00921">921</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
 
 </div>
 </div>
@@ -1323,7 +1317,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00865">865</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00923">923</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
 
 </div>
 </div>

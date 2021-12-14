@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 9.1</span>
+                <span id="sfml">Google OR-Tools 9.2</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -103,16 +103,13 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1BoolArgumentProto.html">BoolArgumentProto</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Argument of the constraints of the form OP(literals).  <a href="classGoogle_1_1OrTools_1_1Sat_1_1BoolArgumentProto.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1IntegerArgumentProto.html">IntegerArgumentProto</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Argument of the constraints of the form target_var = OP(vars).  <a href="classGoogle_1_1OrTools_1_1Sat_1_1IntegerArgumentProto.html#details">More...</a><br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1LinearExpressionProto.html">LinearExpressionProto</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Some constraints supports linear expression instead of just using a reference to a variable.  <a href="classGoogle_1_1OrTools_1_1Sat_1_1LinearExpressionProto.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1LinearArgumentProto.html">LinearArgumentProto</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1AllDifferentConstraintProto.html">AllDifferentConstraintProto</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">All variables must take different values.  <a href="classGoogle_1_1OrTools_1_1Sat_1_1AllDifferentConstraintProto.html#details">More...</a><br /></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">All affine expressions must take different values.  <a href="classGoogle_1_1OrTools_1_1Sat_1_1AllDifferentConstraintProto.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1LinearConstraintProto.html">LinearConstraintProto</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">The linear sum vars[i] * coeffs[i] must fall in the given domain.  <a href="classGoogle_1_1OrTools_1_1Sat_1_1LinearConstraintProto.html#details">More...</a><br /></td></tr>
@@ -159,6 +156,9 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1CpObjectiveProto.html">CpObjectiveProto</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Optimization objective.  <a href="classGoogle_1_1OrTools_1_1Sat_1_1CpObjectiveProto.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1FloatObjectiveProto.html">FloatObjectiveProto</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A linear floating point objective: sum coeffs[i] * vars[i] + offset.  <a href="classGoogle_1_1OrTools_1_1Sat_1_1FloatObjectiveProto.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto.html">DecisionStrategyProto</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Define the strategy to follow when the solver needs to take a new decision.  <a href="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -182,6 +182,9 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1CpModelProto.html">CpModelProto</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A constraint programming problem.  <a href="classGoogle_1_1OrTools_1_1Sat_1_1CpModelProto.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1CpSolverSolution.html">CpSolverSolution</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Just a message used to store dense solution.  <a href="classGoogle_1_1OrTools_1_1Sat_1_1CpSolverSolution.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1CpSolverResponse.html">CpSolverResponse</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">The response returned by a solver trying to solve a <a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1CpModelProto.html" title="A constraint programming problem.">CpModelProto</a>.  <a href="classGoogle_1_1OrTools_1_1Sat_1_1CpSolverResponse.html#details">More...</a><br /></td></tr>

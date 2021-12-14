@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 9.1</span>
+                <span id="sfml">Google OR-Tools 9.2</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -128,6 +128,12 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a55515a55b4b5c7cdbaef14541c35d974"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3015d4924aa576e1d658dcece527bc5a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpObjectiveProtoOrBuilder.html">com.google.ortools.sat.CpObjectiveProtoOrBuilder</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpModelProtoOrBuilder.html#a3015d4924aa576e1d658dcece527bc5a">getObjectiveOrBuilder</a> ()</td></tr>
 <tr class="separator:a3015d4924aa576e1d658dcece527bc5a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acee46c44d06bd7ba6722fb79ffaaf8f5"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpModelProtoOrBuilder.html#acee46c44d06bd7ba6722fb79ffaaf8f5">hasFloatingPointObjective</a> ()</td></tr>
+<tr class="separator:acee46c44d06bd7ba6722fb79ffaaf8f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a47d1b7e4251df0d13f7ac2f1d43b7880"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1FloatObjectiveProto.html">com.google.ortools.sat.FloatObjectiveProto</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpModelProtoOrBuilder.html#a47d1b7e4251df0d13f7ac2f1d43b7880">getFloatingPointObjective</a> ()</td></tr>
+<tr class="separator:a47d1b7e4251df0d13f7ac2f1d43b7880"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af52b02bb5b558a51782db6f40a2cfb24"><td class="memItemLeft" align="right" valign="top"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1FloatObjectiveProtoOrBuilder.html">com.google.ortools.sat.FloatObjectiveProtoOrBuilder</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpModelProtoOrBuilder.html#af52b02bb5b558a51782db6f40a2cfb24">getFloatingPointObjectiveOrBuilder</a> ()</td></tr>
+<tr class="separator:af52b02bb5b558a51782db6f40a2cfb24"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a57fa95dca57f4da260d539f766145a3b"><td class="memItemLeft" align="right" valign="top">java.util.List&lt; <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto.html">com.google.ortools.sat.DecisionStrategyProto</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpModelProtoOrBuilder.html#a57fa95dca57f4da260d539f766145a3b">getSearchStrategyList</a> ()</td></tr>
 <tr class="separator:a57fa95dca57f4da260d539f766145a3b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a67411b45d9a1d85b4bddfbf33eca38f9"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto.html">com.google.ortools.sat.DecisionStrategyProto</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpModelProtoOrBuilder.html#a67411b45d9a1d85b4bddfbf33eca38f9">getSearchStrategy</a> (int index)</td></tr>
@@ -180,7 +186,7 @@ mechanism is slower but allows in case the model is INFEASIBLE to get a
 potentially small subset of them that can be used to explain the
 infeasibility.
 Think (IIS), except when you are only concerned by the provided
-assumptions. This is powerful as it allows to group a set of logicially
+assumptions. This is powerful as it allows to group a set of logically
 related constraint under only one enforcement literal which can potentially
 give you a good and interpretable explanation for infeasiblity.
 Such infeasibility explanation will be available in the
@@ -218,7 +224,7 @@ mechanism is slower but allows in case the model is INFEASIBLE to get a
 potentially small subset of them that can be used to explain the
 infeasibility.
 Think (IIS), except when you are only concerned by the provided
-assumptions. This is powerful as it allows to group a set of logicially
+assumptions. This is powerful as it allows to group a set of logically
 related constraint under only one enforcement literal which can potentially
 give you a good and interpretable explanation for infeasiblity.
 Such infeasibility explanation will be available in the
@@ -250,7 +256,7 @@ mechanism is slower but allows in case the model is INFEASIBLE to get a
 potentially small subset of them that can be used to explain the
 infeasibility.
 Think (IIS), except when you are only concerned by the provided
-assumptions. This is powerful as it allows to group a set of logicially
+assumptions. This is powerful as it allows to group a set of logically
 related constraint under only one enforcement literal which can potentially
 give you a good and interpretable explanation for infeasiblity.
 Such infeasibility explanation will be available in the
@@ -368,6 +374,70 @@ sufficient_assumptions_for_infeasibility response field.
 
 </div>
 </div>
+<a id="a47d1b7e4251df0d13f7ac2f1d43b7880" name="a47d1b7e4251df0d13f7ac2f1d43b7880"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a47d1b7e4251df0d13f7ac2f1d43b7880">&#9670;&nbsp;</a></span>getFloatingPointObjective()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1FloatObjectiveProto.html">com.google.ortools.sat.FloatObjectiveProto</a> getFloatingPointObjective </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre>
+Advanced usage.
+It is invalid to have both an objective and a floating point objective.
+The objective of the model, in floating point format. The solver will
+automatically scale this to integer during expansion and thus convert it to
+a normal <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpObjectiveProto.html">CpObjectiveProto</a>. See the mip* parameters to control how this is
+scaled. In most situation the precision will be good enough, but you can
+see the logs to see what are the precision guaranteed when this is
+converted to a fixed point representation.
+Note that even if the precision is bad, the returned objective_value and
+best_objective_bound will be computed correctly. So at the end of the solve
+you can check the gap if you only want precise optimal.
+</pre><p ><code>.operations_research.sat.FloatObjectiveProto floating_point_objective = 9;</code> </p><dl class="section return"><dt>Returns</dt><dd>The floatingPointObjective. </dd></dl>
+
+<p>Implemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto.html#a20406ea092b23860c582f56d419dc065">CpModelProto</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto_1_1Builder.html#a47d1b7e4251df0d13f7ac2f1d43b7880">CpModelProto.Builder</a>.</p>
+
+</div>
+</div>
+<a id="af52b02bb5b558a51782db6f40a2cfb24" name="af52b02bb5b558a51782db6f40a2cfb24"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af52b02bb5b558a51782db6f40a2cfb24">&#9670;&nbsp;</a></span>getFloatingPointObjectiveOrBuilder()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1FloatObjectiveProtoOrBuilder.html">com.google.ortools.sat.FloatObjectiveProtoOrBuilder</a> getFloatingPointObjectiveOrBuilder </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre>
+Advanced usage.
+It is invalid to have both an objective and a floating point objective.
+The objective of the model, in floating point format. The solver will
+automatically scale this to integer during expansion and thus convert it to
+a normal <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpObjectiveProto.html">CpObjectiveProto</a>. See the mip* parameters to control how this is
+scaled. In most situation the precision will be good enough, but you can
+see the logs to see what are the precision guaranteed when this is
+converted to a fixed point representation.
+Note that even if the precision is bad, the returned objective_value and
+best_objective_bound will be computed correctly. So at the end of the solve
+you can check the gap if you only want precise optimal.
+</pre><p ><code>.operations_research.sat.FloatObjectiveProto floating_point_objective = 9;</code> </p>
+
+<p>Implemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto.html#a76a3ba25951910968565ce5e5e920757">CpModelProto</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto_1_1Builder.html#af52b02bb5b558a51782db6f40a2cfb24">CpModelProto.Builder</a>.</p>
+
+</div>
+</div>
 <a id="abb7ec7b0ebd57ee0e512590c3a7c73a9" name="abb7ec7b0ebd57ee0e512590c3a7c73a9"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#abb7ec7b0ebd57ee0e512590c3a7c73a9">&#9670;&nbsp;</a></span>getName()</h2>
 
@@ -478,9 +548,8 @@ is also used as a heuristic when we are not in fixed search.
 Advanced Usage: if not all variables appears and the parameter
 "instantiate_all_variables" is set to false, then the solver will not try
 to instantiate the variables that do not appear. Thus, at the end of the
-search, not all variables may be fixed and this is why we have the
-solution_lower_bounds and solution_upper_bounds fields in the
-<a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponse.html">CpSolverResponse</a>.
+search, not all variables may be fixed. Currently, we will set them to
+their lower bound in the solution.
 </pre><p ><code>repeated .operations_research.sat.DecisionStrategyProto search_strategy = 5;</code> </p>
 
 <p>Implemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto.html#aefeeb1e84adfdcc2b027c0b40f4fd579">CpModelProto</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto_1_1Builder.html#a67411b45d9a1d85b4bddfbf33eca38f9">CpModelProto.Builder</a>.</p>
@@ -508,9 +577,8 @@ is also used as a heuristic when we are not in fixed search.
 Advanced Usage: if not all variables appears and the parameter
 "instantiate_all_variables" is set to false, then the solver will not try
 to instantiate the variables that do not appear. Thus, at the end of the
-search, not all variables may be fixed and this is why we have the
-solution_lower_bounds and solution_upper_bounds fields in the
-<a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponse.html">CpSolverResponse</a>.
+search, not all variables may be fixed. Currently, we will set them to
+their lower bound in the solution.
 </pre><p ><code>repeated .operations_research.sat.DecisionStrategyProto search_strategy = 5;</code> </p>
 
 <p>Implemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto.html#a90e2e1483acd20f8b42e33b2a61e3693">CpModelProto</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto_1_1Builder.html#ab6fe7bdbcb3199f969484eae9334e7fb">CpModelProto.Builder</a>.</p>
@@ -538,9 +606,8 @@ is also used as a heuristic when we are not in fixed search.
 Advanced Usage: if not all variables appears and the parameter
 "instantiate_all_variables" is set to false, then the solver will not try
 to instantiate the variables that do not appear. Thus, at the end of the
-search, not all variables may be fixed and this is why we have the
-solution_lower_bounds and solution_upper_bounds fields in the
-<a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponse.html">CpSolverResponse</a>.
+search, not all variables may be fixed. Currently, we will set them to
+their lower bound in the solution.
 </pre><p ><code>repeated .operations_research.sat.DecisionStrategyProto search_strategy = 5;</code> </p>
 
 <p>Implemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto.html#aece39b27a45cf9964216cd5854085758">CpModelProto</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto_1_1Builder.html#a57fa95dca57f4da260d539f766145a3b">CpModelProto.Builder</a>.</p>
@@ -569,9 +636,8 @@ is also used as a heuristic when we are not in fixed search.
 Advanced Usage: if not all variables appears and the parameter
 "instantiate_all_variables" is set to false, then the solver will not try
 to instantiate the variables that do not appear. Thus, at the end of the
-search, not all variables may be fixed and this is why we have the
-solution_lower_bounds and solution_upper_bounds fields in the
-<a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponse.html">CpSolverResponse</a>.
+search, not all variables may be fixed. Currently, we will set them to
+their lower bound in the solution.
 </pre><p ><code>repeated .operations_research.sat.DecisionStrategyProto search_strategy = 5;</code> </p>
 
 <p>Implemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto.html#afd32eeda7cb17839cec4f54ede177187">CpModelProto</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto_1_1Builder.html#ad1992dd81838de332c8efa4c4f655f5b">CpModelProto.Builder</a>.</p>
@@ -599,9 +665,8 @@ is also used as a heuristic when we are not in fixed search.
 Advanced Usage: if not all variables appears and the parameter
 "instantiate_all_variables" is set to false, then the solver will not try
 to instantiate the variables that do not appear. Thus, at the end of the
-search, not all variables may be fixed and this is why we have the
-solution_lower_bounds and solution_upper_bounds fields in the
-<a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponse.html">CpSolverResponse</a>.
+search, not all variables may be fixed. Currently, we will set them to
+their lower bound in the solution.
 </pre><p ><code>repeated .operations_research.sat.DecisionStrategyProto search_strategy = 5;</code> </p>
 
 <p>Implemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto.html#a8cc2384b8646b7893f3ce16aa3b7038d">CpModelProto</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto_1_1Builder.html#aae2ccc252512a7c74a988e75d109f0d3">CpModelProto.Builder</a>.</p>
@@ -827,6 +892,38 @@ The associated Protos should be referred by their index in these fields.
 </pre><p ><code>repeated .operations_research.sat.IntegerVariableProto variables = 2;</code> </p>
 
 <p>Implemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto.html#aaea8cb87176ef0f47a93ca87d786e8f9">CpModelProto</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto_1_1Builder.html#a46dab5d0754462f144405ce14d87d025">CpModelProto.Builder</a>.</p>
+
+</div>
+</div>
+<a id="acee46c44d06bd7ba6722fb79ffaaf8f5" name="acee46c44d06bd7ba6722fb79ffaaf8f5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acee46c44d06bd7ba6722fb79ffaaf8f5">&#9670;&nbsp;</a></span>hasFloatingPointObjective()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">boolean hasFloatingPointObjective </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre>
+Advanced usage.
+It is invalid to have both an objective and a floating point objective.
+The objective of the model, in floating point format. The solver will
+automatically scale this to integer during expansion and thus convert it to
+a normal <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpObjectiveProto.html">CpObjectiveProto</a>. See the mip* parameters to control how this is
+scaled. In most situation the precision will be good enough, but you can
+see the logs to see what are the precision guaranteed when this is
+converted to a fixed point representation.
+Note that even if the precision is bad, the returned objective_value and
+best_objective_bound will be computed correctly. So at the end of the solve
+you can check the gap if you only want precise optimal.
+</pre><p ><code>.operations_research.sat.FloatObjectiveProto floating_point_objective = 9;</code> </p><dl class="section return"><dt>Returns</dt><dd>Whether the floatingPointObjective field is set. </dd></dl>
+
+<p>Implemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto.html#af036663e8f96dfb689f0139baca1d0ee">CpModelProto</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto_1_1Builder.html#acee46c44d06bd7ba6722fb79ffaaf8f5">CpModelProto.Builder</a>.</p>
 
 </div>
 </div>

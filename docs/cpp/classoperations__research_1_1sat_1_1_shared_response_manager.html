@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.1</span>
+   &#160;<span id="projectnumber">9.2</span>
    </div>
   </td>
  </tr>
@@ -106,10 +106,12 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ab24169d006da05dc1bf3f5d8b4f0ae65"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1c09f1736a0ed87a6e5f1cf48dd9b43c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_cp_solver_response.html">CpSolverResponse</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_shared_response_manager.html#a1c09f1736a0ed87a6e5f1cf48dd9b43c">GetResponse</a> (bool full_response=true)</td></tr>
 <tr class="separator:a1c09f1736a0ed87a6e5f1cf48dd9b43c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a89f86e6812dff68f0a0fe68651c96457"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_shared_response_manager.html#a89f86e6812dff68f0a0fe68651c96457">AddSolutionPostprocessor</a> (std::function&lt; void(<a class="el" href="classoperations__research_1_1sat_1_1_cp_solver_response.html">CpSolverResponse</a> *)&gt; postprocessor)</td></tr>
-<tr class="separator:a89f86e6812dff68f0a0fe68651c96457"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4879444472ad8df79eea233962a60260"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_shared_response_manager.html#a4879444472ad8df79eea233962a60260">AddFinalSolutionPostprocessor</a> (std::function&lt; void(<a class="el" href="classoperations__research_1_1sat_1_1_cp_solver_response.html">CpSolverResponse</a> *)&gt; postprocessor)</td></tr>
-<tr class="separator:a4879444472ad8df79eea233962a60260"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a34930fb7e2e3d02fc829b5d395f2018b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_shared_response_manager.html#a34930fb7e2e3d02fc829b5d395f2018b">AddSolutionPostprocessor</a> (std::function&lt; void(std::vector&lt; int64_t &gt; *)&gt; postprocessor)</td></tr>
+<tr class="separator:a34930fb7e2e3d02fc829b5d395f2018b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abfb3eeaf610607b89fd9c2af7c492ead"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_shared_response_manager.html#abfb3eeaf610607b89fd9c2af7c492ead">AddResponsePostprocessor</a> (std::function&lt; void(<a class="el" href="classoperations__research_1_1sat_1_1_cp_solver_response.html">CpSolverResponse</a> *)&gt; postprocessor)</td></tr>
+<tr class="separator:abfb3eeaf610607b89fd9c2af7c492ead"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a40957d9a7040b78f0c838c25f3fe8c93"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_shared_response_manager.html#a40957d9a7040b78f0c838c25f3fe8c93">AddFinalResponsePostprocessor</a> (std::function&lt; void(<a class="el" href="classoperations__research_1_1sat_1_1_cp_solver_response.html">CpSolverResponse</a> *)&gt; postprocessor)</td></tr>
+<tr class="separator:a40957d9a7040b78f0c838c25f3fe8c93"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac25b5700df43621c1132a8cffce727e5"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_shared_response_manager.html#ac25b5700df43621c1132a8cffce727e5">AddSolutionCallback</a> (std::function&lt; void(const <a class="el" href="classoperations__research_1_1sat_1_1_cp_solver_response.html">CpSolverResponse</a> &amp;)&gt; <a class="el" href="gurobi__interface_8cc.html#a6627a3800ac768bb5528ef54c9cace36">callback</a>)</td></tr>
 <tr class="separator:ac25b5700df43621c1132a8cffce727e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae602825eaafbd7898db32c977d47b1b5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_shared_response_manager.html#ae602825eaafbd7898db32c977d47b1b5">UnregisterCallback</a> (int callback_id)</td></tr>
@@ -126,12 +128,12 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a8b4c8e606fe8af8a8e7b2afe724ad48c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa81c865475fd0607d70ae640f98eb955"><td class="memItemLeft" align="right" valign="top">IntegerValue&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_shared_response_manager.html#aa81c865475fd0607d70ae640f98eb955">BestSolutionInnerObjectiveValue</a> ()</td></tr>
 <tr class="separator:aa81c865475fd0607d70ae640f98eb955"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a35fa462770297e363b3444408b1a349b"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_shared_response_manager.html#a35fa462770297e363b3444408b1a349b">PrimalIntegral</a> () const</td></tr>
-<tr class="separator:a35fa462770297e363b3444408b1a349b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6089bc75390eaa54a3d1d593c1089a58"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_shared_response_manager.html#a6089bc75390eaa54a3d1d593c1089a58">UpdatePrimalIntegral</a> ()</td></tr>
-<tr class="separator:a6089bc75390eaa54a3d1d593c1089a58"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:add152b19eea8ec9d13a7afe9e0e848e9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_shared_response_manager.html#add152b19eea8ec9d13a7afe9e0e848e9">SetUpdatePrimalIntegralOnEachChange</a> (bool set)</td></tr>
-<tr class="separator:add152b19eea8ec9d13a7afe9e0e848e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9957adc3f286e1b9b7ef04fb486d07fc"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_shared_response_manager.html#a9957adc3f286e1b9b7ef04fb486d07fc">GapIntegral</a> () const</td></tr>
+<tr class="separator:a9957adc3f286e1b9b7ef04fb486d07fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afa4bb5e4ca9e8d37d14358554a81c5fa"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_shared_response_manager.html#afa4bb5e4ca9e8d37d14358554a81c5fa">UpdateGapIntegral</a> ()</td></tr>
+<tr class="separator:afa4bb5e4ca9e8d37d14358554a81c5fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9f8e90fcb5aab512ec917c4162490a8a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_shared_response_manager.html#a9f8e90fcb5aab512ec917c4162490a8a">SetUpdateGapIntegralOnEachChange</a> (bool set)</td></tr>
+<tr class="separator:a9f8e90fcb5aab512ec917c4162490a8a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afcc9de6240a7eb2da97d08787d53df55"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_shared_response_manager.html#afcc9de6240a7eb2da97d08787d53df55">UpdateInnerObjectiveBounds</a> (const std::string &amp;update_info, IntegerValue lb, IntegerValue ub)</td></tr>
 <tr class="separator:afcc9de6240a7eb2da97d08787d53df55"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a976be4568cddb91edff011f3390104e1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_shared_response_manager.html#a976be4568cddb91edff011f3390104e1">NewSolution</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_cp_solver_response.html">CpSolverResponse</a> &amp;<a class="el" href="cp__model__solver_8cc.html#abcd33b18ce6d5a90a4ba5c37cfa58829">response</a>, <a class="el" href="classoperations__research_1_1sat_1_1_model.html">Model</a> *<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>)</td></tr>
@@ -154,6 +156,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a4e384fc1008faf07788b158de9a28f6d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a980263e6b86ef8180855eac0f703dc51"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_shared_response_manager.html#a980263e6b86ef8180855eac0f703dc51">DisplayImprovementStatistics</a> ()</td></tr>
 <tr class="separator:a980263e6b86ef8180855eac0f703dc51"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab9d505bf3111cdd7b25b67ad27e2bb30"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_shared_response_manager.html#ab9d505bf3111cdd7b25b67ad27e2bb30">LogMessage</a> (std::string <a class="el" href="trace_8cc.html#a36bd74109f547f7f8198faf5a12d2879">message</a>)</td></tr>
+<tr class="separator:ab9d505bf3111cdd7b25b67ad27e2bb30"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab652a8cdcf159a4362b718a4af85c49e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_cp_solver_response.html">CpSolverResponse</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_shared_response_manager.html#ab652a8cdcf159a4362b718a4af85c49e">MutableResponse</a> ()</td></tr>
 <tr class="separator:ab652a8cdcf159a4362b718a4af85c49e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
@@ -187,14 +191,14 @@ Public Member Functions</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a4879444472ad8df79eea233962a60260" name="a4879444472ad8df79eea233962a60260"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4879444472ad8df79eea233962a60260">&#9670;&nbsp;</a></span>AddFinalSolutionPostprocessor()</h2>
+<a id="a40957d9a7040b78f0c838c25f3fe8c93" name="a40957d9a7040b78f0c838c25f3fe8c93"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a40957d9a7040b78f0c838c25f3fe8c93">&#9670;&nbsp;</a></span>AddFinalResponsePostprocessor()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void AddFinalSolutionPostprocessor </td>
+          <td class="memname">void AddFinalResponsePostprocessor </td>
           <td>(</td>
           <td class="paramtype">std::function&lt; void(<a class="el" href="classoperations__research_1_1sat_1_1_cp_solver_response.html">CpSolverResponse</a> *)&gt;&#160;</td>
           <td class="paramname"><em>postprocessor</em></td><td>)</td>
@@ -203,7 +207,27 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00361">361</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00369">369</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
+
+</div>
+</div>
+<a id="abfb3eeaf610607b89fd9c2af7c492ead" name="abfb3eeaf610607b89fd9c2af7c492ead"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abfb3eeaf610607b89fd9c2af7c492ead">&#9670;&nbsp;</a></span>AddResponsePostprocessor()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void AddResponsePostprocessor </td>
+          <td>(</td>
+          <td class="paramtype">std::function&lt; void(<a class="el" href="classoperations__research_1_1sat_1_1_cp_solver_response.html">CpSolverResponse</a> *)&gt;&#160;</td>
+          <td class="paramname"><em>postprocessor</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00363">363</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
 
 </div>
 </div>
@@ -223,12 +247,12 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00367">367</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00375">375</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
 
 </div>
 </div>
-<a id="a89f86e6812dff68f0a0fe68651c96457" name="a89f86e6812dff68f0a0fe68651c96457"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a89f86e6812dff68f0a0fe68651c96457">&#9670;&nbsp;</a></span>AddSolutionPostprocessor()</h2>
+<a id="a34930fb7e2e3d02fc829b5d395f2018b" name="a34930fb7e2e3d02fc829b5d395f2018b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a34930fb7e2e3d02fc829b5d395f2018b">&#9670;&nbsp;</a></span>AddSolutionPostprocessor()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -236,14 +260,14 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="memname">void AddSolutionPostprocessor </td>
           <td>(</td>
-          <td class="paramtype">std::function&lt; void(<a class="el" href="classoperations__research_1_1sat_1_1_cp_solver_response.html">CpSolverResponse</a> *)&gt;&#160;</td>
+          <td class="paramtype">std::function&lt; void(std::vector&lt; int64_t &gt; *)&gt;&#160;</td>
           <td class="paramname"><em>postprocessor</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00355">355</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00357">357</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
 
 </div>
 </div>
@@ -263,7 +287,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00309">309</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00311">311</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
 
 </div>
 </div>
@@ -282,7 +306,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00345">345</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00347">347</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
 
 </div>
 </div>
@@ -301,7 +325,26 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00639">639</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00682">682</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
+
+</div>
+</div>
+<a id="a9957adc3f286e1b9b7ef04fb486d07fc" name="a9957adc3f286e1b9b7ef04fb486d07fc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9957adc3f286e1b9b7ef04fb486d07fc">&#9670;&nbsp;</a></span>GapIntegral()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double GapIntegral </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00352">352</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
 
 </div>
 </div>
@@ -320,7 +363,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00317">317</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00319">319</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
 
 </div>
 </div>
@@ -339,7 +382,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00322">322</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00324">324</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
 
 </div>
 </div>
@@ -359,7 +402,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00386">386</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00414">414</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
 
 </div>
 </div>
@@ -379,7 +422,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00135">135</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00140">140</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
 
 </div>
 </div>
@@ -399,7 +442,27 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00544">544</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00587">587</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
+
+</div>
+</div>
+<a id="ab9d505bf3111cdd7b25b67ad27e2bb30" name="ab9d505bf3111cdd7b25b67ad27e2bb30"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab9d505bf3111cdd7b25b67ad27e2bb30">&#9670;&nbsp;</a></span>LogMessage()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void LogMessage </td>
+          <td>(</td>
+          <td class="paramtype">std::string&#160;</td>
+          <td class="paramname"><em>message</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00134">134</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
 
 </div>
 </div>
@@ -426,7 +489,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="synchronization_8h_source.html#l00330">330</a> of file <a class="el" href="synchronization_8h_source.html">synchronization.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="synchronization_8h_source.html#l00336">336</a> of file <a class="el" href="synchronization_8h_source.html">synchronization.h</a>.</p>
 
 </div>
 </div>
@@ -453,7 +516,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="synchronization_8h_source.html#l00306">306</a> of file <a class="el" href="synchronization_8h_source.html">synchronization.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="synchronization_8h_source.html#l00310">310</a> of file <a class="el" href="synchronization_8h_source.html">synchronization.h</a>.</p>
 
 </div>
 </div>
@@ -483,7 +546,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00431">431</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00468">468</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
 
 </div>
 </div>
@@ -503,26 +566,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00285">285</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
-
-</div>
-</div>
-<a id="a35fa462770297e363b3444408b1a349b" name="a35fa462770297e363b3444408b1a349b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a35fa462770297e363b3444408b1a349b">&#9670;&nbsp;</a></span>PrimalIntegral()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">double PrimalIntegral </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00350">350</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00290">290</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
 
 </div>
 </div>
@@ -541,7 +585,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00608">608</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00651">651</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
 
 </div>
 </div>
@@ -569,7 +613,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="synchronization_8h_source.html#l00319">319</a> of file <a class="el" href="synchronization_8h_source.html">synchronization.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="synchronization_8h_source.html#l00323">323</a> of file <a class="el" href="synchronization_8h_source.html">synchronization.h</a>.</p>
 
 </div>
 </div>
@@ -589,7 +633,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00182">182</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00187">187</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
 
 </div>
 </div>
@@ -609,18 +653,18 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00579">579</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00622">622</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
 
 </div>
 </div>
-<a id="add152b19eea8ec9d13a7afe9e0e848e9" name="add152b19eea8ec9d13a7afe9e0e848e9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#add152b19eea8ec9d13a7afe9e0e848e9">&#9670;&nbsp;</a></span>SetUpdatePrimalIntegralOnEachChange()</h2>
+<a id="a9f8e90fcb5aab512ec917c4162490a8a" name="a9f8e90fcb5aab512ec917c4162490a8a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9f8e90fcb5aab512ec917c4162490a8a">&#9670;&nbsp;</a></span>SetUpdateGapIntegralOnEachChange()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void SetUpdatePrimalIntegralOnEachChange </td>
+          <td class="memname">void SetUpdateGapIntegralOnEachChange </td>
           <td>(</td>
           <td class="paramtype">bool&#160;</td>
           <td class="paramname"><em>set</em></td><td>)</td>
@@ -629,7 +673,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00148">148</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00153">153</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
 
 </div>
 </div>
@@ -656,7 +700,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="synchronization_8h_source.html#l00303">303</a> of file <a class="el" href="synchronization_8h_source.html">synchronization.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="synchronization_8h_source.html#l00307">307</a> of file <a class="el" href="synchronization_8h_source.html">synchronization.h</a>.</p>
 
 </div>
 </div>
@@ -675,7 +719,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00327">327</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00329">329</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
 
 </div>
 </div>
@@ -694,7 +738,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00335">335</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00337">337</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
 
 </div>
 </div>
@@ -713,7 +757,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00340">340</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00342">342</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
 
 </div>
 </div>
@@ -733,7 +777,26 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00375">375</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00383">383</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
+
+</div>
+</div>
+<a id="afa4bb5e4ca9e8d37d14358554a81c5fa" name="afa4bb5e4ca9e8d37d14358554a81c5fa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afa4bb5e4ca9e8d37d14358554a81c5fa">&#9670;&nbsp;</a></span>UpdateGapIntegral()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void UpdateGapIntegral </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00158">158</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
 
 </div>
 </div>
@@ -769,26 +832,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00226">226</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
-
-</div>
-</div>
-<a id="a6089bc75390eaa54a3d1d593c1089a58" name="a6089bc75390eaa54a3d1d593c1089a58"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6089bc75390eaa54a3d1d593c1089a58">&#9670;&nbsp;</a></span>UpdatePrimalIntegral()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void UpdatePrimalIntegral </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00153">153</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00231">231</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
 
 </div>
 </div>

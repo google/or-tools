@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 9.1</span>
+                <span id="sfml">Google OR-Tools 9.2</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -124,6 +124,8 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_solver_response.html">CpSolverResponse</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_solver_solution.html">CpSolverSolution</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cumulative_constraint.html">CumulativeConstraint</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Specialized cumulative constraint.  <a href="classoperations__research_1_1sat_1_1_cumulative_constraint.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -135,9 +137,12 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_dense_matrix_proto.html">DenseMatrixProto</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A dedicated container for linear expressions with double coefficients.  <a href="classoperations__research_1_1sat_1_1_double_linear_expr.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_element_constraint_proto.html">ElementConstraintProto</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_integer_argument_proto.html">IntegerArgumentProto</a></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_float_objective_proto.html">FloatObjectiveProto</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_integer_variable_proto.html">IntegerVariableProto</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -211,8 +216,8 @@ Enumerations</h2></td></tr>
 , <a class="el" href="namespaceoperations__research_1_1sat.html#a94523f1ebceff999bc59a3db7d2b98b6aac0157e9af8921b714667cdaa10d09f0">DecisionStrategyProto_VariableSelectionStrategy_CHOOSE_MIN_DOMAIN_SIZE</a> = 3
 , <br />
 &#160;&#160;<a class="el" href="namespaceoperations__research_1_1sat.html#a94523f1ebceff999bc59a3db7d2b98b6a3b1dbb74050c9b83b333d6137c47e10b">DecisionStrategyProto_VariableSelectionStrategy_CHOOSE_MAX_DOMAIN_SIZE</a> = 4
-, <a class="el" href="namespaceoperations__research_1_1sat.html#a94523f1ebceff999bc59a3db7d2b98b6a3da8a28b16b5c0072a721e7657f77763">DecisionStrategyProto_VariableSelectionStrategy_DecisionStrategyProto_VariableSelectionStrategy_INT_MIN_SENTINEL_DO_NOT_USE_</a> = std::numeric_limits&lt;::PROTOBUF_NAMESPACE_ID::int32&gt;::min()
-, <a class="el" href="namespaceoperations__research_1_1sat.html#a94523f1ebceff999bc59a3db7d2b98b6ae49c5ca9c4434f188df518c8d6d597c1">DecisionStrategyProto_VariableSelectionStrategy_DecisionStrategyProto_VariableSelectionStrategy_INT_MAX_SENTINEL_DO_NOT_USE_</a> = std::numeric_limits&lt;::PROTOBUF_NAMESPACE_ID::int32&gt;::max()
+, <a class="el" href="namespaceoperations__research_1_1sat.html#a94523f1ebceff999bc59a3db7d2b98b6a3da8a28b16b5c0072a721e7657f77763">DecisionStrategyProto_VariableSelectionStrategy_DecisionStrategyProto_VariableSelectionStrategy_INT_MIN_SENTINEL_DO_NOT_USE_</a> = std::numeric_limits&lt;int32_t&gt;::min()
+, <a class="el" href="namespaceoperations__research_1_1sat.html#a94523f1ebceff999bc59a3db7d2b98b6ae49c5ca9c4434f188df518c8d6d597c1">DecisionStrategyProto_VariableSelectionStrategy_DecisionStrategyProto_VariableSelectionStrategy_INT_MAX_SENTINEL_DO_NOT_USE_</a> = std::numeric_limits&lt;int32_t&gt;::max()
 <br />
  }</td></tr>
 <tr class="separator:a94523f1ebceff999bc59a3db7d2b98b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -223,8 +228,8 @@ Enumerations</h2></td></tr>
 , <a class="el" href="namespaceoperations__research_1_1sat.html#a0ab0c4789d577b30dde661c19f88d00eae2ddcc4b888df56eb4300f94b24f8005">DecisionStrategyProto_DomainReductionStrategy_SELECT_UPPER_HALF</a> = 3
 , <br />
 &#160;&#160;<a class="el" href="namespaceoperations__research_1_1sat.html#a0ab0c4789d577b30dde661c19f88d00ea2dd975e36bdd9ac9e65463fcc4f0541c">DecisionStrategyProto_DomainReductionStrategy_SELECT_MEDIAN_VALUE</a> = 4
-, <a class="el" href="namespaceoperations__research_1_1sat.html#a0ab0c4789d577b30dde661c19f88d00ea12f599538c023b465123a3c9cfa9869f">DecisionStrategyProto_DomainReductionStrategy_DecisionStrategyProto_DomainReductionStrategy_INT_MIN_SENTINEL_DO_NOT_USE_</a> = std::numeric_limits&lt;::PROTOBUF_NAMESPACE_ID::int32&gt;::min()
-, <a class="el" href="namespaceoperations__research_1_1sat.html#a0ab0c4789d577b30dde661c19f88d00ea610f4d8bf804f4c0261df253a3e06462">DecisionStrategyProto_DomainReductionStrategy_DecisionStrategyProto_DomainReductionStrategy_INT_MAX_SENTINEL_DO_NOT_USE_</a> = std::numeric_limits&lt;::PROTOBUF_NAMESPACE_ID::int32&gt;::max()
+, <a class="el" href="namespaceoperations__research_1_1sat.html#a0ab0c4789d577b30dde661c19f88d00ea12f599538c023b465123a3c9cfa9869f">DecisionStrategyProto_DomainReductionStrategy_DecisionStrategyProto_DomainReductionStrategy_INT_MIN_SENTINEL_DO_NOT_USE_</a> = std::numeric_limits&lt;int32_t&gt;::min()
+, <a class="el" href="namespaceoperations__research_1_1sat.html#a0ab0c4789d577b30dde661c19f88d00ea610f4d8bf804f4c0261df253a3e06462">DecisionStrategyProto_DomainReductionStrategy_DecisionStrategyProto_DomainReductionStrategy_INT_MAX_SENTINEL_DO_NOT_USE_</a> = std::numeric_limits&lt;int32_t&gt;::max()
 <br />
  }</td></tr>
 <tr class="separator:a0ab0c4789d577b30dde661c19f88d00e"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -235,8 +240,8 @@ Enumerations</h2></td></tr>
 , <a class="el" href="namespaceoperations__research_1_1sat.html#aedc4ddb96acc28481c09828d2e016815a2884fa43446c0cbc9c7a9b74d41d7483">INFEASIBLE</a> = 3
 , <br />
 &#160;&#160;<a class="el" href="namespaceoperations__research_1_1sat.html#aedc4ddb96acc28481c09828d2e016815a2579881e7c83261bc21bafb5a5c92cad">OPTIMAL</a> = 4
-, <a class="el" href="namespaceoperations__research_1_1sat.html#aedc4ddb96acc28481c09828d2e016815a3c013bc15052315782a00d86f3fca3ab">CpSolverStatus_INT_MIN_SENTINEL_DO_NOT_USE_</a> = std::numeric_limits&lt;::PROTOBUF_NAMESPACE_ID::int32&gt;::min()
-, <a class="el" href="namespaceoperations__research_1_1sat.html#aedc4ddb96acc28481c09828d2e016815a3c910aa4be26fdd6efed0262315b1ffd">CpSolverStatus_INT_MAX_SENTINEL_DO_NOT_USE_</a> = std::numeric_limits&lt;::PROTOBUF_NAMESPACE_ID::int32&gt;::max()
+, <a class="el" href="namespaceoperations__research_1_1sat.html#aedc4ddb96acc28481c09828d2e016815a3c013bc15052315782a00d86f3fca3ab">CpSolverStatus_INT_MIN_SENTINEL_DO_NOT_USE_</a> = std::numeric_limits&lt;int32_t&gt;::min()
+, <a class="el" href="namespaceoperations__research_1_1sat.html#aedc4ddb96acc28481c09828d2e016815a3c910aa4be26fdd6efed0262315b1ffd">CpSolverStatus_INT_MAX_SENTINEL_DO_NOT_USE_</a> = std::numeric_limits&lt;int32_t&gt;::max()
 <br />
  }</td></tr>
 <tr class="separator:aedc4ddb96acc28481c09828d2e016815"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -330,20 +335,78 @@ Functions</h2></td></tr>
 <tr class="separator:a0c1b0a196a70f7edd0ff1bc0250e76ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a616a1843aa394d2d018e052050588bb2"><td class="memItemLeft" align="right" valign="top">std::ostream &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a616a1843aa394d2d018e052050588bb2">operator&lt;&lt;</a> (std::ostream &amp;os, const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;e)</td></tr>
 <tr class="separator:a616a1843aa394d2d018e052050588bb2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4c1168782300a1c64e854ec6f1ead1ea"><td class="memItemLeft" align="right" valign="top">std::ostream &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a4c1168782300a1c64e854ec6f1ead1ea">operator&lt;&lt;</a> (std::ostream &amp;os, const <a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;e)</td></tr>
+<tr class="separator:a4c1168782300a1c64e854ec6f1ead1ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afeefd0a183a2d1c9f09fec0aa52b200a"><td class="memItemLeft" align="right" valign="top">std::ostream &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#afeefd0a183a2d1c9f09fec0aa52b200a">operator&lt;&lt;</a> (std::ostream &amp;os, const <a class="el" href="classoperations__research_1_1sat_1_1_interval_var.html">IntervalVar</a> &amp;var)</td></tr>
 <tr class="separator:afeefd0a183a2d1c9f09fec0aa52b200a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab6fe86bc876c281163a053a9581346c3"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#ab6fe86bc876c281163a053a9581346c3">SolutionIntegerValue</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_cp_solver_response.html">CpSolverResponse</a> &amp;r, const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;expr)</td></tr>
 <tr class="memdesc:ab6fe86bc876c281163a053a9581346c3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Evaluates the value of an linear expression in a solver response.  <a href="namespaceoperations__research_1_1sat.html#ab6fe86bc876c281163a053a9581346c3">More...</a><br /></td></tr>
 <tr class="separator:ab6fe86bc876c281163a053a9581346c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af7857084f34282d9c30370db7d63faa7"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#af7857084f34282d9c30370db7d63faa7">SolutionIntegerMin</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_cp_solver_response.html">CpSolverResponse</a> &amp;r, <a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a> x)</td></tr>
-<tr class="memdesc:af7857084f34282d9c30370db7d63faa7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the min of an integer variable in a solution.  <a href="namespaceoperations__research_1_1sat.html#af7857084f34282d9c30370db7d63faa7">More...</a><br /></td></tr>
-<tr class="separator:af7857084f34282d9c30370db7d63faa7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0205c1cb83c849b1f47dab55ad6ada5c"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a0205c1cb83c849b1f47dab55ad6ada5c">SolutionIntegerMax</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_cp_solver_response.html">CpSolverResponse</a> &amp;r, <a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a> x)</td></tr>
-<tr class="memdesc:a0205c1cb83c849b1f47dab55ad6ada5c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the max of an integer variable in a solution.  <a href="namespaceoperations__research_1_1sat.html#a0205c1cb83c849b1f47dab55ad6ada5c">More...</a><br /></td></tr>
-<tr class="separator:a0205c1cb83c849b1f47dab55ad6ada5c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afa415e372a9d64eede869ed98666c29c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#afa415e372a9d64eede869ed98666c29c">SolutionBooleanValue</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_cp_solver_response.html">CpSolverResponse</a> &amp;r, <a class="el" href="classoperations__research_1_1sat_1_1_bool_var.html">BoolVar</a> x)</td></tr>
 <tr class="memdesc:afa415e372a9d64eede869ed98666c29c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Evaluates the value of a Boolean literal in a solver response.  <a href="namespaceoperations__research_1_1sat.html#afa415e372a9d64eede869ed98666c29c">More...</a><br /></td></tr>
 <tr class="separator:afa415e372a9d64eede869ed98666c29c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a007d129b4917935f84c9ae0823c2cb11"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a007d129b4917935f84c9ae0823c2cb11">VarDebugString</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_cp_model_proto.html">CpModelProto</a> &amp;proto, int index)</td></tr>
+<tr class="separator:a007d129b4917935f84c9ae0823c2cb11"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a49f6d80163fd6aa41fec7ebf8e27949a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a49f6d80163fd6aa41fec7ebf8e27949a">operator-</a> (<a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> expr)</td></tr>
+<tr class="separator:a49f6d80163fd6aa41fec7ebf8e27949a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a14d680e53b769b0bf60b6613d27994df"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a14d680e53b769b0bf60b6613d27994df">operator+</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;lhs, const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;rhs)</td></tr>
+<tr class="separator:a14d680e53b769b0bf60b6613d27994df"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a70c3650a2627f7072b46545ba712da1c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a70c3650a2627f7072b46545ba712da1c">operator+</a> (<a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;&amp;lhs, const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;rhs)</td></tr>
+<tr class="separator:a70c3650a2627f7072b46545ba712da1c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af5d9b25ef5642c457636001e9393034e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#af5d9b25ef5642c457636001e9393034e">operator+</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;lhs, <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;&amp;rhs)</td></tr>
+<tr class="separator:af5d9b25ef5642c457636001e9393034e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a12a296a3b389239ce1ffef3527bfa1e3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a12a296a3b389239ce1ffef3527bfa1e3">operator+</a> (<a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;&amp;lhs, <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;&amp;rhs)</td></tr>
+<tr class="separator:a12a296a3b389239ce1ffef3527bfa1e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aedd485d7f6b2ccacff90294455d30ae5"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#aedd485d7f6b2ccacff90294455d30ae5">operator-</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;lhs, const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;rhs)</td></tr>
+<tr class="separator:aedd485d7f6b2ccacff90294455d30ae5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a62d4cee395c01f64847f322fd74f3613"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a62d4cee395c01f64847f322fd74f3613">operator-</a> (<a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;&amp;lhs, const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;rhs)</td></tr>
+<tr class="separator:a62d4cee395c01f64847f322fd74f3613"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1083f8028e54d27eec081e45d92da3da"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a1083f8028e54d27eec081e45d92da3da">operator-</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;lhs, <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;&amp;rhs)</td></tr>
+<tr class="separator:a1083f8028e54d27eec081e45d92da3da"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab29f5117f4220225e73e5984196315a7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#ab29f5117f4220225e73e5984196315a7">operator-</a> (<a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;&amp;lhs, <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;&amp;rhs)</td></tr>
+<tr class="separator:ab29f5117f4220225e73e5984196315a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae5e220860af1fa89265bd640ab575c94"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#ae5e220860af1fa89265bd640ab575c94">operator*</a> (<a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> expr, int64_t factor)</td></tr>
+<tr class="separator:ae5e220860af1fa89265bd640ab575c94"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1b127fca095a77a5c789d443f522fbbb"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a1b127fca095a77a5c789d443f522fbbb">operator*</a> (int64_t factor, <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> expr)</td></tr>
+<tr class="separator:a1b127fca095a77a5c789d443f522fbbb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3ef55954ce104b703b05f5a926a55c52"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a3ef55954ce104b703b05f5a926a55c52">operator-</a> (<a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> expr)</td></tr>
+<tr class="separator:a3ef55954ce104b703b05f5a926a55c52"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adedef397b25c1cc6909adcae18a820e9"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#adedef397b25c1cc6909adcae18a820e9">operator+</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;lhs, const <a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;rhs)</td></tr>
+<tr class="separator:adedef397b25c1cc6909adcae18a820e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a23499bc93d6b2ab81e91ea946e2780c8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a23499bc93d6b2ab81e91ea946e2780c8">operator+</a> (<a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;&amp;lhs, const <a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;rhs)</td></tr>
+<tr class="separator:a23499bc93d6b2ab81e91ea946e2780c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0bdaf49a2294d9fd664ce3ad0360d501"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a0bdaf49a2294d9fd664ce3ad0360d501">operator+</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;lhs, <a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;&amp;rhs)</td></tr>
+<tr class="separator:a0bdaf49a2294d9fd664ce3ad0360d501"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5317d7f37f16096d85dfc5a7f05bed77"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a5317d7f37f16096d85dfc5a7f05bed77">operator+</a> (<a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;&amp;lhs, <a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;&amp;rhs)</td></tr>
+<tr class="separator:a5317d7f37f16096d85dfc5a7f05bed77"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a880c86015007715e39e0d638d595f90a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a880c86015007715e39e0d638d595f90a">operator+</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;lhs, double rhs)</td></tr>
+<tr class="separator:a880c86015007715e39e0d638d595f90a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abf85f46b2a5a861212995b8b30890d63"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#abf85f46b2a5a861212995b8b30890d63">operator+</a> (<a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;&amp;lhs, double rhs)</td></tr>
+<tr class="separator:abf85f46b2a5a861212995b8b30890d63"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ade884e51118469ac2d3f46da775f0e0e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#ade884e51118469ac2d3f46da775f0e0e">operator+</a> (double lhs, <a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;&amp;rhs)</td></tr>
+<tr class="separator:ade884e51118469ac2d3f46da775f0e0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1400ddaec2d03291cb4930b40d473490"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a1400ddaec2d03291cb4930b40d473490">operator+</a> (double lhs, const <a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;rhs)</td></tr>
+<tr class="separator:a1400ddaec2d03291cb4930b40d473490"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1ed1cd9aca1c45ff97111ebfe1d8c555"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a1ed1cd9aca1c45ff97111ebfe1d8c555">operator-</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;lhs, const <a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;rhs)</td></tr>
+<tr class="separator:a1ed1cd9aca1c45ff97111ebfe1d8c555"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ade32b256f6277fd7a7e52c3a17128b96"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#ade32b256f6277fd7a7e52c3a17128b96">operator-</a> (<a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;&amp;lhs, const <a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;rhs)</td></tr>
+<tr class="separator:ade32b256f6277fd7a7e52c3a17128b96"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a37a77b7fe5f2ae90130d7f9cf20a995a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a37a77b7fe5f2ae90130d7f9cf20a995a">operator-</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;lhs, <a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;&amp;rhs)</td></tr>
+<tr class="separator:a37a77b7fe5f2ae90130d7f9cf20a995a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a90add9340d2579eed96c65f248306982"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a90add9340d2579eed96c65f248306982">operator-</a> (<a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;&amp;lhs, <a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;&amp;rhs)</td></tr>
+<tr class="separator:a90add9340d2579eed96c65f248306982"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3140d971daef3de86ab71735b57c58bf"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a3140d971daef3de86ab71735b57c58bf">operator-</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;lhs, double rhs)</td></tr>
+<tr class="separator:a3140d971daef3de86ab71735b57c58bf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaf22dfdf4475e858e7ff0e8920f11f7b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#aaf22dfdf4475e858e7ff0e8920f11f7b">operator-</a> (<a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;&amp;lhs, double rhs)</td></tr>
+<tr class="separator:aaf22dfdf4475e858e7ff0e8920f11f7b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a071654105c5e2fbb6bfab91c5a5cf3ff"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a071654105c5e2fbb6bfab91c5a5cf3ff">operator-</a> (double lhs, <a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;&amp;rhs)</td></tr>
+<tr class="separator:a071654105c5e2fbb6bfab91c5a5cf3ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac1ddbf6a02889772d677e107a2ba46c9"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#ac1ddbf6a02889772d677e107a2ba46c9">operator-</a> (double lhs, const <a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;rhs)</td></tr>
+<tr class="separator:ac1ddbf6a02889772d677e107a2ba46c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8ad89939d32828716e2f01940e81ce4a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a8ad89939d32828716e2f01940e81ce4a">operator*</a> (<a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> expr, double factor)</td></tr>
+<tr class="separator:a8ad89939d32828716e2f01940e81ce4a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac5f88f13d009bea305340ad747262317"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#ac5f88f13d009bea305340ad747262317">operator*</a> (double factor, <a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> expr)</td></tr>
+<tr class="separator:ac5f88f13d009bea305340ad747262317"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a09d851f944ab4f305c3d9f8df99b7bf8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_cp_solver_response.html">CpSolverResponse</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a09d851f944ab4f305c3d9f8df99b7bf8">Solve</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_cp_model_proto.html">CpModelProto</a> &amp;model_proto)</td></tr>
 <tr class="memdesc:a09d851f944ab4f305c3d9f8df99b7bf8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Solves the given <a class="el" href="classoperations__research_1_1sat_1_1_cp_model_proto.html">CpModelProto</a> and returns an instance of <a class="el" href="classoperations__research_1_1sat_1_1_cp_solver_response.html">CpSolverResponse</a>.  <a href="namespaceoperations__research_1_1sat.html#a09d851f944ab4f305c3d9f8df99b7bf8">More...</a><br /></td></tr>
 <tr class="separator:a09d851f944ab4f305c3d9f8df99b7bf8"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -523,6 +586,8 @@ Variables</h2></td></tr>
 <tr class="separator:a223479678a6c4c9d8b47a77db02b914d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8cc08aed16e89a81f7cde799a790a3d1"><td class="memItemLeft" align="right" valign="top">CpSolverResponseDefaultTypeInternal&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a8cc08aed16e89a81f7cde799a790a3d1">_CpSolverResponse_default_instance_</a></td></tr>
 <tr class="separator:a8cc08aed16e89a81f7cde799a790a3d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae1da61ae4432812a260d36955d349e6c"><td class="memItemLeft" align="right" valign="top">CpSolverSolutionDefaultTypeInternal&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#ae1da61ae4432812a260d36955d349e6c">_CpSolverSolution_default_instance_</a></td></tr>
+<tr class="separator:ae1da61ae4432812a260d36955d349e6c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aee153940e8ef35428c50dd448409c6f2"><td class="memItemLeft" align="right" valign="top">CumulativeConstraintProtoDefaultTypeInternal&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#aee153940e8ef35428c50dd448409c6f2">_CumulativeConstraintProto_default_instance_</a></td></tr>
 <tr class="separator:aee153940e8ef35428c50dd448409c6f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6e1584f6741309b50e2db39c1670f097"><td class="memItemLeft" align="right" valign="top">DecisionStrategyProtoDefaultTypeInternal&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a6e1584f6741309b50e2db39c1670f097">_DecisionStrategyProto_default_instance_</a></td></tr>
@@ -533,8 +598,8 @@ Variables</h2></td></tr>
 <tr class="separator:ae3a02742030c124a9b6029a2397376a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab8a8f5cff578449bc5514c4df3e823b6"><td class="memItemLeft" align="right" valign="top">ElementConstraintProtoDefaultTypeInternal&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#ab8a8f5cff578449bc5514c4df3e823b6">_ElementConstraintProto_default_instance_</a></td></tr>
 <tr class="separator:ab8a8f5cff578449bc5514c4df3e823b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a37ff576212cf01bac7c37c4bfb670511"><td class="memItemLeft" align="right" valign="top">IntegerArgumentProtoDefaultTypeInternal&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a37ff576212cf01bac7c37c4bfb670511">_IntegerArgumentProto_default_instance_</a></td></tr>
-<tr class="separator:a37ff576212cf01bac7c37c4bfb670511"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a86df7716f79e450b221ec1af02f994bf"><td class="memItemLeft" align="right" valign="top">FloatObjectiveProtoDefaultTypeInternal&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a86df7716f79e450b221ec1af02f994bf">_FloatObjectiveProto_default_instance_</a></td></tr>
+<tr class="separator:a86df7716f79e450b221ec1af02f994bf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3bef289699c48c5389fa270be5b59c3a"><td class="memItemLeft" align="right" valign="top">IntegerVariableProtoDefaultTypeInternal&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a3bef289699c48c5389fa270be5b59c3a">_IntegerVariableProto_default_instance_</a></td></tr>
 <tr class="separator:a3bef289699c48c5389fa270be5b59c3a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5f4bbdfa15618bf8312bf8e6cc742097"><td class="memItemLeft" align="right" valign="top">IntervalConstraintProtoDefaultTypeInternal&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a5f4bbdfa15618bf8312bf8e6cc742097">_IntervalConstraintProto_default_instance_</a></td></tr>
@@ -674,7 +739,7 @@ Variables</h2></td></tr>
 <tr><td class="fieldname"><a id="aedc4ddb96acc28481c09828d2e016815a3c910aa4be26fdd6efed0262315b1ffd" name="aedc4ddb96acc28481c09828d2e016815a3c910aa4be26fdd6efed0262315b1ffd"></a>CpSolverStatus_INT_MAX_SENTINEL_DO_NOT_USE_&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8pb_8h_source.html#l00238">238</a> of file <a class="el" href="cp__model_8pb_8h_source.html">cp_model.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8pb_8h_source.html#l00242">242</a> of file <a class="el" href="cp__model_8pb_8h_source.html">cp_model.pb.h</a>.</p>
 
 </div>
 </div>
@@ -699,7 +764,7 @@ Variables</h2></td></tr>
 <tr><td class="fieldname"><a id="a0ab0c4789d577b30dde661c19f88d00ea610f4d8bf804f4c0261df253a3e06462" name="a0ab0c4789d577b30dde661c19f88d00ea610f4d8bf804f4c0261df253a3e06462"></a>DecisionStrategyProto_DomainReductionStrategy_DecisionStrategyProto_DomainReductionStrategy_INT_MAX_SENTINEL_DO_NOT_USE_&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8pb_8h_source.html#l00210">210</a> of file <a class="el" href="cp__model_8pb_8h_source.html">cp_model.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8pb_8h_source.html#l00214">214</a> of file <a class="el" href="cp__model_8pb_8h_source.html">cp_model.pb.h</a>.</p>
 
 </div>
 </div>
@@ -724,7 +789,7 @@ Variables</h2></td></tr>
 <tr><td class="fieldname"><a id="a94523f1ebceff999bc59a3db7d2b98b6ae49c5ca9c4434f188df518c8d6d597c1" name="a94523f1ebceff999bc59a3db7d2b98b6ae49c5ca9c4434f188df518c8d6d597c1"></a>DecisionStrategyProto_VariableSelectionStrategy_DecisionStrategyProto_VariableSelectionStrategy_INT_MAX_SENTINEL_DO_NOT_USE_&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8pb_8h_source.html#l00182">182</a> of file <a class="el" href="cp__model_8pb_8h_source.html">cp_model.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8pb_8h_source.html#l00186">186</a> of file <a class="el" href="cp__model_8pb_8h_source.html">cp_model.pb.h</a>.</p>
 
 </div>
 </div>
@@ -1081,7 +1146,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8pb_8h_source.html#l00254">254</a> of file <a class="el" href="cp__model_8pb_8h_source.html">cp_model.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8pb_8h_source.html#l00258">258</a> of file <a class="el" href="cp__model_8pb_8h_source.html">cp_model.pb.h</a>.</p>
 
 </div>
 </div>
@@ -1119,7 +1184,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8pb_8h_source.html#l00261">261</a> of file <a class="el" href="cp__model_8pb_8h_source.html">cp_model.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8pb_8h_source.html#l00265">265</a> of file <a class="el" href="cp__model_8pb_8h_source.html">cp_model.pb.h</a>.</p>
 
 </div>
 </div>
@@ -1182,7 +1247,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8pb_8h_source.html#l00226">226</a> of file <a class="el" href="cp__model_8pb_8h_source.html">cp_model.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8pb_8h_source.html#l00230">230</a> of file <a class="el" href="cp__model_8pb_8h_source.html">cp_model.pb.h</a>.</p>
 
 </div>
 </div>
@@ -1220,7 +1285,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8pb_8h_source.html#l00233">233</a> of file <a class="el" href="cp__model_8pb_8h_source.html">cp_model.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8pb_8h_source.html#l00237">237</a> of file <a class="el" href="cp__model_8pb_8h_source.html">cp_model.pb.h</a>.</p>
 
 </div>
 </div>
@@ -1283,7 +1348,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8pb_8h_source.html#l00198">198</a> of file <a class="el" href="cp__model_8pb_8h_source.html">cp_model.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8pb_8h_source.html#l00202">202</a> of file <a class="el" href="cp__model_8pb_8h_source.html">cp_model.pb.h</a>.</p>
 
 </div>
 </div>
@@ -1321,7 +1386,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8pb_8h_source.html#l00205">205</a> of file <a class="el" href="cp__model_8pb_8h_source.html">cp_model.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8pb_8h_source.html#l00209">209</a> of file <a class="el" href="cp__model_8pb_8h_source.html">cp_model.pb.h</a>.</p>
 
 </div>
 </div>
@@ -1414,8 +1479,1128 @@ Variables</h2></td></tr>
 
 </div>
 </div>
+<a id="ac5f88f13d009bea305340ad747262317" name="ac5f88f13d009bea305340ad747262317"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac5f88f13d009bea305340ad747262317">&#9670;&nbsp;</a></span>operator*() <span class="overload">[1/4]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> operations_research::sat::operator* </td>
+          <td>(</td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>factor</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a>&#160;</td>
+          <td class="paramname"><em>expr</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l01312">1312</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+
+</div>
+</div>
+<a id="a8ad89939d32828716e2f01940e81ce4a" name="a8ad89939d32828716e2f01940e81ce4a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8ad89939d32828716e2f01940e81ce4a">&#9670;&nbsp;</a></span>operator*() <span class="overload">[2/4]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> operations_research::sat::operator* </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a>&#160;</td>
+          <td class="paramname"><em>expr</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>factor</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l01307">1307</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+
+</div>
+</div>
+<a id="a1b127fca095a77a5c789d443f522fbbb" name="a1b127fca095a77a5c789d443f522fbbb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1b127fca095a77a5c789d443f522fbbb">&#9670;&nbsp;</a></span>operator*() <span class="overload">[3/4]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> operations_research::sat::operator* </td>
+          <td>(</td>
+          <td class="paramtype">int64_t&#160;</td>
+          <td class="paramname"><em>factor</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a>&#160;</td>
+          <td class="paramname"><em>expr</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l01205">1205</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+
+</div>
+</div>
+<a id="ae5e220860af1fa89265bd640ab575c94" name="ae5e220860af1fa89265bd640ab575c94"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae5e220860af1fa89265bd640ab575c94">&#9670;&nbsp;</a></span>operator*() <span class="overload">[4/4]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> operations_research::sat::operator* </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a>&#160;</td>
+          <td class="paramname"><em>expr</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int64_t&#160;</td>
+          <td class="paramname"><em>factor</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l01201">1201</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+
+</div>
+</div>
+<a id="adedef397b25c1cc6909adcae18a820e9" name="adedef397b25c1cc6909adcae18a820e9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adedef397b25c1cc6909adcae18a820e9">&#9670;&nbsp;</a></span>operator+() <span class="overload">[1/12]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> operations_research::sat::operator+ </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;&#160;</td>
+          <td class="paramname"><em>lhs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;&#160;</td>
+          <td class="paramname"><em>rhs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l01214">1214</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+
+</div>
+</div>
+<a id="a880c86015007715e39e0d638d595f90a" name="a880c86015007715e39e0d638d595f90a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a880c86015007715e39e0d638d595f90a">&#9670;&nbsp;</a></span>operator+() <span class="overload">[2/12]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> operations_research::sat::operator+ </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;&#160;</td>
+          <td class="paramname"><em>lhs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>rhs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l01241">1241</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+
+</div>
+</div>
+<a id="a0bdaf49a2294d9fd664ce3ad0360d501" name="a0bdaf49a2294d9fd664ce3ad0360d501"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0bdaf49a2294d9fd664ce3ad0360d501">&#9670;&nbsp;</a></span>operator+() <span class="overload">[3/12]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> operations_research::sat::operator+ </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;&#160;</td>
+          <td class="paramname"><em>lhs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;&amp;&#160;</td>
+          <td class="paramname"><em>rhs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l01225">1225</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+
+</div>
+</div>
+<a id="a14d680e53b769b0bf60b6613d27994df" name="a14d680e53b769b0bf60b6613d27994df"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a14d680e53b769b0bf60b6613d27994df">&#9670;&nbsp;</a></span>operator+() <span class="overload">[4/12]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> operations_research::sat::operator+ </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;&#160;</td>
+          <td class="paramname"><em>lhs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;&#160;</td>
+          <td class="paramname"><em>rhs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l01155">1155</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+
+</div>
+</div>
+<a id="af5d9b25ef5642c457636001e9393034e" name="af5d9b25ef5642c457636001e9393034e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af5d9b25ef5642c457636001e9393034e">&#9670;&nbsp;</a></span>operator+() <span class="overload">[5/12]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> operations_research::sat::operator+ </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;&#160;</td>
+          <td class="paramname"><em>lhs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;&amp;&#160;</td>
+          <td class="paramname"><em>rhs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l01164">1164</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+
+</div>
+</div>
+<a id="a1400ddaec2d03291cb4930b40d473490" name="a1400ddaec2d03291cb4930b40d473490"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1400ddaec2d03291cb4930b40d473490">&#9670;&nbsp;</a></span>operator+() <span class="overload">[6/12]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> operations_research::sat::operator+ </td>
+          <td>(</td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>lhs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;&#160;</td>
+          <td class="paramname"><em>rhs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l01254">1254</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+
+</div>
+</div>
+<a id="ade884e51118469ac2d3f46da775f0e0e" name="ade884e51118469ac2d3f46da775f0e0e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ade884e51118469ac2d3f46da775f0e0e">&#9670;&nbsp;</a></span>operator+() <span class="overload">[7/12]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> operations_research::sat::operator+ </td>
+          <td>(</td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>lhs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;&amp;&#160;</td>
+          <td class="paramname"><em>rhs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l01250">1250</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+
+</div>
+</div>
+<a id="a23499bc93d6b2ab81e91ea946e2780c8" name="a23499bc93d6b2ab81e91ea946e2780c8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a23499bc93d6b2ab81e91ea946e2780c8">&#9670;&nbsp;</a></span>operator+() <span class="overload">[8/12]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> operations_research::sat::operator+ </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;&amp;&#160;</td>
+          <td class="paramname"><em>lhs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;&#160;</td>
+          <td class="paramname"><em>rhs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l01220">1220</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+
+</div>
+</div>
+<a id="abf85f46b2a5a861212995b8b30890d63" name="abf85f46b2a5a861212995b8b30890d63"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abf85f46b2a5a861212995b8b30890d63">&#9670;&nbsp;</a></span>operator+() <span class="overload">[9/12]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> operations_research::sat::operator+ </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;&amp;&#160;</td>
+          <td class="paramname"><em>lhs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>rhs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l01246">1246</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+
+</div>
+</div>
+<a id="a5317d7f37f16096d85dfc5a7f05bed77" name="a5317d7f37f16096d85dfc5a7f05bed77"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5317d7f37f16096d85dfc5a7f05bed77">&#9670;&nbsp;</a></span>operator+() <span class="overload">[10/12]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> operations_research::sat::operator+ </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;&amp;&#160;</td>
+          <td class="paramname"><em>lhs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;&amp;&#160;</td>
+          <td class="paramname"><em>rhs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l01230">1230</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+
+</div>
+</div>
+<a id="a70c3650a2627f7072b46545ba712da1c" name="a70c3650a2627f7072b46545ba712da1c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a70c3650a2627f7072b46545ba712da1c">&#9670;&nbsp;</a></span>operator+() <span class="overload">[11/12]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> operations_research::sat::operator+ </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;&amp;&#160;</td>
+          <td class="paramname"><em>lhs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;&#160;</td>
+          <td class="paramname"><em>rhs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l01160">1160</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+
+</div>
+</div>
+<a id="a12a296a3b389239ce1ffef3527bfa1e3" name="a12a296a3b389239ce1ffef3527bfa1e3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a12a296a3b389239ce1ffef3527bfa1e3">&#9670;&nbsp;</a></span>operator+() <span class="overload">[12/12]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> operations_research::sat::operator+ </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;&amp;&#160;</td>
+          <td class="paramname"><em>lhs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;&amp;&#160;</td>
+          <td class="paramname"><em>rhs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l01168">1168</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+
+</div>
+</div>
+<a id="a1ed1cd9aca1c45ff97111ebfe1d8c555" name="a1ed1cd9aca1c45ff97111ebfe1d8c555"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1ed1cd9aca1c45ff97111ebfe1d8c555">&#9670;&nbsp;</a></span>operator-() <span class="overload">[1/14]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> operations_research::sat::operator- </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;&#160;</td>
+          <td class="paramname"><em>lhs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;&#160;</td>
+          <td class="paramname"><em>rhs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l01260">1260</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+
+</div>
+</div>
+<a id="a3140d971daef3de86ab71735b57c58bf" name="a3140d971daef3de86ab71735b57c58bf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3140d971daef3de86ab71735b57c58bf">&#9670;&nbsp;</a></span>operator-() <span class="overload">[2/14]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> operations_research::sat::operator- </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;&#160;</td>
+          <td class="paramname"><em>lhs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>rhs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l01287">1287</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+
+</div>
+</div>
+<a id="a37a77b7fe5f2ae90130d7f9cf20a995a" name="a37a77b7fe5f2ae90130d7f9cf20a995a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a37a77b7fe5f2ae90130d7f9cf20a995a">&#9670;&nbsp;</a></span>operator-() <span class="overload">[3/14]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> operations_research::sat::operator- </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;&#160;</td>
+          <td class="paramname"><em>lhs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;&amp;&#160;</td>
+          <td class="paramname"><em>rhs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l01271">1271</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+
+</div>
+</div>
+<a id="aedd485d7f6b2ccacff90294455d30ae5" name="aedd485d7f6b2ccacff90294455d30ae5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aedd485d7f6b2ccacff90294455d30ae5">&#9670;&nbsp;</a></span>operator-() <span class="overload">[4/14]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> operations_research::sat::operator- </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;&#160;</td>
+          <td class="paramname"><em>lhs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;&#160;</td>
+          <td class="paramname"><em>rhs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l01178">1178</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+
+</div>
+</div>
+<a id="a1083f8028e54d27eec081e45d92da3da" name="a1083f8028e54d27eec081e45d92da3da"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1083f8028e54d27eec081e45d92da3da">&#9670;&nbsp;</a></span>operator-() <span class="overload">[5/14]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> operations_research::sat::operator- </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;&#160;</td>
+          <td class="paramname"><em>lhs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;&amp;&#160;</td>
+          <td class="paramname"><em>rhs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l01187">1187</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+
+</div>
+</div>
+<a id="ac1ddbf6a02889772d677e107a2ba46c9" name="ac1ddbf6a02889772d677e107a2ba46c9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac1ddbf6a02889772d677e107a2ba46c9">&#9670;&nbsp;</a></span>operator-() <span class="overload">[6/14]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> operations_research::sat::operator- </td>
+          <td>(</td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>lhs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;&#160;</td>
+          <td class="paramname"><em>rhs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l01301">1301</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+
+</div>
+</div>
+<a id="a071654105c5e2fbb6bfab91c5a5cf3ff" name="a071654105c5e2fbb6bfab91c5a5cf3ff"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a071654105c5e2fbb6bfab91c5a5cf3ff">&#9670;&nbsp;</a></span>operator-() <span class="overload">[7/14]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> operations_research::sat::operator- </td>
+          <td>(</td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>lhs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;&amp;&#160;</td>
+          <td class="paramname"><em>rhs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l01296">1296</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+
+</div>
+</div>
+<a id="ade32b256f6277fd7a7e52c3a17128b96" name="ade32b256f6277fd7a7e52c3a17128b96"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ade32b256f6277fd7a7e52c3a17128b96">&#9670;&nbsp;</a></span>operator-() <span class="overload">[8/14]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> operations_research::sat::operator- </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;&amp;&#160;</td>
+          <td class="paramname"><em>lhs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;&#160;</td>
+          <td class="paramname"><em>rhs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l01266">1266</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+
+</div>
+</div>
+<a id="aaf22dfdf4475e858e7ff0e8920f11f7b" name="aaf22dfdf4475e858e7ff0e8920f11f7b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaf22dfdf4475e858e7ff0e8920f11f7b">&#9670;&nbsp;</a></span>operator-() <span class="overload">[9/14]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> operations_research::sat::operator- </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;&amp;&#160;</td>
+          <td class="paramname"><em>lhs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>rhs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l01292">1292</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+
+</div>
+</div>
+<a id="a90add9340d2579eed96c65f248306982" name="a90add9340d2579eed96c65f248306982"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a90add9340d2579eed96c65f248306982">&#9670;&nbsp;</a></span>operator-() <span class="overload">[10/14]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> operations_research::sat::operator- </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;&amp;&#160;</td>
+          <td class="paramname"><em>lhs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;&amp;&#160;</td>
+          <td class="paramname"><em>rhs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l01276">1276</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+
+</div>
+</div>
+<a id="a3ef55954ce104b703b05f5a926a55c52" name="a3ef55954ce104b703b05f5a926a55c52"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3ef55954ce104b703b05f5a926a55c52">&#9670;&nbsp;</a></span>operator-() <span class="overload">[11/14]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> operations_research::sat::operator- </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a>&#160;</td>
+          <td class="paramname"><em>expr</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l01212">1212</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+
+</div>
+</div>
+<a id="a62d4cee395c01f64847f322fd74f3613" name="a62d4cee395c01f64847f322fd74f3613"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a62d4cee395c01f64847f322fd74f3613">&#9670;&nbsp;</a></span>operator-() <span class="overload">[12/14]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> operations_research::sat::operator- </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;&amp;&#160;</td>
+          <td class="paramname"><em>lhs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;&#160;</td>
+          <td class="paramname"><em>rhs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l01183">1183</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+
+</div>
+</div>
+<a id="ab29f5117f4220225e73e5984196315a7" name="ab29f5117f4220225e73e5984196315a7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab29f5117f4220225e73e5984196315a7">&#9670;&nbsp;</a></span>operator-() <span class="overload">[13/14]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> operations_research::sat::operator- </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;&amp;&#160;</td>
+          <td class="paramname"><em>lhs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;&amp;&#160;</td>
+          <td class="paramname"><em>rhs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l01191">1191</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+
+</div>
+</div>
+<a id="a49f6d80163fd6aa41fec7ebf8e27949a" name="a49f6d80163fd6aa41fec7ebf8e27949a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a49f6d80163fd6aa41fec7ebf8e27949a">&#9670;&nbsp;</a></span>operator-() <span class="overload">[14/14]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> operations_research::sat::operator- </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a>&#160;</td>
+          <td class="paramname"><em>expr</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l01153">1153</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+
+</div>
+</div>
 <a id="a807d4ae4dc98ad0c05fa05c3f1dfabc9" name="a807d4ae4dc98ad0c05fa05c3f1dfabc9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a807d4ae4dc98ad0c05fa05c3f1dfabc9">&#9670;&nbsp;</a></span>operator&lt;&lt;() <span class="overload">[1/4]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a807d4ae4dc98ad0c05fa05c3f1dfabc9">&#9670;&nbsp;</a></span>operator&lt;&lt;() <span class="overload">[1/5]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1442,8 +2627,36 @@ Variables</h2></td></tr>
 
 </div>
 </div>
+<a id="a4c1168782300a1c64e854ec6f1ead1ea" name="a4c1168782300a1c64e854ec6f1ead1ea"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4c1168782300a1c64e854ec6f1ead1ea">&#9670;&nbsp;</a></span>operator&lt;&lt;() <span class="overload">[2/5]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::ostream &amp; operations_research::sat::operator&lt;&lt; </td>
+          <td>(</td>
+          <td class="paramtype">std::ostream &amp;&#160;</td>
+          <td class="paramname"><em>os</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;&#160;</td>
+          <td class="paramname"><em>e</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="afeefd0a183a2d1c9f09fec0aa52b200a" name="afeefd0a183a2d1c9f09fec0aa52b200a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afeefd0a183a2d1c9f09fec0aa52b200a">&#9670;&nbsp;</a></span>operator&lt;&lt;() <span class="overload">[2/4]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#afeefd0a183a2d1c9f09fec0aa52b200a">&#9670;&nbsp;</a></span>operator&lt;&lt;() <span class="overload">[3/5]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1471,7 +2684,7 @@ Variables</h2></td></tr>
 </div>
 </div>
 <a id="a0c1b0a196a70f7edd0ff1bc0250e76ac" name="a0c1b0a196a70f7edd0ff1bc0250e76ac"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0c1b0a196a70f7edd0ff1bc0250e76ac">&#9670;&nbsp;</a></span>operator&lt;&lt;() <span class="overload">[3/4]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a0c1b0a196a70f7edd0ff1bc0250e76ac">&#9670;&nbsp;</a></span>operator&lt;&lt;() <span class="overload">[4/5]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1499,7 +2712,7 @@ Variables</h2></td></tr>
 </div>
 </div>
 <a id="a616a1843aa394d2d018e052050588bb2" name="a616a1843aa394d2d018e052050588bb2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a616a1843aa394d2d018e052050588bb2">&#9670;&nbsp;</a></span>operator&lt;&lt;() <span class="overload">[4/4]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a616a1843aa394d2d018e052050588bb2">&#9670;&nbsp;</a></span>operator&lt;&lt;() <span class="overload">[5/5]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2667,66 +3880,6 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="a0205c1cb83c849b1f47dab55ad6ada5c" name="a0205c1cb83c849b1f47dab55ad6ada5c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0205c1cb83c849b1f47dab55ad6ada5c">&#9670;&nbsp;</a></span>SolutionIntegerMax()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int64_t operations_research::sat::SolutionIntegerMax </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_cp_solver_response.html">CpSolverResponse</a> &amp;&#160;</td>
-          <td class="paramname"><em>r</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a>&#160;</td>
-          <td class="paramname"><em>x</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Returns the max of an integer variable in a solution. </p>
-
-</div>
-</div>
-<a id="af7857084f34282d9c30370db7d63faa7" name="af7857084f34282d9c30370db7d63faa7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af7857084f34282d9c30370db7d63faa7">&#9670;&nbsp;</a></span>SolutionIntegerMin()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int64_t operations_research::sat::SolutionIntegerMin </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_cp_solver_response.html">CpSolverResponse</a> &amp;&#160;</td>
-          <td class="paramname"><em>r</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a>&#160;</td>
-          <td class="paramname"><em>x</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Returns the min of an integer variable in a solution. </p>
-
-</div>
-</div>
 <a id="ab6fe86bc876c281163a053a9581346c3" name="ab6fe86bc876c281163a053a9581346c3"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ab6fe86bc876c281163a053a9581346c3">&#9670;&nbsp;</a></span>SolutionIntegerValue()</h2>
 
@@ -2870,6 +4023,34 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Solves the given <a class="el" href="classoperations__research_1_1sat_1_1_cp_model_proto.html">CpModelProto</a> with the given sat parameters as string in JSon format, and returns an instance of <a class="el" href="classoperations__research_1_1sat_1_1_cp_solver_response.html">CpSolverResponse</a>. </p>
+
+</div>
+</div>
+<a id="a007d129b4917935f84c9ae0823c2cb11" name="a007d129b4917935f84c9ae0823c2cb11"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a007d129b4917935f84c9ae0823c2cb11">&#9670;&nbsp;</a></span>VarDebugString()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::string operations_research::sat::VarDebugString </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_cp_model_proto.html">CpModelProto</a> &amp;&#160;</td>
+          <td class="paramname"><em>proto</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>index</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
 
 </div>
 </div>
@@ -3072,6 +4253,28 @@ Variables</h2></td></tr>
 
 </div>
 </div>
+<a id="ae1da61ae4432812a260d36955d349e6c" name="ae1da61ae4432812a260d36955d349e6c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae1da61ae4432812a260d36955d349e6c">&#9670;&nbsp;</a></span>_CpSolverSolution_default_instance_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">CpSolverSolutionDefaultTypeInternal _CpSolverSolution_default_instance_</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="aee153940e8ef35428c50dd448409c6f2" name="aee153940e8ef35428c50dd448409c6f2"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aee153940e8ef35428c50dd448409c6f2">&#9670;&nbsp;</a></span>_CumulativeConstraintProto_default_instance_</h2>
 
@@ -3182,8 +4385,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="a37ff576212cf01bac7c37c4bfb670511" name="a37ff576212cf01bac7c37c4bfb670511"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a37ff576212cf01bac7c37c4bfb670511">&#9670;&nbsp;</a></span>_IntegerArgumentProto_default_instance_</h2>
+<a id="a86df7716f79e450b221ec1af02f994bf" name="a86df7716f79e450b221ec1af02f994bf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a86df7716f79e450b221ec1af02f994bf">&#9670;&nbsp;</a></span>_FloatObjectiveProto_default_instance_</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3192,7 +4395,7 @@ Variables</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">IntegerArgumentProtoDefaultTypeInternal _IntegerArgumentProto_default_instance_</td>
+          <td class="memname">FloatObjectiveProtoDefaultTypeInternal _FloatObjectiveProto_default_instance_</td>
         </tr>
       </table>
   </td>
@@ -3642,7 +4845,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8pb_8h_source.html#l00250">250</a> of file <a class="el" href="cp__model_8pb_8h_source.html">cp_model.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8pb_8h_source.html#l00254">254</a> of file <a class="el" href="cp__model_8pb_8h_source.html">cp_model.pb.h</a>.</p>
 
 </div>
 </div>
@@ -3666,7 +4869,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8pb_8h_source.html#l00249">249</a> of file <a class="el" href="cp__model_8pb_8h_source.html">cp_model.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8pb_8h_source.html#l00253">253</a> of file <a class="el" href="cp__model_8pb_8h_source.html">cp_model.pb.h</a>.</p>
 
 </div>
 </div>
@@ -3690,7 +4893,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8pb_8h_source.html#l00248">248</a> of file <a class="el" href="cp__model_8pb_8h_source.html">cp_model.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8pb_8h_source.html#l00252">252</a> of file <a class="el" href="cp__model_8pb_8h_source.html">cp_model.pb.h</a>.</p>
 
 </div>
 </div>
@@ -3714,7 +4917,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8pb_8h_source.html#l00222">222</a> of file <a class="el" href="cp__model_8pb_8h_source.html">cp_model.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8pb_8h_source.html#l00226">226</a> of file <a class="el" href="cp__model_8pb_8h_source.html">cp_model.pb.h</a>.</p>
 
 </div>
 </div>
@@ -3738,7 +4941,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8pb_8h_source.html#l00221">221</a> of file <a class="el" href="cp__model_8pb_8h_source.html">cp_model.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8pb_8h_source.html#l00225">225</a> of file <a class="el" href="cp__model_8pb_8h_source.html">cp_model.pb.h</a>.</p>
 
 </div>
 </div>
@@ -3762,7 +4965,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8pb_8h_source.html#l00220">220</a> of file <a class="el" href="cp__model_8pb_8h_source.html">cp_model.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8pb_8h_source.html#l00224">224</a> of file <a class="el" href="cp__model_8pb_8h_source.html">cp_model.pb.h</a>.</p>
 
 </div>
 </div>
@@ -3786,7 +4989,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8pb_8h_source.html#l00194">194</a> of file <a class="el" href="cp__model_8pb_8h_source.html">cp_model.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8pb_8h_source.html#l00198">198</a> of file <a class="el" href="cp__model_8pb_8h_source.html">cp_model.pb.h</a>.</p>
 
 </div>
 </div>
@@ -3810,7 +5013,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8pb_8h_source.html#l00193">193</a> of file <a class="el" href="cp__model_8pb_8h_source.html">cp_model.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8pb_8h_source.html#l00197">197</a> of file <a class="el" href="cp__model_8pb_8h_source.html">cp_model.pb.h</a>.</p>
 
 </div>
 </div>
@@ -3834,7 +5037,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8pb_8h_source.html#l00192">192</a> of file <a class="el" href="cp__model_8pb_8h_source.html">cp_model.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8pb_8h_source.html#l00196">196</a> of file <a class="el" href="cp__model_8pb_8h_source.html">cp_model.pb.h</a>.</p>
 
 </div>
 </div>

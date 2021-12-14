@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.1</span>
+   &#160;<span id="projectnumber">9.2</span>
    </div>
   </td>
  </tr>
@@ -131,6 +131,16 @@ Functions</h2></td></tr>
 <tr class="separator:a217ba4c51953c701a68d6572d79801f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a10826704577008404187a36808daa739"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a10826704577008404187a36808daa739">ComputeInnerObjective</a> (const CpObjectiveProto &amp;objective, const CpSolverResponse &amp;<a class="el" href="cp__model__solver_8cc.html#abcd33b18ce6d5a90a4ba5c37cfa58829">response</a>)</td></tr>
 <tr class="separator:a10826704577008404187a36808daa739"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae1c79e5c254e1e69d4ca7f52ba9cdc8b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#ae1c79e5c254e1e69d4ca7f52ba9cdc8b">ExpressionContainsSingleRef</a> (const LinearExpressionProto &amp;expr)</td></tr>
+<tr class="separator:ae1c79e5c254e1e69d4ca7f52ba9cdc8b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aab9fc6e23064f7f2aff53c4f5059f493"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#aab9fc6e23064f7f2aff53c4f5059f493">ExpressionIsAffine</a> (const LinearExpressionProto &amp;expr)</td></tr>
+<tr class="separator:aab9fc6e23064f7f2aff53c4f5059f493"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adc1745a206c1ed3667e9de782d8a8c13"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#adc1745a206c1ed3667e9de782d8a8c13">GetSingleRefFromExpression</a> (const LinearExpressionProto &amp;expr)</td></tr>
+<tr class="separator:adc1745a206c1ed3667e9de782d8a8c13"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aced7df5982ab26894efec32543e459f7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#aced7df5982ab26894efec32543e459f7">AddLinearExpressionToLinearConstraint</a> (const LinearExpressionProto &amp;expr, int64_t <a class="el" href="markowitz_8cc.html#a722e11301e7de93191aa47dbd3ecb4d8">coefficient</a>, LinearConstraintProto *linear)</td></tr>
+<tr class="separator:aced7df5982ab26894efec32543e459f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a763f6514921f30b326a1582569b60ddb"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a763f6514921f30b326a1582569b60ddb">LinearExpressionProtosAreEqual</a> (const LinearExpressionProto &amp;<a class="el" href="constraint__solver_2table_8cc.html#acb18315d548212835cd8ed4287e6c0b6">a</a>, const LinearExpressionProto &amp;<a class="el" href="constraint__solver_2table_8cc.html#a9293e4d29cac928301645070dd307683">b</a>, int64_t b_scaling)</td></tr>
+<tr class="separator:a763f6514921f30b326a1582569b60ddb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Macro Definition Documentation</h2>
 <a id="a970e04df3f6acfdbf5bfb4e2335e15eb" name="a970e04df3f6acfdbf5bfb4e2335e15eb"></a>
@@ -163,7 +173,7 @@ Functions</h2></td></tr>
 <div class="line">  }</div>
 <div class="ttc" id="ademon__profiler_8cc_html_a05da18ca9c7b657a4a6ea24e07c9b695"><div class="ttname"><a href="demon__profiler_8cc.html#a05da18ca9c7b657a4a6ea24e07c9b695">ct</a></div><div class="ttdeci">const Constraint * ct</div><div class="ttdef"><b>Definition:</b> <a href="demon__profiler_8cc_source.html#l00043">demon_profiler.cc:43</a></div></div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="cp__model__utils_8cc_source.html#l00171">171</a> of file <a class="el" href="cp__model__utils_8cc_source.html">cp_model_utils.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__utils_8cc_source.html#l00154">154</a> of file <a class="el" href="cp__model__utils_8cc_source.html">cp_model_utils.cc</a>.</p>
 
 </div>
 </div>
@@ -198,7 +208,7 @@ Functions</h2></td></tr>
 <div class="line">    ct-&gt;mutable_##ct_name()-&gt;set_##field_name(temp);  \</div>
 <div class="line">  }</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="cp__model__utils_8cc_source.html#l00164">164</a> of file <a class="el" href="cp__model__utils_8cc_source.html">cp_model_utils.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__utils_8cc_source.html#l00147">147</a> of file <a class="el" href="cp__model__utils_8cc_source.html">cp_model_utils.cc</a>.</p>
 
 </div>
 </div>

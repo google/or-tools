@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.1</span>
+   &#160;<span id="projectnumber">9.2</span>
    </div>
   </td>
  </tr>
@@ -119,9 +119,16 @@ Namespaces</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:aef1ea7e6296a28c0fa0752328d8cb900"><td class="memTemplParams" colspan="2">template&lt;typename URBG &gt; </td></tr>
-<tr class="memitem:aef1ea7e6296a28c0fa0752328d8cb900"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#aef1ea7e6296a28c0fa0752328d8cb900">RandomizeDecisionHeuristic</a> (URBG *random, SatParameters *<a class="el" href="cp__model__fz__solver_8cc.html#a10a1eab179b472c030bdc2a2efef7219">parameters</a>)</td></tr>
-<tr class="separator:aef1ea7e6296a28c0fa0752328d8cb900"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abbbb4c91f9a3d6eb290709745f5b661c"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#abbbb4c91f9a3d6eb290709745f5b661c">ModularInverse</a> (int64_t x, int64_t m)</td></tr>
+<tr class="separator:abbbb4c91f9a3d6eb290709745f5b661c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a629c989df2521428c30722f175874774"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a629c989df2521428c30722f175874774">PositiveMod</a> (int64_t x, int64_t m)</td></tr>
+<tr class="separator:a629c989df2521428c30722f175874774"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac015d81b88379719f680eadc2aad1508"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#ac015d81b88379719f680eadc2aad1508">ProductWithModularInverse</a> (int64_t coeff, int64_t mod, int64_t rhs)</td></tr>
+<tr class="separator:ac015d81b88379719f680eadc2aad1508"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a852a51b53f6217d6bfd1aef455f53f8c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a852a51b53f6217d6bfd1aef455f53f8c">SolveDiophantineEquationOfSizeTwo</a> (int64_t &amp;<a class="el" href="constraint__solver_2table_8cc.html#acb18315d548212835cd8ed4287e6c0b6">a</a>, int64_t &amp;<a class="el" href="constraint__solver_2table_8cc.html#a9293e4d29cac928301645070dd307683">b</a>, int64_t &amp;cte, int64_t &amp;x0, int64_t &amp;y0)</td></tr>
+<tr class="separator:a852a51b53f6217d6bfd1aef455f53f8c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0441e1a54fe203c0707131e587de8fae"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a0441e1a54fe203c0707131e587de8fae">RandomizeDecisionHeuristic</a> (absl::BitGenRef random, SatParameters *<a class="el" href="cp__model__fz__solver_8cc.html#a10a1eab179b472c030bdc2a2efef7219">parameters</a>)</td></tr>
+<tr class="separator:a0441e1a54fe203c0707131e587de8fae"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2ef3eb1f5fe6506a5e24115f10d724fc"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a2ef3eb1f5fe6506a5e24115f10d724fc">MoveOneUnprocessedLiteralLast</a> (const std::set&lt; LiteralIndex &gt; &amp;processed, int relevant_prefix_size, std::vector&lt; Literal &gt; *literals)</td></tr>
 <tr class="separator:a2ef3eb1f5fe6506a5e24115f10d724fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3e5f39b52251ad02e571592493b4d39f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a3e5f39b52251ad02e571592493b4d39f">CompressTuples</a> (absl::Span&lt; const int64_t &gt; domain_sizes, int64_t any_value, std::vector&lt; std::vector&lt; int64_t &gt; &gt; *tuples)</td></tr>

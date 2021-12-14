@@ -1,4 +1,4 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classoperations__research_1_1_rev_array.html" title="Reversible array of POD types." alt="" coords="5,5,125,32"/>
-<area shape="rect" id="node2" href="$classoperations__research_1_1_numerical_rev_array.html" title="Subclass of RevArray&lt;T&gt; which adds numerical operations." alt="" coords="173,5,360,32"/>
+<area shape="rect" id="node1" href="$classoperations__research_1_1_rev.html" title="This class adds reversibility to a POD type." alt="" coords="5,5,91,32"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1_numerical_rev.html" title="Subclass of Rev&lt;T&gt; which adds numerical operations." alt="" coords="139,5,291,32"/>
 </map>

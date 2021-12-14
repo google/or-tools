@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.1</span>
+   &#160;<span id="projectnumber">9.2</span>
    </div>
   </td>
  </tr>
@@ -94,12 +94,16 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1sat_1_1_l
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="sat_2linear__constraint_8h_source.html#l00147">147</a> of file <a class="el" href="sat_2linear__constraint_8h_source.html">sat/linear_constraint.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat_2linear__constraint_8h_source.html#l00152">152</a> of file <a class="el" href="sat_2linear__constraint_8h_source.html">sat/linear_constraint.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
+<tr class="memitem:a430818c3ef05f66283bb2e83e29e5df6"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_linear_constraint_builder.html#a430818c3ef05f66283bb2e83e29e5df6">LinearConstraintBuilder</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_model.html">Model</a> *<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>)</td></tr>
+<tr class="separator:a430818c3ef05f66283bb2e83e29e5df6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac4f3463a3a8c65c17b54653af8aaba1f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_linear_constraint_builder.html#ac4f3463a3a8c65c17b54653af8aaba1f">LinearConstraintBuilder</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_model.html">Model</a> *<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>, IntegerValue lb, IntegerValue ub)</td></tr>
 <tr class="separator:ac4f3463a3a8c65c17b54653af8aaba1f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a322657f18d11f256cf3e03b0bd640d5a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_linear_constraint_builder.html#a322657f18d11f256cf3e03b0bd640d5a">AddConstant</a> (IntegerValue <a class="el" href="matrix__utils_8cc.html#aee90379adb0307effb138f4871edbc5c">value</a>)</td></tr>
+<tr class="separator:a322657f18d11f256cf3e03b0bd640d5a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad65ddc0d04d71006a9ebe3b9dcfe2ce6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_linear_constraint_builder.html#ad65ddc0d04d71006a9ebe3b9dcfe2ce6">AddTerm</a> (IntegerVariable <a class="el" href="sat__solver_8cc.html#a8392bdc4ed570e6a95c7fca35b09f83f">var</a>, IntegerValue coeff)</td></tr>
 <tr class="separator:ad65ddc0d04d71006a9ebe3b9dcfe2ce6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a283f3aa3c17ea8153287276f5a7d1435"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_linear_constraint_builder.html#a283f3aa3c17ea8153287276f5a7d1435">AddTerm</a> (<a class="el" href="structoperations__research_1_1sat_1_1_affine_expression.html">AffineExpression</a> expr, IntegerValue coeff)</td></tr>
@@ -108,18 +112,50 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a49e8e4a987d39f4da335e1ed287bb8ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1870e6e525b08bc771c4b8d26af5bdf1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_linear_constraint_builder.html#a1870e6e525b08bc771c4b8d26af5bdf1">AddLinearExpression</a> (const <a class="el" href="structoperations__research_1_1sat_1_1_linear_expression.html">LinearExpression</a> &amp;expr, IntegerValue coeff)</td></tr>
 <tr class="separator:a1870e6e525b08bc771c4b8d26af5bdf1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7e251202babf951363efedbd30af45c5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_linear_constraint_builder.html#a7e251202babf951363efedbd30af45c5">AddQuadraticLowerBound</a> (<a class="el" href="structoperations__research_1_1sat_1_1_affine_expression.html">AffineExpression</a> left, <a class="el" href="structoperations__research_1_1sat_1_1_affine_expression.html">AffineExpression</a> right, <a class="el" href="classoperations__research_1_1sat_1_1_integer_trail.html">IntegerTrail</a> *integer_trail)</td></tr>
-<tr class="separator:a7e251202babf951363efedbd30af45c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a322657f18d11f256cf3e03b0bd640d5a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_linear_constraint_builder.html#a322657f18d11f256cf3e03b0bd640d5a">AddConstant</a> (IntegerValue <a class="el" href="matrix__utils_8cc.html#aee90379adb0307effb138f4871edbc5c">value</a>)</td></tr>
-<tr class="separator:a322657f18d11f256cf3e03b0bd640d5a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a094a24aaf66d66b693e7e80a0222f040"><td class="memItemLeft" align="right" valign="top">ABSL_MUST_USE_RESULT bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_linear_constraint_builder.html#a094a24aaf66d66b693e7e80a0222f040">AddLiteralTerm</a> (<a class="el" href="classoperations__research_1_1sat_1_1_literal.html">Literal</a> lit, IntegerValue coeff)</td></tr>
 <tr class="separator:a094a24aaf66d66b693e7e80a0222f040"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7e251202babf951363efedbd30af45c5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_linear_constraint_builder.html#a7e251202babf951363efedbd30af45c5">AddQuadraticLowerBound</a> (<a class="el" href="structoperations__research_1_1sat_1_1_affine_expression.html">AffineExpression</a> left, <a class="el" href="structoperations__research_1_1sat_1_1_affine_expression.html">AffineExpression</a> right, <a class="el" href="classoperations__research_1_1sat_1_1_integer_trail.html">IntegerTrail</a> *integer_trail)</td></tr>
+<tr class="separator:a7e251202babf951363efedbd30af45c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa71d36872f416feaa853788a7a7a7ef8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_linear_constraint_builder.html#aa71d36872f416feaa853788a7a7a7ef8">Clear</a> ()</td></tr>
+<tr class="separator:aa71d36872f416feaa853788a7a7a7ef8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8ef32d79f50eb45bb9305c8b436cf6c4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structoperations__research_1_1sat_1_1_linear_constraint.html">LinearConstraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_linear_constraint_builder.html#a8ef32d79f50eb45bb9305c8b436cf6c4">Build</a> ()</td></tr>
 <tr class="separator:a8ef32d79f50eb45bb9305c8b436cf6c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4d2ece710db2456bc8e887f57e09312a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structoperations__research_1_1sat_1_1_linear_constraint.html">LinearConstraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_linear_constraint_builder.html#a4d2ece710db2456bc8e887f57e09312a">BuildConstraint</a> (IntegerValue lb, IntegerValue ub)</td></tr>
+<tr class="separator:a4d2ece710db2456bc8e887f57e09312a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a96ececaa94026aaa3a46fb65df0a17a9"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structoperations__research_1_1sat_1_1_linear_expression.html">LinearExpression</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_linear_constraint_builder.html#a96ececaa94026aaa3a46fb65df0a17a9">BuildExpression</a> ()</td></tr>
+<tr class="separator:a96ececaa94026aaa3a46fb65df0a17a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="a430818c3ef05f66283bb2e83e29e5df6" name="a430818c3ef05f66283bb2e83e29e5df6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a430818c3ef05f66283bb2e83e29e5df6">&#9670;&nbsp;</a></span>LinearConstraintBuilder() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_linear_constraint_builder.html">LinearConstraintBuilder</a> </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_model.html">Model</a> *&#160;</td>
+          <td class="paramname"><em>model</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">explicit</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="sat_2linear__constraint_8h_source.html#l00159">159</a> of file <a class="el" href="sat_2linear__constraint_8h_source.html">sat/linear_constraint.h</a>.</p>
+
+</div>
+</div>
 <a id="ac4f3463a3a8c65c17b54653af8aaba1f" name="ac4f3463a3a8c65c17b54653af8aaba1f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac4f3463a3a8c65c17b54653af8aaba1f">&#9670;&nbsp;</a></span>LinearConstraintBuilder()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ac4f3463a3a8c65c17b54653af8aaba1f">&#9670;&nbsp;</a></span>LinearConstraintBuilder() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -158,7 +194,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat_2linear__constraint_8h_source.html#l00153">153</a> of file <a class="el" href="sat_2linear__constraint_8h_source.html">sat/linear_constraint.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat_2linear__constraint_8h_source.html#l00161">161</a> of file <a class="el" href="sat_2linear__constraint_8h_source.html">sat/linear_constraint.h</a>.</p>
 
 </div>
 </div>
@@ -179,7 +215,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat_2linear__constraint_8cc_source.html#l00088">88</a> of file <a class="el" href="sat_2linear__constraint_8cc_source.html">sat/linear_constraint.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat_2linear__constraint_8cc_source.html#l00086">86</a> of file <a class="el" href="sat_2linear__constraint_8cc_source.html">sat/linear_constraint.cc</a>.</p>
 
 </div>
 </div>
@@ -199,7 +235,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat_2linear__constraint_8cc_source.html#l00052">52</a> of file <a class="el" href="sat_2linear__constraint_8cc_source.html">sat/linear_constraint.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat_2linear__constraint_8cc_source.html#l00051">51</a> of file <a class="el" href="sat_2linear__constraint_8cc_source.html">sat/linear_constraint.cc</a>.</p>
 
 </div>
 </div>
@@ -229,7 +265,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat_2linear__constraint_8cc_source.html#l00057">57</a> of file <a class="el" href="sat_2linear__constraint_8cc_source.html">sat/linear_constraint.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat_2linear__constraint_8cc_source.html#l00056">56</a> of file <a class="el" href="sat_2linear__constraint_8cc_source.html">sat/linear_constraint.cc</a>.</p>
 
 </div>
 </div>
@@ -259,7 +295,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat_2linear__constraint_8cc_source.html#l00093">93</a> of file <a class="el" href="sat_2linear__constraint_8cc_source.html">sat/linear_constraint.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat_2linear__constraint_8cc_source.html#l00090">90</a> of file <a class="el" href="sat_2linear__constraint_8cc_source.html">sat/linear_constraint.cc</a>.</p>
 
 </div>
 </div>
@@ -295,7 +331,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat_2linear__constraint_8cc_source.html#l00071">71</a> of file <a class="el" href="sat_2linear__constraint_8cc_source.html">sat/linear_constraint.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat_2linear__constraint_8cc_source.html#l00069">69</a> of file <a class="el" href="sat_2linear__constraint_8cc_source.html">sat/linear_constraint.cc</a>.</p>
 
 </div>
 </div>
@@ -374,7 +410,83 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat_2linear__constraint_8cc_source.html#l00154">154</a> of file <a class="el" href="sat_2linear__constraint_8cc_source.html">sat/linear_constraint.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat_2linear__constraint_8cc_source.html#l00119">119</a> of file <a class="el" href="sat_2linear__constraint_8cc_source.html">sat/linear_constraint.cc</a>.</p>
+
+</div>
+</div>
+<a id="a4d2ece710db2456bc8e887f57e09312a" name="a4d2ece710db2456bc8e887f57e09312a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4d2ece710db2456bc8e887f57e09312a">&#9670;&nbsp;</a></span>BuildConstraint()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structoperations__research_1_1sat_1_1_linear_constraint.html">LinearConstraint</a> BuildConstraint </td>
+          <td>(</td>
+          <td class="paramtype">IntegerValue&#160;</td>
+          <td class="paramname"><em>lb</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">IntegerValue&#160;</td>
+          <td class="paramname"><em>ub</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="sat_2linear__constraint_8cc_source.html#l00123">123</a> of file <a class="el" href="sat_2linear__constraint_8cc_source.html">sat/linear_constraint.cc</a>.</p>
+
+</div>
+</div>
+<a id="a96ececaa94026aaa3a46fb65df0a17a9" name="a96ececaa94026aaa3a46fb65df0a17a9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a96ececaa94026aaa3a46fb65df0a17a9">&#9670;&nbsp;</a></span>BuildExpression()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structoperations__research_1_1sat_1_1_linear_expression.html">LinearExpression</a> BuildExpression </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="sat_2linear__constraint_8cc_source.html#l00132">132</a> of file <a class="el" href="sat_2linear__constraint_8cc_source.html">sat/linear_constraint.cc</a>.</p>
+
+</div>
+</div>
+<a id="aa71d36872f416feaa853788a7a7a7ef8" name="aa71d36872f416feaa853788a7a7a7ef8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa71d36872f416feaa853788a7a7a7ef8">&#9670;&nbsp;</a></span>Clear()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Clear </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="sat_2linear__constraint_8h_source.html#l00191">191</a> of file <a class="el" href="sat_2linear__constraint_8h_source.html">sat/linear_constraint.h</a>.</p>
 
 </div>
 </div>

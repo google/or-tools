@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 9.1</span>
+                <span id="sfml">Google OR-Tools 9.2</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -94,7 +94,7 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1sat_1_1_i
 <p >Optionally, a presence literal can be added to this constraint. This presence literal is understood by the same constraints. These constraints ignore interval variables with precence literals assigned to false. Conversely, these constraints will also set these presence literals to false if they cannot fit these intervals into the schedule.</p>
 <p >It can only be constructed via <code><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#aefeb74012f8af6c901d0fa45cb75b02e" title="Creates an interval variable from 3 affine expressions.">CpModelBuilder.NewIntervalVar()</a></code>. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00341">341</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00477">477</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -104,9 +104,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a8b419aa8e100f7d6dc404b1e591443ce"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_interval_var.html">IntervalVar</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_interval_var.html#a8b419aa8e100f7d6dc404b1e591443ce">WithName</a> (const std::string &amp;name)</td></tr>
 <tr class="memdesc:a8b419aa8e100f7d6dc404b1e591443ce"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the name of the variable.  <a href="classoperations__research_1_1sat_1_1_interval_var.html#a8b419aa8e100f7d6dc404b1e591443ce">More...</a><br /></td></tr>
 <tr class="separator:a8b419aa8e100f7d6dc404b1e591443ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a41087c5f2f732f7a2f336b45b952f199"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_interval_var.html#a41087c5f2f732f7a2f336b45b952f199">Name</a> () const</td></tr>
-<tr class="memdesc:a41087c5f2f732f7a2f336b45b952f199"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the name of the interval (or the empty string if not set).  <a href="classoperations__research_1_1sat_1_1_interval_var.html#a41087c5f2f732f7a2f336b45b952f199">More...</a><br /></td></tr>
-<tr class="separator:a41087c5f2f732f7a2f336b45b952f199"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8546382b04c2126bd39cc17d72d0b5a2"><td class="memItemLeft" align="right" valign="top">const std::string &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_interval_var.html#a8546382b04c2126bd39cc17d72d0b5a2">Name</a> () const</td></tr>
+<tr class="memdesc:a8546382b04c2126bd39cc17d72d0b5a2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the name of the interval (or the empty string if not set).  <a href="classoperations__research_1_1sat_1_1_interval_var.html#a8546382b04c2126bd39cc17d72d0b5a2">More...</a><br /></td></tr>
+<tr class="separator:a8546382b04c2126bd39cc17d72d0b5a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a23a69311a4e8d684fc0c92967fddaa8b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_interval_var.html#a23a69311a4e8d684fc0c92967fddaa8b">StartExpr</a> () const</td></tr>
 <tr class="memdesc:a23a69311a4e8d684fc0c92967fddaa8b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the start linear expression.  <a href="classoperations__research_1_1sat_1_1_interval_var.html#a23a69311a4e8d684fc0c92967fddaa8b">More...</a><br /></td></tr>
 <tr class="separator:a23a69311a4e8d684fc0c92967fddaa8b"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -223,7 +223,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns the index of the interval constraint in the model. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00395">395</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00527">527</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
@@ -232,9 +232,6 @@ Public Member Functions</h2></td></tr>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
           <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_interval_constraint_proto.html">IntervalConstraintProto</a> * MutableProto </td>
@@ -243,27 +240,20 @@ Public Member Functions</h2></td></tr>
           <td> const</td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
 
 <p>Returns the mutable underlying protobuf object (useful for model edition). </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00390">390</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
-
 </div>
 </div>
-<a id="a41087c5f2f732f7a2f336b45b952f199" name="a41087c5f2f732f7a2f336b45b952f199"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a41087c5f2f732f7a2f336b45b952f199">&#9670;&nbsp;</a></span>Name()</h2>
+<a id="a8546382b04c2126bd39cc17d72d0b5a2" name="a8546382b04c2126bd39cc17d72d0b5a2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8546382b04c2126bd39cc17d72d0b5a2">&#9670;&nbsp;</a></span>Name()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">std::string Name </td>
+          <td class="memname">const std::string &amp; Name </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -301,7 +291,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Difference test with another interval variable. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00377">377</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00513">513</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
@@ -331,7 +321,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Equality test with another interval variable. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00372">372</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00508">508</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
@@ -360,9 +350,6 @@ Public Member Functions</h2></td></tr>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
           <td class="memname">const <a class="el" href="classoperations__research_1_1sat_1_1_interval_constraint_proto.html">IntervalConstraintProto</a> &amp; Proto </td>
@@ -371,16 +358,9 @@ Public Member Functions</h2></td></tr>
           <td> const</td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
 
 <p>Returns the underlying protobuf object (useful for testing). </p>
-
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00385">385</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>

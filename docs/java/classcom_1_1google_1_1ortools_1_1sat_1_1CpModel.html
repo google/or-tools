@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 9.1</span>
+                <span id="sfml">Google OR-Tools 9.2</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -92,7 +92,7 @@ $(document).ready(function(){initNavTree('classcom_1_1google_1_1ortools_1_1sat_1
 <div class="textblock"><p >Main modeling class. </p>
 <p >Proposes a factory to create all modeling objects understood by the SAT solver. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00042">42</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00044">44</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Classes</h2></td></tr>
@@ -196,6 +196,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:aa244af8f621b649b116312870d8d070d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#aa244af8f621b649b116312870d8d070d">addAllDifferent</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a>[] variables)</td></tr>
 <tr class="memdesc:aa244af8f621b649b116312870d8d070d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#aa244af8f621b649b116312870d8d070d">More...</a><br /></td></tr>
 <tr class="separator:aa244af8f621b649b116312870d8d070d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5d98348d855145dad4168ed29cd94fa6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a5d98348d855145dad4168ed29cd94fa6">addAllDifferent</a> (<a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a>[] expressions)</td></tr>
+<tr class="memdesc:a5d98348d855145dad4168ed29cd94fa6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a5d98348d855145dad4168ed29cd94fa6">More...</a><br /></td></tr>
+<tr class="separator:a5d98348d855145dad4168ed29cd94fa6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8a9dc8e5d73e1683ac243d9afa7a52e8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a8a9dc8e5d73e1683ac243d9afa7a52e8">addElement</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a> index, <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a>[] variables, <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a> target)</td></tr>
 <tr class="memdesc:a8a9dc8e5d73e1683ac243d9afa7a52e8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds the element constraint:  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a8a9dc8e5d73e1683ac243d9afa7a52e8">More...</a><br /></td></tr>
 <tr class="separator:a8a9dc8e5d73e1683ac243d9afa7a52e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -226,42 +229,63 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ac186197ab1a1d6ee6fafd4fa65444b86"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#ac186197ab1a1d6ee6fafd4fa65444b86">addInverse</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a>[] variables, <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a>[] inverseVariables)</td></tr>
 <tr class="memdesc:ac186197ab1a1d6ee6fafd4fa65444b86"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#ac186197ab1a1d6ee6fafd4fa65444b86">More...</a><br /></td></tr>
 <tr class="separator:ac186197ab1a1d6ee6fafd4fa65444b86"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a731e8bd6e9ce86bea263bcb22498571d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a731e8bd6e9ce86bea263bcb22498571d">addReservoirConstraint</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a>[] times, long[] demands, long minLevel, long maxLevel)</td></tr>
-<tr class="memdesc:a731e8bd6e9ce86bea263bcb22498571d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a731e8bd6e9ce86bea263bcb22498571d">More...</a><br /></td></tr>
-<tr class="separator:a731e8bd6e9ce86bea263bcb22498571d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a65c5e85798b91fc39bbcc8ee35e7d808"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a65c5e85798b91fc39bbcc8ee35e7d808">addReservoirConstraint</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a>[] times, int[] demands, long minLevel, long maxLevel)</td></tr>
-<tr class="memdesc:a65c5e85798b91fc39bbcc8ee35e7d808"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a65c5e85798b91fc39bbcc8ee35e7d808">More...</a><br /></td></tr>
-<tr class="separator:a65c5e85798b91fc39bbcc8ee35e7d808"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a258c2320306720544f8a9caa2fc1b949"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a258c2320306720544f8a9caa2fc1b949">addReservoirConstraintWithActive</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a>[] times, long[] demands, <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a>[] actives, long minLevel, long maxLevel)</td></tr>
-<tr class="memdesc:a258c2320306720544f8a9caa2fc1b949"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a258c2320306720544f8a9caa2fc1b949">More...</a><br /></td></tr>
-<tr class="separator:a258c2320306720544f8a9caa2fc1b949"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9a9e0fdb63a893daa454d53fb21a38c7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a9a9e0fdb63a893daa454d53fb21a38c7">addReservoirConstraintWithActive</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a>[] times, int[] demands, <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a>[] actives, long minLevel, long maxLevel)</td></tr>
-<tr class="memdesc:a9a9e0fdb63a893daa454d53fb21a38c7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a9a9e0fdb63a893daa454d53fb21a38c7">More...</a><br /></td></tr>
-<tr class="separator:a9a9e0fdb63a893daa454d53fb21a38c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a083e8573674296266b19bc5a2b86897b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a083e8573674296266b19bc5a2b86897b">addReservoirConstraint</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a>[] times, long[] levelChanges, long minLevel, long maxLevel)</td></tr>
+<tr class="memdesc:a083e8573674296266b19bc5a2b86897b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a083e8573674296266b19bc5a2b86897b">More...</a><br /></td></tr>
+<tr class="separator:a083e8573674296266b19bc5a2b86897b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a49b3f9ff146bc0f77a376cca150edae3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a49b3f9ff146bc0f77a376cca150edae3">addReservoirConstraint</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a>[] times, int[] levelChanges, long minLevel, long maxLevel)</td></tr>
+<tr class="memdesc:a49b3f9ff146bc0f77a376cca150edae3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a49b3f9ff146bc0f77a376cca150edae3">More...</a><br /></td></tr>
+<tr class="separator:a49b3f9ff146bc0f77a376cca150edae3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ade13a3ebd385b7ae97c25babdae7dad5"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#ade13a3ebd385b7ae97c25babdae7dad5">addReservoirConstraint</a> (<a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a>[] times, long[] levelChanges, long minLevel, long maxLevel)</td></tr>
+<tr class="memdesc:ade13a3ebd385b7ae97c25babdae7dad5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#ade13a3ebd385b7ae97c25babdae7dad5">More...</a><br /></td></tr>
+<tr class="separator:ade13a3ebd385b7ae97c25babdae7dad5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a673d687355c977d2c31e2e5a01d834d1"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a673d687355c977d2c31e2e5a01d834d1">addReservoirConstraint</a> (<a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a>[] times, int[] levelChanges, long minLevel, long maxLevel)</td></tr>
+<tr class="memdesc:a673d687355c977d2c31e2e5a01d834d1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a673d687355c977d2c31e2e5a01d834d1">More...</a><br /></td></tr>
+<tr class="separator:a673d687355c977d2c31e2e5a01d834d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9ca2a6a1ffd523c8cad175c0f697c3b7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a9ca2a6a1ffd523c8cad175c0f697c3b7">addReservoirConstraintWithActive</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a>[] times, long[] levelChanges, <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a>[] actives, long minLevel, long maxLevel)</td></tr>
+<tr class="memdesc:a9ca2a6a1ffd523c8cad175c0f697c3b7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a9ca2a6a1ffd523c8cad175c0f697c3b7">More...</a><br /></td></tr>
+<tr class="separator:a9ca2a6a1ffd523c8cad175c0f697c3b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9e7f640a6446b1762e55106aa1f2a664"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a9e7f640a6446b1762e55106aa1f2a664">addReservoirConstraintWithActive</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a>[] times, int[] levelChanges, <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a>[] actives, long minLevel, long maxLevel)</td></tr>
+<tr class="memdesc:a9e7f640a6446b1762e55106aa1f2a664"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a9e7f640a6446b1762e55106aa1f2a664">More...</a><br /></td></tr>
+<tr class="separator:a9e7f640a6446b1762e55106aa1f2a664"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a62749519be556bd6fab263576f35eca0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a62749519be556bd6fab263576f35eca0">addReservoirConstraintWithActive</a> (<a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a>[] times, long[] levelChanges, <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a>[] actives, long minLevel, long maxLevel)</td></tr>
+<tr class="memdesc:a62749519be556bd6fab263576f35eca0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a62749519be556bd6fab263576f35eca0">More...</a><br /></td></tr>
+<tr class="separator:a62749519be556bd6fab263576f35eca0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a814169ebf1049e2ebdc711395c12ae9b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a814169ebf1049e2ebdc711395c12ae9b">addReservoirConstraintWithActive</a> (<a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a>[] times, int[] levelChanges, <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a>[] actives, long minLevel, long maxLevel)</td></tr>
+<tr class="memdesc:a814169ebf1049e2ebdc711395c12ae9b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a814169ebf1049e2ebdc711395c12ae9b">More...</a><br /></td></tr>
+<tr class="separator:a814169ebf1049e2ebdc711395c12ae9b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abe9f49ebd3adc21e3433735393f7990b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#abe9f49ebd3adc21e3433735393f7990b">addMapDomain</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a> var, <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1Literal.html">Literal</a>[] booleans, long offset)</td></tr>
 <tr class="memdesc:abe9f49ebd3adc21e3433735393f7990b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#abe9f49ebd3adc21e3433735393f7990b">More...</a><br /></td></tr>
 <tr class="separator:abe9f49ebd3adc21e3433735393f7990b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab18889303cb7409a96a7778085f9f7ad"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#ab18889303cb7409a96a7778085f9f7ad">addMinEquality</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a> target, <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a>[] vars)</td></tr>
-<tr class="memdesc:ab18889303cb7409a96a7778085f9f7ad"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#ab18889303cb7409a96a7778085f9f7ad">More...</a><br /></td></tr>
-<tr class="separator:ab18889303cb7409a96a7778085f9f7ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ade1679337394cf33d0406c2ae18e631a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#ade1679337394cf33d0406c2ae18e631a">addMaxEquality</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a> target, <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a>[] vars)</td></tr>
-<tr class="memdesc:ade1679337394cf33d0406c2ae18e631a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#ade1679337394cf33d0406c2ae18e631a">More...</a><br /></td></tr>
-<tr class="separator:ade1679337394cf33d0406c2ae18e631a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5fbb526d9d241b398980965a6ad29cf8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a5fbb526d9d241b398980965a6ad29cf8">addDivisionEquality</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a> target, <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a> num, <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a> denom)</td></tr>
-<tr class="memdesc:a5fbb526d9d241b398980965a6ad29cf8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a5fbb526d9d241b398980965a6ad29cf8">More...</a><br /></td></tr>
-<tr class="separator:a5fbb526d9d241b398980965a6ad29cf8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8f957d1cfc8db742b71a61bd830c7d31"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a8f957d1cfc8db742b71a61bd830c7d31">addAbsEquality</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a> target, <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a> var)</td></tr>
-<tr class="memdesc:a8f957d1cfc8db742b71a61bd830c7d31"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a8f957d1cfc8db742b71a61bd830c7d31">More...</a><br /></td></tr>
-<tr class="separator:a8f957d1cfc8db742b71a61bd830c7d31"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a75a3fdb0db38f2501a441ca2ca9f400a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a75a3fdb0db38f2501a441ca2ca9f400a">addModuloEquality</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a> target, <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a> var, <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a> mod)</td></tr>
-<tr class="memdesc:a75a3fdb0db38f2501a441ca2ca9f400a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a75a3fdb0db38f2501a441ca2ca9f400a">More...</a><br /></td></tr>
-<tr class="separator:a75a3fdb0db38f2501a441ca2ca9f400a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3795c421962238b8751b5e2e8654afbb"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a3795c421962238b8751b5e2e8654afbb">addModuloEquality</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a> target, <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a> var, long mod)</td></tr>
-<tr class="memdesc:a3795c421962238b8751b5e2e8654afbb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a3795c421962238b8751b5e2e8654afbb">More...</a><br /></td></tr>
-<tr class="separator:a3795c421962238b8751b5e2e8654afbb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a701e85fcfe8ad1dfd83fcbced49fce96"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a701e85fcfe8ad1dfd83fcbced49fce96">addProductEquality</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a> target, <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a>[] vars)</td></tr>
-<tr class="memdesc:a701e85fcfe8ad1dfd83fcbced49fce96"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a701e85fcfe8ad1dfd83fcbced49fce96">More...</a><br /></td></tr>
-<tr class="separator:a701e85fcfe8ad1dfd83fcbced49fce96"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2c121f33f5126bcfb239191659f7358e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a2c121f33f5126bcfb239191659f7358e">addMinEquality</a> (<a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a> target, <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a>[] vars)</td></tr>
+<tr class="memdesc:a2c121f33f5126bcfb239191659f7358e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a2c121f33f5126bcfb239191659f7358e">More...</a><br /></td></tr>
+<tr class="separator:a2c121f33f5126bcfb239191659f7358e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9a91498e90119505e5c59827db45658a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a9a91498e90119505e5c59827db45658a">addMinEquality</a> (<a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a> target, <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a>[] exprs)</td></tr>
+<tr class="memdesc:a9a91498e90119505e5c59827db45658a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a9a91498e90119505e5c59827db45658a">More...</a><br /></td></tr>
+<tr class="separator:a9a91498e90119505e5c59827db45658a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac63256842dd1216d5b046f42fcc977ad"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#ac63256842dd1216d5b046f42fcc977ad">addMaxEquality</a> (<a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a> target, <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a>[] vars)</td></tr>
+<tr class="memdesc:ac63256842dd1216d5b046f42fcc977ad"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#ac63256842dd1216d5b046f42fcc977ad">More...</a><br /></td></tr>
+<tr class="separator:ac63256842dd1216d5b046f42fcc977ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8774f3e82217f141af2588f9a5914e55"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a8774f3e82217f141af2588f9a5914e55">addMaxEquality</a> (<a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a> target, <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a>[] exprs)</td></tr>
+<tr class="memdesc:a8774f3e82217f141af2588f9a5914e55"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a8774f3e82217f141af2588f9a5914e55">More...</a><br /></td></tr>
+<tr class="separator:a8774f3e82217f141af2588f9a5914e55"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a859f6483eb43f6851e4e1e37286ac2d2"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a859f6483eb43f6851e4e1e37286ac2d2">addDivisionEquality</a> (<a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a> target, <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a> num, <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a> denom)</td></tr>
+<tr class="memdesc:a859f6483eb43f6851e4e1e37286ac2d2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a859f6483eb43f6851e4e1e37286ac2d2">More...</a><br /></td></tr>
+<tr class="separator:a859f6483eb43f6851e4e1e37286ac2d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aba5de75a49cc84f362ae2dbe59379d5b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#aba5de75a49cc84f362ae2dbe59379d5b">addAbsEquality</a> (<a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a> target, <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a> expr)</td></tr>
+<tr class="memdesc:aba5de75a49cc84f362ae2dbe59379d5b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#aba5de75a49cc84f362ae2dbe59379d5b">More...</a><br /></td></tr>
+<tr class="separator:aba5de75a49cc84f362ae2dbe59379d5b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0be7e9d8944967b15a7f0abf0fd7ec52"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a0be7e9d8944967b15a7f0abf0fd7ec52">addModuloEquality</a> (<a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a> target, <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a> var, <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a> mod)</td></tr>
+<tr class="memdesc:a0be7e9d8944967b15a7f0abf0fd7ec52"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a0be7e9d8944967b15a7f0abf0fd7ec52">More...</a><br /></td></tr>
+<tr class="separator:a0be7e9d8944967b15a7f0abf0fd7ec52"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a17c51f9dffb94e70b5c2e266302e1ede"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a17c51f9dffb94e70b5c2e266302e1ede">addModuloEquality</a> (<a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a> target, <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a> var, long mod)</td></tr>
+<tr class="memdesc:a17c51f9dffb94e70b5c2e266302e1ede"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a17c51f9dffb94e70b5c2e266302e1ede">More...</a><br /></td></tr>
+<tr class="separator:a17c51f9dffb94e70b5c2e266302e1ede"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0ab3870688afc4a697b186966b95d0d9"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a0ab3870688afc4a697b186966b95d0d9">addMultiplicationEquality</a> (<a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a> target, <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a>[] vars)</td></tr>
+<tr class="memdesc:a0ab3870688afc4a697b186966b95d0d9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a0ab3870688afc4a697b186966b95d0d9">More...</a><br /></td></tr>
+<tr class="separator:a0ab3870688afc4a697b186966b95d0d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2a8d136f791aa5784d2b18f4c576f378"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a2a8d136f791aa5784d2b18f4c576f378">addMultiplicationEquality</a> (<a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a> target, <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a>[] exprs)</td></tr>
+<tr class="memdesc:a2a8d136f791aa5784d2b18f4c576f378"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a2a8d136f791aa5784d2b18f4c576f378">More...</a><br /></td></tr>
+<tr class="separator:a2a8d136f791aa5784d2b18f4c576f378"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0e36a594178d35f5f43aff9bf2260059"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalVar.html">IntervalVar</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a0e36a594178d35f5f43aff9bf2260059">newIntervalVar</a> (<a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a> start, <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a> size, <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a> end, String name)</td></tr>
 <tr class="memdesc:a0e36a594178d35f5f43aff9bf2260059"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates an interval variable from three affine expressions start, size, and end.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a0e36a594178d35f5f43aff9bf2260059">More...</a><br /></td></tr>
 <tr class="separator:a0e36a594178d35f5f43aff9bf2260059"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -286,18 +310,24 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ac4d56ad1d1a291e137e96f3a17d0c85a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#ac4d56ad1d1a291e137e96f3a17d0c85a">addNoOverlap2D</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalVar.html">IntervalVar</a>[] xIntervals, <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalVar.html">IntervalVar</a>[] yIntervals)</td></tr>
 <tr class="memdesc:ac4d56ad1d1a291e137e96f3a17d0c85a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#ac4d56ad1d1a291e137e96f3a17d0c85a">More...</a><br /></td></tr>
 <tr class="separator:ac4d56ad1d1a291e137e96f3a17d0c85a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa95e5ea63b249cc46face65282abc07b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#aa95e5ea63b249cc46face65282abc07b">addCumulative</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalVar.html">IntervalVar</a>[] intervals, <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a>[] demands, <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a> capacity)</td></tr>
-<tr class="memdesc:aa95e5ea63b249cc46face65282abc07b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#aa95e5ea63b249cc46face65282abc07b">More...</a><br /></td></tr>
-<tr class="separator:aa95e5ea63b249cc46face65282abc07b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af7d49792bd053fe1ee8c77efe03755d6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#af7d49792bd053fe1ee8c77efe03755d6">addCumulative</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalVar.html">IntervalVar</a>[] intervals, long[] demands, <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a> capacity)</td></tr>
-<tr class="memdesc:af7d49792bd053fe1ee8c77efe03755d6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#af7d49792bd053fe1ee8c77efe03755d6">More...</a><br /></td></tr>
-<tr class="separator:af7d49792bd053fe1ee8c77efe03755d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9961466ef8371e502084fb8a2d20b806"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a9961466ef8371e502084fb8a2d20b806">addCumulative</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalVar.html">IntervalVar</a>[] intervals, int[] demands, <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a> capacity)</td></tr>
-<tr class="memdesc:a9961466ef8371e502084fb8a2d20b806"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a9961466ef8371e502084fb8a2d20b806">More...</a><br /></td></tr>
-<tr class="separator:a9961466ef8371e502084fb8a2d20b806"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0b0ce6f30b6b0c62b12b288c2b735b5d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a0b0ce6f30b6b0c62b12b288c2b735b5d">addCumulative</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalVar.html">IntervalVar</a>[] intervals, <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a>[] demands, <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a> capacity)</td></tr>
+<tr class="memdesc:a0b0ce6f30b6b0c62b12b288c2b735b5d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a0b0ce6f30b6b0c62b12b288c2b735b5d">More...</a><br /></td></tr>
+<tr class="separator:a0b0ce6f30b6b0c62b12b288c2b735b5d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2888d1de673155278faca64efbea47da"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a2888d1de673155278faca64efbea47da">addCumulative</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalVar.html">IntervalVar</a>[] intervals, <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a>[] demands, long capacity)</td></tr>
+<tr class="memdesc:a2888d1de673155278faca64efbea47da"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a2888d1de673155278faca64efbea47da">More...</a><br /></td></tr>
+<tr class="separator:a2888d1de673155278faca64efbea47da"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8a885b4cd7e4ce3cabb9c057641348b8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a8a885b4cd7e4ce3cabb9c057641348b8">addCumulative</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalVar.html">IntervalVar</a>[] intervals, <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a>[] demands, <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a> capacity)</td></tr>
+<tr class="memdesc:a8a885b4cd7e4ce3cabb9c057641348b8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a8a885b4cd7e4ce3cabb9c057641348b8">More...</a><br /></td></tr>
+<tr class="separator:a8a885b4cd7e4ce3cabb9c057641348b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab2e76a732efab8cbae8ee2cd9104ac7e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#ab2e76a732efab8cbae8ee2cd9104ac7e">addCumulative</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalVar.html">IntervalVar</a>[] intervals, <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a>[] demands, long capacity)</td></tr>
 <tr class="memdesc:ab2e76a732efab8cbae8ee2cd9104ac7e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#ab2e76a732efab8cbae8ee2cd9104ac7e">More...</a><br /></td></tr>
 <tr class="separator:ab2e76a732efab8cbae8ee2cd9104ac7e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a07e3d824cf54adbf9707bf7fa9709062"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a07e3d824cf54adbf9707bf7fa9709062">addCumulative</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalVar.html">IntervalVar</a>[] intervals, long[] demands, <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a> capacity)</td></tr>
+<tr class="memdesc:a07e3d824cf54adbf9707bf7fa9709062"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a07e3d824cf54adbf9707bf7fa9709062">More...</a><br /></td></tr>
+<tr class="separator:a07e3d824cf54adbf9707bf7fa9709062"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a57f998f712d6ba2369e936430227c912"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a57f998f712d6ba2369e936430227c912">addCumulative</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalVar.html">IntervalVar</a>[] intervals, int[] demands, <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a> capacity)</td></tr>
+<tr class="memdesc:a57f998f712d6ba2369e936430227c912"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a57f998f712d6ba2369e936430227c912">More...</a><br /></td></tr>
+<tr class="separator:a57f998f712d6ba2369e936430227c912"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1593689b0cf4489cd1434eb5c2311529"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a1593689b0cf4489cd1434eb5c2311529">addCumulative</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalVar.html">IntervalVar</a>[] intervals, long[] demands, long capacity)</td></tr>
 <tr class="memdesc:a1593689b0cf4489cd1434eb5c2311529"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a1593689b0cf4489cd1434eb5c2311529">More...</a><br /></td></tr>
 <tr class="separator:a1593689b0cf4489cd1434eb5c2311529"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -322,9 +352,13 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a5ebe6f90377f06adcb4a95eca060bcb6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a5ebe6f90377f06adcb4a95eca060bcb6">minimize</a> (<a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a> expr)</td></tr>
 <tr class="memdesc:a5ebe6f90377f06adcb4a95eca060bcb6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a minimization objective of a linear expression.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a5ebe6f90377f06adcb4a95eca060bcb6">More...</a><br /></td></tr>
 <tr class="separator:a5ebe6f90377f06adcb4a95eca060bcb6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab0ca1aadc6b8ba7104c8bcbb2b607e6c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#ab0ca1aadc6b8ba7104c8bcbb2b607e6c">minimize</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1DoubleLinearExpr.html">DoubleLinearExpr</a> expr)</td></tr>
+<tr class="separator:ab0ca1aadc6b8ba7104c8bcbb2b607e6c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa03f83497b1d96e83c6bcf48c385078c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#aa03f83497b1d96e83c6bcf48c385078c">maximize</a> (<a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a> expr)</td></tr>
 <tr class="memdesc:aa03f83497b1d96e83c6bcf48c385078c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a maximization objective of a linear expression.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#aa03f83497b1d96e83c6bcf48c385078c">More...</a><br /></td></tr>
 <tr class="separator:aa03f83497b1d96e83c6bcf48c385078c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a32ca6deb46a5dd2fcb441f296dc115e2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a32ca6deb46a5dd2fcb441f296dc115e2">maximize</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1DoubleLinearExpr.html">DoubleLinearExpr</a> expr)</td></tr>
+<tr class="separator:a32ca6deb46a5dd2fcb441f296dc115e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac0c18fd6fab211d3e77716bee65ec90e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#ac0c18fd6fab211d3e77716bee65ec90e">addDecisionStrategy</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a>[] variables, DecisionStrategyProto.VariableSelectionStrategy varStr, DecisionStrategyProto.DomainReductionStrategy domStr)</td></tr>
 <tr class="memdesc:ac0c18fd6fab211d3e77716bee65ec90e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#ac0c18fd6fab211d3e77716bee65ec90e">More...</a><br /></td></tr>
 <tr class="separator:ac0c18fd6fab211d3e77716bee65ec90e"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -361,13 +395,13 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00063">63</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00065">65</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a8f957d1cfc8db742b71a61bd830c7d31" name="a8f957d1cfc8db742b71a61bd830c7d31"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8f957d1cfc8db742b71a61bd830c7d31">&#9670;&nbsp;</a></span>addAbsEquality()</h2>
+<a id="aba5de75a49cc84f362ae2dbe59379d5b" name="aba5de75a49cc84f362ae2dbe59379d5b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aba5de75a49cc84f362ae2dbe59379d5b">&#9670;&nbsp;</a></span>addAbsEquality()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -375,14 +409,14 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a> addAbsEquality </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a>&#160;</td>
           <td class="paramname"><em>target</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a>&#160;</td>
-          <td class="paramname"><em>var</em>&#160;</td>
+          <td class="paramtype"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a>&#160;</td>
+          <td class="paramname"><em>expr</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -393,15 +427,15 @@ Public Member Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Adds. </p>
-<div class="fragment"><div class="line">target == Abs(var) </div>
+<div class="fragment"><div class="line">target == Abs(expr) </div>
 </div><!-- fragment --><p> . </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00681">681</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00850">850</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
 <a id="aa244af8f621b649b116312870d8d070d" name="aa244af8f621b649b116312870d8d070d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa244af8f621b649b116312870d8d070d">&#9670;&nbsp;</a></span>addAllDifferent()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aa244af8f621b649b116312870d8d070d">&#9670;&nbsp;</a></span>addAllDifferent() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -428,7 +462,39 @@ Public Member Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>an instance of the <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html" title="Wrapper around a ConstraintProto.">Constraint</a> class </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00269">269</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00271">271</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+
+</div>
+</div>
+<a id="a5d98348d855145dad4168ed29cd94fa6" name="a5d98348d855145dad4168ed29cd94fa6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5d98348d855145dad4168ed29cd94fa6">&#9670;&nbsp;</a></span>addAllDifferent() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a> addAllDifferent </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a>[]&#160;</td>
+          <td class="paramname"><em>expressions</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Adds. </p>
+<div class="fragment"><div class="line">AllDifferent(expressions) </div>
+</div><!-- fragment --><p> .</p>
+<p >This constraint forces all affine expressions to have different values.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">expressions</td><td>a list of affine integer expressions </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>an instance of the <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html" title="Wrapper around a ConstraintProto.">Constraint</a> class </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00288">288</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -463,7 +529,7 @@ Public Member Functions</h2></td></tr>
 </div><!-- fragment --><p> .</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a971f9bc9c7ae12bab67f4513a8f109d3" title="Adds.">addAllowedAssignments(IntVar[], long[][])</a> <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a971f9bc9c7ae12bab67f4513a8f109d3" title="Adds.">addAllowedAssignments</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00388">388</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00407">407</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -512,7 +578,7 @@ Public Member Functions</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00364">364</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00383">383</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -534,7 +600,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Adds a literal to the model as assumption. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00979">979</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l01201">1201</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -556,7 +622,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Adds multiple literals to the model as assumptions. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00984">984</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l01206">1206</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -620,7 +686,7 @@ Public Member Functions</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00469">469</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00488">488</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -644,7 +710,7 @@ Public Member Functions</h2></td></tr>
 <div class="fragment"><div class="line">And(literals) == <span class="keyword">true</span> </div>
 </div><!-- fragment --><p> . </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00124">124</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00126">126</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -668,7 +734,7 @@ Public Member Functions</h2></td></tr>
 <div class="fragment"><div class="line">Or(literals) == <span class="keyword">true</span> </div>
 </div><!-- fragment --><p> . </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00114">114</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00116">116</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -692,7 +758,7 @@ Public Member Functions</h2></td></tr>
 <div class="fragment"><div class="line">XOr(literals) == <span class="keyword">true</span> </div>
 </div><!-- fragment --><p> . </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00134">134</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00136">136</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -750,12 +816,12 @@ Public Member Functions</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00329">329</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00348">348</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
-<a id="a9961466ef8371e502084fb8a2d20b806" name="a9961466ef8371e502084fb8a2d20b806"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9961466ef8371e502084fb8a2d20b806">&#9670;&nbsp;</a></span>addCumulative() <span class="overload">[1/6]</span></h2>
+<a id="a57f998f712d6ba2369e936430227c912" name="a57f998f712d6ba2369e936430227c912"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a57f998f712d6ba2369e936430227c912">&#9670;&nbsp;</a></span>addCumulative() <span class="overload">[1/8]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -775,7 +841,7 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a>&#160;</td>
           <td class="paramname"><em>capacity</em>&#160;</td>
         </tr>
         <tr>
@@ -789,14 +855,14 @@ Public Member Functions</h2></td></tr>
 <p>Adds. </p>
 <div class="fragment"><div class="line">Cumulative(intervals, demands, capacity) </div>
 </div><!-- fragment --><p> with fixed demands.</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#aa95e5ea63b249cc46face65282abc07b" title="Adds.">addCumulative(IntervalVar[], IntVar[], IntVar)</a> AddCumulative </dd></dl>
+<dl class="section see"><dt>See also</dt><dd>#addCumulative(IntervalVar[], IntVar[], IntVar) AddCumulative </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00918">918</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l01158">1158</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
 <a id="ade4cf08cb9e883d52f012a25385a9eb0" name="ade4cf08cb9e883d52f012a25385a9eb0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ade4cf08cb9e883d52f012a25385a9eb0">&#9670;&nbsp;</a></span>addCumulative() <span class="overload">[2/6]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ade4cf08cb9e883d52f012a25385a9eb0">&#9670;&nbsp;</a></span>addCumulative() <span class="overload">[2/8]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -830,14 +896,14 @@ Public Member Functions</h2></td></tr>
 <p>Adds. </p>
 <div class="fragment"><div class="line">Cumulative(intervals, demands, capacity) </div>
 </div><!-- fragment --><p> with fixed demands and fixed capacity.</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#aa95e5ea63b249cc46face65282abc07b" title="Adds.">addCumulative(IntervalVar[], IntVar[], IntVar)</a> AddCumulative </dd></dl>
+<dl class="section see"><dt>See also</dt><dd>#addCumulative(IntervalVar[], IntVar[], IntVar) AddCumulative </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00963">963</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l01185">1185</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
-<a id="aa95e5ea63b249cc46face65282abc07b" name="aa95e5ea63b249cc46face65282abc07b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa95e5ea63b249cc46face65282abc07b">&#9670;&nbsp;</a></span>addCumulative() <span class="overload">[3/6]</span></h2>
+<a id="a8a885b4cd7e4ce3cabb9c057641348b8" name="a8a885b4cd7e4ce3cabb9c057641348b8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8a885b4cd7e4ce3cabb9c057641348b8">&#9670;&nbsp;</a></span>addCumulative() <span class="overload">[3/8]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -857,7 +923,7 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a>&#160;</td>
           <td class="paramname"><em>capacity</em>&#160;</td>
         </tr>
         <tr>
@@ -870,27 +936,15 @@ Public Member Functions</h2></td></tr>
 
 <p>Adds. </p>
 <div class="fragment"><div class="line">Cumulative(intervals, demands, capacity) </div>
-</div><!-- fragment --><p> .</p>
-<p >This constraint enforces that:</p>
-<div class="fragment"><div class="line"> forall t: sum(demands[i] <span class="keywordflow">if</span> (start(intervals[t]) &lt;= t &lt; end(intervals[t])) and (t is</div>
-<div class="line">present)) &lt;= capacity </div>
-</div><!-- fragment --><p> .</p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">intervals</td><td>the list of intervals </td></tr>
-    <tr><td class="paramname">demands</td><td>the list of demands for each interval. Each demand must be a positive integer variable. </td></tr>
-    <tr><td class="paramname">capacity</td><td>the maximum capacity of the cumulative constraint. It must be a positive integer variable. </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>an instance of the <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html" title="Wrapper around a ConstraintProto.">Constraint</a> class </dd></dl>
+</div><!-- fragment --><p> with integer variable demands.</p>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a0b0ce6f30b6b0c62b12b288c2b735b5d" title="Adds.">addCumulative(IntervalVar[], LinearExpr[], LinearExpr)</a> AddCumulative </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00882">882</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l01104">1104</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
 <a id="ab2e76a732efab8cbae8ee2cd9104ac7e" name="ab2e76a732efab8cbae8ee2cd9104ac7e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab2e76a732efab8cbae8ee2cd9104ac7e">&#9670;&nbsp;</a></span>addCumulative() <span class="overload">[4/6]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ab2e76a732efab8cbae8ee2cd9104ac7e">&#9670;&nbsp;</a></span>addCumulative() <span class="overload">[4/8]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -924,14 +978,108 @@ Public Member Functions</h2></td></tr>
 <p>Adds. </p>
 <div class="fragment"><div class="line">Cumulative(intervals, demands, capacity) </div>
 </div><!-- fragment --><p> with fixed capacity.</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#aa95e5ea63b249cc46face65282abc07b" title="Adds.">addCumulative(IntervalVar[], IntVar[], IntVar)</a> AddCumulative </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a0b0ce6f30b6b0c62b12b288c2b735b5d" title="Adds.">addCumulative(IntervalVar[], LinearExpr[], LinearExpr)</a> AddCumulative </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00927">927</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l01122">1122</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
-<a id="af7d49792bd053fe1ee8c77efe03755d6" name="af7d49792bd053fe1ee8c77efe03755d6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af7d49792bd053fe1ee8c77efe03755d6">&#9670;&nbsp;</a></span>addCumulative() <span class="overload">[5/6]</span></h2>
+<a id="a0b0ce6f30b6b0c62b12b288c2b735b5d" name="a0b0ce6f30b6b0c62b12b288c2b735b5d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0b0ce6f30b6b0c62b12b288c2b735b5d">&#9670;&nbsp;</a></span>addCumulative() <span class="overload">[5/8]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a> addCumulative </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalVar.html">IntervalVar</a>[]&#160;</td>
+          <td class="paramname"><em>intervals</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a>[]&#160;</td>
+          <td class="paramname"><em>demands</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a>&#160;</td>
+          <td class="paramname"><em>capacity</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Adds. </p>
+<div class="fragment"><div class="line">Cumulative(intervals, demands, capacity) </div>
+</div><!-- fragment --><p> .</p>
+<p >This constraint enforces that:</p>
+<div class="fragment"><div class="line"> forall t: sum(demands[i] <span class="keywordflow">if</span> (start(intervals[t]) &lt;= t &lt; end(intervals[t])) and (t is</div>
+<div class="line">present)) &lt;= capacity </div>
+</div><!-- fragment --><p> .</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">intervals</td><td>the list of intervals </td></tr>
+    <tr><td class="paramname">demands</td><td>the list of demands for each interval. Each demand must be a positive affine expression. </td></tr>
+    <tr><td class="paramname">capacity</td><td>the maximum capacity of the cumulative constraint. It must be a positive affine expression. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>an instance of the <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html" title="Wrapper around a ConstraintProto.">Constraint</a> class </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l01067">1067</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+
+</div>
+</div>
+<a id="a2888d1de673155278faca64efbea47da" name="a2888d1de673155278faca64efbea47da"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2888d1de673155278faca64efbea47da">&#9670;&nbsp;</a></span>addCumulative() <span class="overload">[6/8]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a> addCumulative </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalVar.html">IntervalVar</a>[]&#160;</td>
+          <td class="paramname"><em>intervals</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a>[]&#160;</td>
+          <td class="paramname"><em>demands</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">long&#160;</td>
+          <td class="paramname"><em>capacity</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Adds. </p>
+<div class="fragment"><div class="line">Cumulative(intervals, demands, capacity) </div>
+</div><!-- fragment --><p> fixed capacity.</p>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a0b0ce6f30b6b0c62b12b288c2b735b5d" title="Adds.">addCumulative(IntervalVar[], LinearExpr[], LinearExpr)</a> AddCumulative </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l01086">1086</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+
+</div>
+</div>
+<a id="a07e3d824cf54adbf9707bf7fa9709062" name="a07e3d824cf54adbf9707bf7fa9709062"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a07e3d824cf54adbf9707bf7fa9709062">&#9670;&nbsp;</a></span>addCumulative() <span class="overload">[7/8]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -951,7 +1099,7 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a>&#160;</td>
           <td class="paramname"><em>capacity</em>&#160;</td>
         </tr>
         <tr>
@@ -965,14 +1113,14 @@ Public Member Functions</h2></td></tr>
 <p>Adds. </p>
 <div class="fragment"><div class="line">Cumulative(intervals, demands, capacity) </div>
 </div><!-- fragment --><p> with fixed demands.</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#aa95e5ea63b249cc46face65282abc07b" title="Adds.">addCumulative(IntervalVar[], IntVar[], IntVar)</a> AddCumulative </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a0b0ce6f30b6b0c62b12b288c2b735b5d" title="Adds.">addCumulative(IntervalVar[], LinearExpr[], LinearExpr)</a> AddCumulative </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00900">900</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l01140">1140</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
 <a id="a1593689b0cf4489cd1434eb5c2311529" name="a1593689b0cf4489cd1434eb5c2311529"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1593689b0cf4489cd1434eb5c2311529">&#9670;&nbsp;</a></span>addCumulative() <span class="overload">[6/6]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a1593689b0cf4489cd1434eb5c2311529">&#9670;&nbsp;</a></span>addCumulative() <span class="overload">[8/8]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1006,9 +1154,9 @@ Public Member Functions</h2></td></tr>
 <p>Adds. </p>
 <div class="fragment"><div class="line">Cumulative(intervals, demands, capacity) </div>
 </div><!-- fragment --><p> with fixed demands and fixed capacity.</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#aa95e5ea63b249cc46face65282abc07b" title="Adds.">addCumulative(IntervalVar[], IntVar[], IntVar)</a> AddCumulative </dd></dl>
+<dl class="section see"><dt>See also</dt><dd>#addCumulative(IntervalVar[], IntVar[], IntVar) AddCumulative </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00945">945</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l01167">1167</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -1048,7 +1196,7 @@ Public Member Functions</h2></td></tr>
 <div class="fragment"><div class="line">DecisionStrategy(variables, varStr, domStr) </div>
 </div><!-- fragment --><p> . </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l01019">1019</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l01257">1257</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -1082,7 +1230,7 @@ Public Member Functions</h2></td></tr>
 <div class="fragment"><div class="line">expr != value </div>
 </div><!-- fragment --><p> . </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00240">240</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00242">242</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -1116,7 +1264,7 @@ Public Member Functions</h2></td></tr>
 <div class="fragment"><div class="line">left != right </div>
 </div><!-- fragment --><p> . </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00247">247</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00249">249</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -1156,12 +1304,12 @@ Public Member Functions</h2></td></tr>
 <div class="fragment"><div class="line">left + offset != right </div>
 </div><!-- fragment --><p> . </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00253">253</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00255">255</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
-<a id="a5fbb526d9d241b398980965a6ad29cf8" name="a5fbb526d9d241b398980965a6ad29cf8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5fbb526d9d241b398980965a6ad29cf8">&#9670;&nbsp;</a></span>addDivisionEquality()</h2>
+<a id="a859f6483eb43f6851e4e1e37286ac2d2" name="a859f6483eb43f6851e4e1e37286ac2d2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a859f6483eb43f6851e4e1e37286ac2d2">&#9670;&nbsp;</a></span>addDivisionEquality()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1169,19 +1317,19 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a> addDivisionEquality </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a>&#160;</td>
           <td class="paramname"><em>target</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a>&#160;</td>
           <td class="paramname"><em>num</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a>&#160;</td>
           <td class="paramname"><em>denom</em>&#160;</td>
         </tr>
         <tr>
@@ -1196,7 +1344,7 @@ Public Member Functions</h2></td></tr>
 <div class="fragment"><div class="line">target == num / denom </div>
 </div><!-- fragment --><p> , rounded towards 0. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00670">670</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00839">839</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -1236,7 +1384,7 @@ Public Member Functions</h2></td></tr>
 <div class="fragment"><div class="line">values[index] == target </div>
 </div><!-- fragment --><p> . </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00303">303</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00322">322</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -1276,7 +1424,7 @@ Public Member Functions</h2></td></tr>
 <div class="fragment"><div class="line">variables[index] == target </div>
 </div><!-- fragment --><p> . </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00279">279</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00298">298</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -1316,7 +1464,7 @@ Public Member Functions</h2></td></tr>
 <div class="fragment"><div class="line">values[index] == target </div>
 </div><!-- fragment --><p> . </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00291">291</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00310">310</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -1350,7 +1498,7 @@ Public Member Functions</h2></td></tr>
 <div class="fragment"><div class="line">expr == value </div>
 </div><!-- fragment --><p> . </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00173">173</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00175">175</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -1384,7 +1532,7 @@ Public Member Functions</h2></td></tr>
 <div class="fragment"><div class="line">left == right </div>
 </div><!-- fragment --><p> . </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00178">178</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00180">180</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -1424,7 +1572,7 @@ Public Member Functions</h2></td></tr>
 <div class="fragment"><div class="line">left + offset == right </div>
 </div><!-- fragment --><p> . </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00183">183</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00185">185</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -1459,7 +1607,7 @@ Public Member Functions</h2></td></tr>
 </div><!-- fragment --><p> .</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#acb22618b9c5bf942f2994e9226df0cd2" title="Adds.">addForbiddenAssignments(IntVar[], long[][])</a> <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#acb22618b9c5bf942f2994e9226df0cd2" title="Adds.">addForbiddenAssignments</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00431">431</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00450">450</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -1508,7 +1656,7 @@ Public Member Functions</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00419">419</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00438">438</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -1542,7 +1690,7 @@ Public Member Functions</h2></td></tr>
 <div class="fragment"><div class="line">expr &gt;= value </div>
 </div><!-- fragment --><p> . </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00214">214</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00216">216</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -1576,7 +1724,7 @@ Public Member Functions</h2></td></tr>
 <div class="fragment"><div class="line">left &gt;= right </div>
 </div><!-- fragment --><p> . </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00219">219</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00221">221</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -1616,7 +1764,7 @@ Public Member Functions</h2></td></tr>
 <div class="fragment"><div class="line">left + offset &gt;= right </div>
 </div><!-- fragment --><p> . </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00234">234</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00236">236</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -1650,7 +1798,7 @@ Public Member Functions</h2></td></tr>
 <div class="fragment"><div class="line">expr &gt; value </div>
 </div><!-- fragment --><p> . </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00224">224</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00226">226</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -1684,7 +1832,7 @@ Public Member Functions</h2></td></tr>
 <div class="fragment"><div class="line">left &gt; right </div>
 </div><!-- fragment --><p> . </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00229">229</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00231">231</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -1716,7 +1864,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Adds hinting to a variable. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00968">968</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l01190">1190</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -1750,7 +1898,7 @@ Public Member Functions</h2></td></tr>
 <div class="fragment"><div class="line">a =&gt; b </div>
 </div><!-- fragment --><p> . </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00144">144</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00146">146</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -1799,7 +1947,7 @@ Public Member Functions</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00500">500</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00519">519</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -1833,7 +1981,7 @@ Public Member Functions</h2></td></tr>
 <div class="fragment"><div class="line">expr &lt;= value </div>
 </div><!-- fragment --><p> . </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00188">188</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00190">190</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -1867,7 +2015,7 @@ Public Member Functions</h2></td></tr>
 <div class="fragment"><div class="line">left &lt;= right </div>
 </div><!-- fragment --><p> . </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00193">193</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00195">195</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -1907,7 +2055,7 @@ Public Member Functions</h2></td></tr>
 <div class="fragment"><div class="line">left + offset &lt;= right </div>
 </div><!-- fragment --><p> . </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00208">208</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00210">210</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -1941,7 +2089,7 @@ Public Member Functions</h2></td></tr>
 <div class="fragment"><div class="line">expr &lt; value </div>
 </div><!-- fragment --><p> . </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00198">198</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00200">200</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -1975,7 +2123,7 @@ Public Member Functions</h2></td></tr>
 <div class="fragment"><div class="line">left &lt; right </div>
 </div><!-- fragment --><p> . </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00203">203</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00205">205</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -2015,7 +2163,7 @@ Public Member Functions</h2></td></tr>
 <div class="fragment"><div class="line">lb &lt;= expr &lt;= ub </div>
 </div><!-- fragment --><p> . </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00168">168</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00170">170</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -2049,7 +2197,7 @@ Public Member Functions</h2></td></tr>
 <div class="fragment"><div class="line">expr in domain </div>
 </div><!-- fragment --><p> . </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00151">151</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00153">153</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -2089,12 +2237,12 @@ Public Member Functions</h2></td></tr>
 <div class="fragment"><div class="line">var == i + offset &lt;=&gt; booleans[i] == <span class="keyword">true</span> <span class="keywordflow">for</span> all i in [0, booleans.length) </div>
 </div><!-- fragment --><p> . </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00640">640</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00787">787</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
-<a id="ade1679337394cf33d0406c2ae18e631a" name="ade1679337394cf33d0406c2ae18e631a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ade1679337394cf33d0406c2ae18e631a">&#9670;&nbsp;</a></span>addMaxEquality()</h2>
+<a id="ac63256842dd1216d5b046f42fcc977ad" name="ac63256842dd1216d5b046f42fcc977ad"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac63256842dd1216d5b046f42fcc977ad">&#9670;&nbsp;</a></span>addMaxEquality() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2102,7 +2250,7 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a> addMaxEquality </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a>&#160;</td>
           <td class="paramname"><em>target</em>, </td>
         </tr>
         <tr>
@@ -2123,12 +2271,46 @@ Public Member Functions</h2></td></tr>
 <div class="fragment"><div class="line">target == Max(vars) </div>
 </div><!-- fragment --><p> . </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00659">659</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00817">817</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
-<a id="ab18889303cb7409a96a7778085f9f7ad" name="ab18889303cb7409a96a7778085f9f7ad"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab18889303cb7409a96a7778085f9f7ad">&#9670;&nbsp;</a></span>addMinEquality()</h2>
+<a id="a8774f3e82217f141af2588f9a5914e55" name="a8774f3e82217f141af2588f9a5914e55"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8774f3e82217f141af2588f9a5914e55">&#9670;&nbsp;</a></span>addMaxEquality() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a> addMaxEquality </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a>&#160;</td>
+          <td class="paramname"><em>target</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a>[]&#160;</td>
+          <td class="paramname"><em>exprs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Adds. </p>
+<div class="fragment"><div class="line">target == Max(exprs) </div>
+</div><!-- fragment --><p> . </p>
+
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00828">828</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+
+</div>
+</div>
+<a id="a2c121f33f5126bcfb239191659f7358e" name="a2c121f33f5126bcfb239191659f7358e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2c121f33f5126bcfb239191659f7358e">&#9670;&nbsp;</a></span>addMinEquality() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2136,7 +2318,7 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a> addMinEquality </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a>&#160;</td>
           <td class="paramname"><em>target</em>, </td>
         </tr>
         <tr>
@@ -2157,12 +2339,46 @@ Public Member Functions</h2></td></tr>
 <div class="fragment"><div class="line">target == Min(vars) </div>
 </div><!-- fragment --><p> . </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00648">648</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00795">795</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
-<a id="a75a3fdb0db38f2501a441ca2ca9f400a" name="a75a3fdb0db38f2501a441ca2ca9f400a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a75a3fdb0db38f2501a441ca2ca9f400a">&#9670;&nbsp;</a></span>addModuloEquality() <span class="overload">[1/2]</span></h2>
+<a id="a9a91498e90119505e5c59827db45658a" name="a9a91498e90119505e5c59827db45658a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9a91498e90119505e5c59827db45658a">&#9670;&nbsp;</a></span>addMinEquality() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a> addMinEquality </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a>&#160;</td>
+          <td class="paramname"><em>target</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a>[]&#160;</td>
+          <td class="paramname"><em>exprs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Adds. </p>
+<div class="fragment"><div class="line">target == Min(exprs) </div>
+</div><!-- fragment --><p> . </p>
+
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00806">806</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+
+</div>
+</div>
+<a id="a0be7e9d8944967b15a7f0abf0fd7ec52" name="a0be7e9d8944967b15a7f0abf0fd7ec52"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0be7e9d8944967b15a7f0abf0fd7ec52">&#9670;&nbsp;</a></span>addModuloEquality() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2170,19 +2386,19 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a> addModuloEquality </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a>&#160;</td>
           <td class="paramname"><em>target</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a>&#160;</td>
           <td class="paramname"><em>var</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a>&#160;</td>
           <td class="paramname"><em>mod</em>&#160;</td>
         </tr>
         <tr>
@@ -2197,12 +2413,12 @@ Public Member Functions</h2></td></tr>
 <div class="fragment"><div class="line">target == var % mod </div>
 </div><!-- fragment --><p> . </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00692">692</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00860">860</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
-<a id="a3795c421962238b8751b5e2e8654afbb" name="a3795c421962238b8751b5e2e8654afbb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3795c421962238b8751b5e2e8654afbb">&#9670;&nbsp;</a></span>addModuloEquality() <span class="overload">[2/2]</span></h2>
+<a id="a17c51f9dffb94e70b5c2e266302e1ede" name="a17c51f9dffb94e70b5c2e266302e1ede"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a17c51f9dffb94e70b5c2e266302e1ede">&#9670;&nbsp;</a></span>addModuloEquality() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2210,13 +2426,13 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a> addModuloEquality </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a>&#160;</td>
           <td class="paramname"><em>target</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a>&#160;</td>
           <td class="paramname"><em>var</em>, </td>
         </tr>
         <tr>
@@ -2237,7 +2453,75 @@ Public Member Functions</h2></td></tr>
 <div class="fragment"><div class="line">target == var % mod </div>
 </div><!-- fragment --><p> . </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00703">703</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00871">871</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+
+</div>
+</div>
+<a id="a0ab3870688afc4a697b186966b95d0d9" name="a0ab3870688afc4a697b186966b95d0d9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0ab3870688afc4a697b186966b95d0d9">&#9670;&nbsp;</a></span>addMultiplicationEquality() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a> addMultiplicationEquality </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a>&#160;</td>
+          <td class="paramname"><em>target</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a>[]&#160;</td>
+          <td class="paramname"><em>vars</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Adds. </p>
+<div class="fragment"><div class="line">target == Product(vars) </div>
+</div><!-- fragment --><p> . </p>
+
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00882">882</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+
+</div>
+</div>
+<a id="a2a8d136f791aa5784d2b18f4c576f378" name="a2a8d136f791aa5784d2b18f4c576f378"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2a8d136f791aa5784d2b18f4c576f378">&#9670;&nbsp;</a></span>addMultiplicationEquality() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a> addMultiplicationEquality </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a>&#160;</td>
+          <td class="paramname"><em>target</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a>[]&#160;</td>
+          <td class="paramname"><em>exprs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Adds. </p>
+<div class="fragment"><div class="line">target == Product(exprs) </div>
+</div><!-- fragment --><p> . </p>
+
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00893">893</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -2269,7 +2553,7 @@ Public Member Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>an instance of the <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html" title="Wrapper around a ConstraintProto.">Constraint</a> class </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00835">835</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l01020">1020</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -2312,46 +2596,12 @@ Public Member Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>an instance of the <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html" title="Wrapper around a ConstraintProto.">Constraint</a> class </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00855">855</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l01040">1040</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
-<a id="a701e85fcfe8ad1dfd83fcbced49fce96" name="a701e85fcfe8ad1dfd83fcbced49fce96"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a701e85fcfe8ad1dfd83fcbced49fce96">&#9670;&nbsp;</a></span>addProductEquality()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a> addProductEquality </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a>&#160;</td>
-          <td class="paramname"><em>target</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a>[]&#160;</td>
-          <td class="paramname"><em>vars</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Adds. </p>
-<div class="fragment"><div class="line">target == Product(vars) </div>
-</div><!-- fragment --><p> . </p>
-
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00714">714</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
-
-</div>
-</div>
-<a id="a65c5e85798b91fc39bbcc8ee35e7d808" name="a65c5e85798b91fc39bbcc8ee35e7d808"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a65c5e85798b91fc39bbcc8ee35e7d808">&#9670;&nbsp;</a></span>addReservoirConstraint() <span class="overload">[1/2]</span></h2>
+<a id="a49b3f9ff146bc0f77a376cca150edae3" name="a49b3f9ff146bc0f77a376cca150edae3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a49b3f9ff146bc0f77a376cca150edae3">&#9670;&nbsp;</a></span>addReservoirConstraint() <span class="overload">[1/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2366,7 +2616,7 @@ Public Member Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">int[]&#160;</td>
-          <td class="paramname"><em>demands</em>, </td>
+          <td class="paramname"><em>levelChanges</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -2389,16 +2639,16 @@ Public Member Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Adds. </p>
-<div class="fragment"><div class="line">Reservoir(times, demands, minLevel, maxLevel) </div>
+<div class="fragment"><div class="line">Reservoir(times, levelChanges, minLevel, maxLevel) </div>
 </div><!-- fragment --><p> .</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a731e8bd6e9ce86bea263bcb22498571d" title="Adds.">addReservoirConstraint(IntVar[], long[], long, long)</a> Reservoir </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a083e8573674296266b19bc5a2b86897b" title="Adds.">addReservoirConstraint(IntVar[], long[], long, long)</a> Reservoir </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00566">566</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00586">586</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
-<a id="a731e8bd6e9ce86bea263bcb22498571d" name="a731e8bd6e9ce86bea263bcb22498571d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a731e8bd6e9ce86bea263bcb22498571d">&#9670;&nbsp;</a></span>addReservoirConstraint() <span class="overload">[2/2]</span></h2>
+<a id="a083e8573674296266b19bc5a2b86897b" name="a083e8573674296266b19bc5a2b86897b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a083e8573674296266b19bc5a2b86897b">&#9670;&nbsp;</a></span>addReservoirConstraint() <span class="overload">[2/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2413,7 +2663,7 @@ Public Member Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">long[]&#160;</td>
-          <td class="paramname"><em>demands</em>, </td>
+          <td class="paramname"><em>levelChanges</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -2436,20 +2686,20 @@ Public Member Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Adds. </p>
-<div class="fragment"><div class="line">Reservoir(times, demands, minLevel, maxLevel) </div>
+<div class="fragment"><div class="line">Reservoir(times, levelChanges, minLevel, maxLevel) </div>
 </div><!-- fragment --><p> .</p>
 <p >Maintains a reservoir level within bounds. The water level starts at 0, and at any times, it must be between minLevel and maxLevel. If the variable </p><div class="fragment"><div class="line">times[i] </div>
 </div><!-- fragment --><p> is assigned a value t, and if </p><div class="fragment"><div class="line">actives[i] </div>
-</div><!-- fragment --><p> is true, then the current level changes by </p><div class="fragment"><div class="line">demands[i] </div>
+</div><!-- fragment --><p> is true, then the current level changes by </p><div class="fragment"><div class="line">levelChanges[i] </div>
 </div><!-- fragment --><p> (which is constant) at the time t.</p>
 <p >Note that </p><div class="fragment"><div class="line">minLevel </div>
 </div><!-- fragment --><p> must be less than 0, and </p><div class="fragment"><div class="line">maxLevel </div>
-</div><!-- fragment --><p> must be greater than 0. Therefore, </p><div class="fragment"><div class="line">forall t : minLevel &lt;= sum(demands[i] <span class="keywordflow">if</span> times[i] &lt;= t) &lt;= maxLevel </div>
+</div><!-- fragment --><p> must be greater than 0. Therefore, </p><div class="fragment"><div class="line">forall t : minLevel &lt;= sum(levelChanges[i] <span class="keywordflow">if</span> times[i] &lt;= t) &lt;= maxLevel </div>
 </div><!-- fragment --><p> .</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">times</td><td>a list of integer variables which specify the time of the filling or emptying the reservoir </td></tr>
-    <tr><td class="paramname">demands</td><td>a list of integer values that specifies the amount of the emptying or feeling </td></tr>
+    <tr><td class="paramname">levelChanges</td><td>a list of integer values that specifies the amount of the emptying or feeling </td></tr>
     <tr><td class="paramname">minLevel</td><td>at any time, the level of the reservoir must be greater of equal than the min level. minLevel must me &lt;= 0. </td></tr>
     <tr><td class="paramname">maxLevel</td><td>at any time, the level of the reservoir must be less or equal than the max level. maxLevel must be &gt;= 0. </td></tr>
   </table>
@@ -2458,19 +2708,138 @@ Public Member Functions</h2></td></tr>
 <dl class="section return"><dt>Returns</dt><dd>an instance of the <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html" title="Wrapper around a ConstraintProto.">Constraint</a> class </dd></dl>
 <dl class="exception"><dt>Exceptions</dt><dd>
   <table class="exception">
-    <tr><td class="paramname"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel_1_1MismatchedArrayLengths.html" title="Exception thrown when parallel arrays have mismatched lengths.">MismatchedArrayLengths</a></td><td>if times and demands have different length </td></tr>
+    <tr><td class="paramname"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel_1_1MismatchedArrayLengths.html" title="Exception thrown when parallel arrays have mismatched lengths.">MismatchedArrayLengths</a></td><td>if times and levelChanges have different lengths </td></tr>
     <tr><td class="paramname">IllegalArgumentException</td><td>if minLevel &gt; 0 </td></tr>
     <tr><td class="paramname">IllegalArgumentException</td><td>if maxLevel &lt; 0 </td></tr>
   </table>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00538">538</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00558">558</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
-<a id="a9a9e0fdb63a893daa454d53fb21a38c7" name="a9a9e0fdb63a893daa454d53fb21a38c7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9a9e0fdb63a893daa454d53fb21a38c7">&#9670;&nbsp;</a></span>addReservoirConstraintWithActive() <span class="overload">[1/2]</span></h2>
+<a id="a673d687355c977d2c31e2e5a01d834d1" name="a673d687355c977d2c31e2e5a01d834d1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a673d687355c977d2c31e2e5a01d834d1">&#9670;&nbsp;</a></span>addReservoirConstraint() <span class="overload">[3/4]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a> addReservoirConstraint </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a>[]&#160;</td>
+          <td class="paramname"><em>times</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int[]&#160;</td>
+          <td class="paramname"><em>levelChanges</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">long&#160;</td>
+          <td class="paramname"><em>minLevel</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">long&#160;</td>
+          <td class="paramname"><em>maxLevel</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Adds. </p>
+<div class="fragment"><div class="line">Reservoir(times, levelChanges, minLevel, maxLevel) </div>
+</div><!-- fragment --><p> .</p>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a083e8573674296266b19bc5a2b86897b" title="Adds.">addReservoirConstraint(IntVar[], long[], long, long)</a> Reservoir </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00643">643</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+
+</div>
+</div>
+<a id="ade13a3ebd385b7ae97c25babdae7dad5" name="ade13a3ebd385b7ae97c25babdae7dad5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ade13a3ebd385b7ae97c25babdae7dad5">&#9670;&nbsp;</a></span>addReservoirConstraint() <span class="overload">[4/4]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a> addReservoirConstraint </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a>[]&#160;</td>
+          <td class="paramname"><em>times</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">long[]&#160;</td>
+          <td class="paramname"><em>levelChanges</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">long&#160;</td>
+          <td class="paramname"><em>minLevel</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">long&#160;</td>
+          <td class="paramname"><em>maxLevel</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Adds. </p>
+<div class="fragment"><div class="line">Reservoir(times, levelChanges, minLevel, maxLevel) </div>
+</div><!-- fragment --><p> .</p>
+<p >Maintains a reservoir level within bounds. The water level starts at 0, and at any times, it must be between minLevel and maxLevel. If the expression </p><div class="fragment"><div class="line">times[i] </div>
+</div><!-- fragment --><p> is assigned a value t, and if </p><div class="fragment"><div class="line">actives[i] </div>
+</div><!-- fragment --><p> is true, then the current level changes by </p><div class="fragment"><div class="line">levelChanges[i] </div>
+</div><!-- fragment --><p> (which is constant) at the time t.</p>
+<p >Note that </p><div class="fragment"><div class="line">minLevel </div>
+</div><!-- fragment --><p> must be less than 0, and </p><div class="fragment"><div class="line">maxLevel </div>
+</div><!-- fragment --><p> must be greater than 0. Therefore, </p><div class="fragment"><div class="line">forall t : minLevel &lt;= sum(levelChanges[i] <span class="keywordflow">if</span> times[i] &lt;= t) &lt;= maxLevel </div>
+</div><!-- fragment --><p> .</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">times</td><td>a list of affine expressions which specify the time of the filling or emptying the reservoir </td></tr>
+    <tr><td class="paramname">levelChanges</td><td>a list of integer values that specifies the amount of the emptying or feeling </td></tr>
+    <tr><td class="paramname">minLevel</td><td>at any time, the level of the reservoir must be greater of equal than the min level. minLevel must me &lt;= 0. </td></tr>
+    <tr><td class="paramname">maxLevel</td><td>at any time, the level of the reservoir must be less or equal than the max level. maxLevel must be &gt;= 0. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>an instance of the <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html" title="Wrapper around a ConstraintProto.">Constraint</a> class </dd></dl>
+<dl class="exception"><dt>Exceptions</dt><dd>
+  <table class="exception">
+    <tr><td class="paramname"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel_1_1MismatchedArrayLengths.html" title="Exception thrown when parallel arrays have mismatched lengths.">MismatchedArrayLengths</a></td><td>if times and levelChanges have different lengths </td></tr>
+    <tr><td class="paramname">IllegalArgumentException</td><td>if minLevel &gt; 0 </td></tr>
+    <tr><td class="paramname">IllegalArgumentException</td><td>if maxLevel &lt; 0 </td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00615">615</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+
+</div>
+</div>
+<a id="a9e7f640a6446b1762e55106aa1f2a664" name="a9e7f640a6446b1762e55106aa1f2a664"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9e7f640a6446b1762e55106aa1f2a664">&#9670;&nbsp;</a></span>addReservoirConstraintWithActive() <span class="overload">[1/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2485,7 +2854,7 @@ Public Member Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">int[]&#160;</td>
-          <td class="paramname"><em>demands</em>, </td>
+          <td class="paramname"><em>levelChanges</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -2514,16 +2883,16 @@ Public Member Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Adds. </p>
-<div class="fragment"><div class="line">Reservoir(times, demands, actives, minLevel, maxLevel) </div>
+<div class="fragment"><div class="line">Reservoir(times, levelChanges, actives, minLevel, maxLevel) </div>
 </div><!-- fragment --><p> .</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a258c2320306720544f8a9caa2fc1b949" title="Adds.">addReservoirConstraintWithActive(IntVar[], long[], IntVar[], long, long)</a> Reservoir </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a9ca2a6a1ffd523c8cad175c0f697c3b7" title="Adds.">addReservoirConstraintWithActive(IntVar[], long[], IntVar[], long, long)</a> Reservoir </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00633">633</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00711">711</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
-<a id="a258c2320306720544f8a9caa2fc1b949" name="a258c2320306720544f8a9caa2fc1b949"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a258c2320306720544f8a9caa2fc1b949">&#9670;&nbsp;</a></span>addReservoirConstraintWithActive() <span class="overload">[2/2]</span></h2>
+<a id="a9ca2a6a1ffd523c8cad175c0f697c3b7" name="a9ca2a6a1ffd523c8cad175c0f697c3b7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9ca2a6a1ffd523c8cad175c0f697c3b7">&#9670;&nbsp;</a></span>addReservoirConstraintWithActive() <span class="overload">[2/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2538,7 +2907,7 @@ Public Member Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">long[]&#160;</td>
-          <td class="paramname"><em>demands</em>, </td>
+          <td class="paramname"><em>levelChanges</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -2567,20 +2936,20 @@ Public Member Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Adds. </p>
-<div class="fragment"><div class="line">Reservoir(times, demands, actives, minLevel, maxLevel) </div>
+<div class="fragment"><div class="line">Reservoir(times, levelChanges, actives, minLevel, maxLevel) </div>
 </div><!-- fragment --><p> .</p>
 <p >Maintains a reservoir level within bounds. The water level starts at 0, and at any time, it must be between minLevel and maxLevel. If the variable </p><div class="fragment"><div class="line">times[i] </div>
-</div><!-- fragment --><p> is assigned a value t, then the current level changes by </p><div class="fragment"><div class="line">demands[i] </div>
+</div><!-- fragment --><p> is assigned a value t, then the current level changes by </p><div class="fragment"><div class="line">levelChanges[i] </div>
 </div><!-- fragment --><p> (which is constant) at the time t.</p>
 <p >Note that </p><div class="fragment"><div class="line">minLevel </div>
 </div><!-- fragment --><p> must be less than 0, and </p><div class="fragment"><div class="line">maxLevel </div>
-</div><!-- fragment --><p> must be greater than 0. Therefore, </p><div class="fragment"><div class="line"> forall t : minLevel &lt;= sum(demands[i] * actives[i] <span class="keywordflow">if</span> times[i] &lt;= t) &lt;=</div>
+</div><!-- fragment --><p> must be greater than 0. Therefore, </p><div class="fragment"><div class="line"> forall t : minLevel &lt;= sum(levelChanges[i] * actives[i] <span class="keywordflow">if</span> times[i] &lt;= t) &lt;=</div>
 <div class="line">maxLevel </div>
 </div><!-- fragment --><p> .</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">times</td><td>a list of integer variables which specify the time of the filling or emptying the reservoir </td></tr>
-    <tr><td class="paramname">demands</td><td>a list of integer values that specifies the amount of the emptying or feeling </td></tr>
+    <tr><td class="paramname">levelChanges</td><td>a list of integer values that specifies the amount of the emptying or feeling </td></tr>
     <tr><td class="paramname">minLevel</td><td>at any time, the level of the reservoir must be greater of equal than the min level. minLevel must me &lt;= 0. </td></tr>
     <tr><td class="paramname">maxLevel</td><td>at any time, the level of the reservoir must be less or equal than the max level. maxLevel must be &gt;= 0. </td></tr>
   </table>
@@ -2589,14 +2958,145 @@ Public Member Functions</h2></td></tr>
 <dl class="section return"><dt>Returns</dt><dd>an instance of the <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html" title="Wrapper around a ConstraintProto.">Constraint</a> class </dd></dl>
 <dl class="exception"><dt>Exceptions</dt><dd>
   <table class="exception">
-    <tr><td class="paramname"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel_1_1MismatchedArrayLengths.html" title="Exception thrown when parallel arrays have mismatched lengths.">MismatchedArrayLengths</a></td><td>if times, demands, or actives have different length </td></tr>
+    <tr><td class="paramname"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel_1_1MismatchedArrayLengths.html" title="Exception thrown when parallel arrays have mismatched lengths.">MismatchedArrayLengths</a></td><td>if times, levelChanges, or actives have different lengths </td></tr>
     <tr><td class="paramname">IllegalArgumentException</td><td>if minLevel &gt; 0 </td></tr>
     <tr><td class="paramname">IllegalArgumentException</td><td>if maxLevel &lt; 0 </td></tr>
   </table>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00594">594</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00672">672</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+
+</div>
+</div>
+<a id="a814169ebf1049e2ebdc711395c12ae9b" name="a814169ebf1049e2ebdc711395c12ae9b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a814169ebf1049e2ebdc711395c12ae9b">&#9670;&nbsp;</a></span>addReservoirConstraintWithActive() <span class="overload">[3/4]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a> addReservoirConstraintWithActive </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a>[]&#160;</td>
+          <td class="paramname"><em>times</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int[]&#160;</td>
+          <td class="paramname"><em>levelChanges</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a>[]&#160;</td>
+          <td class="paramname"><em>actives</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">long&#160;</td>
+          <td class="paramname"><em>minLevel</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">long&#160;</td>
+          <td class="paramname"><em>maxLevel</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Adds. </p>
+<div class="fragment"><div class="line">Reservoir(times, levelChanges, actives, minLevel, maxLevel) </div>
+</div><!-- fragment --><p> .</p>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a9ca2a6a1ffd523c8cad175c0f697c3b7" title="Adds.">addReservoirConstraintWithActive(IntVar[], long[], IntVar[], long, long)</a> Reservoir </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00780">780</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+
+</div>
+</div>
+<a id="a62749519be556bd6fab263576f35eca0" name="a62749519be556bd6fab263576f35eca0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a62749519be556bd6fab263576f35eca0">&#9670;&nbsp;</a></span>addReservoirConstraintWithActive() <span class="overload">[4/4]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html">Constraint</a> addReservoirConstraintWithActive </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a>[]&#160;</td>
+          <td class="paramname"><em>times</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">long[]&#160;</td>
+          <td class="paramname"><em>levelChanges</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a>[]&#160;</td>
+          <td class="paramname"><em>actives</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">long&#160;</td>
+          <td class="paramname"><em>minLevel</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">long&#160;</td>
+          <td class="paramname"><em>maxLevel</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Adds. </p>
+<div class="fragment"><div class="line">Reservoir(times, levelChanges, actives, minLevel, maxLevel) </div>
+</div><!-- fragment --><p> .</p>
+<p >Maintains a reservoir level within bounds. The water level starts at 0, and at any time, it must be between minLevel and maxLevel. If the expression </p><div class="fragment"><div class="line">times[i] </div>
+</div><!-- fragment --><p> is assigned a value t, then the current level changes by </p><div class="fragment"><div class="line">levelChanges[i] </div>
+</div><!-- fragment --><p> (which is constant) at the time t.</p>
+<p >Note that </p><div class="fragment"><div class="line">minLevel </div>
+</div><!-- fragment --><p> must be less than 0, and </p><div class="fragment"><div class="line">maxLevel </div>
+</div><!-- fragment --><p> must be greater than 0. Therefore, </p><div class="fragment"><div class="line"> forall t : minLevel &lt;= sum(levelChanges[i] * actives[i] <span class="keywordflow">if</span> times[i] &lt;= t) &lt;=</div>
+<div class="line">maxLevel </div>
+</div><!-- fragment --><p> .</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">times</td><td>a list of affine expressions which specify the time of the filling or emptying the reservoir </td></tr>
+    <tr><td class="paramname">levelChanges</td><td>a list of integer values that specifies the amount of the emptying or feeling </td></tr>
+    <tr><td class="paramname">minLevel</td><td>at any time, the level of the reservoir must be greater of equal than the min level. minLevel must me &lt;= 0. </td></tr>
+    <tr><td class="paramname">maxLevel</td><td>at any time, the level of the reservoir must be less or equal than the max level. maxLevel must be &gt;= 0. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>an instance of the <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html" title="Wrapper around a ConstraintProto.">Constraint</a> class </dd></dl>
+<dl class="exception"><dt>Exceptions</dt><dd>
+  <table class="exception">
+    <tr><td class="paramname"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel_1_1MismatchedArrayLengths.html" title="Exception thrown when parallel arrays have mismatched lengths.">MismatchedArrayLengths</a></td><td>if times, levelChanges, or actives have different lengths </td></tr>
+    <tr><td class="paramname">IllegalArgumentException</td><td>if minLevel &gt; 0 </td></tr>
+    <tr><td class="paramname">IllegalArgumentException</td><td>if maxLevel &lt; 0 </td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00741">741</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -2617,7 +3117,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Remove all assumptions from the model. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00991">991</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l01213">1213</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -2638,7 +3138,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Remove all solution hints. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00974">974</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l01196">1196</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -2667,7 +3167,7 @@ Public Member Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>true if the model was correctly written. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l01047">1047</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l01285">1285</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -2688,7 +3188,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns the false literal. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00107">107</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00109">109</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -2709,12 +3209,32 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns the model builder. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l01094">1094</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l01334">1334</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+
+</div>
+</div>
+<a id="a32ca6deb46a5dd2fcb441f296dc115e2" name="a32ca6deb46a5dd2fcb441f296dc115e2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a32ca6deb46a5dd2fcb441f296dc115e2">&#9670;&nbsp;</a></span>maximize() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void maximize </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1DoubleLinearExpr.html">DoubleLinearExpr</a>&#160;</td>
+          <td class="paramname"><em>expr</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l01246">1246</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
 <a id="aa03f83497b1d96e83c6bcf48c385078c" name="aa03f83497b1d96e83c6bcf48c385078c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa03f83497b1d96e83c6bcf48c385078c">&#9670;&nbsp;</a></span>maximize()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aa03f83497b1d96e83c6bcf48c385078c">&#9670;&nbsp;</a></span>maximize() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2731,12 +3251,32 @@ Public Member Functions</h2></td></tr>
 
 <p>Adds a maximization objective of a linear expression. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l01007">1007</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l01237">1237</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+
+</div>
+</div>
+<a id="ab0ca1aadc6b8ba7104c8bcbb2b607e6c" name="ab0ca1aadc6b8ba7104c8bcbb2b607e6c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab0ca1aadc6b8ba7104c8bcbb2b607e6c">&#9670;&nbsp;</a></span>minimize() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void minimize </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1DoubleLinearExpr.html">DoubleLinearExpr</a>&#160;</td>
+          <td class="paramname"><em>expr</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l01228">1228</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
 <a id="a5ebe6f90377f06adcb4a95eca060bcb6" name="a5ebe6f90377f06adcb4a95eca060bcb6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5ebe6f90377f06adcb4a95eca060bcb6">&#9670;&nbsp;</a></span>minimize()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a5ebe6f90377f06adcb4a95eca060bcb6">&#9670;&nbsp;</a></span>minimize() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2753,7 +3293,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Adds a minimization objective of a linear expression. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00998">998</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l01220">1220</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -2772,7 +3312,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l01085">1085</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l01325">1325</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -2793,7 +3333,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns some statistics on model as a string. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l01030">1030</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l01268">1268</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -2813,7 +3353,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l01089">1089</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l01329">1329</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -2835,7 +3375,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Creates a Boolean variable with the given name. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00087">87</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00089">89</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -2857,7 +3397,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Creates a constant variable. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00092">92</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00094">94</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -2895,7 +3435,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Creates a fixed interval from its start and its size. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00766">766</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00948">948</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -2943,7 +3483,7 @@ Public Member Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>An <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalVar.html" title="An interval variable.">IntervalVar</a> object </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00759">759</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00939">939</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -3000,7 +3540,7 @@ Public Member Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>An <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalVar.html" title="An interval variable.">IntervalVar</a> object </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00740">740</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00919">919</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -3038,7 +3578,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Creates an integer variable with domain [lb, ub]. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00071">71</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00073">73</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -3078,7 +3618,7 @@ Public Member Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>a variable with the given domain. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00082">82</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00084">84</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -3122,7 +3662,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Creates an optional fixed interval from start and size, and an isPresent literal. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00820">820</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l01005">1005</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -3177,7 +3717,7 @@ Public Member Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>An <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalVar.html" title="An interval variable.">IntervalVar</a> object </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00811">811</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00995">995</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -3242,7 +3782,7 @@ Public Member Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>an <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalVar.html" title="An interval variable.">IntervalVar</a> object </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00790">790</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00972">972</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -3263,7 +3803,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns the true literal. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00102">102</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l00104">104</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -3284,7 +3824,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns a non empty string explaining the issue if the model is invalid. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l01035">1035</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l01273">1273</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>

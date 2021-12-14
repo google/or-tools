@@ -16,5 +16,6 @@ var searchData=
   ['operations_5fresearch_5futil_2ecs_13',['operations_research_util.cs',['../operations__research__util_8cs.html',1,'']]],
   ['operations_5fresearch_5futilpinvoke_2ecs_14',['operations_research_utilPINVOKE.cs',['../operations__research__utilPINVOKE_8cs.html',1,'']]],
   ['optimizevar_2ecs_15',['OptimizeVar.cs',['../OptimizeVar_8cs.html',1,'']]],
-  ['optionalboolean_2epb_2ecs_16',['OptionalBoolean.pb.cs',['../OptionalBoolean_8pb_8cs.html',1,'']]]
+  ['optionalboolean_2epb_2ecs_16',['OptionalBoolean.pb.cs',['../OptionalBoolean_8pb_8cs.html',1,'']]],
+  ['ortoolsversion_2ecs_17',['OrToolsVersion.cs',['../OrToolsVersion_8cs.html',1,'']]]
 ];

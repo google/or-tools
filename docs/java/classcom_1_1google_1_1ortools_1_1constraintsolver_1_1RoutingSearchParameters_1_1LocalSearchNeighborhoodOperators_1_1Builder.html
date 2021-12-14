@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 9.1</span>
+                <span id="sfml">Google OR-Tools 9.2</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -779,7 +779,7 @@ Possible neighbors for the path 1 -&gt; 2 -&gt; 3 -&gt; 4 with 5 inactive
       </table>
 </div><div class="memdoc">
 <pre>
-Operator which relaxes one entire path and all unactive nodes.
+Operator which relaxes one entire path and all inactive nodes.
 </pre><p ><code>.operations_research.OptionalBoolean use_full_path_lns = 17;</code> </p><dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
 <p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l06463">6463</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
@@ -877,7 +877,7 @@ using the GlobalCheapestInsertion heuristic.
 <pre>
 Operator which relaxes all inactive nodes and one sub-chain of six
 consecutive arcs. That way the path can be improved by inserting inactive
-nodes or swaping arcs.
+nodes or swapping arcs.
 </pre><p ><code>.operations_research.OptionalBoolean use_inactive_lns = 19;</code> </p><dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
 <p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l06646">6646</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
@@ -1310,7 +1310,7 @@ place):
 1 -&gt; A -&gt; [E] -&gt; B -&gt; C -&gt; D -&gt; 2
 1 -&gt; A -&gt; B -&gt; [E] -&gt; C -&gt; D -&gt; 2
 1 -&gt; A -&gt; B -&gt; C -&gt; [E] -&gt; D -&gt; 2
-This operator is extremelly useful to move chains of nodes which are
+This operator is extremely useful to move chains of nodes which are
 located at the same place (for instance nodes part of a same stop).
 </pre><p ><code>.operations_research.OptionalBoolean use_relocate_neighbors = 3;</code> </p><dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
@@ -1501,7 +1501,7 @@ cost(A,i) = cost(1,i) and cost(i,A) = cost(i,6).
 </div><div class="memdoc">
 <pre>
 --- Intra-route operators ---
-Operator which reverves a sub-chain of a path. It is called TwoOpt
+Operator which reverses a subchain of a path. It is called TwoOpt
 because it breaks two arcs on the path; resulting paths are called
 two-optimal.
 Possible neighbors for the path 1 -&gt; 2 -&gt; 3 -&gt; 4 -&gt; 5
@@ -1963,7 +1963,7 @@ Possible neighbors for the path 1 -&gt; 2 -&gt; 3 -&gt; 4 with 5 inactive
       </table>
 </div><div class="memdoc">
 <pre>
-Operator which relaxes one entire path and all unactive nodes.
+Operator which relaxes one entire path and all inactive nodes.
 </pre><p ><code>.operations_research.OptionalBoolean use_full_path_lns = 17;</code> </p><dl class="section return"><dt>Returns</dt><dd>The useFullPathLns. </dd></dl>
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1LocalSearchNeighborhoodOperatorsOrBuilder.html#a477cf579171749da76e1cab0cd7a26f1">RoutingSearchParameters.LocalSearchNeighborhoodOperatorsOrBuilder</a>.</p>
@@ -1987,7 +1987,7 @@ Operator which relaxes one entire path and all unactive nodes.
       </table>
 </div><div class="memdoc">
 <pre>
-Operator which relaxes one entire path and all unactive nodes.
+Operator which relaxes one entire path and all inactive nodes.
 </pre><p ><code>.operations_research.OptionalBoolean use_full_path_lns = 17;</code> </p><dl class="section return"><dt>Returns</dt><dd>The enum numeric value on the wire for useFullPathLns. </dd></dl>
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1LocalSearchNeighborhoodOperatorsOrBuilder.html#adfa161e0ef54e9d1da22a46a6e6b64b9">RoutingSearchParameters.LocalSearchNeighborhoodOperatorsOrBuilder</a>.</p>
@@ -2173,7 +2173,7 @@ using the GlobalCheapestInsertion heuristic.
 <pre>
 Operator which relaxes all inactive nodes and one sub-chain of six
 consecutive arcs. That way the path can be improved by inserting inactive
-nodes or swaping arcs.
+nodes or swapping arcs.
 </pre><p ><code>.operations_research.OptionalBoolean use_inactive_lns = 19;</code> </p><dl class="section return"><dt>Returns</dt><dd>The useInactiveLns. </dd></dl>
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1LocalSearchNeighborhoodOperatorsOrBuilder.html#a4030d7ed49b0f368d5e3180837bc1648">RoutingSearchParameters.LocalSearchNeighborhoodOperatorsOrBuilder</a>.</p>
@@ -2199,7 +2199,7 @@ nodes or swaping arcs.
 <pre>
 Operator which relaxes all inactive nodes and one sub-chain of six
 consecutive arcs. That way the path can be improved by inserting inactive
-nodes or swaping arcs.
+nodes or swapping arcs.
 </pre><p ><code>.operations_research.OptionalBoolean use_inactive_lns = 19;</code> </p><dl class="section return"><dt>Returns</dt><dd>The enum numeric value on the wire for useInactiveLns. </dd></dl>
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1LocalSearchNeighborhoodOperatorsOrBuilder.html#af3e045a0e68a144d0f1ce1f6bde57dca">RoutingSearchParameters.LocalSearchNeighborhoodOperatorsOrBuilder</a>.</p>
@@ -3049,7 +3049,7 @@ place):
 1 -&gt; A -&gt; [E] -&gt; B -&gt; C -&gt; D -&gt; 2
 1 -&gt; A -&gt; B -&gt; [E] -&gt; C -&gt; D -&gt; 2
 1 -&gt; A -&gt; B -&gt; C -&gt; [E] -&gt; D -&gt; 2
-This operator is extremelly useful to move chains of nodes which are
+This operator is extremely useful to move chains of nodes which are
 located at the same place (for instance nodes part of a same stop).
 </pre><p ><code>.operations_research.OptionalBoolean use_relocate_neighbors = 3;</code> </p><dl class="section return"><dt>Returns</dt><dd>The useRelocateNeighbors. </dd></dl>
 
@@ -3094,7 +3094,7 @@ place):
 1 -&gt; A -&gt; [E] -&gt; B -&gt; C -&gt; D -&gt; 2
 1 -&gt; A -&gt; B -&gt; [E] -&gt; C -&gt; D -&gt; 2
 1 -&gt; A -&gt; B -&gt; C -&gt; [E] -&gt; D -&gt; 2
-This operator is extremelly useful to move chains of nodes which are
+This operator is extremely useful to move chains of nodes which are
 located at the same place (for instance nodes part of a same stop).
 </pre><p ><code>.operations_research.OptionalBoolean use_relocate_neighbors = 3;</code> </p><dl class="section return"><dt>Returns</dt><dd>The enum numeric value on the wire for useRelocateNeighbors. </dd></dl>
 
@@ -3510,7 +3510,7 @@ cost(A,i) = cost(1,i) and cost(i,A) = cost(i,6).
 </div><div class="memdoc">
 <pre>
 --- Intra-route operators ---
-Operator which reverves a sub-chain of a path. It is called TwoOpt
+Operator which reverses a subchain of a path. It is called TwoOpt
 because it breaks two arcs on the path; resulting paths are called
 two-optimal.
 Possible neighbors for the path 1 -&gt; 2 -&gt; 3 -&gt; 4 -&gt; 5
@@ -3543,7 +3543,7 @@ be moved):
 </div><div class="memdoc">
 <pre>
 --- Intra-route operators ---
-Operator which reverves a sub-chain of a path. It is called TwoOpt
+Operator which reverses a subchain of a path. It is called TwoOpt
 because it breaks two arcs on the path; resulting paths are called
 two-optimal.
 Possible neighbors for the path 1 -&gt; 2 -&gt; 3 -&gt; 4 -&gt; 5
@@ -4206,7 +4206,7 @@ Possible neighbors for the path 1 -&gt; 2 -&gt; 3 -&gt; 4 with 5 inactive
       </table>
 </div><div class="memdoc">
 <pre>
-Operator which relaxes one entire path and all unactive nodes.
+Operator which relaxes one entire path and all inactive nodes.
 </pre><p ><code>.operations_research.OptionalBoolean use_full_path_lns = 17;</code> </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">value</td><td>The useFullPathLns to set. </td></tr>
@@ -4235,7 +4235,7 @@ Operator which relaxes one entire path and all unactive nodes.
       </table>
 </div><div class="memdoc">
 <pre>
-Operator which relaxes one entire path and all unactive nodes.
+Operator which relaxes one entire path and all inactive nodes.
 </pre><p ><code>.operations_research.OptionalBoolean use_full_path_lns = 17;</code> </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">value</td><td>The enum numeric value on the wire for useFullPathLns to set. </td></tr>
@@ -4456,7 +4456,7 @@ using the GlobalCheapestInsertion heuristic.
 <pre>
 Operator which relaxes all inactive nodes and one sub-chain of six
 consecutive arcs. That way the path can be improved by inserting inactive
-nodes or swaping arcs.
+nodes or swapping arcs.
 </pre><p ><code>.operations_research.OptionalBoolean use_inactive_lns = 19;</code> </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">value</td><td>The useInactiveLns to set. </td></tr>
@@ -4487,7 +4487,7 @@ nodes or swaping arcs.
 <pre>
 Operator which relaxes all inactive nodes and one sub-chain of six
 consecutive arcs. That way the path can be improved by inserting inactive
-nodes or swaping arcs.
+nodes or swapping arcs.
 </pre><p ><code>.operations_research.OptionalBoolean use_inactive_lns = 19;</code> </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">value</td><td>The enum numeric value on the wire for useInactiveLns to set. </td></tr>
@@ -5479,7 +5479,7 @@ place):
 1 -&gt; A -&gt; [E] -&gt; B -&gt; C -&gt; D -&gt; 2
 1 -&gt; A -&gt; B -&gt; [E] -&gt; C -&gt; D -&gt; 2
 1 -&gt; A -&gt; B -&gt; C -&gt; [E] -&gt; D -&gt; 2
-This operator is extremelly useful to move chains of nodes which are
+This operator is extremely useful to move chains of nodes which are
 located at the same place (for instance nodes part of a same stop).
 </pre><p ><code>.operations_research.OptionalBoolean use_relocate_neighbors = 3;</code> </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
@@ -5529,7 +5529,7 @@ place):
 1 -&gt; A -&gt; [E] -&gt; B -&gt; C -&gt; D -&gt; 2
 1 -&gt; A -&gt; B -&gt; [E] -&gt; C -&gt; D -&gt; 2
 1 -&gt; A -&gt; B -&gt; C -&gt; [E] -&gt; D -&gt; 2
-This operator is extremelly useful to move chains of nodes which are
+This operator is extremely useful to move chains of nodes which are
 located at the same place (for instance nodes part of a same stop).
 </pre><p ><code>.operations_research.OptionalBoolean use_relocate_neighbors = 3;</code> </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
@@ -6015,7 +6015,7 @@ cost(A,i) = cost(1,i) and cost(i,A) = cost(i,6).
 </div><div class="memdoc">
 <pre>
 --- Intra-route operators ---
-Operator which reverves a sub-chain of a path. It is called TwoOpt
+Operator which reverses a subchain of a path. It is called TwoOpt
 because it breaks two arcs on the path; resulting paths are called
 two-optimal.
 Possible neighbors for the path 1 -&gt; 2 -&gt; 3 -&gt; 4 -&gt; 5
@@ -6053,7 +6053,7 @@ be moved):
 </div><div class="memdoc">
 <pre>
 --- Intra-route operators ---
-Operator which reverves a sub-chain of a path. It is called TwoOpt
+Operator which reverses a subchain of a path. It is called TwoOpt
 because it breaks two arcs on the path; resulting paths are called
 two-optimal.
 Possible neighbors for the path 1 -&gt; 2 -&gt; 3 -&gt; 4 -&gt; 5

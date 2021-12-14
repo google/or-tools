@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 9.1</span>
+                <span id="sfml">Google OR-Tools 9.2</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -97,6 +97,8 @@ $(document).ready(function(){initNavTree('classcom_1_1google_1_1ortools_1_1sat_1
 Public Member Functions</h2></td></tr>
 <tr class="memitem:ad38a2e57e12f75971eabe15e083b42ef"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1ScalProd.html#ad38a2e57e12f75971eabe15e083b42ef">ScalProd</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a>[] variables, long[] coefficients)</td></tr>
 <tr class="separator:ad38a2e57e12f75971eabe15e083b42ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aad85a910a99025db03402e6830a932ef"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1ScalProd.html#aad85a910a99025db03402e6830a932ef">ScalProd</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a>[] variables, long[] coefficients, long offset)</td></tr>
+<tr class="separator:aad85a910a99025db03402e6830a932ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a44d2a6541bd74945219f137627bb4be9"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1ScalProd.html#a44d2a6541bd74945219f137627bb4be9">ScalProd</a> (<a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1Literal.html">Literal</a>[] literals, long[] coefficients)</td></tr>
 <tr class="separator:a44d2a6541bd74945219f137627bb4be9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa276db95d91159511af9a159e935be49"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1ScalProd.html#aa276db95d91159511af9a159e935be49">ScalProd</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a> var, long coefficient, long offset)</td></tr>
@@ -153,10 +155,12 @@ Static Public Member Functions</h2></td></tr>
 <tr class="memitem:aabd5eab5be1618da7812710dd2cdedd6"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html#aabd5eab5be1618da7812710dd2cdedd6">constant</a> (long value)</td></tr>
 <tr class="memdesc:aabd5eab5be1618da7812710dd2cdedd6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates an constant expression.  <a href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html#aabd5eab5be1618da7812710dd2cdedd6">More...</a><br /></td></tr>
 <tr class="separator:aabd5eab5be1618da7812710dd2cdedd6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3ceac0618c4da85586bcf29355d194ef"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html#a3ceac0618c4da85586bcf29355d194ef">rebuildFromLinearExpressionProto</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProto.html">LinearExpressionProto</a> proto, CpModelProto.Builder builder)</td></tr>
+<tr class="separator:a3ceac0618c4da85586bcf29355d194ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="ad38a2e57e12f75971eabe15e083b42ef" name="ad38a2e57e12f75971eabe15e083b42ef"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad38a2e57e12f75971eabe15e083b42ef">&#9670;&nbsp;</a></span>ScalProd() <span class="overload">[1/5]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ad38a2e57e12f75971eabe15e083b42ef">&#9670;&nbsp;</a></span>ScalProd() <span class="overload">[1/6]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -185,8 +189,44 @@ Static Public Member Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="aad85a910a99025db03402e6830a932ef" name="aad85a910a99025db03402e6830a932ef"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aad85a910a99025db03402e6830a932ef">&#9670;&nbsp;</a></span>ScalProd() <span class="overload">[2/6]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1ScalProd.html">ScalProd</a> </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a>[]&#160;</td>
+          <td class="paramname"><em>variables</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">long[]&#160;</td>
+          <td class="paramname"><em>coefficients</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">long&#160;</td>
+          <td class="paramname"><em>offset</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="ScalProd_8java_source.html#l00028">28</a> of file <a class="el" href="ScalProd_8java_source.html">ScalProd.java</a>.</p>
+
+</div>
+</div>
 <a id="a44d2a6541bd74945219f137627bb4be9" name="a44d2a6541bd74945219f137627bb4be9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a44d2a6541bd74945219f137627bb4be9">&#9670;&nbsp;</a></span>ScalProd() <span class="overload">[2/5]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a44d2a6541bd74945219f137627bb4be9">&#9670;&nbsp;</a></span>ScalProd() <span class="overload">[3/6]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -211,12 +251,12 @@ Static Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ScalProd_8java_source.html#l00028">28</a> of file <a class="el" href="ScalProd_8java_source.html">ScalProd.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ScalProd_8java_source.html#l00034">34</a> of file <a class="el" href="ScalProd_8java_source.html">ScalProd.java</a>.</p>
 
 </div>
 </div>
 <a id="aa276db95d91159511af9a159e935be49" name="aa276db95d91159511af9a159e935be49"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa276db95d91159511af9a159e935be49">&#9670;&nbsp;</a></span>ScalProd() <span class="overload">[3/5]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aa276db95d91159511af9a159e935be49">&#9670;&nbsp;</a></span>ScalProd() <span class="overload">[4/6]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -247,12 +287,12 @@ Static Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ScalProd_8java_source.html#l00048">48</a> of file <a class="el" href="ScalProd_8java_source.html">ScalProd.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ScalProd_8java_source.html#l00054">54</a> of file <a class="el" href="ScalProd_8java_source.html">ScalProd.java</a>.</p>
 
 </div>
 </div>
 <a id="a432f3c9d076249dade933538b700708e" name="a432f3c9d076249dade933538b700708e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a432f3c9d076249dade933538b700708e">&#9670;&nbsp;</a></span>ScalProd() <span class="overload">[4/5]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a432f3c9d076249dade933538b700708e">&#9670;&nbsp;</a></span>ScalProd() <span class="overload">[5/6]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -283,12 +323,12 @@ Static Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ScalProd_8java_source.html#l00054">54</a> of file <a class="el" href="ScalProd_8java_source.html">ScalProd.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ScalProd_8java_source.html#l00060">60</a> of file <a class="el" href="ScalProd_8java_source.html">ScalProd.java</a>.</p>
 
 </div>
 </div>
 <a id="a2ff48665bf063083523bb71540efa6e2" name="a2ff48665bf063083523bb71540efa6e2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2ff48665bf063083523bb71540efa6e2">&#9670;&nbsp;</a></span>ScalProd() <span class="overload">[5/5]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a2ff48665bf063083523bb71540efa6e2">&#9670;&nbsp;</a></span>ScalProd() <span class="overload">[6/6]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -303,7 +343,7 @@ Static Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ScalProd_8java_source.html#l00066">66</a> of file <a class="el" href="ScalProd_8java_source.html">ScalProd.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ScalProd_8java_source.html#l00072">72</a> of file <a class="el" href="ScalProd_8java_source.html">ScalProd.java</a>.</p>
 
 </div>
 </div>
@@ -350,7 +390,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Creates an affine expression (var * coefficient + offset). </p>
 
-<p class="definition">Definition at line <a class="el" href="LinearExpr_8java_source.html#l00093">93</a> of file <a class="el" href="LinearExpr_8java_source.html">LinearExpr.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LinearExpr_8java_source.html#l00096">96</a> of file <a class="el" href="LinearExpr_8java_source.html">LinearExpr.java</a>.</p>
 
 </div>
 </div>
@@ -396,7 +436,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Creates an affine expression (lit * coefficient + offset). </p>
 
-<p class="definition">Definition at line <a class="el" href="LinearExpr_8java_source.html#l00098">98</a> of file <a class="el" href="LinearExpr_8java_source.html">LinearExpr.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LinearExpr_8java_source.html#l00101">101</a> of file <a class="el" href="LinearExpr_8java_source.html">LinearExpr.java</a>.</p>
 
 </div>
 </div>
@@ -436,7 +476,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Creates a scalar product. </p>
 
-<p class="definition">Definition at line <a class="el" href="LinearExpr_8java_source.html#l00070">70</a> of file <a class="el" href="LinearExpr_8java_source.html">LinearExpr.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LinearExpr_8java_source.html#l00073">73</a> of file <a class="el" href="LinearExpr_8java_source.html">LinearExpr.java</a>.</p>
 
 </div>
 </div>
@@ -476,7 +516,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Creates a scalar product. </p>
 
-<p class="definition">Definition at line <a class="el" href="LinearExpr_8java_source.html#l00062">62</a> of file <a class="el" href="LinearExpr_8java_source.html">LinearExpr.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LinearExpr_8java_source.html#l00065">65</a> of file <a class="el" href="LinearExpr_8java_source.html">LinearExpr.java</a>.</p>
 
 </div>
 </div>
@@ -506,7 +546,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Creates a sum expression. </p>
 
-<p class="definition">Definition at line <a class="el" href="LinearExpr_8java_source.html#l00036">36</a> of file <a class="el" href="LinearExpr_8java_source.html">LinearExpr.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LinearExpr_8java_source.html#l00039">39</a> of file <a class="el" href="LinearExpr_8java_source.html">LinearExpr.java</a>.</p>
 
 </div>
 </div>
@@ -536,7 +576,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Creates an constant expression. </p>
 
-<p class="definition">Definition at line <a class="el" href="LinearExpr_8java_source.html#l00103">103</a> of file <a class="el" href="LinearExpr_8java_source.html">LinearExpr.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LinearExpr_8java_source.html#l00106">106</a> of file <a class="el" href="LinearExpr_8java_source.html">LinearExpr.java</a>.</p>
 
 </div>
 </div>
@@ -560,7 +600,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html#a2c77626134edecc47b69efe661ea1904">LinearExpr</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="ScalProd_8java_source.html#l00099">99</a> of file <a class="el" href="ScalProd_8java_source.html">ScalProd.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ScalProd_8java_source.html#l00105">105</a> of file <a class="el" href="ScalProd_8java_source.html">ScalProd.java</a>.</p>
 
 </div>
 </div>
@@ -583,7 +623,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html#aa7d6a5c7e69f4efdc6a44b85bbe22f1a">LinearExpr</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="ScalProd_8java_source.html#l00107">107</a> of file <a class="el" href="ScalProd_8java_source.html">ScalProd.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ScalProd_8java_source.html#l00113">113</a> of file <a class="el" href="ScalProd_8java_source.html">ScalProd.java</a>.</p>
 
 </div>
 </div>
@@ -607,7 +647,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html#aff988e01e71c0dd3c11e6f970a209520">LinearExpr</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="ScalProd_8java_source.html#l00091">91</a> of file <a class="el" href="ScalProd_8java_source.html">ScalProd.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ScalProd_8java_source.html#l00097">97</a> of file <a class="el" href="ScalProd_8java_source.html">ScalProd.java</a>.</p>
 
 </div>
 </div>
@@ -630,7 +670,45 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html#a59f9cb76db051cd784a42f38220f896d">LinearExpr</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="ScalProd_8java_source.html#l00086">86</a> of file <a class="el" href="ScalProd_8java_source.html">ScalProd.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ScalProd_8java_source.html#l00092">92</a> of file <a class="el" href="ScalProd_8java_source.html">ScalProd.java</a>.</p>
+
+</div>
+</div>
+<a id="a3ceac0618c4da85586bcf29355d194ef" name="a3ceac0618c4da85586bcf29355d194ef"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3ceac0618c4da85586bcf29355d194ef">&#9670;&nbsp;</a></span>rebuildFromLinearExpressionProto()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a> rebuildFromLinearExpressionProto </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProto.html">LinearExpressionProto</a>&#160;</td>
+          <td class="paramname"><em>proto</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">CpModelProto.Builder&#160;</td>
+          <td class="paramname"><em>builder</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="LinearExpr_8java_source.html#l00110">110</a> of file <a class="el" href="LinearExpr_8java_source.html">LinearExpr.java</a>.</p>
 
 </div>
 </div>
@@ -670,7 +748,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Creates a scalar product. </p>
 
-<p class="definition">Definition at line <a class="el" href="LinearExpr_8java_source.html#l00050">50</a> of file <a class="el" href="LinearExpr_8java_source.html">LinearExpr.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LinearExpr_8java_source.html#l00053">53</a> of file <a class="el" href="LinearExpr_8java_source.html">LinearExpr.java</a>.</p>
 
 </div>
 </div>
@@ -710,7 +788,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Creates a scalar product. </p>
 
-<p class="definition">Definition at line <a class="el" href="LinearExpr_8java_source.html#l00042">42</a> of file <a class="el" href="LinearExpr_8java_source.html">LinearExpr.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LinearExpr_8java_source.html#l00045">45</a> of file <a class="el" href="LinearExpr_8java_source.html">LinearExpr.java</a>.</p>
 
 </div>
 </div>
@@ -740,7 +818,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Creates a sum expression. </p>
 
-<p class="definition">Definition at line <a class="el" href="LinearExpr_8java_source.html#l00031">31</a> of file <a class="el" href="LinearExpr_8java_source.html">LinearExpr.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LinearExpr_8java_source.html#l00034">34</a> of file <a class="el" href="LinearExpr_8java_source.html">LinearExpr.java</a>.</p>
 
 </div>
 </div>
@@ -780,7 +858,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Creates a linear term (var * coefficient). </p>
 
-<p class="definition">Definition at line <a class="el" href="LinearExpr_8java_source.html#l00083">83</a> of file <a class="el" href="LinearExpr_8java_source.html">LinearExpr.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LinearExpr_8java_source.html#l00086">86</a> of file <a class="el" href="LinearExpr_8java_source.html">LinearExpr.java</a>.</p>
 
 </div>
 </div>
@@ -820,7 +898,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Creates a linear term (lit * coefficient). </p>
 
-<p class="definition">Definition at line <a class="el" href="LinearExpr_8java_source.html#l00088">88</a> of file <a class="el" href="LinearExpr_8java_source.html">LinearExpr.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LinearExpr_8java_source.html#l00091">91</a> of file <a class="el" href="LinearExpr_8java_source.html">LinearExpr.java</a>.</p>
 
 </div>
 </div>

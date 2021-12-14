@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.1</span>
+   &#160;<span id="projectnumber">9.2</span>
    </div>
   </td>
  </tr>
@@ -109,7 +109,7 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1_time_lim
 </ol>
 <p >Note that in optimized mode, the counters are disabled for performance reasons, and calling AdvanceDeterministicTime(duration, counter_name) is equivalent to calling AdvanceDeterministicTime(duration). </p>
 
-<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00105">105</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00106">106</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -234,7 +234,7 @@ Static Public Attributes</h2></td></tr>
 <p >Instruction count is the number of instructions executed. It is based on PMU counters and is not very acurate.</p>
 <p >Use an infinite limit value to ignore a limit. </p>
 
-<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00472">472</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00473">473</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
 
 </div>
 </div>
@@ -261,7 +261,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00126">126</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00127">127</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
 
 </div>
 </div>
@@ -319,7 +319,7 @@ Static Public Attributes</h2></td></tr>
 <p>Advances the deterministic time. </p>
 <p >For reproducibility reasons, the deterministic time doesn't advance automatically as the regular elapsed time does. </p>
 
-<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00226">226</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00227">227</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
 
 </div>
 </div>
@@ -361,7 +361,7 @@ Static Public Attributes</h2></td></tr>
 <p >For reproducibility reasons, the deterministic time doesn't advance automatically as the regular elapsed time does.</p>
 <p >In debug mode, this method also updates the deterministic time counter with the given name. In optimized mode, this method is equivalent to <code><a class="el" href="classoperations__research_1_1_time_limit.html#af90cfd1fc238433fc303ee28c5914eb9" title="Advances the deterministic time.">AdvanceDeterministicTime(double)</a></code>. </p>
 
-<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00240">240</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00241">241</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
 
 </div>
 </div>
@@ -411,7 +411,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Returns the current external Boolean limit. </p>
 
-<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00281">281</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00282">282</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
 
 </div>
 </div>
@@ -441,7 +441,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Creates a time limit object that puts limit only on the deterministic time. </p>
 
-<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00144">144</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00145">145</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
 
 </div>
 </div>
@@ -472,7 +472,7 @@ Static Public Attributes</h2></td></tr>
 <p>Creates a time limit object initialized from an object that provides methods <code>max_time_in_seconds()</code> and max_deterministic_time(). </p>
 <p >This method is designed specifically to work with solver parameter protos, e.g. <code>BopParameters</code>, <code>MipParameters</code> and <code>SatParameters</code>. </p>
 
-<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00159">159</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00160">160</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
 
 </div>
 </div>
@@ -502,7 +502,7 @@ Static Public Attributes</h2></td></tr>
 <p>Returns the remaining deterministic time before <code><a class="el" href="classoperations__research_1_1_time_limit.html#a810d5f7aaf80cc09cf5a094e20c1aaca" title="Returns true when the external limit is true, or the deterministic time is over the deterministic lim...">LimitReached()</a></code> returns true due to the deterministic limit. </p>
 <p >If the <code><a class="el" href="classoperations__research_1_1_time_limit.html" title="A simple class to enforce both an elapsed time limit and a deterministic time limit in the same threa...">TimeLimit</a></code> was constructed with <b>infinity</b> as the deterministic limit (default value), this will always return infinity. </p>
 
-<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00212">212</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00213">213</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
 
 </div>
 </div>
@@ -532,7 +532,7 @@ Static Public Attributes</h2></td></tr>
 <p>Returns the elapsed deterministic time since the construction of this object. </p>
 <p >That corresponds to the sum of all deterministic durations passed as an argument to <code><a class="el" href="classoperations__research_1_1_time_limit.html#af90cfd1fc238433fc303ee28c5914eb9" title="Advances the deterministic time.">AdvanceDeterministicTime()</a></code> calls. </p>
 
-<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00260">260</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00261">261</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
 
 </div>
 </div>
@@ -561,7 +561,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Returns the time elapsed in seconds since the construction of this object. </p>
 
-<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00251">251</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00252">252</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
 
 </div>
 </div>
@@ -590,7 +590,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Returns the number of instructions left to reach the limit. </p>
 
-<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00582">582</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00583">583</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
 
 </div>
 </div>
@@ -622,7 +622,7 @@ Static Public Attributes</h2></td></tr>
 <p >If the <a class="el" href="classoperations__research_1_1_time_limit.html" title="A simple class to enforce both an elapsed time limit and a deterministic time limit in the same threa...">TimeLimit</a> was constructed with <b>infinity</b> as the limit, this will always return infinity.</p>
 <p >Note that this function is not optimized for speed as <code><a class="el" href="classoperations__research_1_1_time_limit.html#a810d5f7aaf80cc09cf5a094e20c1aaca" title="Returns true when the external limit is true, or the deterministic time is over the deterministic lim...">LimitReached()</a></code> is. </p>
 
-<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00571">571</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00572">572</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
 
 </div>
 </div>
@@ -651,7 +651,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Creates a time limit object that uses infinite time for wall time, deterministic time and instruction count limit. </p>
 
-<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00134">134</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00135">135</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
 
 </div>
 </div>
@@ -681,7 +681,7 @@ Static Public Attributes</h2></td></tr>
 <p>Returns true when the external limit is true, or the deterministic time is over the deterministic limit or if the next time <code><a class="el" href="classoperations__research_1_1_time_limit.html#a810d5f7aaf80cc09cf5a094e20c1aaca" title="Returns true when the external limit is true, or the deterministic time is over the deterministic lim...">LimitReached()</a></code> is called is likely to be over the time limit. </p>
 <p >See toplevel comment. Once it has returned true, it is guaranteed to always return true. </p>
 
-<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00533">533</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00534">534</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
 
 </div>
 </div>
@@ -709,7 +709,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00512">512</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00513">513</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
 
 </div>
 </div>
@@ -764,7 +764,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Returns the number of instructions executed since the creation of this object. </p>
 
-<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00523">523</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00524">524</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
 
 </div>
 </div>
@@ -796,7 +796,7 @@ Static Public Attributes</h2></td></tr>
 <p >This is used to mark the limit as reached through an external Boolean, i.e. <code><a class="el" href="classoperations__research_1_1_time_limit.html#a810d5f7aaf80cc09cf5a094e20c1aaca" title="Returns true when the external limit is true, or the deterministic time is over the deterministic lim...">LimitReached()</a></code> returns true when the value of external_boolean_as_limit is true whatever the time limits are.</p>
 <p >Note that users of the <a class="el" href="classoperations__research_1_1_time_limit.html" title="A simple class to enforce both an elapsed time limit and a deterministic time limit in the same threa...">TimeLimit</a> can modify the provided atomic for their own internal logic (see <a class="el" href="classoperations__research_1_1_shared_time_limit.html#a17a237457e57625296e6b24feb19c60a">SharedTimeLimit::Stop()</a> for example). </p>
 
-<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00273">273</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00274">274</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
 
 </div>
 </div>
@@ -827,7 +827,7 @@ Static Public Attributes</h2></td></tr>
 <p>Sets new time limits. </p>
 <p >Note that this does not reset the running max nor any registered external Boolean. </p>
 
-<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00506">506</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00507">507</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
 
 </div>
 </div>
@@ -858,7 +858,7 @@ Static Public Attributes</h2></td></tr>
 <p>Sets the instruction limit. </p>
 <p >We need this method since the static constructor to create time limit from parameters doesn't support setting instruction limit. </p>
 
-<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00171">171</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00172">172</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
 
 </div>
 </div>
@@ -883,7 +883,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00108">108</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00109">109</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
 
 </div>
 </div>
@@ -907,7 +907,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00107">107</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00108">108</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
 
 </div>
 </div>

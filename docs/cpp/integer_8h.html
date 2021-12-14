@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.1</span>
+   &#160;<span id="projectnumber">9.2</span>
    </div>
   </td>
  </tr>
@@ -107,9 +107,13 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1sat_1_1_debug_solution.html">DebugSolution</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_integer_encoder.html">IntegerEncoder</a></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1sat_1_1_value_literal_pair.html">ValueLiteralPair</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1sat_1_1_integer_encoder_1_1_value_literal_pair.html">IntegerEncoder::ValueLiteralPair</a></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1sat_1_1_value_literal_pair_1_1_compare_by_literal.html">ValueLiteralPair::CompareByLiteral</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1sat_1_1_value_literal_pair_1_1_compare_by_value.html">ValueLiteralPair::CompareByValue</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_integer_encoder.html">IntegerEncoder</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_integer_trail.html">IntegerTrail</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -176,6 +180,8 @@ Functions</h2></td></tr>
 <tr class="separator:aae43e784db06c0974ce59ebbe8dd2b22"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0af861617ac8f6ef74fe77c789248b86"><td class="memItemLeft" align="right" valign="top">std::ostream &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a0af861617ac8f6ef74fe77c789248b86">operator&lt;&lt;</a> (std::ostream &amp;os, IntegerLiteral i_lit)</td></tr>
 <tr class="separator:a0af861617ac8f6ef74fe77c789248b86"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:add3ed8a15027b96a110bbe6e17f6a4c4"><td class="memItemLeft" align="right" valign="top">std::ostream &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#add3ed8a15027b96a110bbe6e17f6a4c4">operator&lt;&lt;</a> (std::ostream &amp;os, const ValueLiteralPair &amp;p)</td></tr>
+<tr class="separator:add3ed8a15027b96a110bbe6e17f6a4c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3cb95842130bc03177260ad20464bdbf"><td class="memItemLeft" align="right" valign="top">std::function&lt; BooleanVariable(Model *)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a3cb95842130bc03177260ad20464bdbf">NewBooleanVariable</a> ()</td></tr>
 <tr class="separator:a3cb95842130bc03177260ad20464bdbf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a64664019450638ab96732f0b59ea015b"><td class="memItemLeft" align="right" valign="top">std::function&lt; IntegerVariable(Model *)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a64664019450638ab96732f0b59ea015b">ConstantIntegerVariable</a> (int64_t <a class="el" href="matrix__utils_8cc.html#aee90379adb0307effb138f4871edbc5c">value</a>)</td></tr>
@@ -204,8 +210,8 @@ Functions</h2></td></tr>
 <tr class="separator:a6e056f4efb99b080ae5bdb7267339f59"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad39ed3f215af8b2d35da4d2a52254c42"><td class="memItemLeft" align="right" valign="top">std::function&lt; void(Model *)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#ad39ed3f215af8b2d35da4d2a52254c42">ImpliesInInterval</a> (Literal in_interval, IntegerVariable v, int64_t lb, int64_t ub)</td></tr>
 <tr class="separator:ad39ed3f215af8b2d35da4d2a52254c42"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae282013f2321b5817fd61ad9e705e446"><td class="memItemLeft" align="right" valign="top">std::function&lt; std::vector&lt; IntegerEncoder::ValueLiteralPair &gt;(Model *)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#ae282013f2321b5817fd61ad9e705e446">FullyEncodeVariable</a> (IntegerVariable <a class="el" href="sat__solver_8cc.html#a8392bdc4ed570e6a95c7fca35b09f83f">var</a>)</td></tr>
-<tr class="separator:ae282013f2321b5817fd61ad9e705e446"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0185d084af6ad784edced90f45174133"><td class="memItemLeft" align="right" valign="top">std::function&lt; std::vector&lt; ValueLiteralPair &gt;(Model *)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a0185d084af6ad784edced90f45174133">FullyEncodeVariable</a> (IntegerVariable <a class="el" href="sat__solver_8cc.html#a8392bdc4ed570e6a95c7fca35b09f83f">var</a>)</td></tr>
+<tr class="separator:a0185d084af6ad784edced90f45174133"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab052eee1f91ef47d1e5a162c2dfdd355"><td class="memItemLeft" align="right" valign="top">std::function&lt; void(Model *)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#ab052eee1f91ef47d1e5a162c2dfdd355">ExcludeCurrentSolutionWithoutIgnoredVariableAndBacktrack</a> ()</td></tr>
 <tr class="separator:ab052eee1f91ef47d1e5a162c2dfdd355"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>

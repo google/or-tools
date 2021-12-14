@@ -17,5 +17,6 @@ var searchData=
   ['operations_5fresearch_5futil_14',['operations_research_util',['../classGoogle_1_1OrTools_1_1Util_1_1operations__research__util.html',1,'Google::OrTools::Util']]],
   ['operations_5fresearch_5futilpinvoke_15',['operations_research_utilPINVOKE',['../classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE.html',1,'Google::OrTools::Util']]],
   ['optimizevar_16',['OptimizeVar',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1OptimizeVar.html',1,'Google::OrTools::ConstraintSolver']]],
-  ['optionalbooleanreflection_17',['OptionalBooleanReflection',['../classGoogle_1_1OrTools_1_1Util_1_1OptionalBooleanReflection.html',1,'Google::OrTools::Util']]]
+  ['optionalbooleanreflection_17',['OptionalBooleanReflection',['../classGoogle_1_1OrTools_1_1Util_1_1OptionalBooleanReflection.html',1,'Google::OrTools::Util']]],
+  ['ortoolsversion_18',['OrToolsVersion',['../classGoogle_1_1OrTools_1_1Init_1_1OrToolsVersion.html',1,'Google::OrTools::Init']]]
 ];

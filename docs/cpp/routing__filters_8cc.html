@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.1</span>
+   &#160;<span id="projectnumber">9.2</span>
    </div>
   </td>
  </tr>
@@ -108,9 +108,9 @@ Functions</h2></td></tr>
 <tr class="memitem:aa2ef113e19924b88159b114a929b3358"><td class="memItemLeft" align="right" valign="top">IntVarLocalSearchFilter *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#aa2ef113e19924b88159b114a929b3358">MakeMaxActiveVehiclesFilter</a> (const RoutingModel &amp;routing_model)</td></tr>
 <tr class="memdesc:aa2ef113e19924b88159b114a929b3358"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a filter ensuring that max active vehicles constraints are enforced.  <a href="namespaceoperations__research.html#aa2ef113e19924b88159b114a929b3358">More...</a><br /></td></tr>
 <tr class="separator:aa2ef113e19924b88159b114a929b3358"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aeb15e4444582a925522843bb414de9c3"><td class="memItemLeft" align="right" valign="top">IntVarLocalSearchFilter *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#aeb15e4444582a925522843bb414de9c3">MakeNodeDisjunctionFilter</a> (const RoutingModel &amp;routing_model)</td></tr>
-<tr class="memdesc:aeb15e4444582a925522843bb414de9c3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a filter ensuring that node disjunction constraints are enforced.  <a href="namespaceoperations__research.html#aeb15e4444582a925522843bb414de9c3">More...</a><br /></td></tr>
-<tr class="separator:aeb15e4444582a925522843bb414de9c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae83b77e66d5864f0ed762e07e2f5d660"><td class="memItemLeft" align="right" valign="top">IntVarLocalSearchFilter *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#ae83b77e66d5864f0ed762e07e2f5d660">MakeNodeDisjunctionFilter</a> (const RoutingModel &amp;routing_model, bool filter_cost)</td></tr>
+<tr class="memdesc:ae83b77e66d5864f0ed762e07e2f5d660"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a filter ensuring that node disjunction constraints are enforced.  <a href="namespaceoperations__research.html#ae83b77e66d5864f0ed762e07e2f5d660">More...</a><br /></td></tr>
+<tr class="separator:ae83b77e66d5864f0ed762e07e2f5d660"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4bbb86ef97d259aabe86e0abde4759e3"><td class="memItemLeft" align="right" valign="top">IntVarLocalSearchFilter *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a4bbb86ef97d259aabe86e0abde4759e3">MakeVehicleAmortizedCostFilter</a> (const RoutingModel &amp;routing_model)</td></tr>
 <tr class="memdesc:a4bbb86ef97d259aabe86e0abde4759e3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a filter computing vehicle amortized costs.  <a href="namespaceoperations__research.html#a4bbb86ef97d259aabe86e0abde4759e3">More...</a><br /></td></tr>
 <tr class="separator:a4bbb86ef97d259aabe86e0abde4759e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -123,8 +123,8 @@ Functions</h2></td></tr>
 <tr class="memitem:ae2219dbffeee11e9bca17cc1e8217747"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#ae2219dbffeee11e9bca17cc1e8217747">AppendLightWeightDimensionFilters</a> (const PathState *path_state, const std::vector&lt; RoutingDimension * &gt; &amp;<a class="el" href="arc__flow__builder_8cc.html#a85d16954ed793ec11f3250a16cab2a36">dimensions</a>, std::vector&lt; LocalSearchFilterManager::FilterEvent &gt; *filters)</td></tr>
 <tr class="memdesc:ae2219dbffeee11e9bca17cc1e8217747"><td class="mdescLeft">&#160;</td><td class="mdescRight">Appends dimension-based filters to the given list of filters using a path state.  <a href="namespaceoperations__research.html#ae2219dbffeee11e9bca17cc1e8217747">More...</a><br /></td></tr>
 <tr class="separator:ae2219dbffeee11e9bca17cc1e8217747"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0e3e4445c55d0c59ef4edbaf7acbd3a8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a0e3e4445c55d0c59ef4edbaf7acbd3a8">AppendDimensionCumulFilters</a> (const std::vector&lt; RoutingDimension * &gt; &amp;<a class="el" href="arc__flow__builder_8cc.html#a85d16954ed793ec11f3250a16cab2a36">dimensions</a>, const RoutingSearchParameters &amp;<a class="el" href="cp__model__fz__solver_8cc.html#a10a1eab179b472c030bdc2a2efef7219">parameters</a>, bool filter_objective_cost, std::vector&lt; LocalSearchFilterManager::FilterEvent &gt; *filters)</td></tr>
-<tr class="separator:a0e3e4445c55d0c59ef4edbaf7acbd3a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7f4fe408591e8a588a180aa911fff682"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a7f4fe408591e8a588a180aa911fff682">AppendDimensionCumulFilters</a> (const std::vector&lt; RoutingDimension * &gt; &amp;<a class="el" href="arc__flow__builder_8cc.html#a85d16954ed793ec11f3250a16cab2a36">dimensions</a>, const RoutingSearchParameters &amp;<a class="el" href="cp__model__fz__solver_8cc.html#a10a1eab179b472c030bdc2a2efef7219">parameters</a>, bool filter_objective_cost, bool filter_light_weight_unary_dimensions, std::vector&lt; LocalSearchFilterManager::FilterEvent &gt; *filters)</td></tr>
+<tr class="separator:a7f4fe408591e8a588a180aa911fff682"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad03cbd2a51a0688c1fd08d3a7c1754c9"><td class="memItemLeft" align="right" valign="top">IntVarLocalSearchFilter *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#ad03cbd2a51a0688c1fd08d3a7c1754c9">MakePickupDeliveryFilter</a> (const RoutingModel &amp;routing_model, const RoutingModel::IndexPairs &amp;pairs, const std::vector&lt; RoutingModel::PickupAndDeliveryPolicy &gt; &amp;vehicle_policies)</td></tr>
 <tr class="memdesc:ad03cbd2a51a0688c1fd08d3a7c1754c9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a filter enforcing pickup and delivery constraints for the given pair of nodes and given policies.  <a href="namespaceoperations__research.html#ad03cbd2a51a0688c1fd08d3a7c1754c9">More...</a><br /></td></tr>
 <tr class="separator:ad03cbd2a51a0688c1fd08d3a7c1754c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -137,6 +137,9 @@ Functions</h2></td></tr>
 <tr class="memitem:a91afedb1e53b3780441cc6ee7aebb2b3"><td class="memItemLeft" align="right" valign="top">IntVarLocalSearchFilter *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a91afedb1e53b3780441cc6ee7aebb2b3">MakeGlobalLPCumulFilter</a> (GlobalDimensionCumulOptimizer *optimizer, GlobalDimensionCumulOptimizer *mp_optimizer, bool filter_objective_cost)</td></tr>
 <tr class="memdesc:a91afedb1e53b3780441cc6ee7aebb2b3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a filter checking global linear constraints and costs.  <a href="namespaceoperations__research.html#a91afedb1e53b3780441cc6ee7aebb2b3">More...</a><br /></td></tr>
 <tr class="separator:a91afedb1e53b3780441cc6ee7aebb2b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7b3beec7f703272555d72aa07e633934"><td class="memItemLeft" align="right" valign="top">LocalSearchFilter *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a7b3beec7f703272555d72aa07e633934">MakeResourceAssignmentFilter</a> (LocalDimensionCumulOptimizer *optimizer, LocalDimensionCumulOptimizer *mp_optimizer, bool propagate_own_objective_value, bool filter_objective_cost)</td></tr>
+<tr class="memdesc:a7b3beec7f703272555d72aa07e633934"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a filter checking the feasibility and cost of the resource assignment.  <a href="namespaceoperations__research.html#a7b3beec7f703272555d72aa07e633934">More...</a><br /></td></tr>
+<tr class="separator:a7b3beec7f703272555d72aa07e633934"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6a24a85a196ecfb2b799a0409ef757c6"><td class="memItemLeft" align="right" valign="top">IntVarLocalSearchFilter *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a6a24a85a196ecfb2b799a0409ef757c6">MakeCPFeasibilityFilter</a> (RoutingModel *routing_model)</td></tr>
 <tr class="memdesc:a6a24a85a196ecfb2b799a0409ef757c6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a filter checking the current solution using CP propagation.  <a href="namespaceoperations__research.html#a6a24a85a196ecfb2b799a0409ef757c6">More...</a><br /></td></tr>
 <tr class="separator:a6a24a85a196ecfb2b799a0409ef757c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -195,7 +198,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__filters_8cc_source.html#l00984">984</a> of file <a class="el" href="routing__filters_8cc_source.html">routing_filters.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__filters_8cc_source.html#l00969">969</a> of file <a class="el" href="routing__filters_8cc_source.html">routing_filters.cc</a>.</p>
 
 </div>
 </div>
@@ -211,7 +214,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__filters_8cc_source.html#l00985">985</a> of file <a class="el" href="routing__filters_8cc_source.html">routing_filters.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__filters_8cc_source.html#l00970">970</a> of file <a class="el" href="routing__filters_8cc_source.html">routing_filters.cc</a>.</p>
 
 </div>
 </div>
@@ -227,7 +230,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__filters_8cc_source.html#l00977">977</a> of file <a class="el" href="routing__filters_8cc_source.html">routing_filters.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__filters_8cc_source.html#l00962">962</a> of file <a class="el" href="routing__filters_8cc_source.html">routing_filters.cc</a>.</p>
 
 </div>
 </div>
@@ -243,7 +246,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__filters_8cc_source.html#l00978">978</a> of file <a class="el" href="routing__filters_8cc_source.html">routing_filters.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__filters_8cc_source.html#l00963">963</a> of file <a class="el" href="routing__filters_8cc_source.html">routing_filters.cc</a>.</p>
 
 </div>
 </div>
@@ -259,7 +262,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__filters_8cc_source.html#l00979">979</a> of file <a class="el" href="routing__filters_8cc_source.html">routing_filters.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__filters_8cc_source.html#l00964">964</a> of file <a class="el" href="routing__filters_8cc_source.html">routing_filters.cc</a>.</p>
 
 </div>
 </div>

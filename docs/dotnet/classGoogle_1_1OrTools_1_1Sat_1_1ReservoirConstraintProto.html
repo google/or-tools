@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 9.1</span>
+                <span id="sfml">Google OR-Tools 9.2</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -92,11 +92,12 @@ $(document).ready(function(){initNavTree('classGoogle_1_1OrTools_1_1Sat_1_1Reser
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p >Maintain a reservoir level within bounds. </p>
 <p >The water level starts at 0, and at any time, it must be within [min_level, max_level].</p>
-<p >If the variable actives[i] is true, and if the variable times[i] is assigned a value t, then the current level changes by demands[i] (which is constant) at the time t. Therefore, at any time t: sum(demands[i] * actives[i] if times[i] &lt;= t) in [min_level, max_level]</p>
-<p >Note that min level must be &lt;= 0, and the max level must be &gt;= 0. Please use fixed demands to simulate initial state.</p>
+<p >If the variable actives[i] is true, and if the variable times[i] is assigned a value t, then the current level changes by level_changes[i] (which is constant) at the time t. Therefore, at any time t:</p>
+<p >sum(level_changes[i] * actives[i] if times[i] &lt;= t) in [min_level, max_level]</p>
+<p >Note that min level must be &lt;= 0, and the max level must be &gt;= 0. Please use fixed level_changes to simulate initial state.</p>
 <p >The array of boolean variables 'actives', if defined, indicates which actions are actually performed. If this array is not defined, then it is assumed that all actions will be performed. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l03239">3239</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l02876">2876</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -131,15 +132,15 @@ Static Public Attributes</h2></td></tr>
 <tr class="memitem:ad1432ea7e4b6a39fe65404777a67668c"><td class="memItemLeft" align="right" valign="top">const int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1ReservoirConstraintProto.html#ad1432ea7e4b6a39fe65404777a67668c">MaxLevelFieldNumber</a> = 2</td></tr>
 <tr class="memdesc:ad1432ea7e4b6a39fe65404777a67668c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Field number for the "max_level" field. <a href="classGoogle_1_1OrTools_1_1Sat_1_1ReservoirConstraintProto.html#ad1432ea7e4b6a39fe65404777a67668c">More...</a><br /></td></tr>
 <tr class="separator:ad1432ea7e4b6a39fe65404777a67668c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2a028a0b1f1f41a216add91d9aad18f9"><td class="memItemLeft" align="right" valign="top">const int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1ReservoirConstraintProto.html#a2a028a0b1f1f41a216add91d9aad18f9">TimesFieldNumber</a> = 3</td></tr>
-<tr class="memdesc:a2a028a0b1f1f41a216add91d9aad18f9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Field number for the "times" field. <a href="classGoogle_1_1OrTools_1_1Sat_1_1ReservoirConstraintProto.html#a2a028a0b1f1f41a216add91d9aad18f9">More...</a><br /></td></tr>
-<tr class="separator:a2a028a0b1f1f41a216add91d9aad18f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a094e3db64da9466a3afd007266a4b704"><td class="memItemLeft" align="right" valign="top">const int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1ReservoirConstraintProto.html#a094e3db64da9466a3afd007266a4b704">DemandsFieldNumber</a> = 4</td></tr>
-<tr class="memdesc:a094e3db64da9466a3afd007266a4b704"><td class="mdescLeft">&#160;</td><td class="mdescRight">Field number for the "demands" field. <a href="classGoogle_1_1OrTools_1_1Sat_1_1ReservoirConstraintProto.html#a094e3db64da9466a3afd007266a4b704">More...</a><br /></td></tr>
-<tr class="separator:a094e3db64da9466a3afd007266a4b704"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a128a2b93d2fcd586966e92b329f09033"><td class="memItemLeft" align="right" valign="top">const int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1ReservoirConstraintProto.html#a128a2b93d2fcd586966e92b329f09033">ActivesFieldNumber</a> = 5</td></tr>
-<tr class="memdesc:a128a2b93d2fcd586966e92b329f09033"><td class="mdescLeft">&#160;</td><td class="mdescRight">Field number for the "actives" field. <a href="classGoogle_1_1OrTools_1_1Sat_1_1ReservoirConstraintProto.html#a128a2b93d2fcd586966e92b329f09033">More...</a><br /></td></tr>
-<tr class="separator:a128a2b93d2fcd586966e92b329f09033"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0b5061fc7b6892d656778f88a7a596f8"><td class="memItemLeft" align="right" valign="top">const int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1ReservoirConstraintProto.html#a0b5061fc7b6892d656778f88a7a596f8">TimeExprsFieldNumber</a> = 3</td></tr>
+<tr class="memdesc:a0b5061fc7b6892d656778f88a7a596f8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Field number for the "time_exprs" field. <a href="classGoogle_1_1OrTools_1_1Sat_1_1ReservoirConstraintProto.html#a0b5061fc7b6892d656778f88a7a596f8">More...</a><br /></td></tr>
+<tr class="separator:a0b5061fc7b6892d656778f88a7a596f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aca3857a34476508b42ac20b65754ecdf"><td class="memItemLeft" align="right" valign="top">const int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1ReservoirConstraintProto.html#aca3857a34476508b42ac20b65754ecdf">LevelChangesFieldNumber</a> = 4</td></tr>
+<tr class="memdesc:aca3857a34476508b42ac20b65754ecdf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Field number for the "level_changes" field. <a href="classGoogle_1_1OrTools_1_1Sat_1_1ReservoirConstraintProto.html#aca3857a34476508b42ac20b65754ecdf">More...</a><br /></td></tr>
+<tr class="separator:aca3857a34476508b42ac20b65754ecdf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8e37608754934f6a0bef906d6a09b302"><td class="memItemLeft" align="right" valign="top">const int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1ReservoirConstraintProto.html#a8e37608754934f6a0bef906d6a09b302">ActiveLiteralsFieldNumber</a> = 5</td></tr>
+<tr class="memdesc:a8e37608754934f6a0bef906d6a09b302"><td class="mdescLeft">&#160;</td><td class="mdescRight">Field number for the "active_literals" field. <a href="classGoogle_1_1OrTools_1_1Sat_1_1ReservoirConstraintProto.html#a8e37608754934f6a0bef906d6a09b302">More...</a><br /></td></tr>
+<tr class="separator:a8e37608754934f6a0bef906d6a09b302"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="properties" name="properties"></a>
 Properties</h2></td></tr>
@@ -151,15 +152,14 @@ Properties</h2></td></tr>
 <tr class="separator:a2d59caa4ff26ef73aee89535ced41016"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a73b2a1b811f0bc984b5eaa0827380fac"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1ReservoirConstraintProto.html#a73b2a1b811f0bc984b5eaa0827380fac">MaxLevel</a><code> [getset]</code></td></tr>
 <tr class="separator:a73b2a1b811f0bc984b5eaa0827380fac"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a229b6c3359862d7b64b7e20befa08bfa"><td class="memItemLeft" align="right" valign="top">pbc::RepeatedField&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1ReservoirConstraintProto.html#a229b6c3359862d7b64b7e20befa08bfa">Times</a><code> [get]</code></td></tr>
-<tr class="memdesc:a229b6c3359862d7b64b7e20befa08bfa"><td class="mdescLeft">&#160;</td><td class="mdescRight">variables.  <a href="classGoogle_1_1OrTools_1_1Sat_1_1ReservoirConstraintProto.html#a229b6c3359862d7b64b7e20befa08bfa">More...</a><br /></td></tr>
-<tr class="separator:a229b6c3359862d7b64b7e20befa08bfa"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a101cced2fda10f3b0ed67648bcfb1594"><td class="memItemLeft" align="right" valign="top">pbc::RepeatedField&lt; long &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1ReservoirConstraintProto.html#a101cced2fda10f3b0ed67648bcfb1594">Demands</a><code> [get]</code></td></tr>
-<tr class="memdesc:a101cced2fda10f3b0ed67648bcfb1594"><td class="mdescLeft">&#160;</td><td class="mdescRight">constants, can be negative.  <a href="classGoogle_1_1OrTools_1_1Sat_1_1ReservoirConstraintProto.html#a101cced2fda10f3b0ed67648bcfb1594">More...</a><br /></td></tr>
-<tr class="separator:a101cced2fda10f3b0ed67648bcfb1594"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a36d2186ce73c0b22bcea087e72d33dd8"><td class="memItemLeft" align="right" valign="top">pbc::RepeatedField&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1ReservoirConstraintProto.html#a36d2186ce73c0b22bcea087e72d33dd8">Actives</a><code> [get]</code></td></tr>
-<tr class="memdesc:a36d2186ce73c0b22bcea087e72d33dd8"><td class="mdescLeft">&#160;</td><td class="mdescRight">literals.  <a href="classGoogle_1_1OrTools_1_1Sat_1_1ReservoirConstraintProto.html#a36d2186ce73c0b22bcea087e72d33dd8">More...</a><br /></td></tr>
-<tr class="separator:a36d2186ce73c0b22bcea087e72d33dd8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af28a6df1f625c6cb5bac05f98ab8c5ca"><td class="memItemLeft" align="right" valign="top">pbc::RepeatedField&lt; global::Google.OrTools.Sat.LinearExpressionProto &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1ReservoirConstraintProto.html#af28a6df1f625c6cb5bac05f98ab8c5ca">TimeExprs</a><code> [get]</code></td></tr>
+<tr class="memdesc:af28a6df1f625c6cb5bac05f98ab8c5ca"><td class="mdescLeft">&#160;</td><td class="mdescRight">affine expressions.  <a href="classGoogle_1_1OrTools_1_1Sat_1_1ReservoirConstraintProto.html#af28a6df1f625c6cb5bac05f98ab8c5ca">More...</a><br /></td></tr>
+<tr class="separator:af28a6df1f625c6cb5bac05f98ab8c5ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5101e2429d8b19b94f2b37c96895842f"><td class="memItemLeft" align="right" valign="top">pbc::RepeatedField&lt; long &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1ReservoirConstraintProto.html#a5101e2429d8b19b94f2b37c96895842f">LevelChanges</a><code> [get]</code></td></tr>
+<tr class="memdesc:a5101e2429d8b19b94f2b37c96895842f"><td class="mdescLeft">&#160;</td><td class="mdescRight">constants, can be negative.  <a href="classGoogle_1_1OrTools_1_1Sat_1_1ReservoirConstraintProto.html#a5101e2429d8b19b94f2b37c96895842f">More...</a><br /></td></tr>
+<tr class="separator:a5101e2429d8b19b94f2b37c96895842f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a55981c13eb78709b528d25aec4aa09b8"><td class="memItemLeft" align="right" valign="top">pbc::RepeatedField&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1ReservoirConstraintProto.html#a55981c13eb78709b528d25aec4aa09b8">ActiveLiterals</a><code> [get]</code></td></tr>
+<tr class="separator:a55981c13eb78709b528d25aec4aa09b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a71b574924db2a5a49f11ee574b4c9552" name="a71b574924db2a5a49f11ee574b4c9552"></a>
@@ -185,7 +185,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l03264">3264</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l02901">2901</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -213,7 +213,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l03272">3272</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l02909">2909</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -241,7 +241,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l03443">3443</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l03077">3077</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -268,7 +268,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l03283">3283</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l02920">2920</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -296,7 +296,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l03355">3355</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l02989">2989</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -324,7 +324,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l03361">3361</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l02995">2995</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -351,7 +351,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l03378">3378</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l03012">3012</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -379,7 +379,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l03480">3480</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l03114">3114</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -407,7 +407,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l03462">3462</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l03096">3096</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -434,7 +434,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l03393">3393</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l03027">3027</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -462,13 +462,13 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l03399">3399</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l03033">3033</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
-<a id="a128a2b93d2fcd586966e92b329f09033" name="a128a2b93d2fcd586966e92b329f09033"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a128a2b93d2fcd586966e92b329f09033">&#9670;&nbsp;</a></span>ActivesFieldNumber</h2>
+<a id="a8e37608754934f6a0bef906d6a09b302" name="a8e37608754934f6a0bef906d6a09b302"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8e37608754934f6a0bef906d6a09b302">&#9670;&nbsp;</a></span>ActiveLiteralsFieldNumber</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -477,7 +477,7 @@ Properties</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const int ActivesFieldNumber = 5</td>
+          <td class="memname">const int ActiveLiteralsFieldNumber = 5</td>
         </tr>
       </table>
   </td>
@@ -487,14 +487,14 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Field number for the "actives" field.</p>
+<p>Field number for the "active_literals" field.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l03340">3340</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l02977">2977</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
-<a id="a094e3db64da9466a3afd007266a4b704" name="a094e3db64da9466a3afd007266a4b704"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a094e3db64da9466a3afd007266a4b704">&#9670;&nbsp;</a></span>DemandsFieldNumber</h2>
+<a id="aca3857a34476508b42ac20b65754ecdf" name="aca3857a34476508b42ac20b65754ecdf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aca3857a34476508b42ac20b65754ecdf">&#9670;&nbsp;</a></span>LevelChangesFieldNumber</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -503,7 +503,7 @@ Properties</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const int DemandsFieldNumber = 4</td>
+          <td class="memname">const int LevelChangesFieldNumber = 4</td>
         </tr>
       </table>
   </td>
@@ -513,9 +513,9 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Field number for the "demands" field.</p>
+<p>Field number for the "level_changes" field.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l03326">3326</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l02963">2963</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -541,7 +541,7 @@ Properties</h2></td></tr>
 
 <p>Field number for the "max_level" field.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l03300">3300</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l02937">2937</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -567,12 +567,12 @@ Properties</h2></td></tr>
 
 <p>Field number for the "min_level" field.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l03288">3288</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l02925">2925</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
-<a id="a2a028a0b1f1f41a216add91d9aad18f9" name="a2a028a0b1f1f41a216add91d9aad18f9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2a028a0b1f1f41a216add91d9aad18f9">&#9670;&nbsp;</a></span>TimesFieldNumber</h2>
+<a id="a0b5061fc7b6892d656778f88a7a596f8" name="a0b5061fc7b6892d656778f88a7a596f8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0b5061fc7b6892d656778f88a7a596f8">&#9670;&nbsp;</a></span>TimeExprsFieldNumber</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -581,7 +581,7 @@ Properties</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const int TimesFieldNumber = 3</td>
+          <td class="memname">const int TimeExprsFieldNumber = 3</td>
         </tr>
       </table>
   </td>
@@ -591,15 +591,15 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Field number for the "times" field.</p>
+<p>Field number for the "time_exprs" field.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l03312">3312</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l02949">2949</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Property Documentation</h2>
-<a id="a36d2186ce73c0b22bcea087e72d33dd8" name="a36d2186ce73c0b22bcea087e72d33dd8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a36d2186ce73c0b22bcea087e72d33dd8">&#9670;&nbsp;</a></span>Actives</h2>
+<a id="a55981c13eb78709b528d25aec4aa09b8" name="a55981c13eb78709b528d25aec4aa09b8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a55981c13eb78709b528d25aec4aa09b8">&#9670;&nbsp;</a></span>ActiveLiterals</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -608,7 +608,7 @@ Properties</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">pbc.RepeatedField&lt;int&gt; Actives</td>
+          <td class="memname">pbc.RepeatedField&lt;int&gt; ActiveLiterals</td>
         </tr>
       </table>
   </td>
@@ -618,35 +618,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>literals. </p>
-
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l03349">3349</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
-
-</div>
-</div>
-<a id="a101cced2fda10f3b0ed67648bcfb1594" name="a101cced2fda10f3b0ed67648bcfb1594"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a101cced2fda10f3b0ed67648bcfb1594">&#9670;&nbsp;</a></span>Demands</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">pbc.RepeatedField&lt;long&gt; Demands</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">get</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>constants, can be negative. </p>
-
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l03335">3335</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l02983">2983</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -670,7 +642,33 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l03252">3252</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l02889">2889</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+
+</div>
+</div>
+<a id="a5101e2429d8b19b94f2b37c96895842f" name="a5101e2429d8b19b94f2b37c96895842f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5101e2429d8b19b94f2b37c96895842f">&#9670;&nbsp;</a></span>LevelChanges</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">pbc.RepeatedField&lt;long&gt; LevelChanges</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">get</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>constants, can be negative. </p>
+
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l02972">2972</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -694,7 +692,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l03304">3304</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l02941">2941</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -718,7 +716,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l03292">3292</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l02929">2929</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -742,12 +740,12 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l03248">3248</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l02885">2885</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
-<a id="a229b6c3359862d7b64b7e20befa08bfa" name="a229b6c3359862d7b64b7e20befa08bfa"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a229b6c3359862d7b64b7e20befa08bfa">&#9670;&nbsp;</a></span>Times</h2>
+<a id="af28a6df1f625c6cb5bac05f98ab8c5ca" name="af28a6df1f625c6cb5bac05f98ab8c5ca"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af28a6df1f625c6cb5bac05f98ab8c5ca">&#9670;&nbsp;</a></span>TimeExprs</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -756,7 +754,7 @@ Properties</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">pbc.RepeatedField&lt;int&gt; Times</td>
+          <td class="memname">pbc.RepeatedField&lt;global.Google.OrTools.Sat.LinearExpressionProto&gt; TimeExprs</td>
         </tr>
       </table>
   </td>
@@ -766,9 +764,9 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>variables. </p>
+<p>affine expressions. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l03321">3321</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l02958">2958</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>

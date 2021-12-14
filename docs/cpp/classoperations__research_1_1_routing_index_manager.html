@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.1</span>
+   &#160;<span id="projectnumber">9.2</span>
    </div>
   </td>
  </tr>
@@ -96,12 +96,12 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1_routing_
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p >Manager for any NodeIndex &lt;-&gt; variable index conversion. </p>
-<p >The routing solver uses variable indices internally and through its API. These variable indices are tricky to manage directly because one <a class="el" href="classoperations__research_1_1_node.html">Node</a> can correspond to a multitude of variables, depending on the number of times they appear in the model, and if they're used as start and/or end points. This class aims to simplify variable index usage, allowing users to use NodeIndex instead.</p>
+<p >The routing solver uses variable indices internally and through its API. These variable indices are tricky to manage directly because one Node can correspond to a multitude of variables, depending on the number of times they appear in the model, and if they're used as start and/or end points. This class aims to simplify variable index usage, allowing users to use NodeIndex instead.</p>
 <p >Usage: </p><div class="fragment"><div class="line"><span class="keyword">auto</span> starts_ends = ...;  </div>
 <div class="line"><a class="code hl_function" href="classoperations__research_1_1_routing_index_manager.html#aa34d48cf57fc120d2a7307a4e7435dd3">RoutingIndexManager</a> manager(10, 4, starts_ends);  <span class="comment">// 10 nodes, 4 vehicles.</span></div>
 <div class="line">RoutingModel <a class="code hl_variable" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>(manager);</div>
 <div class="ttc" id="aclassoperations__research_1_1_routing_index_manager_html_aa34d48cf57fc120d2a7307a4e7435dd3"><div class="ttname"><a href="classoperations__research_1_1_routing_index_manager.html#aa34d48cf57fc120d2a7307a4e7435dd3">operations_research::RoutingIndexManager::RoutingIndexManager</a></div><div class="ttdeci">RoutingIndexManager(int num_nodes, int num_vehicles, NodeIndex depot)</div><div class="ttdoc">Creates a NodeIndex to variable index mapping for a problem containing 'num_nodes',...</div><div class="ttdef"><b>Definition:</b> <a href="routing__index__manager_8cc_source.html#l00027">routing_index_manager.cc:27</a></div></div>
-<div class="ttc" id="agurobi__interface_8cc_html_a0728f23c9a47655d38e0bf1a2f200bcf"><div class="ttname"><a href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a></div><div class="ttdeci">GRBmodel * model</div><div class="ttdef"><b>Definition:</b> <a href="gurobi__interface_8cc_source.html#l00273">gurobi_interface.cc:273</a></div></div>
+<div class="ttc" id="agurobi__interface_8cc_html_a0728f23c9a47655d38e0bf1a2f200bcf"><div class="ttname"><a href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a></div><div class="ttdeci">GRBmodel * model</div><div class="ttdef"><b>Definition:</b> <a href="gurobi__interface_8cc_source.html#l00274">gurobi_interface.cc:274</a></div></div>
 </div><!-- fragment --><p >Then, use 'manager.NodeToIndex(node)' whenever model requires a variable index.</p>
 <p >Note: the mapping between node indices and variables indices is subject to change so no assumption should be made on it. The only guarantee is that indices range between 0 and n-1, where n = number of vehicles * 2 (for start and end nodes) + number of non-start or end nodes. </p>
 

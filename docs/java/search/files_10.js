@@ -21,12 +21,11 @@ var searchData=
   ['solver_2ejava_18',['Solver.java',['../Solver_8java.html',1,'']]],
   ['solverparameters_2ejava_19',['SolverParameters.java',['../SolverParameters_8java.html',1,'']]],
   ['solvewrapper_2ejava_20',['SolveWrapper.java',['../SolveWrapper_8java.html',1,'']]],
-  ['sorteddisjointintervallist_2ejava_21',['SortedDisjointIntervalList.java',['../SortedDisjointIntervalList_8java.html',1,'']]],
-  ['sparsepermutationproto_2ejava_22',['SparsePermutationProto.java',['../SparsePermutationProto_8java.html',1,'']]],
-  ['sparsepermutationprotoorbuilder_2ejava_23',['SparsePermutationProtoOrBuilder.java',['../SparsePermutationProtoOrBuilder_8java.html',1,'']]],
-  ['sum_2ejava_24',['Sum.java',['../Sum_8java.html',1,'']]],
-  ['sumofvariables_2ejava_25',['SumOfVariables.java',['../SumOfVariables_8java.html',1,'']]],
-  ['symmetrybreaker_2ejava_26',['SymmetryBreaker.java',['../SymmetryBreaker_8java.html',1,'']]],
-  ['symmetryproto_2ejava_27',['SymmetryProto.java',['../SymmetryProto_8java.html',1,'']]],
-  ['symmetryprotoorbuilder_2ejava_28',['SymmetryProtoOrBuilder.java',['../SymmetryProtoOrBuilder_8java.html',1,'']]]
+  ['sparsepermutationproto_2ejava_21',['SparsePermutationProto.java',['../SparsePermutationProto_8java.html',1,'']]],
+  ['sparsepermutationprotoorbuilder_2ejava_22',['SparsePermutationProtoOrBuilder.java',['../SparsePermutationProtoOrBuilder_8java.html',1,'']]],
+  ['sum_2ejava_23',['Sum.java',['../Sum_8java.html',1,'']]],
+  ['sumofvariables_2ejava_24',['SumOfVariables.java',['../SumOfVariables_8java.html',1,'']]],
+  ['symmetrybreaker_2ejava_25',['SymmetryBreaker.java',['../SymmetryBreaker_8java.html',1,'']]],
+  ['symmetryproto_2ejava_26',['SymmetryProto.java',['../SymmetryProto_8java.html',1,'']]],
+  ['symmetryprotoorbuilder_2ejava_27',['SymmetryProtoOrBuilder.java',['../SymmetryProtoOrBuilder_8java.html',1,'']]]
 ];

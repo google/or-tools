@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.1</span>
+   &#160;<span id="projectnumber">9.2</span>
    </div>
   </td>
  </tr>
@@ -96,12 +96,12 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1bop_1_1_a
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="bop__ls_8h_source.html#l00264">264</a> of file <a class="el" href="bop__ls_8h_source.html">bop_ls.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="bop__ls_8h_source.html#l00266">266</a> of file <a class="el" href="bop__ls_8h_source.html">bop_ls.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a00f4006611a6be7146be3c212f390409"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1bop_1_1_assignment_and_constraint_feasibility_maintainer.html#a00f4006611a6be7146be3c212f390409">AssignmentAndConstraintFeasibilityMaintainer</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_linear_boolean_problem.html">sat::LinearBooleanProblem</a> &amp;problem)</td></tr>
-<tr class="separator:a00f4006611a6be7146be3c212f390409"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4c09c677e55f65ac5560f2f69ffba1f8"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1bop_1_1_assignment_and_constraint_feasibility_maintainer.html#a4c09c677e55f65ac5560f2f69ffba1f8">AssignmentAndConstraintFeasibilityMaintainer</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_linear_boolean_problem.html">sat::LinearBooleanProblem</a> &amp;problem, absl::BitGenRef random)</td></tr>
+<tr class="separator:a4c09c677e55f65ac5560f2f69ffba1f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7ca2c696b5f31c5e2e575dddd31c3917"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1bop_1_1_assignment_and_constraint_feasibility_maintainer.html#a7ca2c696b5f31c5e2e575dddd31c3917">SetReferenceSolution</a> (const <a class="el" href="classoperations__research_1_1bop_1_1_bop_solution.html">BopSolution</a> &amp;reference_solution)</td></tr>
 <tr class="separator:a7ca2c696b5f31c5e2e575dddd31c3917"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a63bf1cee69906b012fad61969f94b5b7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1bop_1_1_assignment_and_constraint_feasibility_maintainer.html#a63bf1cee69906b012fad61969f94b5b7">UseCurrentStateAsReference</a> ()</td></tr>
@@ -145,8 +145,8 @@ Static Public Attributes</h2></td></tr>
 <tr class="separator:a6d42dda42beefd330e80ddb25d415a1e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a00f4006611a6be7146be3c212f390409" name="a00f4006611a6be7146be3c212f390409"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a00f4006611a6be7146be3c212f390409">&#9670;&nbsp;</a></span>AssignmentAndConstraintFeasibilityMaintainer()</h2>
+<a id="a4c09c677e55f65ac5560f2f69ffba1f8" name="a4c09c677e55f65ac5560f2f69ffba1f8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4c09c677e55f65ac5560f2f69ffba1f8">&#9670;&nbsp;</a></span>AssignmentAndConstraintFeasibilityMaintainer()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -158,8 +158,18 @@ Static Public Attributes</h2></td></tr>
           <td class="memname"><a class="el" href="classoperations__research_1_1bop_1_1_assignment_and_constraint_feasibility_maintainer.html">AssignmentAndConstraintFeasibilityMaintainer</a> </td>
           <td>(</td>
           <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_linear_boolean_problem.html">sat::LinearBooleanProblem</a> &amp;&#160;</td>
-          <td class="paramname"><em>problem</em></td><td>)</td>
+          <td class="paramname"><em>problem</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">absl::BitGenRef&#160;</td>
+          <td class="paramname"><em>random</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
   </td>
@@ -169,7 +179,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="bop__ls_8cc_source.html#l00182">182</a> of file <a class="el" href="bop__ls_8cc_source.html">bop_ls.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="bop__ls_8cc_source.html#l00184">184</a> of file <a class="el" href="bop__ls_8cc_source.html">bop_ls.cc</a>.</p>
 
 </div>
 </div>
@@ -189,7 +199,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="bop__ls_8cc_source.html#l00322">322</a> of file <a class="el" href="bop__ls_8cc_source.html">bop_ls.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="bop__ls_8cc_source.html#l00325">325</a> of file <a class="el" href="bop__ls_8cc_source.html">bop_ls.cc</a>.</p>
 
 </div>
 </div>
@@ -209,7 +219,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="bop__ls_8cc_source.html#l00301">301</a> of file <a class="el" href="bop__ls_8cc_source.html">bop_ls.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="bop__ls_8cc_source.html#l00304">304</a> of file <a class="el" href="bop__ls_8cc_source.html">bop_ls.cc</a>.</p>
 
 </div>
 </div>
@@ -237,7 +247,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="bop__ls_8h_source.html#l00335">335</a> of file <a class="el" href="bop__ls_8h_source.html">bop_ls.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="bop__ls_8h_source.html#l00337">337</a> of file <a class="el" href="bop__ls_8h_source.html">bop_ls.h</a>.</p>
 
 </div>
 </div>
@@ -256,7 +266,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="bop__ls_8cc_source.html#l00345">345</a> of file <a class="el" href="bop__ls_8cc_source.html">bop_ls.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="bop__ls_8cc_source.html#l00348">348</a> of file <a class="el" href="bop__ls_8cc_source.html">bop_ls.cc</a>.</p>
 
 </div>
 </div>
@@ -275,7 +285,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="bop__ls_8cc_source.html#l00327">327</a> of file <a class="el" href="bop__ls_8cc_source.html">bop_ls.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="bop__ls_8cc_source.html#l00330">330</a> of file <a class="el" href="bop__ls_8cc_source.html">bop_ls.cc</a>.</p>
 
 </div>
 </div>
@@ -303,7 +313,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="bop__ls_8h_source.html#l00358">358</a> of file <a class="el" href="bop__ls_8h_source.html">bop_ls.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="bop__ls_8h_source.html#l00360">360</a> of file <a class="el" href="bop__ls_8h_source.html">bop_ls.h</a>.</p>
 
 </div>
 </div>
@@ -331,7 +341,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="bop__ls_8h_source.html#l00341">341</a> of file <a class="el" href="bop__ls_8h_source.html">bop_ls.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="bop__ls_8h_source.html#l00343">343</a> of file <a class="el" href="bop__ls_8h_source.html">bop_ls.h</a>.</p>
 
 </div>
 </div>
@@ -359,7 +369,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="bop__ls_8h_source.html#l00346">346</a> of file <a class="el" href="bop__ls_8h_source.html">bop_ls.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="bop__ls_8h_source.html#l00348">348</a> of file <a class="el" href="bop__ls_8h_source.html">bop_ls.h</a>.</p>
 
 </div>
 </div>
@@ -387,7 +397,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="bop__ls_8h_source.html#l00353">353</a> of file <a class="el" href="bop__ls_8h_source.html">bop_ls.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="bop__ls_8h_source.html#l00355">355</a> of file <a class="el" href="bop__ls_8h_source.html">bop_ls.h</a>.</p>
 
 </div>
 </div>
@@ -406,7 +416,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="bop__ls_8cc_source.html#l00384">384</a> of file <a class="el" href="bop__ls_8cc_source.html">bop_ls.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="bop__ls_8cc_source.html#l00387">387</a> of file <a class="el" href="bop__ls_8cc_source.html">bop_ls.cc</a>.</p>
 
 </div>
 </div>
@@ -433,7 +443,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="bop__ls_8h_source.html#l00313">313</a> of file <a class="el" href="bop__ls_8h_source.html">bop_ls.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="bop__ls_8h_source.html#l00315">315</a> of file <a class="el" href="bop__ls_8h_source.html">bop_ls.h</a>.</p>
 
 </div>
 </div>
@@ -460,7 +470,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="bop__ls_8h_source.html#l00329">329</a> of file <a class="el" href="bop__ls_8h_source.html">bop_ls.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="bop__ls_8h_source.html#l00331">331</a> of file <a class="el" href="bop__ls_8h_source.html">bop_ls.h</a>.</p>
 
 </div>
 </div>
@@ -487,7 +497,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="bop__ls_8h_source.html#l00318">318</a> of file <a class="el" href="bop__ls_8h_source.html">bop_ls.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="bop__ls_8h_source.html#l00320">320</a> of file <a class="el" href="bop__ls_8h_source.html">bop_ls.h</a>.</p>
 
 </div>
 </div>
@@ -514,7 +524,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="bop__ls_8h_source.html#l00323">323</a> of file <a class="el" href="bop__ls_8h_source.html">bop_ls.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="bop__ls_8h_source.html#l00325">325</a> of file <a class="el" href="bop__ls_8h_source.html">bop_ls.h</a>.</p>
 
 </div>
 </div>
@@ -533,7 +543,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="bop__ls_8cc_source.html#l00350">350</a> of file <a class="el" href="bop__ls_8cc_source.html">bop_ls.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="bop__ls_8cc_source.html#l00353">353</a> of file <a class="el" href="bop__ls_8cc_source.html">bop_ls.cc</a>.</p>
 
 </div>
 </div>
@@ -560,7 +570,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="bop__ls_8h_source.html#l00338">338</a> of file <a class="el" href="bop__ls_8h_source.html">bop_ls.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="bop__ls_8h_source.html#l00340">340</a> of file <a class="el" href="bop__ls_8h_source.html">bop_ls.h</a>.</p>
 
 </div>
 </div>
@@ -580,7 +590,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="bop__ls_8cc_source.html#l00248">248</a> of file <a class="el" href="bop__ls_8cc_source.html">bop_ls.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="bop__ls_8cc_source.html#l00251">251</a> of file <a class="el" href="bop__ls_8cc_source.html">bop_ls.cc</a>.</p>
 
 </div>
 </div>
@@ -599,7 +609,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="bop__ls_8cc_source.html#l00272">272</a> of file <a class="el" href="bop__ls_8cc_source.html">bop_ls.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="bop__ls_8cc_source.html#l00275">275</a> of file <a class="el" href="bop__ls_8cc_source.html">bop_ls.cc</a>.</p>
 
 </div>
 </div>
@@ -624,7 +634,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="bop__ls_8h_source.html#l00273">273</a> of file <a class="el" href="bop__ls_8h_source.html">bop_ls.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="bop__ls_8h_source.html#l00275">275</a> of file <a class="el" href="bop__ls_8h_source.html">bop_ls.h</a>.</p>
 
 </div>
 </div>

@@ -7,6 +7,7 @@ var searchData=
   ['pairrelocateoperator_4',['PairRelocateOperator',['../classoperations__research_1_1_pair_relocate_operator.html',1,'operations_research']]],
   ['pathoperator_5',['PathOperator',['../classoperations__research_1_1_path_operator.html',1,'operations_research']]],
   ['pathstate_6',['PathState',['../classoperations__research_1_1_path_state.html',1,'operations_research']]],
-  ['propagationbaseobject_7',['PropagationBaseObject',['../classoperations__research_1_1_propagation_base_object.html',1,'operations_research']]],
-  ['propagationmonitor_8',['PropagationMonitor',['../classoperations__research_1_1_propagation_monitor.html',1,'operations_research']]]
+  ['profileddecisionbuilder_7',['ProfiledDecisionBuilder',['../classoperations__research_1_1_profiled_decision_builder.html',1,'operations_research']]],
+  ['propagationbaseobject_8',['PropagationBaseObject',['../classoperations__research_1_1_propagation_base_object.html',1,'operations_research']]],
+  ['propagationmonitor_9',['PropagationMonitor',['../classoperations__research_1_1_propagation_monitor.html',1,'operations_research']]]
 ];

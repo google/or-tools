@@ -1,7 +1,7 @@
 var searchData=
 [
   ['valuedeleter_0',['ValueDeleter',['../classgtl_1_1_value_deleter.html',1,'gtl']]],
-  ['valueliteralpair_1',['ValueLiteralPair',['../structoperations__research_1_1sat_1_1_integer_encoder_1_1_value_literal_pair.html',1,'operations_research::sat::IntegerEncoder']]],
+  ['valueliteralpair_1',['ValueLiteralPair',['../structoperations__research_1_1sat_1_1_value_literal_pair.html',1,'operations_research::sat']]],
   ['vardomination_2',['VarDomination',['../classoperations__research_1_1sat_1_1_var_domination.html',1,'operations_research::sat']]],
   ['variable_3',['Variable',['../structoperations__research_1_1fz_1_1_variable.html',1,'Variable'],['../classoperations__research_1_1math__opt_1_1_variable.html',1,'Variable']]],
   ['variableboundchange_4',['VariableBoundChange',['../structoperations__research_1_1sat_1_1_pseudo_costs_1_1_variable_bound_change.html',1,'operations_research::sat::PseudoCosts']]],

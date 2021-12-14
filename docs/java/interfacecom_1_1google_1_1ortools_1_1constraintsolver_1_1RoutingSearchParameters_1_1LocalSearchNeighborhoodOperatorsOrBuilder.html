@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 9.1</span>
+                <span id="sfml">Google OR-Tools 9.2</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -566,7 +566,7 @@ Possible neighbors for the path 1 -&gt; 2 -&gt; 3 -&gt; 4 with 5 inactive
       </table>
 </div><div class="memdoc">
 <pre>
-Operator which relaxes one entire path and all unactive nodes.
+Operator which relaxes one entire path and all inactive nodes.
 </pre><p ><code>.operations_research.OptionalBoolean use_full_path_lns = 17;</code> </p><dl class="section return"><dt>Returns</dt><dd>The useFullPathLns. </dd></dl>
 
 <p>Implemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1LocalSearchNeighborhoodOperators.html#a1f60bcf7d2c9d73353b701a69e6912e4">RoutingSearchParameters.LocalSearchNeighborhoodOperators</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1LocalSearchNeighborhoodOperators_1_1Builder.html#a1f60bcf7d2c9d73353b701a69e6912e4">RoutingSearchParameters.LocalSearchNeighborhoodOperators.Builder</a>.</p>
@@ -588,7 +588,7 @@ Operator which relaxes one entire path and all unactive nodes.
       </table>
 </div><div class="memdoc">
 <pre>
-Operator which relaxes one entire path and all unactive nodes.
+Operator which relaxes one entire path and all inactive nodes.
 </pre><p ><code>.operations_research.OptionalBoolean use_full_path_lns = 17;</code> </p><dl class="section return"><dt>Returns</dt><dd>The enum numeric value on the wire for useFullPathLns. </dd></dl>
 
 <p>Implemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1LocalSearchNeighborhoodOperators.html#a353c5605cf96b653c89867beaeab3d92">RoutingSearchParameters.LocalSearchNeighborhoodOperators</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1LocalSearchNeighborhoodOperators_1_1Builder.html#a353c5605cf96b653c89867beaeab3d92">RoutingSearchParameters.LocalSearchNeighborhoodOperators.Builder</a>.</p>
@@ -760,7 +760,7 @@ using the GlobalCheapestInsertion heuristic.
 <pre>
 Operator which relaxes all inactive nodes and one sub-chain of six
 consecutive arcs. That way the path can be improved by inserting inactive
-nodes or swaping arcs.
+nodes or swapping arcs.
 </pre><p ><code>.operations_research.OptionalBoolean use_inactive_lns = 19;</code> </p><dl class="section return"><dt>Returns</dt><dd>The useInactiveLns. </dd></dl>
 
 <p>Implemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1LocalSearchNeighborhoodOperators.html#ad764eb2ccbf9cd5795afad2f38d51c95">RoutingSearchParameters.LocalSearchNeighborhoodOperators</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1LocalSearchNeighborhoodOperators_1_1Builder.html#ad764eb2ccbf9cd5795afad2f38d51c95">RoutingSearchParameters.LocalSearchNeighborhoodOperators.Builder</a>.</p>
@@ -784,7 +784,7 @@ nodes or swaping arcs.
 <pre>
 Operator which relaxes all inactive nodes and one sub-chain of six
 consecutive arcs. That way the path can be improved by inserting inactive
-nodes or swaping arcs.
+nodes or swapping arcs.
 </pre><p ><code>.operations_research.OptionalBoolean use_inactive_lns = 19;</code> </p><dl class="section return"><dt>Returns</dt><dd>The enum numeric value on the wire for useInactiveLns. </dd></dl>
 
 <p>Implemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1LocalSearchNeighborhoodOperators.html#aa591046995c79bafccb5ce1f4226b58e">RoutingSearchParameters.LocalSearchNeighborhoodOperators</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1LocalSearchNeighborhoodOperators_1_1Builder.html#aa591046995c79bafccb5ce1f4226b58e">RoutingSearchParameters.LocalSearchNeighborhoodOperators.Builder</a>.</p>
@@ -1578,7 +1578,7 @@ place):
 1 -&gt; A -&gt; [E] -&gt; B -&gt; C -&gt; D -&gt; 2
 1 -&gt; A -&gt; B -&gt; [E] -&gt; C -&gt; D -&gt; 2
 1 -&gt; A -&gt; B -&gt; C -&gt; [E] -&gt; D -&gt; 2
-This operator is extremelly useful to move chains of nodes which are
+This operator is extremely useful to move chains of nodes which are
 located at the same place (for instance nodes part of a same stop).
 </pre><p ><code>.operations_research.OptionalBoolean use_relocate_neighbors = 3;</code> </p><dl class="section return"><dt>Returns</dt><dd>The useRelocateNeighbors. </dd></dl>
 
@@ -1621,7 +1621,7 @@ place):
 1 -&gt; A -&gt; [E] -&gt; B -&gt; C -&gt; D -&gt; 2
 1 -&gt; A -&gt; B -&gt; [E] -&gt; C -&gt; D -&gt; 2
 1 -&gt; A -&gt; B -&gt; C -&gt; [E] -&gt; D -&gt; 2
-This operator is extremelly useful to move chains of nodes which are
+This operator is extremely useful to move chains of nodes which are
 located at the same place (for instance nodes part of a same stop).
 </pre><p ><code>.operations_research.OptionalBoolean use_relocate_neighbors = 3;</code> </p><dl class="section return"><dt>Returns</dt><dd>The enum numeric value on the wire for useRelocateNeighbors. </dd></dl>
 
@@ -2009,7 +2009,7 @@ cost(A,i) = cost(1,i) and cost(i,A) = cost(i,6).
 </div><div class="memdoc">
 <pre>
 --- Intra-route operators ---
-Operator which reverves a sub-chain of a path. It is called TwoOpt
+Operator which reverses a subchain of a path. It is called TwoOpt
 because it breaks two arcs on the path; resulting paths are called
 two-optimal.
 Possible neighbors for the path 1 -&gt; 2 -&gt; 3 -&gt; 4 -&gt; 5
@@ -2040,7 +2040,7 @@ be moved):
 </div><div class="memdoc">
 <pre>
 --- Intra-route operators ---
-Operator which reverves a sub-chain of a path. It is called TwoOpt
+Operator which reverses a subchain of a path. It is called TwoOpt
 because it breaks two arcs on the path; resulting paths are called
 two-optimal.
 Possible neighbors for the path 1 -&gt; 2 -&gt; 3 -&gt; 4 -&gt; 5

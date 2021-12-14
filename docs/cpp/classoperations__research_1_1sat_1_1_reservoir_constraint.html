@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.1</span>
+   &#160;<span id="projectnumber">9.2</span>
    </div>
   </td>
  </tr>
@@ -97,16 +97,16 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1sat_1_1_r
 <div class="textblock"><p >Specialized reservoir constraint. </p>
 <p >This constraint allows adding emptying/refilling events to the reservoir constraint incrementally. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00532">532</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00664">664</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a16dc05b5038b4329fd855468547ee560"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_reservoir_constraint.html#a16dc05b5038b4329fd855468547ee560">AddEvent</a> (<a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a> <a class="el" href="resource_8cc.html#aee52de7b225665566aa47246b9d6b8fa">time</a>, int64_t <a class="el" href="arc__flow__builder_8cc.html#a03bbf16021794da27dc482d7eb9fc0d1">demand</a>)</td></tr>
-<tr class="memdesc:a16dc05b5038b4329fd855468547ee560"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a mandatory event.  <a href="classoperations__research_1_1sat_1_1_reservoir_constraint.html#a16dc05b5038b4329fd855468547ee560">More...</a><br /></td></tr>
-<tr class="separator:a16dc05b5038b4329fd855468547ee560"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac5464ed0368b6579edf974e26da51d1b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_reservoir_constraint.html#ac5464ed0368b6579edf974e26da51d1b">AddOptionalEvent</a> (<a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a> <a class="el" href="resource_8cc.html#aee52de7b225665566aa47246b9d6b8fa">time</a>, int64_t <a class="el" href="arc__flow__builder_8cc.html#a03bbf16021794da27dc482d7eb9fc0d1">demand</a>, <a class="el" href="classoperations__research_1_1sat_1_1_bool_var.html">BoolVar</a> is_active)</td></tr>
-<tr class="memdesc:ac5464ed0368b6579edf974e26da51d1b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a optional event.  <a href="classoperations__research_1_1sat_1_1_reservoir_constraint.html#ac5464ed0368b6579edf974e26da51d1b">More...</a><br /></td></tr>
-<tr class="separator:ac5464ed0368b6579edf974e26da51d1b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae51d785e7e5cab1700c821106ff9d403"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_reservoir_constraint.html#ae51d785e7e5cab1700c821106ff9d403">AddEvent</a> (<a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> <a class="el" href="resource_8cc.html#aee52de7b225665566aa47246b9d6b8fa">time</a>, int64_t level_change)</td></tr>
+<tr class="memdesc:ae51d785e7e5cab1700c821106ff9d403"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a mandatory event.  <a href="classoperations__research_1_1sat_1_1_reservoir_constraint.html#ae51d785e7e5cab1700c821106ff9d403">More...</a><br /></td></tr>
+<tr class="separator:ae51d785e7e5cab1700c821106ff9d403"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a36be81439711b656fd9a3a8c1f889072"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_reservoir_constraint.html#a36be81439711b656fd9a3a8c1f889072">AddOptionalEvent</a> (<a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> <a class="el" href="resource_8cc.html#aee52de7b225665566aa47246b9d6b8fa">time</a>, int64_t level_change, <a class="el" href="classoperations__research_1_1sat_1_1_bool_var.html">BoolVar</a> is_active)</td></tr>
+<tr class="memdesc:a36be81439711b656fd9a3a8c1f889072"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a optional event.  <a href="classoperations__research_1_1sat_1_1_reservoir_constraint.html#a36be81439711b656fd9a3a8c1f889072">More...</a><br /></td></tr>
+<tr class="separator:a36be81439711b656fd9a3a8c1f889072"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0ef1ea52810f5cb078f58799520b833c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_constraint.html#a0ef1ea52810f5cb078f58799520b833c">OnlyEnforceIf</a> (absl::Span&lt; const <a class="el" href="classoperations__research_1_1sat_1_1_bool_var.html">BoolVar</a> &gt; literals)</td></tr>
 <tr class="memdesc:a0ef1ea52810f5cb078f58799520b833c"><td class="mdescLeft">&#160;</td><td class="mdescRight">The constraint will be enforced iff all literals listed here are true.  <a href="classoperations__research_1_1sat_1_1_constraint.html#a0ef1ea52810f5cb078f58799520b833c">More...</a><br /></td></tr>
 <tr class="separator:a0ef1ea52810f5cb078f58799520b833c"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -132,8 +132,8 @@ Protected Attributes</h2></td></tr>
 <tr class="separator:a9ee30a925ae7127a28ae72965c8654d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a16dc05b5038b4329fd855468547ee560" name="a16dc05b5038b4329fd855468547ee560"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a16dc05b5038b4329fd855468547ee560">&#9670;&nbsp;</a></span>AddEvent()</h2>
+<a id="ae51d785e7e5cab1700c821106ff9d403" name="ae51d785e7e5cab1700c821106ff9d403"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae51d785e7e5cab1700c821106ff9d403">&#9670;&nbsp;</a></span>AddEvent()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -141,14 +141,14 @@ Protected Attributes</h2></td></tr>
         <tr>
           <td class="memname">void AddEvent </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a>&#160;</td>
           <td class="paramname"><em>time</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">int64_t&#160;</td>
-          <td class="paramname"><em>demand</em>&#160;</td>
+          <td class="paramname"><em>level_change</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -159,14 +159,14 @@ Protected Attributes</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Adds a mandatory event. </p>
-<p >It will increase the used capacity by <code>c demand at time</code>c time. </p>
+<p >It will increase the used capacity by <code>level_change</code> at time <code>time</code>. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00318">318</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00585">585</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
 
 </div>
 </div>
-<a id="ac5464ed0368b6579edf974e26da51d1b" name="ac5464ed0368b6579edf974e26da51d1b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac5464ed0368b6579edf974e26da51d1b">&#9670;&nbsp;</a></span>AddOptionalEvent()</h2>
+<a id="a36be81439711b656fd9a3a8c1f889072" name="a36be81439711b656fd9a3a8c1f889072"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a36be81439711b656fd9a3a8c1f889072">&#9670;&nbsp;</a></span>AddOptionalEvent()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -174,14 +174,14 @@ Protected Attributes</h2></td></tr>
         <tr>
           <td class="memname">void AddOptionalEvent </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a>&#160;</td>
           <td class="paramname"><em>time</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">int64_t&#160;</td>
-          <td class="paramname"><em>demand</em>, </td>
+          <td class="paramname"><em>level_change</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -198,9 +198,9 @@ Protected Attributes</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Adds a optional event. </p>
-<p >If <code>c is_active is true, It will increase the used capacity by</code>c demand at time `c time. </p>
+<p >If <code>c is_active is true, It will increase the used capacity by </code>level_change<code>at time</code>c time. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00325">325</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00593">593</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
 
 </div>
 </div>
@@ -229,7 +229,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns the mutable underlying protobuf object (useful for model edition). </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00454">454</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00586">586</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
@@ -258,7 +258,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns the name of the constraint (or the empty string if not set). </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00281">281</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00548">548</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
 
 </div>
 </div>
@@ -295,7 +295,7 @@ Protected Attributes</h2></td></tr>
 <li>other: no support (but can be added on a per-demand basis). </li>
 </ul>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00283">283</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00550">550</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
 
 </div>
 </div>
@@ -325,7 +325,7 @@ Protected Attributes</h2></td></tr>
 
 <p>See <a class="el" href="classoperations__research_1_1sat_1_1_constraint.html#a0ef1ea52810f5cb078f58799520b833c" title="The constraint will be enforced iff all literals listed here are true.">OnlyEnforceIf(absl::Span&lt;const BoolVar&gt; literals)</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00290">290</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00557">557</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
 
 </div>
 </div>
@@ -354,7 +354,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns the underlying protobuf object (useful for testing). </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00451">451</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00583">583</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
@@ -384,7 +384,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Sets the name of the constraint. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00276">276</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00543">543</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
 
 </div>
 </div>
@@ -409,7 +409,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00461">461</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00593">593</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>

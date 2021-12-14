@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.1</span>
+   &#160;<span id="projectnumber">9.2</span>
    </div>
   </td>
  </tr>
@@ -109,52 +109,54 @@ $(document).ready(function(){initNavTree('drat__writer_8cc_source.html',''); ini
 <div class="line"><a id="l00018" name="l00018"></a><span class="lineno">   18</span><span class="preprocessor">#include &quot;absl/strings/str_format.h&quot;</span></div>
 <div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span><span class="preprocessor">#include &quot;<a class="code" href="base_2logging_8h.html">ortools/base/logging.h</a>&quot;</span></div>
 <div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span><span class="preprocessor">#if !defined(__PORTABLE_PLATFORM__)</span></div>
-<div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span><span class="preprocessor">#endif  </span><span class="comment">// !__PORTABLE_PLATFORM__</span></div>
-<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span><span class="preprocessor">#include &quot;absl/status/status.h&quot;</span></div>
-<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span> </div>
-<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceoperations__research.html">operations_research</a> {</div>
-<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span><span class="keyword">namespace </span>sat {</div>
-<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span> </div>
-<div class="line"><a id="l00027" name="l00027"></a><span class="lineno"><a class="line" href="classoperations__research_1_1sat_1_1_drat_writer.html#aaddc7cfa3444e264600a1a3a192de532">   27</a></span><a class="code hl_function" href="classoperations__research_1_1sat_1_1_drat_writer.html#aaddc7cfa3444e264600a1a3a192de532">DratWriter::~DratWriter</a>() {</div>
-<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span>  <span class="keywordflow">if</span> (output_ != <span class="keyword">nullptr</span>) {</div>
-<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span><span class="preprocessor">#if !defined(__PORTABLE_PLATFORM__)</span></div>
-<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span>    <a class="code hl_define" href="base_2logging_8h.html#a9f96ed9f06763f0821fdbb4d29031d8d">CHECK_OK</a>(<a class="code hl_function" href="namespacefile.html#a076b0cad1794671953aa9a8b8f9cf943">file::WriteString</a>(output_, buffer_, <a class="code hl_function" href="namespacefile.html#a1abdf766bb120d38e7a4dfa200972681">file::Defaults</a>()));</div>
-<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span>    <a class="code hl_define" href="base_2logging_8h.html#a9f96ed9f06763f0821fdbb4d29031d8d">CHECK_OK</a>(output_-&gt;<a class="code hl_function" href="class_file.html#aef7e3d18ef267f23f64ad397fa359cc1">Close</a>(<a class="code hl_function" href="namespacefile.html#a1abdf766bb120d38e7a4dfa200972681">file::Defaults</a>()));</div>
-<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span><span class="preprocessor">#endif  </span><span class="comment">// !__PORTABLE_PLATFORM__</span></div>
-<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span>  }</div>
-<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>}</div>
-<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span> </div>
-<div class="line"><a id="l00036" name="l00036"></a><span class="lineno"><a class="line" href="classoperations__research_1_1sat_1_1_drat_writer.html#a98bacf41c50979896b4a5f5e41fb0ccf">   36</a></span><span class="keywordtype">void</span> <a class="code hl_function" href="classoperations__research_1_1sat_1_1_drat_writer.html#a98bacf41c50979896b4a5f5e41fb0ccf">DratWriter::AddClause</a>(absl::Span&lt;const Literal&gt; clause) {</div>
-<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>  WriteClause(clause);</div>
-<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>}</div>
-<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span> </div>
-<div class="line"><a id="l00040" name="l00040"></a><span class="lineno"><a class="line" href="classoperations__research_1_1sat_1_1_drat_writer.html#a18349231154d0f5eaee94fe213f347e6">   40</a></span><span class="keywordtype">void</span> <a class="code hl_function" href="classoperations__research_1_1sat_1_1_drat_writer.html#a18349231154d0f5eaee94fe213f347e6">DratWriter::DeleteClause</a>(absl::Span&lt;const Literal&gt; clause) {</div>
-<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>  buffer_ += <span class="stringliteral">&quot;d &quot;</span>;</div>
-<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>  WriteClause(clause);</div>
-<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>}</div>
-<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span> </div>
-<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span><span class="keywordtype">void</span> DratWriter::WriteClause(absl::Span&lt;const Literal&gt; clause) {</div>
-<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>  <span class="keywordflow">for</span> (<span class="keyword">const</span> <a class="code hl_class" href="classoperations__research_1_1sat_1_1_literal.html">Literal</a> <a class="code hl_variable" href="optimization_8cc.html#af63dcc00f2023fdf498e0829e6fb8a6b">literal</a> : clause) {</div>
-<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>    absl::StrAppendFormat(&amp;buffer_, <span class="stringliteral">&quot;%d &quot;</span>, <a class="code hl_variable" href="optimization_8cc.html#af63dcc00f2023fdf498e0829e6fb8a6b">literal</a>.SignedValue());</div>
-<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>  }</div>
-<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>  buffer_ += <span class="stringliteral">&quot;0\n&quot;</span>;</div>
-<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>  <span class="keywordflow">if</span> (buffer_.size() &gt; 10000) {</div>
-<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span><span class="preprocessor">#if !defined(__PORTABLE_PLATFORM__)</span></div>
-<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>    <a class="code hl_define" href="base_2logging_8h.html#a9f96ed9f06763f0821fdbb4d29031d8d">CHECK_OK</a>(<a class="code hl_function" href="namespacefile.html#a076b0cad1794671953aa9a8b8f9cf943">file::WriteString</a>(output_, buffer_, <a class="code hl_function" href="namespacefile.html#a1abdf766bb120d38e7a4dfa200972681">file::Defaults</a>()));</div>
-<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span><span class="preprocessor">#endif  </span><span class="comment">// !__PORTABLE_PLATFORM__</span></div>
-<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>    buffer_.clear();</div>
-<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>  }</div>
-<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>}</div>
-<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span> </div>
-<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>}  <span class="comment">// namespace sat</span></div>
-<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>}  <span class="comment">// namespace operations_research</span></div>
+<div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span><span class="preprocessor">#include &quot;<a class="code" href="base_2file_8h.html">ortools/base/file.h</a>&quot;</span></div>
+<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span><span class="preprocessor">#endif  </span><span class="comment">// !__PORTABLE_PLATFORM__</span></div>
+<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span><span class="preprocessor">#include &quot;absl/status/status.h&quot;</span></div>
+<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span> </div>
+<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceoperations__research.html">operations_research</a> {</div>
+<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span><span class="keyword">namespace </span>sat {</div>
+<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span> </div>
+<div class="line"><a id="l00028" name="l00028"></a><span class="lineno"><a class="line" href="classoperations__research_1_1sat_1_1_drat_writer.html#aaddc7cfa3444e264600a1a3a192de532">   28</a></span><a class="code hl_function" href="classoperations__research_1_1sat_1_1_drat_writer.html#aaddc7cfa3444e264600a1a3a192de532">DratWriter::~DratWriter</a>() {</div>
+<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span>  <span class="keywordflow">if</span> (output_ != <span class="keyword">nullptr</span>) {</div>
+<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span><span class="preprocessor">#if !defined(__PORTABLE_PLATFORM__)</span></div>
+<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span>    <a class="code hl_define" href="base_2logging_8h.html#a9f96ed9f06763f0821fdbb4d29031d8d">CHECK_OK</a>(<a class="code hl_function" href="namespacefile.html#a076b0cad1794671953aa9a8b8f9cf943">file::WriteString</a>(output_, buffer_, <a class="code hl_function" href="namespacefile.html#a1abdf766bb120d38e7a4dfa200972681">file::Defaults</a>()));</div>
+<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span>    <a class="code hl_define" href="base_2logging_8h.html#a9f96ed9f06763f0821fdbb4d29031d8d">CHECK_OK</a>(output_-&gt;<a class="code hl_function" href="class_file.html#aef7e3d18ef267f23f64ad397fa359cc1">Close</a>(<a class="code hl_function" href="namespacefile.html#a1abdf766bb120d38e7a4dfa200972681">file::Defaults</a>()));</div>
+<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span><span class="preprocessor">#endif  </span><span class="comment">// !__PORTABLE_PLATFORM__</span></div>
+<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>  }</div>
+<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>}</div>
+<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span> </div>
+<div class="line"><a id="l00037" name="l00037"></a><span class="lineno"><a class="line" href="classoperations__research_1_1sat_1_1_drat_writer.html#a98bacf41c50979896b4a5f5e41fb0ccf">   37</a></span><span class="keywordtype">void</span> <a class="code hl_function" href="classoperations__research_1_1sat_1_1_drat_writer.html#a98bacf41c50979896b4a5f5e41fb0ccf">DratWriter::AddClause</a>(absl::Span&lt;const Literal&gt; clause) {</div>
+<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>  WriteClause(clause);</div>
+<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>}</div>
+<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span> </div>
+<div class="line"><a id="l00041" name="l00041"></a><span class="lineno"><a class="line" href="classoperations__research_1_1sat_1_1_drat_writer.html#a18349231154d0f5eaee94fe213f347e6">   41</a></span><span class="keywordtype">void</span> <a class="code hl_function" href="classoperations__research_1_1sat_1_1_drat_writer.html#a18349231154d0f5eaee94fe213f347e6">DratWriter::DeleteClause</a>(absl::Span&lt;const Literal&gt; clause) {</div>
+<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>  buffer_ += <span class="stringliteral">&quot;d &quot;</span>;</div>
+<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>  WriteClause(clause);</div>
+<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>}</div>
+<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span> </div>
+<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span><span class="keywordtype">void</span> DratWriter::WriteClause(absl::Span&lt;const Literal&gt; clause) {</div>
+<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>  <span class="keywordflow">for</span> (<span class="keyword">const</span> <a class="code hl_class" href="classoperations__research_1_1sat_1_1_literal.html">Literal</a> <a class="code hl_variable" href="optimization_8cc.html#af63dcc00f2023fdf498e0829e6fb8a6b">literal</a> : clause) {</div>
+<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>    absl::StrAppendFormat(&amp;buffer_, <span class="stringliteral">&quot;%d &quot;</span>, <a class="code hl_variable" href="optimization_8cc.html#af63dcc00f2023fdf498e0829e6fb8a6b">literal</a>.SignedValue());</div>
+<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>  }</div>
+<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>  buffer_ += <span class="stringliteral">&quot;0\n&quot;</span>;</div>
+<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>  <span class="keywordflow">if</span> (buffer_.size() &gt; 10000) {</div>
+<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span><span class="preprocessor">#if !defined(__PORTABLE_PLATFORM__)</span></div>
+<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>    <a class="code hl_define" href="base_2logging_8h.html#a9f96ed9f06763f0821fdbb4d29031d8d">CHECK_OK</a>(<a class="code hl_function" href="namespacefile.html#a076b0cad1794671953aa9a8b8f9cf943">file::WriteString</a>(output_, buffer_, <a class="code hl_function" href="namespacefile.html#a1abdf766bb120d38e7a4dfa200972681">file::Defaults</a>()));</div>
+<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span><span class="preprocessor">#endif  </span><span class="comment">// !__PORTABLE_PLATFORM__</span></div>
+<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>    buffer_.clear();</div>
+<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>  }</div>
+<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>}</div>
+<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span> </div>
+<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>}  <span class="comment">// namespace sat</span></div>
+<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>}  <span class="comment">// namespace operations_research</span></div>
+<div class="ttc" id="abase_2file_8h_html"><div class="ttname"><a href="base_2file_8h.html">file.h</a></div></div>
 <div class="ttc" id="abase_2logging_8h_html"><div class="ttname"><a href="base_2logging_8h.html">logging.h</a></div></div>
-<div class="ttc" id="abase_2logging_8h_html_a9f96ed9f06763f0821fdbb4d29031d8d"><div class="ttname"><a href="base_2logging_8h.html#a9f96ed9f06763f0821fdbb4d29031d8d">CHECK_OK</a></div><div class="ttdeci">#define CHECK_OK(x)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00042">base/logging.h:42</a></div></div>
+<div class="ttc" id="abase_2logging_8h_html_a9f96ed9f06763f0821fdbb4d29031d8d"><div class="ttname"><a href="base_2logging_8h.html#a9f96ed9f06763f0821fdbb4d29031d8d">CHECK_OK</a></div><div class="ttdeci">#define CHECK_OK(x)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00043">base/logging.h:43</a></div></div>
 <div class="ttc" id="aclass_file_html_aef7e3d18ef267f23f64ad397fa359cc1"><div class="ttname"><a href="class_file.html#aef7e3d18ef267f23f64ad397fa359cc1">File::Close</a></div><div class="ttdeci">bool Close()</div><div class="ttdef"><b>Definition:</b> <a href="base_2file_8cc_source.html#l00048">base/file.cc:48</a></div></div>
-<div class="ttc" id="aclassoperations__research_1_1sat_1_1_drat_writer_html_a18349231154d0f5eaee94fe213f347e6"><div class="ttname"><a href="classoperations__research_1_1sat_1_1_drat_writer.html#a18349231154d0f5eaee94fe213f347e6">operations_research::sat::DratWriter::DeleteClause</a></div><div class="ttdeci">void DeleteClause(absl::Span&lt; const Literal &gt; clause)</div><div class="ttdef"><b>Definition:</b> <a href="drat__writer_8cc_source.html#l00040">drat_writer.cc:40</a></div></div>
-<div class="ttc" id="aclassoperations__research_1_1sat_1_1_drat_writer_html_a98bacf41c50979896b4a5f5e41fb0ccf"><div class="ttname"><a href="classoperations__research_1_1sat_1_1_drat_writer.html#a98bacf41c50979896b4a5f5e41fb0ccf">operations_research::sat::DratWriter::AddClause</a></div><div class="ttdeci">void AddClause(absl::Span&lt; const Literal &gt; clause)</div><div class="ttdef"><b>Definition:</b> <a href="drat__writer_8cc_source.html#l00036">drat_writer.cc:36</a></div></div>
-<div class="ttc" id="aclassoperations__research_1_1sat_1_1_drat_writer_html_aaddc7cfa3444e264600a1a3a192de532"><div class="ttname"><a href="classoperations__research_1_1sat_1_1_drat_writer.html#aaddc7cfa3444e264600a1a3a192de532">operations_research::sat::DratWriter::~DratWriter</a></div><div class="ttdeci">~DratWriter()</div><div class="ttdef"><b>Definition:</b> <a href="drat__writer_8cc_source.html#l00027">drat_writer.cc:27</a></div></div>
-<div class="ttc" id="aclassoperations__research_1_1sat_1_1_literal_html"><div class="ttname"><a href="classoperations__research_1_1sat_1_1_literal.html">operations_research::sat::Literal</a></div><div class="ttdef"><b>Definition:</b> <a href="sat__base_8h_source.html#l00065">sat_base.h:65</a></div></div>
+<div class="ttc" id="aclassoperations__research_1_1sat_1_1_drat_writer_html_a18349231154d0f5eaee94fe213f347e6"><div class="ttname"><a href="classoperations__research_1_1sat_1_1_drat_writer.html#a18349231154d0f5eaee94fe213f347e6">operations_research::sat::DratWriter::DeleteClause</a></div><div class="ttdeci">void DeleteClause(absl::Span&lt; const Literal &gt; clause)</div><div class="ttdef"><b>Definition:</b> <a href="drat__writer_8cc_source.html#l00041">drat_writer.cc:41</a></div></div>
+<div class="ttc" id="aclassoperations__research_1_1sat_1_1_drat_writer_html_a98bacf41c50979896b4a5f5e41fb0ccf"><div class="ttname"><a href="classoperations__research_1_1sat_1_1_drat_writer.html#a98bacf41c50979896b4a5f5e41fb0ccf">operations_research::sat::DratWriter::AddClause</a></div><div class="ttdeci">void AddClause(absl::Span&lt; const Literal &gt; clause)</div><div class="ttdef"><b>Definition:</b> <a href="drat__writer_8cc_source.html#l00037">drat_writer.cc:37</a></div></div>
+<div class="ttc" id="aclassoperations__research_1_1sat_1_1_drat_writer_html_aaddc7cfa3444e264600a1a3a192de532"><div class="ttname"><a href="classoperations__research_1_1sat_1_1_drat_writer.html#aaddc7cfa3444e264600a1a3a192de532">operations_research::sat::DratWriter::~DratWriter</a></div><div class="ttdeci">~DratWriter()</div><div class="ttdef"><b>Definition:</b> <a href="drat__writer_8cc_source.html#l00028">drat_writer.cc:28</a></div></div>
+<div class="ttc" id="aclassoperations__research_1_1sat_1_1_literal_html"><div class="ttname"><a href="classoperations__research_1_1sat_1_1_literal.html">operations_research::sat::Literal</a></div><div class="ttdef"><b>Definition:</b> <a href="sat__base_8h_source.html#l00066">sat_base.h:66</a></div></div>
 <div class="ttc" id="adrat__writer_8h_html"><div class="ttname"><a href="drat__writer_8h.html">drat_writer.h</a></div></div>
 <div class="ttc" id="anamespacefile_html_a076b0cad1794671953aa9a8b8f9cf943"><div class="ttname"><a href="namespacefile.html#a076b0cad1794671953aa9a8b8f9cf943">file::WriteString</a></div><div class="ttdeci">absl::Status WriteString(File *file, const absl::string_view &amp;contents, int flags)</div><div class="ttdef"><b>Definition:</b> <a href="base_2file_8cc_source.html#l00184">base/file.cc:184</a></div></div>
 <div class="ttc" id="anamespacefile_html_a1abdf766bb120d38e7a4dfa200972681"><div class="ttname"><a href="namespacefile.html#a1abdf766bb120d38e7a4dfa200972681">file::Defaults</a></div><div class="ttdeci">int Defaults()</div><div class="ttdef"><b>Definition:</b> <a href="base_2file_8h_source.html#l00119">base/file.h:119</a></div></div>

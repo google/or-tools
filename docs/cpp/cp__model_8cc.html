@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.1</span>
+   &#160;<span id="projectnumber">9.2</span>
    </div>
   </td>
  </tr>
@@ -110,21 +110,19 @@ Functions</h2></td></tr>
 <tr class="separator:a7ac491fd74967da4f340617ad11677ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a15ca399ada8a279dc92f693ede7e4004"><td class="memItemLeft" align="right" valign="top">std::ostream &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a15ca399ada8a279dc92f693ede7e4004">operator&lt;&lt;</a> (std::ostream &amp;os, const BoolVar &amp;<a class="el" href="sat__solver_8cc.html#a8392bdc4ed570e6a95c7fca35b09f83f">var</a>)</td></tr>
 <tr class="separator:a15ca399ada8a279dc92f693ede7e4004"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2b9b0d38a85459cb4f9fbf29b4d42ade"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a2b9b0d38a85459cb4f9fbf29b4d42ade">VarDebugString</a> (const CpModelProto &amp;<a class="el" href="cp__model__fz__solver_8cc.html#aed003f5eb5197bc586b7ef2c36a63da2">proto</a>, int <a class="el" href="routing__search_8cc.html#aa9d6bcc39dc199c2a2671a88ecf3630e">index</a>)</td></tr>
+<tr class="separator:a2b9b0d38a85459cb4f9fbf29b4d42ade"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6a3611a7a8f77b0d387269129446af45"><td class="memItemLeft" align="right" valign="top">std::ostream &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a6a3611a7a8f77b0d387269129446af45">operator&lt;&lt;</a> (std::ostream &amp;os, const IntVar &amp;<a class="el" href="sat__solver_8cc.html#a8392bdc4ed570e6a95c7fca35b09f83f">var</a>)</td></tr>
 <tr class="separator:a6a3611a7a8f77b0d387269129446af45"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4cbef4e709106f914a0f0815655bbcfe"><td class="memItemLeft" align="right" valign="top">std::ostream &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a4cbef4e709106f914a0f0815655bbcfe">operator&lt;&lt;</a> (std::ostream &amp;os, const LinearExpr &amp;e)</td></tr>
 <tr class="separator:a4cbef4e709106f914a0f0815655bbcfe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a96eb2f333d67c59300769228ba15846d"><td class="memItemLeft" align="right" valign="top">std::ostream &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a96eb2f333d67c59300769228ba15846d">operator&lt;&lt;</a> (std::ostream &amp;os, const DoubleLinearExpr &amp;e)</td></tr>
+<tr class="separator:a96eb2f333d67c59300769228ba15846d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afc3577375a878b5799dacab11aaa4c3d"><td class="memItemLeft" align="right" valign="top">std::ostream &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#afc3577375a878b5799dacab11aaa4c3d">operator&lt;&lt;</a> (std::ostream &amp;os, const IntervalVar &amp;<a class="el" href="sat__solver_8cc.html#a8392bdc4ed570e6a95c7fca35b09f83f">var</a>)</td></tr>
 <tr class="separator:afc3577375a878b5799dacab11aaa4c3d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac2624925d8e44eb29065efd632d49e90"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#ac2624925d8e44eb29065efd632d49e90">SolutionIntegerValue</a> (const CpSolverResponse &amp;r, const LinearExpr &amp;expr)</td></tr>
 <tr class="memdesc:ac2624925d8e44eb29065efd632d49e90"><td class="mdescLeft">&#160;</td><td class="mdescRight">Evaluates the value of an linear expression in a solver response.  <a href="namespaceoperations__research_1_1sat.html#ac2624925d8e44eb29065efd632d49e90">More...</a><br /></td></tr>
 <tr class="separator:ac2624925d8e44eb29065efd632d49e90"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae590886bef4574e35a8a1f71515c35a6"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#ae590886bef4574e35a8a1f71515c35a6">SolutionIntegerMin</a> (const CpSolverResponse &amp;r, IntVar x)</td></tr>
-<tr class="memdesc:ae590886bef4574e35a8a1f71515c35a6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the min of an integer variable in a solution.  <a href="namespaceoperations__research_1_1sat.html#ae590886bef4574e35a8a1f71515c35a6">More...</a><br /></td></tr>
-<tr class="separator:ae590886bef4574e35a8a1f71515c35a6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a412115557d810f656d0c61a86cc7d179"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a412115557d810f656d0c61a86cc7d179">SolutionIntegerMax</a> (const CpSolverResponse &amp;r, IntVar x)</td></tr>
-<tr class="memdesc:a412115557d810f656d0c61a86cc7d179"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the max of an integer variable in a solution.  <a href="namespaceoperations__research_1_1sat.html#a412115557d810f656d0c61a86cc7d179">More...</a><br /></td></tr>
-<tr class="separator:a412115557d810f656d0c61a86cc7d179"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8391a20c25890ccbf3f5e3982afed236"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a8391a20c25890ccbf3f5e3982afed236">SolutionBooleanValue</a> (const CpSolverResponse &amp;r, BoolVar x)</td></tr>
 <tr class="memdesc:a8391a20c25890ccbf3f5e3982afed236"><td class="mdescLeft">&#160;</td><td class="mdescRight">Evaluates the value of a Boolean literal in a solver response.  <a href="namespaceoperations__research_1_1sat.html#a8391a20c25890ccbf3f5e3982afed236">More...</a><br /></td></tr>
 <tr class="separator:a8391a20c25890ccbf3f5e3982afed236"><td class="memSeparator" colspan="2">&#160;</td></tr>

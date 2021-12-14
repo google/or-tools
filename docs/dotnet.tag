@@ -943,6 +943,9 @@
     <class kind="class">Google::OrTools::ConstraintSolver::RoutingModel</class>
     <class kind="class">Google::OrTools::ConstraintSolver::RoutingModel::VehicleTypeContainer</class>
     <class kind="class">Google::OrTools::ConstraintSolver::RoutingModel::VehicleTypeContainer::VehicleClassEntry</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::RoutingModel::ResourceGroup</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::RoutingModel::ResourceGroup::Attributes</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::RoutingModel::ResourceGroup::Resource</class>
     <namespace>Google</namespace>
     <namespace>Google::OrTools</namespace>
     <namespace>Google::OrTools::ConstraintSolver</namespace>
@@ -1347,6 +1350,15 @@
     <namespace>Google::OrTools::Init</namespace>
   </compound>
   <compound kind="file">
+    <name>OrToolsVersion.cs</name>
+    <path>/home/mizux/work/master/ortools/gen/ortools/init/</path>
+    <filename>OrToolsVersion_8cs.html</filename>
+    <class kind="class">Google::OrTools::Init::OrToolsVersion</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::Init</namespace>
+  </compound>
+  <compound kind="file">
     <name>DoubleVector.cs</name>
     <path>/home/mizux/work/master/ortools/gen/ortools/linear_solver/</path>
     <filename>DoubleVector_8cs.html</filename>
@@ -1431,7 +1443,6 @@
     <class kind="class">Google::OrTools::Sat::CpModelReflection</class>
     <class kind="class">Google::OrTools::Sat::IntegerVariableProto</class>
     <class kind="class">Google::OrTools::Sat::BoolArgumentProto</class>
-    <class kind="class">Google::OrTools::Sat::IntegerArgumentProto</class>
     <class kind="class">Google::OrTools::Sat::LinearExpressionProto</class>
     <class kind="class">Google::OrTools::Sat::LinearArgumentProto</class>
     <class kind="class">Google::OrTools::Sat::AllDifferentConstraintProto</class>
@@ -1450,6 +1461,7 @@
     <class kind="class">Google::OrTools::Sat::ListOfVariablesProto</class>
     <class kind="class">Google::OrTools::Sat::ConstraintProto</class>
     <class kind="class">Google::OrTools::Sat::CpObjectiveProto</class>
+    <class kind="class">Google::OrTools::Sat::FloatObjectiveProto</class>
     <class kind="class">Google::OrTools::Sat::DecisionStrategyProto</class>
     <class kind="class">Google::OrTools::Sat::DecisionStrategyProto::Types</class>
     <class kind="class">Google::OrTools::Sat::DecisionStrategyProto::Types::AffineTransformation</class>
@@ -1458,6 +1470,7 @@
     <class kind="class">Google::OrTools::Sat::DenseMatrixProto</class>
     <class kind="class">Google::OrTools::Sat::SymmetryProto</class>
     <class kind="class">Google::OrTools::Sat::CpModelProto</class>
+    <class kind="class">Google::OrTools::Sat::CpSolverSolution</class>
     <class kind="class">Google::OrTools::Sat::CpSolverResponse</class>
     <namespace>Google</namespace>
     <namespace>Google::OrTools</namespace>
@@ -1607,9 +1620,18 @@
     </member>
   </compound>
   <compound kind="file">
-    <name>Domain.cs</name>
+    <name>constraint_solver/Domain.cs</name>
+    <path>/home/mizux/work/master/ortools/gen/ortools/constraint_solver/</path>
+    <filename>constraint__solver_2Domain_8cs.html</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::Domain</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>util/Domain.cs</name>
     <path>/home/mizux/work/master/ortools/gen/ortools/util/</path>
-    <filename>Domain_8cs.html</filename>
+    <filename>util_2Domain_8cs.html</filename>
     <class kind="class">Google::OrTools::Util::Domain</class>
     <namespace>Google</namespace>
     <namespace>Google::OrTools</namespace>
@@ -2021,9 +2043,9 @@
     </member>
     <member kind="variable" static="yes">
       <type>const int</type>
-      <name>VarsFieldNumber</name>
+      <name>ExprsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1AllDifferentConstraintProto.html</anchorfile>
-      <anchor>a21a2e981c9fba2735b6ba452e5fba670</anchor>
+      <anchor>a91ebb5be873fd94bdfda893eed0b28f7</anchor>
       <arglist></arglist>
     </member>
     <member kind="property" static="yes">
@@ -2041,10 +2063,10 @@
       <arglist></arglist>
     </member>
     <member kind="property">
-      <type>pbc::RepeatedField&lt; int &gt;</type>
-      <name>Vars</name>
+      <type>pbc::RepeatedField&lt; global::Google.OrTools.Sat.LinearExpressionProto &gt;</type>
+      <name>Exprs</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1AllDifferentConstraintProto.html</anchorfile>
-      <anchor>a46424caf03d01d66a437f7157b75a109</anchor>
+      <anchor>aa5e7b46c38574dc27852f744d6507830</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -3304,6 +3326,59 @@
       <type>bool</type>
       <name>swigCMemOwn</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1AssignmentSequenceContainer.html</anchorfile>
+      <anchor>abc050282310ee35f8b4bac77b6103375</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>Google::OrTools::ConstraintSolver::RoutingModel::ResourceGroup::Attributes</name>
+    <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel_1_1ResourceGroup_1_1Attributes.html</filename>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel_1_1ResourceGroup_1_1Attributes.html</anchorfile>
+      <anchor>a6e2d745cdb7a7b983f861ed6a9a541a7</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>Attributes</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel_1_1ResourceGroup_1_1Attributes.html</anchorfile>
+      <anchor>a2ee6f3658c1eec6d46c09c2494ace6a2</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>Attributes</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel_1_1ResourceGroup_1_1Attributes.html</anchorfile>
+      <anchor>a4f7125d952d5363b9f3436caa52a64e3</anchor>
+      <arglist>(Domain start_domain, Domain end_domain)</arglist>
+    </member>
+    <member kind="function">
+      <type>Domain</type>
+      <name>StartDomain</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel_1_1ResourceGroup_1_1Attributes.html</anchorfile>
+      <anchor>a4d05e54eb4772ed8c5f0a7d278e2e665</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Domain</type>
+      <name>EndDomain</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel_1_1ResourceGroup_1_1Attributes.html</anchorfile>
+      <anchor>a07442b17d3d37031dbb58770b78bf82c</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel_1_1ResourceGroup_1_1Attributes.html</anchorfile>
+      <anchor>a8ad4348ef0f9969025bab397e7e27e26</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>bool</type>
+      <name>swigCMemOwn</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel_1_1ResourceGroup_1_1Attributes.html</anchorfile>
       <anchor>abc050282310ee35f8b4bac77b6103375</anchor>
       <arglist></arglist>
     </member>
@@ -6426,18 +6501,25 @@
       <anchor>a628d9b9cb5909db3e9de2927643f4b03</anchor>
       <arglist>(long value)</arglist>
     </member>
+    <member kind="function">
+      <type>override string</type>
+      <name>ShortString</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstantExpr.html</anchorfile>
+      <anchor>aba017d356ac25967226a9e0cd575333a</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>override string</type>
+      <name>ToString</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstantExpr.html</anchorfile>
+      <anchor>aa73e7c4dd1df5fd5fbf81c7764ee1533</anchor>
+      <arglist>()</arglist>
+    </member>
     <member kind="function" virtualness="virtual">
       <type>virtual int</type>
       <name>GetIndex</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
       <anchor>a7aba08b2ee4c0f9f55f7483c2446506e</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" virtualness="virtual">
-      <type>virtual string</type>
-      <name>ShortString</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a09f9e8495cb2bf896284e77f448a2cdf</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
@@ -6677,6 +6759,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
       <anchor>ac10f0ce08a15667c91e7b17f1556187f</anchor>
       <arglist>(LinearExpr e, long initial_coeff, Dictionary&lt; IntVar, long &gt; dict)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>RebuildLinearExprFromLinearExpressionProto</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
+      <anchor>ad65b1f9128e66e846be3f63fe426dc7b</anchor>
+      <arglist>(LinearExpressionProto proto, CpModelProto model)</arglist>
     </member>
     <member kind="property">
       <type>long</type>
@@ -7571,11 +7660,8 @@
       <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html" anchor="add031c8a971ab43db9a0ecb0cbe3281ea98109c65144890f8bde5f1a841abec7c">BoolXor</enumvalue>
       <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html" anchor="add031c8a971ab43db9a0ecb0cbe3281eaa5d35925ece129f234796229b8f6c1c0">IntDiv</enumvalue>
       <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html" anchor="add031c8a971ab43db9a0ecb0cbe3281ea7da807a0fbf8011fe03c6bf8e43e7204">IntMod</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html" anchor="add031c8a971ab43db9a0ecb0cbe3281ea0e238d91e181055afe9b555cf17a0be4">IntMax</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html" anchor="add031c8a971ab43db9a0ecb0cbe3281eaf067905cb02860b539ca5d5051b63c59">LinMax</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html" anchor="add031c8a971ab43db9a0ecb0cbe3281ea9cbde1fab2aaa0299975cd276305a559">IntMin</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html" anchor="add031c8a971ab43db9a0ecb0cbe3281ead2827b813d1d73df44360201e3296bea">LinMin</enumvalue>
       <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html" anchor="add031c8a971ab43db9a0ecb0cbe3281eae8b856ab57f387b45540fbf58e8c573c">IntProd</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html" anchor="add031c8a971ab43db9a0ecb0cbe3281eaf067905cb02860b539ca5d5051b63c59">LinMax</enumvalue>
       <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html" anchor="add031c8a971ab43db9a0ecb0cbe3281ea32a843da6ea40ab3b17a3421ccdf671b">Linear</enumvalue>
       <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html" anchor="add031c8a971ab43db9a0ecb0cbe3281ea4680357c5e5448b730ebee193f28ba32">AllDiff</enumvalue>
       <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html" anchor="add031c8a971ab43db9a0ecb0cbe3281ea231afe47f3f37d3808096b36c28b4ded">Element</enumvalue>
@@ -7740,9 +7826,9 @@
     </member>
     <member kind="variable" static="yes">
       <type>const int</type>
-      <name>IntMaxFieldNumber</name>
+      <name>IntProdFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
-      <anchor>a0aa83f98c23dc5ed39a3cdd93fb37ff8</anchor>
+      <anchor>a2e7910aea48894a521857cebb436fcd1</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
@@ -7750,27 +7836,6 @@
       <name>LinMaxFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
       <anchor>a46d8012040c3b4ca56c67ff80eedd90a</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable" static="yes">
-      <type>const int</type>
-      <name>IntMinFieldNumber</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
-      <anchor>a6f860e76e3f5be16773133b1e2f3c6f2</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable" static="yes">
-      <type>const int</type>
-      <name>LinMinFieldNumber</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
-      <anchor>a8e824abe71c54c631fcb9aef1ec06096</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable" static="yes">
-      <type>const int</type>
-      <name>IntProdFieldNumber</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
-      <anchor>a2e7910aea48894a521857cebb436fcd1</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
@@ -7935,24 +8000,24 @@
       <arglist></arglist>
     </member>
     <member kind="property">
-      <type>global::Google.OrTools.Sat.IntegerArgumentProto??</type>
+      <type>global::Google.OrTools.Sat.LinearArgumentProto??</type>
       <name>IntDiv</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
-      <anchor>a115c3284d511041c8dfe42894c9fa48a</anchor>
+      <anchor>af80bff693660c3e86e8c9221ec4ced7a</anchor>
       <arglist></arglist>
     </member>
     <member kind="property">
-      <type>global::Google.OrTools.Sat.IntegerArgumentProto??</type>
+      <type>global::Google.OrTools.Sat.LinearArgumentProto??</type>
       <name>IntMod</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
-      <anchor>a24deb5a000fc8ee874c1328ab5483887</anchor>
+      <anchor>a028379f031a1323aefe25938548d7f58</anchor>
       <arglist></arglist>
     </member>
     <member kind="property">
-      <type>global::Google.OrTools.Sat.IntegerArgumentProto??</type>
-      <name>IntMax</name>
+      <type>global::Google.OrTools.Sat.LinearArgumentProto??</type>
+      <name>IntProd</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
-      <anchor>a5550621340a6f4cfd9847b405363323e</anchor>
+      <anchor>aa7fb724fbf110ec4f049b06c8e7d86b0</anchor>
       <arglist></arglist>
     </member>
     <member kind="property">
@@ -7960,27 +8025,6 @@
       <name>LinMax</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
       <anchor>ad4a8d996cee82203f7da63eec5aa3110</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>global::Google.OrTools.Sat.IntegerArgumentProto??</type>
-      <name>IntMin</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
-      <anchor>a3e1d51a94ace9db0b0f795227ad95715</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>global::Google.OrTools.Sat.LinearArgumentProto??</type>
-      <name>LinMin</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
-      <anchor>a60ace67dbde61574c86a8a816b6588d4</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>global::Google.OrTools.Sat.IntegerArgumentProto??</type>
-      <name>IntProd</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
-      <anchor>a16ddbdab403e7866b252037e43595743</anchor>
       <arglist></arglist>
     </member>
     <member kind="property">
@@ -8638,6 +8682,13 @@
     </member>
     <member kind="function">
       <type>Constraint</type>
+      <name>AddAllDifferent</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpModel.html</anchorfile>
+      <anchor>adeb05199e4717949430adf0ce2eebce8</anchor>
+      <arglist>(IEnumerable&lt; LinearExpr &gt; exprs)</arglist>
+    </member>
+    <member kind="function">
+      <type>Constraint</type>
       <name>AddElement</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpModel.html</anchorfile>
       <anchor>a71e2fb1862397c2616930fe46ef318c2</anchor>
@@ -8703,15 +8754,29 @@
       <type>Constraint</type>
       <name>AddReservoirConstraint&lt; I &gt;</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpModel.html</anchorfile>
-      <anchor>a62712acc22fea3ba05f18e76ffdd59f5</anchor>
-      <arglist>(IEnumerable&lt; IntVar &gt; times, IEnumerable&lt; I &gt; demands, long min_level, long max_level)</arglist>
+      <anchor>ac247574f4d9f9588b7ca23fae94aaf53</anchor>
+      <arglist>(IEnumerable&lt; IntVar &gt; times, IEnumerable&lt; I &gt; levelChanges, long minLevel, long maxLevel)</arglist>
     </member>
     <member kind="function">
       <type>Constraint</type>
       <name>AddReservoirConstraintWithActive&lt; I &gt;</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpModel.html</anchorfile>
-      <anchor>a08044bab646d6ad568fa0fb8d152b50e</anchor>
-      <arglist>(IEnumerable&lt; IntVar &gt; times, IEnumerable&lt; I &gt; demands, IEnumerable&lt; IntVar &gt; actives, long min_level, long max_level)</arglist>
+      <anchor>ade3953a42d1ec71386f3ffaa1b048d5d</anchor>
+      <arglist>(IEnumerable&lt; IntVar &gt; times, IEnumerable&lt; I &gt; levelChanges, IEnumerable&lt; IntVar &gt; actives, long minLevel, long maxLevel)</arglist>
+    </member>
+    <member kind="function">
+      <type>Constraint</type>
+      <name>AddReservoirConstraint&lt; I &gt;</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpModel.html</anchorfile>
+      <anchor>a92b2bf2acbd93fb8485d0dd83b06ba55</anchor>
+      <arglist>(IEnumerable&lt; LinearExpr &gt; times, IEnumerable&lt; I &gt; levelChanges, long minLevel, long maxLevel)</arglist>
+    </member>
+    <member kind="function">
+      <type>Constraint</type>
+      <name>AddReservoirConstraintWithActive&lt; I &gt;</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpModel.html</anchorfile>
+      <anchor>a45669c55eaa609b16f3e7e1b0c34b9e6</anchor>
+      <arglist>(IEnumerable&lt; LinearExpr &gt; times, IEnumerable&lt; I &gt; levelChanges, IEnumerable&lt; IntVar &gt; actives, long minLevel, long maxLevel)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -8752,8 +8817,15 @@
       <type>Constraint</type>
       <name>AddMinEquality</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpModel.html</anchorfile>
-      <anchor>aec4189d044c166a0fba1a640e4ea1d94</anchor>
-      <arglist>(IntVar target, IEnumerable&lt; IntVar &gt; vars)</arglist>
+      <anchor>ac10f76d37dcdbb79fe20d301dbbd8745</anchor>
+      <arglist>(LinearExpr target, IEnumerable&lt; IntVar &gt; vars)</arglist>
+    </member>
+    <member kind="function">
+      <type>Constraint</type>
+      <name>AddMinEquality</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpModel.html</anchorfile>
+      <anchor>a7a34b20da86ff05069ef0aed66b4e5ea</anchor>
+      <arglist>(LinearExpr target, IEnumerable&lt; LinearExpr &gt; exprs)</arglist>
     </member>
     <member kind="function">
       <type>Constraint</type>
@@ -8761,6 +8833,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpModel.html</anchorfile>
       <anchor>ab5c8f8c782cdf74186377d5f714a4392</anchor>
       <arglist>(IntVar target, IEnumerable&lt; IntVar &gt; vars)</arglist>
+    </member>
+    <member kind="function">
+      <type>Constraint</type>
+      <name>AddMaxEquality</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpModel.html</anchorfile>
+      <anchor>a4628e1c40b8c137b0e7142d57ce0a136</anchor>
+      <arglist>(LinearExpr target, IEnumerable&lt; LinearExpr &gt; exprs)</arglist>
     </member>
     <member kind="function">
       <type>Constraint</type>
@@ -8773,8 +8852,8 @@
       <type>Constraint</type>
       <name>AddAbsEquality</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpModel.html</anchorfile>
-      <anchor>a2642f1728e719f00cf36e348124155e0</anchor>
-      <arglist>(IntVar target, IntVar var)</arglist>
+      <anchor>aedb87415d51c301c1d201ba00e672086</anchor>
+      <arglist>(LinearExpr target, LinearExpr expr)</arglist>
     </member>
     <member kind="function">
       <type>Constraint</type>
@@ -8787,8 +8866,15 @@
       <type>Constraint</type>
       <name>AddMultiplicationEquality</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpModel.html</anchorfile>
-      <anchor>aa6f70a42d67956d265337ae7fbf6f880</anchor>
-      <arglist>(IntVar target, IEnumerable&lt; IntVar &gt; vars)</arglist>
+      <anchor>a849b7bf9d26b9eee4eb5e207bca7b673</anchor>
+      <arglist>(LinearExpr target, IEnumerable&lt; IntVar &gt; vars)</arglist>
+    </member>
+    <member kind="function">
+      <type>Constraint</type>
+      <name>AddMultiplicationEquality</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpModel.html</anchorfile>
+      <anchor>a7edb0fc562c244e04376e85ddd36258b</anchor>
+      <arglist>(LinearExpr target, IEnumerable&lt; LinearExpr &gt; exprs)</arglist>
     </member>
     <member kind="function">
       <type>Constraint</type>
@@ -9069,6 +9155,13 @@
     </member>
     <member kind="variable" static="yes">
       <type>const int</type>
+      <name>FloatingPointObjectiveFieldNumber</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpModelProto.html</anchorfile>
+      <anchor>ae28dd2113cc7633ab3d5af22614c48db</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>const int</type>
       <name>SearchStrategyFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpModelProto.html</anchorfile>
       <anchor>ae654c338cd096d02316da17102478fc2</anchor>
@@ -9135,6 +9228,13 @@
       <name>Objective</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpModelProto.html</anchorfile>
       <anchor>a6f88812564a724916949913db66cc1c7</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>global::Google.OrTools.Sat.FloatObjectiveProto</type>
+      <name>FloatingPointObjective</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpModelProto.html</anchorfile>
+      <anchor>afa0fc26790890fa2b816a87f28fb0c02</anchor>
       <arglist></arglist>
     </member>
     <member kind="property">
@@ -9292,6 +9392,27 @@
       <anchor>a01f10f58a6dc930134078b60c77cdbd6</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>const int</type>
+      <name>ScalingWasExactFieldNumber</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpObjectiveProto.html</anchorfile>
+      <anchor>a8acac67f41adbaa9729a5be42f3c25de</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>const int</type>
+      <name>IntegerOffsetFieldNumber</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpObjectiveProto.html</anchorfile>
+      <anchor>a21218caa92bfc562dbd4ec4bd123d0d4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>const int</type>
+      <name>IntegerScalingFactorFieldNumber</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpObjectiveProto.html</anchorfile>
+      <anchor>af81d0f3af83b65c5d39cf513078c2c3b</anchor>
+      <arglist></arglist>
+    </member>
     <member kind="property" static="yes">
       <type>static pb::MessageParser&lt; CpObjectiveProto &gt;</type>
       <name>Parser</name>
@@ -9339,6 +9460,27 @@
       <name>Domain</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpObjectiveProto.html</anchorfile>
       <anchor>a76a57a11af895d020e17640a5f1ea7d5</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>bool</type>
+      <name>ScalingWasExact</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpObjectiveProto.html</anchorfile>
+      <anchor>aaa9fcadbd464184f03c635f405bf34ce</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>long</type>
+      <name>IntegerOffset</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpObjectiveProto.html</anchorfile>
+      <anchor>acaccedd9e829a13308811343fe640446</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>long</type>
+      <name>IntegerScalingFactor</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpObjectiveProto.html</anchorfile>
+      <anchor>a5ca92277e730d9574c115bd8448510e7</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -9630,6 +9772,13 @@
       <anchor>a62ec955bc6789a6555786f31f6b612a8</anchor>
       <arglist>()</arglist>
     </member>
+    <member kind="function">
+      <type>String</type>
+      <name>SolutionInfo</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolver.html</anchorfile>
+      <anchor>ae4491822ab9fcf1ea253c9fc18cbfba0</anchor>
+      <arglist>()</arglist>
+    </member>
     <member kind="property">
       <type>double</type>
       <name>ObjectiveValue</name>
@@ -9769,16 +9918,9 @@
     </member>
     <member kind="variable" static="yes">
       <type>const int</type>
-      <name>SolutionLowerBoundsFieldNumber</name>
+      <name>AdditionalSolutionsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverResponse.html</anchorfile>
-      <anchor>af1c126e614045e27b95b9b8489aa2540</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable" static="yes">
-      <type>const int</type>
-      <name>SolutionUpperBoundsFieldNumber</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverResponse.html</anchorfile>
-      <anchor>adf7bbedecc70a5f142014a14e88c32e7</anchor>
+      <anchor>a78d8baf4a1eecb7e0930f5ac9d6fb8dd</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
@@ -9797,9 +9939,16 @@
     </member>
     <member kind="variable" static="yes">
       <type>const int</type>
-      <name>AllSolutionsWereFoundFieldNumber</name>
+      <name>IntegerObjectiveFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverResponse.html</anchorfile>
-      <anchor>a6ad14191d43e734441cbb2346251c4fb</anchor>
+      <anchor>a5de3865386df4fa38dceb6f500880769</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>const int</type>
+      <name>InnerObjectiveLowerBoundFieldNumber</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverResponse.html</anchorfile>
+      <anchor>adec23a548ab7bafc61e03ff483f483a3</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
@@ -9874,9 +10023,9 @@
     </member>
     <member kind="variable" static="yes">
       <type>const int</type>
-      <name>PrimalIntegralFieldNumber</name>
+      <name>GapIntegralFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverResponse.html</anchorfile>
-      <anchor>abdadb2dc122c05dfaaee41095ff57e85</anchor>
+      <anchor>a4b042435dc82fffc308cb06570bb5a9c</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
@@ -9936,17 +10085,10 @@
       <arglist></arglist>
     </member>
     <member kind="property">
-      <type>pbc::RepeatedField&lt; long &gt;</type>
-      <name>SolutionLowerBounds</name>
+      <type>pbc::RepeatedField&lt; global::Google.OrTools.Sat.CpSolverSolution &gt;</type>
+      <name>AdditionalSolutions</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverResponse.html</anchorfile>
-      <anchor>a64d59cbe813d53933df920f00d45ee09</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>pbc::RepeatedField&lt; long &gt;</type>
-      <name>SolutionUpperBounds</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverResponse.html</anchorfile>
-      <anchor>a4b936f6bf05b86858fa22f7381a519ea</anchor>
+      <anchor>addd4ccd46528f95c4c89f3f7c833da11</anchor>
       <arglist></arglist>
     </member>
     <member kind="property">
@@ -9964,10 +10106,17 @@
       <arglist></arglist>
     </member>
     <member kind="property">
-      <type>bool</type>
-      <name>AllSolutionsWereFound</name>
+      <type>global::Google.OrTools.Sat.CpObjectiveProto</type>
+      <name>IntegerObjective</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverResponse.html</anchorfile>
-      <anchor>a50e03a5e496ce0b74199626c0cefa29d</anchor>
+      <anchor>a06c27b2a78a65ff54957421f0af11efe</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>long</type>
+      <name>InnerObjectiveLowerBound</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverResponse.html</anchorfile>
+      <anchor>a27ad0899ca99b53dc2c864c5492ddc0b</anchor>
       <arglist></arglist>
     </member>
     <member kind="property">
@@ -10042,9 +10191,9 @@
     </member>
     <member kind="property">
       <type>double</type>
-      <name>PrimalIntegral</name>
+      <name>GapIntegral</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverResponse.html</anchorfile>
-      <anchor>a47567cf8d21a8fb5b660246053645d2e</anchor>
+      <anchor>af29674138ef126846daefe8c559503ca</anchor>
       <arglist></arglist>
     </member>
     <member kind="property">
@@ -10059,6 +10208,115 @@
       <name>SolveLog</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverResponse.html</anchorfile>
       <anchor>a1a19180e0b7563c4036a332d5e8479b2</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>Google::OrTools::Sat::CpSolverSolution</name>
+    <filename>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverSolution.html</filename>
+    <member kind="function">
+      <type></type>
+      <name>CpSolverSolution</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverSolution.html</anchorfile>
+      <anchor>aa2e210db45690e39d2f57cdf2764248c</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>CpSolverSolution</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverSolution.html</anchorfile>
+      <anchor>a51659a4c9392007f05c8f9c398a7ce87</anchor>
+      <arglist>(CpSolverSolution other)</arglist>
+    </member>
+    <member kind="function">
+      <type>CpSolverSolution</type>
+      <name>Clone</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverSolution.html</anchorfile>
+      <anchor>a6e0afbd60936ffe90a932fad60fc486f</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>override bool</type>
+      <name>Equals</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverSolution.html</anchorfile>
+      <anchor>aed28555b480a5bca5a5d8349d0f01f11</anchor>
+      <arglist>(object other)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>Equals</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverSolution.html</anchorfile>
+      <anchor>ab0bb87ebb1bf502e8c0a504587ead80b</anchor>
+      <arglist>(CpSolverSolution other)</arglist>
+    </member>
+    <member kind="function">
+      <type>override int</type>
+      <name>GetHashCode</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverSolution.html</anchorfile>
+      <anchor>a77e1afa2b6dee1ed3640da81d7407b42</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>override string</type>
+      <name>ToString</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverSolution.html</anchorfile>
+      <anchor>aa73e7c4dd1df5fd5fbf81c7764ee1533</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>WriteTo</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverSolution.html</anchorfile>
+      <anchor>a3b36e6a370fa4c10b03b619d8f1f1ab1</anchor>
+      <arglist>(pb::CodedOutputStream output)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>CalculateSize</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverSolution.html</anchorfile>
+      <anchor>a3b4564c183dd5666fa9c002a55f80ded</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>MergeFrom</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverSolution.html</anchorfile>
+      <anchor>adebfb067add9bda0072be9d0e75efdf9</anchor>
+      <arglist>(CpSolverSolution other)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>MergeFrom</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverSolution.html</anchorfile>
+      <anchor>a67eef3374888e85bdb523ae39a13e2ac</anchor>
+      <arglist>(pb::CodedInputStream input)</arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>const int</type>
+      <name>ValuesFieldNumber</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverSolution.html</anchorfile>
+      <anchor>a0f043e9370464c8079c3a67de0ec0d39</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property" static="yes">
+      <type>static pb::MessageParser&lt; CpSolverSolution &gt;</type>
+      <name>Parser</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverSolution.html</anchorfile>
+      <anchor>a229d504d15acf6b020d00c3fc93b1692</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property" static="yes">
+      <type>static pbr::MessageDescriptor</type>
+      <name>Descriptor</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverSolution.html</anchorfile>
+      <anchor>acbefcf491fe57d4ebe699914922577fb</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>pbc::RepeatedField&lt; long &gt;</type>
+      <name>Values</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverSolution.html</anchorfile>
+      <anchor>a03005053f4c67f2f20de315a36ceaf26</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -10308,13 +10566,6 @@
       <anchor>a094e3db64da9466a3afd007266a4b704</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
-      <type>const int</type>
-      <name>EnergiesFieldNumber</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CumulativeConstraintProto.html</anchorfile>
-      <anchor>a17025b6e5f24b29e52d53a3df8931951</anchor>
-      <arglist></arglist>
-    </member>
     <member kind="property" static="yes">
       <type>static pb::MessageParser&lt; CumulativeConstraintProto &gt;</type>
       <name>Parser</name>
@@ -10330,10 +10581,10 @@
       <arglist></arglist>
     </member>
     <member kind="property">
-      <type>int</type>
+      <type>global::Google.OrTools.Sat.LinearExpressionProto</type>
       <name>Capacity</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CumulativeConstraintProto.html</anchorfile>
-      <anchor>a5ad7f82470f145a0d6ae871ff7b623f3</anchor>
+      <anchor>ae2029c18226c0aefc9a287feac912066</anchor>
       <arglist></arglist>
     </member>
     <member kind="property">
@@ -10344,17 +10595,10 @@
       <arglist></arglist>
     </member>
     <member kind="property">
-      <type>pbc::RepeatedField&lt; int &gt;</type>
+      <type>pbc::RepeatedField&lt; global::Google.OrTools.Sat.LinearExpressionProto &gt;</type>
       <name>Demands</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CumulativeConstraintProto.html</anchorfile>
-      <anchor>abeedbe5249ad314b51534776c128fc3b</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>pbc::RepeatedField&lt; global::Google.OrTools.Sat.LinearExpressionProto &gt;</type>
-      <name>Energies</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CumulativeConstraintProto.html</anchorfile>
-      <anchor>a8ab07d87d50c4abaf6f469ede79633db</anchor>
+      <anchor>aa7a5971a853d997381e3efbda2938da1</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -10470,6 +10714,20 @@
       <name>ToString</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DecisionBuilder.html</anchorfile>
       <anchor>aa73e7c4dd1df5fd5fbf81c7764ee1533</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetName</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DecisionBuilder.html</anchorfile>
+      <anchor>a82b23f1074f0c74e267aecd88a355a42</anchor>
+      <arglist>(string name)</arglist>
+    </member>
+    <member kind="function">
+      <type>string</type>
+      <name>GetName</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DecisionBuilder.html</anchorfile>
+      <anchor>ac97112280cc4435c8df3c88070c839b4</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -11883,6 +12141,164 @@
     </member>
   </compound>
   <compound kind="class">
+    <name>Google::OrTools::ConstraintSolver::Domain</name>
+    <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</filename>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
+      <anchor>a6e2d745cdb7a7b983f861ed6a9a541a7</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>Domain</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
+      <anchor>a9f9601f2f55637f70394aa8eea61345a</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>Domain</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
+      <anchor>a3b0c688c8580d07c0b67fdc9d42d23be</anchor>
+      <arglist>(long value)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>Domain</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
+      <anchor>a154f0cfa747f1a5fa3ec046d5c304315</anchor>
+      <arglist>(long left, long right)</arglist>
+    </member>
+    <member kind="function">
+      <type>long[]</type>
+      <name>FlattenedIntervals</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
+      <anchor>a879d4b33230edbbf2e3091bf8059bafb</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>IsEmpty</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
+      <anchor>a357657ded604ecb97b76251146f7ac75</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>long</type>
+      <name>Size</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
+      <anchor>a925698fef52feb70dd9c917e360a850e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>long</type>
+      <name>Min</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
+      <anchor>ad132aa17bd7af00f0e9e47e88131b1e8</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>long</type>
+      <name>Max</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
+      <anchor>a7ee6ae2c7b5f55ad5bbe78b79004d87a</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>Contains</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
+      <anchor>ab613fee6b08a7ec8047fd89a9f903d43</anchor>
+      <arglist>(long value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Domain</type>
+      <name>Complement</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
+      <anchor>a4d8d2d1b41195b2e491b29cf6220b78d</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Domain</type>
+      <name>Negation</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
+      <anchor>a99f401d076ce2277855769d8a9be38eb</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Domain</type>
+      <name>IntersectionWith</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
+      <anchor>ad3802e7b8dc8deb2f7b0c098785b4d3b</anchor>
+      <arglist>(Domain domain)</arglist>
+    </member>
+    <member kind="function">
+      <type>Domain</type>
+      <name>UnionWith</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
+      <anchor>ab27330f9c6e8e5b9b2d1af6f7d40f9ab</anchor>
+      <arglist>(Domain domain)</arglist>
+    </member>
+    <member kind="function">
+      <type>Domain</type>
+      <name>AdditionWith</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
+      <anchor>ababa690b367f2dbe09846fcbefab83aa</anchor>
+      <arglist>(Domain domain)</arglist>
+    </member>
+    <member kind="function">
+      <type>override string</type>
+      <name>ToString</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
+      <anchor>aa73e7c4dd1df5fd5fbf81c7764ee1533</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static Domain</type>
+      <name>AllValues</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
+      <anchor>a5669c93d2e233c82a5a33910fcbe8fe0</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static Domain</type>
+      <name>FromValues</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
+      <anchor>a29b21eafd928cfacebd50a5b29734d3f</anchor>
+      <arglist>(long[] values)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static Domain</type>
+      <name>FromIntervals</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
+      <anchor>aed92e127fa43920c2f1b7d8086ebbba0</anchor>
+      <arglist>(long[][] intervals)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static Domain</type>
+      <name>FromFlatIntervals</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
+      <anchor>a87c52024e24cc5e125483d1ac5018838</anchor>
+      <arglist>(long[] flat_intervals)</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
+      <anchor>a8ad4348ef0f9969025bab397e7e27e26</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>bool</type>
+      <name>swigCMemOwn</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
+      <anchor>abc050282310ee35f8b4bac77b6103375</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
     <name>Google::OrTools::Util::Domain</name>
     <filename>classGoogle_1_1OrTools_1_1Util_1_1Domain.html</filename>
     <member kind="function">
@@ -11991,10 +12407,10 @@
       <arglist>(Domain domain)</arglist>
     </member>
     <member kind="function">
-      <type>string</type>
+      <type>override string</type>
       <name>ToString</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Domain.html</anchorfile>
-      <anchor>a18220b86ab5378509a68e4afa4a2fb5b</anchor>
+      <anchor>aa73e7c4dd1df5fd5fbf81c7764ee1533</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
@@ -12638,6 +13054,157 @@
       <name>Descriptor</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy.html</anchorfile>
       <anchor>acbefcf491fe57d4ebe699914922577fb</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>Google::OrTools::Sat::FloatObjectiveProto</name>
+    <filename>classGoogle_1_1OrTools_1_1Sat_1_1FloatObjectiveProto.html</filename>
+    <member kind="function">
+      <type></type>
+      <name>FloatObjectiveProto</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1FloatObjectiveProto.html</anchorfile>
+      <anchor>aad49032ee75ebc29cb4735b3cfe7e449</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>FloatObjectiveProto</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1FloatObjectiveProto.html</anchorfile>
+      <anchor>a487c27c40f06cc57ab752da82f198ea9</anchor>
+      <arglist>(FloatObjectiveProto other)</arglist>
+    </member>
+    <member kind="function">
+      <type>FloatObjectiveProto</type>
+      <name>Clone</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1FloatObjectiveProto.html</anchorfile>
+      <anchor>a17d3bee51744b94b307c35861b9ed6ae</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>override bool</type>
+      <name>Equals</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1FloatObjectiveProto.html</anchorfile>
+      <anchor>aed28555b480a5bca5a5d8349d0f01f11</anchor>
+      <arglist>(object other)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>Equals</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1FloatObjectiveProto.html</anchorfile>
+      <anchor>a88014bb7edaccf126083ca761646df8f</anchor>
+      <arglist>(FloatObjectiveProto other)</arglist>
+    </member>
+    <member kind="function">
+      <type>override int</type>
+      <name>GetHashCode</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1FloatObjectiveProto.html</anchorfile>
+      <anchor>a77e1afa2b6dee1ed3640da81d7407b42</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>override string</type>
+      <name>ToString</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1FloatObjectiveProto.html</anchorfile>
+      <anchor>aa73e7c4dd1df5fd5fbf81c7764ee1533</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>WriteTo</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1FloatObjectiveProto.html</anchorfile>
+      <anchor>a3b36e6a370fa4c10b03b619d8f1f1ab1</anchor>
+      <arglist>(pb::CodedOutputStream output)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>CalculateSize</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1FloatObjectiveProto.html</anchorfile>
+      <anchor>a3b4564c183dd5666fa9c002a55f80ded</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>MergeFrom</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1FloatObjectiveProto.html</anchorfile>
+      <anchor>ad03c44d086df6325e5728cb9a21f61c5</anchor>
+      <arglist>(FloatObjectiveProto other)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>MergeFrom</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1FloatObjectiveProto.html</anchorfile>
+      <anchor>a67eef3374888e85bdb523ae39a13e2ac</anchor>
+      <arglist>(pb::CodedInputStream input)</arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>const int</type>
+      <name>VarsFieldNumber</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1FloatObjectiveProto.html</anchorfile>
+      <anchor>a21a2e981c9fba2735b6ba452e5fba670</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>const int</type>
+      <name>CoeffsFieldNumber</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1FloatObjectiveProto.html</anchorfile>
+      <anchor>a7910a4b4e23721189862a82c6fb49521</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>const int</type>
+      <name>OffsetFieldNumber</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1FloatObjectiveProto.html</anchorfile>
+      <anchor>a12f0687287af579e61b58dff9a12bb94</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>const int</type>
+      <name>MaximizeFieldNumber</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1FloatObjectiveProto.html</anchorfile>
+      <anchor>a516ef4c93c049d51865c8cfea445d0f2</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property" static="yes">
+      <type>static pb::MessageParser&lt; FloatObjectiveProto &gt;</type>
+      <name>Parser</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1FloatObjectiveProto.html</anchorfile>
+      <anchor>a6940f6f2ac09e1dcc441de2532849e76</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property" static="yes">
+      <type>static pbr::MessageDescriptor</type>
+      <name>Descriptor</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1FloatObjectiveProto.html</anchorfile>
+      <anchor>acbefcf491fe57d4ebe699914922577fb</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>pbc::RepeatedField&lt; int &gt;</type>
+      <name>Vars</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1FloatObjectiveProto.html</anchorfile>
+      <anchor>a46424caf03d01d66a437f7157b75a109</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>pbc::RepeatedField&lt; double &gt;</type>
+      <name>Coeffs</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1FloatObjectiveProto.html</anchorfile>
+      <anchor>ac1438b32e9defa6c491c8cb6da5752f2</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>double</type>
+      <name>Offset</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1FloatObjectiveProto.html</anchorfile>
+      <anchor>a2642b1467c54617dec2795d1a3d5785b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>bool</type>
+      <name>Maximize</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1FloatObjectiveProto.html</anchorfile>
+      <anchor>acec459d8d44d25bfc7e8f102730b331a</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -16139,129 +16706,6 @@
     </member>
   </compound>
   <compound kind="class">
-    <name>Google::OrTools::Sat::IntegerArgumentProto</name>
-    <filename>classGoogle_1_1OrTools_1_1Sat_1_1IntegerArgumentProto.html</filename>
-    <member kind="function">
-      <type></type>
-      <name>IntegerArgumentProto</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntegerArgumentProto.html</anchorfile>
-      <anchor>a81eb7f10aef53b45cebe7f032577b5b3</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>IntegerArgumentProto</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntegerArgumentProto.html</anchorfile>
-      <anchor>a5556ae14d2ecadf96ff108f949b79433</anchor>
-      <arglist>(IntegerArgumentProto other)</arglist>
-    </member>
-    <member kind="function">
-      <type>IntegerArgumentProto</type>
-      <name>Clone</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntegerArgumentProto.html</anchorfile>
-      <anchor>a8fd1a673916303d84fcedac3f7ba12fe</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>override bool</type>
-      <name>Equals</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntegerArgumentProto.html</anchorfile>
-      <anchor>aed28555b480a5bca5a5d8349d0f01f11</anchor>
-      <arglist>(object other)</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>Equals</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntegerArgumentProto.html</anchorfile>
-      <anchor>a92a2c9387f8907b478f815909114c070</anchor>
-      <arglist>(IntegerArgumentProto other)</arglist>
-    </member>
-    <member kind="function">
-      <type>override int</type>
-      <name>GetHashCode</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntegerArgumentProto.html</anchorfile>
-      <anchor>a77e1afa2b6dee1ed3640da81d7407b42</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>override string</type>
-      <name>ToString</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntegerArgumentProto.html</anchorfile>
-      <anchor>aa73e7c4dd1df5fd5fbf81c7764ee1533</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>WriteTo</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntegerArgumentProto.html</anchorfile>
-      <anchor>a3b36e6a370fa4c10b03b619d8f1f1ab1</anchor>
-      <arglist>(pb::CodedOutputStream output)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>CalculateSize</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntegerArgumentProto.html</anchorfile>
-      <anchor>a3b4564c183dd5666fa9c002a55f80ded</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>MergeFrom</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntegerArgumentProto.html</anchorfile>
-      <anchor>a7deae298c2f5536b3f1d3fb158a18a2e</anchor>
-      <arglist>(IntegerArgumentProto other)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>MergeFrom</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntegerArgumentProto.html</anchorfile>
-      <anchor>a67eef3374888e85bdb523ae39a13e2ac</anchor>
-      <arglist>(pb::CodedInputStream input)</arglist>
-    </member>
-    <member kind="variable" static="yes">
-      <type>const int</type>
-      <name>TargetFieldNumber</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntegerArgumentProto.html</anchorfile>
-      <anchor>a0a9e2febdf60d2301a87c0247cf8ddbf</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable" static="yes">
-      <type>const int</type>
-      <name>VarsFieldNumber</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntegerArgumentProto.html</anchorfile>
-      <anchor>a21a2e981c9fba2735b6ba452e5fba670</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property" static="yes">
-      <type>static pb::MessageParser&lt; IntegerArgumentProto &gt;</type>
-      <name>Parser</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntegerArgumentProto.html</anchorfile>
-      <anchor>ab81b29d4fc0555316bb4704bfcd74bc2</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property" static="yes">
-      <type>static pbr::MessageDescriptor</type>
-      <name>Descriptor</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntegerArgumentProto.html</anchorfile>
-      <anchor>acbefcf491fe57d4ebe699914922577fb</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>int</type>
-      <name>Target</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntegerArgumentProto.html</anchorfile>
-      <anchor>ab5ff1b7d670e5fa55b02b634dce367bd</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>pbc::RepeatedField&lt; int &gt;</type>
-      <name>Vars</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntegerArgumentProto.html</anchorfile>
-      <anchor>a46424caf03d01d66a437f7157b75a109</anchor>
-      <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="class">
     <name>Google::OrTools::ConstraintSolver::Solver::IntegerCastInfo</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Solver_1_1IntegerCastInfo.html</filename>
     <member kind="function">
@@ -16545,27 +16989,6 @@
       <anchor>a4b8d71a8ca57ba4be3eb4964b0db9572</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
-      <type>const int</type>
-      <name>StartViewFieldNumber</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntervalConstraintProto.html</anchorfile>
-      <anchor>a8be9092500463bb1eb4018c80c8d0390</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable" static="yes">
-      <type>const int</type>
-      <name>EndViewFieldNumber</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntervalConstraintProto.html</anchorfile>
-      <anchor>af6195a63ed99af341a93bf585736ee0c</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable" static="yes">
-      <type>const int</type>
-      <name>SizeViewFieldNumber</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntervalConstraintProto.html</anchorfile>
-      <anchor>ab87a3f96ba168fe75243b543b3d5186c</anchor>
-      <arglist></arglist>
-    </member>
     <member kind="property" static="yes">
       <type>static pb::MessageParser&lt; IntervalConstraintProto &gt;</type>
       <name>Parser</name>
@@ -16581,45 +17004,24 @@
       <arglist></arglist>
     </member>
     <member kind="property">
-      <type>int</type>
+      <type>global::Google.OrTools.Sat.LinearExpressionProto</type>
       <name>Start</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntervalConstraintProto.html</anchorfile>
-      <anchor>a0b2c355629c0c41a383ab8db641304ee</anchor>
+      <anchor>a8ca885c18df6143dfefbe2854ce4f26f</anchor>
       <arglist></arglist>
     </member>
     <member kind="property">
-      <type>int</type>
+      <type>global::Google.OrTools.Sat.LinearExpressionProto</type>
       <name>End</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntervalConstraintProto.html</anchorfile>
-      <anchor>a8fd2246e5257c4d309bf3777e74f54bf</anchor>
+      <anchor>a377242348152d58ff2a105d052407d98</anchor>
       <arglist></arglist>
     </member>
     <member kind="property">
-      <type>int</type>
+      <type>global::Google.OrTools.Sat.LinearExpressionProto</type>
       <name>Size</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntervalConstraintProto.html</anchorfile>
-      <anchor>af06eb7b9b70be91dadd4f12ebcaed796</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>global::Google.OrTools.Sat.LinearExpressionProto</type>
-      <name>StartView</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntervalConstraintProto.html</anchorfile>
-      <anchor>a5e0ee61a5cdef993acd8bd37f93b5946</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>global::Google.OrTools.Sat.LinearExpressionProto</type>
-      <name>EndView</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntervalConstraintProto.html</anchorfile>
-      <anchor>a7cc0ea5a086ce67663c97b0dfd84b584</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>global::Google.OrTools.Sat.LinearExpressionProto</type>
-      <name>SizeView</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntervalConstraintProto.html</anchorfile>
-      <anchor>ae00b75962b94ba24be8780bf5855537c</anchor>
+      <anchor>a2d0faa0626660b678651bfaaceb3afed</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -17308,6 +17710,27 @@
       <name>GetIndex</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntervalVar.html</anchorfile>
       <anchor>a04968eb2a77be01bc897e7441d9b8640</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>LinearExpr</type>
+      <name>StartExpr</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntervalVar.html</anchorfile>
+      <anchor>a78e33af8a99e01d618d5038eb2576ab4</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>LinearExpr</type>
+      <name>SizeExpr</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntervalVar.html</anchorfile>
+      <anchor>a4933e55c6379c315b645e3b10438c4e3</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>LinearExpr</type>
+      <name>EndExpr</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntervalVar.html</anchorfile>
+      <anchor>a7c859191f7a9e0775fe5db32e9fbc28c</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -19609,6 +20032,13 @@
       <arglist>(CpModelProto model, Domain domain, string name)</arglist>
     </member>
     <member kind="function">
+      <type></type>
+      <name>IntVar</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntVar.html</anchorfile>
+      <anchor>a32f607cb793b2b2290211b688db33636</anchor>
+      <arglist>(CpModelProto model, int index)</arglist>
+    </member>
+    <member kind="function">
       <type>override int</type>
       <name>GetIndex</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntVar.html</anchorfile>
@@ -19880,6 +20310,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
       <anchor>ac10f0ce08a15667c91e7b17f1556187f</anchor>
       <arglist>(LinearExpr e, long initial_coeff, Dictionary&lt; IntVar, long &gt; dict)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>RebuildLinearExprFromLinearExpressionProto</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
+      <anchor>ad65b1f9128e66e846be3f63fe426dc7b</anchor>
+      <arglist>(LinearExpressionProto proto, CpModelProto model)</arglist>
     </member>
     <member kind="property">
       <type>IntegerVariableProto</type>
@@ -24500,6 +24937,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
       <anchor>ac10f0ce08a15667c91e7b17f1556187f</anchor>
       <arglist>(LinearExpr e, long initial_coeff, Dictionary&lt; IntVar, long &gt; dict)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>RebuildLinearExprFromLinearExpressionProto</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
+      <anchor>ad65b1f9128e66e846be3f63fe426dc7b</anchor>
+      <arglist>(LinearExpressionProto proto, CpModelProto model)</arglist>
     </member>
     <member kind="property">
       <type>int</type>
@@ -30727,6 +31171,20 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
+      <type>void</type>
+      <name>SetName</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DecisionBuilder.html</anchorfile>
+      <anchor>a82b23f1074f0c74e267aecd88a355a42</anchor>
+      <arglist>(string name)</arglist>
+    </member>
+    <member kind="function">
+      <type>string</type>
+      <name>GetName</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DecisionBuilder.html</anchorfile>
+      <anchor>ac97112280cc4435c8df3c88070c839b4</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
       <type>delegate string</type>
       <name>SwigDelegateDecisionBuilder_0</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DecisionBuilder.html</anchorfile>
@@ -31367,6 +31825,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
       <anchor>ac10f0ce08a15667c91e7b17f1556187f</anchor>
       <arglist>(LinearExpr e, long initial_coeff, Dictionary&lt; IntVar, long &gt; dict)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>RebuildLinearExprFromLinearExpressionProto</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
+      <anchor>ad65b1f9128e66e846be3f63fe426dc7b</anchor>
+      <arglist>(LinearExpressionProto proto, CpModelProto model)</arglist>
     </member>
     <member kind="property">
       <type>int</type>
@@ -38072,6 +38537,20 @@
     </member>
     <member kind="function">
       <type>static global::System.IntPtr</type>
+      <name>Solver_MakeAssignVariablesValuesOrDoNothing</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>aad74a99f860c4ee8630e2ef959a5b086</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, global::System.Runtime.InteropServices.HandleRef jarg2, int length3, long[] jarg3)</arglist>
+    </member>
+    <member kind="function">
+      <type>static global::System.IntPtr</type>
+      <name>Solver_MakeAssignVariablesValuesOrFail</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>abff4fce27909ce85a40c22cd7ad3256b</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, global::System.Runtime.InteropServices.HandleRef jarg2, int length3, long[] jarg3)</arglist>
+    </member>
+    <member kind="function">
+      <type>static global::System.IntPtr</type>
       <name>Solver_MakeFailDecision</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
       <anchor>a089dc514c5d862da6105b949c85a76ed</anchor>
@@ -38911,6 +39390,13 @@
       <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1)</arglist>
     </member>
     <member kind="function">
+      <type>static global::System.IntPtr</type>
+      <name>Solver_MakeProfiledDecisionBuilderWrapper</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>a966c783a67edf948254a09234f973e2a</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, global::System.Runtime.InteropServices.HandleRef jarg2)</arglist>
+    </member>
+    <member kind="function">
       <type>static long</type>
       <name>Zero</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
@@ -39202,6 +39688,20 @@
       <name>DecisionBuilder_ToStringSwigExplicitDecisionBuilder</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
       <anchor>ac76893c9762ef863ee0034b86fba7943</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1)</arglist>
+    </member>
+    <member kind="function">
+      <type>static void</type>
+      <name>DecisionBuilder_SetName</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>a7d6ebde6c41d3b6f98343fd7c625b799</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, string jarg2)</arglist>
+    </member>
+    <member kind="function">
+      <type>static string</type>
+      <name>DecisionBuilder_GetName</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>af8eb85b3fdf2cf4de34ff1cb118d4494</anchor>
       <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1)</arglist>
     </member>
     <member kind="function">
@@ -47388,6 +47888,146 @@
       <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, long jarg2)</arglist>
     </member>
     <member kind="function">
+      <type>static global::System.IntPtr</type>
+      <name>new_Domain__SWIG_0</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>a6ac24da5681e213fac08cdc58ece6cae</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>static global::System.IntPtr</type>
+      <name>new_Domain__SWIG_1</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>a8fdb67b7661e63f31d2e74c7666be65a</anchor>
+      <arglist>(long jarg1)</arglist>
+    </member>
+    <member kind="function">
+      <type>static global::System.IntPtr</type>
+      <name>new_Domain__SWIG_2</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>af9eb8fa4a01263bf2ee494b876024304</anchor>
+      <arglist>(long jarg1, long jarg2)</arglist>
+    </member>
+    <member kind="function">
+      <type>static global::System.IntPtr</type>
+      <name>Domain_AllValues</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>a3901eb60843052abfcee5cf8dcccb8a6</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>static global::System.IntPtr</type>
+      <name>Domain_FromValues</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>aa483e4179501aba975658b52bbc25e86</anchor>
+      <arglist>(int length1, long[] jarg1)</arglist>
+    </member>
+    <member kind="function">
+      <type>static global::System.IntPtr</type>
+      <name>Domain_FromIntervals</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>ad82e3c5251d7c875afb2577e55f81446</anchor>
+      <arglist>(int len1_1, int[] len1_2, long[] jarg1)</arglist>
+    </member>
+    <member kind="function">
+      <type>static global::System.IntPtr</type>
+      <name>Domain_FromFlatIntervals</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>a067b97e16cf895e30df635706ad8f13e</anchor>
+      <arglist>(int length1, long[] jarg1)</arglist>
+    </member>
+    <member kind="function">
+      <type>static global::System.IntPtr</type>
+      <name>Domain_FlattenedIntervals</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>a8b4db57fed3166cb0521f6b2b10c2f73</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1)</arglist>
+    </member>
+    <member kind="function">
+      <type>static bool</type>
+      <name>Domain_IsEmpty</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>a6edcdc57047a73a10cca891b330ac3ed</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1)</arglist>
+    </member>
+    <member kind="function">
+      <type>static long</type>
+      <name>Domain_Size</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>a4389007315f49c4f8abae04c6b5881f7</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1)</arglist>
+    </member>
+    <member kind="function">
+      <type>static long</type>
+      <name>Domain_Min</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>a6d9c92542a4431898046e94a57cbb075</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1)</arglist>
+    </member>
+    <member kind="function">
+      <type>static long</type>
+      <name>Domain_Max</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>aa714ef59fae06d803c2eda7e2240939c</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1)</arglist>
+    </member>
+    <member kind="function">
+      <type>static bool</type>
+      <name>Domain_Contains</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>a0687c37cf791e3d6b1b4bb59aa745e9e</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, long jarg2)</arglist>
+    </member>
+    <member kind="function">
+      <type>static global::System.IntPtr</type>
+      <name>Domain_Complement</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>a572425c4ad2c6420e37a63b443f4706e</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1)</arglist>
+    </member>
+    <member kind="function">
+      <type>static global::System.IntPtr</type>
+      <name>Domain_Negation</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>a590613380f18e648db778a4a073bdd95</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1)</arglist>
+    </member>
+    <member kind="function">
+      <type>static global::System.IntPtr</type>
+      <name>Domain_IntersectionWith</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>a131330da12f1ce0c73586c916204c535</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, global::System.Runtime.InteropServices.HandleRef jarg2)</arglist>
+    </member>
+    <member kind="function">
+      <type>static global::System.IntPtr</type>
+      <name>Domain_UnionWith</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>afec3fdfae1edf9719d4a5231041ee0d5</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, global::System.Runtime.InteropServices.HandleRef jarg2)</arglist>
+    </member>
+    <member kind="function">
+      <type>static global::System.IntPtr</type>
+      <name>Domain_AdditionWith</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>a027dcccc490829ab1e1efeb863c7848b</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, global::System.Runtime.InteropServices.HandleRef jarg2)</arglist>
+    </member>
+    <member kind="function">
+      <type>static string</type>
+      <name>Domain_ToString</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>afed1a71e9c92fe2a6789be63078b8274</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1)</arglist>
+    </member>
+    <member kind="function">
+      <type>static void</type>
+      <name>delete_Domain</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>a540ac6b848e5179f1a541b876fe39f86</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1)</arglist>
+    </member>
+    <member kind="function">
       <type>static System.IntPtr</type>
       <name>DefaultRoutingModelParameters</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
@@ -47574,6 +48214,125 @@
       <name>delete_RoutingModel_VehicleTypeContainer</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
       <anchor>af3206facde3d8f97156ccb55760459d4</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1)</arglist>
+    </member>
+    <member kind="function">
+      <type>static global::System.IntPtr</type>
+      <name>new_RoutingModel_ResourceGroup_Attributes__SWIG_0</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>afcf070646c1be502c259ad65756ef8f4</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>static global::System.IntPtr</type>
+      <name>new_RoutingModel_ResourceGroup_Attributes__SWIG_1</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>a77ff6cc66797ca990ae0ad0c3927d66e</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, global::System.Runtime.InteropServices.HandleRef jarg2)</arglist>
+    </member>
+    <member kind="function">
+      <type>static global::System.IntPtr</type>
+      <name>RoutingModel_ResourceGroup_Attributes_StartDomain</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>a60bc780c950b7d015af7accf06c47e3c</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1)</arglist>
+    </member>
+    <member kind="function">
+      <type>static global::System.IntPtr</type>
+      <name>RoutingModel_ResourceGroup_Attributes_EndDomain</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>ac02cef72e808411b4d8a60791ad54c67</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1)</arglist>
+    </member>
+    <member kind="function">
+      <type>static void</type>
+      <name>delete_RoutingModel_ResourceGroup_Attributes</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>ae1b2c29d125ac0c35b3e65808cbbd80e</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1)</arglist>
+    </member>
+    <member kind="function">
+      <type>static global::System.IntPtr</type>
+      <name>RoutingModel_ResourceGroup_Resource_GetDimensionAttributes</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>ad332d8b3a8498543093bf18412c3f236</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, global::System.Runtime.InteropServices.HandleRef jarg2)</arglist>
+    </member>
+    <member kind="function">
+      <type>static void</type>
+      <name>delete_RoutingModel_ResourceGroup_Resource</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>adfa001ab48d5a80f634e41c5b87ded6a</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1)</arglist>
+    </member>
+    <member kind="function">
+      <type>static global::System.IntPtr</type>
+      <name>new_RoutingModel_ResourceGroup</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>ae041a5b32b4ae5ef51b32826961a84b0</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1)</arglist>
+    </member>
+    <member kind="function">
+      <type>static int</type>
+      <name>RoutingModel_ResourceGroup_AddResource</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>af6e07c0769bb0077141984ebc32d0d15</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, global::System.Runtime.InteropServices.HandleRef jarg2, global::System.Runtime.InteropServices.HandleRef jarg3)</arglist>
+    </member>
+    <member kind="function">
+      <type>static void</type>
+      <name>RoutingModel_ResourceGroup_NotifyVehicleRequiresAResource</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>ad04c9556bc3bde674a9463a7a2c81970</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, int jarg2)</arglist>
+    </member>
+    <member kind="function">
+      <type>static global::System.IntPtr</type>
+      <name>RoutingModel_ResourceGroup_GetVehiclesRequiringAResource</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>a7cfecd3dae69fde1963df1b33a1a71e8</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1)</arglist>
+    </member>
+    <member kind="function">
+      <type>static bool</type>
+      <name>RoutingModel_ResourceGroup_VehicleRequiresAResource</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>a8ff6b40adf9b1e6574406998118d1b43</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, int jarg2)</arglist>
+    </member>
+    <member kind="function">
+      <type>static global::System.IntPtr</type>
+      <name>RoutingModel_ResourceGroup_GetResources</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>a3558df6d0fb892a2ff5166776ec534b3</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1)</arglist>
+    </member>
+    <member kind="function">
+      <type>static global::System.IntPtr</type>
+      <name>RoutingModel_ResourceGroup_GetResource</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>a130613810edb914ab0ed4a2e3dc8afa2</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, int jarg2)</arglist>
+    </member>
+    <member kind="function">
+      <type>static global::System.IntPtr</type>
+      <name>RoutingModel_ResourceGroup_GetAffectedDimensionIndices</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>ac0acf085bd5c83f125b5a6fbb2bc405c</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1)</arglist>
+    </member>
+    <member kind="function">
+      <type>static int</type>
+      <name>RoutingModel_ResourceGroup_Size</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>a2804a6c22620be773bf49d594f0202e2</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1)</arglist>
+    </member>
+    <member kind="function">
+      <type>static void</type>
+      <name>delete_RoutingModel_ResourceGroup</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>aa2570e3d888db565e26270e0e408f660</anchor>
       <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1)</arglist>
     </member>
     <member kind="function">
@@ -47773,10 +48532,38 @@
       <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1)</arglist>
     </member>
     <member kind="function">
+      <type>static int</type>
+      <name>RoutingModel_AddResourceGroup</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>affdadfc2d206a90c77506cd5eb8cf75d</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1)</arglist>
+    </member>
+    <member kind="function">
+      <type>static global::System.IntPtr</type>
+      <name>RoutingModel_GetResourceGroups</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>ada3b6f84910d762580e57adb37d02236</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1)</arglist>
+    </member>
+    <member kind="function">
+      <type>static global::System.IntPtr</type>
+      <name>RoutingModel_GetResourceGroup</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>a82530c9cb0393137a2798e04d11133d1</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, int jarg2)</arglist>
+    </member>
+    <member kind="function">
       <type>static global::System.IntPtr</type>
       <name>RoutingModel_GetDimensionResourceGroupIndices</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
       <anchor>a2219dc9e81896fe9c2b79f200adfe495</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, global::System.Runtime.InteropServices.HandleRef jarg2)</arglist>
+    </member>
+    <member kind="function">
+      <type>static int</type>
+      <name>RoutingModel_GetDimensionResourceGroupIndex</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>a8eec311cca400c0bde0f182d4b5ba8cd</anchor>
       <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, global::System.Runtime.InteropServices.HandleRef jarg2)</arglist>
     </member>
     <member kind="function">
@@ -47833,6 +48620,20 @@
       <name>RoutingModel_GetNumberOfDisjunctions</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
       <anchor>a996ca0315e449c5346d22ad2b941ba18</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1)</arglist>
+    </member>
+    <member kind="function">
+      <type>static bool</type>
+      <name>RoutingModel_HasMandatoryDisjunctions</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>a8a8ac5655cb55335ecaa524e6df48732</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1)</arglist>
+    </member>
+    <member kind="function">
+      <type>static bool</type>
+      <name>RoutingModel_HasMaxCardinalityConstrainedDisjunctions</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>a446d91d93a0284049569a4ef6900bfe0</anchor>
       <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1)</arglist>
     </member>
     <member kind="function">
@@ -48166,16 +48967,16 @@
     </member>
     <member kind="function">
       <type>static void</type>
-      <name>RoutingModel_ConsiderEmptyRouteCostsForVehicle</name>
+      <name>RoutingModel_SetVehicleUsedWhenEmpty</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
-      <anchor>a1b417fad06ab3ae11903a0eb4fe6b63e</anchor>
+      <anchor>a7537f6efd146f4b38f7c0e07f47c9656</anchor>
       <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, bool jarg2, int jarg3)</arglist>
     </member>
     <member kind="function">
       <type>static bool</type>
-      <name>RoutingModel_AreEmptyRouteCostsConsideredForVehicle</name>
+      <name>RoutingModel_IsVehicleUsedWhenEmpty</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
-      <anchor>ae1c8e466f03b5c4230cb04bee4b4a1c6</anchor>
+      <anchor>ad438ac6ba4baa5712dad6d1ba090d759</anchor>
       <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, int jarg2)</arglist>
     </member>
     <member kind="function">
@@ -48481,6 +49282,13 @@
     </member>
     <member kind="function">
       <type>static global::System.IntPtr</type>
+      <name>RoutingModel_ResourceVars</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>a4e1987665f99fa062b579ca57c4c8613</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, int jarg2)</arglist>
+    </member>
+    <member kind="function">
+      <type>static global::System.IntPtr</type>
       <name>RoutingModel_NextVar</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
       <anchor>a7b4ac09e9537e65fab24192476a6673a</anchor>
@@ -48502,9 +49310,9 @@
     </member>
     <member kind="function">
       <type>static global::System.IntPtr</type>
-      <name>RoutingModel_VehicleCostsConsideredVar</name>
+      <name>RoutingModel_VehicleRouteConsideredVar</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
-      <anchor>ace3fac5226ec5ab0762bb9acabe01f71</anchor>
+      <anchor>a93f529f90fefe2265f6d367ef3b74705</anchor>
       <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, int jarg2)</arglist>
     </member>
     <member kind="function">
@@ -48513,6 +49321,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
       <anchor>a1083f5430714229a6faf502d81225c4e</anchor>
       <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, long jarg2)</arglist>
+    </member>
+    <member kind="function">
+      <type>static global::System.IntPtr</type>
+      <name>RoutingModel_ResourceVar</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>a1aa3adc6c75679ee004b016e00325def</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, int jarg2, int jarg3)</arglist>
     </member>
     <member kind="function">
       <type>static global::System.IntPtr</type>
@@ -49990,6 +50805,48 @@
       <name>delete_CppBridge</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Init_1_1operations__research__initPINVOKE.html</anchorfile>
       <anchor>abd7356bb1dab3065e4fc876c1de772a9</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1)</arglist>
+    </member>
+    <member kind="function">
+      <type>static int</type>
+      <name>OrToolsVersion_MajorNumber</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Init_1_1operations__research__initPINVOKE.html</anchorfile>
+      <anchor>a84705ca62ebc22aa36f1b7d24fad4c3e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>static int</type>
+      <name>OrToolsVersion_MinorNumber</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Init_1_1operations__research__initPINVOKE.html</anchorfile>
+      <anchor>ad21ddcf4366c59592ae8f9d1cb17ece1</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>static int</type>
+      <name>OrToolsVersion_PatchNumber</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Init_1_1operations__research__initPINVOKE.html</anchorfile>
+      <anchor>a022d1276656b71507413c37cd5dbf66b</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>static string</type>
+      <name>OrToolsVersion_VersionString</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Init_1_1operations__research__initPINVOKE.html</anchorfile>
+      <anchor>a822eb8266a618db54846c8f324acbc84</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>static global::System.IntPtr</type>
+      <name>new_OrToolsVersion</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Init_1_1operations__research__initPINVOKE.html</anchorfile>
+      <anchor>a7720ff5b20017e90e763341db551f2cf</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>static void</type>
+      <name>delete_OrToolsVersion</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Init_1_1operations__research__initPINVOKE.html</anchorfile>
+      <anchor>a289423edaf4e827737b7c63d3af08372</anchor>
       <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1)</arglist>
     </member>
     <member kind="variable" protection="protected" static="yes">
@@ -53606,6 +54463,66 @@
     </member>
   </compound>
   <compound kind="class">
+    <name>Google::OrTools::Init::OrToolsVersion</name>
+    <filename>classGoogle_1_1OrTools_1_1Init_1_1OrToolsVersion.html</filename>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Init_1_1OrToolsVersion.html</anchorfile>
+      <anchor>a6e2d745cdb7a7b983f861ed6a9a541a7</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>OrToolsVersion</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Init_1_1OrToolsVersion.html</anchorfile>
+      <anchor>a4a5b5c5317aea80aff6b1fd0cb772ceb</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static int</type>
+      <name>MajorNumber</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Init_1_1OrToolsVersion.html</anchorfile>
+      <anchor>acd5e184b45f4a88d520d7ad9b395a5c0</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static int</type>
+      <name>MinorNumber</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Init_1_1OrToolsVersion.html</anchorfile>
+      <anchor>a96efafbd99a965530b7c99892c46b6cd</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static int</type>
+      <name>PatchNumber</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Init_1_1OrToolsVersion.html</anchorfile>
+      <anchor>aac4038592a8463f6f652fc8164ba48d7</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static string</type>
+      <name>VersionString</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Init_1_1OrToolsVersion.html</anchorfile>
+      <anchor>a315075dd1790b87222b5bae3b22a4825</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Init_1_1OrToolsVersion.html</anchorfile>
+      <anchor>a8ad4348ef0f9969025bab397e7e27e26</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>bool</type>
+      <name>swigCMemOwn</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Init_1_1OrToolsVersion.html</anchorfile>
+      <anchor>abc050282310ee35f8b4bac77b6103375</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
     <name>Google::OrTools::ConstraintSolver::Pack</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Pack.html</filename>
     <base>Google::OrTools::ConstraintSolver::Constraint</base>
@@ -55188,6 +56105,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
       <anchor>ac10f0ce08a15667c91e7b17f1556187f</anchor>
       <arglist>(LinearExpr e, long initial_coeff, Dictionary&lt; IntVar, long &gt; dict)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>RebuildLinearExprFromLinearExpressionProto</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
+      <anchor>ad65b1f9128e66e846be3f63fe426dc7b</anchor>
+      <arglist>(LinearExpressionProto proto, CpModelProto model)</arglist>
     </member>
     <member kind="property">
       <type>LinearExpr</type>
@@ -57187,23 +58111,23 @@
     </member>
     <member kind="variable" static="yes">
       <type>const int</type>
-      <name>TimesFieldNumber</name>
+      <name>TimeExprsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ReservoirConstraintProto.html</anchorfile>
-      <anchor>a2a028a0b1f1f41a216add91d9aad18f9</anchor>
+      <anchor>a0b5061fc7b6892d656778f88a7a596f8</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>const int</type>
-      <name>DemandsFieldNumber</name>
+      <name>LevelChangesFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ReservoirConstraintProto.html</anchorfile>
-      <anchor>a094e3db64da9466a3afd007266a4b704</anchor>
+      <anchor>aca3857a34476508b42ac20b65754ecdf</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>const int</type>
-      <name>ActivesFieldNumber</name>
+      <name>ActiveLiteralsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ReservoirConstraintProto.html</anchorfile>
-      <anchor>a128a2b93d2fcd586966e92b329f09033</anchor>
+      <anchor>a8e37608754934f6a0bef906d6a09b302</anchor>
       <arglist></arglist>
     </member>
     <member kind="property" static="yes">
@@ -57235,24 +58159,146 @@
       <arglist></arglist>
     </member>
     <member kind="property">
-      <type>pbc::RepeatedField&lt; int &gt;</type>
-      <name>Times</name>
+      <type>pbc::RepeatedField&lt; global::Google.OrTools.Sat.LinearExpressionProto &gt;</type>
+      <name>TimeExprs</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ReservoirConstraintProto.html</anchorfile>
-      <anchor>a229b6c3359862d7b64b7e20befa08bfa</anchor>
+      <anchor>af28a6df1f625c6cb5bac05f98ab8c5ca</anchor>
       <arglist></arglist>
     </member>
     <member kind="property">
       <type>pbc::RepeatedField&lt; long &gt;</type>
-      <name>Demands</name>
+      <name>LevelChanges</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ReservoirConstraintProto.html</anchorfile>
-      <anchor>a101cced2fda10f3b0ed67648bcfb1594</anchor>
+      <anchor>a5101e2429d8b19b94f2b37c96895842f</anchor>
       <arglist></arglist>
     </member>
     <member kind="property">
       <type>pbc::RepeatedField&lt; int &gt;</type>
-      <name>Actives</name>
+      <name>ActiveLiterals</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ReservoirConstraintProto.html</anchorfile>
-      <anchor>a36d2186ce73c0b22bcea087e72d33dd8</anchor>
+      <anchor>a55981c13eb78709b528d25aec4aa09b8</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>Google::OrTools::ConstraintSolver::RoutingModel::ResourceGroup::Resource</name>
+    <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel_1_1ResourceGroup_1_1Resource.html</filename>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel_1_1ResourceGroup_1_1Resource.html</anchorfile>
+      <anchor>a6e2d745cdb7a7b983f861ed6a9a541a7</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>RoutingModel.ResourceGroup.Attributes</type>
+      <name>GetDimensionAttributes</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel_1_1ResourceGroup_1_1Resource.html</anchorfile>
+      <anchor>a21038c7924d1f1d2bb8c574d14b6bc3a</anchor>
+      <arglist>(RoutingDimension dimension)</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel_1_1ResourceGroup_1_1Resource.html</anchorfile>
+      <anchor>a8ad4348ef0f9969025bab397e7e27e26</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>bool</type>
+      <name>swigCMemOwn</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel_1_1ResourceGroup_1_1Resource.html</anchorfile>
+      <anchor>abc050282310ee35f8b4bac77b6103375</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>Google::OrTools::ConstraintSolver::RoutingModel::ResourceGroup</name>
+    <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel_1_1ResourceGroup.html</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::RoutingModel::ResourceGroup::Attributes</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::RoutingModel::ResourceGroup::Resource</class>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel_1_1ResourceGroup.html</anchorfile>
+      <anchor>a6e2d745cdb7a7b983f861ed6a9a541a7</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>ResourceGroup</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel_1_1ResourceGroup.html</anchorfile>
+      <anchor>aaf9f165b323b9e8090bb30030182955f</anchor>
+      <arglist>(RoutingModel model)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>AddResource</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel_1_1ResourceGroup.html</anchorfile>
+      <anchor>a406dd52218074ddb1e2d74221aeed5f0</anchor>
+      <arglist>(RoutingModel.ResourceGroup.Attributes attributes, RoutingDimension dimension)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>NotifyVehicleRequiresAResource</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel_1_1ResourceGroup.html</anchorfile>
+      <anchor>af1de7a9224abf51b0f265badfe6cd75b</anchor>
+      <arglist>(int vehicle)</arglist>
+    </member>
+    <member kind="function">
+      <type>int[]</type>
+      <name>GetVehiclesRequiringAResource</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel_1_1ResourceGroup.html</anchorfile>
+      <anchor>a8855fa5b84ca03084ec78d53a3235fdf</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>VehicleRequiresAResource</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel_1_1ResourceGroup.html</anchorfile>
+      <anchor>a9c3c15cfb4313e5d1a2c0283eefdaf10</anchor>
+      <arglist>(int vehicle)</arglist>
+    </member>
+    <member kind="function">
+      <type>SWIGTYPE_p_std__vectorT_operations_research__RoutingModel__ResourceGroup__Resource_t</type>
+      <name>GetResources</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel_1_1ResourceGroup.html</anchorfile>
+      <anchor>a6c8010962888cb9e7acabd3ba05e2634</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>RoutingModel.ResourceGroup.Resource</type>
+      <name>GetResource</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel_1_1ResourceGroup.html</anchorfile>
+      <anchor>aa41cbadbec52ee395d709bd0ea47bf24</anchor>
+      <arglist>(int resource_index)</arglist>
+    </member>
+    <member kind="function">
+      <type>SWIGTYPE_p_absl__flat_hash_setT_operations_research__RoutingModel__DimensionIndex_t</type>
+      <name>GetAffectedDimensionIndices</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel_1_1ResourceGroup.html</anchorfile>
+      <anchor>af244294e9f3c833a833cc23eaedbdc6a</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>Size</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel_1_1ResourceGroup.html</anchorfile>
+      <anchor>af40990b9bd3d70d30e8ce7cdda1ad56f</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel_1_1ResourceGroup.html</anchorfile>
+      <anchor>a8ad4348ef0f9969025bab397e7e27e26</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>bool</type>
+      <name>swigCMemOwn</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel_1_1ResourceGroup.html</anchorfile>
+      <anchor>abc050282310ee35f8b4bac77b6103375</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -58036,6 +59082,7 @@
   <compound kind="class">
     <name>Google::OrTools::ConstraintSolver::RoutingModel</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::RoutingModel::ResourceGroup</class>
     <class kind="class">Google::OrTools::ConstraintSolver::RoutingModel::VehicleTypeContainer</class>
     <member kind="function">
       <type>void</type>
@@ -58213,10 +59260,38 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
+      <type>int</type>
+      <name>AddResourceGroup</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html</anchorfile>
+      <anchor>a935fbe2d7b2b9d71bf66b0987b9ae4b3</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>SWIGTYPE_p_std__vectorT_std__unique_ptrT_operations_research__RoutingModel__ResourceGroup_t_t</type>
+      <name>GetResourceGroups</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html</anchorfile>
+      <anchor>af1ee754660f15142ebd576253ca26bfa</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>RoutingModel.ResourceGroup</type>
+      <name>GetResourceGroup</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html</anchorfile>
+      <anchor>ae5850248f8cb4700dcf2f10418b3abbc</anchor>
+      <arglist>(int rg_index)</arglist>
+    </member>
+    <member kind="function">
       <type>int[]</type>
       <name>GetDimensionResourceGroupIndices</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html</anchorfile>
       <anchor>a5e239fdf50df2e86dd15ba8d748a5392</anchor>
+      <arglist>(RoutingDimension dimension)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>GetDimensionResourceGroupIndex</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html</anchorfile>
+      <anchor>a49d634bae66c86904de4bd00c0322dc7</anchor>
       <arglist>(RoutingDimension dimension)</arglist>
     </member>
     <member kind="function">
@@ -58273,6 +59348,20 @@
       <name>GetNumberOfDisjunctions</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html</anchorfile>
       <anchor>adf797f7920b3decd258674914bfa5520</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>HasMandatoryDisjunctions</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html</anchorfile>
+      <anchor>a8e07b6215ae9ee8b7fea36f25f56df1e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>HasMaxCardinalityConstrainedDisjunctions</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html</anchorfile>
+      <anchor>a016d4ca4326aa8cc9c1a7cb99639c3f2</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -58578,16 +59667,16 @@
     </member>
     <member kind="function">
       <type>void</type>
-      <name>ConsiderEmptyRouteCostsForVehicle</name>
+      <name>SetVehicleUsedWhenEmpty</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html</anchorfile>
-      <anchor>a7ccaa3133378da76d3fd5cdb560038ae</anchor>
-      <arglist>(bool consider_costs, int vehicle)</arglist>
+      <anchor>a967cdc356518c25283935efe3c0fe799</anchor>
+      <arglist>(bool is_used, int vehicle)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
-      <name>AreEmptyRouteCostsConsideredForVehicle</name>
+      <name>IsVehicleUsedWhenEmpty</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html</anchorfile>
-      <anchor>ae8811725cdcc90af1e529800ba9bbd52</anchor>
+      <anchor>aab70c73cd910c0e1463cd6ecf468a932</anchor>
       <arglist>(int vehicle)</arglist>
     </member>
     <member kind="function">
@@ -58892,6 +59981,13 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
+      <type>IntVarVector</type>
+      <name>ResourceVars</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html</anchorfile>
+      <anchor>a6307ba95d9c4ebe65a3395f715cd43a5</anchor>
+      <arglist>(int resource_group)</arglist>
+    </member>
+    <member kind="function">
       <type>IntVar</type>
       <name>NextVar</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html</anchorfile>
@@ -58914,9 +60010,9 @@
     </member>
     <member kind="function">
       <type>IntVar</type>
-      <name>VehicleCostsConsideredVar</name>
+      <name>VehicleRouteConsideredVar</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html</anchorfile>
-      <anchor>a58c1f7c5eb35a3d0d0643267abd1fd14</anchor>
+      <anchor>a91dc28c726b346c2a9c2045cdf672aa6</anchor>
       <arglist>(int vehicle)</arglist>
     </member>
     <member kind="function">
@@ -58925,6 +60021,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html</anchorfile>
       <anchor>a103d8c9f89ea1a904cd34174023ef6c5</anchor>
       <arglist>(long index)</arglist>
+    </member>
+    <member kind="function">
+      <type>IntVar</type>
+      <name>ResourceVar</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html</anchorfile>
+      <anchor>a83ad47d079c42cbcf17ec5574f86fb29</anchor>
+      <arglist>(int vehicle, int resource_group)</arglist>
     </member>
     <member kind="function">
       <type>IntVar</type>
@@ -60624,20 +61727,6 @@
     </member>
     <member kind="function">
       <type>void</type>
-      <name>ClearCpModelPostsolveWithFullSolver</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
-      <anchor>ac6329e5c723499fa5f22482ea06d8255</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>ClearCpModelMaxNumPresolveOperations</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
-      <anchor>a5283777a6d60696fb6a1845dbb73523b</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
       <name>ClearCpModelProbingLevel</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a3a0250a2adc620759c98e4eceeab5198</anchor>
@@ -60659,37 +61748,9 @@
     </member>
     <member kind="function">
       <type>void</type>
-      <name>ClearExpandElementConstraints</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
-      <anchor>a1d68960d0605987fc5a0e4fa6d638866</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>ClearExpandAutomatonConstraints</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
-      <anchor>a1ff191c91c281a72398022aa0b5c36d2</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>ClearExpandTableConstraints</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
-      <anchor>a1c77fd231a66a8450a3291ce2fe872ef</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
       <name>ClearExpandAlldiffConstraints</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a95df70b86cd4a787f0b1670f17fe8e40</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>ClearExpandReservoirConstraints</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
-      <anchor>ac6bda10b88bc1b5da126a48c9a3f4bef</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -60725,6 +61786,27 @@
       <name>ClearPresolveExtractIntegerEnforcement</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>af7ac3811379ba79c5ffccbed43db66ea</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>ClearDebugPostsolveWithFullSolver</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
+      <anchor>ac17d035f8d412598856108d60f127081</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>ClearDebugMaxNumPresolveOperations</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
+      <anchor>a0952a3909e4e1f6f27034c3d97e00d87</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>ClearDebugCrashOnBadHint</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
+      <anchor>a43ba37fd0d1ad1ec45bfb3ef6466e54d</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -60806,6 +61888,13 @@
     </member>
     <member kind="function">
       <type>void</type>
+      <name>ClearUseCumulativeInNoOverlap2D</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
+      <anchor>aa5bc85b4eca3b1c85b2c454be8069418</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
       <name>ClearLinearizationLevel</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>adf52cca8ba6fe4d803a660fdf8f8d075</anchor>
@@ -60834,6 +61923,13 @@
     </member>
     <member kind="function">
       <type>void</type>
+      <name>ClearCutLevel</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
+      <anchor>aae070f053885092e66c1ed4abedcc862</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
       <name>ClearOnlyAddCutsAtLevelZero</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>aca32c7a3dcb380f8cfd1031319e15a6e</anchor>
@@ -60841,9 +61937,9 @@
     </member>
     <member kind="function">
       <type>void</type>
-      <name>ClearAddKnapsackCuts</name>
+      <name>ClearAddObjectiveCut</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
-      <anchor>a1f95df5be3800321ed42f0a68565075d</anchor>
+      <anchor>a0fb72f4682e0c4d386bccd29fc7968e4</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -61086,6 +62182,13 @@
     </member>
     <member kind="function">
       <type>void</type>
+      <name>ClearFillAdditionalSolutionsInResponse</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
+      <anchor>adc04504da1fa51fd09797ebab7eeb0dd</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
       <name>ClearInstantiateAllVariables</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a72de0386cf4e73683b219107dcb562ac</anchor>
@@ -61159,20 +62262,6 @@
       <name>ClearUseLnsOnly</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a9fc5e06cde630d1533699d41594f9eea</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>ClearLnsFocusOnDecisionVariables</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
-      <anchor>a147930a9ec2a2607ea8080b2167c518b</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>ClearLnsExpandIntervalsInConstraintGraph</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
-      <anchor>a6f669322168af89e32b50567071f88d7</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -61334,6 +62423,20 @@
       <name>ClearMipCheckPrecision</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a590fe1eccdf8bee50f20994bf7cf47b8</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>ClearMipComputeTrueObjectiveBound</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
+      <anchor>a8835b787f62e179821197be37b207aea</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>ClearMipMaxValidMagnitude</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
+      <anchor>ac0cb5b56f885468362ad5c455ef727f2</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -61870,20 +62973,6 @@
     </member>
     <member kind="variable" static="yes">
       <type>const int</type>
-      <name>CpModelPostsolveWithFullSolverFieldNumber</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
-      <anchor>a7161d6aebd706632b5424751e73f8047</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable" static="yes">
-      <type>const int</type>
-      <name>CpModelMaxNumPresolveOperationsFieldNumber</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
-      <anchor>a55361f7ccf8a08a8efb6e34f0b191a05</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable" static="yes">
-      <type>const int</type>
       <name>CpModelProbingLevelFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a386e52d4156005e4d5f43520bc5873c0</anchor>
@@ -61905,37 +62994,9 @@
     </member>
     <member kind="variable" static="yes">
       <type>const int</type>
-      <name>ExpandElementConstraintsFieldNumber</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
-      <anchor>a3ebd736fa2950803920b63b323ead578</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable" static="yes">
-      <type>const int</type>
-      <name>ExpandAutomatonConstraintsFieldNumber</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
-      <anchor>ae2b6586c02b0fd7d77d641a3c67093c8</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable" static="yes">
-      <type>const int</type>
-      <name>ExpandTableConstraintsFieldNumber</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
-      <anchor>ad8453b5a21eb1e8a5285bd00c8ffa779</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable" static="yes">
-      <type>const int</type>
       <name>ExpandAlldiffConstraintsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>ab98d18e1a6a284516c23312aeffe0ad3</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable" static="yes">
-      <type>const int</type>
-      <name>ExpandReservoirConstraintsFieldNumber</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
-      <anchor>a6d6966f69f0e939535304fb6baffec88</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
@@ -61971,6 +63032,27 @@
       <name>PresolveExtractIntegerEnforcementFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a79790800189c3db3b89556263ac83e95</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>const int</type>
+      <name>DebugPostsolveWithFullSolverFieldNumber</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
+      <anchor>acdd7521d89208b0fd7806c5ebd84753a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>const int</type>
+      <name>DebugMaxNumPresolveOperationsFieldNumber</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
+      <anchor>a540176620cd595ca511ab300f7b330b3</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>const int</type>
+      <name>DebugCrashOnBadHintFieldNumber</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
+      <anchor>a419b4857438bcf2edb76698210ec7851</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
@@ -62052,6 +63134,13 @@
     </member>
     <member kind="variable" static="yes">
       <type>const int</type>
+      <name>UseCumulativeInNoOverlap2DFieldNumber</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
+      <anchor>a094e91a06cf6849da6f2e8d44485c723</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>const int</type>
       <name>LinearizationLevelFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>ac08668953858976abf909a46612a26d2</anchor>
@@ -62080,6 +63169,13 @@
     </member>
     <member kind="variable" static="yes">
       <type>const int</type>
+      <name>CutLevelFieldNumber</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
+      <anchor>a4cd1ab5a240ee78e55703cbeb542ba34</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>const int</type>
       <name>OnlyAddCutsAtLevelZeroFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>ab0291915fe53f36d8a623789e29ce8fd</anchor>
@@ -62087,9 +63183,9 @@
     </member>
     <member kind="variable" static="yes">
       <type>const int</type>
-      <name>AddKnapsackCutsFieldNumber</name>
+      <name>AddObjectiveCutFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
-      <anchor>a4ca47784cd74ca111cbb4abb5c56cb12</anchor>
+      <anchor>a094d809a747b9c33347206cbd50e5179</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
@@ -62332,6 +63428,13 @@
     </member>
     <member kind="variable" static="yes">
       <type>const int</type>
+      <name>FillAdditionalSolutionsInResponseFieldNumber</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
+      <anchor>a543ea288da4e2a8b98a23e29de748408</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>const int</type>
       <name>InstantiateAllVariablesFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>aa8d9f6b5a1c3e3d5a4365c80a58922bd</anchor>
@@ -62405,20 +63508,6 @@
       <name>UseLnsOnlyFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a7342ea18ba372df1a46fe600e12163be</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable" static="yes">
-      <type>const int</type>
-      <name>LnsFocusOnDecisionVariablesFieldNumber</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
-      <anchor>a00c75b93bc537329bd69eed9be90e369</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable" static="yes">
-      <type>const int</type>
-      <name>LnsExpandIntervalsInConstraintGraphFieldNumber</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
-      <anchor>a3e1860db7f2fc69660978a8ab7727878</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
@@ -62580,6 +63669,20 @@
       <name>MipCheckPrecisionFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a66f1be0f52f8f0a4e54b8c1174aa8a46</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>const int</type>
+      <name>MipComputeTrueObjectiveBoundFieldNumber</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
+      <anchor>aa9b38fdfbd8736ad26635ed7e8b1d29f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>const int</type>
+      <name>MipMaxValidMagnitudeFieldNumber</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
+      <anchor>ad4553ca04557a9466d068936fe7e80ba</anchor>
       <arglist></arglist>
     </member>
     <member kind="property" static="yes">
@@ -63542,34 +64645,6 @@
       <arglist></arglist>
     </member>
     <member kind="property">
-      <type>bool</type>
-      <name>CpModelPostsolveWithFullSolver</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
-      <anchor>adba8115a14bc068ffe4a657d97539609</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>bool</type>
-      <name>HasCpModelPostsolveWithFullSolver</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
-      <anchor>ae0102d2edefafafc873e3ccde0bb11ce</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>int</type>
-      <name>CpModelMaxNumPresolveOperations</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
-      <anchor>a29c425a1802b31a5d8db013fa19c0399</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>bool</type>
-      <name>HasCpModelMaxNumPresolveOperations</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
-      <anchor>af6c2c3f81f425a67b6085353f7661942</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
       <type>int</type>
       <name>CpModelProbingLevel</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
@@ -63613,48 +64688,6 @@
     </member>
     <member kind="property">
       <type>bool</type>
-      <name>ExpandElementConstraints</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
-      <anchor>aebcb96fb4ce99bb99d7d6cf62455ec8e</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>bool</type>
-      <name>HasExpandElementConstraints</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
-      <anchor>ab9691f75adda48cf32896f17e1394a66</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>bool</type>
-      <name>ExpandAutomatonConstraints</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
-      <anchor>a90e904017ebb773238ed1405a70c5c6a</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>bool</type>
-      <name>HasExpandAutomatonConstraints</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
-      <anchor>ad3a638f268492e5b0e3bb4b1fdc00544</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>bool</type>
-      <name>ExpandTableConstraints</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
-      <anchor>a8bcabe728b3e6644c72c48a7c8a09512</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>bool</type>
-      <name>HasExpandTableConstraints</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
-      <anchor>aa25ef216665dfba43b797c9ed8f3ef5f</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>bool</type>
       <name>ExpandAlldiffConstraints</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a0153dc4ce4a28bb6d8b07c979d83a0f2</anchor>
@@ -63665,20 +64698,6 @@
       <name>HasExpandAlldiffConstraints</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a119b0f9fee7fc50a911f2f0ca6c69c7b</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>bool</type>
-      <name>ExpandReservoirConstraints</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
-      <anchor>a1e969c8be72f5def1e9fae802c645e03</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>bool</type>
-      <name>HasExpandReservoirConstraints</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
-      <anchor>a77da22c3525c404483363f485d420790</anchor>
       <arglist></arglist>
     </member>
     <member kind="property">
@@ -63749,6 +64768,48 @@
       <name>HasPresolveExtractIntegerEnforcement</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a3f80254aac9ac22187d9b7daa5efe918</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>bool</type>
+      <name>DebugPostsolveWithFullSolver</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
+      <anchor>ae4a8c18462c114d753203302dec58da0</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>bool</type>
+      <name>HasDebugPostsolveWithFullSolver</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
+      <anchor>af05d6f29100b5da6d5a90085b14c6e0b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>int</type>
+      <name>DebugMaxNumPresolveOperations</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
+      <anchor>a6b7ecb16002f909bd1faab952200fa12</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>bool</type>
+      <name>HasDebugMaxNumPresolveOperations</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
+      <anchor>ab2d69df416899dcb198202d8ba03a7a7</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>bool</type>
+      <name>DebugCrashOnBadHint</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
+      <anchor>aeb30c4838f4dc140a92c91fefc55ba61</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>bool</type>
+      <name>HasDebugCrashOnBadHint</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
+      <anchor>a58243d7760bb7adfe3f68bbef09ded86</anchor>
       <arglist></arglist>
     </member>
     <member kind="property">
@@ -63906,6 +64967,20 @@
       <arglist></arglist>
     </member>
     <member kind="property">
+      <type>bool</type>
+      <name>UseCumulativeInNoOverlap2D</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
+      <anchor>a67a0111c208fd39d697344bd85c8ac0c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>bool</type>
+      <name>HasUseCumulativeInNoOverlap2D</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
+      <anchor>a69d083d3b92f3d123561857e77260edb</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
       <type>int</type>
       <name>LinearizationLevel</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
@@ -63962,6 +65037,20 @@
       <arglist></arglist>
     </member>
     <member kind="property">
+      <type>int</type>
+      <name>CutLevel</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
+      <anchor>a2315793f2bd22e1f5bf1aee0b93d6c18</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>bool</type>
+      <name>HasCutLevel</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
+      <anchor>a24aa9244885da9fca2c5728e1a633368</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
       <type>bool</type>
       <name>OnlyAddCutsAtLevelZero</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
@@ -63977,16 +65066,16 @@
     </member>
     <member kind="property">
       <type>bool</type>
-      <name>AddKnapsackCuts</name>
+      <name>AddObjectiveCut</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
-      <anchor>aa5d3d7a10f774db5aab87427451b1d1e</anchor>
+      <anchor>a82111868c38f0881ff72fbac60c77d96</anchor>
       <arglist></arglist>
     </member>
     <member kind="property">
       <type>bool</type>
-      <name>HasAddKnapsackCuts</name>
+      <name>HasAddObjectiveCut</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
-      <anchor>a6f68cfe385381d051bb199dd9cf413ec</anchor>
+      <anchor>aeca00f6252feb47cde1faf157a2c33d4</anchor>
       <arglist></arglist>
     </member>
     <member kind="property">
@@ -64467,6 +65556,20 @@
     </member>
     <member kind="property">
       <type>bool</type>
+      <name>FillAdditionalSolutionsInResponse</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
+      <anchor>a5e22ff8a7dac6fc55f3b33fdf12c6d10</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>bool</type>
+      <name>HasFillAdditionalSolutionsInResponse</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
+      <anchor>a7de6d678dd6680b6a8378010fd45b101</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>bool</type>
       <name>InstantiateAllVariables</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a5ab476be50ab41ef5b08d98fedcaf99d</anchor>
@@ -64617,34 +65720,6 @@
       <name>HasUseLnsOnly</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a06489e33ff3f19ec0f324f45293c9aff</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>bool</type>
-      <name>LnsFocusOnDecisionVariables</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
-      <anchor>a2364fb6eb33d4b709ae62ba93c997713</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>bool</type>
-      <name>HasLnsFocusOnDecisionVariables</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
-      <anchor>a6fabdecadbaadc2622f9d9e2642e164d</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>bool</type>
-      <name>LnsExpandIntervalsInConstraintGraph</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
-      <anchor>aa5353cad9583564cab81190bd72b5afa</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>bool</type>
-      <name>HasLnsExpandIntervalsInConstraintGraph</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
-      <anchor>a688451ffada0504970602c05b3748932</anchor>
       <arglist></arglist>
     </member>
     <member kind="property">
@@ -64967,6 +66042,34 @@
       <name>HasMipCheckPrecision</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a228c2a51646a8a880b9d1b672feb9fba</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>bool</type>
+      <name>MipComputeTrueObjectiveBound</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
+      <anchor>abf58fbfc5ac35f5a8f7059803ff4b418</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>bool</type>
+      <name>HasMipComputeTrueObjectiveBound</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
+      <anchor>a3efd71154ad2c2afd25e9a27f3c31b9f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>double</type>
+      <name>MipMaxValidMagnitude</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
+      <anchor>a3c7286ba4d4aba098235cba1c7aa3d66</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>bool</type>
+      <name>HasMipMaxValidMagnitude</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
+      <anchor>a0c909ca9e31891c09e0773fd55f8109e</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -71134,6 +72237,20 @@
     </member>
     <member kind="function">
       <type>Decision</type>
+      <name>MakeAssignVariablesValuesOrDoNothing</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Solver.html</anchorfile>
+      <anchor>ad663e043b8fc33950a53b6954e90439c</anchor>
+      <arglist>(IntVarVector vars, long[] values)</arglist>
+    </member>
+    <member kind="function">
+      <type>Decision</type>
+      <name>MakeAssignVariablesValuesOrFail</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Solver.html</anchorfile>
+      <anchor>a6a537a15ced5b530e532be1e85ac8cd0</anchor>
+      <arglist>(IntVarVector vars, long[] values)</arglist>
+    </member>
+    <member kind="function">
+      <type>Decision</type>
       <name>MakeFailDecision</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Solver.html</anchorfile>
       <anchor>a3ee30f035a8674450521f8dc205c720e</anchor>
@@ -71971,6 +73088,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Solver.html</anchorfile>
       <anchor>a6d5ff1ccb832c9d27fa7a579248f8084</anchor>
       <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>DecisionBuilder</type>
+      <name>MakeProfiledDecisionBuilderWrapper</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Solver.html</anchorfile>
+      <anchor>a956b8fc25da87d2ef325bd97ff341d3d</anchor>
+      <arglist>(DecisionBuilder db)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static Google.OrTools.ConstraintSolver.ConstraintSolverParameters</type>
@@ -74022,6 +75146,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
       <anchor>ac10f0ce08a15667c91e7b17f1556187f</anchor>
       <arglist>(LinearExpr e, long initial_coeff, Dictionary&lt; IntVar, long &gt; dict)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>RebuildLinearExprFromLinearExpressionProto</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
+      <anchor>ad65b1f9128e66e846be3f63fe426dc7b</anchor>
+      <arglist>(LinearExpressionProto proto, CpModelProto model)</arglist>
     </member>
     <member kind="property">
       <type>List&lt; LinearExpr &gt;</type>
@@ -77414,6 +78545,7 @@
     <class kind="class">Google::OrTools::ConstraintSolver::DefaultPhaseParameters</class>
     <class kind="class">Google::OrTools::ConstraintSolver::Demon</class>
     <class kind="class">Google::OrTools::ConstraintSolver::DisjunctiveConstraint</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::Domain</class>
     <class kind="class">Google::OrTools::ConstraintSolver::FirstSolutionStrategy</class>
     <class kind="class">Google::OrTools::ConstraintSolver::GlobalVehicleBreaksConstraint</class>
     <class kind="interface">Google::OrTools::ConstraintSolver::IConstraintWithStatus</class>
@@ -77597,6 +78729,7 @@
     <class kind="class">Google::OrTools::Init::CppFlags</class>
     <class kind="class">Google::OrTools::Init::operations_research_init</class>
     <class kind="class">Google::OrTools::Init::operations_research_initPINVOKE</class>
+    <class kind="class">Google::OrTools::Init::OrToolsVersion</class>
   </compound>
   <compound kind="namespace">
     <name>Google::OrTools::LinearSolver</name>
@@ -77646,13 +78779,14 @@
     <class kind="class">Google::OrTools::Sat::CpSatHelper</class>
     <class kind="class">Google::OrTools::Sat::CpSolver</class>
     <class kind="class">Google::OrTools::Sat::CpSolverResponse</class>
+    <class kind="class">Google::OrTools::Sat::CpSolverSolution</class>
     <class kind="class">Google::OrTools::Sat::CpSolverSolutionCallback</class>
     <class kind="class">Google::OrTools::Sat::CumulativeConstraintProto</class>
     <class kind="class">Google::OrTools::Sat::DecisionStrategyProto</class>
     <class kind="class">Google::OrTools::Sat::DenseMatrixProto</class>
     <class kind="class">Google::OrTools::Sat::ElementConstraintProto</class>
+    <class kind="class">Google::OrTools::Sat::FloatObjectiveProto</class>
     <class kind="interface">Google::OrTools::Sat::ILiteral</class>
-    <class kind="class">Google::OrTools::Sat::IntegerArgumentProto</class>
     <class kind="class">Google::OrTools::Sat::IntegerVariableProto</class>
     <class kind="class">Google::OrTools::Sat::IntervalConstraintProto</class>
     <class kind="class">Google::OrTools::Sat::IntervalVar</class>

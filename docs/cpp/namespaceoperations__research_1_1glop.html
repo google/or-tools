@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.1</span>
+   &#160;<span id="projectnumber">9.2</span>
    </div>
   </td>
  </tr>
@@ -179,6 +179,8 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1glop_1_1_m_p_s_reader.html">MPSReader</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1glop_1_1_m_p_s_reader_impl.html">MPSReaderImpl</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1glop_1_1_parsed_constraint.html">ParsedConstraint</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1glop_1_1_permutation.html">Permutation</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -467,6 +469,10 @@ Functions</h2></td></tr>
 <tr class="separator:ac9c215aa509854e985e62d8cdf0a33cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1a08072639a759f8cf7134407e4b0fac"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1glop.html#a1a08072639a759f8cf7134407e4b0fac">Scale</a> (<a class="el" href="classoperations__research_1_1glop_1_1_linear_program.html">LinearProgram</a> *lp, <a class="el" href="classoperations__research_1_1glop_1_1_sparse_matrix_scaler.html">SparseMatrixScaler</a> *scaler, <a class="el" href="namespaceoperations__research_1_1glop.html#a8d4212c24c21b25a11a4c119273df998">GlopParameters::ScalingAlgorithm</a> scaling_method)</td></tr>
 <tr class="separator:a1a08072639a759f8cf7134407e4b0fac"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3f17d86383ca85cb8b7aa70b3309865e"><td class="memItemLeft" align="right" valign="top">StatusOr&lt; <a class="el" href="structoperations__research_1_1glop_1_1_parsed_constraint.html">ParsedConstraint</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1glop.html#a3f17d86383ca85cb8b7aa70b3309865e">ParseConstraint</a> (absl::string_view constraint)</td></tr>
+<tr class="separator:a3f17d86383ca85cb8b7aa70b3309865e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a662cdf0c2fb9c6e52c0c7af62d4810c0"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1glop.html#a662cdf0c2fb9c6e52c0c7af62d4810c0">ParseLp</a> (absl::string_view <a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>, <a class="el" href="classoperations__research_1_1glop_1_1_linear_program.html">LinearProgram</a> *lp)</td></tr>
+<tr class="separator:a662cdf0c2fb9c6e52c0c7af62d4810c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a678748f91bc4a57c372e1d3a57763e15"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1glop.html#a678748f91bc4a57c372e1d3a57763e15">StringifyRational</a> (const double x, const double precision)</td></tr>
 <tr class="separator:a678748f91bc4a57c372e1d3a57763e15"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a36e54e6744a2e1a24f3844f6b5b56044"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1glop.html#a36e54e6744a2e1a24f3844f6b5b56044">Stringify</a> (const <a class="el" href="namespaceoperations__research_1_1glop.html#a733947145e3e1631165b618b05c9ccb7">Fractional</a> x, bool fraction)</td></tr>
@@ -1062,7 +1068,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="lp__data_2lp__utils_8h_source.html#l00373">373</a> of file <a class="el" href="lp__data_2lp__utils_8h_source.html">lp_data/lp_utils.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="lp__data_2lp__utils_8h_source.html#l00379">379</a> of file <a class="el" href="lp__data_2lp__utils_8h_source.html">lp_data/lp_utils.h</a>.</p>
 
 </div>
 </div>
@@ -1078,7 +1084,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="lp__data_2lp__utils_8h_source.html#l00372">372</a> of file <a class="el" href="lp__data_2lp__utils_8h_source.html">lp_data/lp_utils.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="lp__data_2lp__utils_8h_source.html#l00378">378</a> of file <a class="el" href="lp__data_2lp__utils_8h_source.html">lp_data/lp_utils.h</a>.</p>
 
 </div>
 </div>
@@ -1950,7 +1956,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="preprocessor_8cc_source.html#l03366">3366</a> of file <a class="el" href="preprocessor_8cc_source.html">preprocessor.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="preprocessor_8cc_source.html#l03417">3417</a> of file <a class="el" href="preprocessor_8cc_source.html">preprocessor.cc</a>.</p>
 
 </div>
 </div>
@@ -2097,7 +2103,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parameters_8pb_8cc_source.html#l00406">406</a> of file <a class="el" href="parameters_8pb_8cc_source.html">parameters.pb.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parameters_8pb_8cc_source.html#l00414">414</a> of file <a class="el" href="parameters_8pb_8cc_source.html">parameters.pb.cc</a>.</p>
 
 </div>
 </div>
@@ -2117,7 +2123,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parameters_8pb_8cc_source.html#l00410">410</a> of file <a class="el" href="parameters_8pb_8cc_source.html">parameters.pb.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parameters_8pb_8cc_source.html#l00418">418</a> of file <a class="el" href="parameters_8pb_8cc_source.html">parameters.pb.cc</a>.</p>
 
 </div>
 </div>
@@ -2202,7 +2208,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parameters_8pb_8cc_source.html#l00381">381</a> of file <a class="el" href="parameters_8pb_8cc_source.html">parameters.pb.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parameters_8pb_8cc_source.html#l00389">389</a> of file <a class="el" href="parameters_8pb_8cc_source.html">parameters.pb.cc</a>.</p>
 
 </div>
 </div>
@@ -2222,7 +2228,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parameters_8pb_8cc_source.html#l00385">385</a> of file <a class="el" href="parameters_8pb_8cc_source.html">parameters.pb.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parameters_8pb_8cc_source.html#l00393">393</a> of file <a class="el" href="parameters_8pb_8cc_source.html">parameters.pb.cc</a>.</p>
 
 </div>
 </div>
@@ -2307,7 +2313,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parameters_8pb_8cc_source.html#l00358">358</a> of file <a class="el" href="parameters_8pb_8cc_source.html">parameters.pb.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parameters_8pb_8cc_source.html#l00366">366</a> of file <a class="el" href="parameters_8pb_8cc_source.html">parameters.pb.cc</a>.</p>
 
 </div>
 </div>
@@ -2327,7 +2333,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parameters_8pb_8cc_source.html#l00362">362</a> of file <a class="el" href="parameters_8pb_8cc_source.html">parameters.pb.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parameters_8pb_8cc_source.html#l00370">370</a> of file <a class="el" href="parameters_8pb_8cc_source.html">parameters.pb.cc</a>.</p>
 
 </div>
 </div>
@@ -2412,7 +2418,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parameters_8pb_8cc_source.html#l00312">312</a> of file <a class="el" href="parameters_8pb_8cc_source.html">parameters.pb.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parameters_8pb_8cc_source.html#l00320">320</a> of file <a class="el" href="parameters_8pb_8cc_source.html">parameters.pb.cc</a>.</p>
 
 </div>
 </div>
@@ -2432,7 +2438,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parameters_8pb_8cc_source.html#l00316">316</a> of file <a class="el" href="parameters_8pb_8cc_source.html">parameters.pb.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parameters_8pb_8cc_source.html#l00324">324</a> of file <a class="el" href="parameters_8pb_8cc_source.html">parameters.pb.cc</a>.</p>
 
 </div>
 </div>
@@ -2517,7 +2523,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parameters_8pb_8cc_source.html#l00335">335</a> of file <a class="el" href="parameters_8pb_8cc_source.html">parameters.pb.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parameters_8pb_8cc_source.html#l00343">343</a> of file <a class="el" href="parameters_8pb_8cc_source.html">parameters.pb.cc</a>.</p>
 
 </div>
 </div>
@@ -2537,7 +2543,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parameters_8pb_8cc_source.html#l00339">339</a> of file <a class="el" href="parameters_8pb_8cc_source.html">parameters.pb.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parameters_8pb_8cc_source.html#l00347">347</a> of file <a class="el" href="parameters_8pb_8cc_source.html">parameters.pb.cc</a>.</p>
 
 </div>
 </div>
@@ -3136,6 +3142,56 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="lp__types_8h_source.html#l00186">186</a> of file <a class="el" href="lp__types_8h_source.html">lp_types.h</a>.</p>
+
+</div>
+</div>
+<a id="a3f17d86383ca85cb8b7aa70b3309865e" name="a3f17d86383ca85cb8b7aa70b3309865e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3f17d86383ca85cb8b7aa70b3309865e">&#9670;&nbsp;</a></span>ParseConstraint()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">absl::StatusOr&lt; <a class="el" href="structoperations__research_1_1glop_1_1_parsed_constraint.html">ParsedConstraint</a> &gt; ParseConstraint </td>
+          <td>(</td>
+          <td class="paramtype">absl::string_view&#160;</td>
+          <td class="paramname"><em>constraint</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="lp__parser_8cc_source.html#l00343">343</a> of file <a class="el" href="lp__parser_8cc_source.html">lp_parser.cc</a>.</p>
+
+</div>
+</div>
+<a id="a662cdf0c2fb9c6e52c0c7af62d4810c0" name="a662cdf0c2fb9c6e52c0c7af62d4810c0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a662cdf0c2fb9c6e52c0c7af62d4810c0">&#9670;&nbsp;</a></span>ParseLp()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">ABSL_MUST_USE_RESULT bool ParseLp </td>
+          <td>(</td>
+          <td class="paramtype">absl::string_view&#160;</td>
+          <td class="paramname"><em>model</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1glop_1_1_linear_program.html">LinearProgram</a> *&#160;</td>
+          <td class="paramname"><em>lp</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="lp__parser_8cc_source.html#l00443">443</a> of file <a class="el" href="lp__parser_8cc_source.html">lp_parser.cc</a>.</p>
 
 </div>
 </div>
@@ -4235,7 +4291,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parameters_8pb_8cc_source.html#l00090">90</a> of file <a class="el" href="parameters_8pb_8cc_source.html">parameters.pb.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parameters_8pb_8cc_source.html#l00092">92</a> of file <a class="el" href="parameters_8pb_8cc_source.html">parameters.pb.cc</a>.</p>
 
 </div>
 </div>

@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.1</span>
+   &#160;<span id="projectnumber">9.2</span>
    </div>
   </td>
  </tr>
@@ -106,11 +106,13 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_lin_min_propagator.html">LinMinPropagator</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_positive_product_propagator.html">PositiveProductPropagator</a></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_product_propagator.html">ProductPropagator</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_positive_division_propagator.html">PositiveDivisionPropagator</a></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_division_propagator.html">DivisionPropagator</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_fixed_division_propagator.html">FixedDivisionPropagator</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_fixed_modulo_propagator.html">FixedModuloPropagator</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_square_propagator.html">SquarePropagator</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -170,12 +172,14 @@ Functions</h2></td></tr>
 <tr class="memitem:a838ae1c98a62762620ef82e362c4ad8c"><td class="memTemplParams" colspan="2">template&lt;class T &gt; </td></tr>
 <tr class="memitem:a838ae1c98a62762620ef82e362c4ad8c"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a838ae1c98a62762620ef82e362c4ad8c">RegisterAndTransferOwnership</a> (Model *<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>, T *<a class="el" href="demon__profiler_8cc.html#a05da18ca9c7b657a4a6ea24e07c9b695">ct</a>)</td></tr>
 <tr class="separator:a838ae1c98a62762620ef82e362c4ad8c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7927dc9fbcf5e960d03149d6555543e1"><td class="memItemLeft" align="right" valign="top">std::function&lt; void(Model *)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a7927dc9fbcf5e960d03149d6555543e1">ProductConstraint</a> (IntegerVariable <a class="el" href="constraint__solver_2table_8cc.html#acb18315d548212835cd8ed4287e6c0b6">a</a>, IntegerVariable <a class="el" href="constraint__solver_2table_8cc.html#a9293e4d29cac928301645070dd307683">b</a>, IntegerVariable p)</td></tr>
-<tr class="separator:a7927dc9fbcf5e960d03149d6555543e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a41f31fb547384fce54f26604b4d598b6"><td class="memItemLeft" align="right" valign="top">std::function&lt; void(Model *)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a41f31fb547384fce54f26604b4d598b6">DivisionConstraint</a> (IntegerVariable num, IntegerVariable denom, IntegerVariable div)</td></tr>
-<tr class="separator:a41f31fb547384fce54f26604b4d598b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a91666d1a5d71bb2d6b74cda04c492ee8"><td class="memItemLeft" align="right" valign="top">std::function&lt; void(Model *)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a91666d1a5d71bb2d6b74cda04c492ee8">FixedDivisionConstraint</a> (IntegerVariable <a class="el" href="constraint__solver_2table_8cc.html#acb18315d548212835cd8ed4287e6c0b6">a</a>, IntegerValue <a class="el" href="constraint__solver_2table_8cc.html#a9293e4d29cac928301645070dd307683">b</a>, IntegerVariable c)</td></tr>
-<tr class="separator:a91666d1a5d71bb2d6b74cda04c492ee8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2ee7c83ad06fb9a710a64f3ff79b4289"><td class="memItemLeft" align="right" valign="top">std::function&lt; void(Model *)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a2ee7c83ad06fb9a710a64f3ff79b4289">ProductConstraint</a> (AffineExpression <a class="el" href="constraint__solver_2table_8cc.html#acb18315d548212835cd8ed4287e6c0b6">a</a>, AffineExpression <a class="el" href="constraint__solver_2table_8cc.html#a9293e4d29cac928301645070dd307683">b</a>, AffineExpression p)</td></tr>
+<tr class="separator:a2ee7c83ad06fb9a710a64f3ff79b4289"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6d8e3999c6efdf2b47d4379b3eb9c85e"><td class="memItemLeft" align="right" valign="top">std::function&lt; void(Model *)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a6d8e3999c6efdf2b47d4379b3eb9c85e">DivisionConstraint</a> (AffineExpression num, AffineExpression denom, AffineExpression div)</td></tr>
+<tr class="separator:a6d8e3999c6efdf2b47d4379b3eb9c85e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a41ea57d3df7b63f7be86a96eca1d0cf8"><td class="memItemLeft" align="right" valign="top">std::function&lt; void(Model *)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a41ea57d3df7b63f7be86a96eca1d0cf8">FixedDivisionConstraint</a> (AffineExpression <a class="el" href="constraint__solver_2table_8cc.html#acb18315d548212835cd8ed4287e6c0b6">a</a>, IntegerValue <a class="el" href="constraint__solver_2table_8cc.html#a9293e4d29cac928301645070dd307683">b</a>, AffineExpression c)</td></tr>
+<tr class="separator:a41ea57d3df7b63f7be86a96eca1d0cf8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad9f0785106a02e030ddee919ff33bd0d"><td class="memItemLeft" align="right" valign="top">std::function&lt; void(Model *)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#ad9f0785106a02e030ddee919ff33bd0d">FixedModuloConstraint</a> (AffineExpression <a class="el" href="constraint__solver_2table_8cc.html#acb18315d548212835cd8ed4287e6c0b6">a</a>, IntegerValue <a class="el" href="constraint__solver_2table_8cc.html#a9293e4d29cac928301645070dd307683">b</a>, AffineExpression c)</td></tr>
+<tr class="separator:ad9f0785106a02e030ddee919ff33bd0d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->

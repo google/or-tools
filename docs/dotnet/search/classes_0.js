@@ -7,5 +7,6 @@ var searchData=
   ['assignmentintcontainer_4',['AssignmentIntContainer',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1AssignmentIntContainer.html',1,'Google::OrTools::ConstraintSolver']]],
   ['assignmentintervalcontainer_5',['AssignmentIntervalContainer',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1AssignmentIntervalContainer.html',1,'Google::OrTools::ConstraintSolver']]],
   ['assignmentsequencecontainer_6',['AssignmentSequenceContainer',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1AssignmentSequenceContainer.html',1,'Google::OrTools::ConstraintSolver']]],
-  ['automatonconstraintproto_7',['AutomatonConstraintProto',['../classGoogle_1_1OrTools_1_1Sat_1_1AutomatonConstraintProto.html',1,'Google::OrTools::Sat']]]
+  ['attributes_7',['Attributes',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel_1_1ResourceGroup_1_1Attributes.html',1,'Google::OrTools::ConstraintSolver::RoutingModel::ResourceGroup']]],
+  ['automatonconstraintproto_8',['AutomatonConstraintProto',['../classGoogle_1_1OrTools_1_1Sat_1_1AutomatonConstraintProto.html',1,'Google::OrTools::Sat']]]
 ];

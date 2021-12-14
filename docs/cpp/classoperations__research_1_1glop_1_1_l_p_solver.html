@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.1</span>
+   &#160;<span id="projectnumber">9.2</span>
    </div>
   </td>
  </tr>
@@ -94,7 +94,7 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1glop_1_1_
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="lp__solver_8h_source.html#l00029">29</a> of file <a class="el" href="lp__solver_8h_source.html">lp_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="lp__solver_8h_source.html#l00030">30</a> of file <a class="el" href="lp__solver_8h_source.html">lp_solver.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -130,6 +130,12 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:aff475d9f1b231153860991e0e981b10e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a89f0453d28020b22404863dbe8edc61d"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceoperations__research_1_1glop.html#a7f6435e3138db1e45c3ff2b00cb999aa">ConstraintStatusColumn</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1glop_1_1_l_p_solver.html#a89f0453d28020b22404863dbe8edc61d">constraint_statuses</a> () const</td></tr>
 <tr class="separator:a89f0453d28020b22404863dbe8edc61d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7fab5e220260ac7d973f3f293ea2ad5f"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceoperations__research_1_1glop.html#a4dc8ae0f97c4110f3cc770715b2bbd12">DenseRow</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1glop_1_1_l_p_solver.html#a7fab5e220260ac7d973f3f293ea2ad5f">primal_ray</a> () const</td></tr>
+<tr class="separator:a7fab5e220260ac7d973f3f293ea2ad5f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab016460ad5e453012eb6a5fe257b8bb3"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceoperations__research_1_1glop.html#ae5fa9e57c2d31b294195ed8a9e17bfac">DenseColumn</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1glop_1_1_l_p_solver.html#ab016460ad5e453012eb6a5fe257b8bb3">constraints_dual_ray</a> () const</td></tr>
+<tr class="separator:ab016460ad5e453012eb6a5fe257b8bb3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a006a984f2cd6bd603cd243639e3491d3"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceoperations__research_1_1glop.html#a4dc8ae0f97c4110f3cc770715b2bbd12">DenseRow</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1glop_1_1_l_p_solver.html#a006a984f2cd6bd603cd243639e3491d3">variable_bounds_dual_ray</a> () const</td></tr>
+<tr class="separator:a006a984f2cd6bd603cd243639e3491d3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a93c5d1b426be6c8173f4f0efbdcf2132"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceoperations__research_1_1glop.html#a733947145e3e1631165b618b05c9ccb7">Fractional</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1glop_1_1_l_p_solver.html#a93c5d1b426be6c8173f4f0efbdcf2132">GetMaximumPrimalInfeasibility</a> () const</td></tr>
 <tr class="separator:a93c5d1b426be6c8173f4f0efbdcf2132"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7767c9dc7ffc1643260017dd5817d6d3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceoperations__research_1_1glop.html#a733947145e3e1631165b618b05c9ccb7">Fractional</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1glop_1_1_l_p_solver.html#a7767c9dc7ffc1643260017dd5817d6d3">GetMaximumDualInfeasibility</a> () const</td></tr>
@@ -140,6 +146,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:af4b325af2d4c849c39bd4a02f32f9cae"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aeccc8138b268e621d96d105e0ddd474a"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1glop_1_1_l_p_solver.html#aeccc8138b268e621d96d105e0ddd474a">DeterministicTime</a> () const</td></tr>
 <tr class="separator:aeccc8138b268e621d96d105e0ddd474a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a061b60ddc2f9fced9216694b1366599e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_solver_logger.html">SolverLogger</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1glop_1_1_l_p_solver.html#a061b60ddc2f9fced9216694b1366599e">GetSolverLogger</a> ()</td></tr>
+<tr class="separator:a061b60ddc2f9fced9216694b1366599e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a1a5c13133724d1d457de6c3c7ce9df85" name="a1a5c13133724d1d457de6c3c7ce9df85"></a>
@@ -157,7 +165,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="lp__solver_8cc_source.html#l00114">114</a> of file <a class="el" href="lp__solver_8cc_source.html">lp_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="lp__solver_8cc_source.html#l00110">110</a> of file <a class="el" href="lp__solver_8cc_source.html">lp_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -177,7 +185,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="lp__solver_8cc_source.html#l00236">236</a> of file <a class="el" href="lp__solver_8cc_source.html">lp_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="lp__solver_8cc_source.html#l00233">233</a> of file <a class="el" href="lp__solver_8cc_source.html">lp_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -204,7 +212,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="lp__solver_8h_source.html#l00113">113</a> of file <a class="el" href="lp__solver_8h_source.html">lp_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="lp__solver_8h_source.html#l00114">114</a> of file <a class="el" href="lp__solver_8h_source.html">lp_solver.h</a>.</p>
 
 </div>
 </div>
@@ -231,7 +239,34 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="lp__solver_8h_source.html#l00116">116</a> of file <a class="el" href="lp__solver_8h_source.html">lp_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="lp__solver_8h_source.html#l00117">117</a> of file <a class="el" href="lp__solver_8h_source.html">lp_solver.h</a>.</p>
+
+</div>
+</div>
+<a id="ab016460ad5e453012eb6a5fe257b8bb3" name="ab016460ad5e453012eb6a5fe257b8bb3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab016460ad5e453012eb6a5fe257b8bb3">&#9670;&nbsp;</a></span>constraints_dual_ray()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const <a class="el" href="namespaceoperations__research_1_1glop.html#ae5fa9e57c2d31b294195ed8a9e17bfac">DenseColumn</a> &amp; constraints_dual_ray </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="lp__solver_8h_source.html#l00127">127</a> of file <a class="el" href="lp__solver_8h_source.html">lp_solver.h</a>.</p>
 
 </div>
 </div>
@@ -250,7 +285,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="lp__solver_8cc_source.html#l00507">507</a> of file <a class="el" href="lp__solver_8cc_source.html">lp_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="lp__solver_8cc_source.html#l00505">505</a> of file <a class="el" href="lp__solver_8cc_source.html">lp_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -277,7 +312,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="lp__solver_8h_source.html#l00112">112</a> of file <a class="el" href="lp__solver_8h_source.html">lp_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="lp__solver_8h_source.html#l00113">113</a> of file <a class="el" href="lp__solver_8h_source.html">lp_solver.h</a>.</p>
 
 </div>
 </div>
@@ -296,7 +331,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="lp__solver_8cc_source.html#l00495">495</a> of file <a class="el" href="lp__solver_8cc_source.html">lp_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="lp__solver_8cc_source.html#l00493">493</a> of file <a class="el" href="lp__solver_8cc_source.html">lp_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -315,7 +350,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="lp__solver_8cc_source.html#l00491">491</a> of file <a class="el" href="lp__solver_8cc_source.html">lp_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="lp__solver_8cc_source.html#l00489">489</a> of file <a class="el" href="lp__solver_8cc_source.html">lp_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -334,7 +369,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="lp__solver_8cc_source.html#l00130">130</a> of file <a class="el" href="lp__solver_8cc_source.html">lp_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="lp__solver_8cc_source.html#l00126">126</a> of file <a class="el" href="lp__solver_8cc_source.html">lp_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -353,7 +388,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="lp__solver_8cc_source.html#l00503">503</a> of file <a class="el" href="lp__solver_8cc_source.html">lp_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="lp__solver_8cc_source.html#l00501">501</a> of file <a class="el" href="lp__solver_8cc_source.html">lp_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -372,7 +407,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="lp__solver_8cc_source.html#l00487">487</a> of file <a class="el" href="lp__solver_8cc_source.html">lp_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="lp__solver_8cc_source.html#l00485">485</a> of file <a class="el" href="lp__solver_8cc_source.html">lp_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -387,6 +422,25 @@ Public Member Functions</h2></td></tr>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="lp__solver_8cc_source.html#l00124">124</a> of file <a class="el" href="lp__solver_8cc_source.html">lp_solver.cc</a>.</p>
+
+</div>
+</div>
+<a id="a061b60ddc2f9fced9216694b1366599e" name="a061b60ddc2f9fced9216694b1366599e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a061b60ddc2f9fced9216694b1366599e">&#9670;&nbsp;</a></span>GetSolverLogger()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1_solver_logger.html">SolverLogger</a> &amp; GetSolverLogger </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -421,7 +475,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="lp__solver_8cc_source.html#l00295">295</a> of file <a class="el" href="lp__solver_8cc_source.html">lp_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="lp__solver_8cc_source.html#l00293">293</a> of file <a class="el" href="lp__solver_8cc_source.html">lp_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -440,7 +494,34 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="lp__solver_8cc_source.html#l00499">499</a> of file <a class="el" href="lp__solver_8cc_source.html">lp_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="lp__solver_8cc_source.html#l00497">497</a> of file <a class="el" href="lp__solver_8cc_source.html">lp_solver.cc</a>.</p>
+
+</div>
+</div>
+<a id="a7fab5e220260ac7d973f3f293ea2ad5f" name="a7fab5e220260ac7d973f3f293ea2ad5f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7fab5e220260ac7d973f3f293ea2ad5f">&#9670;&nbsp;</a></span>primal_ray()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const <a class="el" href="namespaceoperations__research_1_1glop.html#a4dc8ae0f97c4110f3cc770715b2bbd12">DenseRow</a> &amp; primal_ray </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="lp__solver_8h_source.html#l00126">126</a> of file <a class="el" href="lp__solver_8h_source.html">lp_solver.h</a>.</p>
 
 </div>
 </div>
@@ -467,7 +548,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="lp__solver_8h_source.html#l00101">101</a> of file <a class="el" href="lp__solver_8h_source.html">lp_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="lp__solver_8h_source.html#l00102">102</a> of file <a class="el" href="lp__solver_8h_source.html">lp_solver.h</a>.</p>
 
 </div>
 </div>
@@ -497,7 +578,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="lp__solver_8cc_source.html#l00241">241</a> of file <a class="el" href="lp__solver_8cc_source.html">lp_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="lp__solver_8cc_source.html#l00238">238</a> of file <a class="el" href="lp__solver_8cc_source.html">lp_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -517,7 +598,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="lp__solver_8cc_source.html#l00116">116</a> of file <a class="el" href="lp__solver_8cc_source.html">lp_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="lp__solver_8cc_source.html#l00112">112</a> of file <a class="el" href="lp__solver_8cc_source.html">lp_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -537,7 +618,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="lp__solver_8cc_source.html#l00132">132</a> of file <a class="el" href="lp__solver_8cc_source.html">lp_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="lp__solver_8cc_source.html#l00130">130</a> of file <a class="el" href="lp__solver_8cc_source.html">lp_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -567,7 +648,34 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="lp__solver_8cc_source.html#l00138">138</a> of file <a class="el" href="lp__solver_8cc_source.html">lp_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="lp__solver_8cc_source.html#l00136">136</a> of file <a class="el" href="lp__solver_8cc_source.html">lp_solver.cc</a>.</p>
+
+</div>
+</div>
+<a id="a006a984f2cd6bd603cd243639e3491d3" name="a006a984f2cd6bd603cd243639e3491d3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a006a984f2cd6bd603cd243639e3491d3">&#9670;&nbsp;</a></span>variable_bounds_dual_ray()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const <a class="el" href="namespaceoperations__research_1_1glop.html#a4dc8ae0f97c4110f3cc770715b2bbd12">DenseRow</a> &amp; variable_bounds_dual_ray </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="lp__solver_8h_source.html#l00130">130</a> of file <a class="el" href="lp__solver_8h_source.html">lp_solver.h</a>.</p>
 
 </div>
 </div>
@@ -594,7 +702,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="lp__solver_8h_source.html#l00102">102</a> of file <a class="el" href="lp__solver_8h_source.html">lp_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="lp__solver_8h_source.html#l00103">103</a> of file <a class="el" href="lp__solver_8h_source.html">lp_solver.h</a>.</p>
 
 </div>
 </div>
@@ -621,7 +729,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="lp__solver_8h_source.html#l00100">100</a> of file <a class="el" href="lp__solver_8h_source.html">lp_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="lp__solver_8h_source.html#l00101">101</a> of file <a class="el" href="lp__solver_8h_source.html">lp_solver.h</a>.</p>
 
 </div>
 </div>
