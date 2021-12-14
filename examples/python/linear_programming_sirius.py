@@ -86,5 +86,3 @@ def main(name, problem_type):
 if __name__ == '__main__':
     main("SIRIUS_LINEAR_PROGRAMMING",
          pywraplp.Solver.SIRIUS_LINEAR_PROGRAMMING)
-    main("XPRESS_LINEAR_PROGRAMMING",
-         pywraplp.Solver.XPRESS_LINEAR_PROGRAMMING)
