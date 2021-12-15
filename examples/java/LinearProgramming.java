@@ -116,5 +116,7 @@ public class LinearProgramming {
     runLinearProgrammingExample("CLP", false);
     System.out.println("---- Linear programming example with Sirius ----");
     runLinearProgrammingExample("sirius_lp", false);
+    System.out.println("---- Linear programming example with Sirius ----");
+    runLinearProgrammingExample("xpress_lp", false);
   }
 }
