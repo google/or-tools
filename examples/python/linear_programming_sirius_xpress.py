@@ -17,8 +17,9 @@
 from __future__ import print_function
 
 import os
-os.add_dll_directory(os.environ['SIRIUS_BIN_DIR'])
-os.add_dll_directory(os.environ['XPRESS_BIN_DIR'])
+if os.name == 'nt':
+    os.add_dll_directory(os.getenv('SIRIUS_BIN_DIR', ''))
+    os.add_dll_directory(os.getenv('XPRESS_BIN_DIR', ''))
 
 from ortools.linear_solver import pywraplp
 
