@@ -94,6 +94,8 @@ struct LinearExpression {
   // lp_values.
   double LpValue(
       const absl::StrongVector<IntegerVariable, double>& lp_values) const;
+  IntegerValue LevelZeroMin(IntegerTrail* integer_trail) const;
+  IntegerValue Min(IntegerTrail* integer_trail) const;
 
   std::string DebugString() const;
 };

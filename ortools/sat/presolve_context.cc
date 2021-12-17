@@ -1988,8 +1988,6 @@ void PresolveContext::LogInfo() {
   SOLVER_LOG(logger_, "Presolve summary:");
   SOLVER_LOG(logger_, "  - ", NumAffineRelations(),
              " affine relations were detected.");
-  SOLVER_LOG(logger_, "  - ", NumEquivRelations(),
-             " variable equivalence relations were detected.");
   std::map<std::string, int> sorted_rules(stats_by_rule_name_.begin(),
                                           stats_by_rule_name_.end());
   for (const auto& entry : sorted_rules) {

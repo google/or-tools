@@ -137,7 +137,8 @@ class CpModelPresolver {
                                             int64_t* offset);
   bool CanonicalizeLinearExpression(const ConstraintProto& ct,
                                     LinearExpressionProto* exp);
-  bool CanonicalizeLinMax(ConstraintProto* ct);
+  bool CanonicalizeLinearArgument(const ConstraintProto& ct,
+                                  LinearArgumentProto* proto);
 
   // For the linear constraints, we have more than one function.
   bool CanonicalizeLinear(ConstraintProto* ct);

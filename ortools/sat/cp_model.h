@@ -149,7 +149,7 @@ class IntVar {
   /// Warning: If you construct an IntVar from a negated BoolVar, this might
   /// create a new variable in the model. Otherwise this just point to the same
   /// underlying variable.
-  IntVar(const BoolVar& var);  // NOLINT(runtime/explicit)
+  explicit IntVar(const BoolVar& var);
 
   /// Cast IntVar -> BoolVar.
   ///
@@ -173,6 +173,8 @@ class IntVar {
   }
 
   // Returns the domain of the variable.
+  // Note that we keep the fully qualified return type as compilation fails with
+  // gcc otherwise.
   ::operations_research::Domain Domain() const;
 
   std::string DebugString() const;
@@ -240,15 +242,19 @@ class LinearExpr {
   /// Creates an empty linear expression with value zero.
   LinearExpr() = default;
 
+  // NOLINTBEGIN(google-explicit-constructor)
+
   /// Constructs a linear expression from a Boolean variable.
   /// It deals with logical negation correctly.
-  LinearExpr(BoolVar var);  // NOLINT(runtime/explicit)
+  LinearExpr(BoolVar var);
 
   /// Constructs a linear expression from an integer variable.
-  LinearExpr(IntVar var);  // NOLINT(runtime/explicit)
+  LinearExpr(IntVar var);
 
   /// Constructs a constant linear expression.
-  LinearExpr(int64_t constant);  // NOLINT(runtime/explicit)
+  LinearExpr(int64_t constant);
+
+  // NOLINTEND(google-explicit-constructor)
 
   /// Constructs the sum of a list of variables.
   static LinearExpr Sum(absl::Span<const IntVar> vars);
@@ -662,14 +668,15 @@ class ReservoirConstraint : public Constraint {
    * Adds a mandatory event
    *
    * It will increase the used capacity by `level_change` at time `time`.
+   * `time` must be an affine expression.
    */
   void AddEvent(LinearExpr time, int64_t level_change);
 
   /**
-   * Adds a optional event
+   * Adds an optional event
    *
-   * If `c is_active is true, It will increase the used capacity by
-   * `level_change` at time `c time.
+   * If `is_active` is true, It will increase the used capacity by
+   * `level_change` at time `time. `time` must be an affine expression.
    */
   void AddOptionalEvent(LinearExpr time, int64_t level_change,
                         BoolVar is_active);
@@ -911,17 +918,17 @@ class CpModelBuilder {
    * Adds a reservoir constraint with optional refill/emptying events.
    *
    * Maintain a reservoir level within bounds. The water level starts at 0, and
-   * at any time >= 0, it must be within min_level, and max_level. Furthermore,
-   * this constraints expect all times variables to be >= 0. Given an event
-   * (time, demand, active), if active is true, and if time is assigned a value
-   * t, then the level of the reservoir changes by demand (which is constant) at
-   * time t.
+   * at any time, it must be within [min_level, max_level].
    *
-   * Note that level_min can be > 0, or level_max can be < 0. It just forces
-   * some level_changes to be executed at time 0 to make sure that we are within
-   * those bounds with the executed level_changes. Therefore, at any time t >=
-   * 0: sum(level_changes[i] * actives[i] if times[i] <= t) in [min_level,
-   * max_level]
+   * Given an event (time, level_change, active), if active is true, and if time
+   * is assigned a value t, then the level of the reservoir changes by
+   * level_change (which is constant) at time t. Therefore, at any time t:
+   *
+   *     sum(level_changes[i] * actives[i] if times[i] <= t)
+   *         in [min_level, max_level]
+   *
+   * Note that min level must be <= 0, and the max level must be >= 0.
+   * Please use fixed level_changes to simulate an initial state.
    *
    * It returns a ReservoirConstraint that allows adding optional and non
    * optional events incrementally after construction.

@@ -571,23 +571,21 @@ bool CpModelPresolver::PresolveExactlyOne(ConstraintProto* ct) {
   return changed;
 }
 
-bool CpModelPresolver::CanonicalizeLinMax(ConstraintProto* ct) {
+bool CpModelPresolver::CanonicalizeLinearArgument(const ConstraintProto& ct,
+                                                  LinearArgumentProto* proto) {
   if (context_->ModelIsUnsat()) return false;
 
   // Canonicalize all involved expression.
-  //
-  // TODO(user): If we start to have many constraints like this, we should
-  // use reflexion (see cp_model_util) to do that generically.
-  bool changed = CanonicalizeLinearExpression(
-      *ct, ct->mutable_lin_max()->mutable_target());
-  for (LinearExpressionProto& exp : *(ct->mutable_lin_max()->mutable_exprs())) {
-    changed |= CanonicalizeLinearExpression(*ct, &exp);
+  bool changed = CanonicalizeLinearExpression(ct, proto->mutable_target());
+  for (LinearExpressionProto& exp : *(proto->mutable_exprs())) {
+    changed |= CanonicalizeLinearExpression(ct, &exp);
   }
   return changed;
 }
 
 bool CpModelPresolver::PresolveLinMax(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
+  if (HasEnforcementLiteral(*ct)) return false;
 
   // Compute the infered min/max of the target.
   // Update target domain (if it is not a complex expression).
@@ -606,7 +604,7 @@ bool CpModelPresolver::PresolveLinMax(ConstraintProto* ct) {
         return MarkConstraintAsFalse(ct);
       }
     }
-    if (!HasEnforcementLiteral(*ct) && target.vars().size() <= 1) {  // Affine
+    if (target.vars().size() <= 1) {  // Affine
       Domain rhs_domain;
       for (const LinearExpressionProto& expr : ct->lin_max().exprs()) {
         rhs_domain = rhs_domain.UnionWith(
@@ -628,10 +626,37 @@ bool CpModelPresolver::PresolveLinMax(ConstraintProto* ct) {
   const int64_t target_max = context_->MaxOf(target);
   bool changed = false;
   {
+    // If one expression is >= target_min,
+    // We can remove all the expression <= target min.
+    //
+    // Note that we must keep an expression >= target_min though, for corner
+    // case like [2,3] = max([2], [0][3]);
+    bool has_greater_or_equal_to_target_min = false;
+    int64_t max_at_index_to_keep = std::numeric_limits<int64_t>::min();
+    int index_to_keep = -1;
+    for (int i = 0; i < ct->lin_max().exprs_size(); ++i) {
+      const LinearExpressionProto& expr = ct->lin_max().exprs(i);
+      if (context_->MinOf(expr) >= target_min) {
+        const int64_t expr_max = context_->MaxOf(expr);
+        if (expr_max > max_at_index_to_keep) {
+          max_at_index_to_keep = expr_max;
+          index_to_keep = i;
+        }
+        has_greater_or_equal_to_target_min = true;
+      }
+    }
+
     int new_size = 0;
     for (int i = 0; i < ct->lin_max().exprs_size(); ++i) {
       const LinearExpressionProto& expr = ct->lin_max().exprs(i);
-      if (context_->MaxOf(expr) < target_min) continue;
+      const int64_t expr_max = context_->MaxOf(expr);
+      // TODO(user): Also remove expression whose domain is incompatible with
+      // the target even if the bounds are like [2] and [0][3]?
+      if (expr_max < target_min) continue;
+      if (expr_max == target_min && has_greater_or_equal_to_target_min &&
+          i != index_to_keep) {
+        continue;
+      }
       *ct->mutable_lin_max()->mutable_exprs(new_size) = expr;
       new_size++;
     }
@@ -648,9 +673,9 @@ bool CpModelPresolver::PresolveLinMax(ConstraintProto* ct) {
     return MarkConstraintAsFalse(ct);
   }
 
+  // If only one is left, we can convert to an equality. Note that we create a
+  // new constraint otherwise it might not be processed again.
   if (ct->lin_max().exprs().size() == 1) {
-    // Convert to an equality. Note that we create a new constraint otherwise it
-    // might not be processed again.
     context_->UpdateRuleStats("lin_max: converted to equality");
     ConstraintProto* new_ct = context_->working_model->add_constraints();
     *new_ct = *ct;  // copy name and potential reification.
@@ -930,16 +955,11 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
   if (HasEnforcementLiteral(*ct)) return false;
 
-  LinearArgumentProto* proto = ct->mutable_int_prod();
-
-  bool changed = CanonicalizeLinearExpression(*ct, proto->mutable_target());
-  for (LinearExpressionProto& exp : *(proto->mutable_exprs())) {
-    changed |= CanonicalizeLinearExpression(*ct, &exp);
-  }
-
   // Remove constant expressions.
   int64_t constant_factor = 1;
   int new_size = 0;
+  bool changed = false;
+  LinearArgumentProto* proto = ct->mutable_int_prod();
   for (int i = 0; i < ct->int_prod().exprs().size(); ++i) {
     LinearExpressionProto expr = ct->int_prod().exprs(i);
     if (context_->IsFixed(expr)) {
@@ -1144,12 +1164,6 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
 bool CpModelPresolver::PresolveIntDiv(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
 
-  bool changed = CanonicalizeLinearExpression(
-      *ct, ct->mutable_int_div()->mutable_target());
-  for (LinearExpressionProto& exp : *(ct->mutable_int_div()->mutable_exprs())) {
-    changed |= CanonicalizeLinearExpression(*ct, &exp);
-  }
-
   const LinearExpressionProto target = ct->int_div().target();
   const LinearExpressionProto expr = ct->int_div().exprs(0);
   const LinearExpressionProto div = ct->int_div().exprs(1);
@@ -1169,7 +1183,7 @@ bool CpModelPresolver::PresolveIntDiv(ConstraintProto* ct) {
   }
 
   // For now, we only presolve the case where the divisor is constant.
-  if (!context_->IsFixed(div)) return changed;
+  if (!context_->IsFixed(div)) return false;
 
   const int64_t divisor = context_->FixedValue(div);
   if (divisor == 1) {
@@ -1213,17 +1227,11 @@ bool CpModelPresolver::PresolveIntDiv(ConstraintProto* ct) {
 
   // TODO(user): reduce the domain of X by introducing an
   // InverseDivisionOfSortedDisjointIntervals().
-  return changed;
+  return false;
 }
 
 bool CpModelPresolver::PresolveIntMod(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
-
-  bool changed = CanonicalizeLinearExpression(
-      *ct, ct->mutable_int_mod()->mutable_target());
-  for (LinearExpressionProto& exp : *(ct->mutable_int_mod()->mutable_exprs())) {
-    changed |= CanonicalizeLinearExpression(*ct, &exp);
-  }
 
   const LinearExpressionProto target = ct->int_mod().target();
   const LinearExpressionProto expr = ct->int_mod().exprs(0);
@@ -1235,14 +1243,14 @@ bool CpModelPresolver::PresolveIntMod(ConstraintProto* ct) {
           context_->DomainSuperSetOf(expr).PositiveModuloBySuperset(
               context_->DomainSuperSetOf(mod)),
           &domain_changed)) {
-    return changed;
+    return false;
   }
 
   if (domain_changed) {
     context_->UpdateRuleStats("int_mod: reduce target domain");
   }
 
-  return changed;
+  return false;
 }
 
 bool CpModelPresolver::ExploitEquivalenceRelations(int c, ConstraintProto* ct) {
@@ -5628,7 +5636,7 @@ bool CpModelPresolver::PresolveOneConstraint(int c) {
     case ConstraintProto::ConstraintCase::kBoolXor:
       return PresolveBoolXor(ct);
     case ConstraintProto::ConstraintCase::kLinMax:
-      if (CanonicalizeLinMax(ct)) {
+      if (CanonicalizeLinearArgument(*ct, ct->mutable_lin_max())) {
         context_->UpdateConstraintVariableUsage(c);
       }
       if (IsAffineIntAbs(ct)) {
@@ -5637,10 +5645,19 @@ bool CpModelPresolver::PresolveOneConstraint(int c) {
         return PresolveLinMax(ct);
       }
     case ConstraintProto::ConstraintCase::kIntProd:
+      if (CanonicalizeLinearArgument(*ct, ct->mutable_int_prod())) {
+        context_->UpdateConstraintVariableUsage(c);
+      }
       return PresolveIntProd(ct);
     case ConstraintProto::ConstraintCase::kIntDiv:
+      if (CanonicalizeLinearArgument(*ct, ct->mutable_int_div())) {
+        context_->UpdateConstraintVariableUsage(c);
+      }
       return PresolveIntDiv(ct);
     case ConstraintProto::ConstraintCase::kIntMod:
+      if (CanonicalizeLinearArgument(*ct, ct->mutable_int_mod())) {
+        context_->UpdateConstraintVariableUsage(c);
+      }
       return PresolveIntMod(ct);
     case ConstraintProto::ConstraintCase::kLinear: {
       // In the presence of affine relation, it is possible that the sign of a

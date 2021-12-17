@@ -1248,13 +1248,45 @@ void AddCumulativeCutGenerator(const ConstraintProto& ct, Model* m,
 
   relaxation->cut_generators.push_back(
       CreateCumulativeTimeTableCutGenerator(intervals, capacity, demands, m));
-  relaxation->cut_generators.push_back(CreateCumulativeEnergyCutGenerator(
-      intervals, capacity, demands, energies, m));
   relaxation->cut_generators.push_back(
       CreateCumulativeCompletionTimeCutGenerator(intervals, capacity, demands,
                                                  energies, m));
   relaxation->cut_generators.push_back(
       CreateCumulativePrecedenceCutGenerator(intervals, capacity, demands, m));
+
+  // Checks if at least one rectangle has a variable size, is optional, or if
+  // the demand if variable.
+  bool has_variable_part = false;
+  IntegerTrail* integer_trail = m->GetOrCreate<IntegerTrail>();
+  for (int i = 0; i < intervals.size(); ++i) {
+    // Ignore absent rectangles.
+    if (intervals_repository->IsAbsent(intervals[i])) {
+      continue;
+    }
+
+    // Checks non-present intervals.
+    if (!intervals_repository->IsPresent(intervals[i])) {
+      has_variable_part = true;
+      break;
+    }
+
+    // Checks variable sized intervals.
+    if (intervals_repository->MinSize(intervals[i]) !=
+        intervals_repository->MaxSize(intervals[i])) {
+      has_variable_part = true;
+      break;
+    }
+
+    // Checks variable demand.
+    if (!integer_trail->IsFixed(demands[i])) {
+      has_variable_part = true;
+      break;
+    }
+  }
+  if (has_variable_part) {
+    relaxation->cut_generators.push_back(CreateCumulativeEnergyCutGenerator(
+        intervals, capacity, demands, energies, m));
+  }
 }
 
 void AddNoOverlapCutGenerator(const ConstraintProto& ct, Model* m,
@@ -1265,11 +1297,37 @@ void AddNoOverlapCutGenerator(const ConstraintProto& ct, Model* m,
   std::vector<IntervalVariable> intervals =
       mapping->Intervals(ct.no_overlap().intervals());
   relaxation->cut_generators.push_back(
-      CreateNoOverlapEnergyCutGenerator(intervals, m));
-  relaxation->cut_generators.push_back(
       CreateNoOverlapPrecedenceCutGenerator(intervals, m));
   relaxation->cut_generators.push_back(
       CreateNoOverlapCompletionTimeCutGenerator(intervals, m));
+
+  // Checks if at least one rectangle has a variable size or is optional.
+  IntervalsRepository* intervals_repository =
+      m->GetOrCreate<IntervalsRepository>();
+  bool has_variable_part = false;
+  for (int i = 0; i < intervals.size(); ++i) {
+    // Ignore absent rectangles.
+    if (intervals_repository->IsAbsent(intervals[i])) {
+      continue;
+    }
+
+    // Checks non-present intervals.
+    if (!intervals_repository->IsPresent(intervals[i])) {
+      has_variable_part = true;
+      break;
+    }
+
+    // Checks variable sized intervals.
+    if (intervals_repository->MinSize(intervals[i]) !=
+        intervals_repository->MaxSize(intervals[i])) {
+      has_variable_part = true;
+      break;
+    }
+  }
+  if (has_variable_part) {
+    relaxation->cut_generators.push_back(
+        CreateNoOverlapEnergyCutGenerator(intervals, m));
+  }
 }
 
 void AddNoOverlap2dCutGenerator(const ConstraintProto& ct, Model* m,

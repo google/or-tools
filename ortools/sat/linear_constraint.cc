@@ -261,6 +261,22 @@ double LinearExpression::LpValue(
   return result;
 }
 
+IntegerValue LinearExpression::LevelZeroMin(IntegerTrail* integer_trail) const {
+  IntegerValue result = offset;
+  for (int i = 0; i < vars.size(); ++i) {
+    result += coeffs[i] * integer_trail->LevelZeroLowerBound(vars[i]);
+  }
+  return result;
+}
+
+IntegerValue LinearExpression::Min(IntegerTrail* integer_trail) const {
+  IntegerValue result = offset;
+  for (int i = 0; i < vars.size(); ++i) {
+    result += coeffs[i] * integer_trail->LowerBound(vars[i]);
+  }
+  return result;
+}
+
 std::string LinearExpression::DebugString() const {
   std::string result;
   for (int i = 0; i < vars.size(); ++i) {

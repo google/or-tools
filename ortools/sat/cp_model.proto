@@ -159,9 +159,9 @@ message CumulativeConstraintProto {
 // Maintain a reservoir level within bounds. The water level starts at 0, and at
 // any time, it must be within [min_level, max_level].
 //
-// If the variable actives[i] is true, and if the variable times[i] is assigned
-// a value t, then the current level changes by level_changes[i] (which is
-// constant) at the time t. Therefore, at any time t:
+// If the variable actives[i] is true, and if the expression times[i] is
+// assigned a value t, then the current level changes by level_changes[i] (which
+// is constant) at the time t. Therefore, at any time t:
 //
 // sum(level_changes[i] * actives[i] if times[i] <= t) in [min_level, max_level]
 //

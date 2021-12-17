@@ -173,6 +173,7 @@ std::string CpModelStats(const CpModelProto& model_proto) {
   std::map<std::string, int> num_reif_constraints_by_name;
   std::map<std::string, int> name_to_num_literals;
   std::map<std::string, int> name_to_num_terms;
+  std::map<std::string, int> name_to_num_complex_domain;
 
   int no_overlap_2d_num_rectangles = 0;
   int no_overlap_2d_num_optional_rectangles = 0;
@@ -296,6 +297,10 @@ std::string CpModelStats(const CpModelProto& model_proto) {
         ct.linear().vars_size() > 3) {
       name_to_num_terms[name] += ct.linear().vars_size();
     }
+    if (ct.constraint_case() == ConstraintProto::ConstraintCase::kLinear &&
+        ct.linear().vars_size() > 1 && ct.linear().domain().size() > 2) {
+      name_to_num_complex_domain[name]++;
+    }
   }
 
   int num_constants = 0;
@@ -387,6 +392,11 @@ std::string CpModelStats(const CpModelProto& model_proto) {
     if (gtl::ContainsKey(name_to_num_terms, name)) {
       absl::StrAppend(&constraints.back(),
                       " (#terms: ", name_to_num_terms[name], ")");
+    }
+    if (gtl::ContainsKey(name_to_num_complex_domain, name)) {
+      absl::StrAppend(&constraints.back(),
+                      " (#complex_domain: ", name_to_num_complex_domain[name],
+                      ")");
     }
     if (name == "kNoOverlap2D") {
       absl::StrAppend(&constraints.back(),
