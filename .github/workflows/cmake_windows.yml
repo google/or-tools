@@ -1,0 +1,97 @@
+name: CMake Windows
+
+on: workflow_dispatch
+
+jobs:
+  cmake:
+    runs-on: windows-latest
+    steps:
+      - name: Setup python 3.10
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.10'
+      - name: Pip install reqs
+        run: python3 -m pip install --user mypy-protobuf absl-py setuptools wheel numpy pandas virtualenv
+      - name: Add Python binaries to path
+        run: echo "$((Get-Item ~).FullName)/AppData/Roaming/Python/Python310/Scripts" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      - name: Checkout Sirius repo
+        uses: actions/checkout@v2
+        with:
+          repository: rte-france/sirius-solver
+          path: ./sirius-solver
+          ref: antares_integration
+      - name: Configure Sirius
+        working-directory: ./sirius-solver
+        run: cmake -Ssrc -Bbuild -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=SiriusInstall -G "Visual Studio 16 2019"
+      - name: Build & Install Sirius
+        working-directory: ./sirius-solver
+        run: cmake --build build/ --config Release --target INSTALL -- /maxcpucount
+      - name: Upload sirius dll
+        uses: actions/upload-artifact@v2
+        with:
+          name: sirius_solver
+          path: ./sirius-solver/SiriusInstall/bin/sirius_solver.dll
+      - name: Add Sirius bin to path
+        shell: bash
+        run: echo "${{ github.workspace }}\sirius-solver\SiriusInstall\bin" >> $GITHUB_PATH
+      - name: Checkout xpressmp813Win
+        uses: actions/checkout@v2
+        with:
+          repository: jdarlay/xpressmp813Win
+          path: ./xpressmp813
+          ref: master
+          token: ${{ secrets.ACCESS_TOKEN }}
+      - name: Add xpress bin to path
+        shell: bash
+        run: echo "${{ github.workspace }}\xpressmp813\bin" >> $GITHUB_PATH
+      - name: Checkout or-tools
+        uses: actions/checkout@v2
+        with:
+          path: ./or-tools
+      - name: Configure or-tools
+        working-directory: ./or-tools
+        run: cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release -G "Visual Studio 16 2019" -DBUILD_DEPS=ON -DUSE_SIRIUS=ON -Dsirius_solver_DIR="${{ github.workspace }}/sirius-solver/SiriusInstall/cmake" -DUSE_XPRESS=ON -DXPRESS_ROOT="${{ github.workspace }}/xpressmp813" -DBUILD_PYTHON=ON -DBUILD_JAVA=ON -DBUILD_DOTNET=ON
+      - name: Build tests
+        working-directory: ./or-tools
+        run: cmake --build build --config Release --target linear_programming sirius_interface xpress_interface python_package java_package java_example_LinearProgramming dotnet_package dotnet_example_cslinearprogramming -v -- /maxcpucount
+      - name: Upload libortools
+        uses: actions/upload-artifact@v2
+        with:
+          name: libortools
+          path: ./or-tools/build/RELEASE/bin/ortools.lib
+      - name: Upload ortools wheel
+        uses: actions/upload-artifact@v2
+        with:
+          name: ortools_wheel
+          path: './or-tools/build/python/dist/*.whl'
+      - name: Upload ortools jar
+        uses: actions/upload-artifact@v2
+        with:
+          name: ortools_jar
+          path: './or-tools/build/java/ortools-java/target/*.jar'
+      - name: Upload ortools dotnet
+        uses: actions/upload-artifact@v2
+        with:
+          name: ortools_dotnet
+          path: |
+            ./or-tools/build/dotnet/**/*.dll
+            ./or-tools/build/dotnet/**/*.nupkg
+            ./or-tools/build/dotnet/**/*.snupkg
+      - name: Run interface tests
+        working-directory: ./or-tools/build
+        run: ctest -V -C Release -R 'cxx_unittests_*'
+      - name: Run cpp tests
+        working-directory: ./or-tools/build
+        run: ctest -V -C Release -R cxx_cpp_linear_programming
+      - name: Run python tests
+        working-directory: ./or-tools/build
+        run: ctest -V -C Release -R python_python_linear_programming_sirius_xpress
+        env:
+          SIRIUS_BIN_DIR: "${{ github.workspace }}/sirius-solver/SiriusInstall/bin"
+          XPRESS_BIN_DIR: "${{ github.workspace }}/xpressmp813/bin"
+      - name: Run java tests
+        working-directory: ./or-tools/build
+        run: ctest -V -C Release -R java_java_LinearProgramming
+      - name: Run dotnet tests
+        working-directory: ./or-tools/build
+        run: ctest -V -C Release -R dotnet_dotnet_cslinearprogramming
