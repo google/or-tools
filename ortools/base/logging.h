@@ -39,6 +39,7 @@
 #define QCHECK CHECK
 #define QCHECK_EQ CHECK_EQ
 #define QCHECK_GE CHECK_GE
+#define QCHECK_GT CHECK_GT
 #define ABSL_DIE_IF_NULL CHECK_NOTNULL
 #define CHECK_OK(x) CHECK((x).ok())
 #define QCHECK_OK CHECK_OK
@@ -337,6 +338,8 @@ ABSL_DECLARE_FLAG(bool, stop_logging_if_full_disk);
 #define COMPACT_GOOGLE_LOG_FATAL google::NullStreamFatal()
 #define LOG_TO_STRING_FATAL(message) google::NullStreamFatal()
 #endif
+
+#define COMPACT_GOOGLE_LOG_QFATAL COMPACT_GOOGLE_LOG_FATAL
 
 #if defined(NDEBUG) && !defined(DCHECK_ALWAYS_ON)
 #define DCHECK_IS_ON() 0
