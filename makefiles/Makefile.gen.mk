@@ -3225,6 +3225,16 @@ objs/packing/arc_flow_solver.$O: ortools/packing/arc_flow_solver.cc \
  ortools/packing/arc_flow_builder.h | $(OBJ_DIR)/packing
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Spacking$Sarc_flow_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Spacking$Sarc_flow_solver.$O
 
+objs/packing/binpacking_2d_parser.$O: \
+ ortools/packing/binpacking_2d_parser.cc \
+ ortools/packing/binpacking_2d_parser.h ortools/base/integral_types.h \
+ ortools/gen/ortools/packing/multiple_dimensions_bin_packing.pb.h \
+ ortools/base/filelineiter.h ortools/base/file.h ortools/base/logging.h \
+ ortools/base/commandlineflags.h ortools/base/log_severity.h \
+ ortools/base/logging_export.h ortools/base/macros.h \
+ ortools/base/vlog_is_on.h | $(OBJ_DIR)/packing
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Spacking$Sbinpacking_2d_parser.cc $(OBJ_OUT)$(OBJ_DIR)$Spacking$Sbinpacking_2d_parser.$O
+
 objs/packing/vector_bin_packing_parser.$O: \
  ortools/packing/vector_bin_packing_parser.cc \
  ortools/packing/vector_bin_packing_parser.h \
