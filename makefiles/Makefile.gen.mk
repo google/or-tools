@@ -3188,13 +3188,17 @@ $(OBJ_DIR)/sat/sat_parameters.pb.$O: \
 PACKING_DEPS = \
  $(SRC_DIR)/ortools/packing/arc_flow_builder.h \
  $(SRC_DIR)/ortools/packing/arc_flow_solver.h \
+ $(SRC_DIR)/ortools/packing/binpacking_2d_parser.h \
  $(SRC_DIR)/ortools/packing/vector_bin_packing_parser.h \
+ $(GEN_DIR)/ortools/packing/multiple_dimensions_bin_packing.pb.h \
  $(GEN_DIR)/ortools/packing/vector_bin_packing.pb.h
 
 PACKING_LIB_OBJS = \
  $(OBJ_DIR)/packing/arc_flow_builder.$O \
  $(OBJ_DIR)/packing/arc_flow_solver.$O \
+ $(OBJ_DIR)/packing/binpacking_2d_parser.$O \
  $(OBJ_DIR)/packing/vector_bin_packing_parser.$O \
+ $(OBJ_DIR)/packing/multiple_dimensions_bin_packing.pb.$O \
  $(OBJ_DIR)/packing/vector_bin_packing.pb.$O
 
 objs/packing/arc_flow_builder.$O: ortools/packing/arc_flow_builder.cc \
@@ -3231,6 +3235,20 @@ objs/packing/vector_bin_packing_parser.$O: \
  ortools/base/logging_export.h ortools/base/macros.h \
  ortools/base/vlog_is_on.h | $(OBJ_DIR)/packing
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Spacking$Svector_bin_packing_parser.cc $(OBJ_OUT)$(OBJ_DIR)$Spacking$Svector_bin_packing_parser.$O
+
+ortools/packing/multiple_dimensions_bin_packing.proto: ;
+
+$(GEN_DIR)/ortools/packing/multiple_dimensions_bin_packing.pb.cc: \
+ $(SRC_DIR)/ortools/packing/multiple_dimensions_bin_packing.proto | $(GEN_DIR)/ortools/packing
+	$(PROTOC) --experimental_allow_proto3_optional --proto_path=$(INC_DIR) $(PROTOBUF_PROTOC_INC) --cpp_out=$(GEN_PATH) $(SRC_DIR)/ortools/packing/multiple_dimensions_bin_packing.proto
+
+$(GEN_DIR)/ortools/packing/multiple_dimensions_bin_packing.pb.h: \
+ $(GEN_DIR)/ortools/packing/multiple_dimensions_bin_packing.pb.cc
+	$(TOUCH) $(GEN_PATH)$Sortools$Spacking$Smultiple_dimensions_bin_packing.pb.h
+
+$(OBJ_DIR)/packing/multiple_dimensions_bin_packing.pb.$O: \
+ $(GEN_DIR)/ortools/packing/multiple_dimensions_bin_packing.pb.cc | $(OBJ_DIR)/packing
+	$(CCC) $(CFLAGS) -c $(GEN_PATH)$Sortools$Spacking$Smultiple_dimensions_bin_packing.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Spacking$Smultiple_dimensions_bin_packing.pb.$O
 
 ortools/packing/vector_bin_packing.proto: ;
 

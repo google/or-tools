@@ -176,6 +176,7 @@ $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.h \
 $(GEN_DIR)/ortools/glop/parameters.pb.h \
 $(GEN_DIR)/ortools/graph/flow_problem.pb.h \
 $(GEN_DIR)/ortools/linear_solver/linear_solver.pb.h \
+$(GEN_DIR)/ortools/packing/multiple_dimensions_bin_packing.pb.h \
 $(GEN_DIR)/ortools/packing/vector_bin_packing.pb.h \
 $(GEN_DIR)/ortools/sat/boolean_problem.pb.h \
 $(GEN_DIR)/ortools/sat/cp_model.pb.h \
