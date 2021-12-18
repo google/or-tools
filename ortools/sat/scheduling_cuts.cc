@@ -184,7 +184,7 @@ void GenerateEnergeticCuts(
     for (int i2 = 0; i2 < residual_events.size(); ++i2) {
       const EnergyEvent& e = residual_events[i2];
       if (e.IsPresent()) {
-        if (e.energy.has_value()) {
+        if (e.energy) {
           energy_lp += e.energy.value().LpValue(lp_values);
         } else {  // demand and size are not fixed.
           // X * Y >= X * y_min + x_min * Y - x_min * y_min.
@@ -193,10 +193,10 @@ void GenerateEnergeticCuts(
           energy_lp -= ToDouble(e.x_size_min * e.y_size_min);
         }
       } else {
-        const IntegerValue min_energy = std::max(
-            e.x_size_min * e.y_size_min,
-            e.energy.has_value() ? e.energy.value().LevelZeroMin(integer_trail)
-                                 : IntegerValue(0));
+        const IntegerValue min_energy =
+            std::max(e.x_size_min * e.y_size_min,
+                     e.energy ? e.energy.value().LevelZeroMin(integer_trail)
+                              : IntegerValue(0));
         energy_lp += GetLiteralLpValue(Literal(e.presence_literal_index),
                                        lp_values, encoder) *
                      ToDouble(min_energy);
@@ -300,7 +300,7 @@ void GenerateEnergeticCuts(
     for (int i2 = 0; i2 <= end_index_of_max_violation; ++i2) {
       const EnergyEvent& e = residual_events[i2];
       if (e.IsPresent()) {
-        if (e.energy.has_value()) {
+        if (e.energy) {
           // We favor the energy info instead of the McCormick relaxation.
           cut.AddLinearExpression(e.energy.value());
           use_energy = true;
@@ -310,10 +310,10 @@ void GenerateEnergeticCuts(
         }
       } else {
         has_opt_cuts = true;
-        const IntegerValue min_energy = std::max(
-            e.x_size_min * e.y_size_min,
-            e.energy.has_value() ? e.energy.value().LevelZeroMin(integer_trail)
-                                 : IntegerValue(0));
+        const IntegerValue min_energy =
+            std::max(e.x_size_min * e.y_size_min,
+                     e.energy ? e.energy.value().LevelZeroMin(integer_trail)
+                              : IntegerValue(0));
         if (min_energy > e.x_size_min * e.y_size_min) {
           use_energy = true;
         }
