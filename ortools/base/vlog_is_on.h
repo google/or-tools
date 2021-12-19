@@ -19,21 +19,24 @@
 
 namespace google {
 
-#if defined(__GNUC__DISABLED)
+#if defined(__GNUC__)
 // We emit an anonymous static int* variable at every VLOG_IS_ON(n) site.
 // (Normally) the first time every VLOG_IS_ON(n) site is hit,
 // we determine what variable will dynamically control logging at this site:
 // it's either absl::GetFlag(FLAGS_v) or an appropriate internal variable
 // matching the current source file that represents results of
 // parsing of --vmodule flag and/or SetVLOGLevel calls.
-#define VLOG_IS_ON(verboselevel)                                            \
-  __extension__({                                                           \
-    static int32_t* vlocal__ = &google::kLogSiteUninitialized;              \
-    int32_t verbose_level__ = (verboselevel);                               \
-    (*vlocal__ >= verbose_level__) &&                                       \
-        ((vlocal__ != &google::kLogSiteUninitialized) ||                    \
-         (google::InitVLOG3__(&vlocal__, &absl::GetFlag(FLAGS_v), __FILE__, \
-                              verbose_level__)));                           \
+#define VLOG_IS_ON(verboselevel)                                        \
+  __extension__({                                                       \
+    static bool vmodule_initialized__ = false;                          \
+    static int32_t* vmodule_info__ = nullptr;                           \
+    int32_t verbose_level__ = (verboselevel);                           \
+    (vmodule_initialized__                                              \
+         ? (vmodule_info__ == nullptr                                   \
+                ? absl::GetFlag(FLAGS_v) >= verbose_level__             \
+                : *vmodule_info__ >= verbose_level__)                   \
+         : google::InitVLOG3__(&vmodule_info__, &vmodule_initialized__, \
+                               __FILE__, verbose_level__));             \
   })
 #else
 // GNU extensions not available, so we do not support --vmodule.
@@ -61,15 +64,15 @@ extern GOOGLE_GLOG_DLL_DECL int SetVLOGLevel(const char* module_pattern,
 extern int32_t kLogSiteUninitialized;
 
 // Helper routine which determines the logging info for a particalur VLOG site.
-//   site_flag     is the address of the site-local pointer to the controlling
-//                 verbosity level
-//   site_default  is the default to use for *site_flag
+//   get_level     is a function that returns the log level
+//   initialized   is a boolean value that tells if vmodule was initialized
+//                 for that file.
 //   fname         is the current source file name
 //   verbose_level is the argument to VLOG_IS_ON
 // We will return the return value for VLOG_IS_ON
 // and if possible set *site_flag appropriately.
-extern GOOGLE_GLOG_DLL_DECL bool InitVLOG3__(int32_t** site_flag,
-                                             int32_t* site_default,
+extern GOOGLE_GLOG_DLL_DECL bool InitVLOG3__(int32_t** vmodule_info,
+                                             bool* initialized,
                                              const char* fname,
                                              int32_t verbose_level);
 

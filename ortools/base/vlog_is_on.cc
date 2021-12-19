@@ -15,9 +15,9 @@
 
 #include <errno.h>
 #include <stdlib.h>
-#include <string.h>
 
 #include <cstdio>
+#include <cstring>
 #include <string>
 
 #include "absl/synchronization/mutex.h"
@@ -26,11 +26,6 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/logging_utilities.h"
 #include "ortools/base/raw_logging.h"
-
-// glog doesn't have annotation
-#define ANNOTATE_BENIGN_RACE(address, description)
-
-using std::string;
 
 ABSL_FLAG(int, v, 0,
           "Show all VLOG(m) messages for m <= this."
@@ -97,7 +92,7 @@ int32_t kLogSiteUninitialized = 1000;
 // We can't use an STL struct here as we wouldn't know
 // when it's safe to delete/update it: other threads need to use it w/o locks.
 struct VModuleInfo {
-  string module_pattern;
+  std::string module_pattern;
   mutable int32_t vlog_level;  // Conceptually this is an AtomicWord, but it's
                                // too much work to use AtomicWord type here
                                // w/o much actual benefit.
@@ -123,7 +118,7 @@ static void VLOG2Initializer() {
   VModuleInfo* head = NULL;
   VModuleInfo* tail = NULL;
   while ((sep = strchr(vmodule, '=')) != NULL) {
-    string pattern(vmodule, sep - vmodule);
+    std::string pattern(vmodule, sep - vmodule);
     int module_level;
     if (sscanf(sep, "=%d", &module_level) == 1) {
       VModuleInfo* info = new VModuleInfo;
@@ -183,7 +178,7 @@ int SetVLOGLevel(const char* module_pattern, int log_level) {
 
 // NOTE: Individual VLOG statements cache the integer log level pointers.
 // NOTE: This function must not allocate memory or require any locks.
-bool InitVLOG3__(int32_t** site_flag, int32_t* site_default, const char* fname,
+bool InitVLOG3__(int32_t** vmodule_info, bool* initialized, const char* fname,
                  int32_t verbose_level) {
   absl::MutexLock l(&vmodule_lock);
   bool read_vmodule_flag = inited_vmodule;
@@ -195,8 +190,8 @@ bool InitVLOG3__(int32_t** site_flag, int32_t* site_default, const char* fname,
   // VLOG(..) << "The last error was " << strerror(errno)
   int old_errno = errno;
 
-  // site_default normally points to absl::GetFlag(FLAGS_v)
-  int32_t* site_flag_value = site_default;
+  // Set the initialized flag.
+  *initialized = true;
 
   // Get basename for file
   const char* base = strrchr(fname, '/');
@@ -218,23 +213,18 @@ bool InitVLOG3__(int32_t** site_flag, int32_t* site_default, const char* fname,
        info = info->next) {
     if (SafeFNMatch_(info->module_pattern.c_str(), info->module_pattern.size(),
                      base, base_length)) {
-      site_flag_value = &info->vlog_level;
+      *vmodule_info = &info->vlog_level;
       // value at info->vlog_level is now what controls
       // the VLOG at the caller site forever
       break;
     }
   }
 
-  // Cache the vlog value pointer if --vmodule flag has been parsed.
-  ANNOTATE_BENIGN_RACE(site_flag,
-                       "*site_flag may be written by several threads,"
-                       " but the value will be the same");
-  if (read_vmodule_flag) *site_flag = site_flag_value;
-
   // restore the errno in case something recoverable went wrong during
   // the initialization of the VLOG mechanism (see above note "protect the..")
   errno = old_errno;
-  return *site_flag_value >= verbose_level;
+  return *vmodule_info == nullptr ? absl::GetFlag(FLAGS_v) >= verbose_level
+                                  : **vmodule_info >= verbose_level;
 }
 
 }  // namespace google
