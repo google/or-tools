@@ -283,7 +283,7 @@ void GenerateEnergeticCuts(
     // A maximal violated cut has been found.
     bool cut_generated = true;
     bool has_opt_cuts = false;
-    bool lifted = false;
+    bool use_lifted_events = false;
     bool has_quadratic_cuts = false;
     bool use_energy = false;
 
@@ -329,7 +329,7 @@ void GenerateEnergeticCuts(
       const IntegerValue min_overlap = e.GetMinOverlap(
           window_start_of_max_violation, window_end_of_max_violation);
       DCHECK_GT(min_overlap, 0);
-      lifted = true;
+      use_lifted_events = true;
 
       if (e.IsPresent()) {
         cut.AddTerm(e.y_size, min_overlap);
@@ -347,7 +347,7 @@ void GenerateEnergeticCuts(
       std::string full_name = cut_name;
       if (has_opt_cuts) full_name.append("_opt");
       if (has_quadratic_cuts) full_name.append("_quad");
-      if (lifted) full_name.append("_lifted");
+      if (use_lifted_events) full_name.append("_lifted");
       if (use_energy) full_name.append("_energy");
       manager->AddCut(cut.Build(), full_name, lp_values);
     }
