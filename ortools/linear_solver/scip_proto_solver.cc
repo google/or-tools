@@ -42,7 +42,7 @@
 #include "ortools/util/lazy_mutable_copy.h"
 #include "scip/cons_disjunction.h"
 #include "scip/cons_linear.h"
-#include "scip/cons_quadratic.h"
+#include "scip/cons_nonlinear.h"
 #include "scip/pub_var.h"
 #include "scip/scip.h"
 #include "scip/scip_param.h"
@@ -240,7 +240,7 @@ absl::Status AddQuadraticConstraint(
   }
 
   RETURN_IF_SCIP_ERROR(
-      SCIPcreateConsBasicQuadratic(scip,
+      SCIPcreateConsBasicQuadraticNonlinear(scip,
                                    /*cons=*/scip_cst,
                                    /*name=*/gen_cst.name().c_str(),
                                    /*nlinvars=*/lsize,
@@ -489,7 +489,7 @@ absl::Status AddQuadraticObjective(const MPQuadraticObjective& quadobj,
     quadvars2[i] = scip_variables->at(quadobj.qvar2_index(i));
     quadcoefs[i] = quadobj.coefficient(i);
   }
-  RETURN_IF_SCIP_ERROR(SCIPcreateConsBasicQuadratic(
+  RETURN_IF_SCIP_ERROR(SCIPcreateConsBasicQuadraticNonlinear(
       scip, /*cons=*/&scip_constraints->back(), /*name=*/"quadobj",
       /*nlinvars=*/1, /*linvars=*/linvars, /*lincoefs=*/lincoefs,
       /*nquadterms=*/size, /*quadvars1=*/quadvars1.data(),
