@@ -97,9 +97,8 @@ def main():
         work[worker] = model.NewBoolVar(f'work[{worker}]')
 
     for worker in range(num_workers):
-        for task in range(num_tasks):
-            model.Add(work[worker] == sum(
-                x[worker, task] for task in range(num_tasks)))
+        model.Add(work[worker] == sum(
+            x[worker, task] for task in range(num_tasks)))
 
     # Define the allowed groups of worders
     model.AddAllowedAssignments([work[0], work[1], work[2], work[3]], group1)
