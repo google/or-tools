@@ -1507,6 +1507,7 @@ void XpressInterface::ExtractObjective() {
 
 void XpressInterface::SetParameters(const MPSolverParameters& param) {
   SetCommonParameters(param);
+  SetScalingMode(param.GetIntegerParam(MPSolverParameters::SCALING));
   if (mMip) SetMIPParameters(param);
 }
 
