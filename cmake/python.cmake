@@ -304,8 +304,7 @@ if(BUILD_TESTING)
     #COMMAND ${VENV_EXECUTABLE} ${VENV_DIR}
     # Must NOT call it in a folder containing the setup.py otherwise pip call it
     # (i.e. "python setup.py bdist") while we want to consume the wheel package
-    COMMAND ${VENV_Python3_EXECUTABLE} -m pip install protobuf>=3.18.0
-    COMMAND ${VENV_Python3_EXECUTABLE} -m pip install absl-py>=0.13
+    COMMAND ${VENV_Python3_EXECUTABLE} -m pip install protobuf>=3.18.0 absl-py>=0.13 # TODO UP: CLEAN
     COMMAND ${VENV_Python3_EXECUTABLE} -m pip install --no-index --find-links=${CMAKE_CURRENT_BINARY_DIR}/python/dist ${PROJECT_NAME}
     # install modules only required to run examples
     COMMAND ${VENV_Python3_EXECUTABLE} -m pip install pandas matplotlib

@@ -17,7 +17,7 @@
 from __future__ import print_function
 
 import os
-if os.name == 'nt':
+if hasattr(os, 'add_dll_directory'):
     os.add_dll_directory(os.getenv('SIRIUS_BIN_DIR', ''))
     os.add_dll_directory(os.getenv('XPRESS_BIN_DIR', ''))
 
