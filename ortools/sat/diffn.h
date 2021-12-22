@@ -100,8 +100,8 @@ class NonOverlappingRectanglesDisjunctivePropagator
  private:
   bool PropagateTwoBoxes();
   bool FindBoxesThatMustOverlapAHorizontalLineAndPropagate(
-      const SchedulingConstraintHelper& x, SchedulingConstraintHelper* y,
-      std::function<bool()> inner_propagate);
+      bool fast_propagation, const SchedulingConstraintHelper& x,
+      SchedulingConstraintHelper* y);
 
   SchedulingConstraintHelper& global_x_;
   SchedulingConstraintHelper& global_y_;

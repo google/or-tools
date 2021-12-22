@@ -1224,6 +1224,27 @@ void AddAllDiffCutGenerator(const ConstraintProto& ct, Model* m,
   }
 }
 
+bool IntervalIsVariable(const IntervalVariable interval,
+                        IntervalsRepository* intervals_repository) {
+  // Ignore absent rectangles.
+  if (intervals_repository->IsAbsent(interval)) {
+    return false;
+  }
+
+  // Checks non-present intervals.
+  if (!intervals_repository->IsPresent(interval)) {
+    return true;
+  }
+
+  // Checks variable sized intervals.
+  if (intervals_repository->MinSize(interval) !=
+      intervals_repository->MaxSize(interval)) {
+    return true;
+  }
+
+  return false;
+}
+
 void AddCumulativeCutGenerator(const ConstraintProto& ct, Model* m,
                                LinearRelaxation* relaxation) {
   if (HasEnforcementLiteral(ct)) return;
@@ -1259,24 +1280,10 @@ void AddCumulativeCutGenerator(const ConstraintProto& ct, Model* m,
   bool has_variable_part = false;
   IntegerTrail* integer_trail = m->GetOrCreate<IntegerTrail>();
   for (int i = 0; i < intervals.size(); ++i) {
-    // Ignore absent rectangles.
-    if (intervals_repository->IsAbsent(intervals[i])) {
-      continue;
-    }
-
-    // Checks non-present intervals.
-    if (!intervals_repository->IsPresent(intervals[i])) {
+    if (IntervalIsVariable(intervals[i], intervals_repository)) {
       has_variable_part = true;
       break;
     }
-
-    // Checks variable sized intervals.
-    if (intervals_repository->MinSize(intervals[i]) !=
-        intervals_repository->MaxSize(intervals[i])) {
-      has_variable_part = true;
-      break;
-    }
-
     // Checks variable demand.
     if (!integer_trail->IsFixed(demands[i])) {
       has_variable_part = true;
@@ -1306,20 +1313,7 @@ void AddNoOverlapCutGenerator(const ConstraintProto& ct, Model* m,
       m->GetOrCreate<IntervalsRepository>();
   bool has_variable_part = false;
   for (int i = 0; i < intervals.size(); ++i) {
-    // Ignore absent rectangles.
-    if (intervals_repository->IsAbsent(intervals[i])) {
-      continue;
-    }
-
-    // Checks non-present intervals.
-    if (!intervals_repository->IsPresent(intervals[i])) {
-      has_variable_part = true;
-      break;
-    }
-
-    // Checks variable sized intervals.
-    if (intervals_repository->MinSize(intervals[i]) !=
-        intervals_repository->MaxSize(intervals[i])) {
+    if (IntervalIsVariable(intervals[i], intervals_repository)) {
       has_variable_part = true;
       break;
     }

@@ -226,16 +226,9 @@ bool PresolveContext::ExpressionIsALiteral(const LinearExpressionProto& expr,
 bool PresolveContext::IntervalIsConstant(int ct_ref) const {
   const ConstraintProto& proto = working_model->constraints(ct_ref);
   if (!proto.enforcement_literal().empty()) return false;
-  if (!proto.interval().has_start()) return false;
-  for (const int var : proto.interval().start().vars()) {
-    if (!IsFixed(var)) return false;
-  }
-  for (const int var : proto.interval().size().vars()) {
-    if (!IsFixed(var)) return false;
-  }
-  for (const int var : proto.interval().end().vars()) {
-    if (!IsFixed(var)) return false;
-  }
+  if (!IsFixed(proto.interval().start())) return false;
+  if (!IsFixed(proto.interval().size())) return false;
+  if (!IsFixed(proto.interval().end())) return false;
   return true;
 }
 

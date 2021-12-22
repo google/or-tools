@@ -90,8 +90,7 @@ struct LinearExpression {
   std::vector<IntegerValue> coeffs;
   IntegerValue offset = IntegerValue(0);
 
-  // Return the evaluation of the linear expression using the values from
-  // lp_values.
+  // Return[s] the evaluation of the linear expression.
   double LpValue(
       const absl::StrongVector<IntegerVariable, double>& lp_values) const;
   IntegerValue LevelZeroMin(IntegerTrail* integer_trail) const;

@@ -368,8 +368,8 @@ void NonOverlappingRectanglesDisjunctivePropagator::Register(
 
 bool NonOverlappingRectanglesDisjunctivePropagator::
     FindBoxesThatMustOverlapAHorizontalLineAndPropagate(
-        const SchedulingConstraintHelper& x, SchedulingConstraintHelper* y,
-        std::function<bool()> inner_propagate) {
+        bool fast_propagation, const SchedulingConstraintHelper& x,
+        SchedulingConstraintHelper* y) {
   // Note that since we only push bounds on x, we cache the value for y just
   // once.
   if (!y->SynchronizeAndSetTimeDirection(true)) return false;
@@ -417,6 +417,10 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
   //
   // TODO(user): Sorting of boxes seems influential on the performance. Test.
   for (const absl::Span<const int> boxes : boxes_to_propagate_) {
+    // The case of two boxes should be taken care of during "fast" propagation,
+    // so we can skip it here.
+    if (!fast_propagation && boxes.size() <= 2) continue;
+
     x_.ClearOtherHelper();
     if (!x_.ResetFromSubset(x, boxes)) return false;
 
@@ -429,32 +433,20 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
     }
     CHECK_LE(lb, ub);
 
-    // TODO(user): We should scan the integer trail to find the oldest
-    // non-empty common interval. Then we can pick the canonical value within
-    // it.
-
     // We want for different propagation to reuse as much as possible the same
     // line. The idea behind this is to compute the 'canonical' line to use
     // when explaining that boxes overlap on the 'y_dim' dimension. We compute
     // the multiple of the biggest power of two that is common to all boxes.
+    //
+    // TODO(user): We should scan the integer trail to find the oldest
+    // non-empty common interval. Then we can pick the canonical value within
+    // it.
     const IntegerValue line_to_use_for_reason = FindCanonicalValue(lb, ub);
 
     // Setup x_dim for propagation.
     x_.SetOtherHelper(y, boxes, line_to_use_for_reason);
 
-    RETURN_IF_FALSE(inner_propagate());
-  }
-
-  return true;
-}
-
-bool NonOverlappingRectanglesDisjunctivePropagator::Propagate() {
-  global_x_.SetTimeDirection(true);
-  global_y_.SetTimeDirection(true);
-
-  std::function<bool()> inner_propagate;
-  if (watcher_->GetCurrentId() == fast_id_) {
-    inner_propagate = [this]() {
+    if (fast_propagation) {
       if (x_.NumTasks() == 2) {
         // In that case, we can use simpler algorithms.
         // Note that this case happens frequently (~30% of all calls to this
@@ -465,25 +457,32 @@ bool NonOverlappingRectanglesDisjunctivePropagator::Propagate() {
         RETURN_IF_FALSE(forward_detectable_precedences_.Propagate());
         RETURN_IF_FALSE(backward_detectable_precedences_.Propagate());
       }
-      return true;
-    };
-  } else {
-    inner_propagate = [this]() {
-      if (x_.NumTasks() <= 2) return true;
+    } else {
+      DCHECK_GT(x_.NumTasks(), 2);
       RETURN_IF_FALSE(forward_not_last_.Propagate());
       RETURN_IF_FALSE(backward_not_last_.Propagate());
       RETURN_IF_FALSE(backward_edge_finding_.Propagate());
       RETURN_IF_FALSE(forward_edge_finding_.Propagate());
-      return true;
-    };
+    }
   }
 
+  return true;
+}
+
+bool NonOverlappingRectanglesDisjunctivePropagator::Propagate() {
+  global_x_.SetTimeDirection(true);
+  global_y_.SetTimeDirection(true);
+
+  // Note that the code assumes that this was registered twice in fast and slow
+  // mode. So we will not redo some propagation in slow mode that was already
+  // done by the fast mode.
+  const bool fast_propagation = watcher_->GetCurrentId() == fast_id_;
   RETURN_IF_FALSE(FindBoxesThatMustOverlapAHorizontalLineAndPropagate(
-      global_x_, &global_y_, inner_propagate));
+      fast_propagation, global_x_, &global_y_));
 
   // We can actually swap dimensions to propagate vertically.
   RETURN_IF_FALSE(FindBoxesThatMustOverlapAHorizontalLineAndPropagate(
-      global_y_, &global_x_, inner_propagate));
+      fast_propagation, global_y_, &global_x_));
 
   // If two boxes must overlap but do not have a mandatory line/column that
   // crosses both of them, then the code above do not see it. So we manually

@@ -3682,23 +3682,23 @@ bool CpModelPresolver::PresolveNoOverlap(ConstraintProto* ct) {
   NoOverlapConstraintProto* proto = ct->mutable_no_overlap();
   bool changed = false;
 
-  // Filter absent intervals.
+  // Filter absent or size zero intervals.
   {
     const int initial_num_intervals = proto->intervals_size();
     int new_size = 0;
 
     for (int i = 0; i < initial_num_intervals; ++i) {
       const int interval_index = proto->intervals(i);
-      if (context_->ConstraintIsInactive(interval_index)) {
-        continue;
-      }
+      if (context_->ConstraintIsInactive(interval_index)) continue;
+      if (context_->SizeMax(interval_index) == 0) continue;
 
       proto->set_intervals(new_size++, interval_index);
     }
 
     if (new_size < initial_num_intervals) {
       proto->mutable_intervals()->Truncate(new_size);
-      context_->UpdateRuleStats("no_overlap: removed absent intervals");
+      context_->UpdateRuleStats(
+          "no_overlap: removed absent or size zero intervals");
       changed = true;
     }
   }

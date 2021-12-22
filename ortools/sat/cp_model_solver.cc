@@ -3025,7 +3025,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
 #if !defined(__PORTABLE_PLATFORM__)
     // Sometimes, hardware_concurrency will return 0. So always default to 1.
     const int num_cores =
-        params.enumerate_all_solutions()
+        params.enumerate_all_solutions() || !model_proto.assumptions().empty()
             ? 1
             : std::max<int>(std::thread::hardware_concurrency(), 1);
 #else
@@ -3231,7 +3231,16 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
         });
   }
 
-  if (params.num_search_workers() > 1 || model_proto.has_objective()) {
+  if (!model_proto.assumptions().empty() &&
+      (params.num_search_workers() > 1 || model_proto.has_objective())) {
+    SOLVER_LOG(
+        logger,
+        "Warning: solving with assumptions was requested in a non-fully "
+        "supported setting.\nWe will assumes these assumptions true while "
+        "solving, but if the model is infeasible, you will not get a useful "
+        "'sufficient_assumptions_for_infeasibility' field in the response, it "
+        "will include all assumptions.");
+
     // For the case where the assumptions are currently not supported, we just
     // assume they are fixed, and will always report all of them in the UNSAT
     // core if the problem turn out to be UNSAT.
