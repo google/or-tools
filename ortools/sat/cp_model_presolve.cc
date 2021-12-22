@@ -3682,7 +3682,7 @@ bool CpModelPresolver::PresolveNoOverlap(ConstraintProto* ct) {
   NoOverlapConstraintProto* proto = ct->mutable_no_overlap();
   bool changed = false;
 
-  // Filter absent or size zero intervals.
+  // Filter absent intervals.
   {
     const int initial_num_intervals = proto->intervals_size();
     int new_size = 0;
@@ -3690,15 +3690,13 @@ bool CpModelPresolver::PresolveNoOverlap(ConstraintProto* ct) {
     for (int i = 0; i < initial_num_intervals; ++i) {
       const int interval_index = proto->intervals(i);
       if (context_->ConstraintIsInactive(interval_index)) continue;
-      if (context_->SizeMax(interval_index) == 0) continue;
 
       proto->set_intervals(new_size++, interval_index);
     }
 
     if (new_size < initial_num_intervals) {
       proto->mutable_intervals()->Truncate(new_size);
-      context_->UpdateRuleStats(
-          "no_overlap: removed absent or size zero intervals");
+      context_->UpdateRuleStats("no_overlap: removed absent intervals");
       changed = true;
     }
   }
@@ -3751,7 +3749,11 @@ bool CpModelPresolver::PresolveNoOverlap(ConstraintProto* ct) {
     // Sort constant_intervals by start min.
     std::sort(constant_intervals.begin(), constant_intervals.end(),
               [this](int i1, int i2) {
-                return context_->StartMin(i1) < context_->StartMin(i2);
+                const int64_t s1 = context_->StartMin(i1);
+                const int64_t e1 = context_->EndMax(i1);
+                const int64_t s2 = context_->StartMin(i2);
+                const int64_t e2 = context_->EndMax(i2);
+                return std::tie(s1, e1) < std::tie(s2, e2);
               });
 
     // Check for overlapping constant intervals. We need to check feasibility
