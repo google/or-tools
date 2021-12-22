@@ -415,6 +415,9 @@ test_cc_algorithms_samples: \
 
 .PHONY: test_cc_graph_samples # Build and Run all C++ Graph Samples (located in ortools/graph/samples)
 test_cc_graph_samples: \
+ rcc_assignment_linear_sum_assignment \
+ rcc_assignment_min_flow \
+ rcc_balance_min_flow \
  rcc_simple_max_flow_program \
  rcc_simple_min_cost_flow_program
 

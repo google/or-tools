@@ -19,7 +19,7 @@ using System.Linq;
 using Google.OrTools.Graph;
 // [END import]
 
-public class AssignmentLinearAssignment
+public class AssignmentLinearSumAssignment
 {
     static void Main()
     {
@@ -29,10 +29,10 @@ public class AssignmentLinearAssignment
 
         // [START data]
         int[,] costs = {
-          {90, 76, 75, 70},
-          {35, 85, 55, 65},
-          {125, 95, 90, 105},
-          {45, 110, 95, 115},
+            { 90, 76, 75, 70 },
+            { 35, 85, 55, 65 },
+            { 125, 95, 90, 105 },
+            { 45, 110, 95, 115 },
         };
         int numWorkers = 4;
         int[] allWorkers = Enumerable.Range(0, numWorkers).ToArray();
@@ -44,13 +44,13 @@ public class AssignmentLinearAssignment
         // Add each arc.
         foreach (int w in allWorkers)
         {
-          foreach (int t in allTasks)
-          {
-            if (costs[w,t] != 0)
+            foreach (int t in allTasks)
             {
-              assignment.AddArcWithCost(w, t, costs[w, t]);
+                if (costs[w, t] != 0)
+                {
+                    assignment.AddArcWithCost(w, t, costs[w, t]);
+                }
             }
-          }
         }
         // [END constraints]
 
@@ -64,9 +64,8 @@ public class AssignmentLinearAssignment
             Console.WriteLine($"Total cost: {assignment.OptimalCost()}.");
             foreach (int worker in allWorkers)
             {
-              Console.WriteLine(
-                  $"Worker {worker} assigned to task {assignment.RightMate(worker)}. " +
-                  $"Cost: {assignment.AssignmentCost(worker)}.");
+                Console.WriteLine($"Worker {worker} assigned to task {assignment.RightMate(worker)}. " +
+                                  $"Cost: {assignment.AssignmentCost(worker)}.");
             }
         }
         else

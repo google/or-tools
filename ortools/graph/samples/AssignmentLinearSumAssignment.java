@@ -19,9 +19,9 @@ import com.google.ortools.graph.LinearSumAssignment;
 import java.util.stream.IntStream;
 // [END import]
 
-/** Minimal Linear Sum Assignment. */
-public class AssignmentLinearAssignment {
-  public static void main(String[] args) throws Exception {
+/** Minimal Linear Sum Assignment problem. */
+public class AssignmentLinearSumAssignment {
+  public static void main(String[] args) {
     Loader.loadNativeLibraries();
     // [START solver]
     LinearSumAssignment assignment = new LinearSumAssignment();
@@ -29,10 +29,10 @@ public class AssignmentLinearAssignment {
 
     // [START data]
     final int[][] costs = {
-          {90, 76, 75, 70},
-          {35, 85, 55, 65},
-          {125, 95, 90, 105},
-          {45, 110, 95, 115},
+        {90, 76, 75, 70},
+        {35, 85, 55, 65},
+        {125, 95, 90, 105},
+        {45, 110, 95, 115},
     };
     final int numWorkers = 4;
     final int numTasks = 4;
@@ -60,9 +60,8 @@ public class AssignmentLinearAssignment {
     if (status == LinearSumAssignment.Status.OPTIMAL) {
       System.out.println("Total cost: " + assignment.getOptimalCost());
       for (int worker : allWorkers) {
-            System.out.println("Worker " + worker +
-                " assigned to task " + assignment.getRightMate(worker) +
-                ". Cost: " + assignment.getAssignmentCost(worker));
+        System.out.println("Worker " + worker + " assigned to task "
+            + assignment.getRightMate(worker) + ". Cost: " + assignment.getAssignmentCost(worker));
       }
     } else {
       System.out.println("Solving the min cost flow problem failed.");
@@ -71,6 +70,6 @@ public class AssignmentLinearAssignment {
     // [END print_solution]
   }
 
-  private AssignmentLinearAssignment() {}
+  private AssignmentLinearSumAssignment() {}
 }
 // [END program]

@@ -704,6 +704,11 @@ test_java_constraint_solver_samples: \
 
 .PHONY: test_java_graph_samples # Build and Run all Java Graph Samples (located in ortools/graph/samples)
 test_java_graph_samples: \
+ rjava_AssignmentLinearSumAssignment \
+ rjava_AssignmentMinFlow \
+ rjava_BalanceMinFlow \
+ rjava_SimpleMaxFlowProgram \
+ rjava_SimpleMinCostFlowProgram
 
 .PHONY: test_java_linear_solver_samples # Build and Run all Java LP Samples (located in ortools/linear_solver/samples)
 test_java_linear_solver_samples: \

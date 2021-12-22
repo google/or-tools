@@ -634,6 +634,9 @@ test_python_constraint_solver_samples: \
 
 .PHONY: test_python_graph_samples # Run all Python Graph Samples (located in ortools/graph/samples)
 test_python_graph_samples: \
+ rpy_assignment_linear_sum_assignment \
+ rpy_assignment_min_flow \
+ rpy_balance_min_flow \
  rpy_simple_max_flow_program \
  rpy_simple_min_cost_flow_program
 
