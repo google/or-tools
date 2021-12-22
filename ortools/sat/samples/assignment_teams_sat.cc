@@ -13,6 +13,7 @@
 // [START program]
 // Solve a simple assignment problem.
 // [START import]
+#include <cstdint>
 #include <numeric>
 #include <vector>
 
@@ -22,7 +23,7 @@
 namespace operations_research {
 namespace sat {
 
-void AssignmentTeams() {
+void AssignmentTeamsSat() {
   // Data
   // [START data]
   const std::vector<std::vector<int>> costs = {{
@@ -40,7 +41,6 @@ void AssignmentTeams() {
   const int num_tasks = costs[0].size();
   std::vector<int> all_tasks(num_tasks);
   std::iota(all_tasks.begin(), all_tasks.end(), 0);
-
 
   const std::vector<int64_t> team1 = {{ 0, 2, 4 }};
   const std::vector<int64_t> team2 = {{ 1, 3, 5 }};
@@ -137,7 +137,7 @@ void AssignmentTeams() {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  operations_research::sat::AssignmentTeams();
+  operations_research::sat::AssignmentTeamsSat();
   return EXIT_SUCCESS;
 }
 // [END program]
