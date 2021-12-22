@@ -774,6 +774,9 @@ test_dotnet_constraint_solver_samples: \
 
 .PHONY: test_dotnet_graph_samples # Build and Run all .Net LP Samples (located in ortools/graph/samples)
 test_dotnet_graph_samples: \
+	rdotnet_AssignmentLinearSumAssignment \
+	rdotnet_AssignmentMinFlow \
+	rdotnet_BalanceMinFlow \
 	rdotnet_SimpleMaxFlowProgram \
 	rdotnet_SimpleMinCostFlowProgram \
 
