@@ -46,68 +46,75 @@ namespace sat {
 void LoadAndSolve(const std::string& file_name, int instance) {
   packing::BinPacking2dParser parser;
   if (!parser.Load2BPFile(file_name, instance)) {
-    LOG(FATAL) << "Cannot read instance " << instance << " from file "
-               << file_name;
+    LOG(FATAL) << "Cannot read instance " << instance << " from file '"
+               << file_name << "'";
   }
   packing::MultipleDimensionsBinPackingProblem problem = parser.problem();
-  LOG(INFO) << "Successfully loaded instance " << instance << " from file "
-            << file_name;
+  LOG(INFO) << "Successfully loaded instance " << instance << " from file '"
+            << file_name << "'";
   LOG(INFO) << "Instance has " << problem.items_size() << " items";
 
   const auto box_dimensions = problem.box_shape().dimensions();
   const int num_dimensions = box_dimensions.size();
   const int num_items = problem.items_size();
 
-  const int area_of_one_bin = box_dimensions[0] * box_dimensions[1];
-  int sum_of_items_area = 0;
+  const int64_t area_of_one_bin = box_dimensions[0] * box_dimensions[1];
+  int64_t sum_of_items_area = 0;
   for (const auto& item : problem.items()) {
     CHECK_EQ(1, item.shapes_size());
     const auto& shape = item.shapes(0);
     CHECK_EQ(2, shape.dimensions_size());
     sum_of_items_area += shape.dimensions(0) * shape.dimensions(1);
   }
-  const int trivial_lb =
+
+  // Take the ceil of the ratio.
+  const int64_t trivial_lb =
       (sum_of_items_area + area_of_one_bin - 1) / area_of_one_bin;
 
-  LOG(INFO) << "Trivial lower bound of the number of items = " << trivial_lb;
-  if (absl::GetFlag(FLAGS_max_bins) == 0) {
-    LOG(INFO) << "Setting max_bins to " << trivial_lb * 2;
-  }
+  LOG(INFO) << "Trivial lower bound of the number of bins = " << trivial_lb;
   const int max_bins = absl::GetFlag(FLAGS_max_bins) == 0
                            ? trivial_lb * 2
                            : absl::GetFlag(FLAGS_max_bins);
+  if (absl::GetFlag(FLAGS_max_bins) == 0) {
+    LOG(INFO) << "Setting max_bins to " << max_bins;
+  }
 
   CpModelBuilder cp_model;
 
-  // Selects the right shape for each item (plus nil shape if not selected).
-  // The nil shape is the first choice.
-  std::vector<std::vector<BoolVar>> selected(num_items);
+  // We do not support multiple shapes per item.
   for (int item = 0; item < num_items; ++item) {
     const int num_shapes = problem.items(item).shapes_size();
     CHECK_EQ(1, num_shapes);
-    selected[item].resize(max_bins);
+  }
+
+  // Create one Boolean variable per item and per bin.
+  std::vector<std::vector<BoolVar>> item_to_bin(num_items);
+  for (int item = 0; item < num_items; ++item) {
+    item_to_bin[item].resize(max_bins);
     for (int b = 0; b < max_bins; ++b) {
-      selected[item][b] = cp_model.NewBoolVar();
+      item_to_bin[item][b] = cp_model.NewBoolVar();
     }
   }
 
   // Exactly one bin is selected for each item.
   for (int item = 0; item < num_items; ++item) {
-    cp_model.AddEquality(LinearExpr::Sum(selected[item]), 1);
+    cp_model.AddEquality(LinearExpr::Sum(item_to_bin[item]), 1);
   }
 
   // Manages positions and sizes for each item.
-  std::vector<std::vector<std::vector<IntervalVar>>> intervals(num_items);
+  std::vector<std::vector<std::vector<IntervalVar>>>
+      interval_by_item_bin_dimension(num_items);
   for (int item = 0; item < num_items; ++item) {
-    intervals[item].resize(max_bins);
+    interval_by_item_bin_dimension[item].resize(max_bins);
     for (int b = 0; b < max_bins; ++b) {
-      intervals[item][b].resize(2);
+      interval_by_item_bin_dimension[item][b].resize(2);
       for (int dim = 0; dim < num_dimensions; ++dim) {
         const int64_t dimension = box_dimensions[dim];
         const int64_t size = problem.items(item).shapes(0).dimensions(dim);
-        IntVar start = cp_model.NewIntVar({0, dimension - size});
-        intervals[item][b][dim] = cp_model.NewOptionalFixedSizeIntervalVar(
-            start, size, selected[item][b]);
+        const IntVar start = cp_model.NewIntVar({0, dimension - size});
+        interval_by_item_bin_dimension[item][b][dim] =
+            cp_model.NewOptionalFixedSizeIntervalVar(start, size,
+                                                     item_to_bin[item][b]);
       }
     }
   }
@@ -120,8 +127,8 @@ void LoadAndSolve(const std::string& file_name, int instance) {
     for (int b = 0; b < max_bins; ++b) {
       NoOverlap2DConstraint no_overlap_2d = cp_model.AddNoOverlap2D();
       for (int item = 0; item < num_items; ++item) {
-        no_overlap_2d.AddRectangle(intervals[item][b][0],
-                                   intervals[item][b][1]);
+        no_overlap_2d.AddRectangle(interval_by_item_bin_dimension[item][b][0],
+                                   interval_by_item_bin_dimension[item][b][1]);
       }
     }
   } else {
@@ -131,42 +138,39 @@ void LoadAndSolve(const std::string& file_name, int instance) {
   // Redundant constraint.
   LinearExpr sum_of_areas;
   for (int item = 0; item < num_items; ++item) {
-    const int item_area = problem.items(item).shapes(0).dimensions(0) *
-                          problem.items(item).shapes(0).dimensions(1);
+    const int64_t item_area = problem.items(item).shapes(0).dimensions(0) *
+                              problem.items(item).shapes(0).dimensions(1);
     for (int b = 0; b < max_bins; ++b) {
-      sum_of_areas += selected[item][b] * item_area;
+      sum_of_areas += item_to_bin[item][b] * item_area;
     }
   }
   cp_model.AddEquality(sum_of_areas, sum_of_items_area);
 
   // Symmetry breaking: The number of items per bin is decreasing.
-  std::vector<LinearExpr> num_items_per_bins(max_bins);
-  LinearExpr all_items;
+  std::vector<LinearExpr> num_items_in_bin(max_bins);
   for (int b = 0; b < max_bins; ++b) {
     for (int item = 0; item < num_items; ++item) {
-      num_items_per_bins[b] += selected[item][b];
-      all_items += selected[item][b];
+      num_items_in_bin[b] += item_to_bin[item][b];
     }
   }
   for (int b = 1; b < max_bins; ++b) {
-    cp_model.AddLessOrEqual(num_items_per_bins[b - 1], num_items_per_bins[b]);
+    cp_model.AddLessOrEqual(num_items_in_bin[b - 1], num_items_in_bin[b]);
   }
-  cp_model.AddEquality(all_items, num_items);
 
   // Objective.
-  std::vector<BoolVar> bin_is_selected(max_bins);
+  std::vector<BoolVar> bin_is_used(max_bins);
   for (int b = 0; b < max_bins; ++b) {
-    bin_is_selected[b] = cp_model.NewBoolVar();
-    // Link bin_is_selected[i] with the items in bin i.
-    std::vector<BoolVar> all_items;
+    bin_is_used[b] = cp_model.NewBoolVar();
+    // Link bin_is_used[i] with the items in bin i.
+    std::vector<BoolVar> all_items_in_bin;
     for (int item = 0; item < num_items; ++item) {
-      cp_model.AddImplication(selected[item][b], bin_is_selected[b]);
-      all_items.push_back(selected[item][b].Not());
+      cp_model.AddImplication(item_to_bin[item][b], bin_is_used[b]);
+      all_items_in_bin.push_back(item_to_bin[item][b].Not());
     }
-    all_items.push_back(bin_is_selected[b].Not());
-    cp_model.AddBoolOr(all_items);
+    all_items_in_bin.push_back(bin_is_used[b].Not());
+    cp_model.AddBoolOr(all_items_in_bin);
   }
-  cp_model.Minimize(LinearExpr::Sum(bin_is_selected));
+  cp_model.Minimize(LinearExpr::Sum(bin_is_used));
 
   // Setup parameters.
   SatParameters parameters;
@@ -177,7 +181,7 @@ void LoadAndSolve(const std::string& file_name, int instance) {
         absl::GetFlag(FLAGS_params), &parameters))
         << absl::GetFlag(FLAGS_params);
   }
-
+  // We rely on the solver default logging to log the number of bins.
   const CpSolverResponse response =
       SolveWithParameters(cp_model.Build(), parameters);
 }

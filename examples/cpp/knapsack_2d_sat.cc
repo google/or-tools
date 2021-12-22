@@ -44,7 +44,7 @@ namespace sat {
 void CheckAndPrint2DSolution(
     const CpSolverResponse& response,
     const packing::MultipleDimensionsBinPackingProblem& problem,
-    const std::vector<std::vector<IntervalVar>>& intervals,
+    const std::vector<std::vector<IntervalVar>>& interval_by_item_dimension,
     std::string* solution_in_ascii_form) {
   const int num_items = problem.items_size();
 
@@ -59,17 +59,18 @@ void CheckAndPrint2DSolution(
   }
   int64_t used_area = 0;
   for (int item = 0; item < num_items; ++item) {
-    if (!SolutionBooleanValue(response, intervals[item][0].PresenceBoolVar())) {
+    if (!SolutionBooleanValue(
+            response, interval_by_item_dimension[item][0].PresenceBoolVar())) {
       continue;
     }
-    const int64_t x =
-        SolutionIntegerValue(response, intervals[item][0].StartExpr());
-    const int64_t y =
-        SolutionIntegerValue(response, intervals[item][1].StartExpr());
-    const int64_t dx =
-        SolutionIntegerValue(response, intervals[item][0].SizeExpr());
-    const int64_t dy =
-        SolutionIntegerValue(response, intervals[item][1].SizeExpr());
+    const int64_t x = SolutionIntegerValue(
+        response, interval_by_item_dimension[item][0].StartExpr());
+    const int64_t y = SolutionIntegerValue(
+        response, interval_by_item_dimension[item][1].StartExpr());
+    const int64_t dx = SolutionIntegerValue(
+        response, interval_by_item_dimension[item][0].SizeExpr());
+    const int64_t dy = SolutionIntegerValue(
+        response, interval_by_item_dimension[item][1].SizeExpr());
     used_area += dx * dy;
     for (int i = x; i < x + dx; ++i) {
       for (int j = y; j < y + dy; ++j) {
@@ -142,23 +143,25 @@ void LoadAndSolve(const std::string& file_name, int instance) {
   }
 
   // Manages positions and sizes for each item.
-  std::vector<std::vector<IntervalVar>> intervals(num_items);
+  std::vector<std::vector<IntervalVar>> interval_by_item_dimension(num_items);
   for (int item = 0; item < num_items; ++item) {
-    intervals[item].resize(num_dimensions);
+    interval_by_item_dimension[item].resize(num_dimensions);
     const int num_shapes = problem.items(item).shapes_size();
     for (int dim = 0; dim < num_dimensions; ++dim) {
       if (num_shapes == 1) {
         const int64_t dimension = box_dimensions[dim];
         const int64_t size = problem.items(item).shapes(0).dimensions(dim);
         IntVar start = cp_model.NewIntVar({0, dimension - size});
-        intervals[item][dim] = cp_model.NewOptionalFixedSizeIntervalVar(
-            start, size, selected[item][1]);
+        interval_by_item_dimension[item][dim] =
+            cp_model.NewOptionalFixedSizeIntervalVar(start, size,
+                                                     selected[item][1]);
       } else {
         const Domain dimension(0, box_dimensions[dim]);
-        IntVar start = cp_model.NewIntVar(dimension);
-        IntVar size = cp_model.NewIntVar(dimension);
-        IntVar end = cp_model.NewIntVar(dimension);
-        intervals[item][dim] = cp_model.NewIntervalVar(start, size, end);
+        const IntVar start = cp_model.NewIntVar(dimension);
+        const IntVar size = cp_model.NewIntVar(dimension);
+        const IntVar end = cp_model.NewIntVar(dimension);
+        interval_by_item_dimension[item][dim] =
+            cp_model.NewIntervalVar(start, size, end);
 
         for (int shape = 0; shape <= num_shapes; ++shape) {
           const int64_t item_size_in_dim =
@@ -179,7 +182,8 @@ void LoadAndSolve(const std::string& file_name, int instance) {
     LOG(INFO) << "Box size: " << box_dimensions[0] << "*" << box_dimensions[1];
     NoOverlap2DConstraint no_overlap_2d = cp_model.AddNoOverlap2D();
     for (int item = 0; item < num_items; ++item) {
-      no_overlap_2d.AddRectangle(intervals[item][0], intervals[item][1]);
+      no_overlap_2d.AddRectangle(interval_by_item_dimension[item][0],
+                                 interval_by_item_dimension[item][1]);
     }
   } else {
     LOG(FATAL) << num_dimensions << " dimensions not supported.";
@@ -206,12 +210,12 @@ void LoadAndSolve(const std::string& file_name, int instance) {
   std::string solution_in_ascii_form;
   model.Add(NewFeasibleSolutionObserver([&](const CpSolverResponse& r) {
     if (num_dimensions == 2) {
-      CheckAndPrint2DSolution(r, problem, intervals, &solution_in_ascii_form);
+      CheckAndPrint2DSolution(r, problem, interval_by_item_dimension,
+                              &solution_in_ascii_form);
     }
   }));
 
   const CpSolverResponse response = SolveCpModel(cp_model.Build(), &model);
-  LOG(INFO) << CpSolverResponseStats(response);
 
   if (!solution_in_ascii_form.empty()) {
     LOG(INFO) << solution_in_ascii_form;
