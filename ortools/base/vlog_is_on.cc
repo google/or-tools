@@ -113,7 +113,8 @@ static void VLOG2Initializer() {
   // Can now parse --vmodule flag and initialize mapping of module-specific
   // logging levels.
   inited_vmodule = false;
-  const char* vmodule = absl::GetFlag(FLAGS_vmodule).c_str();
+  const std::string vmodule_flag = absl::GetFlag(FLAGS_vmodule);
+  const char* vmodule = vmodule_flag.c_str();
   const char* sep;
   VModuleInfo* head = NULL;
   VModuleInfo* tail = NULL;
