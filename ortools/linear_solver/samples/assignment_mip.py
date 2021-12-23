@@ -77,13 +77,15 @@ def main():
     # Print solution.
     # [START print_solution]
     if status == pywraplp.Solver.OPTIMAL or status == pywraplp.Solver.FEASIBLE:
-        print('Total cost = ', solver.Objective().Value(), '\n')
+        print(f'Total cost = {solver.Objective().Value()}\n')
         for i in range(num_workers):
             for j in range(num_tasks):
                 # Test if x[i,j] is 1 (with tolerance for floating point arithmetic).
                 if x[i, j].solution_value() > 0.5:
-                    print('Worker %d assigned to task %d.  Cost = %d' %
-                          (i, j, costs[i][j]))
+                    print(f'Worker {i} assigned to task {j}.' +
+                          f' Cost: {costs[i][j]}')
+    else:
+        print('No solution found.')
     # [END print_solution]
 
 
