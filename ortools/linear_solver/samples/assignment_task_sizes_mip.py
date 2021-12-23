@@ -55,7 +55,7 @@ def main():
     x = {}
     for worker in range(num_workers):
         for task in range(num_tasks):
-            x[worker, task] = solver.IntVar(0, 1, f'x[{worker},{task}]')
+            x[worker, task] = solver.BoolVar(f'x[{worker},{task}]')
     # [END variables]
 
     # Constraints
@@ -95,7 +95,7 @@ def main():
             for task in range(num_tasks):
                 if x[worker, task].solution_value() > 0.5:
                     print(f'Worker {worker} assigned to task {task}.' +
-                          f' Cost = {costs[worker][task]}')
+                            f' Cost: {costs[worker][task]}')
     else:
         print('No solution found.')
     # [END print_solution]
