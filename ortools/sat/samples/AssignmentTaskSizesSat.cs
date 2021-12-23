@@ -68,7 +68,7 @@ public class AssignmentTaskSizesSat
 
         // Constraints
         // [START constraints]
-        // Each worker is assigned to at most one task.
+        // Each worker is assigned to at most max task size.
         foreach (int worker in allWorkers)
         {
             IntVar[] vars = new IntVar[numTasks];
