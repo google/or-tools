@@ -66,9 +66,9 @@ public class AssignmentGroupsMip
         // [END allowed_groups]
 
         // Model.
-        // [START model]
+        // [START solver]
         Solver solver = Solver.CreateSolver("SCIP");
-        // [END model]
+        // [END solver]
 
         // Variables.
         // [START variables]
