@@ -45,10 +45,10 @@ public class AssignmentTeamsMip
         int teamMax = 2;
         // [END data]
 
-        // Model.
-        // [START model]
+        // Solver.
+        // [START solver]
         Solver solver = Solver.CreateSolver("SCIP");
-        // [END model]
+        // [END solver]
 
         // Variables.
         // [START variables]

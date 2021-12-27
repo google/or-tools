@@ -30,10 +30,10 @@ public class AssignmentMip
         int numTasks = costs.GetLength(1);
         // [END data_model]
 
-        // Model.
-        // [START model]
+        // Solver.
+        // [START solver]
         Solver solver = Solver.CreateSolver("SCIP");
-        // [END model]
+        // [END solver]
 
         // Variables.
         // [START variables]

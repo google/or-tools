@@ -66,7 +66,7 @@ def main():
     ]
     # [END allowed_groups]
 
-    # Solver
+    # Solver.
     # [START solver]
     # Create the mip solver with the SCIP backend.
     solver = pywraplp.Solver.CreateSolver('SCIP')
