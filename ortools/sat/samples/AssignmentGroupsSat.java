@@ -21,6 +21,7 @@ import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.LinearExpr;
+import com.google.ortools.sat.TableConstraint;
 import java.util.stream.IntStream;
 // [END import]
 
@@ -128,9 +129,21 @@ public class AssignmentGroupsSat {
     }
 
     // Define the allowed groups of worders
-    model.addAllowedAssignments(new IntVar[] { work[0], work[1], work[2], work[3] }, group1);
-    model.addAllowedAssignments(new IntVar[] { work[4], work[5], work[6], work[7] }, group2);
-    model.addAllowedAssignments(new IntVar[] { work[8], work[9], work[10], work[11] }, group3);
+    TableConstraint group1Ct =
+        model.addAllowedAssignments(new IntVar[] {work[0], work[1], work[2], work[3]});
+    for (int[] assignment : group1) {
+      group1Ct.addTuple(assignment);
+    }
+    TableConstraint group2Ct =
+        model.addAllowedAssignments(new IntVar[] {work[4], work[5], work[6], work[7]});
+    for (int[] assignment : group2) {
+      group2Ct.addTuple(assignment);
+    }
+    TableConstraint group3Ct =
+        model.addAllowedAssignments(new IntVar[] {work[8], work[9], work[10], work[11]});
+    for (int[] assignment : group3) {
+      group3Ct.addTuple(assignment);
+    }
     // [END assignments]
 
     // Objective
