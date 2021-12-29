@@ -215,7 +215,7 @@ def solve_shift_scheduling(params, output_proto):
     # Request: (employee, shift, day, weight)
     # A negative weight indicates that the employee desire this assignment.
     requests = [
-        # Employee 3 wants the first shift of Saturday off.
+        # Employee 3 does not want the first shift on the first Saturday (negative weight).
         (3, 0, 5, -2),
         # Employee 5 does not want a night shift on the second Thursday (negative weight).
         (5, 3, 10, -2),
