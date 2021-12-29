@@ -6,11 +6,12 @@ def code_sample_cc(name):
       srcs = [name + ".cc"],
       deps = [
         "//ortools/base",
-        "//ortools/graph:min_cost_flow",
-        "//ortools/graph:max_flow",
-        "//ortools/graph:shortestpaths",
+        "//ortools/graph:assignment",
         "//ortools/graph:ebert_graph",
         "//ortools/graph:linear_assignment",
+        "//ortools/graph:max_flow",
+        "//ortools/graph:min_cost_flow",
+        "//ortools/graph:shortestpaths",
       ],
   )
 
@@ -21,10 +22,11 @@ def code_sample_cc(name):
       deps = [
         ":"+name,
         "//ortools/base",
-        "//ortools/graph:min_cost_flow",
-        "//ortools/graph:max_flow",
-        "//ortools/graph:shortestpaths",
+        "//ortools/graph:assignment",
         "//ortools/graph:ebert_graph",
         "//ortools/graph:linear_assignment",
+        "//ortools/graph:max_flow",
+        "//ortools/graph:min_cost_flow",
+        "//ortools/graph:shortestpaths",
       ],
   )
