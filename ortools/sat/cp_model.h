@@ -182,9 +182,6 @@ class IntVar {
   /// Returns the index of the variable in the model. This will be non-negative.
   int index() const { return index_; }
 
-  /// Deprecated. Just do var + cte where needed.
-  LinearExpr AddConstant(int64_t value) const;
-
  private:
   friend class BoolVar;
   friend class CpModelBuilder;
@@ -261,10 +258,6 @@ class LinearExpr {
 
   /// Constructs the sum of a list of Boolean variables.
   static LinearExpr Sum(absl::Span<const BoolVar> vars);
-
-  /// Constructs the sum of a list of variables.
-  // TODO(user): Remove when the operators + and * are implemented.
-  static LinearExpr Sum(std::initializer_list<IntVar> vars);
 
   /// Constructs the scalar product of variables and coefficients.
   static LinearExpr ScalProd(absl::Span<const IntVar> vars,
@@ -977,12 +970,6 @@ class CpModelBuilder {
   /// Adds target == min(exprs).
   Constraint AddMinEquality(const LinearExpr& target,
                             std::initializer_list<LinearExpr> exprs);
-
-  // Deprecated, use AddMinEquality.
-  Constraint AddLinMinEquality(const LinearExpr& target,
-                               absl::Span<const LinearExpr> exprs) {
-    return AddMinEquality(target, exprs);
-  }
 
   /// Adds target == max(vars).
   Constraint AddMaxEquality(const LinearExpr& target,

@@ -126,10 +126,6 @@ std::string IntVar::Name() const {
   return builder_->Proto().variables(index_).name();
 }
 
-LinearExpr IntVar::AddConstant(int64_t value) const {
-  return LinearExpr(*this).AddConstant(value);
-}
-
 ::operations_research::Domain IntVar::Domain() const {
   if (builder_ == nullptr) return Domain();
   return ReadDomainFromProto(builder_->Proto().variables(index_));
@@ -201,14 +197,6 @@ LinearExpr LinearExpr::Sum(absl::Span<const IntVar> vars) {
 LinearExpr LinearExpr::Sum(absl::Span<const BoolVar> vars) {
   LinearExpr result;
   for (const BoolVar& var : vars) {
-    result.AddVar(var);
-  }
-  return result;
-}
-
-LinearExpr LinearExpr::Sum(std::initializer_list<IntVar> vars) {
-  LinearExpr result;
-  for (const IntVar& var : vars) {
     result.AddVar(var);
   }
   return result;
