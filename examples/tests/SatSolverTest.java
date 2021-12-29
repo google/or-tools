@@ -18,6 +18,7 @@ import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.LinearExpr;
+import com.google.ortools.sat.TableConstraint;
 import com.google.ortools.util.Domain;
 import java.lang.Thread;
 import java.util.Random;
@@ -101,7 +102,14 @@ public class SatSolverTest {
       }
     }
     try {
-      model.addAllowedAssignments(entitiesOne, allAllowedValues);
+      TableConstraint table = model.addAllowedAssignments(entitiesOne);
+      final int[] oneTuple = new int[entitiesOne.length];
+      for (int i = 0; i < numEntityTwo; i++) {
+        for (int j = 0; j < entitiesOne.length; j++) {
+          oneTuple[j] = i;
+        }
+        table.addTuple(oneTuple);
+      }      
     } catch (final Exception e) {
       e.printStackTrace();
     }
@@ -224,7 +232,10 @@ public class SatSolverTest {
       specificEntities[i] = entities[allowedAssignments[i]];
     }
     try {
-      model.addAllowedAssignments(specificEntities, allAllowedValues);
+      TableConstraint table = model.addAllowedAssignments(specificEntities);
+      for (Integer[] tuple : allowedAssignmentValues) {
+        table.addTuple(tuple);
+      }
     } catch (final Exception e) {
       e.printStackTrace();
     }
@@ -246,8 +257,10 @@ public class SatSolverTest {
       }
     }
     try {
-      model.addForbiddenAssignments(specificEntities, notAllowedValues);
-    } catch (final Exception e) {
+      TableConstraint table = model.addForbiddenAssignments(specificEntities);
+      for (Integer[] tuple : forbiddenAssignmentsValues) {
+        table.addTuple(tuple);
+      }    } catch (final Exception e) {
       e.printStackTrace();
     }
   }
