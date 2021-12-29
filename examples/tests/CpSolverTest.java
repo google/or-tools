@@ -85,6 +85,27 @@ public final class CpSolverTest {
   }
 
   @Test
+  public void testCpSolver_invalidModel() throws Exception {
+    final CpModel model = new CpModel();
+    assertNotNull(model);
+    // Creates the variables.
+    int numVals = 3;
+
+    final IntVar x = model.newIntVar(0, -1, "x");
+    final IntVar y = model.newIntVar(0, numVals - 1, "y");
+    // Creates the constraints.
+    model.addDifferent(x, y);
+
+    // Creates a solver and solves the model.
+    final CpSolver solver = new CpSolver();
+    assertNotNull(solver);
+    final CpSolverStatus status = solver.solve(model);
+
+    assertThat(status).isEqualTo(CpSolverStatus.MODEL_INVALID);
+    assertEquals("var #0 has no domain(): name: \"x\"", solver.getSolutionInfo());
+  }
+
+  @Test
   public void testCpSolver_hinting() throws Exception {
     final CpModel model = new CpModel();
     assertNotNull(model);
@@ -169,6 +190,8 @@ public final class CpSolverTest {
 
     assertThat(status).isEqualTo(CpSolverStatus.OPTIMAL);
     assertThat(solver.objectiveValue()).isEqualTo(11.0);
+    assertThat(solver.value(LinearExpr.sum(new IntVar[] {x, y, z})))
+        .isEqualTo(solver.value(x) + solver.value(y) + solver.value(z));
   }
 
   @Test
@@ -244,10 +267,7 @@ public final class CpSolverTest {
     StringBuilder logBuilder = new StringBuilder();
     Consumer<String> appendToLog = (String message) -> logBuilder.append(message).append('\n');
     solver.setLogCallback(appendToLog);
-    solver.getParameters()
-          .setLogToStdout(false)
-          .setLogSearchProgress(true)
-          .setNumSearchWorkers(12);
+    solver.getParameters().setLogToStdout(false).setLogSearchProgress(true).setNumSearchWorkers(12);
     CpSolverStatus status = solver.solve(model);
 
     assertThat(status).isEqualTo(CpSolverStatus.OPTIMAL);
