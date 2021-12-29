@@ -1129,6 +1129,44 @@ class CpModel(object):
             model_ct.circuit.literals.append(lit)
         return ct
 
+    def AddMultipleCircuit(self, arcs):
+        """Adds a multiple circuit constraint, aka the "VRP" constraint.
+
+    The direct graph where arc #i (from tails[i] to head[i]) is present iff
+    literals[i] is true must satisfy this set of properties:
+    - #incoming arcs == 1 except for node 0.
+    - #outgoing arcs == 1 except for node 0.
+    - for node zero, #incoming arcs == #outgoing arcs.
+    - There are no duplicate arcs.
+    - Self-arcs are allowed except for node 0.
+    - There is no cycle in this graph, except through node 0.
+
+    Args:
+      arcs: a list of arcs. An arc is a tuple (source_node, destination_node,
+        literal). The arc is selected in the circuit if the literal is true.
+        Both source_node and destination_node must be integers between 0 and the
+        number of nodes - 1.
+
+    Returns:
+      An instance of the `Constraint` class.
+
+    Raises:
+      ValueError: If the list of arcs is empty.
+    """
+        if not arcs:
+            raise ValueError(
+                'AddMultipleCircuit expects a non-empty array of arcs')
+        ct = Constraint(self.__model.constraints)
+        model_ct = self.__model.constraints[ct.Index()]
+        for arc in arcs:
+            tail = cmh.assert_is_int32(arc[0])
+            head = cmh.assert_is_int32(arc[1])
+            lit = self.GetOrMakeBooleanIndex(arc[2])
+            model_ct.routes.tails.append(tail)
+            model_ct.routes.heads.append(head)
+            model_ct.routes.literals.append(lit)
+        return ct
+
     def AddAllowedAssignments(self, variables, tuples_list):
         """Adds AllowedAssignments(variables, tuples_list).
 
