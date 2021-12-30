@@ -1177,17 +1177,13 @@ inline LinearExpr operator-(LinearExpr&& lhs, const LinearExpr& rhs) {
   return std::move(lhs);
 }
 inline LinearExpr operator-(const LinearExpr& lhs, LinearExpr&& rhs) {
-  rhs -= lhs;
+  rhs *= -1;
+  rhs += lhs;
   return std::move(rhs);
 }
 inline LinearExpr operator-(LinearExpr&& lhs, LinearExpr&& rhs) {
-  if (lhs.variables().size() < rhs.variables().size()) {
-    rhs -= std::move(lhs);
-    return std::move(rhs);
-  } else {
-    lhs -= std::move(rhs);
-    return std::move(lhs);
-  }
+  lhs -= std::move(rhs);
+  return std::move(lhs);
 }
 
 inline LinearExpr operator*(LinearExpr expr, int64_t factor) {
@@ -1255,18 +1251,14 @@ inline DoubleLinearExpr operator-(DoubleLinearExpr&& lhs,
 }
 inline DoubleLinearExpr operator-(const DoubleLinearExpr& lhs,
                                   DoubleLinearExpr&& rhs) {
-  rhs -= lhs;
+  rhs *= -1;
+  rhs += lhs;
   return std::move(rhs);
 }
 inline DoubleLinearExpr operator-(DoubleLinearExpr&& lhs,
                                   DoubleLinearExpr&& rhs) {
-  if (lhs.variables().size() < rhs.variables().size()) {
-    rhs -= std::move(lhs);
-    return std::move(rhs);
-  } else {
-    lhs -= std::move(rhs);
-    return std::move(lhs);
-  }
+  lhs -= std::move(rhs);
+  return std::move(lhs);
 }
 
 inline DoubleLinearExpr operator-(DoubleLinearExpr epxr, double rhs) {
