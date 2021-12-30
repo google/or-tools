@@ -22,7 +22,7 @@
 // [END import]
 
 namespace operations_research {
-// MinCostFlow simple interface example.
+// Simple Linear Sum Assignment Problem (LSAP).
 void AssignmentLinearSumAssignment() {
   // [START solver]
   SimpleLinearSumAssignment assignment;
