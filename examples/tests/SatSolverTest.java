@@ -227,7 +227,7 @@ public class SatSolverTest {
     }
     try {
       TableConstraint table = model.addAllowedAssignments(specificEntities);
-      for (int[] tuple : allowedAssignmentValues) {
+      for (int[] tuple : allAllowedValues) {
         table.addTuple(tuple);
       }
     } catch (final Exception e) {
@@ -252,7 +252,7 @@ public class SatSolverTest {
     }
     try {
       TableConstraint table = model.addForbiddenAssignments(specificEntities);
-      for (int[] tuple : forbiddenAssignmentsValues) {
+      for (int[] tuple : notAllowedValues) {
         table.addTuple(tuple);
       }
     } catch (final Exception e) {
