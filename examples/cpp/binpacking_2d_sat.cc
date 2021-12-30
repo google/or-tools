@@ -38,6 +38,10 @@ ABSL_FLAG(std::string, params, "", "Sat parameters in text proto format.");
 ABSL_FLAG(int, max_bins, 0,
           "Maximum number of bins. The 0 default value implies the code will "
           "use some heuristics to compute this number.");
+ABSL_FLAG(bool, advanced_symmetry_breaking, true,
+          "Use the advanced symmetry breaking constraints");
+ABSL_FLAG(bool, global_area_constraint, false,
+          "Redundant constraint to link the global area covered");
 
 namespace operations_research {
 namespace sat {
@@ -136,28 +140,21 @@ void LoadAndSolve(const std::string& file_name, int instance) {
   }
 
   // Redundant constraint.
-  LinearExpr sum_of_areas;
-  for (int item = 0; item < num_items; ++item) {
-    const int64_t item_area = problem.items(item).shapes(0).dimensions(0) *
-                              problem.items(item).shapes(0).dimensions(1);
-    for (int b = 0; b < max_bins; ++b) {
-      sum_of_areas += item_to_bin[item][b] * item_area;
-    }
-  }
-  cp_model.AddEquality(sum_of_areas, sum_of_items_area);
-
-  // Symmetry breaking: The number of items per bin is decreasing.
-  std::vector<LinearExpr> num_items_in_bin(max_bins);
-  for (int b = 0; b < max_bins; ++b) {
+  // The sum of areas in each bin is the sum of all items area.
+  if (absl::GetFlag(FLAGS_global_area_constraint)) {
+    LinearExpr sum_of_areas;
     for (int item = 0; item < num_items; ++item) {
-      num_items_in_bin[b] += item_to_bin[item][b];
+      const int64_t item_area = problem.items(item).shapes(0).dimensions(0) *
+                                problem.items(item).shapes(0).dimensions(1);
+      for (int b = 0; b < max_bins; ++b) {
+        sum_of_areas += item_to_bin[item][b] * item_area;
+      }
     }
-  }
-  for (int b = 1; b < max_bins; ++b) {
-    cp_model.AddLessOrEqual(num_items_in_bin[b - 1], num_items_in_bin[b]);
+    cp_model.AddEquality(sum_of_areas, sum_of_items_area);
   }
 
-  // Objective.
+  // Maintain one Boolean variable per bin that indicates if the bin is used or
+  // not.
   std::vector<BoolVar> bin_is_used(max_bins);
   for (int b = 0; b < max_bins; ++b) {
     bin_is_used[b] = cp_model.NewBoolVar();
@@ -165,16 +162,41 @@ void LoadAndSolve(const std::string& file_name, int instance) {
     std::vector<BoolVar> all_items_in_bin;
     for (int item = 0; item < num_items; ++item) {
       cp_model.AddImplication(item_to_bin[item][b], bin_is_used[b]);
-      all_items_in_bin.push_back(item_to_bin[item][b].Not());
+      all_items_in_bin.push_back(item_to_bin[item][b]);
     }
     all_items_in_bin.push_back(bin_is_used[b].Not());
     cp_model.AddBoolOr(all_items_in_bin);
   }
+
+  // Symmetry breaking.
+  if (absl::GetFlag(FLAGS_advanced_symmetry_breaking)) {
+    // Forces the number of items per bin to decrease.
+    std::vector<IntVar> num_items_in_bin(max_bins);
+    for (int b = 0; b < max_bins; ++b) {
+      num_items_in_bin[b] = cp_model.NewIntVar({0, num_items});
+      std::vector<BoolVar> items_in_bins;
+      for (int item = 0; item < num_items; ++item) {
+        items_in_bins.push_back(item_to_bin[item][b]);
+      }
+      cp_model.AddEquality(num_items_in_bin[b], LinearExpr::Sum(items_in_bins));
+    }
+    for (int b = 1; b < max_bins; ++b) {
+      cp_model.AddGreaterOrEqual(num_items_in_bin[b - 1], num_items_in_bin[b]);
+    }
+  } else {
+    // Forces used bins to be continuous starting at 0.
+    for (int b = 1; b < max_bins; ++b) {
+      cp_model.AddImplication(bin_is_used[b], bin_is_used[b - 1]);
+    }
+  }
+
+  // Objective.
   cp_model.Minimize(LinearExpr::Sum(bin_is_used));
 
   // Setup parameters.
   SatParameters parameters;
   parameters.set_log_search_progress(true);
+  parameters.set_use_cumulative_in_no_overlap_2d(true);
   // Parse the --params flag.
   if (!absl::GetFlag(FLAGS_params).empty()) {
     CHECK(google::protobuf::TextFormat::MergeFromString(
