@@ -5,11 +5,11 @@ cc_binary(
     ],
     deps = [
         "//ortools/base",
-        "@com_google_protobuf//:protobuf",
-        "@com_google_absl//absl/flags:flag",
         "//ortools/packing:binpacking_2d_parser",
         "//ortools/packing:multiple_dimensions_bin_packing_cc_proto",
         "//ortools/sat:cp_model",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_protobuf//:protobuf",
     ],
 )
 
@@ -39,7 +39,7 @@ cc_library(
         "//ortools/base",
         "//ortools/constraint_solver:routing",
         "//ortools/constraint_solver:routing_flags",
-        "//ortools/util:random_engine"
+        "//ortools/util:random_engine",
     ],
 )
 
@@ -71,10 +71,10 @@ cc_binary(
     deps = [
         ":cvrptw_lib",
         "//ortools/base",
-        "@com_google_absl//absl/strings",
         "//ortools/constraint_solver:routing",
         "//ortools/constraint_solver:routing_enums_cc_proto",
         "//ortools/constraint_solver:routing_flags",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -95,9 +95,9 @@ cc_binary(
     deps = [
         ":cvrptw_lib",
         "//ortools/base",
-        "@com_google_absl//absl/strings",
         "//ortools/constraint_solver:routing",
         "//ortools/constraint_solver:routing_flags",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -118,9 +118,9 @@ cc_library(
     deps = [
         "//ortools/base",
         "//ortools/base:file",
-        "@com_google_absl//absl/status",
         "//ortools/graph:ebert_graph",
         "//ortools/graph:linear_assignment",
+        "@com_google_absl//absl/status",
     ],
 )
 
@@ -223,9 +223,9 @@ cc_binary(
     srcs = ["golomb_sat.cc"],
     deps = [
         "//ortools/base",
-        "@com_google_absl//absl/strings",
         "//ortools/sat:cp_model",
         "//ortools/sat:model",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -246,14 +246,13 @@ cc_binary(
     deps = [
         "//ortools/base",
         "//ortools/base:file",
-        "@com_google_absl//absl/strings",
         "//ortools/base:timer",
-        "//ortools/scheduling:jobshop_scheduling_cc_proto",
-        "//ortools/scheduling:jobshop_scheduling_parser",
         "//ortools/sat:cp_model",
         "//ortools/sat:cp_model_solver",
         "//ortools/sat:model",
-
+        "//ortools/scheduling:jobshop_scheduling_cc_proto",
+        "//ortools/scheduling:jobshop_scheduling_parser",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -264,11 +263,11 @@ cc_binary(
     ],
     deps = [
         "//ortools/base",
-        "@com_google_protobuf//:protobuf",
-        "@com_google_absl//absl/flags:flag",
         "//ortools/packing:binpacking_2d_parser",
         "//ortools/packing:multiple_dimensions_bin_packing_cc_proto",
         "//ortools/sat:cp_model",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_protobuf//:protobuf",
     ],
 )
 
@@ -307,9 +306,9 @@ cc_binary(
     srcs = ["magic_sequence_sat.cc"],
     deps = [
         "//ortools/base",
-        "@com_google_absl//absl/strings",
         "//ortools/sat:cp_model",
         "//ortools/sat:model",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -318,9 +317,9 @@ cc_binary(
     srcs = ["magic_square_sat.cc"],
     deps = [
         "//ortools/base",
-        "@com_google_absl//absl/strings",
         "//ortools/sat:cp_model",
         "//ortools/sat:model",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -347,12 +346,12 @@ cc_binary(
     srcs = ["mps_driver.cc"],
     deps = [
         "//ortools/base",
-        "@com_google_absl//absl/strings",
         "//ortools/base:timer",
         "//ortools/glop:lp_solver",
         "//ortools/glop:parameters_cc_proto",
         "//ortools/lp_data:mps_reader",
         "//ortools/util:proto_tools",
+        "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
     ],
 )
@@ -362,9 +361,9 @@ cc_binary(
     srcs = ["multi_knapsack_sat.cc"],
     deps = [
         "//ortools/base",
-        "@com_google_absl//absl/strings",
         "//ortools/sat:cp_model",
         "//ortools/sat:model",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -375,11 +374,11 @@ cc_binary(
         "//ortools/base",
         "//ortools/base:hash",
         "//ortools/base:map_util",
-        "@com_google_absl//absl/strings",
         "//ortools/graph:shortestpaths",
         "//ortools/sat:cp_model",
         "//ortools/sat:model",
         "//ortools/util:tuple_set",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -400,9 +399,9 @@ cc_binary(
         "//ortools/base",
         "//ortools/base:file",
         "//ortools/base:mathutil",
-        "@com_google_absl//absl/strings",
         "//ortools/constraint_solver:routing",
         "//ortools/constraint_solver:routing_flags",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -411,10 +410,10 @@ cc_binary(
     srcs = ["random_tsp.cc"],
     deps = [
         "//ortools/base",
-        "@com_google_absl//absl/strings",
         "//ortools/constraint_solver:routing",
         "//ortools/constraint_solver:routing_flags",
         "//ortools/util:random_engine",
+        "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
     ],
 )
@@ -431,8 +430,6 @@ cc_binary(
         "//ortools/base",
         "//ortools/base:file",
         "//ortools/base:filelineiter",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/strings",
         "//ortools/base:threadpool",
         "//ortools/lp_data:mps_reader",
         "//ortools/lp_data:proto_utils",
@@ -448,6 +445,8 @@ cc_binary(
         "//ortools/sat:symmetry",
         "//ortools/util:sigint",
         "//ortools/util:time_limit",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
     ],
 )
@@ -461,9 +460,9 @@ cc_binary(
         "//ortools/base",
         "//ortools/base:file",
         "//ortools/base:filelineiter",
-        "@com_google_absl//absl/strings",
         "//ortools/sat:cp_model",
         "//ortools/sat:model",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -481,12 +480,12 @@ cc_binary(
     name = "solve",
     srcs = ["solve.cc"],
     deps = [
-        "@com_google_absl//absl/time",
         "//ortools/base",
         "//ortools/linear_solver",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/lp_data:model_reader",
         "//ortools/lp_data:mps_reader",
+        "@com_google_absl//absl/time",
     ],
 )
 
@@ -495,9 +494,9 @@ cc_binary(
     srcs = ["sports_scheduling_sat.cc"],
     deps = [
         "//ortools/base",
-        "@com_google_absl//absl/strings",
         "//ortools/sat:cp_model",
         "//ortools/sat:model",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -519,7 +518,6 @@ cc_binary(
     ],
 )
 
-
 cc_binary(
     name = "variable_intervals_sat",
     srcs = ["variable_intervals_sat.cc"],
@@ -535,15 +533,15 @@ cc_binary(
         "vector_bin_packing_solver.cc",
     ],
     deps = [
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/strings",
-        "//ortools/base:file",
         "//ortools/base",
+        "//ortools/base:file",
         "//ortools/packing:arc_flow_builder",
         "//ortools/packing:arc_flow_solver",
         "//ortools/packing:vector_bin_packing_cc_proto",
         "//ortools/packing:vector_bin_packing_parser",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -556,7 +554,6 @@ cc_binary(
         "//ortools/base",
         "//ortools/base:file",
         "//ortools/base:filelineiter",
-        "@com_google_absl//absl/strings",
         "//ortools/sat:cp_model",
         "//ortools/sat:cp_model_solver",
         "//ortools/sat:disjunctive",
@@ -567,6 +564,7 @@ cc_binary(
         "//ortools/sat:optimization",
         "//ortools/sat:precedences",
         "//ortools/sat:sat_solver",
+        "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
     ],
 )
