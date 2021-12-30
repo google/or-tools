@@ -116,7 +116,8 @@ std::string ProgressMessage(const std::string& event_or_solution_count,
                             double obj_lb, double obj_ub,
                             const std::string& solution_info) {
   const std::string obj_next =
-      absl::StrFormat("next:[%.9g,%.9g]", obj_lb, obj_ub);
+      obj_lb <= obj_ub ? absl::StrFormat("next:[%.9g,%.9g]", obj_lb, obj_ub)
+                       : "next:[]";
   return absl::StrFormat("#%-5s %6.2fs best:%-5.9g %-15s %s",
                          event_or_solution_count, time_in_seconds, obj_best,
                          obj_next, solution_info);
@@ -198,9 +199,12 @@ void SharedResponseManager::TestGapLimitsIfNeeded() {
   // though.
   if (update_integral_on_each_change_) UpdateGapIntegralInternal();
 
+  // Abort if there is not limit set, if the gap is not defined or if we already
+  // proved optimality or infeasibility.
   if (absolute_gap_limit_ == 0 && relative_gap_limit_ == 0) return;
   if (best_solution_objective_value_ >= kMaxIntegerValue) return;
   if (inner_objective_lower_bound_ <= kMinIntegerValue) return;
+  if (inner_objective_lower_bound_ > inner_objective_upper_bound_) return;
 
   const CpObjectiveProto& obj = *objective_or_null_;
   const double user_best =
