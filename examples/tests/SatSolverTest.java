@@ -10,6 +10,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package com.google.ortools;
 
 import com.google.ortools.Loader;
@@ -20,7 +21,6 @@ import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.LinearExpr;
 import com.google.ortools.sat.TableConstraint;
 import com.google.ortools.util.Domain;
-import java.lang.Thread;
 import java.util.Random;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
@@ -37,7 +37,7 @@ public class SatSolverTest {
 
   @Test
   public void testDomainGetter() {
-    System.out.println("testDomainGetter");
+    logger.info("testDomainGetter");
     CpModel model = new CpModel();
 
     // Create decision variables
@@ -52,7 +52,7 @@ public class SatSolverTest {
 
   @Test
   public void testCrashInPresolve() {
-    System.out.println("testCrashInPresolve");
+    logger.info("testCrashInPresolve");
     CpModel model = new CpModel();
 
     // Create decision variables
@@ -80,18 +80,17 @@ public class SatSolverTest {
     com.google.ortools.sat.CpSolverStatus status = solver.solve(model);
 
     if (status != CpSolverStatus.INFEASIBLE) {
-      throw new RuntimeException("Wrong status in testCrashInPresolve");
+      throw new IllegalStateException("Wrong status in testCrashInPresolve");
     }
   }
 
-  private IntVar[] entitiesOne;
   @Test
   public void testCrashInSolveWithAllowedAssignment() {
-    System.out.println("testCrashInSolveWithAllowedAssignment");
+    logger.info("testCrashInSolveWithAllowedAssignment");
     final CpModel model = new CpModel();
     final int numEntityOne = 50000;
     final int numEntityTwo = 100;
-    entitiesOne = new IntVar[numEntityOne];
+    final IntVar[] entitiesOne = new IntVar[numEntityOne];
     for (int i = 0; i < entitiesOne.length; i++) {
       entitiesOne[i] = model.newIntVar(1, numEntityTwo, "E" + i);
     }
@@ -109,7 +108,7 @@ public class SatSolverTest {
           oneTuple[j] = i;
         }
         table.addTuple(oneTuple);
-      }      
+      }
     } catch (final Exception e) {
       e.printStackTrace();
     }
@@ -123,7 +122,7 @@ public class SatSolverTest {
 
   @Test
   public void testCrashEquality() {
-    System.out.println("testCrashInSolveWithAllowedAssignment");
+    logger.info("testCrashInSolveWithAllowedAssignment");
     final CpModel model = new CpModel();
 
     final IntVar[] entities = new IntVar[20];
@@ -131,27 +130,27 @@ public class SatSolverTest {
       entities[i] = model.newIntVar(1, 5, "E" + i);
     }
 
-    final Integer[] equalities = new Integer[] {18, 4, 19, 3, 12};
+    final int[] equalities = new int[] {18, 4, 19, 3, 12};
     addEqualities(model, entities, equalities);
 
-    final Integer[] allowedAssignments = new Integer[] {12, 8, 15};
-    final Integer[] allowedAssignmentValues = new Integer[] {1, 3};
+    final int[] allowedAssignments = new int[] {12, 8, 15};
+    final int[] allowedAssignmentValues = new int[] {1, 3};
     addAllowedAssignMents(model, entities, allowedAssignments, allowedAssignmentValues);
 
-    final Integer[] forbiddenAssignments1 = new Integer[] {6, 15, 19};
-    final Integer[] forbiddenAssignments1Values = new Integer[] {3};
-    final Integer[] forbiddenAssignments2 = new Integer[] {10, 19};
-    final Integer[] forbiddenAssignments2Values = new Integer[] {4};
-    final Integer[] forbiddenAssignments3 = new Integer[] {18, 0, 9, 7};
-    final Integer[] forbiddenAssignments3Values = new Integer[] {4};
-    final Integer[] forbiddenAssignments4 = new Integer[] {14, 11};
-    final Integer[] forbiddenAssignments4Values = new Integer[] {1, 2, 3, 4, 5};
-    final Integer[] forbiddenAssignments5 = new Integer[] {5, 16, 1, 3};
-    final Integer[] forbiddenAssignments5Values = new Integer[] {1, 2, 3, 4, 5};
-    final Integer[] forbiddenAssignments6 = new Integer[] {2, 6, 11, 4};
-    final Integer[] forbiddenAssignments6Values = new Integer[] {1, 2, 3, 4, 5};
-    final Integer[] forbiddenAssignments7 = new Integer[] {6, 18, 12, 2, 9, 14};
-    final Integer[] forbiddenAssignments7Values = new Integer[] {1, 2, 3, 4, 5};
+    final int[] forbiddenAssignments1 = new int[] {6, 15, 19};
+    final int[] forbiddenAssignments1Values = new int[] {3};
+    final int[] forbiddenAssignments2 = new int[] {10, 19};
+    final int[] forbiddenAssignments2Values = new int[] {4};
+    final int[] forbiddenAssignments3 = new int[] {18, 0, 9, 7};
+    final int[] forbiddenAssignments3Values = new int[] {4};
+    final int[] forbiddenAssignments4 = new int[] {14, 11};
+    final int[] forbiddenAssignments4Values = new int[] {1, 2, 3, 4, 5};
+    final int[] forbiddenAssignments5 = new int[] {5, 16, 1, 3};
+    final int[] forbiddenAssignments5Values = new int[] {1, 2, 3, 4, 5};
+    final int[] forbiddenAssignments6 = new int[] {2, 6, 11, 4};
+    final int[] forbiddenAssignments6Values = new int[] {1, 2, 3, 4, 5};
+    final int[] forbiddenAssignments7 = new int[] {6, 18, 12, 2, 9, 14};
+    final int[] forbiddenAssignments7Values = new int[] {1, 2, 3, 4, 5};
 
     addForbiddenAssignments(forbiddenAssignments1Values, forbiddenAssignments1, entities, model);
     addForbiddenAssignments(forbiddenAssignments2Values, forbiddenAssignments2, entities, model);
@@ -161,8 +160,8 @@ public class SatSolverTest {
     addForbiddenAssignments(forbiddenAssignments6Values, forbiddenAssignments6, entities, model);
     addForbiddenAssignments(forbiddenAssignments7Values, forbiddenAssignments7, entities, model);
 
-    final Integer[] configuration =
-        new Integer[] {5, 4, 2, 3, 3, 3, 4, 3, 3, 1, 4, 4, 3, 1, 4, 1, 4, 4, 3, 3};
+    final int[] configuration =
+        new int[] {5, 4, 2, 3, 3, 3, 4, 3, 3, 1, 4, 4, 3, 1, 4, 1, 4, 4, 3, 3};
     for (int i = 0; i < configuration.length; i++) {
       model.addEquality(entities[i], configuration[i]);
     }
@@ -173,7 +172,7 @@ public class SatSolverTest {
 
   @Test
   public void testLogCapture() {
-    System.out.println("testLogCapture");
+    logger.info("testLogCapture");
 
     // Creates the model.
     CpModel model = new CpModel();
@@ -189,36 +188,31 @@ public class SatSolverTest {
     final CpSolver solver = new CpSolver();
     StringBuilder logBuilder = new StringBuilder();
     Consumer<String> appendToLog = (String message) -> {
-      System.out.println(
-          "Current Thread Name:" + Thread.currentThread().getName()
-          + " Id:" + Thread.currentThread().getId()
-          + " msg:" + message
-          );
+      logger.info("Current Thread Name:" + Thread.currentThread().getName()
+          + " Id:" + Thread.currentThread().getId() + " msg:" + message);
       logBuilder.append(message).append('\n');
     };
     solver.setLogCallback(appendToLog);
-    solver.getParameters()
-      .setLogToStdout(false)
-      .setLogSearchProgress(true)
-      //.setNumSearchWorkers(1)
-      ;
+    solver.getParameters().setLogToStdout(false).setLogSearchProgress(true);
     CpSolverStatus status = solver.solve(model);
+    if (status != CpSolverStatus.OPTIMAL) {
+      throw new IllegalStateException("Wrong status in testCrashInPresolve");
+    }
 
     String log = logBuilder.toString();
     if (log.isEmpty()) {
-      throw new RuntimeException("Log should not be empty");
+      throw new IllegalStateException("Log should not be empty");
     }
   }
 
-  private void addEqualities(
-      final CpModel model, final IntVar[] entities, final Integer[] equalities) {
+  private void addEqualities(final CpModel model, final IntVar[] entities, final int[] equalities) {
     for (int i = 0; i < (equalities.length - 1); i++) {
       model.addEquality(entities[equalities[i]], entities[equalities[i + 1]]);
     }
   }
 
   private void addAllowedAssignMents(final CpModel model, final IntVar[] entities,
-      final Integer[] allowedAssignments, final Integer[] allowedAssignmentValues) {
+      final int[] allowedAssignments, final int[] allowedAssignmentValues) {
     final int[][] allAllowedValues =
         new int[allowedAssignmentValues.length][allowedAssignments.length];
     for (int i = 0; i < allowedAssignmentValues.length; i++) {
@@ -233,7 +227,7 @@ public class SatSolverTest {
     }
     try {
       TableConstraint table = model.addAllowedAssignments(specificEntities);
-      for (Integer[] tuple : allowedAssignmentValues) {
+      for (int[] tuple : allowedAssignmentValues) {
         table.addTuple(tuple);
       }
     } catch (final Exception e) {
@@ -241,8 +235,8 @@ public class SatSolverTest {
     }
   }
 
-  private void addForbiddenAssignments(final Integer[] forbiddenAssignmentsValues,
-      final Integer[] forbiddenAssignments, final IntVar[] entities, final CpModel model) {
+  private void addForbiddenAssignments(final int[] forbiddenAssignmentsValues,
+      final int[] forbiddenAssignments, final IntVar[] entities, final CpModel model) {
     final IntVar[] specificEntities = new IntVar[forbiddenAssignments.length];
     for (int i = 0; i < forbiddenAssignments.length; i++) {
       specificEntities[i] = entities[forbiddenAssignments[i]];
@@ -258,9 +252,10 @@ public class SatSolverTest {
     }
     try {
       TableConstraint table = model.addForbiddenAssignments(specificEntities);
-      for (Integer[] tuple : forbiddenAssignmentsValues) {
+      for (int[] tuple : forbiddenAssignmentsValues) {
         table.addTuple(tuple);
-      }    } catch (final Exception e) {
+      }
+    } catch (final Exception e) {
       e.printStackTrace();
     }
   }
