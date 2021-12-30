@@ -1096,9 +1096,28 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
 
   // Restrict the target domain if possible.
   Domain implied(1);
-  for (const LinearExpressionProto& expr : ct->int_prod().exprs()) {
-    implied =
-        implied.ContinuousMultiplicationBy(context_->DomainSuperSetOf(expr));
+  bool is_square = false;
+  if (ct->int_prod().exprs_size() == 2 &&
+      LinearExpressionProtosAreEqual(ct->int_prod().exprs(0),
+                                     ct->int_prod().exprs(1))) {
+    is_square = true;
+    const Domain domain = context_->DomainSuperSetOf(ct->int_prod().exprs(0));
+    if (domain.Size() < 50) {
+      // Exact computation
+      std::vector<int64_t> values;
+      for (const int64_t value : domain.Values()) {
+        values.push_back(value * value);
+      }
+      implied = Domain::FromValues(values);
+    } else {
+      implied = domain.ContinuousMultiplicationBy(domain).IntersectionWith(
+          {0, std::numeric_limits<int64_t>::max()});
+    }
+  } else {
+    for (const LinearExpressionProto& expr : ct->int_prod().exprs()) {
+      implied =
+          implied.ContinuousMultiplicationBy(context_->DomainSuperSetOf(expr));
+    }
   }
   bool domain_modified = false;
   if (!context_->IntersectDomainWith(ct->int_prod().target(), implied,
@@ -1106,7 +1125,8 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
     return false;
   }
   if (domain_modified) {
-    context_->UpdateRuleStats("int_prod: reduced target domain.");
+    context_->UpdateRuleStats(absl::StrCat(
+        is_square ? "int_square" : "int_prod", ": reduced target domain."));
   }
 
   if (ct->int_prod().exprs_size() == 2) {
@@ -1119,7 +1139,7 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
       if (!context_->IntersectDomainWith(product, Domain(0, 1))) {
         return false;
       }
-      context_->UpdateRuleStats("int_prod: fix variable to zero or one.");
+      context_->UpdateRuleStats("int_square: fix variable to zero or one.");
       return RemoveConstraint(ct);
     }
   }
