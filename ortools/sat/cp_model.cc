@@ -386,14 +386,6 @@ DoubleLinearExpr DoubleLinearExpr::Sum(absl::Span<const BoolVar> vars) {
   return result;
 }
 
-DoubleLinearExpr DoubleLinearExpr::Sum(std::initializer_list<IntVar> vars) {
-  DoubleLinearExpr result;
-  for (const IntVar& var : vars) {
-    result.AddTerm(var, 1.0);
-  }
-  return result;
-}
-
 DoubleLinearExpr DoubleLinearExpr::ScalProd(absl::Span<const IntVar> vars,
                                             absl::Span<const double> coeffs) {
   CHECK_EQ(vars.size(), coeffs.size());
@@ -414,24 +406,8 @@ DoubleLinearExpr DoubleLinearExpr::ScalProd(absl::Span<const BoolVar> vars,
   return result;
 }
 
-DoubleLinearExpr DoubleLinearExpr::ScalProd(std::initializer_list<IntVar> vars,
-                                            absl::Span<const double> coeffs) {
-  CHECK_EQ(vars.size(), coeffs.size());
-  DoubleLinearExpr result;
-  int count = 0;
-  for (const IntVar& var : vars) {
-    result.AddTerm(var, coeffs[count++]);
-  }
-  return result;
-}
-
 DoubleLinearExpr& DoubleLinearExpr::operator+=(double value) {
   constant_ += value;
-  return *this;
-}
-
-DoubleLinearExpr& DoubleLinearExpr::AddConstant(double constant) {
-  constant_ += constant;
   return *this;
 }
 
@@ -778,8 +754,7 @@ IntervalVar CpModelBuilder::NewOptionalIntervalVar(const LinearExpr& start,
                                                    const LinearExpr& size,
                                                    const LinearExpr& end,
                                                    BoolVar presence) {
-  AddEquality(LinearExpr(start).AddExpression(size), end)
-      .OnlyEnforceIf(presence);
+  AddEquality(LinearExpr(start) + size, end).OnlyEnforceIf(presence);
 
   const int index = cp_model_.constraints_size();
   ConstraintProto* const ct = cp_model_.add_constraints();
@@ -808,6 +783,26 @@ Constraint CpModelBuilder::AddBoolOr(absl::Span<const BoolVar> literals) {
   ConstraintProto* const proto = cp_model_.add_constraints();
   for (const BoolVar& lit : literals) {
     proto->mutable_bool_or()->add_literals(lit.index_);
+  }
+  return Constraint(proto);
+}
+
+Constraint CpModelBuilder::AddAtLeastOne(absl::Span<const BoolVar> literals) {
+  return AddBoolOr(literals);
+}
+
+Constraint CpModelBuilder::AddAtMostOne(absl::Span<const BoolVar> literals) {
+  ConstraintProto* const proto = cp_model_.add_constraints();
+  for (const BoolVar& lit : literals) {
+    proto->mutable_at_most_one()->add_literals(lit.index_);
+  }
+  return Constraint(proto);
+}
+
+Constraint CpModelBuilder::AddExactlyOne(absl::Span<const BoolVar> literals) {
+  ConstraintProto* const proto = cp_model_.add_constraints();
+  for (const BoolVar& lit : literals) {
+    proto->mutable_exactly_one()->add_literals(lit.index_);
   }
   return Constraint(proto);
 }

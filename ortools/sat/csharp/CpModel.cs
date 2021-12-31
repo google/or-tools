@@ -447,6 +447,35 @@ public class CpModel
         return ct;
     }
 
+    public Constraint AddAtLeastOne(IEnumerable<ILiteral> literals)
+    {
+        return AddBoolOr(literals);
+    }
+
+    public Constraint AddAtMostOne(IEnumerable<ILiteral> literals)
+    {
+        Constraint ct = new Constraint(model_);
+        BoolArgumentProto bool_argument = new BoolArgumentProto();
+        foreach (ILiteral lit in literals)
+        {
+            bool_argument.Literals.Add(lit.GetIndex());
+        }
+        ct.Proto.AtMostOne = bool_argument;
+        return ct;
+    }
+
+    public Constraint AddExactlyOne(IEnumerable<ILiteral> literals)
+    {
+        Constraint ct = new Constraint(model_);
+        BoolArgumentProto bool_argument = new BoolArgumentProto();
+        foreach (ILiteral lit in literals)
+        {
+            bool_argument.Literals.Add(lit.GetIndex());
+        }
+        ct.Proto.ExactlyOne = bool_argument;
+        return ct;
+    }
+
     public Constraint AddBoolAnd(IEnumerable<ILiteral> literals)
     {
         Constraint ct = new Constraint(model_);

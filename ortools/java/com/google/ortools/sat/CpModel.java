@@ -121,12 +121,42 @@ public final class CpModel {
     return ct;
   }
 
+  /** Same as addBoolOr. {@code Sum(literals) >= 1}. */
+  public Constraint addAtLeastOne(Literal[] literals) {
+    Constraint ct = new Constraint(modelBuilder);
+    BoolArgumentProto.Builder boolOr = ct.getBuilder().getBoolOrBuilder();
+    for (Literal lit : literals) {
+      boolOr.addLiterals(lit.getIndex());
+    }
+    return ct;
+  }
+
+  /** Adds {@code AtMostOne(literals): Sum(literals) <= 1}. */
+  public Constraint addAtMostOne(Literal[] literals) {
+    Constraint ct = new Constraint(modelBuilder);
+    BoolArgumentProto.Builder atMostOne = ct.getBuilder().getAtMostOneBuilder();
+    for (Literal lit : literals) {
+      atMostOne.addLiterals(lit.getIndex());
+    }
+    return ct;
+  }
+
+  /** Adds {@code ExactlyOne(literals): Sum(literals) == 1}. */
+  public Constraint addExactlyOne(Literal[] literals) {
+    Constraint ct = new Constraint(modelBuilder);
+    BoolArgumentProto.Builder exactlyOne = ct.getBuilder().getExactlyOneBuilder();
+    for (Literal lit : literals) {
+      exactlyOne.addLiterals(lit.getIndex());
+    }
+    return ct;
+  }
+
   /** Adds {@code And(literals) == true}. */
   public Constraint addBoolAnd(Literal[] literals) {
     Constraint ct = new Constraint(modelBuilder);
-    BoolArgumentProto.Builder boolOr = ct.getBuilder().getBoolAndBuilder();
+    BoolArgumentProto.Builder boolAnd = ct.getBuilder().getBoolAndBuilder();
     for (Literal lit : literals) {
-      boolOr.addLiterals(lit.getIndex());
+      boolAnd.addLiterals(lit.getIndex());
     }
     return ct;
   }
@@ -134,9 +164,9 @@ public final class CpModel {
   /** Adds {@code XOr(literals) == true}. */
   public Constraint addBoolXor(Literal[] literals) {
     Constraint ct = new Constraint(modelBuilder);
-    BoolArgumentProto.Builder boolOr = ct.getBuilder().getBoolXorBuilder();
+    BoolArgumentProto.Builder boolXOr = ct.getBuilder().getBoolXorBuilder();
     for (Literal lit : literals) {
-      boolOr.addLiterals(lit.getIndex());
+      boolXOr.addLiterals(lit.getIndex());
     }
     return ct;
   }

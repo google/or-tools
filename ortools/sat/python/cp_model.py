@@ -1497,10 +1497,30 @@ class CpModel(object):
         return ct
 
     def AddBoolOr(self, literals):
-        """Adds `Or(literals) == true`."""
+        """Adds `Or(literals) == true`: Sum(literals) >= 1."""
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
         model_ct.bool_or.literals.extend(
+            [self.GetOrMakeBooleanIndex(x) for x in literals])
+        return ct
+
+    def AddAtLeastOne(self, literals):
+        """Same as `AddBoolOr`: `Sum(literals) >= 1`."""
+        return self.AddBoolOr(literals)
+
+    def AddAtMostOne(self, literals):
+        """Adds `AtMostOne(literals)`: `Sum(literals) <= 1`."""
+        ct = Constraint(self.__model.constraints)
+        model_ct = self.__model.constraints[ct.Index()]
+        model_ct.at_most_one.literals.extend(
+            [self.GetOrMakeBooleanIndex(x) for x in literals])
+        return ct
+
+    def AddExactlyOne(self, literals):
+        """Adds `ExactlyOne(literals)`: `Sum(literals) == 1`."""
+        ct = Constraint(self.__model.constraints)
+        model_ct = self.__model.constraints[ct.Index()]
+        model_ct.exactly_one.literals.extend(
             [self.GetOrMakeBooleanIndex(x) for x in literals])
         return ct
 

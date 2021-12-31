@@ -299,7 +299,6 @@ class LinearExpr {
   LinearExpr& AddVar(BoolVar var);
   LinearExpr& AddTerm(BoolVar var, int64_t coeff);
   LinearExpr& AddTerm(IntVar var, int64_t coeff);
-  LinearExpr& AddExpression(const LinearExpr& expr) { return *this += expr; }
 
   /// Returns the vector of variable indices.
   const std::vector<int>& variables() const { return variables_; }
@@ -392,9 +391,6 @@ class DoubleLinearExpr {
   DoubleLinearExpr& AddTerm(IntVar var, double coeff);
   DoubleLinearExpr& AddTerm(BoolVar var, double coeff);
 
-  /// Deprecated. Use +=.
-  DoubleLinearExpr& AddConstant(double constant);
-
   /// Adds a constant value to the linear expression.
   DoubleLinearExpr& operator-=(double value);
 
@@ -413,19 +409,12 @@ class DoubleLinearExpr {
   /// Constructs the sum of a list of Boolean variables.
   static DoubleLinearExpr Sum(absl::Span<const BoolVar> vars);
 
-  /// Constructs the sum of a list of variables.
-  static DoubleLinearExpr Sum(std::initializer_list<IntVar> vars);
-
   /// Constructs the scalar product of variables and coefficients.
   static DoubleLinearExpr ScalProd(absl::Span<const IntVar> vars,
                                    absl::Span<const double> coeffs);
 
   /// Constructs the scalar product of Boolean variables and coefficients.
   static DoubleLinearExpr ScalProd(absl::Span<const BoolVar> vars,
-                                   absl::Span<const double> coeffs);
-
-  /// Constructs the scalar product of variables and coefficients.
-  static DoubleLinearExpr ScalProd(std::initializer_list<IntVar> vars,
                                    absl::Span<const double> coeffs);
 
   /// Returns the vector of variable indices.
@@ -791,6 +780,15 @@ class CpModelBuilder {
   /// Adds the constraint that at least one of the literals must be true.
   Constraint AddBoolOr(absl::Span<const BoolVar> literals);
 
+  /// Same as AddBoolOr. Sum literals >= 1.
+  Constraint AddAtLeastOne(absl::Span<const BoolVar> literals);
+
+  /// At most one literal is true. Sum literals <= 1.
+  Constraint AddAtMostOne(absl::Span<const BoolVar> literals);
+
+  /// Exactly one literal is true. Sum literals == 1.
+  Constraint AddExactlyOne(absl::Span<const BoolVar> literals);
+
   /// Adds the constraint that all literals must be true.
   Constraint AddBoolAnd(absl::Span<const BoolVar> literals);
 
@@ -982,12 +980,6 @@ class CpModelBuilder {
   /// Adds target == max(exprs).
   Constraint AddMaxEquality(const LinearExpr& target,
                             std::initializer_list<LinearExpr> exprs);
-
-  // Deprecated, use AddMaxEquality.
-  Constraint AddLinMaxEquality(const LinearExpr& target,
-                               absl::Span<const LinearExpr> exprs) {
-    return AddMaxEquality(target, exprs);
-  }
 
   /// Adds target = num / denom (integer division rounded towards 0).
   Constraint AddDivisionEquality(const LinearExpr& target,
