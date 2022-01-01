@@ -83,11 +83,11 @@ def main():
     # [START constraints]
     # Each worker is assigned to at most one task.
     for worker in range(num_workers):
-        model.Add(sum(x[worker, task] for task in range(num_tasks)) <= 1)
+        model.AddAtMostOne([x[worker, task] for task in range(num_tasks)])
 
     # Each task is assigned to exactly one worker.
     for task in range(num_tasks):
-        model.Add(sum(x[worker, task] for worker in range(num_workers)) == 1)
+        model.AddExactlyOne([x[worker, task] for worker in range(num_workers)])
     # [END constraints]
 
     # [START assignments]
@@ -97,8 +97,9 @@ def main():
         work[worker] = model.NewBoolVar(f'work[{worker}]')
 
     for worker in range(num_workers):
-        model.Add(work[worker] == sum(
-            x[worker, task] for task in range(num_tasks)))
+        for task in range(num_tasks):
+            model.Add(work[worker] == sum(
+                x[worker, task] for task in range(num_tasks)))
 
     # Define the allowed groups of worders
     model.AddAllowedAssignments([work[0], work[1], work[2], work[3]], group1)

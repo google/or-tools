@@ -164,8 +164,7 @@ void LoadAndSolve(const std::string& file_name, int instance) {
       cp_model.AddImplication(item_to_bin[item][b], bin_is_used[b]);
       all_items_in_bin.push_back(item_to_bin[item][b]);
     }
-    all_items_in_bin.push_back(bin_is_used[b].Not());
-    cp_model.AddBoolOr(all_items_in_bin);
+    cp_model.AddBoolOr(all_items_in_bin).OnlyEnforceIf(bin_is_used[b]);
   }
 
   // Symmetry breaking.

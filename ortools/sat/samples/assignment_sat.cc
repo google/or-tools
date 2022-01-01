@@ -25,8 +25,8 @@ void IntegerProgrammingExample() {
       {90, 80, 75, 70},   {35, 85, 55, 65},   {125, 95, 90, 95},
       {45, 110, 95, 115}, {50, 100, 90, 100},
   };
-  const int num_workers = costs.size();
-  const int num_tasks = costs[0].size();
+  const int num_workers = static_cast<int>(costs.size());
+  const int num_tasks = static_cast<int>(costs[0].size());
   // [END data_model]
 
   // Model
@@ -51,15 +51,15 @@ void IntegerProgrammingExample() {
   // [START constraints]
   // Each worker is assigned to at most one task.
   for (int i = 0; i < num_workers; ++i) {
-    cp_model.AddLessOrEqual(LinearExpr::Sum(x[i]), 1);
+    cp_model.AddAtMostOne(x[i]);
   }
   // Each task is assigned to exactly one worker.
   for (int j = 0; j < num_tasks; ++j) {
-    LinearExpr task_sum;
+    std::vector<BoolVar> tasks;
     for (int i = 0; i < num_workers; ++i) {
-      task_sum.AddTerm(x[i][j], 1);
+      tasks.push_back(x[i][j]);
     }
-    cp_model.AddEquality(task_sum, 1);
+    cp_model.AddExactlyOne(tasks);
   }
   // [END constraints]
 

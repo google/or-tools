@@ -62,11 +62,11 @@ void MultipleKnapsackSat() {
   // [START constraints]
   // Each item is assigned to at most one bin.
   for (int i : all_items) {
-    LinearExpr expr;
+    std::vector<BoolVar> copies;
     for (int b : all_bins) {
-      expr += x[std::make_tuple(i, b)];
+      copies.push_back(x[std::make_tuple(i, b)]);
     }
-    cp_model.AddLessOrEqual(expr, 1);
+    cp_model.AddAtMostOne(copies);
   }
 
   // The amount packed in each bin cannot exceed its capacity.

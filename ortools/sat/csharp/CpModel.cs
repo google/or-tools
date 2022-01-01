@@ -611,6 +611,17 @@ public class CpModel
         return ct;
     }
 
+    public Constraint AddMultiplicationEquality(LinearExpr target, LinearExpr left, LinearExpr right)
+    {
+        Constraint ct = new Constraint(model_);
+        LinearArgumentProto args = new LinearArgumentProto();
+        args.Target = GetLinearExpressionProto(target);
+        args.Exprs.Add(GetLinearExpressionProto(left));
+        args.Exprs.Add(GetLinearExpressionProto(right));
+        ct.Proto.IntProd = args;
+        return ct;
+    }
+
     public Constraint AddProdEquality(IntVar target, IEnumerable<IntVar> vars)
     {
         return AddMultiplicationEquality(target, vars);

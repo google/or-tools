@@ -22,6 +22,7 @@
 #include "absl/memory/memory.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/time_limit.h"
 
@@ -964,30 +965,6 @@ void ProductPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   watcher->NotifyThatPropagatorMayNotReachFixedPointInOnePass(id);
 }
 
-namespace {
-
-// TODO(user): Find better implementation? In pratice passing via double is
-// almost always correct, but the CapProd() might be a bit slow. However this
-// is only called when we do propagate something.
-IntegerValue FloorSquareRoot(IntegerValue a) {
-  IntegerValue result(static_cast<int64_t>(
-      std::floor(std::sqrt(static_cast<double>(a.value())))));
-  while (CapProd(result.value(), result.value()) > a) --result;
-  while (CapProd(result.value() + 1, result.value() + 1) <= a) ++result;
-  return result;
-}
-
-// TODO(user): Find better implementation?
-IntegerValue CeilSquareRoot(IntegerValue a) {
-  IntegerValue result(static_cast<int64_t>(
-      std::ceil(std::sqrt(static_cast<double>(a.value())))));
-  while (CapProd(result.value(), result.value()) < a) ++result;
-  while ((result.value() - 1) * (result.value() - 1) >= a) --result;
-  return result;
-}
-
-}  // namespace
-
 SquarePropagator::SquarePropagator(AffineExpression x, AffineExpression s,
                                    IntegerTrail* integer_trail)
     : x_(x), s_(s), integer_trail_(integer_trail) {
@@ -1006,7 +983,7 @@ bool SquarePropagator::Propagate() {
       return false;
     }
   } else if (min_x_square < min_s) {
-    const IntegerValue new_min = CeilSquareRoot(min_s);
+    const IntegerValue new_min(CeilSquareRoot(min_s.value()));
     if (!integer_trail_->SafeEnqueue(
             x_.GreaterOrEqual(new_min),
             {s_.GreaterOrEqual((new_min - 1) * (new_min - 1) + 1)})) {
@@ -1023,7 +1000,7 @@ bool SquarePropagator::Propagate() {
       return false;
     }
   } else if (max_x_square > max_s) {
-    const IntegerValue new_max = FloorSquareRoot(max_s);
+    const IntegerValue new_max(FloorSquareRoot(max_s.value()));
     if (!integer_trail_->SafeEnqueue(
             x_.LowerOrEqual(new_max),
             {s_.LowerOrEqual(IntegerValue(CapProd(new_max.value() + 1,

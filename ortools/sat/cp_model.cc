@@ -1170,6 +1170,16 @@ Constraint CpModelBuilder::AddMultiplicationEquality(
   }
   return Constraint(proto);
 }
+Constraint CpModelBuilder::AddMultiplicationEquality(const LinearExpr& target,
+                                                     const LinearExpr& left,
+                                                     const LinearExpr& right) {
+  ConstraintProto* const proto = cp_model_.add_constraints();
+  *proto->mutable_int_prod()->mutable_target() = LinearExprToProto(target);
+  *proto->mutable_int_prod()->add_exprs() = LinearExprToProto(left);
+  *proto->mutable_int_prod()->add_exprs() = LinearExprToProto(right);
+
+  return Constraint(proto);
+}
 
 Constraint CpModelBuilder::AddNoOverlap(absl::Span<const IntervalVar> vars) {
   ConstraintProto* const proto = cp_model_.add_constraints();

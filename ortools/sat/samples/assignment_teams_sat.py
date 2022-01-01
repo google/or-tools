@@ -55,11 +55,11 @@ def main():
     # [START constraints]
     # Each worker is assigned to at most one task.
     for worker in range(num_workers):
-        model.Add(sum(x[worker, task] for task in range(num_tasks)) <= 1)
+        model.AddAtMostOne([x[worker, task] for task in range(num_tasks)])
 
     # Each task is assigned to exactly one worker.
     for task in range(num_tasks):
-        model.Add(sum(x[worker, task] for worker in range(num_workers)) == 1)
+        model.AddExactlyOne([x[worker, task] for worker in range(num_workers)])
 
     # Each team takes at most two tasks.
     team1_tasks = []

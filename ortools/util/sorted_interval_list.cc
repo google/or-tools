@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <map>
 #include <string>
 #include <utility>
@@ -517,6 +518,32 @@ Domain Domain::PositiveDivisionBySuperset(const Domain& divisor) const {
   CHECK_GT(divisor.Min(), 0);
   return Domain(std::min(Min() / divisor.Max(), Min() / divisor.Min()),
                 std::max(Max() / divisor.Min(), Max() / divisor.Max()));
+}
+
+Domain Domain::SquareSuperset() const {
+  if (IsEmpty()) return Domain();
+  const Domain abs_domain =
+      IntersectionWith({0, std::numeric_limits<int64_t>::max()})
+          .UnionWith(Negation().IntersectionWith(
+              {0, std::numeric_limits<int64_t>::max()}));
+  if (abs_domain.Size() >= kDomainComplexityLimit) {
+    Domain result;
+    result.intervals_.reserve(abs_domain.NumIntervals());
+    for (const auto& interval : abs_domain.intervals()) {
+      result.intervals_.push_back(
+          ClosedInterval(CapProd(interval.start, interval.start),
+                         CapProd(interval.end, interval.end)));
+    }
+    UnionOfSortedIntervals(&result.intervals_);
+    return result;
+  } else {
+    std::vector<int64_t> values;
+    values.reserve(abs_domain.Size());
+    for (const int64_t value : abs_domain.Values()) {
+      values.push_back(CapProd(value, value));
+    }
+    return Domain::FromValues(values);
+  }
 }
 
 // It is a bit difficult to see, but this code is doing the same thing as

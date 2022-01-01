@@ -64,7 +64,7 @@ def main():
 
     # Each task is assigned to exactly one worker.
     for task in range(num_tasks):
-        model.Add(sum(x[worker, task] for worker in range(num_workers)) == 1)
+        model.AddExactlyOne([x[worker, task] for worker in range(num_workers)])
     # [END constraints]
 
     # Objective

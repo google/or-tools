@@ -373,6 +373,11 @@ class Domain {
   Domain PositiveDivisionBySuperset(const Domain& divisor) const;
 
   /**
+   * Returns a superset of {x ∈ Int64, ∃ y ∈ D, x = y * y }.
+   */
+  Domain SquareSuperset() const;
+
+  /**
    * Advanced usage. Given some \e implied information on this domain that is
    * assumed to be always true (i.e. only values in the intersection with
    * implied domain matter), this function will simplify the current domain

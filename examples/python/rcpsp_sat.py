@@ -139,7 +139,7 @@ def SolveRcpsp(problem, proto_file, params):
             ]
 
             # Exactly one recipe must be performed.
-            model.Add(cp_model.LinearExpr.Sum(literals) == 1)
+            model.AddExactlyOne(literals)
 
         else:
             literals = [1]

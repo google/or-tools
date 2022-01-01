@@ -1889,18 +1889,18 @@ def bus_driver_scheduling(minimize_drivers, max_num_drivers):
             model.Add(working_times[d] >= min_working_time)
 
         # Create circuit constraint.
-        model.Add(sum(outgoing_source_literals) == 1)
+        model.AddExactlyOne(outgoing_source_literals)
         for s in range(num_shifts):
-            model.Add(sum(outgoing_literals[s]) == 1)
-            model.Add(sum(incoming_literals[s]) == 1)
-        model.Add(sum(incoming_sink_literals) == 1)
+            model.AddExactlyOne(outgoing_literals[s])
+            model.AddExactlyOne(incoming_literals[s])
+        model.AddExactlyOne(incoming_sink_literals)
 
     # Each shift is covered.
     for s in range(num_shifts):
-        model.Add(sum(performed[d, s] for d in range(num_drivers)) == 1)
+        model.AddExactlyOne([performed[d, s] for d in range(num_drivers)])
         # Globally, each node has one incoming and one outgoing literal
-        model.Add(sum(shared_incoming_literals[s]) == 1)
-        model.Add(sum(shared_outgoing_literals[s]) == 1)
+        model.AddExactlyOne(shared_incoming_literals[s])
+        model.AddExactlyOne(shared_outgoing_literals[s])
 
     # Symmetry breaking
 

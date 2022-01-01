@@ -77,6 +77,10 @@ int64_t ProductWithModularInverse(int64_t coeff, int64_t mod, int64_t rhs);
 bool SolveDiophantineEquationOfSizeTwo(int64_t& a, int64_t& b, int64_t& cte,
                                        int64_t& x0, int64_t& y0);
 
+// The argument must be non-negative.
+int64_t FloorSquareRoot(int64_t a);
+int64_t CeilSquareRoot(int64_t a);
+
 // The model "singleton" random engine used in the solver.
 //
 // In test, we usually set use_absl_random() so that the sequence is changed at

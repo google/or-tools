@@ -1597,7 +1597,7 @@ class CpModel(object):
         return ct
 
     def AddMultiplicationEquality(self, target, expressions):
-        """Adds `target == variables[0] * .. * variables[n]`."""
+        """Adds `target == expressions[0] * .. * expressions[n]`."""
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
         model_ct.int_prod.exprs.extend(

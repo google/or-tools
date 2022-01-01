@@ -19,6 +19,7 @@
 
 #include "absl/numeric/int128.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/util/saturated_arithmetic.h"
 
 namespace operations_research {
 namespace sat {
@@ -164,6 +165,26 @@ bool SolveDiophantineEquationOfSizeTwo(int64_t& a, int64_t& b, int64_t& cte,
 
   y0 = static_cast<int64_t>(r);
   return true;
+}
+
+// TODO(user): Find better implementation? In pratice passing via double is
+// almost always correct, but the CapProd() might be a bit slow. However this
+// is only called when we do propagate something.
+int64_t FloorSquareRoot(int64_t a) {
+  int64_t result =
+      static_cast<int64_t>(std::floor(std::sqrt(static_cast<double>(a))));
+  while (CapProd(result, result) > a) --result;
+  while (CapProd(result + 1, result + 1) <= a) ++result;
+  return result;
+}
+
+// TODO(user): Find better implementation?
+int64_t CeilSquareRoot(int64_t a) {
+  int64_t result =
+      static_cast<int64_t>(std::ceil(std::sqrt(static_cast<double>(a))));
+  while (CapProd(result, result) < a) ++result;
+  while ((result - 1) * (result - 1) >= a) --result;
+  return result;
 }
 
 int MoveOneUnprocessedLiteralLast(const std::set<LiteralIndex>& processed,

@@ -62,14 +62,14 @@ def main():
     # [START exactly_one_nurse]
     for d in all_days:
         for s in all_shifts:
-            model.Add(sum(shifts[(n, d, s)] for n in all_nurses) == 1)
+            model.AddExactlyOne([shifts[(n, d, s)] for n in all_nurses])
     # [END exactly_one_nurse]
 
     # Each nurse works at most one shift per day.
     # [START at_most_one_shift]
     for n in all_nurses:
         for d in all_days:
-            model.Add(sum(shifts[(n, d, s)] for s in all_shifts) <= 1)
+            model.AddAtMostOne([shifts[(n, d, s)] for s in all_shifts])
     # [END at_most_one_shift]
 
     # [START assign_nurses_evenly]

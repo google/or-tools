@@ -649,6 +649,17 @@ public final class CpModel {
     return ct;
   }
 
+  /** Adds {@code target == left * right}. */
+  public Constraint addMultiplicationEquality(
+      LinearExpr target, LinearExpr left, LinearExpr right) {
+    Constraint ct = new Constraint(modelBuilder);
+    LinearArgumentProto.Builder intProd = ct.getBuilder().getIntProdBuilder();
+    intProd.setTarget(getLinearExpressionProtoBuilderFromLinearExpr(target, /*negate=*/false));
+    intProd.addExprs(getLinearExpressionProtoBuilderFromLinearExpr(left, /*negate=*/false));
+    intProd.addExprs(getLinearExpressionProtoBuilderFromLinearExpr(right, /*negate=*/false));
+    return ct;
+  }
+
   // Scheduling support.
 
   /**

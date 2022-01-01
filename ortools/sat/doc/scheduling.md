@@ -1507,8 +1507,8 @@ def OverlappingIntervals():
   model.AddImplication(a_after_b, a_overlaps_b.Not())
   model.AddImplication(b_after_a, a_overlaps_b.Not())
 
-  # Option b: using a sum() == 1.
-  # model.Add(a_after_b + b_after_a + a_overlaps_b == 1)
+  # Option b: using an exactly one constraint.
+  # model.AddExactlyOne([a_after_b, b_after_a, a_overlaps_b])
 
   # Search for start values in increasing order for the two intervals.
   model.AddDecisionStrategy([start_var_a, start_var_b], cp_model.CHOOSE_FIRST,

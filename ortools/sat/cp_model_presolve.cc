@@ -1101,18 +1101,8 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
       LinearExpressionProtosAreEqual(ct->int_prod().exprs(0),
                                      ct->int_prod().exprs(1))) {
     is_square = true;
-    const Domain domain = context_->DomainSuperSetOf(ct->int_prod().exprs(0));
-    if (domain.Size() < 50) {
-      // Exact computation
-      std::vector<int64_t> values;
-      for (const int64_t value : domain.Values()) {
-        values.push_back(value * value);
-      }
-      implied = Domain::FromValues(values);
-    } else {
-      implied = domain.ContinuousMultiplicationBy(domain).IntersectionWith(
-          {0, std::numeric_limits<int64_t>::max()});
-    }
+    implied =
+        context_->DomainSuperSetOf(ct->int_prod().exprs(0)).SquareSuperset();
   } else {
     for (const LinearExpressionProto& expr : ct->int_prod().exprs()) {
       implied =
@@ -1127,6 +1117,21 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
   if (domain_modified) {
     context_->UpdateRuleStats(absl::StrCat(
         is_square ? "int_square" : "int_prod", ": reduced target domain."));
+  }
+
+  // y = x * x, we can reduce the domain of x from the domain of y.
+  if (is_square) {
+    const int64_t target_max = context_->MaxOf(ct->int_prod().target());
+    DCHECK_GE(target_max, 0);
+    const int64_t sqrt_max = FloorSquareRoot(target_max);
+    bool expr_reduced = false;
+    if (!context_->IntersectDomainWith(ct->int_prod().exprs(0),
+                                       {-sqrt_max, sqrt_max}, &expr_reduced)) {
+      return false;
+    }
+    if (expr_reduced) {
+      context_->UpdateRuleStats("int_square: reduced expr domain.");
+    }
   }
 
   if (ct->int_prod().exprs_size() == 2) {

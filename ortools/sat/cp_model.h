@@ -1005,6 +1005,11 @@ class CpModelBuilder {
   Constraint AddMultiplicationEquality(const LinearExpr& target,
                                        std::initializer_list<LinearExpr> exprs);
 
+  /// Adds target == left * right.
+  Constraint AddMultiplicationEquality(const LinearExpr& target,
+                                       const LinearExpr& left,
+                                       const LinearExpr& right);
+
   /**
    * Adds a no-overlap constraint that ensures that all present intervals do
    * not overlap in time.

@@ -340,7 +340,7 @@ def steel_mill_slab(problem, break_symmetries):
 
     # Orders are assigned to one slab.
     for o in all_orders:
-        model.Add(sum(assign[o]) == 1)
+        model.AddExactlyOne(assign[o])
 
     # Redundant constraint (sum of loads == sum of widths).
     model.Add(sum(loads) == sum(widths))
@@ -523,7 +523,7 @@ def steel_mill_slab_with_valid_slabs(problem, break_symmetries):
 
     # Orders are assigned to one slab.
     for o in all_orders:
-        model.Add(sum(assign[o]) == 1)
+        model.AddExactlyOne(assign[o])
 
     # Redundant constraint (sum of loads == sum of widths).
     model.Add(sum(loads) == sum(widths))

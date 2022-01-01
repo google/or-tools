@@ -54,7 +54,7 @@ void StepFunctionSampleSat() {
   cp_model.AddEquality(x, 7).OnlyEnforceIf(b3);
   cp_model.AddEquality(expr, 3).OnlyEnforceIf(b3);
 
-  // At least one bi is true. (we could use a sum == 1).
+  // At least one bi is true. (we could use an exactly one constraint).
   cp_model.AddBoolOr({b0, b2, b3});
 
   // Search for x values in increasing order.
