@@ -236,6 +236,10 @@ PY_PROTO_TYPEMAP(ortools.linear_solver.linear_solver_pb2,
                  operations_research::MPModelProto);
 
 PY_PROTO_TYPEMAP(ortools.linear_solver.linear_solver_pb2,
+                 MPModelRequest,
+                 operations_research::MPModelRequest);
+
+PY_PROTO_TYPEMAP(ortools.linear_solver.linear_solver_pb2,
                  MPSolutionResponse,
                  operations_research::MPSolutionResponse);
 
