@@ -37,7 +37,7 @@ public final class CpModelTest {
     final IntVar y = model.newIntVarFromDomain(Domain.fromValues(new long[] {0, 1, 2, 5}), "y");
     final IntVar z =
         model.newIntVarFromDomain(Domain.fromIntervals(new long[][] {{0, 2}, {5}}), "");
-    final IntVar t = model.newBoolVar("t");
+    final BoolVar t = model.newBoolVar("t");
     final IntVar u = model.newConstant(5);
 
     assertThat(x.getName()).isEqualTo("x");
@@ -85,9 +85,9 @@ public final class CpModelTest {
   public void testCpModel_addBoolOr() throws Exception {
     final CpModel model = new CpModel();
     assertNotNull(model);
-    final IntVar x = model.newBoolVar("x");
-    final IntVar y = model.newBoolVar("y");
-    final IntVar z = model.newBoolVar("z");
+    final BoolVar x = model.newBoolVar("x");
+    final BoolVar y = model.newBoolVar("y");
+    final BoolVar z = model.newBoolVar("z");
     model.addBoolOr(new Literal[] {x, y.not(), z});
 
     assertThat(model.model().getConstraintsCount()).isEqualTo(1);
@@ -99,9 +99,9 @@ public final class CpModelTest {
   public void testCpModel_addAtLeastOne() throws Exception {
     final CpModel model = new CpModel();
     assertNotNull(model);
-    final IntVar x = model.newBoolVar("x");
-    final IntVar y = model.newBoolVar("y");
-    final IntVar z = model.newBoolVar("z");
+    final BoolVar x = model.newBoolVar("x");
+    final BoolVar y = model.newBoolVar("y");
+    final BoolVar z = model.newBoolVar("z");
     model.addAtLeastOne(new Literal[] {x, y.not(), z});
 
     assertThat(model.model().getConstraintsCount()).isEqualTo(1);
@@ -113,9 +113,9 @@ public final class CpModelTest {
   public void testCpModel_addAtMostOne() throws Exception {
     final CpModel model = new CpModel();
     assertNotNull(model);
-    final IntVar x = model.newBoolVar("x");
-    final IntVar y = model.newBoolVar("y");
-    final IntVar z = model.newBoolVar("z");
+    final BoolVar x = model.newBoolVar("x");
+    final BoolVar y = model.newBoolVar("y");
+    final BoolVar z = model.newBoolVar("z");
     model.addAtMostOne(new Literal[] {x, y.not(), z});
 
     assertThat(model.model().getConstraintsCount()).isEqualTo(1);
@@ -127,9 +127,9 @@ public final class CpModelTest {
   public void testCpModel_addExactlyOne() throws Exception {
     final CpModel model = new CpModel();
     assertNotNull(model);
-    final IntVar x = model.newBoolVar("x");
-    final IntVar y = model.newBoolVar("y");
-    final IntVar z = model.newBoolVar("z");
+    final BoolVar x = model.newBoolVar("x");
+    final BoolVar y = model.newBoolVar("y");
+    final BoolVar z = model.newBoolVar("z");
     model.addExactlyOne(new Literal[] {x, y.not(), z});
 
     assertThat(model.model().getConstraintsCount()).isEqualTo(1);
@@ -141,9 +141,9 @@ public final class CpModelTest {
   public void testCpModel_addBoolAnd() throws Exception {
     final CpModel model = new CpModel();
     assertNotNull(model);
-    final IntVar x = model.newBoolVar("x");
-    final IntVar y = model.newBoolVar("y");
-    final IntVar z = model.newBoolVar("z");
+    final BoolVar x = model.newBoolVar("x");
+    final BoolVar y = model.newBoolVar("y");
+    final BoolVar z = model.newBoolVar("z");
     model.addBoolAnd(new Literal[] {x, y.not(), z});
 
     assertThat(model.model().getConstraintsCount()).isEqualTo(1);
@@ -155,9 +155,9 @@ public final class CpModelTest {
   public void testCpModel_addBoolXor() throws Exception {
     final CpModel model = new CpModel();
     assertNotNull(model);
-    final IntVar x = model.newBoolVar("x");
-    final IntVar y = model.newBoolVar("y");
-    final IntVar z = model.newBoolVar("z");
+    final BoolVar x = model.newBoolVar("x");
+    final BoolVar y = model.newBoolVar("y");
+    final BoolVar z = model.newBoolVar("z");
     model.addBoolXor(new Literal[] {x, y.not(), z});
 
     assertThat(model.model().getConstraintsCount()).isEqualTo(1);
@@ -169,8 +169,8 @@ public final class CpModelTest {
   public void testCpModel_addImplication() throws Exception {
     final CpModel model = new CpModel();
     assertNotNull(model);
-    final IntVar x = model.newBoolVar("x");
-    final IntVar y = model.newBoolVar("y");
+    final BoolVar x = model.newBoolVar("x");
+    final BoolVar y = model.newBoolVar("y");
     model.addImplication(x, y);
 
     assertThat(model.model().getConstraintsCount()).isEqualTo(1);
@@ -182,22 +182,22 @@ public final class CpModelTest {
   public void testCpModel_addLinear() throws Exception {
     final CpModel model = new CpModel();
     assertNotNull(model);
-    final IntVar x = model.newBoolVar("x");
-    final IntVar y = model.newBoolVar("y");
+    final BoolVar x = model.newBoolVar("x");
+    final BoolVar y = model.newBoolVar("y");
 
     model.addEquality(LinearExpr.newBuilder().add(x).add(y).build(), 1);
     assertThat(model.model().getConstraintsCount()).isEqualTo(1);
     assertThat(model.model().getConstraints(0).hasLinear()).isTrue();
     assertThat(model.model().getConstraints(0).getLinear().getVarsCount()).isEqualTo(2);
 
-    final IntVar b = model.newBoolVar("b");
+    final BoolVar b = model.newBoolVar("b");
     model.addEquality(LinearExpr.newBuilder().add(x).add(y).build(), 2).onlyEnforceIf(b.not());
     assertThat(model.model().getConstraintsCount()).isEqualTo(2);
     assertThat(model.model().getConstraints(1).hasLinear()).isTrue();
     assertThat(model.model().getConstraints(1).getEnforcementLiteralCount()).isEqualTo(1);
     assertThat(model.model().getConstraints(1).getEnforcementLiteral(0)).isEqualTo(-3);
 
-    final IntVar c = model.newBoolVar("c");
+    final BoolVar c = model.newBoolVar("c");
     model.addEquality(LinearExpr.newBuilder().add(x).add(y).build(), 3)
         .onlyEnforceIf(new Literal[] {b, c});
     assertThat(model.model().getConstraintsCount()).isEqualTo(3);
@@ -208,12 +208,22 @@ public final class CpModelTest {
   }
 
   @Test
+  public void testLinearExpr_addEquality_literal() {
+    final CpModel model = new CpModel();
+    assertNotNull(model);
+    final Literal x = model.newBoolVar("x");
+    final Literal y = model.newBoolVar("y").not();
+
+    model.addEquality(x, y);
+  }
+
+  @Test
   public void testCpModel_addMinEquality() throws Exception {
     final CpModel model = new CpModel();
     assertNotNull(model);
-    final IntVar x = model.newBoolVar("x");
-    final IntVar y = model.newBoolVar("y");
-    final IntVar t = model.newBoolVar("t");
+    final BoolVar x = model.newBoolVar("x");
+    final BoolVar y = model.newBoolVar("y");
+    final BoolVar t = model.newBoolVar("t");
 
     model.addMinEquality(t, new IntVar[] {x, y});
     assertThat(model.model().getConstraintsCount()).isEqualTo(1);
@@ -235,9 +245,9 @@ public final class CpModelTest {
   public void testCpModel_addMaxEquality() throws Exception {
     final CpModel model = new CpModel();
     assertNotNull(model);
-    final IntVar x = model.newBoolVar("x");
-    final IntVar y = model.newBoolVar("y");
-    final IntVar t = model.newBoolVar("t");
+    final BoolVar x = model.newBoolVar("x");
+    final BoolVar y = model.newBoolVar("y");
+    final BoolVar t = model.newBoolVar("t");
 
     model.addMaxEquality(t, new IntVar[] {x, y});
     assertThat(model.model().getConstraintsCount()).isEqualTo(1);
@@ -451,8 +461,8 @@ public final class CpModelTest {
   public void testCpModel_modelStats() throws Exception {
     final CpModel model = new CpModel();
     assertNotNull(model);
-    final IntVar x = model.newBoolVar("x");
-    final IntVar y = model.newBoolVar("y");
+    final BoolVar x = model.newBoolVar("x");
+    final BoolVar y = model.newBoolVar("y");
     model.addImplication(x, y);
 
     String stats = model.modelStats();
@@ -463,8 +473,8 @@ public final class CpModelTest {
   public void testCpModel_validateOk() throws Exception {
     final CpModel model = new CpModel();
     assertNotNull(model);
-    final IntVar x = model.newBoolVar("x");
-    final IntVar y = model.newBoolVar("y");
+    final BoolVar x = model.newBoolVar("x");
+    final BoolVar y = model.newBoolVar("y");
     model.addImplication(x, y);
 
     String stats = model.validate();

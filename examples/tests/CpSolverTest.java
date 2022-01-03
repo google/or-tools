@@ -133,8 +133,8 @@ public final class CpSolverTest {
   public void testCpSolver_booleanValue() throws Exception {
     final CpModel model = new CpModel();
     assertNotNull(model);
-    final IntVar x = model.newBoolVar("x");
-    final IntVar y = model.newBoolVar("y");
+    final BoolVar x = model.newBoolVar("x");
+    final BoolVar y = model.newBoolVar("y");
     model.addBoolOr(new Literal[] {x, y.not()});
 
     // Creates a solver and solves the model.

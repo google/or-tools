@@ -29,6 +29,52 @@ public final class LinearExprTest {
   }
 
   @Test
+  public void testLinearExpr_add() {
+    final CpModel model = new CpModel();
+    assertNotNull(model);
+    final Domain domain = new Domain(0, 10);
+    final IntVar y = model.newIntVarFromDomain(domain, "y");
+
+    final LinearExpr expr = LinearExpr.newBuilder().add(y).build();
+    assertNotNull(expr);
+
+    assertEquals(1, expr.numElements());
+    assertEquals(y, expr.getVariable(0));
+    assertEquals(1, expr.getCoefficient(0));
+    assertEquals(0, expr.getOffset());
+  }
+
+  @Test
+  public void testLinearExpr_add_literal() {
+    final CpModel model = new CpModel();
+    assertNotNull(model);
+    final BoolVar y = model.newBoolVar("y");
+
+    final LinearExpr expr = LinearExpr.newBuilder().add(y).build();
+    assertNotNull(expr);
+
+    assertEquals(1, expr.numElements());
+    assertEquals(y, expr.getVariable(0));
+    assertEquals(1, expr.getCoefficient(0));
+    assertEquals(0, expr.getOffset());
+  }
+
+  @Test
+  public void testLinearExpr_add_negated_literal() {
+    final CpModel model = new CpModel();
+    assertNotNull(model);
+    final BoolVar y = model.newBoolVar("y");
+
+    final LinearExpr expr = LinearExpr.newBuilder().add(y.not()).build();
+    assertNotNull(expr);
+
+    assertEquals(1, expr.numElements());
+    assertEquals(y, expr.getVariable(0));
+    assertEquals(-1, expr.getCoefficient(0));
+    assertEquals(1, expr.getOffset());
+  }
+
+  @Test
   public void testLinearExpr_term() {
     final CpModel model = new CpModel();
     assertNotNull(model);
