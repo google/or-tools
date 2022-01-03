@@ -14,8 +14,6 @@ https://developers.google.com/optimization/cp/cp_solver
          * [C   code samples](#c-code-samples)
          * [Java code samples](#java-code-samples)
          * [C# code samples](#c-code-samples-1)
-
-
 <!--te-->
 
 

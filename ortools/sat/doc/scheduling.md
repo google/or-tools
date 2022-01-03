@@ -38,8 +38,6 @@ https://developers.google.com/optimization/
       * [Precedences between intervals](#precedences-between-intervals)
       * [Convex hull of a set of intervals](#convex-hull-of-a-set-of-intervals)
       * [Reservoir constraint](#reservoir-constraint)
-
-
 <!--te-->
 
 

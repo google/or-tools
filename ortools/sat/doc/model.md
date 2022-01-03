@@ -16,8 +16,6 @@ https://developers.google.com/optimization/
       * [Model copy](#model-copy)
          * [Python code](#python-code-1)
          * [C   code](#c-code-2)
-
-
 <!--te-->
 
 

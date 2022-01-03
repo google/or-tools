@@ -17,8 +17,6 @@ https://developers.google.com/optimization/
          * [C   code](#c-code-2)
          * [Java code](#java-code-1)
          * [C# code](#c-code-3)
-
-
 <!--te-->
 
 
