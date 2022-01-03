@@ -10,6 +10,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 // [START program]
 // Solve assignment problem.
 // [START import]
@@ -26,22 +27,22 @@ void AssignmentTaskSizes() {
   // Data
   // [START data]
   const std::vector<std::vector<int>> costs = {{
-    {{90, 76, 75, 70, 50, 74, 12, 68}},
-    {{35, 85, 55, 65, 48, 101, 70, 83}},
-    {{125, 95, 90, 105, 59, 120, 36, 73}},
-    {{45, 110, 95, 115, 104, 83, 37, 71}},
-    {{60, 105, 80, 75, 59, 62, 93, 88}},
-    {{45, 65, 110, 95, 47, 31, 81, 34}},
-    {{38, 51, 107, 41, 69, 99, 115, 48}},
-    {{47, 85, 57, 71, 92, 77, 109, 36}},
-    {{39, 63, 97, 49, 118, 56, 92, 61}},
-    {{47, 101, 71, 60, 88, 109, 52, 90}},
+      {{90, 76, 75, 70, 50, 74, 12, 68}},
+      {{35, 85, 55, 65, 48, 101, 70, 83}},
+      {{125, 95, 90, 105, 59, 120, 36, 73}},
+      {{45, 110, 95, 115, 104, 83, 37, 71}},
+      {{60, 105, 80, 75, 59, 62, 93, 88}},
+      {{45, 65, 110, 95, 47, 31, 81, 34}},
+      {{38, 51, 107, 41, 69, 99, 115, 48}},
+      {{47, 85, 57, 71, 92, 77, 109, 36}},
+      {{39, 63, 97, 49, 118, 56, 92, 61}},
+      {{47, 101, 71, 60, 88, 109, 52, 90}},
   }};
-  const int num_workers = costs.size();
+  const int num_workers = static_cast<int>(costs.size());
   std::vector<int> all_workers(num_workers);
   std::iota(all_workers.begin(), all_workers.end(), 0);
 
-  const int num_tasks = costs[0].size();
+  const int num_tasks = static_cast<int>(costs[0].size());
   std::vector<int> all_tasks(num_tasks);
   std::iota(all_tasks.begin(), all_tasks.end(), 0);
 
@@ -75,17 +76,17 @@ void AssignmentTaskSizes() {
   for (int worker : all_workers) {
     LinearExpr task_sum;
     for (int task : all_tasks) {
-      task_sum.AddTerm(x[worker][task], task_sizes[task]);
+      task_sum += x[worker][task] * task_sizes[task];
     }
     cp_model.AddLessOrEqual(task_sum, total_size_max);
   }
   // Each task is assigned to exactly one worker.
   for (int task : all_tasks) {
-    LinearExpr task_sum;
+    std::vector<BoolVar> tasks;
     for (int worker : all_workers) {
-      task_sum.AddTerm(x[worker][task], 1);
+      tasks.push_back(x[worker][task]);
     }
-    cp_model.AddEquality(task_sum, 1);
+    cp_model.AddExactlyOne(tasks);
   }
   // [END constraints]
 

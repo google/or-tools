@@ -20,6 +20,7 @@ import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.IntervalVar;
 import com.google.ortools.sat.LinearExpr;
+import com.google.ortools.sat.LinearExprBuilder;
 import com.google.ortools.sat.Literal;
 import java.util.ArrayList;
 import java.util.List;
@@ -47,7 +48,7 @@ public class RankingSampleSat {
           IntVar prec = model.newBoolVar(String.format("%d before %d", i, j));
           precedences[i][j] = prec;
           // Ensure that task i precedes task j if prec is true.
-          model.addLessOrEqualWithOffset(starts[i], starts[j], 1).onlyEnforceIf(prec);
+          model.addLessThan(starts[i], starts[j]).onlyEnforceIf(prec);
         }
       }
     }
@@ -69,7 +70,7 @@ public class RankingSampleSat {
         // The following boolOr will enforce that for any two intervals:
         //    i precedes j or j precedes i or at least one interval is not
         //        performed.
-        model.addBoolOr(list.toArray(new Literal[0]));
+        model.addBoolOr(list);
         // For efficiency, we add a redundant constraint declaring that only one of i precedes j and
         // j precedes i are true. This will speed up the solve because the reason of this
         // propagation is shorter that using interval bounds is true.
@@ -80,16 +81,13 @@ public class RankingSampleSat {
 
     // Links precedences and ranks.
     for (int i = 0; i < numTasks; ++i) {
-      IntVar[] vars = new IntVar[numTasks + 1];
-      int[] coefs = new int[numTasks + 1];
-      for (int j = 0; j < numTasks; ++j) {
-        vars[j] = (IntVar) precedences[j][i];
-        coefs[j] = 1;
-      }
-      vars[numTasks] = ranks[i];
-      coefs[numTasks] = -1;
       // ranks == sum(precedences) - 1;
-      model.addEquality(LinearExpr.scalProd(vars, coefs), 1);
+      LinearExprBuilder expr = LinearExpr.newBuilder();
+      for (int j = 0; j < numTasks; ++j) {
+        expr.add(precedences[j][i]);
+      }
+      expr.add(-1);
+      model.addEquality(ranks[i], expr.build());
     }
   }
 
@@ -133,7 +131,7 @@ public class RankingSampleSat {
     rankTasks(model, starts, presences, ranks);
 
     // Adds a constraint on ranks (ranks[0] < ranks[1]).
-    model.addLessOrEqualWithOffset(ranks[0], ranks[1], 1);
+    model.addLessThan(ranks[0], ranks[1]);
 
     // Creates makespan variable.
     IntVar makespan = model.newIntVar(0, horizon, "makespan");
@@ -147,15 +145,12 @@ public class RankingSampleSat {
     //
     // On this problem, as the fixed cost is less that the duration of the last interval, the solver
     // will not perform the last interval.
-    IntVar[] objectiveVars = new IntVar[numTasks + 1];
-    int[] objectiveCoefs = new int[numTasks + 1];
+    LinearExprBuilder obj = LinearExpr.newBuilder();
     for (int t = 0; t < numTasks; ++t) {
-      objectiveVars[t] = (IntVar) presences[t];
-      objectiveCoefs[t] = -7;
+      obj.addTerm(presences[t], -7);
     }
-    objectiveVars[numTasks] = makespan;
-    objectiveCoefs[numTasks] = 2;
-    model.minimize(LinearExpr.scalProd(objectiveVars, objectiveCoefs));
+    obj.addTerm(makespan, 2);
+    model.minimize(obj.build());
 
     // Creates a solver and solves the model.
     CpSolver solver = new CpSolver();

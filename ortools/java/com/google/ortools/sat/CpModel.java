@@ -121,8 +121,28 @@ public final class CpModel {
     return ct;
   }
 
+  /** Adds {@code Or(literals) == true}. */
+  public Constraint addBoolOr(Iterable<Literal> literals) {
+    Constraint ct = new Constraint(modelBuilder);
+    BoolArgumentProto.Builder boolOr = ct.getBuilder().getBoolOrBuilder();
+    for (Literal lit : literals) {
+      boolOr.addLiterals(lit.getIndex());
+    }
+    return ct;
+  }
+
   /** Same as addBoolOr. {@code Sum(literals) >= 1}. */
   public Constraint addAtLeastOne(Literal[] literals) {
+    Constraint ct = new Constraint(modelBuilder);
+    BoolArgumentProto.Builder boolOr = ct.getBuilder().getBoolOrBuilder();
+    for (Literal lit : literals) {
+      boolOr.addLiterals(lit.getIndex());
+    }
+    return ct;
+  }
+
+  /** Same as addBoolOr. {@code Sum(literals) >= 1}. */
+  public Constraint addAtLeastOne(Iterable<Literal> literals) {
     Constraint ct = new Constraint(modelBuilder);
     BoolArgumentProto.Builder boolOr = ct.getBuilder().getBoolOrBuilder();
     for (Literal lit : literals) {
@@ -141,8 +161,28 @@ public final class CpModel {
     return ct;
   }
 
+  /** Adds {@code AtMostOne(literals): Sum(literals) <= 1}. */
+  public Constraint addAtMostOne(Iterable<Literal> literals) {
+    Constraint ct = new Constraint(modelBuilder);
+    BoolArgumentProto.Builder atMostOne = ct.getBuilder().getAtMostOneBuilder();
+    for (Literal lit : literals) {
+      atMostOne.addLiterals(lit.getIndex());
+    }
+    return ct;
+  }
+
   /** Adds {@code ExactlyOne(literals): Sum(literals) == 1}. */
   public Constraint addExactlyOne(Literal[] literals) {
+    Constraint ct = new Constraint(modelBuilder);
+    BoolArgumentProto.Builder exactlyOne = ct.getBuilder().getExactlyOneBuilder();
+    for (Literal lit : literals) {
+      exactlyOne.addLiterals(lit.getIndex());
+    }
+    return ct;
+  }
+
+  /** Adds {@code ExactlyOne(literals): Sum(literals) == 1}. */
+  public Constraint addExactlyOne(Iterable<Literal> literals) {
     Constraint ct = new Constraint(modelBuilder);
     BoolArgumentProto.Builder exactlyOne = ct.getBuilder().getExactlyOneBuilder();
     for (Literal lit : literals) {
@@ -161,8 +201,28 @@ public final class CpModel {
     return ct;
   }
 
+  /** Adds {@code And(literals) == true}. */
+  public Constraint addBoolAnd(Iterable<Literal> literals) {
+    Constraint ct = new Constraint(modelBuilder);
+    BoolArgumentProto.Builder boolAnd = ct.getBuilder().getBoolAndBuilder();
+    for (Literal lit : literals) {
+      boolAnd.addLiterals(lit.getIndex());
+    }
+    return ct;
+  }
+
   /** Adds {@code XOr(literals) == true}. */
   public Constraint addBoolXor(Literal[] literals) {
+    Constraint ct = new Constraint(modelBuilder);
+    BoolArgumentProto.Builder boolXOr = ct.getBuilder().getBoolXorBuilder();
+    for (Literal lit : literals) {
+      boolXOr.addLiterals(lit.getIndex());
+    }
+    return ct;
+  }
+
+  /** Adds {@code XOr(literals) == true}. */
+  public Constraint addBoolXor(Iterable<Literal> literals) {
     Constraint ct = new Constraint(modelBuilder);
     BoolArgumentProto.Builder boolXOr = ct.getBuilder().getBoolXorBuilder();
     for (Literal lit : literals) {
@@ -207,12 +267,10 @@ public final class CpModel {
 
   /** Adds {@code left == right}. */
   public Constraint addEquality(LinearExpr left, LinearExpr right) {
-    return addLinearExpressionInDomain(new Difference(left, right), new Domain(0));
-  }
-
-  /** Adds {@code left + offset == right}. */
-  public Constraint addEqualityWithOffset(LinearExpr left, LinearExpr right, long offset) {
-    return addLinearExpressionInDomain(new Difference(left, right), new Domain(-offset));
+    LinearExprBuilder difference = LinearExpr.newBuilder();
+    difference.addExpression(left, 1);
+    difference.addExpression(right, -1);
+    return addLinearExpressionInDomain(difference.build(), new Domain(0));
   }
 
   /** Adds {@code expr <= value}. */
@@ -222,7 +280,10 @@ public final class CpModel {
 
   /** Adds {@code left <= right}. */
   public Constraint addLessOrEqual(LinearExpr left, LinearExpr right) {
-    return addLinearExpressionInDomain(new Difference(left, right), new Domain(Long.MIN_VALUE, 0));
+    LinearExprBuilder difference = LinearExpr.newBuilder();
+    difference.addExpression(left, 1);
+    difference.addExpression(right, -1);
+    return addLinearExpressionInDomain(difference.build(), new Domain(Long.MIN_VALUE, 0));
   }
 
   /** Adds {@code expr < value}. */
@@ -232,13 +293,10 @@ public final class CpModel {
 
   /** Adds {@code left < right}. */
   public Constraint addLessThan(LinearExpr left, LinearExpr right) {
-    return addLinearExpressionInDomain(new Difference(left, right), new Domain(Long.MIN_VALUE, -1));
-  }
-
-  /** Adds {@code left + offset <= right}. */
-  public Constraint addLessOrEqualWithOffset(LinearExpr left, LinearExpr right, long offset) {
-    return addLinearExpressionInDomain(
-        new Difference(left, right), new Domain(Long.MIN_VALUE, -offset));
+    LinearExprBuilder difference = LinearExpr.newBuilder();
+    difference.addExpression(left, 1);
+    difference.addExpression(right, -1);
+    return addLinearExpressionInDomain(difference.build(), new Domain(Long.MIN_VALUE, -1));
   }
 
   /** Adds {@code expr >= value}. */
@@ -248,7 +306,10 @@ public final class CpModel {
 
   /** Adds {@code left >= right}. */
   public Constraint addGreaterOrEqual(LinearExpr left, LinearExpr right) {
-    return addLinearExpressionInDomain(new Difference(left, right), new Domain(0, Long.MAX_VALUE));
+    LinearExprBuilder difference = LinearExpr.newBuilder();
+    difference.addExpression(left, 1);
+    difference.addExpression(right, -1);
+    return addLinearExpressionInDomain(difference.build(), new Domain(0, Long.MAX_VALUE));
   }
 
   /** Adds {@code expr > value}. */
@@ -258,13 +319,10 @@ public final class CpModel {
 
   /** Adds {@code left > right}. */
   public Constraint addGreaterThan(LinearExpr left, LinearExpr right) {
-    return addLinearExpressionInDomain(new Difference(left, right), new Domain(1, Long.MAX_VALUE));
-  }
-
-  /** Adds {@code left + offset >= right}. */
-  public Constraint addGreaterOrEqualWithOffset(LinearExpr left, LinearExpr right, long offset) {
-    return addLinearExpressionInDomain(
-        new Difference(left, right), new Domain(-offset, Long.MAX_VALUE));
+    LinearExprBuilder difference = LinearExpr.newBuilder();
+    difference.addExpression(left, 1);
+    difference.addExpression(right, -1);
+    return addLinearExpressionInDomain(difference.build(), new Domain(1, Long.MAX_VALUE));
   }
 
   /** Adds {@code expr != value}. */
@@ -276,15 +334,11 @@ public final class CpModel {
 
   /** Adds {@code left != right}. */
   public Constraint addDifferent(LinearExpr left, LinearExpr right) {
-    return addLinearExpressionInDomain(new Difference(left, right),
+    LinearExprBuilder difference = LinearExpr.newBuilder();
+    difference.addExpression(left, 1);
+    difference.addExpression(right, -1);
+    return addLinearExpressionInDomain(difference.build(),
         Domain.fromFlatIntervals(new long[] {Long.MIN_VALUE, -1, 1, Long.MAX_VALUE}));
-  }
-
-  /** Adds {@code left + offset != right}. */
-  public Constraint addDifferentWithOffset(LinearExpr left, LinearExpr right, long offset) {
-    return addLinearExpressionInDomain(new Difference(left, right),
-        Domain.fromFlatIntervals(
-            new long[] {Long.MIN_VALUE, -offset - 1, -offset + 1, Long.MAX_VALUE}));
   }
 
   // Integer constraints.
@@ -315,6 +369,20 @@ public final class CpModel {
    * @return an instance of the Constraint class
    */
   public Constraint addAllDifferent(LinearExpr[] expressions) {
+    Constraint ct = new Constraint(modelBuilder);
+    AllDifferentConstraintProto.Builder allDiff = ct.getBuilder().getAllDiffBuilder();
+    for (LinearExpr expr : expressions) {
+      allDiff.addExprs(getLinearExpressionProtoBuilderFromLinearExpr(expr, /*negate=*/false));
+    }
+    return ct;
+  }
+
+  /**
+   * Adds {@code AllDifferent(expressions)}.
+   *
+   * @see addAllDifferent(LinearExpr[]).
+   */
+  public Constraint addAllDifferent(Iterable<LinearExpr> expressions) {
     Constraint ct = new Constraint(modelBuilder);
     AllDifferentConstraintProto.Builder allDiff = ct.getBuilder().getAllDiffBuilder();
     for (LinearExpr expr : expressions) {
@@ -408,6 +476,21 @@ public final class CpModel {
   }
 
   /**
+   * Adds {@code AllowedAssignments(variables)}.
+   *
+   * @see addAllowedAssignments(IntVar[])
+   */
+  public TableConstraint addAllowedAssignments(Iterable<IntVar> variables) {
+    TableConstraint ct = new TableConstraint(modelBuilder);
+    TableConstraintProto.Builder table = ct.getBuilder().getTableBuilder();
+    for (IntVar var : variables) {
+      table.addVars(var.getIndex());
+    }
+    table.setNegated(false);
+    return ct;
+  }
+
+  /**
    * Adds {@code ForbiddenAssignments(variables)}.
    *
    * <p>A ForbiddenAssignments constraint is a constraint on an array of variables where the list of
@@ -418,6 +501,21 @@ public final class CpModel {
    *     directly to the table constraint.
    */
   public TableConstraint addForbiddenAssignments(IntVar[] variables) {
+    TableConstraint ct = new TableConstraint(modelBuilder);
+    TableConstraintProto.Builder table = ct.getBuilder().getTableBuilder();
+    for (IntVar var : variables) {
+      table.addVars(var.getIndex());
+    }
+    table.setNegated(true);
+    return ct;
+  }
+
+  /**
+   * Adds {@code ForbiddenAssignments(variables)}.
+   *
+   * @see addForbiddenAssignments(IntVar[])
+   */
+  public TableConstraint addForbiddenAssignments(Iterable<IntVar> variables) {
     TableConstraint ct = new TableConstraint(modelBuilder);
     TableConstraintProto.Builder table = ct.getBuilder().getTableBuilder();
     for (IntVar var : variables) {
@@ -562,6 +660,17 @@ public final class CpModel {
     return ct;
   }
 
+  /** Adds {@code target == Min(exprs)}. */
+  public Constraint addMinEquality(LinearExpr target, Iterable<LinearExpr> exprs) {
+    Constraint ct = new Constraint(modelBuilder);
+    LinearArgumentProto.Builder linMax = ct.getBuilder().getLinMaxBuilder();
+    linMax.setTarget(getLinearExpressionProtoBuilderFromLinearExpr(target, /*negate=*/true));
+    for (LinearExpr expr : exprs) {
+      linMax.addExprs(getLinearExpressionProtoBuilderFromLinearExpr(expr, /*negate=*/true));
+    }
+    return ct;
+  }
+
   /** Adds {@code target == Max(vars)}. */
   public Constraint addMaxEquality(LinearExpr target, IntVar[] vars) {
     Constraint ct = new Constraint(modelBuilder);
@@ -575,6 +684,17 @@ public final class CpModel {
 
   /** Adds {@code target == Max(exprs)}. */
   public Constraint addMaxEquality(LinearExpr target, LinearExpr[] exprs) {
+    Constraint ct = new Constraint(modelBuilder);
+    LinearArgumentProto.Builder linMax = ct.getBuilder().getLinMaxBuilder();
+    linMax.setTarget(getLinearExpressionProtoBuilderFromLinearExpr(target, /*negate=*/false));
+    for (LinearExpr expr : exprs) {
+      linMax.addExprs(getLinearExpressionProtoBuilderFromLinearExpr(expr, /*negate=*/false));
+    }
+    return ct;
+  }
+
+  /** Adds {@code target == Max(exprs)}. */
+  public Constraint addMaxEquality(LinearExpr target, Iterable<LinearExpr> exprs) {
     Constraint ct = new Constraint(modelBuilder);
     LinearArgumentProto.Builder linMax = ct.getBuilder().getLinMaxBuilder();
     linMax.setTarget(getLinearExpressionProtoBuilderFromLinearExpr(target, /*negate=*/false));
@@ -678,7 +798,10 @@ public final class CpModel {
    */
   public IntervalVar newIntervalVar(
       LinearExpr start, LinearExpr size, LinearExpr end, String name) {
-    addEquality(new Sum(start, size), end);
+    LinearExprBuilder expr = LinearExpr.newBuilder();
+    expr.addExpression(start);
+    expr.addExpression(size);
+    addEquality(expr.build(), end);
     return new IntervalVar(modelBuilder,
         getLinearExpressionProtoBuilderFromLinearExpr(start, /*negate=*/false),
         getLinearExpressionProtoBuilderFromLinearExpr(size, /*negate=*/false),
@@ -700,7 +823,8 @@ public final class CpModel {
     return new IntervalVar(modelBuilder,
         getLinearExpressionProtoBuilderFromLinearExpr(start, /*negate=*/false),
         getLinearExpressionProtoBuilderFromLong(size),
-        getLinearExpressionProtoBuilderFromLinearExpr(new Sum(start, size), /*negate=*/false),
+        getLinearExpressionProtoBuilderFromLinearExpr(
+            LinearExpr.newBuilder().addExpression(start).add(size).build(), /*negate=*/false),
         name);
   }
 
@@ -731,7 +855,8 @@ public final class CpModel {
    */
   public IntervalVar newOptionalIntervalVar(
       LinearExpr start, LinearExpr size, LinearExpr end, Literal isPresent, String name) {
-    addEquality(new Sum(start, size), end).onlyEnforceIf(isPresent);
+    addEquality(LinearExpr.newBuilder().addExpression(start).addExpression(size).build(), end)
+        .onlyEnforceIf(isPresent);
     return new IntervalVar(modelBuilder,
         getLinearExpressionProtoBuilderFromLinearExpr(start, /*negate=*/false),
         getLinearExpressionProtoBuilderFromLinearExpr(size, /*negate=*/false),
@@ -757,7 +882,8 @@ public final class CpModel {
     return new IntervalVar(modelBuilder,
         getLinearExpressionProtoBuilderFromLinearExpr(start, /*negate=*/false),
         getLinearExpressionProtoBuilderFromLong(size),
-        getLinearExpressionProtoBuilderFromLinearExpr(new Sum(start, size), /*negate=*/false),
+        getLinearExpressionProtoBuilderFromLinearExpr(
+            LinearExpr.newBuilder().addExpression(start).add(size).build(), /*negate=*/false),
         isPresent.getIndex(), name);
   }
 
@@ -778,6 +904,20 @@ public final class CpModel {
    * @return an instance of the Constraint class
    */
   public Constraint addNoOverlap(IntervalVar[] intervalVars) {
+    Constraint ct = new Constraint(modelBuilder);
+    NoOverlapConstraintProto.Builder noOverlap = ct.getBuilder().getNoOverlapBuilder();
+    for (IntervalVar var : intervalVars) {
+      noOverlap.addIntervals(var.getIndex());
+    }
+    return ct;
+  }
+
+  /**
+   * Adds {@code NoOverlap(intervalVars)}.
+   *
+   * @see addNoOverlap(IntervalVar[]).
+   */
+  public Constraint addNoOverlap(Iterable<IntervalVar> intervalVars) {
     Constraint ct = new Constraint(modelBuilder);
     NoOverlapConstraintProto.Builder noOverlap = ct.getBuilder().getNoOverlapBuilder();
     for (IntervalVar var : intervalVars) {

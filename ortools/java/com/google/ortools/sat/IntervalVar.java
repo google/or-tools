@@ -77,7 +77,7 @@ public final class IntervalVar {
     return LinearExpr.rebuildFromLinearExpressionProto(intervalBuilder.getSize(), modelBuilder);
   }
 
-  /** Returns the size expression. */
+  /** Returns the end expression. */
   public LinearExpr getEndExpr() {
     return LinearExpr.rebuildFromLinearExpressionProto(intervalBuilder.getEnd(), modelBuilder);
   }

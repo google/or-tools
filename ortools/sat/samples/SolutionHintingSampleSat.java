@@ -45,7 +45,7 @@ public class SolutionHintingSampleSat {
     // [END constraints]
 
     // [START objective]
-    model.maximize(LinearExpr.scalProd(new IntVar[] {x, y, z}, new int[] {1, 2, 3}));
+    model.maximize(LinearExpr.scalProd(new IntVar[] {x, y, z}, new long[] {1, 2, 3}));
     // [END objective]
 
     // Solution hinting: x <- 1, y <- 2

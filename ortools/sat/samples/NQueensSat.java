@@ -84,8 +84,8 @@ public final class NQueensSat {
     LinearExpr[] diag1 = new LinearExpr[boardSize];
     LinearExpr[] diag2 = new LinearExpr[boardSize];
     for (int i = 0; i < boardSize; ++i) {
-      diag1[i] = LinearExpr.affine(queens[i], /*coefficient=*/1, /*offset=*/i);
-      diag2[i] = LinearExpr.affine(queens[i], /*coefficient=*/1, /*offset=*/-i);
+      diag1[i] = LinearExpr.newBuilder().add(queens[i]).add(i).build();
+      diag2[i] = LinearExpr.newBuilder().add(queens[i]).add(-i).build();
     }
     model.addAllDifferent(diag1);
     model.addAllDifferent(diag2);

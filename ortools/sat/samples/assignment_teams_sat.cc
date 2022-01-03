@@ -10,6 +10,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 // [START program]
 // Solve a simple assignment problem.
 // [START import]
@@ -27,23 +28,23 @@ void AssignmentTeamsSat() {
   // Data
   // [START data]
   const std::vector<std::vector<int>> costs = {{
-    {{90, 76, 75, 70}},
-    {{35, 85, 55, 65}},
-    {{125, 95, 90, 105}},
-    {{45, 110, 95, 115}},
-    {{60, 105, 80, 75}},
-    {{45, 65, 110, 95}},
+      {{90, 76, 75, 70}},
+      {{35, 85, 55, 65}},
+      {{125, 95, 90, 105}},
+      {{45, 110, 95, 115}},
+      {{60, 105, 80, 75}},
+      {{45, 65, 110, 95}},
   }};
-  const int num_workers = costs.size();
+  const int num_workers = static_cast<int>(costs.size());
   std::vector<int> all_workers(num_workers);
   std::iota(all_workers.begin(), all_workers.end(), 0);
 
-  const int num_tasks = costs[0].size();
+  const int num_tasks = static_cast<int>(costs[0].size());
   std::vector<int> all_tasks(num_tasks);
   std::iota(all_tasks.begin(), all_tasks.end(), 0);
 
-  const std::vector<int64_t> team1 = {{ 0, 2, 4 }};
-  const std::vector<int64_t> team2 = {{ 1, 3, 5 }};
+  const std::vector<int> team1 = {{0, 2, 4}};
+  const std::vector<int> team2 = {{1, 3, 5}};
   // Maximum total of tasks for any team
   const int team_max = 2;
   // [END data]
@@ -71,31 +72,31 @@ void AssignmentTeamsSat() {
   // [START constraints]
   // Each worker is assigned to at most one task.
   for (int worker : all_workers) {
-    cp_model.AddLessOrEqual(LinearExpr::Sum(x[worker]), 1);
+    cp_model.AddAtMostOne(x[worker]);
   }
   // Each task is assigned to exactly one worker.
   for (int task : all_tasks) {
-    LinearExpr task_sum;
+    std::vector<BoolVar> tasks;
     for (int worker : all_workers) {
-      task_sum.AddTerm(x[worker][task], 1);
+      tasks.push_back(x[worker][task]);
     }
-    cp_model.AddEquality(task_sum, 1);
+    cp_model.AddExactlyOne(tasks);
   }
 
   // Each team takes at most two tasks.
   LinearExpr team1_tasks;
   for (int worker : team1) {
-        for (int task : all_tasks) {
-            team1_tasks.AddTerm(x[worker][task], 1);
-        }
+    for (int task : all_tasks) {
+      team1_tasks += x[worker][task];
+    }
   }
   cp_model.AddLessOrEqual(team1_tasks, team_max);
 
   LinearExpr team2_tasks;
   for (int worker : team2) {
-        for (int task : all_tasks) {
-            team2_tasks.AddTerm(x[worker][task], 1);
-        }
+    for (int task : all_tasks) {
+      team2_tasks += x[worker][task];
+    }
   }
   cp_model.AddLessOrEqual(team2_tasks, team_max);
   // [END constraints]

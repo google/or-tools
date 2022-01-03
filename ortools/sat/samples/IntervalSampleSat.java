@@ -29,8 +29,8 @@ public class IntervalSampleSat {
     // An interval can be created from three affine expressions.
     IntVar startVar = model.newIntVar(0, horizon, "start");
     IntVar endVar = model.newIntVar(0, horizon, "end");
-    IntervalVar intervalVar = model.newIntervalVar(
-        startVar, LinearExpr.constant(10), LinearExpr.affine(endVar, 1, 2), "interval");
+    IntervalVar intervalVar = model.newIntervalVar(startVar, LinearExpr.constant(10),
+        LinearExpr.newBuilder().add(endVar).add(2).build(), "interval");
     System.out.println(intervalVar);
 
     // If the size is fixed, a simpler version uses the start expression and the size.

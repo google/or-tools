@@ -11,16 +11,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// CP-SAT example that solves an assignment problem.
 // [START program]
+// CP-SAT example that solves an assignment problem.
 package com.google.ortools.sat.samples;
 // [START import]
 import com.google.ortools.Loader;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverStatus;
-import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.LinearExpr;
+import com.google.ortools.sat.LinearExprBuilder;
+import com.google.ortools.sat.Literal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -59,16 +60,11 @@ public class AssignmentTeamsSat {
 
     // Variables
     // [START variables]
-    IntVar[][] x = new IntVar[numWorkers][numTasks];
+    Literal[][] x = new Literal[numWorkers][numTasks];
     // Variables in a 1-dim array.
-    IntVar[] xFlat = new IntVar[numWorkers * numTasks];
-    int[] costsFlat = new int[numWorkers * numTasks];
     for (int worker : allWorkers) {
       for (int task : allTasks) {
         x[worker][task] = model.newBoolVar("x[" + worker + "," + task + "]");
-        int k = worker * numTasks + task;
-        xFlat[k] = x[worker][task];
-        costsFlat[k] = costs[worker][task];
       }
     }
     // [END variables]
@@ -77,43 +73,49 @@ public class AssignmentTeamsSat {
     // [START constraints]
     // Each worker is assigned to at most one task.
     for (int worker : allWorkers) {
-      IntVar[] vars = new IntVar[numTasks];
+      List<Literal> tasks = new ArrayList<>();
       for (int task : allTasks) {
-        vars[task] = x[worker][task];
+        tasks.add(x[worker][task]);
       }
-      model.addLessOrEqual(LinearExpr.sum(vars), 1);
+      model.addAtMostOne(tasks);
     }
+
     // Each task is assigned to exactly one worker.
     for (int task : allTasks) {
-      // LinearExpr taskSum;
-      IntVar[] vars = new IntVar[numWorkers];
+      List<Literal> workers = new ArrayList<>();
       for (int worker : allWorkers) {
-        vars[worker] = x[worker][task];
+        workers.add(x[worker][task]);
       }
-      model.addEquality(LinearExpr.sum(vars), 1);
+      model.addExactlyOne(workers);
     }
 
     // Each team takes at most two tasks.
-    List<IntVar> team1Tasks = new ArrayList<>();
+    LinearExprBuilder team1Tasks = LinearExpr.newBuilder();
     for (int worker : team1) {
       for (int task : allTasks) {
         team1Tasks.add(x[worker][task]);
       }
     }
-    model.addLessOrEqual(LinearExpr.sum(team1Tasks.toArray(new IntVar[0])), teamMax);
+    model.addLessOrEqual(team1Tasks.build(), teamMax);
 
-    List<IntVar> team2Tasks = new ArrayList<>();
+    LinearExprBuilder team2Tasks = LinearExpr.newBuilder();
     for (int worker : team2) {
       for (int task : allTasks) {
         team2Tasks.add(x[worker][task]);
       }
     }
-    model.addLessOrEqual(LinearExpr.sum(team2Tasks.toArray(new IntVar[0])), teamMax);
+    model.addLessOrEqual(team2Tasks.build(), teamMax);
     // [END constraints]
 
     // Objective
     // [START objective]
-    model.minimize(LinearExpr.scalProd(xFlat, costsFlat));
+    LinearExprBuilder obj = LinearExpr.newBuilder();
+    for (int worker : allWorkers) {
+      for (int task : allTasks) {
+        obj.addTerm(x[worker][task], costs[worker][task]);
+      }
+    }
+    model.minimize(obj.build());
     // [END objective]
 
     // Solve
@@ -129,7 +131,7 @@ public class AssignmentTeamsSat {
       System.out.println("Total cost: " + solver.objectiveValue() + "\n");
       for (int worker : allWorkers) {
         for (int task : allTasks) {
-          if (solver.value(x[worker][task]) == 1) {
+          if (solver.booleanValue(x[worker][task])) {
             System.out.println("Worker " + worker + " assigned to task " + task
                 + ".  Cost: " + costs[worker][task]);
           }

@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// CP-SAT example that solves an assignment problem.
 // [START program]
+// CP-SAT example that solves an assignment problem.
 package com.google.ortools.sat.samples;
 // [START import]
 import com.google.ortools.Loader;
@@ -21,7 +21,11 @@ import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.LinearExpr;
+import com.google.ortools.sat.LinearExprBuilder;
+import com.google.ortools.sat.Literal;
 import com.google.ortools.sat.TableConstraint;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.IntStream;
 // [END import]
 
@@ -32,10 +36,18 @@ public class AssignmentGroupsSat {
     // Data
     // [START data]
     int[][] costs = {
-      { 90, 76, 75, 70, 50, 74 },    { 35, 85, 55, 65, 48, 101 }, { 125, 95, 90, 105, 59, 120 },
-      { 45, 110, 95, 115, 104, 83 }, { 60, 105, 80, 75, 59, 62 }, { 45, 65, 110, 95, 47, 31 },
-      { 38, 51, 107, 41, 69, 99 },   { 47, 85, 57, 71, 92, 77 },  { 39, 63, 97, 49, 118, 56 },
-      { 47, 101, 71, 60, 88, 109 },  { 17, 39, 103, 64, 61, 92 }, { 101, 45, 83, 59, 92, 27 },
+        {90, 76, 75, 70, 50, 74},
+        {35, 85, 55, 65, 48, 101},
+        {125, 95, 90, 105, 59, 120},
+        {45, 110, 95, 115, 104, 83},
+        {60, 105, 80, 75, 59, 62},
+        {45, 65, 110, 95, 47, 31},
+        {38, 51, 107, 41, 69, 99},
+        {47, 85, 57, 71, 92, 77},
+        {39, 63, 97, 49, 118, 56},
+        {47, 101, 71, 60, 88, 109},
+        {17, 39, 103, 64, 61, 92},
+        {101, 45, 83, 59, 92, 27},
     };
     final int numWorkers = costs.length;
     final int numTasks = costs[0].length;
@@ -47,27 +59,27 @@ public class AssignmentGroupsSat {
     // Allowed groups of workers:
     // [START allowed_groups]
     int[][] group1 = {
-      { 0, 0, 1, 1 }, // Workers 2, 3
-      { 0, 1, 0, 1 }, // Workers 1, 3
-      { 0, 1, 1, 0 }, // Workers 1, 2
-      { 1, 1, 0, 0 }, // Workers 0, 1
-      { 1, 0, 1, 0 }, // Workers 0, 2
+        {0, 0, 1, 1}, // Workers 2, 3
+        {0, 1, 0, 1}, // Workers 1, 3
+        {0, 1, 1, 0}, // Workers 1, 2
+        {1, 1, 0, 0}, // Workers 0, 1
+        {1, 0, 1, 0}, // Workers 0, 2
     };
 
     int[][] group2 = {
-      { 0, 0, 1, 1 }, // Workers 6, 7
-      { 0, 1, 0, 1 }, // Workers 5, 7
-      { 0, 1, 1, 0 }, // Workers 5, 6
-      { 1, 1, 0, 0 }, // Workers 4, 5
-      { 1, 0, 0, 1 }, // Workers 4, 7
+        {0, 0, 1, 1}, // Workers 6, 7
+        {0, 1, 0, 1}, // Workers 5, 7
+        {0, 1, 1, 0}, // Workers 5, 6
+        {1, 1, 0, 0}, // Workers 4, 5
+        {1, 0, 0, 1}, // Workers 4, 7
     };
 
     int[][] group3 = {
-      { 0, 0, 1, 1 }, // Workers 10, 11
-      { 0, 1, 0, 1 }, // Workers 9, 11
-      { 0, 1, 1, 0 }, // Workers 9, 10
-      { 1, 0, 1, 0 }, // Workers 8, 10
-      { 1, 0, 0, 1 }, // Workers 8, 11
+        {0, 0, 1, 1}, // Workers 10, 11
+        {0, 1, 0, 1}, // Workers 9, 11
+        {0, 1, 1, 0}, // Workers 9, 10
+        {1, 0, 1, 0}, // Workers 8, 10
+        {1, 0, 0, 1}, // Workers 8, 11
     };
     // [END allowed_groups]
 
@@ -78,16 +90,10 @@ public class AssignmentGroupsSat {
 
     // Variables
     // [START variables]
-    IntVar[][] x = new IntVar[numWorkers][numTasks];
-    // Variables in a 1-dim array.
-    IntVar[] xFlat = new IntVar[numWorkers * numTasks];
-    int[] costsFlat = new int[numWorkers * numTasks];
+    Literal[][] x = new Literal[numWorkers][numTasks];
     for (int worker : allWorkers) {
       for (int task : allTasks) {
-        x[worker][task] = model.newBoolVar("x["+worker+","+task+"]");
-        int k = worker * numTasks + task;
-        xFlat[k] = x[worker][task];
-        costsFlat[k] = costs[worker][task];
+        x[worker][task] = model.newBoolVar("x[" + worker + "," + task + "]");
       }
     }
     // [END variables]
@@ -96,20 +102,20 @@ public class AssignmentGroupsSat {
     // [START constraints]
     // Each worker is assigned to at most one task.
     for (int worker : allWorkers) {
-      IntVar[] vars = new IntVar[numTasks];
+      List<Literal> tasks = new ArrayList<>();
       for (int task : allTasks) {
-        vars[task] = x[worker][task];
+        tasks.add(x[worker][task]);
       }
-      model.addLessOrEqual(LinearExpr.sum(vars), 1);
+      model.addAtMostOne(tasks);
     }
+
     // Each task is assigned to exactly one worker.
     for (int task : allTasks) {
-      // LinearExpr taskSum;
-      IntVar[] vars = new IntVar[numWorkers];
+      List<Literal> workers = new ArrayList<>();
       for (int worker : allWorkers) {
-        vars[worker] = x[worker][task];
+        workers.add(x[worker][task]);
       }
-      model.addEquality(LinearExpr.sum(vars), 1);
+      model.addExactlyOne(workers);
     }
     // [END constraints]
 
@@ -117,15 +123,15 @@ public class AssignmentGroupsSat {
     // Create variables for each worker, indicating whether they work on some task.
     IntVar[] work = new IntVar[numWorkers];
     for (int worker : allWorkers) {
-      work[worker] = model.newBoolVar("work["+worker+"]");
+      work[worker] = model.newBoolVar("work[" + worker + "]");
     }
 
     for (int worker : allWorkers) {
-      IntVar[] vars = new IntVar[numTasks];
+      LinearExprBuilder expr = LinearExpr.newBuilder();
       for (int task : allTasks) {
-        vars[task] = x[worker][task];
+        expr.add(x[worker][task]);
       }
-      model.addEquality(work[worker], LinearExpr.sum(vars));
+      model.addEquality(work[worker], expr.build());
     }
 
     // Define the allowed groups of worders
@@ -148,7 +154,13 @@ public class AssignmentGroupsSat {
 
     // Objective
     // [START objective]
-    model.minimize(LinearExpr.scalProd(xFlat, costsFlat));
+    LinearExprBuilder obj = LinearExpr.newBuilder();
+    for (int worker : allWorkers) {
+      for (int task : allTasks) {
+        obj.addTerm(x[worker][task], costs[worker][task]);
+      }
+    }
+    model.minimize(obj.build());
     // [END objective]
 
     // Solve
@@ -164,9 +176,9 @@ public class AssignmentGroupsSat {
       System.out.println("Total cost: " + solver.objectiveValue() + "\n");
       for (int worker : allWorkers) {
         for (int task : allTasks) {
-          if (solver.value(x[worker][task]) == 1) {
-            System.out.println(
-                "Worker " + worker + " assigned to task " + task + ".  Cost: " + costs[worker][task]);
+          if (solver.booleanValue(x[worker][task])) {
+            System.out.println("Worker " + worker + " assigned to task " + task
+                + ".  Cost: " + costs[worker][task]);
           }
         }
       }

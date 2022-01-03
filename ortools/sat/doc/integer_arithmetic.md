@@ -238,9 +238,9 @@ public class RabbitsAndPheasantsSat {
     IntVar r = model.newIntVar(0, 100, "r");
     IntVar p = model.newIntVar(0, 100, "p");
     // 20 heads.
-    model.addEquality(LinearExpr.sum(new IntVar[] {r, p}), 20);
+    model.addEquality(LinearExpr.newBuilder().add(r).add(p).build(), 20);
     // 56 legs.
-    model.addEquality(LinearExpr.scalProd(new IntVar[] {r, p}, new long[] {4, 2}), 56);
+    model.addEquality(LinearExpr.newBuilder().addTerm(r, 4).addTerm(p, 2).build(), 56);
 
     // Creates a solver and solves the model.
     CpSolver solver = new CpSolver();
@@ -505,23 +505,20 @@ public class EarlinessTardinessCostSampleSat {
     long largeConstant = 1000;
     IntVar expr = model.newIntVar(0, largeConstant, "expr");
 
-    // First segment: s1 == earlinessCost * (earlinessDate - x).
-    IntVar s1 = model.newIntVar(-largeConstant, largeConstant, "s1");
-    model.addEquality(
-        LinearExpr.scalProd(new IntVar[] {s1, x}, new long[] {1, earlinessCost}),
-        earlinessCost * earlinessDate);
-
-    // Second segment.
-    IntVar s2 = model.newConstant(0);
-
-    // Third segment: s3 == latenessCost * (x - latenessDate).
-    IntVar s3 = model.newIntVar(-largeConstant, largeConstant, "s3");
-    model.addEquality(
-        LinearExpr.scalProd(new IntVar[] {s3, x}, new long[] {1, -latenessCost}),
-        -latenessCost * latenessDate);
-
-    // Link together expr and x through s1, s2, and s3.
-    model.addMaxEquality(expr, new IntVar[] {s1, s2, s3});
+    // Link together expr and the 3 segment.
+    // First segment: y == earlinessCost * (earlinessDate - x).
+    // Second segment: y = 0
+    // Third segment: y == latenessCost * (x - latenessDate).
+    model.addMaxEquality(
+        expr,
+        new LinearExpr[] {
+          LinearExpr.newBuilder()
+              .addTerm(x, -earlinessCost)
+              .add(earlinessCost * earlinessDate)
+              .build(),
+          LinearExpr.constant(0),
+          LinearExpr.newBuilder().addTerm(x, latenessCost).add(-latenessCost * latenessDate).build()
+        });
 
     // Search for x values in increasing order.
     model.addDecisionStrategy(

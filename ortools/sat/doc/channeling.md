@@ -194,25 +194,24 @@ public class ChannelingSampleSat {
     CpModel model = new CpModel();
 
     // Declare our two primary variables.
-    IntVar x = model.newIntVar(0, 10, "x");
-    IntVar y = model.newIntVar(0, 10, "y");
+    IntVar[] vars = new IntVar[] {model.newIntVar(0, 10, "x"), model.newIntVar(0, 10, "y")};
 
     // Declare our intermediate boolean variable.
     IntVar b = model.newBoolVar("b");
 
     // Implement b == (x >= 5).
-    model.addGreaterOrEqual(x, 5).onlyEnforceIf(b);
-    model.addLessOrEqual(x, 4).onlyEnforceIf(b.not());
+    model.addGreaterOrEqual(vars[0], 5).onlyEnforceIf(b);
+    model.addLessOrEqual(vars[0], 4).onlyEnforceIf(b.not());
 
     // Create our two half-reified constraints.
     // First, b implies (y == 10 - x).
-    model.addEquality(LinearExpr.sum(new IntVar[] {x, y}), 10).onlyEnforceIf(b);
+    model.addEquality(LinearExpr.sum(vars), 10).onlyEnforceIf(b);
     // Second, not(b) implies y == 0.
-    model.addEquality(y, 0).onlyEnforceIf(b.not());
+    model.addEquality(vars[1], 0).onlyEnforceIf(b.not());
 
     // Search for x values in increasing order.
     model.addDecisionStrategy(
-        new IntVar[] {x},
+        new IntVar[] {vars[0]},
         DecisionStrategyProto.VariableSelectionStrategy.CHOOSE_FIRST,
         DecisionStrategyProto.DomainReductionStrategy.SELECT_MIN_VALUE);
 
@@ -242,7 +241,7 @@ public class ChannelingSampleSat {
           }
 
           private IntVar[] variableArray;
-        }.init(new IntVar[] {x, y, b}));
+        }.init(new IntVar[] {vars[0], vars[1], b}));
   }
 }
 ```
@@ -516,6 +515,7 @@ import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.LinearExpr;
+import com.google.ortools.sat.LinearExprBuilder;
 
 /** Solves a bin packing problem with the CP-SAT solver. */
 public class BinPackingProblemSat {
@@ -554,25 +554,21 @@ public class BinPackingProblemSat {
     }
 
     // Links load and x.
-    int[] sizes = new int[numItems];
-    for (int i = 0; i < numItems; ++i) {
-      sizes[i] = items[i][0];
-    }
     for (int b = 0; b < numBins; ++b) {
-      IntVar[] vars = new IntVar[numItems];
+      LinearExprBuilder expr = LinearExpr.newBuilder();
       for (int i = 0; i < numItems; ++i) {
-        vars[i] = x[i][b];
+        expr.addTerm(x[i][b], items[i][0]);
       }
-      model.addEquality(LinearExpr.scalProd(vars, sizes), load[b]);
+      model.addEquality(expr.build(), load[b]);
     }
 
     // Place all items.
     for (int i = 0; i < numItems; ++i) {
-      IntVar[] vars = new IntVar[numBins];
+      LinearExprBuilder expr = LinearExpr.newBuilder();
       for (int b = 0; b < numBins; ++b) {
-        vars[b] = x[i][b];
+        expr.add(x[i][b]);
       }
-      model.addEquality(LinearExpr.sum(vars), items[i][1]);
+      model.addEquality(expr.build(), items[i][1]);
     }
 
     // Links load and slack.

@@ -13,46 +13,41 @@
 
 package com.google.ortools.sat;
 
-/** the sum of two linear expressions. Used internally. */
-final class Sum implements LinearExpr {
-  private final LinearExpr left;
-  private final LinearExpr right;
+/** A linear expression interface that can be parsed. */
+public final class AffineExpression implements LinearExpr {
+  private final IntVar var;
+  private final long coefficient;
+  private final long offset;
 
-  public Sum(LinearExpr left, LinearExpr right) {
-    this.left = left;
-    this.right = right;
-  }
-
-  public Sum(LinearExpr left, long right) {
-    this.left = left;
-    this.right = new Constant(right);
+  public AffineExpression(IntVar var, long coefficient, long offset) {
+    this.var = var;
+    this.coefficient = coefficient;
+    this.offset = offset;
   }
 
   @Override
   public int numElements() {
-    return left.numElements() + right.numElements();
+    return 1;
   }
 
   @Override
   public IntVar getVariable(int index) {
-    if (index < left.numElements()) {
-      return left.getVariable(index);
-    } else {
-      return right.getVariable(index - left.numElements());
+    if (index != 0) {
+      throw new IllegalArgumentException("wrong index in LinearExpr.getVariable(): " + index);
     }
+    return var;
   }
 
   @Override
   public long getCoefficient(int index) {
-    if (index < left.numElements()) {
-      return left.getCoefficient(index);
-    } else {
-      return right.getCoefficient(index - left.numElements());
+    if (index != 0) {
+      throw new IllegalArgumentException("wrong index in LinearExpr.getCoefficient(): " + index);
     }
+    return coefficient;
   }
 
   @Override
   public long getOffset() {
-    return left.getOffset() + right.getOffset();
+    return offset;
   }
 }

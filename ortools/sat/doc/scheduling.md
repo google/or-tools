@@ -175,7 +175,10 @@ public class IntervalSampleSat {
     IntVar endVar = model.newIntVar(0, horizon, "end");
     IntervalVar intervalVar =
         model.newIntervalVar(
-            startVar, LinearExpr.constant(10), LinearExpr.affine(endVar, 1, 2), "interval");
+            startVar,
+            LinearExpr.constant(10),
+            LinearExpr.newBuilder().add(endVar).add(2).build(),
+            "interval");
     System.out.println(intervalVar);
 
     // If the size is fixed, a simpler version uses the start expression and the size.
@@ -344,7 +347,7 @@ public class OptionalIntervalSampleSat {
         model.newOptionalIntervalVar(
             startVar,
             LinearExpr.constant(10),
-            LinearExpr.affine(endVar, 1, 2),
+            LinearExpr.newBuilder().add(endVar).add(2).build(),
             presence,
             "interval");
     System.out.println(intervalVar);
@@ -568,20 +571,17 @@ public class NoOverlapSampleSat {
     // Task 0, duration 2.
     IntVar start0 = model.newIntVar(0, horizon, "start0");
     int duration0 = 2;
-    IntVar end0 = model.newIntVar(0, horizon, "end0");
-    IntervalVar task0 = model.newIntervalVar(start0, LinearExpr.constant(duration0), end0, "task0");
+    IntervalVar task0 = model.newFixedSizeIntervalVar(start0, duration0, "task0");
 
     //  Task 1, duration 4.
     IntVar start1 = model.newIntVar(0, horizon, "start1");
     int duration1 = 4;
-    IntVar end1 = model.newIntVar(0, horizon, "end1");
-    IntervalVar task1 = model.newIntervalVar(start1, LinearExpr.constant(duration1), end1, "task1");
+    IntervalVar task1 = model.newFixedSizeIntervalVar(start1, duration1, "task1");
 
     // Task 2, duration 3.
     IntVar start2 = model.newIntVar(0, horizon, "start2");
     int duration2 = 3;
-    IntVar end2 = model.newIntVar(0, horizon, "end2");
-    IntervalVar task2 = model.newIntervalVar(start2, LinearExpr.constant(duration2), end2, "task2");
+    IntervalVar task2 = model.newFixedSizeIntervalVar(start2, duration2, "task2");
 
     // Weekends.
     IntervalVar weekend0 = model.newFixedInterval(5, 2, "weekend0");
@@ -595,7 +595,13 @@ public class NoOverlapSampleSat {
 
     // Makespan objective.
     IntVar obj = model.newIntVar(0, horizon, "makespan");
-    model.addMaxEquality(obj, new IntVar[] {end0, end1, end2});
+    model.addMaxEquality(
+        obj,
+        new LinearExpr[] {
+          LinearExpr.newBuilder().add(start0).add(duration0).build(),
+          LinearExpr.newBuilder().add(start1).add(duration1).build(),
+          LinearExpr.newBuilder().add(start2).add(duration2).build()
+        });
     model.minimize(obj);
 
     // Creates a solver and solves the model.
@@ -992,6 +998,7 @@ import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.IntervalVar;
 import com.google.ortools.sat.LinearExpr;
+import com.google.ortools.sat.LinearExprBuilder;
 import com.google.ortools.sat.Literal;
 import java.util.ArrayList;
 import java.util.List;
@@ -1019,7 +1026,7 @@ public class RankingSampleSat {
           IntVar prec = model.newBoolVar(String.format("%d before %d", i, j));
           precedences[i][j] = prec;
           // Ensure that task i precedes task j if prec is true.
-          model.addLessOrEqualWithOffset(starts[i], starts[j], 1).onlyEnforceIf(prec);
+          model.addLessThan(starts[i], starts[j]).onlyEnforceIf(prec);
         }
       }
     }
@@ -1041,7 +1048,7 @@ public class RankingSampleSat {
         // The following boolOr will enforce that for any two intervals:
         //    i precedes j or j precedes i or at least one interval is not
         //        performed.
-        model.addBoolOr(list.toArray(new Literal[0]));
+        model.addBoolOr(list);
         // For efficiency, we add a redundant constraint declaring that only one of i precedes j and
         // j precedes i are true. This will speed up the solve because the reason of this
         // propagation is shorter that using interval bounds is true.
@@ -1052,16 +1059,13 @@ public class RankingSampleSat {
 
     // Links precedences and ranks.
     for (int i = 0; i < numTasks; ++i) {
-      IntVar[] vars = new IntVar[numTasks + 1];
-      int[] coefs = new int[numTasks + 1];
-      for (int j = 0; j < numTasks; ++j) {
-        vars[j] = (IntVar) precedences[j][i];
-        coefs[j] = 1;
-      }
-      vars[numTasks] = ranks[i];
-      coefs[numTasks] = -1;
       // ranks == sum(precedences) - 1;
-      model.addEquality(LinearExpr.scalProd(vars, coefs), 1);
+      LinearExprBuilder expr = LinearExpr.newBuilder();
+      for (int j = 0; j < numTasks; ++j) {
+        expr.add(precedences[j][i]);
+      }
+      expr.add(-1);
+      model.addEquality(ranks[i], expr.build());
     }
   }
 
@@ -1107,7 +1111,7 @@ public class RankingSampleSat {
     rankTasks(model, starts, presences, ranks);
 
     // Adds a constraint on ranks (ranks[0] < ranks[1]).
-    model.addLessOrEqualWithOffset(ranks[0], ranks[1], 1);
+    model.addLessThan(ranks[0], ranks[1]);
 
     // Creates makespan variable.
     IntVar makespan = model.newIntVar(0, horizon, "makespan");
@@ -1121,15 +1125,12 @@ public class RankingSampleSat {
     //
     // On this problem, as the fixed cost is less that the duration of the last interval, the solver
     // will not perform the last interval.
-    IntVar[] objectiveVars = new IntVar[numTasks + 1];
-    int[] objectiveCoefs = new int[numTasks + 1];
+    LinearExprBuilder obj = LinearExpr.newBuilder();
     for (int t = 0; t < numTasks; ++t) {
-      objectiveVars[t] = (IntVar) presences[t];
-      objectiveCoefs[t] = -7;
+      obj.addTerm(presences[t], -7);
     }
-    objectiveVars[numTasks] = makespan;
-    objectiveCoefs[numTasks] = 2;
-    model.minimize(LinearExpr.scalProd(objectiveVars, objectiveCoefs));
+    obj.addTerm(makespan, 2);
+    model.minimize(obj.build());
 
     // Creates a solver and solves the model.
     CpSolver solver = new CpSolver();
