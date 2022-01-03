@@ -120,12 +120,14 @@ public class VrpBreaks
 
         // Create and register a transit callback.
         // [START transit_callback]
-        int transitCallbackIndex = routing.RegisterTransitCallback((long fromIndex, long toIndex) => {
-            // Convert from routing variable Index to time matrix NodeIndex.
-            var fromNode = manager.IndexToNode(fromIndex);
-            var toNode = manager.IndexToNode(toIndex);
-            return data.TimeMatrix[fromNode, toNode] + data.ServiceTime[fromNode];
-        });
+        int transitCallbackIndex =
+            routing.RegisterTransitCallback((long fromIndex, long toIndex) =>
+                                            {
+                                                // Convert from routing variable Index to time matrix NodeIndex.
+                                                var fromNode = manager.IndexToNode(fromIndex);
+                                                var toNode = manager.IndexToNode(toIndex);
+                                                return data.TimeMatrix[fromNode, toNode] + data.ServiceTime[fromNode];
+                                            });
         // [END transit_callback]
 
         // Define cost of each arc.

@@ -140,8 +140,7 @@ public class VrpInitialRoutes {
 
     // Setting first solution heuristic.
     // [START parameters]
-    RoutingSearchParameters searchParameters =
-        main.defaultRoutingSearchParameters().toBuilder().build();
+    RoutingSearchParameters searchParameters = main.defaultRoutingSearchParameters();
     // [END parameters]
 
     // Solve the problem.
