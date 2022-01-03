@@ -26,8 +26,6 @@ https://developers.google.com/optimization/
          * [C# code](#c-code-5)
       * [Product of two Boolean Variables](#product-of-two-boolean-variables)
          * [Python code](#python-code-3)
-
-
 <!--te-->
 
 

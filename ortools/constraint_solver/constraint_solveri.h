@@ -54,6 +54,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <initializer_list>
 #include <memory>
 #include <string>
 #include <utility>
@@ -3020,49 +3021,43 @@ inline int64_t PosIntDivDown(int64_t e, int64_t v) {
 std::vector<int64_t> ToInt64Vector(const std::vector<int>& input);
 
 #if !defined(SWIG)
-// A PathState represents a set of paths and changed made on it.
+// A PathState represents a set of paths and changes made on it.
 //
 // More accurately, let us define P_{num_nodes, starts, ends}-graphs the set of
 // directed graphs with nodes [0, num_nodes) whose connected components are
 // paths from starts[i] to ends[i] (for the same i) and loops.
-// Let us fix num_nodes, starts and ends so we call these P-graphs.
+// Let us fix num_nodes, starts and ends, so we call these P-graphs.
 //
-// Let us define some notions on graphs with the same set of nodes:
-//   tails(D) is the set of nodes that are the tail of some arc of D.
-//   P0 inter P1 is the graph of all arcs both in P0 and P1.
-//   P0 union P1 is the graph of all arcs either in P0 or P1.
-//   P1 - P0 is the graph with arcs in P1 and not in P0.
-//   P0 |> D is the graph with arcs of P0 whose tail is not in tails(D).
-//   P0 + D is (P0 |> D) union D.
+// A P-graph can be described by the sequence of nodes of each of its paths,
+// and its set of loops. To describe a change made on a given P-graph G0 that
+// yields another P-graph G1, we choose to describe G1 in terms of G0. When
+// the difference between G0 and G1 is small, as is almost always the case in a
+// local search setting, the description is compact, allowing for incremental
+// filters to be efficient.
 //
-// Now suppose P0 and P1 are P-graphs.
-// P0 + (P1 - P0) is exactly P1.
-// Moreover, note that P0 |> D is not a union of paths from some starts[i] to
-// ends[i] and loops like P0, because the operation removes arcs from P0.
-// P0 |> D is a union of generic paths, loops, and isolated nodes.
-// Let us call the generic paths and isolated nodes "chains".
-// Then the paths of P0 + D are chains linked by arcs of D.
-// Those chains are particularly interesting when examining a P-graph change.
+// In order to describe G1 in terms of G0 succintly, we describe each path of
+// G1 as a sequence of chains of G0. A chain of G0 is either a nonempty sequence
+// of consecutive nodes of a path of G0, or a node that was a loop in G0.
+// For instance, a path that was not modified from G0 to G1 has one chain,
+// the sequence of all nodes in the path. Typically, local search operators
+// modify one or two paths, and the resulting paths can described as sequences
+// of two to four chains of G0. Paths that were modified are listed explicitly,
+// allowing to iterate only on changed paths.
+// The loops of G1 are described more implicitly: the loops of G1 not in G0
+// are listed explicitly, but those in both G1 and G0 are not listed.
 //
-// A PathState represents a P-graph for a fixed {num_nodes, starts, ends}.
-// The value of a PathState can be changed incrementally from P0 to P1
-// by passing the arcs of P1 - P0 to ChangeNext() and marking the end of the
-// change with a call to CutChains().
-// If P0 + D is not a P-graph, the behaviour is undefined.
-// TODO(user): check whether we want to have a DCHECK that P0 + D
-//   is a P-graph or if CutChains() should return false.
+// A PathState object can be in two states: committed or changed.
+// At construction, the object is committed, G0.
+// To enter a changed state G1, one can pass modifications with ChangePath() and
+// ChangeLoops(). For reasons of efficiency, a chain is described as a range of
+// node indices in the representation of the committed graph G0. To that effect,
+// the nodes of a path of G0 are guaranteed to have consecutive indices.
 //
-// After CutChains(), tails(D) can be traversed using an iterator,
-// and the chains of P0 |> D can be browsed by chain-based iterators.
-// An iterator allows to browse the set of paths that have changed.
-// Then Commit() or Revert() can be called: Commit() changes the PathState to
-// represent P1 = P0 + D, all further changes are made from P1; Revert() changes
-// the PathState to forget D completely and return the state to P0.
+// Filters can then browse the change efficiently using ChangedPaths(),
+// Chains(), Nodes() and ChangedLoops().
 //
-// After a Commit(), Revert() or at initial state, the same iterators are
-// available and represent the change by an empty D: the set of changed paths
-// and the set of changed nodes is empty. Still, the chain-based iterator allows
-// to browse paths: each path has exactly one chain.
+// Then Commit() or Revert() can be called: Commit() sets the changed state G1
+// as the new committed state, Revert() erases all changes.
 class PathState {
  public:
   // A Chain allows to iterate on all nodes of a chain, and access some data:

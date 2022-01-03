@@ -384,7 +384,7 @@ message MPModelDeltaProto {
   // NOTE(user): We may also add more deltas, eg. objective offset.
 }
 
-// Next id: 15.
+// Next id: 17.
 message MPModelRequest {
   // The model to be optimized by the server.
   optional MPModelProto model = 1;
@@ -430,6 +430,7 @@ message MPModelRequest {
   //
   // If not specified, the time limit on the solver is the RPC's deadline_left.
   optional double solver_time_limit_seconds = 3;
+
 
   // If this is set, then EnableOutput() will be set on the internal MPSolver
   // that solves the model.

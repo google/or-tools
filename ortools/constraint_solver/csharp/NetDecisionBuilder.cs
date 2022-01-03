@@ -16,219 +16,219 @@ using System.Collections;
 
 namespace Google.OrTools.ConstraintSolver
 {
+/**
+ * This class acts as a intermediate step between a c++ decision builder and a
+ * .Net one. Its main purpose is to catch the .Net application exception
+ * launched when a failure occurs during the Next() call, and to return
+ * silently a System.ApplicationException that will propagate the failure back
+ * to the C++ code.
+ *
+ */
+public class NetDecisionBuilder : DecisionBuilder
+{
     /**
-     * This class acts as a intermediate step between a c++ decision builder and a
-     * .Net one. Its main purpose is to catch the .Net application exception
-     * launched when a failure occurs during the Next() call, and to return
-     * silently a System.ApplicationException that will propagate the failure back
-     * to the C++ code.
-     *
+     * This methods wraps the calls to next() and catches fail exceptions.
+     * It currently catches all application exceptions.
      */
-    public class NetDecisionBuilder : DecisionBuilder
+    public override Decision NextWrapper(Solver solver)
     {
-        /**
-         * This methods wraps the calls to next() and catches fail exceptions.
-         * It currently catches all application exceptions.
-         */
-        public override Decision NextWrapper(Solver solver)
+        try
         {
-            try
-            {
-                return Next(solver);
-            }
-            catch (ApplicationException /*e*/)
-            {
-                // TODO(user): Catch only fail exceptions.
-                return solver.MakeFailDecision();
-            }
+            return Next(solver);
         }
-        /**
-         * This is the new method to subclass when defining a .Net decision builder.
-         */
-        public virtual Decision Next(Solver solver)
+        catch (ApplicationException /*e*/)
         {
-            return null;
+            // TODO(user): Catch only fail exceptions.
+            return solver.MakeFailDecision();
         }
     }
-
     /**
-     * This class acts as a intermediate step between a c++ decision and a
-     * .Net one. Its main purpose is to catch the .Net application
-     * exception launched when a failure occurs during the
-     * Apply()/Refute() calls, and to set the ShouldFail() flag on the
-     * solver that will propagate the failure back to the C++ code.
-     *
+     * This is the new method to subclass when defining a .Net decision builder.
      */
-    public class NetDecision : Decision
+    public virtual Decision Next(Solver solver)
     {
-        /**
-         * This methods wraps the calls to Apply() and catches fail exceptions.
-         * It currently catches all application exceptions.
-         */
-        public override void ApplyWrapper(Solver solver)
-        {
-            try
-            {
-                Apply(solver);
-            }
-            catch (ApplicationException /*e*/)
-            {
-                // TODO(user): Catch only fail exceptions.
-                solver.ShouldFail();
-            }
-        }
-        /**
-         * This is a new method to subclass when defining a .Net decision.
-         */
-        public virtual void Apply(Solver solver)
-        {
-            // By default, do nothing
-        }
+        return null;
+    }
+}
 
-        public override void RefuteWrapper(Solver solver)
+/**
+ * This class acts as a intermediate step between a c++ decision and a
+ * .Net one. Its main purpose is to catch the .Net application
+ * exception launched when a failure occurs during the
+ * Apply()/Refute() calls, and to set the ShouldFail() flag on the
+ * solver that will propagate the failure back to the C++ code.
+ *
+ */
+public class NetDecision : Decision
+{
+    /**
+     * This methods wraps the calls to Apply() and catches fail exceptions.
+     * It currently catches all application exceptions.
+     */
+    public override void ApplyWrapper(Solver solver)
+    {
+        try
         {
-            try
-            {
-                Refute(solver);
-            }
-            catch (ApplicationException /*e*/)
-            {
-                // TODO(user): Catch only fail exceptions.
-                solver.ShouldFail();
-            }
+            Apply(solver);
         }
-        /**
-         * This is a new method to subclass when defining a .Net decision.
-         */
-        public virtual void Refute(Solver solver)
+        catch (ApplicationException /*e*/)
         {
+            // TODO(user): Catch only fail exceptions.
+            solver.ShouldFail();
+        }
+    }
+    /**
+     * This is a new method to subclass when defining a .Net decision.
+     */
+    public virtual void Apply(Solver solver)
+    {
+        // By default, do nothing
+    }
+
+    public override void RefuteWrapper(Solver solver)
+    {
+        try
+        {
+            Refute(solver);
+        }
+        catch (ApplicationException /*e*/)
+        {
+            // TODO(user): Catch only fail exceptions.
+            solver.ShouldFail();
+        }
+    }
+    /**
+     * This is a new method to subclass when defining a .Net decision.
+     */
+    public virtual void Refute(Solver solver)
+    {
+    }
+}
+
+public class NetDemon : Demon
+{
+    /**
+     * This methods wraps the calls to next() and catches fail exceptions.
+     */
+    public override void RunWrapper(Solver solver)
+    {
+        try
+        {
+            Run(solver);
+        }
+        catch (ApplicationException /*e*/)
+        {
+            // TODO(user): Check that this is indeed a fail. Try implementing
+            // custom exceptions (hard).
+            solver.ShouldFail();
+        }
+    }
+    /**
+     * This is the new method to subclass when defining a .Net decision builder.
+     */
+    public virtual void Run(Solver solver)
+    {
+    }
+    public override int Priority()
+    {
+        return Solver.NORMAL_PRIORITY;
+    }
+    public override string ToString()
+    {
+        return "NetDemon";
+    }
+}
+
+public class NetConstraint : Constraint
+{
+    public NetConstraint(Solver s) : base(s)
+    {
+    }
+
+    public override void InitialPropagateWrapper()
+    {
+        try
+        {
+            InitialPropagate();
+        }
+        catch (ApplicationException /*e*/)
+        {
+            solver().ShouldFail();
+        }
+    }
+    public virtual void InitialPropagate()
+    {
+    }
+    public override string ToString()
+    {
+        return "NetConstraint";
+    }
+}
+
+public class IntVarEnumerator : IEnumerator
+{
+    private IntVarIterator iterator_;
+
+    // Enumerators are positioned before the first element
+    // until the first MoveNext() call.
+    private bool first_ = true;
+
+    public IntVarEnumerator(IntVarIterator iterator)
+    {
+        iterator_ = iterator;
+    }
+
+    public bool MoveNext()
+    {
+        if (first_)
+        {
+            iterator_.Init();
+            first_ = false;
+        }
+        else
+        {
+            iterator_.Next();
+        }
+        return iterator_.Ok();
+    }
+
+    public void Reset()
+    {
+        first_ = true;
+    }
+
+    object IEnumerator.Current
+    {
+        get {
+            return Current;
         }
     }
 
-    public class NetDemon : Demon
+    public long Current
     {
-        /**
-         * This methods wraps the calls to next() and catches fail exceptions.
-         */
-        public override void RunWrapper(Solver solver)
-        {
-            try
+        get {
+            if (!first_ && iterator_.Ok())
             {
-                Run(solver);
-            }
-            catch (ApplicationException /*e*/)
-            {
-                // TODO(user): Check that this is indeed a fail. Try implementing
-                // custom exceptions (hard).
-                solver.ShouldFail();
-            }
-        }
-        /**
-         * This is the new method to subclass when defining a .Net decision builder.
-         */
-        public virtual void Run(Solver solver)
-        {
-        }
-        public override int Priority()
-        {
-            return Solver.NORMAL_PRIORITY;
-        }
-        public override string ToString()
-        {
-            return "NetDemon";
-        }
-    }
-
-    public class NetConstraint : Constraint
-    {
-        public NetConstraint(Solver s) : base(s)
-        {
-        }
-
-        public override void InitialPropagateWrapper()
-        {
-            try
-            {
-                InitialPropagate();
-            }
-            catch (ApplicationException /*e*/)
-            {
-                solver().ShouldFail();
-            }
-        }
-        public virtual void InitialPropagate()
-        {
-        }
-        public override string ToString()
-        {
-            return "NetConstraint";
-        }
-    }
-
-    public class IntVarEnumerator : IEnumerator
-    {
-        private IntVarIterator iterator_;
-
-        // Enumerators are positioned before the first element
-        // until the first MoveNext() call.
-        private bool first_ = true;
-
-        public IntVarEnumerator(IntVarIterator iterator)
-        {
-            iterator_ = iterator;
-        }
-
-        public bool MoveNext()
-        {
-            if (first_)
-            {
-                iterator_.Init();
-                first_ = false;
+                return iterator_.Value();
             }
             else
             {
-                iterator_.Next();
-            }
-            return iterator_.Ok();
-        }
-
-        public void Reset()
-        {
-            first_ = true;
-        }
-
-        object IEnumerator.Current
-        {
-            get {
-                return Current;
-            }
-        }
-
-        public long Current
-        {
-            get {
-                if (!first_ && iterator_.Ok())
-                {
-                    return iterator_.Value();
-                }
-                else
-                {
-                    throw new InvalidOperationException();
-                }
+                throw new InvalidOperationException();
             }
         }
     }
+}
 
-    public partial class IntVarIterator : BaseObject, IEnumerable
+public partial class IntVarIterator : BaseObject, IEnumerable
+{
+    IEnumerator IEnumerable.GetEnumerator()
     {
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return (IEnumerator)GetEnumerator();
-        }
-
-        public IntVarEnumerator GetEnumerator()
-        {
-            return new IntVarEnumerator(this);
-        }
+        return (IEnumerator)GetEnumerator();
     }
+
+    public IntVarEnumerator GetEnumerator()
+    {
+        return new IntVarEnumerator(this);
+    }
+}
 } // namespace Google.OrTools.ConstraintSolver

@@ -66,16 +66,16 @@ public final class CpIsFunCp {
 
     // CP + IS + FUN = TRUE
     final IntVar sum1 =
-          solver.makeSum(new IntVar[] {
-            p, s, n,
-            solver.makeProd(solver.makeSum(new IntVar[]{c, i, u}).var(), base).var(),
-            solver.makeProd(f, base * base).var()}).var();
-    final IntVar sum2 =
-          solver.makeSum(new IntVar[] {
-            e,
-            solver.makeProd(u, base).var(),
-            solver.makeProd(r, base * base).var(),
-            solver.makeProd(t, base * base * base).var()}).var();
+        solver
+            .makeSum(new IntVar[] {p, s, n,
+                solver.makeProd(solver.makeSum(new IntVar[] {c, i, u}).var(), base).var(),
+                solver.makeProd(f, base * base).var()})
+            .var();
+    final IntVar sum2 = solver
+                            .makeSum(new IntVar[] {e, solver.makeProd(u, base).var(),
+                                solver.makeProd(r, base * base).var(),
+                                solver.makeProd(t, base * base * base).var()})
+                            .var();
     solver.addConstraint(solver.makeEquality(sum1, sum2));
     // [END constraints]
 
