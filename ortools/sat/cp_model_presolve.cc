@@ -1369,25 +1369,42 @@ bool CpModelPresolver::CanonicalizeLinearExpressionInternal(
   const int old_size = proto->vars().size();
   DCHECK_EQ(old_size, proto->coeffs().size());
   for (int i = 0; i < old_size; ++i) {
-    const int ref = proto->vars(i);
-    const int var = PositiveRef(ref);
-    const int64_t coeff =
-        RefIsPositive(ref) ? proto->coeffs(i) : -proto->coeffs(i);
-    if (coeff == 0) continue;
+    // Remove fixed variable and take affine representative.
+    //
+    // Note that we need to do that before we test for equality with an
+    // enforcement (they should already have been mapped).
+    int new_var;
+    int64_t new_coeff;
+    {
+      const int ref = proto->vars(i);
+      const int var = PositiveRef(ref);
+      const int64_t coeff =
+          RefIsPositive(ref) ? proto->coeffs(i) : -proto->coeffs(i);
+      if (coeff == 0) continue;
 
-    if (context_->IsFixed(var)) {
-      sum_of_fixed_terms += coeff * context_->MinOf(var);
-      continue;
+      if (context_->IsFixed(var)) {
+        sum_of_fixed_terms += coeff * context_->FixedValue(var);
+        continue;
+      }
+
+      const AffineRelation::Relation r = context_->GetAffineRelation(var);
+      if (r.representative != var) {
+        remapped = true;
+        sum_of_fixed_terms += coeff * r.offset;
+      }
+
+      new_var = r.representative;
+      new_coeff = coeff * r.coeff;
     }
 
     // TODO(user): Avoid the quadratic loop for the corner case of many
     // enforcement literal (this should be pretty rare though).
     bool removed = false;
     for (const int enf : ct.enforcement_literal()) {
-      if (var == PositiveRef(enf)) {
+      if (new_var == PositiveRef(enf)) {
         if (RefIsPositive(enf)) {
           // If the constraint is enforced, we can assume the variable is at 1.
-          sum_of_fixed_terms += coeff;
+          sum_of_fixed_terms += new_coeff;
         } else {
           // We can assume the variable is at zero.
         }
@@ -1400,12 +1417,7 @@ bool CpModelPresolver::CanonicalizeLinearExpressionInternal(
       continue;
     }
 
-    const AffineRelation::Relation r = context_->GetAffineRelation(var);
-    if (r.representative != var) {
-      remapped = true;
-      sum_of_fixed_terms += coeff * r.offset;
-    }
-    tmp_terms_.push_back({r.representative, coeff * r.coeff});
+    tmp_terms_.push_back({new_var, new_coeff});
   }
   proto->clear_vars();
   proto->clear_coeffs();
@@ -2202,6 +2214,18 @@ bool CpModelPresolver::DetectAndProcessOneSidedLinearConstraint(
   if (!is_le_constraint && !is_ge_constraint) return false;
   CHECK_NE(is_le_constraint, is_ge_constraint);
 
+  // Tricky: If a variable appears in the enforcement literal list, it is
+  // constraining in the "true" direction. We rely on the constraint to have
+  // been canonicalized and these literal removed for correctness here. In debug
+  // mode we still do some check since it is easy to add presolve rules and call
+  // this with a non-canonicalized constraint.
+  absl::flat_hash_set<int> enforcement_set;
+  if (DEBUG_MODE) {
+    for (const int ref : ct->enforcement_literal()) {
+      enforcement_set.insert(ref);
+    }
+  }
+
   bool recanonicalize = false;
   for (int i = 0; i < num_vars; ++i) {
     const int var = ct->linear().vars(i);
@@ -2209,8 +2233,10 @@ bool CpModelPresolver::DetectAndProcessOneSidedLinearConstraint(
     CHECK(RefIsPositive(var));
 
     if ((var_coeff > 0) == is_ge_constraint) {
+      DCHECK(!enforcement_set.contains(var));
       context_->var_to_lb_only_constraints[var].insert(c);
     } else {
+      DCHECK(!enforcement_set.contains(NegatedRef(var)));
       context_->var_to_ub_only_constraints[var].insert(c);
     }
 
@@ -5691,7 +5717,7 @@ bool CpModelPresolver::PresolveOneConstraint(int c) {
       // variable change during canonicalization, and a variable that could
       // freely move in one direction can no longer do so. So we make sure we
       // always remove c from all the maps before re-inserting it in
-      // PropagateDomainsInLinear().
+      // DetectAndProcessOneSidedLinearConstraint().
       //
       // TODO(user): The move in only one direction code is redundant with the
       // dual bound strengthening code. So maybe we don't need both.
