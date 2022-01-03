@@ -13,7 +13,7 @@
 
 package com.google.ortools.sat;
 
-/** A linear expression interface that can be parsed. */
+/** A specialized linear expression: a * x + b */
 public final class AffineExpression implements LinearExpr {
   private final IntVar var;
   private final long coefficient;

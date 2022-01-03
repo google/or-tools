@@ -13,15 +13,10 @@
 
 package com.google.ortools.sat;
 
-/** A linear expression interface that can be parsed. */
+/** A specialized linear expression: sum(xi) + b. */
 public final class SumOfVariables implements LinearExpr {
   private final IntVar[] variables;
   private final long offset;
-
-  public SumOfVariables(IntVar[] variables) {
-    this.variables = variables;
-    this.offset = 0;
-  }
 
   public SumOfVariables(IntVar[] variables, long offset) {
     this.variables = variables;

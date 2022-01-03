@@ -13,7 +13,7 @@
 
 package com.google.ortools.sat;
 
-/** A linear expression interface that can be parsed. */
+/** A specialized constant linear expression. */
 public final class Constant implements LinearExpr {
   private final long offset;
 
