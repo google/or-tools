@@ -20,6 +20,7 @@ import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.LinearExpr;
 import com.google.ortools.sat.LinearExprBuilder;
+import com.google.ortools.sat.Literal;
 
 /** Solves a bin packing problem with the CP-SAT solver. */
 public class BinPackingProblemSat {
@@ -52,7 +53,7 @@ public class BinPackingProblemSat {
     }
 
     // Slack variables.
-    IntVar[] slacks = new IntVar[numBins];
+    Literal[] slacks = new Literal[numBins];
     for (int b = 0; b < numBins; ++b) {
       slacks[b] = model.newBoolVar("slack_" + b);
     }

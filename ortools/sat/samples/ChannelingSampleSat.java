@@ -14,6 +14,7 @@
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
+import com.google.ortools.sat.BoolVar;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
@@ -33,7 +34,7 @@ public class ChannelingSampleSat {
     IntVar[] vars = new IntVar[] {model.newIntVar(0, 10, "x"), model.newIntVar(0, 10, "y")};
 
     // Declare our intermediate boolean variable.
-    IntVar b = model.newBoolVar("b");
+    BoolVar b = model.newBoolVar("b");
 
     // Implement b == (x >= 5).
     model.addGreaterOrEqual(vars[0], 5).onlyEnforceIf(b);

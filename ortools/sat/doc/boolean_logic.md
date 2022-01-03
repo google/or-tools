@@ -26,6 +26,8 @@ https://developers.google.com/optimization/
          * [C# code](#c-code-5)
       * [Product of two Boolean Variables](#product-of-two-boolean-variables)
          * [Python code](#python-code-3)
+
+
 <!--te-->
 
 
@@ -93,17 +95,17 @@ int main() {
 ```java
 package com.google.ortools.sat.samples;
 
-import com.google.ortools.Loader;
+import com.google.ortools.sat.BoolVar;
 import com.google.ortools.sat.CpModel;
-import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.Literal;
+import com.google.ortools.Loader;
 
 /** Code sample to demonstrate Boolean variable and literals. */
 public class LiteralSampleSat {
   public static void main(String[] args) throws Exception {
     Loader.loadNativeLibraries();
     CpModel model = new CpModel();
-    IntVar x = model.newBoolVar("x");
+    BoolVar x = model.newBoolVar("x");
     Literal notX = x.not();
     System.out.println(notX.getShortString());
   }
@@ -192,8 +194,8 @@ int main() {
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
+import com.google.ortools.sat.BoolVar;
 import com.google.ortools.sat.CpModel;
-import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.Literal;
 
 /** Code sample to demonstrates a simple Boolean constraint. */
@@ -201,8 +203,8 @@ public class BoolOrSampleSat {
   public static void main(String[] args) throws Exception {
     Loader.loadNativeLibraries();
     CpModel model = new CpModel();
-    IntVar x = model.newBoolVar("x");
-    IntVar y = model.newBoolVar("y");
+    BoolVar x = model.newBoolVar("x");
+    BoolVar y = model.newBoolVar("y");
     model.addBoolOr(new Literal[] {x, y.not()});
   }
 }
@@ -319,8 +321,8 @@ int main() {
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
+import com.google.ortools.sat.BoolVar;
 import com.google.ortools.sat.CpModel;
-import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.Literal;
 
 /**
@@ -338,9 +340,9 @@ public class ReifiedSampleSat {
     Loader.loadNativeLibraries();
     CpModel model = new CpModel();
 
-    IntVar x = model.newBoolVar("x");
-    IntVar y = model.newBoolVar("y");
-    IntVar b = model.newBoolVar("b");
+    BoolVar x = model.newBoolVar("x");
+    BoolVar y = model.newBoolVar("y");
+    BoolVar b = model.newBoolVar("b");
 
     // Version 1: a half-reified boolean and.
     model.addBoolAnd(new Literal[] {x, y.not()}).onlyEnforceIf(b);

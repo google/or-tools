@@ -14,8 +14,8 @@
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
+import com.google.ortools.sat.BoolVar;
 import com.google.ortools.sat.CpModel;
-import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.Literal;
 
 /**
@@ -33,9 +33,9 @@ public class ReifiedSampleSat {
     Loader.loadNativeLibraries();
     CpModel model = new CpModel();
 
-    IntVar x = model.newBoolVar("x");
-    IntVar y = model.newBoolVar("y");
-    IntVar b = model.newBoolVar("b");
+    BoolVar x = model.newBoolVar("x");
+    BoolVar y = model.newBoolVar("y");
+    BoolVar b = model.newBoolVar("b");
 
     // Version 1: a half-reified boolean and.
     model.addBoolAnd(new Literal[] {x, y.not()}).onlyEnforceIf(b);

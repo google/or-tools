@@ -14,6 +14,7 @@
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
+import com.google.ortools.sat.BoolVar;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverStatus;
@@ -30,9 +31,10 @@ public class RankingSampleSat {
   /**
    * This code takes a list of interval variables in a noOverlap constraint, and a parallel list of
    * integer variables and enforces the following constraint
+   *
    * <ul>
-   * <li>rank[i] == -1 iff interval[i] is not active.
-   * <li>rank[i] == number of active intervals that precede interval[i].
+   *   <li>rank[i] == -1 iff interval[i] is not active.
+   *   <li>rank[i] == number of active intervals that precede interval[i].
    * </ul>
    */
   static void rankTasks(CpModel model, IntVar[] starts, Literal[] presences, IntVar[] ranks) {
@@ -45,7 +47,7 @@ public class RankingSampleSat {
         if (i == j) {
           precedences[i][i] = presences[i];
         } else {
-          IntVar prec = model.newBoolVar(String.format("%d before %d", i, j));
+          BoolVar prec = model.newBoolVar(String.format("%d before %d", i, j));
           precedences[i][j] = prec;
           // Ensure that task i precedes task j if prec is true.
           model.addLessThan(starts[i], starts[j]).onlyEnforceIf(prec);
@@ -103,7 +105,7 @@ public class RankingSampleSat {
     Literal[] presences = new Literal[numTasks];
     IntVar[] ranks = new IntVar[numTasks];
 
-    IntVar trueVar = model.newConstant(1);
+    Literal trueLiteral = model.trueLiteral();
 
     // Creates intervals, half of them are optional.
     for (int t = 0; t < numTasks; ++t) {
@@ -113,7 +115,7 @@ public class RankingSampleSat {
       if (t < numTasks / 2) {
         intervals[t] = model.newIntervalVar(
             starts[t], LinearExpr.constant(duration), ends[t], "interval_" + t);
-        presences[t] = trueVar;
+        presences[t] = trueLiteral;
       } else {
         presences[t] = model.newBoolVar("presence_" + t);
         intervals[t] = model.newOptionalIntervalVar(

@@ -85,28 +85,38 @@ public final class CpModel {
   }
 
   /** Creates a Boolean variable with the given name. */
-  public IntVar newBoolVar(String name) {
-    return new IntVar(modelBuilder, new Domain(0, 1), name);
+  public BoolVar newBoolVar(String name) {
+    return new BoolVar(modelBuilder, new Domain(0, 1), name);
   }
 
   /** Creates a constant variable. */
   public IntVar newConstant(long value) {
     if (constantMap.containsKey(value)) {
-      return constantMap.get(value);
+      return new IntVar(modelBuilder, constantMap.get(value));
     }
     IntVar cste = new IntVar(modelBuilder, new Domain(value), ""); // bounds and name.
-    constantMap.put(value, cste);
+    constantMap.put(value, cste.getIndex());
     return cste;
   }
 
   /** Returns the true literal. */
   public Literal trueLiteral() {
-    return newConstant(1);
+    if (constantMap.containsKey(1L)) {
+      return new BoolVar(modelBuilder, constantMap.get(1L));
+    }
+    BoolVar cste = new BoolVar(modelBuilder, new Domain(1), ""); // bounds and name.
+    constantMap.put(1L, cste.getIndex());
+    return cste;
   }
 
   /** Returns the false literal. */
   public Literal falseLiteral() {
-    return newConstant(0);
+    if (constantMap.containsKey(0L)) {
+      return new BoolVar(modelBuilder, constantMap.get(0L));
+    }
+    BoolVar cste = new BoolVar(modelBuilder, new Domain(0), ""); // bounds and name.
+    constantMap.put(0L, cste.getIndex());
+    return cste;
   }
 
   // Boolean Constraints.
@@ -268,8 +278,8 @@ public final class CpModel {
   /** Adds {@code left == right}. */
   public Constraint addEquality(LinearExpr left, LinearExpr right) {
     LinearExprBuilder difference = LinearExpr.newBuilder();
-    difference.addExpression(left, 1);
-    difference.addExpression(right, -1);
+    difference.addTerm(left, 1);
+    difference.addTerm(right, -1);
     return addLinearExpressionInDomain(difference.build(), new Domain(0));
   }
 
@@ -281,8 +291,8 @@ public final class CpModel {
   /** Adds {@code left <= right}. */
   public Constraint addLessOrEqual(LinearExpr left, LinearExpr right) {
     LinearExprBuilder difference = LinearExpr.newBuilder();
-    difference.addExpression(left, 1);
-    difference.addExpression(right, -1);
+    difference.addTerm(left, 1);
+    difference.addTerm(right, -1);
     return addLinearExpressionInDomain(difference.build(), new Domain(Long.MIN_VALUE, 0));
   }
 
@@ -294,8 +304,8 @@ public final class CpModel {
   /** Adds {@code left < right}. */
   public Constraint addLessThan(LinearExpr left, LinearExpr right) {
     LinearExprBuilder difference = LinearExpr.newBuilder();
-    difference.addExpression(left, 1);
-    difference.addExpression(right, -1);
+    difference.addTerm(left, 1);
+    difference.addTerm(right, -1);
     return addLinearExpressionInDomain(difference.build(), new Domain(Long.MIN_VALUE, -1));
   }
 
@@ -307,8 +317,8 @@ public final class CpModel {
   /** Adds {@code left >= right}. */
   public Constraint addGreaterOrEqual(LinearExpr left, LinearExpr right) {
     LinearExprBuilder difference = LinearExpr.newBuilder();
-    difference.addExpression(left, 1);
-    difference.addExpression(right, -1);
+    difference.addTerm(left, 1);
+    difference.addTerm(right, -1);
     return addLinearExpressionInDomain(difference.build(), new Domain(0, Long.MAX_VALUE));
   }
 
@@ -320,8 +330,8 @@ public final class CpModel {
   /** Adds {@code left > right}. */
   public Constraint addGreaterThan(LinearExpr left, LinearExpr right) {
     LinearExprBuilder difference = LinearExpr.newBuilder();
-    difference.addExpression(left, 1);
-    difference.addExpression(right, -1);
+    difference.addTerm(left, 1);
+    difference.addTerm(right, -1);
     return addLinearExpressionInDomain(difference.build(), new Domain(1, Long.MAX_VALUE));
   }
 
@@ -335,8 +345,8 @@ public final class CpModel {
   /** Adds {@code left != right}. */
   public Constraint addDifferent(LinearExpr left, LinearExpr right) {
     LinearExprBuilder difference = LinearExpr.newBuilder();
-    difference.addExpression(left, 1);
-    difference.addExpression(right, -1);
+    difference.addTerm(left, 1);
+    difference.addTerm(right, -1);
     return addLinearExpressionInDomain(difference.build(),
         Domain.fromFlatIntervals(new long[] {Long.MIN_VALUE, -1, 1, Long.MAX_VALUE}));
   }
@@ -798,10 +808,7 @@ public final class CpModel {
    */
   public IntervalVar newIntervalVar(
       LinearExpr start, LinearExpr size, LinearExpr end, String name) {
-    LinearExprBuilder expr = LinearExpr.newBuilder();
-    expr.addExpression(start);
-    expr.addExpression(size);
-    addEquality(expr.build(), end);
+    addEquality(LinearExpr.newBuilder().add(start).add(size).build(), end);
     return new IntervalVar(modelBuilder,
         getLinearExpressionProtoBuilderFromLinearExpr(start, /*negate=*/false),
         getLinearExpressionProtoBuilderFromLinearExpr(size, /*negate=*/false),
@@ -824,7 +831,7 @@ public final class CpModel {
         getLinearExpressionProtoBuilderFromLinearExpr(start, /*negate=*/false),
         getLinearExpressionProtoBuilderFromLong(size),
         getLinearExpressionProtoBuilderFromLinearExpr(
-            LinearExpr.newBuilder().addExpression(start).add(size).build(), /*negate=*/false),
+            LinearExpr.newBuilder().add(start).add(size).build(), /*negate=*/false),
         name);
   }
 
@@ -855,8 +862,7 @@ public final class CpModel {
    */
   public IntervalVar newOptionalIntervalVar(
       LinearExpr start, LinearExpr size, LinearExpr end, Literal isPresent, String name) {
-    addEquality(LinearExpr.newBuilder().addExpression(start).addExpression(size).build(), end)
-        .onlyEnforceIf(isPresent);
+    addEquality(LinearExpr.newBuilder().add(start).add(size).build(), end).onlyEnforceIf(isPresent);
     return new IntervalVar(modelBuilder,
         getLinearExpressionProtoBuilderFromLinearExpr(start, /*negate=*/false),
         getLinearExpressionProtoBuilderFromLinearExpr(size, /*negate=*/false),
@@ -883,7 +889,7 @@ public final class CpModel {
         getLinearExpressionProtoBuilderFromLinearExpr(start, /*negate=*/false),
         getLinearExpressionProtoBuilderFromLong(size),
         getLinearExpressionProtoBuilderFromLinearExpr(
-            LinearExpr.newBuilder().addExpression(start).add(size).build(), /*negate=*/false),
+            LinearExpr.newBuilder().add(start).add(size).build(), /*negate=*/false),
         isPresent.getIndex(), name);
   }
 
@@ -1124,5 +1130,5 @@ public final class CpModel {
   }
 
   private final CpModelProto.Builder modelBuilder;
-  private final Map<Long, IntVar> constantMap;
+  private final Map<Long, Integer> constantMap;
 }

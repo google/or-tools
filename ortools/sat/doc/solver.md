@@ -27,6 +27,8 @@ https://developers.google.com/optimization/
          * [C   code](#c-code-4)
          * [Java code](#java-code-2)
          * [C# code](#c-code-5)
+
+
 <!--te-->
 
 
@@ -368,7 +370,7 @@ public class SolveAndPrintIntermediateSolutionsSampleSat {
     model.addDifferent(x, y);
 
     // Maximize a linear combination of variables.
-    model.maximize(LinearExpr.scalProd(new IntVar[] {x, y, z}, new long[] {1, 2, 3}));
+    model.maximize(LinearExpr.weightedSum(new IntVar[] {x, y, z}, new long[] {1, 2, 3}));
 
     // Create a solver and solve the model.
     CpSolver solver = new CpSolver();

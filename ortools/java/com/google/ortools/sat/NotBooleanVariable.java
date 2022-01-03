@@ -18,7 +18,7 @@ package com.google.ortools.sat;
  * instead.
  */
 public final class NotBooleanVariable implements Literal {
-  public NotBooleanVariable(IntVar boolVar) {
+  public NotBooleanVariable(BoolVar boolVar) {
     this.boolVar = boolVar;
   }
 
@@ -34,11 +34,48 @@ public final class NotBooleanVariable implements Literal {
     return boolVar;
   }
 
+  @Override
+  public BoolVar getBoolVar() {
+    return boolVar;
+  }
+
+  @Override
+  public boolean negated() {
+    return true;
+  }
+
+  // LinearExpr interface.
+  @Override
+  public int numElements() {
+    return 1;
+  }
+
+  @Override
+  public IntVar getVariable(int index) {
+    if (index != 0) {
+      throw new IllegalArgumentException("wrong index in LinearExpr.getVariable(): " + index);
+    }
+    return boolVar;
+  }
+
+  @Override
+  public long getCoefficient(int index) {
+    if (index != 0) {
+      throw new IllegalArgumentException("wrong index in LinearExpr.getCoefficient(): " + index);
+    }
+    return -1;
+  }
+
+  @Override
+  public long getOffset() {
+    return 1;
+  }
+
   /** Returns a short string describing this literal. */
   @Override
   public String getShortString() {
     return "not(" + boolVar.getShortString() + ")";
   }
 
-  private final IntVar boolVar;
+  private final BoolVar boolVar;
 }

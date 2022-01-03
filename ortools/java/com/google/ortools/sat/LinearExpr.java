@@ -45,6 +45,11 @@ public interface LinearExpr {
     return newBuilder().addTerm(var, coeff).build();
   }
 
+  /** Shortcut for newBuilder().addTerm(expr, coeff).build() */
+  static LinearExpr term(LinearExpr expr, long coeff) {
+    return newBuilder().addTerm(expr, coeff).build();
+  }
+
   /** Shortcut for newBuilder().addTerm(literal, coeff).build() */
   static LinearExpr term(Literal literal, long coeff) {
     return newBuilder().addTerm(literal, coeff).build();
@@ -55,26 +60,36 @@ public interface LinearExpr {
     return newBuilder().addSum(vars).build();
   }
 
+  /** Shortcut for newBuilder().addSum(exprs).build() */
+  static LinearExpr sum(LinearExpr[] exprs) {
+    return newBuilder().addSum(exprs).build();
+  }
+
   /** Shortcut for newBuilder().addSum(literals).build() */
   static LinearExpr sum(Literal[] literals) {
     return newBuilder().addSum(literals).build();
   }
 
-  /** Shortcut for newBuilder().addScalProd(vars, coeffs).build() */
-  static LinearExpr scalProd(IntVar[] vars, long[] coeffs) {
-    return newBuilder().addScalProd(vars, coeffs).build();
+  /** Shortcut for newBuilder().addWeightedSum(vars, coeffs).build() */
+  static LinearExpr weightedSum(IntVar[] vars, long[] coeffs) {
+    return newBuilder().addWeightedSum(vars, coeffs).build();
   }
 
-  /** Shortcut for newBuilder().addScalProd(literals, coeffs).build() */
-  static LinearExpr scalProd(Literal[] literals, long[] coeffs) {
-    return newBuilder().addScalProd(literals, coeffs).build();
+  /** Shortcut for newBuilder().addWeightedSum(literals, coeffs).build() */
+  static LinearExpr weightedSum(Literal[] literals, long[] coeffs) {
+    return newBuilder().addWeightedSum(literals, coeffs).build();
+  }
+
+  /** Shortcut for newBuilder().addWeightedSum(exprs, coeffs).build() */
+  static LinearExpr weightedSum(LinearExpr[] exprs, long[] coeffs) {
+    return newBuilder().addWeightedSum(exprs, coeffs).build();
   }
 
   static LinearExpr rebuildFromLinearExpressionProto(
       LinearExpressionProto proto, CpModelProto.Builder builder) {
     int numElements = proto.getVarsCount();
     if (numElements == 0) {
-      return new Constant(proto.getOffset());
+      return new ConstantExpression(proto.getOffset());
     } else if (numElements == 1) {
       return new AffineExpression(
           new IntVar(builder, proto.getVars(0)), proto.getCoeffs(0), proto.getOffset());
@@ -91,9 +106,9 @@ public interface LinearExpr {
         }
       }
       if (allOnes) {
-        return new SumOfVariables(vars, offset);
+        return new SumExpression(vars, offset);
       } else {
-        return new ScalProd(vars, coeffs, offset);
+        return new WeightedSumExpression(vars, coeffs, offset);
       }
     }
   }

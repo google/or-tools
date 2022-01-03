@@ -16,6 +16,8 @@ https://developers.google.com/optimization/
       * [Model copy](#model-copy)
          * [Python code](#python-code-1)
          * [C   code](#c-code-2)
+
+
 <!--te-->
 
 
@@ -204,7 +206,7 @@ public class SolutionHintingSampleSat {
     // Create the constraints.
     model.addDifferent(x, y);
 
-    model.maximize(LinearExpr.scalProd(new IntVar[] {x, y, z}, new long[] {1, 2, 3}));
+    model.maximize(LinearExpr.weightedSum(new IntVar[] {x, y, z}, new long[] {1, 2, 3}));
 
     // Solution hinting: x <- 1, y <- 2
     model.addHint(x, 1);

@@ -44,13 +44,13 @@ public final class CpSatExample {
 
     // Create the constraints.
     // [START constraints]
-    model.addLessOrEqual(LinearExpr.scalProd(new IntVar[] {x, y, z}, new long[] {2, 7, 3}), 50);
-    model.addLessOrEqual(LinearExpr.scalProd(new IntVar[] {x, y, z}, new long[] {3, -5, 7}), 45);
-    model.addLessOrEqual(LinearExpr.scalProd(new IntVar[] {x, y, z}, new long[] {5, 2, -6}), 37);
+    model.addLessOrEqual(LinearExpr.weightedSum(new IntVar[] {x, y, z}, new long[] {2, 7, 3}), 50);
+    model.addLessOrEqual(LinearExpr.weightedSum(new IntVar[] {x, y, z}, new long[] {3, -5, 7}), 45);
+    model.addLessOrEqual(LinearExpr.weightedSum(new IntVar[] {x, y, z}, new long[] {5, 2, -6}), 37);
     // [END constraints]
 
     // [START objective]
-    model.maximize(LinearExpr.scalProd(new IntVar[] {x, y, z}, new long[] {2, 2, 3}));
+    model.maximize(LinearExpr.weightedSum(new IntVar[] {x, y, z}, new long[] {2, 2, 3}));
     // [END objective]
 
     // Create a solver and solve the model.

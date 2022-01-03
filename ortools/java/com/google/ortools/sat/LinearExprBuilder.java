@@ -28,19 +28,13 @@ public final class LinearExprBuilder {
     this.offset = 0;
   }
 
-  public LinearExprBuilder add(IntVar var) {
-    coefficients.merge(var, 1L, Long::sum);
+  public LinearExprBuilder add(LinearExpr expr) {
+    addTerm(expr, 1);
     return this;
   }
 
   public LinearExprBuilder add(Literal literal) {
-    final int index = literal.getIndex();
-    if (index >= 0) {
-      coefficients.merge((IntVar) literal, 1L, Long::sum);
-    } else {
-      offset = offset + 1;
-      coefficients.merge((IntVar) literal.not(), -1L, Long::sum);
-    }
+    addTerm(literal, 1);
     return this;
   }
 
@@ -49,79 +43,87 @@ public final class LinearExprBuilder {
     return this;
   }
 
-  public LinearExprBuilder addTerm(IntVar var, long coeff) {
-    coefficients.merge(var, coeff, Long::sum);
+  public LinearExprBuilder addTerm(LinearExpr expr, long coeff) {
+    final int numElements = expr.numElements();
+    for (int i = 0; i < numElements; ++i) {
+      coefficients.merge(expr.getVariable(i), expr.getCoefficient(i) * coeff, Long::sum);
+    }
+    offset = offset + expr.getOffset() * coeff;
     return this;
   }
 
   public LinearExprBuilder addTerm(Literal literal, long coeff) {
-    final int index = literal.getIndex();
-    if (index >= 0) {
-      coefficients.merge((IntVar) literal, coeff, Long::sum);
-    } else {
+    final BoolVar boolVar = literal.getBoolVar();
+    if (literal.negated()) {
+      coefficients.merge(boolVar, -coeff, Long::sum);
       offset = offset + coeff;
-      coefficients.merge((IntVar) literal.not(), -coeff, Long::sum);
+    } else {
+      coefficients.merge(boolVar, coeff, Long::sum);
     }
     return this;
   }
 
   public LinearExprBuilder addSum(IntVar[] vars) {
     for (final IntVar var : vars) {
-      add(var);
+      addTerm(var, 1);
     }
     return this;
   }
 
   public LinearExprBuilder addSum(Literal[] literals) {
     for (final Literal literal : literals) {
-      add(literal);
+      addTerm(literal, 1);
     }
     return this;
   }
 
-  public LinearExprBuilder addScalProd(IntVar[] vars, long[] coeffs) {
+  public LinearExprBuilder addSum(LinearExpr[] exprs) {
+    for (final LinearExpr expr : exprs) {
+      addTerm(expr, 1);
+    }
+    return this;
+  }
+
+  public LinearExprBuilder addWeightedSum(IntVar[] vars, long[] coeffs) {
     for (int i = 0; i < vars.length; ++i) {
       addTerm(vars[i], coeffs[i]);
     }
-
     return this;
   }
 
-  public LinearExprBuilder addScalProd(IntVar[] vars, int[] coeffs) {
+  public LinearExprBuilder addWeightedSum(IntVar[] vars, int[] coeffs) {
     for (int i = 0; i < vars.length; ++i) {
       addTerm(vars[i], coeffs[i]);
     }
-
     return this;
   }
 
-  public LinearExprBuilder addScalProd(Literal[] literals, long[] coeffs) {
+  public LinearExprBuilder addWeightedSum(Literal[] literals, long[] coeffs) {
     for (int i = 0; i < literals.length; ++i) {
       addTerm(literals[i], coeffs[i]);
     }
-
     return this;
   }
 
-  public LinearExprBuilder addScalProd(Literal[] literals, int[] coeffs) {
+  public LinearExprBuilder addWeightedSum(Literal[] literals, int[] coeffs) {
     for (int i = 0; i < literals.length; ++i) {
       addTerm(literals[i], coeffs[i]);
     }
-
     return this;
   }
 
-  public LinearExprBuilder addExpression(LinearExpr expr, long coeff) {
-    final int numElements = expr.numElements();
-    for (int i = 0; i < numElements; ++i) {
-      addTerm(expr.getVariable(i), expr.getCoefficient(i) * coeff);
+  public LinearExprBuilder addWeightedSum(LinearExpr[] exprs, long[] coeffs) {
+    for (int i = 0; i < exprs.length; ++i) {
+      addTerm(exprs[i], coeffs[i]);
     }
-    add(expr.getOffset());
     return this;
   }
 
-  public LinearExprBuilder addExpression(LinearExpr expr) {
-    return addExpression(expr, 1);
+  public LinearExprBuilder addWeightedSum(LinearExpr[] exprs, int[] coeffs) {
+    for (int i = 0; i < exprs.length; ++i) {
+      addTerm(exprs[i], coeffs[i]);
+    }
+    return this;
   }
 
   public LinearExpr build() {
@@ -140,7 +142,7 @@ public final class LinearExprBuilder {
       }
     }
     if (numElements == 0) {
-      return new Constant(offset);
+      return new ConstantExpression(offset);
     } else if (numElements == 1) {
       return new AffineExpression(lastVar, lastCoeff, offset);
     } else if (allOnes) {
@@ -152,7 +154,7 @@ public final class LinearExprBuilder {
           index++;
         }
       }
-      return new SumOfVariables(vars, offset);
+      return new SumExpression(vars, offset);
     } else {
       IntVar[] vars = new IntVar[numElements];
       long[] coeffs = new long[numElements];
@@ -164,7 +166,7 @@ public final class LinearExprBuilder {
           index++;
         }
       }
-      return new ScalProd(vars, coeffs, offset);
+      return new WeightedSumExpression(vars, coeffs, offset);
     }
   }
 }

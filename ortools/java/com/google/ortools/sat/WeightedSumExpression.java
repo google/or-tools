@@ -14,12 +14,12 @@
 package com.google.ortools.sat;
 
 /** A specialized linear expression: sum(ai * xi) + b. */
-public final class ScalProd implements LinearExpr {
+public final class WeightedSumExpression implements LinearExpr {
   private final IntVar[] variables;
   private final long[] coefficients;
-  private long offset;
+  private final long offset;
 
-  public ScalProd(IntVar[] variables, long[] coefficients, long offset) {
+  public WeightedSumExpression(IntVar[] variables, long[] coefficients, long offset) {
     this.variables = variables;
     this.coefficients = coefficients;
     this.offset = offset;

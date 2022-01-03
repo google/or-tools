@@ -18,7 +18,7 @@ import com.google.ortools.sat.IntegerVariableProto;
 import com.google.ortools.util.Domain;
 
 /** An integer variable. */
-public final class IntVar implements Literal, LinearExpr {
+public class IntVar implements LinearExpr {
   IntVar(CpModelProto.Builder builder, Domain domain, String name) {
     this.modelBuilder = builder;
     this.variableIndex = modelBuilder.getVariablesCount();
@@ -27,14 +27,12 @@ public final class IntVar implements Literal, LinearExpr {
     for (long b : domain.flattenedIntervals()) {
       this.varBuilder.addDomain(b);
     }
-    this.negation_ = null;
   }
 
   IntVar(CpModelProto.Builder builder, int index) {
     this.modelBuilder = builder;
     this.variableIndex = index;
     this.varBuilder = modelBuilder.getVariablesBuilder(index);
-    this.negation_ = null;
   }
 
   @Override
@@ -48,7 +46,6 @@ public final class IntVar implements Literal, LinearExpr {
   }
 
   /** Internal, returns the index of the variable in the underlying CpModelProto. */
-  @Override
   public int getIndex() {
     return variableIndex;
   }
@@ -66,33 +63,23 @@ public final class IntVar implements Literal, LinearExpr {
 
   @Override
   public IntVar getVariable(int index) {
-    assert (index == 0);
+    if (index != 0) {
+      throw new IllegalArgumentException("wrong index in LinearExpr.getVariable(): " + index);
+    }
     return this;
   }
 
   @Override
   public long getCoefficient(int index) {
-    assert (index == 0);
+    if (index != 0) {
+      throw new IllegalArgumentException("wrong index in LinearExpr.getCoefficient(): " + index);
+    }
     return 1;
   }
 
   @Override
   public long getOffset() {
     return 0;
-  }
-
-  /** Returns a short string describing the variable. */
-  @Override
-  public String getShortString() {
-    if (varBuilder.getName().isEmpty()) {
-      if (varBuilder.getDomainCount() == 2 && varBuilder.getDomain(0) == varBuilder.getDomain(1)) {
-        return String.format("%d", varBuilder.getDomain(0));
-      } else {
-        return String.format("var_%d(%s)", getIndex(), displayBounds());
-      }
-    } else {
-      return String.format("%s(%s)", getName(), displayBounds());
-    }
   }
 
   /** Returns the domain as a string without the enclosing []. */
@@ -111,22 +98,25 @@ public final class IntVar implements Literal, LinearExpr {
     return out;
   }
 
-  /** Returns the negation of a boolean variable. */
-  @Override
-  public Literal not() {
-    if (negation_ == null) {
-      negation_ = new NotBooleanVariable(this);
-    }
-    return negation_;
-  }
-
   /** Returns the domain of the variable. */
   public Domain getDomain() {
     return CpSatHelper.variableDomain(varBuilder.build());
   }
 
-  private final CpModelProto.Builder modelBuilder;
-  private final int variableIndex;
-  private final IntegerVariableProto.Builder varBuilder;
-  private NotBooleanVariable negation_ = null;
+  /** Returns a short string describing the variable. */
+  public String getShortString() {
+    if (varBuilder.getName().isEmpty()) {
+      if (varBuilder.getDomainCount() == 2 && varBuilder.getDomain(0) == varBuilder.getDomain(1)) {
+        return String.format("%d", varBuilder.getDomain(0));
+      } else {
+        return String.format("var_%d(%s)", getIndex(), displayBounds());
+      }
+    } else {
+      return String.format("%s(%s)", getName(), displayBounds());
+    }
+  }
+
+  protected final CpModelProto.Builder modelBuilder;
+  protected final int variableIndex;
+  protected final IntegerVariableProto.Builder varBuilder;
 }

@@ -17,6 +17,8 @@ https://developers.google.com/optimization/
          * [C   code](#c-code-2)
          * [Java code](#java-code-1)
          * [C# code](#c-code-3)
+
+
 <!--te-->
 
 
@@ -178,6 +180,7 @@ package com.google.ortools.sat.samples;
 import com.google.ortools.Loader;
 import com.google.ortools.sat.DecisionStrategyProto;
 import com.google.ortools.sat.SatParameters;
+import com.google.ortools.sat.BoolVar;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
@@ -195,7 +198,7 @@ public class ChannelingSampleSat {
     IntVar[] vars = new IntVar[] {model.newIntVar(0, 10, "x"), model.newIntVar(0, 10, "y")};
 
     // Declare our intermediate boolean variable.
-    IntVar b = model.newBoolVar("b");
+    BoolVar b = model.newBoolVar("b");
 
     // Implement b == (x >= 5).
     model.addGreaterOrEqual(vars[0], 5).onlyEnforceIf(b);
@@ -514,6 +517,7 @@ import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.LinearExpr;
 import com.google.ortools.sat.LinearExprBuilder;
+import com.google.ortools.sat.Literal;
 
 /** Solves a bin packing problem with the CP-SAT solver. */
 public class BinPackingProblemSat {
@@ -546,7 +550,7 @@ public class BinPackingProblemSat {
     }
 
     // Slack variables.
-    IntVar[] slacks = new IntVar[numBins];
+    Literal[] slacks = new Literal[numBins];
     for (int b = 0; b < numBins; ++b) {
       slacks[b] = model.newBoolVar("slack_" + b);
     }

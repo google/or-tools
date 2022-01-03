@@ -13,32 +13,27 @@
 
 package com.google.ortools.sat;
 
-/** A specialized linear expression: sum(xi) + b. */
-public final class SumOfVariables implements LinearExpr {
-  private final IntVar[] variables;
+/** A specialized constant linear expression. */
+public final class ConstantExpression implements LinearExpr {
   private final long offset;
 
-  public SumOfVariables(IntVar[] variables, long offset) {
-    this.variables = variables;
+  public ConstantExpression(long offset) {
     this.offset = offset;
   }
 
   @Override
   public int numElements() {
-    return variables.length;
+    return 0;
   }
 
   @Override
   public IntVar getVariable(int index) {
-    if (index < 0 || index >= variables.length) {
-      throw new IllegalArgumentException("wrong index in LinearExpr.getVariable(): " + index);
-    }
-    return variables[index];
+    throw new IllegalArgumentException("wrong index in LinearExpr.getVariable(): " + index);
   }
 
   @Override
   public long getCoefficient(int index) {
-    return 1;
+    throw new IllegalArgumentException("wrong index in LinearExpr.getCoefficient(): " + index);
   }
 
   @Override
