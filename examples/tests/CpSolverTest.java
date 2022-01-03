@@ -112,7 +112,7 @@ public final class CpSolverTest {
     final IntVar x = model.newIntVar(0, 5, "x");
     final IntVar y = model.newIntVar(0, 6, "y");
     // Creates the constraints.
-    model.addEquality(LinearExpr.sum(new IntVar[] {x, y}), 6);
+    model.addEquality(LinearExpr.newBuilder().add(x).add(y).build(), 6);
 
     // Add hints.
     model.addHint(x, 2);
@@ -181,7 +181,7 @@ public final class CpSolverTest {
     model.addDifferent(x, y);
 
     // Maximizes a linear combination of variables.
-    model.maximize(LinearExpr.scalProd(new IntVar[] {x, y, z}, new int[] {1, 2, 3}));
+    model.maximize(LinearExpr.newBuilder().add(x).addTerm(y, 2).addTerm(z, 3).build());
 
     // Creates a solver and solves the model.
     final CpSolver solver = new CpSolver();
@@ -190,7 +190,7 @@ public final class CpSolverTest {
 
     assertThat(status).isEqualTo(CpSolverStatus.OPTIMAL);
     assertThat(solver.objectiveValue()).isEqualTo(11.0);
-    assertThat(solver.value(LinearExpr.sum(new IntVar[] {x, y, z})))
+    assertThat(solver.value(LinearExpr.newBuilder().addSum(new IntVar[] {x, y, z}).build()))
         .isEqualTo(solver.value(x) + solver.value(y) + solver.value(z));
   }
 
@@ -203,7 +203,7 @@ public final class CpSolverTest {
     final IntVar y = model.newIntVar(0, 5, "y");
 
     // Create a linear constraint which enforces that only x or y can be greater than 0.
-    model.addLinearConstraint(LinearExpr.sum(new IntVar[] {x, y}), 0, 1);
+    model.addLinearConstraint(LinearExpr.newBuilder().add(x).add(y).build(), 0, 1);
 
     // Create the objective variable
     final IntVar obj = model.newIntVar(0, 3, "obj");

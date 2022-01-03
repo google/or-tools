@@ -96,6 +96,48 @@ public final class CpModelTest {
   }
 
   @Test
+  public void testCpModel_addAtLeastOne() throws Exception {
+    final CpModel model = new CpModel();
+    assertNotNull(model);
+    final IntVar x = model.newBoolVar("x");
+    final IntVar y = model.newBoolVar("y");
+    final IntVar z = model.newBoolVar("z");
+    model.addAtLeastOne(new Literal[] {x, y.not(), z});
+
+    assertThat(model.model().getConstraintsCount()).isEqualTo(1);
+    assertThat(model.model().getConstraints(0).hasBoolOr()).isTrue();
+    assertThat(model.model().getConstraints(0).getBoolOr().getLiteralsCount()).isEqualTo(3);
+  }
+
+  @Test
+  public void testCpModel_addAtMostOne() throws Exception {
+    final CpModel model = new CpModel();
+    assertNotNull(model);
+    final IntVar x = model.newBoolVar("x");
+    final IntVar y = model.newBoolVar("y");
+    final IntVar z = model.newBoolVar("z");
+    model.addAtMostOne(new Literal[] {x, y.not(), z});
+
+    assertThat(model.model().getConstraintsCount()).isEqualTo(1);
+    assertThat(model.model().getConstraints(0).hasAtMostOne()).isTrue();
+    assertThat(model.model().getConstraints(0).getAtMostOne().getLiteralsCount()).isEqualTo(3);
+  }
+
+  @Test
+  public void testCpModel_addExactlyOne() throws Exception {
+    final CpModel model = new CpModel();
+    assertNotNull(model);
+    final IntVar x = model.newBoolVar("x");
+    final IntVar y = model.newBoolVar("y");
+    final IntVar z = model.newBoolVar("z");
+    model.addExactlyOne(new Literal[] {x, y.not(), z});
+
+    assertThat(model.model().getConstraintsCount()).isEqualTo(1);
+    assertThat(model.model().getConstraints(0).hasExactlyOne()).isTrue();
+    assertThat(model.model().getConstraints(0).getExactlyOne().getLiteralsCount()).isEqualTo(3);
+  }
+
+  @Test
   public void testCpModel_addBoolAnd() throws Exception {
     final CpModel model = new CpModel();
     assertNotNull(model);
@@ -143,20 +185,21 @@ public final class CpModelTest {
     final IntVar x = model.newBoolVar("x");
     final IntVar y = model.newBoolVar("y");
 
-    model.addEquality(LinearExpr.sum(new IntVar[] {x, y}), 1);
+    model.addEquality(LinearExpr.newBuilder().add(x).add(y).build(), 1);
     assertThat(model.model().getConstraintsCount()).isEqualTo(1);
     assertThat(model.model().getConstraints(0).hasLinear()).isTrue();
     assertThat(model.model().getConstraints(0).getLinear().getVarsCount()).isEqualTo(2);
 
     final IntVar b = model.newBoolVar("b");
-    model.addEquality(LinearExpr.sum(new IntVar[] {x, y}), 2).onlyEnforceIf(b.not());
+    model.addEquality(LinearExpr.newBuilder().add(x).add(y).build(), 2).onlyEnforceIf(b.not());
     assertThat(model.model().getConstraintsCount()).isEqualTo(2);
     assertThat(model.model().getConstraints(1).hasLinear()).isTrue();
     assertThat(model.model().getConstraints(1).getEnforcementLiteralCount()).isEqualTo(1);
     assertThat(model.model().getConstraints(1).getEnforcementLiteral(0)).isEqualTo(-3);
 
     final IntVar c = model.newBoolVar("c");
-    model.addEquality(LinearExpr.sum(new IntVar[] {x, y}), 3).onlyEnforceIf(new Literal[] {b, c});
+    model.addEquality(LinearExpr.newBuilder().add(x).add(y).build(), 3)
+        .onlyEnforceIf(new Literal[] {b, c});
     assertThat(model.model().getConstraintsCount()).isEqualTo(3);
     assertThat(model.model().getConstraints(2).hasLinear()).isTrue();
     assertThat(model.model().getConstraints(2).getEnforcementLiteralCount()).isEqualTo(2);
@@ -219,8 +262,9 @@ public final class CpModelTest {
     final IntVar x = model.newBoolVar("x");
     final IntVar t = model.newBoolVar("t");
 
-    model.addMinEquality(LinearExpr.term(t, -3),
-        new LinearExpr[] {LinearExpr.affine(x, 2, 1), LinearExpr.constant(5)});
+    model.addMinEquality(LinearExpr.newBuilder().addTerm(t, -3).build(),
+        new LinearExpr[] {LinearExpr.newBuilder().addTerm(x, 2).add(1).build(),
+            LinearExpr.newBuilder().add(5).build()});
     assertThat(model.model().getConstraintsCount()).isEqualTo(1);
     assertThat(model.model().getConstraints(0).hasLinMax()).isTrue();
     LinearArgumentProto ct = model.model().getConstraints(0).getLinMax();
@@ -243,7 +287,8 @@ public final class CpModelTest {
     final IntVar x = model.newBoolVar("x");
     final IntVar t = model.newBoolVar("t");
 
-    model.addAbsEquality(LinearExpr.term(t, -3), LinearExpr.affine(x, 2, 1));
+    model.addAbsEquality(LinearExpr.newBuilder().addTerm(t, -3).build(),
+        LinearExpr.newBuilder().addTerm(x, 2).add(1).build());
     assertThat(model.model().getConstraintsCount()).isEqualTo(1);
     assertThat(model.model().getConstraints(0).hasLinMax()).isTrue();
     LinearArgumentProto ct = model.model().getConstraints(0).getLinMax();
@@ -432,7 +477,7 @@ public final class CpModelTest {
     assertNotNull(model);
     final IntVar x = model.newIntVar(0, 9223372036854775807L, "x");
     final IntVar y = model.newIntVar(0, 10, "y");
-    model.addLinearExpressionInDomain(LinearExpr.sum(new IntVar[] {x, y}),
+    model.addLinearExpressionInDomain(LinearExpr.newBuilder().add(x).add(y).build(),
         Domain.fromFlatIntervals(new long[] {6, 9223372036854775807L}));
 
     String stats = model.validate();

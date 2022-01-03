@@ -35,7 +35,7 @@ public final class LinearExprTest {
     final Domain domain = new Domain(0, 10);
     final IntVar y = model.newIntVarFromDomain(domain, "y");
 
-    final LinearExpr expr = LinearExpr.term(y, 12);
+    final LinearExpr expr = LinearExpr.newBuilder().addTerm(y, 12).build();
     assertNotNull(expr);
 
     assertEquals(1, expr.numElements());
@@ -50,7 +50,7 @@ public final class LinearExprTest {
     assertNotNull(model);
     final Literal y = model.newBoolVar("y");
 
-    final LinearExpr expr = LinearExpr.term(y.not(), 12);
+    final LinearExpr expr = LinearExpr.newBuilder().addTerm(y.not(), 12).build();
     assertNotNull(expr);
 
     assertThat(expr.numElements()).isEqualTo(1);
@@ -66,7 +66,7 @@ public final class LinearExprTest {
     final Domain domain = new Domain(0, 10);
     final IntVar y = model.newIntVarFromDomain(domain, "y");
 
-    final LinearExpr expr = LinearExpr.affine(y, 12, 5);
+    final LinearExpr expr = LinearExpr.newBuilder().addTerm(y, 12).add(5).build();
     assertNotNull(expr);
 
     assertThat(expr.numElements()).isEqualTo(1);
@@ -81,7 +81,7 @@ public final class LinearExprTest {
     assertNotNull(model);
     final Literal y = model.newBoolVar("y");
 
-    final LinearExpr expr = LinearExpr.affine(y.not(), 12, 5);
+    final LinearExpr expr = LinearExpr.newBuilder().addTerm(y.not(), 12).add(5).build();
     assertNotNull(expr);
 
     assertThat(expr.numElements()).isEqualTo(1);
@@ -98,7 +98,7 @@ public final class LinearExprTest {
     final IntVar x = model.newIntVarFromDomain(domain, "x");
     final IntVar y = model.newIntVarFromDomain(domain, "y");
 
-    final LinearExpr expr = LinearExpr.sum(new IntVar[] {x, y});
+    final LinearExpr expr = LinearExpr.newBuilder().add(x).add(y).build();
     assertNotNull(expr);
 
     assertThat(expr.numElements()).isEqualTo(2);
@@ -117,7 +117,7 @@ public final class LinearExprTest {
     final IntVar x = model.newIntVarFromDomain(domain, "x");
     final IntVar y = model.newIntVarFromDomain(domain, "y");
 
-    final LinearExpr expr = LinearExpr.scalProd(new IntVar[] {x, y}, new long[] {3, 5});
+    final LinearExpr expr = LinearExpr.newBuilder().addTerm(x, 3).addTerm(y, 5).build();
     assertNotNull(expr);
 
     assertThat(expr.numElements()).isEqualTo(2);
@@ -135,7 +135,7 @@ public final class LinearExprTest {
     final Literal x = model.newBoolVar("x");
     final Literal y = model.newBoolVar("y");
 
-    final LinearExpr expr = LinearExpr.booleanSum(new Literal[] {x, y.not()});
+    final LinearExpr expr = LinearExpr.newBuilder().add(x).add(y.not()).build();
     assertNotNull(expr);
 
     assertThat(expr.numElements()).isEqualTo(2);
@@ -143,7 +143,7 @@ public final class LinearExprTest {
     assertThat(expr.getCoefficient(0)).isEqualTo(1);
     assertThat(expr.getVariable(1)).isEqualTo(y);
     assertThat(expr.getCoefficient(1)).isEqualTo(-1);
-    assertThat(expr.getOffset()).isEqualTo(-1);
+    assertThat(expr.getOffset()).isEqualTo(1);
   }
 
   @Test
@@ -153,8 +153,7 @@ public final class LinearExprTest {
     final Literal x = model.newBoolVar("x");
     final Literal y = model.newBoolVar("y");
 
-    final LinearExpr expr =
-        LinearExpr.booleanScalProd(new Literal[] {x, y.not()}, new long[] {3, 5});
+    final LinearExpr expr = LinearExpr.newBuilder().addTerm(x, 3).addTerm(y.not(), 5).build();
     assertNotNull(expr);
 
     assertThat(expr.numElements()).isEqualTo(2);
@@ -162,6 +161,6 @@ public final class LinearExprTest {
     assertThat(expr.getCoefficient(0)).isEqualTo(3);
     assertThat(expr.getVariable(1)).isEqualTo(y);
     assertThat(expr.getCoefficient(1)).isEqualTo(-5);
-    assertThat(expr.getOffset()).isEqualTo(-5);
+    assertThat(expr.getOffset()).isEqualTo(5);
   }
 }
