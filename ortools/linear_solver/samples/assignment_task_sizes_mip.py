@@ -63,9 +63,8 @@ def main():
     # The total size of the tasks each worker takes on is at most total_size_max.
     for worker in range(num_workers):
         solver.Add(
-            solver.Sum([
-                task_sizes[task] * x[worker, task] for task in range(num_tasks)
-            ]) <= total_size_max)
+            solver.Sum([task_sizes[task] * x[worker, task]
+                        for task in range(num_tasks)]) <= total_size_max)
 
     # Each task is assigned to exactly one worker.
     for task in range(num_tasks):
