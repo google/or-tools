@@ -264,6 +264,7 @@ double LinearExpression::LpValue(
 IntegerValue LinearExpression::LevelZeroMin(IntegerTrail* integer_trail) const {
   IntegerValue result = offset;
   for (int i = 0; i < vars.size(); ++i) {
+    CHECK_GE(coeffs[i], 0);
     result += coeffs[i] * integer_trail->LevelZeroLowerBound(vars[i]);
   }
   return result;
