@@ -104,7 +104,7 @@ public class NursesSat {
           numShiftsWorked.add(shifts[n][d][s]);
         }
       }
-      model.addLinearConstraint(numShiftsWorked.build(), minShiftsPerNurse, maxShiftsPerNurse);
+      model.addLinearConstraint(numShiftsWorked, minShiftsPerNurse, maxShiftsPerNurse);
     }
     // [END assign_nurses_evenly]
 

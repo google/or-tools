@@ -21,13 +21,20 @@ public final class ConstantExpression implements LinearExpr {
     this.offset = offset;
   }
 
+  // LinearArgument interface.
+  @Override
+  public LinearExpr build() {
+    return this;
+  }
+
+  // LinearExpr interface.
   @Override
   public int numElements() {
     return 0;
   }
 
   @Override
-  public IntVar getVariable(int index) {
+  public int getVariableIndex(int index) {
     throw new IllegalArgumentException("wrong index in LinearExpr.getVariable(): " + index);
   }
 
@@ -39,5 +46,10 @@ public final class ConstantExpression implements LinearExpr {
   @Override
   public long getOffset() {
     return offset;
+  }
+
+  @Override
+  public String toString() {
+    return String.format("%d", offset);
   }
 }

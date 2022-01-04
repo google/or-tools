@@ -18,7 +18,7 @@ import com.google.ortools.sat.IntegerVariableProto;
 import com.google.ortools.util.Domain;
 
 /** An integer variable. */
-public class IntVar implements LinearExpr {
+public class IntVar implements LinearArgument {
   IntVar(CpModelProto.Builder builder, Domain domain, String name) {
     this.modelBuilder = builder;
     this.variableIndex = modelBuilder.getVariablesCount();
@@ -35,17 +35,12 @@ public class IntVar implements LinearExpr {
     this.varBuilder = modelBuilder.getVariablesBuilder(index);
   }
 
-  @Override
-  public String toString() {
-    return varBuilder.toString();
-  }
-
   /** Returns the name of the variable given upon creation. */
   public String getName() {
     return varBuilder.getName();
   }
 
-  /** Internal, returns the index of the variable in the underlying CpModelProto. */
+  /** Returns the index of the variable in the underlying CpModelProto. */
   public int getIndex() {
     return variableIndex;
   }
@@ -55,31 +50,10 @@ public class IntVar implements LinearExpr {
     return varBuilder;
   }
 
-  // LinearExpr interface.
+  // LinearArgument interface
   @Override
-  public int numElements() {
-    return 1;
-  }
-
-  @Override
-  public IntVar getVariable(int index) {
-    if (index != 0) {
-      throw new IllegalArgumentException("wrong index in LinearExpr.getVariable(): " + index);
-    }
-    return this;
-  }
-
-  @Override
-  public long getCoefficient(int index) {
-    if (index != 0) {
-      throw new IllegalArgumentException("wrong index in LinearExpr.getCoefficient(): " + index);
-    }
-    return 1;
-  }
-
-  @Override
-  public long getOffset() {
-    return 0;
+  public LinearExpr build() {
+    return new AffineExpression(variableIndex, 1, 0);
   }
 
   /** Returns the domain as a string without the enclosing []. */
@@ -103,8 +77,8 @@ public class IntVar implements LinearExpr {
     return CpSatHelper.variableDomain(varBuilder.build());
   }
 
-  /** Returns a short string describing the variable. */
-  public String getShortString() {
+  @Override
+  public String toString() {
     if (varBuilder.getName().isEmpty()) {
       if (varBuilder.getDomainCount() == 2 && varBuilder.getDomain(0) == varBuilder.getDomain(1)) {
         return String.format("%d", varBuilder.getDomain(0));

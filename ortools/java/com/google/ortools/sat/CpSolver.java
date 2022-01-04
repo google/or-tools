@@ -127,10 +127,11 @@ public final class CpSolver {
   }
 
   /** Returns the value of a linear expression in the last solution found. */
-  public long value(LinearExpr expr) {
-    long result = expr.getOffset();
-    for (int i = 0; i < expr.numElements(); ++i) {
-      result += solveResponse.getSolution(expr.getVariable(i).getIndex()) * expr.getCoefficient(i);
+  public long value(LinearArgument expr) {
+    final LinearExpr e = expr.build();
+    long result = e.getOffset();
+    for (int i = 0; i < e.numElements(); ++i) {
+      result += solveResponse.getSolution(e.getVariableIndex(i)) * e.getCoefficient(i);
     }
     return result;
   }

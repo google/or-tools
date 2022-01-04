@@ -15,27 +15,34 @@ package com.google.ortools.sat;
 
 /** A specialized linear expression: a * x + b */
 public final class AffineExpression implements LinearExpr {
-  private final IntVar var;
+  private final int varIndex;
   private final long coefficient;
   private final long offset;
 
-  public AffineExpression(IntVar var, long coefficient, long offset) {
-    this.var = var;
+  public AffineExpression(int varIndex, long coefficient, long offset) {
+    this.varIndex = varIndex;
     this.coefficient = coefficient;
     this.offset = offset;
   }
 
+  // LinearArgument interface.
+  @Override
+  public LinearExpr build() {
+    return this;
+  }
+
+  // LinearExpr interface.
   @Override
   public int numElements() {
     return 1;
   }
 
   @Override
-  public IntVar getVariable(int index) {
+  public int getVariableIndex(int index) {
     if (index != 0) {
-      throw new IllegalArgumentException("wrong index in LinearExpr.getVariable(): " + index);
+      throw new IllegalArgumentException("wrong index in LinearExpr.getIndex(): " + index);
     }
-    return var;
+    return varIndex;
   }
 
   @Override

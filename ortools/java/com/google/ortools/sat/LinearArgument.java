@@ -13,10 +13,8 @@
 
 package com.google.ortools.sat;
 
-/** Interface to describe a boolean variable or its negation. */
-public interface Literal extends LinearArgument {
-  public int getIndex();
-
-  /** Returns the Boolean negation of the current literal. */
-  public Literal not();
+/** A object that can build a LinearExpr object. */
+public interface LinearArgument {
+  /** Builds a linear expression. */
+  LinearExpr build();
 }

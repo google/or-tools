@@ -20,32 +20,47 @@ import com.google.ortools.util.Domain;
 public final class BoolVar extends IntVar implements Literal {
   BoolVar(CpModelProto.Builder builder, Domain domain, String name) {
     super(builder, domain, name);
-    this.negation_ = null;
+    this.negation = null;
   }
 
   BoolVar(CpModelProto.Builder builder, int index) {
     super(builder, index);
-    this.negation_ = null;
+    this.negation = null;
   }
 
   /** Returns the negation of a boolean variable. */
   @Override
   public Literal not() {
-    if (negation_ == null) {
-      negation_ = new NotBooleanVariable(this);
+    if (negation == null) {
+      negation = new NotBoolVar(this);
     }
-    return negation_;
+    return negation;
   }
 
   @Override
-  public BoolVar getBoolVar() {
-    return this;
+  public String toString() {
+    if (varBuilder.getName().isEmpty()) {
+      if (varBuilder.getDomainCount() == 2 && varBuilder.getDomain(0) == varBuilder.getDomain(1)) {
+        if (varBuilder.getDomain(0) == 0) {
+          return "false";
+        } else {
+          return "true";
+        }
+      } else {
+        return String.format("boolvar_%d(%s)", getIndex(), displayBounds());
+      }
+    } else {
+      if (varBuilder.getDomainCount() == 2 && varBuilder.getDomain(0) == varBuilder.getDomain(1)) {
+        if (varBuilder.getDomain(0) == 0) {
+          return String.format("%s(false)", varBuilder.getName());
+        } else {
+          return String.format("%s(true)", varBuilder.getName());
+        }
+      } else {
+        return String.format("%s(%s)", getName(), displayBounds());
+      }
+    }
   }
 
-  @Override
-  public boolean negated() {
-    return false;
-  }
-
-  private NotBooleanVariable negation_ = null;
+  private NotBoolVar negation = null;
 }

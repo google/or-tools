@@ -177,7 +177,7 @@ public class IntervalSampleSat {
         model.newIntervalVar(
             startVar,
             LinearExpr.constant(10),
-            LinearExpr.newBuilder().add(endVar).add(2).build(),
+            LinearExpr.newBuilder().add(endVar).add(2),
             "interval");
     System.out.println(intervalVar);
 
@@ -347,7 +347,7 @@ public class OptionalIntervalSampleSat {
         model.newOptionalIntervalVar(
             startVar,
             LinearExpr.constant(10),
-            LinearExpr.newBuilder().add(endVar).add(2).build(),
+            LinearExpr.newBuilder().add(endVar).add(2),
             presence,
             "interval");
     System.out.println(intervalVar);
@@ -1067,7 +1067,7 @@ public class RankingSampleSat {
         expr.add(precedences[j][i]);
       }
       expr.add(-1);
-      model.addEquality(ranks[i], expr.build());
+      model.addEquality(ranks[i], expr);
     }
   }
 
@@ -1132,7 +1132,7 @@ public class RankingSampleSat {
       obj.addTerm(presences[t], -7);
     }
     obj.addTerm(makespan, 2);
-    model.minimize(obj.build());
+    model.minimize(obj);
 
     // Creates a solver and solves the model.
     CpSolver solver = new CpSolver();

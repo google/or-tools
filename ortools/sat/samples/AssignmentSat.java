@@ -91,7 +91,7 @@ public class AssignmentSat {
         obj.addTerm(x[worker][task], costs[worker][task]);
       }
     }
-    model.minimize(obj.build());
+    model.minimize(obj);
     // [END objective]
 
     // Solve

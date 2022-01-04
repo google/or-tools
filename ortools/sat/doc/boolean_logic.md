@@ -107,7 +107,7 @@ public class LiteralSampleSat {
     CpModel model = new CpModel();
     BoolVar x = model.newBoolVar("x");
     Literal notX = x.not();
-    System.out.println(notX.getShortString());
+    System.out.println(notX);
   }
 }
 ```

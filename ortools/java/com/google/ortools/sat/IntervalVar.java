@@ -69,17 +69,17 @@ public final class IntervalVar {
 
   /** Returns the start expression. */
   public LinearExpr getStartExpr() {
-    return LinearExpr.rebuildFromLinearExpressionProto(intervalBuilder.getStart(), modelBuilder);
+    return LinearExpr.rebuildFromLinearExpressionProto(intervalBuilder.getStart());
   }
 
   /** Returns the size expression. */
   public LinearExpr getSizeExpr() {
-    return LinearExpr.rebuildFromLinearExpressionProto(intervalBuilder.getSize(), modelBuilder);
+    return LinearExpr.rebuildFromLinearExpressionProto(intervalBuilder.getSize());
   }
 
   /** Returns the end expression. */
   public LinearExpr getEndExpr() {
-    return LinearExpr.rebuildFromLinearExpressionProto(intervalBuilder.getEnd(), modelBuilder);
+    return LinearExpr.rebuildFromLinearExpressionProto(intervalBuilder.getEnd());
   }
 
   private final CpModelProto.Builder modelBuilder;

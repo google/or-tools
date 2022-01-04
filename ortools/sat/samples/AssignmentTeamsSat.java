@@ -96,7 +96,7 @@ public class AssignmentTeamsSat {
         team1Tasks.add(x[worker][task]);
       }
     }
-    model.addLessOrEqual(team1Tasks.build(), teamMax);
+    model.addLessOrEqual(team1Tasks, teamMax);
 
     LinearExprBuilder team2Tasks = LinearExpr.newBuilder();
     for (int worker : team2) {
@@ -104,7 +104,7 @@ public class AssignmentTeamsSat {
         team2Tasks.add(x[worker][task]);
       }
     }
-    model.addLessOrEqual(team2Tasks.build(), teamMax);
+    model.addLessOrEqual(team2Tasks, teamMax);
     // [END constraints]
 
     // Objective
@@ -115,7 +115,7 @@ public class AssignmentTeamsSat {
         obj.addTerm(x[worker][task], costs[worker][task]);
       }
     }
-    model.minimize(obj.build());
+    model.minimize(obj);
     // [END objective]
 
     // Solve

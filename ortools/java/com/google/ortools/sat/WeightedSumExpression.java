@@ -15,32 +15,37 @@ package com.google.ortools.sat;
 
 /** A specialized linear expression: sum(ai * xi) + b. */
 public final class WeightedSumExpression implements LinearExpr {
-  private final IntVar[] variables;
+  private final int[] variablesIndices;
   private final long[] coefficients;
   private final long offset;
 
-  public WeightedSumExpression(IntVar[] variables, long[] coefficients, long offset) {
-    this.variables = variables;
+  public WeightedSumExpression(int[] variablesIndices, long[] coefficients, long offset) {
+    this.variablesIndices = variablesIndices;
     this.coefficients = coefficients;
     this.offset = offset;
   }
 
   @Override
-  public int numElements() {
-    return variables.length;
+  public LinearExpr build() {
+    return this;
   }
 
   @Override
-  public IntVar getVariable(int index) {
-    if (index < 0 || index >= variables.length) {
+  public int numElements() {
+    return variablesIndices.length;
+  }
+
+  @Override
+  public int getVariableIndex(int index) {
+    if (index < 0 || index >= variablesIndices.length) {
       throw new IllegalArgumentException("wrong index in LinearExpr.getVariable(): " + index);
     }
-    return variables[index];
+    return variablesIndices[index];
   }
 
   @Override
   public long getCoefficient(int index) {
-    if (index < 0 || index >= variables.length) {
+    if (index < 0 || index >= variablesIndices.length) {
       throw new IllegalArgumentException("wrong index in LinearExpr.getCoefficient(): " + index);
     }
     return coefficients[index];

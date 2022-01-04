@@ -13,28 +13,21 @@
 
 package com.google.ortools.sat;
 
-import static java.util.Comparator.comparingInt;
-
 import java.util.Map;
 import java.util.TreeMap;
 
 /** Builder class for the LinearExpr container. */
-public final class LinearExprBuilder {
-  private final TreeMap<IntVar, Long> coefficients;
+public final class LinearExprBuilder implements LinearArgument {
+  private final TreeMap<Integer, Long> coefficients;
   private long offset;
 
   LinearExprBuilder() {
-    this.coefficients = new TreeMap<>(comparingInt(IntVar::getIndex));
+    this.coefficients = new TreeMap<>();
     this.offset = 0;
   }
 
-  public LinearExprBuilder add(LinearExpr expr) {
+  public LinearExprBuilder add(LinearArgument expr) {
     addTerm(expr, 1);
-    return this;
-  }
-
-  public LinearExprBuilder add(Literal literal) {
-    addTerm(literal, 1);
     return this;
   }
 
@@ -43,130 +36,65 @@ public final class LinearExprBuilder {
     return this;
   }
 
-  public LinearExprBuilder addTerm(LinearExpr expr, long coeff) {
-    final int numElements = expr.numElements();
+  public LinearExprBuilder addTerm(LinearArgument expr, long coeff) {
+    final LinearExpr e = expr.build();
+    final int numElements = e.numElements();
     for (int i = 0; i < numElements; ++i) {
-      coefficients.merge(expr.getVariable(i), expr.getCoefficient(i) * coeff, Long::sum);
+      coefficients.merge(e.getVariableIndex(i), e.getCoefficient(i) * coeff, Long::sum);
     }
-    offset = offset + expr.getOffset() * coeff;
+    offset = offset + e.getOffset() * coeff;
     return this;
   }
 
-  public LinearExprBuilder addTerm(Literal literal, long coeff) {
-    final BoolVar boolVar = literal.getBoolVar();
-    if (literal.negated()) {
-      coefficients.merge(boolVar, -coeff, Long::sum);
-      offset = offset + coeff;
-    } else {
-      coefficients.merge(boolVar, coeff, Long::sum);
-    }
-    return this;
-  }
-
-  public LinearExprBuilder addSum(IntVar[] vars) {
-    for (final IntVar var : vars) {
-      addTerm(var, 1);
-    }
-    return this;
-  }
-
-  public LinearExprBuilder addSum(Literal[] literals) {
-    for (final Literal literal : literals) {
-      addTerm(literal, 1);
-    }
-    return this;
-  }
-
-  public LinearExprBuilder addSum(LinearExpr[] exprs) {
-    for (final LinearExpr expr : exprs) {
+  public LinearExprBuilder addSum(LinearArgument[] exprs) {
+    for (final LinearArgument expr : exprs) {
       addTerm(expr, 1);
     }
     return this;
   }
 
-  public LinearExprBuilder addWeightedSum(IntVar[] vars, long[] coeffs) {
-    for (int i = 0; i < vars.length; ++i) {
-      addTerm(vars[i], coeffs[i]);
-    }
-    return this;
-  }
-
-  public LinearExprBuilder addWeightedSum(IntVar[] vars, int[] coeffs) {
-    for (int i = 0; i < vars.length; ++i) {
-      addTerm(vars[i], coeffs[i]);
-    }
-    return this;
-  }
-
-  public LinearExprBuilder addWeightedSum(Literal[] literals, long[] coeffs) {
-    for (int i = 0; i < literals.length; ++i) {
-      addTerm(literals[i], coeffs[i]);
-    }
-    return this;
-  }
-
-  public LinearExprBuilder addWeightedSum(Literal[] literals, int[] coeffs) {
-    for (int i = 0; i < literals.length; ++i) {
-      addTerm(literals[i], coeffs[i]);
-    }
-    return this;
-  }
-
-  public LinearExprBuilder addWeightedSum(LinearExpr[] exprs, long[] coeffs) {
+  public LinearExprBuilder addWeightedSum(LinearArgument[] exprs, long[] coeffs) {
     for (int i = 0; i < exprs.length; ++i) {
       addTerm(exprs[i], coeffs[i]);
     }
     return this;
   }
 
-  public LinearExprBuilder addWeightedSum(LinearExpr[] exprs, int[] coeffs) {
+  public LinearExprBuilder addWeightedSum(LinearArgument[] exprs, int[] coeffs) {
     for (int i = 0; i < exprs.length; ++i) {
       addTerm(exprs[i], coeffs[i]);
     }
     return this;
   }
 
+  @Override
   public LinearExpr build() {
-    boolean allOnes = true;
     int numElements = 0;
-    IntVar lastVar = null;
+    int lastVarIndex = -1;
     long lastCoeff = 0;
-    for (Map.Entry<IntVar, Long> entry : coefficients.entrySet()) {
+    for (Map.Entry<Integer, Long> entry : coefficients.entrySet()) {
       if (entry.getValue() != 0) {
         numElements++;
-        lastVar = entry.getKey();
+        lastVarIndex = entry.getKey();
         lastCoeff = entry.getValue();
-        if (lastCoeff != 1) {
-          allOnes = false;
-        }
       }
     }
     if (numElements == 0) {
       return new ConstantExpression(offset);
     } else if (numElements == 1) {
-      return new AffineExpression(lastVar, lastCoeff, offset);
-    } else if (allOnes) {
-      IntVar[] vars = new IntVar[numElements];
-      int index = 0;
-      for (Map.Entry<IntVar, Long> entry : coefficients.entrySet()) {
-        if (entry.getValue() != 0) {
-          vars[index] = entry.getKey();
-          index++;
-        }
-      }
-      return new SumExpression(vars, offset);
+      return new AffineExpression(lastVarIndex, lastCoeff, offset);
     } else {
-      IntVar[] vars = new IntVar[numElements];
+      int[] varIndices = new int[numElements];
       long[] coeffs = new long[numElements];
       int index = 0;
-      for (Map.Entry<IntVar, Long> entry : coefficients.entrySet()) {
+      for (Map.Entry<Integer, Long> entry : coefficients.entrySet()) {
         if (entry.getValue() != 0) {
-          vars[index] = entry.getKey();
+          varIndices[index] = entry.getKey();
           coeffs[index] = entry.getValue();
           index++;
         }
       }
-      return new WeightedSumExpression(vars, coeffs, offset);
+      return new WeightedSumExpression(varIndices, coeffs, offset);
     }
   }
 }

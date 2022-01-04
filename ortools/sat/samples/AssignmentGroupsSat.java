@@ -131,7 +131,7 @@ public class AssignmentGroupsSat {
       for (int task : allTasks) {
         expr.add(x[worker][task]);
       }
-      model.addEquality(work[worker], expr.build());
+      model.addEquality(work[worker], expr);
     }
 
     // Define the allowed groups of worders
@@ -160,7 +160,7 @@ public class AssignmentGroupsSat {
         obj.addTerm(x[worker][task], costs[worker][task]);
       }
     }
-    model.minimize(obj.build());
+    model.minimize(obj);
     // [END objective]
 
     // Solve

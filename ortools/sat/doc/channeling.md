@@ -561,7 +561,7 @@ public class BinPackingProblemSat {
       for (int i = 0; i < numItems; ++i) {
         expr.addTerm(x[i][b], items[i][0]);
       }
-      model.addEquality(expr.build(), load[b]);
+      model.addEquality(expr, load[b]);
     }
 
     // Place all items.
@@ -570,7 +570,7 @@ public class BinPackingProblemSat {
       for (int b = 0; b < numBins; ++b) {
         expr.add(x[i][b]);
       }
-      model.addEquality(expr.build(), items[i][1]);
+      model.addEquality(expr, items[i][1]);
     }
 
     // Links load and slack.

@@ -74,7 +74,7 @@ public class MultipleKnapsackSat {
       for (int i : allItems) {
         load.addTerm(x[i][b], weights[i]);
       }
-      model.addLessOrEqual(load.build(), binCapacities[b]);
+      model.addLessOrEqual(load, binCapacities[b]);
     }
     // [END constraints]
 
@@ -87,7 +87,7 @@ public class MultipleKnapsackSat {
         obj.addTerm(x[i][b], values[i]);
       }
     }
-    model.maximize(obj.build());
+    model.maximize(obj);
     // [END objective]
 
     // [START solve]

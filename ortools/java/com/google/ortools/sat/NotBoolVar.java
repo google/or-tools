@@ -17,12 +17,12 @@ package com.google.ortools.sat;
  * The negation of a boolean variable. This class should not be used directly, Literal must be used
  * instead.
  */
-public final class NotBooleanVariable implements Literal {
-  public NotBooleanVariable(BoolVar boolVar) {
+public final class NotBoolVar implements Literal {
+  public NotBoolVar(BoolVar boolVar) {
     this.boolVar = boolVar;
   }
 
-  /** Internal: returns the index in the literal in the underlying CpModelProto. */
+  /** returns the index in the literal in the underlying CpModelProto. */
   @Override
   public int getIndex() {
     return -boolVar.getIndex() - 1;
@@ -34,47 +34,16 @@ public final class NotBooleanVariable implements Literal {
     return boolVar;
   }
 
+  // LinearArgument interface.
   @Override
-  public BoolVar getBoolVar() {
-    return boolVar;
-  }
-
-  @Override
-  public boolean negated() {
-    return true;
-  }
-
-  // LinearExpr interface.
-  @Override
-  public int numElements() {
-    return 1;
-  }
-
-  @Override
-  public IntVar getVariable(int index) {
-    if (index != 0) {
-      throw new IllegalArgumentException("wrong index in LinearExpr.getVariable(): " + index);
-    }
-    return boolVar;
-  }
-
-  @Override
-  public long getCoefficient(int index) {
-    if (index != 0) {
-      throw new IllegalArgumentException("wrong index in LinearExpr.getCoefficient(): " + index);
-    }
-    return -1;
-  }
-
-  @Override
-  public long getOffset() {
-    return 1;
+  public LinearExpr build() {
+    return new AffineExpression(boolVar.getIndex(), -1, 1);
   }
 
   /** Returns a short string describing this literal. */
   @Override
-  public String getShortString() {
-    return "not(" + boolVar.getShortString() + ")";
+  public String toString() {
+    return "not(" + boolVar + ")";
   }
 
   private final BoolVar boolVar;

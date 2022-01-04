@@ -13,16 +13,15 @@
 
 package com.google.ortools.sat;
 
-import com.google.ortools.sat.CpModelProto;
 import com.google.ortools.sat.LinearExpressionProto;
 
-/** A linear expression interface that can be parsed. */
-public interface LinearExpr {
-  /** Returns the number of elements in the interface. */
+/** A linear expression (sum (ai * xi) + b). It specifies methods to help parsing the expression. */
+public interface LinearExpr extends LinearArgument {
+  /** Returns the number of terms (excluding the constant one) in this expression. */
   int numElements();
 
-  /** Returns the ith variable. */
-  IntVar getVariable(int index);
+  /** Returns the index of the ith variable. */
+  int getVariableIndex(int index);
 
   /** Returns the ith coefficient. */
   long getCoefficient(int index);
@@ -40,76 +39,36 @@ public interface LinearExpr {
     return newBuilder().add(value).build();
   }
 
-  /** Shortcut for newBuilder().addTerm(var, coeff).build() */
-  static LinearExpr term(IntVar var, long coeff) {
-    return newBuilder().addTerm(var, coeff).build();
-  }
-
   /** Shortcut for newBuilder().addTerm(expr, coeff).build() */
-  static LinearExpr term(LinearExpr expr, long coeff) {
+  static LinearExpr term(LinearArgument expr, long coeff) {
     return newBuilder().addTerm(expr, coeff).build();
   }
 
-  /** Shortcut for newBuilder().addTerm(literal, coeff).build() */
-  static LinearExpr term(Literal literal, long coeff) {
-    return newBuilder().addTerm(literal, coeff).build();
-  }
-
-  /** Shortcut for newBuilder().addSum(vars).build() */
-  static LinearExpr sum(IntVar[] vars) {
-    return newBuilder().addSum(vars).build();
-  }
-
   /** Shortcut for newBuilder().addSum(exprs).build() */
-  static LinearExpr sum(LinearExpr[] exprs) {
+  static LinearExpr sum(LinearArgument[] exprs) {
     return newBuilder().addSum(exprs).build();
   }
 
-  /** Shortcut for newBuilder().addSum(literals).build() */
-  static LinearExpr sum(Literal[] literals) {
-    return newBuilder().addSum(literals).build();
-  }
-
-  /** Shortcut for newBuilder().addWeightedSum(vars, coeffs).build() */
-  static LinearExpr weightedSum(IntVar[] vars, long[] coeffs) {
-    return newBuilder().addWeightedSum(vars, coeffs).build();
-  }
-
-  /** Shortcut for newBuilder().addWeightedSum(literals, coeffs).build() */
-  static LinearExpr weightedSum(Literal[] literals, long[] coeffs) {
-    return newBuilder().addWeightedSum(literals, coeffs).build();
-  }
-
   /** Shortcut for newBuilder().addWeightedSum(exprs, coeffs).build() */
-  static LinearExpr weightedSum(LinearExpr[] exprs, long[] coeffs) {
+  static LinearExpr weightedSum(LinearArgument[] exprs, long[] coeffs) {
     return newBuilder().addWeightedSum(exprs, coeffs).build();
   }
 
-  static LinearExpr rebuildFromLinearExpressionProto(
-      LinearExpressionProto proto, CpModelProto.Builder builder) {
+  static LinearExpr rebuildFromLinearExpressionProto(LinearExpressionProto proto) {
     int numElements = proto.getVarsCount();
     if (numElements == 0) {
       return new ConstantExpression(proto.getOffset());
     } else if (numElements == 1) {
-      return new AffineExpression(
-          new IntVar(builder, proto.getVars(0)), proto.getCoeffs(0), proto.getOffset());
+      return new AffineExpression(proto.getVars(0), proto.getCoeffs(0), proto.getOffset());
     } else {
-      IntVar[] vars = new IntVar[numElements];
+      int[] varsIndices = new int[numElements];
       long[] coeffs = new long[numElements];
       long offset = proto.getOffset();
-      boolean allOnes = true;
       for (int i = 0; i < numElements; ++i) {
-        vars[i] = new IntVar(builder, proto.getVars(i));
+        varsIndices[i] = proto.getVars(i);
         coeffs[i] = proto.getCoeffs(i);
-        if (coeffs[i] != 1) {
-          allOnes = false;
-        }
       }
-      if (allOnes) {
-        return new SumExpression(vars, offset);
-      } else {
-        return new WeightedSumExpression(vars, coeffs, offset);
-      }
+      return new WeightedSumExpression(varsIndices, coeffs, offset);
     }
   }
 }

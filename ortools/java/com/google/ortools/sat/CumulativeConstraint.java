@@ -28,10 +28,10 @@ public class CumulativeConstraint extends Constraint {
   }
 
   /// Adds a pair (interval, demand) to the constraint.
-  void addDemand(IntervalVar interval, LinearExpr demand) {
+  void addDemand(IntervalVar interval, LinearArgument demand) {
     CumulativeConstraintProto.Builder cumul = getBuilder().getCumulativeBuilder();
     cumul.addIntervals(interval.getIndex());
-    cumul.addDemands(model.getLinearExpressionProtoBuilderFromLinearExpr(demand, false));
+    cumul.addDemands(model.getLinearExpressionProtoBuilderFromLinearArgument(demand, false));
   }
 
   /// Adds a pair (interval, demand) to the constraint.

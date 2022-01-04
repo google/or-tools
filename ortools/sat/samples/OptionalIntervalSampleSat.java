@@ -32,7 +32,7 @@ public class OptionalIntervalSampleSat {
     IntVar endVar = model.newIntVar(0, horizon, "end");
     Literal presence = model.newBoolVar("presence");
     IntervalVar intervalVar = model.newOptionalIntervalVar(startVar, LinearExpr.constant(10),
-        LinearExpr.newBuilder().add(endVar).add(2).build(), presence, "interval");
+        LinearExpr.newBuilder().add(endVar).add(2), presence, "interval");
     System.out.println(intervalVar);
 
     // If the size is fixed, a simpler version uses the start expression, the size and the literal.

@@ -89,7 +89,7 @@ public class RankingSampleSat {
         expr.add(precedences[j][i]);
       }
       expr.add(-1);
-      model.addEquality(ranks[i], expr.build());
+      model.addEquality(ranks[i], expr);
     }
   }
 
@@ -152,7 +152,7 @@ public class RankingSampleSat {
       obj.addTerm(presences[t], -7);
     }
     obj.addTerm(makespan, 2);
-    model.minimize(obj.build());
+    model.minimize(obj);
 
     // Creates a solver and solves the model.
     CpSolver solver = new CpSolver();

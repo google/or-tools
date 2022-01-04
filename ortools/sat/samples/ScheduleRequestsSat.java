@@ -151,7 +151,7 @@ public class ScheduleRequestsSat {
           numShiftsWorked.add(shifts[n][d][s]);
         }
       }
-      model.addLinearConstraint(numShiftsWorked.build(), minShiftsPerNurse, maxShiftsPerNurse);
+      model.addLinearConstraint(numShiftsWorked, minShiftsPerNurse, maxShiftsPerNurse);
     }
     // [END assign_nurses_evenly]
 
@@ -164,7 +164,7 @@ public class ScheduleRequestsSat {
         }
       }
     }
-    model.maximize(obj.build());
+    model.maximize(obj);
     // [END objective]
 
     // Creates a solver and solves the model.

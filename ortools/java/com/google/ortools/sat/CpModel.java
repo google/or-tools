@@ -30,6 +30,7 @@ import com.google.ortools.sat.NoOverlapConstraintProto;
 import com.google.ortools.sat.ReservoirConstraintProto;
 import com.google.ortools.sat.TableConstraintProto;
 import com.google.ortools.util.Domain;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -123,12 +124,7 @@ public final class CpModel {
 
   /** Adds {@code Or(literals) == true}. */
   public Constraint addBoolOr(Literal[] literals) {
-    Constraint ct = new Constraint(modelBuilder);
-    BoolArgumentProto.Builder boolOr = ct.getBuilder().getBoolOrBuilder();
-    for (Literal lit : literals) {
-      boolOr.addLiterals(lit.getIndex());
-    }
-    return ct;
+    return addBoolOr(Arrays.asList(literals));
   }
 
   /** Adds {@code Or(literals) == true}. */
@@ -143,32 +139,17 @@ public final class CpModel {
 
   /** Same as addBoolOr. {@code Sum(literals) >= 1}. */
   public Constraint addAtLeastOne(Literal[] literals) {
-    Constraint ct = new Constraint(modelBuilder);
-    BoolArgumentProto.Builder boolOr = ct.getBuilder().getBoolOrBuilder();
-    for (Literal lit : literals) {
-      boolOr.addLiterals(lit.getIndex());
-    }
-    return ct;
+    return addBoolOr(Arrays.asList(literals));
   }
 
   /** Same as addBoolOr. {@code Sum(literals) >= 1}. */
   public Constraint addAtLeastOne(Iterable<Literal> literals) {
-    Constraint ct = new Constraint(modelBuilder);
-    BoolArgumentProto.Builder boolOr = ct.getBuilder().getBoolOrBuilder();
-    for (Literal lit : literals) {
-      boolOr.addLiterals(lit.getIndex());
-    }
-    return ct;
+    return addBoolOr(literals);
   }
 
   /** Adds {@code AtMostOne(literals): Sum(literals) <= 1}. */
   public Constraint addAtMostOne(Literal[] literals) {
-    Constraint ct = new Constraint(modelBuilder);
-    BoolArgumentProto.Builder atMostOne = ct.getBuilder().getAtMostOneBuilder();
-    for (Literal lit : literals) {
-      atMostOne.addLiterals(lit.getIndex());
-    }
-    return ct;
+    return addAtMostOne(Arrays.asList(literals));
   }
 
   /** Adds {@code AtMostOne(literals): Sum(literals) <= 1}. */
@@ -183,12 +164,7 @@ public final class CpModel {
 
   /** Adds {@code ExactlyOne(literals): Sum(literals) == 1}. */
   public Constraint addExactlyOne(Literal[] literals) {
-    Constraint ct = new Constraint(modelBuilder);
-    BoolArgumentProto.Builder exactlyOne = ct.getBuilder().getExactlyOneBuilder();
-    for (Literal lit : literals) {
-      exactlyOne.addLiterals(lit.getIndex());
-    }
-    return ct;
+    return addExactlyOne(Arrays.asList(literals));
   }
 
   /** Adds {@code ExactlyOne(literals): Sum(literals) == 1}. */
@@ -203,12 +179,7 @@ public final class CpModel {
 
   /** Adds {@code And(literals) == true}. */
   public Constraint addBoolAnd(Literal[] literals) {
-    Constraint ct = new Constraint(modelBuilder);
-    BoolArgumentProto.Builder boolAnd = ct.getBuilder().getBoolAndBuilder();
-    for (Literal lit : literals) {
-      boolAnd.addLiterals(lit.getIndex());
-    }
-    return ct;
+    return addBoolAnd(Arrays.asList(literals));
   }
 
   /** Adds {@code And(literals) == true}. */
@@ -223,12 +194,7 @@ public final class CpModel {
 
   /** Adds {@code XOr(literals) == true}. */
   public Constraint addBoolXor(Literal[] literals) {
-    Constraint ct = new Constraint(modelBuilder);
-    BoolArgumentProto.Builder boolXOr = ct.getBuilder().getBoolXorBuilder();
-    for (Literal lit : literals) {
-      boolXOr.addLiterals(lit.getIndex());
-    }
-    return ct;
+    return addBoolXor(Arrays.asList(literals));
   }
 
   /** Adds {@code XOr(literals) == true}. */
@@ -249,126 +215,111 @@ public final class CpModel {
   // Linear constraints.
 
   /** Adds {@code expr in domain}. */
-  public Constraint addLinearExpressionInDomain(LinearExpr expr, Domain domain) {
+  public Constraint addLinearExpressionInDomain(LinearArgument expr, Domain domain) {
     Constraint ct = new Constraint(modelBuilder);
     LinearConstraintProto.Builder lin = ct.getBuilder().getLinearBuilder();
-    for (int i = 0; i < expr.numElements(); ++i) {
-      lin.addVars(expr.getVariable(i).getIndex()).addCoeffs(expr.getCoefficient(i));
+    final LinearExpr e = expr.build();
+    for (int i = 0; i < e.numElements(); ++i) {
+      lin.addVars(e.getVariableIndex(i)).addCoeffs(e.getCoefficient(i));
     }
-    long offset = expr.getOffset();
-    if (offset != 0) {
-      lin.addVars(newConstant(1).getIndex()).addCoeffs(offset);
-    }
+    long offset = e.getOffset();
     for (long b : domain.flattenedIntervals()) {
-      lin.addDomain(b);
+      if (b == Long.MIN_VALUE || b == Long.MAX_VALUE) {
+        lin.addDomain(b);
+      } else {
+        lin.addDomain(b - offset);
+      }
     }
     return ct;
   }
 
   /** Adds {@code lb <= expr <= ub}. */
-  public Constraint addLinearConstraint(LinearExpr expr, long lb, long ub) {
+  public Constraint addLinearConstraint(LinearArgument expr, long lb, long ub) {
     return addLinearExpressionInDomain(expr, new Domain(lb, ub));
   }
 
   /** Adds {@code expr == value}. */
-  public Constraint addEquality(LinearExpr expr, long value) {
+  public Constraint addEquality(LinearArgument expr, long value) {
     return addLinearExpressionInDomain(expr, new Domain(value));
   }
 
   /** Adds {@code left == right}. */
-  public Constraint addEquality(LinearExpr left, LinearExpr right) {
+  public Constraint addEquality(LinearArgument left, LinearArgument right) {
     LinearExprBuilder difference = LinearExpr.newBuilder();
     difference.addTerm(left, 1);
     difference.addTerm(right, -1);
-    return addLinearExpressionInDomain(difference.build(), new Domain(0));
+    return addLinearExpressionInDomain(difference, new Domain(0));
   }
 
   /** Adds {@code expr <= value}. */
-  public Constraint addLessOrEqual(LinearExpr expr, long value) {
+  public Constraint addLessOrEqual(LinearArgument expr, long value) {
     return addLinearExpressionInDomain(expr, new Domain(Long.MIN_VALUE, value));
   }
 
   /** Adds {@code left <= right}. */
-  public Constraint addLessOrEqual(LinearExpr left, LinearExpr right) {
+  public Constraint addLessOrEqual(LinearArgument left, LinearArgument right) {
     LinearExprBuilder difference = LinearExpr.newBuilder();
     difference.addTerm(left, 1);
     difference.addTerm(right, -1);
-    return addLinearExpressionInDomain(difference.build(), new Domain(Long.MIN_VALUE, 0));
+    return addLinearExpressionInDomain(difference, new Domain(Long.MIN_VALUE, 0));
   }
 
   /** Adds {@code expr < value}. */
-  public Constraint addLessThan(LinearExpr expr, long value) {
+  public Constraint addLessThan(LinearArgument expr, long value) {
     return addLinearExpressionInDomain(expr, new Domain(Long.MIN_VALUE, value - 1));
   }
 
   /** Adds {@code left < right}. */
-  public Constraint addLessThan(LinearExpr left, LinearExpr right) {
+  public Constraint addLessThan(LinearArgument left, LinearArgument right) {
     LinearExprBuilder difference = LinearExpr.newBuilder();
     difference.addTerm(left, 1);
     difference.addTerm(right, -1);
-    return addLinearExpressionInDomain(difference.build(), new Domain(Long.MIN_VALUE, -1));
+    return addLinearExpressionInDomain(difference, new Domain(Long.MIN_VALUE, -1));
   }
 
   /** Adds {@code expr >= value}. */
-  public Constraint addGreaterOrEqual(LinearExpr expr, long value) {
+  public Constraint addGreaterOrEqual(LinearArgument expr, long value) {
     return addLinearExpressionInDomain(expr, new Domain(value, Long.MAX_VALUE));
   }
 
   /** Adds {@code left >= right}. */
-  public Constraint addGreaterOrEqual(LinearExpr left, LinearExpr right) {
+  public Constraint addGreaterOrEqual(LinearArgument left, LinearArgument right) {
     LinearExprBuilder difference = LinearExpr.newBuilder();
     difference.addTerm(left, 1);
     difference.addTerm(right, -1);
-    return addLinearExpressionInDomain(difference.build(), new Domain(0, Long.MAX_VALUE));
+    return addLinearExpressionInDomain(difference, new Domain(0, Long.MAX_VALUE));
   }
 
   /** Adds {@code expr > value}. */
-  public Constraint addGreaterThan(LinearExpr expr, long value) {
+  public Constraint addGreaterThan(LinearArgument expr, long value) {
     return addLinearExpressionInDomain(expr, new Domain(value + 1, Long.MAX_VALUE));
   }
 
   /** Adds {@code left > right}. */
-  public Constraint addGreaterThan(LinearExpr left, LinearExpr right) {
+  public Constraint addGreaterThan(LinearArgument left, LinearArgument right) {
     LinearExprBuilder difference = LinearExpr.newBuilder();
     difference.addTerm(left, 1);
     difference.addTerm(right, -1);
-    return addLinearExpressionInDomain(difference.build(), new Domain(1, Long.MAX_VALUE));
+    return addLinearExpressionInDomain(difference, new Domain(1, Long.MAX_VALUE));
   }
 
   /** Adds {@code expr != value}. */
-  public Constraint addDifferent(LinearExpr expr, long value) {
+  public Constraint addDifferent(LinearArgument expr, long value) {
     return addLinearExpressionInDomain(expr,
         Domain.fromFlatIntervals(
             new long[] {Long.MIN_VALUE, value - 1, value + 1, Long.MAX_VALUE}));
   }
 
   /** Adds {@code left != right}. */
-  public Constraint addDifferent(LinearExpr left, LinearExpr right) {
+  public Constraint addDifferent(LinearArgument left, LinearArgument right) {
     LinearExprBuilder difference = LinearExpr.newBuilder();
     difference.addTerm(left, 1);
     difference.addTerm(right, -1);
-    return addLinearExpressionInDomain(difference.build(),
-        Domain.fromFlatIntervals(new long[] {Long.MIN_VALUE, -1, 1, Long.MAX_VALUE}));
+    return addLinearExpressionInDomain(
+        difference, Domain.fromFlatIntervals(new long[] {Long.MIN_VALUE, -1, 1, Long.MAX_VALUE}));
   }
 
   // Integer constraints.
-
-  /**
-   * Adds {@code AllDifferent(variables)}.
-   *
-   * <p>This constraint forces all variables to have different values.
-   *
-   * @param variables a list of integer variables
-   * @return an instance of the Constraint class
-   */
-  public Constraint addAllDifferent(IntVar[] variables) {
-    Constraint ct = new Constraint(modelBuilder);
-    AllDifferentConstraintProto.Builder allDiff = ct.getBuilder().getAllDiffBuilder();
-    for (IntVar var : variables) {
-      allDiff.addExprs(getLinearExpressionProtoBuilderFromLinearExpr(var, /*negate=*/false));
-    }
-    return ct;
-  }
 
   /**
    * Adds {@code AllDifferent(expressions)}.
@@ -378,25 +329,20 @@ public final class CpModel {
    * @param expressions a list of affine integer expressions
    * @return an instance of the Constraint class
    */
-  public Constraint addAllDifferent(LinearExpr[] expressions) {
-    Constraint ct = new Constraint(modelBuilder);
-    AllDifferentConstraintProto.Builder allDiff = ct.getBuilder().getAllDiffBuilder();
-    for (LinearExpr expr : expressions) {
-      allDiff.addExprs(getLinearExpressionProtoBuilderFromLinearExpr(expr, /*negate=*/false));
-    }
-    return ct;
+  public Constraint addAllDifferent(LinearArgument[] expressions) {
+    return addAllDifferent(Arrays.asList(expressions));
   }
 
   /**
    * Adds {@code AllDifferent(expressions)}.
    *
-   * @see addAllDifferent(LinearExpr[]).
+   * @see addAllDifferent(LinearArgument[]).
    */
-  public Constraint addAllDifferent(Iterable<LinearExpr> expressions) {
+  public Constraint addAllDifferent(Iterable<? extends LinearArgument> expressions) {
     Constraint ct = new Constraint(modelBuilder);
     AllDifferentConstraintProto.Builder allDiff = ct.getBuilder().getAllDiffBuilder();
-    for (LinearExpr expr : expressions) {
-      allDiff.addExprs(getLinearExpressionProtoBuilderFromLinearExpr(expr, /*negate=*/false));
+    for (LinearArgument expr : expressions) {
+      allDiff.addExprs(getLinearExpressionProtoBuilderFromLinearArgument(expr, /*negate=*/false));
     }
     return ct;
   }
@@ -419,7 +365,7 @@ public final class CpModel {
     ElementConstraintProto.Builder element =
         ct.getBuilder().getElementBuilder().setIndex(index.getIndex());
     for (long v : values) {
-      element.addVars(indexFromConstant(v));
+      element.addVars(newConstant(v).getIndex());
     }
     element.setTarget(target.getIndex());
     return ct;
@@ -431,7 +377,7 @@ public final class CpModel {
     ElementConstraintProto.Builder element =
         ct.getBuilder().getElementBuilder().setIndex(index.getIndex());
     for (long v : values) {
-      element.addVars(indexFromConstant(v));
+      element.addVars(newConstant(v).getIndex());
     }
     element.setTarget(target.getIndex());
     return ct;
@@ -476,13 +422,7 @@ public final class CpModel {
    *     directly to the table constraint.
    */
   public TableConstraint addAllowedAssignments(IntVar[] variables) {
-    TableConstraint ct = new TableConstraint(modelBuilder);
-    TableConstraintProto.Builder table = ct.getBuilder().getTableBuilder();
-    for (IntVar var : variables) {
-      table.addVars(var.getIndex());
-    }
-    table.setNegated(false);
-    return ct;
+    return addAllowedAssignments(Arrays.asList(variables));
   }
 
   /**
@@ -511,13 +451,7 @@ public final class CpModel {
    *     directly to the table constraint.
    */
   public TableConstraint addForbiddenAssignments(IntVar[] variables) {
-    TableConstraint ct = new TableConstraint(modelBuilder);
-    TableConstraintProto.Builder table = ct.getBuilder().getTableBuilder();
-    for (IntVar var : variables) {
-      table.addVars(var.getIndex());
-    }
-    table.setNegated(true);
-    return ct;
+    return addForbiddenAssignments(Arrays.asList(variables));
   }
 
   /**
@@ -649,144 +583,115 @@ public final class CpModel {
   }
 
   /** Adds {@code target == Min(vars)}. */
-  public Constraint addMinEquality(LinearExpr target, IntVar[] vars) {
+  public Constraint addMinEquality(LinearArgument target, LinearArgument[] exprs) {
     Constraint ct = new Constraint(modelBuilder);
     LinearArgumentProto.Builder linMax = ct.getBuilder().getLinMaxBuilder();
-    linMax.setTarget(getLinearExpressionProtoBuilderFromLinearExpr(target, /*negate=*/true));
-    for (IntVar var : vars) {
-      linMax.addExprs(getLinearExpressionProtoBuilderFromLinearExpr(var, /*negate=*/true));
+    linMax.setTarget(getLinearExpressionProtoBuilderFromLinearArgument(target, /*negate=*/true));
+    for (LinearArgument expr : exprs) {
+      linMax.addExprs(getLinearExpressionProtoBuilderFromLinearArgument(expr, /*negate=*/true));
     }
     return ct;
   }
 
   /** Adds {@code target == Min(exprs)}. */
-  public Constraint addMinEquality(LinearExpr target, LinearExpr[] exprs) {
+  public Constraint addMinEquality(
+      LinearArgument target, Iterable<? extends LinearArgument> exprs) {
     Constraint ct = new Constraint(modelBuilder);
     LinearArgumentProto.Builder linMax = ct.getBuilder().getLinMaxBuilder();
-    linMax.setTarget(getLinearExpressionProtoBuilderFromLinearExpr(target, /*negate=*/true));
-    for (LinearExpr expr : exprs) {
-      linMax.addExprs(getLinearExpressionProtoBuilderFromLinearExpr(expr, /*negate=*/true));
-    }
-    return ct;
-  }
-
-  /** Adds {@code target == Min(exprs)}. */
-  public Constraint addMinEquality(LinearExpr target, Iterable<LinearExpr> exprs) {
-    Constraint ct = new Constraint(modelBuilder);
-    LinearArgumentProto.Builder linMax = ct.getBuilder().getLinMaxBuilder();
-    linMax.setTarget(getLinearExpressionProtoBuilderFromLinearExpr(target, /*negate=*/true));
-    for (LinearExpr expr : exprs) {
-      linMax.addExprs(getLinearExpressionProtoBuilderFromLinearExpr(expr, /*negate=*/true));
+    linMax.setTarget(getLinearExpressionProtoBuilderFromLinearArgument(target, /*negate=*/true));
+    for (LinearArgument expr : exprs) {
+      linMax.addExprs(getLinearExpressionProtoBuilderFromLinearArgument(expr, /*negate=*/true));
     }
     return ct;
   }
 
   /** Adds {@code target == Max(vars)}. */
-  public Constraint addMaxEquality(LinearExpr target, IntVar[] vars) {
+  public Constraint addMaxEquality(LinearArgument target, LinearArgument[] exprs) {
     Constraint ct = new Constraint(modelBuilder);
     LinearArgumentProto.Builder linMax = ct.getBuilder().getLinMaxBuilder();
-    linMax.setTarget(getLinearExpressionProtoBuilderFromLinearExpr(target, /*negate=*/false));
-    for (IntVar var : vars) {
-      linMax.addExprs(getLinearExpressionProtoBuilderFromLinearExpr(var, /*negate=*/false));
+    linMax.setTarget(getLinearExpressionProtoBuilderFromLinearArgument(target, /*negate=*/false));
+    for (LinearArgument expr : exprs) {
+      linMax.addExprs(getLinearExpressionProtoBuilderFromLinearArgument(expr, /*negate=*/false));
     }
     return ct;
   }
 
   /** Adds {@code target == Max(exprs)}. */
-  public Constraint addMaxEquality(LinearExpr target, LinearExpr[] exprs) {
+  public Constraint addMaxEquality(
+      LinearArgument target, Iterable<? extends LinearArgument> exprs) {
     Constraint ct = new Constraint(modelBuilder);
     LinearArgumentProto.Builder linMax = ct.getBuilder().getLinMaxBuilder();
-    linMax.setTarget(getLinearExpressionProtoBuilderFromLinearExpr(target, /*negate=*/false));
-    for (LinearExpr expr : exprs) {
-      linMax.addExprs(getLinearExpressionProtoBuilderFromLinearExpr(expr, /*negate=*/false));
-    }
-    return ct;
-  }
-
-  /** Adds {@code target == Max(exprs)}. */
-  public Constraint addMaxEquality(LinearExpr target, Iterable<LinearExpr> exprs) {
-    Constraint ct = new Constraint(modelBuilder);
-    LinearArgumentProto.Builder linMax = ct.getBuilder().getLinMaxBuilder();
-    linMax.setTarget(getLinearExpressionProtoBuilderFromLinearExpr(target, /*negate=*/false));
-    for (LinearExpr expr : exprs) {
-      linMax.addExprs(getLinearExpressionProtoBuilderFromLinearExpr(expr, /*negate=*/false));
+    linMax.setTarget(getLinearExpressionProtoBuilderFromLinearArgument(target, /*negate=*/false));
+    for (LinearArgument expr : exprs) {
+      linMax.addExprs(getLinearExpressionProtoBuilderFromLinearArgument(expr, /*negate=*/false));
     }
     return ct;
   }
 
   /** Adds {@code target == num / denom}, rounded towards 0. */
-  public Constraint addDivisionEquality(LinearExpr target, LinearExpr num, LinearExpr denom) {
+  public Constraint addDivisionEquality(
+      LinearArgument target, LinearArgument num, LinearArgument denom) {
     Constraint ct = new Constraint(modelBuilder);
     ct.getBuilder()
         .getIntDivBuilder()
-        .setTarget(getLinearExpressionProtoBuilderFromLinearExpr(target, /*negate=*/false))
-        .addExprs(getLinearExpressionProtoBuilderFromLinearExpr(num, /*negate=*/false))
-        .addExprs(getLinearExpressionProtoBuilderFromLinearExpr(denom, /*negate=*/false));
+        .setTarget(getLinearExpressionProtoBuilderFromLinearArgument(target, /*negate=*/false))
+        .addExprs(getLinearExpressionProtoBuilderFromLinearArgument(num, /*negate=*/false))
+        .addExprs(getLinearExpressionProtoBuilderFromLinearArgument(denom, /*negate=*/false));
     return ct;
   }
 
   /** Adds {@code target == Abs(expr)}. */
-  public Constraint addAbsEquality(LinearExpr target, LinearExpr expr) {
+  public Constraint addAbsEquality(LinearArgument target, LinearArgument expr) {
     Constraint ct = new Constraint(modelBuilder);
     LinearArgumentProto.Builder linMax = ct.getBuilder().getLinMaxBuilder();
-    linMax.setTarget(getLinearExpressionProtoBuilderFromLinearExpr(target, /*negate=*/false));
-    linMax.addExprs(getLinearExpressionProtoBuilderFromLinearExpr(expr, /*negate=*/false));
-    linMax.addExprs(getLinearExpressionProtoBuilderFromLinearExpr(expr, /*negate=*/true));
+    linMax.setTarget(getLinearExpressionProtoBuilderFromLinearArgument(target, /*negate=*/false));
+    linMax.addExprs(getLinearExpressionProtoBuilderFromLinearArgument(expr, /*negate=*/false));
+    linMax.addExprs(getLinearExpressionProtoBuilderFromLinearArgument(expr, /*negate=*/true));
     return ct;
   }
 
   /** Adds {@code target == var % mod}. */
-  public Constraint addModuloEquality(LinearExpr target, LinearExpr var, LinearExpr mod) {
+  public Constraint addModuloEquality(
+      LinearArgument target, LinearArgument var, LinearArgument mod) {
     Constraint ct = new Constraint(modelBuilder);
     ct.getBuilder()
         .getIntModBuilder()
-        .setTarget(getLinearExpressionProtoBuilderFromLinearExpr(target, /*negate=*/false))
-        .addExprs(getLinearExpressionProtoBuilderFromLinearExpr(var, /*negate=*/false))
-        .addExprs(getLinearExpressionProtoBuilderFromLinearExpr(mod, /*negate=*/false));
+        .setTarget(getLinearExpressionProtoBuilderFromLinearArgument(target, /*negate=*/false))
+        .addExprs(getLinearExpressionProtoBuilderFromLinearArgument(var, /*negate=*/false))
+        .addExprs(getLinearExpressionProtoBuilderFromLinearArgument(mod, /*negate=*/false));
     return ct;
   }
 
   /** Adds {@code target == var % mod}. */
-  public Constraint addModuloEquality(LinearExpr target, LinearExpr var, long mod) {
+  public Constraint addModuloEquality(LinearArgument target, LinearArgument var, long mod) {
     Constraint ct = new Constraint(modelBuilder);
     ct.getBuilder()
         .getIntModBuilder()
-        .setTarget(getLinearExpressionProtoBuilderFromLinearExpr(target, /*negate=*/false))
-        .addExprs(getLinearExpressionProtoBuilderFromLinearExpr(var, /*negate=*/false))
+        .setTarget(getLinearExpressionProtoBuilderFromLinearArgument(target, /*negate=*/false))
+        .addExprs(getLinearExpressionProtoBuilderFromLinearArgument(var, /*negate=*/false))
         .addExprs(getLinearExpressionProtoBuilderFromLong(mod));
     return ct;
   }
 
-  /** Adds {@code target == Product(vars)}. */
-  public Constraint addMultiplicationEquality(LinearExpr target, IntVar[] vars) {
-    Constraint ct = new Constraint(modelBuilder);
-    LinearArgumentProto.Builder intProd = ct.getBuilder().getIntProdBuilder();
-    intProd.setTarget(getLinearExpressionProtoBuilderFromLinearExpr(target, /*negate=*/false));
-    for (IntVar var : vars) {
-      intProd.addExprs(getLinearExpressionProtoBuilderFromLinearExpr(var, /*negate=*/false));
-    }
-    return ct;
-  }
-
   /** Adds {@code target == Product(exprs)}. */
-  public Constraint addMultiplicationEquality(LinearExpr target, LinearExpr[] exprs) {
+  public Constraint addMultiplicationEquality(LinearArgument target, LinearArgument[] exprs) {
     Constraint ct = new Constraint(modelBuilder);
     LinearArgumentProto.Builder intProd = ct.getBuilder().getIntProdBuilder();
-    intProd.setTarget(getLinearExpressionProtoBuilderFromLinearExpr(target, /*negate=*/false));
-    for (LinearExpr expr : exprs) {
-      intProd.addExprs(getLinearExpressionProtoBuilderFromLinearExpr(expr, /*negate=*/false));
+    intProd.setTarget(getLinearExpressionProtoBuilderFromLinearArgument(target, /*negate=*/false));
+    for (LinearArgument expr : exprs) {
+      intProd.addExprs(getLinearExpressionProtoBuilderFromLinearArgument(expr, /*negate=*/false));
     }
     return ct;
   }
 
   /** Adds {@code target == left * right}. */
   public Constraint addMultiplicationEquality(
-      LinearExpr target, LinearExpr left, LinearExpr right) {
+      LinearArgument target, LinearArgument left, LinearArgument right) {
     Constraint ct = new Constraint(modelBuilder);
     LinearArgumentProto.Builder intProd = ct.getBuilder().getIntProdBuilder();
-    intProd.setTarget(getLinearExpressionProtoBuilderFromLinearExpr(target, /*negate=*/false));
-    intProd.addExprs(getLinearExpressionProtoBuilderFromLinearExpr(left, /*negate=*/false));
-    intProd.addExprs(getLinearExpressionProtoBuilderFromLinearExpr(right, /*negate=*/false));
+    intProd.setTarget(getLinearExpressionProtoBuilderFromLinearArgument(target, /*negate=*/false));
+    intProd.addExprs(getLinearExpressionProtoBuilderFromLinearArgument(left, /*negate=*/false));
+    intProd.addExprs(getLinearExpressionProtoBuilderFromLinearArgument(right, /*negate=*/false));
     return ct;
   }
 
@@ -807,12 +712,12 @@ public final class CpModel {
    * @return An IntervalVar object
    */
   public IntervalVar newIntervalVar(
-      LinearExpr start, LinearExpr size, LinearExpr end, String name) {
-    addEquality(LinearExpr.newBuilder().add(start).add(size).build(), end);
+      LinearArgument start, LinearArgument size, LinearArgument end, String name) {
+    addEquality(LinearExpr.newBuilder().add(start).add(size), end);
     return new IntervalVar(modelBuilder,
-        getLinearExpressionProtoBuilderFromLinearExpr(start, /*negate=*/false),
-        getLinearExpressionProtoBuilderFromLinearExpr(size, /*negate=*/false),
-        getLinearExpressionProtoBuilderFromLinearExpr(end, /*negate=*/false), name);
+        getLinearExpressionProtoBuilderFromLinearArgument(start, /*negate=*/false),
+        getLinearExpressionProtoBuilderFromLinearArgument(size, /*negate=*/false),
+        getLinearExpressionProtoBuilderFromLinearArgument(end, /*negate=*/false), name);
   }
 
   /**
@@ -826,12 +731,12 @@ public final class CpModel {
    * @param name the name of the interval variable.
    * @return An IntervalVar object
    */
-  public IntervalVar newFixedSizeIntervalVar(LinearExpr start, long size, String name) {
+  public IntervalVar newFixedSizeIntervalVar(LinearArgument start, long size, String name) {
     return new IntervalVar(modelBuilder,
-        getLinearExpressionProtoBuilderFromLinearExpr(start, /*negate=*/false),
+        getLinearExpressionProtoBuilderFromLinearArgument(start, /*negate=*/false),
         getLinearExpressionProtoBuilderFromLong(size),
-        getLinearExpressionProtoBuilderFromLinearExpr(
-            LinearExpr.newBuilder().add(start).add(size).build(), /*negate=*/false),
+        getLinearExpressionProtoBuilderFromLinearArgument(
+            LinearExpr.newBuilder().add(start).add(size), /*negate=*/false),
         name);
   }
 
@@ -860,14 +765,14 @@ public final class CpModel {
    * @param name The name of the interval variable
    * @return an IntervalVar object
    */
-  public IntervalVar newOptionalIntervalVar(
-      LinearExpr start, LinearExpr size, LinearExpr end, Literal isPresent, String name) {
-    addEquality(LinearExpr.newBuilder().add(start).add(size).build(), end).onlyEnforceIf(isPresent);
+  public IntervalVar newOptionalIntervalVar(LinearArgument start, LinearArgument size,
+      LinearArgument end, Literal isPresent, String name) {
+    addEquality(LinearExpr.newBuilder().add(start).add(size), end).onlyEnforceIf(isPresent);
     return new IntervalVar(modelBuilder,
-        getLinearExpressionProtoBuilderFromLinearExpr(start, /*negate=*/false),
-        getLinearExpressionProtoBuilderFromLinearExpr(size, /*negate=*/false),
-        getLinearExpressionProtoBuilderFromLinearExpr(end, /*negate=*/false), isPresent.getIndex(),
-        name);
+        getLinearExpressionProtoBuilderFromLinearArgument(start, /*negate=*/false),
+        getLinearExpressionProtoBuilderFromLinearArgument(size, /*negate=*/false),
+        getLinearExpressionProtoBuilderFromLinearArgument(end, /*negate=*/false),
+        isPresent.getIndex(), name);
   }
 
   /**
@@ -884,12 +789,12 @@ public final class CpModel {
    * @return An IntervalVar object
    */
   public IntervalVar newOptionalFixedSizeIntervalVar(
-      LinearExpr start, long size, Literal isPresent, String name) {
+      LinearArgument start, long size, Literal isPresent, String name) {
     return new IntervalVar(modelBuilder,
-        getLinearExpressionProtoBuilderFromLinearExpr(start, /*negate=*/false),
+        getLinearExpressionProtoBuilderFromLinearArgument(start, /*negate=*/false),
         getLinearExpressionProtoBuilderFromLong(size),
-        getLinearExpressionProtoBuilderFromLinearExpr(
-            LinearExpr.newBuilder().add(start).add(size).build(), /*negate=*/false),
+        getLinearExpressionProtoBuilderFromLinearArgument(
+            LinearExpr.newBuilder().add(start).add(size), /*negate=*/false),
         isPresent.getIndex(), name);
   }
 
@@ -910,12 +815,7 @@ public final class CpModel {
    * @return an instance of the Constraint class
    */
   public Constraint addNoOverlap(IntervalVar[] intervalVars) {
-    Constraint ct = new Constraint(modelBuilder);
-    NoOverlapConstraintProto.Builder noOverlap = ct.getBuilder().getNoOverlapBuilder();
-    for (IntervalVar var : intervalVars) {
-      noOverlap.addIntervals(var.getIndex());
-    }
-    return ct;
+    return addNoOverlap(Arrays.asList(intervalVars));
   }
 
   /**
@@ -961,17 +861,17 @@ public final class CpModel {
    * @return an instance of the CumulativeConstraint class. this class allows adding (interval,
    *     demand) pairs incrementally.
    */
-  public CumulativeConstraint addCumulative(LinearExpr capacity) {
+  public CumulativeConstraint addCumulative(LinearArgument capacity) {
     CumulativeConstraint ct = new CumulativeConstraint(this);
     CumulativeConstraintProto.Builder cumul = ct.getBuilder().getCumulativeBuilder();
-    cumul.setCapacity(getLinearExpressionProtoBuilderFromLinearExpr(capacity, false));
+    cumul.setCapacity(getLinearExpressionProtoBuilderFromLinearArgument(capacity, false));
     return ct;
   }
 
   /**
    * Adds {@code Cumulative(capacity)}.
    *
-   * @see #addCumulative(LinearExpr capacity)
+   * @see #addCumulative(LinearArgument capacity)
    */
   public CumulativeConstraint addCumulative(long capacity) {
     CumulativeConstraint ct = new CumulativeConstraint(this);
@@ -1011,12 +911,13 @@ public final class CpModel {
   // Objective.
 
   /** Adds a minimization objective of a linear expression. */
-  public void minimize(LinearExpr expr) {
+  public void minimize(LinearArgument expr) {
     CpObjectiveProto.Builder obj = modelBuilder.getObjectiveBuilder();
-    for (int i = 0; i < expr.numElements(); ++i) {
-      obj.addVars(expr.getVariable(i).getIndex()).addCoeffs(expr.getCoefficient(i));
+    final LinearExpr e = expr.build();
+    for (int i = 0; i < e.numElements(); ++i) {
+      obj.addVars(e.getVariableIndex(i)).addCoeffs(e.getCoefficient(i));
     }
-    obj.setOffset(expr.getOffset());
+    obj.setOffset(e.getOffset());
   }
 
   public void minimize(DoubleLinearExpr expr) {
@@ -1028,12 +929,13 @@ public final class CpModel {
   }
 
   /** Adds a maximization objective of a linear expression. */
-  public void maximize(LinearExpr expr) {
+  public void maximize(LinearArgument expr) {
     CpObjectiveProto.Builder obj = modelBuilder.getObjectiveBuilder();
-    for (int i = 0; i < expr.numElements(); ++i) {
-      obj.addVars(expr.getVariable(i).getIndex()).addCoeffs(-expr.getCoefficient(i));
+    final LinearExpr e = expr.build();
+    for (int i = 0; i < e.numElements(); ++i) {
+      obj.addVars(e.getVariableIndex(i)).addCoeffs(-e.getCoefficient(i));
     }
-    obj.setOffset(-expr.getOffset());
+    obj.setOffset(-e.getOffset());
     obj.setScalingFactor(-1.0);
   }
 
@@ -1081,27 +983,14 @@ public final class CpModel {
   }
 
   // Helpers
-
-  long[] toLongArray(int[] values) {
-    long[] result = new long[values.length];
-    for (int i = 0; i < values.length; ++i) {
-      result[i] = values[i];
-    }
-    return result;
-  }
-
-  int indexFromConstant(long constant) {
-    IntVar constVar = newConstant(constant);
-    return constVar.getIndex();
-  }
-
-  LinearExpressionProto.Builder getLinearExpressionProtoBuilderFromLinearExpr(
-      LinearExpr expr, boolean negate) {
+  LinearExpressionProto.Builder getLinearExpressionProtoBuilderFromLinearArgument(
+      LinearArgument arg, boolean negate) {
     LinearExpressionProto.Builder builder = LinearExpressionProto.newBuilder();
+    final LinearExpr expr = arg.build();
     final int numVariables = expr.numElements();
     final long mult = negate ? -1 : 1;
     for (int i = 0; i < numVariables; ++i) {
-      builder.addVars(expr.getVariable(i).getIndex());
+      builder.addVars(expr.getVariableIndex(i));
       builder.addCoeffs(expr.getCoefficient(i) * mult);
     }
     builder.setOffset(expr.getOffset() * mult);

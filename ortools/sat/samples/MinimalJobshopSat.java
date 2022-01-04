@@ -125,7 +125,7 @@ public class MinimalJobshopSat {
     // [START objective]
     // Makespan objective.
     IntVar objVar = model.newIntVar(0, horizon, "makespan");
-    List<LinearExpr> ends = new ArrayList<>();
+    List<IntVar> ends = new ArrayList<>();
     for (int jobID = 0; jobID < allJobs.size(); ++jobID) {
       List<Task> job = allJobs.get(jobID);
       List<Integer> key = Arrays.asList(jobID, job.size() - 1);

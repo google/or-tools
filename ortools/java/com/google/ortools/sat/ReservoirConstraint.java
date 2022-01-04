@@ -33,10 +33,10 @@ public class ReservoirConstraint extends Constraint {
    * <p>It will increase the used capacity by `levelChange` at time `time`. `time` must be an affine
    * expression.
    */
-  void addEvent(LinearExpr time, long levelChange) {
+  void addEvent(LinearArgument time, long levelChange) {
     ReservoirConstraintProto.Builder reservoir = getBuilder().getReservoirBuilder();
     reservoir.addTimeExprs(
-        model.getLinearExpressionProtoBuilderFromLinearExpr(time, /*negate=*/false));
+        model.getLinearExpressionProtoBuilderFromLinearArgument(time, /*negate=*/false));
     reservoir.addLevelChanges(levelChange);
     reservoir.addActiveLiterals(model.trueLiteral().getIndex());
   }
@@ -62,7 +62,7 @@ public class ReservoirConstraint extends Constraint {
   void addOptionalEvent(LinearExpr time, long levelChange, Literal isActive) {
     ReservoirConstraintProto.Builder reservoir = getBuilder().getReservoirBuilder();
     reservoir.addTimeExprs(
-        model.getLinearExpressionProtoBuilderFromLinearExpr(time, /*negate=*/false));
+        model.getLinearExpressionProtoBuilderFromLinearArgument(time, /*negate=*/false));
     reservoir.addLevelChanges(levelChange);
     reservoir.addActiveLiterals(isActive.getIndex());
   }

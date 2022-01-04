@@ -79,7 +79,7 @@ public class AssignmentTaskSizesSat {
       for (int task : allTasks) {
         expr.addTerm(x[worker][task], taskSizes[task]);
       }
-      model.addLessOrEqual(expr.build(), totalSizeMax);
+      model.addLessOrEqual(expr, totalSizeMax);
     }
 
     // Each task is assigned to exactly one worker.
@@ -100,7 +100,7 @@ public class AssignmentTaskSizesSat {
         obj.addTerm(x[worker][task], costs[worker][task]);
       }
     }
-    model.minimize(obj.build());
+    model.minimize(obj);
     // [END objective]
 
     // Solve
