@@ -376,29 +376,55 @@ namespace operations_research {
 
   TEST(XpressInterface, ConstraintCoef) {
     UNITTEST_INIT_MIP();
-    MPVariable* x = solver.MakeBoolVar("x");
-    MPConstraint* c = solver.MakeRowConstraint(4.1, 6.4);
-    double coef = -15.6;
-    c->SetCoefficient(x, coef);
+    MPVariable* x1 = solver.MakeBoolVar("x1");
+    MPVariable* x2 = solver.MakeBoolVar("x2");
+    MPConstraint* c1 = solver.MakeRowConstraint(4.1, solver.infinity());
+    MPConstraint* c2 = solver.MakeRowConstraint(-solver.infinity(), 0.1);
+    double c11 = -15.6, c12 = 0.4, c21 = -11, c22 = 4.5;
+    c1->SetCoefficient(x1, c11);
+    c1->SetCoefficient(x2, c12);
+    c2->SetCoefficient(x1, c21);
+    c2->SetCoefficient(x2, c22);
     solver.Solve();
-    EXPECT_EQ(getter.getConstraintCoef(c->index(), x->index()), coef);
-    coef = 5.2;
-    c->SetCoefficient(x, coef);
+    EXPECT_EQ(getter.getConstraintCoef(c1->index(), x1->index()), c11);
+    EXPECT_EQ(getter.getConstraintCoef(c1->index(), x2->index()), c12);
+    EXPECT_EQ(getter.getConstraintCoef(c2->index(), x1->index()), c21);
+    EXPECT_EQ(getter.getConstraintCoef(c2->index(), x2->index()), c22);
+    c11 = 0.11, c12 = 0.12, c21 = 0.21, c22 = 0.22;
+    c1->SetCoefficient(x1, c11);
+    c1->SetCoefficient(x2, c12);
+    c2->SetCoefficient(x1, c21);
+    c2->SetCoefficient(x2, c22);
     solver.Solve();
-    EXPECT_EQ(getter.getConstraintCoef(c->index(), x->index()), coef);
+    EXPECT_EQ(getter.getConstraintCoef(c1->index(), x1->index()), c11);
+    EXPECT_EQ(getter.getConstraintCoef(c1->index(), x2->index()), c12);
+    EXPECT_EQ(getter.getConstraintCoef(c2->index(), x1->index()), c21);
+    EXPECT_EQ(getter.getConstraintCoef(c2->index(), x2->index()), c22);
   }
 
   TEST(XpressInterface, ClearConstraint) {
     UNITTEST_INIT_MIP();
-    MPVariable* x = solver.MakeBoolVar("x");
-    MPConstraint* c = solver.MakeRowConstraint(4.1, 6.4);
-    double coef = -15.6;
-    c->SetCoefficient(x, coef);
+    MPVariable* x1 = solver.MakeBoolVar("x1");
+    MPVariable* x2 = solver.MakeBoolVar("x2");
+    MPConstraint* c1 = solver.MakeRowConstraint(4.1, solver.infinity());
+    MPConstraint* c2 = solver.MakeRowConstraint(-solver.infinity(), 0.1);
+    double c11 = -1533.6, c12 = 3.4, c21 = -11000, c22 = 0.0001;
+    c1->SetCoefficient(x1, c11);
+    c1->SetCoefficient(x2, c12);
+    c2->SetCoefficient(x1, c21);
+    c2->SetCoefficient(x2, c22);
     solver.Solve();
-    EXPECT_EQ(getter.getConstraintCoef(c->index(), x->index()), coef);
-    c->Clear();
+    EXPECT_EQ(getter.getConstraintCoef(c1->index(), x1->index()), c11);
+    EXPECT_EQ(getter.getConstraintCoef(c1->index(), x2->index()), c12);
+    EXPECT_EQ(getter.getConstraintCoef(c2->index(), x1->index()), c21);
+    EXPECT_EQ(getter.getConstraintCoef(c2->index(), x2->index()), c22);
+    c1->Clear();
+    c2->Clear();
     solver.Solve();
-    EXPECT_EQ(getter.getConstraintCoef(c->index(), x->index()), 0);
+    EXPECT_EQ(getter.getConstraintCoef(c1->index(), x1->index()), 0);
+    EXPECT_EQ(getter.getConstraintCoef(c1->index(), x2->index()), 0);
+    EXPECT_EQ(getter.getConstraintCoef(c2->index(), x1->index()), 0);
+    EXPECT_EQ(getter.getConstraintCoef(c2->index(), x2->index()), 0);
   }
 
   TEST(XpressInterface, ObjectiveCoef) {
@@ -549,7 +575,7 @@ ENDATA
     double tol = 1e-4;
     params.SetDoubleParam(MPSolverParameters::PRIMAL_TOLERANCE, tol);
     solver.Solve(params);
-    CHECK_EQ(getter.getDoubleControl(XPRS_FEASTOL), tol);
+    EXPECT_EQ(getter.getDoubleControl(XPRS_FEASTOL), tol);
   }
 
   TEST(XpressInterface, SetDualTolerance) {
@@ -558,7 +584,7 @@ ENDATA
     double tol = 1e-2;
     params.SetDoubleParam(MPSolverParameters::DUAL_TOLERANCE, tol);
     solver.Solve(params);
-    CHECK_EQ(getter.getDoubleControl(XPRS_OPTIMALITYTOL), tol);
+    EXPECT_EQ(getter.getDoubleControl(XPRS_OPTIMALITYTOL), tol);
   }
 
   TEST(XpressInterface, SetPresolveMode) {
@@ -566,10 +592,10 @@ ENDATA
     MPSolverParameters params;
     params.SetIntegerParam(MPSolverParameters::PRESOLVE, MPSolverParameters::PRESOLVE_OFF);
     solver.Solve(params);
-    CHECK_EQ(getter.getIntegerControl(XPRS_PRESOLVE), 0);
+    EXPECT_EQ(getter.getIntegerControl(XPRS_PRESOLVE), 0);
     params.SetIntegerParam(MPSolverParameters::PRESOLVE, MPSolverParameters::PRESOLVE_ON);
     solver.Solve(params);
-    CHECK_EQ(getter.getIntegerControl(XPRS_PRESOLVE), 1);
+    EXPECT_EQ(getter.getIntegerControl(XPRS_PRESOLVE), 1);
   }
 
   TEST(XpressInterface, SetLpAlgorithm) {
@@ -577,13 +603,13 @@ ENDATA
     MPSolverParameters params;
     params.SetIntegerParam(MPSolverParameters::LP_ALGORITHM, MPSolverParameters::DUAL);
     solver.Solve(params);
-    CHECK_EQ(getter.getIntegerControl(XPRS_DEFAULTALG), 2);
+    EXPECT_EQ(getter.getIntegerControl(XPRS_DEFAULTALG), 2);
     params.SetIntegerParam(MPSolverParameters::LP_ALGORITHM, MPSolverParameters::PRIMAL);
     solver.Solve(params);
-    CHECK_EQ(getter.getIntegerControl(XPRS_DEFAULTALG), 3);
+    EXPECT_EQ(getter.getIntegerControl(XPRS_DEFAULTALG), 3);
     params.SetIntegerParam(MPSolverParameters::LP_ALGORITHM, MPSolverParameters::BARRIER);
     solver.Solve(params);
-    CHECK_EQ(getter.getIntegerControl(XPRS_DEFAULTALG), 4);
+    EXPECT_EQ(getter.getIntegerControl(XPRS_DEFAULTALG), 4);
   }
 
   TEST(XpressInterface, SetScaling) {
@@ -591,10 +617,10 @@ ENDATA
     MPSolverParameters params;
     params.SetIntegerParam(MPSolverParameters::SCALING, MPSolverParameters::SCALING_OFF);
     solver.Solve(params);
-    CHECK_EQ(getter.getIntegerControl(XPRS_SCALING), 0);
+    EXPECT_EQ(getter.getIntegerControl(XPRS_SCALING), 0);
     params.SetIntegerParam(MPSolverParameters::SCALING, MPSolverParameters::SCALING_ON);
     solver.Solve(params);
-    CHECK_EQ(getter.getIntegerControl(XPRS_SCALING), 163);
+    EXPECT_EQ(getter.getIntegerControl(XPRS_SCALING), 163);
   }
 
   TEST(XpressInterface, SetRelativeMipGap) {
@@ -603,7 +629,7 @@ ENDATA
     double relativeMipGap = 1e-3;
     params.SetDoubleParam(MPSolverParameters::RELATIVE_MIP_GAP, relativeMipGap);
     solver.Solve(params);
-    CHECK_EQ(getter.getDoubleControl(XPRS_MIPRELSTOP), relativeMipGap);
+    EXPECT_EQ(getter.getDoubleControl(XPRS_MIPRELSTOP), relativeMipGap);
   }
 
   TEST(XpressInterface, setStringControls) {
@@ -710,7 +736,7 @@ ENDATA
   }
 
   TEST(XpressInterface, setIntControl) {
-        std::vector<std::tuple<std::string, int, int>> params = {
+    std::vector<std::tuple<std::string, int, int>> params = {
       {"EXTRAROWS", XPRS_EXTRAROWS, 1},
       {"EXTRACOLS", XPRS_EXTRACOLS, 1},
       {"LPITERLIMIT", XPRS_LPITERLIMIT, 1},
@@ -982,10 +1008,10 @@ ENDATA
     c3->SetCoefficient(y, 3);
     solver.Solve();
 
-    CHECK_EQ(obj->Value(), 6);
-    CHECK_EQ(obj->BestBound(), 6);
-    CHECK_EQ(x->solution_value(), 2);
-    CHECK_EQ(y->solution_value(), 2);
+    EXPECT_EQ(obj->Value(), 6);
+    EXPECT_EQ(obj->BestBound(), 6);
+    EXPECT_EQ(x->solution_value(), 2);
+    EXPECT_EQ(y->solution_value(), 2);
   }
 
   TEST(XpressInterface, SolveLP) {
