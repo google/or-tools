@@ -39,7 +39,7 @@ public final class LinearExprTest {
     assertNotNull(expr);
 
     assertEquals(1, expr.numElements());
-    assertEquals(y, expr.getVariable(0));
+    assertEquals(y.getIndex(), expr.getVariableIndex(0));
     assertEquals(1, expr.getCoefficient(0));
     assertEquals(0, expr.getOffset());
   }
@@ -54,7 +54,7 @@ public final class LinearExprTest {
     assertNotNull(expr);
 
     assertEquals(1, expr.numElements());
-    assertEquals(y, expr.getVariable(0));
+    assertEquals(y.getIndex(), expr.getVariableIndex(0));
     assertEquals(1, expr.getCoefficient(0));
     assertEquals(0, expr.getOffset());
   }
@@ -69,7 +69,7 @@ public final class LinearExprTest {
     assertNotNull(expr);
 
     assertEquals(1, expr.numElements());
-    assertEquals(y, expr.getVariable(0));
+    assertEquals(y.getIndex(), expr.getVariableIndex(0));
     assertEquals(-1, expr.getCoefficient(0));
     assertEquals(1, expr.getOffset());
   }
@@ -85,7 +85,7 @@ public final class LinearExprTest {
     assertNotNull(expr);
 
     assertEquals(1, expr.numElements());
-    assertEquals(y, expr.getVariable(0));
+    assertEquals(y.getIndex(), expr.getVariableIndex(0));
     assertEquals(12, expr.getCoefficient(0));
     assertEquals(0, expr.getOffset());
   }
@@ -100,7 +100,7 @@ public final class LinearExprTest {
     assertNotNull(expr);
 
     assertThat(expr.numElements()).isEqualTo(1);
-    assertThat(expr.getVariable(0)).isEqualTo(y);
+    assertThat(expr.getVariableIndex(0)).isEqualTo(y.getIndex());
     assertThat(expr.getCoefficient(0)).isEqualTo(-12);
     assertThat(expr.getOffset()).isEqualTo(12);
   }
@@ -116,7 +116,7 @@ public final class LinearExprTest {
     assertNotNull(expr);
 
     assertThat(expr.numElements()).isEqualTo(1);
-    assertThat(expr.getVariable(0)).isEqualTo(y);
+    assertThat(expr.getVariableIndex(0)).isEqualTo(y.getIndex());
     assertThat(expr.getCoefficient(0)).isEqualTo(12);
     assertThat(expr.getOffset()).isEqualTo(5);
   }
@@ -131,7 +131,7 @@ public final class LinearExprTest {
     assertNotNull(expr);
 
     assertThat(expr.numElements()).isEqualTo(1);
-    assertThat(expr.getVariable(0)).isEqualTo(y);
+    assertThat(expr.getVariableIndex(0)).isEqualTo(y.getIndex());
     assertThat(expr.getCoefficient(0)).isEqualTo(-12);
     assertThat(expr.getOffset()).isEqualTo(17);
   }
@@ -148,9 +148,9 @@ public final class LinearExprTest {
     assertNotNull(expr);
 
     assertThat(expr.numElements()).isEqualTo(2);
-    assertThat(expr.getVariable(0)).isEqualTo(x);
+    assertThat(expr.getVariableIndex(0)).isEqualTo(x.getIndex());
     assertThat(expr.getCoefficient(0)).isEqualTo(1);
-    assertThat(expr.getVariable(1)).isEqualTo(y);
+    assertThat(expr.getVariableIndex(1)).isEqualTo(y.getIndex());
     assertThat(expr.getCoefficient(1)).isEqualTo(1);
     assertThat(expr.getOffset()).isEqualTo(0);
   }
@@ -167,9 +167,9 @@ public final class LinearExprTest {
     assertNotNull(expr);
 
     assertThat(expr.numElements()).isEqualTo(2);
-    assertThat(expr.getVariable(0)).isEqualTo(x);
+    assertThat(expr.getVariableIndex(0)).isEqualTo(x.getIndex());
     assertThat(expr.getCoefficient(0)).isEqualTo(3);
-    assertThat(expr.getVariable(1)).isEqualTo(y);
+    assertThat(expr.getVariableIndex(1)).isEqualTo(y.getIndex());
     assertThat(expr.getCoefficient(1)).isEqualTo(5);
     assertThat(expr.getOffset()).isEqualTo(0);
   }
@@ -185,9 +185,9 @@ public final class LinearExprTest {
     assertNotNull(expr);
 
     assertThat(expr.numElements()).isEqualTo(2);
-    assertThat(expr.getVariable(0)).isEqualTo(x);
+    assertThat(expr.getVariableIndex(0)).isEqualTo(x.getIndex());
     assertThat(expr.getCoefficient(0)).isEqualTo(1);
-    assertThat(expr.getVariable(1)).isEqualTo(y);
+    assertThat(expr.getVariableIndex(1)).isEqualTo(y.getIndex());
     assertThat(expr.getCoefficient(1)).isEqualTo(-1);
     assertThat(expr.getOffset()).isEqualTo(1);
   }
@@ -203,9 +203,9 @@ public final class LinearExprTest {
     assertNotNull(expr);
 
     assertThat(expr.numElements()).isEqualTo(2);
-    assertThat(expr.getVariable(0)).isEqualTo(x);
+    assertThat(expr.getVariableIndex(0)).isEqualTo(x.getIndex());
     assertThat(expr.getCoefficient(0)).isEqualTo(3);
-    assertThat(expr.getVariable(1)).isEqualTo(y);
+    assertThat(expr.getVariableIndex(1)).isEqualTo(y.getIndex());
     assertThat(expr.getCoefficient(1)).isEqualTo(-5);
     assertThat(expr.getOffset()).isEqualTo(5);
   }
