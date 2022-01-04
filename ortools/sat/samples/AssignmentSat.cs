@@ -80,7 +80,7 @@ public class AssignmentSat
 
         // Objective
         // [START objective]
-        model.Minimize(LinearExpr.ScalProd(xFlat, costsFlat));
+        model.Minimize(LinearExpr.WeightedSum(xFlat, costsFlat));
         // [END objective]
 
         // Solve

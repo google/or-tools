@@ -735,7 +735,7 @@ public class NetworkRoutingSat
                     traffics.Add(_demands[i].Traffic);
                 }
 
-                var sum = LinearExpr.ScalProd(vars, traffics);
+                var sum = LinearExpr.WeightedSum(vars, traffics);
                 var trafficVar = cpModel.NewIntVar(0, sumOfTraffic, $"trafficVar{arcIndex}");
                 trafficVars.Add(trafficVar);
                 cpModel.Add(sum == trafficVar);

@@ -91,7 +91,7 @@ public class BalanceGroupSat
         {
             var itemValues = allItems.Select(x => itemInGroup[x, @group]).ToArray();
 
-            var sum = LinearExpr.ScalProd(itemValues, values);
+            var sum = LinearExpr.WeightedSum(itemValues, values);
             model.Add(sum <= averageSumPerGroup + e);
             model.Add(sum >= averageSumPerGroup - e);
         }

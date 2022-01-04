@@ -96,7 +96,8 @@ type is not uniform across languages.
 ### Other methods
 
 To exclude a single value, use ranges combined with int64min and int64max
-values, e.g., `[[int64min, -3], [-1, int64max]]`, or use the `Complement` method.
+values, e.g., `[[int64min, -3], [-1, int64max]]`, or use the `Complement`
+method.
 
 To create a variable with a single value domain, use the `NewConstant()` API (or
 `newConstant()` in Java).
@@ -106,13 +107,13 @@ To create a variable with a single value domain, use the `NewConstant()` API (or
 ### C++ and Java linear constraints and linear expressions
 
 **C++** and **Java** APIs do not use arithmetic operators (+, \*, -, <=...).
-Linear constraints are created using a method of the model factory, such as 
+Linear constraints are created using a method of the model factory, such as
 `cp_model.AddEquality(x, 3)` in C++, or `cp_model.addGreaterOrEqual(x, 10)` in
 Java.
 
 Furthermore, helper methods can be used to create sums and scalar products like
-`LinearExpr::Sum({x, y, z})` in C++, and `LinearExpr.scalProd(new IntVar[] {x,
-y, z}, new long[] {1, 2, 3})` in Java.
+`LinearExpr::Sum({x, y, z})` in C++, and `LinearExpr.weightedSum(new IntVar[]
+{x, y, z}, new long[] {1, 2, 3})` in Java.
 
 ### Python and C\# linear constraints and linear expressions
 
@@ -122,9 +123,9 @@ y, z}, new long[] {1, 2, 3})` in Java.
 
 ### Generic linear constraint
 
-in **all languages**, the cp_model factory offers a generic method to constrain a
-linear expression to be in a domain. This is used in the step function examples
-below.
+in **all languages**, the cp_model factory offers a generic method to constrain
+a linear expression to be in a domain. This is used in the step function
+examples below.
 
 ### Limitations
 

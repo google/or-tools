@@ -304,7 +304,7 @@ void AddAlternativeTaskDurationRelaxation(
       cp_model.AddEquality(
           tasks[t].end,
           tasks[t].start +
-              LinearExpr::ScalProd(presence_literals, shifted_durations) +
+              LinearExpr::WeightedSum(presence_literals, shifted_durations) +
               min_duration);
     }
   }
@@ -452,9 +452,9 @@ void CreateMachines(
 
       // Add a linear equation to define the size of the tail interval.
       if (absl::GetFlag(FLAGS_use_variable_duration_to_encode_transition)) {
-        cp_model.AddEquality(
-            tail.interval.SizeExpr(),
-            LinearExpr::ScalProd(literals, transitions) + tail.fixed_duration);
+        cp_model.AddEquality(tail.interval.SizeExpr(),
+                             LinearExpr::WeightedSum(literals, transitions) +
+                                 tail.fixed_duration);
       }
     }
     LOG(INFO) << "Machine " << m
@@ -540,11 +540,12 @@ void CreateObjective(
                                         problem.scaling_factor().value());
     }
     cp_model.Minimize(
-        DoubleLinearExpr::ScalProd(objective_vars, double_objective_coeffs) +
+        DoubleLinearExpr::WeightedSum(objective_vars, double_objective_coeffs) +
         static_cast<double>(objective_offset));
   } else {
-    cp_model.Minimize(LinearExpr::ScalProd(objective_vars, objective_coeffs) +
-                      objective_offset);
+    cp_model.Minimize(
+        LinearExpr::WeightedSum(objective_vars, objective_coeffs) +
+        objective_offset);
   }
 }
 

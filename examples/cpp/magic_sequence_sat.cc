@@ -60,7 +60,7 @@ void MagicSequence(int size) {
     for (int i = 0; i < size; ++i) {
       vars_equal_to_j.push_back(var_domains[i][j]);
     }
-    cp_model.AddEquality(LinearExpr::ScalProd(var_domains[j], values),
+    cp_model.AddEquality(LinearExpr::WeightedSum(var_domains[j], values),
                          LinearExpr::Sum(vars_equal_to_j));
   }
 

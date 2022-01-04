@@ -1922,7 +1922,7 @@ def bus_driver_scheduling(minimize_drivers, max_num_drivers):
         model.Add(
             cp_model.LinearExpr.Sum(working_times) == total_driving_time +
             num_drivers * (setup_time + cleanup_time) +
-            cp_model.LinearExpr.ScalProd(delay_literals, delay_weights))
+            cp_model.LinearExpr.WeightedSum(delay_literals, delay_weights))
 
     if minimize_drivers:
         # Minimize the number of working drivers
@@ -1931,7 +1931,7 @@ def bus_driver_scheduling(minimize_drivers, max_num_drivers):
         # Minimize the sum of delays between tasks, which in turns minimize the
         # sum of working times as the total driving time is fixed
         model.Minimize(
-            cp_model.LinearExpr.ScalProd(delay_literals, delay_weights))
+            cp_model.LinearExpr.WeightedSum(delay_literals, delay_weights))
 
     if not minimize_drivers and FLAGS.output_proto:
         print('Writing proto to %s' % FLAGS.output_proto)

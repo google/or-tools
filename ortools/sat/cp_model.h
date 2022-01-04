@@ -24,7 +24,8 @@
  IntVar pheasants = cp_model.NewIntVar(all_animals).WithName("pheasants");
 
  cp_model.AddEquality(LinearExpr::Sum({rabbits, pheasants}), 20);
- cp_model.AddEquality(LinearExpr::ScalProd({rabbits, pheasants}, {4, 2}), 56);
+ cp_model.AddEquality(LinearExpr::WeightedSum({rabbits, pheasants}, {4, 2}),
+ 56);
 
  const CpSolverResponse response = Solve(cp_model.Build());
  if (response.status() == CpSolverStatus::FEASIBLE) {
@@ -260,17 +261,17 @@ class LinearExpr {
   static LinearExpr Sum(absl::Span<const BoolVar> vars);
 
   /// Constructs the scalar product of variables and coefficients.
-  static LinearExpr ScalProd(absl::Span<const IntVar> vars,
-                             absl::Span<const int64_t> coeffs);
+  static LinearExpr WeightedSum(absl::Span<const IntVar> vars,
+                                absl::Span<const int64_t> coeffs);
 
   /// Constructs the scalar product of Boolean variables and coefficients.
-  static LinearExpr ScalProd(absl::Span<const BoolVar> vars,
-                             absl::Span<const int64_t> coeffs);
+  static LinearExpr WeightedSum(absl::Span<const BoolVar> vars,
+                                absl::Span<const int64_t> coeffs);
 
   /// Constructs the scalar product of variables and coefficients.
   // TODO(user): Remove when the operators + and * are implemented.
-  static LinearExpr ScalProd(std::initializer_list<IntVar> vars,
-                             absl::Span<const int64_t> coeffs);
+  static LinearExpr WeightedSum(std::initializer_list<IntVar> vars,
+                                absl::Span<const int64_t> coeffs);
 
   /// Constructs var * coefficient.
   static LinearExpr Term(IntVar var, int64_t coefficient);
@@ -281,9 +282,9 @@ class LinearExpr {
   /// Deprecated. Use Sum() instead.
   static LinearExpr BooleanSum(absl::Span<const BoolVar> vars);
 
-  /// Deprecated. Use ScalProd() instead.
-  static LinearExpr BooleanScalProd(absl::Span<const BoolVar> vars,
-                                    absl::Span<const int64_t> coeffs);
+  /// Deprecated. Use WeightedSum() instead.
+  static LinearExpr BooleanWeightedSum(absl::Span<const BoolVar> vars,
+                                       absl::Span<const int64_t> coeffs);
 
   /// Constructs a linear expr from its proto representation.
   static LinearExpr FromProto(const LinearExpressionProto& proto);
@@ -348,14 +349,14 @@ std::ostream& operator<<(std::ostream& os, const LinearExpr& e);
   // e2 = x + y + 5
   DoubleLinearExpr e2 = DoubleLinearExpr::Sum({x, y}).AddConstant(5.0);
   // e3 = 2 * x - y
-  DoubleLinearExpr e3 = DoubleLinearExpr::ScalProd({x, y}, {2, -1});
+  DoubleLinearExpr e3 = DoubleLinearExpr::WeightedSum({x, y}, {2, -1});
   DoubleLinearExpr e4(b);  // e4 = b.
   DoubleLinearExpr e5(b.Not());  // e5 = 1 - b.
   // If passing a std::vector<BoolVar>, a specialized method must be called.
   std::vector<BoolVar> bools = {b, Not(c)};
   DoubleLinearExpr e6 = DoubleLinearExpr::Sum(bools);  // e6 = b + 1 - c;
   // e7 = -3.0 * b + 1.5 - 1.5 * c;
-  DoubleLinearExpr e7 = DoubleLinearExpr::ScalProd(bools, {-3.0, 1.5});
+  DoubleLinearExpr e7 = DoubleLinearExpr::WeightedSum(bools, {-3.0, 1.5});
   \endcode
  *  This can be used in the objective definition.
  * \code
@@ -410,12 +411,12 @@ class DoubleLinearExpr {
   static DoubleLinearExpr Sum(absl::Span<const BoolVar> vars);
 
   /// Constructs the scalar product of variables and coefficients.
-  static DoubleLinearExpr ScalProd(absl::Span<const IntVar> vars,
-                                   absl::Span<const double> coeffs);
+  static DoubleLinearExpr WeightedSum(absl::Span<const IntVar> vars,
+                                      absl::Span<const double> coeffs);
 
   /// Constructs the scalar product of Boolean variables and coefficients.
-  static DoubleLinearExpr ScalProd(absl::Span<const BoolVar> vars,
-                                   absl::Span<const double> coeffs);
+  static DoubleLinearExpr WeightedSum(absl::Span<const BoolVar> vars,
+                                      absl::Span<const double> coeffs);
 
   /// Returns the vector of variable indices.
   const std::vector<int>& variables() const { return variables_; }

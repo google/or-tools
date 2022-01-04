@@ -172,7 +172,7 @@ class LinearExpr(object):
 
   ```
   model.Minimize(cp_model.LinearExpr.Sum(expressions))
-  model.Add(cp_model.LinearExpr.ScalProd(expressions, coefficients) >= 0)
+  model.Add(cp_model.LinearExpr.WeightedSum(expressions, coefficients) >= 0)
   ```
   """
 
@@ -184,14 +184,14 @@ class LinearExpr(object):
         return _SumArray(expressions)
 
     @classmethod
-    def ScalProd(cls, expressions, coefficients):
+    def WeightedSum(cls, expressions, coefficients):
         """Creates the expression sum(expressions[i] * coefficients[i])."""
         if LinearExpr.IsEmptyOrAllNull(coefficients):
             return 0
         elif len(expressions) == 1:
             return expressions[0] * coefficients[0]
         else:
-            return _ScalProd(expressions, coefficients)
+            return _WeightedSum(expressions, coefficients)
 
     @classmethod
     def Term(cls, expression, coefficient):
@@ -229,7 +229,7 @@ class LinearExpr(object):
             if all_ones:
                 return _SumArray(variables, offset)
             else:
-                return _ScalProd(variables, coeffs, offset)
+                return _WeightedSum(variables, coeffs, offset)
 
     def GetIntegerVarValueMap(self):
         """Scans the expression, and returns (var_coef_map, constant)."""
@@ -250,7 +250,7 @@ class LinearExpr(object):
                 for e in expr.Expressions():
                     to_process.append((e, coeff))
                 constant += expr.Constant() * coeff
-            elif isinstance(expr, _ScalProd):
+            elif isinstance(expr, _WeightedSum):
                 for e, c in zip(expr.Expressions(), expr.Coefficients()):
                     to_process.append((e, coeff * c))
                 constant += expr.Constant() * coeff
@@ -285,7 +285,7 @@ class LinearExpr(object):
                 for e in expr.Expressions():
                     to_process.append((e, coeff))
                 constant += expr.Constant() * coeff
-            elif isinstance(expr, _ScalProd):
+            elif isinstance(expr, _WeightedSum):
                 for e, c in zip(expr.Expressions(), expr.Coefficients()):
                     to_process.append((e, coeff * c))
                 constant += expr.Constant() * coeff
@@ -547,8 +547,8 @@ class _SumArray(LinearExpr):
         return self.__constant
 
 
-class _ScalProd(LinearExpr):
-    """Represents the scalar product of expressions with constants and a constant."""
+class _WeightedSum(LinearExpr):
+    """Represents sum(ai * xi) + b."""
 
     def __init__(self, expressions, coefficients, constant=0):
         self.__expressions = []
@@ -556,7 +556,7 @@ class _ScalProd(LinearExpr):
         self.__constant = constant
         if len(expressions) != len(coefficients):
             raise TypeError(
-                'In the LinearExpr.ScalProd method, the expression array and the '
+                'In the LinearExpr.WeightedSum method, the expression array and the '
                 ' coefficient array must have the same length.')
         for e, c in zip(expressions, coefficients):
             c = cmh.assert_is_a_number(c)
@@ -597,7 +597,7 @@ class _ScalProd(LinearExpr):
         return output
 
     def __repr__(self):
-        return 'ScalProd([{}], [{}], {})'.format(
+        return 'WeightedSum([{}], [{}], {})'.format(
             ', '.join(map(repr, self.__expressions)),
             ', '.join(map(repr, self.__coefficients)), self.__constant)
 
@@ -2090,7 +2090,7 @@ def EvaluateLinearExpr(expression, solution):
             for e in expr.Expressions():
                 to_process.append((e, coeff))
             value += expr.Constant() * coeff
-        elif isinstance(expr, _ScalProd):
+        elif isinstance(expr, _WeightedSum):
             for e, c in zip(expr.Expressions(), expr.Coefficients()):
                 to_process.append((e, coeff * c))
             value += expr.Constant() * coeff
@@ -2362,7 +2362,7 @@ class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
                 for e in expr.Expressions():
                     to_process.append((e, coeff))
                     value += expr.Constant() * coeff
-            elif isinstance(expr, _ScalProd):
+            elif isinstance(expr, _WeightedSum):
                 for e, c in zip(expr.Expressions(), expr.Coefficients()):
                     to_process.append((e, coeff * c))
                 value += expr.Constant() * coeff

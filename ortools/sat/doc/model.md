@@ -295,7 +295,7 @@ public class SolutionHintingSampleSat
         model.AddHint(x, 1);
         model.AddHint(y, 2);
 
-        model.Maximize(LinearExpr.ScalProd(new IntVar[] { x, y, z }, new int[] { 1, 2, 3 }));
+        model.Maximize(LinearExpr.WeightedSum(new IntVar[] { x, y, z }, new int[] { 1, 2, 3 }));
 
         // Creates a solver and solves the model.
         CpSolver solver = new CpSolver();

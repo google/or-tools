@@ -253,8 +253,8 @@ public class ShiftSchedulingSat
         }
 
         // Objective
-        var objBoolSum = LinearExpr.ScalProd(objBoolVars, objBoolCoeffs);
-        var objIntSum = LinearExpr.ScalProd(objIntVars, objIntCoeffs);
+        var objBoolSum = LinearExpr.WeightedSum(objBoolVars, objBoolCoeffs);
+        var objIntSum = LinearExpr.WeightedSum(objIntVars, objIntCoeffs);
 
         model.Minimize(objBoolSum + objIntSum);
 

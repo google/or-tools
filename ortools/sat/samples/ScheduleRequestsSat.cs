@@ -181,7 +181,7 @@ public class ScheduleRequestsSat
                 }
             }
         }
-        model.Maximize(LinearExpr.ScalProd(flatShifts, flatShiftRequests));
+        model.Maximize(LinearExpr.WeightedSum(flatShifts, flatShiftRequests));
         // [END objective]
 
         // Solve

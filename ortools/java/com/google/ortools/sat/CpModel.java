@@ -923,7 +923,7 @@ public final class CpModel {
   public void minimize(DoubleLinearExpr expr) {
     FloatObjectiveProto.Builder obj = modelBuilder.getFloatingPointObjectiveBuilder();
     for (int i = 0; i < expr.numElements(); ++i) {
-      obj.addVars(expr.getVariable(i).getIndex()).addCoeffs(expr.getCoefficient(i));
+      obj.addVars(expr.getVariableIndex(i)).addCoeffs(expr.getCoefficient(i));
     }
     obj.setOffset(expr.getOffset()).setMaximize(false);
   }
@@ -942,7 +942,7 @@ public final class CpModel {
   public void maximize(DoubleLinearExpr expr) {
     FloatObjectiveProto.Builder obj = modelBuilder.getFloatingPointObjectiveBuilder();
     for (int i = 0; i < expr.numElements(); ++i) {
-      obj.addVars(expr.getVariable(i).getIndex()).addCoeffs(expr.getCoefficient(i));
+      obj.addVars(expr.getVariableIndex(i)).addCoeffs(expr.getCoefficient(i));
     }
     obj.setOffset(expr.getOffset()).setMaximize(true);
   }

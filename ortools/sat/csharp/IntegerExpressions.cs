@@ -17,28 +17,6 @@ using System;
 using System.Collections.Generic;
 using Google.OrTools.Util;
 
-// Helpers.
-
-// IntVar[] helper class.
-public static class IntVarArrayHelper
-{
-    [Obsolete("This Sum method is deprecated, please use LinearExpr.Sum() instead.")]
-    public static LinearExpr Sum(this IntVar[] vars)
-    {
-        return LinearExpr.Sum(vars);
-    }
-    [Obsolete("This ScalProd method is deprecated, please use LinearExpr.ScalProd() instead.")]
-    public static LinearExpr ScalProd(this IntVar[] vars, int[] coeffs)
-    {
-        return LinearExpr.ScalProd(vars, coeffs);
-    }
-    [Obsolete("This ScalProd method is deprecated, please use LinearExpr.ScalProd() instead.")]
-    public static LinearExpr ScalProd(this IntVar[] vars, long[] coeffs)
-    {
-        return LinearExpr.ScalProd(vars, coeffs);
-    }
-}
-
 public interface ILiteral
 {
     ILiteral Not();
@@ -58,12 +36,12 @@ public class LinearExpr
         return new SumArray(exprs);
     }
 
-    public static LinearExpr ScalProd(IEnumerable<IntVar> vars, IEnumerable<int> coeffs)
+    public static LinearExpr WeightedSum(IEnumerable<IntVar> vars, IEnumerable<int> coeffs)
     {
         return new SumArray(vars, coeffs);
     }
 
-    public static LinearExpr ScalProd(IEnumerable<IntVar> vars, IEnumerable<long> coeffs)
+    public static LinearExpr WeightedSum(IEnumerable<IntVar> vars, IEnumerable<long> coeffs)
     {
         return new SumArray(vars, coeffs);
     }

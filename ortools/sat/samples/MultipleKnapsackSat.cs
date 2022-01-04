@@ -74,7 +74,7 @@ public class MultipleKnapsackSat
             {
                 vars[i] = x[i, b];
             }
-            model.Add(LinearExpr.ScalProd(vars, Weights) <= BinCapacities[b]);
+            model.Add(LinearExpr.WeightedSum(vars, Weights) <= BinCapacities[b]);
         }
         // [END constraints]
 
@@ -91,7 +91,7 @@ public class MultipleKnapsackSat
                 objectiveValues[k] = Values[i];
             }
         }
-        model.Maximize(LinearExpr.ScalProd(objectiveVars, objectiveValues));
+        model.Maximize(LinearExpr.WeightedSum(objectiveVars, objectiveValues));
         //  [END objective]
 
         // Solve

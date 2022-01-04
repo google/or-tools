@@ -73,7 +73,7 @@ public class SolutionHintingSampleSat
         model.AddHint(y, 2);
 
         // [START objective]
-        model.Maximize(LinearExpr.ScalProd(new IntVar[] { x, y, z }, new int[] { 1, 2, 3 }));
+        model.Maximize(LinearExpr.WeightedSum(new IntVar[] { x, y, z }, new int[] { 1, 2, 3 }));
         // [END objective]
 
         // Creates a solver and solves the model.

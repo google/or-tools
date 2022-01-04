@@ -13,7 +13,11 @@
 
 package com.google.ortools.sat;
 
-/** A object that can build a LinearExpr object. */
+/**
+ * A object that can build a LinearExpr object.
+ *
+ * <p>This class is used in all modeling methods of the CpModel class.
+ */
 public interface LinearArgument {
   /** Builds a linear expression. */
   LinearExpr build();

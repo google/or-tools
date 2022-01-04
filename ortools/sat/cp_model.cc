@@ -202,8 +202,8 @@ LinearExpr LinearExpr::Sum(absl::Span<const BoolVar> vars) {
   return result;
 }
 
-LinearExpr LinearExpr::ScalProd(absl::Span<const IntVar> vars,
-                                absl::Span<const int64_t> coeffs) {
+LinearExpr LinearExpr::WeightedSum(absl::Span<const IntVar> vars,
+                                   absl::Span<const int64_t> coeffs) {
   CHECK_EQ(vars.size(), coeffs.size());
   LinearExpr result;
   for (int i = 0; i < vars.size(); ++i) {
@@ -212,8 +212,8 @@ LinearExpr LinearExpr::ScalProd(absl::Span<const IntVar> vars,
   return result;
 }
 
-LinearExpr LinearExpr::ScalProd(absl::Span<const BoolVar> vars,
-                                absl::Span<const int64_t> coeffs) {
+LinearExpr LinearExpr::WeightedSum(absl::Span<const BoolVar> vars,
+                                   absl::Span<const int64_t> coeffs) {
   CHECK_EQ(vars.size(), coeffs.size());
   LinearExpr result;
   for (int i = 0; i < vars.size(); ++i) {
@@ -222,8 +222,8 @@ LinearExpr LinearExpr::ScalProd(absl::Span<const BoolVar> vars,
   return result;
 }
 
-LinearExpr LinearExpr::ScalProd(std::initializer_list<IntVar> vars,
-                                absl::Span<const int64_t> coeffs) {
+LinearExpr LinearExpr::WeightedSum(std::initializer_list<IntVar> vars,
+                                   absl::Span<const int64_t> coeffs) {
   CHECK_EQ(vars.size(), coeffs.size());
   LinearExpr result;
   int count = 0;
@@ -253,8 +253,8 @@ LinearExpr LinearExpr::BooleanSum(absl::Span<const BoolVar> vars) {
   return result;
 }
 
-LinearExpr LinearExpr::BooleanScalProd(absl::Span<const BoolVar> vars,
-                                       absl::Span<const int64_t> coeffs) {
+LinearExpr LinearExpr::BooleanWeightedSum(absl::Span<const BoolVar> vars,
+                                          absl::Span<const int64_t> coeffs) {
   CHECK_EQ(vars.size(), coeffs.size());
   LinearExpr result;
   for (int i = 0; i < vars.size(); ++i) {
@@ -386,8 +386,8 @@ DoubleLinearExpr DoubleLinearExpr::Sum(absl::Span<const BoolVar> vars) {
   return result;
 }
 
-DoubleLinearExpr DoubleLinearExpr::ScalProd(absl::Span<const IntVar> vars,
-                                            absl::Span<const double> coeffs) {
+DoubleLinearExpr DoubleLinearExpr::WeightedSum(
+    absl::Span<const IntVar> vars, absl::Span<const double> coeffs) {
   CHECK_EQ(vars.size(), coeffs.size());
   DoubleLinearExpr result;
   for (int i = 0; i < vars.size(); ++i) {
@@ -396,8 +396,8 @@ DoubleLinearExpr DoubleLinearExpr::ScalProd(absl::Span<const IntVar> vars,
   return result;
 }
 
-DoubleLinearExpr DoubleLinearExpr::ScalProd(absl::Span<const BoolVar> vars,
-                                            absl::Span<const double> coeffs) {
+DoubleLinearExpr DoubleLinearExpr::WeightedSum(
+    absl::Span<const BoolVar> vars, absl::Span<const double> coeffs) {
   CHECK_EQ(vars.size(), coeffs.size());
   DoubleLinearExpr result;
   for (int i = 0; i < vars.size(); ++i) {

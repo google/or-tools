@@ -665,7 +665,7 @@ public class BinPackingProblemSat
             {
                 tmp[i] = x[i, b];
             }
-            model.Add(load[b] == LinearExpr.ScalProd(tmp, sizes));
+            model.Add(load[b] == LinearExpr.WeightedSum(tmp, sizes));
         }
 
         // Place all items.

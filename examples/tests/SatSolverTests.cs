@@ -291,7 +291,7 @@ namespace Google.OrTools.Tests
         }
 
         [Fact]
-        public void LargeScalProdLong()
+        public void LargeWeightedSumLong()
         {
             CpModel model = new CpModel();
             List<IntVar> vars = new List<IntVar>();
@@ -304,14 +304,14 @@ namespace Google.OrTools.Tests
             }
 
             var watch = System.Diagnostics.Stopwatch.StartNew();
-            model.Minimize(LinearExpr.ScalProd(vars, coeffs));
+            model.Minimize(LinearExpr.WeightedSum(vars, coeffs));
             watch.Stop();
             var elapsedMs = watch.ElapsedMilliseconds;
             Console.WriteLine($"Long: Elapsed time {elapsedMs}");
         }
 
         [Fact]
-        public void LargeScalProdInt()
+        public void LargeWeightedSumInt()
         {
             CpModel model = new CpModel();
             List<IntVar> vars = new List<IntVar>();
@@ -324,14 +324,14 @@ namespace Google.OrTools.Tests
             }
 
             var watch = System.Diagnostics.Stopwatch.StartNew();
-            model.Minimize(LinearExpr.ScalProd(vars, coeffs));
+            model.Minimize(LinearExpr.WeightedSum(vars, coeffs));
             watch.Stop();
             var elapsedMs = watch.ElapsedMilliseconds;
             Console.WriteLine($"Int: Elapsed time {elapsedMs}");
         }
 
         [Fact]
-        public void LargeScalProdExpr()
+        public void LargeWeightedSumExpr()
         {
             CpModel model = new CpModel();
             List<LinearExpr> exprs = new List<LinearExpr>();
@@ -349,7 +349,7 @@ namespace Google.OrTools.Tests
         }
 
         [Fact]
-        public void LargeScalProdProto()
+        public void LargeWeightedSumProto()
         {
             CpModel model = new CpModel();
             List<IntVar> vars = new List<IntVar>();
@@ -388,7 +388,7 @@ namespace Google.OrTools.Tests
         public void SolveFromString()
         {
             string model_str = @"
-            { 
+            {
               ""variables"": [
                 { ""name"": ""C"", ""domain"": [ ""1"", ""9"" ] },
                 { ""name"": ""P"", ""domain"": [ ""0"", ""9"" ] },

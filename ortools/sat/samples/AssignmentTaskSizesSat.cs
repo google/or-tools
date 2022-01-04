@@ -76,7 +76,7 @@ public class AssignmentTaskSizesSat
             {
                 vars[task] = x[worker, task];
             }
-            model.Add(LinearExpr.ScalProd(vars, taskSizes) <= totalSizeMax);
+            model.Add(LinearExpr.WeightedSum(vars, taskSizes) <= totalSizeMax);
         }
 
         // Each task is assigned to exactly one worker.
@@ -93,7 +93,7 @@ public class AssignmentTaskSizesSat
 
         // Objective
         // [START objective]
-        model.Minimize(LinearExpr.ScalProd(xFlat, costsFlat));
+        model.Minimize(LinearExpr.WeightedSum(xFlat, costsFlat));
         // [END objective]
 
         // Solve

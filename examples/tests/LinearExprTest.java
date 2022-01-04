@@ -156,7 +156,7 @@ public final class LinearExprTest {
   }
 
   @Test
-  public void testLinearExpr_scalProd() {
+  public void testLinearExpr_weightedSum() {
     final CpModel model = new CpModel();
     assertNotNull(model);
     final Domain domain = new Domain(0, 10);
@@ -193,7 +193,7 @@ public final class LinearExprTest {
   }
 
   @Test
-  public void testLinearExpr_booleanScalProd() {
+  public void testLinearExpr_booleanWeightedSum() {
     final CpModel model = new CpModel();
     assertNotNull(model);
     final Literal x = model.newBoolVar("x");
