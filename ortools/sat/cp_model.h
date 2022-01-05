@@ -279,13 +279,6 @@ class LinearExpr {
   /// Constructs bool * coefficient.
   static LinearExpr Term(BoolVar var, int64_t coefficient);
 
-  /// Deprecated. Use Sum() instead.
-  static LinearExpr BooleanSum(absl::Span<const BoolVar> vars);
-
-  /// Deprecated. Use WeightedSum() instead.
-  static LinearExpr BooleanWeightedSum(absl::Span<const BoolVar> vars,
-                                       absl::Span<const int64_t> coeffs);
-
   /// Constructs a linear expr from its proto representation.
   static LinearExpr FromProto(const LinearExpressionProto& proto);
 

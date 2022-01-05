@@ -245,24 +245,6 @@ LinearExpr LinearExpr::Term(BoolVar var, int64_t coefficient) {
   return result;
 }
 
-LinearExpr LinearExpr::BooleanSum(absl::Span<const BoolVar> vars) {
-  LinearExpr result;
-  for (const BoolVar& var : vars) {
-    result.AddVar(var);
-  }
-  return result;
-}
-
-LinearExpr LinearExpr::BooleanWeightedSum(absl::Span<const BoolVar> vars,
-                                          absl::Span<const int64_t> coeffs) {
-  CHECK_EQ(vars.size(), coeffs.size());
-  LinearExpr result;
-  for (int i = 0; i < vars.size(); ++i) {
-    result.AddTerm(vars[i], coeffs[i]);
-  }
-  return result;
-}
-
 LinearExpr& LinearExpr::AddConstant(int64_t value) {
   constant_ += value;
   return *this;
