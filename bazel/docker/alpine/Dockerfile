@@ -18,12 +18,12 @@ ENV JAVA_HOME=/usr/lib/jvm/default-jvm
 ENV PATH=$JAVA_HOME/bin:$PATH
 
 FROM env AS devel
-WORKDIR /home/lib
+WORKDIR /home/project
 COPY . .
 
-FROM devel as build
+FROM devel AS build
 RUN bazel version
 RUN bazel build --curses=no --host_javabase=@local_jdk//:jdk --cxxopt=-std=c++17 --copt='-Wno-sign-compare' //...:all
 
-FROM build as test
+FROM build AS test
 RUN bazel test --curses=no --host_javabase=@local_jdk//:jdk --cxxopt=-std=c++17 --copt='-Wno-sign-compare' //...:all
