@@ -80,7 +80,7 @@ namespace operations_research {
 
     double getObjectiveOffset() {
       double offset;
-      XPRSgetdblcontrol(prob(), XPRS_OBJRHS, &offset);
+      XPRSgetdblattrib(prob(), XPRS_OBJRHS, &offset);
       return offset;
     }
 
