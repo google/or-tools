@@ -108,7 +108,7 @@ sh_targets_$1 = $(addprefix sh_, $(addsuffix _$1, $(DISTROS)))
 $$(sh_targets_$1): sh_%_$1: %_$1
 	${DOCKER_RUN_CMD} -it --name ${PROJECT}_${BUILD_SYSTEM}_$$*_$1 ${IMAGE}:$$*_$1
 
-#$$(info Create targets: $(addprefix clean_, $(addsuffix _$1, $(DISTROS))).)
+#$$(info Create targets: clean_$1 $(addprefix clean_, $(addsuffix _$1, $(DISTROS))).)
 clean_targets_$1 = $(addprefix clean_, $(addsuffix _$1, $(DISTROS)))
 .PHONY: clean_$1 $(clean_targets_$1)
 clean_$1: $$(clean_targets_$1)
