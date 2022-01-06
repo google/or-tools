@@ -42,13 +42,13 @@ Dockers [Alpine, Archlinux, Centos, Debian, Fedora, OpenSuse, Ubuntu]x[C++, Pyth
 <nav for="cmake"> |
 <a href="#deps">Dependencies</a> |
 <a href="#options">Options</a> |
-<a href="doc/cpp.md">C++</a> |
-<a href="doc/swig.md">Swig</a> |
-<a href="doc/python.md">Python 3</a> |
-<a href="doc/dotnet.md">.Net Core</a> |
-<a href="doc/java.md">Java</a> |
+<a href="docs/cpp.md">C++</a> |
+<a href="docs/swig.md">Swig</a> |
+<a href="docs/python.md">Python 3</a> |
+<a href="docs/dotnet.md">.Net Core</a> |
+<a href="docs/java.md">Java</a> |
 <a href="#integration">Integration</a> |
-<a href="doc/ci.md">CI</a> |
+<a href="docs/ci.md">CI</a> |
 </nav>
 
 OR-Tools comes with a CMake based build ([CMakeLists.txt](../CMakeLists.txt))

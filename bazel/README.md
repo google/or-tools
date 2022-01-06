@@ -24,7 +24,7 @@ Dockers [Alpine, Archlinux, Centos, Debian, Fedora, OpenSuse, Ubuntu]: [![Status
 <a href="#compilation">Compilation</a> |
 <a href="#testing">Testing</a> |
 <a href="#integration">Integration</a> |
-<a href="doc/ci.md">CI</a> |
+<a href="docs/ci.md">CI</a> |
 </nav>
 
 OR-Tools comes with a Bazel based build ([WORKSPACE](../WORKSPACE)) that can be

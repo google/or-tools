@@ -41,7 +41,7 @@ Python, Java, .Net]: [![Status][docker_svg]][docker_link]
 ## Introduction
 <nav for="make"> |
 <a href="#deps">Dependencies</a> |
-<a href="doc/ci.md">CI</a> |
+<a href="docs/ci.md">CI</a> |
 </nav>
 
 OR-Tools comes with a GNU Make based build ([Makefile](../Makefile)) that can be
