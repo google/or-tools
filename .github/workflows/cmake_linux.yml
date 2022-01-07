@@ -71,9 +71,9 @@ jobs:
                          xpress_interface \
                          python_package \
                          java_package \
-                         java_example_LinearProgramming \
+                         java_java_LinearProgramming \
                          dotnet_package \
-                         dotnet_example_cslinearprogramming \
+                         dotnet_dotnet_cslinearprogramming \
                 -j14
       - name: Upload libortools
         uses: actions/upload-artifact@v2
