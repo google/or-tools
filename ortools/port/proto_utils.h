@@ -21,6 +21,7 @@
 #include "google/protobuf/text_format.h"
 #endif  // !defined(__PORTABLE_PLATFORM__)
 
+#include "absl/base/attributes.h"
 #include "absl/strings/str_cat.h"
 
 namespace operations_research {

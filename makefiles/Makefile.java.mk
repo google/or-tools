@@ -415,7 +415,9 @@ GPG_ARGS ?= <arg>--pinentry-mode</arg><arg>loopback</arg>
 $(TEMP_JAVA_DIR):
 	$(MKDIR) $(TEMP_JAVA_DIR)
 
-# ortools-native
+#########################
+# Java Runtime Package ##
+#########################
 $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_NATIVE_PROJECT): | $(TEMP_JAVA_DIR)
 	$(MKDIR) $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_NATIVE_PROJECT)
 
@@ -448,7 +450,9 @@ endif
 	cd $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_NATIVE_PROJECT) && "$(MVN_BIN)" install -B $(GPG_SIGN)
 	$(TOUCH) $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_NATIVE_PROJECT)$Stimestamp
 
-# ortools-java
+####################
+##  JAVA Package  ##
+####################
 ifeq ($(UNIVERSAL_JAVA_PACKAGE),1)
 JAVA_ORTOOLS_POM=pom-full.xml.in
 else
@@ -566,7 +570,6 @@ $$(TEMP_JAVA_DIR)/$1/%/$$(JAVA_SRC_DIR)/%.java: \
 
 rjava_%: \
  java \
- $$(SRC_DIR)/ortools/$1/samples/%.java \
  $$(TEMP_JAVA_DIR)/$1/%/pom.xml \
  $$(TEMP_JAVA_DIR)/$1/%/$$(JAVA_SRC_DIR)/%.java \
  FORCE
@@ -617,7 +620,6 @@ $$(TEMP_JAVA_DIR)/$1/%/$$(JAVA_SRC_DIR)/%.java: \
 
 rjava_%: \
  java \
- $$(SRC_DIR)/examples/$1/%.java \
  $$(TEMP_JAVA_DIR)/$1/%/pom.xml \
  $$(TEMP_JAVA_DIR)/$1/%/$$(JAVA_SRC_DIR)/%.java \
  FORCE
@@ -665,7 +667,6 @@ $(TEMP_JAVA_DIR)/tests/%/$(JAVA_TEST_DIR)/%.java: \
 
 rjava_%: \
  java \
- $(SRC_DIR)/examples/tests/%.java \
  $(TEMP_JAVA_DIR)/tests/%/pom.xml \
  $(TEMP_JAVA_DIR)/tests/%/$(JAVA_TEST_DIR)/%.java \
  FORCE

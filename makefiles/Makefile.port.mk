@@ -8,6 +8,7 @@ OS = Windows
 endif
 ifeq ($(OS),Windows)
   SYSTEM = win
+  SHELL = cmd.exe
 else
   SYSTEM = unix
 endif
@@ -118,7 +119,7 @@ ifeq ($(SYSTEM),unix)
     else
       JAVA_HOME ?= $(shell /usr/libexec/java_home)
     endif
-    MAC_MIN_VERSION = 10.14
+    MAC_MIN_VERSION = 10.15
   endif # ($(OS),Darwin)
 endif # ($(SYSTEM),unix)
 

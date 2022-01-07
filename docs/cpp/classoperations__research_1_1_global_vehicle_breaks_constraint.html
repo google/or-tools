@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.1</span>
+   &#160;<span id="projectnumber">9.2</span>
    </div>
   </td>
  </tr>
@@ -97,7 +97,7 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1_global_v
 <div class="textblock"><p ><a class="el" href="classoperations__research_1_1_global_vehicle_breaks_constraint.html" title="GlobalVehicleBreaksConstraint ensures breaks constraints are enforced on all vehicles in the dimensio...">GlobalVehicleBreaksConstraint</a> ensures breaks constraints are enforced on all vehicles in the dimension passed to its constructor. </p>
 <p >It is intended to be used for dimensions representing time. A break constraint ensures break intervals fit on the route of a vehicle. For a given vehicle, it forces break intervals to be disjoint from visit intervals, where visit intervals start at CumulVar(node) and last for node_visit_transit[node]. Moreover, it ensures that there is enough time between two consecutive nodes of a route to do transit and vehicle breaks, i.e. if Next(nodeA) = nodeB, CumulVar(nodeA) = tA and CumulVar(nodeB) = tB, then SlackVar(nodeA) &gt;= sum_{breaks \subseteq [tA, tB)} duration(break). </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02188">2188</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02256">2256</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -218,7 +218,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classoperations__research_1_1_pack.html#aa30c84aec5e60d6b74e1e1eb15011d4a">Pack</a>, <a class="el" href="classoperations__research_1_1_if_then_else_ct.html#aa30c84aec5e60d6b74e1e1eb15011d4a">IfThenElseCt</a>, and <a class="el" href="class_swig_director___constraint.html#a8043b2f97c119b7f9281a7a5a88089f0">SwigDirector_Constraint</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l03254">3254</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l03294">3294</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -249,7 +249,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="class_swig_director___constraint.html#a8d3de765a37ab507b801467955dc183e">SwigDirector_Constraint</a>, and <a class="el" href="classoperations__research_1_1_boolean_var.html#adbfe3c73b9cad61f112ccb082b553c51">BooleanVar</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l02520">2520</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l02521">2521</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -278,7 +278,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classoperations__research_1_1_constraint.html#aed804747c45a7e1caf81461f9e45dd91">Constraint</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02191">2191</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02259">2259</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -306,7 +306,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l02526">2526</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l02527">2527</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -337,7 +337,7 @@ Public Member Functions</h2></td></tr>
 <p>This method pushes the demon onto the propagation queue. </p>
 <p >It will be processed directly if the queue is empty. It will be enqueued according to its priority otherwise. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03194">3194</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03209">3209</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -365,7 +365,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03195">3195</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03210">3210</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -393,7 +393,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l02522">2522</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l02523">2523</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -423,7 +423,7 @@ Public Member Functions</h2></td></tr>
 <p>This method freezes the propagation queue. </p>
 <p >It is useful when you need to apply multiple modifications at once. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03185">3185</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03200">3200</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -452,7 +452,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns whether the object has been named or not. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l02518">2518</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l02519">2519</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -513,7 +513,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Is the constraint created by a cast from expression to integer variable? </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l03260">3260</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l03300">3300</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -544,7 +544,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="class_swig_director___constraint.html#a1d89c28bd42ba9a52da008bb69367171">SwigDirector_Constraint</a>, <a class="el" href="class_swig_director___propagation_base_object.html#a1d89c28bd42ba9a52da008bb69367171">SwigDirector_PropagationBaseObject</a>, <a class="el" href="class_swig_director___constraint.html#a6a119daa8b83c3aaffdb6e11fac1f97e">SwigDirector_Constraint</a>, and <a class="el" href="classoperations__research_1_1_piecewise_linear_expr.html#aa4f4ba750a08765e64da2d0bd473944a">PiecewiseLinearExpr</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l02510">2510</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l02511">2511</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -606,7 +606,7 @@ Public Member Functions</h2></td></tr>
 <p>Calls Post and then Propagate to initialize the constraints. </p>
 <p >This is usually done in the root node. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l03246">3246</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l03286">3286</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -635,7 +635,7 @@ Public Member Functions</h2></td></tr>
 
 <p>This method clears the failure callback. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03208">3208</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03223">3223</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -663,7 +663,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03202">3202</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03217">3217</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -691,7 +691,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l02514">2514</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l02515">2515</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -721,7 +721,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Shortcut for variable cleaner. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03211">3211</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03226">3226</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -748,7 +748,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03181">3181</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03196">3196</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -778,7 +778,7 @@ Public Member Functions</h2></td></tr>
 <p>This method unfreezes the propagation queue. </p>
 <p >All modifications that happened when the queue was frozen will be processed. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03189">3189</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03204">3204</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -810,7 +810,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="class_swig_director___constraint.html#a0c5b651f8fe6e47bba5b073817a665c0">SwigDirector_Constraint</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l03264">3264</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l03304">3304</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div>

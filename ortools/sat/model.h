@@ -168,7 +168,7 @@ class Model {
   template <typename T>
   void Register(T* non_owned_class) {
     const size_t type_id = gtl::FastTypeId<T>();
-    CHECK(!gtl::ContainsKey(singletons_, type_id));
+    CHECK(!singletons_.contains(type_id));
     singletons_[type_id] = non_owned_class;
   }
 

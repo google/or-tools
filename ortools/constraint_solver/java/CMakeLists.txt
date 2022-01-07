@@ -7,8 +7,7 @@ set_property(SOURCE routing.i PROPERTY COMPILE_OPTIONS
 swig_add_library(jniconstraint_solver
   TYPE OBJECT
   LANGUAGE java
-  OUTPUT_DIR
-  ${PROJECT_BINARY_DIR}/java/${JAVA_PROJECT}/${JAVA_PACKAGE_PATH}/constraintsolver
+  OUTPUT_DIR ${JAVA_PROJECT_DIR}/${JAVA_SRC_PATH}/constraintsolver
   SOURCES routing.i)
 
 target_include_directories(jniconstraint_solver PRIVATE ${JNI_INCLUDE_DIRS})

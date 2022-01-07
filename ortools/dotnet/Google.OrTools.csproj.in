@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <TargetFrameworks>netcoreapp3.1;net5.0</TargetFrameworks>
+    <TargetFrameworks>netcoreapp3.1;net6.0</TargetFrameworks>
     <RuntimeIdentifiers>win-x64;osx-x64;linux-x64</RuntimeIdentifiers>
     <AssemblyName>@DOTNET_PROJECT@</AssemblyName>
     <Version>@PROJECT_VERSION@</Version>
@@ -24,50 +24,50 @@
 
   <!-- On windows we can build cross-platform netstandard and windows-only netframework.-->
   <PropertyGroup Condition=" '$(OS)' != 'Windows_NT' And '$(OS)' != 'Windows' ">
-    <TargetFrameworks>netcoreapp3.1;net5.0</TargetFrameworks>
+    <TargetFrameworks>netcoreapp3.1;net6.0</TargetFrameworks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(OS)' == 'Windows_NT' Or '$(OS)' == 'Windows' ">
-    <TargetFrameworks>netcoreapp3.1;net5.0;net452</TargetFrameworks>
+    <TargetFrameworks>netcoreapp3.1;net6.0;net452</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="@PROJECT_DOTNET_DIR@/ortools/algorithms/*.cs">
+    <Compile Include="@DOTNET_PROJECT_DIR@/ortools/algorithms/*.cs">
       <Link>algorithms/%(Filename)%(Extension)</Link>
     </Compile>
 
-    <Compile Include="@PROJECT_DOTNET_DIR@/ortools/graph/*.cs">
+    <Compile Include="@DOTNET_PROJECT_DIR@/ortools/graph/*.cs">
       <Link>graph/%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="@PROJECT_SOURCE_DIR@/ortools/graph/csharp/*.cs">
       <Link>graph/%(Filename)%(Extension)</Link>
     </Compile>
 
-    <Compile Include="@PROJECT_DOTNET_DIR@/ortools/linear_solver/*.cs">
+    <Compile Include="@DOTNET_PROJECT_DIR@/ortools/linear_solver/*.cs">
       <Link>linear_solver/%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="@PROJECT_SOURCE_DIR@/ortools/linear_solver/csharp/*.cs">
       <Link>linear_solver/%(Filename)%(Extension)</Link>
     </Compile>
 
-    <Compile Include="@PROJECT_DOTNET_DIR@/ortools/constraint_solver/*.cs">
+    <Compile Include="@DOTNET_PROJECT_DIR@/ortools/constraint_solver/*.cs">
       <Link>constraint_solver/%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="@PROJECT_SOURCE_DIR@/ortools/constraint_solver/csharp/*.cs">
       <Link>constraint_solver/%(Filename)%(Extension)</Link>
     </Compile>
 
-    <Compile Include="@PROJECT_DOTNET_DIR@/ortools/init/*.cs">
+    <Compile Include="@DOTNET_PROJECT_DIR@/ortools/init/*.cs">
       <Link>init/%(Filename)%(Extension)</Link>
     </Compile>
 
-    <Compile Include="@PROJECT_DOTNET_DIR@/ortools/sat/*.cs">
+    <Compile Include="@DOTNET_PROJECT_DIR@/ortools/sat/*.cs">
       <Link>sat/%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="@PROJECT_SOURCE_DIR@/ortools/sat/csharp/*.cs">
       <Link>sat/%(Filename)%(Extension)</Link>
     </Compile>
 
-    <Compile Include="@PROJECT_DOTNET_DIR@/ortools/util/*.cs">
+    <Compile Include="@DOTNET_PROJECT_DIR@/ortools/util/*.cs">
       <Link>util/%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="@PROJECT_SOURCE_DIR@/ortools/util/csharp/*.cs">
@@ -142,7 +142,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Google.Protobuf" Version="3.18.0"/>
+    <PackageReference Include="Google.Protobuf" Version="3.19.1"/>
   </ItemGroup>
 
   <!-- Need to add required runtime dependencies so Meta-Project will pull runtime Nuget(s) -->

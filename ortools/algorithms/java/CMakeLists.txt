@@ -7,8 +7,7 @@ set_property(SOURCE knapsack_solver.i PROPERTY COMPILE_OPTIONS
 swig_add_library(jnialgorithms
   TYPE OBJECT
   LANGUAGE java
-  OUTPUT_DIR
-  ${PROJECT_BINARY_DIR}/java/${JAVA_PROJECT}/${JAVA_PACKAGE_PATH}/algorithms
+  OUTPUT_DIR ${JAVA_PROJECT_DIR}/${JAVA_SRC_PATH}/algorithms
   SOURCES knapsack_solver.i)
 
 target_include_directories(jnialgorithms PRIVATE ${JNI_INCLUDE_DIRS})

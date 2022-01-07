@@ -13,7 +13,7 @@ endif()
 # Check if we have system Python on Debian/Ubuntu, if so tell setuptools
 # to use the deb layout (dist-packages instead of site-packages).
 execute_process(
-  COMMAND @Python_EXECUTABLE@ -c "import sys; sys.stdout.write(sys.path[-1])"
+  COMMAND @Python3_EXECUTABLE@ -c "import sys; sys.stdout.write(sys.path[-1])"
   OUTPUT_VARIABLE Python_STDLIB_DIR
 )
 if(Python_STDLIB_DIR MATCHES ".*/dist-packages$")
@@ -24,7 +24,7 @@ endif()
 
 execute_process(
   WORKING_DIRECTORY @PROJECT_BINARY_DIR@/python
-  COMMAND @Python_EXECUTABLE@ setup.py install
+  COMMAND @Python3_EXECUTABLE@ setup.py install
     ${ROOT}
     --prefix=@CMAKE_INSTALL_PREFIX@
     ${SETUPTOOLS_INSTALL_LAYOUT}

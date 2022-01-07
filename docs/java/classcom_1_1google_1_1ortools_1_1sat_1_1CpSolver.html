@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 9.1</span>
+                <span id="sfml">Google OR-Tools 9.2</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -119,9 +119,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a3675e4eff4f3825c371d8afaa003d365"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpSolver.html#a3675e4eff4f3825c371d8afaa003d365">bestObjectiveBound</a> ()</td></tr>
 <tr class="memdesc:a3675e4eff4f3825c371d8afaa003d365"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the best lower bound found when minimizing, of the best upper bound found when maximizing.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpSolver.html#a3675e4eff4f3825c371d8afaa003d365">More...</a><br /></td></tr>
 <tr class="separator:a3675e4eff4f3825c371d8afaa003d365"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a61e7d175c0ca4cd5a12965af3fe358c4"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpSolver.html#a61e7d175c0ca4cd5a12965af3fe358c4">value</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a> var)</td></tr>
-<tr class="memdesc:a61e7d175c0ca4cd5a12965af3fe358c4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the value of a variable in the last solution found.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpSolver.html#a61e7d175c0ca4cd5a12965af3fe358c4">More...</a><br /></td></tr>
-<tr class="separator:a61e7d175c0ca4cd5a12965af3fe358c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abbebe2cd8460e3d0833c77863280f5de"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpSolver.html#abbebe2cd8460e3d0833c77863280f5de">value</a> (<a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a> expr)</td></tr>
+<tr class="memdesc:abbebe2cd8460e3d0833c77863280f5de"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the value of a linear expression in the last solution found.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpSolver.html#abbebe2cd8460e3d0833c77863280f5de">More...</a><br /></td></tr>
+<tr class="separator:abbebe2cd8460e3d0833c77863280f5de"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad6a3705cb3e6ea4939bfb0bb578d4d01"><td class="memItemLeft" align="right" valign="top">Boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpSolver.html#ad6a3705cb3e6ea4939bfb0bb578d4d01">booleanValue</a> (<a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1Literal.html">Literal</a> var)</td></tr>
 <tr class="memdesc:ad6a3705cb3e6ea4939bfb0bb578d4d01"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the Boolean value of a literal in the last solution found.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpSolver.html#ad6a3705cb3e6ea4939bfb0bb578d4d01">More...</a><br /></td></tr>
 <tr class="separator:ad6a3705cb3e6ea4939bfb0bb578d4d01"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -151,6 +151,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:adb1b01f7ab8973fc2b7a5f279dddc185"><td class="memItemLeft" align="right" valign="top">String&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpSolver.html#adb1b01f7ab8973fc2b7a5f279dddc185">responseStats</a> ()</td></tr>
 <tr class="memdesc:adb1b01f7ab8973fc2b7a5f279dddc185"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns some statistics on the solution found as a string.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpSolver.html#adb1b01f7ab8973fc2b7a5f279dddc185">More...</a><br /></td></tr>
 <tr class="separator:adb1b01f7ab8973fc2b7a5f279dddc185"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa15253dcc329f3440cc61abbfe535267"><td class="memItemLeft" align="right" valign="top">String&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpSolver.html#aa15253dcc329f3440cc61abbfe535267">getSolutionInfo</a> ()</td></tr>
+<tr class="memdesc:aa15253dcc329f3440cc61abbfe535267"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns some information on how the solution was found, or the reason why the model or the parameters are invalid.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpSolver.html#aa15253dcc329f3440cc61abbfe535267">More...</a><br /></td></tr>
+<tr class="separator:aa15253dcc329f3440cc61abbfe535267"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a14e6e324b58ee2744bfed85969fd0f10" name="a14e6e324b58ee2744bfed85969fd0f10"></a>
@@ -214,7 +217,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns the Boolean value of a literal in the last solution found. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolver_8java_source.html#l00135">135</a> of file <a class="el" href="CpSolver_8java_source.html">CpSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolver_8java_source.html#l00139">139</a> of file <a class="el" href="CpSolver_8java_source.html">CpSolver.java</a>.</p>
 
 </div>
 </div>
@@ -235,7 +238,28 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns the builder of the parameters of the SAT solver for modification. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolver_8java_source.html#l00174">174</a> of file <a class="el" href="CpSolver_8java_source.html">CpSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolver_8java_source.html#l00178">178</a> of file <a class="el" href="CpSolver_8java_source.html">CpSolver.java</a>.</p>
+
+</div>
+</div>
+<a id="aa15253dcc329f3440cc61abbfe535267" name="aa15253dcc329f3440cc61abbfe535267"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa15253dcc329f3440cc61abbfe535267">&#9670;&nbsp;</a></span>getSolutionInfo()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">String getSolutionInfo </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns some information on how the solution was found, or the reason why the model or the parameters are invalid. </p>
+
+<p class="definition">Definition at line <a class="el" href="CpSolver_8java_source.html#l00196">196</a> of file <a class="el" href="CpSolver_8java_source.html">CpSolver.java</a>.</p>
 
 </div>
 </div>
@@ -256,7 +280,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns the number of branches explored during search. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolver_8java_source.html#l00150">150</a> of file <a class="el" href="CpSolver_8java_source.html">CpSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolver_8java_source.html#l00154">154</a> of file <a class="el" href="CpSolver_8java_source.html">CpSolver.java</a>.</p>
 
 </div>
 </div>
@@ -277,7 +301,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns the number of conflicts created during search. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolver_8java_source.html#l00155">155</a> of file <a class="el" href="CpSolver_8java_source.html">CpSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolver_8java_source.html#l00159">159</a> of file <a class="el" href="CpSolver_8java_source.html">CpSolver.java</a>.</p>
 
 </div>
 </div>
@@ -319,7 +343,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns the internal response protobuf that is returned internally by the SAT solver. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolver_8java_source.html#l00145">145</a> of file <a class="el" href="CpSolver_8java_source.html">CpSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolver_8java_source.html#l00149">149</a> of file <a class="el" href="CpSolver_8java_source.html">CpSolver.java</a>.</p>
 
 </div>
 </div>
@@ -340,7 +364,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns some statistics on the solution found as a string. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolver_8java_source.html#l00184">184</a> of file <a class="el" href="CpSolver_8java_source.html">CpSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolver_8java_source.html#l00188">188</a> of file <a class="el" href="CpSolver_8java_source.html">CpSolver.java</a>.</p>
 
 </div>
 </div>
@@ -405,7 +429,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Sets the log callback for the solver. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolver_8java_source.html#l00179">179</a> of file <a class="el" href="CpSolver_8java_source.html">CpSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolver_8java_source.html#l00183">183</a> of file <a class="el" href="CpSolver_8java_source.html">CpSolver.java</a>.</p>
 
 </div>
 </div>
@@ -532,7 +556,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpSolver_8java_source.html#l00169">169</a> of file <a class="el" href="CpSolver_8java_source.html">CpSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolver_8java_source.html#l00173">173</a> of file <a class="el" href="CpSolver_8java_source.html">CpSolver.java</a>.</p>
 
 </div>
 </div>
@@ -553,12 +577,12 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns the user time of the search. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolver_8java_source.html#l00165">165</a> of file <a class="el" href="CpSolver_8java_source.html">CpSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolver_8java_source.html#l00169">169</a> of file <a class="el" href="CpSolver_8java_source.html">CpSolver.java</a>.</p>
 
 </div>
 </div>
-<a id="a61e7d175c0ca4cd5a12965af3fe358c4" name="a61e7d175c0ca4cd5a12965af3fe358c4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a61e7d175c0ca4cd5a12965af3fe358c4">&#9670;&nbsp;</a></span>value()</h2>
+<a id="abbebe2cd8460e3d0833c77863280f5de" name="abbebe2cd8460e3d0833c77863280f5de"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abbebe2cd8460e3d0833c77863280f5de">&#9670;&nbsp;</a></span>value()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -566,14 +590,14 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="memname">long value </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html">IntVar</a>&#160;</td>
-          <td class="paramname"><em>var</em></td><td>)</td>
+          <td class="paramtype"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html">LinearExpr</a>&#160;</td>
+          <td class="paramname"><em>expr</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p>Returns the value of a variable in the last solution found. </p>
+<p>Returns the value of a linear expression in the last solution found. </p>
 
 <p class="definition">Definition at line <a class="el" href="CpSolver_8java_source.html#l00130">130</a> of file <a class="el" href="CpSolver_8java_source.html">CpSolver.java</a>.</p>
 
@@ -596,7 +620,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns the wall time of the search. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolver_8java_source.html#l00160">160</a> of file <a class="el" href="CpSolver_8java_source.html">CpSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolver_8java_source.html#l00164">164</a> of file <a class="el" href="CpSolver_8java_source.html">CpSolver.java</a>.</p>
 
 </div>
 </div>

@@ -41,9 +41,11 @@ setup(
     name='ORTOOLS_PYTHON_VERSION',
     version='VVVV',
     packages=find_packages(),
+    python_requires='>= 3.6',
     install_requires=[
-        'protobuf >= 3.18.0',
         'absl-py >= 0.13',
+        'numpy >= 1.13.3',
+        'protobuf >= 3.19.1',
     ],
     package_data={
         'ortools.init' : ['_pywrapinit.dll', '*.pyi'],

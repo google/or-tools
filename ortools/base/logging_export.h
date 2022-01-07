@@ -20,7 +20,7 @@
 #define GOOGLE_GLOG_DLL_DECL __declspec(dllexport)
 #else
 #define GOOGLE_GLOG_DLL_DECL __declspec(dllimport)
-#endif  // OR_TOOLS_EXPORT
+#endif  // OR_TOOLS_EXPORTS
 #endif  // _MSC_VER && OR_TOOLS_AS_DYNAMIC_LIB
 
 #ifndef GOOGLE_GLOG_DLL_DECL

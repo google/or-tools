@@ -110,8 +110,7 @@ void CostasHard(const int dim) {
     for (int j = 0; j < dim - i; ++j) {
       IntVar diff = cp_model.NewIntVar(difference_domain);
       subset.push_back(diff);
-      cp_model.AddEquality(
-          diff, LinearExpr::ScalProd({vars[j + i], vars[j]}, {1, -1}));
+      cp_model.AddEquality(diff, vars[j + i] - vars[j]);
     }
 
     cp_model.AddAllDifferent(subset);
@@ -158,8 +157,8 @@ void CostasBool(const int dim) {
   }
 
   for (int i = 0; i < dim; ++i) {
-    cp_model.AddEquality(LinearExpr::BooleanSum(vars[i]), 1);
-    cp_model.AddEquality(LinearExpr::BooleanSum(transposed_vars[i]), 1);
+    cp_model.AddEquality(LinearExpr::Sum(vars[i]), 1);
+    cp_model.AddEquality(LinearExpr::Sum(transposed_vars[i]), 1);
   }
 
   // Check that the pairwise difference is unique
@@ -179,8 +178,8 @@ void CostasBool(const int dim) {
                               Not(vars[var + step][value]), neg});
         }
       }
-      cp_model.AddLessOrEqual(LinearExpr::BooleanSum(positive_diffs), 1);
-      cp_model.AddLessOrEqual(LinearExpr::BooleanSum(negative_diffs), 1);
+      cp_model.AddLessOrEqual(LinearExpr::Sum(positive_diffs), 1);
+      cp_model.AddLessOrEqual(LinearExpr::Sum(negative_diffs), 1);
     }
   }
 
@@ -229,8 +228,8 @@ void CostasBoolSoft(const int dim) {
   }
 
   for (int i = 0; i < dim; ++i) {
-    cp_model.AddEquality(LinearExpr::BooleanSum(vars[i]), 1);
-    cp_model.AddEquality(LinearExpr::BooleanSum(transposed_vars[i]), 1);
+    cp_model.AddEquality(LinearExpr::Sum(vars[i]), 1);
+    cp_model.AddEquality(LinearExpr::Sum(transposed_vars[i]), 1);
   }
 
   std::vector<IntVar> all_violations;
@@ -255,10 +254,8 @@ void CostasBoolSoft(const int dim) {
           cp_model.NewIntVar(Domain(0, positive_diffs.size()));
       const IntVar neg_var =
           cp_model.NewIntVar(Domain(0, negative_diffs.size()));
-      cp_model.AddGreaterOrEqual(
-          pos_var, LinearExpr::BooleanSum(positive_diffs).AddConstant(-1));
-      cp_model.AddGreaterOrEqual(
-          neg_var, LinearExpr::BooleanSum(negative_diffs).AddConstant(-1));
+      cp_model.AddGreaterOrEqual(pos_var, LinearExpr::Sum(positive_diffs) - 1);
+      cp_model.AddGreaterOrEqual(neg_var, LinearExpr::Sum(negative_diffs) - 1);
       all_violations.push_back(pos_var);
       all_violations.push_back(neg_var);
     }

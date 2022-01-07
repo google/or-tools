@@ -163,6 +163,7 @@
 #include <new>
 #include <vector>
 
+#include "absl/base/port.h"
 #include "absl/debugging/leak_check.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"

@@ -97,7 +97,7 @@ std::function<bool(const absl::StrongVector<IntegerVariable, double>&,
                    LinearConstraintManager*)>
 GenerateCumulativeEnergyCuts(const std::string& cut_name,
                              SchedulingConstraintHelper* helper,
-                             const std::vector<IntegerVariable>& demands,
+                             const std::vector<AffineExpression>& demands,
                              const std::vector<LinearExpression>& energies,
                              AffineExpression capacity, Model* model) {
   Trail* trail = model->GetOrCreate<Trail>();
@@ -184,23 +184,14 @@ GenerateCumulativeEnergyCuts(const std::string& cut_name,
         const int t = residual_intervals[i2];
         intervals_not_visited.erase(t);
         if (helper->IsPresent(t)) {
-          if (demand_is_fixed(t)) {
-            if (helper->SizeIsFixed(t)) {
-              energy_lp += ToDouble(helper->SizeMin(t) * demand_min(t));
-            } else {
-              energy_lp += ToDouble(demand_min(t)) *
-                           helper->Sizes()[t].LpValue(lp_values);
-            }
-          } else if (helper->SizeIsFixed(t)) {
-            DCHECK(!demands.empty());
-            energy_lp += lp_values[demands[t]] * ToDouble(helper->SizeMin(t));
-          } else if (!energies.empty()) {
+          if (ProductIsLinearized(energies[t])) {
             energy_lp += energies[t].LpValue(lp_values);
           } else {  // demand and size are not fixed.
             DCHECK(!demands.empty());
             energy_lp +=
                 ToDouble(demand_min(t)) * helper->Sizes()[t].LpValue(lp_values);
-            energy_lp += lp_values[demands[t]] * ToDouble(helper->SizeMin(t));
+            energy_lp +=
+                demands[t].LpValue(lp_values) * ToDouble(helper->SizeMin(t));
             energy_lp -= ToDouble(demand_min(t) * helper->SizeMin(t));
           }
         } else {
@@ -251,7 +242,7 @@ GenerateCumulativeEnergyCuts(const std::string& cut_name,
             } else {
               DCHECK(!demands.empty());
               forced_contrib_lp +=
-                  lp_values[demands[t]] * ToDouble(min_overlap);
+                  demands[t].LpValue(lp_values) * ToDouble(min_overlap);
             }
           } else {
             forced_contrib_lp += GetLiteralLpValue(helper->PresenceLiteral(t),
@@ -289,9 +280,7 @@ GenerateCumulativeEnergyCuts(const std::string& cut_name,
       for (int i2 = 0; i2 <= end_index_of_max_violation; ++i2) {
         const int t = residual_intervals[i2];
         if (helper->IsPresent(t)) {
-          if (demand_is_fixed(t)) {
-            cut.AddTerm(helper->Sizes()[t], demand_min(t));
-          } else if (!helper->SizeIsFixed(t) && !energies.empty()) {
+          if (ProductIsLinearized(energies[t])) {
             // We favor the energy info instead of the McCormick relaxation.
             cut.AddLinearExpression(energies[t]);
             use_energy = true;
@@ -355,9 +344,24 @@ GenerateCumulativeEnergyCuts(const std::string& cut_name,
   };
 }
 
+void AppendVariablesToCumulativeCut(
+    const AffineExpression& capacity,
+    const std::vector<AffineExpression>& demands, IntegerTrail* integer_trail,
+    CutGenerator* result) {
+  for (const AffineExpression& demand_expr : demands) {
+    if (!integer_trail->IsFixed(demand_expr)) {
+      result->vars.push_back(demand_expr.var);
+    }
+  }
+  if (!integer_trail->IsFixed(capacity)) {
+    result->vars.push_back(capacity.var);
+  }
+}
+
 CutGenerator CreateCumulativeEnergyCutGenerator(
     const std::vector<IntervalVariable>& intervals,
-    const IntegerVariable capacity, const std::vector<IntegerVariable>& demands,
+    const AffineExpression& capacity,
+    const std::vector<AffineExpression>& demands,
     const std::vector<LinearExpression>& energies, Model* model) {
   CutGenerator result;
 
@@ -365,8 +369,8 @@ CutGenerator CreateCumulativeEnergyCutGenerator(
       new SchedulingConstraintHelper(intervals, model);
   model->TakeOwnership(helper);
 
-  result.vars = demands;
-  result.vars.push_back(capacity);
+  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+  AppendVariablesToCumulativeCut(capacity, demands, integer_trail, &result);
   AddIntegerVariableFromIntervals(helper, model, &result.vars);
   for (const LinearExpression& energy : energies) {
     result.vars.insert(result.vars.end(), energy.vars.begin(),
@@ -392,40 +396,50 @@ CutGenerator CreateNoOverlapEnergyCutGenerator(
   model->TakeOwnership(helper);
 
   AddIntegerVariableFromIntervals(helper, model, &result.vars);
+  gtl::STLSortAndRemoveDuplicates(&result.vars);
+
+  std::vector<LinearExpression> sizes;
+  sizes.reserve(intervals.size());
+  for (int i = 0; i < intervals.size(); ++i) {
+    LinearConstraintBuilder builder(model);
+    builder.AddTerm(helper->Sizes()[i], IntegerValue(1));
+    sizes.push_back(builder.BuildExpression());
+  }
 
   // TODO(user): Do not create the cut generator if all intervals are
   // performed with a fixed size as it will not propagate more than
   // the overload checker.
   result.generate_cuts = GenerateCumulativeEnergyCuts(
       "NoOverlapEnergy", helper,
-      /*demands=*/{}, /*energies=*/{},
+      /*demands=*/{}, /*energies=*/sizes,
       /*capacity=*/AffineExpression(IntegerValue(1)), model);
   return result;
 }
 
 CutGenerator CreateCumulativeTimeTableCutGenerator(
     const std::vector<IntervalVariable>& intervals,
-    const IntegerVariable capacity, const std::vector<IntegerVariable>& demands,
-    Model* model) {
+    const AffineExpression& capacity,
+    const std::vector<AffineExpression>& demands, Model* model) {
   CutGenerator result;
 
   SchedulingConstraintHelper* helper =
       new SchedulingConstraintHelper(intervals, model);
   model->TakeOwnership(helper);
 
-  result.vars = demands;
-  result.vars.push_back(capacity);
+  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+  AppendVariablesToCumulativeCut(capacity, demands, integer_trail, &result);
+
   AddIntegerVariableFromIntervals(helper, model, &result.vars);
+  gtl::STLSortAndRemoveDuplicates(&result.vars);
 
   struct Event {
     int interval_index;
     IntegerValue time;
     bool positive;
-    IntegerVariable demand;
+    AffineExpression demand;
   };
 
   Trail* trail = model->GetOrCreate<Trail>();
-  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
 
   result.generate_cuts =
       [helper, capacity, demands, trail, integer_trail, model](
@@ -578,20 +592,22 @@ void GeneratePrecedenceCuts(
 }
 
 CutGenerator CreateCumulativePrecedenceCutGenerator(
-    const std::vector<IntervalVariable>& intervals, IntegerVariable capacity,
-    const std::vector<IntegerVariable>& demands, Model* model) {
+    const std::vector<IntervalVariable>& intervals,
+    const AffineExpression& capacity,
+    const std::vector<AffineExpression>& demands, Model* model) {
   CutGenerator result;
 
   SchedulingConstraintHelper* helper =
       new SchedulingConstraintHelper(intervals, model);
   model->TakeOwnership(helper);
 
-  result.vars = demands;
-  result.vars.push_back(capacity);
+  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+  AppendVariablesToCumulativeCut(capacity, demands, integer_trail, &result);
+
   AddIntegerVariableFromIntervals(helper, model, &result.vars);
+  gtl::STLSortAndRemoveDuplicates(&result.vars);
 
   Trail* trail = model->GetOrCreate<Trail>();
-  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
 
   result.generate_cuts =
       [trail, integer_trail, helper, demands, capacity, model](
@@ -750,7 +766,8 @@ void GenerateCompletionTimeCuts(
     if (use_lifting) {
       for (int before = 0; before < start; ++before) {
         if (events[before].x_start_min + events[before].x_size_min >
-            sequence_start_min) {
+            sequence_start_min) {  // Build the vector of energies as the vector
+                                   // of sizes.
           CtEvent event = events[before];  // Copy.
           event.lifted = true;
           const IntegerValue old_size_min = event.x_size_min;
@@ -888,7 +905,8 @@ CutGenerator CreateNoOverlapCompletionTimeCutGenerator(
 
 CutGenerator CreateCumulativeCompletionTimeCutGenerator(
     const std::vector<IntervalVariable>& intervals,
-    const IntegerVariable capacity, const std::vector<IntegerVariable>& demands,
+    const AffineExpression& capacity,
+    const std::vector<AffineExpression>& demands,
     const std::vector<LinearExpression>& energies, Model* model) {
   CutGenerator result;
 
@@ -896,12 +914,13 @@ CutGenerator CreateCumulativeCompletionTimeCutGenerator(
       new SchedulingConstraintHelper(intervals, model);
   model->TakeOwnership(helper);
 
-  result.vars = demands;
-  result.vars.push_back(capacity);
+  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+  AppendVariablesToCumulativeCut(capacity, demands, integer_trail, &result);
+
   AddIntegerVariableFromIntervals(helper, model, &result.vars);
+  gtl::STLSortAndRemoveDuplicates(&result.vars);
 
   Trail* trail = model->GetOrCreate<Trail>();
-  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
 
   result.generate_cuts =
       [trail, integer_trail, helper, demands, energies, capacity, model](
@@ -919,14 +938,10 @@ CutGenerator CreateCumulativeCompletionTimeCutGenerator(
             if (helper->SizeMin(index) > 0 &&
                 integer_trail->LowerBound(demands[index]) > 0) {
               const AffineExpression end_expr = helper->Ends()[index];
-              IntegerValue energy_min =
-                  energies.empty()
-                      ? IntegerValue(0)
-                      : LinExprLowerBound(energies[index], *integer_trail);
-
               const IntegerValue size_min = helper->SizeMin(index);
               const IntegerValue demand_min =
                   integer_trail->LowerBound(demands[index]);
+
               CtEvent event;
               event.x_start_min = helper->StartMin(index);
               event.x_size_min = size_min;
@@ -934,11 +949,16 @@ CutGenerator CreateCumulativeCompletionTimeCutGenerator(
               event.x_lp_end = end_expr.LpValue(lp_values);
               event.y_start_min = IntegerValue(0);
               event.y_end_max = IntegerValue(capacity_max);
-              if (energy_min > size_min * demand_min) {
-                event.energy_min = energy_min;
-                event.use_energy = true;
-              } else {
-                event.energy_min = size_min * demand_min;
+              event.energy_min = size_min * demand_min;
+              // TODO(user): Investigate and re-enable a correct version.
+              if (/*DISABLES_CODE*/ (false) &&
+                  ProductIsLinearized(energies[index])) {
+                const IntegerValue linearized_energy =
+                    LinExprLowerBound(energies[index], *integer_trail);
+                if (linearized_energy > event.energy_min) {
+                  event.energy_min = linearized_energy;
+                  event.use_energy = true;
+                }
               }
               events.push_back(event);
             }
@@ -986,9 +1006,10 @@ CutGenerator CreateNoOverlap2dCompletionTimeCutGenerator(
         std::vector<IntegerValue> cached_areas(num_boxes);
         std::vector<Rectangle> cached_rectangles(num_boxes);
         for (int box = 0; box < num_boxes; ++box) {
+          if (!y_helper->IsPresent(box) || !y_helper->IsPresent(box)) continue;
+
           cached_areas[box] = x_helper->SizeMin(box) * y_helper->SizeMin(box);
           if (cached_areas[box] == 0) continue;
-          if (!y_helper->IsPresent(box) || !y_helper->IsPresent(box)) continue;
 
           // TODO(user): It might be possible/better to use some shifted value
           // here, but for now this code is not in the hot spot, so better be
@@ -1044,6 +1065,244 @@ CutGenerator CreateNoOverlap2dCompletionTimeCutGenerator(
           if (!y_helper->SynchronizeAndSetTimeDirection(false)) return false;
           generate_cuts("NoOverlap2dXCompletionTimeMirror", x_helper, y_helper);
           generate_cuts("NoOverlap2dYCompletionTimeMirror", y_helper, x_helper);
+        }
+        return true;
+      };
+  return result;
+}
+
+void GenerateNoOverlap2dEnergyCut(
+    const absl::StrongVector<IntegerVariable, double>& lp_values, Model* model,
+    IntegerTrail* integer_trail, IntegerEncoder* encoder,
+    LinearConstraintManager* manager,
+    const std::vector<LinearExpression>& energies, absl::Span<int> boxes,
+    const std::string& cut_name, SchedulingConstraintHelper* x_helper,
+    SchedulingConstraintHelper* y_helper) {
+  // Sort tasks by StartMin, tie breaked by EndMax.
+  std::sort(boxes.begin(), boxes.end(), [x_helper](int a, int b) {
+    return x_helper->StartMin(a) < x_helper->StartMin(b) ||
+           (x_helper->StartMin(a) == x_helper->StartMin(b) &&
+            x_helper->EndMax(a) < x_helper->EndMax(b));
+  });
+
+  for (int i1 = 0; i1 + 1 < boxes.size(); ++i1) {
+    // For each start time, we will keep the most violated cut
+    // generated while scanning the residual intervals.
+    int end_index_of_max_violation = -1;
+    double max_relative_violation = 1.01;
+    IntegerValue x_min_of_max_violation(0);
+    IntegerValue x_max_of_max_violation(0);
+    IntegerValue y_min_of_max_violation(0);
+    IntegerValue y_max_of_max_violation(0);
+
+    // Accumulates intervals and check for potential cuts.
+    double energy_lp = 0.0;
+    IntegerValue x_min = kMaxIntegerValue;
+    IntegerValue x_max = kMinIntegerValue;
+    IntegerValue y_min = kMaxIntegerValue;
+    IntegerValue y_max = kMinIntegerValue;
+
+    // We sort all tasks (start_min(task) >= start_min(start_index) by
+    // increasing end max.
+    std::vector<int> residual_intervals(boxes.begin() + i1, boxes.end());
+    std::sort(residual_intervals.begin(), residual_intervals.end(),
+              [&](int a, int b) {
+                return x_helper->EndMax(a) < x_helper->EndMax(b);
+              });
+
+    // Let's process residual tasks and evaluate the cut violation of
+    // the cut at each step. We follow the same structure as the cut
+    // creation code below.
+    for (int i2 = 0; i2 < residual_intervals.size(); ++i2) {
+      const int t = residual_intervals[i2];
+      if (x_helper->IsPresent(t) && y_helper->IsPresent(t)) {
+        if (ProductIsLinearized(energies[t])) {
+          energy_lp += energies[t].LpValue(lp_values);
+        } else {  // demand and size are not fixed.
+          energy_lp += x_helper->Sizes()[t].LpValue(lp_values) *
+                       ToDouble(y_helper->SizeMin(t));
+          energy_lp += y_helper->Sizes()[t].LpValue(lp_values) *
+                       ToDouble(x_helper->SizeMin(t));
+          energy_lp -= ToDouble(x_helper->SizeMin(t) * y_helper->SizeMin(t));
+        }
+      } else {
+        const Literal lit = x_helper->IsOptional(t)
+                                ? x_helper->PresenceLiteral(t)
+                                : y_helper->PresenceLiteral(t);
+        // TODO(user): Use the energy min if better than size_min *
+        // demand_min, here and when building the cut.
+        energy_lp += GetLiteralLpValue(lit, lp_values, encoder) *
+                     ToDouble(x_helper->SizeMin(t) * y_helper->SizeMin(t));
+      }
+
+      // Update bounding box.
+      x_min = std::min(x_min, x_helper->StartMin(t));
+      x_max = std::max(x_max, x_helper->EndMax(t));
+      y_min = std::min(y_min, y_helper->StartMin(t));
+      y_max = std::max(y_max, y_helper->EndMax(t));
+
+      // Compute the violation of the potential cut.
+      const double relative_violation =
+          energy_lp / ToDouble((x_max - x_min) * (y_max - y_min));
+      if (relative_violation > max_relative_violation) {
+        end_index_of_max_violation = i2;
+        max_relative_violation = relative_violation;
+        x_min_of_max_violation = x_min;
+        x_max_of_max_violation = x_max;
+        y_min_of_max_violation = y_min;
+        y_max_of_max_violation = y_max;
+      }
+    }
+    if (end_index_of_max_violation == -1) return;
+
+    // A maximal violated cut has been found.
+    bool has_opt_cuts = false;
+    bool has_quadratic_cuts = false;
+    bool use_energy = false;
+
+    LinearConstraintBuilder cut(
+        model, kMinIntegerValue,
+        (x_max_of_max_violation - x_min_of_max_violation) *
+            (y_max_of_max_violation - y_min_of_max_violation));
+
+    // Build the cut.
+    for (int i2 = 0; i2 <= end_index_of_max_violation; ++i2) {
+      const int t = residual_intervals[i2];
+      if (x_helper->IsPresent(t) && y_helper->IsPresent(t)) {
+        if (ProductIsLinearized(energies[t])) {
+          // We favor the energy info instead of the McCormick relaxation.
+          cut.AddLinearExpression(energies[t]);
+          use_energy = true;
+        } else {
+          // This will add linear term if the size is fixed.
+          cut.AddQuadraticLowerBound(x_helper->Sizes()[t], y_helper->Sizes()[t],
+                                     integer_trail);
+          has_quadratic_cuts = true;
+        }
+      } else {
+        // TODO(user): use the offset of the energy expression if better
+        // than size_min * demand_min.
+        DCHECK(!x_helper->IsPresent(t) || !y_helper->IsPresent(t));
+        const Literal lit = !x_helper->IsPresent(t)
+                                ? x_helper->PresenceLiteral(t)
+                                : y_helper->PresenceLiteral(t);
+        if (cut.AddLiteralTerm(lit,
+                               x_helper->SizeMin(t) * y_helper->SizeMin(t))) {
+          has_opt_cuts = true;
+          if (!x_helper->SizeIsFixed(t) && !y_helper->SizeIsFixed(t)) {
+            has_quadratic_cuts = true;
+          }
+        }
+      }
+    }
+
+    std::string full_name = cut_name;
+    if (has_opt_cuts) full_name.append("_opt");
+    if (has_quadratic_cuts) full_name.append("_quad");
+    if (use_energy) full_name.append("_energy");
+
+    manager->AddCut(cut.Build(), full_name, lp_values);
+  }
+}
+
+CutGenerator CreateNoOverlap2dEnergyCutGenerator(
+    const std::vector<IntervalVariable>& x_intervals,
+    const std::vector<IntervalVariable>& y_intervals, Model* model) {
+  CutGenerator result;
+  IntervalsRepository* intervals_repository =
+      model->GetOrCreate<IntervalsRepository>();
+  const int num_boxes = x_intervals.size();
+
+  std::vector<LinearExpression> energies;
+  std::vector<AffineExpression> x_sizes;
+  std::vector<AffineExpression> y_sizes;
+  for (int i = 0; i < num_boxes; ++i) {
+    x_sizes.push_back(intervals_repository->Size(x_intervals[i]));
+    y_sizes.push_back(intervals_repository->Size(y_intervals[i]));
+  }
+  LinearizeInnerProduct(x_sizes, y_sizes, model, &energies);
+
+  SchedulingConstraintHelper* x_helper =
+      new SchedulingConstraintHelper(x_intervals, model);
+  model->TakeOwnership(x_helper);
+
+  SchedulingConstraintHelper* y_helper =
+      new SchedulingConstraintHelper(y_intervals, model);
+  model->TakeOwnership(y_helper);
+  AddIntegerVariableFromIntervals(x_helper, model, &result.vars);
+  AddIntegerVariableFromIntervals(y_helper, model, &result.vars);
+
+  Trail* trail = model->GetOrCreate<Trail>();
+  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+  IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
+
+  result.generate_cuts =
+      [integer_trail, trail, encoder, x_helper, y_helper, model, energies](
+          const absl::StrongVector<IntegerVariable, double>& lp_values,
+          LinearConstraintManager* manager) {
+        if (trail->CurrentDecisionLevel() > 0) return true;
+
+        if (!x_helper->SynchronizeAndSetTimeDirection(true)) return false;
+        if (!y_helper->SynchronizeAndSetTimeDirection(true)) return false;
+
+        const int num_boxes = x_helper->NumTasks();
+        std::vector<int> active_boxes;
+        std::vector<Rectangle> cached_rectangles(num_boxes);
+        for (int box = 0; box < num_boxes; ++box) {
+          if (y_helper->IsAbsent(box) || y_helper->IsAbsent(box)) continue;
+          // We cannot consider boxes controlled by 2 active enforcement
+          // literals.
+          if (!x_helper->IsPresent(box) && !y_helper->IsPresent(box) &&
+              x_helper->PresenceLiteral(box) !=
+                  y_helper->PresenceLiteral(box)) {
+            continue;
+          }
+
+          // TODO(user): It might be possible/better to use some shifted value
+          // here, but for now this code is not in the hot spot, so better be
+          // defensive and only do connected components on really disjoint
+          // boxes.
+          Rectangle& rectangle = cached_rectangles[box];
+          rectangle.x_min = x_helper->StartMin(box);
+          rectangle.x_max = x_helper->EndMax(box);
+          rectangle.y_min = y_helper->StartMin(box);
+          rectangle.y_max = y_helper->EndMax(box);
+
+          active_boxes.push_back(box);
+        }
+
+        if (active_boxes.size() <= 1) return true;
+
+        std::vector<absl::Span<int>> components =
+            GetOverlappingRectangleComponents(cached_rectangles,
+                                              absl::MakeSpan(active_boxes));
+
+        // Forward pass.
+        if (!x_helper->SynchronizeAndSetTimeDirection(true)) return false;
+        if (!y_helper->SynchronizeAndSetTimeDirection(true)) return false;
+        for (absl::Span<int> boxes : components) {
+          if (boxes.size() <= 1) continue;
+
+          GenerateNoOverlap2dEnergyCut(
+              lp_values, model, integer_trail, encoder, manager, energies,
+              boxes, "NoOverlap2dXEnergy", x_helper, y_helper);
+          GenerateNoOverlap2dEnergyCut(
+              lp_values, model, integer_trail, encoder, manager, energies,
+              boxes, "NoOverlap2dYEnergy", y_helper, x_helper);
+        }
+
+        // Backward pass.
+        if (!x_helper->SynchronizeAndSetTimeDirection(false)) return false;
+        if (!y_helper->SynchronizeAndSetTimeDirection(false)) return false;
+        for (absl::Span<int> boxes : components) {
+          if (boxes.size() <= 1) continue;
+
+          GenerateNoOverlap2dEnergyCut(
+              lp_values, model, integer_trail, encoder, manager, energies,
+              boxes, "NoOverlap2dXEnergyMirror", x_helper, y_helper);
+          GenerateNoOverlap2dEnergyCut(
+              lp_values, model, integer_trail, encoder, manager, energies,
+              boxes, "NoOverlap2dYEnergyMirror", y_helper, x_helper);
         }
         return true;
       };

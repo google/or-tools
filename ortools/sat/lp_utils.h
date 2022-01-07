@@ -54,6 +54,19 @@ int FindRationalFactor(double x, int limit = 1e4, double tolerance = 1e-6);
 std::vector<double> ScaleContinuousVariables(double scaling, double max_bound,
                                              MPModelProto* mp_model);
 
+// This simple step helps and should be done first. Returns false if the model
+// is trivially infeasible because of crossing bounds.
+bool MakeBoundsOfIntegerVariablesInteger(const SatParameters& params,
+                                         MPModelProto* mp_model,
+                                         SolverLogger* logger);
+
+// Performs some extra tests on the given MPModelProto and returns false if one
+// is not satisfied. These are needed before trying to convert it to the native
+// CP-SAT format.
+bool MPModelProtoValidationBeforeConversion(const SatParameters& params,
+                                            const MPModelProto& mp_model,
+                                            SolverLogger* logger);
+
 // To satisfy our scaling requirements, any terms that is almost zero can just
 // be set to zero. We need to do that before operations like
 // DetectImpliedIntegers(), becauses really low coefficients can cause issues
@@ -80,6 +93,36 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
                                        const MPModelProto& mp_model,
                                        CpModelProto* cp_model,
                                        SolverLogger* logger);
+
+// Scales a double objective to its integer version and fills it in the proto.
+// The variable listed in the objective must be already defined in the cp_model
+// proto as this uses the variables bounds to compute a proper scaling.
+//
+// This uses params.mip_wanted_tolerance() and
+// params.mip_max_activity_exponent() to compute the scaling. Note however that
+// if the wanted tolerance is not satisfied this still scale with best effort.
+// You can see in the log the tolerance guaranteed by this automatic scaling.
+//
+// This will almost always returns true except for really bad cases like having
+// infinity in the objective.
+bool ScaleAndSetObjective(const SatParameters& params,
+                          const std::vector<std::pair<int, double>>& objective,
+                          double objective_offset, bool maximize,
+                          CpModelProto* cp_model, SolverLogger* logger);
+
+// Given a CpModelProto with a floating point objective, and its scaled integer
+// version with a known lower bound, this uses the variable bounds to derive a
+// correct lower bound on the original objective.
+//
+// Note that the integer version can be way different, but then the bound is
+// likely to be bad. For now, we solve this with a simple LP with one
+// constraint.
+//
+// TODO(user): Code a custom algo with more precision guarantee?
+double ComputeTrueObjectiveLowerBound(
+    const CpModelProto& model_proto_with_floating_point_objective,
+    const CpObjectiveProto& integer_objective,
+    const int64_t inner_integer_objective_lower_bound);
 
 // Converts an integer program with only binary variables to a Boolean
 // optimization problem. Returns false if the problem didn't contains only

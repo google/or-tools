@@ -58,7 +58,8 @@ target_compile_options(glop_proto PUBLIC ${GLOP_COMPILE_OPTIONS})
 target_link_libraries(glop_proto PRIVATE protobuf::libprotobuf)
 
 # Main Target
-add_library(glop
+add_library(glop)
+target_sources(glop PRIVATE
   ortools/base/commandlineflags.h
   ortools/base/file.cc
   ortools/base/file.h
@@ -130,6 +131,8 @@ add_library(glop
   ortools/util/file_util.h
   ortools/util/fp_utils.cc
   ortools/util/fp_utils.h
+  ortools/util/logging.cc
+  ortools/util/logging.h
   ortools/util/rational_approximation.cc
   ortools/util/rational_approximation.h
   ortools/util/stats.cc
@@ -137,6 +140,13 @@ add_library(glop
   ortools/util/time_limit.cc
   ortools/util/time_limit.h
   )
+if(BUILD_LP_PARSER)
+  target_sources(glop PRIVATE
+    ortools/base/case.cc
+    ortools/base/case.h
+    ortools/lp_data/lp_parser.cc
+    ortools/lp_data/lp_parser.h)
+endif()
 
 if(WIN32)
   list(APPEND GLOP_COMPILE_DEFINITIONS "__WIN32__")
@@ -226,6 +236,7 @@ target_link_libraries(glop PUBLIC
   absl::statusor
   absl::str_format
   protobuf::libprotobuf
+  ${RE2_DEPS}
   )
 if(WIN32)
   #target_link_libraries(glop PUBLIC psapi.lib ws2_32.lib)
@@ -310,6 +321,7 @@ install(FILES
   ortools/util/bitset.h
   ortools/util/file_util.h
   ortools/util/fp_utils.h
+  ortools/util/logging.h
   ortools/util/random_engine.h
   ortools/util/rational_approximation.h
   ortools/util/return_macros.h

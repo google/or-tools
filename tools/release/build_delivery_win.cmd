@@ -295,7 +295,7 @@ echo %BRANCH% %SHA1%>build_examples.log
 exit /B 0
 
 
-REM PYTHON 3.6,3.7,3.8,3.9
+REM PYTHON 3.6,3.7,3.8,3.9,3.10
 :BUILD_PYTHON
 title Build Python
 set HASH=
@@ -305,7 +305,7 @@ echo Python build seems up to date, skipping
 exit /B 0
 )
 
-for %%v in (6 7 8 9) do (
+for %%v in (6 7 8 9 10) do (
   title Build Python 3.%%v
   REM Check Python
   which.exe C:\python3%%v-64\python.exe || exit 1

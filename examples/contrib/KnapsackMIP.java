@@ -26,17 +26,12 @@ import com.google.ortools.Loader;
 import com.google.ortools.linearsolver.*;
 
 public class KnapsackMIP {
-  private static MPSolver createSolver(String solverType) {
-    try {
-      return new MPSolver("MIPDiet", MPSolver.OptimizationProblemType.valueOf(solverType));
-    } catch (java.lang.IllegalArgumentException e) {
-      System.err.println("Bad solver type: " + e);
-      return null;
-    }
-  }
-
   private static void solve(String solverType) {
-    MPSolver solver = createSolver(solverType);
+    MPSolver solver = MPSolver.createSolver(solverType);
+    if (solver == null) {
+      System.out.println("Could not create solver");
+      return;
+    }
 
     /** variables */
     int itemCount = 12;

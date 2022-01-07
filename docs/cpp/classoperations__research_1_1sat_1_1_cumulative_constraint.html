@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.1</span>
+   &#160;<span id="projectnumber">9.2</span>
    </div>
   </td>
  </tr>
@@ -95,15 +95,16 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1sat_1_1_c
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p >Specialized cumulative constraint. </p>
-<p >This constraint allows adding fixed or variables demands to the cumulative constraint incrementally. </p>
+<p >This constraint allows adding fixed or variables demands to the cumulative constraint incrementally.</p>
+<p >One cannot mix the <a class="el" href="classoperations__research_1_1sat_1_1_cumulative_constraint.html#a373a753457a063a05b393cd653be079a" title="Adds a pair (interval, demand) to the constraint.">AddDemand()</a> and AddDemandWithEnergy() APIs in the same cumulative API. Either always supply energy info, or never. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00597">597</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00728">728</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a93d6b777e333ebf211de4c96208dfe8d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cumulative_constraint.html#a93d6b777e333ebf211de4c96208dfe8d">AddDemand</a> (<a class="el" href="classoperations__research_1_1sat_1_1_interval_var.html">IntervalVar</a> <a class="el" href="resource_8cc.html#af92a8383a05fdf586a52263d358f5ada">interval</a>, <a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a> <a class="el" href="arc__flow__builder_8cc.html#a03bbf16021794da27dc482d7eb9fc0d1">demand</a>)</td></tr>
-<tr class="memdesc:a93d6b777e333ebf211de4c96208dfe8d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a pair (interval, demand) to the constraint.  <a href="classoperations__research_1_1sat_1_1_cumulative_constraint.html#a93d6b777e333ebf211de4c96208dfe8d">More...</a><br /></td></tr>
-<tr class="separator:a93d6b777e333ebf211de4c96208dfe8d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a373a753457a063a05b393cd653be079a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cumulative_constraint.html#a373a753457a063a05b393cd653be079a">AddDemand</a> (<a class="el" href="classoperations__research_1_1sat_1_1_interval_var.html">IntervalVar</a> <a class="el" href="resource_8cc.html#af92a8383a05fdf586a52263d358f5ada">interval</a>, <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> <a class="el" href="arc__flow__builder_8cc.html#a03bbf16021794da27dc482d7eb9fc0d1">demand</a>)</td></tr>
+<tr class="memdesc:a373a753457a063a05b393cd653be079a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a pair (interval, demand) to the constraint.  <a href="classoperations__research_1_1sat_1_1_cumulative_constraint.html#a373a753457a063a05b393cd653be079a">More...</a><br /></td></tr>
+<tr class="separator:a373a753457a063a05b393cd653be079a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0ef1ea52810f5cb078f58799520b833c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_constraint.html#a0ef1ea52810f5cb078f58799520b833c">OnlyEnforceIf</a> (absl::Span&lt; const <a class="el" href="classoperations__research_1_1sat_1_1_bool_var.html">BoolVar</a> &gt; literals)</td></tr>
 <tr class="memdesc:a0ef1ea52810f5cb078f58799520b833c"><td class="mdescLeft">&#160;</td><td class="mdescRight">The constraint will be enforced iff all literals listed here are true.  <a href="classoperations__research_1_1sat_1_1_constraint.html#a0ef1ea52810f5cb078f58799520b833c">More...</a><br /></td></tr>
 <tr class="separator:a0ef1ea52810f5cb078f58799520b833c"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -129,8 +130,8 @@ Protected Attributes</h2></td></tr>
 <tr class="separator:a9ee30a925ae7127a28ae72965c8654d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a93d6b777e333ebf211de4c96208dfe8d" name="a93d6b777e333ebf211de4c96208dfe8d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a93d6b777e333ebf211de4c96208dfe8d">&#9670;&nbsp;</a></span>AddDemand()</h2>
+<a id="a373a753457a063a05b393cd653be079a" name="a373a753457a063a05b393cd653be079a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a373a753457a063a05b393cd653be079a">&#9670;&nbsp;</a></span>AddDemand()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -144,7 +145,7 @@ Protected Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a>&#160;</td>
           <td class="paramname"><em>demand</em>&#160;</td>
         </tr>
         <tr>
@@ -157,7 +158,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Adds a pair (interval, demand) to the constraint. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00350">350</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00637">637</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
 
 </div>
 </div>
@@ -186,7 +187,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns the mutable underlying protobuf object (useful for model edition). </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00454">454</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00581">581</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
@@ -215,7 +216,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns the name of the constraint (or the empty string if not set). </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00281">281</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00566">566</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
 
 </div>
 </div>
@@ -252,7 +253,7 @@ Protected Attributes</h2></td></tr>
 <li>other: no support (but can be added on a per-demand basis). </li>
 </ul>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00283">283</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00568">568</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
 
 </div>
 </div>
@@ -282,7 +283,7 @@ Protected Attributes</h2></td></tr>
 
 <p>See <a class="el" href="classoperations__research_1_1sat_1_1_constraint.html#a0ef1ea52810f5cb078f58799520b833c" title="The constraint will be enforced iff all literals listed here are true.">OnlyEnforceIf(absl::Span&lt;const BoolVar&gt; literals)</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00290">290</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00575">575</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
 
 </div>
 </div>
@@ -311,7 +312,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns the underlying protobuf object (useful for testing). </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00451">451</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00578">578</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
@@ -341,7 +342,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Sets the name of the constraint. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00276">276</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00561">561</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
 
 </div>
 </div>
@@ -366,7 +367,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00461">461</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00588">588</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>

@@ -117,8 +117,7 @@ void IntervalSampleSat() {
   const IntVar z = cp_model.NewIntVar(horizon).WithName("z");
 
   const IntervalVar interval_var =
-      cp_model.NewIntervalVar(x, y, LinearExpr(z).AddConstant(2))
-          .WithName("interval");
+      cp_model.NewIntervalVar(x, y, z + 2).WithName("interval");
   LOG(INFO) << "start = " << interval_var.StartExpr()
             << ", size = " << interval_var.SizeExpr()
             << ", end = " << interval_var.EndExpr()
@@ -288,9 +287,7 @@ void OptionalIntervalSampleSat() {
   const BoolVar presence_var = cp_model.NewBoolVar().WithName("presence");
 
   const IntervalVar interval_var =
-      cp_model
-          .NewOptionalIntervalVar(x, y, LinearExpr(z).AddConstant(2),
-                                  presence_var)
+      cp_model.NewOptionalIntervalVar(x, y, z + 2, presence_var)
           .WithName("interval");
   LOG(INFO) << "start = " << interval_var.StartExpr()
             << ", size = " << interval_var.SizeExpr()
@@ -485,35 +482,29 @@ void NoOverlapSampleSat() {
   const Domain horizon(0, kHorizon);
   // Task 0, duration 2.
   const IntVar start_0 = cp_model.NewIntVar(horizon);
-  const IntVar duration_0 = cp_model.NewConstant(2);
+  const int64_t duration_0 = 2;
   const IntVar end_0 = cp_model.NewIntVar(horizon);
   const IntervalVar task_0 =
       cp_model.NewIntervalVar(start_0, duration_0, end_0);
 
   // Task 1, duration 4.
   const IntVar start_1 = cp_model.NewIntVar(horizon);
-  const IntVar duration_1 = cp_model.NewConstant(4);
+  const int64_t duration_1 = 4;
   const IntVar end_1 = cp_model.NewIntVar(horizon);
   const IntervalVar task_1 =
       cp_model.NewIntervalVar(start_1, duration_1, end_1);
 
   // Task 2, duration 3.
   const IntVar start_2 = cp_model.NewIntVar(horizon);
-  const IntVar duration_2 = cp_model.NewConstant(3);
+  const int64_t duration_2 = 3;
   const IntVar end_2 = cp_model.NewIntVar(horizon);
   const IntervalVar task_2 =
       cp_model.NewIntervalVar(start_2, duration_2, end_2);
 
   // Week ends.
-  const IntervalVar weekend_0 =
-      cp_model.NewIntervalVar(cp_model.NewConstant(5), cp_model.NewConstant(2),
-                              cp_model.NewConstant(7));
-  const IntervalVar weekend_1 =
-      cp_model.NewIntervalVar(cp_model.NewConstant(12), cp_model.NewConstant(2),
-                              cp_model.NewConstant(14));
-  const IntervalVar weekend_2 =
-      cp_model.NewIntervalVar(cp_model.NewConstant(19), cp_model.NewConstant(2),
-                              cp_model.NewConstant(21));
+  const IntervalVar weekend_0 = cp_model.NewIntervalVar(5, 2, 7);
+  const IntervalVar weekend_1 = cp_model.NewIntervalVar(12, 2, 14);
+  const IntervalVar weekend_2 = cp_model.NewIntervalVar(19, 2, 21);
 
   // No Overlap constraint.
   cp_model.AddNoOverlap(
@@ -904,7 +895,7 @@ void RankingSampleSat() {
     for (int i = 0; i < num_tasks; ++i) {
       LinearExpr sum_of_predecessors(-1);
       for (int j = 0; j < num_tasks; ++j) {
-        sum_of_predecessors.AddVar(precedences[j][i]);
+        sum_of_predecessors += precedences[j][i];
       }
       cp_model.AddEquality(ranks[i], sum_of_predecessors);
     }
@@ -921,7 +912,7 @@ void RankingSampleSat() {
 
   for (int t = 0; t < kNumTasks; ++t) {
     const IntVar start = cp_model.NewIntVar(horizon);
-    const IntVar duration = cp_model.NewConstant(t + 1);
+    const int64_t duration = t + 1;
     const IntVar end = cp_model.NewIntVar(horizon);
     const BoolVar presence =
         t < kNumTasks / 2 ? cp_model.TrueVar() : cp_model.NewBoolVar();
@@ -953,10 +944,9 @@ void RankingSampleSat() {
 
   // Create objective: minimize 2 * makespan - 7 * sum of presences.
   // That is you gain 7 by interval performed, but you pay 2 by day of delays.
-  LinearExpr objective;
-  objective.AddTerm(makespan, 2);
+  LinearExpr objective = 2 * makespan;
   for (int t = 0; t < kNumTasks; ++t) {
-    objective.AddTerm(presences[t], -7);
+    objective -= 7 * presences[t];
   }
   cp_model.Minimize(objective);
 

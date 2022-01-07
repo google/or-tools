@@ -104,9 +104,7 @@ void SetEnforcementLiteralToFalse(const ConstraintProto& ct,
 
 // Here we simply assign all non-fixed variable to a feasible value. Which
 // should always exists by construction.
-void PostsolveLinear(const ConstraintProto& ct,
-                     const std::vector<bool>& prefer_lower_value,
-                     std::vector<Domain>* domains) {
+void PostsolveLinear(const ConstraintProto& ct, std::vector<Domain>* domains) {
   int64_t fixed_activity = 0;
   const int size = ct.linear().vars().size();
   std::vector<int> free_vars;
@@ -142,8 +140,7 @@ void PostsolveLinear(const ConstraintProto& ct,
       SetEnforcementLiteralToFalse(ct, domains);
       return;
     }
-    const int64_t value = prefer_lower_value[var] ? domain.Min() : domain.Max();
-    (*domains)[var] = Domain(value);
+    (*domains)[var] = Domain(domain.SmallestValue());
     return;
   }
 
@@ -180,7 +177,7 @@ void PostsolveLinear(const ConstraintProto& ct,
     // case, so if this fail, it might indicate an issue here and not in the
     // presolve/solver code.
     CHECK(!domain.IsEmpty()) << ct.ShortDebugString();
-    const int64_t value = prefer_lower_value[var] ? domain.Min() : domain.Max();
+    const int64_t value = domain.SmallestValue();
     (*domains)[var] = Domain(value);
 
     fixed_activity += coeff * value;
@@ -188,34 +185,35 @@ void PostsolveLinear(const ConstraintProto& ct,
   DCHECK(initial_rhs.Contains(fixed_activity));
 }
 
-// We assign any non fixed lhs variables to their minimum value. Then we assign
-// the target to the max. This should always be feasible.
-//
-// Note(user): Our heuristic is not feasible if x = max(-x, ...) but we made
-// sure we don't output such int_max here. Alternatively we could probably fix
-// the code here.
-void PostsolveIntMax(const ConstraintProto& ct, std::vector<Domain>* domains) {
-  int64_t m = std::numeric_limits<int64_t>::min();
-  for (const int ref : ct.int_max().vars()) {
-    const int var = PositiveRef(ref);
-    if (!(*domains)[var].IsFixed()) {
-      // Assign to minimum value.
-      const int64_t value =
-          RefIsPositive(ref) ? (*domains)[var].Min() : (*domains)[var].Max();
-      (*domains)[var] = Domain(value);
-    }
+namespace {
 
-    const int64_t value = (*domains)[var].FixedValue();
-    m = std::max(m, RefIsPositive(ref) ? value : -value);
+int64_t EvaluateLinearExpression(const LinearExpressionProto& expr,
+                                 const std::vector<Domain>& domains) {
+  int64_t value = expr.offset();
+  for (int i = 0; i < expr.vars_size(); ++i) {
+    const int ref = expr.vars(i);
+    const int64_t increment =
+        domains[PositiveRef(expr.vars(i))].FixedValue() * expr.coeffs(i);
+    value += RefIsPositive(ref) ? increment : -increment;
   }
-  const int target_ref = ct.int_max().target();
+  return value;
+}
+
+}  // namespace
+
+// Compute the max of each expression, and assign it to the target expr (which
+// must be of the form +ref or -ref);
+// We only support post-solving the case were the target is unassigned,
+// but everything else is fixed.
+void PostsolveLinMax(const ConstraintProto& ct, std::vector<Domain>* domains) {
+  int64_t max_value = std::numeric_limits<int64_t>::min();
+  for (const LinearExpressionProto& expr : ct.lin_max().exprs()) {
+    max_value = std::max(max_value, EvaluateLinearExpression(expr, *domains));
+  }
+  const int target_ref = GetSingleRefFromExpression(ct.lin_max().target());
   const int target_var = PositiveRef(target_ref);
-  if (RefIsPositive(target_ref)) {
-    (*domains)[target_var] = (*domains)[target_var].IntersectionWith(Domain(m));
-  } else {
-    (*domains)[target_var] =
-        (*domains)[target_var].IntersectionWith(Domain(-m));
-  }
+  (*domains)[target_var] = (*domains)[target_var].IntersectionWith(
+      Domain(RefIsPositive(target_ref) ? max_value : -max_value));
   CHECK(!(*domains)[target_var].IsEmpty());
 }
 
@@ -242,18 +240,35 @@ void PostsolveElement(const ConstraintProto& ct, std::vector<Domain>* domains) {
     }
   }
 
-  // Deal with fixed index (and constant vars).
+  // Deal with fixed index.
   if ((*domains)[index_var].IsFixed()) {
     const int64_t index_var_value = (*domains)[index_var].FixedValue();
     const int selected_ref = ct.element().vars(
         RefIsPositive(index_ref) ? index_var_value : -index_var_value);
     const int selected_var = PositiveRef(selected_ref);
-    const int64_t selected_value = (*domains)[selected_var].FixedValue();
-    (*domains)[target_var] = (*domains)[target_var].IntersectionWith(
-        Domain(RefIsPositive(target_ref) == RefIsPositive(selected_ref)
-                   ? selected_value
-                   : -selected_value));
-    DCHECK(!(*domains)[target_var].IsEmpty());
+    if ((*domains)[selected_var].IsFixed()) {
+      const int64_t selected_value = (*domains)[selected_var].FixedValue();
+      (*domains)[target_var] = (*domains)[target_var].IntersectionWith(
+          Domain(RefIsPositive(target_ref) == RefIsPositive(selected_ref)
+                     ? selected_value
+                     : -selected_value));
+      DCHECK(!(*domains)[target_var].IsEmpty());
+    } else {
+      const bool same_sign =
+          (selected_var == selected_ref) == (target_var == target_ref);
+      const Domain target_domain = (*domains)[target_var];
+      const Domain selected_domain = same_sign
+                                         ? (*domains)[selected_var]
+                                         : (*domains)[selected_var].Negation();
+      const Domain final = target_domain.IntersectionWith(selected_domain);
+      const int64_t value = final.SmallestValue();
+      (*domains)[target_var] =
+          (*domains)[target_var].IntersectionWith(Domain(value));
+      (*domains)[selected_var] = (*domains)[selected_var].IntersectionWith(
+          Domain(same_sign ? value : -value));
+      DCHECK(!(*domains)[target_var].IsEmpty());
+      DCHECK(!(*domains)[selected_var].IsEmpty());
+    }
     return;
   }
 
@@ -289,52 +304,21 @@ void PostsolveElement(const ConstraintProto& ct, std::vector<Domain>* domains) {
 void PostsolveResponse(const int64_t num_variables_in_original_model,
                        const CpModelProto& mapping_proto,
                        const std::vector<int>& postsolve_mapping,
-                       CpSolverResponse* response) {
-  // Map back the sufficient assumptions for infeasibility.
-  for (int& ref :
-       *(response->mutable_sufficient_assumptions_for_infeasibility())) {
-    ref = RefIsPositive(ref) ? postsolve_mapping[ref]
-                             : NegatedRef(postsolve_mapping[PositiveRef(ref)]);
-  }
-
-  // Abort if no solution or something is wrong.
-  if (response->status() != CpSolverStatus::FEASIBLE &&
-      response->status() != CpSolverStatus::OPTIMAL) {
-    return;
-  }
-  if (response->solution_size() != postsolve_mapping.size()) return;
+                       std::vector<int64_t>* solution) {
+  CHECK_EQ(solution->size(), postsolve_mapping.size());
 
   // Read the initial variable domains, either from the fixed solution of the
   // presolved problems or from the mapping model.
   std::vector<Domain> domains(mapping_proto.variables_size());
   for (int i = 0; i < postsolve_mapping.size(); ++i) {
     CHECK_LE(postsolve_mapping[i], domains.size());
-    domains[postsolve_mapping[i]] = Domain(response->solution(i));
+    domains[postsolve_mapping[i]] = Domain((*solution)[i]);
   }
   for (int i = 0; i < domains.size(); ++i) {
     if (domains[i].IsEmpty()) {
       domains[i] = ReadDomainFromProto(mapping_proto.variables(i));
     }
     CHECK(!domains[i].IsEmpty());
-  }
-
-  // Some free variable should be fixed towards their good objective direction.
-  //
-  // TODO(user): currently the objective is not part of the mapping_proto, so
-  // this shouldn't matter for our current presolve reduction.
-  CHECK(!mapping_proto.has_objective());
-  std::vector<bool> prefer_lower_value(domains.size(), true);
-  if (mapping_proto.has_objective()) {
-    const int size = mapping_proto.objective().vars().size();
-    for (int i = 0; i < size; ++i) {
-      int var = mapping_proto.objective().vars(i);
-      int64_t coeff = mapping_proto.objective().coeffs(i);
-      if (!RefIsPositive(var)) {
-        var = PositiveRef(var);
-        coeff = -coeff;
-      }
-      prefer_lower_value[i] = (coeff >= 0);
-    }
   }
 
   // Process the constraints in reverse order.
@@ -365,10 +349,10 @@ void PostsolveResponse(const int64_t num_variables_in_original_model,
         PostsolveExactlyOne(ct, &domains);
         break;
       case ConstraintProto::kLinear:
-        PostsolveLinear(ct, prefer_lower_value, &domains);
+        PostsolveLinear(ct, &domains);
         break;
-      case ConstraintProto::kIntMax:
-        PostsolveIntMax(ct, &domains);
+      case ConstraintProto::kLinMax:
+        PostsolveLinMax(ct, &domains);
         break;
       case ConstraintProto::kElement:
         PostsolveElement(ct, &domains);
@@ -380,15 +364,12 @@ void PostsolveResponse(const int64_t num_variables_in_original_model,
     }
   }
 
-  // Fill the response. Maybe fix some still unfixed variable.
-  response->mutable_solution()->Clear();
+  // Fill the response.
+  // Maybe fix some still unfixed variable.
+  solution->clear();
   CHECK_LE(num_variables_in_original_model, domains.size());
   for (int i = 0; i < num_variables_in_original_model; ++i) {
-    if (prefer_lower_value[i]) {
-      response->add_solution(domains[i].Min());
-    } else {
-      response->add_solution(domains[i].Max());
-    }
+    solution->push_back(domains[i].SmallestValue());
   }
 }
 

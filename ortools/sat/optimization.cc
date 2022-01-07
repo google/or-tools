@@ -25,6 +25,7 @@
 #include <string>
 #include <utility>
 
+#include "absl/random/bit_gen_ref.h"
 #include "absl/random/random.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
@@ -39,7 +40,6 @@
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #endif  // __PORTABLE_PLATFORM__
-#include "ortools/base/random.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/boolean_problem.h"
 #include "ortools/sat/encoding.h"
@@ -761,14 +761,12 @@ SatSolver::Status SolveWithWPM1(LogBehavior log,
   }
 }
 
-SatSolver::Status SolveWithRandomParameters(LogBehavior log,
-                                            const LinearBooleanProblem& problem,
-                                            int num_times, SatSolver* solver,
-                                            std::vector<bool>* solution) {
+SatSolver::Status SolveWithRandomParameters(
+    LogBehavior log, const LinearBooleanProblem& problem, int num_times,
+    absl::BitGenRef random, SatSolver* solver, std::vector<bool>* solution) {
   Logger logger(log);
   const SatParameters initial_parameters = solver->parameters();
 
-  MTRandom random("A random seed.");
   SatParameters parameters = initial_parameters;
   TimeLimit time_limit(parameters.max_time_in_seconds());
 
@@ -782,7 +780,7 @@ SatSolver::Status SolveWithRandomParameters(LogBehavior log,
   Coefficient best(min_seen);
   for (int i = 0; i < num_times; ++i) {
     solver->Backtrack(0);
-    RandomizeDecisionHeuristic(&random, &parameters);
+    RandomizeDecisionHeuristic(random, &parameters);
 
     parameters.set_max_number_of_conflicts(max_number_of_conflicts);
     parameters.set_max_time_in_seconds(time_limit.GetTimeLeft());

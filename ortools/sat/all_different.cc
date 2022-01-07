@@ -65,11 +65,27 @@ std::function<void(Model*)> AllDifferentBinary(
 }
 
 std::function<void(Model*)> AllDifferentOnBounds(
+    const std::vector<AffineExpression>& expressions) {
+  return [=](Model* model) {
+    if (expressions.empty()) return;
+    auto* constraint = new AllDifferentBoundsPropagator(
+        expressions, model->GetOrCreate<IntegerTrail>());
+    constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
+    model->TakeOwnership(constraint);
+  };
+}
+
+std::function<void(Model*)> AllDifferentOnBounds(
     const std::vector<IntegerVariable>& vars) {
   return [=](Model* model) {
     if (vars.empty()) return;
+    std::vector<AffineExpression> expressions;
+    expressions.reserve(vars.size());
+    for (const IntegerVariable var : vars) {
+      expressions.push_back(AffineExpression(var));
+    }
     auto* constraint = new AllDifferentBoundsPropagator(
-        vars, model->GetOrCreate<IntegerTrail>());
+        expressions, model->GetOrCreate<IntegerTrail>());
     constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(constraint);
   };
@@ -418,30 +434,32 @@ bool AllDifferentConstraint::Propagate() {
 }
 
 AllDifferentBoundsPropagator::AllDifferentBoundsPropagator(
-    const std::vector<IntegerVariable>& vars, IntegerTrail* integer_trail)
+    const std::vector<AffineExpression>& expressions,
+    IntegerTrail* integer_trail)
     : integer_trail_(integer_trail) {
-  CHECK(!vars.empty());
+  CHECK(!expressions.empty());
 
   // We need +2 for sentinels.
-  const int capacity = vars.size() + 2;
+  const int capacity = expressions.size() + 2;
   index_to_start_index_.resize(capacity);
   index_to_end_index_.resize(capacity);
-  index_to_var_.resize(capacity, kNoIntegerVariable);
+  index_is_present_.resize(capacity, false);
+  index_to_expr_.resize(capacity, kNoIntegerVariable);
 
-  for (int i = 0; i < vars.size(); ++i) {
-    vars_.push_back({vars[i]});
-    negated_vars_.push_back({NegationOf(vars[i])});
+  for (int i = 0; i < expressions.size(); ++i) {
+    bounds_.push_back({expressions[i]});
+    negated_bounds_.push_back({expressions[i].Negated()});
   }
 }
 
 bool AllDifferentBoundsPropagator::Propagate() {
   if (!PropagateLowerBounds()) return false;
 
-  // Note that it is not required to swap back vars_ and negated_vars_.
+  // Note that it is not required to swap back bounds_ and negated_bounds_.
   // TODO(user): investigate the impact.
-  std::swap(vars_, negated_vars_);
+  std::swap(bounds_, negated_bounds_);
   const bool result = PropagateLowerBounds();
-  std::swap(vars_, negated_vars_);
+  std::swap(bounds_, negated_bounds_);
   return result;
 }
 
@@ -450,9 +468,9 @@ void AllDifferentBoundsPropagator::FillHallReason(IntegerValue hall_lb,
   integer_reason_.clear();
   const int limit = GetIndex(hall_ub);
   for (int i = GetIndex(hall_lb); i <= limit; ++i) {
-    const IntegerVariable var = index_to_var_[i];
-    integer_reason_.push_back(IntegerLiteral::GreaterOrEqual(var, hall_lb));
-    integer_reason_.push_back(IntegerLiteral::LowerOrEqual(var, hall_ub));
+    const AffineExpression expr = index_to_expr_[i];
+    integer_reason_.push_back(expr.GreaterOrEqual(hall_lb));
+    integer_reason_.push_back(expr.LowerOrEqual(hall_ub));
   }
 }
 
@@ -477,24 +495,24 @@ int AllDifferentBoundsPropagator::FindStartIndexAndCompressPath(int index) {
 
 bool AllDifferentBoundsPropagator::PropagateLowerBounds() {
   // Start by filling the cached bounds and sorting by increasing lb.
-  for (VarValue& entry : vars_) {
-    entry.lb = integer_trail_->LowerBound(entry.var);
-    entry.ub = integer_trail_->UpperBound(entry.var);
+  for (CachedBounds& entry : bounds_) {
+    entry.lb = integer_trail_->LowerBound(entry.expr);
+    entry.ub = integer_trail_->UpperBound(entry.expr);
   }
-  IncrementalSort(vars_.begin(), vars_.end(),
-                  [](VarValue a, VarValue b) { return a.lb < b.lb; });
+  IncrementalSort(bounds_.begin(), bounds_.end(),
+                  [](CachedBounds a, CachedBounds b) { return a.lb < b.lb; });
 
-  // We will split the variable in vars sorted by lb in contiguous subset with
-  // index of the form [start, start + num_in_window).
+  // We will split the affine epressions in vars sorted by lb in contiguous
+  // subset with index of the form [start, start + num_in_window).
   int start = 0;
   int num_in_window = 1;
 
   // Minimum lower bound in the current window.
-  IntegerValue min_lb = vars_.front().lb;
+  IntegerValue min_lb = bounds_.front().lb;
 
-  const int size = vars_.size();
+  const int size = bounds_.size();
   for (int i = 1; i < size; ++i) {
-    const IntegerValue lb = vars_[i].lb;
+    const IntegerValue lb = bounds_[i].lb;
 
     // If the lower bounds of all the other variables is greater, then it can
     // never fall into a potential hall interval formed by the variable in the
@@ -506,7 +524,7 @@ bool AllDifferentBoundsPropagator::PropagateLowerBounds() {
 
     // Process the current window.
     if (num_in_window > 1) {
-      absl::Span<VarValue> window(&vars_[start], num_in_window);
+      absl::Span<CachedBounds> window(&bounds_[start], num_in_window);
       if (!PropagateLowerBoundsInternal(min_lb, window)) {
         return false;
       }
@@ -520,7 +538,7 @@ bool AllDifferentBoundsPropagator::PropagateLowerBounds() {
 
   // Take care of the last window.
   if (num_in_window > 1) {
-    absl::Span<VarValue> window(&vars_[start], num_in_window);
+    absl::Span<CachedBounds> window(&bounds_[start], num_in_window);
     return PropagateLowerBoundsInternal(min_lb, window);
   }
 
@@ -528,32 +546,32 @@ bool AllDifferentBoundsPropagator::PropagateLowerBounds() {
 }
 
 bool AllDifferentBoundsPropagator::PropagateLowerBoundsInternal(
-    IntegerValue min_lb, absl::Span<VarValue> vars) {
+    IntegerValue min_lb, absl::Span<CachedBounds> bounds) {
   hall_starts_.clear();
   hall_ends_.clear();
 
-  // All cached lb in vars will be in [min_lb, min_lb + vars_.size()).
+  // All cached lb in bounds will be in [min_lb, min_lb + bounds_.size()).
   // Make sure we change our base_ so that GetIndex() fit in our buffers.
   base_ = min_lb - IntegerValue(1);
 
-  // Sparse cleaning of value_to_nodes_.
+  // Sparse cleaning of index_is_present_.
   for (const int i : indices_to_clear_) {
-    index_to_var_[i] = kNoIntegerVariable;
+    index_is_present_[i] = false;
   }
   indices_to_clear_.clear();
 
-  // Sort vars by increasing ub.
-  std::sort(vars.begin(), vars.end(),
-            [](VarValue a, VarValue b) { return a.ub < b.ub; });
-  for (const VarValue entry : vars) {
-    const IntegerVariable var = entry.var;
+  // Sort bounds by increasing ub.
+  std::sort(bounds.begin(), bounds.end(),
+            [](CachedBounds a, CachedBounds b) { return a.ub < b.ub; });
+  for (const CachedBounds entry : bounds) {
+    const AffineExpression expr = entry.expr;
 
     // Note that it is important to use the cache to make sure GetIndex() is
     // not out of bound in case integer_trail_->LowerBound() changed when we
     // pushed something.
     const IntegerValue lb = entry.lb;
     const int lb_index = GetIndex(lb);
-    const bool value_is_covered = PointIsPresent(lb_index);
+    const bool value_is_covered = index_is_present_[lb_index];
 
     // Check if lb is in an Hall interval, and push it if this is the case.
     if (value_is_covered) {
@@ -564,10 +582,9 @@ bool AllDifferentBoundsPropagator::PropagateLowerBoundsInternal(
         const IntegerValue hs = hall_starts_[hall_index];
         const IntegerValue he = hall_ends_[hall_index];
         FillHallReason(hs, he);
-        integer_reason_.push_back(IntegerLiteral::GreaterOrEqual(var, hs));
-        if (!integer_trail_->Enqueue(
-                IntegerLiteral::GreaterOrEqual(var, he + 1),
-                /*literal_reason=*/{}, integer_reason_)) {
+        integer_reason_.push_back(expr.GreaterOrEqual(hs));
+        if (!integer_trail_->SafeEnqueue(expr.GreaterOrEqual(he + 1),
+                                         integer_reason_)) {
           return false;
         }
       }
@@ -586,11 +603,11 @@ bool AllDifferentBoundsPropagator::PropagateLowerBoundsInternal(
       new_index = index_to_end_index_[start_index] + 1;
       end_index = new_index;
     } else {
-      if (PointIsPresent(new_index - 1)) {
+      if (index_is_present_[new_index - 1]) {
         start_index = FindStartIndexAndCompressPath(new_index - 1);
       }
     }
-    if (PointIsPresent(new_index + 1)) {
+    if (index_is_present_[new_index + 1]) {
       end_index = index_to_end_index_[new_index + 1];
       index_to_start_index_[new_index + 1] = start_index;
     }
@@ -601,17 +618,19 @@ bool AllDifferentBoundsPropagator::PropagateLowerBoundsInternal(
     // This is the only place where we "add" a new node.
     {
       index_to_start_index_[new_index] = start_index;
-      index_to_var_[new_index] = var;
+      index_to_expr_[new_index] = expr;
+      index_is_present_[new_index] = true;
       indices_to_clear_.push_back(new_index);
     }
 
-    // We cannot have a conflict, because it should have beend detected before
-    // by pushing an interval lower bound past its upper bound.
-    //
-    // TODO(user): Not 100% clear since pushing can have side-effect, maybe we
-    // should just report the conflict if it happens!
+    // In most situation, we cannot have a conflict now, because it should have
+    // been detected before by pushing an interval lower bound past its upper
+    // bound. However, it is possible that when we push one bound, other bounds
+    // change. So if the upper bound is smaller than the current interval end,
+    // we abort so that the conflit reason will be better on the next call to
+    // the propagator.
     const IntegerValue end = GetValue(end_index);
-    DCHECK_LE(end, integer_trail_->UpperBound(var));
+    if (end > integer_trail_->UpperBound(expr)) return true;
 
     // If we have a new Hall interval, add it to the set. Note that it will
     // always be last, and if it overlaps some previous Hall intervals, it
@@ -637,8 +656,8 @@ bool AllDifferentBoundsPropagator::PropagateLowerBoundsInternal(
 void AllDifferentBoundsPropagator::RegisterWith(
     GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
-  for (const VarValue entry : vars_) {
-    watcher->WatchIntegerVariable(entry.var, id);
+  for (const CachedBounds& entry : bounds_) {
+    watcher->WatchAffineExpression(entry.expr, id);
   }
   watcher->NotifyThatPropagatorMayNotReachFixedPointInOnePass(id);
 }

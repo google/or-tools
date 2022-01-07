@@ -415,15 +415,15 @@ CutGenerator CreateKnapsackCoverCutGenerator(
     const std::vector<IntegerVariable>& vars, Model* model);
 
 // A cut generator for z = x * y (x and y >= 0).
-CutGenerator CreatePositiveMultiplicationCutGenerator(IntegerVariable z,
-                                                      IntegerVariable x,
-                                                      IntegerVariable y,
+CutGenerator CreatePositiveMultiplicationCutGenerator(AffineExpression z,
+                                                      AffineExpression x,
+                                                      AffineExpression y,
                                                       int linearization_level,
                                                       Model* model);
 
 // A cut generator for y = x ^ 2 (x >= 0).
 // It will dynamically add a linear inequality to push y closer to the parabola.
-CutGenerator CreateSquareCutGenerator(IntegerVariable y, IntegerVariable x,
+CutGenerator CreateSquareCutGenerator(AffineExpression y, AffineExpression x,
                                       int linearization_level, Model* model);
 
 // A cut generator for all_diff(xi). Let the united domain of all xi be D. Sum
@@ -433,7 +433,7 @@ CutGenerator CreateSquareCutGenerator(IntegerVariable y, IntegerVariable x,
 // cuts of the form described above if they are violated by lp solution. Note
 // that all the fixed variables are ignored while generating cuts.
 CutGenerator CreateAllDifferentCutGenerator(
-    const std::vector<IntegerVariable>& vars, Model* model);
+    const std::vector<AffineExpression>& exprs, Model* model);
 
 // Consider the Lin Max constraint with d expressions and n variables in the
 // form: target = max {exprs[k] = Sum (wki * xi + bk)}. k in {1,..,d}.

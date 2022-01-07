@@ -602,6 +602,7 @@ test_python_algorithms_samples: \
 
 .PHONY: test_python_constraint_solver_samples # Run all Python CP Samples (located in ortools/constraint_solver/samples)
 test_python_constraint_solver_samples: \
+ rpy_nqueens_cp \
  rpy_simple_cp_program \
  rpy_simple_routing_program \
  rpy_tsp \
@@ -662,6 +663,7 @@ test_python_sat_samples: \
  rpy_literal_sample_sat \
  rpy_minimal_jobshop_sat \
  rpy_no_overlap_sample_sat \
+ rpy_nqueens_sat \
  rpy_nurses_sat \
  rpy_optional_interval_sample_sat \
  rpy_rabbits_and_pheasants_sat \
@@ -856,7 +858,6 @@ test_python_python: \
  rpy_linear_assignment_api \
  rpy_linear_programming \
  rpy_magic_sequence_distribute \
- rpy_nqueens_sat \
  rpy_pyflow_example \
  rpy_reallocate_sat \
  rpy_rcpsp_sat \
@@ -1037,7 +1038,7 @@ endif
 .PHONY: test_package_python # Test Python "ortools" wheel package
 test_package_python: package_python
 	-$(DELREC) $(PYPI_ARCHIVE_TEMP_DIR)$Svenv
-	$(PYTHON_EXECUTABLE) -m venv $(PYPI_ARCHIVE_TEMP_DIR)$Svenv
+	$(PYTHON_EXECUTABLE) -m venv --system-site-packages $(PYPI_ARCHIVE_TEMP_DIR)$Svenv
 	$(COPY) test.py.in $(PYPI_ARCHIVE_TEMP_DIR)$Svenv$Stest.py
 	$(COPY) ortools$Salgorithms$Ssamples$Ssimple_knapsack_program.py $(PYPI_ARCHIVE_TEMP_DIR)$Svenv
 	$(COPY) ortools$Sgraph$Ssamples$Ssimple_max_flow_program.py $(PYPI_ARCHIVE_TEMP_DIR)$Svenv
@@ -1050,6 +1051,7 @@ test_package_python: package_python
 	$(COPY) ortools$Sconstraint_solver$Ssamples$Scvrptw_break.py $(PYPI_ARCHIVE_TEMP_DIR)$Svenv
 ifneq ($(SYSTEM),win)
 	$(PYPI_ARCHIVE_TEMP_DIR)/venv/bin/python -m pip install $(PYPI_ARCHIVE_TEMP_DIR)/ortools/dist/*.whl
+	$(PYPI_ARCHIVE_TEMP_DIR)/venv/bin/python -m pip install pandas matplotlib
 	$(PYPI_ARCHIVE_TEMP_DIR)/venv/bin/python $(PYPI_ARCHIVE_TEMP_DIR)/venv/test.py
 	$(PYPI_ARCHIVE_TEMP_DIR)/venv/bin/python $(PYPI_ARCHIVE_TEMP_DIR)/venv/simple_knapsack_program.py
 	$(PYPI_ARCHIVE_TEMP_DIR)/venv/bin/python $(PYPI_ARCHIVE_TEMP_DIR)/venv/simple_max_flow_program.py
@@ -1064,6 +1066,7 @@ else
 # wildcar not working on windows:  i.e. `pip install *.whl`:
 # *.whl is not a valid wheel filename.
 	$(PYPI_ARCHIVE_TEMP_DIR)\venv\Scripts\python -m pip install --find-links=$(PYPI_ARCHIVE_TEMP_DIR)\ortools\dist ortools
+	$(PYPI_ARCHIVE_TEMP_DIR)\venv\Scripts\python -m pip install pandas matplotlib
 	$(PYPI_ARCHIVE_TEMP_DIR)\venv\Scripts\python $(PYPI_ARCHIVE_TEMP_DIR)\venv\test.py
 	$(PYPI_ARCHIVE_TEMP_DIR)\venv\Scripts\python $(PYPI_ARCHIVE_TEMP_DIR)\venv\simple_knapsack_program.py
 	$(PYPI_ARCHIVE_TEMP_DIR)\venv\Scripts\python $(PYPI_ARCHIVE_TEMP_DIR)\venv\simple_max_flow_program.py

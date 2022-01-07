@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.1</span>
+   &#160;<span id="projectnumber">9.2</span>
    </div>
   </td>
  </tr>
@@ -100,12 +100,12 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1sat_1_1_i
 <p >Optionally, a presence literal can be added to this constraint. This presence literal is understood by the same constraints. These constraints ignore interval variables with precence literals assigned to false. Conversely, these constraints will also set these presence literals to false if they cannot fit these intervals into the schedule.</p>
 <p >It can only be constructed via <code><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#aefeb74012f8af6c901d0fa45cb75b02e" title="Creates an interval variable from 3 affine expressions.">CpModelBuilder.NewIntervalVar()</a></code>. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00341">341</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00475">475</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:abc65bca287dcaf1b40050c24f3a8a917"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_interval_var.html#abc65bca287dcaf1b40050c24f3a8a917">IntervalVar</a> ()</td></tr>
-<tr class="memdesc:abc65bca287dcaf1b40050c24f3a8a917"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default ctor.  <a href="classoperations__research_1_1sat_1_1_interval_var.html#abc65bca287dcaf1b40050c24f3a8a917">More...</a><br /></td></tr>
+<tr class="memdesc:abc65bca287dcaf1b40050c24f3a8a917"><td class="mdescLeft">&#160;</td><td class="mdescRight">A default constructed <a class="el" href="classoperations__research_1_1sat_1_1_interval_var.html" title="Represents a Interval variable.">IntervalVar</a> can be used to mean not defined yet.  <a href="classoperations__research_1_1sat_1_1_interval_var.html#abc65bca287dcaf1b40050c24f3a8a917">More...</a><br /></td></tr>
 <tr class="separator:abc65bca287dcaf1b40050c24f3a8a917"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8b419aa8e100f7d6dc404b1e591443ce"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_interval_var.html">IntervalVar</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_interval_var.html#a8b419aa8e100f7d6dc404b1e591443ce">WithName</a> (const std::string &amp;<a class="el" href="gscip__solver_8cc.html#a82e2a7e0f28d620da677073b6b24574b">name</a>)</td></tr>
 <tr class="memdesc:a8b419aa8e100f7d6dc404b1e591443ce"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the name of the variable.  <a href="classoperations__research_1_1sat_1_1_interval_var.html#a8b419aa8e100f7d6dc404b1e591443ce">More...</a><br /></td></tr>
@@ -134,12 +134,6 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a764be64f3029f8b8e23511061d8de355"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_interval_var.html#a764be64f3029f8b8e23511061d8de355">DebugString</a> () const</td></tr>
 <tr class="memdesc:a764be64f3029f8b8e23511061d8de355"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a debug string.  <a href="classoperations__research_1_1sat_1_1_interval_var.html#a764be64f3029f8b8e23511061d8de355">More...</a><br /></td></tr>
 <tr class="separator:a764be64f3029f8b8e23511061d8de355"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a74fcd7b0a528758df5a92aad1d562497"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classoperations__research_1_1sat_1_1_interval_constraint_proto.html">IntervalConstraintProto</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_interval_var.html#a74fcd7b0a528758df5a92aad1d562497">Proto</a> () const</td></tr>
-<tr class="memdesc:a74fcd7b0a528758df5a92aad1d562497"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the underlying protobuf object (useful for testing).  <a href="classoperations__research_1_1sat_1_1_interval_var.html#a74fcd7b0a528758df5a92aad1d562497">More...</a><br /></td></tr>
-<tr class="separator:a74fcd7b0a528758df5a92aad1d562497"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa858f77edef674095fe8ad0866b33fd9"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_interval_constraint_proto.html">IntervalConstraintProto</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_interval_var.html#aa858f77edef674095fe8ad0866b33fd9">MutableProto</a> () const</td></tr>
-<tr class="memdesc:aa858f77edef674095fe8ad0866b33fd9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the mutable underlying protobuf object (useful for model edition).  <a href="classoperations__research_1_1sat_1_1_interval_var.html#aa858f77edef674095fe8ad0866b33fd9">More...</a><br /></td></tr>
-<tr class="separator:aa858f77edef674095fe8ad0866b33fd9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acca41811e8aaab0112b987749c0ecb93"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_interval_var.html#acca41811e8aaab0112b987749c0ecb93">index</a> () const</td></tr>
 <tr class="memdesc:acca41811e8aaab0112b987749c0ecb93"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the index of the interval constraint in the model.  <a href="classoperations__research_1_1sat_1_1_interval_var.html#acca41811e8aaab0112b987749c0ecb93">More...</a><br /></td></tr>
 <tr class="separator:acca41811e8aaab0112b987749c0ecb93"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -160,9 +154,10 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Default ctor. </p>
+<p>A default constructed <a class="el" href="classoperations__research_1_1sat_1_1_interval_var.html" title="Represents a Interval variable.">IntervalVar</a> can be used to mean not defined yet. </p>
+<p >However, it shouldn't be passed to any of the functions in this file. Doing so will crash in debug mode and will result in an invalid model in opt mode. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00356">356</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00643">643</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
 
 </div>
 </div>
@@ -184,7 +179,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns a debug string. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00387">387</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00688">688</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
 
 </div>
 </div>
@@ -206,7 +201,7 @@ Public Member Functions</h2></td></tr>
 <p>Returns the end linear expression. </p>
 <p >Note that this rebuilds the expression each time this method is called. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00374">374</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00669">669</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
 
 </div>
 </div>
@@ -235,36 +230,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns the index of the interval constraint in the model. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00395">395</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
-
-</div>
-</div>
-<a id="aa858f77edef674095fe8ad0866b33fd9" name="aa858f77edef674095fe8ad0866b33fd9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa858f77edef674095fe8ad0866b33fd9">&#9670;&nbsp;</a></span>MutableProto()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_interval_constraint_proto.html">IntervalConstraintProto</a> * MutableProto </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Returns the mutable underlying protobuf object (useful for model edition). </p>
-
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00390">390</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00522">522</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
@@ -285,7 +251,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns the name of the interval (or the empty string if not set). </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00383">383</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00683">683</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
 
 </div>
 </div>
@@ -315,7 +281,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Difference test with another interval variable. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00377">377</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00514">514</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
@@ -345,7 +311,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Equality test with another interval variable. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00372">372</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00509">509</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
@@ -367,36 +333,7 @@ Public Member Functions</h2></td></tr>
 <p>Returns a <a class="el" href="classoperations__research_1_1sat_1_1_bool_var.html" title="A Boolean variable.">BoolVar</a> indicating the presence of this interval. </p>
 <p >It returns <code><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a38d802efced63979cac9c029f748b2df" title="Creates an always true Boolean variable.">CpModelBuilder.TrueVar()</a></code> if the interval is not optional. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00378">378</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
-
-</div>
-</div>
-<a id="a74fcd7b0a528758df5a92aad1d562497" name="a74fcd7b0a528758df5a92aad1d562497"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a74fcd7b0a528758df5a92aad1d562497">&#9670;&nbsp;</a></span>Proto()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">const <a class="el" href="classoperations__research_1_1sat_1_1_interval_constraint_proto.html">IntervalConstraintProto</a> &amp; Proto </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Returns the underlying protobuf object (useful for testing). </p>
-
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00385">385</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00676">676</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
 
 </div>
 </div>
@@ -418,7 +355,7 @@ Public Member Functions</h2></td></tr>
 <p>Returns the size linear expression. </p>
 <p >Note that this rebuilds the expression each time this method is called. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00370">370</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00662">662</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
 
 </div>
 </div>
@@ -440,7 +377,7 @@ Public Member Functions</h2></td></tr>
 <p>Returns the start linear expression. </p>
 <p >Note that this rebuilds the expression each time this method is called. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00366">366</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00655">655</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
 
 </div>
 </div>
@@ -462,7 +399,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Sets the name of the variable. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00361">361</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00648">648</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
 
 </div>
 </div>

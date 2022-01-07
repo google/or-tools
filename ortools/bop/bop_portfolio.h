@@ -25,6 +25,7 @@
 #include "ortools/glop/lp_solver.h"
 #include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/util/random_engine.h"
 #include "ortools/util/stats.h"
 #include "ortools/util/time_limit.h"
 
@@ -85,7 +86,7 @@ class PortfolioOptimizer : public BopOptimizerBase {
                         const BopParameters& parameters,
                         const BopSolverOptimizerSet& optimizer_set);
 
-  std::unique_ptr<MTRandom> random_;
+  random_engine_t random_;
   int64_t state_update_stamp_;
   BopConstraintTerms objective_terms_;
   std::unique_ptr<OptimizerSelector> selector_;

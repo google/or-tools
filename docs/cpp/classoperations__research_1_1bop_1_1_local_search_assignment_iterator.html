@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.1</span>
+   &#160;<span id="projectnumber">9.2</span>
    </div>
   </td>
  </tr>
@@ -95,12 +95,12 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1bop_1_1_l
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="bop__ls_8h_source.html#l00505">505</a> of file <a class="el" href="bop__ls_8h_source.html">bop_ls.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="bop__ls_8h_source.html#l00507">507</a> of file <a class="el" href="bop__ls_8h_source.html">bop_ls.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a4c13a1377925d2ceefaea09f0c5747ff"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1bop_1_1_local_search_assignment_iterator.html#a4c13a1377925d2ceefaea09f0c5747ff">LocalSearchAssignmentIterator</a> (const <a class="el" href="classoperations__research_1_1bop_1_1_problem_state.html">ProblemState</a> &amp;problem_state, int max_num_decisions, int max_num_broken_constraints, <a class="el" href="classoperations__research_1_1bop_1_1_sat_wrapper.html">SatWrapper</a> *sat_wrapper)</td></tr>
-<tr class="separator:a4c13a1377925d2ceefaea09f0c5747ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a80a191adadd35414e44186a3ba68eb46"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1bop_1_1_local_search_assignment_iterator.html#a80a191adadd35414e44186a3ba68eb46">LocalSearchAssignmentIterator</a> (const <a class="el" href="classoperations__research_1_1bop_1_1_problem_state.html">ProblemState</a> &amp;problem_state, int max_num_decisions, int max_num_broken_constraints, absl::BitGenRef random, <a class="el" href="classoperations__research_1_1bop_1_1_sat_wrapper.html">SatWrapper</a> *sat_wrapper)</td></tr>
+<tr class="separator:a80a191adadd35414e44186a3ba68eb46"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3910f2e32fea60320d748418ce5b263a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1bop_1_1_local_search_assignment_iterator.html#a3910f2e32fea60320d748418ce5b263a">~LocalSearchAssignmentIterator</a> ()</td></tr>
 <tr class="separator:a3910f2e32fea60320d748418ce5b263a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5fff4dd0a189641f7b3702bbb73f2bbd"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1bop_1_1_local_search_assignment_iterator.html#a5fff4dd0a189641f7b3702bbb73f2bbd">UseTranspositionTable</a> (bool v)</td></tr>
@@ -123,8 +123,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a764be64f3029f8b8e23511061d8de355"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a4c13a1377925d2ceefaea09f0c5747ff" name="a4c13a1377925d2ceefaea09f0c5747ff"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4c13a1377925d2ceefaea09f0c5747ff">&#9670;&nbsp;</a></span>LocalSearchAssignmentIterator()</h2>
+<a id="a80a191adadd35414e44186a3ba68eb46" name="a80a191adadd35414e44186a3ba68eb46"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a80a191adadd35414e44186a3ba68eb46">&#9670;&nbsp;</a></span>LocalSearchAssignmentIterator()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -150,6 +150,12 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">absl::BitGenRef&#160;</td>
+          <td class="paramname"><em>random</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype"><a class="el" href="classoperations__research_1_1bop_1_1_sat_wrapper.html">SatWrapper</a> *&#160;</td>
           <td class="paramname"><em>sat_wrapper</em>&#160;</td>
         </tr>
@@ -161,7 +167,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="bop__ls_8cc_source.html#l00679">679</a> of file <a class="el" href="bop__ls_8cc_source.html">bop_ls.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="bop__ls_8cc_source.html#l00682">682</a> of file <a class="el" href="bop__ls_8cc_source.html">bop_ls.cc</a>.</p>
 
 </div>
 </div>
@@ -180,7 +186,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="bop__ls_8cc_source.html#l00700">700</a> of file <a class="el" href="bop__ls_8cc_source.html">bop_ls.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="bop__ls_8cc_source.html#l00704">704</a> of file <a class="el" href="bop__ls_8cc_source.html">bop_ls.cc</a>.</p>
 
 </div>
 </div>
@@ -208,7 +214,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="bop__ls_8h_source.html#l00539">539</a> of file <a class="el" href="bop__ls_8h_source.html">bop_ls.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="bop__ls_8h_source.html#l00542">542</a> of file <a class="el" href="bop__ls_8h_source.html">bop_ls.h</a>.</p>
 
 </div>
 </div>
@@ -227,7 +233,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="bop__ls_8cc_source.html#l00828">828</a> of file <a class="el" href="bop__ls_8cc_source.html">bop_ls.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="bop__ls_8cc_source.html#l00832">832</a> of file <a class="el" href="bop__ls_8cc_source.html">bop_ls.cc</a>.</p>
 
 </div>
 </div>
@@ -246,7 +252,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="bop__ls_8cc_source.html#l00824">824</a> of file <a class="el" href="bop__ls_8cc_source.html">bop_ls.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="bop__ls_8cc_source.html#l00828">828</a> of file <a class="el" href="bop__ls_8cc_source.html">bop_ls.cc</a>.</p>
 
 </div>
 </div>
@@ -273,7 +279,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="bop__ls_8h_source.html#l00533">533</a> of file <a class="el" href="bop__ls_8h_source.html">bop_ls.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="bop__ls_8h_source.html#l00536">536</a> of file <a class="el" href="bop__ls_8h_source.html">bop_ls.h</a>.</p>
 
 </div>
 </div>
@@ -292,7 +298,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="bop__ls_8cc_source.html#l00764">764</a> of file <a class="el" href="bop__ls_8cc_source.html">bop_ls.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="bop__ls_8cc_source.html#l00768">768</a> of file <a class="el" href="bop__ls_8cc_source.html">bop_ls.cc</a>.</p>
 
 </div>
 </div>
@@ -312,7 +318,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="bop__ls_8cc_source.html#l00709">709</a> of file <a class="el" href="bop__ls_8cc_source.html">bop_ls.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="bop__ls_8cc_source.html#l00713">713</a> of file <a class="el" href="bop__ls_8cc_source.html">bop_ls.cc</a>.</p>
 
 </div>
 </div>
@@ -331,7 +337,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="bop__ls_8cc_source.html#l00725">725</a> of file <a class="el" href="bop__ls_8cc_source.html">bop_ls.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="bop__ls_8cc_source.html#l00729">729</a> of file <a class="el" href="bop__ls_8cc_source.html">bop_ls.cc</a>.</p>
 
 </div>
 </div>
@@ -359,7 +365,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="bop__ls_8h_source.html#l00515">515</a> of file <a class="el" href="bop__ls_8h_source.html">bop_ls.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="bop__ls_8h_source.html#l00518">518</a> of file <a class="el" href="bop__ls_8h_source.html">bop_ls.h</a>.</p>
 
 </div>
 </div>
@@ -387,7 +393,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="bop__ls_8h_source.html#l00514">514</a> of file <a class="el" href="bop__ls_8h_source.html">bop_ls.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="bop__ls_8h_source.html#l00517">517</a> of file <a class="el" href="bop__ls_8h_source.html">bop_ls.h</a>.</p>
 
 </div>
 </div>

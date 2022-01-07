@@ -85,10 +85,9 @@ SatSolver::Status SolveWithWPM1(LogBehavior log,
 // random parameters. Keep the best solution (regarding the objective) and
 // returns it in solution. The problem is assumed to be already loaded into the
 // given solver.
-SatSolver::Status SolveWithRandomParameters(LogBehavior log,
-                                            const LinearBooleanProblem& problem,
-                                            int num_times, SatSolver* solver,
-                                            std::vector<bool>* solution);
+SatSolver::Status SolveWithRandomParameters(
+    LogBehavior log, const LinearBooleanProblem& problem, int num_times,
+    absl::BitGenRef random, SatSolver* solver, std::vector<bool>* solution);
 
 // Starts by solving the decision version of the given LinearBooleanProblem and
 // then simply add a constraint to find a lower objective that the current best

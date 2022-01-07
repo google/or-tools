@@ -35,7 +35,7 @@ void SolveAndPrintIntermediateSolutionsSampleSat() {
   // [END constraints]
 
   // [START objective]
-  cp_model.Maximize(LinearExpr::ScalProd({x, y, z}, {1, 2, 3}));
+  cp_model.Maximize(x + 2 * y + 3 * z);
   // [END objective]
 
   // [START print_solution]

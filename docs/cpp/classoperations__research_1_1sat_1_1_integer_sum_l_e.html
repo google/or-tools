@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.1</span>
+   &#160;<span id="projectnumber">9.2</span>
    </div>
   </td>
  </tr>
@@ -106,6 +106,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a6ee8ed57254aec3ae99d399bae5b3736"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a79ee9e362d647b6d65cf6d38e3df216d"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_integer_sum_l_e.html#a79ee9e362d647b6d65cf6d38e3df216d">PropagateAtLevelZero</a> ()</td></tr>
 <tr class="separator:a79ee9e362d647b6d65cf6d38e3df216d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a83404baa3e4ce3beaefa9a662f627655"><td class="memItemLeft" align="right" valign="top">std::pair&lt; IntegerValue, IntegerValue &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_integer_sum_l_e.html#a83404baa3e4ce3beaefa9a662f627655">ConditionalLb</a> (<a class="el" href="structoperations__research_1_1sat_1_1_integer_literal.html">IntegerLiteral</a> integer_literal, IntegerVariable target_var) const</td></tr>
+<tr class="separator:a83404baa3e4ce3beaefa9a662f627655"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aee053ac2dc53cef048aa8e815e9443bb"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_propagator_interface.html#aee053ac2dc53cef048aa8e815e9443bb">IncrementalPropagate</a> (const std::vector&lt; int &gt; &amp;watch_indices)</td></tr>
 <tr class="separator:aee053ac2dc53cef048aa8e815e9443bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
@@ -159,6 +161,36 @@ Public Member Functions</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="a83404baa3e4ce3beaefa9a662f627655" name="a83404baa3e4ce3beaefa9a662f627655"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a83404baa3e4ce3beaefa9a662f627655">&#9670;&nbsp;</a></span>ConditionalLb()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::pair&lt; IntegerValue, IntegerValue &gt; ConditionalLb </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="structoperations__research_1_1sat_1_1_integer_literal.html">IntegerLiteral</a>&#160;</td>
+          <td class="paramname"><em>integer_literal</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">IntegerVariable&#160;</td>
+          <td class="paramname"><em>target_var</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="integer__expr_8cc_source.html#l00079">79</a> of file <a class="el" href="integer__expr_8cc_source.html">integer_expr.cc</a>.</p>
+
+</div>
+</div>
 <a id="aee053ac2dc53cef048aa8e815e9443bb" name="aee053ac2dc53cef048aa8e815e9443bb"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aee053ac2dc53cef048aa8e815e9443bb">&#9670;&nbsp;</a></span>IncrementalPropagate()</h2>
 
@@ -185,7 +217,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classoperations__research_1_1sat_1_1_circuit_propagator.html#a45321337f970685d9847db005c4b3de1">CircuitPropagator</a>, <a class="el" href="classoperations__research_1_1sat_1_1_circuit_covering_propagator.html#a45321337f970685d9847db005c4b3de1">CircuitCoveringPropagator</a>, <a class="el" href="classoperations__research_1_1sat_1_1_scheduling_constraint_helper.html#a45321337f970685d9847db005c4b3de1">SchedulingConstraintHelper</a>, and <a class="el" href="classoperations__research_1_1sat_1_1_linear_programming_constraint.html#aadd64e5df937ad4d29342ef997d6b9fc">LinearProgrammingConstraint</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01128">1128</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01196">1196</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
 
 </div>
 </div>
@@ -214,7 +246,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="classoperations__research_1_1sat_1_1_propagator_interface.html#ab355d13060fa36037afa32aa8ddbe62a">PropagatorInterface</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="integer__expr_8cc_source.html#l00079">79</a> of file <a class="el" href="integer__expr_8cc_source.html">integer_expr.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer__expr_8cc_source.html#l00134">134</a> of file <a class="el" href="integer__expr_8cc_source.html">integer_expr.cc</a>.</p>
 
 </div>
 </div>
@@ -233,7 +265,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer__expr_8cc_source.html#l00195">195</a> of file <a class="el" href="integer__expr_8cc_source.html">integer_expr.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer__expr_8cc_source.html#l00250">250</a> of file <a class="el" href="integer__expr_8cc_source.html">integer_expr.cc</a>.</p>
 
 </div>
 </div>
@@ -253,7 +285,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer__expr_8cc_source.html#l00237">237</a> of file <a class="el" href="integer__expr_8cc_source.html">integer_expr.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer__expr_8cc_source.html#l00292">292</a> of file <a class="el" href="integer__expr_8cc_source.html">integer_expr.cc</a>.</p>
 
 </div>
 </div>

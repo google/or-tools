@@ -39,6 +39,12 @@
 %rename (setFlags) operations_research::CppBridge::SetFlags;
 %rename (logGurobiSharedLibrary) operations_research::CppBridge::LoadGurobiSharedLibrary;
 
+%unignore operations_research::OrToolsVersion;
+%rename (getMajorNumber) operations_research::OrToolsVersion::MajorNumber;
+%rename (getMinorNumber) operations_research::OrToolsVersion::MinorNumber;
+%rename (getPatchNumber) operations_research::OrToolsVersion::PatchNumber;
+%rename (getVersionString) operations_research::OrToolsVersion::VersionString;
+
 %include "ortools/init/init.h"
 
 %unignoreall

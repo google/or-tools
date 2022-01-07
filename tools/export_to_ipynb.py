@@ -29,7 +29,7 @@ nbook = v4.upgrade(nbook)  # Upgrade v3 to v4
 
 print('Adding copyright cell...')
 google = '##### Copyright 2021 Google LLC.'
-nbook['cells'].append(v4.new_markdown_cell(google))
+nbook['cells'].append(v4.new_markdown_cell(source=google, id='google'))
 
 print('Adding license cell...')
 apache = '''Licensed under the Apache License, Version 2.0 (the "License");
@@ -44,11 +44,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-nbook['cells'].append(v4.new_markdown_cell(apache))
+nbook['cells'].append(v4.new_markdown_cell(source=apache, id='apache'))
 
 print('Adding Title cell...')
 basename = '# ' + os.path.basename(input_file).replace('.py', '')
-nbook['cells'].append(v4.new_markdown_cell(basename))
+nbook['cells'].append(v4.new_markdown_cell(source=basename, id='basename'))
 
 print('Adding link cell...')
 github_logo = 'https://raw.githubusercontent.com/google/or-tools/master/tools/github_32px.png'
@@ -64,15 +64,15 @@ link = f'''<table align=\"left\">
 <a href=\"{github_path}\"><img src=\"{github_logo}\"/>View source on GitHub</a>
 </td>
 </table>'''
-nbook['cells'].append(v4.new_markdown_cell(link))
+nbook['cells'].append(v4.new_markdown_cell(source=link, id='link'))
 
 print('Installing ortools cell...')
 install_doc = ('First, you must install '
                '[ortools](https://pypi.org/project/ortools/) package in this '
                'colab.')
-nbook['cells'].append(v4.new_markdown_cell(install_doc))
+nbook['cells'].append(v4.new_markdown_cell(source=install_doc, id='doc'))
 install_cmd = '!pip install ortools'
-nbook['cells'].append(v4.new_code_cell(install_cmd))
+nbook['cells'].append(v4.new_code_cell(source=install_cmd, id='install'))
 
 print('Adding code cell...')
 all_blocks = ast.parse(text).body
@@ -104,7 +104,7 @@ for c_block, s, e in zip(all_blocks, line_start, line_start[1:] + [len(lines)]):
     print('appending', c_block)
     full_text += c_text + '\n'
 
-nbook['cells'].append(v4.new_code_cell(full_text))
+nbook['cells'].append(v4.new_code_cell(source=full_text, id='code'))
 
 jsonform = v4.writes(nbook) + '\n'
 

@@ -38,6 +38,7 @@
 #include "ortools/base/recordio.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/sysinfo.h"
+#include "ortools/base/timer.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/util/tuple_set.h"
 #include "zlib.h"
@@ -2488,8 +2489,8 @@ void Solver::SetName(const PropagationBaseObject* object,
 }
 
 bool Solver::HasName(const PropagationBaseObject* const object) const {
-  return gtl::ContainsKey(propagation_object_names_,
-                          const_cast<PropagationBaseObject*>(object)) ||
+  return propagation_object_names_.contains(
+             const_cast<PropagationBaseObject*>(object)) ||
          (!object->BaseName().empty() && parameters_.name_all_variables());
 }
 
@@ -2530,6 +2531,10 @@ void PropagationBaseObject::EnqueueAll(const SimpleRevFIFO<Demon*>& demons) {
 // ---------- Decision Builder ----------
 
 std::string DecisionBuilder::DebugString() const { return "DecisionBuilder"; }
+
+std::string DecisionBuilder::GetName() const {
+  return name_.empty() ? DebugString() : name_;
+}
 
 void DecisionBuilder::AppendMonitors(
     Solver* const solver, std::vector<SearchMonitor*>* const extras) {}
@@ -3239,6 +3244,41 @@ Assignment* Solver::GetOrCreateLocalSearchState() {
   return local_search_state_.get();
 }
 
+// ----------------- ProfiledDecisionBuilder ------------
+
+ProfiledDecisionBuilder::ProfiledDecisionBuilder(DecisionBuilder* db)
+    : db_(db), name_(db_->GetName()), seconds_(0) {}
+
+Decision* ProfiledDecisionBuilder::Next(Solver* const solver) {
+  timer_.Start();
+  // In case db_->Next() fails, gathering the running time on backtrack.
+  solver->AddBacktrackAction(
+      [this](Solver* solver) {
+        if (timer_.IsRunning()) {
+          timer_.Stop();
+          seconds_ += timer_.Get();
+        }
+      },
+      true);
+  Decision* const decision = db_->Next(solver);
+  timer_.Stop();
+  seconds_ += timer_.Get();
+  return decision;
+}
+
+std::string ProfiledDecisionBuilder::DebugString() const {
+  return db_->DebugString();
+}
+
+void ProfiledDecisionBuilder::AppendMonitors(
+    Solver* const solver, std::vector<SearchMonitor*>* const extras) {
+  db_->AppendMonitors(solver, extras);
+}
+
+void ProfiledDecisionBuilder::Accept(ModelVisitor* const visitor) const {
+  db_->Accept(visitor);
+}
+
 // ----------------- Constraint class -------------------
 
 std::string Constraint::DebugString() const { return "Constraint"; }
@@ -3258,7 +3298,7 @@ void Constraint::Accept(ModelVisitor* const visitor) const {
 }
 
 bool Constraint::IsCastConstraint() const {
-  return gtl::ContainsKey(solver()->cast_constraints_, this);
+  return solver()->cast_constraints_.contains(this);
 }
 
 IntVar* Constraint::Var() { return nullptr; }

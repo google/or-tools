@@ -114,6 +114,7 @@
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/scattered_vector.h"
 #include "ortools/lp_data/sparse_row.h"
+#include "ortools/util/logging.h"
 #include "ortools/util/random_engine.h"
 #include "ortools/util/time_limit.h"
 
@@ -234,6 +235,8 @@ class RevisedSimplex {
   void ClearIntegralityScales() { integrality_scale_.clear(); }
   void SetIntegralityScale(ColIndex col, Fractional scale);
 
+  void SetLogger(SolverLogger* logger) { logger_ = logger; }
+
  private:
   struct IterationStats : public StatsGroup {
     IterationStats()
@@ -301,7 +304,7 @@ class RevisedSimplex {
   std::string SimpleVariableInfo(ColIndex col) const;
 
   // Displays a short string with the current iteration and objective value.
-  void DisplayIterationInfo();
+  void DisplayIterationInfo(bool primal);
 
   // Displays the error bounds of the current solution.
   void DisplayErrors();
@@ -704,6 +707,10 @@ class RevisedSimplex {
   absl::BitGen absl_random_;
 #endif
   absl::BitGenRef random_;
+
+  // Helpers for logging the solve progress.
+  SolverLogger default_logger_;
+  SolverLogger* logger_ = &default_logger_;
 
   // Representation of matrix B using eta matrices and LU decomposition.
   BasisFactorization basis_factorization_;

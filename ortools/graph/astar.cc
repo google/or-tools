@@ -11,12 +11,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <absl/container/flat_hash_map.h>
-#include <absl/container/flat_hash_set.h>
-
 #include <memory>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 #include "ortools/base/adjustable_priority_queue.h"
 #include "ortools/base/integral_types.h"
 
@@ -27,7 +26,7 @@ namespace {
 class Element {
  public:
   Element()
-      : heap_index_(-1), distance_(0), node_(-1), distance_with_heuristic_(0) {}
+      : heap_index_(-1), distance_(0), distance_with_heuristic_(0), node_(-1) {}
 
   // The distance_with_heuristic is used for the comparison
   // in the priority queue
@@ -63,10 +62,10 @@ class AStarSP {
       : node_count_(node_count),
         start_node_(start_node),
         graph_(std::move(graph)),
+        heuristic_(std::move(heuristic)),
         disconnected_distance_(disconnected_distance),
         predecessor_(new int[node_count]),
-        elements_(node_count),
-        heuristic_(std::move(heuristic)) {}
+        elements_(node_count) {}
   bool ShortestPath(int end_node, std::vector<int>* nodes);
 
  private:

@@ -5,7 +5,7 @@ set_property(SOURCE sat.i PROPERTY COMPILE_DEFINITIONS
 swig_add_library(pywrapsat
   TYPE SHARED
   LANGUAGE python
-  OUTPUT_DIR  ${PROJECT_BINARY_DIR}/python/${PROJECT_NAME}/sat
+  OUTPUT_DIR  ${PYTHON_PROJECT_DIR}/sat
   SOURCES sat.i)
 
 target_include_directories(pywrapsat PRIVATE ${Python3_INCLUDE_DIRS})

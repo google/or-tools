@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 9.1</span>
+                <span id="sfml">Google OR-Tools 9.2</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -91,9 +91,8 @@ $(document).ready(function(){initNavTree('classGoogle_1_1OrTools_1_1Sat_1_1CpObj
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p >Optimization objective. </p>
-<p >This is in a message because decision problems don't have any objective. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l06919">6919</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l06377">6377</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -137,6 +136,15 @@ Static Public Attributes</h2></td></tr>
 <tr class="memitem:a01f10f58a6dc930134078b60c77cdbd6"><td class="memItemLeft" align="right" valign="top">const int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1CpObjectiveProto.html#a01f10f58a6dc930134078b60c77cdbd6">DomainFieldNumber</a> = 5</td></tr>
 <tr class="memdesc:a01f10f58a6dc930134078b60c77cdbd6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Field number for the "domain" field. <a href="classGoogle_1_1OrTools_1_1Sat_1_1CpObjectiveProto.html#a01f10f58a6dc930134078b60c77cdbd6">More...</a><br /></td></tr>
 <tr class="separator:a01f10f58a6dc930134078b60c77cdbd6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8acac67f41adbaa9729a5be42f3c25de"><td class="memItemLeft" align="right" valign="top">const int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1CpObjectiveProto.html#a8acac67f41adbaa9729a5be42f3c25de">ScalingWasExactFieldNumber</a> = 6</td></tr>
+<tr class="memdesc:a8acac67f41adbaa9729a5be42f3c25de"><td class="mdescLeft">&#160;</td><td class="mdescRight">Field number for the "scaling_was_exact" field. <a href="classGoogle_1_1OrTools_1_1Sat_1_1CpObjectiveProto.html#a8acac67f41adbaa9729a5be42f3c25de">More...</a><br /></td></tr>
+<tr class="separator:a8acac67f41adbaa9729a5be42f3c25de"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a21218caa92bfc562dbd4ec4bd123d0d4"><td class="memItemLeft" align="right" valign="top">const int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1CpObjectiveProto.html#a21218caa92bfc562dbd4ec4bd123d0d4">IntegerOffsetFieldNumber</a> = 7</td></tr>
+<tr class="memdesc:a21218caa92bfc562dbd4ec4bd123d0d4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Field number for the "integer_offset" field. <a href="classGoogle_1_1OrTools_1_1Sat_1_1CpObjectiveProto.html#a21218caa92bfc562dbd4ec4bd123d0d4">More...</a><br /></td></tr>
+<tr class="separator:a21218caa92bfc562dbd4ec4bd123d0d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af81d0f3af83b65c5d39cf513078c2c3b"><td class="memItemLeft" align="right" valign="top">const int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1CpObjectiveProto.html#af81d0f3af83b65c5d39cf513078c2c3b">IntegerScalingFactorFieldNumber</a> = 8</td></tr>
+<tr class="memdesc:af81d0f3af83b65c5d39cf513078c2c3b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Field number for the "integer_scaling_factor" field. <a href="classGoogle_1_1OrTools_1_1Sat_1_1CpObjectiveProto.html#af81d0f3af83b65c5d39cf513078c2c3b">More...</a><br /></td></tr>
+<tr class="separator:af81d0f3af83b65c5d39cf513078c2c3b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="properties" name="properties"></a>
 Properties</h2></td></tr>
@@ -157,6 +165,14 @@ Properties</h2></td></tr>
 <tr class="memitem:a76a57a11af895d020e17640a5f1ea7d5"><td class="memItemLeft" align="right" valign="top">pbc::RepeatedField&lt; long &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1CpObjectiveProto.html#a76a57a11af895d020e17640a5f1ea7d5">Domain</a><code> [get]</code></td></tr>
 <tr class="memdesc:a76a57a11af895d020e17640a5f1ea7d5"><td class="mdescLeft">&#160;</td><td class="mdescRight">If non-empty, only look for an objective value in the given domain.  <a href="classGoogle_1_1OrTools_1_1Sat_1_1CpObjectiveProto.html#a76a57a11af895d020e17640a5f1ea7d5">More...</a><br /></td></tr>
 <tr class="separator:a76a57a11af895d020e17640a5f1ea7d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaa9fcadbd464184f03c635f405bf34ce"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1CpObjectiveProto.html#aaa9fcadbd464184f03c635f405bf34ce">ScalingWasExact</a><code> [getset]</code></td></tr>
+<tr class="memdesc:aaa9fcadbd464184f03c635f405bf34ce"><td class="mdescLeft">&#160;</td><td class="mdescRight">Internal field.  <a href="classGoogle_1_1OrTools_1_1Sat_1_1CpObjectiveProto.html#aaa9fcadbd464184f03c635f405bf34ce">More...</a><br /></td></tr>
+<tr class="separator:aaa9fcadbd464184f03c635f405bf34ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acaccedd9e829a13308811343fe640446"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1CpObjectiveProto.html#acaccedd9e829a13308811343fe640446">IntegerOffset</a><code> [getset]</code></td></tr>
+<tr class="memdesc:acaccedd9e829a13308811343fe640446"><td class="mdescLeft">&#160;</td><td class="mdescRight">Internal field.  <a href="classGoogle_1_1OrTools_1_1Sat_1_1CpObjectiveProto.html#acaccedd9e829a13308811343fe640446">More...</a><br /></td></tr>
+<tr class="separator:acaccedd9e829a13308811343fe640446"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5ca92277e730d9574c115bd8448510e7"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1CpObjectiveProto.html#a5ca92277e730d9574c115bd8448510e7">IntegerScalingFactor</a><code> [getset]</code></td></tr>
+<tr class="separator:a5ca92277e730d9574c115bd8448510e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a1c316fa816105f2f9627ec5941d2e36d" name="a1c316fa816105f2f9627ec5941d2e36d"></a>
@@ -182,7 +198,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l06944">6944</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l06402">6402</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -210,7 +226,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l06952">6952</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l06410">6410</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -238,7 +254,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l07133">7133</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l06677">6677</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -265,7 +281,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l06963">6963</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l06424">6424</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -293,7 +309,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l07051">7051</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l06565">6565</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -321,7 +337,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l07045">7045</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l06559">6559</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -348,7 +364,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l07068">7068</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l06585">6585</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -376,7 +392,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l07152">7152</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l06705">6705</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -404,7 +420,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l07170">7170</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l06732">6732</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -431,7 +447,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l07083">7083</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l06603">6603</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -459,7 +475,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l07089">7089</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l06609">6609</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -486,7 +502,7 @@ Properties</h2></td></tr>
 
 <p>Field number for the "coeffs" field.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l06984">6984</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l06445">6445</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -512,7 +528,59 @@ Properties</h2></td></tr>
 
 <p>Field number for the "domain" field.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l07028">7028</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l06489">6489</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+
+</div>
+</div>
+<a id="a21218caa92bfc562dbd4ec4bd123d0d4" name="a21218caa92bfc562dbd4ec4bd123d0d4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a21218caa92bfc562dbd4ec4bd123d0d4">&#9670;&nbsp;</a></span>IntegerOffsetFieldNumber</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const int IntegerOffsetFieldNumber = 7</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Field number for the "integer_offset" field.</p>
+
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l06524">6524</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+
+</div>
+</div>
+<a id="af81d0f3af83b65c5d39cf513078c2c3b" name="af81d0f3af83b65c5d39cf513078c2c3b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af81d0f3af83b65c5d39cf513078c2c3b">&#9670;&nbsp;</a></span>IntegerScalingFactorFieldNumber</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const int IntegerScalingFactorFieldNumber = 8</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Field number for the "integer_scaling_factor" field.</p>
+
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l06546">6546</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -538,7 +606,7 @@ Properties</h2></td></tr>
 
 <p>Field number for the "offset" field.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l06995">6995</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l06456">6456</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -564,7 +632,33 @@ Properties</h2></td></tr>
 
 <p>Field number for the "scaling_factor" field.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l07016">7016</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l06477">6477</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+
+</div>
+</div>
+<a id="a8acac67f41adbaa9729a5be42f3c25de" name="a8acac67f41adbaa9729a5be42f3c25de"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8acac67f41adbaa9729a5be42f3c25de">&#9670;&nbsp;</a></span>ScalingWasExactFieldNumber</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const int ScalingWasExactFieldNumber = 6</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Field number for the "scaling_was_exact" field.</p>
+
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l06505">6505</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -590,7 +684,7 @@ Properties</h2></td></tr>
 
 <p>Field number for the "vars" field.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l06968">6968</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l06429">6429</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -615,7 +709,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l06990">6990</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l06451">6451</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -639,7 +733,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l06932">6932</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l06390">6390</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -666,7 +760,59 @@ Properties</h2></td></tr>
 <p>If non-empty, only look for an objective value in the given domain. </p>
 <p >Note that this does not depend on the offset or scaling factor, it is a domain on the sum of the objective terms only. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l07039">7039</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l06500">6500</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+
+</div>
+</div>
+<a id="acaccedd9e829a13308811343fe640446" name="acaccedd9e829a13308811343fe640446"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acaccedd9e829a13308811343fe640446">&#9670;&nbsp;</a></span>IntegerOffset</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">long IntegerOffset</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">get</span><span class="mlabel">set</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Internal field. </p>
+<p >This is only useful for inner_objective_lower_bound, It should never be set in most cases, so we have the simple: sum(coefficients[i] * objective_vars[i]) &gt;= inner_objective_lower_bound.</p>
+<p >This is similar to offset/scaling_factor but allows to stay in the integer domain. Note that the formula is not the same than for the floating point objective. If this is set, we have linear_expression * scaling + offset &gt;= inner_objective_lower_bound </p>
+
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l06538">6538</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+
+</div>
+</div>
+<a id="a5ca92277e730d9574c115bd8448510e7" name="a5ca92277e730d9574c115bd8448510e7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5ca92277e730d9574c115bd8448510e7">&#9670;&nbsp;</a></span>IntegerScalingFactor</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">long IntegerScalingFactor</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">get</span><span class="mlabel">set</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l06550">6550</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -694,7 +840,7 @@ Properties</h2></td></tr>
 <p >This is needed to have a consistent objective after presolve or when scaling a double problem to express it with integers.</p>
 <p >Note that if scaling_factor is zero, then it is assumed to be 1, so that by default these fields have no effect. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l07008">7008</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l06469">6469</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -718,7 +864,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l06928">6928</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l06386">6386</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -742,7 +888,35 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l07020">7020</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l06481">6481</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+
+</div>
+</div>
+<a id="aaa9fcadbd464184f03c635f405bf34ce" name="aaa9fcadbd464184f03c635f405bf34ce"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaa9fcadbd464184f03c635f405bf34ce">&#9670;&nbsp;</a></span>ScalingWasExact</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ScalingWasExact</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">get</span><span class="mlabel">set</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Internal field. </p>
+<p >Do not set. When we scale a <a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1FloatObjectiveProto.html" title="A linear floating point objective: sum coeffs[i] * vars[i] + offset.">FloatObjectiveProto</a> to a integer version, we set this to true if the scaling was exact (i.e. all original coeff were integer for instance).</p>
+<p >TODO(user): Put the error bounds we computed instead? </p>
+
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l06516">6516</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -767,9 +941,9 @@ Properties</h2></td></tr>
 </div><div class="memdoc">
 
 <p>The linear terms of the objective to minimize. </p>
-<p >For a maximization problem, one can negate all coefficients in the objective and set a scaling_factor to -1. </p>
+<p >For a maximization problem, one can negate all coefficients in the objective and set scaling_factor to -1. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l06979">6979</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l06440">6440</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>

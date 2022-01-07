@@ -23,6 +23,9 @@ if(USE_SCIP)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_SCIP")
   set(GSCIP_DIR gscip)
 endif()
+if(USE_GLPK)
+  list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_GLPK")
+endif()
 if(USE_COINOR)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS
     "USE_CBC" # enable COIN-OR CBC support
@@ -124,8 +127,10 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   ZLIB::ZLIB
   ${ABSL_DEPS}
   protobuf::libprotobuf
+  ${RE2_DEPS}
   ${COINOR_DEPS}
   $<$<BOOL:${USE_SCIP}>:libscip>
+  $<$<BOOL:${USE_GLPK}>:GLPK::GLPK>
   $<$<BOOL:${USE_CPLEX}>:CPLEX::CPLEX>
   $<$<BOOL:${USE_XPRESS}>:XPRESS::XPRESS>
   $<$<BOOL:${USE_SIRIUS}>:sirius_solver>
@@ -135,7 +140,7 @@ if(WIN32)
 endif()
 
 # ALIAS
-add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
+add_library(${PROJECT_NAMESPACE}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
 # Generate Protobuf cpp sources
 set(PROTO_HDRS)
@@ -203,11 +208,11 @@ target_compile_definitions(${PROJECT_NAME}_proto PUBLIC ${OR_TOOLS_COMPILE_DEFIN
 target_compile_options(${PROJECT_NAME}_proto PUBLIC ${OR_TOOLS_COMPILE_OPTIONS})
 #target_link_libraries(${PROJECT_NAME}_proto PRIVATE protobuf::libprotobuf)
 add_dependencies(${PROJECT_NAME}_proto protobuf::libprotobuf)
-add_library(${PROJECT_NAME}::proto ALIAS ${PROJECT_NAME}_proto)
-# Add ortools::proto to libortools
-#target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_NAME}::proto)
-target_sources(${PROJECT_NAME} PRIVATE $<TARGET_OBJECTS:${PROJECT_NAME}::proto>)
-add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}::proto)
+add_library(${PROJECT_NAMESPACE}::proto ALIAS ${PROJECT_NAME}_proto)
+# Add ${PROJECT_NAMESPACE}::proto to libortools
+#target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_NAMESPACE}::proto)
+target_sources(${PROJECT_NAME} PRIVATE $<TARGET_OBJECTS:${PROJECT_NAMESPACE}::proto>)
+add_dependencies(${PROJECT_NAME} ${PROJECT_NAMESPACE}::proto)
 
 foreach(SUBPROJECT IN ITEMS
  algorithms
@@ -248,7 +253,7 @@ install(TARGETS ${PROJECT_NAME}
   )
 
 install(EXPORT ${PROJECT_NAME}Targets
-  NAMESPACE ${PROJECT_NAME}::
+  NAMESPACE ${PROJECT_NAMESPACE}::
   DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME})
 install(DIRECTORY ortools
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
@@ -302,7 +307,7 @@ function(add_cxx_sample FILE_NAME)
   add_executable(${SAMPLE_NAME} ${FILE_NAME})
   target_include_directories(${SAMPLE_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
   target_compile_features(${SAMPLE_NAME} PRIVATE cxx_std_17)
-  target_link_libraries(${SAMPLE_NAME} PRIVATE ortools::ortools)
+  target_link_libraries(${SAMPLE_NAME} PRIVATE ${PROJECT_NAMESPACE}::ortools)
 
   include(GNUInstallDirs)
   install(TARGETS ${SAMPLE_NAME})
@@ -335,7 +340,7 @@ function(add_cxx_example FILE_NAME)
   add_executable(${EXAMPLE_NAME} ${FILE_NAME})
   target_include_directories(${EXAMPLE_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
   target_compile_features(${EXAMPLE_NAME} PRIVATE cxx_std_17)
-  target_link_libraries(${EXAMPLE_NAME} PRIVATE ortools::ortools)
+  target_link_libraries(${EXAMPLE_NAME} PRIVATE ${PROJECT_NAMESPACE}::ortools)
 
   include(GNUInstallDirs)
   install(TARGETS ${EXAMPLE_NAME})
@@ -368,7 +373,7 @@ function(add_cxx_test FILE_NAME)
   add_executable(${TEST_NAME} ${FILE_NAME})
   target_include_directories(${TEST_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
   target_compile_features(${TEST_NAME} PRIVATE cxx_std_17)
-  target_link_libraries(${TEST_NAME} PRIVATE ortools::ortools)
+  target_link_libraries(${TEST_NAME} PRIVATE ${PROJECT_NAMESPACE}::ortools)
 
   if(BUILD_TESTING)
     add_test(NAME cxx_${COMPONENT_NAME}_${TEST_NAME} COMMAND ${TEST_NAME})

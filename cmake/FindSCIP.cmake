@@ -25,8 +25,14 @@ Hints
 A user may set ``SCIP_ROOT`` to a SCIP installation root to tell this
 module where to look.
 #]=======================================================================]
-set(SCIP_FOUND FALSE)
+# first specifically look for the CMake version of SCIP
+find_package(SCIP QUIET NO_MODULE)
+# if we found the SCIP cmake package then we are done.
+if(SCIP_FOUND)
+  return()
+endif()
 
+set(SCIP_FOUND FALSE)
 if(CMAKE_C_COMPILER_LOADED)
   include (CheckIncludeFile)
   include (CheckCSourceCompiles)
@@ -55,7 +61,7 @@ if(SCIP_FOUND AND NOT TARGET SCIP::SCIP)
 
   if(APPLE)
     set(SCIP_ARCH darwin.x86_64.gnu.opt)
-    set_property(TARGET SCIP::SCIP TARGET_PROPERTY IMPORTED_LOCATION
+    set_property(TARGET SCIP::SCIP PROPERTY IMPORTED_LOCATION
       -force_load
       ${SCIP_ROOT}/lib/libscip.a
       ${SCIP_ROOT}/lib/libscipopt.a
@@ -64,17 +70,19 @@ if(SCIP_FOUND AND NOT TARGET SCIP::SCIP)
       )
   elseif(UNIX)
     set(SCIP_ARCH linux.x86_64.gnu.opt)
-    set_property(TARGET SCIP::SCIP TARGET_PROPERTY IMPORTED_LOCATION
+    set_property(TARGET SCIP::SCIP PROPERTY IMPORTED_LOCATION
       ${SCIP_ROOT}/lib/libscip.a
       ${SCIP_ROOT}/lib/libscipopt.a
       ${SCIP_ROOT}/lib/libsoplex.a
       ${SCIP_ROOT}/lib/libsoplex.${SCIP_ARCH}.a
       )
   elseif(MSVC)
-    set_property(TARGET SCIP::SCIP TARGET_PROPERTY IMPORTED_LOCATION
+    set_property(TARGET SCIP::SCIP PROPERTY IMPORTED_LOCATION
       ${SCIP_ROOT}/lib/scip.lib
       ${SCIP_ROOT}/lib/soplex.lib
       ignore:4006
       )
+  else()
+    message(FATAL_ERROR "OR-Tools with SCIP not supported for ${CMAKE_SYSTEM}")
   endif()
 endif()

@@ -144,6 +144,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/port.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/flags/parse.h"
 #include "absl/flags/usage.h"
@@ -608,7 +609,7 @@ class MPSolver {
    */
   absl::Status LoadSolutionFromProto(
       const MPSolutionResponse& response,
-      double tolerance = kDefaultPrimalTolerance);
+      double tolerance = std::numeric_limits<double>::infinity());
 
   /**
    * Resets values of out of bound variables to the corresponding bound and

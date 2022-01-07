@@ -7,7 +7,7 @@ command -v cmake | xargs echo "cmake: " | tee test.log
 command -v make | xargs echo "make: " | tee -a test.log
 command -v swig | xargs echo "swig: " | tee -a test.log
 # python
-PY=(3.6 3.7 3.8 3.9)
+PY=(3.6 3.7 3.8 3.9 3.10)
 for i in "${PY[@]}"; do
   command -v "python$i" | xargs echo "python$i: " | tee -a test.log
 done

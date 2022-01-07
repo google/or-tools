@@ -33,7 +33,7 @@ IntVarLocalSearchFilter* MakeMaxActiveVehiclesFilter(
 
 /// Returns a filter ensuring that node disjunction constraints are enforced.
 IntVarLocalSearchFilter* MakeNodeDisjunctionFilter(
-    const RoutingModel& routing_model);
+    const RoutingModel& routing_model, bool filter_cost);
 
 /// Returns a filter computing vehicle amortized costs.
 IntVarLocalSearchFilter* MakeVehicleAmortizedCostFilter(
@@ -69,6 +69,13 @@ IntVarLocalSearchFilter* MakeGlobalLPCumulFilter(
     GlobalDimensionCumulOptimizer* optimizer,
     GlobalDimensionCumulOptimizer* mp_optimizer, bool filter_objective_cost);
 
+/// Returns a filter checking the feasibility and cost of the resource
+/// assignment.
+LocalSearchFilter* MakeResourceAssignmentFilter(
+    LocalDimensionCumulOptimizer* optimizer,
+    LocalDimensionCumulOptimizer* mp_optimizer,
+    bool propagate_own_objective_value, bool filter_objective_cost);
+
 /// Returns a filter checking the current solution using CP propagation.
 IntVarLocalSearchFilter* MakeCPFeasibilityFilter(RoutingModel* routing_model);
 
@@ -82,6 +89,7 @@ void AppendLightWeightDimensionFilters(
 void AppendDimensionCumulFilters(
     const std::vector<RoutingDimension*>& dimensions,
     const RoutingSearchParameters& parameters, bool filter_objective_cost,
+    bool filter_light_weight_unary_dimensions,
     std::vector<LocalSearchFilterManager::FilterEvent>* filters);
 
 /// Generic path-based filter class.
@@ -110,6 +118,7 @@ class BasePathFilter : public IntVarLocalSearchFilter {
   const std::vector<int64_t>& GetTouchedPathStarts() const {
     return touched_paths_.PositionsSetAtLeastOnce();
   }
+  bool PathStartTouched(int64_t start) const { return touched_paths_[start]; }
   const std::vector<int64_t>& GetNewSynchronizedUnperformedNodes() const {
     return new_synchronized_unperformed_nodes_.PositionsSetAtLeastOnce();
   }
@@ -121,11 +130,10 @@ class BasePathFilter : public IntVarLocalSearchFilter {
   virtual void OnBeforeSynchronizePaths() {}
   virtual void OnAfterSynchronizePaths() {}
   virtual void OnSynchronizePathFromStart(int64_t start) {}
-  virtual void InitializeAcceptPath() {}
+  virtual bool InitializeAcceptPath() { return true; }
   virtual bool AcceptPath(int64_t path_start, int64_t chain_start,
                           int64_t chain_end) = 0;
-  virtual bool FinalizeAcceptPath(const Assignment* delta,
-                                  int64_t objective_min,
+  virtual bool FinalizeAcceptPath(int64_t objective_min,
                                   int64_t objective_max) {
     return true;
   }

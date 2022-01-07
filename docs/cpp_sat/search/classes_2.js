@@ -9,6 +9,7 @@ var searchData=
   ['cpmodelproto_6',['CpModelProto',['../classoperations__research_1_1sat_1_1_cp_model_proto.html',1,'operations_research::sat']]],
   ['cpobjectiveproto_7',['CpObjectiveProto',['../classoperations__research_1_1sat_1_1_cp_objective_proto.html',1,'operations_research::sat']]],
   ['cpsolverresponse_8',['CpSolverResponse',['../classoperations__research_1_1sat_1_1_cp_solver_response.html',1,'operations_research::sat']]],
-  ['cumulativeconstraint_9',['CumulativeConstraint',['../classoperations__research_1_1sat_1_1_cumulative_constraint.html',1,'operations_research::sat']]],
-  ['cumulativeconstraintproto_10',['CumulativeConstraintProto',['../classoperations__research_1_1sat_1_1_cumulative_constraint_proto.html',1,'operations_research::sat']]]
+  ['cpsolversolution_9',['CpSolverSolution',['../classoperations__research_1_1sat_1_1_cp_solver_solution.html',1,'operations_research::sat']]],
+  ['cumulativeconstraint_10',['CumulativeConstraint',['../classoperations__research_1_1sat_1_1_cumulative_constraint.html',1,'operations_research::sat']]],
+  ['cumulativeconstraintproto_11',['CumulativeConstraintProto',['../classoperations__research_1_1sat_1_1_cumulative_constraint_proto.html',1,'operations_research::sat']]]
 ];

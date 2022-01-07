@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 9.1</span>
+                <span id="sfml">Google OR-Tools 9.2</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -90,9 +90,9 @@ $(document).ready(function(){initNavTree('classGoogle_1_1OrTools_1_1Sat_1_1AllDi
 </div><!--header-->
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p >All variables must take different values. </p>
+<div class="textblock"><p >All affine expressions must take different values. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l01381">1381</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l01167">1167</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -121,9 +121,9 @@ Public Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-attribs" name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
-<tr class="memitem:a21a2e981c9fba2735b6ba452e5fba670"><td class="memItemLeft" align="right" valign="top">const int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1AllDifferentConstraintProto.html#a21a2e981c9fba2735b6ba452e5fba670">VarsFieldNumber</a> = 1</td></tr>
-<tr class="memdesc:a21a2e981c9fba2735b6ba452e5fba670"><td class="mdescLeft">&#160;</td><td class="mdescRight">Field number for the "vars" field. <a href="classGoogle_1_1OrTools_1_1Sat_1_1AllDifferentConstraintProto.html#a21a2e981c9fba2735b6ba452e5fba670">More...</a><br /></td></tr>
-<tr class="separator:a21a2e981c9fba2735b6ba452e5fba670"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a91ebb5be873fd94bdfda893eed0b28f7"><td class="memItemLeft" align="right" valign="top">const int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1AllDifferentConstraintProto.html#a91ebb5be873fd94bdfda893eed0b28f7">ExprsFieldNumber</a> = 1</td></tr>
+<tr class="memdesc:a91ebb5be873fd94bdfda893eed0b28f7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Field number for the "exprs" field. <a href="classGoogle_1_1OrTools_1_1Sat_1_1AllDifferentConstraintProto.html#a91ebb5be873fd94bdfda893eed0b28f7">More...</a><br /></td></tr>
+<tr class="separator:a91ebb5be873fd94bdfda893eed0b28f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="properties" name="properties"></a>
 Properties</h2></td></tr>
@@ -131,8 +131,8 @@ Properties</h2></td></tr>
 <tr class="separator:abb63882b8aabf881afe272e1608d9934"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acbefcf491fe57d4ebe699914922577fb"><td class="memItemLeft" align="right" valign="top">static pbr::MessageDescriptor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1AllDifferentConstraintProto.html#acbefcf491fe57d4ebe699914922577fb">Descriptor</a><code> [get]</code></td></tr>
 <tr class="separator:acbefcf491fe57d4ebe699914922577fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a46424caf03d01d66a437f7157b75a109"><td class="memItemLeft" align="right" valign="top">pbc::RepeatedField&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1AllDifferentConstraintProto.html#a46424caf03d01d66a437f7157b75a109">Vars</a><code> [get]</code></td></tr>
-<tr class="separator:a46424caf03d01d66a437f7157b75a109"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa5e7b46c38574dc27852f744d6507830"><td class="memItemLeft" align="right" valign="top">pbc::RepeatedField&lt; global::Google.OrTools.Sat.LinearExpressionProto &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1AllDifferentConstraintProto.html#aa5e7b46c38574dc27852f744d6507830">Exprs</a><code> [get]</code></td></tr>
+<tr class="separator:aa5e7b46c38574dc27852f744d6507830"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a38fc3490251a1ceefabd6ee0a0fa5520" name="a38fc3490251a1ceefabd6ee0a0fa5520"></a>
@@ -158,7 +158,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l01406">1406</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l01192">1192</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -186,7 +186,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l01414">1414</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l01200">1200</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -214,7 +214,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l01498">1498</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l01284">1284</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -241,7 +241,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l01421">1421</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l01207">1207</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -269,7 +269,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l01444">1444</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l01230">1230</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -297,7 +297,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l01438">1438</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l01224">1224</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -324,7 +324,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l01457">1457</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l01243">1243</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -352,7 +352,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l01509">1509</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l01295">1295</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -380,7 +380,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l01519">1519</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l01305">1305</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -407,7 +407,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l01468">1468</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l01254">1254</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -435,13 +435,13 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l01474">1474</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l01260">1260</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
-<a id="a21a2e981c9fba2735b6ba452e5fba670" name="a21a2e981c9fba2735b6ba452e5fba670"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a21a2e981c9fba2735b6ba452e5fba670">&#9670;&nbsp;</a></span>VarsFieldNumber</h2>
+<a id="a91ebb5be873fd94bdfda893eed0b28f7" name="a91ebb5be873fd94bdfda893eed0b28f7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a91ebb5be873fd94bdfda893eed0b28f7">&#9670;&nbsp;</a></span>ExprsFieldNumber</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -450,7 +450,7 @@ Properties</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const int VarsFieldNumber = 1</td>
+          <td class="memname">const int ExprsFieldNumber = 1</td>
         </tr>
       </table>
   </td>
@@ -460,9 +460,9 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Field number for the "vars" field.</p>
+<p>Field number for the "exprs" field.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l01426">1426</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l01212">1212</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -487,7 +487,31 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l01394">1394</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l01180">1180</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+
+</div>
+</div>
+<a id="aa5e7b46c38574dc27852f744d6507830" name="aa5e7b46c38574dc27852f744d6507830"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa5e7b46c38574dc27852f744d6507830">&#9670;&nbsp;</a></span>Exprs</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">pbc.RepeatedField&lt;global.Google.OrTools.Sat.LinearExpressionProto&gt; Exprs</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">get</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l01218">1218</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -511,31 +535,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l01390">1390</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
-
-</div>
-</div>
-<a id="a46424caf03d01d66a437f7157b75a109" name="a46424caf03d01d66a437f7157b75a109"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a46424caf03d01d66a437f7157b75a109">&#9670;&nbsp;</a></span>Vars</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">pbc.RepeatedField&lt;int&gt; Vars</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">get</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l01432">1432</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l01176">1176</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>

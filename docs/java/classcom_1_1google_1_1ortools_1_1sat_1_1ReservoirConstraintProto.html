@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 9.1</span>
+                <span id="sfml">Google OR-Tools 9.2</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -96,11 +96,11 @@ $(document).ready(function(){initNavTree('classcom_1_1google_1_1ortools_1_1sat_1
 Maintain a reservoir level within bounds. The water level starts at 0, and at
 any time, it must be within [min_level, max_level].
 If the variable actives[i] is true, and if the variable times[i] is assigned
-a value t, then the current level changes by demands[i] (which is constant)
-at the time t. Therefore, at any time t:
-     sum(demands[i] * actives[i] if times[i] &lt;= t) in [min_level, max_level]
+a value t, then the current level changes by level_changes[i] (which is
+constant) at the time t. Therefore, at any time t:
+sum(level_changes[i] * actives[i] if times[i] &lt;= t) in [min_level, max_level]
 Note that min level must be &lt;= 0, and the max level must be &gt;= 0. Please use
-fixed demands to simulate initial state.
+fixed level_changes to simulate initial state.
 The array of boolean variables 'actives', if defined, indicates which actions
 are actually performed. If this array is not defined, then it is assumed that
 all actions will be performed.
@@ -123,24 +123,31 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ae4666cc92350e24231ac841dd8320488"><td class="memItemLeft" align="right" valign="top">.lang.Override long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProto.html#ae4666cc92350e24231ac841dd8320488">getMaxLevel</a> ()</td></tr>
 <tr class="memdesc:ae4666cc92350e24231ac841dd8320488"><td class="mdescLeft">&#160;</td><td class="mdescRight"><code>int64 max_level = 2;</code>  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProto.html#ae4666cc92350e24231ac841dd8320488">More...</a><br /></td></tr>
 <tr class="separator:ae4666cc92350e24231ac841dd8320488"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a04838a644253d2c304c9931ed485fd38"><td class="memItemLeft" align="right" valign="top">.lang.Override java.util.List&lt; java.lang.Integer &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProto.html#a04838a644253d2c304c9931ed485fd38">getTimesList</a> ()</td></tr>
-<tr class="separator:a04838a644253d2c304c9931ed485fd38"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2907532d1a8bc74dec064e49e9906523"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProto.html#a2907532d1a8bc74dec064e49e9906523">getTimesCount</a> ()</td></tr>
-<tr class="separator:a2907532d1a8bc74dec064e49e9906523"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac57ab268d9b34f8ef606faa81bc116c6"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProto.html#ac57ab268d9b34f8ef606faa81bc116c6">getTimes</a> (int index)</td></tr>
-<tr class="separator:ac57ab268d9b34f8ef606faa81bc116c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6ed93567b322b66e7e25a287e85591ed"><td class="memItemLeft" align="right" valign="top">.lang.Override java.util.List&lt; java.lang.Long &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProto.html#a6ed93567b322b66e7e25a287e85591ed">getDemandsList</a> ()</td></tr>
-<tr class="separator:a6ed93567b322b66e7e25a287e85591ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a56151962c4fee5a1b099f9916d04fd93"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProto.html#a56151962c4fee5a1b099f9916d04fd93">getDemandsCount</a> ()</td></tr>
-<tr class="separator:a56151962c4fee5a1b099f9916d04fd93"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa450ad21ed07572cab0c1d4a359ccb49"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProto.html#aa450ad21ed07572cab0c1d4a359ccb49">getDemands</a> (int index)</td></tr>
-<tr class="separator:aa450ad21ed07572cab0c1d4a359ccb49"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0888e17ad59fde982e871cc2a6728a59"><td class="memItemLeft" align="right" valign="top">.lang.Override java.util.List&lt; java.lang.Integer &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProto.html#a0888e17ad59fde982e871cc2a6728a59">getActivesList</a> ()</td></tr>
-<tr class="separator:a0888e17ad59fde982e871cc2a6728a59"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7109eae5d06e6b1bf36f6189efc0327b"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProto.html#a7109eae5d06e6b1bf36f6189efc0327b">getActivesCount</a> ()</td></tr>
-<tr class="separator:a7109eae5d06e6b1bf36f6189efc0327b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab8f8716b171ef2d2e39c2b0efe5ee9ea"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProto.html#ab8f8716b171ef2d2e39c2b0efe5ee9ea">getActives</a> (int index)</td></tr>
-<tr class="separator:ab8f8716b171ef2d2e39c2b0efe5ee9ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac4a8de021197c3ecf6fb7e9f2da26f34"><td class="memItemLeft" align="right" valign="top">.lang.Override java.util.List&lt; <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProto.html">com.google.ortools.sat.LinearExpressionProto</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProto.html#ac4a8de021197c3ecf6fb7e9f2da26f34">getTimeExprsList</a> ()</td></tr>
+<tr class="separator:ac4a8de021197c3ecf6fb7e9f2da26f34"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7650e56f9eac94d89ff567bf78d04e6b"><td class="memItemLeft" align="right" valign="top">.lang.Override java.util.List&lt;? extends <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProtoOrBuilder.html">com.google.ortools.sat.LinearExpressionProtoOrBuilder</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProto.html#a7650e56f9eac94d89ff567bf78d04e6b">getTimeExprsOrBuilderList</a> ()</td></tr>
+<tr class="separator:a7650e56f9eac94d89ff567bf78d04e6b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab5122fa11462dddc803a3c07429af549"><td class="memItemLeft" align="right" valign="top">.lang.Override int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProto.html#ab5122fa11462dddc803a3c07429af549">getTimeExprsCount</a> ()</td></tr>
+<tr class="separator:ab5122fa11462dddc803a3c07429af549"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac537e0c0e04cc87b092401b72828b634"><td class="memItemLeft" align="right" valign="top">.lang.Override <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProto.html">com.google.ortools.sat.LinearExpressionProto</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProto.html#ac537e0c0e04cc87b092401b72828b634">getTimeExprs</a> (int index)</td></tr>
+<tr class="separator:ac537e0c0e04cc87b092401b72828b634"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad9ea5ca090fdf57f4b2715d9df689aa1"><td class="memItemLeft" align="right" valign="top">.lang.Override <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProtoOrBuilder.html">com.google.ortools.sat.LinearExpressionProtoOrBuilder</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProto.html#ad9ea5ca090fdf57f4b2715d9df689aa1">getTimeExprsOrBuilder</a> (int index)</td></tr>
+<tr class="separator:ad9ea5ca090fdf57f4b2715d9df689aa1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a49f97ce0cad4ed99dcc0736dd795f4c3"><td class="memItemLeft" align="right" valign="top">.lang.Override java.util.List&lt; java.lang.Long &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProto.html#a49f97ce0cad4ed99dcc0736dd795f4c3">getLevelChangesList</a> ()</td></tr>
+<tr class="separator:a49f97ce0cad4ed99dcc0736dd795f4c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9670047c48f70ca3d332de881e2f5e29"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProto.html#a9670047c48f70ca3d332de881e2f5e29">getLevelChangesCount</a> ()</td></tr>
+<tr class="separator:a9670047c48f70ca3d332de881e2f5e29"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7242fc900cc71b5e76f14e898482cfe7"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProto.html#a7242fc900cc71b5e76f14e898482cfe7">getLevelChanges</a> (int index)</td></tr>
+<tr class="separator:a7242fc900cc71b5e76f14e898482cfe7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acae2fa9295495f5b2acf23e4758f4632"><td class="memItemLeft" align="right" valign="top">.lang.Override java.util.List&lt; java.lang.Integer &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProto.html#acae2fa9295495f5b2acf23e4758f4632">getActiveLiteralsList</a> ()</td></tr>
+<tr class="memdesc:acae2fa9295495f5b2acf23e4758f4632"><td class="mdescLeft">&#160;</td><td class="mdescRight"><code>repeated int32 active_literals = 5;</code>  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProto.html#acae2fa9295495f5b2acf23e4758f4632">More...</a><br /></td></tr>
+<tr class="separator:acae2fa9295495f5b2acf23e4758f4632"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2548c51f5f98add4f0c1948aada9ba4c"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProto.html#a2548c51f5f98add4f0c1948aada9ba4c">getActiveLiteralsCount</a> ()</td></tr>
+<tr class="memdesc:a2548c51f5f98add4f0c1948aada9ba4c"><td class="mdescLeft">&#160;</td><td class="mdescRight"><code>repeated int32 active_literals = 5;</code>  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProto.html#a2548c51f5f98add4f0c1948aada9ba4c">More...</a><br /></td></tr>
+<tr class="separator:a2548c51f5f98add4f0c1948aada9ba4c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a96e08ec396f5910b64c3d35f2e28e0f5"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProto.html#a96e08ec396f5910b64c3d35f2e28e0f5">getActiveLiterals</a> (int index)</td></tr>
+<tr class="memdesc:a96e08ec396f5910b64c3d35f2e28e0f5"><td class="mdescLeft">&#160;</td><td class="mdescRight"><code>repeated int32 active_literals = 5;</code>  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProto.html#a96e08ec396f5910b64c3d35f2e28e0f5">More...</a><br /></td></tr>
+<tr class="separator:a96e08ec396f5910b64c3d35f2e28e0f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a968cb605190759c690e5a97cdc0bb4a1"><td class="memItemLeft" align="right" valign="top">.lang.Override final boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProto.html#a968cb605190759c690e5a97cdc0bb4a1">isInitialized</a> ()</td></tr>
 <tr class="separator:a968cb605190759c690e5a97cdc0bb4a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a813eab1fc00c769aad910c480868972b"><td class="memItemLeft" align="right" valign="top">.lang.Override void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProto.html#a813eab1fc00c769aad910c480868972b">writeTo</a> (com.google.protobuf.CodedOutputStream output)  throws java.io.IOException </td></tr>
@@ -203,12 +210,12 @@ Static Public Attributes</h2></td></tr>
 <tr class="separator:a1519e9538f3bf5b3b38f12955745795a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1fec4f911c7569333b3c2800da620348"><td class="memItemLeft" align="right" valign="top">static final int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProto.html#a1fec4f911c7569333b3c2800da620348">MAX_LEVEL_FIELD_NUMBER</a> = 2</td></tr>
 <tr class="separator:a1fec4f911c7569333b3c2800da620348"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a458378a0b27dadc45d273716cc38ad5e"><td class="memItemLeft" align="right" valign="top">static final int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProto.html#a458378a0b27dadc45d273716cc38ad5e">TIMES_FIELD_NUMBER</a> = 3</td></tr>
-<tr class="separator:a458378a0b27dadc45d273716cc38ad5e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adfd7735f6aa0e8dd454143a8f57fe61c"><td class="memItemLeft" align="right" valign="top">static final int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProto.html#adfd7735f6aa0e8dd454143a8f57fe61c">DEMANDS_FIELD_NUMBER</a> = 4</td></tr>
-<tr class="separator:adfd7735f6aa0e8dd454143a8f57fe61c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad937282feb9bb629e3e79926280ade18"><td class="memItemLeft" align="right" valign="top">static final int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProto.html#ad937282feb9bb629e3e79926280ade18">ACTIVES_FIELD_NUMBER</a> = 5</td></tr>
-<tr class="separator:ad937282feb9bb629e3e79926280ade18"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a071a021ffc5dcdf537cfb4ddba4b3d05"><td class="memItemLeft" align="right" valign="top">static final int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProto.html#a071a021ffc5dcdf537cfb4ddba4b3d05">TIME_EXPRS_FIELD_NUMBER</a> = 3</td></tr>
+<tr class="separator:a071a021ffc5dcdf537cfb4ddba4b3d05"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aefb5502d748f358d8bf9cb523f393ce6"><td class="memItemLeft" align="right" valign="top">static final int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProto.html#aefb5502d748f358d8bf9cb523f393ce6">LEVEL_CHANGES_FIELD_NUMBER</a> = 4</td></tr>
+<tr class="separator:aefb5502d748f358d8bf9cb523f393ce6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a79723be58fd2e16d2a652ada2ccea653"><td class="memItemLeft" align="right" valign="top">static final int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProto.html#a79723be58fd2e16d2a652ada2ccea653">ACTIVE_LITERALS_FIELD_NUMBER</a> = 5</td></tr>
+<tr class="separator:a79723be58fd2e16d2a652ada2ccea653"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-methods" name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
@@ -236,18 +243,18 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00432">432</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00414">414</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
-<a id="ab8f8716b171ef2d2e39c2b0efe5ee9ea" name="ab8f8716b171ef2d2e39c2b0efe5ee9ea"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab8f8716b171ef2d2e39c2b0efe5ee9ea">&#9670;&nbsp;</a></span>getActives()</h2>
+<a id="a96e08ec396f5910b64c3d35f2e28e0f5" name="a96e08ec396f5910b64c3d35f2e28e0f5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a96e08ec396f5910b64c3d35f2e28e0f5">&#9670;&nbsp;</a></span>getActiveLiterals()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int getActives </td>
+          <td class="memname">int getActiveLiterals </td>
           <td>(</td>
           <td class="paramtype">int&#160;</td>
           <td class="paramname"><em>index</em></td><td>)</td>
@@ -255,67 +262,67 @@ Protected Member Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<pre>
-literals.
-</pre><p ><code>repeated int32 actives = 5;</code> </p><dl class="params"><dt>Parameters</dt><dd>
+
+<p><code>repeated int32 active_literals = 5;</code> </p>
+<dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">index</td><td>The index of the element to return. </td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>The actives at the given index. </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>The activeLiterals at the given index. </dd></dl>
 
-<p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProtoOrBuilder.html#ab8f8716b171ef2d2e39c2b0efe5ee9ea">ReservoirConstraintProtoOrBuilder</a>.</p>
+<p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProtoOrBuilder.html#a96e08ec396f5910b64c3d35f2e28e0f5">ReservoirConstraintProtoOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00320">320</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00316">316</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
-<a id="a7109eae5d06e6b1bf36f6189efc0327b" name="a7109eae5d06e6b1bf36f6189efc0327b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7109eae5d06e6b1bf36f6189efc0327b">&#9670;&nbsp;</a></span>getActivesCount()</h2>
+<a id="a2548c51f5f98add4f0c1948aada9ba4c" name="a2548c51f5f98add4f0c1948aada9ba4c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2548c51f5f98add4f0c1948aada9ba4c">&#9670;&nbsp;</a></span>getActiveLiteralsCount()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int getActivesCount </td>
+          <td class="memname">int getActiveLiteralsCount </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
         </tr>
       </table>
 </div><div class="memdoc">
-<pre>
-literals.
-</pre><p ><code>repeated int32 actives = 5;</code> </p><dl class="section return"><dt>Returns</dt><dd>The count of actives. </dd></dl>
 
-<p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProtoOrBuilder.html#a7109eae5d06e6b1bf36f6189efc0327b">ReservoirConstraintProtoOrBuilder</a>.</p>
+<p><code>repeated int32 active_literals = 5;</code> </p>
+<dl class="section return"><dt>Returns</dt><dd>The count of activeLiterals. </dd></dl>
+
+<p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProtoOrBuilder.html#a2548c51f5f98add4f0c1948aada9ba4c">ReservoirConstraintProtoOrBuilder</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00308">308</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
-<a id="a0888e17ad59fde982e871cc2a6728a59" name="a0888e17ad59fde982e871cc2a6728a59"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0888e17ad59fde982e871cc2a6728a59">&#9670;&nbsp;</a></span>getActivesList()</h2>
+<a id="acae2fa9295495f5b2acf23e4758f4632" name="acae2fa9295495f5b2acf23e4758f4632"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acae2fa9295495f5b2acf23e4758f4632">&#9670;&nbsp;</a></span>getActiveLiteralsList()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">.lang.Override java.util.List&lt; java.lang.Integer &gt; getActivesList </td>
+          <td class="memname">.lang.Override java.util.List&lt; java.lang.Integer &gt; getActiveLiteralsList </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
         </tr>
       </table>
 </div><div class="memdoc">
-<pre>
-literals.
-</pre><p ><code>repeated int32 actives = 5;</code> </p><dl class="section return"><dt>Returns</dt><dd>A list containing the actives. </dd></dl>
 
-<p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProtoOrBuilder.html#afd04bd001fe7f665d122281951cec586">ReservoirConstraintProtoOrBuilder</a>.</p>
+<p><code>repeated int32 active_literals = 5;</code> </p>
+<dl class="section return"><dt>Returns</dt><dd>A list containing the activeLiterals. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00297">297</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProtoOrBuilder.html#a39f917e715beebba5405b458e6a85962">ReservoirConstraintProtoOrBuilder</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00301">301</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -342,7 +349,7 @@ literals.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l01199">1199</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l01383">1383</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -361,86 +368,7 @@ literals.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l01224">1224</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
-
-</div>
-</div>
-<a id="aa450ad21ed07572cab0c1d4a359ccb49" name="aa450ad21ed07572cab0c1d4a359ccb49"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa450ad21ed07572cab0c1d4a359ccb49">&#9670;&nbsp;</a></span>getDemands()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">long getDemands </td>
-          <td>(</td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>index</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<pre>
-constants, can be negative.
-</pre><p ><code>repeated int64 demands = 4;</code> </p><dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">index</td><td>The index of the element to return. </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>The demands at the given index. </dd></dl>
-
-<p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProtoOrBuilder.html#aa450ad21ed07572cab0c1d4a359ccb49">ReservoirConstraintProtoOrBuilder</a>.</p>
-
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00280">280</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
-
-</div>
-</div>
-<a id="a56151962c4fee5a1b099f9916d04fd93" name="a56151962c4fee5a1b099f9916d04fd93"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a56151962c4fee5a1b099f9916d04fd93">&#9670;&nbsp;</a></span>getDemandsCount()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int getDemandsCount </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<pre>
-constants, can be negative.
-</pre><p ><code>repeated int64 demands = 4;</code> </p><dl class="section return"><dt>Returns</dt><dd>The count of demands. </dd></dl>
-
-<p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProtoOrBuilder.html#a56151962c4fee5a1b099f9916d04fd93">ReservoirConstraintProtoOrBuilder</a>.</p>
-
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00268">268</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
-
-</div>
-</div>
-<a id="a6ed93567b322b66e7e25a287e85591ed" name="a6ed93567b322b66e7e25a287e85591ed"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6ed93567b322b66e7e25a287e85591ed">&#9670;&nbsp;</a></span>getDemandsList()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">.lang.Override java.util.List&lt; java.lang.Long &gt; getDemandsList </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<pre>
-constants, can be negative.
-</pre><p ><code>repeated int64 demands = 4;</code> </p><dl class="section return"><dt>Returns</dt><dd>A list containing the demands. </dd></dl>
-
-<p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProtoOrBuilder.html#a643221724d9494dc5cdb4416ff0580c8">ReservoirConstraintProtoOrBuilder</a>.</p>
-
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00257">257</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l01408">1408</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -467,7 +395,86 @@ constants, can be negative.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00171">171</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00159">159</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+
+</div>
+</div>
+<a id="a7242fc900cc71b5e76f14e898482cfe7" name="a7242fc900cc71b5e76f14e898482cfe7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7242fc900cc71b5e76f14e898482cfe7">&#9670;&nbsp;</a></span>getLevelChanges()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">long getLevelChanges </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>index</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre>
+constants, can be negative.
+</pre><p ><code>repeated int64 level_changes = 4;</code> </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">index</td><td>The index of the element to return. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>The levelChanges at the given index. </dd></dl>
+
+<p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProtoOrBuilder.html#a7242fc900cc71b5e76f14e898482cfe7">ReservoirConstraintProtoOrBuilder</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00288">288</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+
+</div>
+</div>
+<a id="a9670047c48f70ca3d332de881e2f5e29" name="a9670047c48f70ca3d332de881e2f5e29"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9670047c48f70ca3d332de881e2f5e29">&#9670;&nbsp;</a></span>getLevelChangesCount()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int getLevelChangesCount </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre>
+constants, can be negative.
+</pre><p ><code>repeated int64 level_changes = 4;</code> </p><dl class="section return"><dt>Returns</dt><dd>The count of levelChanges. </dd></dl>
+
+<p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProtoOrBuilder.html#a9670047c48f70ca3d332de881e2f5e29">ReservoirConstraintProtoOrBuilder</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00276">276</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+
+</div>
+</div>
+<a id="a49f97ce0cad4ed99dcc0736dd795f4c3" name="a49f97ce0cad4ed99dcc0736dd795f4c3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a49f97ce0cad4ed99dcc0736dd795f4c3">&#9670;&nbsp;</a></span>getLevelChangesList()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">.lang.Override java.util.List&lt; java.lang.Long &gt; getLevelChangesList </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre>
+constants, can be negative.
+</pre><p ><code>repeated int64 level_changes = 4;</code> </p><dl class="section return"><dt>Returns</dt><dd>A list containing the levelChanges. </dd></dl>
+
+<p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProtoOrBuilder.html#a4a4a940fccb9141553cc938527065300">ReservoirConstraintProtoOrBuilder</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00265">265</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -491,7 +498,7 @@ constants, can be negative.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProtoOrBuilder.html#a5504f487a57a46ecf23358afc71865d6">ReservoirConstraintProtoOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00201">201</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00189">189</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -515,7 +522,7 @@ constants, can be negative.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProtoOrBuilder.html#a155fa3945685a7e3be9ae83528042535">ReservoirConstraintProtoOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00190">190</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00178">178</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -534,7 +541,7 @@ constants, can be negative.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l01219">1219</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l01403">1403</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -553,18 +560,18 @@ constants, can be negative.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00371">371</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00363">363</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
-<a id="ac57ab268d9b34f8ef606faa81bc116c6" name="ac57ab268d9b34f8ef606faa81bc116c6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac57ab268d9b34f8ef606faa81bc116c6">&#9670;&nbsp;</a></span>getTimes()</h2>
+<a id="ac537e0c0e04cc87b092401b72828b634" name="ac537e0c0e04cc87b092401b72828b634"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac537e0c0e04cc87b092401b72828b634">&#9670;&nbsp;</a></span>getTimeExprs()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int getTimes </td>
+          <td class="memname">.lang.Override <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProto.html">com.google.ortools.sat.LinearExpressionProto</a> getTimeExprs </td>
           <td>(</td>
           <td class="paramtype">int&#160;</td>
           <td class="paramname"><em>index</em></td><td>)</td>
@@ -573,29 +580,23 @@ constants, can be negative.
       </table>
 </div><div class="memdoc">
 <pre>
-variables.
-</pre><p ><code>repeated int32 times = 3;</code> </p><dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">index</td><td>The index of the element to return. </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>The times at the given index. </dd></dl>
+affine expressions.
+</pre><p ><code>repeated .operations_research.sat.LinearExpressionProto time_exprs = 3;</code> </p>
 
-<p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProtoOrBuilder.html#ac57ab268d9b34f8ef606faa81bc116c6">ReservoirConstraintProtoOrBuilder</a>.</p>
+<p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProtoOrBuilder.html#af80ce5a60809cca2c8beb2fdd5b22ae5">ReservoirConstraintProtoOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00240">240</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00237">237</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
-<a id="a2907532d1a8bc74dec064e49e9906523" name="a2907532d1a8bc74dec064e49e9906523"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2907532d1a8bc74dec064e49e9906523">&#9670;&nbsp;</a></span>getTimesCount()</h2>
+<a id="ab5122fa11462dddc803a3c07429af549" name="ab5122fa11462dddc803a3c07429af549"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab5122fa11462dddc803a3c07429af549">&#9670;&nbsp;</a></span>getTimeExprsCount()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int getTimesCount </td>
+          <td class="memname">.lang.Override int getTimeExprsCount </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -603,23 +604,23 @@ variables.
       </table>
 </div><div class="memdoc">
 <pre>
-variables.
-</pre><p ><code>repeated int32 times = 3;</code> </p><dl class="section return"><dt>Returns</dt><dd>The count of times. </dd></dl>
+affine expressions.
+</pre><p ><code>repeated .operations_research.sat.LinearExpressionProto time_exprs = 3;</code> </p>
 
-<p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProtoOrBuilder.html#a2907532d1a8bc74dec064e49e9906523">ReservoirConstraintProtoOrBuilder</a>.</p>
+<p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProtoOrBuilder.html#a365252816e90f0d1553eb7652d65ea9d">ReservoirConstraintProtoOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00228">228</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00226">226</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
-<a id="a04838a644253d2c304c9931ed485fd38" name="a04838a644253d2c304c9931ed485fd38"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a04838a644253d2c304c9931ed485fd38">&#9670;&nbsp;</a></span>getTimesList()</h2>
+<a id="ac4a8de021197c3ecf6fb7e9f2da26f34" name="ac4a8de021197c3ecf6fb7e9f2da26f34"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac4a8de021197c3ecf6fb7e9f2da26f34">&#9670;&nbsp;</a></span>getTimeExprsList()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">.lang.Override java.util.List&lt; java.lang.Integer &gt; getTimesList </td>
+          <td class="memname">.lang.Override java.util.List&lt; <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProto.html">com.google.ortools.sat.LinearExpressionProto</a> &gt; getTimeExprsList </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -627,12 +628,61 @@ variables.
       </table>
 </div><div class="memdoc">
 <pre>
-variables.
-</pre><p ><code>repeated int32 times = 3;</code> </p><dl class="section return"><dt>Returns</dt><dd>A list containing the times. </dd></dl>
+affine expressions.
+</pre><p ><code>repeated .operations_research.sat.LinearExpressionProto time_exprs = 3;</code> </p>
 
-<p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProtoOrBuilder.html#afc4c4ba15f604556c819d881a05d65c1">ReservoirConstraintProtoOrBuilder</a>.</p>
+<p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProtoOrBuilder.html#a18ad4699f0919c3b0891f5aed2cb4e1c">ReservoirConstraintProtoOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00217">217</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00203">203</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+
+</div>
+</div>
+<a id="ad9ea5ca090fdf57f4b2715d9df689aa1" name="ad9ea5ca090fdf57f4b2715d9df689aa1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad9ea5ca090fdf57f4b2715d9df689aa1">&#9670;&nbsp;</a></span>getTimeExprsOrBuilder()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">.lang.Override <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProtoOrBuilder.html">com.google.ortools.sat.LinearExpressionProtoOrBuilder</a> getTimeExprsOrBuilder </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>index</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre>
+affine expressions.
+</pre><p ><code>repeated .operations_research.sat.LinearExpressionProto time_exprs = 3;</code> </p>
+
+<p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProtoOrBuilder.html#a485dd3d384d92000b3330904e3fb3523">ReservoirConstraintProtoOrBuilder</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00248">248</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+
+</div>
+</div>
+<a id="a7650e56f9eac94d89ff567bf78d04e6b" name="a7650e56f9eac94d89ff567bf78d04e6b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7650e56f9eac94d89ff567bf78d04e6b">&#9670;&nbsp;</a></span>getTimeExprsOrBuilderList()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">.lang.Override java.util.List&lt;? extends <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProtoOrBuilder.html">com.google.ortools.sat.LinearExpressionProtoOrBuilder</a> &gt; getTimeExprsOrBuilderList </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre>
+affine expressions.
+</pre><p ><code>repeated .operations_research.sat.LinearExpressionProto time_exprs = 3;</code> </p>
+
+<p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProtoOrBuilder.html#a6c578e2c1f708b53dfaa01ef1a06f971">ReservoirConstraintProtoOrBuilder</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00215">215</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -670,7 +720,7 @@ variables.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00456">456</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00438">438</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -697,7 +747,7 @@ variables.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00177">177</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00165">165</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -716,7 +766,7 @@ variables.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00327">327</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00323">323</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -743,7 +793,7 @@ variables.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00557">557</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00539">539</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -771,7 +821,7 @@ variables.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00560">560</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00542">542</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -790,7 +840,7 @@ variables.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00556">556</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00538">538</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -818,7 +868,7 @@ variables.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00570">570</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00552">552</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -874,7 +924,7 @@ variables.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00529">529</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00511">511</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -912,7 +962,7 @@ variables.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00534">534</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00516">516</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -940,7 +990,7 @@ variables.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00507">507</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00489">489</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -978,7 +1028,7 @@ variables.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00511">511</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00493">493</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -1006,7 +1056,7 @@ variables.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00496">496</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00478">478</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -1044,7 +1094,7 @@ variables.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00501">501</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00483">483</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -1072,7 +1122,7 @@ variables.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00541">541</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00523">523</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -1110,7 +1160,7 @@ variables.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00547">547</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00529">529</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -1138,7 +1188,7 @@ variables.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00517">517</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00499">499</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -1176,7 +1226,7 @@ variables.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00522">522</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00504">504</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -1204,7 +1254,7 @@ variables.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00485">485</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00467">467</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -1242,7 +1292,7 @@ variables.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00490">490</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00472">472</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -1269,7 +1319,7 @@ variables.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l01214">1214</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l01398">1398</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -1288,7 +1338,7 @@ variables.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00564">564</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00546">546</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -1308,13 +1358,13 @@ variables.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00337">337</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00333">333</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
-<a id="ad937282feb9bb629e3e79926280ade18" name="ad937282feb9bb629e3e79926280ade18"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad937282feb9bb629e3e79926280ade18">&#9670;&nbsp;</a></span>ACTIVES_FIELD_NUMBER</h2>
+<a id="a79723be58fd2e16d2a652ada2ccea653" name="a79723be58fd2e16d2a652ada2ccea653"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a79723be58fd2e16d2a652ada2ccea653">&#9670;&nbsp;</a></span>ACTIVE_LITERALS_FIELD_NUMBER</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1323,7 +1373,7 @@ variables.
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">final int ACTIVES_FIELD_NUMBER = 5</td>
+          <td class="memname">final int ACTIVE_LITERALS_FIELD_NUMBER = 5</td>
         </tr>
       </table>
   </td>
@@ -1333,12 +1383,12 @@ variables.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00285">285</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00293">293</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
-<a id="adfd7735f6aa0e8dd454143a8f57fe61c" name="adfd7735f6aa0e8dd454143a8f57fe61c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adfd7735f6aa0e8dd454143a8f57fe61c">&#9670;&nbsp;</a></span>DEMANDS_FIELD_NUMBER</h2>
+<a id="aefb5502d748f358d8bf9cb523f393ce6" name="aefb5502d748f358d8bf9cb523f393ce6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aefb5502d748f358d8bf9cb523f393ce6">&#9670;&nbsp;</a></span>LEVEL_CHANGES_FIELD_NUMBER</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1347,7 +1397,7 @@ variables.
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">final int DEMANDS_FIELD_NUMBER = 4</td>
+          <td class="memname">final int LEVEL_CHANGES_FIELD_NUMBER = 4</td>
         </tr>
       </table>
   </td>
@@ -1357,7 +1407,7 @@ variables.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00245">245</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00253">253</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -1381,7 +1431,7 @@ variables.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00194">194</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00182">182</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -1405,12 +1455,12 @@ variables.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00183">183</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00171">171</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
-<a id="a458378a0b27dadc45d273716cc38ad5e" name="a458378a0b27dadc45d273716cc38ad5e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a458378a0b27dadc45d273716cc38ad5e">&#9670;&nbsp;</a></span>TIMES_FIELD_NUMBER</h2>
+<a id="a071a021ffc5dcdf537cfb4ddba4b3d05" name="a071a021ffc5dcdf537cfb4ddba4b3d05"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a071a021ffc5dcdf537cfb4ddba4b3d05">&#9670;&nbsp;</a></span>TIME_EXPRS_FIELD_NUMBER</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1419,7 +1469,7 @@ variables.
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">final int TIMES_FIELD_NUMBER = 3</td>
+          <td class="memname">final int TIME_EXPRS_FIELD_NUMBER = 3</td>
         </tr>
       </table>
   </td>
@@ -1429,7 +1479,7 @@ variables.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00205">205</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00193">193</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>

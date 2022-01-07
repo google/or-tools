@@ -1,13 +1,13 @@
 | Linux | macOS | Windows |
 |-------|-------|---------|
-| [![Status][dotnet_linux_svg]][dotnet_linux_link] | [![Status][dotnet_osx_svg]][dotnet_osx_link] | [![Status][dotnet_win_svg]][dotnet_win_link] |
+| [![Status][linux_dotnet_svg]][linux_dotnet_link] | [![Status][macos_dotnet_svg]][macos_dotnet_link] | [![Status][windows_dotnet_svg]][windows_dotnet_link] |
 
-[dotnet_linux_svg]: https://github.com/google/or-tools/workflows/.Net%20Linux%20CI/badge.svg?branch=master
-[dotnet_linux_link]: https://github.com/google/or-tools/actions?query=workflow%3A".Net+Linux+CI"
-[dotnet_osx_svg]: https://github.com/google/or-tools/workflows/.Net%20MacOS%20CI/badge.svg?branch=master
-[dotnet_osx_link]: https://github.com/google/or-tools/actions?query=workflow%3A".Net+MacOS+CI"
-[dotnet_win_svg]: https://github.com/google/or-tools/workflows/.Net%20Windows%20CI/badge.svg?branch=master
-[dotnet_win_link]: https://github.com/google/or-tools/actions?query=workflow%3A".Net+Windows+CI"
+[linux_dotnet_svg]: https://github.com/google/or-tools/actions/workflows/cmake_linux_dotnet.yml/badge.svg?branch=master
+[linux_dotnet_link]: https://github.com/google/or-tools/actions/workflows/cmake_linux_dotnet.yml
+[macos_dotnet_svg]: https://github.com/google/or-tools/actions/workflows/cmake_macos_dotnet.yml/badge.svg?branch=master
+[macos_dotnet_link]: https://github.com/google/or-tools/actions/workflows/cmake_macos_dotnet.yml
+[windows_dotnet_svg]: https://github.com/google/or-tools/actions/workflows/cmake_windows_dotnet.yml/badge.svg?branch=master
+[windows_dotnet_link]: https://github.com/google/or-tools/actions/workflows/cmake_windows_dotnet.yml
 
 # Introduction
 Try to build a .NetStandard2.0 native (for win-x64, linux-x64 and osx-x64) nuget multi package using [`dotnet/cli`](https://github.com/dotnet/cli) and the *new* .csproj format.

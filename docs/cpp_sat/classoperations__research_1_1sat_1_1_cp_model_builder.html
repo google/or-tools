@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 9.1</span>
+                <span id="sfml">Google OR-Tools 9.2</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -93,10 +93,13 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1sat_1_1_c
 <li>AddXXX to create new constraints and add them to the model. </li>
 </ul>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00617">617</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00748">748</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
+<tr class="memitem:a940d484bb6523277e1d2c742f4f534a4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a940d484bb6523277e1d2c742f4f534a4">SetName</a> (const std::string &amp;name)</td></tr>
+<tr class="memdesc:a940d484bb6523277e1d2c742f4f534a4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the name of the model.  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a940d484bb6523277e1d2c742f4f534a4">More...</a><br /></td></tr>
+<tr class="separator:a940d484bb6523277e1d2c742f4f534a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a39205137bf1d725eeb83298fed27a320"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a39205137bf1d725eeb83298fed27a320">NewIntVar</a> (const <a class="el" href="classoperations__research_1_1_domain.html">Domain</a> &amp;domain)</td></tr>
 <tr class="memdesc:a39205137bf1d725eeb83298fed27a320"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates an integer variable with the given domain.  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a39205137bf1d725eeb83298fed27a320">More...</a><br /></td></tr>
 <tr class="separator:a39205137bf1d725eeb83298fed27a320"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -131,7 +134,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:a9fb68d41ffab385f703f7944ba2e5211"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds the constraint that all literals must be true.  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a9fb68d41ffab385f703f7944ba2e5211">More...</a><br /></td></tr>
 <tr class="separator:a9fb68d41ffab385f703f7944ba2e5211"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a93e3463c812581d990d7c4524cc8c4c7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a93e3463c812581d990d7c4524cc8c4c7">AddBoolXor</a> (absl::Span&lt; const <a class="el" href="classoperations__research_1_1sat_1_1_bool_var.html">BoolVar</a> &gt; literals)</td></tr>
-<tr class="memdesc:a93e3463c812581d990d7c4524cc8c4c7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds the constraint that a odd number of literal is true.  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a93e3463c812581d990d7c4524cc8c4c7">More...</a><br /></td></tr>
+<tr class="memdesc:a93e3463c812581d990d7c4524cc8c4c7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds the constraint that an odd number of literals is true.  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a93e3463c812581d990d7c4524cc8c4c7">More...</a><br /></td></tr>
 <tr class="separator:a93e3463c812581d990d7c4524cc8c4c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9c73529fc4e296344e3a8abcf6043ac0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a9c73529fc4e296344e3a8abcf6043ac0">AddImplication</a> (<a class="el" href="classoperations__research_1_1sat_1_1_bool_var.html">BoolVar</a> a, <a class="el" href="classoperations__research_1_1sat_1_1_bool_var.html">BoolVar</a> b)</td></tr>
 <tr class="memdesc:a9c73529fc4e296344e3a8abcf6043ac0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a =&gt; b.  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a9c73529fc4e296344e3a8abcf6043ac0">More...</a><br /></td></tr>
@@ -158,8 +161,14 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:ae17bac92c54a4eabc1ddaa875d32cdd2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds left != right.  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#ae17bac92c54a4eabc1ddaa875d32cdd2">More...</a><br /></td></tr>
 <tr class="separator:ae17bac92c54a4eabc1ddaa875d32cdd2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aea10fa3042dfc4f8c5e0db27cb106e01"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#aea10fa3042dfc4f8c5e0db27cb106e01">AddAllDifferent</a> (absl::Span&lt; const <a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a> &gt; vars)</td></tr>
-<tr class="memdesc:aea10fa3042dfc4f8c5e0db27cb106e01"><td class="mdescLeft">&#160;</td><td class="mdescRight">this constraint forces all variables to have different values.  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#aea10fa3042dfc4f8c5e0db27cb106e01">More...</a><br /></td></tr>
+<tr class="memdesc:aea10fa3042dfc4f8c5e0db27cb106e01"><td class="mdescLeft">&#160;</td><td class="mdescRight">This constraint forces all variables to have different values.  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#aea10fa3042dfc4f8c5e0db27cb106e01">More...</a><br /></td></tr>
 <tr class="separator:aea10fa3042dfc4f8c5e0db27cb106e01"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad411d7d2f540870677ff93c2d079b42e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#ad411d7d2f540870677ff93c2d079b42e">AddAllDifferent</a> (absl::Span&lt; const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &gt; exprs)</td></tr>
+<tr class="memdesc:ad411d7d2f540870677ff93c2d079b42e"><td class="mdescLeft">&#160;</td><td class="mdescRight">This constraint forces all expressions to have different values.  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#ad411d7d2f540870677ff93c2d079b42e">More...</a><br /></td></tr>
+<tr class="separator:ad411d7d2f540870677ff93c2d079b42e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aedc208dd0e0d367b8668b072caaff4b9"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#aedc208dd0e0d367b8668b072caaff4b9">AddAllDifferent</a> (std::initializer_list&lt; <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &gt; exprs)</td></tr>
+<tr class="memdesc:aedc208dd0e0d367b8668b072caaff4b9"><td class="mdescLeft">&#160;</td><td class="mdescRight">This constraint forces all expressions to have different values.  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#aedc208dd0e0d367b8668b072caaff4b9">More...</a><br /></td></tr>
+<tr class="separator:aedc208dd0e0d367b8668b072caaff4b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7671d69e0d2ee5470b338710c9d13f80"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a7671d69e0d2ee5470b338710c9d13f80">AddVariableElement</a> (<a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a> index, absl::Span&lt; const <a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a> &gt; variables, <a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a> target)</td></tr>
 <tr class="memdesc:a7671d69e0d2ee5470b338710c9d13f80"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds the element constraint: variables[index] == target.  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a7671d69e0d2ee5470b338710c9d13f80">More...</a><br /></td></tr>
 <tr class="separator:a7671d69e0d2ee5470b338710c9d13f80"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -185,50 +194,69 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:aa68f742140354e58ef7811ffce23e838"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a reservoir constraint with optional refill/emptying events.  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#aa68f742140354e58ef7811ffce23e838">More...</a><br /></td></tr>
 <tr class="separator:aa68f742140354e58ef7811ffce23e838"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abf7850d0824985bff25b3013958f2b50"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_automaton_constraint.html">AutomatonConstraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#abf7850d0824985bff25b3013958f2b50">AddAutomaton</a> (absl::Span&lt; const <a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a> &gt; transition_variables, int starting_state, absl::Span&lt; const int &gt; final_states)</td></tr>
-<tr class="memdesc:abf7850d0824985bff25b3013958f2b50"><td class="mdescLeft">&#160;</td><td class="mdescRight">An automaton constraint/.  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#abf7850d0824985bff25b3013958f2b50">More...</a><br /></td></tr>
+<tr class="memdesc:abf7850d0824985bff25b3013958f2b50"><td class="mdescLeft">&#160;</td><td class="mdescRight">An automaton constraint.  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#abf7850d0824985bff25b3013958f2b50">More...</a><br /></td></tr>
 <tr class="separator:abf7850d0824985bff25b3013958f2b50"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a38c2cb81b84bc79c5ecba6d9b3a74358"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a38c2cb81b84bc79c5ecba6d9b3a74358">AddMinEquality</a> (<a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a> target, absl::Span&lt; const <a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a> &gt; vars)</td></tr>
-<tr class="memdesc:a38c2cb81b84bc79c5ecba6d9b3a74358"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds target == min(vars).  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a38c2cb81b84bc79c5ecba6d9b3a74358">More...</a><br /></td></tr>
-<tr class="separator:a38c2cb81b84bc79c5ecba6d9b3a74358"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a176df1096ed569d1b15e3d2f19d388c1"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a176df1096ed569d1b15e3d2f19d388c1">AddMinEquality</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;target, absl::Span&lt; const <a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a> &gt; vars)</td></tr>
+<tr class="memdesc:a176df1096ed569d1b15e3d2f19d388c1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds target == min(vars).  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a176df1096ed569d1b15e3d2f19d388c1">More...</a><br /></td></tr>
+<tr class="separator:a176df1096ed569d1b15e3d2f19d388c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a559fcb228e572d752feb7c34a8b5aa5e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a559fcb228e572d752feb7c34a8b5aa5e">AddMinEquality</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;target, absl::Span&lt; const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &gt; exprs)</td></tr>
+<tr class="memdesc:a559fcb228e572d752feb7c34a8b5aa5e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds target == min(exprs).  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a559fcb228e572d752feb7c34a8b5aa5e">More...</a><br /></td></tr>
+<tr class="separator:a559fcb228e572d752feb7c34a8b5aa5e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af7501ea21c5a79fe541aa88b9b1e1b81"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#af7501ea21c5a79fe541aa88b9b1e1b81">AddMinEquality</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;target, std::initializer_list&lt; <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &gt; exprs)</td></tr>
+<tr class="memdesc:af7501ea21c5a79fe541aa88b9b1e1b81"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds target == min(exprs).  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#af7501ea21c5a79fe541aa88b9b1e1b81">More...</a><br /></td></tr>
+<tr class="separator:af7501ea21c5a79fe541aa88b9b1e1b81"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acc86b30fb4b73d398398e21f5d801da3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#acc86b30fb4b73d398398e21f5d801da3">AddLinMinEquality</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;target, absl::Span&lt; const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &gt; exprs)</td></tr>
-<tr class="memdesc:acc86b30fb4b73d398398e21f5d801da3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds target == min(exprs).  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#acc86b30fb4b73d398398e21f5d801da3">More...</a><br /></td></tr>
 <tr class="separator:acc86b30fb4b73d398398e21f5d801da3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3f32fd0e59b753a40089aae8fa14f2e8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a3f32fd0e59b753a40089aae8fa14f2e8">AddMaxEquality</a> (<a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a> target, absl::Span&lt; const <a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a> &gt; vars)</td></tr>
-<tr class="memdesc:a3f32fd0e59b753a40089aae8fa14f2e8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds target == max(vars).  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a3f32fd0e59b753a40089aae8fa14f2e8">More...</a><br /></td></tr>
-<tr class="separator:a3f32fd0e59b753a40089aae8fa14f2e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a630f0c9ad7837eb9bada72f95d02b5de"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a630f0c9ad7837eb9bada72f95d02b5de">AddMaxEquality</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;target, absl::Span&lt; const <a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a> &gt; vars)</td></tr>
+<tr class="memdesc:a630f0c9ad7837eb9bada72f95d02b5de"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds target == max(vars).  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a630f0c9ad7837eb9bada72f95d02b5de">More...</a><br /></td></tr>
+<tr class="separator:a630f0c9ad7837eb9bada72f95d02b5de"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a176cc329f03b6806c8da32315cf5dd72"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a176cc329f03b6806c8da32315cf5dd72">AddMaxEquality</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;target, absl::Span&lt; const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &gt; exprs)</td></tr>
+<tr class="memdesc:a176cc329f03b6806c8da32315cf5dd72"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds target == max(exprs).  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a176cc329f03b6806c8da32315cf5dd72">More...</a><br /></td></tr>
+<tr class="separator:a176cc329f03b6806c8da32315cf5dd72"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8033cc520df315250da86521b98baa76"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a8033cc520df315250da86521b98baa76">AddMaxEquality</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;target, std::initializer_list&lt; <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &gt; exprs)</td></tr>
+<tr class="memdesc:a8033cc520df315250da86521b98baa76"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds target == max(exprs).  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a8033cc520df315250da86521b98baa76">More...</a><br /></td></tr>
+<tr class="separator:a8033cc520df315250da86521b98baa76"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad3fa9762ec2d7d414e42531bac8c3704"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#ad3fa9762ec2d7d414e42531bac8c3704">AddLinMaxEquality</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;target, absl::Span&lt; const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &gt; exprs)</td></tr>
-<tr class="memdesc:ad3fa9762ec2d7d414e42531bac8c3704"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds target == max(exprs).  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#ad3fa9762ec2d7d414e42531bac8c3704">More...</a><br /></td></tr>
 <tr class="separator:ad3fa9762ec2d7d414e42531bac8c3704"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a41656ab2aa515b1768f3325383c32a47"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a41656ab2aa515b1768f3325383c32a47">AddDivisionEquality</a> (<a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a> target, <a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a> numerator, <a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a> denominator)</td></tr>
-<tr class="memdesc:a41656ab2aa515b1768f3325383c32a47"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds target = num / denom (integer division rounded towards 0).  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a41656ab2aa515b1768f3325383c32a47">More...</a><br /></td></tr>
-<tr class="separator:a41656ab2aa515b1768f3325383c32a47"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2642f1728e719f00cf36e348124155e0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a2642f1728e719f00cf36e348124155e0">AddAbsEquality</a> (<a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a> target, <a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a> var)</td></tr>
-<tr class="memdesc:a2642f1728e719f00cf36e348124155e0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds target == abs(var).  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a2642f1728e719f00cf36e348124155e0">More...</a><br /></td></tr>
-<tr class="separator:a2642f1728e719f00cf36e348124155e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aabad4e80a83e1b7ceb05a1a33263c6af"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#aabad4e80a83e1b7ceb05a1a33263c6af">AddModuloEquality</a> (<a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a> target, <a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a> var, <a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a> mod)</td></tr>
-<tr class="memdesc:aabad4e80a83e1b7ceb05a1a33263c6af"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds target = var % mod.  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#aabad4e80a83e1b7ceb05a1a33263c6af">More...</a><br /></td></tr>
-<tr class="separator:aabad4e80a83e1b7ceb05a1a33263c6af"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acc9c643fff37dd8f960fb0a6d67803f6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#acc9c643fff37dd8f960fb0a6d67803f6">AddProductEquality</a> (<a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a> target, absl::Span&lt; const <a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a> &gt; vars)</td></tr>
-<tr class="memdesc:acc9c643fff37dd8f960fb0a6d67803f6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds target == prod(vars).  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#acc9c643fff37dd8f960fb0a6d67803f6">More...</a><br /></td></tr>
-<tr class="separator:acc9c643fff37dd8f960fb0a6d67803f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ade35c71a127dfa03a665b9a3567922a5"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#ade35c71a127dfa03a665b9a3567922a5">AddDivisionEquality</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;target, const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;numerator, const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;denominator)</td></tr>
+<tr class="memdesc:ade35c71a127dfa03a665b9a3567922a5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds target = num / denom (integer division rounded towards 0).  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#ade35c71a127dfa03a665b9a3567922a5">More...</a><br /></td></tr>
+<tr class="separator:ade35c71a127dfa03a665b9a3567922a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a24476aba55675649b9d70f860e9d644d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a24476aba55675649b9d70f860e9d644d">AddAbsEquality</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;target, const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;expr)</td></tr>
+<tr class="memdesc:a24476aba55675649b9d70f860e9d644d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds target == abs(expr).  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a24476aba55675649b9d70f860e9d644d">More...</a><br /></td></tr>
+<tr class="separator:a24476aba55675649b9d70f860e9d644d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae74a0e832048cb2b3dd48da40d0acf19"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#ae74a0e832048cb2b3dd48da40d0acf19">AddModuloEquality</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;target, const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;var, const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;mod)</td></tr>
+<tr class="memdesc:ae74a0e832048cb2b3dd48da40d0acf19"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds target = var % mod.  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#ae74a0e832048cb2b3dd48da40d0acf19">More...</a><br /></td></tr>
+<tr class="separator:ae74a0e832048cb2b3dd48da40d0acf19"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a67d4d98635a4bcb9e41d9f9617e94175"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a67d4d98635a4bcb9e41d9f9617e94175">AddMultiplicationEquality</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;target, absl::Span&lt; const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &gt; exprs)</td></tr>
+<tr class="memdesc:a67d4d98635a4bcb9e41d9f9617e94175"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds target == prod(exprs).  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a67d4d98635a4bcb9e41d9f9617e94175">More...</a><br /></td></tr>
+<tr class="separator:a67d4d98635a4bcb9e41d9f9617e94175"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1358fa6bbfd81c0bd9b4db5929db2c5a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a1358fa6bbfd81c0bd9b4db5929db2c5a">AddMultiplicationEquality</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;target, absl::Span&lt; const <a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a> &gt; vars)</td></tr>
+<tr class="memdesc:a1358fa6bbfd81c0bd9b4db5929db2c5a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds target == prod(vars).  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a1358fa6bbfd81c0bd9b4db5929db2c5a">More...</a><br /></td></tr>
+<tr class="separator:a1358fa6bbfd81c0bd9b4db5929db2c5a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a49572c20ea5b3e3edf1a8a0071b421f5"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a49572c20ea5b3e3edf1a8a0071b421f5">AddMultiplicationEquality</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;target, std::initializer_list&lt; <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &gt; exprs)</td></tr>
+<tr class="memdesc:a49572c20ea5b3e3edf1a8a0071b421f5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds target == prod(vars).  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a49572c20ea5b3e3edf1a8a0071b421f5">More...</a><br /></td></tr>
+<tr class="separator:a49572c20ea5b3e3edf1a8a0071b421f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af6e22d55cdb0a5a5dda6e70f4d339f85"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#af6e22d55cdb0a5a5dda6e70f4d339f85">AddNoOverlap</a> (absl::Span&lt; const <a class="el" href="classoperations__research_1_1sat_1_1_interval_var.html">IntervalVar</a> &gt; vars)</td></tr>
 <tr class="memdesc:af6e22d55cdb0a5a5dda6e70f4d339f85"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a no-overlap constraint that ensures that all present intervals do not overlap in time.  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#af6e22d55cdb0a5a5dda6e70f4d339f85">More...</a><br /></td></tr>
 <tr class="separator:af6e22d55cdb0a5a5dda6e70f4d339f85"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab0da51955684003ebd40b203c9515538"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_no_overlap2_d_constraint.html">NoOverlap2DConstraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#ab0da51955684003ebd40b203c9515538">AddNoOverlap2D</a> ()</td></tr>
 <tr class="memdesc:ab0da51955684003ebd40b203c9515538"><td class="mdescLeft">&#160;</td><td class="mdescRight">The no_overlap_2d constraint prevents a set of boxes from overlapping.  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#ab0da51955684003ebd40b203c9515538">More...</a><br /></td></tr>
 <tr class="separator:ab0da51955684003ebd40b203c9515538"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7eaa53689ca6adc2a83db42dfb81e2ed"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_cumulative_constraint.html">CumulativeConstraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a7eaa53689ca6adc2a83db42dfb81e2ed">AddCumulative</a> (<a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a> capacity)</td></tr>
-<tr class="memdesc:a7eaa53689ca6adc2a83db42dfb81e2ed"><td class="mdescLeft">&#160;</td><td class="mdescRight">The cumulative constraint.  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a7eaa53689ca6adc2a83db42dfb81e2ed">More...</a><br /></td></tr>
-<tr class="separator:a7eaa53689ca6adc2a83db42dfb81e2ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa00953bf30612f3b18705401e865f76f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_cumulative_constraint.html">CumulativeConstraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#aa00953bf30612f3b18705401e865f76f">AddCumulative</a> (<a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> capacity)</td></tr>
+<tr class="memdesc:aa00953bf30612f3b18705401e865f76f"><td class="mdescLeft">&#160;</td><td class="mdescRight">The cumulative constraint.  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#aa00953bf30612f3b18705401e865f76f">More...</a><br /></td></tr>
+<tr class="separator:aa00953bf30612f3b18705401e865f76f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a992e2e2fd31057ae895a5e1ee406c067"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a992e2e2fd31057ae895a5e1ee406c067">Minimize</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;expr)</td></tr>
 <tr class="memdesc:a992e2e2fd31057ae895a5e1ee406c067"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a linear minimization objective.  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a992e2e2fd31057ae895a5e1ee406c067">More...</a><br /></td></tr>
 <tr class="separator:a992e2e2fd31057ae895a5e1ee406c067"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a31a1be3f2c7681803fa97c6b33c010db"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a31a1be3f2c7681803fa97c6b33c010db">Minimize</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;expr)</td></tr>
+<tr class="memdesc:a31a1be3f2c7681803fa97c6b33c010db"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a linear minimization objective after rescaling of the double coefficients.  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a31a1be3f2c7681803fa97c6b33c010db">More...</a><br /></td></tr>
+<tr class="separator:a31a1be3f2c7681803fa97c6b33c010db"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a49f862c5400f04e70393acc6b78f096a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a49f862c5400f04e70393acc6b78f096a">Maximize</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;expr)</td></tr>
 <tr class="memdesc:a49f862c5400f04e70393acc6b78f096a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a linear maximization objective.  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a49f862c5400f04e70393acc6b78f096a">More...</a><br /></td></tr>
 <tr class="separator:a49f862c5400f04e70393acc6b78f096a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7555c0d6582783a6778bf209acc737e9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a7555c0d6582783a6778bf209acc737e9">ScaleObjectiveBy</a> (double scaling)</td></tr>
-<tr class="memdesc:a7555c0d6582783a6778bf209acc737e9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets scaling of the objective.  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a7555c0d6582783a6778bf209acc737e9">More...</a><br /></td></tr>
-<tr class="separator:a7555c0d6582783a6778bf209acc737e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5ccc3702e485c0bac752ae8cd49e5c7f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a5ccc3702e485c0bac752ae8cd49e5c7f">Maximize</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;expr)</td></tr>
+<tr class="memdesc:a5ccc3702e485c0bac752ae8cd49e5c7f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a linear maximization objective after rescaling of the double coefficients.  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a5ccc3702e485c0bac752ae8cd49e5c7f">More...</a><br /></td></tr>
+<tr class="separator:a5ccc3702e485c0bac752ae8cd49e5c7f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6a381cb501091af7e3e8604baa503e4f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a6a381cb501091af7e3e8604baa503e4f">AddDecisionStrategy</a> (absl::Span&lt; const <a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a> &gt; variables, <a class="el" href="namespaceoperations__research_1_1sat.html#a94523f1ebceff999bc59a3db7d2b98b6">DecisionStrategyProto::VariableSelectionStrategy</a> var_strategy, <a class="el" href="namespaceoperations__research_1_1sat.html#a0ab0c4789d577b30dde661c19f88d00e">DecisionStrategyProto::DomainReductionStrategy</a> domain_strategy)</td></tr>
 <tr class="memdesc:a6a381cb501091af7e3e8604baa503e4f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a decision strategy on a list of integer variables.  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a6a381cb501091af7e3e8604baa503e4f">More...</a><br /></td></tr>
 <tr class="separator:a6a381cb501091af7e3e8604baa503e4f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -238,8 +266,11 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a0a6a19ee5a4f0b894f3ac87438aeede5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a0a6a19ee5a4f0b894f3ac87438aeede5">AddHint</a> (<a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a> var, int64_t value)</td></tr>
 <tr class="memdesc:a0a6a19ee5a4f0b894f3ac87438aeede5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds hinting to a variable.  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a0a6a19ee5a4f0b894f3ac87438aeede5">More...</a><br /></td></tr>
 <tr class="separator:a0a6a19ee5a4f0b894f3ac87438aeede5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a59832da63a617fe3b1a25002e4447731"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a59832da63a617fe3b1a25002e4447731">AddHint</a> (<a class="el" href="classoperations__research_1_1sat_1_1_bool_var.html">BoolVar</a> var, bool value)</td></tr>
+<tr class="memdesc:a59832da63a617fe3b1a25002e4447731"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds hinting to a Boolean variable.  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a59832da63a617fe3b1a25002e4447731">More...</a><br /></td></tr>
+<tr class="separator:a59832da63a617fe3b1a25002e4447731"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a485bca08c27e5705acb26db873aba498"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a485bca08c27e5705acb26db873aba498">ClearHints</a> ()</td></tr>
-<tr class="memdesc:a485bca08c27e5705acb26db873aba498"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove all hints.  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a485bca08c27e5705acb26db873aba498">More...</a><br /></td></tr>
+<tr class="memdesc:a485bca08c27e5705acb26db873aba498"><td class="mdescLeft">&#160;</td><td class="mdescRight">Removes all hints.  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a485bca08c27e5705acb26db873aba498">More...</a><br /></td></tr>
 <tr class="separator:a485bca08c27e5705acb26db873aba498"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a985bb035f4cbc4de36302c52e210bb73"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a985bb035f4cbc4de36302c52e210bb73">AddAssumption</a> (<a class="el" href="classoperations__research_1_1sat_1_1_bool_var.html">BoolVar</a> lit)</td></tr>
 <tr class="memdesc:a985bb035f4cbc4de36302c52e210bb73"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a literal to the model as assumptions.  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a985bb035f4cbc4de36302c52e210bb73">More...</a><br /></td></tr>
@@ -257,7 +288,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a9a064a54dbbe3289ba6919b6cddaf813"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_proto.html">CpModelProto</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a9a064a54dbbe3289ba6919b6cddaf813">MutableProto</a> ()</td></tr>
 <tr class="separator:a9a064a54dbbe3289ba6919b6cddaf813"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a848bf666470d64c65de60c29b3c852f1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a848bf666470d64c65de60c29b3c852f1">CopyFrom</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_cp_model_proto.html">CpModelProto</a> &amp;model_proto)</td></tr>
-<tr class="memdesc:a848bf666470d64c65de60c29b3c852f1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Replace the current model with the one from the given proto.  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a848bf666470d64c65de60c29b3c852f1">More...</a><br /></td></tr>
+<tr class="memdesc:a848bf666470d64c65de60c29b3c852f1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Replaces the current model with the one from the given proto.  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a848bf666470d64c65de60c29b3c852f1">More...</a><br /></td></tr>
 <tr class="separator:a848bf666470d64c65de60c29b3c852f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae1791e483516ceaac7c275500d6ac622"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_bool_var.html">BoolVar</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#ae1791e483516ceaac7c275500d6ac622">GetBoolVarFromProtoIndex</a> (int index)</td></tr>
 <tr class="memdesc:ae1791e483516ceaac7c275500d6ac622"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the Boolean variable from its index in the proto.  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#ae1791e483516ceaac7c275500d6ac622">More...</a><br /></td></tr>
@@ -270,8 +301,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a9ff0b1b7e617ce43edcd01029eeb80af"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a2642f1728e719f00cf36e348124155e0" name="a2642f1728e719f00cf36e348124155e0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2642f1728e719f00cf36e348124155e0">&#9670;&nbsp;</a></span>AddAbsEquality()</h2>
+<a id="a24476aba55675649b9d70f860e9d644d" name="a24476aba55675649b9d70f860e9d644d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a24476aba55675649b9d70f860e9d644d">&#9670;&nbsp;</a></span>AddAbsEquality()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -279,14 +310,14 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_constraint.html">Constraint</a> AddAbsEquality </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a>&#160;</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;&#160;</td>
           <td class="paramname"><em>target</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a>&#160;</td>
-          <td class="paramname"><em>var</em>&#160;</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;&#160;</td>
+          <td class="paramname"><em>expr</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -296,12 +327,12 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Adds target == abs(var). </p>
+<p>Adds target == abs(expr). </p>
 
 </div>
 </div>
 <a id="aea10fa3042dfc4f8c5e0db27cb106e01" name="aea10fa3042dfc4f8c5e0db27cb106e01"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aea10fa3042dfc4f8c5e0db27cb106e01">&#9670;&nbsp;</a></span>AddAllDifferent()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aea10fa3042dfc4f8c5e0db27cb106e01">&#9670;&nbsp;</a></span>AddAllDifferent() <span class="overload">[1/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -316,7 +347,47 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>this constraint forces all variables to have different values. </p>
+<p>This constraint forces all variables to have different values. </p>
+
+</div>
+</div>
+<a id="ad411d7d2f540870677ff93c2d079b42e" name="ad411d7d2f540870677ff93c2d079b42e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad411d7d2f540870677ff93c2d079b42e">&#9670;&nbsp;</a></span>AddAllDifferent() <span class="overload">[2/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_constraint.html">Constraint</a> AddAllDifferent </td>
+          <td>(</td>
+          <td class="paramtype">absl::Span&lt; const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &gt;&#160;</td>
+          <td class="paramname"><em>exprs</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>This constraint forces all expressions to have different values. </p>
+
+</div>
+</div>
+<a id="aedc208dd0e0d367b8668b072caaff4b9" name="aedc208dd0e0d367b8668b072caaff4b9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aedc208dd0e0d367b8668b072caaff4b9">&#9670;&nbsp;</a></span>AddAllDifferent() <span class="overload">[3/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_constraint.html">Constraint</a> AddAllDifferent </td>
+          <td>(</td>
+          <td class="paramtype">std::initializer_list&lt; <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &gt;&#160;</td>
+          <td class="paramname"><em>exprs</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>This constraint forces all expressions to have different values. </p>
 
 </div>
 </div>
@@ -337,8 +408,8 @@ Public Member Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Adds an allowed assignments constraint. </p>
-<p >An AllowedAssignments constraint is a constraint on an array of variables that forces, when all variables are fixed to a single value, that the corresponding list of values is equal to one of the tuple added to the constraint.</p>
-<p >It returns a table constraint that allows adding tuples incrementally after construction, </p>
+<p >An AllowedAssignments constraint is a constraint on an array of variables that forces, when all variables are fixed to a single value, that the corresponding list of values is equal to one of the tuples added to the constraint.</p>
+<p >It returns a table constraint that allows adding tuples incrementally after construction. </p>
 
 </div>
 </div>
@@ -414,7 +485,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>An automaton constraint/. </p>
+<p>An automaton constraint. </p>
 <p >An automaton constraint takes a list of variables (of size n), an initial state, a set of final states, and a set of transitions. A transition is a triplet ('tail', 'head', 'label'), where 'tail' and 'head' are states, and 'label' is the label of an arc from 'head' to 'tail', corresponding to the value of one variable in the list of variables.</p>
 <p >This automaton will be unrolled into a flow with n + 1 phases. Each phase contains the possible states of the automaton. The first state contains the initial state. The last phase contains the final states.</p>
 <p >Between two consecutive phases i and i + 1, the automaton creates a set of arcs. For each transition (tail, head, label), it will add an arc from the state 'tail' of phase i and the state 'head' of phase i + 1. This arc labeled by the value 'label' of the variables 'variables[i]'. That is, this arc can only be selected if 'variables[i]' is assigned the value 'label'. A feasible solution of this constraint is an assignment of variables such that, starting from the initial state in phase 0, there is a path labeled by the values of the variables that ends in one of the final states in the final phase.</p>
@@ -478,7 +549,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Adds the constraint that a odd number of literal is true. </p>
+<p>Adds the constraint that an odd number of literals is true. </p>
 
 </div>
 </div>
@@ -504,8 +575,8 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a7eaa53689ca6adc2a83db42dfb81e2ed" name="a7eaa53689ca6adc2a83db42dfb81e2ed"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7eaa53689ca6adc2a83db42dfb81e2ed">&#9670;&nbsp;</a></span>AddCumulative()</h2>
+<a id="aa00953bf30612f3b18705401e865f76f" name="aa00953bf30612f3b18705401e865f76f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa00953bf30612f3b18705401e865f76f">&#9670;&nbsp;</a></span>AddCumulative()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -513,7 +584,7 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_cumulative_constraint.html">CumulativeConstraint</a> AddCumulative </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a>&#160;</td>
           <td class="paramname"><em>capacity</em></td><td>)</td>
           <td></td>
         </tr>
@@ -597,8 +668,8 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a41656ab2aa515b1768f3325383c32a47" name="a41656ab2aa515b1768f3325383c32a47"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a41656ab2aa515b1768f3325383c32a47">&#9670;&nbsp;</a></span>AddDivisionEquality()</h2>
+<a id="ade35c71a127dfa03a665b9a3567922a5" name="ade35c71a127dfa03a665b9a3567922a5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ade35c71a127dfa03a665b9a3567922a5">&#9670;&nbsp;</a></span>AddDivisionEquality()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -606,19 +677,19 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_constraint.html">Constraint</a> AddDivisionEquality </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a>&#160;</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;&#160;</td>
           <td class="paramname"><em>target</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a>&#160;</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;&#160;</td>
           <td class="paramname"><em>numerator</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a>&#160;</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;&#160;</td>
           <td class="paramname"><em>denominator</em>&#160;</td>
         </tr>
         <tr>
@@ -717,7 +788,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Adds an forbidden assignments constraint. </p>
 <p >A ForbiddenAssignments constraint is a constraint on an array of variables where the list of impossible combinations is provided in the tuples added to the constraint.</p>
-<p >It returns a table constraint that allows adding tuples incrementally after construction, </p>
+<p >It returns a table constraint that allows adding tuples incrementally after construction. </p>
 
 </div>
 </div>
@@ -781,8 +852,38 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="a59832da63a617fe3b1a25002e4447731" name="a59832da63a617fe3b1a25002e4447731"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a59832da63a617fe3b1a25002e4447731">&#9670;&nbsp;</a></span>AddHint() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void AddHint </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_bool_var.html">BoolVar</a>&#160;</td>
+          <td class="paramname"><em>var</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>value</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Adds hinting to a Boolean variable. </p>
+
+</div>
+</div>
 <a id="a0a6a19ee5a4f0b894f3ac87438aeede5" name="a0a6a19ee5a4f0b894f3ac87438aeede5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0a6a19ee5a4f0b894f3ac87438aeede5">&#9670;&nbsp;</a></span>AddHint()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a0a6a19ee5a4f0b894f3ac87438aeede5">&#9670;&nbsp;</a></span>AddHint() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -847,7 +948,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Adds a =&gt; b. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00665">665</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00801">801</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
@@ -977,9 +1078,115 @@ Public Member Functions</h2></td></tr>
 
 <div class="memitem">
 <div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
           <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_constraint.html">Constraint</a> AddLinMaxEquality </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;&#160;</td>
+          <td class="paramname"><em>target</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">absl::Span&lt; const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &gt;&#160;</td>
+          <td class="paramname"><em>exprs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00993">993</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+
+</div>
+</div>
+<a id="acc86b30fb4b73d398398e21f5d801da3" name="acc86b30fb4b73d398398e21f5d801da3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acc86b30fb4b73d398398e21f5d801da3">&#9670;&nbsp;</a></span>AddLinMinEquality()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_constraint.html">Constraint</a> AddLinMinEquality </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;&#160;</td>
+          <td class="paramname"><em>target</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">absl::Span&lt; const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &gt;&#160;</td>
+          <td class="paramname"><em>exprs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00975">975</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+
+</div>
+</div>
+<a id="a630f0c9ad7837eb9bada72f95d02b5de" name="a630f0c9ad7837eb9bada72f95d02b5de"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a630f0c9ad7837eb9bada72f95d02b5de">&#9670;&nbsp;</a></span>AddMaxEquality() <span class="overload">[1/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_constraint.html">Constraint</a> AddMaxEquality </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;&#160;</td>
+          <td class="paramname"><em>target</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">absl::Span&lt; const <a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a> &gt;&#160;</td>
+          <td class="paramname"><em>vars</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Adds target == max(vars). </p>
+
+</div>
+</div>
+<a id="a176cc329f03b6806c8da32315cf5dd72" name="a176cc329f03b6806c8da32315cf5dd72"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a176cc329f03b6806c8da32315cf5dd72">&#9670;&nbsp;</a></span>AddMaxEquality() <span class="overload">[2/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_constraint.html">Constraint</a> AddMaxEquality </td>
           <td>(</td>
           <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;&#160;</td>
           <td class="paramname"><em>target</em>, </td>
@@ -1002,14 +1209,74 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="acc86b30fb4b73d398398e21f5d801da3" name="acc86b30fb4b73d398398e21f5d801da3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acc86b30fb4b73d398398e21f5d801da3">&#9670;&nbsp;</a></span>AddLinMinEquality()</h2>
+<a id="a8033cc520df315250da86521b98baa76" name="a8033cc520df315250da86521b98baa76"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8033cc520df315250da86521b98baa76">&#9670;&nbsp;</a></span>AddMaxEquality() <span class="overload">[3/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_constraint.html">Constraint</a> AddLinMinEquality </td>
+          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_constraint.html">Constraint</a> AddMaxEquality </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;&#160;</td>
+          <td class="paramname"><em>target</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::initializer_list&lt; <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &gt;&#160;</td>
+          <td class="paramname"><em>exprs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Adds target == max(exprs). </p>
+
+</div>
+</div>
+<a id="a176df1096ed569d1b15e3d2f19d388c1" name="a176df1096ed569d1b15e3d2f19d388c1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a176df1096ed569d1b15e3d2f19d388c1">&#9670;&nbsp;</a></span>AddMinEquality() <span class="overload">[1/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_constraint.html">Constraint</a> AddMinEquality </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;&#160;</td>
+          <td class="paramname"><em>target</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">absl::Span&lt; const <a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a> &gt;&#160;</td>
+          <td class="paramname"><em>vars</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Adds target == min(vars). </p>
+
+</div>
+</div>
+<a id="a559fcb228e572d752feb7c34a8b5aa5e" name="a559fcb228e572d752feb7c34a8b5aa5e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a559fcb228e572d752feb7c34a8b5aa5e">&#9670;&nbsp;</a></span>AddMinEquality() <span class="overload">[2/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_constraint.html">Constraint</a> AddMinEquality </td>
           <td>(</td>
           <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;&#160;</td>
           <td class="paramname"><em>target</em>, </td>
@@ -1032,38 +1299,8 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a3f32fd0e59b753a40089aae8fa14f2e8" name="a3f32fd0e59b753a40089aae8fa14f2e8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3f32fd0e59b753a40089aae8fa14f2e8">&#9670;&nbsp;</a></span>AddMaxEquality()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_constraint.html">Constraint</a> AddMaxEquality </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a>&#160;</td>
-          <td class="paramname"><em>target</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">absl::Span&lt; const <a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a> &gt;&#160;</td>
-          <td class="paramname"><em>vars</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Adds target == max(vars). </p>
-
-</div>
-</div>
-<a id="a38c2cb81b84bc79c5ecba6d9b3a74358" name="a38c2cb81b84bc79c5ecba6d9b3a74358"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a38c2cb81b84bc79c5ecba6d9b3a74358">&#9670;&nbsp;</a></span>AddMinEquality()</h2>
+<a id="af7501ea21c5a79fe541aa88b9b1e1b81" name="af7501ea21c5a79fe541aa88b9b1e1b81"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af7501ea21c5a79fe541aa88b9b1e1b81">&#9670;&nbsp;</a></span>AddMinEquality() <span class="overload">[3/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1071,14 +1308,14 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_constraint.html">Constraint</a> AddMinEquality </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a>&#160;</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;&#160;</td>
           <td class="paramname"><em>target</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">absl::Span&lt; const <a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a> &gt;&#160;</td>
-          <td class="paramname"><em>vars</em>&#160;</td>
+          <td class="paramtype">std::initializer_list&lt; <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &gt;&#160;</td>
+          <td class="paramname"><em>exprs</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -1088,12 +1325,12 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Adds target == min(vars). </p>
+<p>Adds target == min(exprs). </p>
 
 </div>
 </div>
-<a id="aabad4e80a83e1b7ceb05a1a33263c6af" name="aabad4e80a83e1b7ceb05a1a33263c6af"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aabad4e80a83e1b7ceb05a1a33263c6af">&#9670;&nbsp;</a></span>AddModuloEquality()</h2>
+<a id="ae74a0e832048cb2b3dd48da40d0acf19" name="ae74a0e832048cb2b3dd48da40d0acf19"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae74a0e832048cb2b3dd48da40d0acf19">&#9670;&nbsp;</a></span>AddModuloEquality()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1101,19 +1338,19 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_constraint.html">Constraint</a> AddModuloEquality </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a>&#160;</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;&#160;</td>
           <td class="paramname"><em>target</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a>&#160;</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;&#160;</td>
           <td class="paramname"><em>var</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a>&#160;</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;&#160;</td>
           <td class="paramname"><em>mod</em>&#160;</td>
         </tr>
         <tr>
@@ -1152,6 +1389,96 @@ Public Member Functions</h2></td></tr>
 <li>Self-arcs are allowed except for node 0.</li>
 <li>There is no cycle in this graph, except through node 0. </li>
 </ul>
+
+</div>
+</div>
+<a id="a1358fa6bbfd81c0bd9b4db5929db2c5a" name="a1358fa6bbfd81c0bd9b4db5929db2c5a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1358fa6bbfd81c0bd9b4db5929db2c5a">&#9670;&nbsp;</a></span>AddMultiplicationEquality() <span class="overload">[1/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_constraint.html">Constraint</a> AddMultiplicationEquality </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;&#160;</td>
+          <td class="paramname"><em>target</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">absl::Span&lt; const <a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a> &gt;&#160;</td>
+          <td class="paramname"><em>vars</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Adds target == prod(vars). </p>
+
+</div>
+</div>
+<a id="a67d4d98635a4bcb9e41d9f9617e94175" name="a67d4d98635a4bcb9e41d9f9617e94175"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a67d4d98635a4bcb9e41d9f9617e94175">&#9670;&nbsp;</a></span>AddMultiplicationEquality() <span class="overload">[2/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_constraint.html">Constraint</a> AddMultiplicationEquality </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;&#160;</td>
+          <td class="paramname"><em>target</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">absl::Span&lt; const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &gt;&#160;</td>
+          <td class="paramname"><em>exprs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Adds target == prod(exprs). </p>
+
+</div>
+</div>
+<a id="a49572c20ea5b3e3edf1a8a0071b421f5" name="a49572c20ea5b3e3edf1a8a0071b421f5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a49572c20ea5b3e3edf1a8a0071b421f5">&#9670;&nbsp;</a></span>AddMultiplicationEquality() <span class="overload">[3/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_constraint.html">Constraint</a> AddMultiplicationEquality </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;&#160;</td>
+          <td class="paramname"><em>target</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::initializer_list&lt; <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &gt;&#160;</td>
+          <td class="paramname"><em>exprs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Adds target == prod(vars). </p>
 
 </div>
 </div>
@@ -1224,36 +1551,6 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="acc9c643fff37dd8f960fb0a6d67803f6" name="acc9c643fff37dd8f960fb0a6d67803f6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acc9c643fff37dd8f960fb0a6d67803f6">&#9670;&nbsp;</a></span>AddProductEquality()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_constraint.html">Constraint</a> AddProductEquality </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a>&#160;</td>
-          <td class="paramname"><em>target</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">absl::Span&lt; const <a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a> &gt;&#160;</td>
-          <td class="paramname"><em>vars</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Adds target == prod(vars). </p>
-
-</div>
-</div>
 <a id="aa68f742140354e58ef7811ffce23e838" name="aa68f742140354e58ef7811ffce23e838"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aa68f742140354e58ef7811ffce23e838">&#9670;&nbsp;</a></span>AddReservoirConstraint()</h2>
 
@@ -1282,7 +1579,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Adds a reservoir constraint with optional refill/emptying events. </p>
 <p >Maintain a reservoir level within bounds. The water level starts at 0, and at any time &gt;= 0, it must be within min_level, and max_level. Furthermore, this constraints expect all times variables to be &gt;= 0. Given an event (time, demand, active), if active is true, and if time is assigned a value t, then the level of the reservoir changes by demand (which is constant) at time t.</p>
-<p >Note that level_min can be &gt; 0, or level_max can be &lt; 0. It just forces some demands to be executed at time 0 to make sure that we are within those bounds with the executed demands. Therefore, at any time t &gt;= 0: sum(demands[i] * actives[i] if times[i] &lt;= t) in [min_level, max_level]</p>
+<p >Note that level_min can be &gt; 0, or level_max can be &lt; 0. It just forces some level_changes to be executed at time 0 to make sure that we are within those bounds with the executed level_changes. Therefore, at any time t &gt;= 0: sum(level_changes[i] * actives[i] if times[i] &lt;= t) in [min_level, max_level]</p>
 <p >It returns a <a class="el" href="classoperations__research_1_1sat_1_1_reservoir_constraint.html" title="Specialized reservoir constraint.">ReservoirConstraint</a> that allows adding optional and non optional events incrementally after construction. </p>
 
 </div>
@@ -1346,7 +1643,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00909">909</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l01085">1085</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
@@ -1384,7 +1681,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Remove all hints. </p>
+<p>Removes all hints. </p>
 
 </div>
 </div>
@@ -1404,7 +1701,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Replace the current model with the one from the given proto. </p>
+<p>Replaces the current model with the one from the given proto. </p>
 
 </div>
 </div>
@@ -1424,7 +1721,7 @@ Public Member Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Creates an always false Boolean variable. </p>
-<p >If this is called multiple time, always the same variable will be returned. </p>
+<p >If this is called multiple times, the same variable will always be returned. </p>
 
 </div>
 </div>
@@ -1488,8 +1785,28 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="a5ccc3702e485c0bac752ae8cd49e5c7f" name="a5ccc3702e485c0bac752ae8cd49e5c7f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5ccc3702e485c0bac752ae8cd49e5c7f">&#9670;&nbsp;</a></span>Maximize() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Maximize </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;&#160;</td>
+          <td class="paramname"><em>expr</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Adds a linear maximization objective after rescaling of the double coefficients. </p>
+
+</div>
+</div>
 <a id="a49f862c5400f04e70393acc6b78f096a" name="a49f862c5400f04e70393acc6b78f096a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a49f862c5400f04e70393acc6b78f096a">&#9670;&nbsp;</a></span>Maximize()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a49f862c5400f04e70393acc6b78f096a">&#9670;&nbsp;</a></span>Maximize() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1508,8 +1825,28 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="a31a1be3f2c7681803fa97c6b33c010db" name="a31a1be3f2c7681803fa97c6b33c010db"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a31a1be3f2c7681803fa97c6b33c010db">&#9670;&nbsp;</a></span>Minimize() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Minimize </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_double_linear_expr.html">DoubleLinearExpr</a> &amp;&#160;</td>
+          <td class="paramname"><em>expr</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Adds a linear minimization objective after rescaling of the double coefficients. </p>
+
+</div>
+</div>
 <a id="a992e2e2fd31057ae895a5e1ee406c067" name="a992e2e2fd31057ae895a5e1ee406c067"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a992e2e2fd31057ae895a5e1ee406c067">&#9670;&nbsp;</a></span>Minimize()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a992e2e2fd31057ae895a5e1ee406c067">&#9670;&nbsp;</a></span>Minimize() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1551,7 +1888,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00912">912</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l01088">1088</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
@@ -1591,6 +1928,7 @@ Public Member Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Creates a constant variable. </p>
+<p >This is a shortcut for NewVariable(Domain(value)).but it will return the same variable if used twice with the same constant. </p>
 
 </div>
 </div>
@@ -1781,29 +2119,27 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00911">911</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l01087">1087</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
-<a id="a7555c0d6582783a6778bf209acc737e9" name="a7555c0d6582783a6778bf209acc737e9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7555c0d6582783a6778bf209acc737e9">&#9670;&nbsp;</a></span>ScaleObjectiveBy()</h2>
+<a id="a940d484bb6523277e1d2c742f4f534a4" name="a940d484bb6523277e1d2c742f4f534a4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a940d484bb6523277e1d2c742f4f534a4">&#9670;&nbsp;</a></span>SetName()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void ScaleObjectiveBy </td>
+          <td class="memname">void SetName </td>
           <td>(</td>
-          <td class="paramtype">double&#160;</td>
-          <td class="paramname"><em>scaling</em></td><td>)</td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>name</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p>Sets scaling of the objective. </p>
-<p >It must be called after <code><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a992e2e2fd31057ae895a5e1ee406c067" title="Adds a linear minimization objective.">Minimize()</a></code> or <code><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a49f862c5400f04e70393acc6b78f096a" title="Adds a linear maximization objective.">Maximize()</a></code>).</p>
-<p ><code>scaling</code> must be &gt; 0.0. </p>
+<p>Sets the name of the model. </p>
 
 </div>
 </div>
@@ -1823,7 +2159,7 @@ Public Member Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Creates an always true Boolean variable. </p>
-<p >If this is called multiple time, always the same variable will be returned. </p>
+<p >If this is called multiple times, the same variable will always be returned. </p>
 
 </div>
 </div>

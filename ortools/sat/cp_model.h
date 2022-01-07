@@ -39,6 +39,7 @@
 #define OR_TOOLS_SAT_CP_MODEL_H_
 
 #include <cstdint>
+#include <initializer_list>
 #include <limits>
 #include <string>
 
@@ -59,54 +60,46 @@ class LinearExpr;
 class IntVar;
 
 /**
- *  A Boolean variable.
+ * A Boolean variable.
  *
- * This class wraps an IntegerVariableProto with domain [0, 1].
- * It supports the logical negation (Not).
+ * This class refer to an IntegerVariableProto with domain [0, 1] or to its
+ * logical negation (Not). This is called a Boolean Literal in other context.
  *
  * This can only be constructed via \c CpModelBuilder.NewBoolVar().
  */
 class BoolVar {
  public:
+  /// A default constructed BoolVar can be used to mean not defined yet.
+  /// However, it shouldn't be passed to any of the functions in this file.
+  /// Doing so will crash in debug mode and will result in an invalid model in
+  /// opt mode.
   BoolVar();
 
   /// Sets the name of the variable.
+  /// Note that this will always set the "positive" version of this Boolean.
   BoolVar WithName(const std::string& name);
 
   /// Returns the name of the variable.
-  const std::string& Name() const { return Proto().name(); }
+  std::string Name() const;
 
   /// Returns the logical negation of the current Boolean variable.
-  BoolVar Not() const { return BoolVar(NegatedRef(index_), cp_model_); }
+  BoolVar Not() const { return BoolVar(NegatedRef(index_), builder_); }
 
-  /// Equality test with another boolvar.
   bool operator==(const BoolVar& other) const {
-    return other.cp_model_ == cp_model_ && other.index_ == index_;
+    return other.builder_ == builder_ && other.index_ == index_;
   }
 
-  /// Dis-Equality test.
   bool operator!=(const BoolVar& other) const {
-    return other.cp_model_ != cp_model_ || other.index_ != index_;
+    return other.builder_ != builder_ || other.index_ != index_;
   }
 
-  /// Debug string.
   std::string DebugString() const;
-
-  /// Returns the underlying protobuf object (useful for testing).
-  const IntegerVariableProto& Proto() const {
-    return cp_model_->variables(index_);
-  }
-
-  /// Returns the mutable underlying protobuf object (useful for model edition).
-  IntegerVariableProto* MutableProto() const {
-    return cp_model_->mutable_variables(index_);
-  }
 
   /**
    * Returns the index of the variable in the model.
    *
-   * If the variable is the negation of another variable v, its index is
-   * -v.index() - 1.
+   * Warning: If the variable is the negation of another variable v, its index
+   * is -v.index() - 1. So this can be negative.
    */
   int index() const { return index_; }
 
@@ -114,6 +107,7 @@ class BoolVar {
   friend class CircuitConstraint;
   friend class Constraint;
   friend class CpModelBuilder;
+  friend class DoubleLinearExpr;
   friend class IntVar;
   friend class IntervalVar;
   friend class MultipleCircuitConstraint;
@@ -121,16 +115,16 @@ class BoolVar {
   friend class ReservoirConstraint;
   friend bool SolutionBooleanValue(const CpSolverResponse& r, BoolVar x);
 
-  BoolVar(int index, CpModelProto* cp_model);
+  BoolVar(int index, CpModelBuilder* builder);
 
-  CpModelProto* cp_model_ = nullptr;
+  CpModelBuilder* builder_ = nullptr;
   int index_ = std::numeric_limits<int32_t>::min();
 };
 
 std::ostream& operator<<(std::ostream& os, const BoolVar& var);
 
 /**
- *  A convenient wrapper so we can write Not(x) instead of x.Not() which is
+ * A convenient wrapper so we can write Not(x) instead of x.Not() which is
  * sometimes clearer.
  */
 BoolVar Not(BoolVar x);
@@ -140,73 +134,69 @@ BoolVar Not(BoolVar x);
  *
  * This class wraps an IntegerVariableProto.
  * This can only be constructed via \c CpModelBuilder.NewIntVar().
- *
- * Note that a BoolVar can be used in any place that accept an
- * IntVar via an implicit cast. It will simply take the value
- * 0 (when false) or 1 (when true).
  */
 class IntVar {
  public:
+  /// A default constructed IntVar can be used to mean not defined yet.
+  /// However, it shouldn't be passed to any of the functions in this file.
+  /// Doing so will crash in debug mode and will result in an invalid model in
+  /// opt mode.
   IntVar();
 
-  /// Implicit cast BoolVar -> IntVar.
+  /// Cast BoolVar -> IntVar.
+  /// The IntVar will take the value 1 (when the bool is true) and 0 otherwise.
+  ///
+  /// Warning: If you construct an IntVar from a negated BoolVar, this might
+  /// create a new variable in the model. Otherwise this just point to the same
+  /// underlying variable.
   IntVar(const BoolVar& var);  // NOLINT(runtime/explicit)
 
-  /// Cast  IntVar -> BoolVar.
-  /// Checks that the domain of the var is within {0,1}.
+  /// Cast IntVar -> BoolVar.
+  ///
+  /// Warning: The domain of the var must be within {0,1}. If not, we crash
+  /// in debug mode, and in opt mode you will get an invalid model if you use
+  /// this BoolVar anywhere since it will not have a valid domain.
   BoolVar ToBoolVar() const;
 
   /// Sets the name of the variable.
   IntVar WithName(const std::string& name);
 
   /// Returns the name of the variable (or the empty string if not set).
-  const std::string& Name() const { return Proto().name(); }
+  std::string Name() const;
 
-  /// Adds a constant value to an integer variable and returns a linear
-  /// expression.
-  LinearExpr AddConstant(int64_t value) const;
-
-  /// Equality test with another IntVar.
   bool operator==(const IntVar& other) const {
-    return other.cp_model_ == cp_model_ && other.index_ == index_;
+    return other.builder_ == builder_ && other.index_ == index_;
   }
 
-  /// Difference test with anpther IntVar.
   bool operator!=(const IntVar& other) const {
-    return other.cp_model_ != cp_model_ || other.index_ != index_;
+    return other.builder_ != builder_ || other.index_ != index_;
   }
 
-  /// Returns a debug string.
+  // Returns the domain of the variable.
+  ::operations_research::Domain Domain() const;
+
   std::string DebugString() const;
 
-  /// Returns the underlying protobuf object (useful for testing).
-  const IntegerVariableProto& Proto() const {
-    return cp_model_->variables(index_);
-  }
-
-  /// Returns the mutable underlying protobuf object (useful for model edition).
-  IntegerVariableProto* MutableProto() const {
-    return cp_model_->mutable_variables(index_);
-  }
-
-  /// Returns the index of the variable in the model.
+  /// Returns the index of the variable in the model. This will be non-negative.
   int index() const { return index_; }
+
+  /// Deprecated. Just do var + cte where needed.
+  LinearExpr AddConstant(int64_t value) const;
 
  private:
   friend class BoolVar;
   friend class CpModelBuilder;
   friend class CumulativeConstraint;
+  friend class DoubleLinearExpr;
   friend class LinearExpr;
   friend class IntervalVar;
   friend class ReservoirConstraint;
   friend int64_t SolutionIntegerValue(const CpSolverResponse& r,
                                       const LinearExpr& expr);
-  friend int64_t SolutionIntegerMin(const CpSolverResponse& r, IntVar x);
-  friend int64_t SolutionIntegerMax(const CpSolverResponse& r, IntVar x);
 
-  IntVar(int index, CpModelProto* cp_model);
+  IntVar(int index, CpModelBuilder* builder);
 
-  CpModelProto* cp_model_ = nullptr;
+  CpModelBuilder* builder_ = nullptr;
   int index_ = std::numeric_limits<int32_t>::min();
 };
 
@@ -215,47 +205,43 @@ std::ostream& operator<<(std::ostream& os, const IntVar& var);
 /**
  * A dedicated container for linear expressions.
  *
- * This class helps building and manipulating linear expressions.
  * With the use of implicit constructors, it can accept integer values, Boolean
- * and Integer variables. Note that Not(x) will be silently transformed into
- * 1 - x when added to the linear expression.
+ * and Integer variables. Note that Not(x) will be silently transformed into 1 -
+ * x when added to the linear expression. It also support operator overloads to
+ * construct the linear expression naturally.
  *
- * Furthermore, static methods allows sums and scalar products, with or without
- * an additional constant.
+ * Furthermore, static methods allow to construct a linear expression from sums
+ * or scalar products.
  *
  * Usage:
  * \code
   CpModelBuilder cp_model;
-  IntVar x = model.NewIntVar(0, 10, "x");
-  IntVar y = model.NewIntVar(0, 10, "y");
+  IntVar x = model.NewIntVar({0, 10}).WithName("x");
+  IntVar y = model.NewIntVar({0, 10}).WithName("y");
   BoolVar b = model.NewBoolVar().WithName("b");
   BoolVar c = model.NewBoolVar().WithName("c");
-  LinearExpr e1(x);  // e1 = x.
-  LinearExpr e2 = LinearExpr::Sum({x, y}).AddConstant(5);  // e2 = x + y + 5;
-  LinearExpr e3 = LinearExpr::ScalProd({x, y}, {2, -1});  // e3 = 2 * x - y.
-  LinearExpr e4(b);  // e4 = b.
-  LinearExpr e5(b.Not());  // e5 = 1 - b.
-  // If passing a std::vector<BoolVar>, a specialized method must be called.
+  LinearExpr e1(x);  // Or e1 = x.
+  LinearExpr e2 = x + y + 5;
+  LinearExpr e3 = 2 * x - y;
+  LinearExpr e4 = b;
+  LinearExpr e5 = b.Not();  // 1 - b.
   std::vector<BoolVar> bools = {b, Not(c)};
-  LinearExpr e6 = LinearExpr::BooleanSum(bools);  // e6 = b + 1 - c;
-  // e7 = -3 * b + 1 - c;
-  LinearExpr e7 = LinearExpr::BooleanScalProd(bools, {-3, 1});
+  LinearExpr e6 = LinearExpr::Sum(bools);   // b + 1 - c;
+  LinearExpr e7 = -3 * b + Not(c);  // -3 * b + 1 - c;
   \endcode
  *  This can be used implicitly in some of the CpModelBuilder methods.
  * \code
-  cp_model.AddGreaterThan(x, 5);  // x > 5
-  cp_model.AddEquality(x, LinearExpr(y).AddConstant(5));  // x == y + 5
+  cp_model.AddGreaterThan(x, 5);
+  cp_model.AddEquality(x, y + 5);
   \endcode
   */
 class LinearExpr {
  public:
-  LinearExpr();
+  /// Creates an empty linear expression with value zero.
+  LinearExpr() = default;
 
-  /**
-   * Constructs a linear expression from a Boolean variable.
-   *
-   *  It deals with logical negation correctly.
-   */
+  /// Constructs a linear expression from a Boolean variable.
+  /// It deals with logical negation correctly.
   LinearExpr(BoolVar var);  // NOLINT(runtime/explicit)
 
   /// Constructs a linear expression from an integer variable.
@@ -264,59 +250,207 @@ class LinearExpr {
   /// Constructs a constant linear expression.
   LinearExpr(int64_t constant);  // NOLINT(runtime/explicit)
 
-  /// Adds a constant value to the linear expression.
-  LinearExpr& AddConstant(int64_t value);
-
-  /// Adds a single integer variable to the linear expression.
-  LinearExpr& AddVar(IntVar var);
-
-  /// Adds a term (var * coeff) to the linear expression.
-  LinearExpr& AddTerm(IntVar var, int64_t coeff);
-
-  /// Adds another linear expression to the linear expression.
-  LinearExpr& AddExpression(const LinearExpr& expr);
-
   /// Constructs the sum of a list of variables.
   static LinearExpr Sum(absl::Span<const IntVar> vars);
+
+  /// Constructs the sum of a list of Boolean variables.
+  static LinearExpr Sum(absl::Span<const BoolVar> vars);
+
+  /// Constructs the sum of a list of variables.
+  // TODO(user): Remove when the operators + and * are implemented.
+  static LinearExpr Sum(std::initializer_list<IntVar> vars);
 
   /// Constructs the scalar product of variables and coefficients.
   static LinearExpr ScalProd(absl::Span<const IntVar> vars,
                              absl::Span<const int64_t> coeffs);
 
-  /// Constructs the sum of a list of Booleans.
-  static LinearExpr BooleanSum(absl::Span<const BoolVar> vars);
+  /// Constructs the scalar product of Boolean variables and coefficients.
+  static LinearExpr ScalProd(absl::Span<const BoolVar> vars,
+                             absl::Span<const int64_t> coeffs);
 
-  /// Constructs the scalar product of Booleans and coefficients.
-  static LinearExpr BooleanScalProd(absl::Span<const BoolVar> vars,
-                                    absl::Span<const int64_t> coeffs);
+  /// Constructs the scalar product of variables and coefficients.
+  // TODO(user): Remove when the operators + and * are implemented.
+  static LinearExpr ScalProd(std::initializer_list<IntVar> vars,
+                             absl::Span<const int64_t> coeffs);
+
   /// Constructs var * coefficient.
   static LinearExpr Term(IntVar var, int64_t coefficient);
 
-  /// Returns the vector of variables.
-  const std::vector<IntVar>& variables() const { return variables_; }
+  /// Constructs bool * coefficient.
+  static LinearExpr Term(BoolVar var, int64_t coefficient);
+
+  /// Deprecated. Use Sum() instead.
+  static LinearExpr BooleanSum(absl::Span<const BoolVar> vars);
+
+  /// Deprecated. Use ScalProd() instead.
+  static LinearExpr BooleanScalProd(absl::Span<const BoolVar> vars,
+                                    absl::Span<const int64_t> coeffs);
+
+  /// Constructs a linear expr from its proto representation.
+  static LinearExpr FromProto(const LinearExpressionProto& proto);
+
+  // Operators.
+  LinearExpr& operator+=(const LinearExpr& other);
+  LinearExpr& operator-=(const LinearExpr& other);
+  LinearExpr& operator*=(int64_t factor);
+
+  // Deprecated. Use operators instead.
+  LinearExpr& AddConstant(int64_t value);
+  LinearExpr& AddVar(IntVar var);
+  LinearExpr& AddVar(BoolVar var);
+  LinearExpr& AddTerm(BoolVar var, int64_t coeff);
+  LinearExpr& AddTerm(IntVar var, int64_t coeff);
+  LinearExpr& AddExpression(const LinearExpr& expr) { return *this += expr; }
+
+  /// Returns the vector of variable indices.
+  const std::vector<int>& variables() const { return variables_; }
 
   /// Returns the vector of coefficients.
   const std::vector<int64_t>& coefficients() const { return coefficients_; }
 
+  /// Returns true if the expression has no variables.
+  const bool IsConstant() const { return variables_.empty(); }
+
   /// Returns the constant term.
   int64_t constant() const { return constant_; }
 
-  /// Checks that the expression is 1 * var + 0, and returns var.
-  IntVar Var() const;
-
-  /// Checks that the expression is constant and returns its value.
-  int64_t Value() const;
-
-  /// Debug string.
-  std::string DebugString() const;
+  /**
+   * Debug string. If the CpModelBuilder is passed, the string will include
+   * variable names and domains. Otherwise, you will get a shorter string with
+   * only variable indices.
+   */
+  std::string DebugString(const CpModelProto* proto = nullptr) const;
 
  private:
-  std::vector<IntVar> variables_;
+  std::vector<int> variables_;
   std::vector<int64_t> coefficients_;
   int64_t constant_ = 0;
 };
 
 std::ostream& operator<<(std::ostream& os, const LinearExpr& e);
+
+/**
+ * A dedicated container for linear expressions with double coefficients.
+ *
+ * This class helps building and manipulating linear expressions.
+ * Note that Not(x) will be silently transformed into 1 - x when added to the
+ * linear expression.
+ *
+ * Furthermore, static methods allows sums and scalar products, with or without
+ * an additional constant.
+ *
+ * Usage:
+ * \code
+  CpModelBuilder cp_model;
+  IntVar x = model.NewIntVar({0, 10}).WithName("x");
+  IntVar y = model.NewIntVar({0, 10}).WithName("y");
+  BoolVar b = model.NewBoolVar().WithName("b");
+  BoolVar c = model.NewBoolVar().WithName("c");
+  DoubleLinearExpr e1(x);  // e1 = x.
+  // e2 = x + y + 5
+  DoubleLinearExpr e2 = DoubleLinearExpr::Sum({x, y}).AddConstant(5.0);
+  // e3 = 2 * x - y
+  DoubleLinearExpr e3 = DoubleLinearExpr::ScalProd({x, y}, {2, -1});
+  DoubleLinearExpr e4(b);  // e4 = b.
+  DoubleLinearExpr e5(b.Not());  // e5 = 1 - b.
+  // If passing a std::vector<BoolVar>, a specialized method must be called.
+  std::vector<BoolVar> bools = {b, Not(c)};
+  DoubleLinearExpr e6 = DoubleLinearExpr::Sum(bools);  // e6 = b + 1 - c;
+  // e7 = -3.0 * b + 1.5 - 1.5 * c;
+  DoubleLinearExpr e7 = DoubleLinearExpr::ScalProd(bools, {-3.0, 1.5});
+  \endcode
+ *  This can be used in the objective definition.
+ * \code
+  // Minimize 3.4 * y + 5.2
+  cp_model.Minimize(DoubleLinearExpr::Term(y, 3.4).AddConstant(5.2));
+  \endcode
+  */
+class DoubleLinearExpr {
+ public:
+  DoubleLinearExpr();
+
+  /// Constructs a linear expression from a Boolean variable.
+  /// It deals with logical negation correctly.
+  explicit DoubleLinearExpr(BoolVar var);
+
+  /// Constructs a linear expression from an integer variable.
+  explicit DoubleLinearExpr(IntVar var);
+
+  /// Constructs a constant linear expression.
+  explicit DoubleLinearExpr(double constant);
+
+  /// Adds a constant value to the linear expression.
+  DoubleLinearExpr& operator+=(double value);
+
+  /// Adds a single integer variable to the linear expression.
+  DoubleLinearExpr& operator+=(IntVar var);
+  DoubleLinearExpr& operator+=(BoolVar var);
+
+  /// Adds another linear expression to the linear expression.
+  DoubleLinearExpr& operator+=(const DoubleLinearExpr& expr);
+
+  /// Adds a term (var * coeff) to the linear expression.
+  DoubleLinearExpr& AddTerm(IntVar var, double coeff);
+  DoubleLinearExpr& AddTerm(BoolVar var, double coeff);
+
+  /// Deprecated. Use +=.
+  DoubleLinearExpr& AddConstant(double constant);
+
+  /// Adds a constant value to the linear expression.
+  DoubleLinearExpr& operator-=(double value);
+
+  /// Adds a single integer variable to the linear expression.
+  DoubleLinearExpr& operator-=(IntVar var);
+
+  /// Adds another linear expression to the linear expression.
+  DoubleLinearExpr& operator-=(const DoubleLinearExpr& expr);
+
+  /// Multiply the linear expression by a constant.
+  DoubleLinearExpr& operator*=(double coeff);
+
+  /// Constructs the sum of a list of variables.
+  static DoubleLinearExpr Sum(absl::Span<const IntVar> vars);
+
+  /// Constructs the sum of a list of Boolean variables.
+  static DoubleLinearExpr Sum(absl::Span<const BoolVar> vars);
+
+  /// Constructs the sum of a list of variables.
+  static DoubleLinearExpr Sum(std::initializer_list<IntVar> vars);
+
+  /// Constructs the scalar product of variables and coefficients.
+  static DoubleLinearExpr ScalProd(absl::Span<const IntVar> vars,
+                                   absl::Span<const double> coeffs);
+
+  /// Constructs the scalar product of Boolean variables and coefficients.
+  static DoubleLinearExpr ScalProd(absl::Span<const BoolVar> vars,
+                                   absl::Span<const double> coeffs);
+
+  /// Constructs the scalar product of variables and coefficients.
+  static DoubleLinearExpr ScalProd(std::initializer_list<IntVar> vars,
+                                   absl::Span<const double> coeffs);
+
+  /// Returns the vector of variable indices.
+  const std::vector<int>& variables() const { return variables_; }
+
+  /// Returns the vector of coefficients.
+  const std::vector<double>& coefficients() const { return coefficients_; }
+
+  // Returns true if the expression has no variable.
+  const bool IsConstant() const { return variables_.empty(); }
+
+  /// Returns the constant term.
+  double constant() const { return constant_; }
+
+  /// Debug string. See the documentation for LinearExpr::DebugString().
+  std::string DebugString(const CpModelProto* proto = nullptr) const;
+
+ private:
+  std::vector<int> variables_;
+  std::vector<double> coefficients_;
+  double constant_ = 0;
+};
+
+std::ostream& operator<<(std::ostream& os, const DoubleLinearExpr& e);
 
 /**
  * Represents a Interval variable.
@@ -340,7 +474,10 @@ std::ostream& operator<<(std::ostream& os, const LinearExpr& e);
  */
 class IntervalVar {
  public:
-  /// Default ctor.
+  /// A default constructed IntervalVar can be used to mean not defined yet.
+  /// However, it shouldn't be passed to any of the functions in this file.
+  /// Doing so will crash in debug mode and will result in an invalid model in
+  /// opt mode.
   IntervalVar();
 
   /// Sets the name of the variable.
@@ -370,26 +507,16 @@ class IntervalVar {
 
   /// Equality test with another interval variable.
   bool operator==(const IntervalVar& other) const {
-    return other.cp_model_ == cp_model_ && other.index_ == index_;
+    return other.builder_ == builder_ && other.index_ == index_;
   }
 
   /// Difference test with another interval variable.
   bool operator!=(const IntervalVar& other) const {
-    return other.cp_model_ != cp_model_ || other.index_ != index_;
+    return other.builder_ != builder_ || other.index_ != index_;
   }
 
   /// Returns a debug string.
   std::string DebugString() const;
-
-  /// Returns the underlying protobuf object (useful for testing).
-  const IntervalConstraintProto& Proto() const {
-    return cp_model_->constraints(index_).interval();
-  }
-
-  /// Returns the mutable underlying protobuf object (useful for model edition).
-  IntervalConstraintProto* MutableProto() const {
-    return cp_model_->mutable_constraints(index_)->mutable_interval();
-  }
 
   /// Returns the index of the interval constraint in the model.
   int index() const { return index_; }
@@ -400,9 +527,9 @@ class IntervalVar {
   friend class NoOverlap2DConstraint;
   friend std::ostream& operator<<(std::ostream& os, const IntervalVar& var);
 
-  IntervalVar(int index, CpModelProto* cp_model);
+  IntervalVar(int index, CpModelBuilder* builder);
 
-  CpModelProto* cp_model_ = nullptr;
+  CpModelBuilder* builder_ = nullptr;
   int index_ = std::numeric_limits<int32_t>::min();
 };
 
@@ -534,17 +661,18 @@ class ReservoirConstraint : public Constraint {
   /**
    * Adds a mandatory event
    *
-   * It will increase the used capacity by `c demand at time `c time.
+   * It will increase the used capacity by `level_change` at time `time`.
    */
-  void AddEvent(IntVar time, int64_t demand);
+  void AddEvent(LinearExpr time, int64_t level_change);
 
   /**
    * Adds a optional event
    *
-   * If `c is_active is true, It will increase the used capacity by `c demand at
-   * time `c time.
+   * If `c is_active is true, It will increase the used capacity by
+   * `level_change` at time `c time.
    */
-  void AddOptionalEvent(IntVar time, int64_t demand, BoolVar is_active);
+  void AddOptionalEvent(LinearExpr time, int64_t level_change,
+                        BoolVar is_active);
 
  private:
   friend class CpModelBuilder;
@@ -593,11 +721,14 @@ class NoOverlap2DConstraint : public Constraint {
  *
  * This constraint allows adding fixed or variables demands to the cumulative
  * constraint incrementally.
+ *
+ * One cannot mix the AddDemand() and AddDemandWithEnergy() APIs in the same
+ * cumulative API. Either always supply energy info, or never.
  */
 class CumulativeConstraint : public Constraint {
  public:
   /// Adds a pair (interval, demand) to the constraint.
-  void AddDemand(IntervalVar interval, IntVar demand);
+  void AddDemand(IntervalVar interval, LinearExpr demand);
 
  private:
   friend class CpModelBuilder;
@@ -616,22 +747,27 @@ class CumulativeConstraint : public Constraint {
  */
 class CpModelBuilder {
  public:
+  /// Sets the name of the model.
+  void SetName(const std::string& name);
+
   /// Creates an integer variable with the given domain.
   IntVar NewIntVar(const Domain& domain);
 
   /// Creates a Boolean variable.
   BoolVar NewBoolVar();
 
-  /// Creates a constant variable.
+  /// Creates a constant variable. This is a shortcut for
+  /// NewVariable(Domain(value)).but it will return the same variable if used
+  /// twice with the same constant.
   IntVar NewConstant(int64_t value);
 
   /// Creates an always true Boolean variable.
-  /// If this is called multiple time, always the same variable will be
+  /// If this is called multiple times, the same variable will always be
   /// returned.
   BoolVar TrueVar();
 
   /// Creates an always false Boolean variable.
-  /// If this is called multiple time, always the same variable will be
+  /// If this is called multiple times, the same variable will always be
   /// returned.
   BoolVar FalseVar();
 
@@ -658,7 +794,7 @@ class CpModelBuilder {
   /// Adds the constraint that all literals must be true.
   Constraint AddBoolAnd(absl::Span<const BoolVar> literals);
 
-  /// Adds the constraint that a odd number of literal is true.
+  /// Adds the constraint that an odd number of literals is true.
   Constraint AddBoolXor(absl::Span<const BoolVar> literals);
 
   /// Adds a => b.
@@ -687,8 +823,14 @@ class CpModelBuilder {
   /// Adds left != right.
   Constraint AddNotEqual(const LinearExpr& left, const LinearExpr& right);
 
-  /// this constraint forces all variables to have different values.
+  /// This constraint forces all variables to have different values.
   Constraint AddAllDifferent(absl::Span<const IntVar> vars);
+
+  /// This constraint forces all expressions to have different values.
+  Constraint AddAllDifferent(absl::Span<const LinearExpr> exprs);
+
+  /// This constraint forces all expressions to have different values.
+  Constraint AddAllDifferent(std::initializer_list<LinearExpr> exprs);
 
   /// Adds the element constraint: variables[index] == target
   Constraint AddVariableElement(IntVar index,
@@ -737,11 +879,11 @@ class CpModelBuilder {
    *
    * An AllowedAssignments constraint is a constraint on an array of variables
    * that forces, when all variables are fixed to a single value, that the
-   * corresponding list of values is equal to one of the tuple added to the
+   * corresponding list of values is equal to one of the tuples added to the
    * constraint.
    *
    * It returns a table constraint that allows adding tuples incrementally after
-   * construction,
+   * construction.
    */
   TableConstraint AddAllowedAssignments(absl::Span<const IntVar> vars);
 
@@ -753,11 +895,11 @@ class CpModelBuilder {
    * to the constraint.
    *
    * It returns a table constraint that allows adding tuples incrementally after
-   * construction,
+   * construction.
    */
   TableConstraint AddForbiddenAssignments(absl::Span<const IntVar> vars);
 
-  /** An inverse constraint
+  /** An inverse constraint.
    *
    * It enforces that if 'variables[i]' is assigned a value
    * 'j', then inverse_variables[j] is assigned a value 'i'. And vice versa.
@@ -776,9 +918,10 @@ class CpModelBuilder {
    * time t.
    *
    * Note that level_min can be > 0, or level_max can be < 0. It just forces
-   * some demands to be executed at time 0 to make sure that we are within those
-   * bounds with the executed demands. Therefore, at any time t >= 0:
-   *     sum(demands[i] * actives[i] if times[i] <= t) in [min_level, max_level]
+   * some level_changes to be executed at time 0 to make sure that we are within
+   * those bounds with the executed level_changes. Therefore, at any time t >=
+   * 0: sum(level_changes[i] * actives[i] if times[i] <= t) in [min_level,
+   * max_level]
    *
    * It returns a ReservoirConstraint that allows adding optional and non
    * optional events incrementally after construction.
@@ -787,8 +930,7 @@ class CpModelBuilder {
                                              int64_t max_level);
 
   /**
-   *
-   * An automaton constraint/
+   * An automaton constraint.
    *
    * An automaton constraint takes a list of variables (of size n), an initial
    * state, a set of final states, and a set of transitions. A transition is a
@@ -818,34 +960,67 @@ class CpModelBuilder {
       absl::Span<const int> final_states);
 
   /// Adds target == min(vars).
-  Constraint AddMinEquality(IntVar target, absl::Span<const IntVar> vars);
+  Constraint AddMinEquality(const LinearExpr& target,
+                            absl::Span<const IntVar> vars);
 
   /// Adds target == min(exprs).
+  Constraint AddMinEquality(const LinearExpr& target,
+                            absl::Span<const LinearExpr> exprs);
+
+  /// Adds target == min(exprs).
+  Constraint AddMinEquality(const LinearExpr& target,
+                            std::initializer_list<LinearExpr> exprs);
+
+  // Deprecated, use AddMinEquality.
   Constraint AddLinMinEquality(const LinearExpr& target,
-                               absl::Span<const LinearExpr> exprs);
+                               absl::Span<const LinearExpr> exprs) {
+    return AddMinEquality(target, exprs);
+  }
 
   /// Adds target == max(vars).
-  Constraint AddMaxEquality(IntVar target, absl::Span<const IntVar> vars);
+  Constraint AddMaxEquality(const LinearExpr& target,
+                            absl::Span<const IntVar> vars);
 
   /// Adds target == max(exprs).
+  Constraint AddMaxEquality(const LinearExpr& target,
+                            absl::Span<const LinearExpr> exprs);
+
+  /// Adds target == max(exprs).
+  Constraint AddMaxEquality(const LinearExpr& target,
+                            std::initializer_list<LinearExpr> exprs);
+
+  // Deprecated, use AddMaxEquality.
   Constraint AddLinMaxEquality(const LinearExpr& target,
-                               absl::Span<const LinearExpr> exprs);
+                               absl::Span<const LinearExpr> exprs) {
+    return AddMaxEquality(target, exprs);
+  }
 
   /// Adds target = num / denom (integer division rounded towards 0).
-  Constraint AddDivisionEquality(IntVar target, IntVar numerator,
-                                 IntVar denominator);
+  Constraint AddDivisionEquality(const LinearExpr& target,
+                                 const LinearExpr& numerator,
+                                 const LinearExpr& denominator);
 
-  /// Adds target == abs(var).
-  Constraint AddAbsEquality(IntVar target, IntVar var);
+  /// Adds target == abs(expr).
+  Constraint AddAbsEquality(const LinearExpr& target, const LinearExpr& expr);
 
   /// Adds target = var % mod.
-  Constraint AddModuloEquality(IntVar target, IntVar var, IntVar mod);
+  Constraint AddModuloEquality(const LinearExpr& target, const LinearExpr& var,
+                               const LinearExpr& mod);
+
+  /// Adds target == prod(exprs).
+  Constraint AddMultiplicationEquality(const LinearExpr& target,
+                                       absl::Span<const LinearExpr> exprs);
 
   /// Adds target == prod(vars).
-  Constraint AddProductEquality(IntVar target, absl::Span<const IntVar> vars);
+  Constraint AddMultiplicationEquality(const LinearExpr& target,
+                                       absl::Span<const IntVar> vars);
+
+  /// Adds target == prod(vars).
+  Constraint AddMultiplicationEquality(const LinearExpr& target,
+                                       std::initializer_list<LinearExpr> exprs);
 
   /**
-   *  Adds a no-overlap constraint that ensures that all present intervals do
+   * Adds a no-overlap constraint that ensures that all present intervals do
    * not overlap in time.
    */
   Constraint AddNoOverlap(absl::Span<const IntervalVar> vars);
@@ -855,27 +1030,27 @@ class CpModelBuilder {
    */
   NoOverlap2DConstraint AddNoOverlap2D();
 
-  /** The cumulative constraint
+  /**
+   * The cumulative constraint
    *
    * It ensures that for any integer point, the sum of the demands of the
    * intervals containing that point does not exceed the capacity.
    */
-  CumulativeConstraint AddCumulative(IntVar capacity);
+  CumulativeConstraint AddCumulative(LinearExpr capacity);
 
   /// Adds a linear minimization objective.
   void Minimize(const LinearExpr& expr);
 
+  /// Adds a linear minimization objective after rescaling of the double
+  /// coefficients.
+  void Minimize(const DoubleLinearExpr& expr);
+
   /// Adds a linear maximization objective.
   void Maximize(const LinearExpr& expr);
 
-  /**
-   * Sets scaling of the objective.
-   *
-   * It must be called after \c Minimize() or \c Maximize()).
-   *
-   * \c scaling must be > 0.0.
-   */
-  void ScaleObjectiveBy(double scaling);
+  /// Adds a linear maximization objective after rescaling of the double
+  /// coefficients.
+  void Maximize(const DoubleLinearExpr& expr);
 
   /// Adds a decision strategy on a list of integer variables.
   void AddDecisionStrategy(
@@ -892,7 +1067,10 @@ class CpModelBuilder {
   /// Adds hinting to a variable.
   void AddHint(IntVar var, int64_t value);
 
-  /// Remove all hints.
+  /// Adds hinting to a Boolean variable.
+  void AddHint(BoolVar var, bool value);
+
+  /// Removes all hints.
   void ClearHints();
 
   /// Adds a literal to the model as assumptions.
@@ -904,14 +1082,12 @@ class CpModelBuilder {
   /// Remove all assumptions from the model.
   void ClearAssumptions();
 
-  // TODO(user) : add MapDomain?
-
   const CpModelProto& Build() const { return Proto(); }
 
   const CpModelProto& Proto() const { return cp_model_; }
   CpModelProto* MutableProto() { return &cp_model_; }
 
-  /// Replace the current model with the one from the given proto.
+  /// Replaces the current model with the one from the given proto.
   void CopyFrom(const CpModelProto& model_proto);
 
   /// Returns the Boolean variable from its index in the proto.
@@ -927,16 +1103,11 @@ class CpModelBuilder {
   friend class CumulativeConstraint;
   friend class ReservoirConstraint;
   friend class IntervalVar;
+  friend class IntVar;
 
   // Fills the 'expr_proto' with the linear expression represented by 'expr'.
-  void LinearExprToProto(const LinearExpr& expr,
-                         LinearExpressionProto* expr_proto);
-
-  // Rebuilds a LinearExpr from a LinearExpressionProto.
-  // This method is a member of CpModelBuilder because it needs to be friend
-  // with IntVar.
-  static LinearExpr LinearExprFromProto(const LinearExpressionProto& expr_proto,
-                                        CpModelProto* model_proto_);
+  LinearExpressionProto LinearExprToProto(const LinearExpr& expr,
+                                          bool negate = false);
 
   // Returns a (cached) integer variable index with a constant value.
   int IndexFromConstant(int64_t value);
@@ -959,14 +1130,170 @@ class CpModelBuilder {
 /// Evaluates the value of an linear expression in a solver response.
 int64_t SolutionIntegerValue(const CpSolverResponse& r, const LinearExpr& expr);
 
-/// Returns the min of an integer variable in a solution.
-int64_t SolutionIntegerMin(const CpSolverResponse& r, IntVar x);
-
-/// Returns the max of an integer variable in a solution.
-int64_t SolutionIntegerMax(const CpSolverResponse& r, IntVar x);
-
 /// Evaluates the value of a Boolean literal in a solver response.
 bool SolutionBooleanValue(const CpSolverResponse& r, BoolVar x);
+
+// Returns a more readable and compact DebugString() than
+// proto.variables(index).DebugString(). This is used by IntVar::DebugString()
+// but also allow to get the same string from a const proto.
+std::string VarDebugString(const CpModelProto& proto, int index);
+
+// ============================================================================
+// Minimal support for "natural" API to create LinearExpr.
+//
+// Note(user): This might be optimized further by optimizing LinearExpr for
+// holding one term, or introducing an LinearTerm class, but these should mainly
+// be used to construct small expressions. Revisit if we run into performance
+// issues. Note that if perf become a bottleneck for a client, then probably
+// directly writing the proto will be even faster.
+// ============================================================================
+
+inline LinearExpr operator-(LinearExpr expr) { return expr *= -1; }
+
+inline LinearExpr operator+(const LinearExpr& lhs, const LinearExpr& rhs) {
+  LinearExpr temp(lhs);
+  temp += rhs;
+  return temp;
+}
+inline LinearExpr operator+(LinearExpr&& lhs, const LinearExpr& rhs) {
+  lhs += rhs;
+  return std::move(lhs);
+}
+inline LinearExpr operator+(const LinearExpr& lhs, LinearExpr&& rhs) {
+  rhs += lhs;
+  return std::move(rhs);
+}
+inline LinearExpr operator+(LinearExpr&& lhs, LinearExpr&& rhs) {
+  if (lhs.variables().size() < rhs.variables().size()) {
+    rhs += std::move(lhs);
+    return std::move(rhs);
+  } else {
+    lhs += std::move(rhs);
+    return std::move(lhs);
+  }
+}
+
+inline LinearExpr operator-(const LinearExpr& lhs, const LinearExpr& rhs) {
+  LinearExpr temp(lhs);
+  temp -= rhs;
+  return temp;
+}
+inline LinearExpr operator-(LinearExpr&& lhs, const LinearExpr& rhs) {
+  lhs -= rhs;
+  return std::move(lhs);
+}
+inline LinearExpr operator-(const LinearExpr& lhs, LinearExpr&& rhs) {
+  rhs -= lhs;
+  return std::move(rhs);
+}
+inline LinearExpr operator-(LinearExpr&& lhs, LinearExpr&& rhs) {
+  if (lhs.variables().size() < rhs.variables().size()) {
+    rhs -= std::move(lhs);
+    return std::move(rhs);
+  } else {
+    lhs -= std::move(rhs);
+    return std::move(lhs);
+  }
+}
+
+inline LinearExpr operator*(LinearExpr expr, int64_t factor) {
+  expr *= factor;
+  return expr;
+}
+inline LinearExpr operator*(int64_t factor, LinearExpr expr) {
+  expr *= factor;
+  return expr;
+}
+
+// For DoubleLinearExpr.
+
+inline DoubleLinearExpr operator-(DoubleLinearExpr expr) {
+  expr *= -1;
+  return expr;
+}
+
+inline DoubleLinearExpr operator+(const DoubleLinearExpr& lhs,
+                                  const DoubleLinearExpr& rhs) {
+  DoubleLinearExpr temp(lhs);
+  temp += rhs;
+  return temp;
+}
+inline DoubleLinearExpr operator+(DoubleLinearExpr&& lhs,
+                                  const DoubleLinearExpr& rhs) {
+  lhs += rhs;
+  return std::move(lhs);
+}
+inline DoubleLinearExpr operator+(const DoubleLinearExpr& lhs,
+                                  DoubleLinearExpr&& rhs) {
+  rhs += lhs;
+  return std::move(rhs);
+}
+inline DoubleLinearExpr operator+(DoubleLinearExpr&& lhs,
+                                  DoubleLinearExpr&& rhs) {
+  if (lhs.variables().size() < rhs.variables().size()) {
+    rhs += std::move(lhs);
+    return std::move(rhs);
+  } else {
+    lhs += std::move(rhs);
+    return std::move(lhs);
+  }
+}
+
+inline DoubleLinearExpr operator+(DoubleLinearExpr expr, double rhs) {
+  expr += rhs;
+  return expr;
+}
+inline DoubleLinearExpr operator+(double lhs, DoubleLinearExpr expr) {
+  expr += lhs;
+  return expr;
+}
+
+inline DoubleLinearExpr operator-(const DoubleLinearExpr& lhs,
+                                  const DoubleLinearExpr& rhs) {
+  DoubleLinearExpr temp(lhs);
+  temp -= rhs;
+  return temp;
+}
+inline DoubleLinearExpr operator-(DoubleLinearExpr&& lhs,
+                                  const DoubleLinearExpr& rhs) {
+  lhs -= rhs;
+  return std::move(lhs);
+}
+inline DoubleLinearExpr operator-(const DoubleLinearExpr& lhs,
+                                  DoubleLinearExpr&& rhs) {
+  rhs -= lhs;
+  return std::move(rhs);
+}
+inline DoubleLinearExpr operator-(DoubleLinearExpr&& lhs,
+                                  DoubleLinearExpr&& rhs) {
+  if (lhs.variables().size() < rhs.variables().size()) {
+    rhs -= std::move(lhs);
+    return std::move(rhs);
+  } else {
+    lhs -= std::move(rhs);
+    return std::move(lhs);
+  }
+}
+
+inline DoubleLinearExpr operator-(DoubleLinearExpr epxr, double rhs) {
+  epxr -= rhs;
+  return epxr;
+}
+inline DoubleLinearExpr operator-(double lhs, DoubleLinearExpr expr) {
+  expr *= -1;
+  expr += lhs;
+  return expr;
+}
+
+inline DoubleLinearExpr operator*(DoubleLinearExpr expr, double factor) {
+  expr *= factor;
+  return expr;
+}
+
+inline DoubleLinearExpr operator*(double factor, DoubleLinearExpr expr) {
+  expr *= factor;
+  return expr;
+}
 
 }  // namespace sat
 }  // namespace operations_research

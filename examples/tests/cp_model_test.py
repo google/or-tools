@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """Tests for ortools.sat.python.cp_model."""
 
 import unittest
@@ -327,7 +328,7 @@ class CpModelTest(unittest.TestCase):
         model.AddAllDifferent(x)
         self.assertEqual(5, len(model.Proto().variables))
         self.assertEqual(1, len(model.Proto().constraints))
-        self.assertEqual(5, len(model.Proto().constraints[0].all_diff.vars))
+        self.assertEqual(5, len(model.Proto().constraints[0].all_diff.exprs))
 
     def testMaxEquality(self):
         print('testMaxEquality')
@@ -337,8 +338,9 @@ class CpModelTest(unittest.TestCase):
         model.AddMaxEquality(x, y)
         self.assertEqual(6, len(model.Proto().variables))
         self.assertEqual(1, len(model.Proto().constraints))
-        self.assertEqual(5, len(model.Proto().constraints[0].int_max.vars))
-        self.assertEqual(0, model.Proto().constraints[0].int_max.target)
+        self.assertEqual(5, len(model.Proto().constraints[0].lin_max.exprs))
+        self.assertEqual(0, model.Proto().constraints[0].lin_max.target.vars[0])
+        self.assertEqual(1, model.Proto().constraints[0].lin_max.target.coeffs[0])
 
     def testMinEquality(self):
         print('testMinEquality')
@@ -348,34 +350,39 @@ class CpModelTest(unittest.TestCase):
         model.AddMinEquality(x, y)
         self.assertEqual(6, len(model.Proto().variables))
         self.assertEqual(1, len(model.Proto().constraints))
-        self.assertEqual(5, len(model.Proto().constraints[0].int_min.vars))
-        self.assertEqual(0, model.Proto().constraints[0].int_min.target)
+        self.assertEqual(5, len(model.Proto().constraints[0].lin_max.exprs))
+        self.assertEqual(0, model.Proto().constraints[0].lin_max.target.vars[0])
+        self.assertEqual(-1, model.Proto().constraints[0].lin_max.target.coeffs[0])
 
     def testMinEqualityWithConstant(self):
         print('testMinEqualityWithConstant')
         model = cp_model.CpModel()
         x = model.NewIntVar(0, 4, 'x')
         y = model.NewIntVar(0, 4, 'y')
-        model.AddMinEquality(x, [y, 3])
-        self.assertEqual(3, len(model.Proto().variables))
+        model.AddMinEquality(x, [2 * y, 3])
+        self.assertEqual(2, len(model.Proto().variables))
         self.assertEqual(1, len(model.Proto().constraints))
-        self.assertEqual(2, len(model.Proto().constraints[0].int_min.vars))
-        self.assertEqual(1, model.Proto().constraints[0].int_min.vars[0])
-        self.assertEqual(2, model.Proto().constraints[0].int_min.vars[1])
-        self.assertEqual(3, model.Proto().variables[2].domain[0])
-        self.assertEqual(3, model.Proto().variables[2].domain[1])
+        self.assertEqual(2, len(model.Proto().constraints[0].lin_max.exprs))
+        self.assertEqual(1, model.Proto().constraints[0].lin_max.exprs[0].vars[0])
+        self.assertEqual(-2, model.Proto().constraints[0].lin_max.exprs[0].coeffs[0])
+        self.assertEqual(-3, model.Proto().constraints[0].lin_max.exprs[1].offset)
 
     def testAbs(self):
         print('testAbs')
         model = cp_model.CpModel()
         x = model.NewIntVar(0, 4, 'x')
         y = model.NewIntVar(-5, 5, 'y')
-        model.AddMaxEquality(x, [-y, y])
+        model.AddAbsEquality(x, y)
         self.assertEqual(2, len(model.Proto().variables))
         self.assertEqual(1, len(model.Proto().constraints))
-        self.assertEqual(2, len(model.Proto().constraints[0].int_max.vars))
-        self.assertEqual(-2, model.Proto().constraints[0].int_max.vars[0])
-        self.assertEqual(1, model.Proto().constraints[0].int_max.vars[1])
+        lin_max = model.Proto().constraints[0].lin_max
+        self.assertEqual(0, lin_max.target.vars[0])
+        self.assertEqual(1, lin_max.target.coeffs[0])
+        self.assertEqual(2, len(lin_max.exprs))
+        self.assertEqual(1, lin_max.exprs[0].vars[0])
+        self.assertEqual(1, lin_max.exprs[0].coeffs[0])
+        self.assertEqual(1, lin_max.exprs[1].vars[0])
+        self.assertEqual(-1, lin_max.exprs[1].coeffs[0])
         passed = False
         try:
             z = abs(x)
@@ -393,11 +400,11 @@ class CpModelTest(unittest.TestCase):
         x = model.NewIntVar(0, 10, 'x')
         y = model.NewIntVar(0, 50, 'y')
         model.AddDivisionEquality(x, y, 6)
-        self.assertEqual(3, len(model.Proto().variables))
+        self.assertEqual(2, len(model.Proto().variables))
         self.assertEqual(1, len(model.Proto().constraints))
-        self.assertEqual(2, len(model.Proto().constraints[0].int_div.vars))
-        self.assertEqual(1, model.Proto().constraints[0].int_div.vars[0])
-        self.assertEqual(2, model.Proto().constraints[0].int_div.vars[1])
+        self.assertEqual(2, len(model.Proto().constraints[0].int_div.exprs))
+        self.assertEqual(1, model.Proto().constraints[0].int_div.exprs[0].vars[0])
+        self.assertEqual(6, model.Proto().constraints[0].int_div.exprs[1].offset)
 
     def testModulo(self):
         print('testModulo')
@@ -405,22 +412,22 @@ class CpModelTest(unittest.TestCase):
         x = model.NewIntVar(0, 10, 'x')
         y = model.NewIntVar(0, 50, 'y')
         model.AddModuloEquality(x, y, 6)
-        self.assertEqual(3, len(model.Proto().variables))
+        self.assertEqual(2, len(model.Proto().variables))
         self.assertEqual(1, len(model.Proto().constraints))
-        self.assertEqual(2, len(model.Proto().constraints[0].int_mod.vars))
-        self.assertEqual(1, model.Proto().constraints[0].int_mod.vars[0])
-        self.assertEqual(2, model.Proto().constraints[0].int_mod.vars[1])
+        self.assertEqual(2, len(model.Proto().constraints[0].int_mod.exprs))
+        self.assertEqual(1, model.Proto().constraints[0].int_mod.exprs[0].vars[0])
+        self.assertEqual(6, model.Proto().constraints[0].int_mod.exprs[1].offset)
 
     def testProdEquality(self):
         print('testProdEquality')
         model = cp_model.CpModel()
         x = model.NewIntVar(0, 4, 'x')
         y = [model.NewIntVar(0, 4, 'y%i' % i) for i in range(5)]
-        model.AddProdEquality(x, y)
+        model.AddMultiplicationEquality(x, y)
         self.assertEqual(6, len(model.Proto().variables))
         self.assertEqual(1, len(model.Proto().constraints))
-        self.assertEqual(5, len(model.Proto().constraints[0].int_prod.vars))
-        self.assertEqual(0, model.Proto().constraints[0].int_prod.target)
+        self.assertEqual(5, len(model.Proto().constraints[0].int_prod.exprs))
+        self.assertEqual(0, model.Proto().constraints[0].int_prod.target.vars[0])
 
     def testBoolOr(self):
         print('testBoolOr')
@@ -459,37 +466,37 @@ class CpModelTest(unittest.TestCase):
 
     def testAssertIsInt64(self):
         print('testAssertIsInt64')
-        cp_model_helper.AssertIsInt64(123)
-        cp_model_helper.AssertIsInt64(2**63 - 1)
-        cp_model_helper.AssertIsInt64(-2**63)
+        cp_model_helper.assert_is_int64(123)
+        cp_model_helper.assert_is_int64(2**63 - 1)
+        cp_model_helper.assert_is_int64(-2**63)
 
     def testCapInt64(self):
         print('testCapInt64')
         self.assertEqual(
-            cp_model_helper.CapInt64(cp_model.INT_MAX), cp_model.INT_MAX)
+            cp_model_helper.to_capped_int64(cp_model.INT_MAX), cp_model.INT_MAX)
         self.assertEqual(
-            cp_model_helper.CapInt64(cp_model.INT_MAX + 1), cp_model.INT_MAX)
+            cp_model_helper.to_capped_int64(cp_model.INT_MAX + 1), cp_model.INT_MAX)
         self.assertEqual(
-            cp_model_helper.CapInt64(cp_model.INT_MIN), cp_model.INT_MIN)
+            cp_model_helper.to_capped_int64(cp_model.INT_MIN), cp_model.INT_MIN)
         self.assertEqual(
-            cp_model_helper.CapInt64(cp_model.INT_MIN - 1), cp_model.INT_MIN)
-        self.assertEqual(cp_model_helper.CapInt64(15), 15)
+            cp_model_helper.to_capped_int64(cp_model.INT_MIN - 1), cp_model.INT_MIN)
+        self.assertEqual(cp_model_helper.to_capped_int64(15), 15)
 
     def testCapSub(self):
         print('testCapSub')
-        self.assertEqual(cp_model_helper.CapSub(10, 5), 5)
+        self.assertEqual(cp_model_helper.capped_subtraction(10, 5), 5)
         self.assertEqual(
-            cp_model_helper.CapSub(cp_model.INT_MIN, 5), cp_model.INT_MIN)
+            cp_model_helper.capped_subtraction(cp_model.INT_MIN, 5), cp_model.INT_MIN)
         self.assertEqual(
-            cp_model_helper.CapSub(cp_model.INT_MIN, -5), cp_model.INT_MIN)
+            cp_model_helper.capped_subtraction(cp_model.INT_MIN, -5), cp_model.INT_MIN)
         self.assertEqual(
-            cp_model_helper.CapSub(cp_model.INT_MAX, 5), cp_model.INT_MAX)
+            cp_model_helper.capped_subtraction(cp_model.INT_MAX, 5), cp_model.INT_MAX)
         self.assertEqual(
-            cp_model_helper.CapSub(cp_model.INT_MAX, -5), cp_model.INT_MAX)
+            cp_model_helper.capped_subtraction(cp_model.INT_MAX, -5), cp_model.INT_MAX)
         self.assertEqual(
-            cp_model_helper.CapSub(2, cp_model.INT_MIN), cp_model.INT_MAX)
+            cp_model_helper.capped_subtraction(2, cp_model.INT_MIN), cp_model.INT_MAX)
         self.assertEqual(
-            cp_model_helper.CapSub(2, cp_model.INT_MAX), cp_model.INT_MIN)
+            cp_model_helper.capped_subtraction(2, cp_model.INT_MAX), cp_model.INT_MIN)
 
     def testGetOrMakeIndexFromConstant(self):
         print('testGetOrMakeIndexFromConstant')
@@ -532,8 +539,8 @@ class CpModelTest(unittest.TestCase):
         y = model.NewIntVar(0, 3, 'y')
         self.assertEqual(repr(x), 'x(0..4)')
         self.assertEqual(repr(x * 2), 'ProductCst(x(0..4), 2)')
-        self.assertEqual(repr(x + y), 'SumArray(x(0..4), y(0..3), 0)')
-        self.assertEqual(repr(x + 5), 'SumArray(x(0..4), 5)')
+        self.assertEqual(repr(x + y), 'Sum(x(0..4), y(0..3))')
+        self.assertEqual(repr(x + 5), 'Sum(x(0..4), 5)')
 
     def testDisplayBounds(self):
         print('testDisplayBounds')

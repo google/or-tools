@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.1</span>
+   &#160;<span id="projectnumber">9.2</span>
    </div>
   </td>
  </tr>
@@ -96,7 +96,7 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1_vehicle_
 <div class="textblock"><p >Helper class that manages vehicles. </p>
 <p >This class is based on the <a class="el" href="structoperations__research_1_1_routing_model_1_1_vehicle_type_container.html" title="Struct used to sort and store vehicles by their type.">RoutingModel::VehicleTypeContainer</a> that sorts and stores vehicles based on their "type". </p>
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00046">46</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00048">48</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -116,6 +116,9 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ae273572e5466d452e207c045ee242b4a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae1f5dd925d8845bf8826dfa9bad2518b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_vehicle_type_curator.html#ae1f5dd925d8845bf8826dfa9bad2518b">ReinjectVehicleOfClass</a> (int vehicle, int <a class="el" href="routing__search_8cc.html#a1a01a2753d74fedd87264d8bd34a12df">vehicle_class</a>, int64_t fixed_cost)</td></tr>
 <tr class="separator:ae1f5dd925d8845bf8826dfa9bad2518b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2f14bd5a823d4b8de9bf858ec54466cc"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_vehicle_type_curator.html#a2f14bd5a823d4b8de9bf858ec54466cc">HasCompatibleVehicleOfType</a> (int type, const std::function&lt; bool(int)&gt; &amp;vehicle_is_compatible) const</td></tr>
+<tr class="memdesc:a2f14bd5a823d4b8de9bf858ec54466cc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Searches a compatible vehicle of the given type; returns false if none was found.  <a href="classoperations__research_1_1_vehicle_type_curator.html#a2f14bd5a823d4b8de9bf858ec54466cc">More...</a><br /></td></tr>
+<tr class="separator:a2f14bd5a823d4b8de9bf858ec54466cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3c728b8544bdbae03f52979a1fda6f90"><td class="memItemLeft" align="right" valign="top">std::pair&lt; int, int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_vehicle_type_curator.html#a3c728b8544bdbae03f52979a1fda6f90">GetCompatibleVehicleOfType</a> (int type, std::function&lt; bool(int)&gt; vehicle_is_compatible, std::function&lt; bool(int)&gt; stop_and_return_vehicle)</td></tr>
 <tr class="memdesc:a3c728b8544bdbae03f52979a1fda6f90"><td class="mdescLeft">&#160;</td><td class="mdescRight">Searches for the best compatible vehicle of the given type, i.e.  <a href="classoperations__research_1_1_vehicle_type_curator.html#a3c728b8544bdbae03f52979a1fda6f90">More...</a><br /></td></tr>
 <tr class="separator:a3c728b8544bdbae03f52979a1fda6f90"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -145,7 +148,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00048">48</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00050">50</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
 
 </div>
 </div>
@@ -185,7 +188,7 @@ Public Member Functions</h2></td></tr>
 <p>Searches for the best compatible vehicle of the given type, i.e. </p>
 <p >the first vehicle v of type 'type' for which vehicle_is_compatible(v) returns true. If a compatible <em>vehicle</em> is found, its index is removed from vehicles_per_vehicle_class_ and the function returns {vehicle, -1}. If for some <em>vehicle</em> 'stop_and_return_vehicle' returns true before a compatible vehicle is found, the function simply returns {-1, vehicle}. Returns {-1, -1} if no compatible vehicle is found and the stopping condition is never met. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l00127">127</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l00140">140</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
 
 </div>
 </div>
@@ -213,7 +216,39 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00064">64</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00066">66</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
+
+</div>
+</div>
+<a id="a2f14bd5a823d4b8de9bf858ec54466cc" name="a2f14bd5a823d4b8de9bf858ec54466cc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2f14bd5a823d4b8de9bf858ec54466cc">&#9670;&nbsp;</a></span>HasCompatibleVehicleOfType()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool HasCompatibleVehicleOfType </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>type</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::function&lt; bool(int)&gt; &amp;&#160;</td>
+          <td class="paramname"><em>vehicle_is_compatible</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Searches a compatible vehicle of the given type; returns false if none was found. </p>
+
+<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l00128">128</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
 
 </div>
 </div>
@@ -240,7 +275,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00052">52</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00054">54</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
 
 </div>
 </div>
@@ -285,7 +320,7 @@ Public Member Functions</h2></td></tr>
 </div><div class="memdoc">
 <p >Add the vehicle class entry to the set (it was removed when vehicles_per_vehicle_class_[vehicle_class] got empty).</p>
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00076">76</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00078">78</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
 
 </div>
 </div>
@@ -307,7 +342,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Resets the vehicles stored, storing only vehicles from the vehicle_type_container_ for which store_vehicle() returns true. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l00076">76</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l00077">77</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
 
 </div>
 </div>
@@ -335,7 +370,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00054">54</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00056">56</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
 
 </div>
 </div>
@@ -357,7 +392,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Goes through all the currently stored vehicles and removes vehicles for which remove_vehicle() returns true. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l00105">105</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l00106">106</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
 
 </div>
 </div>

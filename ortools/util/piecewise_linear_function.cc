@@ -18,6 +18,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/container/btree_set.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/logging.h"
 
@@ -708,7 +709,7 @@ void PiecewiseLinearFunction::Operation(
   const std::vector<PiecewiseSegment>& other_segments = other.segments();
   own_segments.swap(segments_);
 
-  std::set<int64_t> start_x_points;
+  absl::btree_set<int64_t> start_x_points;
   for (int i = 0; i < own_segments.size(); ++i) {
     start_x_points.insert(own_segments[i].start_x());
   }

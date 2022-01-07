@@ -67,7 +67,7 @@ void GolombRuler(int size) {
   for (int i = 0; i < size; ++i) {
     for (int j = i + 1; j < size; ++j) {
       const IntVar diff = cp_model.NewIntVar(domain);
-      cp_model.AddEquality(LinearExpr::Sum({diff, ticks[i]}), ticks[j]);
+      cp_model.AddEquality(diff, ticks[j] - ticks[i]);
       diffs.push_back(diff);
     }
   }

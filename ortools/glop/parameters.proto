@@ -22,7 +22,7 @@ syntax = "proto2";
 
 package operations_research.glop;
 
-// next id = 66
+// next id = 68
 message GlopParameters {
 
   // Supported algorithms for scaling:
@@ -441,6 +441,9 @@ message GlopParameters {
   // relevant files.
   optional bool log_search_progress = 61 [default = false];
 
+  // If true, logs will be displayed to stdout instead of using Google log info.
+  optional bool log_to_stdout = 66 [default = true];
+
   // If the starting basis contains FREE variable with bounds, we will move
   // any such variable to their closer bounds if the distance is smaller than
   // this parameter.
@@ -465,5 +468,8 @@ message GlopParameters {
   // this situation can happen only if a starting value was specified via
   // SetStartingVariableValuesForNextSolve().
   optional bool push_to_vertex = 65 [default = true];
+
+  // If presolve runs, include the pass that detects implied free variables.
+  optional bool use_implied_free_preprocessor = 67 [default = true];
 
 }

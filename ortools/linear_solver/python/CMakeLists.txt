@@ -5,7 +5,7 @@ set_property(SOURCE linear_solver.i PROPERTY COMPILE_DEFINITIONS
 swig_add_library(pywraplp
   TYPE SHARED
   LANGUAGE python
-  OUTPUT_DIR ${PROJECT_BINARY_DIR}/python/${PROJECT_NAME}/linear_solver
+  OUTPUT_DIR ${PYTHON_PROJECT_DIR}/linear_solver
   SOURCES linear_solver.i)
 
 target_include_directories(pywraplp PRIVATE ${Python3_INCLUDE_DIRS})

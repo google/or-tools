@@ -13,6 +13,9 @@
 
 #include "ortools/packing/arc_flow_solver.h"
 
+#include <string>
+
+#include "absl/container/btree_map.h"
 #include "absl/flags/flag.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/file.h"
@@ -72,13 +75,18 @@ double ConvertVectorBinPackingProblem(const vbp::VectorBinPackingProblem& input,
 vbp::VectorBinPackingSolution SolveVectorBinPackingWithArcFlow(
     const vbp::VectorBinPackingProblem& problem,
     MPSolver::OptimizationProblemType solver_type,
-    const std::string& mip_params, double time_limit, int num_threads) {
+    const std::string& mip_params, double time_limit, int num_threads,
+    int max_bins) {
   ArcFlowGraph graph;
   const double arc_flow_time = ConvertVectorBinPackingProblem(problem, &graph);
 
   int max_num_bins = 0;
-  for (const auto& item : problem.item()) {
-    max_num_bins += item.num_copies();
+  if (max_bins > 0) {
+    max_num_bins = max_bins;
+  } else {
+    for (const auto& item : problem.item()) {
+      max_num_bins += item.num_copies();
+    }
   }
   const int num_types = problem.item_size();
   std::vector<std::vector<MPVariable*>> incoming_vars(graph.nodes.size());
@@ -194,12 +202,10 @@ vbp::VectorBinPackingSolution SolveVectorBinPackingWithArcFlow(
     };
     const auto pop_next_item = [&node_to_next_count_item](int node) {
       CHECK(!node_to_next_count_item[node].empty());
-      NextCountItem& arc = node_to_next_count_item[node].back();
-      const int next = arc.next;
+      auto& [next, count, item] = node_to_next_count_item[node].back();
       CHECK_NE(next, -1);
-      const int item = arc.item;
-      CHECK_GT(arc.count, 0);
-      if (--arc.count == 0) {
+      CHECK_GT(count, 0);
+      if (--count == 0) {
         node_to_next_count_item[node].pop_back();
       }
       return NextItem({next, item});
@@ -208,21 +214,21 @@ vbp::VectorBinPackingSolution SolveVectorBinPackingWithArcFlow(
     const int start_node = 0;
     const int end_node = graph.nodes.size() - 1;
     while (!node_to_next_count_item[start_node].empty()) {
-      std::map<int, int> item_count;
+      absl::btree_map<int, int> item_count;
       int current = start_node;
       while (current != end_node) {
-        const NextItem n = pop_next_item(current);
-        if (n.item != -1) {
-          item_count[n.item]++;
+        const auto& [next, item] = pop_next_item(current);
+        if (item != -1) {
+          item_count[item]++;
         } else {
-          CHECK_EQ(n.next, end_node);
+          CHECK_EQ(next, end_node);
         }
-        current = n.next;
+        current = next;
       }
       vbp::VectorBinPackingOneBinInSolution* bin = solution.add_bins();
-      for (const auto& it : item_count) {
-        bin->add_item_indices(it.first);
-        bin->add_item_copies(it.second);
+      for (const auto& [item, count] : item_count) {
+        bin->add_item_indices(item);
+        bin->add_item_copies(count);
       }
     }
   }

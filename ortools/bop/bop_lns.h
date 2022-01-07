@@ -23,7 +23,6 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/random.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/bop/bop_base.h"
 #include "ortools/bop/bop_parameters.pb.h"
@@ -129,7 +128,7 @@ class BopAdaptiveLNSOptimizer : public BopOptimizerBase {
 class ObjectiveBasedNeighborhood : public NeighborhoodGenerator {
  public:
   ObjectiveBasedNeighborhood(const BopConstraintTerms* objective_terms,
-                             MTRandom* random)
+                             absl::BitGenRef random)
       : objective_terms_(*objective_terms), random_(random) {}
   ~ObjectiveBasedNeighborhood() final {}
 
@@ -138,7 +137,7 @@ class ObjectiveBasedNeighborhood : public NeighborhoodGenerator {
                             double difficulty,
                             sat::SatSolver* sat_propagator) final;
   const BopConstraintTerms& objective_terms_;
-  MTRandom* random_;
+  absl::BitGenRef random_;
 };
 
 // Generates a neighborhood by randomly selecting a subset of constraints and
@@ -147,7 +146,7 @@ class ObjectiveBasedNeighborhood : public NeighborhoodGenerator {
 class ConstraintBasedNeighborhood : public NeighborhoodGenerator {
  public:
   ConstraintBasedNeighborhood(const BopConstraintTerms* objective_terms,
-                              MTRandom* random)
+                              absl::BitGenRef random)
       : objective_terms_(*objective_terms), random_(random) {}
   ~ConstraintBasedNeighborhood() final {}
 
@@ -156,7 +155,7 @@ class ConstraintBasedNeighborhood : public NeighborhoodGenerator {
                             double difficulty,
                             sat::SatSolver* sat_propagator) final;
   const BopConstraintTerms& objective_terms_;
-  MTRandom* random_;
+  absl::BitGenRef random_;
 };
 
 // Generates a neighborhood by taking a random local neighborhood in an
@@ -165,7 +164,7 @@ class ConstraintBasedNeighborhood : public NeighborhoodGenerator {
 class RelationGraphBasedNeighborhood : public NeighborhoodGenerator {
  public:
   RelationGraphBasedNeighborhood(const sat::LinearBooleanProblem& problem,
-                                 MTRandom* random);
+                                 absl::BitGenRef random);
   ~RelationGraphBasedNeighborhood() final {}
 
  private:
@@ -176,7 +175,7 @@ class RelationGraphBasedNeighborhood : public NeighborhoodGenerator {
   // TODO(user): reuse by_variable_matrix_ from the LS? Note however than we
   // don't need the coefficients here.
   absl::StrongVector<VariableIndex, std::vector<ConstraintIndex>> columns_;
-  MTRandom* random_;
+  absl::BitGenRef random_;
 };
 
 }  // namespace bop

@@ -32,21 +32,23 @@
 namespace operations_research {
 namespace sat {
 
-// For a given set of intervals and demands, we compute the maximum energy of
-// each task and make sure it is less than the span of the intervals * its
+// For a given set of intervals and demands, we compute the energy of
+// each task and make sure their sum fits in the span of the intervals * its
 // capacity.
 //
 // If an interval is optional, it contributes
 //    min_demand * min_size * presence_literal
 // amount of total energy.
 //
-// If an interval is performed, it contributes either min_demand * size or
-// demand * min_size. We choose the most violated formulation.
+// If an interval is performed, we use the linear energy formulation (if
+// defined, that is if different from a constant -1), or the McCormick
+// relaxation of the product size * demand if not defined.
 //
 // The maximum energy is capacity * span of intervals at level 0.
 CutGenerator CreateCumulativeEnergyCutGenerator(
     const std::vector<IntervalVariable>& intervals,
-    const IntegerVariable capacity, const std::vector<IntegerVariable>& demands,
+    const AffineExpression& capacity,
+    const std::vector<AffineExpression>& demands,
     const std::vector<LinearExpression>& energies, Model* model);
 
 // For a given set of intervals and demands, we first compute the mandatory part
@@ -62,26 +64,46 @@ CutGenerator CreateCumulativeEnergyCutGenerator(
 //   + sum(presence_literal * min_of_demand) <= capacity.
 CutGenerator CreateCumulativeTimeTableCutGenerator(
     const std::vector<IntervalVariable>& intervals,
-    const IntegerVariable capacity, const std::vector<IntegerVariable>& demands,
-    Model* model);
+    const AffineExpression& capacity,
+    const std::vector<AffineExpression>& demands, Model* model);
 
 // Completion time cuts for the cumulative constraint. It is a simple relaxation
 // where we replace a cumulative task with demand k and duration d by a
 // no_overlap task with duration d * k / capacity_max.
 CutGenerator CreateCumulativeCompletionTimeCutGenerator(
     const std::vector<IntervalVariable>& intervals,
-    const IntegerVariable capacity, const std::vector<IntegerVariable>& demands,
+    const AffineExpression& capacity,
+    const std::vector<AffineExpression>& demands,
     const std::vector<LinearExpression>& energies, Model* model);
 
 // For a given set of intervals in a cumulative constraint, we detect violated
 // mandatory precedences and create a cut for these.
 CutGenerator CreateCumulativePrecedenceCutGenerator(
-    const std::vector<IntervalVariable>& intervals, IntegerVariable capacity,
-    const std::vector<IntegerVariable>& demands, Model* model);
+    const std::vector<IntervalVariable>& intervals,
+    const AffineExpression& capacity,
+    const std::vector<AffineExpression>& demands, Model* model);
 
 // Completion time cuts for the no_overlap_2d constraint. It actually generates
 // the completion time cumulative cuts in both axis.
 CutGenerator CreateNoOverlap2dCompletionTimeCutGenerator(
+    const std::vector<IntervalVariable>& x_intervals,
+    const std::vector<IntervalVariable>& y_intervals, Model* model);
+
+// Energetic cuts for the no_overlap_2d constraint.
+//
+// For a given set of rectangles, we compute the area of each rectangle
+// and make sure their sum is less than the area of the bounding interval.
+//
+// If an interval is optional, it contributes
+//    min_size_x * min_size_y * presence_literal
+// amount of total area.
+//
+// If an interval is performed, we use the linear area formulation (if
+// possible), or the McCormick relaxation of the size_x * size_y.
+//
+// The maximum area is the area of the bounding rectangle of each intervals
+// at level 0.
+CutGenerator CreateNoOverlap2dEnergyCutGenerator(
     const std::vector<IntervalVariable>& x_intervals,
     const std::vector<IntervalVariable>& y_intervals, Model* model);
 

@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.1</span>
+   &#160;<span id="projectnumber">9.2</span>
    </div>
   </td>
  </tr>
@@ -106,8 +106,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a922026cbae3cd7aac276fcad53bd4278"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a877d019ee57a306f9dc8da11efcb4c82"><td class="memItemLeft" align="right" valign="top">IntegerVariable&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_mapping.html#a877d019ee57a306f9dc8da11efcb4c82">Integer</a> (int ref) const</td></tr>
 <tr class="separator:a877d019ee57a306f9dc8da11efcb4c82"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a294162e1365ee4ad6cca5500ca019f42"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structoperations__research_1_1sat_1_1_affine_expression.html">AffineExpression</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_mapping.html#a294162e1365ee4ad6cca5500ca019f42">LoadAffineView</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expression_proto.html">LinearExpressionProto</a> &amp;exp) const</td></tr>
-<tr class="separator:a294162e1365ee4ad6cca5500ca019f42"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6ddddda7c40903f78e419181d0f85686"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structoperations__research_1_1sat_1_1_affine_expression.html">AffineExpression</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_mapping.html#a6ddddda7c40903f78e419181d0f85686">Affine</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expression_proto.html">LinearExpressionProto</a> &amp;exp) const</td></tr>
+<tr class="separator:a6ddddda7c40903f78e419181d0f85686"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a099bf96c059cdd79e938f093a393db48"><td class="memItemLeft" align="right" valign="top">IntervalVariable&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_mapping.html#a099bf96c059cdd79e938f093a393db48">Interval</a> (int i) const</td></tr>
 <tr class="separator:a099bf96c059cdd79e938f093a393db48"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5acd9bb02b1a73f78c662668afde7fea"><td class="memTemplParams" colspan="2">template&lt;typename List &gt; </td></tr>
@@ -116,6 +116,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:af95d44da268450fcb634bb1ae3732527"><td class="memTemplParams" colspan="2">template&lt;typename ProtoIndices &gt; </td></tr>
 <tr class="memitem:af95d44da268450fcb634bb1ae3732527"><td class="memTemplItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classoperations__research_1_1sat_1_1_literal.html">sat::Literal</a> &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_mapping.html#af95d44da268450fcb634bb1ae3732527">Literals</a> (const ProtoIndices &amp;indices) const</td></tr>
 <tr class="separator:af95d44da268450fcb634bb1ae3732527"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8a12f1ca979bf89f793ddc3b9ff4538b"><td class="memTemplParams" colspan="2">template&lt;typename List &gt; </td></tr>
+<tr class="memitem:a8a12f1ca979bf89f793ddc3b9ff4538b"><td class="memTemplItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="structoperations__research_1_1sat_1_1_affine_expression.html">AffineExpression</a> &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_mapping.html#a8a12f1ca979bf89f793ddc3b9ff4538b">Affines</a> (const List &amp;list) const</td></tr>
+<tr class="separator:a8a12f1ca979bf89f793ddc3b9ff4538b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a619ceb25c10043ce5b356b1da14be385"><td class="memTemplParams" colspan="2">template&lt;typename ProtoIndices &gt; </td></tr>
 <tr class="memitem:a619ceb25c10043ce5b356b1da14be385"><td class="memTemplItemLeft" align="right" valign="top">std::vector&lt; IntervalVariable &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_mapping.html#a619ceb25c10043ce5b356b1da14be385">Intervals</a> (const ProtoIndices &amp;indices) const</td></tr>
 <tr class="separator:a619ceb25c10043ce5b356b1da14be385"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -141,6 +144,62 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ae05bc267fe7166e53214c1b3fa157023"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="a6ddddda7c40903f78e419181d0f85686" name="a6ddddda7c40903f78e419181d0f85686"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6ddddda7c40903f78e419181d0f85686">&#9670;&nbsp;</a></span>Affine()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structoperations__research_1_1sat_1_1_affine_expression.html">AffineExpression</a> Affine </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expression_proto.html">LinearExpressionProto</a> &amp;&#160;</td>
+          <td class="paramname"><em>exp</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cp__model__mapping_8h_source.html#l00094">94</a> of file <a class="el" href="cp__model__mapping_8h_source.html">cp_model_mapping.h</a>.</p>
+
+</div>
+</div>
+<a id="a8a12f1ca979bf89f793ddc3b9ff4538b" name="a8a12f1ca979bf89f793ddc3b9ff4538b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8a12f1ca979bf89f793ddc3b9ff4538b">&#9670;&nbsp;</a></span>Affines()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt; <a class="el" href="structoperations__research_1_1sat_1_1_affine_expression.html">AffineExpression</a> &gt; Affines </td>
+          <td>(</td>
+          <td class="paramtype">const List &amp;&#160;</td>
+          <td class="paramname"><em>list</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cp__model__mapping_8h_source.html#l00125">125</a> of file <a class="el" href="cp__model__mapping_8h_source.html">cp_model_mapping.h</a>.</p>
+
+</div>
+</div>
 <a id="a66ee25333b0b64292cfa8731c4d4f5eb" name="a66ee25333b0b64292cfa8731c4d4f5eb"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a66ee25333b0b64292cfa8731c4d4f5eb">&#9670;&nbsp;</a></span>ConstraintIsAlreadyLoaded()</h2>
 
@@ -165,7 +224,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__mapping_8h_source.html#l00135">135</a> of file <a class="el" href="cp__model__mapping_8h_source.html">cp_model_mapping.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__mapping_8h_source.html#l00142">142</a> of file <a class="el" href="cp__model__mapping_8h_source.html">cp_model_mapping.h</a>.</p>
 
 </div>
 </div>
@@ -193,7 +252,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__mapping_8h_source.html#l00162">162</a> of file <a class="el" href="cp__model__mapping_8h_source.html">cp_model_mapping.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__mapping_8h_source.html#l00169">169</a> of file <a class="el" href="cp__model__mapping_8h_source.html">cp_model_mapping.h</a>.</p>
 
 </div>
 </div>
@@ -221,7 +280,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__mapping_8h_source.html#l00149">149</a> of file <a class="el" href="cp__model__mapping_8h_source.html">cp_model_mapping.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__mapping_8h_source.html#l00156">156</a> of file <a class="el" href="cp__model__mapping_8h_source.html">cp_model_mapping.h</a>.</p>
 
 </div>
 </div>
@@ -249,7 +308,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__mapping_8h_source.html#l00153">153</a> of file <a class="el" href="cp__model__mapping_8h_source.html">cp_model_mapping.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__mapping_8h_source.html#l00160">160</a> of file <a class="el" href="cp__model__mapping_8h_source.html">cp_model_mapping.h</a>.</p>
 
 </div>
 </div>
@@ -276,7 +335,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__mapping_8h_source.html#l00158">158</a> of file <a class="el" href="cp__model__mapping_8h_source.html">cp_model_mapping.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__mapping_8h_source.html#l00165">165</a> of file <a class="el" href="cp__model__mapping_8h_source.html">cp_model_mapping.h</a>.</p>
 
 </div>
 </div>
@@ -388,7 +447,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__mapping_8h_source.html#l00125">125</a> of file <a class="el" href="cp__model__mapping_8h_source.html">cp_model_mapping.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__mapping_8h_source.html#l00132">132</a> of file <a class="el" href="cp__model__mapping_8h_source.html">cp_model_mapping.h</a>.</p>
 
 </div>
 </div>
@@ -444,7 +503,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__mapping_8h_source.html#l00144">144</a> of file <a class="el" href="cp__model__mapping_8h_source.html">cp_model_mapping.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__mapping_8h_source.html#l00151">151</a> of file <a class="el" href="cp__model__mapping_8h_source.html">cp_model_mapping.h</a>.</p>
 
 </div>
 </div>
@@ -532,34 +591,6 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a294162e1365ee4ad6cca5500ca019f42" name="a294162e1365ee4ad6cca5500ca019f42"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a294162e1365ee4ad6cca5500ca019f42">&#9670;&nbsp;</a></span>LoadAffineView()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="structoperations__research_1_1sat_1_1_affine_expression.html">AffineExpression</a> LoadAffineView </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expression_proto.html">LinearExpressionProto</a> &amp;&#160;</td>
-          <td class="paramname"><em>exp</em></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="cp__model__mapping_8h_source.html#l00094">94</a> of file <a class="el" href="cp__model__mapping_8h_source.html">cp_model_mapping.h</a>.</p>
-
-</div>
-</div>
 <a id="a432f9671a5c6197d10b284ad2443322c" name="a432f9671a5c6197d10b284ad2443322c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a432f9671a5c6197d10b284ad2443322c">&#9670;&nbsp;</a></span>NumBooleanVariables()</h2>
 
@@ -583,7 +614,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__mapping_8h_source.html#l00181">181</a> of file <a class="el" href="cp__model__mapping_8h_source.html">cp_model_mapping.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__mapping_8h_source.html#l00188">188</a> of file <a class="el" href="cp__model__mapping_8h_source.html">cp_model_mapping.h</a>.</p>
 
 </div>
 </div>
@@ -610,7 +641,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__mapping_8h_source.html#l00174">174</a> of file <a class="el" href="cp__model__mapping_8h_source.html">cp_model_mapping.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__mapping_8h_source.html#l00181">181</a> of file <a class="el" href="cp__model__mapping_8h_source.html">cp_model_mapping.h</a>.</p>
 
 </div>
 </div>
@@ -637,7 +668,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__mapping_8h_source.html#l00202">202</a> of file <a class="el" href="cp__model__mapping_8h_source.html">cp_model_mapping.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__mapping_8h_source.html#l00209">209</a> of file <a class="el" href="cp__model__mapping_8h_source.html">cp_model_mapping.h</a>.</p>
 
 </div>
 </div>
@@ -665,7 +696,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__mapping_8h_source.html#l00193">193</a> of file <a class="el" href="cp__model__mapping_8h_source.html">cp_model_mapping.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__mapping_8h_source.html#l00200">200</a> of file <a class="el" href="cp__model__mapping_8h_source.html">cp_model_mapping.h</a>.</p>
 
 </div>
 </div>

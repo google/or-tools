@@ -9,6 +9,7 @@ var searchData=
   ['assignmentintcontainer_6',['AssignmentIntContainer',['../classcom_1_1google_1_1ortools_1_1constraintsolver_1_1AssignmentIntContainer.html',1,'com::google::ortools::constraintsolver']]],
   ['assignmentintervalcontainer_7',['AssignmentIntervalContainer',['../classcom_1_1google_1_1ortools_1_1constraintsolver_1_1AssignmentIntervalContainer.html',1,'com::google::ortools::constraintsolver']]],
   ['assignmentsequencecontainer_8',['AssignmentSequenceContainer',['../classcom_1_1google_1_1ortools_1_1constraintsolver_1_1AssignmentSequenceContainer.html',1,'com::google::ortools::constraintsolver']]],
-  ['automatonconstraintproto_9',['AutomatonConstraintProto',['../classcom_1_1google_1_1ortools_1_1sat_1_1AutomatonConstraintProto.html',1,'com::google::ortools::sat']]],
-  ['automatonconstraintprotoorbuilder_10',['AutomatonConstraintProtoOrBuilder',['../interfacecom_1_1google_1_1ortools_1_1sat_1_1AutomatonConstraintProtoOrBuilder.html',1,'com::google::ortools::sat']]]
+  ['attributes_9',['Attributes',['../classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel_1_1ResourceGroup_1_1Attributes.html',1,'com::google::ortools::constraintsolver::RoutingModel::ResourceGroup']]],
+  ['automatonconstraintproto_10',['AutomatonConstraintProto',['../classcom_1_1google_1_1ortools_1_1sat_1_1AutomatonConstraintProto.html',1,'com::google::ortools::sat']]],
+  ['automatonconstraintprotoorbuilder_11',['AutomatonConstraintProtoOrBuilder',['../interfacecom_1_1google_1_1ortools_1_1sat_1_1AutomatonConstraintProtoOrBuilder.html',1,'com::google::ortools::sat']]]
 ];

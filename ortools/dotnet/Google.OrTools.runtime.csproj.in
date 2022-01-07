@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <TargetFrameworks>netcoreapp3.1;net5.0</TargetFrameworks>
+    <TargetFrameworks>netcoreapp3.1;net6.0</TargetFrameworks>
     <RuntimeIdentifier>@RUNTIME_IDENTIFIER@</RuntimeIdentifier>
     <AssemblyName>google-ortools-native</AssemblyName>
     <Version>@PROJECT_VERSION@</Version>

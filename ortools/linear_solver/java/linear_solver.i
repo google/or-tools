@@ -157,7 +157,10 @@ PROTO2_RETURN(
    *       that.
    */
    bool loadSolutionFromProto(const MPSolutionResponse& response) {
-     return $self->LoadSolutionFromProto(response).ok();
+     const absl::Status status =
+         $self->LoadSolutionFromProto(response);
+     LOG_IF(ERROR, !status.ok()) << "LoadSolutionFromProto() failed: " << status;
+     return status.ok();
    }
 
   /**

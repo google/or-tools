@@ -84,12 +84,12 @@ void ArgumentHolder::SetSequenceArrayArgument(
 
 bool ArgumentHolder::HasIntegerExpressionArgument(
     const std::string& arg_name) const {
-  return gtl::ContainsKey(integer_expression_argument_, arg_name);
+  return integer_expression_argument_.contains(arg_name);
 }
 
 bool ArgumentHolder::HasIntegerVariableArrayArgument(
     const std::string& arg_name) const {
-  return gtl::ContainsKey(integer_variable_array_argument_, arg_name);
+  return integer_variable_array_argument_.contains(arg_name);
 }
 
 int64_t ArgumentHolder::FindIntegerArgumentWithDefault(

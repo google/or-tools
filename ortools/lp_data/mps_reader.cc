@@ -15,6 +15,7 @@
 
 #include <cstdint>
 
+#include "absl/container/btree_set.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/match.h"
@@ -129,7 +130,8 @@ class MPSReaderImpl {
     FREE_VARIABLE,
     INFINITE_LOWER_BOUND,
     INFINITE_UPPER_BOUND,
-    BINARY
+    BINARY,
+    SEMI_CONTINUOUS
   };
 
   // Different types of constraints for a given row.
@@ -288,6 +290,9 @@ class DataWrapper<LinearProgram> {
     data_->SetVariableType(ColIndex(index),
                            LinearProgram::VariableType::INTEGER);
   }
+  void SetVariableTypeToSemiContinuous(int index) {
+    LOG(FATAL) << "Semi continuous variables are not supported";
+  }
   void SetVariableBounds(int index, double lower_bound, double upper_bound) {
     data_->SetVariableBounds(ColIndex(index), lower_bound, upper_bound);
   }
@@ -377,6 +382,9 @@ class DataWrapper<MPModelProto> {
   void SetVariableTypeToInteger(int index) {
     data_->mutable_variable(index)->set_is_integer(true);
   }
+  void SetVariableTypeToSemiContinuous(int index) {
+    semi_continuous_variables_.push_back(index);
+  }
   void SetVariableBounds(int index, double lower_bound, double upper_bound) {
     data_->mutable_variable(index)->set_lower_bound(lower_bound);
     data_->mutable_variable(index)->set_upper_bound(upper_bound);
@@ -420,6 +428,69 @@ class DataWrapper<MPModelProto> {
   void CleanUp() {
     google::protobuf::util::RemoveAt(data_->mutable_constraint(),
                                      constraints_to_delete_);
+
+    for (const int index : semi_continuous_variables_) {
+      MPVariableProto* mp_var = data_->mutable_variable(index);
+      // We detect that the lower bound was not set when it is left to its
+      // default value of zero.
+      const double lb =
+          mp_var->lower_bound() == 0 ? 1.0 : mp_var->lower_bound();
+      DCHECK_GT(lb, 0.0);
+      const double ub = mp_var->upper_bound();
+      mp_var->set_lower_bound(0.0);
+
+      // Create a new Boolean variable.
+      const int bool_var_index = data_->variable_size();
+      MPVariableProto* bool_var = data_->add_variable();
+      bool_var->set_lower_bound(0.0);
+      bool_var->set_upper_bound(1.0);
+      bool_var->set_is_integer(true);
+
+      // TODO(user): Experiment with the switch constant.
+      if (ub >= 1e8) {  // Use indicator constraints
+        // bool_var == 0 implies var == 0.
+        MPGeneralConstraintProto* const zero_constraint =
+            data_->add_general_constraint();
+        MPIndicatorConstraint* const zero_indicator =
+            zero_constraint->mutable_indicator_constraint();
+        zero_indicator->set_var_index(bool_var_index);
+        zero_indicator->set_var_value(0);
+        zero_indicator->mutable_constraint()->set_lower_bound(0.0);
+        zero_indicator->mutable_constraint()->set_upper_bound(0.0);
+        zero_indicator->mutable_constraint()->add_var_index(index);
+        zero_indicator->mutable_constraint()->add_coefficient(1.0);
+
+        // bool_var == 1 implies lb <= var <= ub
+        MPGeneralConstraintProto* const one_constraint =
+            data_->add_general_constraint();
+        MPIndicatorConstraint* const one_indicator =
+            one_constraint->mutable_indicator_constraint();
+        one_indicator->set_var_index(bool_var_index);
+        one_indicator->set_var_value(1);
+        one_indicator->mutable_constraint()->set_lower_bound(lb);
+        one_indicator->mutable_constraint()->set_upper_bound(ub);
+        one_indicator->mutable_constraint()->add_var_index(index);
+        one_indicator->mutable_constraint()->add_coefficient(1.0);
+      } else {  // Pure linear encoding.
+        // var >= bool_var * lb
+        MPConstraintProto* lower = data_->add_constraint();
+        lower->set_lower_bound(0.0);
+        lower->set_upper_bound(std::numeric_limits<double>::infinity());
+        lower->add_var_index(index);
+        lower->add_coefficient(1.0);
+        lower->add_var_index(bool_var_index);
+        lower->add_coefficient(-lb);
+
+        // var <= bool_var * ub
+        MPConstraintProto* upper = data_->add_constraint();
+        upper->set_lower_bound(-std::numeric_limits<double>::infinity());
+        upper->set_upper_bound(0.0);
+        upper->add_var_index(index);
+        upper->add_coefficient(1.0);
+        upper->add_var_index(bool_var_index);
+        upper->add_coefficient(-ub);
+      }
+    }
   }
 
  private:
@@ -427,7 +498,8 @@ class DataWrapper<MPModelProto> {
 
   absl::flat_hash_map<std::string, int> variable_indices_by_name_;
   absl::flat_hash_map<std::string, int> constraint_indices_by_name_;
-  absl::node_hash_set<int> constraints_to_delete_;
+  absl::btree_set<int> constraints_to_delete_;
+  std::vector<int> semi_continuous_variables_;
 };
 
 template <class Data>
@@ -850,6 +922,11 @@ absl::Status MPSReaderImpl::StoreBound(const std::string& bound_type_mnemonic,
       ASSIGN_OR_RETURN(upper_bound, GetDoubleFromString(bound_value));
       break;
     }
+    case SEMI_CONTINUOUS: {
+      ASSIGN_OR_RETURN(upper_bound, GetDoubleFromString(bound_value));
+      data->SetVariableTypeToSemiContinuous(col);
+      break;
+    }
     case FIXED_VARIABLE: {
       ASSIGN_OR_RETURN(lower_bound, GetDoubleFromString(bound_value));
       upper_bound = lower_bound;
@@ -920,6 +997,8 @@ MPSReaderImpl::MPSReaderImpl()
   bound_name_to_id_map_["BV"] = BINARY;
   bound_name_to_id_map_["LI"] = LOWER_BOUND;
   bound_name_to_id_map_["UI"] = UPPER_BOUND;
+  bound_name_to_id_map_["SC"] = SEMI_CONTINUOUS;
+  // TODO(user): Support 'SI' (semi integer).
   integer_type_names_set_.insert("BV");
   integer_type_names_set_.insert("LI");
   integer_type_names_set_.insert("UI");

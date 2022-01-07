@@ -15,6 +15,7 @@
 #define OR_TOOLS_LINEAR_SOLVER_SAT_PROTO_SOLVER_H_
 
 #include <functional>
+#include <string>
 
 #include "absl/status/statusor.h"
 #include "ortools/linear_solver/linear_solver.pb.h"

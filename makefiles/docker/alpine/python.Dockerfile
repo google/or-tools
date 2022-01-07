@@ -1,5 +1,5 @@
 FROM ortools/make:alpine_swig AS env
-RUN apk add --no-cache python3-dev py3-pip py3-wheel
+RUN apk add --no-cache python3-dev py3-pip py3-wheel py3-numpy py3-pandas
 RUN python3 -m pip install absl-py mypy-protobuf
 
 FROM env AS devel

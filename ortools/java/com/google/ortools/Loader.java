@@ -100,7 +100,8 @@ public class Loader {
 
   /** Unpack and Load the native libraries needed for using ortools-java.*/
   private static boolean loaded = false;
-  public static void loadNativeLibraries() {
+
+  public static synchronized void loadNativeLibraries() {
     if (!loaded) {
       try {
         URI resourceURI = getNativeResourceURI();

@@ -18,8 +18,8 @@ import collections
 from absl import app
 from absl import flags
 from google.protobuf import text_format
-from ortools.scheduling import pywraprcpsp
 from ortools.sat.python import cp_model
+from ortools.scheduling import pywraprcpsp
 
 FLAGS = flags.FLAGS
 
@@ -131,13 +131,18 @@ def SolveRcpsp(problem, proto_file, params):
         start_var = model.NewIntVar(0, horizon, f'start_of_task_{t}')
         end_var = model.NewIntVar(0, horizon, f'end_of_task_{t}')
 
-        # Create one literal per recipe.
-        literals = [
-            model.NewBoolVar(f'is_present_{t}_{r}') for r in all_recipes
-        ]
+        literals = []
+        if num_recipes > 1:
+            # Create one literal per recipe.
+            literals = [
+                model.NewBoolVar(f'is_present_{t}_{r}') for r in all_recipes
+            ]
 
-        # Exactly one recipe must be performed.
-        model.Add(cp_model.LinearExpr.Sum(literals) == 1)
+            # Exactly one recipe must be performed.
+            model.Add(cp_model.LinearExpr.Sum(literals) == 1)
+
+        else:
+            literals = [1]
 
         # Temporary data structure to fill in 0 demands.
         demand_matrix = collections.defaultdict(int)
@@ -153,11 +158,11 @@ def SolveRcpsp(problem, proto_file, params):
             cp_model.Domain.FromValues(task_to_recipe_durations[t]),
             f'duration_of_task_{t}')
 
-        # linear encoding of the duration (link recipe literals and duration).
-        min_duration = min(task_to_recipe_durations[t])
-        shifted = [x - min_duration for x in task_to_recipe_durations[t]]
-        model.Add(duration_var == min_duration +
-                  cp_model.LinearExpr.ScalProd(literals, shifted))
+        # Link the recipe literals and the duration_var.
+        for r in range(num_recipes):
+            model.Add(
+                duration_var == task_to_recipe_durations[t][r]).OnlyEnforceIf(
+                    literals[r])
 
         # Create the interval of the task.
         task_interval = model.NewIntervalVar(start_var, duration_var, end_var,
@@ -180,11 +185,12 @@ def SolveRcpsp(problem, proto_file, params):
                 cp_model.Domain.FromValues(demands), f'demand_{t}_{resource}')
             task_to_resource_demands[t].append(demand_var)
 
-            # linear encoding of the demand per resource.
-            min_demand = min(demands)
-            shifted = [x - min_demand for x in demands]
-            model.Add(demand_var == min_demand +
-                      cp_model.LinearExpr.ScalProd(literals, shifted))
+            # Link the recipe literals and the demand_var.
+            for r in all_recipes:
+                model.Add(demand_var == demand_matrix[(resource,
+                                                       r)]).OnlyEnforceIf(
+                                                           literals[r])
+
             resource_to_sum_of_demand_max[resource] += max(demands)
 
     # Create makespan variable
@@ -251,25 +257,11 @@ def SolveRcpsp(problem, proto_file, params):
                 capacities.append(capacity)
                 max_cost += c * resource.unit_cost
             else:  # Standard renewable resource.
-                energies = []
-                for t in all_active_tasks:
-                    literals = task_to_presence_literals[t]
-                    fixed_energies = [
-                        task_resource_to_fixed_demands[(t, r)][index] *
-                        task_to_recipe_durations[t][index]
-                        for index in range(len(literals))
-                    ]
-                    min_energy = min(fixed_energies)
-                    scaled_energies = [x - min_energy for x in fixed_energies]
-                    energies.append(
-                        min_energy +
-                        cp_model.LinearExpr.ScalProd(literals, scaled_energies))
-
                 if FLAGS.use_interval_makespan:
                     intervals.append(interval_makespan)
                     demands.append(c)
-                    energies.append(c * makespan_size)
-                model.AddCumulativeWithEnergy(intervals, demands, energies, c)
+
+                model.AddCumulative(intervals, demands, c)
         else:  # Non empty non renewable resource. (single mode only)
             if problem.is_consumer_producer:
                 reservoir_starts = []

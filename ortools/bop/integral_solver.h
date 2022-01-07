@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_BOP_INTEGRAL_SOLVER_H_
 #define OR_TOOLS_BOP_INTEGRAL_SOLVER_H_
 
+#include "absl/base/port.h"
 #include "ortools/bop/bop_parameters.pb.h"
 #include "ortools/bop/bop_types.h"
 #include "ortools/lp_data/lp_data.h"

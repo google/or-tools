@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_SAT_DIFFN_H_
 #define OR_TOOLS_SAT_DIFFN_H_
 
+#include <functional>
 #include <vector>
 
 #include "ortools/base/int_type.h"
@@ -167,8 +168,32 @@ inline std::function<void(Model*)> NonOverlappingRectangles(
     model->TakeOwnership(constraint);
 
     if (add_cumulative_relaxation) {
-      AddCumulativeRelaxation(x, x_helper, y_helper, model);
-      AddCumulativeRelaxation(y, y_helper, x_helper, model);
+      // We must first check if the cumulative relaxation is possible.
+      bool some_boxes_are_only_optional_on_x = false;
+      bool some_boxes_are_only_optional_on_y = false;
+      for (int i = 0; i < x.size(); ++i) {
+        if (x_helper->IsOptional(i) && y_helper->IsOptional(i) &&
+            x_helper->PresenceLiteral(i) != y_helper->PresenceLiteral(i)) {
+          // Abort as the task would be conditioned by two literals.
+          return;
+        }
+        if (x_helper->IsOptional(i) && !y_helper->IsOptional(i)) {
+          // We cannot use x_size as the demand of the cumulative based on
+          // the y_intervals.
+          some_boxes_are_only_optional_on_x = true;
+        }
+        if (y_helper->IsOptional(i) && !x_helper->IsOptional(i)) {
+          // We cannot use y_size as the demand of the cumulative based on
+          // the y_intervals.
+          some_boxes_are_only_optional_on_y = true;
+        }
+      }
+      if (!some_boxes_are_only_optional_on_y) {
+        AddCumulativeRelaxation(x, x_helper, y_helper, model);
+      }
+      if (!some_boxes_are_only_optional_on_x) {
+        AddCumulativeRelaxation(y, y_helper, x_helper, model);
+      }
     }
   };
 }

@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.1</span>
+   &#160;<span id="projectnumber">9.2</span>
    </div>
   </td>
  </tr>
@@ -106,6 +106,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a035277f8488770078b1171cae4636b8e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab39c6534b88d91087a44512efe0ee5e5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_solver_logger.html#ab39c6534b88d91087a44512efe0ee5e5">AddInfoLoggingCallback</a> (std::function&lt; void(const std::string &amp;<a class="el" href="trace_8cc.html#a36bd74109f547f7f8198faf5a12d2879">message</a>)&gt; <a class="el" href="gurobi__interface_8cc.html#a6627a3800ac768bb5528ef54c9cace36">callback</a>)</td></tr>
 <tr class="separator:ab39c6534b88d91087a44512efe0ee5e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a630f306104f78bce3e29b523331a3465"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_solver_logger.html#a630f306104f78bce3e29b523331a3465">ClearInfoLoggingCallbacks</a> ()</td></tr>
+<tr class="separator:a630f306104f78bce3e29b523331a3465"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2f768f31381e2c76157646fa2eec940b"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_solver_logger.html#a2f768f31381e2c76157646fa2eec940b">NumInfoLoggingCallbacks</a> () const</td></tr>
+<tr class="separator:a2f768f31381e2c76157646fa2eec940b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4241703540f7e339d45a97cd128fab8b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_solver_logger.html#a4241703540f7e339d45a97cd128fab8b">LogInfo</a> (const char *source_filename, int source_line, const std::string &amp;<a class="el" href="trace_8cc.html#a36bd74109f547f7f8198faf5a12d2879">message</a>)</td></tr>
 <tr class="separator:a4241703540f7e339d45a97cd128fab8b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
@@ -127,6 +131,25 @@ Public Member Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="util_2logging_8cc_source.html#l00023">23</a> of file <a class="el" href="util_2logging_8cc_source.html">util/logging.cc</a>.</p>
+
+</div>
+</div>
+<a id="a630f306104f78bce3e29b523331a3465" name="a630f306104f78bce3e29b523331a3465"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a630f306104f78bce3e29b523331a3465">&#9670;&nbsp;</a></span>ClearInfoLoggingCallbacks()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ClearInfoLoggingCallbacks </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="util_2logging_8cc_source.html#l00028">28</a> of file <a class="el" href="util_2logging_8cc_source.html">util/logging.cc</a>.</p>
 
 </div>
 </div>
@@ -217,7 +240,34 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="util_2logging_8cc_source.html#l00028">28</a> of file <a class="el" href="util_2logging_8cc_source.html">util/logging.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="util_2logging_8cc_source.html#l00030">30</a> of file <a class="el" href="util_2logging_8cc_source.html">util/logging.cc</a>.</p>
+
+</div>
+</div>
+<a id="a2f768f31381e2c76157646fa2eec940b" name="a2f768f31381e2c76157646fa2eec940b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2f768f31381e2c76157646fa2eec940b">&#9670;&nbsp;</a></span>NumInfoLoggingCallbacks()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int NumInfoLoggingCallbacks </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="util_2logging_8h_source.html#l00057">57</a> of file <a class="el" href="util_2logging_8h_source.html">util/logging.h</a>.</p>
 
 </div>
 </div>

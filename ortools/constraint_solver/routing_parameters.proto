@@ -161,7 +161,7 @@ message RoutingSearchParameters {
     // 1 -> A -> [E] -> B -> C -> D -> 2
     // 1 -> A -> B -> [E] -> C -> D -> 2
     // 1 -> A -> B -> C -> [E] -> D -> 2
-    // This operator is extremelly useful to move chains of nodes which are
+    // This operator is extremely useful to move chains of nodes which are
     // located at the same place (for instance nodes part of a same stop).
     OptionalBoolean use_relocate_neighbors = 3;
     // Relocate neighborhood that moves subpaths all pickup and delivery
@@ -222,7 +222,7 @@ message RoutingSearchParameters {
     //   1 -> 2      3 -> A -> D -> [B -> C] -> 4
     OptionalBoolean use_relocate_expensive_chain = 23;
     // --- Intra-route operators ---
-    // Operator which reverves a sub-chain of a path. It is called TwoOpt
+    // Operator which reverses a subchain of a path. It is called TwoOpt
     // because it breaks two arcs on the path; resulting paths are called
     // two-optimal.
     // Possible neighbors for the path 1 -> 2 -> 3 -> 4 -> 5
@@ -326,7 +326,7 @@ message RoutingSearchParameters {
     // Note that the two sub-chains can be part of the same path; they even may
     // overlap.
     OptionalBoolean use_path_lns = 16;
-    // Operator which relaxes one entire path and all unactive nodes.
+    // Operator which relaxes one entire path and all inactive nodes.
     OptionalBoolean use_full_path_lns = 17;
     // TSP-base LNS.
     // Randomly merges consecutive nodes until n "meta"-nodes remain and solves
@@ -337,7 +337,7 @@ message RoutingSearchParameters {
     OptionalBoolean use_tsp_lns = 18;
     // Operator which relaxes all inactive nodes and one sub-chain of six
     // consecutive arcs. That way the path can be improved by inserting inactive
-    // nodes or swaping arcs.
+    // nodes or swapping arcs.
     OptionalBoolean use_inactive_lns = 19;
     // --- LNS-like large neighborhood search operators using heuristics ---
     // Operator which makes all nodes on a route unperformed, and reinserts them

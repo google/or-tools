@@ -12,6 +12,7 @@
 // limitations under the License.
 
 // [START program]
+// Solves a multiple knapsack problem using the CP-SAT solver.
 package com.google.ortools.sat.samples;
 // [START import]
 import com.google.ortools.Loader;
@@ -20,118 +21,107 @@ import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.LinearExpr;
+import java.util.stream.IntStream;
 // [END import]
 
 /** Sample showing how to solve a multiple knapsack problem. */
 public class MultipleKnapsackSat {
-  // [START data]
-  static class DataModel {
-    int[] items = new int[] {48, 30, 42, 36, 36, 48, 42, 42, 36, 24, 30, 30, 42, 36, 36};
-    int[] values = new int[] {10, 30, 25, 50, 35, 30, 15, 40, 30, 35, 45, 10, 20, 30, 25};
-    int[] binCapacities = new int[] {100, 100, 100, 100, 100};
-    int numItems = items.length;
-    int numBins = 5;
-  }
-  // [END data]
-
-  // [START solution_printer]
-  static void printSolution(
-      DataModel data, CpSolver solver, IntVar[][] x, IntVar[] load, IntVar[] value) {
-    System.out.printf("Optimal objective value: %f%n", solver.objectiveValue());
-    System.out.println();
-    long packedWeight = 0;
-    long packedValue = 0;
-    for (int b = 0; b < data.numBins; ++b) {
-      System.out.println("Bin " + b);
-      for (int i = 0; i < data.numItems; ++i) {
-        if (solver.value(x[i][b]) > 0) {
-          System.out.println(
-              "Item " + i + "  -  Weight: " + data.items[i] + "  Value: " + data.values[i]);
-        }
-      }
-      System.out.println("Packed bin weight: " + solver.value(load[b]));
-      packedWeight = packedWeight + solver.value(load[b]);
-      System.out.println("Packed bin value: " + solver.value(value[b]) + "\n");
-      packedValue = packedValue + solver.value(value[b]);
-    }
-    System.out.println("Total packed weight: " + packedWeight);
-    System.out.println("Total packed value: " + packedValue);
-  }
-
   public static void main(String[] args) {
     Loader.loadNativeLibraries();
     // Instantiate the data problem.
     // [START data]
-    final DataModel data = new DataModel();
+    final int[] weights = {48, 30, 42, 36, 36, 48, 42, 42, 36, 24, 30, 30, 42, 36, 36};
+    final int[] values = {10, 30, 25, 50, 35, 30, 15, 40, 30, 35, 45, 10, 20, 30, 25};
+    final int numItems = weights.length;
+    final int[] allItems = IntStream.range(0, numItems).toArray();
+
+    final int[] binCapacities = {100, 100, 100, 100, 100};
+    final int numBins = binCapacities.length;
+    final int[] allBins = IntStream.range(0, numBins).toArray();
     // [END data]
-    int totalValue = 0;
-    for (int i = 0; i < data.numItems; ++i) {
-      totalValue = totalValue + data.values[i];
-    }
 
     // [START model]
     CpModel model = new CpModel();
     // [END model]
 
+    // Variables.
     // [START variables]
-    IntVar[][] x = new IntVar[data.numItems][data.numBins];
-    for (int i = 0; i < data.numItems; ++i) {
-      for (int b = 0; b < data.numBins; ++b) {
-        x[i][b] = model.newIntVar(0, 1, "x_" + i + "_" + b);
+    IntVar[][] x = new IntVar[numItems][numBins];
+    for (int i : allItems) {
+      for (int b : allBins) {
+        x[i][b] = model.newBoolVar("x_" + i + "_" + b);
       }
-    }
-    // Main variables.
-    // Load and value variables.
-    IntVar[] load = new IntVar[data.numBins];
-    IntVar[] value = new IntVar[data.numBins];
-    for (int b = 0; b < data.numBins; ++b) {
-      load[b] = model.newIntVar(0, data.binCapacities[b], "load_" + b);
-      value[b] = model.newIntVar(0, totalValue, "value_" + b);
-    }
-
-    // Links load and value with x.
-    int[] sizes = new int[data.numItems];
-    for (int i = 0; i < data.numItems; ++i) {
-      sizes[i] = data.items[i];
-    }
-    for (int b = 0; b < data.numBins; ++b) {
-      IntVar[] vars = new IntVar[data.numItems];
-      for (int i = 0; i < data.numItems; ++i) {
-        vars[i] = x[i][b];
-      }
-      model.addEquality(LinearExpr.scalProd(vars, data.items), load[b]);
-      model.addEquality(LinearExpr.scalProd(vars, data.values), value[b]);
     }
     // [END variables]
 
+    // Constraints.
     // [START constraints]
-    // Each item can be in at most one bin.
-    // Place all items.
-    for (int i = 0; i < data.numItems; ++i) {
-      IntVar[] vars = new IntVar[data.numBins];
-      for (int b = 0; b < data.numBins; ++b) {
+    // Each item is assigned to at most one bin.
+    for (int i : allItems) {
+      IntVar[] vars = new IntVar[numBins];
+      for (int b : allBins) {
         vars[b] = x[i][b];
       }
       model.addLessOrEqual(LinearExpr.sum(vars), 1);
     }
+
+    // The amount packed in each bin cannot exceed its capacity.
+    for (int b : allBins) {
+      IntVar[] vars = new IntVar[numItems];
+      for (int i : allItems) {
+        vars[i] = x[i][b];
+      }
+      model.addLessOrEqual(LinearExpr.scalProd(vars, weights), binCapacities[b]);
+    }
     // [END constraints]
-    // Maximize sum of load.
+
+    // Objective.
     // [START objective]
-    model.maximize(LinearExpr.sum(value));
+    // Maximize total value of packed items.
+    IntVar[] objectiveVars = new IntVar[numItems * numBins];
+    int[] objectiveValues = new int[numItems * numBins];
+    for (int i : allItems) {
+      for (int b : allBins) {
+        int k = i * numBins + b;
+        objectiveVars[k] = x[i][b];
+        objectiveValues[k] = values[i];
+      }
+    }
+    model.maximize(LinearExpr.scalProd(objectiveVars, objectiveValues));
     // [END objective]
 
     // [START solve]
     CpSolver solver = new CpSolver();
-    CpSolverStatus status = solver.solve(model);
+    final CpSolverStatus status = solver.solve(model);
     // [END solve]
 
     // [START print_solution]
-    System.out.println("Solve status: " + status);
+    // Check that the problem has an optimal solution.
     if (status == CpSolverStatus.OPTIMAL) {
-      printSolution(data, solver, x, load, value);
+      System.out.println("Total packed value: " + solver.objectiveValue());
+      long totalWeight = 0;
+      for (int b : allBins) {
+        long binWeight = 0;
+        long binValue = 0;
+        System.out.println("Bin " + b);
+        for (int i : allItems) {
+          if (solver.value(x[i][b]) > 0) {
+            System.out.println("Item " + i + " weight: " + weights[i] + " value: " + values[i]);
+            binWeight += weights[i];
+            binValue += values[i];
+          }
+        }
+        System.out.println("Packed bin weight: " + binWeight);
+        System.out.println("Packed bin value: " + binValue);
+        totalWeight += binWeight;
+      }
+      System.out.println("Total packed weight: " + totalWeight);
+    } else {
+      System.err.println("The problem does not have an optimal solution.");
     }
     // [END print_solution]
   }
 
   private MultipleKnapsackSat() {}
 }
+// [END program]

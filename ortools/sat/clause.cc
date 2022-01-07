@@ -1550,6 +1550,7 @@ bool BinaryImplicationGraph::TransformIntoMaxCliques(
             });
   for (std::vector<Literal>& clique : *at_most_ones) {
     const int old_size = clique.size();
+    if (time_limit_->LimitReached()) break;
 
     // Remap the clique to only use representative.
     //
@@ -1579,7 +1580,7 @@ bool BinaryImplicationGraph::TransformIntoMaxCliques(
 
     // We only expand the clique as long as we didn't spend too much time.
     if (work_done_in_mark_descendants_ < max_num_explored_nodes) {
-      clique = ExpandAtMostOne(clique);
+      clique = ExpandAtMostOne(clique, max_num_explored_nodes);
     }
     std::sort(clique.begin(), clique.end());
     if (!gtl::InsertIfNotPresent(&max_cliques, clique)) {
@@ -1788,7 +1789,8 @@ void BinaryImplicationGraph::MarkDescendants(Literal root) {
 }
 
 std::vector<Literal> BinaryImplicationGraph::ExpandAtMostOne(
-    const absl::Span<const Literal> at_most_one) {
+    const absl::Span<const Literal> at_most_one,
+    int64_t max_num_explored_nodes) {
   std::vector<Literal> clique(at_most_one.begin(), at_most_one.end());
 
   // Optim.
@@ -1801,8 +1803,10 @@ std::vector<Literal> BinaryImplicationGraph::ExpandAtMostOne(
 
   std::vector<LiteralIndex> intersection;
   for (int i = 0; i < clique.size(); ++i) {
+    if (work_done_in_mark_descendants_ > max_num_explored_nodes) break;
     is_marked_.ClearAndResize(LiteralIndex(implications_.size()));
     MarkDescendants(clique[i]);
+
     if (i == 0) {
       intersection = is_marked_.PositionsSetAtLeastOnce();
       for (const Literal l : clique) is_marked_.Clear(l.NegatedIndex());

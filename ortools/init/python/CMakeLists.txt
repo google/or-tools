@@ -5,7 +5,7 @@ set_property(SOURCE init.i PROPERTY COMPILE_DEFINITIONS
 swig_add_library(pywrapinit
   TYPE SHARED
   LANGUAGE python
-  OUTPUT_DIR  ${PROJECT_BINARY_DIR}/python/${PROJECT_NAME}/init
+  OUTPUT_DIR  ${PYTHON_PROJECT_DIR}/init
   SOURCES init.i)
 
 target_include_directories(pywrapinit PRIVATE ${Python3_INCLUDE_DIRS})

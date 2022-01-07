@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.2"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>OR-Tools: ConnectedComponentsTypeHelper&lt; T, CompareOrHashT &gt;</title>
+<title>OR-Tools: ConnectedComponentsTypeHelper&lt; T, CompareOrHashT, Eq &gt;</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.1</span>
+   &#160;<span id="projectnumber">9.2</span>
    </div>
   </td>
  </tr>
@@ -90,58 +90,60 @@ $(document).ready(function(){initNavTree('structinternal_1_1_connected_component
 <a href="#nested-classes">Classes</a> &#124;
 <a href="#pub-types">Public Types</a> &#124;
 <a href="structinternal_1_1_connected_components_type_helper-members.html">List of all members</a>  </div>
-  <div class="headertitle"><div class="title">ConnectedComponentsTypeHelper&lt; T, CompareOrHashT &gt;</div></div>
+  <div class="headertitle"><div class="title">ConnectedComponentsTypeHelper&lt; T, CompareOrHashT, Eq &gt;</div></div>
 </div><!--header-->
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><div class="compoundTemplParams">template&lt;typename T, typename CompareOrHashT&gt;<br />
-struct internal::ConnectedComponentsTypeHelper&lt; T, CompareOrHashT &gt;</div>
+<div class="textblock"><div class="compoundTemplParams">template&lt;typename T, typename CompareOrHashT, typename Eq&gt;<br />
+struct internal::ConnectedComponentsTypeHelper&lt; T, CompareOrHashT, Eq &gt;</div>
 <p class="definition">Definition at line <a class="el" href="connected__components_8h_source.html#l00142">142</a> of file <a class="el" href="connected__components_8h_source.html">connected_components.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structinternal_1_1_connected_components_type_helper_1_1_select_container.html">SelectContainer</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structinternal_1_1_connected_components_type_helper_1_1_select_container_3_01_u_00_01absl_1_1ena4377d43c3c42f63e44f1faa2099dbc3b.html">SelectContainer&lt; U, absl::enable_if_t&lt; std::is_integral&lt; decltype(std::declval&lt; const U &amp; &gt;()(std::declval&lt; const T &amp; &gt;()))&gt;::value &gt; &gt;</a></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structinternal_1_1_connected_components_type_helper_1_1_select_container_3_01_u_00_01_v_00_01absd9e38fb7eadb6bad4dd775831f3ebbed.html">SelectContainer&lt; U, V, absl::enable_if_t&lt; std::is_integral&lt; decltype(std::declval&lt; const U &amp; &gt;()(std::declval&lt; const T &amp; &gt;()))&gt;::value &amp;&amp;!std::is_same_v&lt; V, void &gt; &gt; &gt;</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structinternal_1_1_connected_components_type_helper_1_1_select_container_3_01_u_00_01_v_00_01abs1534987f9e8409be3313e3a3227b2e22.html">SelectContainer&lt; U, V, absl::enable_if_t&lt; std::is_integral&lt; decltype(std::declval&lt; const U &amp; &gt;()(std::declval&lt; const T &amp; &gt;()))&gt;::value &amp;&amp;std::is_same_v&lt; V, void &gt; &gt; &gt;</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:a9f0704a43f57c1243c82d334ab44bae7"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structinternal_1_1_connected_components_type_helper.html#a9f0704a43f57c1243c82d334ab44bae7">Set</a> = typename <a class="el" href="structinternal_1_1_connected_components_type_helper_1_1_select_container.html">SelectContainer</a>&lt; CompareOrHashT &gt;::<a class="el" href="structinternal_1_1_connected_components_type_helper.html#a9f0704a43f57c1243c82d334ab44bae7">Set</a></td></tr>
-<tr class="separator:a9f0704a43f57c1243c82d334ab44bae7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad14fcba412e4f7905bd8169f6c03ed36"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structinternal_1_1_connected_components_type_helper.html#ad14fcba412e4f7905bd8169f6c03ed36">Map</a> = typename <a class="el" href="structinternal_1_1_connected_components_type_helper_1_1_select_container.html">SelectContainer</a>&lt; CompareOrHashT &gt;::<a class="el" href="structinternal_1_1_connected_components_type_helper.html#ad14fcba412e4f7905bd8169f6c03ed36">Map</a></td></tr>
-<tr class="separator:ad14fcba412e4f7905bd8169f6c03ed36"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aea05f2d3c7de6bbbbb0adffd470fbce5"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structinternal_1_1_connected_components_type_helper.html#aea05f2d3c7de6bbbbb0adffd470fbce5">Set</a> = typename <a class="el" href="structinternal_1_1_connected_components_type_helper_1_1_select_container.html">SelectContainer</a>&lt; CompareOrHashT, Eq &gt;::<a class="el" href="structinternal_1_1_connected_components_type_helper.html#aea05f2d3c7de6bbbbb0adffd470fbce5">Set</a></td></tr>
+<tr class="separator:aea05f2d3c7de6bbbbb0adffd470fbce5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5e243307133bf4b9d213eac078d0b7b7"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structinternal_1_1_connected_components_type_helper.html#a5e243307133bf4b9d213eac078d0b7b7">Map</a> = typename <a class="el" href="structinternal_1_1_connected_components_type_helper_1_1_select_container.html">SelectContainer</a>&lt; CompareOrHashT, Eq &gt;::<a class="el" href="structinternal_1_1_connected_components_type_helper.html#a5e243307133bf4b9d213eac078d0b7b7">Map</a></td></tr>
+<tr class="separator:a5e243307133bf4b9d213eac078d0b7b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Typedef Documentation</h2>
-<a id="ad14fcba412e4f7905bd8169f6c03ed36" name="ad14fcba412e4f7905bd8169f6c03ed36"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad14fcba412e4f7905bd8169f6c03ed36">&#9670;&nbsp;</a></span>Map</h2>
+<a id="a5e243307133bf4b9d213eac078d0b7b7" name="a5e243307133bf4b9d213eac078d0b7b7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5e243307133bf4b9d213eac078d0b7b7">&#9670;&nbsp;</a></span>Map</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="structinternal_1_1_connected_components_type_helper.html#ad14fcba412e4f7905bd8169f6c03ed36">Map</a> =  typename <a class="el" href="structinternal_1_1_connected_components_type_helper_1_1_select_container.html">SelectContainer</a>&lt;CompareOrHashT&gt;::<a class="el" href="structinternal_1_1_connected_components_type_helper.html#ad14fcba412e4f7905bd8169f6c03ed36">Map</a></td>
+          <td class="memname">using <a class="el" href="structinternal_1_1_connected_components_type_helper.html#a5e243307133bf4b9d213eac078d0b7b7">Map</a> =  typename <a class="el" href="structinternal_1_1_connected_components_type_helper_1_1_select_container.html">SelectContainer</a>&lt;CompareOrHashT, Eq&gt;::<a class="el" href="structinternal_1_1_connected_components_type_helper.html#a5e243307133bf4b9d213eac078d0b7b7">Map</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="connected__components_8h_source.html#l00164">164</a> of file <a class="el" href="connected__components_8h_source.html">connected_components.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="connected__components_8h_source.html#l00179">179</a> of file <a class="el" href="connected__components_8h_source.html">connected_components.h</a>.</p>
 
 </div>
 </div>
-<a id="a9f0704a43f57c1243c82d334ab44bae7" name="a9f0704a43f57c1243c82d334ab44bae7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9f0704a43f57c1243c82d334ab44bae7">&#9670;&nbsp;</a></span>Set</h2>
+<a id="aea05f2d3c7de6bbbbb0adffd470fbce5" name="aea05f2d3c7de6bbbbb0adffd470fbce5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aea05f2d3c7de6bbbbb0adffd470fbce5">&#9670;&nbsp;</a></span>Set</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="structinternal_1_1_connected_components_type_helper.html#a9f0704a43f57c1243c82d334ab44bae7">Set</a> =  typename <a class="el" href="structinternal_1_1_connected_components_type_helper_1_1_select_container.html">SelectContainer</a>&lt;CompareOrHashT&gt;::<a class="el" href="structinternal_1_1_connected_components_type_helper.html#a9f0704a43f57c1243c82d334ab44bae7">Set</a></td>
+          <td class="memname">using <a class="el" href="structinternal_1_1_connected_components_type_helper.html#aea05f2d3c7de6bbbbb0adffd470fbce5">Set</a> =  typename <a class="el" href="structinternal_1_1_connected_components_type_helper_1_1_select_container.html">SelectContainer</a>&lt;CompareOrHashT, Eq&gt;::<a class="el" href="structinternal_1_1_connected_components_type_helper.html#aea05f2d3c7de6bbbbb0adffd470fbce5">Set</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="connected__components_8h_source.html#l00163">163</a> of file <a class="el" href="connected__components_8h_source.html">connected_components.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="connected__components_8h_source.html#l00178">178</a> of file <a class="el" href="connected__components_8h_source.html">connected_components.h</a>.</p>
 
 </div>
 </div>

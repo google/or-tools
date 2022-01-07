@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.1</span>
+   &#160;<span id="projectnumber">9.2</span>
    </div>
   </td>
  </tr>
@@ -109,12 +109,18 @@ Functions</h2></td></tr>
 <tr class="separator:ac71665cf974c4a75adc4c9ad251ae853"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af8b326626fb8ca0efd32ff0564d35731"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#af8b326626fb8ca0efd32ff0564d35731">FindRationalFactor</a> (double x, int limit, double tolerance)</td></tr>
 <tr class="separator:af8b326626fb8ca0efd32ff0564d35731"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab976889f89f3df5d24c7b72c0a7d8d07"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#ab976889f89f3df5d24c7b72c0a7d8d07">MakeBoundsOfIntegerVariablesInteger</a> (const SatParameters &amp;params, MPModelProto *mp_model, SolverLogger *logger)</td></tr>
+<tr class="separator:ab976889f89f3df5d24c7b72c0a7d8d07"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8163165c60b5914e1e8476c56b048664"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a8163165c60b5914e1e8476c56b048664">RemoveNearZeroTerms</a> (const SatParameters &amp;params, MPModelProto *mp_model, SolverLogger *logger)</td></tr>
 <tr class="separator:a8163165c60b5914e1e8476c56b048664"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9cad548d18a6c850514c835b34f60cfe"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a9cad548d18a6c850514c835b34f60cfe">MPModelProtoValidationBeforeConversion</a> (const SatParameters &amp;params, const MPModelProto &amp;mp_model, SolverLogger *logger)</td></tr>
+<tr class="separator:a9cad548d18a6c850514c835b34f60cfe"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae188c568fdffc07e6443ba7eb11cff1b"><td class="memItemLeft" align="right" valign="top">std::vector&lt; double &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#ae188c568fdffc07e6443ba7eb11cff1b">DetectImpliedIntegers</a> (MPModelProto *mp_model, SolverLogger *logger)</td></tr>
 <tr class="separator:ae188c568fdffc07e6443ba7eb11cff1b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8344143223766ba5898fdba30d6f61d8"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a8344143223766ba5898fdba30d6f61d8">ConvertMPModelProtoToCpModelProto</a> (const SatParameters &amp;params, const MPModelProto &amp;mp_model, CpModelProto *cp_model, SolverLogger *logger)</td></tr>
 <tr class="separator:a8344143223766ba5898fdba30d6f61d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0b38571bb1f48f98df1134a4005d9c21"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a0b38571bb1f48f98df1134a4005d9c21">ScaleAndSetObjective</a> (const SatParameters &amp;params, const std::vector&lt; std::pair&lt; int, double &gt; &gt; &amp;objective, double objective_offset, bool maximize, CpModelProto *cp_model, SolverLogger *logger)</td></tr>
+<tr class="separator:a0b38571bb1f48f98df1134a4005d9c21"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7b33067a7dffa07cd5748bc4552c85a1"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a7b33067a7dffa07cd5748bc4552c85a1">ConvertBinaryMPModelProtoToBooleanProblem</a> (const MPModelProto &amp;mp_model, LinearBooleanProblem *problem)</td></tr>
 <tr class="separator:a7b33067a7dffa07cd5748bc4552c85a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4591e100a0f29a249169e5833995cd31"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a4591e100a0f29a249169e5833995cd31">ConvertBooleanProblemToLinearProgram</a> (const LinearBooleanProblem &amp;problem, glop::LinearProgram *lp)</td></tr>
@@ -125,6 +131,8 @@ Functions</h2></td></tr>
 <tr class="separator:a0ce1f2f17b7ce984fbfc526d6c04f337"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa46871f0150f3db9f9fdcbd1049aadaa"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#aa46871f0150f3db9f9fdcbd1049aadaa">SolveLpAndUseIntegerVariableToStartLNS</a> (const glop::LinearProgram &amp;lp, LinearBooleanProblem *problem)</td></tr>
 <tr class="separator:aa46871f0150f3db9f9fdcbd1049aadaa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abf1098bd1f66254ed356544335469700"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#abf1098bd1f66254ed356544335469700">ComputeTrueObjectiveLowerBound</a> (const CpModelProto &amp;model_proto_with_floating_point_objective, const CpObjectiveProto &amp;integer_objective, const int64_t inner_integer_objective_lower_bound)</td></tr>
+<tr class="separator:abf1098bd1f66254ed356544335469700"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Variable Documentation</h2>
 <a id="ab1734711414da2e668957d24a41b1ddf" name="ab1734711414da2e668957d24a41b1ddf"></a>
@@ -139,7 +147,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat_2lp__utils_8cc_source.html#l00496">496</a> of file <a class="el" href="sat_2lp__utils_8cc_source.html">sat/lp_utils.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat_2lp__utils_8cc_source.html#l00600">600</a> of file <a class="el" href="sat_2lp__utils_8cc_source.html">sat/lp_utils.cc</a>.</p>
 
 </div>
 </div>
@@ -155,7 +163,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat_2lp__utils_8cc_source.html#l00497">497</a> of file <a class="el" href="sat_2lp__utils_8cc_source.html">sat/lp_utils.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat_2lp__utils_8cc_source.html#l00601">601</a> of file <a class="el" href="sat_2lp__utils_8cc_source.html">sat/lp_utils.cc</a>.</p>
 
 </div>
 </div>
@@ -171,7 +179,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat_2lp__utils_8cc_source.html#l00489">489</a> of file <a class="el" href="sat_2lp__utils_8cc_source.html">sat/lp_utils.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat_2lp__utils_8cc_source.html#l00593">593</a> of file <a class="el" href="sat_2lp__utils_8cc_source.html">sat/lp_utils.cc</a>.</p>
 
 </div>
 </div>
@@ -187,7 +195,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat_2lp__utils_8cc_source.html#l00490">490</a> of file <a class="el" href="sat_2lp__utils_8cc_source.html">sat/lp_utils.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat_2lp__utils_8cc_source.html#l00594">594</a> of file <a class="el" href="sat_2lp__utils_8cc_source.html">sat/lp_utils.cc</a>.</p>
 
 </div>
 </div>
@@ -203,7 +211,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat_2lp__utils_8cc_source.html#l00491">491</a> of file <a class="el" href="sat_2lp__utils_8cc_source.html">sat/lp_utils.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat_2lp__utils_8cc_source.html#l00595">595</a> of file <a class="el" href="sat_2lp__utils_8cc_source.html">sat/lp_utils.cc</a>.</p>
 
 </div>
 </div>
@@ -219,7 +227,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat_2lp__utils_8cc_source.html#l00494">494</a> of file <a class="el" href="sat_2lp__utils_8cc_source.html">sat/lp_utils.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat_2lp__utils_8cc_source.html#l00598">598</a> of file <a class="el" href="sat_2lp__utils_8cc_source.html">sat/lp_utils.cc</a>.</p>
 
 </div>
 </div>
@@ -235,7 +243,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat_2lp__utils_8cc_source.html#l00498">498</a> of file <a class="el" href="sat_2lp__utils_8cc_source.html">sat/lp_utils.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat_2lp__utils_8cc_source.html#l00602">602</a> of file <a class="el" href="sat_2lp__utils_8cc_source.html">sat/lp_utils.cc</a>.</p>
 
 </div>
 </div>
@@ -251,7 +259,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat_2lp__utils_8cc_source.html#l00495">495</a> of file <a class="el" href="sat_2lp__utils_8cc_source.html">sat/lp_utils.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat_2lp__utils_8cc_source.html#l00599">599</a> of file <a class="el" href="sat_2lp__utils_8cc_source.html">sat/lp_utils.cc</a>.</p>
 
 </div>
 </div>
@@ -267,7 +275,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat_2lp__utils_8cc_source.html#l00493">493</a> of file <a class="el" href="sat_2lp__utils_8cc_source.html">sat/lp_utils.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat_2lp__utils_8cc_source.html#l00597">597</a> of file <a class="el" href="sat_2lp__utils_8cc_source.html">sat/lp_utils.cc</a>.</p>
 
 </div>
 </div>

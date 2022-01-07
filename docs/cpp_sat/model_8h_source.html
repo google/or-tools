@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 9.1</span>
+                <span id="sfml">Google OR-Tools 9.2</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -181,7 +181,7 @@ $(document).ready(function(){initNavTree('model_8h_source.html',''); initResizab
 <div class="line"><a id="l00168" name="l00168"></a><span class="lineno">  168</span>  <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
 <div class="line"><a id="l00169" name="l00169"></a><span class="lineno"><a class="line" href="classoperations__research_1_1sat_1_1_model.html#a7fac5de5604ea8668bc414536e8aa7ee">  169</a></span>  <span class="keywordtype">void</span> <a class="code hl_function" href="classoperations__research_1_1sat_1_1_model.html#a7fac5de5604ea8668bc414536e8aa7ee">Register</a>(T* non_owned_class) {</div>
 <div class="line"><a id="l00170" name="l00170"></a><span class="lineno">  170</span>    <span class="keyword">const</span> <span class="keywordtype">size_t</span> type_id = gtl::FastTypeId&lt;T&gt;();</div>
-<div class="line"><a id="l00171" name="l00171"></a><span class="lineno">  171</span>    CHECK(!gtl::ContainsKey(singletons_, type_id));</div>
+<div class="line"><a id="l00171" name="l00171"></a><span class="lineno">  171</span>    CHECK(!singletons_.contains(type_id));</div>
 <div class="line"><a id="l00172" name="l00172"></a><span class="lineno">  172</span>    singletons_[type_id] = non_owned_class;</div>
 <div class="line"><a id="l00173" name="l00173"></a><span class="lineno">  173</span>  }</div>
 <div class="line"><a id="l00174" name="l00174"></a><span class="lineno">  174</span> </div>
@@ -247,7 +247,7 @@ $(document).ready(function(){initNavTree('model_8h_source.html',''); initResizab
 <div class="ttc" id="aclassoperations__research_1_1sat_1_1_model_html_ad906471543194544f1e53c5d851887fb"><div class="ttname"><a href="classoperations__research_1_1sat_1_1_model.html#ad906471543194544f1e53c5d851887fb">operations_research::sat::Model::Mutable</a></div><div class="ttdeci">T * Mutable() const</div><div class="ttdoc">Same as Get(), but returns a mutable version of the object.</div><div class="ttdef"><b>Definition:</b> <a href="model_8h_source.html#l00136">model.h:136</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1sat_1_1_model_html_aee6e749f21ce871e8a4f306ba25f2c83"><div class="ttname"><a href="classoperations__research_1_1sat_1_1_model.html#aee6e749f21ce871e8a4f306ba25f2c83">operations_research::sat::Model::TakeOwnership</a></div><div class="ttdeci">void TakeOwnership(T *t)</div><div class="ttdoc">Gives ownership of a pointer to this model.</div><div class="ttdef"><b>Definition:</b> <a href="model_8h_source.html#l00147">model.h:147</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1sat_1_1_model_html_afb0c03e2a6201677c266f8a7eb77c2dc"><div class="ttname"><a href="classoperations__research_1_1sat_1_1_model.html#afb0c03e2a6201677c266f8a7eb77c2dc">operations_research::sat::Model::GetOrCreate</a></div><div class="ttdeci">T * GetOrCreate()</div><div class="ttdoc">Returns an object of type T that is unique to this model (like a &quot;local&quot; singleton).</div><div class="ttdef"><b>Definition:</b> <a href="model_8h_source.html#l00106">model.h:106</a></div></div>
-<div class="ttc" id="anamespaceoperations__research_html"><div class="ttname"><a href="namespaceoperations__research.html">operations_research</a></div><div class="ttdef"><b>Definition:</b> <a href="cp__model_8h_source.html#l00054">cp_model.h:54</a></div></div>
+<div class="ttc" id="anamespaceoperations__research_html"><div class="ttname"><a href="namespaceoperations__research.html">operations_research</a></div><div class="ttdef"><b>Definition:</b> <a href="cp__model_8h_source.html#l00055">cp_model.h:55</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
         </div>

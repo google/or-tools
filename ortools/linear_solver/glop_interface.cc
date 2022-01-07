@@ -16,6 +16,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/base/attributes.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"

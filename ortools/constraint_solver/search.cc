@@ -1704,8 +1704,14 @@ Decision* Solver::MakeVariableGreaterOrEqualValue(IntVar* const var,
 namespace {
 class AssignVariablesValues : public Decision {
  public:
-  AssignVariablesValues(const std::vector<IntVar*>& vars,
-                        const std::vector<int64_t>& values);
+  // Selects what this Decision does on the Refute() branch:
+  // - kForbidAssignment: adds a constraint that forbids the assignment.
+  // - kDoNothing: does nothing.
+  // - kFail: fails.
+  enum class RefutationBehavior { kForbidAssignment, kDoNothing, kFail };
+  AssignVariablesValues(
+      const std::vector<IntVar*>& vars, const std::vector<int64_t>& values,
+      RefutationBehavior refutation = RefutationBehavior::kForbidAssignment);
   ~AssignVariablesValues() override {}
   void Apply(Solver* const s) override;
   void Refute(Solver* const s) override;
@@ -1726,42 +1732,87 @@ class AssignVariablesValues : public Decision {
  private:
   const std::vector<IntVar*> vars_;
   const std::vector<int64_t> values_;
+  const RefutationBehavior refutation_;
 };
 
 AssignVariablesValues::AssignVariablesValues(const std::vector<IntVar*>& vars,
-                                             const std::vector<int64_t>& values)
-    : vars_(vars), values_(values) {}
+                                             const std::vector<int64_t>& values,
+                                             RefutationBehavior refutation)
+    : vars_(vars), values_(values), refutation_(refutation) {}
 
 std::string AssignVariablesValues::DebugString() const {
   std::string out;
+  if (vars_.empty()) out += "do nothing";
   for (int i = 0; i < vars_.size(); ++i) {
     absl::StrAppendFormat(&out, "[%s == %d]", vars_[i]->DebugString(),
                           values_[i]);
+  }
+  switch (refutation_) {
+    case RefutationBehavior::kForbidAssignment:
+      out += " or forbid assignment";
+      break;
+    case RefutationBehavior::kDoNothing:
+      out += " or do nothing";
+      break;
+    case RefutationBehavior::kFail:
+      out += " or fail";
+      break;
   }
   return out;
 }
 
 void AssignVariablesValues::Apply(Solver* const s) {
+  if (vars_.empty()) return;
+  vars_[0]->FreezeQueue();
   for (int i = 0; i < vars_.size(); ++i) {
     vars_[i]->SetValue(values_[i]);
   }
+  vars_[0]->UnfreezeQueue();
 }
 
 void AssignVariablesValues::Refute(Solver* const s) {
-  std::vector<IntVar*> terms;
-  for (int i = 0; i < vars_.size(); ++i) {
-    IntVar* term = s->MakeBoolVar();
-    s->MakeIsDifferentCstCt(vars_[i], values_[i], term);
-    terms.push_back(term);
+  switch (refutation_) {
+    case RefutationBehavior::kForbidAssignment: {
+      std::vector<IntVar*> terms;
+      for (int i = 0; i < vars_.size(); ++i) {
+        IntVar* term = s->MakeBoolVar();
+        s->AddConstraint(s->MakeIsDifferentCstCt(vars_[i], values_[i], term));
+        terms.push_back(term);
+      }
+      s->AddConstraint(s->MakeSumGreaterOrEqual(terms, 1));
+      break;
+    }
+    case RefutationBehavior::kDoNothing: {
+      break;
+    }
+    case RefutationBehavior::kFail: {
+      s->Fail();
+      break;
+    }
   }
-  s->AddConstraint(s->MakeSumGreaterOrEqual(terms, 1));
 }
 }  // namespace
 
 Decision* Solver::MakeAssignVariablesValues(
     const std::vector<IntVar*>& vars, const std::vector<int64_t>& values) {
   CHECK_EQ(vars.size(), values.size());
-  return RevAlloc(new AssignVariablesValues(vars, values));
+  return RevAlloc(new AssignVariablesValues(
+      vars, values,
+      AssignVariablesValues::RefutationBehavior::kForbidAssignment));
+}
+
+Decision* Solver::MakeAssignVariablesValuesOrDoNothing(
+    const std::vector<IntVar*>& vars, const std::vector<int64_t>& values) {
+  CHECK_EQ(vars.size(), values.size());
+  return RevAlloc(new AssignVariablesValues(
+      vars, values, AssignVariablesValues::RefutationBehavior::kDoNothing));
+}
+
+Decision* Solver::MakeAssignVariablesValuesOrFail(
+    const std::vector<IntVar*>& vars, const std::vector<int64_t>& values) {
+  CHECK_EQ(vars.size(), values.size());
+  return RevAlloc(new AssignVariablesValues(
+      vars, values, AssignVariablesValues::RefutationBehavior::kFail));
 }
 
 // ----- AssignAllVariables -----

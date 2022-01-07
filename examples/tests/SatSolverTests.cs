@@ -201,7 +201,7 @@ namespace Google.OrTools.Tests
             IntVar squaredDelta = model.NewIntVar(0, 25, "squaredDelta");
             model.Add(x == boolvar * 4);
             model.Add(delta == x - 5);
-            model.AddProdEquality(squaredDelta, new IntVar[] { delta, delta });
+            model.AddMultiplicationEquality(squaredDelta, new IntVar[] { delta, delta });
             model.Minimize(squaredDelta);
             // Console.WriteLine("model = " + model.Model.ToString());
 
@@ -264,7 +264,7 @@ namespace Google.OrTools.Tests
             CpSolverResponse response = solver.Response;
             Assert.Equal(3, solver.Value(v1));
             Assert.Equal(1, solver.Value(v2));
-            Assert.Equal(new long[] { 3, 1, 3 }, response.Solution);
+            Assert.Equal(new long[] { 3, 1 }, response.Solution);
             Assert.Equal(0, response.ObjectiveValue);
             // Console.WriteLine("response = " + reponse.ToString());
         }
@@ -285,7 +285,7 @@ namespace Google.OrTools.Tests
             CpSolverResponse response = solver.Response;
             Assert.Equal(3, solver.Value(v1));
             Assert.Equal(4, solver.Value(v2));
-            Assert.Equal(new long[] { 3, 4, 3 }, response.Solution);
+            Assert.Equal(new long[] { 3, 4 }, response.Solution);
             Assert.Equal(0, response.ObjectiveValue);
             // Console.WriteLine("response = " + reponse.ToString());
         }
@@ -402,7 +402,17 @@ namespace Google.OrTools.Tests
                 { ""name"": ""E"", ""domain"": [ ""0"", ""9"" ] }
               ],
               ""constraints"": [
-                { ""allDiff"": { ""vars"": [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 ] } },
+                { ""allDiff"": { ""exprs"": [
+                    { ""vars"": [""0""], ""coeffs"": [""1""] },
+                    { ""vars"": [""1""], ""coeffs"": [""1""] },
+                    { ""vars"": [""2""], ""coeffs"": [""1""] },
+                    { ""vars"": [""3""], ""coeffs"": [""1""] },
+                    { ""vars"": [""4""], ""coeffs"": [""1""] },
+                    { ""vars"": [""5""], ""coeffs"": [""1""] },
+                    { ""vars"": [""6""], ""coeffs"": [""1""] },
+                    { ""vars"": [""7""], ""coeffs"": [""1""] },
+                    { ""vars"": [""8""], ""coeffs"": [""1""] },
+                    { ""vars"": [""9""], ""coeffs"": [""1""] } ] } },
                 { ""linear"": { ""vars"": [ 6, 5, 9, 4, 3, 7, 8, 2, 0, 1 ], ""coeffs"": [ ""1"", ""0"", ""-1"", ""100"", ""1"", ""-1000"", ""-100"", ""10"", ""10"", ""1"" ], ""domain"": [ ""0"", ""0"" ] } }
               ]
             }";
@@ -433,6 +443,18 @@ namespace Google.OrTools.Tests
             solver.Solve(model);
             Assert.NotEmpty(log);
             Assert.Contains("OPTIMAL", log);
+        }
+
+        [Fact]
+        public void TestInterval()
+        {
+            Console.WriteLine("TestInterval test");
+            CpModel model = new CpModel();
+            IntVar v = model.NewIntVar(-10, 10, "v");
+            IntervalVar i = model.NewFixedSizeIntervalVar(v, 3, "i");
+            Assert.Equal("v", i.StartExpr().ShortString());
+            Assert.Equal("3", i.SizeExpr().ShortString());
+            Assert.Equal("(v + 3)", i.EndExpr().ShortString());
         }
     }
 } // namespace Google.OrTools.Tests

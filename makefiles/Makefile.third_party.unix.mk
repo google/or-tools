@@ -20,8 +20,8 @@ UNIX_SWIG_BINARY ?= swig
 PROTOC_BINARY := $(shell $(WHICH) ${UNIX_PROTOC_BINARY})
 
 # Tags of dependencies to checkout.
-PROTOBUF_TAG = v3.18.0
-ABSL_TAG = 20210324.2
+PROTOBUF_TAG = v3.19.1
+ABSL_TAG = 20211102.0
 CBC_TAG = 2.10.5
 CGL_TAG = 0.60.3
 # Clp >= 1.17.5 is broken, so we must keep 1.17.4
@@ -220,7 +220,7 @@ dependencies/install/lib/libprotobuf.a: $(PROTOBUF_SRCDIR) | dependencies/instal
     -DBUILD_TESTING=OFF \
     -Dprotobuf_BUILD_TESTS=OFF \
     -Dprotobuf_BUILD_EXAMPLES=OFF \
-    -DCMAKE_CXX_FLAGS="$(MAC_VERSION)" \
+    -DCMAKE_OSX_DEPLOYMENT_TARGET="$(MAC_MIN_VERSION)" \
     -DCMAKE_INSTALL_PREFIX=../../install && \
   $(CMAKE) --build build_cmake --config Release -v -- -j4 && \
   $(CMAKE) --build build_cmake --config Release --target install
@@ -289,7 +289,7 @@ dependencies/install/lib/libabsl.a: dependencies/sources/abseil-cpp-$(ABSL_TAG) 
     -DCMAKE_PREFIX_PATH="$(OR_TOOLS_TOP)/dependencies/install" \
     -DBUILD_SHARED_LIBS=OFF \
     -DBUILD_STATIC_LIBS=ON \
-    -DCMAKE_CXX_FLAGS="$(MAC_VERSION)" \
+    -DCMAKE_OSX_DEPLOYMENT_TARGET="$(MAC_MIN_VERSION)" \
     -DBUILD_TESTING=OFF \
     -DCMAKE_INSTALL_PREFIX=../../install && \
   $(CMAKE) --build build_cmake --config Release -v -- -j4 && \
@@ -307,75 +307,64 @@ _ABSL_STATIC_LIB_DIR = $(dir $(wildcard \
  $(UNIX_ABSL_DIR)/lib*/libabsl_base.a \
  $(UNIX_ABSL_DIR)/lib/*/libabsl_base.a))
 STATIC_ABSL_LNK = \
-$(_ABSL_STATIC_LIB_DIR)libabsl_synchronization.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_bad_any_cast_impl.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_bad_optional_access.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_bad_variant_access.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_city.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_civil_time.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_examine_stack.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_failure_signal_handler.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_flags.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_flags_config.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_flags_internal.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_flags_marshalling.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_flags_parse.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_flags_program_name.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_flags_usage.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_flags_usage_internal.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_graphcycles_internal.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_hash.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_hashtablez_sampler.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_leak_check.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_leak_check_disable.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_log_severity.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_malloc_internal.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_periodic_sampler.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_flags.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_flags_internal.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_flags_marshalling.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_flags_reflection.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_flags_config.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_flags_private_handle_accessor.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_flags_commandlineflag.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_flags_commandlineflag_internal.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_flags_program_name.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_random_distributions.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_random_internal_distribution_test_util.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_random_seed_sequences.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_random_internal_pool_urbg.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_random_internal_randen.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_random_internal_randen_hwaes.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_random_internal_randen_hwaes_impl.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_random_internal_randen_slow.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_random_internal_seed_material.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_random_internal_platform.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_random_internal_seed_material.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_random_seed_gen_exception.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_random_seed_sequences.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_raw_hash_set.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_raw_logging_internal.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_scoped_set_env.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_spinlock_wait.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_stacktrace.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_status.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_hashtablez_sampler.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_hash.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_city.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_low_level_hash.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_leak_check.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_statusor.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_str_format_internal.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_strings.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_strings_internal.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_symbolize.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_throw_delegate.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_time.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_time_zone.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_exponential_biased.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_status.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_cord.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_int128.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_cordz_info.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_cord_internal.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_cordz_functions.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_exponential_biased.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_cordz_handle.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_bad_optional_access.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_bad_variant_access.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_str_format_internal.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_synchronization.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_stacktrace.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_symbolize.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_debugging_internal.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_demangle_internal.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_flags.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_flags_commandlineflag.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_flags_commandlineflag_internal.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_flags_config.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_flags_internal.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_flags_marshalling.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_flags_parse.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_flags_private_handle_accessor.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_flags_program_name.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_flags_reflection.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_flags_usage.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_flags_usage_internal.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_graphcycles_internal.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_malloc_internal.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_time.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_strings.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_strings_internal.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_base.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_city.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_wyhash.a
+$(_ABSL_STATIC_LIB_DIR)libabsl_spinlock_wait.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_throw_delegate.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_int128.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_civil_time.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_time_zone.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_bad_any_cast_impl.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_raw_logging_internal.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_log_severity.a
 
 ABSL_LNK = $(STATIC_ABSL_LNK)
 
@@ -394,7 +383,7 @@ install_cbc: dependencies/install/lib/libCbc.a
 
 CBC_SRCDIR = dependencies/sources/Cbc-$(CBC_TAG)
 dependencies/install/lib/libCbc.a: install_cgl $(CBC_SRCDIR)
-	cd $(CBC_SRCDIR) && $(SET_COMPILER) ./configure \
+	cd $(CBC_SRCDIR) && $(SET_COMPILER) $(SET_COIN_OPT) ./configure \
     --prefix=$(OR_ROOT_FULL)/dependencies/install \
     --enable-static --disable-shared \
     --disable-debug \
@@ -406,8 +395,8 @@ dependencies/install/lib/libCbc.a: install_cgl $(CBC_SRCDIR)
     --enable-dependency-linking \
     --enable-cbc-parallel \
     ADD_CXXFLAGS="-w -DCBC_THREAD_SAFE -DCBC_NO_INTERRUPT $(MAC_VERSION) -std=c++11"
-	$(SET_COMPILER) make -C $(CBC_SRCDIR)
-	$(SET_COMPILER) make install -C $(CBC_SRCDIR)
+	$(SET_COMPILER) $(SET_COIN_OPT) make -C $(CBC_SRCDIR)
+	$(SET_COMPILER) $(SET_COIN_OPT) make install -C $(CBC_SRCDIR)
 
 $(CBC_SRCDIR): | dependencies/sources
 	-$(DELREC) $(CBC_SRCDIR)
@@ -434,7 +423,7 @@ install_cgl: dependencies/install/lib/libCgl.a
 
 CGL_SRCDIR = dependencies/sources/Cgl-$(CGL_TAG)
 dependencies/install/lib/libCgl.a: install_clp $(CGL_SRCDIR)
-	cd $(CGL_SRCDIR) && $(SET_COMPILER) ./configure \
+	cd $(CGL_SRCDIR) && $(SET_COMPILER) $(SET_COIN_OPT) ./configure \
     --prefix=$(OR_ROOT_FULL)/dependencies/install \
     --enable-static --disable-shared \
     --disable-debug \
@@ -445,8 +434,8 @@ dependencies/install/lib/libCgl.a: install_clp $(CGL_SRCDIR)
     --disable-dependency-tracking \
     --enable-dependency-linking \
     ADD_CXXFLAGS="-w $(MAC_VERSION) -std=c++11"
-	$(SET_COMPILER) make -C $(CGL_SRCDIR)
-	$(SET_COMPILER) make install -C $(CGL_SRCDIR)
+	$(SET_COMPILER) $(SET_COIN_OPT) make -C $(CGL_SRCDIR)
+	$(SET_COMPILER) $(SET_COIN_OPT) make install -C $(CGL_SRCDIR)
 
 $(CGL_SRCDIR): | dependencies/sources
 	-$(DELREC) $(CGL_SRCDIR)
@@ -471,7 +460,7 @@ install_clp: dependencies/install/lib/libClp.a
 
 CLP_SRCDIR = dependencies/sources/Clp-$(CLP_TAG)
 dependencies/install/lib/libClp.a: install_osi $(CLP_SRCDIR)
-	cd $(CLP_SRCDIR) && $(SET_COMPILER) ./configure \
+	cd $(CLP_SRCDIR) && $(SET_COMPILER) $(SET_COIN_OPT) ./configure \
     --prefix=$(OR_ROOT_FULL)/dependencies/install \
     --enable-static --disable-shared \
     --disable-debug \
@@ -482,8 +471,8 @@ dependencies/install/lib/libClp.a: install_osi $(CLP_SRCDIR)
     --disable-dependency-tracking \
     --enable-dependency-linking \
     ADD_CXXFLAGS="-w $(MAC_VERSION) -std=c++11"
-	$(SET_COMPILER) make -C $(CLP_SRCDIR)
-	$(SET_COMPILER) make install -C $(CLP_SRCDIR)
+	$(SET_COMPILER) $(SET_COIN_OPT) make -C $(CLP_SRCDIR)
+	$(SET_COMPILER) $(SET_COIN_OPT) make install -C $(CLP_SRCDIR)
 
 $(CLP_SRCDIR): | dependencies/sources
 	-$(DELREC) $(CLP_SRCDIR)
@@ -510,7 +499,7 @@ install_osi: dependencies/install/lib/libOsi.a
 
 OSI_SRCDIR = dependencies/sources/Osi-$(OSI_TAG)
 dependencies/install/lib/libOsi.a: install_coinutils $(OSI_SRCDIR)
-	cd $(OSI_SRCDIR) && $(SET_COMPILER) ./configure \
+	cd $(OSI_SRCDIR) && $(SET_COMPILER) $(SET_COIN_OPT) ./configure \
     --prefix=$(OR_ROOT_FULL)/dependencies/install \
     --enable-static --disable-shared \
     --disable-debug \
@@ -522,8 +511,8 @@ dependencies/install/lib/libOsi.a: install_coinutils $(OSI_SRCDIR)
     --disable-dependency-tracking \
     --enable-dependency-linking \
     ADD_CXXFLAGS="-w $(MAC_VERSION) -std=c++11"
-	$(SET_COMPILER) make -C $(OSI_SRCDIR)
-	$(SET_COMPILER) make install -C $(OSI_SRCDIR)
+	$(SET_COMPILER) $(SET_COIN_OPT) make -C $(OSI_SRCDIR)
+	$(SET_COMPILER) $(SET_COIN_OPT) make install -C $(OSI_SRCDIR)
 
 $(OSI_SRCDIR): | dependencies/sources
 	-$(DELREC) $(OSI_SRCDIR)
@@ -549,7 +538,7 @@ install_coinutils: dependencies/install/lib/libCoinUtils.a
 COINUTILS_SRCDIR = dependencies/sources/CoinUtils-$(COINUTILS_TAG)
 dependencies/install/lib/libCoinUtils.a: $(COINUTILS_SRCDIR) | \
  dependencies/install/lib/pkgconfig dependencies/install/include/coin
-	cd $(COINUTILS_SRCDIR) && $(SET_COMPILER) ./configure \
+	cd $(COINUTILS_SRCDIR) && $(SET_COMPILER) $(SET_COIN_OPT) ./configure \
     --prefix=$(OR_ROOT_FULL)/dependencies/install \
     --enable-static --disable-shared \
     --disable-bzlib \
@@ -561,8 +550,8 @@ dependencies/install/lib/libCoinUtils.a: $(COINUTILS_SRCDIR) | \
     --disable-dependency-tracking \
     --enable-dependency-linking \
     ADD_CXXFLAGS="-w $(MAC_VERSION) -std=c++11"
-	$(SET_COMPILER) make -C $(COINUTILS_SRCDIR)
-	$(SET_COMPILER) make install -C $(COINUTILS_SRCDIR)
+	$(SET_COMPILER) $(SET_COIN_OPT) make -C $(COINUTILS_SRCDIR)
+	$(SET_COMPILER) $(SET_COIN_OPT) make install -C $(COINUTILS_SRCDIR)
 
 $(COINUTILS_SRCDIR): | dependencies/sources
 	-$(DELREC) $(COINUTILS_SRCDIR)
@@ -633,7 +622,7 @@ dependencies/install/lib/libscip.a: $(SCIP_SRCDIR) | dependencies/install
     -DSHARED=OFF \
     -DBUILD_STATIC_LIBS=ON \
     -DBUILD_TESTING=OFF \
-    -DCMAKE_CXX_FLAGS="$(MAC_VERSION)" \
+    -DCMAKE_OSX_DEPLOYMENT_TARGET="$(MAC_MIN_VERSION)" \
     -DREADLINE=OFF \
     -DGMP=OFF \
     -DPAPILO=OFF \

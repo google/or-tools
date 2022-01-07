@@ -20,6 +20,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/strings/str_format.h"
 #include "ortools/sat/cp_model_utils.h"
+#include "ortools/sat/integer.h"
 #include "ortools/sat/util.h"
 
 namespace operations_research {
@@ -109,9 +110,10 @@ BooleanOrIntegerLiteral CpModelView::MedianValue(int var) const {
     const IntegerVariable variable = mapping_.Integer(var);
     CHECK_NE(variable, kNoIntegerVariable);
     CHECK(integer_encoder_.VariableIsFullyEncoded(variable));
-    std::vector<IntegerEncoder::ValueLiteralPair> encoding =
+    std::vector<ValueLiteralPair> encoding =
         integer_encoder_.RawDomainEncoding(variable);
-    std::sort(encoding.begin(), encoding.end());
+    std::sort(encoding.begin(), encoding.end(),
+              ValueLiteralPair::CompareByValue());
     std::vector<Literal> unassigned_sorted_literals;
     for (const auto& p : encoding) {
       if (!boolean_assignment_.LiteralIsAssigned(p.literal)) {
@@ -445,6 +447,10 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     SatParameters new_params = base_params;
     new_params.set_optimize_with_lb_tree_search(true);
     new_params.set_linearization_level(2);
+
+    // We do not want to change the objective_var lb from outside as it gives
+    // better result to only use locally derived reason in that algo.
+    new_params.set_share_objective_bounds(false);
     strategies["lb_tree_search"] = new_params;
   }
 
@@ -543,6 +549,10 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     if (num_workers > 10) {
       names.push_back("quick_restart_no_lp");
     }
+    // Only add lb_tree_search if there is an objective.
+    if (num_workers > 12) {
+      names.push_back("lb_tree_search");
+    }
   } else {
     names.push_back("default_lp");
     if (use_fixed_strategy) names.push_back("fixed");
@@ -556,7 +566,6 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
   }
   if (num_workers > 12) {
     names.push_back("probing");
-    names.push_back("lb_tree_search");
   }
 
   // Creates the diverse set of parameters with names and seed. We remove the

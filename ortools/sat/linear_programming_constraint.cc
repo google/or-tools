@@ -155,7 +155,7 @@ ScatteredIntegerVector::GetTerms() {
 // a constraint was added will have no effect on this class.
 LinearProgrammingConstraint::LinearProgrammingConstraint(Model* model)
     : constraint_manager_(model),
-      sat_parameters_(*(model->GetOrCreate<SatParameters>())),
+      parameters_(*(model->GetOrCreate<SatParameters>())),
       model_(model),
       time_limit_(model->GetOrCreate<TimeLimit>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
@@ -171,8 +171,8 @@ LinearProgrammingConstraint::LinearProgrammingConstraint(Model* model)
   glop::GlopParameters parameters;
   parameters.set_use_dual_simplex(true);
   simplex_.SetParameters(parameters);
-  if (sat_parameters_.use_branching_in_lp() ||
-      sat_parameters_.search_branching() == SatParameters::LP_SEARCH) {
+  if (parameters_.use_branching_in_lp() ||
+      parameters_.search_branching() == SatParameters::LP_SEARCH) {
     compute_reduced_cost_averages_ = true;
   }
 
@@ -346,7 +346,7 @@ bool LinearProgrammingConstraint::CreateLpFromConstraintManager() {
   // Set the information for the step to polish the LP basis. All our variables
   // are integer, but for now, we just try to minimize the fractionality of the
   // binary variables.
-  if (sat_parameters_.polish_lp_solution()) {
+  if (parameters_.polish_lp_solution()) {
     simplex_.ClearIntegralityScales();
     for (int i = 0; i < num_vars; ++i) {
       const IntegerVariable cp_var = integer_variables_[i];
@@ -519,7 +519,7 @@ void LinearProgrammingConstraint::RegisterWith(Model* model) {
   std::sort(integer_objective_.begin(), integer_objective_.end());
 
   // Set the LP to its initial content.
-  if (!sat_parameters_.add_lp_constraints_lazily()) {
+  if (!parameters_.add_lp_constraints_lazily()) {
     constraint_manager_.AddAllConstraintsToLp();
   }
   if (!CreateLpFromConstraintManager()) {
@@ -806,7 +806,7 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
 
   bool at_least_one_added = false;
 
-  // Try cover appraoch to find cut.
+  // Try cover approach to find cut.
   {
     if (cover_cut_helper_.TrySimpleKnapsack(cut_, tmp_lp_values_, tmp_var_lbs_,
                                             tmp_var_ubs_)) {
@@ -819,7 +819,7 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
   // Try integer rounding heuristic to find cut.
   {
     RoundingOptions options;
-    options.max_scaling = sat_parameters_.max_integer_rounding_scaling();
+    options.max_scaling = parameters_.max_integer_rounding_scaling();
     integer_rounding_cut_helper_.ComputeCut(options, tmp_lp_values_,
                                             tmp_var_lbs_, tmp_var_ubs_,
                                             &implied_bounds_processor_, &cut_);
@@ -1055,6 +1055,49 @@ IntegerValue GetCoeff(ColIndex col, const ListOfTerms& terms) {
 }
 
 }  // namespace
+
+// Because we know the objective is integer, the constraint objective >= lb can
+// sometime cut the current lp optimal, and it can make a big difference to add
+// it. Or at least use it when constructing more advanced cuts. See
+// 'multisetcover_batch_0_case_115_instance_0_small_subset_elements_3_sumreqs
+//  _1295_candidates_41.fzn'
+//
+// TODO(user): It might be better to just integrate this with the MIR code so
+// that we not only consider MIR1 involving the objective but we also consider
+// combining it with other constraints.
+void LinearProgrammingConstraint::AddObjectiveCut() {
+  if (integer_objective_.size() <= 1) return;
+
+  // Clear temp data.
+  tmp_lp_values_.clear();
+  tmp_var_lbs_.clear();
+  tmp_var_ubs_.clear();
+  cut_.Clear();
+
+  // We negate everything to have a <= base constraint.
+  cut_.lb = kMinIntegerValue;
+  cut_.ub = integer_objective_offset_ -
+            integer_trail_->LevelZeroLowerBound(objective_cp_);
+  for (const auto& [col, coeff] : integer_objective_) {
+    const IntegerVariable var = integer_variables_[col.value()];
+    cut_.vars.push_back(var);
+    tmp_lp_values_.push_back(expanded_lp_solution_[var]);
+    tmp_var_lbs_.push_back(integer_trail_->LevelZeroLowerBound(var));
+    tmp_var_ubs_.push_back(integer_trail_->LevelZeroUpperBound(var));
+    cut_.coeffs.push_back(-coeff);
+  }
+
+  // Because the objective has often large coefficient, we always try a MIR1
+  // like heuristic to round it to reasonable values.
+  RoundingOptions options;
+  options.max_scaling = parameters_.max_integer_rounding_scaling();
+  integer_rounding_cut_helper_.ComputeCut(options, tmp_lp_values_, tmp_var_lbs_,
+                                          tmp_var_ubs_,
+                                          &implied_bounds_processor_, &cut_);
+
+  // Note that the cut will not be added if it is not good enough.
+  constraint_manager_.AddCut(cut_, "Objective", expanded_lp_solution_);
+}
 
 void LinearProgrammingConstraint::AddMirCuts() {
   // Heuristic to generate MIR_n cuts by combining a small number of rows. This
@@ -1334,7 +1377,7 @@ void LinearProgrammingConstraint::AddZeroHalfCuts() {
 
 void LinearProgrammingConstraint::UpdateSimplexIterationLimit(
     const int64_t min_iter, const int64_t max_iter) {
-  if (sat_parameters_.linearization_level() < 2) return;
+  if (parameters_.linearization_level() < 2) return;
   const int64_t num_degenerate_columns = CalculateDegeneracy();
   const int64_t num_cols = simplex_.GetProblemNumCols().value();
   if (num_cols <= 0) {
@@ -1393,7 +1436,7 @@ bool LinearProgrammingConstraint::Propagate() {
   } else {
     parameters.set_max_number_of_iterations(next_simplex_iter_);
   }
-  if (sat_parameters_.use_exact_lp_reason()) {
+  if (parameters_.use_exact_lp_reason()) {
     parameters.set_change_status_to_imprecise(false);
     parameters.set_primal_feasibility_tolerance(1e-7);
     parameters.set_dual_feasibility_tolerance(1e-7);
@@ -1405,9 +1448,11 @@ bool LinearProgrammingConstraint::Propagate() {
 
   // Add new constraints to the LP and resolve?
   const int max_cuts_rounds =
-      trail_->CurrentDecisionLevel() == 0
-          ? sat_parameters_.max_cut_rounds_at_level_zero()
-          : 1;
+      parameters_.cut_level() <= 0
+          ? 0
+          : (trail_->CurrentDecisionLevel() == 0
+                 ? parameters_.max_cut_rounds_at_level_zero()
+                 : 1);
   int cuts_round = 0;
   while (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL &&
          cuts_round < max_cuts_rounds) {
@@ -1425,15 +1470,16 @@ bool LinearProgrammingConstraint::Propagate() {
       //
       // TODO(user): Refactor so that they are just normal cut generators?
       if (trail_->CurrentDecisionLevel() == 0) {
-        if (sat_parameters_.add_mir_cuts()) AddMirCuts();
-        if (sat_parameters_.add_cg_cuts()) AddCGCuts();
-        if (sat_parameters_.add_zero_half_cuts()) AddZeroHalfCuts();
+        if (parameters_.add_objective_cut()) AddObjectiveCut();
+        if (parameters_.add_mir_cuts()) AddMirCuts();
+        if (parameters_.add_cg_cuts()) AddCGCuts();
+        if (parameters_.add_zero_half_cuts()) AddZeroHalfCuts();
       }
 
       // Try to add cuts.
       if (!cut_generators_.empty() &&
           (trail_->CurrentDecisionLevel() == 0 ||
-           !sat_parameters_.only_add_cuts_at_level_zero())) {
+           !parameters_.only_add_cuts_at_level_zero())) {
         for (const CutGenerator& generator : cut_generators_) {
           if (!generator.generate_cuts(expanded_lp_solution_,
                                        &constraint_manager_)) {
@@ -1470,7 +1516,7 @@ bool LinearProgrammingConstraint::Propagate() {
 
   // A dual-unbounded problem is infeasible. We use the dual ray reason.
   if (simplex_.GetProblemStatus() == glop::ProblemStatus::DUAL_UNBOUNDED) {
-    if (sat_parameters_.use_exact_lp_reason()) {
+    if (parameters_.use_exact_lp_reason()) {
       if (!FillExactDualRayReason()) return true;
     } else {
       FillReducedCostReasonIn(simplex_.GetDualRayRowCombination(),
@@ -1488,7 +1534,7 @@ bool LinearProgrammingConstraint::Propagate() {
        simplex_.GetProblemStatus() == glop::ProblemStatus::DUAL_FEASIBLE)) {
     // TODO(user): Maybe do a bit less computation when we cannot propagate
     // anything.
-    if (sat_parameters_.use_exact_lp_reason()) {
+    if (parameters_.use_exact_lp_reason()) {
       if (!ExactLpReasonning()) return false;
 
       // Display when the inexact bound would have propagated more.
@@ -1567,10 +1613,10 @@ bool LinearProgrammingConstraint::Propagate() {
     }
   }
 
-  if (sat_parameters_.use_branching_in_lp() && objective_is_defined_ &&
+  if (parameters_.use_branching_in_lp() && objective_is_defined_ &&
       trail_->CurrentDecisionLevel() == 0 && !is_degenerate_ &&
       lp_solution_is_set_ && !lp_solution_is_integer_ &&
-      sat_parameters_.linearization_level() >= 2 &&
+      parameters_.linearization_level() >= 2 &&
       compute_reduced_cost_averages_ &&
       simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL) {
     count_since_last_branching_++;

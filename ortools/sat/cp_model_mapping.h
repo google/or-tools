@@ -91,7 +91,7 @@ class CpModelMapping {
   // TODO(user): We could "easily" create an intermediate variable for more
   // complex linear expression. We could also identify duplicate expressions to
   // not create two identical integer variable.
-  AffineExpression LoadAffineView(const LinearExpressionProto& exp) const {
+  AffineExpression Affine(const LinearExpressionProto& exp) const {
     CHECK_LE(exp.vars().size(), 1);
     if (exp.vars().empty()) {
       return AffineExpression(IntegerValue(exp.offset()));
@@ -118,6 +118,13 @@ class CpModelMapping {
   std::vector<sat::Literal> Literals(const ProtoIndices& indices) const {
     std::vector<sat::Literal> result;
     for (const int i : indices) result.push_back(CpModelMapping::Literal(i));
+    return result;
+  }
+
+  template <typename List>
+  std::vector<AffineExpression> Affines(const List& list) const {
+    std::vector<AffineExpression> result;
+    for (const auto& i : list) result.push_back(Affine(i));
     return result;
   }
 

@@ -23,7 +23,8 @@ namespace packing {
 vbp::VectorBinPackingSolution SolveVectorBinPackingWithArcFlow(
     const vbp::VectorBinPackingProblem& problem,
     MPSolver::OptimizationProblemType solver_type,
-    const std::string& mip_params, double time_limit, int num_threads);
+    const std::string& mip_params, double time_limit, int num_threads,
+    int max_bins);
 
 }  // namespace packing
 }  // namespace operations_research

@@ -54,7 +54,7 @@ void BinpackingProblemSat() {
   for (int b = 0; b < kNumBins; ++b) {
     LinearExpr expr;
     for (int i = 0; i < num_items; ++i) {
-      expr.AddTerm(x[i][b], items[i][0]);
+      expr += x[i][b] * items[i][0];
     }
     cp_model.AddEquality(expr, load[b]);
   }
@@ -75,7 +75,7 @@ void BinpackingProblemSat() {
   }
 
   // Maximize sum of slacks.
-  cp_model.Maximize(LinearExpr::BooleanSum(slacks));
+  cp_model.Maximize(LinearExpr::Sum(slacks));
 
   // Solving part.
   const CpSolverResponse response = Solve(cp_model.Build());

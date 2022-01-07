@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.1</span>
+   &#160;<span id="projectnumber">9.2</span>
    </div>
   </td>
  </tr>
@@ -151,10 +151,22 @@ Functions</h2></td></tr>
 <tr class="separator:afc1129274beafb17b41ac2fa278de60c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6c7910e5ccb41edc8f442a682890cb31"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a6c7910e5ccb41edc8f442a682890cb31">ScaleObjectiveValue</a> (const CpObjectiveProto &amp;<a class="el" href="cp__model__fz__solver_8cc.html#aed003f5eb5197bc586b7ef2c36a63da2">proto</a>, int64_t <a class="el" href="matrix__utils_8cc.html#aee90379adb0307effb138f4871edbc5c">value</a>)</td></tr>
 <tr class="separator:a6c7910e5ccb41edc8f442a682890cb31"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad0d99a59590707fcc7bbd11e1ca5804f"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#ad0d99a59590707fcc7bbd11e1ca5804f">ScaleInnerObjectiveValue</a> (const CpObjectiveProto &amp;<a class="el" href="cp__model__fz__solver_8cc.html#aed003f5eb5197bc586b7ef2c36a63da2">proto</a>, int64_t <a class="el" href="matrix__utils_8cc.html#aee90379adb0307effb138f4871edbc5c">value</a>)</td></tr>
+<tr class="separator:ad0d99a59590707fcc7bbd11e1ca5804f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1ff712b32e44ffd2e7f40042330bf2ad"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a1ff712b32e44ffd2e7f40042330bf2ad">UnscaleObjectiveValue</a> (const CpObjectiveProto &amp;<a class="el" href="cp__model__fz__solver_8cc.html#aed003f5eb5197bc586b7ef2c36a63da2">proto</a>, double <a class="el" href="matrix__utils_8cc.html#aee90379adb0307effb138f4871edbc5c">value</a>)</td></tr>
 <tr class="separator:a1ff712b32e44ffd2e7f40042330bf2ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a10826704577008404187a36808daa739"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a10826704577008404187a36808daa739">ComputeInnerObjective</a> (const CpObjectiveProto &amp;objective, const CpSolverResponse &amp;<a class="el" href="cp__model__solver_8cc.html#abcd33b18ce6d5a90a4ba5c37cfa58829">response</a>)</td></tr>
 <tr class="separator:a10826704577008404187a36808daa739"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae1c79e5c254e1e69d4ca7f52ba9cdc8b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#ae1c79e5c254e1e69d4ca7f52ba9cdc8b">ExpressionContainsSingleRef</a> (const LinearExpressionProto &amp;expr)</td></tr>
+<tr class="separator:ae1c79e5c254e1e69d4ca7f52ba9cdc8b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aab9fc6e23064f7f2aff53c4f5059f493"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#aab9fc6e23064f7f2aff53c4f5059f493">ExpressionIsAffine</a> (const LinearExpressionProto &amp;expr)</td></tr>
+<tr class="separator:aab9fc6e23064f7f2aff53c4f5059f493"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adc1745a206c1ed3667e9de782d8a8c13"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#adc1745a206c1ed3667e9de782d8a8c13">GetSingleRefFromExpression</a> (const LinearExpressionProto &amp;expr)</td></tr>
+<tr class="separator:adc1745a206c1ed3667e9de782d8a8c13"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aced7df5982ab26894efec32543e459f7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#aced7df5982ab26894efec32543e459f7">AddLinearExpressionToLinearConstraint</a> (const LinearExpressionProto &amp;expr, int64_t <a class="el" href="markowitz_8cc.html#a722e11301e7de93191aa47dbd3ecb4d8">coefficient</a>, LinearConstraintProto *linear)</td></tr>
+<tr class="separator:aced7df5982ab26894efec32543e459f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a763f6514921f30b326a1582569b60ddb"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a763f6514921f30b326a1582569b60ddb">LinearExpressionProtosAreEqual</a> (const LinearExpressionProto &amp;<a class="el" href="constraint__solver_2table_8cc.html#acb18315d548212835cd8ed4287e6c0b6">a</a>, const LinearExpressionProto &amp;<a class="el" href="constraint__solver_2table_8cc.html#a9293e4d29cac928301645070dd307683">b</a>, int64_t b_scaling)</td></tr>
+<tr class="separator:a763f6514921f30b326a1582569b60ddb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->

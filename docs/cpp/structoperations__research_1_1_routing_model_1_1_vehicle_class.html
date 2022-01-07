@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.1</span>
+   &#160;<span id="projectnumber">9.2</span>
    </div>
   </td>
  </tr>
@@ -95,7 +95,7 @@ $(document).ready(function(){initNavTree('structoperations__research_1_1_routing
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00320">320</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00321">321</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
@@ -111,6 +111,9 @@ Public Attributes</h2></td></tr>
 <tr class="memitem:a056f907141642096d7919e3ef79fad43"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1_routing_model_1_1_vehicle_class.html#a056f907141642096d7919e3ef79fad43">fixed_cost</a></td></tr>
 <tr class="memdesc:a056f907141642096d7919e3ef79fad43"><td class="mdescLeft">&#160;</td><td class="mdescRight">Contrarily to <a class="el" href="structoperations__research_1_1_routing_model_1_1_cost_class.html">CostClass</a>, here we need strict equivalence.  <a href="structoperations__research_1_1_routing_model_1_1_vehicle_class.html#a056f907141642096d7919e3ef79fad43">More...</a><br /></td></tr>
 <tr class="separator:a056f907141642096d7919e3ef79fad43"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9eb4b6f817b65fd952b584b7d4def359"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1_routing_model_1_1_vehicle_class.html#a9eb4b6f817b65fd952b584b7d4def359">used_when_empty</a></td></tr>
+<tr class="memdesc:a9eb4b6f817b65fd952b584b7d4def359"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether or not the vehicle is used when empty.  <a href="structoperations__research_1_1_routing_model_1_1_vehicle_class.html#a9eb4b6f817b65fd952b584b7d4def359">More...</a><br /></td></tr>
+<tr class="separator:a9eb4b6f817b65fd952b584b7d4def359"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9f7fbf98fe796946fe0be2ca5c8b4e50"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1_routing_model_1_1_vehicle_class.html#a9f7fbf98fe796946fe0be2ca5c8b4e50">start_equivalence_class</a></td></tr>
 <tr class="memdesc:a9f7fbf98fe796946fe0be2ca5c8b4e50"><td class="mdescLeft">&#160;</td><td class="mdescRight">Vehicle start and end equivalence classes.  <a href="structoperations__research_1_1_routing_model_1_1_vehicle_class.html#a9f7fbf98fe796946fe0be2ca5c8b4e50">More...</a><br /></td></tr>
 <tr class="separator:a9f7fbf98fe796946fe0be2ca5c8b4e50"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -133,6 +136,9 @@ Public Attributes</h2></td></tr>
 <tr class="memitem:a7d7f5e9ed15021fdd15db3dc56f16787"><td class="memItemLeft" align="right" valign="top">uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1_routing_model_1_1_vehicle_class.html#a7d7f5e9ed15021fdd15db3dc56f16787">unvisitable_nodes_fprint</a></td></tr>
 <tr class="memdesc:a7d7f5e9ed15021fdd15db3dc56f16787"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fingerprint of unvisitable non-start/end nodes.  <a href="structoperations__research_1_1_routing_model_1_1_vehicle_class.html#a7d7f5e9ed15021fdd15db3dc56f16787">More...</a><br /></td></tr>
 <tr class="separator:a7d7f5e9ed15021fdd15db3dc56f16787"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a79d1a9b81733529191a1ec1d6c8409e9"><td class="memItemLeft" align="right" valign="top">std::vector&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1_routing_model_1_1_vehicle_class.html#a79d1a9b81733529191a1ec1d6c8409e9">required_resource_group_indices</a></td></tr>
+<tr class="memdesc:a79d1a9b81733529191a1ec1d6c8409e9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sorted set of resource groups for which the vehicle requires a resource.  <a href="structoperations__research_1_1_routing_model_1_1_vehicle_class.html#a79d1a9b81733529191a1ec1d6c8409e9">More...</a><br /></td></tr>
+<tr class="separator:a79d1a9b81733529191a1ec1d6c8409e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="ad42f0b03bf2ec344fa3ab98832a020f6" name="ad42f0b03bf2ec344fa3ab98832a020f6"></a>
@@ -171,7 +177,7 @@ Public Attributes</h2></td></tr>
 
 <p>Comparator for STL containers and algorithms. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l01470">1470</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l01655">1655</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -190,7 +196,7 @@ Public Attributes</h2></td></tr>
 
 <p>The cost class of the vehicle. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00322">322</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00323">323</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -206,7 +212,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00339">339</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00342">342</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -222,7 +228,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00338">338</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00341">341</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -238,7 +244,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00337">337</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00340">340</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -256,7 +262,7 @@ Public Attributes</h2></td></tr>
 
 <p>dimension_evaluators[d]-&gt;Run(from, to) is the transit value of arc from-&gt;to for a dimension d. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00342">342</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00345">345</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -272,7 +278,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00336">336</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00339">339</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -291,7 +297,7 @@ Public Attributes</h2></td></tr>
 <p>Bounds of cumul variables at start and end vehicle nodes. </p>
 <p >dimension_{start,end}_cumuls_{min,max}[d] is the bound for dimension d. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00335">335</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00338">338</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -307,7 +313,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00332">332</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00335">335</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -325,7 +331,25 @@ Public Attributes</h2></td></tr>
 
 <p>Contrarily to <a class="el" href="structoperations__research_1_1_routing_model_1_1_cost_class.html">CostClass</a>, here we need strict equivalence. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00324">324</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00325">325</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+
+</div>
+</div>
+<a id="a79d1a9b81733529191a1ec1d6c8409e9" name="a79d1a9b81733529191a1ec1d6c8409e9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a79d1a9b81733529191a1ec1d6c8409e9">&#9670;&nbsp;</a></span>required_resource_group_indices</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;int&gt; required_resource_group_indices</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Sorted set of resource groups for which the vehicle requires a resource. </p>
+
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00349">349</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -344,7 +368,7 @@ Public Attributes</h2></td></tr>
 <p>Vehicle start and end equivalence classes. </p>
 <p >Currently if two vehicles have different start/end nodes which are "physically" located at the same place, these two vehicles will be considered as non-equivalent unless the two indices are in the same class. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00331">331</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00334">334</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -362,7 +386,25 @@ Public Attributes</h2></td></tr>
 
 <p>Fingerprint of unvisitable non-start/end nodes. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00344">344</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00347">347</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+
+</div>
+</div>
+<a id="a9eb4b6f817b65fd952b584b7d4def359" name="a9eb4b6f817b65fd952b584b7d4def359"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9eb4b6f817b65fd952b584b7d4def359">&#9670;&nbsp;</a></span>used_when_empty</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool used_when_empty</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Whether or not the vehicle is used when empty. </p>
+
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00327">327</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>

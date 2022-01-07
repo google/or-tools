@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 9.1</span>
+                <span id="sfml">Google OR-Tools 9.2</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -178,24 +178,25 @@ $(document).ready(function(){initNavTree('Loader_8java_source.html',''); initRes
 <div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span>  }</div>
 <div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span> </div>
 <div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span>  <span class="keyword">private</span> <span class="keyword">static</span> <span class="keywordtype">boolean</span> loaded = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00103" name="l00103"></a><span class="lineno"><a class="line" href="classcom_1_1google_1_1ortools_1_1Loader.html#a9a2f42e70e4614116cbb84ce99984e4a">  103</a></span>  <span class="keyword">public</span> <span class="keyword">static</span> <span class="keywordtype">void</span> <a class="code hl_function" href="classcom_1_1google_1_1ortools_1_1Loader.html#a9a2f42e70e4614116cbb84ce99984e4a">loadNativeLibraries</a>() {</div>
-<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span>    <span class="keywordflow">if</span> (!loaded) {</div>
-<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span>      <span class="keywordflow">try</span> {</div>
-<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span>        URI resourceURI = getNativeResourceURI();</div>
-<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span>        Path tempPath = unpackNativeResources(resourceURI);</div>
-<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span>        <span class="comment">// Load the native library</span></div>
-<div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span>        System.load(tempPath.resolve(RESOURCE_PATH)</div>
-<div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span>                        .resolve(System.mapLibraryName(<span class="stringliteral">&quot;jniortools&quot;</span>))</div>
-<div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span>                        .toString());</div>
-<div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span>        loaded = <span class="keyword">true</span>;</div>
-<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span>      } <span class="keywordflow">catch</span> (IOException e) {</div>
-<div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span>        <span class="keywordflow">throw</span> <span class="keyword">new</span> RuntimeException(e);</div>
-<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span>      }</div>
-<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span>    }</div>
-<div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span>  }</div>
-<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span>}</div>
+<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span> </div>
+<div class="line"><a id="l00104" name="l00104"></a><span class="lineno"><a class="line" href="classcom_1_1google_1_1ortools_1_1Loader.html#adf38bc17bd7b27471669a18a89a556ef">  104</a></span>  <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">synchronized</span> <span class="keywordtype">void</span> <a class="code hl_function" href="classcom_1_1google_1_1ortools_1_1Loader.html#adf38bc17bd7b27471669a18a89a556ef">loadNativeLibraries</a>() {</div>
+<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span>    <span class="keywordflow">if</span> (!loaded) {</div>
+<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span>      <span class="keywordflow">try</span> {</div>
+<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span>        URI resourceURI = getNativeResourceURI();</div>
+<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span>        Path tempPath = unpackNativeResources(resourceURI);</div>
+<div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span>        <span class="comment">// Load the native library</span></div>
+<div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span>        System.load(tempPath.resolve(RESOURCE_PATH)</div>
+<div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span>                        .resolve(System.mapLibraryName(<span class="stringliteral">&quot;jniortools&quot;</span>))</div>
+<div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span>                        .toString());</div>
+<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span>        loaded = <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span>      } <span class="keywordflow">catch</span> (IOException e) {</div>
+<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span>        <span class="keywordflow">throw</span> <span class="keyword">new</span> RuntimeException(e);</div>
+<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span>      }</div>
+<div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span>    }</div>
+<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span>  }</div>
+<div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span>}</div>
 <div class="ttc" id="aclasscom_1_1google_1_1ortools_1_1Loader_html"><div class="ttname"><a href="classcom_1_1google_1_1ortools_1_1Loader.html">com.google.ortools.Loader</a></div><div class="ttdoc">Load native libraries needed for using ortools-java.</div><div class="ttdef"><b>Definition:</b> <a href="Loader_8java_source.html#l00033">Loader.java:33</a></div></div>
-<div class="ttc" id="aclasscom_1_1google_1_1ortools_1_1Loader_html_a9a2f42e70e4614116cbb84ce99984e4a"><div class="ttname"><a href="classcom_1_1google_1_1ortools_1_1Loader.html#a9a2f42e70e4614116cbb84ce99984e4a">com.google.ortools.Loader.loadNativeLibraries</a></div><div class="ttdeci">static void loadNativeLibraries()</div><div class="ttdef"><b>Definition:</b> <a href="Loader_8java_source.html#l00103">Loader.java:103</a></div></div>
+<div class="ttc" id="aclasscom_1_1google_1_1ortools_1_1Loader_html_adf38bc17bd7b27471669a18a89a556ef"><div class="ttname"><a href="classcom_1_1google_1_1ortools_1_1Loader.html#adf38bc17bd7b27471669a18a89a556ef">com.google.ortools.Loader.loadNativeLibraries</a></div><div class="ttdeci">static synchronized void loadNativeLibraries()</div><div class="ttdef"><b>Definition:</b> <a href="Loader_8java_source.html#l00104">Loader.java:104</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
         </div>

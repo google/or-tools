@@ -11,6 +11,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+%typemap(csimports) SWIGTYPE %{
+using System;
+using System.Runtime.InteropServices;
+using System.Collections;
+using System.Collections.Generic;
+%}
+
 // TODO(user): Refactor this file to adhere to the SWIG style guide.
 %include "std_pair.i"
 %template(IntBoolPair) std::pair<int, bool>;
@@ -18,6 +25,7 @@
 %include "ortools/constraint_solver/csharp/constraint_solver.i"
 %include "ortools/constraint_solver/csharp/routing_types.i"
 %include "ortools/constraint_solver/csharp/routing_index_manager.i"
+%include "ortools/util/csharp/sorted_interval_list.i"
 
 // We need to forward-declare the proto here, so that PROTO_INPUT involving it
 // works correctly. The order matters very much: this declaration needs to be
@@ -56,6 +64,11 @@ namespace operations_research {
 
 // RoutingModel
 %unignore RoutingModel;
+%typemap(csimports) RoutingModel
+%{
+using System;
+using System.Collections.Generic;
+%}
 %typemap(cscode) RoutingModel %{
   // Keep reference to delegate to avoid GC to collect them early.
   private List<LongToLong> unaryTransitCallbacks;
@@ -125,6 +138,11 @@ namespace operations_research {
 
 // RoutingDimension
 %unignore RoutingDimension;
+%typemap(csimports) RoutingDimension
+%{
+using System;
+using System.Collections.Generic;
+%}
 %typemap(cscode) RoutingDimension %{
   // Keep reference to delegate to avoid GC to collect them early.
   private List<IntIntToLong> limitCallbacks;

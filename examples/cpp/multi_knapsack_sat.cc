@@ -80,11 +80,10 @@ void MultiKnapsackSat(int scaling, const std::string& params) {
   for (int b = 0; b < num_bins; ++b) {
     IntVar bin_weight = builder.NewIntVar({kWeightMin, kWeightMax});
     bin_weights.push_back(bin_weight);
-    builder.AddEquality(LinearExpr::BooleanScalProd(items_in_bins[b], weights),
+    builder.AddEquality(LinearExpr::ScalProd(items_in_bins[b], weights),
                         bin_weight);
-    builder.AddLinearConstraint(
-        LinearExpr::BooleanScalProd(items_in_bins[b], volumes),
-        {kVolumeMin, kVolumeMax});
+    builder.AddLinearConstraint(LinearExpr::ScalProd(items_in_bins[b], volumes),
+                                {kVolumeMin, kVolumeMax});
   }
 
   // Each item is selected at most one time.
@@ -93,8 +92,7 @@ void MultiKnapsackSat(int scaling, const std::string& params) {
     for (int b = 0; b < num_bins; ++b) {
       bin_contain_item[b] = items_in_bins[b][i];
     }
-    builder.AddEquality(LinearExpr::BooleanSum(bin_contain_item),
-                        selected_items[i]);
+    builder.AddEquality(LinearExpr::Sum(bin_contain_item), selected_items[i]);
   }
 
   // Maximize the sums of weights.

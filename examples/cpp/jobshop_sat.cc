@@ -106,7 +106,7 @@ int64_t ComputeHorizon(const JsspInputProblem& problem) {
 struct JobTaskData {
   IntervalVar interval;
   IntVar start;
-  IntVar duration;
+  LinearExpr duration;
   IntVar end;
 };
 
@@ -252,7 +252,7 @@ void CreateAlternativeTasks(
         for (const AlternativeTaskData& alternative : alternatives) {
           interval_presences.push_back(alternative.presence);
         }
-        cp_model.AddEquality(LinearExpr::BooleanSum(interval_presences), 1);
+        cp_model.AddEquality(LinearExpr::Sum(interval_presences), 1);
       }
     }
   }
@@ -302,9 +302,10 @@ void AddAlternativeTaskDurationRelaxation(
       // end == start + min_duration +
       //        sum(shifted_duration[i] * presence_literals[i])
       cp_model.AddEquality(
-          LinearExpr::ScalProd({tasks[t].end, tasks[t].start}, {1, -1}),
-          LinearExpr::BooleanScalProd(presence_literals, shifted_durations)
-              .AddConstant(min_duration));
+          tasks[t].end,
+          tasks[t].start +
+              LinearExpr::ScalProd(presence_literals, shifted_durations) +
+              min_duration);
     }
   }
 }
@@ -382,6 +383,12 @@ void CreateMachines(
     // Create circuit constraint on a machine. Node 0 is both the source and
     // sink, i.e. the first and last job.
     CircuitConstraint circuit = cp_model.AddCircuitConstraint();
+
+    // If all intervals are optional, a solution without any performed
+    // interval in this resource requires an empty circuit.
+    BoolVar empty_circuit = cp_model.NewBoolVar();
+    circuit.AddArc(0, 0, empty_circuit);
+
     for (int i = 0; i < num_intervals; ++i) {
       const int job_i = machine_to_tasks[m][i].job;
       const MachineTaskData& tail = machine_to_tasks[m][i];
@@ -392,8 +399,11 @@ void CreateMachines(
       // Source to nodes.
       circuit.AddArc(0, i + 1, cp_model.NewBoolVar());
       // Node to sink.
-      const BoolVar sink_literal = cp_model.NewBoolVar();
-      circuit.AddArc(i + 1, 0, sink_literal);
+      circuit.AddArc(i + 1, 0, cp_model.NewBoolVar());
+
+      // If the circuit is empty, the interval cannot be performed.
+      cp_model.AddImplication(empty_circuit,
+                              Not(tail.interval.PresenceBoolVar()));
 
       // Used to constrain the size of the tail interval.
       std::vector<BoolVar> literals;
@@ -430,21 +440,21 @@ void CreateMachines(
           }
 
           // Make sure the interval follow the circuit in time.
-          // Note that we use the start + delay as this is more precise than
-          // the non-propagated end.
+          // Note that we use the start + duration + transition  as this is more
+          // precise than the non-propagated end.
           cp_model
-              .AddLessOrEqual(tail.interval.StartExpr().AddConstant(
-                                  tail.fixed_duration + transition),
-                              head.interval.StartExpr())
+              .AddLessOrEqual(
+                  tail.interval.StartExpr() + tail.fixed_duration + transition,
+                  head.interval.StartExpr())
               .OnlyEnforceIf(lit);
         }
       }
 
       // Add a linear equation to define the size of the tail interval.
       if (absl::GetFlag(FLAGS_use_variable_duration_to_encode_transition)) {
-        cp_model.AddEquality(tail.interval.SizeExpr(),
-                             LinearExpr::BooleanScalProd(literals, transitions)
-                                 .AddConstant(tail.fixed_duration));
+        cp_model.AddEquality(
+            tail.interval.SizeExpr(),
+            LinearExpr::ScalProd(literals, transitions) + tail.fixed_duration);
       }
     }
     LOG(INFO) << "Machine " << m
@@ -478,7 +488,8 @@ void CreateObjective(
       for (int a = 0; a < num_alternatives; ++a) {
         // Add cost if present.
         if (task.cost_size() > 0) {
-          objective_vars.push_back(job_task_to_alternatives[j][t][a].presence);
+          objective_vars.push_back(
+              IntVar(job_task_to_alternatives[j][t][a].presence));
           objective_coeffs.push_back(task.cost(a));
         }
       }
@@ -494,8 +505,7 @@ void CreateObjective(
         objective_coeffs.push_back(lateness_penalty);
       } else {
         const IntVar lateness_var = cp_model.NewIntVar(Domain(0, horizon));
-        cp_model.AddLinMaxEquality(
-            lateness_var, {LinearExpr(0), job_end.AddConstant(-due_date)});
+        cp_model.AddMaxEquality(lateness_var, {0, job_end - due_date});
         objective_vars.push_back(lateness_var);
         objective_coeffs.push_back(lateness_penalty);
       }
@@ -509,10 +519,7 @@ void CreateObjective(
 
       if (due_date > 0) {
         const IntVar earliness_var = cp_model.NewIntVar(Domain(0, horizon));
-        cp_model.AddLinMaxEquality(
-            earliness_var,
-            {LinearExpr(0),
-             LinearExpr::Term(job_end, -1).AddConstant(due_date)});
+        cp_model.AddMaxEquality(earliness_var, {0, due_date - job_end});
         objective_vars.push_back(earliness_var);
         objective_coeffs.push_back(earliness_penalty);
       }
@@ -526,10 +533,18 @@ void CreateObjective(
   }
 
   // Add the objective to the model.
-  cp_model.Minimize(LinearExpr::ScalProd(objective_vars, objective_coeffs)
-                        .AddConstant(objective_offset));
   if (problem.has_scaling_factor()) {
-    cp_model.ScaleObjectiveBy(problem.scaling_factor().value());
+    std::vector<double> double_objective_coeffs;
+    for (const int64_t coeff : objective_coeffs) {
+      double_objective_coeffs.push_back(1.0 * coeff /
+                                        problem.scaling_factor().value());
+    }
+    cp_model.Minimize(
+        DoubleLinearExpr::ScalProd(objective_vars, double_objective_coeffs) +
+        static_cast<double>(objective_offset));
+  } else {
+    cp_model.Minimize(LinearExpr::ScalProd(objective_vars, objective_coeffs) +
+                      objective_offset);
   }
 }
 
@@ -593,14 +608,12 @@ void AddCumulativeRelaxation(
     // Ignore trivial case with all intervals.
     if (intervals.size() == 1 || intervals.size() == num_tasks) continue;
 
-    const IntVar capacity = cp_model.NewConstant(component.size());
-    const IntVar one = cp_model.NewConstant(1);
-    CumulativeConstraint cumul = cp_model.AddCumulative(capacity);
+    CumulativeConstraint cumul = cp_model.AddCumulative(component.size());
     for (int i = 0; i < intervals.size(); ++i) {
-      cumul.AddDemand(intervals[i], one);
+      cumul.AddDemand(intervals[i], 1);
     }
     if (absl::GetFlag(FLAGS_use_interval_makespan)) {
-      cumul.AddDemand(makespan_interval, capacity);
+      cumul.AddDemand(makespan_interval, component.size());
     }
   }
 }
@@ -614,14 +627,13 @@ void AddMakespanRedundantConstraints(
   const int num_machines = problem.machines_size();
 
   // Global energetic reasoning.
-  std::vector<IntVar> all_task_durations;
+  LinearExpr sum_of_duration;
   for (const std::vector<JobTaskData>& tasks : job_to_tasks) {
     for (const JobTaskData& task : tasks) {
-      all_task_durations.push_back(task.duration);
+      sum_of_duration += task.duration;
     }
   }
-  cp_model.AddLessOrEqual(LinearExpr::Sum(all_task_durations),
-                          LinearExpr::Term(makespan, num_machines));
+  cp_model.AddLessOrEqual(sum_of_duration, makespan * num_machines);
 }
 
 void DisplayJobStatistics(
@@ -636,8 +648,7 @@ void DisplayJobStatistics(
   for (const std::vector<JobTaskData>& job : job_to_tasks) {
     num_tasks += job.size();
     for (const JobTaskData& task : job) {
-      if (task.duration.Proto().domain_size() != 2 ||
-          task.duration.Proto().domain(0) != task.duration.Proto().domain(1)) {
+      if (!task.duration.IsConstant()) {
         num_tasks_with_variable_duration++;
       }
     }
@@ -743,7 +754,7 @@ void Solve(const JsspInputProblem& problem) {
     const IntVar start =
         job_to_tasks[precedence.second_job_index()].front().start;
     const IntVar end = job_to_tasks[precedence.first_job_index()].back().end;
-    cp_model.AddLessOrEqual(end.AddConstant(precedence.min_delay()), start);
+    cp_model.AddLessOrEqual(end + precedence.min_delay(), start);
   }
 
   // Objective.

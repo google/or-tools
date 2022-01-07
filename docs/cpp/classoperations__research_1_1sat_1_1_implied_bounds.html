@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.1</span>
+   &#160;<span id="projectnumber">9.2</span>
    </div>
   </td>
  </tr>
@@ -94,7 +94,7 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1sat_1_1_i
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="implied__bounds_8h_source.html#l00078">78</a> of file <a class="el" href="implied__bounds_8h_source.html">implied_bounds.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="implied__bounds_8h_source.html#l00079">79</a> of file <a class="el" href="implied__bounds_8h_source.html">implied_bounds.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -114,6 +114,12 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ab0ad83ca54e924120d2fb6d2eb9c3033"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8c4d4ba1ccfd6cf414066b37e7a246c1"><td class="memItemLeft" align="right" valign="top">const absl::flat_hash_map&lt; IntegerVariable, IntegerValue &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_implied_bounds.html#a8c4d4ba1ccfd6cf414066b37e7a246c1">GetImpliedValues</a> (<a class="el" href="classoperations__research_1_1sat_1_1_literal.html">Literal</a> <a class="el" href="optimization_8cc.html#af63dcc00f2023fdf498e0829e6fb8a6b">literal</a>) const</td></tr>
 <tr class="separator:a8c4d4ba1ccfd6cf414066b37e7a246c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6f803d37ccb81865b3dfe666cf3f2c3e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_implied_bounds.html#a6f803d37ccb81865b3dfe666cf3f2c3e">AddElementEncoding</a> (IntegerVariable <a class="el" href="sat__solver_8cc.html#a8392bdc4ed570e6a95c7fca35b09f83f">var</a>, const std::vector&lt; <a class="el" href="structoperations__research_1_1sat_1_1_value_literal_pair.html">ValueLiteralPair</a> &gt; &amp;encoding, int exactly_one_index)</td></tr>
+<tr class="separator:a6f803d37ccb81865b3dfe666cf3f2c3e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5fa6e048979b81356f58a0ce364b0f28"><td class="memItemLeft" align="right" valign="top">const absl::flat_hash_map&lt; int, std::vector&lt; <a class="el" href="structoperations__research_1_1sat_1_1_value_literal_pair.html">ValueLiteralPair</a> &gt; &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_implied_bounds.html#a5fa6e048979b81356f58a0ce364b0f28">GetElementEncodings</a> (IntegerVariable <a class="el" href="sat__solver_8cc.html#a8392bdc4ed570e6a95c7fca35b09f83f">var</a>)</td></tr>
+<tr class="separator:a5fa6e048979b81356f58a0ce364b0f28"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab8e39f1475297ca71eba5563bce4726c"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; IntegerVariable &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_implied_bounds.html#ab8e39f1475297ca71eba5563bce4726c">GetElementEncodedVariables</a> () const</td></tr>
+<tr class="separator:ab8e39f1475297ca71eba5563bce4726c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0e2d0bf17ef8f8ea329a2faec4583377"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_implied_bounds.html#a0e2d0bf17ef8f8ea329a2faec4583377">EnqueueNewDeductions</a> ()</td></tr>
 <tr class="separator:a0e2d0bf17ef8f8ea329a2faec4583377"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2ae6fb4551f6640de5e5dcabf8930253"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_implied_bounds.html#a2ae6fb4551f6640de5e5dcabf8930253">NotifyNewIntegerView</a> (<a class="el" href="classoperations__research_1_1sat_1_1_literal.html">Literal</a> <a class="el" href="optimization_8cc.html#af63dcc00f2023fdf498e0829e6fb8a6b">literal</a>)</td></tr>
@@ -144,7 +150,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="implied__bounds_8h_source.html#l00080">80</a> of file <a class="el" href="implied__bounds_8h_source.html">implied_bounds.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="implied__bounds_8h_source.html#l00081">81</a> of file <a class="el" href="implied__bounds_8h_source.html">implied_bounds.h</a>.</p>
 
 </div>
 </div>
@@ -163,7 +169,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="implied__bounds_8cc_source.html#l00024">24</a> of file <a class="el" href="implied__bounds_8cc_source.html">implied_bounds.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="implied__bounds_8cc_source.html#l00026">26</a> of file <a class="el" href="implied__bounds_8cc_source.html">implied_bounds.cc</a>.</p>
 
 </div>
 </div>
@@ -194,7 +200,43 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="implied__bounds_8cc_source.html#l00031">31</a> of file <a class="el" href="implied__bounds_8cc_source.html">implied_bounds.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="implied__bounds_8cc_source.html#l00033">33</a> of file <a class="el" href="implied__bounds_8cc_source.html">implied_bounds.cc</a>.</p>
+
+</div>
+</div>
+<a id="a6f803d37ccb81865b3dfe666cf3f2c3e" name="a6f803d37ccb81865b3dfe666cf3f2c3e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6f803d37ccb81865b3dfe666cf3f2c3e">&#9670;&nbsp;</a></span>AddElementEncoding()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void AddElementEncoding </td>
+          <td>(</td>
+          <td class="paramtype">IntegerVariable&#160;</td>
+          <td class="paramname"><em>var</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; <a class="el" href="structoperations__research_1_1sat_1_1_value_literal_pair.html">ValueLiteralPair</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>encoding</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>exactly_one_index</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="implied__bounds_8cc_source.html#l00208">208</a> of file <a class="el" href="implied__bounds_8cc_source.html">implied_bounds.cc</a>.</p>
 
 </div>
 </div>
@@ -230,7 +272,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="implied__bounds_8cc_source.html#l00185">185</a> of file <a class="el" href="implied__bounds_8cc_source.html">implied_bounds.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="implied__bounds_8cc_source.html#l00187">187</a> of file <a class="el" href="implied__bounds_8cc_source.html">implied_bounds.cc</a>.</p>
 
 </div>
 </div>
@@ -249,7 +291,46 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="implied__bounds_8cc_source.html#l00206">206</a> of file <a class="el" href="implied__bounds_8cc_source.html">implied_bounds.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="implied__bounds_8cc_source.html#l00229">229</a> of file <a class="el" href="implied__bounds_8cc_source.html">implied_bounds.cc</a>.</p>
+
+</div>
+</div>
+<a id="ab8e39f1475297ca71eba5563bce4726c" name="ab8e39f1475297ca71eba5563bce4726c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab8e39f1475297ca71eba5563bce4726c">&#9670;&nbsp;</a></span>GetElementEncodedVariables()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">const std::vector&lt; IntegerVariable &gt; &amp; GetElementEncodedVariables </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="implied__bounds_8cc_source.html#l00224">224</a> of file <a class="el" href="implied__bounds_8cc_source.html">implied_bounds.cc</a>.</p>
+
+</div>
+</div>
+<a id="a5fa6e048979b81356f58a0ce364b0f28" name="a5fa6e048979b81356f58a0ce364b0f28"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5fa6e048979b81356f58a0ce364b0f28">&#9670;&nbsp;</a></span>GetElementEncodings()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">const absl::flat_hash_map&lt; int, std::vector&lt; <a class="el" href="structoperations__research_1_1sat_1_1_value_literal_pair.html">ValueLiteralPair</a> &gt; &gt; &amp; GetElementEncodings </td>
+          <td>(</td>
+          <td class="paramtype">IntegerVariable&#160;</td>
+          <td class="paramname"><em>var</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="implied__bounds_8cc_source.html#l00215">215</a> of file <a class="el" href="implied__bounds_8cc_source.html">implied_bounds.cc</a>.</p>
 
 </div>
 </div>
@@ -269,7 +350,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="implied__bounds_8cc_source.html#l00163">163</a> of file <a class="el" href="implied__bounds_8cc_source.html">implied_bounds.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="implied__bounds_8cc_source.html#l00165">165</a> of file <a class="el" href="implied__bounds_8cc_source.html">implied_bounds.cc</a>.</p>
 
 </div>
 </div>
@@ -297,7 +378,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="implied__bounds_8h_source.html#l00117">117</a> of file <a class="el" href="implied__bounds_8h_source.html">implied_bounds.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="implied__bounds_8h_source.html#l00118">118</a> of file <a class="el" href="implied__bounds_8h_source.html">implied_bounds.h</a>.</p>
 
 </div>
 </div>
@@ -325,7 +406,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="implied__bounds_8h_source.html#l00135">135</a> of file <a class="el" href="implied__bounds_8h_source.html">implied_bounds.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="implied__bounds_8h_source.html#l00150">150</a> of file <a class="el" href="implied__bounds_8h_source.html">implied_bounds.h</a>.</p>
 
 </div>
 </div>
@@ -345,7 +426,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="implied__bounds_8cc_source.html#l00195">195</a> of file <a class="el" href="implied__bounds_8cc_source.html">implied_bounds.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="implied__bounds_8cc_source.html#l00197">197</a> of file <a class="el" href="implied__bounds_8cc_source.html">implied_bounds.cc</a>.</p>
 
 </div>
 </div>
@@ -372,7 +453,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="implied__bounds_8h_source.html#l00112">112</a> of file <a class="el" href="implied__bounds_8h_source.html">implied_bounds.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="implied__bounds_8h_source.html#l00113">113</a> of file <a class="el" href="implied__bounds_8h_source.html">implied_bounds.h</a>.</p>
 
 </div>
 </div>

@@ -8,7 +8,7 @@ set_property(SOURCE sorted_interval_list.i PROPERTY COMPILE_OPTIONS
 swig_add_library(dotnet_util
   TYPE OBJECT
   LANGUAGE csharp
-  OUTPUT_DIR ${PROJECT_BINARY_DIR}/dotnet/${PROJECT_NAME}/util
+  OUTPUT_DIR ${DOTNET_PROJECT_DIR}/ortools/util
   SOURCES sorted_interval_list.i)
 
 #target_include_directories(dotnet_util PRIVATE ${DOTNET_INCLUDE_DIRS})

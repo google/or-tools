@@ -32,6 +32,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
@@ -233,8 +234,8 @@ class NetworkRoutingDataBuilder {
       AddEdge(i, j);
     }
 
-    std::set<int> to_complete;
-    std::set<int> not_full;
+    absl::btree_set<int> to_complete;
+    absl::btree_set<int> not_full;
     for (int i = 0; i < num_backbones_; ++i) {
       if (degrees_[i] < min_backbone_degree_) {
         to_complete.insert(i);
@@ -577,7 +578,7 @@ class NetworkRoutingSolver {
     // Node - Graph Constraint.
     for (int demand_index = 0; demand_index < num_demands; ++demand_index) {
       for (int arc = 0; arc < num_arcs; ++arc) {
-        path_vars[demand_index].push_back(cp_model.NewBoolVar());
+        path_vars[demand_index].push_back(IntVar(cp_model.NewBoolVar()));
       }
       // Fill Tuple Set for AllowedAssignment constraint.
       TableConstraint path_ct =
@@ -600,8 +601,7 @@ class NetworkRoutingSolver {
       LinearExpr traffic_expr;
       for (int i = 0; i < path_vars.size(); ++i) {
         sum_of_traffic += demands_array_[i].traffic;
-        traffic_expr.AddTerm(path_vars[i][arc_index],
-                             demands_array_[i].traffic);
+        traffic_expr += path_vars[i][arc_index] * demands_array_[i].traffic;
       }
       const IntVar traffic_var = cp_model.NewIntVar(Domain(0, sum_of_traffic));
       traffic_vars[arc_index] = traffic_var;
@@ -610,14 +610,13 @@ class NetworkRoutingSolver {
       const int64_t capacity = arc_capacity_[arc_index];
       IntVar scaled_traffic =
           cp_model.NewIntVar(Domain(0, sum_of_traffic * 1000));
-      cp_model.AddEquality(LinearExpr::ScalProd({traffic_var}, {1000}),
-                           scaled_traffic);
+      cp_model.AddEquality(traffic_var * 1000, scaled_traffic);
       IntVar normalized_traffic =
           cp_model.NewIntVar(Domain(0, sum_of_traffic * 1000 / capacity));
       max_normalized_traffic =
           std::max(max_normalized_traffic, sum_of_traffic * 1000 / capacity);
       cp_model.AddDivisionEquality(normalized_traffic, scaled_traffic,
-                                   cp_model.NewConstant(capacity));
+                                   capacity);
       normalized_traffic_vars[arc_index] = normalized_traffic;
       const BoolVar comfort = cp_model.NewBoolVar();
       const int64_t safe_capacity =
@@ -633,12 +632,8 @@ class NetworkRoutingSolver {
         cp_model.NewIntVar(Domain(0, max_normalized_traffic));
     cp_model.AddMaxEquality(max_usage_cost, normalized_traffic_vars);
 
-    LinearExpr objective_expr;
-    objective_expr.AddVar(max_usage_cost);
-    for (const BoolVar var : comfortable_traffic_vars) {
-      objective_expr.AddVar(var);
-    }
-    cp_model.Minimize(objective_expr);
+    cp_model.Minimize(LinearExpr::Sum(comfortable_traffic_vars) +
+                      max_usage_cost);
 
     Model model;
     if (!absl::GetFlag(FLAGS_params).empty()) {

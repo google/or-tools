@@ -23,6 +23,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/btree_set.h"
 #include "ortools/algorithms/knapsack_solver_for_cuts.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/stl_util.h"
@@ -1149,12 +1150,18 @@ void IntegerRoundingCutHelper::ComputeCut(
     coeff = f(coeff);
     if (coeff == 0) continue;
     if (change_sign_at_postprocessing_[i]) {
-      cut->ub = IntegerValue(
-          CapAdd((coeff * -upper_bounds[i]).value(), cut->ub.value()));
+      if (!AddProductTo(coeff, -upper_bounds[i], &cut->ub)) {
+        // Abort with a trivially satisfied cut.
+        cut->Clear();
+        return;
+      }
       tmp_terms_.push_back({cut->vars[i], -coeff});
     } else {
-      cut->ub = IntegerValue(
-          CapAdd((coeff * lower_bounds[i]).value(), cut->ub.value()));
+      if (!AddProductTo(coeff, lower_bounds[i], &cut->ub)) {
+        // Abort with a trivially satisfied cut.
+        cut->Clear();
+        return;
+      }
       tmp_terms_.push_back({cut->vars[i], coeff});
     }
   }
@@ -1338,13 +1345,15 @@ bool CoverCutHelper::TrySimpleKnapsack(
   return true;
 }
 
-CutGenerator CreatePositiveMultiplicationCutGenerator(IntegerVariable z,
-                                                      IntegerVariable x,
-                                                      IntegerVariable y,
+CutGenerator CreatePositiveMultiplicationCutGenerator(AffineExpression z,
+                                                      AffineExpression x,
+                                                      AffineExpression y,
                                                       int linearization_level,
                                                       Model* model) {
   CutGenerator result;
-  result.vars = {z, x, y};
+  if (z.var != kNoIntegerVariable) result.vars.push_back(z.var);
+  if (x.var != kNoIntegerVariable) result.vars.push_back(x.var);
+  if (y.var != kNoIntegerVariable) result.vars.push_back(y.var);
 
   IntegerTrail* const integer_trail = model->GetOrCreate<IntegerTrail>();
   Trail* trail = model->GetOrCreate<Trail>();
@@ -1369,9 +1378,9 @@ CutGenerator CreatePositiveMultiplicationCutGenerator(IntegerVariable z,
           return true;
         }
 
-        const double x_lp_value = lp_values[x];
-        const double y_lp_value = lp_values[y];
-        const double z_lp_value = lp_values[z];
+        const double x_lp_value = x.LpValue(lp_values);
+        const double y_lp_value = y.LpValue(lp_values);
+        const double z_lp_value = z.LpValue(lp_values);
 
         // TODO(user): As the bounds change monotonically, these cuts
         // dominate any previous one.  try to keep a reference to the cut and
@@ -1425,15 +1434,16 @@ CutGenerator CreatePositiveMultiplicationCutGenerator(IntegerVariable z,
   return result;
 }
 
-CutGenerator CreateSquareCutGenerator(IntegerVariable y, IntegerVariable x,
+CutGenerator CreateSquareCutGenerator(AffineExpression y, AffineExpression x,
                                       int linearization_level, Model* model) {
   CutGenerator result;
-  result.vars = {y, x};
+  if (x.var != kNoIntegerVariable) result.vars.push_back(x.var);
+  if (y.var != kNoIntegerVariable) result.vars.push_back(y.var);
 
   Trail* trail = model->GetOrCreate<Trail>();
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
   result.generate_cuts =
-      [y, x, linearization_level, trail, integer_trail](
+      [y, x, linearization_level, trail, integer_trail, model](
           const absl::StrongVector<IntegerVariable, double>& lp_values,
           LinearConstraintManager* manager) {
         if (trail->CurrentDecisionLevel() > 0 && linearization_level == 1) {
@@ -1448,8 +1458,8 @@ CutGenerator CreateSquareCutGenerator(IntegerVariable y, IntegerVariable x,
         if (x_ub > (int64_t{1} << 31)) return true;
         DCHECK_GE(x_lb, 0);
 
-        const double y_lp_value = lp_values[y];
-        const double x_lp_value = lp_values[x];
+        const double y_lp_value = y.LpValue(lp_values);
+        const double x_lp_value = x.LpValue(lp_values);
 
         // First cut: target should be below the line:
         //     (x_lb, x_lb ^ 2) to (x_ub, x_ub ^ 2).
@@ -1459,14 +1469,11 @@ CutGenerator CreateSquareCutGenerator(IntegerVariable y, IntegerVariable x,
         const double max_lp_y = y_lb + above_slope * (x_lp_value - x_lb);
         if (y_lp_value >= max_lp_y + kMinCutViolation) {
           // cut: y <= (x_lb + x_ub) * x - x_lb * x_ub
-          LinearConstraint above_cut;
-          above_cut.vars.push_back(y);
-          above_cut.coeffs.push_back(IntegerValue(1));
-          above_cut.vars.push_back(x);
-          above_cut.coeffs.push_back(IntegerValue(-above_slope));
-          above_cut.lb = kMinIntegerValue;
-          above_cut.ub = IntegerValue(-x_lb * x_ub);
-          manager->AddCut(above_cut, "SquareUpper", lp_values);
+          LinearConstraintBuilder above_cut(model, kMinIntegerValue,
+                                            IntegerValue(-x_lb * x_ub));
+          above_cut.AddTerm(y, IntegerValue(1));
+          above_cut.AddTerm(x, IntegerValue(-above_slope));
+          manager->AddCut(above_cut.Build(), "SquareUpper", lp_values);
         }
 
         // Second cut: target should be above all the lines
@@ -1482,14 +1489,12 @@ CutGenerator CreateSquareCutGenerator(IntegerVariable y, IntegerVariable x,
         if (min_lp_y >= y_lp_value + kMinCutViolation) {
           // cut: y >= below_slope * (x - x_floor) + x_floor ^ 2
           //    : y >= below_slope * x - x_floor ^ 2 - x_floor
-          LinearConstraint below_cut;
-          below_cut.vars.push_back(y);
-          below_cut.coeffs.push_back(IntegerValue(1));
-          below_cut.vars.push_back(x);
-          below_cut.coeffs.push_back(-IntegerValue(below_slope));
-          below_cut.lb = IntegerValue(-x_floor - x_floor * x_floor);
-          below_cut.ub = kMaxIntegerValue;
-          manager->AddCut(below_cut, "SquareLower", lp_values);
+          LinearConstraintBuilder below_cut(
+              model, IntegerValue(-x_floor - x_floor * x_floor),
+              kMaxIntegerValue);
+          below_cut.AddTerm(y, IntegerValue(1));
+          below_cut.AddTerm(x, -IntegerValue(below_slope));
+          manager->AddCut(below_cut.Build(), "SquareLower", lp_values);
         }
         return true;
       };
@@ -1777,39 +1782,76 @@ bool ImpliedBoundsProcessor::DebugSlack(IntegerVariable first_slack,
 
 namespace {
 
+int64_t SumOfKMinValues(const absl::btree_set<int64_t>& values, int k) {
+  int count = 0;
+  int64_t sum = 0;
+  for (const int64_t value : values) {
+    sum += value;
+    if (++count >= k) return sum;
+  }
+  return sum;
+}
+
 void TryToGenerateAllDiffCut(
-    const std::vector<std::pair<double, IntegerVariable>>& sorted_vars_lp,
+    const std::vector<std::pair<double, AffineExpression>>& sorted_exprs_lp,
     const IntegerTrail& integer_trail,
     const absl::StrongVector<IntegerVariable, double>& lp_values,
-    LinearConstraintManager* manager) {
-  Domain current_union;
-  std::vector<IntegerVariable> current_set_vars;
+    LinearConstraintManager* manager, Model* model) {
+  std::vector<AffineExpression> current_set_exprs;
+  const int num_exprs = sorted_exprs_lp.size();
+  absl::btree_set<int64_t> min_values;
+  absl::btree_set<int64_t> negated_max_values;
   double sum = 0.0;
-  for (auto value_var : sorted_vars_lp) {
-    sum += value_var.first;
-    const IntegerVariable var = value_var.second;
-    // TODO(user): The union of the domain of the variable being considered
-    // does not give the tightest bounds, try to get better bounds.
-    current_union =
-        current_union.UnionWith(integer_trail.InitialVariableDomain(var));
-    current_set_vars.push_back(var);
-    const int64_t required_min_sum =
-        SumOfKMinValueInDomain(current_union, current_set_vars.size());
-    const int64_t required_max_sum =
-        SumOfKMaxValueInDomain(current_union, current_set_vars.size());
-    if (sum < required_min_sum || sum > required_max_sum) {
-      LinearConstraint cut;
-      for (IntegerVariable var : current_set_vars) {
-        cut.AddTerm(var, IntegerValue(1));
+  for (auto value_expr : sorted_exprs_lp) {
+    sum += value_expr.first;
+    const AffineExpression expr = value_expr.second;
+    if (integer_trail.IsFixed(expr)) {
+      const int64_t value = integer_trail.FixedValue(expr).value();
+      min_values.insert(value);
+      negated_max_values.insert(-value);
+    } else {
+      int count = 0;
+      const int64_t coeff = expr.coeff.value();
+      const int64_t constant = expr.constant.value();
+      for (const int64_t value :
+           integer_trail.InitialVariableDomain(expr.var).Values()) {
+        if (coeff > 0) {
+          min_values.insert(value * coeff + constant);
+        } else {
+          negated_max_values.insert(-(value * coeff + constant));
+        }
+        if (++count >= num_exprs) break;
       }
-      cut.lb = IntegerValue(required_min_sum);
-      cut.ub = IntegerValue(required_max_sum);
-      manager->AddCut(cut, "all_diff", lp_values);
+
+      count = 0;
+      for (const int64_t value :
+           integer_trail.InitialVariableDomain(expr.var).Negation().Values()) {
+        if (coeff > 0) {
+          negated_max_values.insert(value * coeff - constant);
+        } else {
+          min_values.insert(-value * coeff + constant);
+        }
+        if (++count >= num_exprs) break;
+      }
+    }
+    current_set_exprs.push_back(expr);
+    const int64_t required_min_sum =
+        SumOfKMinValues(min_values, current_set_exprs.size());
+    const int64_t required_max_sum =
+        -SumOfKMinValues(negated_max_values, current_set_exprs.size());
+    if (sum < required_min_sum || sum > required_max_sum) {
+      LinearConstraintBuilder cut(model, IntegerValue(required_min_sum),
+                                  IntegerValue(required_max_sum));
+      for (AffineExpression expr : current_set_exprs) {
+        cut.AddTerm(expr, IntegerValue(1));
+      }
+      manager->AddCut(cut.Build(), "all_diff", lp_values);
       // NOTE: We can extend the current set but it is more helpful to generate
       // the cut on a different set of variables so we reset the counters.
       sum = 0.0;
-      current_set_vars.clear();
-      current_union = Domain();
+      current_set_exprs.clear();
+      min_values.clear();
+      negated_max_values.clear();
     }
   }
 }
@@ -1817,37 +1859,48 @@ void TryToGenerateAllDiffCut(
 }  // namespace
 
 CutGenerator CreateAllDifferentCutGenerator(
-    const std::vector<IntegerVariable>& vars, Model* model) {
+    const std::vector<AffineExpression>& exprs, Model* model) {
   CutGenerator result;
-  result.vars = vars;
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+
+  for (const AffineExpression& expr : exprs) {
+    if (!integer_trail->IsFixed(expr)) {
+      result.vars.push_back(expr.var);
+    }
+  }
+  gtl::STLSortAndRemoveDuplicates(&result.vars);
+
   Trail* trail = model->GetOrCreate<Trail>();
   result.generate_cuts =
-      [vars, integer_trail, trail](
+      [exprs, integer_trail, trail, model](
           const absl::StrongVector<IntegerVariable, double>& lp_values,
           LinearConstraintManager* manager) {
         // These cuts work at all levels but the generator adds too many cuts on
         // some instances and degrade the performance so we only use it at level
         // 0.
         if (trail->CurrentDecisionLevel() > 0) return true;
-        std::vector<std::pair<double, IntegerVariable>> sorted_vars;
-        for (const IntegerVariable var : vars) {
-          if (integer_trail->LevelZeroLowerBound(var) ==
-              integer_trail->LevelZeroUpperBound(var)) {
+        std::vector<std::pair<double, AffineExpression>> sorted_exprs;
+        for (const AffineExpression expr : exprs) {
+          if (integer_trail->LevelZeroLowerBound(expr) ==
+              integer_trail->LevelZeroUpperBound(expr)) {
             continue;
           }
-          sorted_vars.push_back(std::make_pair(lp_values[var], var));
+          sorted_exprs.push_back(std::make_pair(expr.LpValue(lp_values), expr));
         }
-        std::sort(sorted_vars.begin(), sorted_vars.end());
-        TryToGenerateAllDiffCut(sorted_vars, *integer_trail, lp_values,
-                                manager);
+        std::sort(sorted_exprs.begin(), sorted_exprs.end(),
+                  [](std::pair<double, AffineExpression>& a,
+                     const std::pair<double, AffineExpression>& b) {
+                    return a.first < b.first;
+                  });
+        TryToGenerateAllDiffCut(sorted_exprs, *integer_trail, lp_values,
+                                manager, model);
         // Other direction.
-        std::reverse(sorted_vars.begin(), sorted_vars.end());
-        TryToGenerateAllDiffCut(sorted_vars, *integer_trail, lp_values,
-                                manager);
+        std::reverse(sorted_exprs.begin(), sorted_exprs.end());
+        TryToGenerateAllDiffCut(sorted_exprs, *integer_trail, lp_values,
+                                manager, model);
         return true;
       };
-  VLOG(1) << "Created all_diff cut generator of size: " << vars.size();
+  VLOG(1) << "Created all_diff cut generator of size: " << exprs.size();
   return result;
 }
 
@@ -2101,7 +2154,7 @@ CutGenerator CreateCliqueCutGenerator(
               model, IntegerValue(std::numeric_limits<int64_t>::min()),
               IntegerValue(1));
           for (const Literal l : at_most_one) {
-            if (ContainsKey(positive_map, l.Index())) {
+            if (positive_map.contains(l.Index())) {
               builder.AddTerm(positive_map.at(l.Index()), IntegerValue(1));
             } else {
               // Add 1 - X to the linear constraint.

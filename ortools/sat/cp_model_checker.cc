@@ -63,6 +63,14 @@ bool VariableReferenceIsValid(const CpModelProto& model, int reference) {
   return reference >= -static_cast<int>(model.variables_size());
 }
 
+// Note(user): Historically we always accepted positive or negative variable
+// reference everywhere, but now that we can always substitute affine relation,
+// we starts to transition to positive reference only, which are clearer. Note
+// that this doesn't concern literal reference though.
+bool VariableIndexIsValid(const CpModelProto& model, int var) {
+  return var >= 0 && var < model.variables_size();
+}
+
 bool LiteralReferenceIsValid(const CpModelProto& model, int reference) {
   if (!VariableReferenceIsValid(model, reference)) return false;
   const auto& var_proto = model.variables(PositiveRef(reference));
@@ -154,6 +162,7 @@ template <class LinearExpressionProto>
 bool PossibleIntegerOverflow(const CpModelProto& model,
                              const LinearExpressionProto& proto,
                              int64_t offset = 0) {
+  if (offset == std::numeric_limits<int64_t>::min()) return true;
   int64_t sum_min = -std::abs(offset);
   int64_t sum_max = +std::abs(offset);
   for (int i = 0; i < proto.vars_size(); ++i) {
@@ -240,11 +249,7 @@ int64_t IntervalSizeMin(const CpModelProto& model, int interval_index) {
             model.constraints(interval_index).constraint_case());
   const IntervalConstraintProto& proto =
       model.constraints(interval_index).interval();
-  if (proto.has_size_view()) {
-    return MinOfExpression(model, proto.size_view());
-  } else {
-    return MinOfRef(model, proto.size());
-  }
+  return MinOfExpression(model, proto.size());
 }
 
 int64_t IntervalSizeMax(const CpModelProto& model, int interval_index) {
@@ -252,11 +257,7 @@ int64_t IntervalSizeMax(const CpModelProto& model, int interval_index) {
             model.constraints(interval_index).constraint_case());
   const IntervalConstraintProto& proto =
       model.constraints(interval_index).interval();
-  if (proto.has_size_view()) {
-    return MaxOfExpression(model, proto.size_view());
-  } else {
-    return MaxOfRef(model, proto.size());
-  }
+  return MaxOfExpression(model, proto.size());
 }
 
 Domain DomainOfRef(const CpModelProto& model, int ref) {
@@ -275,6 +276,15 @@ std::string ValidateLinearExpression(const CpModelProto& model,
                         ProtobufShortDebugString(expr));
   }
   return "";
+}
+
+std::string ValidateAffineExpression(const CpModelProto& model,
+                                     const LinearExpressionProto& expr) {
+  if (expr.vars_size() > 1) {
+    return absl::StrCat("expression must be affine: ",
+                        ProtobufShortDebugString(expr));
+  }
+  return ValidateLinearExpression(model, expr);
 }
 
 std::string ValidateLinearConstraint(const CpModelProto& model,
@@ -297,34 +307,51 @@ std::string ValidateLinearConstraint(const CpModelProto& model,
 
 std::string ValidateIntModConstraint(const CpModelProto& model,
                                      const ConstraintProto& ct) {
-  if (ct.int_mod().vars().size() != 2) {
+  if (ct.int_mod().exprs().size() != 2) {
     return absl::StrCat("An int_mod constraint should have exactly 2 terms: ",
                         ProtobufShortDebugString(ct));
   }
-  const int mod_var = ct.int_mod().vars(1);
-  const IntegerVariableProto& mod_proto = model.variables(PositiveRef(mod_var));
-  if ((RefIsPositive(mod_var) && mod_proto.domain(0) <= 0) ||
-      (!RefIsPositive(mod_var) &&
-       mod_proto.domain(mod_proto.domain_size() - 1) >= 0)) {
+  if (!ct.int_mod().has_target()) {
+    return absl::StrCat("An int_mod constraint should have a target: ",
+                        ProtobufShortDebugString(ct));
+  }
+
+  RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, ct.int_mod().exprs(0)));
+  RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, ct.int_mod().exprs(1)));
+  RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, ct.int_mod().target()));
+
+  const LinearExpressionProto mod_expr = ct.int_mod().exprs(1);
+  if (MinOfExpression(model, mod_expr) <= 0) {
     return absl::StrCat(
         "An int_mod must have a strictly positive modulo argument: ",
         ProtobufShortDebugString(ct));
   }
+
   return "";
 }
 
 std::string ValidateIntProdConstraint(const CpModelProto& model,
                                       const ConstraintProto& ct) {
-  if (ct.int_prod().vars().size() != 2) {
+  if (ct.int_prod().exprs().size() != 2) {
     return absl::StrCat("An int_prod constraint should have exactly 2 terms: ",
                         ProtobufShortDebugString(ct));
   }
+  if (!ct.int_prod().has_target()) {
+    return absl::StrCat("An int_prod constraint should have a target: ",
+                        ProtobufShortDebugString(ct));
+  }
+
+  RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, ct.int_prod().exprs(0)));
+  RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, ct.int_prod().exprs(1)));
+  RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, ct.int_prod().target()));
 
   // Detect potential overflow if some of the variables span across 0.
+  const LinearExpressionProto& expr0 = ct.int_prod().exprs(0);
+  const LinearExpressionProto& expr1 = ct.int_prod().exprs(1);
   const Domain product_domain =
-      ReadDomainFromProto(model.variables(PositiveRef(ct.int_prod().vars(0))))
-          .ContinuousMultiplicationBy(ReadDomainFromProto(
-              model.variables(PositiveRef(ct.int_prod().vars(1)))));
+      Domain({MinOfExpression(model, expr0), MaxOfExpression(model, expr0)})
+          .ContinuousMultiplicationBy(Domain(
+              {MinOfExpression(model, expr1), MaxOfExpression(model, expr1)}));
   if ((product_domain.Max() == std::numeric_limits<int64_t>::max() &&
        product_domain.Min() < 0) ||
       (product_domain.Min() == std::numeric_limits<int64_t>::min() &&
@@ -337,17 +364,26 @@ std::string ValidateIntProdConstraint(const CpModelProto& model,
 
 std::string ValidateIntDivConstraint(const CpModelProto& model,
                                      const ConstraintProto& ct) {
-  if (ct.int_div().vars().size() != 2) {
+  if (ct.int_div().exprs().size() != 2) {
     return absl::StrCat("An int_div constraint should have exactly 2 terms: ",
                         ProtobufShortDebugString(ct));
   }
-  const IntegerVariableProto& divisor_proto =
-      model.variables(PositiveRef(ct.int_div().vars(1)));
-  if (divisor_proto.domain(0) <= 0 &&
-      divisor_proto.domain(divisor_proto.domain_size() - 1) >= 0) {
+  if (!ct.int_div().has_target()) {
+    return absl::StrCat("An int_div constraint should have a target: ",
+                        ProtobufShortDebugString(ct));
+  }
+
+  RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, ct.int_div().exprs(0)));
+  RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, ct.int_div().exprs(1)));
+  RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, ct.int_div().target()));
+
+  const LinearExpressionProto& divisor_proto = ct.int_div().exprs(1);
+  if (MinOfExpression(model, divisor_proto) <= 0 &&
+      MaxOfExpression(model, divisor_proto) >= 0) {
     return absl::StrCat("The divisor cannot span across zero in constraint: ",
                         ProtobufShortDebugString(ct));
   }
+
   return "";
 }
 
@@ -486,62 +522,46 @@ std::string ValidateIntervalConstraint(const CpModelProto& model,
         "supported: ",
         ProtobufShortDebugString(ct));
   }
+  const IntervalConstraintProto& arg = ct.interval();
+
+  if (!arg.has_start()) {
+    return absl::StrCat("Interval must have a start expression: ",
+                        ProtobufShortDebugString(ct));
+  }
+  if (!arg.has_size()) {
+    return absl::StrCat("Interval must have a size expression: ",
+                        ProtobufShortDebugString(ct));
+  }
+  if (!arg.has_end()) {
+    return absl::StrCat("Interval must have a end expression: ",
+                        ProtobufShortDebugString(ct));
+  }
 
   LinearExpressionProto for_overflow_validation;
-
-  const IntervalConstraintProto& arg = ct.interval();
-  int num_view = 0;
-  if (arg.has_start_view()) {
-    ++num_view;
-    if (arg.start_view().vars_size() > 1) {
-      return "Interval with a start expression containing more than one "
-             "variable are currently not supported.";
-    }
-    RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, arg.start_view()));
-    AppendToOverflowValidator(arg.start_view(), &for_overflow_validation);
-  } else {
-    for_overflow_validation.add_vars(arg.start());
-    for_overflow_validation.add_coeffs(1);
+  if (arg.start().vars_size() > 1) {
+    return "Interval with a start expression containing more than one "
+           "variable are currently not supported.";
   }
-  if (arg.has_size_view()) {
-    ++num_view;
-    if (arg.size_view().vars_size() > 1) {
-      return "Interval with a size expression containing more than one "
-             "variable are currently not supported.";
-    }
-    RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, arg.size_view()));
-    if (ct.enforcement_literal().empty() &&
-        MinOfExpression(model, arg.size_view()) < 0) {
-      return absl::StrCat(
-          "The size of an performed interval must be >= 0 in constraint: ",
-          ProtobufDebugString(ct));
-    }
-    AppendToOverflowValidator(arg.size_view(), &for_overflow_validation);
-  } else {
-    if (ct.enforcement_literal().empty()) {
-      const std::string domain_error =
-          ValidateDomainIsPositive(model, arg.size(), "size");
-      if (!domain_error.empty()) {
-        return absl::StrCat(domain_error,
-                            " in constraint: ", ProtobufDebugString(ct));
-      }
-    }
-
-    for_overflow_validation.add_vars(arg.size());
-    for_overflow_validation.add_coeffs(1);
+  RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, arg.start()));
+  AppendToOverflowValidator(arg.start(), &for_overflow_validation);
+  if (arg.size().vars_size() > 1) {
+    return "Interval with a size expression containing more than one "
+           "variable are currently not supported.";
   }
-  if (arg.has_end_view()) {
-    ++num_view;
-    if (arg.end_view().vars_size() > 1) {
-      return "Interval with a end expression containing more than one "
-             "variable are currently not supported.";
-    }
-    RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, arg.end_view()));
-    AppendToOverflowValidator(arg.end_view(), &for_overflow_validation);
-  } else {
-    for_overflow_validation.add_vars(arg.end());
-    for_overflow_validation.add_coeffs(1);
+  RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, arg.size()));
+  if (ct.enforcement_literal().empty() &&
+      MinOfExpression(model, arg.size()) < 0) {
+    return absl::StrCat(
+        "The size of an performed interval must be >= 0 in constraint: ",
+        ProtobufDebugString(ct));
   }
+  AppendToOverflowValidator(arg.size(), &for_overflow_validation);
+  if (arg.end().vars_size() > 1) {
+    return "Interval with a end expression containing more than one "
+           "variable are currently not supported.";
+  }
+  RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, arg.end()));
+  AppendToOverflowValidator(arg.end(), &for_overflow_validation);
 
   if (PossibleIntegerOverflow(model, for_overflow_validation,
                               for_overflow_validation.offset())) {
@@ -549,12 +569,6 @@ std::string ValidateIntervalConstraint(const CpModelProto& model,
                         ProtobufShortDebugString(ct.interval()));
   }
 
-  if (num_view != 0 && num_view != 3) {
-    return absl::StrCat(
-        "Interval must use either the var or the view representation, but not "
-        "both: ",
-        ProtobufShortDebugString(ct));
-  }
   return "";
 }
 
@@ -565,70 +579,38 @@ std::string ValidateCumulativeConstraint(const CpModelProto& model,
                         ProtobufShortDebugString(ct));
   }
 
-  if (ct.cumulative().energies_size() != 0 &&
-      ct.cumulative().energies_size() != ct.cumulative().intervals_size()) {
-    return absl::StrCat("energies_size() != intervals_size() in constraint: ",
-                        ProtobufShortDebugString(ct));
+  RETURN_IF_NOT_EMPTY(
+      ValidateLinearExpression(model, ct.cumulative().capacity()));
+  for (const LinearExpressionProto& demand : ct.cumulative().demands()) {
+    RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, demand));
   }
 
-  for (const int demand_ref : ct.cumulative().demands()) {
-    const std::string domain_error =
-        ValidateDomainIsPositive(model, demand_ref, "demand");
-    if (!domain_error.empty()) {
-      return absl::StrCat(domain_error,
-                          " in constraint: ", ProtobufDebugString(ct));
+  for (const LinearExpressionProto& demand_expr : ct.cumulative().demands()) {
+    if (MinOfExpression(model, demand_expr) < 0) {
+      return absl::StrCat(
+          "Demand ", demand_expr.DebugString(),
+          " must be positive in constraint: ", ProtobufDebugString(ct));
     }
+    if (demand_expr.vars_size() > 1) {
+      return absl::StrCat("Demand ", demand_expr.DebugString(),
+                          " must be affine or constant in constraint: ",
+                          ProtobufDebugString(ct));
+    }
+  }
+  if (ct.cumulative().capacity().vars_size() > 1) {
+    return absl::StrCat(
+        "capacity ", ct.cumulative().capacity().DebugString(),
+        " must be affine or constant in constraint: ", ProtobufDebugString(ct));
   }
 
   int64_t sum_max_demands = 0;
-  for (const int demand_ref : ct.cumulative().demands()) {
-    const int64_t demand_max = MaxOfRef(model, demand_ref);
+  for (const LinearExpressionProto& demand_expr : ct.cumulative().demands()) {
+    const int64_t demand_max = MaxOfExpression(model, demand_expr);
     DCHECK_GE(demand_max, 0);
     sum_max_demands = CapAdd(sum_max_demands, demand_max);
     if (sum_max_demands == std::numeric_limits<int64_t>::max()) {
       return "The sum of max demands do not fit on an int64_t in constraint: " +
              ProtobufDebugString(ct);
-    }
-  }
-
-  int64_t sum_max_energies = 0;
-  for (int i = 0; i < ct.cumulative().intervals_size(); ++i) {
-    const int64_t demand_max = MaxOfRef(model, ct.cumulative().demands(i));
-    const int64_t size_max =
-        IntervalSizeMax(model, ct.cumulative().intervals(i));
-    sum_max_energies = CapAdd(sum_max_energies, CapProd(size_max, demand_max));
-    if (sum_max_energies == std::numeric_limits<int64_t>::max()) {
-      return "The sum of max energies (size * demand) do not fit on an int64_t "
-             "in constraint: " +
-             ProtobufDebugString(ct);
-    }
-  }
-
-  for (int i = 0; i < ct.cumulative().energies_size(); ++i) {
-    const LinearExpressionProto& expr = ct.cumulative().energies(i);
-    const std::string error = ValidateLinearExpression(model, expr);
-    if (!error.empty()) {
-      return absl::StrCat(error, "in energy expression of constraint: ",
-                          ProtobufShortDebugString(ct));
-    }
-
-    // The following check is quite loose, but it will catch gross mistakes like
-    // having an empty expression (= 0) with a non zero demand and non null
-    // interval.
-    const int interval = ct.cumulative().intervals(i);
-    const int64_t size_min = IntervalSizeMin(model, interval);
-    const int64_t size_max = IntervalSizeMax(model, interval);
-    const Domain product =
-        DomainOfRef(model, ct.cumulative().demands(i))
-            .ContinuousMultiplicationBy({size_min, size_max});
-    const int64_t energy_min = MinOfExpression(model, expr);
-    const int64_t energy_max = MaxOfExpression(model, expr);
-    if (product.IntersectionWith({energy_min, energy_max}).IsEmpty()) {
-      return absl::StrCat(
-          "The energy expression (with index ", i,
-          ") is not compatible with the product of the size of the interval, "
-          "and the demand in constraint: ",
-          ProtobufShortDebugString(ct));
     }
   }
 
@@ -666,9 +648,14 @@ std::string ValidateReservoirConstraint(const CpModelProto& model,
   if (ct.enforcement_literal_size() > 0) {
     return "Reservoir does not support enforcement literals.";
   }
-  if (ct.reservoir().times().size() != ct.reservoir().demands().size()) {
-    return absl::StrCat("Times and demands fields must be of the same size: ",
-                        ProtobufShortDebugString(ct));
+  if (ct.reservoir().time_exprs().size() !=
+      ct.reservoir().level_changes().size()) {
+    return absl::StrCat(
+        "time_exprs and level_changes fields must be of the same size: ",
+        ProtobufShortDebugString(ct));
+  }
+  for (const LinearExpressionProto& expr : ct.reservoir().time_exprs()) {
+    RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, expr));
   }
   if (ct.reservoir().min_level() > 0) {
     return absl::StrCat(
@@ -684,7 +671,7 @@ std::string ValidateReservoirConstraint(const CpModelProto& model,
   }
 
   int64_t sum_abs = 0;
-  for (const int64_t demand : ct.reservoir().demands()) {
+  for (const int64_t demand : ct.reservoir().level_changes()) {
     // We test for min int64_t before the abs().
     if (demand == std::numeric_limits<int64_t>::min()) {
       return "Possible integer overflow in constraint: " +
@@ -696,13 +683,14 @@ std::string ValidateReservoirConstraint(const CpModelProto& model,
              ProtobufDebugString(ct);
     }
   }
-  if (ct.reservoir().actives_size() > 0 &&
-      ct.reservoir().actives_size() != ct.reservoir().times_size()) {
-    return "Wrong array length of actives variables";
+  if (ct.reservoir().active_literals_size() > 0 &&
+      ct.reservoir().active_literals_size() !=
+          ct.reservoir().time_exprs_size()) {
+    return "Wrong array length of active_literals variables";
   }
-  if (ct.reservoir().demands_size() > 0 &&
-      ct.reservoir().demands_size() != ct.reservoir().times_size()) {
-    return "Wrong array length of demands variables";
+  if (ct.reservoir().level_changes_size() > 0 &&
+      ct.reservoir().level_changes_size() != ct.reservoir().time_exprs_size()) {
+    return "Wrong array length of level_changes variables";
   }
   return "";
 }
@@ -726,6 +714,31 @@ std::string ValidateObjective(const CpModelProto& model,
   if (PossibleIntegerOverflow(model, obj)) {
     return "Possible integer overflow in objective: " +
            ProtobufDebugString(obj);
+  }
+  return "";
+}
+
+std::string ValidateFloatingPointObjective(const CpModelProto& model,
+                                           const FloatObjectiveProto& obj) {
+  if (obj.vars().size() != obj.coeffs().size()) {
+    return absl::StrCat("vars and coeffs size do not match in objective: ",
+                        ProtobufShortDebugString(obj));
+  }
+  for (const int v : obj.vars()) {
+    if (!VariableIndexIsValid(model, v)) {
+      return absl::StrCat("Out of bound integer variable ", v,
+                          " in objective: ", ProtobufShortDebugString(obj));
+    }
+  }
+  for (const double coef : obj.coeffs()) {
+    if (!std::isfinite(coef)) {
+      return absl::StrCat("Coefficients must be finites in objective: ",
+                          ProtobufShortDebugString(obj));
+    }
+  }
+  if (!std::isfinite(obj.offset())) {
+    return absl::StrCat("Offset must be finite in objective: ",
+                        ProtobufShortDebugString(obj));
   }
   return "";
 }
@@ -857,18 +870,8 @@ std::string ValidateCpModel(const CpModelProto& model) {
       case ConstraintProto::ConstraintCase::kLinMax: {
         RETURN_IF_NOT_EMPTY(
             ValidateLinearExpression(model, ct.lin_max().target()));
-        for (int i = 0; i < ct.lin_max().exprs_size(); ++i) {
-          RETURN_IF_NOT_EMPTY(
-              ValidateLinearExpression(model, ct.lin_max().exprs(i)));
-        }
-        break;
-      }
-      case ConstraintProto::ConstraintCase::kLinMin: {
-        RETURN_IF_NOT_EMPTY(
-            ValidateLinearExpression(model, ct.lin_min().target()));
-        for (int i = 0; i < ct.lin_min().exprs_size(); ++i) {
-          RETURN_IF_NOT_EMPTY(
-              ValidateLinearExpression(model, ct.lin_min().exprs(i)));
+        for (const LinearExpressionProto& expr : ct.lin_max().exprs()) {
+          RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, expr));
         }
         break;
       }
@@ -885,6 +888,11 @@ std::string ValidateCpModel(const CpModelProto& model) {
         if (ct.inverse().f_direct().size() != ct.inverse().f_inverse().size()) {
           return absl::StrCat("Non-matching fields size in inverse: ",
                               ProtobufShortDebugString(ct));
+        }
+        break;
+      case ConstraintProto::ConstraintCase::kAllDiff:
+        for (const LinearExpressionProto& expr : ct.all_diff().exprs()) {
+          RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, expr));
         }
         break;
       case ConstraintProto::ConstraintCase::kTable:
@@ -933,8 +941,16 @@ std::string ValidateCpModel(const CpModelProto& model) {
       }
     }
   }
+  if (model.has_objective() && model.has_floating_point_objective()) {
+    return "A model cannot have both an objective and a floating point "
+           "objective.";
+  }
   if (model.has_objective()) {
     RETURN_IF_NOT_EMPTY(ValidateObjective(model, model.objective()));
+  }
+  if (model.has_floating_point_objective()) {
+    RETURN_IF_NOT_EMPTY(ValidateFloatingPointObjective(
+        model, model.floating_point_objective()));
   }
   RETURN_IF_NOT_EMPTY(ValidateSearchStrategies(model));
   RETURN_IF_NOT_EMPTY(ValidateSolutionHint(model));
@@ -1026,15 +1042,6 @@ class ConstraintChecker {
     return DomainInProtoContains(ct.linear(), sum);
   }
 
-  bool IntMaxConstraintIsFeasible(const ConstraintProto& ct) {
-    const int64_t max = Value(ct.int_max().target());
-    int64_t actual_max = std::numeric_limits<int64_t>::min();
-    for (int i = 0; i < ct.int_max().vars_size(); ++i) {
-      actual_max = std::max(actual_max, Value(ct.int_max().vars(i)));
-    }
-    return max == actual_max;
-  }
-
   int64_t LinearExpressionValue(const LinearExpressionProto& expr) const {
     int64_t sum = expr.offset();
     const int num_variables = expr.vars_size();
@@ -1055,67 +1062,46 @@ class ConstraintChecker {
   }
 
   bool IntProdConstraintIsFeasible(const ConstraintProto& ct) {
-    const int64_t prod = Value(ct.int_prod().target());
+    const int64_t prod = LinearExpressionValue(ct.int_prod().target());
     int64_t actual_prod = 1;
-    for (int i = 0; i < ct.int_prod().vars_size(); ++i) {
-      actual_prod *= Value(ct.int_prod().vars(i));
+    for (const LinearExpressionProto& expr : ct.int_prod().exprs()) {
+      actual_prod = CapProd(actual_prod, LinearExpressionValue(expr));
     }
     return prod == actual_prod;
   }
 
   bool IntDivConstraintIsFeasible(const ConstraintProto& ct) {
-    return Value(ct.int_div().target()) ==
-           Value(ct.int_div().vars(0)) / Value(ct.int_div().vars(1));
+    return LinearExpressionValue(ct.int_div().target()) ==
+           LinearExpressionValue(ct.int_div().exprs(0)) /
+               LinearExpressionValue(ct.int_div().exprs(1));
   }
 
   bool IntModConstraintIsFeasible(const ConstraintProto& ct) {
-    return Value(ct.int_mod().target()) ==
-           Value(ct.int_mod().vars(0)) % Value(ct.int_mod().vars(1));
-  }
-
-  bool IntMinConstraintIsFeasible(const ConstraintProto& ct) {
-    const int64_t min = Value(ct.int_min().target());
-    int64_t actual_min = std::numeric_limits<int64_t>::max();
-    for (int i = 0; i < ct.int_min().vars_size(); ++i) {
-      actual_min = std::min(actual_min, Value(ct.int_min().vars(i)));
-    }
-    return min == actual_min;
-  }
-
-  bool LinMinConstraintIsFeasible(const ConstraintProto& ct) {
-    const int64_t min = LinearExpressionValue(ct.lin_min().target());
-    int64_t actual_min = std::numeric_limits<int64_t>::max();
-    for (int i = 0; i < ct.lin_min().exprs_size(); ++i) {
-      const int64_t expr_value = LinearExpressionValue(ct.lin_min().exprs(i));
-      actual_min = std::min(actual_min, expr_value);
-    }
-    return min == actual_min;
+    return LinearExpressionValue(ct.int_mod().target()) ==
+           LinearExpressionValue(ct.int_mod().exprs(0)) %
+               LinearExpressionValue(ct.int_mod().exprs(1));
   }
 
   bool AllDiffConstraintIsFeasible(const ConstraintProto& ct) {
     absl::flat_hash_set<int64_t> values;
-    for (const int v : ct.all_diff().vars()) {
-      if (gtl::ContainsKey(values, Value(v))) return false;
-      values.insert(Value(v));
+    for (const LinearExpressionProto& expr : ct.all_diff().exprs()) {
+      const int64_t value = LinearExpressionValue(expr);
+      const auto [it, inserted] = values.insert(value);
+      if (!inserted) return false;
     }
     return true;
   }
 
   int64_t IntervalStart(const IntervalConstraintProto& interval) const {
-    return interval.has_start_view()
-               ? LinearExpressionValue(interval.start_view())
-               : Value(interval.start());
+    return LinearExpressionValue(interval.start());
   }
 
   int64_t IntervalSize(const IntervalConstraintProto& interval) const {
-    return interval.has_size_view()
-               ? LinearExpressionValue(interval.size_view())
-               : Value(interval.size());
+    return LinearExpressionValue(interval.size());
   }
 
   int64_t IntervalEnd(const IntervalConstraintProto& interval) const {
-    return interval.has_end_view() ? LinearExpressionValue(interval.end_view())
-                                   : Value(interval.end());
+    return LinearExpressionValue(interval.end());
   }
 
   bool IntervalConstraintIsFeasible(const ConstraintProto& ct) {
@@ -1203,7 +1189,7 @@ class ConstraintChecker {
   bool CumulativeConstraintIsFeasible(const CpModelProto& model,
                                       const ConstraintProto& ct) {
     // TODO(user): Improve complexity for large durations.
-    const int64_t capacity = Value(ct.cumulative().capacity());
+    const int64_t capacity = LinearExpressionValue(ct.cumulative().capacity());
     const int num_intervals = ct.cumulative().intervals_size();
     absl::flat_hash_map<int64_t, int64_t> usage;
     for (int i = 0; i < num_intervals; ++i) {
@@ -1214,19 +1200,13 @@ class ConstraintChecker {
             interval_constraint.interval();
         const int64_t start = IntervalStart(interval);
         const int64_t duration = IntervalSize(interval);
-        const int64_t demand = Value(ct.cumulative().demands(i));
+        const int64_t demand =
+            LinearExpressionValue(ct.cumulative().demands(i));
         for (int64_t t = start; t < start + duration; ++t) {
           usage[t] += demand;
-          if (usage[t] > capacity) return false;
-        }
-        if (!ct.cumulative().energies().empty()) {
-          const LinearExpressionProto& energy_expr =
-              ct.cumulative().energies(i);
-          int64_t energy = energy_expr.offset();
-          for (int j = 0; j < energy_expr.vars_size(); ++j) {
-            energy += Value(energy_expr.vars(j)) * energy_expr.coeffs(j);
-          }
-          if (duration * demand != energy) {
+          if (usage[t] > capacity) {
+            VLOG(1) << "time: " << t << " usage: " << usage[t]
+                    << " capa: " << capacity;
             return false;
           }
         }
@@ -1272,7 +1252,7 @@ class ConstraintChecker {
     for (int i = 0; i < num_steps; ++i) {
       const std::pair<int64_t, int64_t> key = {current_state,
                                                Value(ct.automaton().vars(i))};
-      if (!gtl::ContainsKey(transition_map, key)) {
+      if (!transition_map.contains(key)) {
         return false;
       }
       current_state = transition_map[key];
@@ -1387,7 +1367,7 @@ class ConstraintChecker {
     }
 
     // Each routes cover as many node as there is arcs, but this way we count
-    // multiple times the depot. So the number of nodes covered are:
+    // multiple time_exprs the depot. So the number of nodes covered are:
     //     count - depot_nexts.size() + 1.
     // And this number + the self arcs should be num_nodes.
     if (count - depot_nexts.size() + 1 + num_self_arcs != num_nodes) {
@@ -1411,15 +1391,16 @@ class ConstraintChecker {
   }
 
   bool ReservoirConstraintIsFeasible(const ConstraintProto& ct) {
-    const int num_variables = ct.reservoir().times_size();
+    const int num_variables = ct.reservoir().time_exprs_size();
     const int64_t min_level = ct.reservoir().min_level();
     const int64_t max_level = ct.reservoir().max_level();
     std::map<int64_t, int64_t> deltas;
-    const bool has_active_variables = ct.reservoir().actives_size() > 0;
+    const bool has_active_variables = ct.reservoir().active_literals_size() > 0;
     for (int i = 0; i < num_variables; i++) {
-      const int64_t time = Value(ct.reservoir().times(i));
-      if (!has_active_variables || Value(ct.reservoir().actives(i)) == 1) {
-        deltas[time] += ct.reservoir().demands(i);
+      const int64_t time = LinearExpressionValue(ct.reservoir().time_exprs(i));
+      if (!has_active_variables ||
+          Value(ct.reservoir().active_literals(i)) == 1) {
+        deltas[time] += ct.reservoir().level_changes(i);
       }
     }
     int64_t current_level = 0;
@@ -1499,15 +1480,6 @@ bool SolutionIsFeasible(const CpModelProto& model,
       case ConstraintProto::ConstraintCase::kIntMod:
         is_feasible = checker.IntModConstraintIsFeasible(ct);
         break;
-      case ConstraintProto::ConstraintCase::kIntMin:
-        is_feasible = checker.IntMinConstraintIsFeasible(ct);
-        break;
-      case ConstraintProto::ConstraintCase::kLinMin:
-        is_feasible = checker.LinMinConstraintIsFeasible(ct);
-        break;
-      case ConstraintProto::ConstraintCase::kIntMax:
-        is_feasible = checker.IntMaxConstraintIsFeasible(ct);
-        break;
       case ConstraintProto::ConstraintCase::kLinMax:
         is_feasible = checker.LinMaxConstraintIsFeasible(ct);
         break;
@@ -1516,7 +1488,7 @@ bool SolutionIsFeasible(const CpModelProto& model,
         break;
       case ConstraintProto::ConstraintCase::kInterval:
         if (!checker.IntervalConstraintIsFeasible(ct)) {
-          if (ct.interval().has_start_view()) {
+          if (ct.interval().has_start()) {
             // Tricky: For simplified presolve, we require that a separate
             // constraint is added to the model to enforce the "interval".
             // This indicates that such a constraint was not added to the model.

@@ -63,6 +63,13 @@ Preprocessor::~Preprocessor() {}
 
 bool MainLpPreprocessor::Run(LinearProgram* lp) {
   RETURN_VALUE_IF_NULL(lp, false);
+
+  default_logger_.EnableLogging(parameters_.log_search_progress());
+  default_logger_.SetLogToStdOut(parameters_.log_to_stdout());
+
+  SOLVER_LOG(logger_, "");
+  SOLVER_LOG(logger_, "Starting presolve...");
+
   initial_num_rows_ = lp->num_constraints();
   initial_num_cols_ = lp->num_variables();
   initial_num_entries_ = lp->num_entries();
@@ -88,9 +95,7 @@ bool MainLpPreprocessor::Run(LinearProgram* lp) {
       // which has exactly the same meaning for these particular preprocessors.
       if (preprocessors_.size() == old_stack_size) {
         // We use i here because the last pass did nothing.
-        if (parameters_.log_search_progress() || VLOG_IS_ON(1)) {
-          LOG(INFO) << "Reached fixed point after presolve pass #" << i;
-        }
+        SOLVER_LOG(logger_, "Reached fixed point after presolve pass #", i);
         break;
       }
     }
@@ -146,23 +151,22 @@ void MainLpPreprocessor::RunAndPushIfRelevant(
     return;
   }
 
-  const bool log_info = parameters_.log_search_progress() || VLOG_IS_ON(1);
   if (preprocessor->Run(lp)) {
     const EntryIndex new_num_entries = lp->num_entries();
     const double preprocess_time = time_limit->GetElapsedTime() - start_time;
-    if (log_info) {
-      LOG(INFO) << absl::StrFormat(
-          "%s(%fs): %d(%d) rows, %d(%d) columns, %d(%d) entries.", name,
-          preprocess_time, lp->num_constraints().value(),
-          (lp->num_constraints() - initial_num_rows_).value(),
-          lp->num_variables().value(),
-          (lp->num_variables() - initial_num_cols_).value(),
-          // static_cast<int64_t> is needed because the Android port uses
-          // int32_t.
-          static_cast<int64_t>(new_num_entries.value()),
-          static_cast<int64_t>(new_num_entries.value() -
-                               initial_num_entries_.value()));
-    }
+    SOLVER_LOG(logger_,
+               absl::StrFormat(
+                   "%-45s: %d(%d) rows, %d(%d) columns, %d(%d) entries. (%fs)",
+                   name, lp->num_constraints().value(),
+                   (lp->num_constraints() - initial_num_rows_).value(),
+                   lp->num_variables().value(),
+                   (lp->num_variables() - initial_num_cols_).value(),
+                   // static_cast<int64_t> is needed because the Android port
+                   // uses int32_t.
+                   static_cast<int64_t>(new_num_entries.value()),
+                   static_cast<int64_t>(new_num_entries.value() -
+                                        initial_num_entries_.value()),
+                   preprocess_time));
     status_ = preprocessor->status();
     preprocessors_.push_back(std::move(preprocessor));
     return;
@@ -170,9 +174,9 @@ void MainLpPreprocessor::RunAndPushIfRelevant(
     // Even if a preprocessor returns false (i.e. no need for postsolve), it
     // can detect an issue with the problem.
     status_ = preprocessor->status();
-    if (status_ != ProblemStatus::INIT && log_info) {
-      LOG(INFO) << name << " detected that the problem is "
-                << GetProblemStatusString(status_);
+    if (status_ != ProblemStatus::INIT) {
+      SOLVER_LOG(logger_, name, " detected that the problem is ",
+                 GetProblemStatusString(status_));
     }
   }
 }
@@ -1377,6 +1381,7 @@ struct ColWithDegree {
 bool ImpliedFreePreprocessor::Run(LinearProgram* lp) {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_VALUE_IF_NULL(lp, false);
+  if (!parameters_.use_implied_free_preprocessor()) return false;
   const RowIndex num_rows = lp->num_constraints();
   const ColIndex num_cols = lp->num_variables();
 
@@ -1805,6 +1810,7 @@ void UnconstrainedVariablePreprocessor::RemoveZeroCostUnconstrainedVariable(
     rhs_[row] = is_constraint_upper_bound_relevant
                     ? lp->constraint_upper_bounds()[row]
                     : lp->constraint_lower_bounds()[row];
+    DCHECK(IsFinite(rhs_[row]));
 
     // TODO(user): Here, we may render the row free, so subsequent columns
     // processed by the columns loop in Run() have more chance to be removed.
@@ -1902,6 +1908,10 @@ bool UnconstrainedVariablePreprocessor::Run(LinearProgram* lp) {
     if (rc_ub.Sum() <= low_tolerance) {
       can_be_removed = true;
       target_bound = col_ub;
+      if (in_mip_context_ && lp->IsVariableInteger(col)) {
+        target_bound = std::floor(target_bound + high_tolerance);
+      }
+
       rc_is_away_from_zero = rc_ub.Sum() <= -high_tolerance;
       can_be_removed = !may_have_participated_ub_[col];
     }
@@ -1911,6 +1921,10 @@ bool UnconstrainedVariablePreprocessor::Run(LinearProgram* lp) {
       if (!can_be_removed || !IsFinite(target_bound)) {
         can_be_removed = true;
         target_bound = col_lb;
+        if (in_mip_context_ && lp->IsVariableInteger(col)) {
+          target_bound = std::ceil(target_bound - high_tolerance);
+        }
+
         rc_is_away_from_zero = rc_lb.Sum() >= high_tolerance;
         can_be_removed = !may_have_participated_lb_[col];
       }
@@ -1940,16 +1954,20 @@ bool UnconstrainedVariablePreprocessor::Run(LinearProgram* lp) {
         // choose proper variable values during the call to RecoverSolution()
         // that make all the constraints satisfiable. Unfortunately, this is not
         // so easy to do in the general case, so we only deal with a simpler
-        // case when the cost of the variable is zero, and the constraints do
-        // not block it in one direction.
+        // case when the cost of the variable is zero, and none of the
+        // constraints (even the deleted one) block the variable moving to its
+        // infinite target_bound.
         //
         // TODO(user): deal with the more generic case.
         if (col_cost != 0.0) continue;
+
+        const double sign_correction = (target_bound == kInfinity) ? 1.0 : -1.0;
         bool skip = false;
         for (const SparseColumn::Entry e : column) {
           // Note that it is important to check the rows that are already
           // deleted here, otherwise the post-solve will not work.
-          if (IsConstraintBlockingVariable(*lp, e.coefficient(), e.row())) {
+          if (IsConstraintBlockingVariable(
+                  *lp, sign_correction * e.coefficient(), e.row())) {
             skip = true;
             break;
           }
@@ -2275,16 +2293,26 @@ void SingletonPreprocessor::DeleteSingletonRow(MatrixEntry e,
           ? implied_upper_bound
           : old_upper_bound;
 
+  // This can happen if we ask for 1e-300 * x to be >= 1e9.
+  if (new_upper_bound == -kInfinity || new_lower_bound == kInfinity) {
+    VLOG(1) << "Problem ProblemStatus::PRIMAL_INFEASIBLE, singleton "
+               "row causes the bound of the variable "
+            << e.col << " to go to infinity.";
+    status_ = ProblemStatus::PRIMAL_INFEASIBLE;
+    return;
+  }
+
   if (new_upper_bound < new_lower_bound) {
     if (!IsSmallerWithinFeasibilityTolerance(new_lower_bound,
                                              new_upper_bound)) {
-      VLOG(1) << "Problem ProblemStatus::INFEASIBLE_OR_UNBOUNDED, singleton "
+      VLOG(1) << "Problem ProblemStatus::PRIMAL_INFEASIBLE, singleton "
                  "row causes the bound of the variable "
               << e.col << " to be infeasible by "
               << new_lower_bound - new_upper_bound;
       status_ = ProblemStatus::PRIMAL_INFEASIBLE;
       return;
     }
+
     // Otherwise, fix the variable to one of its bounds.
     if (new_lower_bound == lp->variable_lower_bounds()[e.col]) {
       new_upper_bound = new_lower_bound;
@@ -2292,7 +2320,15 @@ void SingletonPreprocessor::DeleteSingletonRow(MatrixEntry e,
     if (new_upper_bound == lp->variable_upper_bounds()[e.col]) {
       new_lower_bound = new_upper_bound;
     }
-    DCHECK_EQ(new_lower_bound, new_upper_bound);
+
+    // When both new bounds are coming from the constraint and are crossing, it
+    // means the constraint bounds where originally crossing too. We arbitrarily
+    // choose one of the bound in this case.
+    //
+    // TODO(user): The code in this file shouldn't create crossing bounds at
+    // any point, so we could decide which bound to use directly on the user
+    // given problem before running any presolve.
+    new_upper_bound = new_lower_bound;
   }
   row_deletion_helper_.MarkRowForDeletion(e.row);
   undo_stack_.push_back(SingletonUndo(SingletonUndo::SINGLETON_ROW, *lp, e,
@@ -2438,7 +2474,9 @@ void SingletonUndo::ZeroCostSingletonColumnUndo(
     const GlopParameters& parameters, const SparseColumn& saved_row,
     ProblemSolution* solution) const {
   // If the variable was fixed, this is easy. Note that this is the only
-  // possible case if the current constraint status is FIXED.
+  // possible case if the current constraint status is FIXED, except if the
+  // variable bounds are small compared to the constraint bounds, like adding
+  // 1e-100 to a fixed == 1 constraint.
   if (variable_upper_bound_ == variable_lower_bound_) {
     solution->primal_values[e_.col] = variable_lower_bound_;
     solution->variable_statuses[e_.col] = VariableStatus::FIXED_VALUE;
@@ -2446,9 +2484,22 @@ void SingletonUndo::ZeroCostSingletonColumnUndo(
   }
 
   const ConstraintStatus ct_status = solution->constraint_statuses[e_.row];
-  DCHECK_NE(ct_status, ConstraintStatus::FIXED_VALUE);
-  if (ct_status == ConstraintStatus::AT_LOWER_BOUND ||
-      ct_status == ConstraintStatus::AT_UPPER_BOUND) {
+  if (ct_status == ConstraintStatus::FIXED_VALUE) {
+    const Fractional corrected_dual = is_maximization_
+                                          ? -solution->dual_values[e_.row]
+                                          : solution->dual_values[e_.row];
+    if (corrected_dual > 0) {
+      DCHECK(IsFinite(variable_lower_bound_));
+      solution->primal_values[e_.col] = variable_lower_bound_;
+      solution->variable_statuses[e_.col] = VariableStatus::AT_LOWER_BOUND;
+    } else {
+      DCHECK(IsFinite(variable_upper_bound_));
+      solution->primal_values[e_.col] = variable_upper_bound_;
+      solution->variable_statuses[e_.col] = VariableStatus::AT_UPPER_BOUND;
+    }
+    return;
+  } else if (ct_status == ConstraintStatus::AT_LOWER_BOUND ||
+             ct_status == ConstraintStatus::AT_UPPER_BOUND) {
     if ((ct_status == ConstraintStatus::AT_UPPER_BOUND && e_.coeff > 0.0) ||
         (ct_status == ConstraintStatus::AT_LOWER_BOUND && e_.coeff < 0.0)) {
       DCHECK(IsFinite(variable_lower_bound_));
@@ -3708,9 +3759,24 @@ bool ShiftVariableBoundsPreprocessor::Run(LinearProgram* lp) {
 
   // Apply the changes to the constraint bound and objective offset.
   for (RowIndex row(0); row < num_rows; ++row) {
+    if (!std::isfinite(row_offsets[row].Value())) {
+      // This can happen for bad input where we get floating point overflow.
+      // We can even get nan if we have two overflow in opposite direction.
+      VLOG(1) << "Shifting variable bounds causes a floating point overflow "
+                 "for constraint "
+              << row << ".";
+      status_ = ProblemStatus::INVALID_PROBLEM;
+      return false;
+    }
     lp->SetConstraintBounds(
         row, lp->constraint_lower_bounds()[row] - row_offsets[row].Value(),
         lp->constraint_upper_bounds()[row] - row_offsets[row].Value());
+  }
+  if (!std::isfinite(objective_offset.Value())) {
+    VLOG(1) << "Shifting variable bounds causes a floating point overflow "
+               "for the objective.";
+    status_ = ProblemStatus::INVALID_PROBLEM;
+    return false;
   }
   lp->SetObjectiveOffset(lp->objective_offset() + objective_offset.Value());
   return true;

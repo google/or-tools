@@ -3953,10 +3953,10 @@ class OppIntExpr : public BaseIntExpr {
  public:
   OppIntExpr(Solver* const s, IntExpr* const e) : BaseIntExpr(s), expr_(e) {}
   ~OppIntExpr() override {}
-  int64_t Min() const override { return (-expr_->Max()); }
-  void SetMin(int64_t m) override { expr_->SetMax(-m); }
-  int64_t Max() const override { return (-expr_->Min()); }
-  void SetMax(int64_t m) override { expr_->SetMin(-m); }
+  int64_t Min() const override { return (CapOpp(expr_->Max())); }
+  void SetMin(int64_t m) override { expr_->SetMax(CapOpp(m)); }
+  int64_t Max() const override { return (CapOpp(expr_->Min())); }
+  void SetMax(int64_t m) override { expr_->SetMin(CapOpp(m)); }
   bool Bound() const override { return (expr_->Bound()); }
   std::string name() const override {
     return absl::StrFormat("(-%s)", expr_->name());
@@ -4323,7 +4323,7 @@ void TimesIntExpr::SetMin(int64_t m) {
 
 void TimesIntExpr::SetMax(int64_t m) {
   if (m != std::numeric_limits<int64_t>::max()) {
-    TimesSetMin(left_, minus_right_, minus_left_, right_, -m);
+    TimesSetMin(left_, minus_right_, minus_left_, right_, CapOpp(m));
   }
 }
 

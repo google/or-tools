@@ -218,7 +218,7 @@ class LiteralWatchers : public SatPropagator {
   // that some learned clause are kept forever (heuristics) and do not appear
   // here.
   bool IsRemovable(SatClause* const clause) const {
-    return gtl::ContainsKey(clauses_info_, clause);
+    return clauses_info_.contains(clause);
   }
   int64_t num_removable_clauses() const { return clauses_info_.size(); }
   absl::flat_hash_map<SatClause*, ClauseInfo>* mutable_clauses_info() {
@@ -734,7 +734,8 @@ class BinaryImplicationGraph : public SatPropagator {
   // if this is called with any sub-clique of the result we will get the same
   // maximal clique.
   std::vector<Literal> ExpandAtMostOne(
-      const absl::Span<const Literal> at_most_one);
+      const absl::Span<const Literal> at_most_one,
+      int64_t max_num_explored_nodes);
 
   // Same as ExpandAtMostOne() but try to maximize the weight in the clique.
   std::vector<Literal> ExpandAtMostOneWithWeight(

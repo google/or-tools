@@ -455,10 +455,10 @@ JAVA_PROJECT := ortools-java-@PROJECT_VERSION@.jar
 java.log: \
  $(JAVA_NATIVE_PROJECT) pom-runtime.xml \
  $(JAVA_PROJECT) pom-local.xml
-	"$(MVN_BIN)" org.apache.maven.plugins:maven-install-plugin:2.5.2:install-file \
--Dfile=$(JAVA_NATIVE_PROJECT) -DpomFile=pom-runtime.xml
-	"$(MVN_BIN)" org.apache.maven.plugins:maven-install-plugin:2.5.2:install-file \
--Dfile=$(JAVA_PROJECT) -DpomFile=pom-local.xml
+	"$(MVN_BIN)" org.apache.maven.plugins:maven-install-plugin:3.0.0-M1:install-file \
+-Dfile=$(JAVA_NATIVE_PROJECT)
+	"$(MVN_BIN)" org.apache.maven.plugins:maven-install-plugin:3.0.0-M1:install-file \
+-Dfile=$(JAVA_PROJECT)
 	@$(TOUCH) $@
 
 .PHONY: detect_java
@@ -486,154 +486,155 @@ dotnet test_dotnet:
 	exit 127
 else
 dotnet:
-	$(MAKE) run SOURCE=examples/dotnet/3_jugs_regular.cs
+	$(MAKE) run SOURCE=examples/dotnet/3_jugs_regular/3_jugs_regular.cs
 # Linear Solver
-	$(MAKE) run SOURCE=examples/dotnet/SimpleLpProgram.cs
-	$(MAKE) run SOURCE=examples/dotnet/SimpleMipProgram.cs
+	$(MAKE) run SOURCE=examples/dotnet/SimpleLpProgram/SimpleLpProgram.cs
+	$(MAKE) run SOURCE=examples/dotnet/SimpleMipProgram/SimpleMipProgram.cs
 # Constraint Solver
-	$(MAKE) run SOURCE=examples/dotnet/Tsp.cs
-	$(MAKE) run SOURCE=examples/dotnet/Vrp.cs
+	$(MAKE) run SOURCE=examples/dotnet/Tsp/Tsp.cs
+	$(MAKE) run SOURCE=examples/dotnet/Vrp/Vrp.cs
 # Sat
-	$(MAKE) run SOURCE=examples/dotnet/NursesSat.cs
-	$(MAKE) run SOURCE=examples/dotnet/JobshopSat.cs
-	$(MAKE) run SOURCE=examples/dotnet/JobshopFt06Sat.cs
-	$(MAKE) run SOURCE=examples/dotnet/GateSchedulingSat.cs
-	$(MAKE) run SOURCE=examples/dotnet/TaskSchedulingSat.cs
+	$(MAKE) run SOURCE=examples/dotnet/NursesSat/NursesSat.cs
+	$(MAKE) run SOURCE=examples/dotnet/JobshopSat/JobshopSat.cs
+	$(MAKE) run SOURCE=examples/dotnet/JobshopFt06Sat/JobshopFt06Sat.cs
+	$(MAKE) run SOURCE=examples/dotnet/GateSchedulingSat/GateSchedulingSat.cs
+	$(MAKE) run SOURCE=examples/dotnet/TaskSchedulingSat/TaskSchedulingSat.cs
 # Misc
-	$(MAKE) run SOURCE=examples/dotnet/cslinearprogramming.cs
-	$(MAKE) run SOURCE=examples/dotnet/csintegerprogramming.cs
-	$(MAKE) run SOURCE=examples/dotnet/assignment.cs
-	$(MAKE) run SOURCE=examples/dotnet/alldifferent_except_0.cs
-	$(MAKE) run SOURCE=examples/dotnet/all_interval.cs
-	$(MAKE) run SOURCE=examples/dotnet/a_puzzle.cs
-	$(MAKE) run SOURCE=examples/dotnet/a_round_of_golf.cs
-	$(MAKE) run SOURCE=examples/dotnet/broken_weights.cs
-	$(MAKE) run SOURCE=examples/dotnet/bus_schedule.cs
-	$(MAKE) run SOURCE=examples/dotnet/circuit2.cs
-	$(MAKE) run SOURCE=examples/dotnet/circuit.cs
-	$(MAKE) run SOURCE=examples/dotnet/coins3.cs
-	$(MAKE) run SOURCE=examples/dotnet/coins_grid.cs ARGS="5 2"
-	$(MAKE) run SOURCE=examples/dotnet/combinatorial_auction2.cs
-	$(MAKE) run SOURCE=examples/dotnet/contiguity_regular.cs
-	$(MAKE) run SOURCE=examples/dotnet/contiguity_transition.cs
-	$(MAKE) run SOURCE=examples/dotnet/costas_array.cs
-	$(MAKE) run SOURCE=examples/dotnet/covering_opl.cs
-	$(MAKE) run SOURCE=examples/dotnet/crew.cs
-	$(MAKE) run SOURCE=examples/dotnet/crossword.cs
-	$(MAKE) run SOURCE=examples/dotnet/crypta.cs
-	$(MAKE) run SOURCE=examples/dotnet/crypto.cs
-	$(MAKE) run SOURCE=examples/dotnet/cscvrptw.cs
-	$(MAKE) run SOURCE=examples/dotnet/csflow.cs
-	$(MAKE) run SOURCE=examples/dotnet/csknapsack.cs
-	$(MAKE) run SOURCE=examples/dotnet/csls_api.cs
-	$(MAKE) run SOURCE=examples/dotnet/csrabbitspheasants.cs
-	$(MAKE) run SOURCE=examples/dotnet/cstsp.cs
-	$(MAKE) run SOURCE=examples/dotnet/curious_set_of_integers.cs
-	$(MAKE) run SOURCE=examples/dotnet/debruijn.cs
-	$(MAKE) run SOURCE=examples/dotnet/csdiet.cs
-	$(MAKE) run SOURCE=examples/dotnet/discrete_tomography.cs
-	$(MAKE) run SOURCE=examples/dotnet/divisible_by_9_through_1.cs
-	$(MAKE) run SOURCE=examples/dotnet/dudeney.cs
-	$(MAKE) run SOURCE=examples/dotnet/einav_puzzle2.cs
-	$(MAKE) run SOURCE=examples/dotnet/eq10.cs
-	$(MAKE) run SOURCE=examples/dotnet/eq20.cs
-	$(MAKE) run SOURCE=examples/dotnet/fill_a_pix.cs
-	$(MAKE) run SOURCE=examples/dotnet/furniture_moving.cs
-	$(MAKE) run SOURCE=examples/dotnet/furniture_moving_intervals.cs
-	$(MAKE) run SOURCE=examples/dotnet/futoshiki.cs
-	$(MAKE) run SOURCE=examples/dotnet/golomb_ruler.cs
-	$(MAKE) run SOURCE=examples/dotnet/grocery.cs
-	$(MAKE) run SOURCE=examples/dotnet/hidato_table.cs
-	$(MAKE) run SOURCE=examples/dotnet/just_forgotten.cs
-	$(MAKE) run SOURCE=examples/dotnet/kakuro.cs
-	$(MAKE) run SOURCE=examples/dotnet/kenken2.cs
-	$(MAKE) run SOURCE=examples/dotnet/killer_sudoku.cs
-	$(MAKE) run SOURCE=examples/dotnet/labeled_dice.cs
-	$(MAKE) run SOURCE=examples/dotnet/langford.cs
-	$(MAKE) run SOURCE=examples/dotnet/least_diff.cs
-	$(MAKE) run SOURCE=examples/dotnet/lectures.cs
-	$(MAKE) run SOURCE=examples/dotnet/magic_sequence.cs
-	$(MAKE) run SOURCE=examples/dotnet/magic_square_and_cards.cs
-	$(MAKE) run SOURCE=examples/dotnet/magic_square.cs
-	$(MAKE) run SOURCE=examples/dotnet/map2.cs
-	$(MAKE) run SOURCE=examples/dotnet/map.cs
-	$(MAKE) run SOURCE=examples/dotnet/marathon2.cs
-	$(MAKE) run SOURCE=examples/dotnet/max_flow_taha.cs
-	$(MAKE) run SOURCE=examples/dotnet/max_flow_winston1.cs
-	$(MAKE) run SOURCE=examples/dotnet/minesweeper.cs
-	$(MAKE) run SOURCE=examples/dotnet/mr_smith.cs
-#	$(MAKE) run SOURCE=examples/dotnet/nontransitive_dice.cs # too long
-	$(MAKE) run SOURCE=examples/dotnet/nqueens.cs
-	$(MAKE) run SOURCE=examples/dotnet/nurse_rostering_regular.cs
-	$(MAKE) run SOURCE=examples/dotnet/nurse_rostering_transition.cs
-	$(MAKE) run SOURCE=examples/dotnet/olympic.cs
-	$(MAKE) run SOURCE=examples/dotnet/organize_day.cs
-	$(MAKE) run SOURCE=examples/dotnet/organize_day_intervals.cs
-	$(MAKE) run SOURCE=examples/dotnet/pandigital_numbers.cs
-#	$(MAKE) run SOURCE=examples/dotnet/partition.cs # too long
-	$(MAKE) run SOURCE=examples/dotnet/perfect_square_sequence.cs
-	$(MAKE) run SOURCE=examples/dotnet/photo_problem.cs
-	$(MAKE) run SOURCE=examples/dotnet/place_number_puzzle.cs
-	$(MAKE) run SOURCE=examples/dotnet/p_median.cs
-	$(MAKE) run SOURCE=examples/dotnet/post_office_problem2.cs
-	$(MAKE) run SOURCE=examples/dotnet/quasigroup_completion.cs
-	$(MAKE) run SOURCE=examples/dotnet/regex.cs
-	$(MAKE) run SOURCE=examples/dotnet/rogo2.cs
-	$(MAKE) run SOURCE=examples/dotnet/scheduling_speakers.cs
-	$(MAKE) run SOURCE=examples/dotnet/secret_santa2.cs
-#	$(MAKE) run SOURCE=examples/dotnet/secret_santa.cs # too long
-	$(MAKE) run SOURCE=examples/dotnet/send_more_money2.cs
-	$(MAKE) run SOURCE=examples/dotnet/send_more_money.cs
-	$(MAKE) run SOURCE=examples/dotnet/send_most_money.cs
-	$(MAKE) run SOURCE=examples/dotnet/seseman.cs
-	$(MAKE) run SOURCE=examples/dotnet/set_covering2.cs
-	$(MAKE) run SOURCE=examples/dotnet/set_covering3.cs
-	$(MAKE) run SOURCE=examples/dotnet/set_covering4.cs
-	$(MAKE) run SOURCE=examples/dotnet/set_covering.cs
-	$(MAKE) run SOURCE=examples/dotnet/set_covering_deployment.cs
-	$(MAKE) run SOURCE=examples/dotnet/set_covering_skiena.cs
-	$(MAKE) run SOURCE=examples/dotnet/set_partition.cs
-	$(MAKE) run SOURCE=examples/dotnet/sicherman_dice.cs
-	$(MAKE) run SOURCE=examples/dotnet/ski_assignment.cs
-	$(MAKE) run SOURCE=examples/dotnet/stable_marriage.cs
-	$(MAKE) run SOURCE=examples/dotnet/strimko2.cs
-	$(MAKE) run SOURCE=examples/dotnet/subset_sum.cs
-	$(MAKE) run SOURCE=examples/dotnet/sudoku.cs
-	$(MAKE) run SOURCE=examples/dotnet/survo_puzzle.cs
-	$(MAKE) run SOURCE=examples/dotnet/to_num.cs
-	$(MAKE) run SOURCE=examples/dotnet/traffic_lights.cs
-	$(MAKE) run SOURCE=examples/dotnet/volsay.cs
-	$(MAKE) run SOURCE=examples/dotnet/volsay2.cs
-	$(MAKE) run SOURCE=examples/dotnet/volsay3.cs
-	$(MAKE) run SOURCE=examples/dotnet/wedding_optimal_chart.cs
-	$(MAKE) run SOURCE=examples/dotnet/who_killed_agatha.cs
-	$(MAKE) run SOURCE=examples/dotnet/xkcd.cs
-	$(MAKE) run SOURCE=examples/dotnet/young_tableaux.cs
-	$(MAKE) run SOURCE=examples/dotnet/zebra.cs
-	$(MAKE) run SOURCE=examples/dotnet/fsintegerprogramming.fs
-	$(MAKE) run SOURCE=examples/dotnet/fslinearprogramming.fs
-	$(MAKE) run SOURCE=examples/dotnet/fsdiet.fs
-	$(MAKE) run SOURCE=examples/dotnet/fsequality.fs
-	$(MAKE) run SOURCE=examples/dotnet/fsequality-inequality.fs
-	$(MAKE) run SOURCE=examples/dotnet/fsinteger-linear-program.fs
-	$(MAKE) run SOURCE=examples/dotnet/fsknapsack.fs
-	$(MAKE) run SOURCE=examples/dotnet/fsnetwork-max-flow.fs
-	$(MAKE) run SOURCE=examples/dotnet/fsnetwork-max-flow-lpSolve.fs
-	$(MAKE) run SOURCE=examples/dotnet/fsnetwork-min-cost-flow.fs
-	$(MAKE) run SOURCE=examples/dotnet/fsProgram.fs
-	$(MAKE) run SOURCE=examples/dotnet/fsrabbit-pheasant.fs
-	$(MAKE) run SOURCE=examples/dotnet/fsvolsay3.fs
-	$(MAKE) run SOURCE=examples/dotnet/fsvolsay3-lpSolve.fs
-	$(MAKE) run SOURCE=examples/dotnet/fsvolsay.fs
-#	$(MAKE) run SOURCE=examples/dotnet/word_square.cs # depends on /usr/share/dict/words
+	$(MAKE) run SOURCE=examples/dotnet/cslinearprogramming/cslinearprogramming.cs
+	$(MAKE) run SOURCE=examples/dotnet/csintegerprogramming/csintegerprogramming.cs
+	$(MAKE) run SOURCE=examples/dotnet/assignment/assignment.cs
+	$(MAKE) run SOURCE=examples/dotnet/alldifferent_except_0/alldifferent_except_0.cs
+	$(MAKE) run SOURCE=examples/dotnet/all_interval/all_interval.cs
+	$(MAKE) run SOURCE=examples/dotnet/a_puzzle/a_puzzle.cs
+	$(MAKE) run SOURCE=examples/dotnet/a_round_of_golf/a_round_of_golf.cs
+	$(MAKE) run SOURCE=examples/dotnet/broken_weights/broken_weights.cs
+	$(MAKE) run SOURCE=examples/dotnet/bus_schedule/bus_schedule.cs
+	$(MAKE) run SOURCE=examples/dotnet/circuit2/circuit2.cs
+	$(MAKE) run SOURCE=examples/dotnet/circuit/circuit.cs
+	$(MAKE) run SOURCE=examples/dotnet/coins3/coins3.cs
+	$(MAKE) run SOURCE=examples/dotnet/coins_grid/coins_grid.cs ARGS="5 2"
+	$(MAKE) run SOURCE=examples/dotnet/combinatorial_auction2/combinatorial_auction2.cs
+	$(MAKE) run SOURCE=examples/dotnet/contiguity_regular/contiguity_regular.cs
+	$(MAKE) run SOURCE=examples/dotnet/contiguity_transition/contiguity_transition.cs
+	$(MAKE) run SOURCE=examples/dotnet/costas_array/costas_array.cs
+	$(MAKE) run SOURCE=examples/dotnet/covering_opl/covering_opl.cs
+	$(MAKE) run SOURCE=examples/dotnet/crew/crew.cs
+	$(MAKE) run SOURCE=examples/dotnet/crossword/crossword.cs
+	$(MAKE) run SOURCE=examples/dotnet/crypta/crypta.cs
+	$(MAKE) run SOURCE=examples/dotnet/crypto/crypto.cs
+	$(MAKE) run SOURCE=examples/dotnet/cscvrptw/cscvrptw.cs
+	$(MAKE) run SOURCE=examples/dotnet/csflow/csflow.cs
+	$(MAKE) run SOURCE=examples/dotnet/csknapsack/csknapsack.cs
+	$(MAKE) run SOURCE=examples/dotnet/csls_api/csls_api.cs
+	$(MAKE) run SOURCE=examples/dotnet/csrabbitspheasants/csrabbitspheasants.cs
+	$(MAKE) run SOURCE=examples/dotnet/cstsp/cstsp.cs
+	$(MAKE) run SOURCE=examples/dotnet/curious_set_of_integers/curious_set_of_integers.cs
+	$(MAKE) run SOURCE=examples/dotnet/debruijn/debruijn.cs
+	$(MAKE) run SOURCE=examples/dotnet/csdiet/csdiet.cs
+	$(MAKE) run SOURCE=examples/dotnet/discrete_tomography/discrete_tomography.cs
+	$(MAKE) run SOURCE=examples/dotnet/divisible_by_9_through_1/divisible_by_9_through_1.cs
+	$(MAKE) run SOURCE=examples/dotnet/dudeney/dudeney.cs
+	$(MAKE) run SOURCE=examples/dotnet/einav_puzzle2/einav_puzzle2.cs
+	$(MAKE) run SOURCE=examples/dotnet/eq10/eq10.cs
+	$(MAKE) run SOURCE=examples/dotnet/eq20/eq20.cs
+	$(MAKE) run SOURCE=examples/dotnet/fill_a_pix/fill_a_pix.cs
+	$(MAKE) run SOURCE=examples/dotnet/furniture_moving/furniture_moving.cs
+	$(MAKE) run SOURCE=examples/dotnet/furniture_moving_intervals/furniture_moving_intervals.cs
+	$(MAKE) run SOURCE=examples/dotnet/futoshiki/futoshiki.cs
+	$(MAKE) run SOURCE=examples/dotnet/golomb_ruler/golomb_ruler.cs
+	$(MAKE) run SOURCE=examples/dotnet/grocery/grocery.cs
+	$(MAKE) run SOURCE=examples/dotnet/hidato_table/hidato_table.cs
+	$(MAKE) run SOURCE=examples/dotnet/just_forgotten/just_forgotten.cs
+	$(MAKE) run SOURCE=examples/dotnet/kakuro/kakuro.cs
+	$(MAKE) run SOURCE=examples/dotnet/kenken2/kenken2.cs
+	$(MAKE) run SOURCE=examples/dotnet/killer_sudoku/killer_sudoku.cs
+	$(MAKE) run SOURCE=examples/dotnet/labeled_dice/labeled_dice.cs
+	$(MAKE) run SOURCE=examples/dotnet/langford/langford.cs
+	$(MAKE) run SOURCE=examples/dotnet/least_diff/least_diff.cs
+	$(MAKE) run SOURCE=examples/dotnet/lectures/lectures.cs
+	$(MAKE) run SOURCE=examples/dotnet/magic_sequence/magic_sequence.cs
+	$(MAKE) run SOURCE=examples/dotnet/magic_square_and_cards/magic_square_and_cards.cs
+	$(MAKE) run SOURCE=examples/dotnet/magic_square/magic_square.cs
+	$(MAKE) run SOURCE=examples/dotnet/map2/map2.cs
+	$(MAKE) run SOURCE=examples/dotnet/map/map.cs
+	$(MAKE) run SOURCE=examples/dotnet/marathon2/marathon2.cs
+	$(MAKE) run SOURCE=examples/dotnet/max_flow_taha/max_flow_taha.cs
+	$(MAKE) run SOURCE=examples/dotnet/max_flow_winston1/max_flow_winston1.cs
+	$(MAKE) run SOURCE=examples/dotnet/minesweeper/minesweeper.cs
+	$(MAKE) run SOURCE=examples/dotnet/mr_smith/mr_smith.cs
+#	$(MAKE) run SOURCE=examples/dotnet/nontransitive_dice/nontransitive_dice.cs # too long
+	$(MAKE) run SOURCE=examples/dotnet/nqueens/nqueens.cs
+	$(MAKE) run SOURCE=examples/dotnet/nurse_rostering_regular/nurse_rostering_regular.cs
+	$(MAKE) run SOURCE=examples/dotnet/nurse_rostering_transition/nurse_rostering_transition.cs
+	$(MAKE) run SOURCE=examples/dotnet/olympic/olympic.cs
+	$(MAKE) run SOURCE=examples/dotnet/organize_day/organize_day.cs
+	$(MAKE) run SOURCE=examples/dotnet/organize_day_intervals/organize_day_intervals.cs
+	$(MAKE) run SOURCE=examples/dotnet/pandigital_numbers/pandigital_numbers.cs
+#	$(MAKE) run SOURCE=examples/dotnet/partition/partition.cs # too long
+	$(MAKE) run SOURCE=examples/dotnet/perfect_square_sequence/perfect_square_sequence.cs
+	$(MAKE) run SOURCE=examples/dotnet/photo_problem/photo_problem.cs
+	$(MAKE) run SOURCE=examples/dotnet/place_number_puzzle/place_number_puzzle.cs
+	$(MAKE) run SOURCE=examples/dotnet/p_median/p_median.cs
+	$(MAKE) run SOURCE=examples/dotnet/post_office_problem2/post_office_problem2.cs
+	$(MAKE) run SOURCE=examples/dotnet/quasigroup_completion/quasigroup_completion.cs
+	$(MAKE) run SOURCE=examples/dotnet/regex/regex.cs
+	$(MAKE) run SOURCE=examples/dotnet/rogo2/rogo2.cs
+	$(MAKE) run SOURCE=examples/dotnet/scheduling_speakers/scheduling_speakers.cs
+	$(MAKE) run SOURCE=examples/dotnet/secret_santa2/secret_santa2.cs
+#	$(MAKE) run SOURCE=examples/dotnet/secret_santa/secret_santa.cs # too long
+	$(MAKE) run SOURCE=examples/dotnet/send_more_money2/send_more_money2.cs
+	$(MAKE) run SOURCE=examples/dotnet/send_more_money/send_more_money.cs
+	$(MAKE) run SOURCE=examples/dotnet/send_most_money/send_most_money.cs
+	$(MAKE) run SOURCE=examples/dotnet/seseman/seseman.cs
+	$(MAKE) run SOURCE=examples/dotnet/set_covering2/set_covering2.cs
+	$(MAKE) run SOURCE=examples/dotnet/set_covering3/set_covering3.cs
+	$(MAKE) run SOURCE=examples/dotnet/set_covering4/set_covering4.cs
+	$(MAKE) run SOURCE=examples/dotnet/set_covering/set_covering.cs
+	$(MAKE) run SOURCE=examples/dotnet/set_covering_deployment/set_covering_deployment.cs
+	$(MAKE) run SOURCE=examples/dotnet/set_covering_skiena/set_covering_skiena.cs
+	$(MAKE) run SOURCE=examples/dotnet/set_partition/set_partition.cs
+	$(MAKE) run SOURCE=examples/dotnet/sicherman_dice/sicherman_dice.cs
+	$(MAKE) run SOURCE=examples/dotnet/ski_assignment/ski_assignment.cs
+	$(MAKE) run SOURCE=examples/dotnet/stable_marriage/stable_marriage.cs
+	$(MAKE) run SOURCE=examples/dotnet/strimko2/strimko2.cs
+	$(MAKE) run SOURCE=examples/dotnet/subset_sum/subset_sum.cs
+	$(MAKE) run SOURCE=examples/dotnet/sudoku/sudoku.cs
+	$(MAKE) run SOURCE=examples/dotnet/survo_puzzle/survo_puzzle.cs
+	$(MAKE) run SOURCE=examples/dotnet/to_num/to_num.cs
+	$(MAKE) run SOURCE=examples/dotnet/traffic_lights/traffic_lights.cs
+	$(MAKE) run SOURCE=examples/dotnet/volsay/volsay.cs
+	$(MAKE) run SOURCE=examples/dotnet/volsay2/volsay2.cs
+	$(MAKE) run SOURCE=examples/dotnet/volsay3/volsay3.cs
+	$(MAKE) run SOURCE=examples/dotnet/wedding_optimal_chart/wedding_optimal_chart.cs
+	$(MAKE) run SOURCE=examples/dotnet/who_killed_agatha/who_killed_agatha.cs
+	$(MAKE) run SOURCE=examples/dotnet/xkcd/xkcd.cs
+	$(MAKE) run SOURCE=examples/dotnet/young_tableaux/young_tableaux.cs
+	$(MAKE) run SOURCE=examples/dotnet/zebra/zebra.cs
+	$(MAKE) run SOURCE=examples/dotnet/fsintegerprogramming/fsintegerprogramming.fs
+	$(MAKE) run SOURCE=examples/dotnet/fslinearprogramming/fslinearprogramming.fs
+	$(MAKE) run SOURCE=examples/dotnet/fsdiet/fsdiet.fs
+	$(MAKE) run SOURCE=examples/dotnet/fsequality/fsequality.fs
+	$(MAKE) run SOURCE=examples/dotnet/fsequality-inequality/fsequality-inequality.fs
+	$(MAKE) run SOURCE=examples/dotnet/fsinteger-linear-program/fsinteger-linear-program.fs
+	$(MAKE) run SOURCE=examples/dotnet/fsknapsack/fsknapsack.fs
+	$(MAKE) run SOURCE=examples/dotnet/fsnetwork-max-flow/fsnetwork-max-flow.fs
+	$(MAKE) run SOURCE=examples/dotnet/fsnetwork-max-flow-lpSolve/fsnetwork-max-flow-lpSolve.fs
+	$(MAKE) run SOURCE=examples/dotnet/fsnetwork-min-cost-flow/fsnetwork-min-cost-flow.fs
+	$(MAKE) run SOURCE=examples/dotnet/fsProgram/fsProgram.fs
+	$(MAKE) run SOURCE=examples/dotnet/fsrabbit-pheasant/fsrabbit-pheasant.fs
+	$(MAKE) run SOURCE=examples/dotnet/fsvolsay3/fsvolsay3.fs
+	$(MAKE) run SOURCE=examples/dotnet/fsvolsay3-lpSolve/fsvolsay3-lpSolve.fs
+	$(MAKE) run SOURCE=examples/dotnet/fsvolsay/fsvolsay.fs
+#	$(MAKE) run SOURCE=examples/dotnet/word_square/word_square.cs # depends on /usr/share/dict/words
 
 test_dotnet: detect_dotnet
-	$(MAKE) run SOURCE=examples/dotnet/SimpleLpProgram.cs
-	$(MAKE) run SOURCE=examples/dotnet/SimpleMipProgram.cs
-	$(MAKE) run SOURCE=examples/dotnet/Tsp.cs
-	$(MAKE) run SOURCE=examples/dotnet/Vrp.cs
-	$(MAKE) run SOURCE=examples/dotnet/JobshopSat.cs
-	$(MAKE) run SOURCE=examples/dotnet/NursesSat.cs
+	$(MAKE) run SOURCE=examples/dotnet/SimpleLpProgram/SimpleLpProgram.cs
+	$(MAKE) run SOURCE=examples/dotnet/SimpleMipProgram/SimpleMipProgram.cs
+	$(MAKE) run SOURCE=examples/dotnet/Tsp/Tsp.cs
+	$(MAKE) run SOURCE=examples/dotnet/Vrp/Vrp.cs
+	$(MAKE) run SOURCE=examples/dotnet/JobshopSat/JobshopSat.cs
+	$(MAKE) run SOURCE=examples/dotnet/NursesSat/NursesSat.cs
+	$(MAKE) run SOURCE=examples/dotnet/fsProgram/fsProgram.fs
 
 ###################
 ##  .NET SOURCE  ##
@@ -650,7 +651,7 @@ build: $(SOURCE) $(SOURCE)proj
 
 .PHONY: run # Run a .Net C# program.
 run: build
-	"$(DOTNET_BIN)" run --no-build --project $(SOURCE_PATH)proj -- $(ARGS)
+	"$(DOTNET_BIN)" run --no-build --framework net6.0 --project $(SOURCE_PATH)proj -- $(ARGS)
 endif # ifeq ($(SOURCE_SUFFIX),.cs)
 
 # .Net F#
@@ -665,7 +666,7 @@ build: $(SOURCE) $(SOURCE)proj
 
 .PHONY: run # Run a .Net F# program.
 run: build
-	"$(DOTNET_BIN)" run --no-build --project $(SOURCE_PATH)proj -- $(ARGS)
+	"$(DOTNET_BIN)" run --no-build --framework net6.0 --project $(SOURCE_PATH)proj -- $(ARGS)
 endif # ifeq ($(SOURCE_SUFFIX),.fs)
 
 endif # ifndef DOTNET_BIN

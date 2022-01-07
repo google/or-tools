@@ -171,6 +171,8 @@ list(APPEND CMAKE_SWIG_FLAGS ${FLAGS} "-I${PROJECT_SOURCE_DIR}")
 
 set(PYTHON_PROJECT ${PROJECT_NAME})
 message(STATUS "Python project: ${PYTHON_PROJECT}")
+set(PYTHON_PROJECT_DIR ${PROJECT_BINARY_DIR}/python/${PYTHON_PROJECT})
+message(STATUS "Python project build path: ${PYTHON_PROJECT_DIR}")
 
 # Swig wrap all libraries
 foreach(SUBPROJECT IN ITEMS init algorithms graph linear_solver constraint_solver sat scheduling util)
@@ -180,30 +182,27 @@ endforeach()
 #######################
 ## Python Packaging  ##
 #######################
-set(PYTHON_PROJECT_PATH ${PROJECT_BINARY_DIR}/python/${PYTHON_PROJECT})
-message(STATUS "Python project build path: ${PYTHON_PROJECT_PATH}")
-
 #file(MAKE_DIRECTORY python/${PYTHON_PROJECT})
-file(GENERATE OUTPUT ${PYTHON_PROJECT_PATH}/__init__.py CONTENT "__version__ = \"${PROJECT_VERSION}\"\n")
-file(GENERATE OUTPUT ${PYTHON_PROJECT_PATH}/init/__init__.py CONTENT "")
-file(GENERATE OUTPUT ${PYTHON_PROJECT_PATH}/algorithms/__init__.py CONTENT "")
-file(GENERATE OUTPUT ${PYTHON_PROJECT_PATH}/graph/__init__.py CONTENT "")
-file(GENERATE OUTPUT ${PYTHON_PROJECT_PATH}/linear_solver/__init__.py CONTENT "")
-file(GENERATE OUTPUT ${PYTHON_PROJECT_PATH}/constraint_solver/__init__.py CONTENT "")
-file(GENERATE OUTPUT ${PYTHON_PROJECT_PATH}/packing/__init__.py CONTENT "")
-file(GENERATE OUTPUT ${PYTHON_PROJECT_PATH}/sat/__init__.py CONTENT "")
-file(GENERATE OUTPUT ${PYTHON_PROJECT_PATH}/sat/python/__init__.py CONTENT "")
-file(GENERATE OUTPUT ${PYTHON_PROJECT_PATH}/scheduling/__init__.py CONTENT "")
-file(GENERATE OUTPUT ${PYTHON_PROJECT_PATH}/util/__init__.py CONTENT "")
+file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/__init__.py CONTENT "__version__ = \"${PROJECT_VERSION}\"\n")
+file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/init/__init__.py CONTENT "")
+file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/algorithms/__init__.py CONTENT "")
+file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/graph/__init__.py CONTENT "")
+file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/linear_solver/__init__.py CONTENT "")
+file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/constraint_solver/__init__.py CONTENT "")
+file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/packing/__init__.py CONTENT "")
+file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/sat/__init__.py CONTENT "")
+file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/sat/python/__init__.py CONTENT "")
+file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/scheduling/__init__.py CONTENT "")
+file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/util/__init__.py CONTENT "")
 
 file(COPY
   ortools/linear_solver/linear_solver_natural_api.py
-  DESTINATION ${PYTHON_PROJECT_PATH}/linear_solver)
+  DESTINATION ${PYTHON_PROJECT_DIR}/linear_solver)
 file(COPY
   ortools/sat/python/cp_model.py
   ortools/sat/python/cp_model_helper.py
   ortools/sat/python/visualization.py
-  DESTINATION ${PYTHON_PROJECT_PATH}/sat/python)
+  DESTINATION ${PYTHON_PROJECT_DIR}/sat/python)
 
 # setup.py.in contains cmake variable e.g. @PYTHON_PROJECT@ and
 # generator expression e.g. $<TARGET_FILE_NAME:pyFoo>
@@ -300,7 +299,7 @@ if(BUILD_TESTING)
   add_custom_command(TARGET python_package POST_BUILD
     # Clean previous install otherwise pip install may do nothing
     COMMAND ${CMAKE_COMMAND} -E remove_directory ${VENV_DIR}
-    COMMAND ${VENV_EXECUTABLE} -p ${Python3_EXECUTABLE} ${VENV_DIR}
+    COMMAND ${VENV_EXECUTABLE} -p ${Python3_EXECUTABLE} --system-site-packages ${VENV_DIR}
     #COMMAND ${VENV_EXECUTABLE} ${VENV_DIR}
     # Must NOT call it in a folder containing the setup.py otherwise pip call it
     # (i.e. "python setup.py bdist") while we want to consume the wheel package
@@ -347,6 +346,9 @@ function(add_python_test FILE_NAME)
   message(STATUS "Configuring test ${FILE_NAME} done")
 endfunction()
 
+#####################
+##  Python Sample  ##
+#####################
 # add_python_sample()
 # CMake function to generate and build python sample.
 # Parameters:
@@ -369,6 +371,9 @@ function(add_python_sample FILE_NAME)
   message(STATUS "Configuring sample ${FILE_NAME} done")
 endfunction()
 
+######################
+##  Python Example  ##
+######################
 # add_python_example()
 # CMake function to generate and build python example.
 # Parameters:

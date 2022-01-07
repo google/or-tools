@@ -31,32 +31,45 @@ http_archive(
 # Protobuf
 git_repository(
     name = "com_google_protobuf",
-    commit = "89b14b1",  # release v3.18.0
+    commit = "7c40b2d",  # release v3.19.1
     remote = "https://github.com/protocolbuffers/protobuf.git",
 )
-
-load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
-
 # Load common dependencies.
+load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
 protobuf_deps()
 
 git_repository(
     name = "com_google_absl",
-    commit = "278e0a0", # release 20210324.2
+    commit = "2151058", # release 20211102.0
     remote = "https://github.com/abseil/abseil-cpp.git",
+)
+
+# Bazel platform rules.
+http_archive(
+    name = "platforms",
+    sha256 = "b601beaf841244de5c5a50d2b2eddd34839788000fa1be4260ce6603ca0d8eb7",
+    strip_prefix = "platforms-98939346da932eef0b54cf808622f5bb0928f00b",
+    urls = ["https://github.com/bazelbuild/platforms/archive/98939346da932eef0b54cf808622f5bb0928f00b.zip"],
+)
+
+git_repository(
+    name = "com_google_re2",
+    patches = ["//bazel:re2.patch"],
+    commit = "0dade9f", # release 2021-11-01
+    remote = "https://github.com/google/re2.git",
 )
 
 git_repository(
     name = "com_google_googletest",
-    commit = "703bd9c", # release-1.10.0
+    commit = "e2239ee", # release-1.11.0
     remote = "https://github.com/google/googletest.git",
 )
 
 http_archive(
     name = "glpk",
     build_file = "//bazel:glpk.BUILD",
-    sha256 = "4281e29b628864dfe48d393a7bedd781e5b475387c20d8b0158f329994721a10",
-    url = "http://ftp.gnu.org/gnu/glpk/glpk-4.65.tar.gz",
+    sha256 = "4a1013eebb50f728fc601bdd833b0b2870333c3b3e5a816eeba921d95bec6f15",
+    url = "http://ftp.gnu.org/gnu/glpk/glpk-5.0.tar.gz",
 )
 
 http_archive(

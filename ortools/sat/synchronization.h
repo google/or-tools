@@ -48,7 +48,7 @@ class SharedSolutionRepository {
  public:
   explicit SharedSolutionRepository(int num_solutions_to_keep)
       : num_solutions_to_keep_(num_solutions_to_keep) {
-    CHECK_GE(num_solutions_to_keep_, 1);
+    CHECK_GE(num_solutions_to_keep_, 0);
   }
 
   // The solution format used by this class.
@@ -197,14 +197,19 @@ class SharedResponseManager {
   // to the AddSolutionCallback() will not call them.
   CpSolverResponse GetResponse(bool full_response = true);
 
+  // These will be called in REVERSE order on any feasible solution returned
+  // to the user.
+  void AddSolutionPostprocessor(
+      std::function<void(std::vector<int64_t>*)> postprocessor);
+
   // These "postprocessing" steps will be applied in REVERSE order of
   // registration to all solution passed to the callbacks.
-  void AddSolutionPostprocessor(
+  void AddResponsePostprocessor(
       std::function<void(CpSolverResponse*)> postprocessor);
 
   // These "postprocessing" steps will only be applied after the others to the
   // solution returned by GetResponse().
-  void AddFinalSolutionPostprocessor(
+  void AddFinalResponsePostprocessor(
       std::function<void(CpSolverResponse*)> postprocessor);
 
   // Adds a callback that will be called on each new solution (for
@@ -242,23 +247,23 @@ class SharedResponseManager {
   // particular instance. Or to evaluate how efficient our LNS code is improving
   // solution.
   //
-  // Note: The integral will start counting on the first UpdatePrimalIntegral()
+  // Note: The integral will start counting on the first UpdateGapIntegral()
   // call, since before the difference is assumed to be zero.
   //
   // Important: To report a proper deterministic integral, we only update it
-  // on UpdatePrimalIntegral() which should be called in the main subsolver
+  // on UpdateGapIntegral() which should be called in the main subsolver
   // synchronization loop.
   //
   // Note(user): In the litterature, people use the relative gap to the optimal
   // solution (or the best known one), but this is ill defined in many case
   // (like if the optimal cost is zero), so I prefer this version.
-  double PrimalIntegral() const;
-  void UpdatePrimalIntegral();
+  double GapIntegral() const;
+  void UpdateGapIntegral();
 
   // Sets this to true to have the "real" but non-deterministic primal integral.
   // If this is true, then there is no need to manually call
-  // UpdatePrimalIntegral() but it is not an issue to do so.
-  void SetUpdatePrimalIntegralOnEachChange(bool set);
+  // UpdateGapIntegral() but it is not an issue to do so.
+  void SetUpdateGapIntegralOnEachChange(bool set);
 
   // Updates the inner objective bounds.
   void UpdateInnerObjectiveBounds(const std::string& update_info,
@@ -272,7 +277,6 @@ class SharedResponseManager {
   // might want a tighter API:
   //  - solution_info
   //  - solution
-  //  - solution_lower_bounds and solution_upper_bounds.
   void NewSolution(const CpSolverResponse& response, Model* model);
 
   // Changes the solution to reflect the fact that the "improving" problem is
@@ -323,6 +327,8 @@ class SharedResponseManager {
   // Display improvement stats.
   void DisplayImprovementStatistics();
 
+  void LogMessage(std::string message);
+
   // This is here for the few codepath that needs to modify the returned
   // response directly. Note that this do not work in parallel.
   //
@@ -338,14 +344,17 @@ class SharedResponseManager {
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
   void SetStatsFromModelInternal(Model* model)
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
-  void UpdatePrimalIntegralInternal() ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+  void UpdateGapIntegralInternal() ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
   void RegisterSolutionFound(const std::string& improvement_info)
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
   void RegisterObjectiveBoundImprovement(const std::string& improvement_info)
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
-  const bool enumerate_all_solutions_;
+  // Generates a response for callbacks and GetResponse().
+  CpSolverResponse GetResponseInternal() ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+
+  const SatParameters& parameters_;
   const WallTimer& wall_timer_;
   ModelSharedTimeLimit* shared_time_limit_;
   CpObjectiveProto const* objective_or_null_ = nullptr;
@@ -373,14 +382,16 @@ class SharedResponseManager {
       mutex_) = IntegerValue(std::numeric_limits<int64_t>::max());
 
   bool update_integral_on_each_change_ ABSL_GUARDED_BY(mutex_) = false;
-  double primal_integral_ ABSL_GUARDED_BY(mutex_) = 0.0;
+  double gap_integral_ ABSL_GUARDED_BY(mutex_) = 0.0;
   double last_absolute_gap_ ABSL_GUARDED_BY(mutex_) = 0.0;
-  double last_primal_integral_time_stamp_ ABSL_GUARDED_BY(mutex_) = 0.0;
+  double last_gap_integral_time_stamp_ ABSL_GUARDED_BY(mutex_) = 0.0;
 
   int next_callback_id_ ABSL_GUARDED_BY(mutex_) = 0;
   std::vector<std::pair<int, std::function<void(const CpSolverResponse&)>>>
       callbacks_ ABSL_GUARDED_BY(mutex_);
 
+  std::vector<std::function<void(std::vector<int64_t>*)>>
+      solution_postprocessors_ ABSL_GUARDED_BY(mutex_);
   std::vector<std::function<void(CpSolverResponse*)>> postprocessors_
       ABSL_GUARDED_BY(mutex_);
   std::vector<std::function<void(CpSolverResponse*)>> final_postprocessors_
@@ -410,6 +421,16 @@ class SharedBoundsManager {
                                 const std::vector<int>& variables,
                                 const std::vector<int64_t>& new_lower_bounds,
                                 const std::vector<int64_t>& new_upper_bounds);
+
+  // If we solved a small independent component of the full problem, then we can
+  // in most situation fix the solution on this subspace.
+  //
+  // Note that because there can be more than one optimal solution on an
+  // independent subproblem, it is important to do that in a locked fashion, and
+  // reject future incompatible fixing.
+  void FixVariablesFromPartialSolution(
+      const std::vector<int64_t>& solution,
+      const std::vector<int>& variables_to_fix);
 
   // Returns a new id to be used in GetChangedBounds(). This is just an ever
   // increasing sequence starting from zero. Note that the class is not designed
@@ -504,6 +525,7 @@ SharedSolutionRepository<ValueType>::GetRandomBiasedSolution(
 
 template <typename ValueType>
 void SharedSolutionRepository<ValueType>::Add(const Solution& solution) {
+  if (num_solutions_to_keep_ == 0) return;
   absl::MutexLock mutex_lock(&mutex_);
   AddInternal(solution);
 }
@@ -529,6 +551,8 @@ void SharedSolutionRepository<ValueType>::AddInternal(
 template <typename ValueType>
 void SharedSolutionRepository<ValueType>::Synchronize() {
   absl::MutexLock mutex_lock(&mutex_);
+  if (new_solutions_.empty()) return;
+
   solutions_.insert(solutions_.end(), new_solutions_.begin(),
                     new_solutions_.end());
   new_solutions_.clear();
@@ -541,6 +565,14 @@ void SharedSolutionRepository<ValueType>::Synchronize() {
   if (solutions_.size() > num_solutions_to_keep_) {
     solutions_.resize(num_solutions_to_keep_);
   }
+
+  if (!solutions_.empty()) {
+    VLOG(2) << "Solution pool update:"
+            << " num_solutions=" << solutions_.size()
+            << " min_rank=" << solutions_[0].rank
+            << " max_rank=" << solutions_.back().rank;
+  }
+
   num_synchronization_++;
 }
 

@@ -11,7 +11,7 @@ var searchData=
   ['helper_5f_8',['helper_',['../classoperations__research_1_1sat_1_1_neighborhood_generator.html#acbd503b89d1dc3dd85dfa9e0e5058472',1,'operations_research::sat::NeighborhoodGenerator']]],
   ['heuristic_5fnum_5ffailures_5flimit_9',['heuristic_num_failures_limit',['../structoperations__research_1_1_default_phase_parameters.html#a0e6d02b76d3e83bde2a02798e4e7a0a9',1,'operations_research::DefaultPhaseParameters']]],
   ['heuristic_5fperiod_10',['heuristic_period',['../structoperations__research_1_1_default_phase_parameters.html#ac452a91363eef95dc8b527628d122c55',1,'operations_research::DefaultPhaseParameters']]],
-  ['hint_5fsearch_11',['HINT_SEARCH',['../classoperations__research_1_1sat_1_1_sat_parameters.html#ad443a9789397f553a38f9d27f85195c0',1,'operations_research::sat::SatParameters']]],
-  ['hint_5fsearch_12',['hint_search',['../structoperations__research_1_1sat_1_1_search_heuristics.html#a3ef187fb1a44e4df4e66c2a59304000e',1,'operations_research::sat::SearchHeuristics']]],
+  ['hint_5fsearch_11',['hint_search',['../structoperations__research_1_1sat_1_1_search_heuristics.html#a3ef187fb1a44e4df4e66c2a59304000e',1,'operations_research::sat::SearchHeuristics']]],
+  ['hint_5fsearch_12',['HINT_SEARCH',['../classoperations__research_1_1sat_1_1_sat_parameters.html#ad443a9789397f553a38f9d27f85195c0',1,'operations_research::sat::SatParameters']]],
   ['holes_5f_13',['holes_',['../constraint__solver_2table_8cc.html#a9ea6e0a7e183dca3a31ee9e998d8b4df',1,'table.cc']]]
 ];

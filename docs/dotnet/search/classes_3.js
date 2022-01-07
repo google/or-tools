@@ -10,7 +10,7 @@ var searchData=
   ['demon_7',['Demon',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Demon.html',1,'Google::OrTools::ConstraintSolver']]],
   ['densematrixproto_8',['DenseMatrixProto',['../classGoogle_1_1OrTools_1_1Sat_1_1DenseMatrixProto.html',1,'Google::OrTools::Sat']]],
   ['disjunctiveconstraint_9',['DisjunctiveConstraint',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DisjunctiveConstraint.html',1,'Google::OrTools::ConstraintSolver']]],
-  ['domain_10',['Domain',['../classGoogle_1_1OrTools_1_1Util_1_1Domain.html',1,'Google::OrTools::Util']]],
+  ['domain_10',['Domain',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html',1,'Domain'],['../classGoogle_1_1OrTools_1_1Util_1_1Domain.html',1,'Domain']]],
   ['doublevector_11',['DoubleVector',['../classGoogle_1_1OrTools_1_1LinearSolver_1_1DoubleVector.html',1,'Google::OrTools::LinearSolver']]],
   ['doublevectorenumerator_12',['DoubleVectorEnumerator',['../classGoogle_1_1OrTools_1_1LinearSolver_1_1DoubleVector_1_1DoubleVectorEnumerator.html',1,'Google::OrTools::LinearSolver::DoubleVector']]]
 ];

@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.1</span>
+   &#160;<span id="projectnumber">9.2</span>
    </div>
   </td>
  </tr>
@@ -95,7 +95,7 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1sat_1_1_p
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00071">71</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00072">72</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -125,6 +125,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:af597da31a1aed22d4bbd0e9398728a9b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a00f995618e00d575372ff823a12553a9"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html#a00f995618e00d575372ff823a12553a9">MaxOf</a> (int ref) const</td></tr>
 <tr class="separator:a00f995618e00d575372ff823a12553a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8851194fe8ce04aab258d31f06c472e2"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html#a8851194fe8ce04aab258d31f06c472e2">FixedValue</a> (int ref) const</td></tr>
+<tr class="separator:a8851194fe8ce04aab258d31f06c472e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9dd01897679ba54fca524a3b0b7d5612"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html#a9dd01897679ba54fca524a3b0b7d5612">DomainContains</a> (int ref, int64_t <a class="el" href="matrix__utils_8cc.html#aee90379adb0307effb138f4871edbc5c">value</a>) const</td></tr>
 <tr class="separator:a9dd01897679ba54fca524a3b0b7d5612"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5e86fd5ce0fc653d355ab7303f373e00"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_domain.html">Domain</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html#a5e86fd5ce0fc653d355ab7303f373e00">DomainOf</a> (int ref) const</td></tr>
@@ -149,12 +151,22 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:aa184497ce787d35a517f0879117ff2e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9cbf216d2567a55091668dda32e9024d"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html#a9cbf216d2567a55091668dda32e9024d">MaxOf</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expression_proto.html">LinearExpressionProto</a> &amp;expr) const</td></tr>
 <tr class="separator:a9cbf216d2567a55091668dda32e9024d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae9762a7095f71f2da30294265690ea67"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html#ae9762a7095f71f2da30294265690ea67">IsFixed</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expression_proto.html">LinearExpressionProto</a> &amp;expr) const</td></tr>
+<tr class="separator:ae9762a7095f71f2da30294265690ea67"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aff9c8c2bbab244b8f9b47406b37d05b5"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html#aff9c8c2bbab244b8f9b47406b37d05b5">FixedValue</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expression_proto.html">LinearExpressionProto</a> &amp;expr) const</td></tr>
+<tr class="separator:aff9c8c2bbab244b8f9b47406b37d05b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aece512a8613203cbc4d4bd22e4498623"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html#aece512a8613203cbc4d4bd22e4498623">DomainContains</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expression_proto.html">LinearExpressionProto</a> &amp;expr, int64_t <a class="el" href="matrix__utils_8cc.html#aee90379adb0307effb138f4871edbc5c">value</a>) const</td></tr>
+<tr class="separator:aece512a8613203cbc4d4bd22e4498623"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae7450e5b3b9b22663ec7e1fe0d82b6b9"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_domain.html">Domain</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html#ae7450e5b3b9b22663ec7e1fe0d82b6b9">DomainSuperSetOf</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expression_proto.html">LinearExpressionProto</a> &amp;expr) const</td></tr>
 <tr class="separator:ae7450e5b3b9b22663ec7e1fe0d82b6b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adff3b5f900c3d62132781fc25b54fb1a"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html#adff3b5f900c3d62132781fc25b54fb1a">ExpressionIsAffineBoolean</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expression_proto.html">LinearExpressionProto</a> &amp;expr) const</td></tr>
 <tr class="separator:adff3b5f900c3d62132781fc25b54fb1a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad1cddf8749d0ce1686f1f428926cfb1d"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html#ad1cddf8749d0ce1686f1f428926cfb1d">LiteralForExpressionMax</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expression_proto.html">LinearExpressionProto</a> &amp;expr) const</td></tr>
 <tr class="separator:ad1cddf8749d0ce1686f1f428926cfb1d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a36a3dfcbe2bf048497070296b91ed97d"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html#a36a3dfcbe2bf048497070296b91ed97d">ExpressionIsSingleVariable</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expression_proto.html">LinearExpressionProto</a> &amp;expr) const</td></tr>
+<tr class="separator:a36a3dfcbe2bf048497070296b91ed97d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0481547ad6462a8cb545e2533bff1dc3"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html#a0481547ad6462a8cb545e2533bff1dc3">ExpressionIsALiteral</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expression_proto.html">LinearExpressionProto</a> &amp;expr, int *<a class="el" href="optimization_8cc.html#af63dcc00f2023fdf498e0829e6fb8a6b">literal</a>=nullptr) const</td></tr>
+<tr class="separator:a0481547ad6462a8cb545e2533bff1dc3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a33f90dcf20e1ce9197e60eb3bed25974"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html#a33f90dcf20e1ce9197e60eb3bed25974">DomainOfVarIsIncludedIn</a> (int <a class="el" href="sat__solver_8cc.html#a8392bdc4ed570e6a95c7fca35b09f83f">var</a>, const <a class="el" href="classoperations__research_1_1_domain.html">Domain</a> &amp;domain)</td></tr>
 <tr class="separator:a33f90dcf20e1ce9197e60eb3bed25974"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0000c1621c1de75511d17c9d14aae0e8"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html#a0000c1621c1de75511d17c9d14aae0e8">VariableIsRemovable</a> (int ref) const</td></tr>
@@ -167,6 +179,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a6939dc7b9db01cf3deff10405e260461"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af248c1021eda72d628e2f3537eb98ded"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html#af248c1021eda72d628e2f3537eb98ded">VariableWasRemoved</a> (int ref) const</td></tr>
 <tr class="separator:af248c1021eda72d628e2f3537eb98ded"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0d7555344bad8a6d860796d76df34c31"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html#a0d7555344bad8a6d860796d76df34c31">VariableWithCostIsUnique</a> (int ref) const</td></tr>
+<tr class="separator:a0d7555344bad8a6d860796d76df34c31"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a34e2cd343e0dfb06af9f67df8c4c3502"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html#a34e2cd343e0dfb06af9f67df8c4c3502">VariableWithCostIsUniqueAndRemovable</a> (int ref) const</td></tr>
 <tr class="separator:a34e2cd343e0dfb06af9f67df8c4c3502"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af7e074480c08f4887da40ca045624b6c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html#af7e074480c08f4887da40ca045624b6c">VariableIsOnlyUsedInEncodingAndMaybeInObjective</a> (int ref) const</td></tr>
@@ -195,10 +209,14 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a11f5290ed8216eea13b9d7383cb4c55f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af4847724208dd09ba3fea8b53132d197"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html#af4847724208dd09ba3fea8b53132d197">ExploitFixedDomain</a> (int <a class="el" href="sat__solver_8cc.html#a8392bdc4ed570e6a95c7fca35b09f83f">var</a>)</td></tr>
 <tr class="separator:af4847724208dd09ba3fea8b53132d197"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3999a4ff1f53b54b40c8cd396105572a"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html#a3999a4ff1f53b54b40c8cd396105572a">StoreAffineRelation</a> (int ref_x, int ref_y, int64_t coeff, int64_t offset)</td></tr>
-<tr class="separator:a3999a4ff1f53b54b40c8cd396105572a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8fc1d49d1e1bf7261f15ccc6c23c4b10"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html#a8fc1d49d1e1bf7261f15ccc6c23c4b10">StoreBooleanEqualityRelation</a> (int ref_a, int ref_b)</td></tr>
-<tr class="separator:a8fc1d49d1e1bf7261f15ccc6c23c4b10"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7b54dd25e40790d8161c7e7b5ba64242"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html#a7b54dd25e40790d8161c7e7b5ba64242">CanonicalizeVariable</a> (int ref)</td></tr>
+<tr class="separator:a7b54dd25e40790d8161c7e7b5ba64242"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0106fb380cd3f9c642575e6318e95f07"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html#a0106fb380cd3f9c642575e6318e95f07">CanonicalizeAffineVariable</a> (int ref, int64_t coeff, int64_t mod, int64_t rhs)</td></tr>
+<tr class="separator:a0106fb380cd3f9c642575e6318e95f07"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac43d47cf9df6d6e9c8e8ffb7fc01c138"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html#ac43d47cf9df6d6e9c8e8ffb7fc01c138">StoreAffineRelation</a> (int ref_x, int ref_y, int64_t coeff, int64_t offset, bool debug_no_recursion=false)</td></tr>
+<tr class="separator:ac43d47cf9df6d6e9c8e8ffb7fc01c138"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a307dddcaccf0a7efca0143d0cdf0cacd"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html#a307dddcaccf0a7efca0143d0cdf0cacd">StoreBooleanEqualityRelation</a> (int ref_a, int ref_b)</td></tr>
+<tr class="separator:a307dddcaccf0a7efca0143d0cdf0cacd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a06f0856b91c0399720273b5da85ce280"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html#a06f0856b91c0399720273b5da85ce280">StoreAbsRelation</a> (int target_ref, int ref)</td></tr>
 <tr class="separator:a06f0856b91c0399720273b5da85ce280"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af97bdc26758ff0f27314cafb7c2d7044"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html#af97bdc26758ff0f27314cafb7c2d7044">GetAbsRelation</a> (int target_ref, int *ref)</td></tr>
@@ -227,20 +245,30 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a69fea604a632b4b91ed950a0e622489c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4f9423ff72ed20e477fff16e8887df96"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html#a4f9423ff72ed20e477fff16e8887df96">GetOrCreateVarValueEncoding</a> (int ref, int64_t <a class="el" href="matrix__utils_8cc.html#aee90379adb0307effb138f4871edbc5c">value</a>)</td></tr>
 <tr class="separator:a4f9423ff72ed20e477fff16e8887df96"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3bb6775f0bab3c01b35622e3ce68ab1d"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html#a3bb6775f0bab3c01b35622e3ce68ab1d">GetOrCreateAffineValueEncoding</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expression_proto.html">LinearExpressionProto</a> &amp;expr, int64_t <a class="el" href="matrix__utils_8cc.html#aee90379adb0307effb138f4871edbc5c">value</a>)</td></tr>
+<tr class="separator:a3bb6775f0bab3c01b35622e3ce68ab1d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7ea7bb314db4dbe4f3b2cac16a2af20f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html#a7ea7bb314db4dbe4f3b2cac16a2af20f">CanonicalizeDomainOfSizeTwo</a> (int <a class="el" href="sat__solver_8cc.html#a8392bdc4ed570e6a95c7fca35b09f83f">var</a>)</td></tr>
 <tr class="separator:a7ea7bb314db4dbe4f3b2cac16a2af20f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9925335988ccbe70e9150a9ce71b9952"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html#a9925335988ccbe70e9150a9ce71b9952">HasVarValueEncoding</a> (int ref, int64_t <a class="el" href="matrix__utils_8cc.html#aee90379adb0307effb138f4871edbc5c">value</a>, int *<a class="el" href="optimization_8cc.html#af63dcc00f2023fdf498e0829e6fb8a6b">literal</a>=nullptr)</td></tr>
 <tr class="separator:a9925335988ccbe70e9150a9ce71b9952"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a058746ebd0b438afbdd49eb5bd290d8f"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html#a058746ebd0b438afbdd49eb5bd290d8f">IsFullyEncoded</a> (int ref) const</td></tr>
+<tr class="separator:a058746ebd0b438afbdd49eb5bd290d8f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adb5bd84dff48647dcee299fa600b685a"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html#adb5bd84dff48647dcee299fa600b685a">IsFullyEncoded</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expression_proto.html">LinearExpressionProto</a> &amp;expr) const</td></tr>
+<tr class="separator:adb5bd84dff48647dcee299fa600b685a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afdf0f5e877efe4e1d003300f0ce1234f"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html#afdf0f5e877efe4e1d003300f0ce1234f">StoreLiteralImpliesVarEqValue</a> (int <a class="el" href="optimization_8cc.html#af63dcc00f2023fdf498e0829e6fb8a6b">literal</a>, int <a class="el" href="sat__solver_8cc.html#a8392bdc4ed570e6a95c7fca35b09f83f">var</a>, int64_t <a class="el" href="matrix__utils_8cc.html#aee90379adb0307effb138f4871edbc5c">value</a>)</td></tr>
 <tr class="separator:afdf0f5e877efe4e1d003300f0ce1234f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2877bce637c80df492977b5b6487d563"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html#a2877bce637c80df492977b5b6487d563">StoreLiteralImpliesVarNEqValue</a> (int <a class="el" href="optimization_8cc.html#af63dcc00f2023fdf498e0829e6fb8a6b">literal</a>, int <a class="el" href="sat__solver_8cc.html#a8392bdc4ed570e6a95c7fca35b09f83f">var</a>, int64_t <a class="el" href="matrix__utils_8cc.html#aee90379adb0307effb138f4871edbc5c">value</a>)</td></tr>
 <tr class="separator:a2877bce637c80df492977b5b6487d563"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aed2a07aad05b4ad8e05cf5fe7b239a1a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html#aed2a07aad05b4ad8e05cf5fe7b239a1a">ReadObjectiveFromProto</a> ()</td></tr>
 <tr class="separator:aed2a07aad05b4ad8e05cf5fe7b239a1a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa62da782b2270ca293531a0aea153fba"><td class="memItemLeft" align="right" valign="top">ABSL_MUST_USE_RESULT bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html#aa62da782b2270ca293531a0aea153fba">CanonicalizeObjective</a> ()</td></tr>
-<tr class="separator:aa62da782b2270ca293531a0aea153fba"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2ff0654486b944d24ec212846d9ea4c1"><td class="memItemLeft" align="right" valign="top">ABSL_MUST_USE_RESULT bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html#a2ff0654486b944d24ec212846d9ea4c1">CanonicalizeObjective</a> (bool simplify_domain=true)</td></tr>
+<tr class="separator:a2ff0654486b944d24ec212846d9ea4c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a36794cf424ca2d69bc4774437a61a88e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html#a36794cf424ca2d69bc4774437a61a88e">WriteObjectiveToProto</a> () const</td></tr>
 <tr class="separator:a36794cf424ca2d69bc4774437a61a88e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a46a91d63a8cc54d2d4d7660022eb1c87"><td class="memItemLeft" align="right" valign="top">ABSL_MUST_USE_RESULT bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html#a46a91d63a8cc54d2d4d7660022eb1c87">ScaleFloatingPointObjective</a> ()</td></tr>
+<tr class="separator:a46a91d63a8cc54d2d4d7660022eb1c87"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6dbf60b03175ebeb45b650fb76b53dbc"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html#a6dbf60b03175ebeb45b650fb76b53dbc">WriteVariableDomainsToProto</a> () const</td></tr>
+<tr class="separator:a6dbf60b03175ebeb45b650fb76b53dbc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae42cae46d8792621471dd137bf9bb3cc"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html#ae42cae46d8792621471dd137bf9bb3cc">ExploitExactlyOneInObjective</a> (absl::Span&lt; const int &gt; exactly_one)</td></tr>
 <tr class="separator:ae42cae46d8792621471dd137bf9bb3cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aaed725b098e5d931862a74b496564e37"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html#aaed725b098e5d931862a74b496564e37">RemoveVariableFromObjective</a> (int <a class="el" href="sat__solver_8cc.html#a8392bdc4ed570e6a95c7fca35b09f83f">var</a>)</td></tr>
@@ -277,8 +305,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a13c8d5cf71bf7735663c489f5493d036"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a268e694a54b376ada250df521eab2e07"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html#a268e694a54b376ada250df521eab2e07">NotifyThatModelIsExpanded</a> ()</td></tr>
 <tr class="separator:a268e694a54b376ada250df521eab2e07"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adc37a02104d979e9943fadfd2e209686"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html#adc37a02104d979e9943fadfd2e209686">GetOrCreateReifiedPrecedenceLiteral</a> (int time_i, int time_j, int active_i, int active_j)</td></tr>
-<tr class="separator:adc37a02104d979e9943fadfd2e209686"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2b7f0524381be1a7b01b5f707b98cb9a"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html#a2b7f0524381be1a7b01b5f707b98cb9a">GetOrCreateReifiedPrecedenceLiteral</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expression_proto.html">LinearExpressionProto</a> &amp;time_i, const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expression_proto.html">LinearExpressionProto</a> &amp;time_j, int active_i, int active_j)</td></tr>
+<tr class="separator:a2b7f0524381be1a7b01b5f707b98cb9a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8d58acb908ccc68472fe1a162957086a"><td class="memItemLeft" align="right" valign="top">std::tuple&lt; int, int64_t, int, int64_t, int64_t, int, int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html#a8d58acb908ccc68472fe1a162957086a">GetReifiedPrecedenceKey</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expression_proto.html">LinearExpressionProto</a> &amp;time_i, const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expression_proto.html">LinearExpressionProto</a> &amp;time_j, int active_i, int active_j)</td></tr>
+<tr class="separator:a8d58acb908ccc68472fe1a162957086a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae58b8c61c87bd4625b0a5db975652151"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html#ae58b8c61c87bd4625b0a5db975652151">ClearPrecedenceCache</a> ()</td></tr>
 <tr class="separator:ae58b8c61c87bd4625b0a5db975652151"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a40432f5ffa1ea8255071161d96f598d1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html#a40432f5ffa1ea8255071161d96f598d1">LogInfo</a> ()</td></tr>
@@ -360,7 +390,7 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00073">73</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00074">74</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
 
 </div>
 </div>
@@ -391,7 +421,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00060">60</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00063">63</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -427,7 +457,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00067">67</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00070">70</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -457,7 +487,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l01501">1501</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l01684">1684</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -477,7 +507,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l01512">1512</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l01695">1695</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -497,7 +527,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00935">935</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l01152">1152</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -517,7 +547,49 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00089">89</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00092">92</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+
+</div>
+</div>
+<a id="a0106fb380cd3f9c642575e6318e95f07" name="a0106fb380cd3f9c642575e6318e95f07"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0106fb380cd3f9c642575e6318e95f07">&#9670;&nbsp;</a></span>CanonicalizeAffineVariable()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool CanonicalizeAffineVariable </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>ref</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int64_t&#160;</td>
+          <td class="paramname"><em>coeff</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int64_t&#160;</td>
+          <td class="paramname"><em>mod</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int64_t&#160;</td>
+          <td class="paramname"><em>rhs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00805">805</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -537,12 +609,12 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l01041">1041</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l01175">1175</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
-<a id="aa62da782b2270ca293531a0aea153fba" name="aa62da782b2270ca293531a0aea153fba"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa62da782b2270ca293531a0aea153fba">&#9670;&nbsp;</a></span>CanonicalizeObjective()</h2>
+<a id="a2ff0654486b944d24ec212846d9ea4c1" name="a2ff0654486b944d24ec212846d9ea4c1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2ff0654486b944d24ec212846d9ea4c1">&#9670;&nbsp;</a></span>CanonicalizeObjective()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -550,13 +622,34 @@ Public Attributes</h2></td></tr>
         <tr>
           <td class="memname">bool CanonicalizeObjective </td>
           <td>(</td>
-          <td class="paramname"></td><td>)</td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>simplify_domain</em> = <code>true</code></td><td>)</td>
           <td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l01373">1373</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l01549">1549</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+
+</div>
+</div>
+<a id="a7b54dd25e40790d8161c7e7b5ba64242" name="a7b54dd25e40790d8161c7e7b5ba64242"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7b54dd25e40790d8161c7e7b5ba64242">&#9670;&nbsp;</a></span>CanonicalizeVariable()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void CanonicalizeVariable </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>ref</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00775">775</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -575,7 +668,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l01739">1739</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l01982">1982</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -594,7 +687,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00037">37</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00040">40</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -614,7 +707,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00420">420</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00492">492</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -634,7 +727,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00432">432</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00504">504</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -662,7 +755,7 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00373">373</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00437">437</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
 
 </div>
 </div>
@@ -681,7 +774,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00510">510</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00582">582</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -700,12 +793,42 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00529">529</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00601">601</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+
+</div>
+</div>
+<a id="aece512a8613203cbc4d4bd22e4498623" name="aece512a8613203cbc4d4bd22e4498623"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aece512a8613203cbc4d4bd22e4498623">&#9670;&nbsp;</a></span>DomainContains() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool DomainContains </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expression_proto.html">LinearExpressionProto</a> &amp;&#160;</td>
+          <td class="paramname"><em>expr</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int64_t&#160;</td>
+          <td class="paramname"><em>value</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00413">413</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
 <a id="a9dd01897679ba54fca524a3b0b7d5612" name="a9dd01897679ba54fca524a3b0b7d5612"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9dd01897679ba54fca524a3b0b7d5612">&#9670;&nbsp;</a></span>DomainContains()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a9dd01897679ba54fca524a3b0b7d5612">&#9670;&nbsp;</a></span>DomainContains() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -730,7 +853,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00349">349</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00406">406</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -750,7 +873,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00079">79</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00082">82</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -770,7 +893,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00339">339</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00396">396</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -808,7 +931,7 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00131">131</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00145">145</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
 
 </div>
 </div>
@@ -828,7 +951,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00150">150</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00176">176</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -848,7 +971,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00236">236</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00286">286</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -868,7 +991,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00229">229</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00280">280</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -888,7 +1011,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l01601">1601</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l01798">1798</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -908,7 +1031,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00622">622</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00694">694</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -928,7 +1051,97 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00160">160</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00186">186</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+
+</div>
+</div>
+<a id="a0481547ad6462a8cb545e2533bff1dc3" name="a0481547ad6462a8cb545e2533bff1dc3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0481547ad6462a8cb545e2533bff1dc3">&#9670;&nbsp;</a></span>ExpressionIsALiteral()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ExpressionIsALiteral </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expression_proto.html">LinearExpressionProto</a> &amp;&#160;</td>
+          <td class="paramname"><em>expr</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int *&#160;</td>
+          <td class="paramname"><em>literal</em> = <code>nullptr</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00203">203</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+
+</div>
+</div>
+<a id="a36a3dfcbe2bf048497070296b91ed97d" name="a36a3dfcbe2bf048497070296b91ed97d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a36a3dfcbe2bf048497070296b91ed97d">&#9670;&nbsp;</a></span>ExpressionIsSingleVariable()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ExpressionIsSingleVariable </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expression_proto.html">LinearExpressionProto</a> &amp;&#160;</td>
+          <td class="paramname"><em>expr</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00198">198</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+
+</div>
+</div>
+<a id="aff9c8c2bbab244b8f9b47406b37d05b5" name="aff9c8c2bbab244b8f9b47406b37d05b5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aff9c8c2bbab244b8f9b47406b37d05b5">&#9670;&nbsp;</a></span>FixedValue() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int64_t FixedValue </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expression_proto.html">LinearExpressionProto</a> &amp;&#160;</td>
+          <td class="paramname"><em>expr</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00167">167</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+
+</div>
+</div>
+<a id="a8851194fe8ce04aab258d31f06c472e2" name="a8851194fe8ce04aab258d31f06c472e2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8851194fe8ce04aab258d31f06c472e2">&#9670;&nbsp;</a></span>FixedValue() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int64_t FixedValue </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>ref</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00127">127</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -958,7 +1171,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00860">860</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l01077">1077</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -978,7 +1191,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00918">918</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l01135">1135</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -998,7 +1211,37 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00879">879</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l01096">1096</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+
+</div>
+</div>
+<a id="a3bb6775f0bab3c01b35622e3ce68ab1d" name="a3bb6775f0bab3c01b35622e3ce68ab1d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3bb6775f0bab3c01b35622e3ce68ab1d">&#9670;&nbsp;</a></span>GetOrCreateAffineValueEncoding()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int GetOrCreateAffineValueEncoding </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expression_proto.html">LinearExpressionProto</a> &amp;&#160;</td>
+          <td class="paramname"><em>expr</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int64_t&#160;</td>
+          <td class="paramname"><em>value</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l01476">1476</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -1018,12 +1261,12 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00048">48</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00051">51</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
-<a id="adc37a02104d979e9943fadfd2e209686" name="adc37a02104d979e9943fadfd2e209686"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adc37a02104d979e9943fadfd2e209686">&#9670;&nbsp;</a></span>GetOrCreateReifiedPrecedenceLiteral()</h2>
+<a id="a2b7f0524381be1a7b01b5f707b98cb9a" name="a2b7f0524381be1a7b01b5f707b98cb9a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2b7f0524381be1a7b01b5f707b98cb9a">&#9670;&nbsp;</a></span>GetOrCreateReifiedPrecedenceLiteral()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1031,13 +1274,13 @@ Public Attributes</h2></td></tr>
         <tr>
           <td class="memname">int GetOrCreateReifiedPrecedenceLiteral </td>
           <td>(</td>
-          <td class="paramtype">int&#160;</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expression_proto.html">LinearExpressionProto</a> &amp;&#160;</td>
           <td class="paramname"><em>time_i</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int&#160;</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expression_proto.html">LinearExpressionProto</a> &amp;&#160;</td>
           <td class="paramname"><em>time_j</em>, </td>
         </tr>
         <tr>
@@ -1060,7 +1303,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l01670">1670</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l01882">1882</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -1090,7 +1333,49 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l01265">1265</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l01404">1404</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+
+</div>
+</div>
+<a id="a8d58acb908ccc68472fe1a162957086a" name="a8d58acb908ccc68472fe1a162957086a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8d58acb908ccc68472fe1a162957086a">&#9670;&nbsp;</a></span>GetReifiedPrecedenceKey()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::tuple&lt; int, int64_t, int, int64_t, int64_t, int, int &gt; GetReifiedPrecedenceKey </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expression_proto.html">LinearExpressionProto</a> &amp;&#160;</td>
+          <td class="paramname"><em>time_i</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expression_proto.html">LinearExpressionProto</a> &amp;&#160;</td>
+          <td class="paramname"><em>time_j</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>active_i</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>active_j</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l01963">1963</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -1110,7 +1395,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00908">908</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l01125">1125</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -1146,7 +1431,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l01249">1249</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l01375">1375</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -1165,7 +1450,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00942">942</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l01159">1159</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -1201,7 +1486,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l01222">1222</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l01351">1351</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -1237,7 +1522,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00393">393</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00460">460</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -1273,7 +1558,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00356">356</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00423">423</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -1293,7 +1578,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00189">189</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00242">242</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -1313,7 +1598,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00173">173</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00226">226</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -1341,12 +1626,32 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00381">381</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00445">445</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
+
+</div>
+</div>
+<a id="ae9762a7095f71f2da30294265690ea67" name="ae9762a7095f71f2da30294265690ea67"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae9762a7095f71f2da30294265690ea67">&#9670;&nbsp;</a></span>IsFixed() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool IsFixed </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expression_proto.html">LinearExpressionProto</a> &amp;&#160;</td>
+          <td class="paramname"><em>expr</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00160">160</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
 <a id="abb6eb29f56c3a33b8ae1b74b08b755c2" name="abb6eb29f56c3a33b8ae1b74b08b755c2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abb6eb29f56c3a33b8ae1b74b08b755c2">&#9670;&nbsp;</a></span>IsFixed()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#abb6eb29f56c3a33b8ae1b74b08b755c2">&#9670;&nbsp;</a></span>IsFixed() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1361,7 +1666,47 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00083">83</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00086">86</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+
+</div>
+</div>
+<a id="adb5bd84dff48647dcee299fa600b685a" name="adb5bd84dff48647dcee299fa600b685a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adb5bd84dff48647dcee299fa600b685a">&#9670;&nbsp;</a></span>IsFullyEncoded() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool IsFullyEncoded </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_linear_expression_proto.html">LinearExpressionProto</a> &amp;&#160;</td>
+          <td class="paramname"><em>expr</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l01398">1398</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+
+</div>
+</div>
+<a id="a058746ebd0b438afbdd49eb5bd290d8f" name="a058746ebd0b438afbdd49eb5bd290d8f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a058746ebd0b438afbdd49eb5bd290d8f">&#9670;&nbsp;</a></span>IsFullyEncoded() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool IsFullyEncoded </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>ref</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l01390">1390</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -1381,7 +1726,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00166">166</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00192">192</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -1401,7 +1746,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00103">103</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00106">106</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -1421,7 +1766,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00094">94</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00097">97</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -1448,7 +1793,7 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00424">424</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00494">494</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
 
 </div>
 </div>
@@ -1467,7 +1812,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l01743">1743</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l01986">1986</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -1487,7 +1832,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00305">305</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00362">362</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -1507,7 +1852,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00137">137</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00147">147</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -1527,7 +1872,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00118">118</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00121">121</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -1547,7 +1892,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00124">124</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00134">134</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -1567,7 +1912,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00112">112</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00115">115</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -1594,7 +1939,7 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00405">405</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00469">469</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
 
 </div>
 </div>
@@ -1621,7 +1966,7 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00186">186</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00201">201</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
 
 </div>
 </div>
@@ -1640,7 +1985,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00046">46</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00049">49</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -1660,7 +2005,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00039">39</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00042">42</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -1687,7 +2032,7 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00406">406</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00470">470</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
 
 </div>
 </div>
@@ -1715,7 +2060,7 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00178">178</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00193">193</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
 
 </div>
 </div>
@@ -1742,7 +2087,7 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00246">246</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00284">284</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
 
 </div>
 </div>
@@ -1769,7 +2114,7 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00247">247</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00285">285</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
 
 </div>
 </div>
@@ -1796,7 +2141,7 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00354">354</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00418">418</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
 
 </div>
 </div>
@@ -1823,7 +2168,7 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00358">358</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00422">422</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
 
 </div>
 </div>
@@ -1850,7 +2195,7 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00355">355</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00419">419</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
 
 </div>
 </div>
@@ -1877,7 +2222,7 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00425">425</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00495">495</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
 
 </div>
 </div>
@@ -1897,7 +2242,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00644">644</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00716">716</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -1924,7 +2269,7 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00427">427</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00497">497</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
 
 </div>
 </div>
@@ -1943,7 +2288,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l01330">1330</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l01495">1495</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -1963,7 +2308,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00930">930</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l01147">1147</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -1990,7 +2335,7 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00396">396</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00460">460</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
 
 </div>
 </div>
@@ -2009,7 +2354,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00666">666</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00738">738</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -2029,7 +2374,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00675">675</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00747">747</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -2049,7 +2394,26 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l01496">1496</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l01679">1679</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+
+</div>
+</div>
+<a id="a46a91d63a8cc54d2d4d7660022eb1c87" name="a46a91d63a8cc54d2d4d7660022eb1c87"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a46a91d63a8cc54d2d4d7660022eb1c87">&#9670;&nbsp;</a></span>ScaleFloatingPointObjective()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ScaleFloatingPointObjective </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00786">786</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -2069,7 +2433,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00410">410</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00482">482</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -2089,7 +2453,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00416">416</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00488">488</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -2109,7 +2473,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00250">250</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00298">298</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -2129,7 +2493,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00243">243</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00292">292</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -2149,7 +2513,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00222">222</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00274">274</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -2169,7 +2533,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00215">215</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00268">268</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -2199,12 +2563,12 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00845">845</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l01062">1062</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
-<a id="a3999a4ff1f53b54b40c8cd396105572a" name="a3999a4ff1f53b54b40c8cd396105572a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3999a4ff1f53b54b40c8cd396105572a">&#9670;&nbsp;</a></span>StoreAffineRelation()</h2>
+<a id="ac43d47cf9df6d6e9c8e8ffb7fc01c138" name="ac43d47cf9df6d6e9c8e8ffb7fc01c138"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac43d47cf9df6d6e9c8e8ffb7fc01c138">&#9670;&nbsp;</a></span>StoreAffineRelation()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2231,7 +2595,13 @@ Public Attributes</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">int64_t&#160;</td>
-          <td class="paramname"><em>offset</em>&#160;</td>
+          <td class="paramname"><em>offset</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>debug_no_recursion</em> = <code>false</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -2241,18 +2611,18 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00703">703</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00865">865</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
-<a id="a8fc1d49d1e1bf7261f15ccc6c23c4b10" name="a8fc1d49d1e1bf7261f15ccc6c23c4b10"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8fc1d49d1e1bf7261f15ccc6c23c4b10">&#9670;&nbsp;</a></span>StoreBooleanEqualityRelation()</h2>
+<a id="a307dddcaccf0a7efca0143d0cdf0cacd" name="a307dddcaccf0a7efca0143d0cdf0cacd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a307dddcaccf0a7efca0143d0cdf0cacd">&#9670;&nbsp;</a></span>StoreBooleanEqualityRelation()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void StoreBooleanEqualityRelation </td>
+          <td class="memname">bool StoreBooleanEqualityRelation </td>
           <td>(</td>
           <td class="paramtype">int&#160;</td>
           <td class="paramname"><em>ref_a</em>, </td>
@@ -2271,7 +2641,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00819">819</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l01039">1039</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -2307,7 +2677,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l01233">1233</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l01361">1361</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -2343,7 +2713,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l01241">1241</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l01368">1368</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -2385,7 +2755,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l01518">1518</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l01702">1702</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -2412,7 +2782,7 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00426">426</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00496">496</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
 
 </div>
 </div>
@@ -2432,7 +2802,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00476">476</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00548">548</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -2451,7 +2821,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00514">514</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00586">586</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -2481,7 +2851,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00442">442</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00514">514</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -2501,7 +2871,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00300">300</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00357">357</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -2521,7 +2891,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00330">330</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00387">387</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -2541,7 +2911,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00273">273</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00320">320</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -2561,7 +2931,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00283">283</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00330">330</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -2581,7 +2951,27 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00312">312</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00369">369</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+
+</div>
+</div>
+<a id="a0d7555344bad8a6d860796d76df34c31" name="a0d7555344bad8a6d860796d76df34c31"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0d7555344bad8a6d860796d76df34c31">&#9670;&nbsp;</a></span>VariableWithCostIsUnique()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool VariableWithCostIsUnique </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>ref</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00336">336</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -2601,7 +2991,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00290">290</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l00348">348</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -2629,7 +3019,7 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00377">377</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00441">441</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
 
 </div>
 </div>
@@ -2648,7 +3038,26 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l01650">1650</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l01850">1850</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
+
+</div>
+</div>
+<a id="a6dbf60b03175ebeb45b650fb76b53dbc" name="a6dbf60b03175ebeb45b650fb76b53dbc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6dbf60b03175ebeb45b650fb76b53dbc">&#9670;&nbsp;</a></span>WriteVariableDomainsToProto()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void WriteVariableDomainsToProto </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="presolve__context_8cc_source.html#l01876">1876</a> of file <a class="el" href="presolve__context_8cc_source.html">presolve_context.cc</a>.</p>
 
 </div>
 </div>
@@ -2665,7 +3074,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00467">467</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00537">537</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
 
 </div>
 </div>
@@ -2681,7 +3090,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00448">448</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00518">518</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
 
 </div>
 </div>
@@ -2697,7 +3106,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00441">441</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00511">511</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
 
 </div>
 </div>
@@ -2713,7 +3122,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00464">464</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00534">534</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
 
 </div>
 </div>
@@ -2729,7 +3138,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00455">455</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00525">525</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
 
 </div>
 </div>
@@ -2745,7 +3154,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00460">460</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00530">530</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
 
 </div>
 </div>
@@ -2761,7 +3170,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00461">461</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00531">531</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
 
 </div>
 </div>
@@ -2777,7 +3186,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00458">458</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00528">528</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
 
 </div>
 </div>
@@ -2793,7 +3202,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00459">459</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00529">529</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
 
 </div>
 </div>
@@ -2809,7 +3218,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00438">438</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00508">508</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
 
 </div>
 </div>
@@ -2825,7 +3234,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00437">437</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00507">507</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
 
 </div>
 </div>
@@ -2841,7 +3250,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00440">440</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00510">510</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
 
 </div>
 </div>

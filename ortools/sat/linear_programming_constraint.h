@@ -145,6 +145,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // The main objective variable should be equal to the linear sum of
   // the arguments passed to SetObjectiveCoefficient().
   void SetMainObjectiveVariable(IntegerVariable ivar) { objective_cp_ = ivar; }
+  IntegerVariable ObjectiveVariable() const { return objective_cp_; }
 
   // Register a new cut generator with this constraint.
   void AddCutGenerator(CutGenerator generator);
@@ -224,6 +225,16 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // Returns some statistics about this LP.
   std::string Statistics() const;
 
+  // Important: this is only temporarily valid.
+  IntegerSumLE* LatestOptimalConstraintOrNull() const {
+    if (optimal_constraints_.empty()) return nullptr;
+    return optimal_constraints_.back().get();
+  }
+
+  const std::vector<std::unique_ptr<IntegerSumLE>>& OptimalConstraints() const {
+    return optimal_constraints_;
+  }
+
  private:
   // Helper methods for branching. Returns true if branching on the given
   // variable helps with more propagation or finds a conflict.
@@ -266,6 +277,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
 
   // Computes and adds the corresponding type of cuts.
   // This can currently only be called at the root node.
+  void AddObjectiveCut();
   void AddCGCuts();
   void AddMirCuts();
   void AddZeroHalfCuts();
@@ -445,7 +457,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   IntegerVariable objective_cp_;
 
   // Singletons from Model.
-  const SatParameters& sat_parameters_;
+  const SatParameters& parameters_;
   Model* model_;
   TimeLimit* time_limit_;
   IntegerTrail* integer_trail_;

@@ -97,8 +97,7 @@ void OpponentModel(int num_teams) {
 
       // Link opponent, home_away, and signed_opponent.
       builder.AddEquality(opp, signed_opp).OnlyEnforceIf(Not(home));
-      builder.AddEquality(LinearExpr(opp).AddConstant(num_teams), signed_opp)
-          .OnlyEnforceIf(home);
+      builder.AddEquality(opp + num_teams, signed_opp).OnlyEnforceIf(home);
     }
   }
 
@@ -108,17 +107,17 @@ void OpponentModel(int num_teams) {
     std::vector<IntVar> day_home_aways;
     for (int t = 0; t < num_teams; ++t) {
       day_opponents.push_back(opponents[t][d]);
-      day_home_aways.push_back(home_aways[t][d]);
+      day_home_aways.push_back(IntVar(home_aways[t][d]));
     }
 
     builder.AddInverseConstraint(day_opponents, day_opponents);
 
     for (int first_team = 0; first_team < num_teams; ++first_team) {
-      IntVar first_home = day_home_aways[first_team];
-      IntVar second_home = builder.NewBoolVar();
+      const IntVar first_home = IntVar(day_home_aways[first_team]);
+      const IntVar second_home = IntVar(builder.NewBoolVar());
       builder.AddVariableElement(day_opponents[first_team], day_home_aways,
                                  second_home);
-      builder.AddEquality(LinearExpr::Sum({first_home, second_home}), 1);
+      builder.AddEquality(first_home + second_home, 1);
     }
 
     builder.AddEquality(LinearExpr::Sum(day_home_aways), num_teams / 2);
@@ -141,7 +140,7 @@ void OpponentModel(int num_teams) {
       builder.AddAllDifferent(moving);
     }
 
-    builder.AddEquality(LinearExpr::BooleanSum(home_aways[t]), num_teams - 1);
+    builder.AddEquality(LinearExpr::Sum(home_aways[t]), num_teams - 1);
 
     // Forbid sequence of 3 homes or 3 aways.
     for (int start = 0; start < num_days - 2; ++start) {
@@ -166,7 +165,7 @@ void OpponentModel(int num_teams) {
     }
   }
 
-  builder.Minimize(LinearExpr::BooleanSum(breaks));
+  builder.Minimize(LinearExpr::Sum(breaks));
 
   Model model;
   if (!absl::GetFlag(FLAGS_params).empty()) {
@@ -234,7 +233,7 @@ void FixtureModel(int num_teams) {
         possible_opponents.push_back(fixtures[d][team][other]);
         possible_opponents.push_back(fixtures[d][other][team]);
       }
-      builder.AddEquality(LinearExpr::BooleanSum(possible_opponents), 1);
+      builder.AddEquality(LinearExpr::Sum(possible_opponents), 1);
     }
   }
 
@@ -246,7 +245,7 @@ void FixtureModel(int num_teams) {
       for (int d = 0; d < num_days; ++d) {
         possible_days.push_back(fixtures[d][team][other]);
       }
-      builder.AddEquality(LinearExpr::BooleanSum(possible_days), 1);
+      builder.AddEquality(LinearExpr::Sum(possible_days), 1);
     }
   }
 
@@ -262,8 +261,8 @@ void FixtureModel(int num_teams) {
         second_half.push_back(fixtures[d + matches_per_day][team][other]);
         second_half.push_back(fixtures[d + matches_per_day][other][team]);
       }
-      builder.AddEquality(LinearExpr::BooleanSum(first_half), 1);
-      builder.AddEquality(LinearExpr::BooleanSum(second_half), 1);
+      builder.AddEquality(LinearExpr::Sum(first_half), 1);
+      builder.AddEquality(LinearExpr::Sum(second_half), 1);
     }
   }
 
@@ -305,9 +304,9 @@ void FixtureModel(int num_teams) {
     }
   }
 
-  builder.AddGreaterOrEqual(LinearExpr::BooleanSum(breaks), 2 * num_teams - 4);
+  builder.AddGreaterOrEqual(LinearExpr::Sum(breaks), 2 * num_teams - 4);
 
-  builder.Minimize(LinearExpr::BooleanSum(breaks));
+  builder.Minimize(LinearExpr::Sum(breaks));
 
   Model model;
   if (!absl::GetFlag(FLAGS_params).empty()) {

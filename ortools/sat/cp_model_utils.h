@@ -139,6 +139,15 @@ inline double ScaleObjectiveValue(const CpObjectiveProto& proto,
   return proto.scaling_factor() * result;
 }
 
+// Similar to ScaleObjectiveValue() but uses the integer version.
+inline int64_t ScaleInnerObjectiveValue(const CpObjectiveProto& proto,
+                                        int64_t value) {
+  if (proto.integer_scaling_factor() == 0) {
+    return value + proto.integer_offset();
+  }
+  return value * proto.integer_scaling_factor() + proto.integer_offset();
+}
+
 // Removes the objective scaling and offset from the given value.
 inline double UnscaleObjectiveValue(const CpObjectiveProto& proto,
                                     double value) {
@@ -154,6 +163,30 @@ inline double UnscaleObjectiveValue(const CpObjectiveProto& proto,
 // to get the user facing objective.
 int64_t ComputeInnerObjective(const CpObjectiveProto& objective,
                               const CpSolverResponse& response);
+
+// Returns true if a linear expression can be reduced to a single ref.
+bool ExpressionContainsSingleRef(const LinearExpressionProto& expr);
+
+// Checks if the expression is affine or constant.
+bool ExpressionIsAffine(const LinearExpressionProto& expr);
+
+// Returns the reference the expression can be reduced to. It will DCHECK that
+// ExpressionContainsSingleRef(expr) is true.
+int GetSingleRefFromExpression(const LinearExpressionProto& expr);
+
+// Adds a linear expression proto to a linear constraint in place.
+//
+// Important: The domain must already be set, otherwise the offset will be lost.
+// We also do not do any duplicate detection, so the constraint might need
+// presolving afterwards.
+void AddLinearExpressionToLinearConstraint(const LinearExpressionProto& expr,
+                                           int64_t coefficient,
+                                           LinearConstraintProto* linear);
+
+// Returns true iff a == b * b_scaling.
+bool LinearExpressionProtosAreEqual(const LinearExpressionProto& a,
+                                    const LinearExpressionProto& b,
+                                    int64_t b_scaling = 1);
 
 }  // namespace sat
 }  // namespace operations_research

@@ -738,7 +738,7 @@ void PathOperator::InitializePathStarts() {
         new_index = index;
       }
       for (int j = 0; j < iteration_parameters_.number_of_base_nodes; ++j) {
-        if (base_paths_[j] == i && !gtl::ContainsKey(found_bases, j)) {
+        if (base_paths_[j] == i && !found_bases.contains(j)) {
           found_bases.insert(j);
           base_paths_[j] = new_index;
           // If the current position of the base node is a removed empty path,
@@ -1532,7 +1532,7 @@ bool TSPLns::MakeNeighbor() {
   int64_t node_path = Path(node);
   while (!IsPathEnd(node)) {
     int64_t next = Next(node);
-    if (gtl::ContainsKey(breaks_set, node)) {
+    if (breaks_set.contains(node)) {
       breaks.push_back(node);
       meta_node_costs.push_back(cost);
       cost = 0;
@@ -3650,6 +3650,14 @@ class LocalSearchProfiler : public LocalSearchMonitor {
   }
   LocalSearchStatistics ExportToLocalSearchStatistics() const {
     LocalSearchStatistics statistics_proto;
+    for (ProfiledDecisionBuilder* db : profiled_decision_builders_) {
+      if (db->seconds() == 0) continue;
+      LocalSearchStatistics::FirstSolutionStatistics* const
+          first_solution_statistics =
+              statistics_proto.add_first_solution_statistics();
+      first_solution_statistics->set_strategy(db->name());
+      first_solution_statistics->set_duration_seconds(db->seconds());
+    }
     std::vector<const LocalSearchOperator*> operators;
     for (const auto& stat : operator_stats_) {
       operators.push_back(stat.first);
@@ -3814,6 +3822,10 @@ class LocalSearchProfiler : public LocalSearchMonitor {
       stats.rejects++;
     }
   }
+  void AddFirstSolutionProfiledDecisionBuilder(
+      ProfiledDecisionBuilder* profiled_db) {
+    profiled_decision_builders_.push_back(profiled_db);
+  }
   void Install() override { SearchMonitor::Install(); }
 
  private:
@@ -3843,7 +3855,21 @@ class LocalSearchProfiler : public LocalSearchMonitor {
   absl::flat_hash_map<const LocalSearchOperator*, OperatorStats>
       operator_stats_;
   absl::flat_hash_map<const LocalSearchFilter*, FilterStats> filter_stats_;
+  // Profiled decision builders.
+  std::vector<ProfiledDecisionBuilder*> profiled_decision_builders_;
 };
+
+DecisionBuilder* Solver::MakeProfiledDecisionBuilderWrapper(
+    DecisionBuilder* db) {
+  if (IsLocalSearchProfilingEnabled()) {
+    ProfiledDecisionBuilder* profiled_db =
+        RevAlloc(new ProfiledDecisionBuilder(db));
+    local_search_profiler_->AddFirstSolutionProfiledDecisionBuilder(
+        profiled_db);
+    return profiled_db;
+  }
+  return db;
+}
 
 void InstallLocalSearchProfiler(LocalSearchProfiler* monitor) {
   monitor->Install();
@@ -4034,6 +4060,8 @@ class FindOneNeighbor : public DecisionBuilder {
   Assignment* const assignment_;
   IntVar* const objective_;
   std::unique_ptr<Assignment> reference_assignment_;
+  std::unique_ptr<Assignment> last_synchronized_assignment_;
+  Assignment* const filter_assignment_delta_;
   SolutionPool* const pool_;
   LocalSearchOperator* const ls_operator_;
   DecisionBuilder* const sub_decision_builder_;
@@ -4050,6 +4078,9 @@ class FindOneNeighbor : public DecisionBuilder {
 // reference_assignment_ is used to keep track of the last assignment on which
 // operators were started, assignment_ corresponding to the last successful
 // neighbor.
+// last_synchronized_assignment_ keeps track of the last assignment on which
+// filters were synchronized and is used to compute the filter_assignment_delta_
+// when synchronizing again.
 FindOneNeighbor::FindOneNeighbor(Assignment* const assignment,
                                  IntVar* objective, SolutionPool* const pool,
                                  LocalSearchOperator* const ls_operator,
@@ -4059,6 +4090,7 @@ FindOneNeighbor::FindOneNeighbor(Assignment* const assignment,
     : assignment_(assignment),
       objective_(objective),
       reference_assignment_(new Assignment(assignment_)),
+      filter_assignment_delta_(assignment->solver()->MakeAssignment()),
       pool_(pool),
       ls_operator_(ls_operator),
       sub_decision_builder_(sub_decision_builder),
@@ -4294,14 +4326,52 @@ bool FindOneNeighbor::FilterAccept(Solver* solver, Assignment* delta,
                                  objective_max);
 }
 
+namespace {
+
+template <typename Container>
+void AddDeltaElements(const Container& old_container,
+                      const Container& new_container, Assignment* delta) {
+  for (const auto& new_element : new_container.elements()) {
+    const auto var = new_element.Var();
+    const auto old_element_ptr = old_container.ElementPtrOrNull(var);
+    if (old_element_ptr == nullptr || *old_element_ptr != new_element) {
+      delta->FastAdd(var)->Copy(new_element);
+    }
+  }
+}
+
+void MakeDelta(const Assignment* old_assignment,
+               const Assignment* new_assignment, Assignment* delta) {
+  DCHECK_NE(delta, nullptr);
+  delta->Clear();
+  AddDeltaElements(old_assignment->IntVarContainer(),
+                   new_assignment->IntVarContainer(), delta);
+  AddDeltaElements(old_assignment->IntervalVarContainer(),
+                   new_assignment->IntervalVarContainer(), delta);
+  AddDeltaElements(old_assignment->SequenceVarContainer(),
+                   new_assignment->SequenceVarContainer(), delta);
+}
+}  // namespace
+
 void FindOneNeighbor::SynchronizeAll(Solver* solver) {
-  pool_->GetNextSolution(reference_assignment_.get());
+  Assignment* const reference_assignment = reference_assignment_.get();
+  pool_->GetNextSolution(reference_assignment);
   neighbor_found_ = false;
   limit_->Init();
   solver->GetLocalSearchMonitor()->BeginOperatorStart();
-  ls_operator_->Start(reference_assignment_.get());
+  ls_operator_->Start(reference_assignment);
   if (filter_manager_ != nullptr) {
-    filter_manager_->Synchronize(reference_assignment_.get(), nullptr);
+    Assignment* delta = nullptr;
+    if (last_synchronized_assignment_ == nullptr) {
+      last_synchronized_assignment_ =
+          absl::make_unique<Assignment>(reference_assignment);
+    } else {
+      MakeDelta(last_synchronized_assignment_.get(), reference_assignment,
+                filter_assignment_delta_);
+      delta = filter_assignment_delta_;
+      last_synchronized_assignment_->Copy(reference_assignment);
+    }
+    filter_manager_->Synchronize(reference_assignment_.get(), delta);
   }
   solver->GetLocalSearchMonitor()->EndOperatorStart();
 }
@@ -4721,7 +4791,8 @@ void LocalSearch::PushFirstSolutionDecision(DecisionBuilder* first_solution) {
   Solver* const solver = assignment_->solver();
   DecisionBuilder* store = solver->MakeStoreAssignment(assignment_);
   DecisionBuilder* first_solution_and_store = solver->Compose(
-      first_solution, first_solution_sub_decision_builder_, store);
+      solver->MakeProfiledDecisionBuilderWrapper(first_solution),
+      first_solution_sub_decision_builder_, store);
   std::vector<SearchMonitor*> monitor;
   monitor.push_back(limit_);
   nested_decisions_.push_back(solver->RevAlloc(

@@ -63,7 +63,7 @@ PortfolioOptimizer::PortfolioOptimizer(
     const ProblemState& problem_state, const BopParameters& parameters,
     const BopSolverOptimizerSet& optimizer_set, const std::string& name)
     : BopOptimizerBase(name),
-      random_(),
+      random_(parameters.random_seed()),
       state_update_stamp_(ProblemState::kInitialStampValue),
       objective_terms_(),
       selector_(),
@@ -223,20 +223,19 @@ void PortfolioOptimizer::AddOptimizer(
     case BopOptimizerMethod::LOCAL_SEARCH: {
       for (int i = 1; i <= parameters.max_num_decisions_in_ls(); ++i) {
         optimizers_.push_back(new LocalSearchOptimizer(
-            absl::StrFormat("LS_%d", i), i, &sat_propagator_));
+            absl::StrFormat("LS_%d", i), i, random_, &sat_propagator_));
       }
     } break;
     case BopOptimizerMethod::RANDOM_FIRST_SOLUTION:
       optimizers_.push_back(new BopRandomFirstSolutionGenerator(
-          "SATRandomFirstSolution", parameters, &sat_propagator_,
-          random_.get()));
+          "SATRandomFirstSolution", parameters, &sat_propagator_, random_));
       break;
     case BopOptimizerMethod::RANDOM_VARIABLE_LNS:
       BuildObjectiveTerms(problem, &objective_terms_);
       optimizers_.push_back(new BopAdaptiveLNSOptimizer(
           "RandomVariableLns",
           /*use_lp_to_guide_sat=*/false,
-          new ObjectiveBasedNeighborhood(&objective_terms_, random_.get()),
+          new ObjectiveBasedNeighborhood(&objective_terms_, random_),
           &sat_propagator_));
       break;
     case BopOptimizerMethod::RANDOM_VARIABLE_LNS_GUIDED_BY_LP:
@@ -244,7 +243,7 @@ void PortfolioOptimizer::AddOptimizer(
       optimizers_.push_back(new BopAdaptiveLNSOptimizer(
           "RandomVariableLnsWithLp",
           /*use_lp_to_guide_sat=*/true,
-          new ObjectiveBasedNeighborhood(&objective_terms_, random_.get()),
+          new ObjectiveBasedNeighborhood(&objective_terms_, random_),
           &sat_propagator_));
       break;
     case BopOptimizerMethod::RANDOM_CONSTRAINT_LNS:
@@ -252,7 +251,7 @@ void PortfolioOptimizer::AddOptimizer(
       optimizers_.push_back(new BopAdaptiveLNSOptimizer(
           "RandomConstraintLns",
           /*use_lp_to_guide_sat=*/false,
-          new ConstraintBasedNeighborhood(&objective_terms_, random_.get()),
+          new ConstraintBasedNeighborhood(&objective_terms_, random_),
           &sat_propagator_));
       break;
     case BopOptimizerMethod::RANDOM_CONSTRAINT_LNS_GUIDED_BY_LP:
@@ -260,7 +259,7 @@ void PortfolioOptimizer::AddOptimizer(
       optimizers_.push_back(new BopAdaptiveLNSOptimizer(
           "RandomConstraintLnsWithLp",
           /*use_lp_to_guide_sat=*/true,
-          new ConstraintBasedNeighborhood(&objective_terms_, random_.get()),
+          new ConstraintBasedNeighborhood(&objective_terms_, random_),
           &sat_propagator_));
       break;
     case BopOptimizerMethod::RELATION_GRAPH_LNS:
@@ -268,7 +267,7 @@ void PortfolioOptimizer::AddOptimizer(
       optimizers_.push_back(new BopAdaptiveLNSOptimizer(
           "RelationGraphLns",
           /*use_lp_to_guide_sat=*/false,
-          new RelationGraphBasedNeighborhood(problem, random_.get()),
+          new RelationGraphBasedNeighborhood(problem, random_),
           &sat_propagator_));
       break;
     case BopOptimizerMethod::RELATION_GRAPH_LNS_GUIDED_BY_LP:
@@ -276,7 +275,7 @@ void PortfolioOptimizer::AddOptimizer(
       optimizers_.push_back(new BopAdaptiveLNSOptimizer(
           "RelationGraphLnsWithLp",
           /*use_lp_to_guide_sat=*/true,
-          new RelationGraphBasedNeighborhood(problem, random_.get()),
+          new RelationGraphBasedNeighborhood(problem, random_),
           &sat_propagator_));
       break;
     case BopOptimizerMethod::COMPLETE_LNS:
@@ -307,8 +306,6 @@ void PortfolioOptimizer::AddOptimizer(
 void PortfolioOptimizer::CreateOptimizers(
     const LinearBooleanProblem& problem, const BopParameters& parameters,
     const BopSolverOptimizerSet& optimizer_set) {
-  random_ = absl::make_unique<MTRandom>(parameters.random_seed());
-
   if (parameters.use_symmetry()) {
     VLOG(1) << "Finding symmetries of the problem.";
     std::vector<std::unique_ptr<SparsePermutation>> generators;

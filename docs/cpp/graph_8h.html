@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.1</span>
+   &#160;<span id="projectnumber">9.2</span>
    </div>
   </td>
  </tr>
@@ -256,7 +256,7 @@ Functions</h2></td></tr>
 <div class="line">                                           t##ArcIterator(*<span class="keyword">this</span>, node, e));   \</div>
 <div class="line">  }</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l01065">1065</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l01066">1066</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
 
 </div>
 </div>
@@ -280,20 +280,20 @@ Functions</h2></td></tr>
 <div class="line">  using pointer = <span class="keyword">const</span> ArcIndexType*;                      \</div>
 <div class="line">  using reference = <span class="keyword">const</span> ArcIndexType&amp;;                    \</div>
 <div class="line">  using value_type = ArcIndexType;                          \</div>
-<div class="line">  bool <a class="code hl_function" href="namespacegtl.html#abced5b6b572672e47e9e294a8ebf25e5">operator!=</a>(<span class="keyword">const</span> iterator_class_name&amp; other)<span class="keyword"> const </span>{ \</div>
+<div class="line">  bool <a class="code hl_function" href="namespaceoperations__research_1_1math__opt.html#ab178aaedd4038bc74e549075b3b09a92">operator!=</a>(<span class="keyword">const</span> iterator_class_name&amp; other)<span class="keyword"> const </span>{ \</div>
 <div class="line">    return this-&gt;index_ != other.index_;                    \</div>
 <div class="line">  }                                                         \</div>
-<div class="line">  bool <a class="code hl_function" href="namespacegtl.html#a7b212c7660f36b494cd909ce63988d96">operator==</a>(<span class="keyword">const</span> iterator_class_name&amp; other)<span class="keyword"> const </span>{ \</div>
+<div class="line">  bool <a class="code hl_function" href="namespaceoperations__research.html#ae161405d349af5d521fa0fd25c3b6f83">operator==</a>(<span class="keyword">const</span> iterator_class_name&amp; other)<span class="keyword"> const </span>{ \</div>
 <div class="line">    return this-&gt;index_ == other.index_;                    \</div>
 <div class="line">  }                                                         \</div>
 <div class="line">  ArcIndexType <a class="code hl_function" href="namespaceoperations__research.html#a66066138340286e4386bbb3de7eafdf4">operator*</a>()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> this-&gt;<a class="code hl_typedef" href="namespaceoperations__research_1_1glop.html#ac89c7b45754e9a6bdabc08bea586fc4e">Index</a>(); }  \</div>
 <div class="line">  void operator++() { this-&gt;Next(); }</div>
-<div class="ttc" id="anamespacegtl_html_a7b212c7660f36b494cd909ce63988d96"><div class="ttname"><a href="namespacegtl.html#a7b212c7660f36b494cd909ce63988d96">gtl::operator==</a></div><div class="ttdeci">bool operator==(const STLCountingAllocator&lt; T, A &gt; &amp;a, const STLCountingAllocator&lt; T, A &gt; &amp;b)</div><div class="ttdef"><b>Definition:</b> <a href="stl__util_8h_source.html#l00977">stl_util.h:977</a></div></div>
-<div class="ttc" id="anamespacegtl_html_abced5b6b572672e47e9e294a8ebf25e5"><div class="ttname"><a href="namespacegtl.html#abced5b6b572672e47e9e294a8ebf25e5">gtl::operator!=</a></div><div class="ttdeci">bool operator!=(const STLCountingAllocator&lt; T, A &gt; &amp;a, const STLCountingAllocator&lt; T, A &gt; &amp;b)</div><div class="ttdef"><b>Definition:</b> <a href="stl__util_8h_source.html#l00985">stl_util.h:985</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_1_1glop_html_ac89c7b45754e9a6bdabc08bea586fc4e"><div class="ttname"><a href="namespaceoperations__research_1_1glop.html#ac89c7b45754e9a6bdabc08bea586fc4e">operations_research::glop::Index</a></div><div class="ttdeci">int32_t Index</div><div class="ttdef"><b>Definition:</b> <a href="lp__types_8h_source.html#l00038">lp_types.h:38</a></div></div>
+<div class="ttc" id="anamespaceoperations__research_1_1math__opt_html_ab178aaedd4038bc74e549075b3b09a92"><div class="ttname"><a href="namespaceoperations__research_1_1math__opt.html#ab178aaedd4038bc74e549075b3b09a92">operations_research::math_opt::operator!=</a></div><div class="ttdeci">bool operator!=(const LinearConstraint &amp;lhs, const LinearConstraint &amp;rhs)</div><div class="ttdef"><b>Definition:</b> <a href="math__opt_2cpp_2linear__constraint_8h_source.html#l00135">math_opt/cpp/linear_constraint.h:135</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_html_a66066138340286e4386bbb3de7eafdf4"><div class="ttname"><a href="namespaceoperations__research.html#a66066138340286e4386bbb3de7eafdf4">operations_research::operator*</a></div><div class="ttdeci">LinearExpr operator*(LinearExpr lhs, double rhs)</div><div class="ttdef"><b>Definition:</b> <a href="linear__expr_8cc_source.html#l00154">linear_expr.cc:154</a></div></div>
+<div class="ttc" id="anamespaceoperations__research_html_ae161405d349af5d521fa0fd25c3b6f83"><div class="ttname"><a href="namespaceoperations__research.html#ae161405d349af5d521fa0fd25c3b6f83">operations_research::operator==</a></div><div class="ttdeci">LinearRange operator==(const LinearExpr &amp;lhs, const LinearExpr &amp;rhs)</div><div class="ttdef"><b>Definition:</b> <a href="linear__expr_8cc_source.html#l00180">linear_expr.cc:180</a></div></div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l01082">1082</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l01083">1083</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
 
 </div>
 </div>
