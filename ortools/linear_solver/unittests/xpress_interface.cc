@@ -5,61 +5,67 @@
 
 namespace operations_research {
 
+#define EXPECT_STATUS(s)                              \
+  do {                                                \
+    int const status_ = s;                            \
+    EXPECT_EQ(0, status_) << "Nonzero return status"; \
+  } while (0)
+
   class XPRSGetter {
   public:
     XPRSGetter(MPSolver* solver) : solver_(solver) {}
 
     int getNumVariables() {
       int cols;
-      XPRSgetintattrib(prob(), XPRS_COLS, &cols);
+      EXPECT_STATUS(XPRSgetintattrib(prob(), XPRS_COLS, &cols));
       return cols;
     }
 
     int getNumConstraints() {
       int cols;
-      XPRSgetintattrib(prob(), XPRS_ROWS, &cols);
+      EXPECT_STATUS(XPRSgetintattrib(prob(), XPRS_ROWS, &cols));
       return cols;
     }
 
     double getLb(int n) {
       EXPECT_LT(n, getNumVariables());
       double lb;
-      XPRSgetlb(prob(), &lb, n, n);
+      EXPECT_STATUS(XPRSgetlb(prob(), &lb, n, n));
       return lb;
     }
 
     double getUb(int n) {
       EXPECT_LT(n, getNumVariables());
       double ub;
-      XPRSgetub(prob(), &ub, n, n);
+      EXPECT_STATUS(XPRSgetub(prob(), &ub, n, n));
       return ub;
     }
 
     char getVariableType(int n) {
       EXPECT_LT(n, getNumVariables());
       char type;
-      XPRSgetcoltype(prob(), &type, n, n);
+      EXPECT_STATUS(XPRSgetcoltype(prob(), &type, n, n));
       return type;
     }
 
     char getConstraintType(int n) {
       EXPECT_LT(n, getNumConstraints());
       char type;
-      XPRSgetrowtype(prob(), &type, n, n);
+      EXPECT_STATUS(XPRSgetrowtype(prob(), &type, n, n));
       return type;
     }
 
     double getConstraintRhs(int n) {
       EXPECT_LT(n, getNumConstraints());
       double rhs;
-      XPRSgetrhs(prob(), &rhs, n, n);
+      EXPECT_STATUS(XPRSgetrhs(prob(), &rhs, n, n));
       return rhs;
     }
 
     double getConstraintRange(int n) {
       EXPECT_LT(n, getNumConstraints());
       double range;
-      XPRSgetrhsrange(prob(), &range, n, n);
+      EXPECT_STATUS(XPRSgetrhsrange(prob(), &range, n, n));
       return range;
     }
 
@@ -67,47 +73,46 @@ namespace operations_research {
       EXPECT_LT(col, getNumVariables());
       EXPECT_LT(row, getNumConstraints());
       double coef;
-      XPRSgetcoef(prob(), row, col, &coef);
+      EXPECT_STATUS(XPRSgetcoef(prob(), row, col, &coef));
       return coef;
     }
 
     double getObjectiveCoef(int n) {
       EXPECT_LT(n, getNumVariables());
       double objCoef;
-      XPRSgetobj(prob(), &objCoef, n, n);
+      EXPECT_STATUS(XPRSgetobj(prob(), &objCoef, n, n));
       return objCoef;
     }
 
     double getObjectiveOffset() {
       double offset;
-      XPRSgetdblattrib(prob(), XPRS_OBJRHS, &offset);
+      EXPECT_STATUS(XPRSgetdblattrib(prob(), XPRS_OBJRHS, &offset));
       return offset;
     }
 
     double getObjectiveSense() {
       double sense;
-      XPRSgetdblattrib(prob(), XPRS_OBJSENSE, &sense);
+      EXPECT_STATUS(XPRSgetdblattrib(prob(), XPRS_OBJSENSE, &sense));
       return sense;
     }
 
     std::string getStringControl(int control) {
       std::string value(280, '\0');
       int valueSize;
-      XPRSgetstringcontrol(prob(), control, &value[0], value.size(), &valueSize);
-      VLOG(0) << "valueSize: " << valueSize;
+      EXPECT_STATUS(XPRSgetstringcontrol(prob(), control, &value[0], value.size(), &valueSize));
       value.resize(valueSize - 1);
       return value;
     }
 
     double getDoubleControl(int control) {
       double value;
-      XPRSgetdblcontrol(prob(), control, &value);
+      EXPECT_STATUS(XPRSgetdblcontrol(prob(), control, &value));
       return value;
     }
 
     int getIntegerControl(int control) {
       int value;
-      XPRSgetintcontrol(prob(), control, &value);
+      EXPECT_STATUS(XPRSgetintcontrol(prob(), control, &value));
       return value;
     }
 
