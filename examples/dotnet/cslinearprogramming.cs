@@ -166,7 +166,7 @@ public class CsLinearProgramming
         RunLinearProgrammingExampleNaturalApi("GLOP", true);
         RunLinearProgrammingExampleNaturalApi("GLPK_LP", false);
         RunLinearProgrammingExampleNaturalApi("CLP", false);
-        RunLinearProgrammingExampleNaturalApi("sirius_lp", false);
+        // RunLinearProgrammingExampleNaturalApi("sirius_lp", false); SetObjectiveOffset not implemented for sirius_interface
         RunLinearProgrammingExampleNaturalApi("xpress_lp", false);
     }
 }
