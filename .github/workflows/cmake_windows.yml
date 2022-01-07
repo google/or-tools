@@ -74,9 +74,8 @@ jobs:
         with:
           name: ortools_dotnet
           path: |
-            ./or-tools/build/dotnet/**/*.dll
-            ./or-tools/build/dotnet/**/*.nupkg
-            ./or-tools/build/dotnet/**/*.snupkg
+            ./or-tools/build/dotnet/packages/Google.OrTools.[0-9]*.[0-9]*.[0-9]*.nupkg
+            ./or-tools/build/dotnet/packages/Google.OrTools.runtime.*.[0-9]*.[0-9]*.[0-9]*.nupkg
       - name: Run sirius_interface unittests
         id: sirius_interface_unittests
         continue-on-error: true
