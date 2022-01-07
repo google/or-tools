@@ -15,6 +15,7 @@
 
 #include <limits>
 #include <memory>
+#include <exception>
 
 #include "absl/strings/str_format.h"
 #include "ortools/base/integral_types.h"
@@ -353,6 +354,7 @@ namespace operations_research {
 					//       in case the type does not change?
 					DCHECK_LE(var_index, SRSgetnbcols(mLp));
 					char const type = integer ? SRS_INTEGER : SRS_CONTINUOUS;
+					throw std::logic_error("Not implemented");
 					//FIXME CHECK_STATUS(SRSchgcoltype(mLp, 1, &var_index, &type));
 				}
 				else
@@ -575,6 +577,7 @@ namespace operations_research {
 	void SiriusInterface::SetObjectiveOffset(double value) {
 		// Changing the objective offset is O(1), so we always do it immediately.
 		InvalidateSolutionSynchronization();
+		throw std::logic_error("Not implemented");
 		//FIXME CHECK_STATUS(SRSsetobjoffset(mLp, value));
 	}
 
@@ -1053,6 +1056,7 @@ namespace operations_research {
 
 	void SiriusInterface::SetRelativeMipGap(double value) {
 		if (mMip) {
+			LOG(WARNING) << "SetRelativeMipGap not implemented for sirius_interface";
 			//FIXME CHECK_STATUS(SRSsetdblcontrol(mLp, SRS_MIPRELSTOP, value));
 		}
 		else {
@@ -1062,10 +1066,12 @@ namespace operations_research {
 	}
 
 	void SiriusInterface::SetPrimalTolerance(double value) {
+		LOG(WARNING) << "SetPrimalTolerance not implemented for sirius_interface";
 		//FIXME CHECK_STATUS(SRSsetdblcontrol(mLp, SRS_FEASTOL, value));
 	}
 
 	void SiriusInterface::SetDualTolerance(double value) {
+		LOG(WARNING) << "SetDualTolerance not implemented for sirius_interface";
 		//FIXME CHECK_STATUS(SRSsetdblcontrol(mLp, SRS_OPTIMALITYTOL, value));
 	}
 
@@ -1091,9 +1097,11 @@ namespace operations_research {
 
 		switch (scaling) {
 		case MPSolverParameters::SCALING_OFF:
+			LOG(WARNING) << "SetScalingMode not implemented for sirius_interface";
 			//FIXME CHECK_STATUS(SRSsetintcontrol(mLp, SRS_SCALING, 0));
 			break;
 		case MPSolverParameters::SCALING_ON:
+			LOG(WARNING) << "SetScalingMode not implemented for sirius_interface";
 			//FIXME CHECK_STATUS(SRSsetintcontrol(mLp, SRS_SCALING, 1));
 			break;
 		}
@@ -1122,6 +1130,7 @@ namespace operations_research {
 		if (alg == 1)
 			SetIntegerParamToUnsupportedValue(MPSolverParameters::LP_ALGORITHM, value);
 		else {
+			LOG(WARNING) << "SetLpAlgorithm not implemented for sirius_interface";
 			//FIXME CHECK_STATUS(SRSsetintcontrol(mLp, SRS_DEFAULTALG, alg));
 		}
 	}
@@ -1136,6 +1145,7 @@ namespace operations_research {
 	absl::Status SiriusInterface::SetNumThreads(int num_threads)
 	{
 		// sirius does not support mt
+		LOG(WARNING) << "SetNumThreads: sirius does not support multithreading";
 		return absl::OkStatus();
 	}
 
@@ -1389,6 +1399,7 @@ namespace operations_research {
 	}
 
 	void SiriusInterface::Write(const std::string& filename) {
+		throw std::logic_error("SRSwritempsprob not fully implemented in sirius-solver");
 		if (sync_status_ == MUST_RELOAD) {
 			Reset();
 		}
