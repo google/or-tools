@@ -65,14 +65,19 @@ std::string IntervalsAsString(const Intervals& intervals) {
 // IntervalsAreSortedAndNonAdjacent() would return true.
 void UnionOfSortedIntervals(absl::InlinedVector<ClosedInterval, 1>* intervals) {
   DCHECK(std::is_sorted(intervals->begin(), intervals->end()));
-  int new_size = 0;
-  for (const ClosedInterval& i : *intervals) {
-    if (new_size > 0 && i.start <= CapAdd((*intervals)[new_size - 1].end, 1)) {
-      (*intervals)[new_size - 1].end =
-          std::max(i.end, (*intervals)[new_size - 1].end);
-    } else {
-      (*intervals)[new_size++] = i;
+  const int size = intervals->size();
+  if (size == 0) return;
+
+  int new_size = 1;
+  for (int i = 1; i < size; ++i) {
+    const ClosedInterval& current = (*intervals)[i];
+    const int64_t end = (*intervals)[new_size - 1].end;
+    if (end == std::numeric_limits<int64_t>::max() ||
+        current.start <= end + 1) {
+      (*intervals)[new_size - 1].end = std::max(current.end, end);
+      continue;
     }
+    (*intervals)[new_size++] = current;
   }
   intervals->resize(new_size);
 
