@@ -15,6 +15,7 @@
 #define OR_TOOLS_BASE_STATUS_BUILDER_H_
 
 #include <sstream>
+#include <string>
 
 #include "absl/status/status.h"
 
@@ -22,6 +23,8 @@ namespace util {
 
 class StatusBuilder {
  public:
+  explicit StatusBuilder(const absl::StatusCode code) : code_(code) {}
+
   explicit StatusBuilder(const absl::Status& status) : code_(status.code()) {
     ss_ << std::string(status.message());
   }
@@ -42,6 +45,70 @@ class StatusBuilder {
   const absl::StatusCode code_;
   std::ostringstream ss_;
 };
+
+inline StatusBuilder AbortedErrorBuilder() {
+  return StatusBuilder(absl::StatusCode::kAborted);
+}
+
+inline StatusBuilder AlreadyExistsErrorBuilder() {
+  return StatusBuilder(absl::StatusCode::kAlreadyExists);
+}
+
+inline StatusBuilder CancelledErrorBuilder() {
+  return StatusBuilder(absl::StatusCode::kCancelled);
+}
+
+inline StatusBuilder DataLossErrorBuilder() {
+  return StatusBuilder(absl::StatusCode::kDataLoss);
+}
+
+inline StatusBuilder DeadlineExceededErrorBuilder() {
+  return StatusBuilder(absl::StatusCode::kDeadlineExceeded);
+}
+
+inline StatusBuilder FailedPreconditionErrorBuilder() {
+  return StatusBuilder(absl::StatusCode::kFailedPrecondition);
+}
+
+inline StatusBuilder InternalErrorBuilder() {
+  return StatusBuilder(absl::StatusCode::kInternal);
+}
+
+inline StatusBuilder InvalidArgumentErrorBuilder() {
+  return StatusBuilder(absl::StatusCode::kInvalidArgument);
+}
+
+inline StatusBuilder NotFoundErrorBuilder() {
+  return StatusBuilder(absl::StatusCode::kNotFound);
+}
+
+inline StatusBuilder OutOfRangeErrorBuilder() {
+  return StatusBuilder(absl::StatusCode::kOutOfRange);
+}
+
+inline StatusBuilder PermissionDeniedErrorBuilder() {
+  return StatusBuilder(absl::StatusCode::kPermissionDenied);
+}
+
+inline StatusBuilder UnauthenticatedErrorBuilder() {
+  return StatusBuilder(absl::StatusCode::kUnauthenticated);
+}
+
+inline StatusBuilder ResourceExhaustedErrorBuilder() {
+  return StatusBuilder(absl::StatusCode::kResourceExhausted);
+}
+
+inline StatusBuilder UnavailableErrorBuilder() {
+  return StatusBuilder(absl::StatusCode::kUnavailable);
+}
+
+inline StatusBuilder UnimplementedErrorBuilder() {
+  return StatusBuilder(absl::StatusCode::kUnimplemented);
+}
+
+inline StatusBuilder UnknownErrorBuilder() {
+  return StatusBuilder(absl::StatusCode::kUnknown);
+}
 
 }  // namespace util
 
