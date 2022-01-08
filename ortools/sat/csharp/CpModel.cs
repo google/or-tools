@@ -68,7 +68,7 @@ public class CpModel
 
     public IntVar NewBoolVar(string name)
     {
-        return new IntVar(model_, new Domain(0, 1), name);
+        return new IntVar(model_, 0, 1, name);
     }
 
     public Constraint AddLinearConstraint(LinearExpr linear_expr, long lb, long ub)
