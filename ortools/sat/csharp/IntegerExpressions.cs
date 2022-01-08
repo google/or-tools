@@ -592,6 +592,18 @@ public class IntVar : LinearExpr, ILiteral
         negation_ = null;
     }
 
+    public IntVar(CpModelProto model, long lb, long ub, string name)
+    {
+        model_ = model;
+        index_ = model.Variables.Count;
+        var_ = new IntegerVariableProto();
+        var_.Name = name;
+        var_.Domain.Add(lb);
+        var_.Domain.Add(ub);
+        model.Variables.Add(var_);
+        negation_ = null;
+    }
+
     public IntVar(CpModelProto model, int index)
     {
         model_ = model;

@@ -46,7 +46,7 @@ public class CpModel
 
     public IntVar NewIntVar(long lb, long ub, string name)
     {
-        return new IntVar(model_, new Domain(lb, ub), name);
+        return new IntVar(model_, lb, ub, name);
     }
 
     public IntVar NewIntVarFromDomain(Domain domain, string name)
