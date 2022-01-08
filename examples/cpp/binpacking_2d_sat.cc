@@ -38,10 +38,12 @@ ABSL_FLAG(std::string, params, "", "Sat parameters in text proto format.");
 ABSL_FLAG(int, max_bins, 0,
           "Maximum number of bins. The 0 default value implies the code will "
           "use some heuristics to compute this number.");
-ABSL_FLAG(bool, advanced_symmetry_breaking, true,
+ABSL_FLAG(bool, symmetry_breaking, true,
           "Use the advanced symmetry breaking constraints");
 ABSL_FLAG(bool, global_area_constraint, false,
           "Redundant constraint to link the global area covered");
+ABSL_FLAG(bool, alternate_model, true,
+          "A different way to express the objective");
 
 namespace operations_research {
 namespace sat {
@@ -153,44 +155,52 @@ void LoadAndSolve(const std::string& file_name, int instance) {
     cp_model.AddEquality(sum_of_areas, sum_of_items_area);
   }
 
-  // Maintain one Boolean variable per bin that indicates if the bin is used or
-  // not.
-  std::vector<BoolVar> bin_is_used(max_bins);
-  for (int b = 0; b < max_bins; ++b) {
-    bin_is_used[b] = cp_model.NewBoolVar();
-    // Link bin_is_used[i] with the items in bin i.
-    std::vector<BoolVar> all_items_in_bin;
-    for (int item = 0; item < num_items; ++item) {
-      cp_model.AddImplication(item_to_bin[item][b], bin_is_used[b]);
-      all_items_in_bin.push_back(item_to_bin[item][b]);
-    }
-    cp_model.AddBoolOr(all_items_in_bin).OnlyEnforceIf(bin_is_used[b]);
-  }
-
-  // Symmetry breaking.
-  if (absl::GetFlag(FLAGS_advanced_symmetry_breaking)) {
-    // Forces the number of items per bin to decrease.
-    std::vector<IntVar> num_items_in_bin(max_bins);
-    for (int b = 0; b < max_bins; ++b) {
-      num_items_in_bin[b] = cp_model.NewIntVar({0, num_items});
-      std::vector<BoolVar> items_in_bins;
+  if (absl::GetFlag(FLAGS_alternate_model)) {
+    const IntVar obj = cp_model.NewIntVar(Domain(trivial_lb, max_bins));
+    cp_model.Minimize(obj);
+    for (int b = trivial_lb; b < max_bins; ++b) {
       for (int item = 0; item < num_items; ++item) {
-        items_in_bins.push_back(item_to_bin[item][b]);
+        cp_model.AddGreaterOrEqual(obj, b + 1)
+            .OnlyEnforceIf(item_to_bin[item][b]);
       }
-      cp_model.AddEquality(num_items_in_bin[b], LinearExpr::Sum(items_in_bins));
-    }
-    for (int b = 1; b < max_bins; ++b) {
-      cp_model.AddGreaterOrEqual(num_items_in_bin[b - 1], num_items_in_bin[b]);
     }
   } else {
-    // Forces used bins to be continuous starting at 0.
-    for (int b = 1; b < max_bins; ++b) {
-      cp_model.AddImplication(bin_is_used[b], bin_is_used[b - 1]);
+    // Maintain one Boolean variable per bin that indicates if the bin is used
+    // or not.
+    std::vector<BoolVar> bin_is_used(max_bins);
+    for (int b = 0; b < max_bins; ++b) {
+      bin_is_used[b] = cp_model.NewBoolVar();
+      // Link bin_is_used[i] with the items in bin i.
+      std::vector<BoolVar> all_items_in_bin;
+      for (int item = 0; item < num_items; ++item) {
+        cp_model.AddImplication(item_to_bin[item][b], bin_is_used[b]);
+        all_items_in_bin.push_back(item_to_bin[item][b]);
+      }
+      cp_model.AddBoolOr(all_items_in_bin).OnlyEnforceIf(bin_is_used[b]);
     }
-  }
 
-  // Objective.
-  cp_model.Minimize(LinearExpr::Sum(bin_is_used));
+    // Symmetry breaking.
+    if (absl::GetFlag(FLAGS_symmetry_breaking)) {
+      // Forces the number of items per bin to decrease.
+      std::vector<IntVar> num_items_in_bin(max_bins);
+      for (int b = 0; b < max_bins; ++b) {
+        num_items_in_bin[b] = cp_model.NewIntVar({0, num_items});
+        std::vector<BoolVar> items_in_bins;
+        for (int item = 0; item < num_items; ++item) {
+          items_in_bins.push_back(item_to_bin[item][b]);
+        }
+        cp_model.AddEquality(num_items_in_bin[b],
+                             LinearExpr::Sum(items_in_bins));
+      }
+      for (int b = 1; b < max_bins; ++b) {
+        cp_model.AddGreaterOrEqual(num_items_in_bin[b - 1],
+                                   num_items_in_bin[b]);
+      }
+    }
+
+    // Objective.
+    cp_model.Minimize(LinearExpr::Sum(bin_is_used));
+  }
 
   // Setup parameters.
   SatParameters parameters;
