@@ -147,6 +147,11 @@ std::string ValidateArgumentReferencesInConstraint(const CpModelProto& model,
       return absl::StrCat("Out of bound interval ", i, " in constraint #", c,
                           " : ", ProtobufShortDebugString(ct));
     }
+    if (i >= c) {
+      return absl::StrCat("Interval ", i, " in constraint #", c,
+                          " must appear before in the list of constraints :",
+                          ProtobufShortDebugString(ct));
+    }
     if (model.constraints(i).constraint_case() !=
         ConstraintProto::ConstraintCase::kInterval) {
       return absl::StrCat(

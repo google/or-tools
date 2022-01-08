@@ -830,7 +830,11 @@ void DetectOptionalVariables(const CpModelProto& model_proto, Model* m) {
         mapping->Integer(var),
         mapping->Literal(enforcement_intersection[var].front()));
   }
-  VLOG(2) << "Auto-detected " << num_optionals << " optional variables.";
+
+  if (num_optionals > 0) {
+    SOLVER_LOG(m->GetOrCreate<SolverLogger>(), "Auto-detected ", num_optionals,
+               " optional variables.");
+  }
 }
 
 void AddFullEncodingFromSearchBranching(const CpModelProto& model_proto,

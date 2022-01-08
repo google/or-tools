@@ -110,18 +110,21 @@ message ElementConstraintProto {
   repeated int32 vars = 3;
 }
 
-// This "special" constraint not only enforces (start + size == end) and (size
-// >= 0) but can also be referred by other constraints using this "interval"
-// concept.
+// This is not really a constraint. It is there so it can be referred by other
+// constraints using this "interval" concept.
+//
+// IMPORTANT: All intervals must appear before they are used. This is enforced
+// by our validation.
+//
+// IMPORTANT: For now, this constraint do not enforce any relations on the
+// components, and it is up to the client to add in the model:
+// - enforcement => start + size == end.
+// - enforcement => size >= 0  // Only needed if size is not already >= 0.
+//
+// IMPORTANT: For now, we just support affine relation. We could easily
+// create an intermediate variable to support full linear expression, but this
+// isn't done currently.
 message IntervalConstraintProto {
-  // IMPORTANT: For now, this constraint do not enforce any relations on the
-  // view, and a linear constraint must be added together with this to enforce
-  // enforcement => start + size == end. An enforcement => size >=0 might also
-  // be needed.
-  //
-  // IMPORTANT: For now, we just support affine relation. We could easily
-  // create an intermediate variable to support full linear expression, but this
-  // isn't done currently.
   LinearExpressionProto start = 4;
   LinearExpressionProto end = 5;
   LinearExpressionProto size = 6;

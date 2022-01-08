@@ -215,8 +215,13 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
                   get_implication_node(NegatedRef(ref_a)));
   };
 
+  // We need to keep track of this for scheduling constraints.
+  absl::flat_hash_map<int, int> interval_constraint_index_to_node;
+
   // Add constraints to the graph.
-  for (const ConstraintProto& constraint : problem.constraints()) {
+  for (int constraint_index = 0; constraint_index < problem.constraints_size();
+       ++constraint_index) {
+    const ConstraintProto& constraint = problem.constraints(constraint_index);
     const int constraint_node = initial_equivalence_classes->size();
     std::vector<int64_t> color = {CONSTRAINT_NODE,
                                   constraint.constraint_case()};
@@ -296,6 +301,76 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
         const int ref_a = constraint.enforcement_literal(0);
         for (const int ref_b : constraint.bool_and().literals()) {
           add_implication(ref_a, ref_b);
+        }
+        break;
+      }
+      case ConstraintProto::kInterval: {
+        // We create 3 constraint nodes (for start, size and end) including the
+        // offset. We connect these to their terms like for a linear constraint.
+        std::vector<int> nodes;
+        for (int indicator = 0; indicator <= 2; ++indicator) {
+          const LinearExpressionProto& expr =
+              indicator == 0   ? constraint.interval().start()
+              : indicator == 1 ? constraint.interval().size()
+                               : constraint.interval().end();
+
+          std::vector<int64_t> local_color = color;
+          local_color.push_back(indicator);
+          local_color.push_back(expr.offset());
+          const int local_node = new_node(local_color);
+          nodes.push_back(local_node);
+
+          for (int i = 0; i < expr.vars().size(); ++i) {
+            const int ref = expr.vars(i);
+            const int var_node = PositiveRef(ref);
+            const int64_t coeff =
+                RefIsPositive(ref) ? expr.coeffs(i) : -expr.coeffs(i);
+            graph->AddArc(get_coefficient_node(var_node, coeff), local_node);
+          }
+        }
+
+        // We will only map enforcement literal to the start_node below because
+        // it has the same index as the constraint_node.
+        interval_constraint_index_to_node[constraint_index] = constraint_node;
+        CHECK_EQ(nodes[0], constraint_node);
+
+        // Make sure that if one node is mapped to another one, its other two
+        // components are the same.
+        graph->AddArc(nodes[0], nodes[1]);
+        graph->AddArc(nodes[1], nodes[2]);
+        graph->AddArc(nodes[2], nodes[0]);  // TODO(user): not needed?
+        break;
+      }
+      case ConstraintProto::kNoOverlap: {
+        // Note(user): This require that intervals appear before they are used.
+        // We currently enforce this at validation, otherwise we need two passes
+        // here and in a bunch of other places.
+        CHECK_EQ(constraint_node, new_node(color));
+        for (const int interval : constraint.no_overlap().intervals()) {
+          graph->AddArc(interval_constraint_index_to_node.at(interval),
+                        constraint_node);
+        }
+        break;
+      }
+      case ConstraintProto::kNoOverlap2D: {
+        // Note(user): This require that intervals appear before they are used.
+        // We currently enforce this at validation, otherwise we need two passes
+        // here and in a bunch of other places.
+        //
+        // TODO(user): With this graph encoding, we loose the symmetry that the
+        // dimension x can be swapped with the dimension y. I think it is
+        // possible to encode this by creating two extra nodes X and
+        // Y, each connected to all the x and all the y, but I have to think
+        // more about it.
+        CHECK_EQ(constraint_node, new_node(color));
+        const int size = constraint.no_overlap_2d().x_intervals().size();
+        for (int i = 0; i < size; ++i) {
+          const int x = constraint.no_overlap_2d().x_intervals(i);
+          const int y = constraint.no_overlap_2d().y_intervals(i);
+          graph->AddArc(interval_constraint_index_to_node.at(x),
+                        constraint_node);
+          graph->AddArc(interval_constraint_index_to_node.at(x),
+                        interval_constraint_index_to_node.at(y));
         }
         break;
       }

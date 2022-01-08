@@ -1544,12 +1544,19 @@ bool BinaryImplicationGraph::TransformIntoMaxCliques(
       implications_.size());
 
   // We starts by processing larger constraints first.
-  std::sort(at_most_ones->begin(), at_most_ones->end(),
-            [](const std::vector<Literal> a, const std::vector<Literal> b) {
-              return a.size() > b.size();
-            });
-  for (std::vector<Literal>& clique : *at_most_ones) {
-    const int old_size = clique.size();
+  // But we want the output order to be stable.
+  std::vector<std::pair<int, int>> index_size_vector;
+  index_size_vector.reserve(at_most_ones->size());
+  for (int i = 0; i < at_most_ones->size(); ++i) {
+    index_size_vector.push_back({i, (*at_most_ones)[i].size()});
+  }
+  std::stable_sort(
+      index_size_vector.begin(), index_size_vector.end(),
+      [](const std::pair<int, int> a, const std::pair<int, int>& b) {
+        return a.second > b.second;
+      });
+  for (const auto [index, old_size] : index_size_vector) {
+    std::vector<Literal>& clique = (*at_most_ones)[index];
     if (time_limit_->LimitReached()) break;
 
     // Remap the clique to only use representative.

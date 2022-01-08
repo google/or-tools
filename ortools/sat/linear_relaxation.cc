@@ -1547,7 +1547,7 @@ LinearRelaxation ComputeLinearRelaxation(const CpModelProto& model_proto,
   // Linearize the at most one constraints. Note that we transform them
   // into maximum "at most one" first and we removes redundant ones.
   m->GetOrCreate<BinaryImplicationGraph>()->TransformIntoMaxCliques(
-      &relaxation.at_most_ones);
+      &relaxation.at_most_ones, params.merge_at_most_one_work_limit());
   for (const std::vector<Literal>& at_most_one : relaxation.at_most_ones) {
     if (at_most_one.empty()) continue;
 

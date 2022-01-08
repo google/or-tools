@@ -257,6 +257,13 @@ class ModelCopy {
   bool CopyExactlyOne(const ConstraintProto& ct);
   bool CopyInterval(const ConstraintProto& ct, int c);
 
+  // These function remove unperformed intervals. Note that they requires
+  // interval to appear before (validated) as they test unperformed by testing
+  // if interval_mapping_ is empty.
+  void CopyAndMapNoOverlap(const ConstraintProto& ct);
+  void CopyAndMapNoOverlap2D(const ConstraintProto& ct);
+  void CopyAndMapCumulative(const ConstraintProto& ct);
+
   PresolveContext* context_;
   int64_t skipped_non_zero_ = 0;
 

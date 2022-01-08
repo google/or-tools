@@ -410,7 +410,8 @@ bool CpModelPresolver::PresolveAtMostOrExactlyOne(ConstraintProto* ct) {
   // Deal with duplicate variable reference.
   context_->tmp_literal_set.clear();
   for (const int literal : *literals) {
-    if (context_->tmp_literal_set.contains(literal)) {
+    const auto [_, inserted] = context_->tmp_literal_set.insert(literal);
+    if (!inserted) {
       if (!context_->SetLiteralToFalse(literal)) return false;
       context_->UpdateRuleStats(absl::StrCat(name, "duplicate literals"));
     }
@@ -440,7 +441,6 @@ bool CpModelPresolver::PresolveAtMostOrExactlyOne(ConstraintProto* ct) {
       }
       return RemoveConstraint(ct);
     }
-    context_->tmp_literal_set.insert(literal);
   }
 
   // Remove fixed variables.
@@ -3796,6 +3796,7 @@ bool CpModelPresolver::PresolveNoOverlap(ConstraintProto* ct) {
     }
   }
 
+  bool move_constraint_last = false;
   if (!constant_intervals.empty()) {
     // Sort constant_intervals by start min.
     std::sort(constant_intervals.begin(), constant_intervals.end(),
@@ -3847,6 +3848,7 @@ bool CpModelPresolver::PresolveNoOverlap(ConstraintProto* ct) {
       new_interval->mutable_start()->set_offset(new_start);
       new_interval->mutable_size()->set_offset(new_end - new_start);
       new_interval->mutable_end()->set_offset(new_end);
+      move_constraint_last = true;
     }
 
     // Cleanup the original proto.
@@ -3877,6 +3879,16 @@ bool CpModelPresolver::PresolveNoOverlap(ConstraintProto* ct) {
   }
   if (proto->intervals().empty()) {
     context_->UpdateRuleStats("no_overlap: no intervals");
+    return RemoveConstraint(ct);
+  }
+
+  // Unfortunately, because we want all intervals to appear before a constraint
+  // that uses them, we need to move the constraint last when we merged constant
+  // intervals.
+  if (move_constraint_last) {
+    changed = true;
+    *context_->working_model->add_constraints() = *ct;
+    context_->UpdateNewConstraintsVariableUsage();
     return RemoveConstraint(ct);
   }
 
@@ -6043,10 +6055,8 @@ bool CpModelPresolver::ProcessSetPPC() {
         if (c1 == c2) continue;
 
         CHECK_LT(c1, c2);
-        if (compared_constraints.contains(std::pair<int, int>(c1, c2))) {
-          continue;
-        }
-        compared_constraints.insert({c1, c2});
+        const auto [_, inserted] = compared_constraints.insert({c1, c2});
+        if (!inserted) continue;
 
         // Hard limit on number of comparisons to avoid spending too much time
         // here.
@@ -7100,6 +7110,10 @@ void CpModelPresolver::PresolveToFixPoint() {
 ModelCopy::ModelCopy(PresolveContext* context) : context_(context) {}
 
 // TODO(user): Merge with the phase 1 of the presolve code.
+//
+// TODO(user): It seems easy to forget to update this if any new constraint
+// contains an interval or if we add a field to an existing constraint. Find a
+// way to remind contributor to not forget this.
 bool ModelCopy::ImportAndSimplifyConstraints(
     const CpModelProto& in_model, const std::vector<int>& ignored_constraints) {
   const absl::flat_hash_set<int> ignored_constraints_set(
@@ -7111,10 +7125,8 @@ bool ModelCopy::ImportAndSimplifyConstraints(
     if (ignored_constraints_set.contains(c)) continue;
 
     const ConstraintProto& ct = in_model.constraints(c);
-    if (OneEnforcementLiteralIsFalse(ct) &&
-        ct.constraint_case() != ConstraintProto::kInterval) {
-      continue;
-    }
+    if (OneEnforcementLiteralIsFalse(ct)) continue;
+
     switch (ct.constraint_case()) {
       case ConstraintProto::CONSTRAINT_NOT_SET: {
         break;
@@ -7143,27 +7155,23 @@ bool ModelCopy::ImportAndSimplifyConstraints(
         if (!CopyInterval(ct, c)) return CreateUnsatModel();
         break;
       }
+      case ConstraintProto::kNoOverlap: {
+        CopyAndMapNoOverlap(ct);
+        break;
+      }
+      case ConstraintProto::kNoOverlap2D: {
+        CopyAndMapNoOverlap2D(ct);
+        break;
+      }
+      case ConstraintProto::kCumulative: {
+        CopyAndMapCumulative(ct);
+        break;
+      }
       default: {
         *context_->working_model->add_constraints() = ct;
       }
     }
   }
-
-  // Re-map interval indices for new constraints.
-  // TODO(user): Support removing unperformed intervals.
-  for (int c = starting_constraint_index_;
-       c < context_->working_model->constraints_size(); ++c) {
-    ConstraintProto& ct_ref = *context_->working_model->mutable_constraints(c);
-    ApplyToAllIntervalIndices(
-        [this](int* ref) {
-          const auto& it = interval_mapping_.find(*ref);
-          if (it != interval_mapping_.end()) {
-            *ref = it->second;
-          }
-        },
-        &ct_ref);
-  }
-
   return true;
 }
 
@@ -7353,13 +7361,61 @@ bool ModelCopy::CopyExactlyOne(const ConstraintProto& ct) {
 }
 
 bool ModelCopy::CopyInterval(const ConstraintProto& ct, int c) {
-  // TODO(user): remove non performed intervals.
   CHECK_EQ(starting_constraint_index_, 0)
       << "Adding new interval constraints to partially filled model is not "
          "supported.";
   interval_mapping_[c] = context_->working_model->constraints_size();
   *context_->working_model->add_constraints() = ct;
   return true;
+}
+
+void ModelCopy::CopyAndMapNoOverlap(const ConstraintProto& ct) {
+  // Note that we don't copy names or enforcement_literal (not supported) here.
+  auto* new_ct =
+      context_->working_model->add_constraints()->mutable_no_overlap();
+  new_ct->mutable_intervals()->Reserve(ct.no_overlap().intervals().size());
+  for (const int index : ct.no_overlap().intervals()) {
+    const auto it = interval_mapping_.find(index);
+    if (it == interval_mapping_.end()) continue;
+    new_ct->add_intervals(it->second);
+  }
+}
+
+void ModelCopy::CopyAndMapNoOverlap2D(const ConstraintProto& ct) {
+  // Note that we don't copy names or enforcement_literal (not supported) here.
+  auto* new_ct =
+      context_->working_model->add_constraints()->mutable_no_overlap_2d();
+  new_ct->set_boxes_with_null_area_can_overlap(
+      ct.no_overlap_2d().boxes_with_null_area_can_overlap());
+
+  const int num_intervals = ct.no_overlap_2d().x_intervals().size();
+  new_ct->mutable_x_intervals()->Reserve(num_intervals);
+  new_ct->mutable_y_intervals()->Reserve(num_intervals);
+  for (int i = 0; i < num_intervals; ++i) {
+    const auto x_it = interval_mapping_.find(ct.no_overlap_2d().x_intervals(i));
+    if (x_it == interval_mapping_.end()) continue;
+    const auto y_it = interval_mapping_.find(ct.no_overlap_2d().y_intervals(i));
+    if (y_it == interval_mapping_.end()) continue;
+    new_ct->add_x_intervals(x_it->second);
+    new_ct->add_y_intervals(y_it->second);
+  }
+}
+
+void ModelCopy::CopyAndMapCumulative(const ConstraintProto& ct) {
+  // Note that we don't copy names or enforcement_literal (not supported) here.
+  auto* new_ct =
+      context_->working_model->add_constraints()->mutable_cumulative();
+  *new_ct->mutable_capacity() = ct.cumulative().capacity();
+
+  const int num_intervals = ct.cumulative().intervals().size();
+  new_ct->mutable_intervals()->Reserve(num_intervals);
+  new_ct->mutable_demands()->Reserve(num_intervals);
+  for (int i = 0; i < num_intervals; ++i) {
+    const auto it = interval_mapping_.find(ct.cumulative().intervals(i));
+    if (it == interval_mapping_.end()) continue;
+    new_ct->add_intervals(it->second);
+    *new_ct->add_demands() = ct.cumulative().demands(i);
+  }
 }
 
 bool ModelCopy::CreateUnsatModel() {
