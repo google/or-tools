@@ -140,18 +140,6 @@ public class CpModel
         return null;
     }
 
-    public Constraint AddAllDifferent(IEnumerable<IntVar> vars)
-    {
-        Constraint ct = new Constraint(model_);
-        AllDifferentConstraintProto alldiff = new AllDifferentConstraintProto();
-        foreach (IntVar var in vars)
-        {
-            alldiff.Exprs.Add(GetLinearExpressionProto(var));
-        }
-        ct.Proto.AllDiff = alldiff;
-        return ct;
-    }
-
     public Constraint AddAllDifferent(IEnumerable<LinearExpr> exprs)
     {
         Constraint ct = new Constraint(model_);
@@ -756,7 +744,7 @@ public class CpModel
 
     bool HasObjective()
     {
-        return model_.Objective == null;
+        return model_.Objective != null;
     }
 
     // Search Decision.
