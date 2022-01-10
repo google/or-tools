@@ -21,10 +21,10 @@ class SpeakerScheduling
 {
     struct Entry
     {
-        public IntVar var;
+        public BoolVar var;
         public int start;
 
-        public Entry(IntVar v, int s)
+        public Entry(BoolVar v, int s)
         {
             var = v;
             start = s;
@@ -93,15 +93,15 @@ class SpeakerScheduling
             entries[speaker] = new List<Entry>();
         }
 
-        List<IntVar>[] contributions_per_slot = new List<IntVar>[last_slot + 1];
+        List<BoolVar>[] contributions_per_slot = new List<BoolVar>[last_slot + 1];
         for (int slot = 1; slot <= last_slot; ++slot)
         {
-            contributions_per_slot[slot] = new List<IntVar>();
+            contributions_per_slot[slot] = new List<BoolVar>();
         }
 
         for (int speaker = 0; speaker < number_of_speakers; ++speaker)
         {
-            List<IntVar> all_vars = new List<IntVar>();
+            List<BoolVar> all_vars = new List<BoolVar>();
             int duration = durations[speaker];
             // Let's filter the possible starts.
             int availability = speaker_availability[speaker].Length;
@@ -125,7 +125,7 @@ class SpeakerScheduling
                 }
                 if (ok)
                 {
-                    IntVar var = model.NewBoolVar("speaker " + (speaker + 1) + " starts at " + slot);
+                    BoolVar var = model.NewBoolVar("speaker " + (speaker + 1) + " starts at " + slot);
                     entries[speaker].Add(new Entry(var, slot));
                     all_vars.Add(var);
                     for (int offset = 0; offset < duration; ++offset)
@@ -134,12 +134,12 @@ class SpeakerScheduling
                     }
                 }
             }
-            model.Add(LinearExpr.Sum(all_vars) == 1);
+            model.AddExactlyOne(all_vars);
         }
         // Force the schedule to be consistent.
         for (int slot = first_slot; slot <= last_slot; ++slot)
         {
-            model.Add(LinearExpr.Sum(contributions_per_slot[slot]) <= 1);
+            model.AddAtMostOne(contributions_per_slot[slot]);
         }
 
         // Creates last_slot.

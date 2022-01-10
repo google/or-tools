@@ -48,7 +48,7 @@ public class GateSchedulingSat
         List<IntervalVar> intervals = new List<IntervalVar>();
         List<IntervalVar> intervals0 = new List<IntervalVar>();
         List<IntervalVar> intervals1 = new List<IntervalVar>();
-        List<IntVar> performed = new List<IntVar>();
+        List<BoolVar> performed = new List<BoolVar>();
         List<IntVar> starts = new List<IntVar>();
         List<IntVar> ends = new List<IntVar>();
         List<int> demands = new List<int>();
@@ -65,7 +65,7 @@ public class GateSchedulingSat
             ends.Add(end);
             demands.Add(jobs[i, 1]);
 
-            IntVar performed_on_m0 = model.NewBoolVar(String.Format("perform_{0}_on_m0", i));
+            BoolVar performed_on_m0 = model.NewBoolVar(String.Format("perform_{0}_on_m0", i));
             performed.Add(performed_on_m0);
 
             // Create an optional copy of interval to be executed on machine 0.

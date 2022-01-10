@@ -59,7 +59,7 @@ public class BalanceGroupSat
 
         var model = new CpModel();
 
-        var itemInGroup = new IntVar[numberItems, numberGroups];
+        var itemInGroup = new BoolVar[numberItems, numberGroups];
         foreach (var item in allItems)
         {
             foreach (var @group in allGroups)
@@ -97,7 +97,7 @@ public class BalanceGroupSat
         }
 
         // colorInGroup variables.
-        var colorInGroup = new IntVar[numberColors, numberGroups];
+        var colorInGroup = new BoolVar[numberColors, numberGroups];
         foreach (var @group in allGroups)
         {
             foreach (var color in allColors)
@@ -156,11 +156,11 @@ public class BalanceGroupSat
         private int[] _colors;
         private int[] _allGroups;
         private int[] _allItems;
-        private IntVar[,] _itemInGroup;
+        private BoolVar[,] _itemInGroup;
 
         private int _solutionCount;
 
-        public SolutionPrinter(int[] values, int[] colors, int[] allGroups, int[] allItems, IntVar[,] itemInGroup)
+        public SolutionPrinter(int[] values, int[] colors, int[] allGroups, int[] allItems, BoolVar[,] itemInGroup)
         {
             this._values = values;
             this._colors = colors;

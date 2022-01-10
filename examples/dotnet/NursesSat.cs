@@ -18,7 +18,7 @@ using Google.OrTools.Sat;
 
 public class NurseSolutionObserver : CpSolverSolutionCallback
 {
-    public NurseSolutionObserver(IntVar[,,] shifts, int num_nurses, int num_days, int num_shifts, HashSet<int> to_print,
+    public NurseSolutionObserver(BoolVar[,,] shifts, int num_nurses, int num_days, int num_shifts, HashSet<int> to_print,
                                  int last_solution_explored)
     {
         shifts_ = shifts;
@@ -90,7 +90,7 @@ public class NursesSat
 
         // Creates shift variables.
         // shift[n, d, s]: nurse "n" works shift "s" on day "d".
-        IntVar[,,] shift = new IntVar[num_nurses, num_days, num_shifts];
+        BoolVar[,,] shift = new BoolVar[num_nurses, num_days, num_shifts];
         foreach (int n in all_nurses)
         {
             foreach (int d in all_days)

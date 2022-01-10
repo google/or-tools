@@ -156,13 +156,13 @@ class TaskSchedulingSat
         CpModel model = new CpModel();
 
         IntervalVar[] tasks = new IntervalVar[taskCount];
-        IntVar[] taskChoosed = new IntVar[taskCount];
+        BoolVar[] taskChoosed = new BoolVar[taskCount];
         IntVar[] allEnds = new IntVar[GetEndTaskCount()];
 
         int endJobCounter = 0;
         foreach (Job j in myJobList)
         {
-            IntVar[] tmp = new IntVar[j.AlternativeTasks.Count];
+            BoolVar[] tmp = new BoolVar[j.AlternativeTasks.Count];
             int i = 0;
             foreach (Task t in j.AlternativeTasks)
             {
@@ -178,7 +178,7 @@ class TaskSchedulingSat
                     tasksToEquipment[t.Equipment] = new List<IntervalVar>();
                 tasksToEquipment[t.Equipment].Add(tasks[ti]);
             }
-            model.Add(LinearExpr.Sum(tmp) == 1);
+            model.AddExactlyOne(tmp);
         }
 
         foreach (KeyValuePair<long, List<IntervalVar>> pair in tasksToEquipment)
