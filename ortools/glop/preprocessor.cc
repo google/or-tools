@@ -2344,8 +2344,7 @@ void SingletonUndo::SingletonRowUndo(const SparseColumn& saved_column,
   DCHECK_EQ(0, solution->dual_values[e_.row]);
 
   // If the variable is basic or free, we can just keep the constraint
-  // VariableStatus::BASIC and
-  // 0.0 as the dual value.
+  // VariableStatus::BASIC and 0.0 as the dual value.
   const VariableStatus status = solution->variable_statuses[e_.col];
   if (status == VariableStatus::BASIC || status == VariableStatus::FREE) return;
 
@@ -2386,6 +2385,13 @@ void SingletonUndo::SingletonRowUndo(const SparseColumn& saved_column,
   // variable becomes a basic variable. This is what the line below do, since
   // the new reduced cost of the variable will be equal to:
   //     old_reduced_cost - coeff * solution->dual_values[row]
+  //
+  // TODO(user): This code is broken for integer variable.
+  // Say our singleton row is 2 * y <= 5, and y was at its implied bound y = 2
+  // at postsolve. The problem is that we can end up with an AT_UPPER_BOUND
+  // status for the constraint 2 * y <= 5 which is not correct since the
+  // activity is 4, and that break later preconditions. Maybe there is a way to
+  // fix everything, but it seems tough to be sure.
   solution->dual_values[e_.row] = reduced_cost / e_.coeff;
   ConstraintStatus new_constraint_status = VariableToConstraintStatus(status);
   if (status == VariableStatus::FIXED_VALUE &&
@@ -2871,6 +2877,14 @@ bool SingletonPreprocessor::Run(LinearProgram* lp) {
       row_to_process.pop_back();
       if (row_degree[row] <= 0) continue;
       const MatrixEntry e = GetSingletonRowMatrixEntry(row, transpose);
+
+      // TODO(user): We should be able to restrict the variable bounds with the
+      // ones of the constraint all the time. However, some situation currently
+      // break the presolve, and it seems hard to fix in a 100% safe way.
+      if (in_mip_context_ && lp->IsVariableInteger(e.col) &&
+          !IntegerSingletonColumnIsRemovable(e, *lp)) {
+        continue;
+      }
 
       DeleteSingletonRow(e, lp);
       --column_degree[e.col];
