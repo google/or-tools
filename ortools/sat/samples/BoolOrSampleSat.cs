@@ -20,8 +20,8 @@ public class BoolOrSampleSat
     {
         CpModel model = new CpModel();
 
-        IntVar x = model.NewBoolVar("x");
-        IntVar y = model.NewBoolVar("y");
+        BoolVar x = model.NewBoolVar("x");
+        BoolVar y = model.NewBoolVar("y");
 
         model.AddBoolOr(new ILiteral[] { x, y.Not() });
     }

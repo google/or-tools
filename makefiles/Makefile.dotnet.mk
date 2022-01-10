@@ -794,27 +794,36 @@ test_dotnet_linear_solver_samples: \
 
 .PHONY: test_dotnet_sat_samples # Build and Run all .Net SAT Samples (located in ortools/sat/samples)
 test_dotnet_sat_samples: \
-	rdotnet_AssignmentSat \
-	rdotnet_AssumptionsSampleSat \
-	rdotnet_BinPackingProblemSat \
-	rdotnet_BoolOrSampleSat \
-	rdotnet_ChannelingSampleSat \
-	rdotnet_CpIsFunSat \
-	rdotnet_EarlinessTardinessCostSampleSat \
-	rdotnet_IntervalSampleSat \
-	rdotnet_LiteralSampleSat \
-	rdotnet_NoOverlapSampleSat \
-	rdotnet_OptionalIntervalSampleSat \
-	rdotnet_RabbitsAndPheasantsSat \
-	rdotnet_RankingSampleSat \
-	rdotnet_ReifiedSampleSat \
-	rdotnet_SearchForAllSolutionsSampleSat \
-	rdotnet_SimpleSatProgram \
-	rdotnet_SolutionHintingSampleSat \
-	rdotnet_SolveAndPrintIntermediateSolutionsSampleSat \
-	rdotnet_SolveWithTimeLimitSampleSat \
-	rdotnet_StepFunctionSampleSat \
-	rdotnet_StopAfterNSolutionsSampleSat
+rdotnet_AssignmentGroupsSat \
+rdotnet_AssignmentSat \
+rdotnet_AssignmentTaskSizesSat \
+rdotnet_AssignmentTeamsSat \
+rdotnet_AssumptionsSampleSat \
+rdotnet_BinPackingProblemSat \
+rdotnet_BoolOrSampleSat \
+rdotnet_ChannelingSampleSat \
+rdotnet_CpIsFunSat \
+rdotnet_CpSatExample \
+rdotnet_EarlinessTardinessCostSampleSat \
+rdotnet_IntervalSampleSat \
+rdotnet_LiteralSampleSat \
+rdotnet_MinimalJobshopSat \
+rdotnet_MultipleKnapsackSat \
+rdotnet_NQueensSat \
+rdotnet_NoOverlapSampleSat \
+rdotnet_NursesSat \
+rdotnet_OptionalIntervalSampleSat \
+rdotnet_RabbitsAndPheasantsSat \
+rdotnet_RankingSampleSat \
+rdotnet_ReifiedSampleSat \
+rdotnet_ScheduleRequestsSat \
+rdotnet_SearchForAllSolutionsSampleSat \
+rdotnet_SimpleSatProgram \
+rdotnet_SolutionHintingSampleSat \
+rdotnet_SolveAndPrintIntermediateSolutionsSampleSat \
+rdotnet_SolveWithTimeLimitSampleSat \
+rdotnet_StepFunctionSampleSat \
+rdotnet_StopAfterNSolutionsSampleSat
 
 .PHONY: check_dotnet_pimpl
 check_dotnet_pimpl: \

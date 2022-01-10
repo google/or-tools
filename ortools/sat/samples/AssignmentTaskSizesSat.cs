@@ -50,18 +50,12 @@ public class AssignmentTaskSizesSat
 
         // Variables.
         // [START variables]
-        IntVar[,] x = new IntVar[numWorkers, numTasks];
-        // Variables in a 1-dim array.
-        IntVar[] xFlat = new IntVar[numWorkers * numTasks];
-        int[] costsFlat = new int[numWorkers * numTasks];
+        BoolVar[,] x = new BoolVar[numWorkers, numTasks];
         foreach (int worker in allWorkers)
         {
             foreach (int task in allTasks)
             {
                 x[worker, task] = model.NewBoolVar($"x[{worker},{task}]");
-                int k = worker * numTasks + task;
-                xFlat[k] = x[worker, task];
-                costsFlat[k] = costs[worker, task];
             }
         }
         // [END variables]
@@ -71,7 +65,7 @@ public class AssignmentTaskSizesSat
         // Each worker is assigned to at most max task size.
         foreach (int worker in allWorkers)
         {
-            IntVar[] vars = new IntVar[numTasks];
+            BoolVar[] vars = new BoolVar[numTasks];
             foreach (int task in allTasks)
             {
                 vars[task] = x[worker, task];
@@ -82,18 +76,26 @@ public class AssignmentTaskSizesSat
         // Each task is assigned to exactly one worker.
         foreach (int task in allTasks)
         {
-            IntVar[] vars = new IntVar[numWorkers];
+            List<ILiteral> workers = new List<ILiteral>();
             foreach (int worker in allWorkers)
             {
-                vars[worker] = x[worker, task];
+                workers.Add(x[worker, task]);
             }
-            model.Add(LinearExpr.Sum(vars) == 1);
+            model.AddExactlyOne(workers);
         }
         // [END constraints]
 
         // Objective
         // [START objective]
-        model.Minimize(LinearExpr.WeightedSum(xFlat, costsFlat));
+        LinearExprBuilder obj = LinearExpr.NewBuilder();
+        foreach (int worker in allWorkers)
+        {
+            foreach (int task in allTasks)
+            {
+                obj.AddTerm(x[worker, task], costs[worker, task]);
+            }
+        }
+        model.Minimize(obj);
         // [END objective]
 
         // Solve

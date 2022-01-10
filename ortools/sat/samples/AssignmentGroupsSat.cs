@@ -72,18 +72,13 @@ public class AssignmentGroupsSat
 
         // Variables.
         // [START variables]
-        IntVar[,] x = new IntVar[numWorkers, numTasks];
+        BoolVar[,] x = new BoolVar[numWorkers, numTasks];
         // Variables in a 1-dim array.
-        IntVar[] xFlat = new IntVar[numWorkers * numTasks];
-        int[] costsFlat = new int[numWorkers * numTasks];
         foreach (int worker in allWorkers)
         {
             foreach (int task in allTasks)
             {
                 x[worker, task] = model.NewBoolVar($"x[{worker},{task}]");
-                int k = worker * numTasks + task;
-                xFlat[k] = x[worker, task];
-                costsFlat[k] = costs[worker, task];
             }
         }
         // [END variables]
@@ -93,29 +88,29 @@ public class AssignmentGroupsSat
         // Each worker is assigned to at most one task.
         foreach (int worker in allWorkers)
         {
-            IntVar[] vars = new IntVar[numTasks];
+            List<ILiteral> tasks = new List<ILiteral>();
             foreach (int task in allTasks)
             {
-                vars[task] = x[worker, task];
+                tasks.Add(x[worker, task]);
             }
-            model.Add(LinearExpr.Sum(vars) <= 1);
+            model.AddAtMostOne(tasks);
         }
 
         // Each task is assigned to exactly one worker.
         foreach (int task in allTasks)
         {
-            IntVar[] vars = new IntVar[numWorkers];
+            List<ILiteral> workers = new List<ILiteral>();
             foreach (int worker in allWorkers)
             {
-                vars[worker] = x[worker, task];
+                workers.Add(x[worker, task]);
             }
-            model.Add(LinearExpr.Sum(vars) == 1);
+            model.AddExactlyOne(workers);
         }
         // [END constraints]
 
         // [START assignments]
         // Create variables for each worker, indicating whether they work on some task.
-        IntVar[] work = new IntVar[numWorkers];
+        BoolVar[] work = new BoolVar[numWorkers];
         foreach (int worker in allWorkers)
         {
             work[worker] = model.NewBoolVar($"work[{worker}]");
@@ -123,12 +118,12 @@ public class AssignmentGroupsSat
 
         foreach (int worker in allWorkers)
         {
-            IntVar[] vars = new IntVar[numTasks];
+            List<ILiteral> tasks = new List<ILiteral>();
             foreach (int task in allTasks)
             {
-                vars[task] = x[worker, task];
+                tasks.Add(x[worker, task]);
             }
-            model.Add(work[worker] == LinearExpr.Sum(vars));
+            model.Add(work[worker] == LinearExpr.Sum(tasks));
         }
 
         // Define the allowed groups of worders
@@ -139,7 +134,15 @@ public class AssignmentGroupsSat
 
         // Objective
         // [START objective]
-        model.Minimize(LinearExpr.WeightedSum(xFlat, costsFlat));
+        LinearExprBuilder obj = LinearExpr.NewBuilder();
+        foreach (int worker in allWorkers)
+        {
+            foreach (int task in allTasks)
+            {
+                obj.AddTerm(x[worker, task], costs[worker, task]);
+            }
+        }
+        model.Minimize(obj);
         // [END objective]
 
         // Solve

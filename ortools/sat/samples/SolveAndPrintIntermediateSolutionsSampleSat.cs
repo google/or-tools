@@ -29,7 +29,7 @@ public class VarArraySolutionPrinterWithObjective : CpSolverSolutionCallback
         Console.WriteLine(String.Format("  objective value = {0}", ObjectiveValue()));
         foreach (IntVar v in variables_)
         {
-            Console.WriteLine(String.Format("  {0} = {1}", v.ShortString(), Value(v)));
+            Console.WriteLine(String.Format("  {0} = {1}", v.ToString(), Value(v)));
         }
         solution_count_++;
     }

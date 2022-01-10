@@ -48,18 +48,12 @@ public class AssignmentTeamsSat
 
         // Variables.
         // [START variables]
-        IntVar[,] x = new IntVar[numWorkers, numTasks];
-        // Variables in a 1-dim array.
-        IntVar[] xFlat = new IntVar[numWorkers * numTasks];
-        int[] costsFlat = new int[numWorkers * numTasks];
+        BoolVar[,] x = new BoolVar[numWorkers, numTasks];
         foreach (int worker in allWorkers)
         {
             foreach (int task in allTasks)
             {
                 x[worker, task] = model.NewBoolVar($"x[{worker},{task}]");
-                int k = worker * numTasks + task;
-                xFlat[k] = x[worker, task];
-                costsFlat[k] = costs[worker, task];
             }
         }
         // [END variables]
@@ -67,25 +61,25 @@ public class AssignmentTeamsSat
         // Constraints
         // [START constraints]
         // Each worker is assigned to at most one task.
-        foreach (int worker in allWorkers)
+        for (int i = 0; i < numWorkers; ++i)
         {
-            IntVar[] vars = new IntVar[numTasks];
-            foreach (int task in allTasks)
+            List<ILiteral> tasks = new List<ILiteral>();
+            for (int j = 0; j < numTasks; ++j)
             {
-                vars[task] = x[worker, task];
+                tasks.Add(x[i, j]);
             }
-            model.Add(LinearExpr.Sum(vars) <= 1);
+            model.AddAtMostOne(tasks);
         }
 
         // Each task is assigned to exactly one worker.
-        foreach (int task in allTasks)
+        for (int j = 0; j < numTasks; ++j)
         {
-            IntVar[] vars = new IntVar[numWorkers];
-            foreach (int worker in allWorkers)
+            List<ILiteral> workers = new List<ILiteral>();
+            for (int i = 0; i < numWorkers; ++i)
             {
-                vars[worker] = x[worker, task];
+                workers.Add(x[i, j]);
             }
-            model.Add(LinearExpr.Sum(vars) == 1);
+            model.AddExactlyOne(workers);
         }
 
         // Each team takes at most two tasks.
@@ -112,7 +106,15 @@ public class AssignmentTeamsSat
 
         // Objective
         // [START objective]
-        model.Minimize(LinearExpr.WeightedSum(xFlat, costsFlat));
+        LinearExprBuilder obj = LinearExpr.NewBuilder();
+        foreach (int worker in allWorkers)
+        {
+            foreach (int task in allTasks)
+            {
+                obj.AddTerm(x[worker, task], costs[worker, task]);
+            }
+        }
+        model.Minimize(obj);
         // [END objective]
 
         // Solve

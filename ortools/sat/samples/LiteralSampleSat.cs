@@ -19,7 +19,7 @@ public class LiteralSampleSat
     static void Main()
     {
         CpModel model = new CpModel();
-        IntVar x = model.NewBoolVar("x");
+        BoolVar x = model.NewBoolVar("x");
         ILiteral not_x = x.Not();
     }
 }

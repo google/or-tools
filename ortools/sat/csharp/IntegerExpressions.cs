@@ -45,6 +45,16 @@ public class LinearExpr
         return NewBuilder().AddSum(exprs);
     }
 
+    public static LinearExpr Sum(IEnumerable<ILiteral> literals)
+    {
+        return NewBuilder().AddSum(literals);
+    }
+
+    public static LinearExpr Sum(IEnumerable<BoolVar> vars)
+    {
+        return NewBuilder().AddSum(vars);
+    }        
+
     public static LinearExpr WeightedSum(IEnumerable<LinearExpr> exprs, IEnumerable<int> coeffs)
     {
         return NewBuilder().AddWeightedSum(exprs, coeffs);
@@ -55,10 +65,47 @@ public class LinearExpr
         return NewBuilder().AddWeightedSum(exprs, coeffs);
     }
 
+    public static LinearExpr WeightedSum(IEnumerable<ILiteral> literals, IEnumerable<int> coeffs)
+    {
+        return NewBuilder().AddWeightedSum(literals, coeffs);
+    }
+
+    public static LinearExpr WeightedSum(IEnumerable<ILiteral> literals, IEnumerable<long> coeffs)
+    {
+        return NewBuilder().AddWeightedSum(literals, coeffs);
+    }    
+
+    public static LinearExpr WeightedSum(IEnumerable<BoolVar> vars, IEnumerable<int> coeffs)
+    {
+        return NewBuilder().AddWeightedSum(vars, coeffs);
+    }
+
+    public static LinearExpr WeightedSum(IEnumerable<BoolVar> vars, IEnumerable<long> coeffs)
+    {
+        return NewBuilder().AddWeightedSum(vars, coeffs);
+    }        
+
     public static LinearExpr Term(LinearExpr expr, long coeff)
     {
         return Prod(expr, coeff);
     }
+
+   public static LinearExpr Term(ILiteral literal, long coeff)
+    {
+        if (literal is BoolVar) 
+        {
+           return Prod((IntVar) literal, coeff);
+        }
+        else
+        {
+            return Affine((BoolVar) literal.Not(), -coeff, coeff);
+        }
+    }
+
+   public static LinearExpr Term(BoolVar var, long coeff)
+    {
+        return Prod(var, coeff);
+    }        
 
     public static LinearExpr Affine(LinearExpr expr, long coeff, long offset)
     {
@@ -79,11 +126,6 @@ public class LinearExpr
         return new LinearExprBuilder();
     }
 
-    public virtual string ShortString()
-    {
-        return ToString();
-    }
-
     public static LinearExpr operator +(LinearExpr a, LinearExpr b)
     {
         return NewBuilder().Add(a).Add(b);
@@ -91,19 +133,11 @@ public class LinearExpr
 
     public static LinearExpr operator +(LinearExpr a, long v)
     {
-        if (v == 0)
-        {
-            return a;
-        }
         return NewBuilder().Add(a).Add(v);
     }
 
     public static LinearExpr operator +(long v, LinearExpr a)
     {
-        if (v == 0)
-        {
-            return a;
-        }
         return NewBuilder().Add(a).Add(v);
     }
 
@@ -114,10 +148,6 @@ public class LinearExpr
 
     public static LinearExpr operator -(LinearExpr a, long v)
     {
-        if (v == 0)
-        {
-            return a;
-        }
         return NewBuilder().Add(a).Add(-v);
     }
 
@@ -250,17 +280,15 @@ public class LinearExpr
         {
             Term term = terms[0];
             terms.RemoveAt(0);
-            LinearExpr expr = term.expr;
-            long coeff = term.coefficient;
-            if (coeff == 0 || (Object)expr == null)
+            if (term.coefficient == 0 || (Object)term.expr == null)
             {
                 continue;
             }
 
-            if (expr is LinearExprBuilder)
+            if (term.expr is LinearExprBuilder)
             {
-                LinearExprBuilder b = (LinearExprBuilder)expr;
-                constant += coeff * b.Offset;
+                LinearExprBuilder b = (LinearExprBuilder)term.expr;
+                constant += term.coefficient * b.Offset;
                 foreach (Term sub in b.Terms)
                 {
                     if (sub.expr is IntVar) // Quick unroll.
@@ -268,47 +296,47 @@ public class LinearExpr
                         IntVar i = (IntVar)sub.expr;
                         if (dict.ContainsKey(i))
                         {
-                            dict[i] += coeff * sub.coefficient;
+                            dict[i] += term.coefficient * sub.coefficient;
                         }
                         else
                         {
-                            dict.Add(i, coeff * sub.coefficient);
+                            dict.Add(i, term.coefficient * sub.coefficient);
                         }
                     }
                     else
                     {
-                        terms.Add(sub);
+                        terms.Add(new Term(sub.expr, sub.coefficient * term.coefficient));
                     }
                 }
             }
-            else if (expr is IntVar)
+            else if (term.expr is IntVar)
             {
-                IntVar i = (IntVar)expr;
+                IntVar i = (IntVar)term.expr;
                 if (dict.ContainsKey(i))
                 {
-                    dict[i] += coeff;
+                    dict[i] += term.coefficient;
                 }
                 else
                 {
-                    dict.Add(i, coeff);
+                    dict.Add(i, term.coefficient);
                 }
             }
-            else if (expr is NotBoolVar)
+            else if (term.expr is NotBoolVar)
             {
-                IntVar i = ((NotBoolVar)expr).NotVar();
+                IntVar i = ((NotBoolVar)term.expr).NotVar();
                 if (dict.ContainsKey(i))
                 {
-                    dict[i] -= coeff;
+                    dict[i] -= term.coefficient;
                 }
                 else
                 {
-                    dict.Add(i, -coeff);
+                    dict.Add(i, -term.coefficient);
                 }
-                constant += coeff;
+                constant += term.coefficient;
             }
             else
             {
-                throw new ArgumentException("Cannot interpret '" + expr.ToString() + "' in an integer expression");
+                throw new ArgumentException("Cannot interpret '" + term.expr.ToString() + "' in an integer expression");
             }
         }
         return constant;
@@ -355,6 +383,18 @@ public class LinearExprBuilder : LinearExpr
         return this;
     }
 
+    public LinearExprBuilder Add(ILiteral literal)
+    {
+        AddTerm(literal, 1);
+        return this;
+    }
+
+    public LinearExprBuilder Add(BoolVar var)
+    {
+        AddTerm(var, 1);
+        return this;
+    }
+
     public LinearExprBuilder Add(long constant)
     {
         offset_ += constant;
@@ -367,6 +407,26 @@ public class LinearExprBuilder : LinearExpr
         return this;
     }
 
+    public LinearExprBuilder AddTerm(ILiteral literal, long coefficient)
+    {
+        if (literal is BoolVar)
+        {
+            terms_.Add(new Term((BoolVar)literal, coefficient));
+        }
+        else
+        {
+            offset_ += coefficient;
+            terms_.Add(new Term((BoolVar)literal.Not(), -coefficient));
+        }
+        return this;
+    }
+
+    public LinearExprBuilder AddTerm(BoolVar var, long coefficient)
+    {
+        terms_.Add(new Term(var, coefficient));
+        return this;
+    }
+
     public LinearExprBuilder AddSum(IEnumerable<LinearExpr> exprs)
     {
         foreach (LinearExpr expr in exprs)
@@ -376,6 +436,23 @@ public class LinearExprBuilder : LinearExpr
         return this;
     }
 
+    public LinearExprBuilder AddSum(IEnumerable<ILiteral> literals)
+    {
+        foreach (ILiteral literal in literals)
+        {
+            AddTerm(literal, 1);
+        }
+        return this;
+    }
+
+     public LinearExprBuilder AddSum(IEnumerable<BoolVar> vars)
+    {
+        foreach (BoolVar var in vars)
+        {
+            AddTerm(var, 1);
+        }
+        return this;
+    }   
     public LinearExprBuilder AddWeightedSum(IEnumerable<LinearExpr> exprs, IEnumerable<long> coefficients)
     {
         foreach (var p in exprs.Zip(coefficients, (e, c) => new { Expr = e, Coeff = c }))
@@ -394,11 +471,42 @@ public class LinearExprBuilder : LinearExpr
         return this;
     }
 
-    public override string ShortString()
+    public LinearExprBuilder AddWeightedSum(IEnumerable<ILiteral> literals, IEnumerable<int> coefficients)
     {
-        return String.Format("({0})", ToString());
+        foreach (var p in literals.Zip(coefficients, (l, c) => new { Literal = l, Coeff = c }))
+        {
+            AddTerm(p.Literal, p.Coeff);
+        }
+        return this;
     }
 
+    public LinearExprBuilder AddWeightedSum(IEnumerable<ILiteral> literals, IEnumerable<long> coefficients)
+    {
+        foreach (var p in literals.Zip(coefficients, (l, c) => new { Literal = l, Coeff = c }))
+        {
+            AddTerm(p.Literal, p.Coeff);
+        }
+        return this;
+    }
+
+    public LinearExprBuilder AddWeightedSum(IEnumerable<BoolVar> vars, IEnumerable<long> coefficients)
+    {
+        foreach (var p in vars.Zip(coefficients, (v, c) => new { Var = v, Coeff = c }))
+        {
+            AddTerm(p.Var, p.Coeff);
+        }
+        return this;
+    }
+
+    public LinearExprBuilder AddWeightedSum(IEnumerable<BoolVar> vars, IEnumerable<int> coefficients)
+    {
+        foreach (var p in vars.Zip(coefficients, (v, c) => new { Var = v, Coeff = c }))
+        {
+            AddTerm(p.Var, p.Coeff);
+        }
+        return this;
+    }
+    
     public override string ToString()
     {
         string result = "";
@@ -416,7 +524,7 @@ public class LinearExprBuilder : LinearExpr
                     result += " + ";
                 }
 
-                result += term.expr.ShortString();
+                result += term.expr.ToString();
             }
             else if (term.coefficient > 0)
             {
@@ -425,28 +533,28 @@ public class LinearExprBuilder : LinearExpr
                     result += " + ";
                 }
 
-                result += String.Format("{0} * {1}}", term.coefficient, term.expr.ShortString());
+                result += String.Format("{0} * {1}", term.coefficient, term.expr.ToString());
             }
             else if (term.coefficient == -1)
             {
                 if (!first)
                 {
-                    result += String.Format(" - {0}", term.expr.ShortString());
+                    result += String.Format(" - {0}", term.expr.ToString());
                 }
                 else
                 {
-                    result += String.Format(" -{0}", term.expr.ShortString());
+                    result += String.Format(" -{0}", term.expr.ToString());
                 }
             }
             else
             {
                 if (!first)
                 {
-                    result += String.Format(" - {0} * {1}", -term.coefficient, term.expr.ShortString());
+                    result += String.Format(" - {0} * {1}", -term.coefficient, term.expr.ToString());
                 }
                 else
                 {
-                    result += String.Format(" {0} * {1}", term.coefficient, term.expr.ShortString());
+                    result += String.Format(" {0} * {1}", term.coefficient, term.expr.ToString());
                 }
             }
         }
@@ -554,11 +662,6 @@ public class IntVar : LinearExpr
 
     public override string ToString()
     {
-        return var_.ToString();
-    }
-
-    public override string ShortString()
-    {
         if (var_.Name != null)
         {
             return var_.Name;
@@ -631,9 +734,9 @@ public class NotBoolVar : LinearExpr, ILiteral
         return boolvar_;
     }
 
-    public override string ShortString()
+    public override string ToString()
     {
-        return String.Format("Not({0})", boolvar_.ShortString());
+        return String.Format("Not({0})", boolvar_.ToString());
     }
 
     private BoolVar boolvar_;

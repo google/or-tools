@@ -33,7 +33,7 @@ public class RankingSampleSat
                 }
                 else
                 {
-                    IntVar prec = model.NewBoolVar(String.Format("{0} before {1}", i, j));
+                    BoolVar prec = model.NewBoolVar(String.Format("{0} before {1}", i, j));
                     precedences[i, j] = prec;
                     model.Add(starts[i] < starts[j]).OnlyEnforceIf(prec);
                 }
@@ -70,12 +70,12 @@ public class RankingSampleSat
         // Links precedences and ranks.
         for (int i = 0; i < num_tasks; ++i)
         {
-            IntVar[] tmp_array = new IntVar[num_tasks];
+            List<IntVar> tasks = new List<IntVar>();
             for (int j = 0; j < num_tasks; ++j)
             {
-                tmp_array[j] = (IntVar)precedences[j, i];
+                tasks.Add((IntVar)precedences[j, i]);
             }
-            model.Add(ranks[i] == LinearExpr.Sum(tmp_array) - 1);
+            model.Add(ranks[i] == LinearExpr.Sum(tasks) - 1);
         }
     }
 
@@ -92,7 +92,7 @@ public class RankingSampleSat
         ILiteral[] presences = new ILiteral[num_tasks];
         IntVar[] ranks = new IntVar[num_tasks];
 
-        IntVar true_var = model.NewConstant(1);
+        ILiteral true_var = model.TrueLiteral();
 
         // Creates intervals, half of them are optional.
         for (int t = 0; t < num_tasks; ++t)

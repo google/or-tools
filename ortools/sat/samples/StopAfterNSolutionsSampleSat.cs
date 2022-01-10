@@ -28,7 +28,7 @@ public class VarArraySolutionPrinterWithLimit : CpSolverSolutionCallback
         Console.WriteLine(String.Format("Solution #{0}: time = {1:F2} s", solution_count_, WallTime()));
         foreach (IntVar v in variables_)
         {
-            Console.WriteLine(String.Format("  {0} = {1}", v.ShortString(), Value(v)));
+            Console.WriteLine(String.Format("  {0} = {1}", v.ToString(), Value(v)));
         }
         solution_count_++;
         if (solution_count_ >= solution_limit_)

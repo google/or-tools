@@ -25,7 +25,7 @@ public class NursesSat
     public class SolutionPrinter : CpSolverSolutionCallback
     {
         public SolutionPrinter(int[] allNurses, int[] allDays, int[] allShifts,
-                               Dictionary<Tuple<int, int, int>, IntVar> shifts, int limit)
+                               Dictionary<Tuple<int, int, int>, BoolVar> shifts, int limit)
         {
             solutionCount_ = 0;
             allNurses_ = allNurses;
@@ -76,7 +76,7 @@ public class NursesSat
         private int[] allNurses_;
         private int[] allDays_;
         private int[] allShifts_;
-        private Dictionary<Tuple<int, int, int>, IntVar> shifts_;
+        private Dictionary<Tuple<int, int, int>, BoolVar> shifts_;
         private int solutionLimit_;
     }
     // [END solution_printer]
@@ -101,7 +101,7 @@ public class NursesSat
         // Creates shift variables.
         // shifts[(n, d, s)]: nurse 'n' works shift 's' on day 'd'.
         // [START variables]
-        Dictionary<Tuple<int, int, int>, IntVar> shifts = new Dictionary<Tuple<int, int, int>, IntVar>();
+        Dictionary<Tuple<int, int, int>, BoolVar> shifts = new Dictionary<Tuple<int, int, int>, BoolVar>();
         foreach (int n in allNurses)
         {
             foreach (int d in allDays)
@@ -120,13 +120,13 @@ public class NursesSat
         {
             foreach (int s in allShifts)
             {
-                IntVar[] x = new IntVar[numNurses];
+                List<ILiteral> literals = new List<ILiteral>();
                 foreach (int n in allNurses)
                 {
                     var key = Tuple.Create(n, d, s);
-                    x[n] = shifts[key];
+                    literals.Add(shifts[key]);
                 }
-                model.Add(LinearExpr.Sum(x) == 1);
+                model.AddExactlyOne(literals);
             }
         }
         // [END exactly_one_nurse]
@@ -137,13 +137,13 @@ public class NursesSat
         {
             foreach (int d in allDays)
             {
-                IntVar[] x = new IntVar[numShifts];
+                List<ILiteral> literals = new List<ILiteral>();
                 foreach (int s in allShifts)
                 {
                     var key = Tuple.Create(n, d, s);
-                    x[s] = shifts[key];
+                    literals.Add(shifts[key]);
                 }
-                model.Add(LinearExpr.Sum(x) <= 1);
+                model.AddAtMostOne(literals);
             }
         }
         // [END at_most_one_shift]
@@ -165,13 +165,13 @@ public class NursesSat
         }
         foreach (int n in allNurses)
         {
-            IntVar[] numShiftsWorked = new IntVar[numDays * numShifts];
+            List<IntVar> numShiftsWorked = new List<IntVar>();
             foreach (int d in allDays)
             {
                 foreach (int s in allShifts)
                 {
                     var key = Tuple.Create(n, d, s);
-                    numShiftsWorked[d * numShifts + s] = shifts[key];
+                    numShiftsWorked.Add(shifts[key]);
                 }
             }
             model.AddLinearConstraint(LinearExpr.Sum(numShiftsWorked), minShiftsPerNurse, maxShiftsPerNurse);

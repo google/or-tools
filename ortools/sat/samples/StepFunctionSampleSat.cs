@@ -27,7 +27,7 @@ public class VarArraySolutionPrinter : CpSolverSolutionCallback
         {
             foreach (IntVar v in variables_)
             {
-                Console.Write(String.Format("{0}={1} ", v.ShortString(), Value(v)));
+                Console.Write(String.Format("{0}={1} ", v.ToString(), Value(v)));
             }
             Console.WriteLine();
         }

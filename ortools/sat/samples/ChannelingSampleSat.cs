@@ -27,7 +27,7 @@ public class VarArraySolutionPrinter : CpSolverSolutionCallback
         {
             foreach (IntVar v in variables_)
             {
-                Console.Write(String.Format("{0}={1} ", v.ShortString(), Value(v)));
+                Console.Write(String.Format("{0}={1} ", v.ToString(), Value(v)));
             }
             Console.WriteLine();
         }
@@ -48,7 +48,7 @@ public class ChannelingSampleSat
         IntVar y = model.NewIntVar(0, 10, "y");
 
         // Declare our intermediate boolean variable.
-        IntVar b = model.NewBoolVar("b");
+        BoolVar b = model.NewBoolVar("b");
 
         // Implement b == (x >= 5).
         model.Add(x >= 5).OnlyEnforceIf(b);
