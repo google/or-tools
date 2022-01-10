@@ -53,7 +53,7 @@ public class LinearExpr
     public static LinearExpr Sum(IEnumerable<BoolVar> vars)
     {
         return NewBuilder().AddSum(vars);
-    }        
+    }
 
     public static LinearExpr WeightedSum(IEnumerable<LinearExpr> exprs, IEnumerable<int> coeffs)
     {
@@ -73,7 +73,7 @@ public class LinearExpr
     public static LinearExpr WeightedSum(IEnumerable<ILiteral> literals, IEnumerable<long> coeffs)
     {
         return NewBuilder().AddWeightedSum(literals, coeffs);
-    }    
+    }
 
     public static LinearExpr WeightedSum(IEnumerable<BoolVar> vars, IEnumerable<int> coeffs)
     {
@@ -83,29 +83,29 @@ public class LinearExpr
     public static LinearExpr WeightedSum(IEnumerable<BoolVar> vars, IEnumerable<long> coeffs)
     {
         return NewBuilder().AddWeightedSum(vars, coeffs);
-    }        
+    }
 
     public static LinearExpr Term(LinearExpr expr, long coeff)
     {
         return Prod(expr, coeff);
     }
 
-   public static LinearExpr Term(ILiteral literal, long coeff)
+    public static LinearExpr Term(ILiteral literal, long coeff)
     {
-        if (literal is BoolVar) 
+        if (literal is BoolVar)
         {
-           return Prod((IntVar) literal, coeff);
+            return Prod((IntVar)literal, coeff);
         }
         else
         {
-            return Affine((BoolVar) literal.Not(), -coeff, coeff);
+            return Affine((BoolVar)literal.Not(), -coeff, coeff);
         }
     }
 
-   public static LinearExpr Term(BoolVar var, long coeff)
+    public static LinearExpr Term(BoolVar var, long coeff)
     {
         return Prod(var, coeff);
-    }        
+    }
 
     public static LinearExpr Affine(LinearExpr expr, long coeff, long offset)
     {
@@ -445,14 +445,14 @@ public class LinearExprBuilder : LinearExpr
         return this;
     }
 
-     public LinearExprBuilder AddSum(IEnumerable<BoolVar> vars)
+    public LinearExprBuilder AddSum(IEnumerable<BoolVar> vars)
     {
         foreach (BoolVar var in vars)
         {
             AddTerm(var, 1);
         }
         return this;
-    }   
+    }
     public LinearExprBuilder AddWeightedSum(IEnumerable<LinearExpr> exprs, IEnumerable<long> coefficients)
     {
         foreach (var p in exprs.Zip(coefficients, (e, c) => new { Expr = e, Coeff = c }))
@@ -506,7 +506,7 @@ public class LinearExprBuilder : LinearExpr
         }
         return this;
     }
-    
+
     public override string ToString()
     {
         string result = "";

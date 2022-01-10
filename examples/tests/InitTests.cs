@@ -18,36 +18,36 @@ using static Google.OrTools.Init.operations_research_init;
 
 namespace Google.OrTools.Tests
 {
-    public class InitTest
+public class InitTest
+{
+    [Fact]
+    public void CheckLogging()
     {
-        [Fact]
-        public void CheckLogging()
-        {
-          Init.CppBridge.InitLogging("init");
-          Init.CppBridge.ShutdownLogging();
-        }
-
-        [Fact]
-        public void CheckFlags()
-        {
-          Init.CppFlags cpp_flags = new Init.CppFlags();
-          cpp_flags.logtostderr = true;
-          cpp_flags.log_prefix = true;
-          cpp_flags.cp_model_dump_prefix = "init";
-          cpp_flags.cp_model_dump_models = true;
-          cpp_flags.cp_model_dump_lns = true;
-          cpp_flags.cp_model_dump_response = true;
-          Init.CppBridge.SetFlags(cpp_flags);
-        }
-
-        [Fact]
-        public void CheckOrToolsVersion()
-        {
-          int major = OrToolsVersion.MajorNumber();
-          int minor = OrToolsVersion.MinorNumber();
-          int patch = OrToolsVersion.PatchNumber();
-          string version = OrToolsVersion.VersionString();
-          Assert.Equal($"{major}.{minor}.{patch}", version);
-        }
+        Init.CppBridge.InitLogging("init");
+        Init.CppBridge.ShutdownLogging();
     }
+
+    [Fact]
+    public void CheckFlags()
+    {
+        Init.CppFlags cpp_flags = new Init.CppFlags();
+        cpp_flags.logtostderr = true;
+        cpp_flags.log_prefix = true;
+        cpp_flags.cp_model_dump_prefix = "init";
+        cpp_flags.cp_model_dump_models = true;
+        cpp_flags.cp_model_dump_lns = true;
+        cpp_flags.cp_model_dump_response = true;
+        Init.CppBridge.SetFlags(cpp_flags);
+    }
+
+    [Fact]
+    public void CheckOrToolsVersion()
+    {
+        int major = OrToolsVersion.MajorNumber();
+        int minor = OrToolsVersion.MinorNumber();
+        int patch = OrToolsVersion.PatchNumber();
+        string version = OrToolsVersion.VersionString();
+        Assert.Equal($"{major}.{minor}.{patch}", version);
+    }
+}
 } // namespace Google.OrTools.Tests
