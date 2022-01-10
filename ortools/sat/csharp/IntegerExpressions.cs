@@ -116,6 +116,18 @@ public class LinearExpr
         return NewBuilder().AddTerm(expr, coeff).Add(offset);
     }
 
+
+    public static LinearExpr Affine(ILiteral literal, long coeff, long offset)
+    {
+        return NewBuilder().AddTerm(literal, coeff).Add(offset);
+    }
+
+    public static LinearExpr Affine(BoolVar var, long coeff, long offset)
+    {
+        return NewBuilder().AddTerm(var, coeff).Add(offset);
+    }
+
+
     public static LinearExpr Constant(long value)
     {
         return NewBuilder().Add(value);
@@ -543,7 +555,7 @@ public class LinearExprBuilder : LinearExpr
                 }
                 else
                 {
-                    result += String.Format(" -{0}", term.expr.ToString());
+                    result += String.Format("-{0}", term.expr.ToString());
                 }
             }
             else
@@ -554,7 +566,7 @@ public class LinearExprBuilder : LinearExpr
                 }
                 else
                 {
-                    result += String.Format(" {0} * {1}", term.coefficient, term.expr.ToString());
+                    result += String.Format("{0} * {1}", term.coefficient, term.expr.ToString());
                 }
             }
         }

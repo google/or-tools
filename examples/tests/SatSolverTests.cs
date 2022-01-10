@@ -431,6 +431,18 @@ public class SatSolverTest
         Console.WriteLine(e8.ToString());
         LinearExpr e9 = LinearExpr.NewBuilder().AddWeightedSum(new BoolVar[] { b1, b2 }, c2);
         Console.WriteLine(e9.ToString());
+        LinearExpr e10 = LinearExpr.NewBuilder().Add(v1);
+        Console.WriteLine(e10.ToString());
+        LinearExpr e11 = LinearExpr.NewBuilder().Add(b1);
+        Console.WriteLine(e11.ToString());
+        LinearExpr e12 = LinearExpr.NewBuilder().Add(b1.Not());
+        Console.WriteLine(e12.ToString());
+        LinearExpr e13 = LinearExpr.NewBuilder().AddTerm(v1, -1);
+        Console.WriteLine(e13.ToString());
+        LinearExpr e14 = LinearExpr.NewBuilder().AddTerm(b1, -1);
+        Console.WriteLine(e14.ToString());
+        LinearExpr e15 = LinearExpr.NewBuilder().AddTerm(b1.Not(), -2);
+        Console.WriteLine(e15.ToString());
     }    
 
     [Fact]
