@@ -123,7 +123,7 @@ public class LiteralSampleSat
     static void Main()
     {
         CpModel model = new CpModel();
-        IntVar x = model.NewBoolVar("x");
+        BoolVar x = model.NewBoolVar("x");
         ILiteral not_x = x.Not();
     }
 }
@@ -222,8 +222,8 @@ public class BoolOrSampleSat
     {
         CpModel model = new CpModel();
 
-        IntVar x = model.NewBoolVar("x");
-        IntVar y = model.NewBoolVar("y");
+        BoolVar x = model.NewBoolVar("x");
+        BoolVar y = model.NewBoolVar("y");
 
         model.AddBoolOr(new ILiteral[] { x, y.Not() });
     }
@@ -370,9 +370,9 @@ public class ReifiedSampleSat
     {
         CpModel model = new CpModel();
 
-        IntVar x = model.NewBoolVar("x");
-        IntVar y = model.NewBoolVar("y");
-        IntVar b = model.NewBoolVar("b");
+        BoolVar x = model.NewBoolVar("x");
+        BoolVar y = model.NewBoolVar("y");
+        BoolVar b = model.NewBoolVar("b");
 
         //  First version using a half-reified bool and.
         model.AddBoolAnd(new ILiteral[] { x, y.Not() }).OnlyEnforceIf(b);
