@@ -13,9 +13,10 @@
 
 namespace Google.OrTools.Sat
 {
+using Google.OrTools.Util;
 using System;
 using System.Collections.Generic;
-using Google.OrTools.Util;
+using System.Linq;
 
 public interface ILiteral
 {
@@ -23,61 +24,59 @@ public interface ILiteral
     int GetIndex();
 }
 
+// Holds a term (expression * coefficient)
+public struct Term
+{
+    public LinearExpr expr;
+    public long coefficient;
+
+    public Term(LinearExpr e, long c)
+    {
+        this.expr = e;
+        this.coefficient = c;
+    }
+}
+
 // Holds a linear expression.
 public class LinearExpr
 {
-    public static LinearExpr Sum(IEnumerable<IntVar> vars)
-    {
-        return new SumArray(vars);
-    }
-
     public static LinearExpr Sum(IEnumerable<LinearExpr> exprs)
     {
-        return new SumArray(exprs);
+        return NewBuilder().AddSum(exprs);
     }
 
-    public static LinearExpr WeightedSum(IEnumerable<IntVar> vars, IEnumerable<int> coeffs)
+    public static LinearExpr WeightedSum(IEnumerable<LinearExpr> exprs, IEnumerable<int> coeffs)
     {
-        return new SumArray(vars, coeffs);
+        return NewBuilder().AddWeightedSum(exprs, coeffs);
     }
 
-    public static LinearExpr WeightedSum(IEnumerable<IntVar> vars, IEnumerable<long> coeffs)
+    public static LinearExpr WeightedSum(IEnumerable<LinearExpr> exprs, IEnumerable<long> coeffs)
     {
-        return new SumArray(vars, coeffs);
+        return NewBuilder().AddWeightedSum(exprs, coeffs);
     }
 
-    public static LinearExpr Term(IntVar var, long coeff)
+    public static LinearExpr Term(LinearExpr expr, long coeff)
     {
-        return Prod(var, coeff);
+        return Prod(expr, coeff);
     }
 
-    public static LinearExpr Affine(IntVar var, long coeff, long offset)
+    public static LinearExpr Affine(LinearExpr expr, long coeff, long offset)
     {
         if (offset == 0)
         {
-            return Prod(var, coeff);
+            return Prod(expr, coeff);
         }
-        else
-        {
-            return new SumArray(Prod(var, coeff), offset);
-        }
+        return NewBuilder().AddTerm(expr, coeff).Add(offset);
     }
 
     public static LinearExpr Constant(long value)
     {
-        return new ConstantExpr(value);
+        return NewBuilder().Add(value);
     }
 
-    public int Index
+    public static LinearExprBuilder NewBuilder()
     {
-        get {
-            return GetIndex();
-        }
-    }
-
-    public virtual int GetIndex()
-    {
-        throw new NotImplementedException();
+        return new LinearExprBuilder();
     }
 
     public virtual string ShortString()
@@ -87,7 +86,7 @@ public class LinearExpr
 
     public static LinearExpr operator +(LinearExpr a, LinearExpr b)
     {
-        return new SumArray(a, b);
+        return NewBuilder().Add(a).Add(b);
     }
 
     public static LinearExpr operator +(LinearExpr a, long v)
@@ -96,7 +95,7 @@ public class LinearExpr
         {
             return a;
         }
-        return new SumArray(a, v);
+        return NewBuilder().Add(a).Add(v);
     }
 
     public static LinearExpr operator +(long v, LinearExpr a)
@@ -105,12 +104,12 @@ public class LinearExpr
         {
             return a;
         }
-        return new SumArray(a, v);
+        return NewBuilder().Add(a).Add(v);
     }
 
     public static LinearExpr operator -(LinearExpr a, LinearExpr b)
     {
-        return new SumArray(a, Prod(b, -1));
+        return NewBuilder().Add(a).AddTerm(b, -1);
     }
 
     public static LinearExpr operator -(LinearExpr a, long v)
@@ -119,16 +118,12 @@ public class LinearExpr
         {
             return a;
         }
-        return new SumArray(a, -v);
+        return NewBuilder().Add(a).Add(-v);
     }
 
     public static LinearExpr operator -(long v, LinearExpr a)
     {
-        if (v == 0)
-        {
-            return Prod(a, -1);
-        }
-        return new SumArray(Prod(a, -1), v);
+        return NewBuilder().AddTerm(a, -1).Add(v);
     }
 
     public static LinearExpr operator *(LinearExpr a, long v)
@@ -228,94 +223,63 @@ public class LinearExpr
 
     public static LinearExpr Prod(LinearExpr e, long v)
     {
-        if (v == 1)
+        if (v == 0)
+        {
+            return NewBuilder();
+        }
+        else if (v == 1)
         {
             return e;
         }
-        else if (e is ProductCst)
-        {
-            ProductCst p = (ProductCst)e;
-            return new ProductCst(p.Expr, p.Coeff * v);
-        }
         else
         {
-            return new ProductCst(e, v);
+            return NewBuilder().AddTerm(e, v);
         }
     }
 
     public static long GetVarValueMap(LinearExpr e, long initial_coeff, Dictionary<IntVar, long> dict)
     {
-        List<LinearExpr> exprs = new List<LinearExpr>();
-        List<long> coeffs = new List<long>();
+        List<Term> terms = new List<Term>();
         if ((Object)e != null)
         {
-            exprs.Add(e);
-            coeffs.Add(initial_coeff);
+            terms.Add(new Term(e, initial_coeff));
         }
         long constant = 0;
 
-        while (exprs.Count > 0)
+        while (terms.Count > 0)
         {
-            LinearExpr expr = exprs[0];
-            exprs.RemoveAt(0);
-            long coeff = coeffs[0];
-            coeffs.RemoveAt(0);
+            Term term = terms[0];
+            terms.RemoveAt(0);
+            LinearExpr expr = term.expr;
+            long coeff = term.coefficient;
             if (coeff == 0 || (Object)expr == null)
+            {
                 continue;
-
-            if (expr is ProductCst)
-            {
-                ProductCst p = (ProductCst)expr;
-                if (p.Coeff != 0)
-                {
-                    exprs.Add(p.Expr);
-                    coeffs.Add(p.Coeff * coeff);
-                }
             }
-            else if (expr is SumArray)
-            {
-                SumArray a = (SumArray)expr;
-                constant += coeff * a.Offset;
-                foreach (LinearExpr sub in a.Expressions)
-                {
-                    if (sub is IntVar)
-                    {
-                        IntVar i = (IntVar)sub;
-                        if (dict.ContainsKey(i))
-                        {
-                            dict[i] += coeff;
-                        }
-                        else
-                        {
-                            dict.Add(i, coeff);
-                        }
-                    }
-                    else if (sub is ProductCst && ((ProductCst)sub).Expr is IntVar)
-                    {
-                        ProductCst sub_prod = (ProductCst)sub;
-                        IntVar i = (IntVar)sub_prod.Expr;
-                        long sub_coeff = sub_prod.Coeff;
 
+            if (expr is LinearExprBuilder)
+            {
+                LinearExprBuilder b = (LinearExprBuilder)expr;
+                constant += coeff * b.Offset;
+                foreach (Term sub in b.Terms)
+                {
+                    if (sub.expr is IntVar) // Quick unroll.
+                    {
+                        IntVar i = (IntVar)sub.expr;
                         if (dict.ContainsKey(i))
                         {
-                            dict[i] += coeff * sub_coeff;
+                            dict[i] += coeff * sub.coefficient;
                         }
                         else
                         {
-                            dict.Add(i, coeff * sub_coeff);
+                            dict.Add(i, coeff * sub.coefficient);
                         }
                     }
                     else
                     {
-                        exprs.Add(sub);
-                        coeffs.Add(coeff);
+                        terms.Add(sub);
                     }
                 }
-            }
-            else if (expr is ConstantExpr)
-            {
-                ConstantExpr cte = (ConstantExpr)expr;
-                constant += coeff * cte.Value;
             }
             else if (expr is IntVar)
             {
@@ -329,9 +293,9 @@ public class LinearExpr
                     dict.Add(i, coeff);
                 }
             }
-            else if (expr is NotBooleanVariable)
+            else if (expr is NotBoolVar)
             {
-                IntVar i = ((NotBooleanVariable)expr).NotVar();
+                IntVar i = ((NotBoolVar)expr).NotVar();
                 if (dict.ContainsKey(i))
                 {
                     dict[i] -= coeff;
@@ -366,160 +330,68 @@ public class LinearExpr
         }
         else
         {
-            LinearExpr[] exprs = new LinearExpr[numElements];
+            LinearExprBuilder builder = LinearExpr.NewBuilder();
             for (int i = 0; i < numElements; ++i)
             {
-                IntVar var = new IntVar(model, proto.Vars[i]);
-                long coeff = proto.Coeffs[i];
-                exprs[i] = Prod(var, coeff);
+                builder.AddTerm(new IntVar(model, proto.Vars[i]), proto.Coeffs[i]);
             }
-            SumArray sum = new SumArray(exprs);
-            sum.Offset = sum.Offset + offset;
-            return sum;
+            builder.Add(offset);
+            return builder;
         }
     }
 }
 
-public class ProductCst : LinearExpr
+public class LinearExprBuilder : LinearExpr
 {
-    public ProductCst(LinearExpr e, long v)
+    public LinearExprBuilder()
     {
-        expr_ = e;
-        coeff_ = v;
+        terms_ = new List<Term>();
+        offset_ = 0;
     }
 
-    public LinearExpr Expr
+    public LinearExprBuilder Add(LinearExpr expr)
     {
-        get {
-            return expr_;
-        }
+        AddTerm(expr, 1);
+        return this;
     }
 
-    public long Coeff
+    public LinearExprBuilder Add(long constant)
     {
-        get {
-            return coeff_;
-        }
+        offset_ += constant;
+        return this;
     }
 
-    private LinearExpr expr_;
-    private long coeff_;
-}
-
-public class SumArray : LinearExpr
-{
-    public SumArray(LinearExpr a, LinearExpr b)
+    public LinearExprBuilder AddTerm(LinearExpr expr, long coefficient)
     {
-        expressions_ = new List<LinearExpr>();
-        AddExpr(a);
-        AddExpr(b);
-        offset_ = 0L;
+        terms_.Add(new Term(expr, coefficient));
+        return this;
     }
 
-    public SumArray(LinearExpr a, long b)
+    public LinearExprBuilder AddSum(IEnumerable<LinearExpr> exprs)
     {
-        expressions_ = new List<LinearExpr>();
-        AddExpr(a);
-        offset_ = b;
-    }
-
-    public SumArray(IEnumerable<LinearExpr> exprs)
-    {
-        expressions_ = new List<LinearExpr>(exprs);
-        offset_ = 0L;
-    }
-
-    public SumArray(IEnumerable<IntVar> vars)
-    {
-        expressions_ = new List<LinearExpr>(vars);
-        offset_ = 0L;
-    }
-
-    public SumArray(IntVar[] vars, long[] coeffs)
-    {
-        expressions_ = new List<LinearExpr>(vars.Length);
-        for (int i = 0; i < vars.Length; ++i)
+        foreach (LinearExpr expr in exprs)
         {
-            AddExpr(Prod(vars[i], coeffs[i]));
+            AddTerm(expr, 1);
         }
-        offset_ = 0L;
+        return this;
     }
 
-    public SumArray(IEnumerable<IntVar> vars, IEnumerable<long> coeffs)
+    public LinearExprBuilder AddWeightedSum(IEnumerable<LinearExpr> exprs, IEnumerable<long> coefficients)
     {
-        List<IntVar> tmp_vars = new List<IntVar>();
-        foreach (IntVar v in vars)
+        foreach (var p in exprs.Zip(coefficients, (e, c) => new { Expr = e, Coeff = c }))
         {
-            tmp_vars.Add(v);
+            AddTerm(p.Expr, p.Coeff);
         }
-        List<long> tmp_coeffs = new List<long>();
-        foreach (long c in coeffs)
-        {
-            tmp_coeffs.Add(c);
-        }
-        if (tmp_vars.Count != tmp_coeffs.Count)
-        {
-            throw new ArgumentException("in SumArray(vars, coeffs), the two lists do not have the same length");
-        }
-        IntVar[] flat_vars = tmp_vars.ToArray();
-        long[] flat_coeffs = tmp_coeffs.ToArray();
-        expressions_ = new List<LinearExpr>(flat_vars.Length);
-        for (int i = 0; i < flat_vars.Length; ++i)
-        {
-            expressions_.Add(Prod(flat_vars[i], flat_coeffs[i]));
-        }
-        offset_ = 0L;
+        return this;
     }
 
-    public SumArray(IEnumerable<IntVar> vars, IEnumerable<int> coeffs)
+    public LinearExprBuilder AddWeightedSum(IEnumerable<LinearExpr> exprs, IEnumerable<int> coefficients)
     {
-        List<IntVar> tmp_vars = new List<IntVar>();
-        foreach (IntVar v in vars)
+        foreach (var p in exprs.Zip(coefficients, (e, c) => new { Expr = e, Coeff = c }))
         {
-            tmp_vars.Add(v);
+            AddTerm(p.Expr, p.Coeff);
         }
-        List<long> tmp_coeffs = new List<long>();
-        foreach (int c in coeffs)
-        {
-            tmp_coeffs.Add(c);
-        }
-        if (tmp_vars.Count != tmp_coeffs.Count)
-        {
-            throw new ArgumentException("in SumArray(vars, coeffs), the two lists do not have the same length");
-        }
-        IntVar[] flat_vars = tmp_vars.ToArray();
-        long[] flat_coeffs = tmp_coeffs.ToArray();
-        expressions_ = new List<LinearExpr>(flat_vars.Length);
-        for (int i = 0; i < flat_vars.Length; ++i)
-        {
-            expressions_.Add(Prod(flat_vars[i], flat_coeffs[i]));
-        }
-        offset_ = 0L;
-    }
-
-    public void AddExpr(LinearExpr expr)
-    {
-        if ((Object)expr != null)
-        {
-            expressions_.Add(expr);
-        }
-    }
-
-    public List<LinearExpr> Expressions
-    {
-        get {
-            return expressions_;
-        }
-    }
-
-    public long Offset
-    {
-        get {
-            return offset_;
-        }
-        set {
-            offset_ = value;
-        }
+        return this;
     }
 
     public override string ShortString()
@@ -530,56 +402,98 @@ public class SumArray : LinearExpr
     public override string ToString()
     {
         string result = "";
-        foreach (LinearExpr expr in expressions_)
+        foreach (Term term in terms_)
         {
-            if ((Object)expr == null)
+            bool first = String.IsNullOrEmpty(result);
+            if ((Object)term.expr == null || term.coefficient == 0)
+            {
                 continue;
+            }
+            if (term.coefficient == 1)
+            {
+                if (!first)
+                {
+                    result += " + ";
+                }
+
+                result += term.expr.ShortString();
+            }
+            else if (term.coefficient > 0)
+            {
+                if (!first)
+                {
+                    result += " + ";
+                }
+
+                result += String.Format("{0} * {1}}", term.coefficient, term.expr.ShortString());
+            }
+            else if (term.coefficient == -1)
+            {
+                if (!first)
+                {
+                    result += String.Format(" - {0}", term.expr.ShortString());
+                }
+                else
+                {
+                    result += String.Format(" -{0}", term.expr.ShortString());
+                }
+            }
+            else
+            {
+                if (!first)
+                {
+                    result += String.Format(" - {0} * {1}", -term.coefficient, term.expr.ShortString());
+                }
+                else
+                {
+                    result += String.Format(" {0} * {1}", term.coefficient, term.expr.ShortString());
+                }
+            }
+        }
+        if (offset_ > 0)
+        {
             if (!String.IsNullOrEmpty(result))
             {
-                result += String.Format(" + ");
+                result += String.Format(" + {0}", offset_);
             }
-
-            result += expr.ShortString();
+            else
+            {
+                result += String.Format("{0}", offset_);
+            }
         }
-        if (offset_ != 0)
+        else if (offset_ < 0)
         {
-            result += String.Format(" + {0}", offset_);
+            if (!String.IsNullOrEmpty(result))
+            {
+                result += String.Format(" - {0}", -offset_);
+            }
+            else
+            {
+                result += String.Format("{0}", offset_);
+            }
         }
         return result;
     }
 
-    private List<LinearExpr> expressions_;
-    private long offset_;
-}
-
-public class ConstantExpr : LinearExpr
-{
-    public ConstantExpr(long value)
-    {
-        value_ = value;
-    }
-
-    public long Value
+    public long Offset
     {
         get {
-            return value_;
+            return offset_;
         }
     }
 
-    public override string ShortString()
+    public List<Term> Terms
     {
-        return String.Format("{0}", value_);
+        get {
+            return terms_;
+        }
     }
 
-    public override string ToString()
-    {
-        return String.Format("ConstantExpr({0})", value_);
-    }
-
-    private long value_;
+    private long offset_;
+    private List<Term> terms_;
 }
 
-public class IntVar : LinearExpr, ILiteral
+public class IntVar : LinearExpr
 {
     public IntVar(CpModelProto model, Domain domain, string name)
     {
@@ -589,7 +503,6 @@ public class IntVar : LinearExpr, ILiteral
         var_.Name = name;
         var_.Domain.Add(domain.FlattenedIntervals());
         model.Variables.Add(var_);
-        negation_ = null;
     }
 
     public IntVar(CpModelProto model, long lb, long ub, string name)
@@ -601,7 +514,6 @@ public class IntVar : LinearExpr, ILiteral
         var_.Domain.Add(lb);
         var_.Domain.Add(ub);
         model.Variables.Add(var_);
-        negation_ = null;
     }
 
     public IntVar(CpModelProto model, int index)
@@ -609,12 +521,18 @@ public class IntVar : LinearExpr, ILiteral
         model_ = model;
         index_ = index;
         var_ = model.Variables[index];
-        negation_ = null;
     }
 
-    public override int GetIndex()
+    public int GetIndex()
     {
         return index_;
+    }
+
+    public int Index
+    {
+        get {
+            return GetIndex();
+        }
     }
 
     public IntegerVariableProto Proto
@@ -656,38 +574,51 @@ public class IntVar : LinearExpr, ILiteral
         return var_.Name;
     }
 
+    protected CpModelProto model_;
+    protected int index_;
+    protected IntegerVariableProto var_;
+}
+
+public class BoolVar : IntVar, ILiteral
+{
+
+    public BoolVar(CpModelProto model, String name) : base(model, 0, 1, name)
+    {
+    }
+
+    public BoolVar(CpModelProto model, int index) : base(model, index)
+    {
+    }
+
     public ILiteral Not()
     {
-        foreach (long b in var_.Domain)
-        {
-            if (b < 0 || b > 1)
-            {
-                throw new ArgumentException("Cannot call Not() on a non boolean variable");
-            }
-        }
         if (negation_ == null)
         {
-            negation_ = new NotBooleanVariable(this);
+            negation_ = new NotBoolVar(this);
         }
         return negation_;
     }
 
-    private CpModelProto model_;
-    private int index_;
-    private IntegerVariableProto var_;
-    private NotBooleanVariable negation_;
+    private NotBoolVar negation_;
 }
 
-public class NotBooleanVariable : LinearExpr, ILiteral
+public class NotBoolVar : LinearExpr, ILiteral
 {
-    public NotBooleanVariable(IntVar boolvar)
+    public NotBoolVar(BoolVar boolvar)
     {
         boolvar_ = boolvar;
     }
 
-    public override int GetIndex()
+    public int GetIndex()
     {
-        return -boolvar_.Index - 1;
+        return -boolvar_.GetIndex() - 1;
+    }
+
+    public int Index
+    {
+        get {
+            return GetIndex();
+        }
     }
 
     public ILiteral Not()
@@ -695,7 +626,7 @@ public class NotBooleanVariable : LinearExpr, ILiteral
         return boolvar_;
     }
 
-    public IntVar NotVar()
+    public BoolVar NotVar()
     {
         return boolvar_;
     }
@@ -705,7 +636,7 @@ public class NotBooleanVariable : LinearExpr, ILiteral
         return String.Format("Not({0})", boolvar_.ShortString());
     }
 
-    private IntVar boolvar_;
+    private BoolVar boolvar_;
 }
 
 public class BoundedLinearExpression

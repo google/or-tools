@@ -21,53 +21,46 @@ public class CpSolverSolutionCallback : SolutionCallback
 {
     public long Value(LinearExpr e)
     {
-        List<LinearExpr> exprs = new List<LinearExpr>();
-        List<long> coeffs = new List<long>();
-        exprs.Add(e);
-        coeffs.Add(1L);
+        List<Term> terms = new List<Term>();
+        terms.Add(new Term(e, 1));
         long constant = 0;
 
-        while (exprs.Count > 0)
+        while (terms.Count > 0)
         {
-            LinearExpr expr = exprs[0];
-            exprs.RemoveAt(0);
-            long coeff = coeffs[0];
-            coeffs.RemoveAt(0);
-            if (coeff == 0)
+            Term term = terms[0];
+            terms.RemoveAt(0);
+            if (term.coefficient == 0)
                 continue;
 
-            if (expr is ProductCst)
+            if (term.expr is LinearExprBuilder)
             {
-                ProductCst p = (ProductCst)expr;
-                if (p.Coeff != 0)
+                LinearExprBuilder a = (LinearExprBuilder)term.expr;
+                constant += term.coefficient * a.Offset;
+                foreach (Term sub in a.Terms)
                 {
-                    exprs.Add(p.Expr);
-                    coeffs.Add(p.Coeff * coeff);
+                    if (term.coefficient == 1)
+                    {
+                        terms.Add(sub);
+                    }
+                    else
+                    {
+                        terms.Add(new Term(sub.expr, sub.coefficient * term.coefficient));
+                    }
                 }
             }
-            else if (expr is SumArray)
+            else if (term.expr is IntVar)
             {
-                SumArray a = (SumArray)expr;
-                constant += coeff * a.Offset;
-                foreach (LinearExpr sub in a.Expressions)
-                {
-                    exprs.Add(sub);
-                    coeffs.Add(coeff);
-                }
-            }
-            else if (expr is IntVar)
-            {
-                int index = expr.Index;
+                int index = ((IntVar)term.expr).GetIndex();
                 long value = SolutionIntegerValue(index);
-                constant += coeff * value;
+                constant += term.coefficient * value;
             }
-            else if (expr is NotBooleanVariable)
+            else if (term.expr is NotBoolVar)
             {
                 throw new ArgumentException("Cannot evaluate a literal in an integer expression.");
             }
             else
             {
-                throw new ArgumentException("Cannot evaluate '" + expr.ToString() + "' in an integer expression");
+                throw new ArgumentException("Cannot evaluate '" + term.expr.ToString() + "' in an integer expression");
             }
         }
         return constant;
@@ -75,7 +68,7 @@ public class CpSolverSolutionCallback : SolutionCallback
 
     public Boolean BooleanValue(ILiteral literal)
     {
-        if (literal is IntVar || literal is NotBooleanVariable)
+        if (literal is BoolVar || literal is NotBoolVar)
         {
             int index = literal.GetIndex();
             return SolutionBooleanValue(index);

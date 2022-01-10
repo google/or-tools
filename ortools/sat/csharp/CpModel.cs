@@ -53,12 +53,10 @@ public class CpModel
     {
         return new IntVar(model_, domain, name);
     }
-    // Constants (named or not).
 
-    // TODO: Cache constant.
     public IntVar NewConstant(long value)
     {
-        return new IntVar(model_, new Domain(value), String.Format("{0}", value));
+        return new IntVar(model_, ConvertConstant(value));
     }
 
     public IntVar NewConstant(long value, string name)
@@ -66,9 +64,23 @@ public class CpModel
         return new IntVar(model_, new Domain(value), name);
     }
 
-    public IntVar NewBoolVar(string name)
+    public BoolVar NewBoolVar(string name)
     {
-        return new IntVar(model_, 0, 1, name);
+        return new BoolVar(model_, name);
+    }
+
+    public ILiteral TrueLiteral()
+    {
+        if (true_literal_ == null)
+        {
+            true_literal_ = new BoolVar(model_, ConvertConstant(1));
+        }
+        return true_literal_;
+    }
+
+    public ILiteral FalseLiteral()
+    {
+        return TrueLiteral().Not();
     }
 
     public Constraint AddLinearConstraint(LinearExpr linear_expr, long lb, long ub)
@@ -737,30 +749,9 @@ public class CpModel
         SetObjective(obj, false);
     }
 
-    public void Minimize()
+    void ClearObjective()
     {
-        SetObjective(null, true);
-    }
-
-    public void Maximize()
-    {
-        SetObjective(null, false);
-    }
-
-    public void AddVarToObjective(IntVar var)
-    {
-        if ((Object)var == null)
-            return;
-        model_.Objective.Vars.Add(var.Index);
-        model_.Objective.Coeffs.Add(model_.Objective.ScalingFactor > 0 ? 1 : -1);
-    }
-
-    public void AddTermToObjective(IntVar var, long coeff)
-    {
-        if (coeff == 0 || (Object)var == null)
-            return;
-        model_.Objective.Vars.Add(var.Index);
-        model_.Objective.Coeffs.Add(model_.Objective.ScalingFactor > 0 ? coeff : -coeff);
+        model_.Objective = null;
     }
 
     bool HasObjective()
@@ -830,7 +821,7 @@ public class CpModel
         else if (obj is IntVar)
         {
             objective.Offset = 0L;
-            objective.Vars.Add(obj.Index);
+            objective.Vars.Add(((IntVar)obj).Index);
             if (minimize)
             {
                 objective.Coeffs.Add(1L);
@@ -919,7 +910,7 @@ public class CpModel
         }
         if (typeof(X) == typeof(long) || typeof(X) == typeof(int) || typeof(X) == typeof(short))
         {
-            return new ConstantExpr(Convert.ToInt64(x));
+            return LinearExpr.Constant(Convert.ToInt64(x));
         }
         if (typeof(X) == typeof(LinearExpr))
         {
@@ -945,6 +936,7 @@ public class CpModel
 
     private CpModelProto model_;
     private Dictionary<long, int> constant_map_;
+    private BoolVar true_literal_;
 }
 
 } // namespace Google.OrTools.Sat
