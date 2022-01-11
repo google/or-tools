@@ -72,10 +72,10 @@ public class TableConstraint extends Constraint {
    */
   public void addTuples(int[][] tuples) {
     TableConstraintProto.Builder table = getBuilder().getTableBuilder();
-    for (int[] tuple : tuples {
+    for (int[] tuple : tuples) {
       if (tuple.length != table.getVarsCount()) {
         throw new CpModel.WrongLength(
-            "addTuple", "tuple does not have the same length as the variables");
+            "addTuples", "a tuple does not have the same length as the variables");
       }
       for (int value : tuple) {
         table.addValues(value);
@@ -92,10 +92,10 @@ public class TableConstraint extends Constraint {
    */
   public void addTuples(long[][] tuples) {
     TableConstraintProto.Builder table = getBuilder().getTableBuilder();
-    for (long[] tuple : tuples {
+    for (long[] tuple : tuples) {
       if (tuple.length != table.getVarsCount()) {
         throw new CpModel.WrongLength(
-            "addTuple", "tuple does not have the same length as the variables");
+            "addTuples", "a tuple does not have the same length as the variables");
       }
       for (long value : tuple) {
         table.addValues(value);

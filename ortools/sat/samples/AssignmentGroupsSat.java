@@ -23,7 +23,6 @@ import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.LinearExpr;
 import com.google.ortools.sat.LinearExprBuilder;
 import com.google.ortools.sat.Literal;
-import com.google.ortools.sat.TableConstraint;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -135,21 +134,12 @@ public class AssignmentGroupsSat {
     }
 
     // Define the allowed groups of worders
-    TableConstraint group1Ct =
-        model.addAllowedAssignments(new IntVar[] {work[0], work[1], work[2], work[3]});
-    for (int[] assignment : group1) {
-      group1Ct.addTuple(assignment);
-    }
-    TableConstraint group2Ct =
-        model.addAllowedAssignments(new IntVar[] {work[4], work[5], work[6], work[7]});
-    for (int[] assignment : group2) {
-      group2Ct.addTuple(assignment);
-    }
-    TableConstraint group3Ct =
-        model.addAllowedAssignments(new IntVar[] {work[8], work[9], work[10], work[11]});
-    for (int[] assignment : group3) {
-      group3Ct.addTuple(assignment);
-    }
+    model.addAllowedAssignments(new IntVar[] {work[0], work[1], work[2], work[3]})
+        .addTuples(group1);
+    model.addAllowedAssignments(new IntVar[] {work[4], work[5], work[6], work[7]})
+        .addTuples(group2);
+    model.addAllowedAssignments(new IntVar[] {work[8], work[9], work[10], work[11]})
+        .addTuples(group3);
     // [END assignments]
 
     // Objective
