@@ -17,10 +17,9 @@ import com.google.ortools.sat.CircuitConstraintProto;
 import com.google.ortools.sat.CpModelProto;
 
 /**
- * Wrapper around a ConstraintProto.
+ * Specialized circuit constraint.
  *
- * <p>Constraints created by the CpModel class are automatically added to the model. One needs this
- * class to add an enforcement literal to a constraint.
+ * <p>This constraint allows adding arcs to the circuit constraint incrementally.
  */
 public class CircuitConstraint extends Constraint {
   public CircuitConstraint(CpModelProto.Builder builder) {

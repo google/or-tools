@@ -33,7 +33,7 @@ public class ReservoirConstraint extends Constraint {
    * <p>It will increase the used capacity by `levelChange` at time `time`. `time` must be an affine
    * expression.
    */
-  void addEvent(LinearArgument time, long levelChange) {
+  public void addEvent(LinearArgument time, long levelChange) {
     ReservoirConstraintProto.Builder reservoir = getBuilder().getReservoirBuilder();
     reservoir.addTimeExprs(
         model.getLinearExpressionProtoBuilderFromLinearArgument(time, /*negate=*/false));
@@ -46,7 +46,7 @@ public class ReservoirConstraint extends Constraint {
    *
    * <p>It will increase the used capacity by `levelChange` at time `time`.
    */
-  void addEvent(long time, long levelChange) {
+  public void addEvent(long time, long levelChange) {
     ReservoirConstraintProto.Builder reservoir = getBuilder().getReservoirBuilder();
     reservoir.addTimeExprs(model.getLinearExpressionProtoBuilderFromLong(time));
     reservoir.addLevelChanges(levelChange);
@@ -59,7 +59,7 @@ public class ReservoirConstraint extends Constraint {
    * <p>If `isActive` is true, It will increase the used capacity by `levelChange` at time `time`.
    * `time` must be an affine expression.
    */
-  void addOptionalEvent(LinearExpr time, long levelChange, Literal isActive) {
+  public void addOptionalEvent(LinearExpr time, long levelChange, Literal isActive) {
     ReservoirConstraintProto.Builder reservoir = getBuilder().getReservoirBuilder();
     reservoir.addTimeExprs(
         model.getLinearExpressionProtoBuilderFromLinearArgument(time, /*negate=*/false));
@@ -72,7 +72,7 @@ public class ReservoirConstraint extends Constraint {
    *
    * <p>If `isActive` is true, It will increase the used capacity by `levelChange` at time `time`.
    */
-  void addOptionalEvent(long time, long levelChange, Literal isActive) {
+  public void addOptionalEvent(long time, long levelChange, Literal isActive) {
     ReservoirConstraintProto.Builder reservoir = getBuilder().getReservoirBuilder();
     reservoir.addTimeExprs(model.getLinearExpressionProtoBuilderFromLong(time));
     reservoir.addLevelChanges(levelChange);
