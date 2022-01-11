@@ -22,6 +22,7 @@ public interface ILiteral
 {
     ILiteral Not();
     int GetIndex();
+    LinearExpr NotAsExpr();
 }
 
 // Holds a term (expression * coefficient)
@@ -333,7 +334,7 @@ public class LinearExpr
             }
             else if (term.expr is NotBoolVar)
             {
-                IntVar i = ((NotBoolVar)term.expr).NotVar();
+                IntVar i = (IntVar)((NotBoolVar)term.expr).Not();
                 if (dict.ContainsKey(i))
                 {
                     dict[i] -= term.coefficient;
@@ -712,6 +713,11 @@ public class BoolVar : IntVar, ILiteral
         return negation_;
     }
 
+    public LinearExpr NotAsExpr()
+    {
+        return (LinearExpr)Not();
+    }
+
     private NotBoolVar negation_;
 }
 
@@ -739,9 +745,9 @@ public class NotBoolVar : LinearExpr, ILiteral
         return boolvar_;
     }
 
-    public BoolVar NotVar()
+    public LinearExpr NotAsExpr()
     {
-        return boolvar_;
+        return (LinearExpr)Not();
     }
 
     public override string ToString()

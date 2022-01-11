@@ -61,23 +61,23 @@ public class AssignmentTeamsSat
         // Constraints
         // [START constraints]
         // Each worker is assigned to at most one task.
-        for (int i = 0; i < numWorkers; ++i)
+        foreach (int worker in allWorkers)
         {
             List<ILiteral> tasks = new List<ILiteral>();
-            for (int j = 0; j < numTasks; ++j)
+            foreach (int task in allTasks)
             {
-                tasks.Add(x[i, j]);
+                tasks.Add(x[worker, task]);
             }
             model.AddAtMostOne(tasks);
         }
 
         // Each task is assigned to exactly one worker.
-        for (int j = 0; j < numTasks; ++j)
+        foreach (int task in allTasks)
         {
             List<ILiteral> workers = new List<ILiteral>();
-            for (int i = 0; i < numWorkers; ++i)
+            foreach (int worker in allWorkers)
             {
-                workers.Add(x[i, j]);
+                workers.Add(x[worker, task]);
             }
             model.AddExactlyOne(workers);
         }

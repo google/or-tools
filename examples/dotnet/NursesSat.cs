@@ -18,8 +18,8 @@ using Google.OrTools.Sat;
 
 public class NurseSolutionObserver : CpSolverSolutionCallback
 {
-    public NurseSolutionObserver(BoolVar[,,] shifts, int num_nurses, int num_days, int num_shifts, HashSet<int> to_print,
-                                 int last_solution_explored)
+    public NurseSolutionObserver(BoolVar[,,] shifts, int num_nurses, int num_days, int num_shifts,
+                                 HashSet<int> to_print, int last_solution_explored)
     {
         shifts_ = shifts;
         num_nurses_ = num_nurses;

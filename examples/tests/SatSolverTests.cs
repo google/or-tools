@@ -145,7 +145,7 @@ public class SatSolverTest
         CpSolverResponse response = solver.Response;
         Assert.Equal(30, response.ObjectiveValue);
         Assert.Equal(new long[] { 10, 10, 30 }, response.Solution);
-        // Console.WriteLine("response = " + reponse.ToString());
+        // Console.WriteLine("response = " + response.ToString());
     }
 
     [Fact]
@@ -165,7 +165,7 @@ public class SatSolverTest
         CpSolverResponse response = solver.Response;
         Assert.Equal(30, response.ObjectiveValue);
         Assert.Equal(new long[] { 10, -10 }, response.Solution);
-        // Console.WriteLine("response = " + reponse.ToString());
+        // Console.WriteLine("response = " + response.ToString());
     }
 
     [Fact]
@@ -188,7 +188,7 @@ public class SatSolverTest
         Assert.Equal(new long[] { -10, 10 }, response.Solution);
         Assert.Equal(-30, solver.Value(v1 - 2 * v2));
         Assert.Equal(-30, response.ObjectiveValue);
-        // Console.WriteLine("response = " + reponse.ToString());
+        // Console.WriteLine("response = " + response.ToString());
     }
 
     [Fact]
@@ -233,7 +233,10 @@ public class SatSolverTest
         model.Add(delta == x - 5);
         long[,] tuples = { { -5, 25 }, { -4, 16 }, { -3, 9 }, { -2, 4 }, { -1, 1 }, { 0, 0 },
                            { 1, 1 },   { 2, 4 },   { 3, 9 },  { 4, 16 }, { 5, 25 } };
-        model.AddAllowedAssignments(new IntVar[] { delta, squaredDelta }, tuples);
+        TableConstraint ct = model.AddAllowedAssignments(new IntVar[] { delta, squaredDelta });
+        for (int i = 0; i < tuples.GetLength(0); ++i) {
+            ct.AddTuple(new long[] { tuples[i, 0], tuples[i, 1]});
+        }
         model.Minimize(squaredDelta);
 
         CpSolver solver = new CpSolver();
@@ -266,7 +269,7 @@ public class SatSolverTest
         Assert.Equal(1, solver.Value(v2));
         Assert.Equal(new long[] { 3, 1 }, response.Solution);
         Assert.Equal(0, response.ObjectiveValue);
-        // Console.WriteLine("response = " + reponse.ToString());
+        // Console.WriteLine("response = " + response.ToString());
     }
 
     [Fact]
@@ -287,7 +290,7 @@ public class SatSolverTest
         Assert.Equal(4, solver.Value(v2));
         Assert.Equal(new long[] { 3, 4 }, response.Solution);
         Assert.Equal(0, response.ObjectiveValue);
-        // Console.WriteLine("response = " + reponse.ToString());
+        // Console.WriteLine("response = " + response.ToString());
     }
 
     [Fact]
@@ -376,6 +379,7 @@ public class SatSolverTest
     [Fact]
     public void LinearExprStaticCompileTest()
     {
+        Console.WriteLine("LinearExprStaticCompileTest");
         CpModel model = new CpModel();
         IntVar v1 = model.NewIntVar(-10, 10, "v1");
         IntVar v2 = model.NewIntVar(-10, 10, "v2");
@@ -406,6 +410,7 @@ public class SatSolverTest
     [Fact]
     public void LinearExprBuilderCompileTest()
     {
+        Console.WriteLine("LinearExprBuilderCompileTest");
         CpModel model = new CpModel();
         IntVar v1 = model.NewIntVar(-10, 10, "v1");
         IntVar v2 = model.NewIntVar(-10, 10, "v2");
@@ -443,8 +448,79 @@ public class SatSolverTest
         Console.WriteLine(e14.ToString());
         LinearExpr e15 = LinearExpr.NewBuilder().AddTerm(b1.Not(), -2);
         Console.WriteLine(e15.ToString());
-    }    
+    }
 
+    [Fact]
+    public void LinearExprIntVarOperatorTest()
+    {
+        Console.WriteLine("LinearExprIntVarOperatorTest");
+        CpModel model = new CpModel();
+        IntVar v = model.NewIntVar(-10, 10, "v");
+        LinearExpr e = v * 2;
+        Console.WriteLine(e);
+        e = 2 * v;
+        Console.WriteLine(e);
+        e = v + 2;
+        Console.WriteLine(e);
+        e = 2 + v;
+        Console.WriteLine(e);
+        e = v;
+        Console.WriteLine(e);
+        e = -v;
+        Console.WriteLine(e);
+        e = 1 - v;
+        Console.WriteLine(e);
+        e = v - 1;
+        Console.WriteLine(e);
+    }
+
+    [Fact]
+    public void LinearExprBoolVarOperatorTest()
+    {
+        Console.WriteLine("LinearExprBoolVarOperatorTest");
+        CpModel model = new CpModel();
+        BoolVar v = model.NewBoolVar("v");
+        LinearExpr e = v * 2;
+        Console.WriteLine(e);
+        e = 2 * v;
+        Console.WriteLine(e);
+        e = v + 2;
+        Console.WriteLine(e);
+        e = 2 + v;
+        Console.WriteLine(e);
+        e = v;
+        Console.WriteLine(e);
+        e = -v;
+        Console.WriteLine(e);
+        e = 1 - v;
+        Console.WriteLine(e);
+        e = v - 1;
+        Console.WriteLine(e);
+    }
+
+    [Fact]
+    public void LinearExprNotBoolVarOperatorTest()
+    {
+        Console.WriteLine("LinearExprBoolVarNotOperatorTest");
+        CpModel model = new CpModel();
+        ILiteral v = model.NewBoolVar("v");
+        LinearExpr e = v.NotAsExpr() * 2;
+        Console.WriteLine(e);
+        e = 2 * v.NotAsExpr();
+        Console.WriteLine(e);
+        e = v.NotAsExpr() + 2;
+        Console.WriteLine(e);
+        e = 2 + v.NotAsExpr();
+        Console.WriteLine(e);
+        e = v.NotAsExpr();
+        Console.WriteLine(e);
+        e = -v.NotAsExpr();
+        Console.WriteLine(e);
+        e = 1 - v.NotAsExpr();
+        Console.WriteLine(e);
+        e = v.NotAsExpr() - 1;
+        Console.WriteLine(e);
+    }
     [Fact]
     public void ExportModel()
     {

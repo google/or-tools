@@ -89,7 +89,11 @@ public class GateSchedulingSat
         }
 
         // Max Length constraint (modeled as a cumulative)
-        model.AddCumulative(intervals, demands, max_length);
+        CumulativeConstraint cumul = model.AddCumulative(max_length);
+        foreach (var p in intervals.Zip(demands, (i, d) => new { Interval = i, Demand = d }))
+        {
+            cumul.AddDemand(p.Interval, p.Demand);
+        }
 
         // Choose which machine to perform the jobs on.
         model.AddNoOverlap(intervals0);

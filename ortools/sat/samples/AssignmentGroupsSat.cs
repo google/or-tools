@@ -40,28 +40,28 @@ public class AssignmentGroupsSat
 
         // Allowed groups of workers:
         // [START allowed_groups]
-        long[,] group1 = {
-            { 0, 0, 1, 1 }, // Workers 2, 3
-            { 0, 1, 0, 1 }, // Workers 1, 3
-            { 0, 1, 1, 0 }, // Workers 1, 2
-            { 1, 1, 0, 0 }, // Workers 0, 1
-            { 1, 0, 1, 0 }, // Workers 0, 2
+        long[][] group1 = {
+            new long[] { 0, 0, 1, 1 }, // Workers 2, 3
+            new long[] { 0, 1, 0, 1 }, // Workers 1, 3
+            new long[] { 0, 1, 1, 0 }, // Workers 1, 2
+            new long[] { 1, 1, 0, 0 }, // Workers 0, 1
+            new long[] { 1, 0, 1, 0 }, // Workers 0, 2
         };
 
-        long[,] group2 = {
-            { 0, 0, 1, 1 }, // Workers 6, 7
-            { 0, 1, 0, 1 }, // Workers 5, 7
-            { 0, 1, 1, 0 }, // Workers 5, 6
-            { 1, 1, 0, 0 }, // Workers 4, 5
-            { 1, 0, 0, 1 }, // Workers 4, 7
+        long[][] group2 = {
+            new long[] { 0, 0, 1, 1 }, // Workers 6, 7
+            new long[] { 0, 1, 0, 1 }, // Workers 5, 7
+            new long[] { 0, 1, 1, 0 }, // Workers 5, 6
+            new long[] { 1, 1, 0, 0 }, // Workers 4, 5
+            new long[] { 1, 0, 0, 1 }, // Workers 4, 7
         };
 
-        long[,] group3 = {
-            { 0, 0, 1, 1 }, // Workers 10, 11
-            { 0, 1, 0, 1 }, // Workers 9, 11
-            { 0, 1, 1, 0 }, // Workers 9, 10
-            { 1, 0, 1, 0 }, // Workers 8, 10
-            { 1, 0, 0, 1 }, // Workers 8, 11
+        long[][] group3 = {
+            new long[] { 0, 0, 1, 1 }, // Workers 10, 11
+            new long[] { 0, 1, 0, 1 }, // Workers 9, 11
+            new long[] { 0, 1, 1, 0 }, // Workers 9, 10
+            new long[] { 1, 0, 1, 0 }, // Workers 8, 10
+            new long[] { 1, 0, 0, 1 }, // Workers 8, 11
         };
         // [END allowed_groups]
 
@@ -127,9 +127,21 @@ public class AssignmentGroupsSat
         }
 
         // Define the allowed groups of worders
-        model.AddAllowedAssignments(new IntVar[] { work[0], work[1], work[2], work[3] }, group1);
-        model.AddAllowedAssignments(new IntVar[] { work[4], work[5], work[6], work[7] }, group2);
-        model.AddAllowedAssignments(new IntVar[] { work[8], work[9], work[10], work[11] }, group3);
+        TableConstraint group1_ct = model.AddAllowedAssignments(new IntVar[] { work[0], work[1], work[2], work[3] });
+        foreach (long[] tuple in group1)
+        {
+            group1_ct.AddTuple(tuple);
+        }
+        TableConstraint group2_ct = model.AddAllowedAssignments(new IntVar[] { work[4], work[5], work[6], work[7] });
+        foreach (long[] tuple in group2)
+        {
+            group2_ct.AddTuple(tuple);
+        }
+        TableConstraint group3_ct = model.AddAllowedAssignments(new IntVar[] { work[8], work[9], work[10], work[11] });
+        foreach (long[] tuple in group3)
+        {
+            group3_ct.AddTuple(tuple);
+        }        
         // [END assignments]
 
         // Objective

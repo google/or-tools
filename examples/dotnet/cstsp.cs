@@ -72,8 +72,9 @@ class Tsp
         }
 
         // Add dummy dimension to test API.
-        routing.AddDimension(routing.RegisterUnaryTransitCallback((long index) => { return 1; }), size + 1, size + 1,
-                             true, "dummy");
+        routing.AddDimension(routing.RegisterUnaryTransitCallback((long index) =>
+                                                                  { return 1; }),
+                             size + 1, size + 1, true, "dummy");
 
         // Solve, returns a solution if any (owned by RoutingModel).
         RoutingSearchParameters search_parameters =
