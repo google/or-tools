@@ -281,7 +281,7 @@ public class LinearExpr
     public static long GetVarValueMap(LinearExpr e, long initial_coeff, Dictionary<IntVar, long> dict)
     {
         List<Term> terms = new List<Term>();
-        if ((Object)e != null)
+        if (e is not null)
         {
             terms.Add(new Term(e, initial_coeff));
         }
@@ -291,7 +291,7 @@ public class LinearExpr
         {
             Term term = terms[0];
             terms.RemoveAt(0);
-            if (term.coefficient == 0 || (Object)term.expr == null)
+            if (term.coefficient == 0 || term.expr is null)
             {
                 continue;
             }
@@ -524,7 +524,7 @@ public class LinearExprBuilder : LinearExpr
         foreach (Term term in terms_)
         {
             bool first = String.IsNullOrEmpty(result);
-            if ((Object)term.expr == null || term.coefficient == 0)
+            if (term.expr is null || term.coefficient == 0)
             {
                 continue;
             }
@@ -616,7 +616,6 @@ public class IntVar : LinearExpr
 {
     public IntVar(CpModelProto model, Domain domain, string name)
     {
-        model_ = model;
         index_ = model.Variables.Count;
         var_ = new IntegerVariableProto();
         var_.Name = name;
@@ -626,7 +625,6 @@ public class IntVar : LinearExpr
 
     public IntVar(CpModelProto model, long lb, long ub, string name)
     {
-        model_ = model;
         index_ = model.Variables.Count;
         var_ = new IntegerVariableProto();
         var_.Name = name;
@@ -637,7 +635,6 @@ public class IntVar : LinearExpr
 
     public IntVar(CpModelProto model, int index)
     {
-        model_ = model;
         index_ = index;
         var_ = model.Variables[index];
     }
@@ -673,14 +670,7 @@ public class IntVar : LinearExpr
 
     public override string ToString()
     {
-        if (var_.Name != null)
-        {
-            return var_.Name;
-        }
-        else
-        {
-            return var_.ToString();
-        }
+        return var_.Name is not null ? var_.Name : var_.ToString();
     }
 
     public string Name()
@@ -688,8 +678,7 @@ public class IntVar : LinearExpr
         return var_.Name;
     }
 
-    protected CpModelProto model_;
-    protected int index_;
+    protected readonly int index_;
     protected IntegerVariableProto var_;
 }
 
@@ -706,11 +695,7 @@ public class BoolVar : IntVar, ILiteral
 
     public ILiteral Not()
     {
-        if (negation_ == null)
-        {
-            negation_ = new NotBoolVar(this);
-        }
-        return negation_;
+        return negation_ ??= new NotBoolVar(this);
     }
 
     public LinearExpr NotAsExpr()
@@ -755,7 +740,7 @@ public class NotBoolVar : LinearExpr, ILiteral
         return String.Format("Not({0})", boolvar_.ToString());
     }
 
-    private BoolVar boolvar_;
+    private readonly BoolVar boolvar_;
 }
 
 public class BoundedLinearExpression

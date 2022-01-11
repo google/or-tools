@@ -22,7 +22,7 @@ public static class IntervalVarArrayHelper
     // get solver from array of interval variables
     private static Solver GetSolver(IntervalVar[] vars)
     {
-        if (vars == null || vars.Length <= 0)
+        if (vars is null || vars.Length <= 0)
             throw new ArgumentException("Array <vars> cannot be null or empty");
 
         return vars[0].solver();
