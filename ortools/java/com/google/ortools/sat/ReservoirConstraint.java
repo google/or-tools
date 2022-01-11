@@ -33,12 +33,13 @@ public class ReservoirConstraint extends Constraint {
    * <p>It will increase the used capacity by `levelChange` at time `time`. `time` must be an affine
    * expression.
    */
-  public void addEvent(LinearArgument time, long levelChange) {
+  public ReservoirConstraint addEvent(LinearArgument time, long levelChange) {
     ReservoirConstraintProto.Builder reservoir = getBuilder().getReservoirBuilder();
     reservoir.addTimeExprs(
         model.getLinearExpressionProtoBuilderFromLinearArgument(time, /*negate=*/false));
     reservoir.addLevelChanges(levelChange);
     reservoir.addActiveLiterals(model.trueLiteral().getIndex());
+    return this;
   }
 
   /**
@@ -46,11 +47,12 @@ public class ReservoirConstraint extends Constraint {
    *
    * <p>It will increase the used capacity by `levelChange` at time `time`.
    */
-  public void addEvent(long time, long levelChange) {
+  public ReservoirConstraint addEvent(long time, long levelChange) {
     ReservoirConstraintProto.Builder reservoir = getBuilder().getReservoirBuilder();
     reservoir.addTimeExprs(model.getLinearExpressionProtoBuilderFromLong(time));
     reservoir.addLevelChanges(levelChange);
     reservoir.addActiveLiterals(model.trueLiteral().getIndex());
+    return this;
   }
 
   /**
@@ -59,12 +61,13 @@ public class ReservoirConstraint extends Constraint {
    * <p>If `isActive` is true, It will increase the used capacity by `levelChange` at time `time`.
    * `time` must be an affine expression.
    */
-  public void addOptionalEvent(LinearExpr time, long levelChange, Literal isActive) {
+  public ReservoirConstraint addOptionalEvent(LinearExpr time, long levelChange, Literal isActive) {
     ReservoirConstraintProto.Builder reservoir = getBuilder().getReservoirBuilder();
     reservoir.addTimeExprs(
         model.getLinearExpressionProtoBuilderFromLinearArgument(time, /*negate=*/false));
     reservoir.addLevelChanges(levelChange);
     reservoir.addActiveLiterals(isActive.getIndex());
+    return this;
   }
 
   /**
@@ -72,11 +75,12 @@ public class ReservoirConstraint extends Constraint {
    *
    * <p>If `isActive` is true, It will increase the used capacity by `levelChange` at time `time`.
    */
-  public void addOptionalEvent(long time, long levelChange, Literal isActive) {
+  public ReservoirConstraint addOptionalEvent(long time, long levelChange, Literal isActive) {
     ReservoirConstraintProto.Builder reservoir = getBuilder().getReservoirBuilder();
     reservoir.addTimeExprs(model.getLinearExpressionProtoBuilderFromLong(time));
     reservoir.addLevelChanges(levelChange);
     reservoir.addActiveLiterals(isActive.getIndex());
+    return this;
   }
 
   private final CpModel model;

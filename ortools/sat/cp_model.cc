@@ -16,6 +16,7 @@
 #include <cstdint>
 #include <initializer_list>
 #include <limits>
+#include <string>
 
 #include "absl/strings/str_format.h"
 #include "ortools/base/map_util.h"
@@ -171,9 +172,25 @@ std::ostream& operator<<(std::ostream& os, const IntVar& var) {
   return os;
 }
 
-LinearExpr::LinearExpr(BoolVar var) { AddVar(var); }
+LinearExpr::LinearExpr(BoolVar var) {
+  DCHECK(var.builder_ != nullptr);
+  const int index = var.index_;
+  if (RefIsPositive(index)) {
+    variables_.push_back(index);
+    coefficients_.push_back(1);
+  } else {
+    // We add 1 - var instead.
+    variables_.push_back(PositiveRef(index));
+    coefficients_.push_back(-1);
+    constant_ += 1;
+  }
+}
 
-LinearExpr::LinearExpr(IntVar var) { AddVar(var); }
+LinearExpr::LinearExpr(IntVar var) {
+  DCHECK(var.builder_ != nullptr);
+  variables_.push_back(var.index_);
+  coefficients_.push_back(1);
+}
 
 LinearExpr::LinearExpr(int64_t constant) { constant_ = constant; }
 
@@ -189,7 +206,7 @@ LinearExpr LinearExpr::FromProto(const LinearExpressionProto& expr_proto) {
 LinearExpr LinearExpr::Sum(absl::Span<const IntVar> vars) {
   LinearExpr result;
   for (const IntVar& var : vars) {
-    result.AddVar(var);
+    result += var;
   }
   return result;
 }
@@ -197,7 +214,7 @@ LinearExpr LinearExpr::Sum(absl::Span<const IntVar> vars) {
 LinearExpr LinearExpr::Sum(absl::Span<const BoolVar> vars) {
   LinearExpr result;
   for (const BoolVar& var : vars) {
-    result.AddVar(var);
+    result += var;
   }
   return result;
 }
@@ -207,7 +224,7 @@ LinearExpr LinearExpr::WeightedSum(absl::Span<const IntVar> vars,
   CHECK_EQ(vars.size(), coeffs.size());
   LinearExpr result;
   for (int i = 0; i < vars.size(); ++i) {
-    result.AddTerm(vars[i], coeffs[i]);
+    result += vars[i] * coeffs[i];
   }
   return result;
 }
@@ -217,7 +234,7 @@ LinearExpr LinearExpr::WeightedSum(absl::Span<const BoolVar> vars,
   CHECK_EQ(vars.size(), coeffs.size());
   LinearExpr result;
   for (int i = 0; i < vars.size(); ++i) {
-    result.AddTerm(vars[i], coeffs[i]);
+    result += vars[i] * coeffs[i];
   }
   return result;
 }
@@ -228,52 +245,21 @@ LinearExpr LinearExpr::WeightedSum(std::initializer_list<IntVar> vars,
   LinearExpr result;
   int count = 0;
   for (const IntVar& var : vars) {
-    result.AddTerm(var, coeffs[count++]);
+    result += var * coeffs[count++];
   }
   return result;
 }
 
 LinearExpr LinearExpr::Term(IntVar var, int64_t coefficient) {
   LinearExpr result;
-  result.AddTerm(var, coefficient);
+  result += var * coefficient;
   return result;
 }
 
 LinearExpr LinearExpr::Term(BoolVar var, int64_t coefficient) {
   LinearExpr result;
-  result.AddTerm(var, coefficient);
+  result += var * coefficient;
   return result;
-}
-
-LinearExpr& LinearExpr::AddConstant(int64_t value) {
-  constant_ += value;
-  return *this;
-}
-
-LinearExpr& LinearExpr::AddVar(IntVar var) { return AddTerm(var, 1); }
-
-LinearExpr& LinearExpr::AddVar(BoolVar var) { return AddTerm(var, 1); }
-
-LinearExpr& LinearExpr::AddTerm(IntVar var, int64_t coeff) {
-  DCHECK(var.builder_ != nullptr);
-  variables_.push_back(var.index_);
-  coefficients_.push_back(coeff);
-  return *this;
-}
-
-LinearExpr& LinearExpr::AddTerm(BoolVar var, int64_t coeff) {
-  DCHECK(var.builder_ != nullptr);
-  const int index = var.index_;
-  if (RefIsPositive(index)) {
-    variables_.push_back(index);
-    coefficients_.push_back(coeff);
-  } else {
-    // We add 1 - var instead.
-    variables_.push_back(PositiveRef(index));
-    coefficients_.push_back(-coeff);
-    constant_ += coeff;
-  }
-  return *this;
 }
 
 LinearExpr& LinearExpr::operator+=(const LinearExpr& other) {

@@ -33,10 +33,11 @@ public class CircuitConstraint extends Constraint {
    * @param head the index of the head node.
    * @param literal it will be set to true if the arc is selected.
    */
-  public void addArc(int tail, int head, Literal literal) {
+  public CircuitConstraint addArc(int tail, int head, Literal literal) {
     CircuitConstraintProto.Builder circuit = getBuilder().getCircuitBuilder();
     circuit.addTails(tail);
     circuit.addHeads(head);
     circuit.addLiterals(literal.getIndex());
+    return this;
   }
 }

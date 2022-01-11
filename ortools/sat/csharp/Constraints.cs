@@ -78,12 +78,13 @@ public class CircuitConstraint : Constraint
      * @param head the index of the head node.
      * @param literal it will be set to true if the arc is selected.
      */
-    public void AddArc(int tail, int head, ILiteral literal)
+    public CircuitConstraint AddArc(int tail, int head, ILiteral literal)
     {
         CircuitConstraintProto circuit = Proto.Circuit;
         circuit.Tails.Add(tail);
         circuit.Heads.Add(head);
         circuit.Literals.Add(literal.GetIndex());
+        return this;
     }
 }
 
@@ -105,12 +106,13 @@ public class MultipleCircuitConstraint : Constraint
      * @param head the index of the head node.
      * @param literal it will be set to true if the arc is selected.
      */
-    public void AddArc(int tail, int head, ILiteral literal)
+    public MultipleCircuitConstraint AddArc(int tail, int head, ILiteral literal)
     {
         RoutesConstraintProto routes = Proto.Routes;
         routes.Tails.Add(tail);
         routes.Heads.Add(head);
         routes.Literals.Add(literal.GetIndex());
+        return this;
     }
 }
 
@@ -133,7 +135,7 @@ public class TableConstraint : Constraint
      * @throws CpModel.WrongLength if the tuple does not have the same length as the array of
      *     variables of the constraint.
      */
-    public void AddTuple(IEnumerable<int> tuple)
+    public TableConstraint AddTuple(IEnumerable<int> tuple)
     {
         TableConstraintProto table = Proto.Table;
 
@@ -147,6 +149,7 @@ public class TableConstraint : Constraint
         {
             throw new ArgumentException("addTuple", "tuple does not have the same length as the variables");
         }
+        return this;
     }
 
     /**
@@ -156,7 +159,7 @@ public class TableConstraint : Constraint
      * @throws CpModel.WrongLength if the tuple does not have the same length as the array of
      *     variables of the constraint.
      */
-    public void AddTuple(IEnumerable<long> tuple)
+    public TableConstraint AddTuple(IEnumerable<long> tuple)
     {
         TableConstraintProto table = Proto.Table;
 
@@ -170,6 +173,7 @@ public class TableConstraint : Constraint
         {
             throw new ArgumentException("addTuple", "tuple does not have the same length as the variables");
         }
+        return this;
     }
 
     /**
@@ -179,7 +183,7 @@ public class TableConstraint : Constraint
      * @throws CpModel.WrongLength if tuples do not have the same length as the array of
      *     variables of the constraint.
      */
-    public void AddTuples(int[,] tuples)
+    public TableConstraint AddTuples(int[,] tuples)
     {
         TableConstraintProto table = Proto.Table;
 
@@ -195,6 +199,7 @@ public class TableConstraint : Constraint
                 table.Values.Add(tuples[i, j]);
             }
         }
+        return this;
     }
 
     /**
@@ -204,7 +209,7 @@ public class TableConstraint : Constraint
      * @throws CpModel.WrongLength if tuples do not have the same length as the array of
      *     variables of the constraint.
      */
-    public void AddTuples(long[,] tuples)
+    public TableConstraint AddTuples(long[,] tuples)
     {
         TableConstraintProto table = Proto.Table;
 
@@ -220,6 +225,7 @@ public class TableConstraint : Constraint
                 table.Values.Add(tuples[i, j]);
             }
         }
+        return this;
     }
 }
 
@@ -235,12 +241,13 @@ public class AutomatonConstraint : Constraint
     }
 
     /// Adds a transitions to the automaton.
-    public void AddTransition(int tail, int head, long label)
+    public AutomatonConstraint AddTransition(int tail, int head, long label)
     {
         AutomatonConstraintProto aut = Proto.Automaton;
         aut.TransitionTail.Add(tail);
         aut.TransitionLabel.Add(label);
         aut.TransitionHead.Add(head);
+        return this;
     }
 }
 
@@ -263,12 +270,13 @@ public class ReservoirConstraint : Constraint
      * <p>It will increase the used capacity by `levelChange` at time `time`. `time` must be an affine
      * expression.
      */
-    public void AddEvent<T, L>(T time, L level_change)
+    public ReservoirConstraint AddEvent<T, L>(T time, L level_change)
     {
         ReservoirConstraintProto res = Proto.Reservoir;
         res.TimeExprs.Add(cp_model_.GetLinearExpressionProto(cp_model_.GetLinearExpr(time)));
         res.LevelChanges.Add(Convert.ToInt64(level_change));
         res.ActiveLiterals.Add(cp_model_.TrueLiteral().GetIndex());
+        return this;
     }
 
     /**
@@ -277,12 +285,13 @@ public class ReservoirConstraint : Constraint
      * <p>If `isActive` is true, It will increase the used capacity by `levelChange` at time `time`.
      * `time` must be an affine expression.
      */
-    public void AddOptionalEvent<T, L>(T time, L level_change, ILiteral literal)
+    public ReservoirConstraint AddOptionalEvent<T, L>(T time, L level_change, ILiteral literal)
     {
         ReservoirConstraintProto res = Proto.Reservoir;
         res.TimeExprs.Add(cp_model_.GetLinearExpressionProto(cp_model_.GetLinearExpr(time)));
         res.LevelChanges.Add(Convert.ToInt64(level_change));
         res.ActiveLiterals.Add(literal.GetIndex());
+        return this;
     }
 
     private CpModel cp_model_;
@@ -302,16 +311,17 @@ public class CumulativeConstraint : Constraint
     }
 
     /// Adds a pair (interval, demand) to the constraint.
-    public void AddDemand<D>(IntervalVar interval, D demand)
+    public CumulativeConstraint AddDemand<D>(IntervalVar interval, D demand)
     {
         CumulativeConstraintProto cumul = Proto.Cumulative;
         cumul.Intervals.Add(interval.GetIndex());
         LinearExpr demandExpr = cp_model_.GetLinearExpr(demand);
         cumul.Demands.Add(cp_model_.GetLinearExpressionProto(demandExpr));
+        return this;
     }
 
     /// Adds all pairs (interval, demand) to the constraint.
-    public void AddDemands<D>(IEnumerable<IntervalVar> intervals, IEnumerable<D> demands)
+    public CumulativeConstraint AddDemands<D>(IEnumerable<IntervalVar> intervals, IEnumerable<D> demands)
     {
         CumulativeConstraintProto cumul = Proto.Cumulative;
         foreach (var p in intervals.Zip(demands, (i, d) => new { Interval = i, Demand = d }))
@@ -320,6 +330,7 @@ public class CumulativeConstraint : Constraint
             LinearExpr demandExpr = cp_model_.GetLinearExpr(p.Demand);
             cumul.Demands.Add(cp_model_.GetLinearExpressionProto(demandExpr));
         }
+        return this;
     }
 
     private CpModel cp_model_;
@@ -337,10 +348,11 @@ public class NoOverlap2dConstraint : Constraint
     }
 
     /// Adds a rectangle (xInterval, yInterval) to the constraint.
-    public void AddRectangle(IntervalVar xInterval, IntervalVar yInterval)
+    public NoOverlap2dConstraint AddRectangle(IntervalVar xInterval, IntervalVar yInterval)
     {
         Proto.NoOverlap2D.XIntervals.Add(xInterval.GetIndex());
         Proto.NoOverlap2D.YIntervals.Add(yInterval.GetIndex());
+        return this;
     }
 }
 

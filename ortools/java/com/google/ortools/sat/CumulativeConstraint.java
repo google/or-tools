@@ -28,17 +28,19 @@ public class CumulativeConstraint extends Constraint {
   }
 
   /// Adds a pair (interval, demand) to the constraint.
-  public void addDemand(IntervalVar interval, LinearArgument demand) {
+  public CumulativeConstraint addDemand(IntervalVar interval, LinearArgument demand) {
     CumulativeConstraintProto.Builder cumul = getBuilder().getCumulativeBuilder();
     cumul.addIntervals(interval.getIndex());
     cumul.addDemands(model.getLinearExpressionProtoBuilderFromLinearArgument(demand, false));
+    return this;
   }
 
   /// Adds a pair (interval, demand) to the constraint.
-  public void addDemand(IntervalVar interval, long demand) {
+  public CumulativeConstraint addDemand(IntervalVar interval, long demand) {
     CumulativeConstraintProto.Builder cumul = getBuilder().getCumulativeBuilder();
     cumul.addIntervals(interval.getIndex());
     cumul.addDemands(model.getLinearExpressionProtoBuilderFromLong(demand));
+    return this;
   }
 
   private final CpModel model;

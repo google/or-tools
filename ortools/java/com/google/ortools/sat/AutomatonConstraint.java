@@ -26,11 +26,12 @@ public class AutomatonConstraint extends Constraint {
   }
 
   /// Adds a transitions to the automaton.
-  void addTransition(int tail, int head, long label) {
+  AutomatonConstraint addTransition(int tail, int head, long label) {
     getBuilder()
         .getAutomatonBuilder()
         .addTransitionTail(tail)
         .addTransitionLabel(label)
         .addTransitionHead(head);
+    return this;
   }
 }

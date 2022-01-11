@@ -34,7 +34,7 @@ public class TableConstraint extends Constraint {
    * @throws CpModel.WrongLength if the tuple does not have the same length as the array of
    *     variables of the constraint.
    */
-  public void addTuple(int[] tuple) {
+  public TableConstraint addTuple(int[] tuple) {
     TableConstraintProto.Builder table = getBuilder().getTableBuilder();
     if (tuple.length != table.getVarsCount()) {
       throw new CpModel.WrongLength(
@@ -43,6 +43,7 @@ public class TableConstraint extends Constraint {
     for (int value : tuple) {
       table.addValues(value);
     }
+    return this;
   }
 
   /**
@@ -52,7 +53,7 @@ public class TableConstraint extends Constraint {
    * @throws CpModel.WrongLength if the tuple does not have the same length as the array of
    *     variables of the constraint.
    */
-  public void addTuple(long[] tuple) {
+  public TableConstraint addTuple(long[] tuple) {
     TableConstraintProto.Builder table = getBuilder().getTableBuilder();
     if (tuple.length != table.getVarsCount()) {
       throw new CpModel.WrongLength(
@@ -61,6 +62,7 @@ public class TableConstraint extends Constraint {
     for (long value : tuple) {
       table.addValues(value);
     }
+    return this;
   }
 
   /**
@@ -70,7 +72,7 @@ public class TableConstraint extends Constraint {
    * @throws CpModel.WrongLength if one tuple does not have the same length as the array of
    *     variables of the constraint.
    */
-  public void addTuples(int[][] tuples) {
+  public TableConstraint addTuples(int[][] tuples) {
     TableConstraintProto.Builder table = getBuilder().getTableBuilder();
     for (int[] tuple : tuples) {
       if (tuple.length != table.getVarsCount()) {
@@ -81,6 +83,7 @@ public class TableConstraint extends Constraint {
         table.addValues(value);
       }
     }
+    return this;
   }
 
   /**
@@ -90,7 +93,7 @@ public class TableConstraint extends Constraint {
    * @throws CpModel.WrongLength if one tuple does not have the same length as the array of
    *     variables of the constraint.
    */
-  public void addTuples(long[][] tuples) {
+  public TableConstraint addTuples(long[][] tuples) {
     TableConstraintProto.Builder table = getBuilder().getTableBuilder();
     for (long[] tuple : tuples) {
       if (tuple.length != table.getVarsCount()) {
@@ -101,5 +104,6 @@ public class TableConstraint extends Constraint {
         table.addValues(value);
       }
     }
+    return this;
   }
 }

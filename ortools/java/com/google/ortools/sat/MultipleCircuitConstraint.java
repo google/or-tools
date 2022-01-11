@@ -33,10 +33,11 @@ public class MultipleCircuitConstraint extends Constraint {
    * @param head the index of the head node.
    * @param literal it will be set to true if the arc is selected.
    */
-  public void addArc(int tail, int head, Literal literal) {
+  public MultipleCircuitConstraint addArc(int tail, int head, Literal literal) {
     RoutesConstraintProto.Builder circuit = getBuilder().getRoutesBuilder();
     circuit.addTails(tail);
     circuit.addHeads(head);
     circuit.addLiterals(literal.getIndex());
+    return this;
   }
 }

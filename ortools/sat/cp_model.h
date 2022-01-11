@@ -43,6 +43,7 @@
 #include <initializer_list>
 #include <limits>
 #include <string>
+#include <utility>
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/types/span.h"
@@ -286,13 +287,6 @@ class LinearExpr {
   LinearExpr& operator+=(const LinearExpr& other);
   LinearExpr& operator-=(const LinearExpr& other);
   LinearExpr& operator*=(int64_t factor);
-
-  // Deprecated. Use operators instead.
-  LinearExpr& AddConstant(int64_t value);
-  LinearExpr& AddVar(IntVar var);
-  LinearExpr& AddVar(BoolVar var);
-  LinearExpr& AddTerm(BoolVar var, int64_t coeff);
-  LinearExpr& AddTerm(IntVar var, int64_t coeff);
 
   /// Returns the vector of variable indices.
   const std::vector<int>& variables() const { return variables_; }
