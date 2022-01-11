@@ -29,11 +29,13 @@ if(@BUILD_LP_PARSER@)
 endif()
 
 if(@USE_COINOR@)
+  # COIN-OR packages don't provide CMake config files
+  list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/modules")
   if(NOT Clp_FOUND AND NOT TARGET Coin::ClpSolver)
-    find_dependency(Clp REQUIRED ${CONFIG_FLAG})
+    find_dependency(Clp REQUIRED)
   endif()
   if(NOT Cbc_FOUND AND NOT TARGET Coin::CbcSolver)
-    find_dependency(Cbc REQUIRED ${CONFIG_FLAG})
+    find_dependency(Cbc REQUIRED)
   endif()
 endif()
 
