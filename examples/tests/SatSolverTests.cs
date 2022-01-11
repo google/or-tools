@@ -233,10 +233,7 @@ public class SatSolverTest
         model.Add(delta == x - 5);
         long[,] tuples = { { -5, 25 }, { -4, 16 }, { -3, 9 }, { -2, 4 }, { -1, 1 }, { 0, 0 },
                            { 1, 1 },   { 2, 4 },   { 3, 9 },  { 4, 16 }, { 5, 25 } };
-        TableConstraint ct = model.AddAllowedAssignments(new IntVar[] { delta, squaredDelta });
-        for (int i = 0; i < tuples.GetLength(0); ++i) {
-            ct.AddTuple(new long[] { tuples[i, 0], tuples[i, 1]});
-        }
+        model.AddAllowedAssignments(new IntVar[] { delta, squaredDelta }).AddTuples(tuples);
         model.Minimize(squaredDelta);
 
         CpSolver solver = new CpSolver();

@@ -15,6 +15,7 @@ namespace Google.OrTools.Sat
 {
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 public class Constraint
 {
@@ -170,6 +171,56 @@ public class TableConstraint : Constraint
             throw new ArgumentException("addTuple", "tuple does not have the same length as the variables");
         }
     }
+
+    /**
+     * Adds a set of tuple of possible/forbidden values to the constraint.
+     *
+     * @param tuples the set of tuples to add to the constraint.
+     * @throws CpModel.WrongLength if tuples do not have the same length as the array of
+     *     variables of the constraint.
+     */
+    public void AddTuples(int[,] tuples)
+    {
+        TableConstraintProto table = Proto.Table;
+
+        if (tuples.GetLength(1) != table.Vars.Count)
+        {
+            throw new ArgumentException("addTuples", "tuples does not have the same length as the variables");
+        }
+
+        for (int i = 0; i < tuples.GetLength(0); ++i)
+        {
+            for (int j = 0; j < tuples.GetLength(1); ++j)
+            {
+                table.Values.Add(tuples[i, j]);
+            }
+        }
+    }
+
+    /**
+     * Adds a set of tuple of possible/forbidden values to the constraint.
+     *
+     * @param tuples the set of tuples to add to the constraint.
+     * @throws CpModel.WrongLength if tuples do not have the same length as the array of
+     *     variables of the constraint.
+     */
+    public void AddTuples(long[,] tuples)
+    {
+        TableConstraintProto table = Proto.Table;
+
+        if (tuples.GetLength(1) != table.Vars.Count)
+        {
+            throw new ArgumentException("addTuples", "tuples does not have the same length as the variables");
+        }
+
+        for (int i = 0; i < tuples.GetLength(0); ++i)
+        {
+            for (int j = 0; j < tuples.GetLength(1); ++j)
+            {
+                table.Values.Add(tuples[i, j]);
+            }
+        }
+    }
 }
 
 /**
@@ -257,6 +308,18 @@ public class CumulativeConstraint : Constraint
         cumul.Intervals.Add(interval.GetIndex());
         LinearExpr demandExpr = cp_model_.GetLinearExpr(demand);
         cumul.Demands.Add(cp_model_.GetLinearExpressionProto(demandExpr));
+    }
+
+    /// Adds all pairs (interval, demand) to the constraint.
+    public void AddDemands<D>(IEnumerable<IntervalVar> intervals, IEnumerable<D> demands)
+    {
+        CumulativeConstraintProto cumul = Proto.Cumulative;
+        foreach (var p in intervals.Zip(demands, (i, d) => new { Interval = i, Demand = d }))
+        {
+            cumul.Intervals.Add(p.Interval.GetIndex());
+            LinearExpr demandExpr = cp_model_.GetLinearExpr(p.Demand);
+            cumul.Demands.Add(cp_model_.GetLinearExpressionProto(demandExpr));
+        }
     }
 
     private CpModel cp_model_;
