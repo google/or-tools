@@ -62,4 +62,44 @@ public class TableConstraint extends Constraint {
       table.addValues(value);
     }
   }
+
+  /**
+   * Adds a list of tuples of possible/forbidden values to the constraint.
+   *
+   * @param tuples the list of tuples to add to the constraint.
+   * @throws CpModel.WrongLength if one tuple does not have the same length as the array of
+   *     variables of the constraint.
+   */
+  public void addTuples(int[][] tuples) {
+    TableConstraintProto.Builder table = getBuilder().getTableBuilder();
+    for (int[] tuple : tuples {
+      if (tuple.length != table.getVarsCount()) {
+        throw new CpModel.WrongLength(
+            "addTuple", "tuple does not have the same length as the variables");
+      }
+      for (int value : tuple) {
+        table.addValues(value);
+      }
+    }
+  }
+
+  /**
+   * Adds a list of tuples of possible/forbidden values to the constraint.
+   *
+   * @param tuples the list of tuples to add to the constraint.
+   * @throws CpModel.WrongLength if one tuple does not have the same length as the array of
+   *     variables of the constraint.
+   */
+  public void addTuples(long[][] tuples) {
+    TableConstraintProto.Builder table = getBuilder().getTableBuilder();
+    for (long[] tuple : tuples {
+      if (tuple.length != table.getVarsCount()) {
+        throw new CpModel.WrongLength(
+            "addTuple", "tuple does not have the same length as the variables");
+      }
+      for (long value : tuple) {
+        table.addValues(value);
+      }
+    }
+  }
 }
