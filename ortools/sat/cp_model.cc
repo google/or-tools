@@ -239,17 +239,6 @@ LinearExpr LinearExpr::WeightedSum(absl::Span<const BoolVar> vars,
   return result;
 }
 
-LinearExpr LinearExpr::WeightedSum(std::initializer_list<IntVar> vars,
-                                   absl::Span<const int64_t> coeffs) {
-  CHECK_EQ(vars.size(), coeffs.size());
-  LinearExpr result;
-  int count = 0;
-  for (const IntVar& var : vars) {
-    result += var * coeffs[count++];
-  }
-  return result;
-}
-
 LinearExpr LinearExpr::Term(IntVar var, int64_t coefficient) {
   LinearExpr result;
   result += var * coefficient;
