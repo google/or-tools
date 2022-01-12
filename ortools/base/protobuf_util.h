@@ -31,6 +31,13 @@ inline void Truncate(RepeatedPtrField<T>* array, int new_size) {
   array->DeleteSubrange(new_size, size - new_size);
 }
 
+// RepeatedField version.
+template <typename T>
+inline void Truncate(RepeatedField<T>* array, int new_size) {
+  // RepeatedField::Truncate performs size validity checks.
+  array->Truncate(new_size);
+}
+
 // Removes the elements at the indices specified by 'indices' from 'array' in
 // time linear in the size of 'array' (on average, even when 'indices' is a
 // singleton) while preserving the relative order of the remaining elements.

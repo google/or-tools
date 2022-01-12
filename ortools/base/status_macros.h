@@ -26,13 +26,14 @@ namespace absl {
 // Example:
 //   RETURN_IF_ERROR(DoThings(4));
 //   RETURN_IF_ERROR(DoThings(5)) << "Additional error context";
-#define RETURN_IF_ERROR(expr)                                \
-  switch (0)                                                 \
-  case 0:                                                    \
-  default:                                                   \
-    if (const ::absl::Status status = (expr); status.ok()) { \
-    } else /* NOLINT */                                      \
-      return ::util::StatusBuilder(status)
+#define RETURN_IF_ERROR(expr)                                        \
+  switch (0)                                                         \
+  case 0:                                                            \
+  default:                                                           \
+    if (const ::absl::Status status_macro_internal_adaptor = (expr); \
+        status_macro_internal_adaptor.ok()) {                        \
+    } else /* NOLINT */                                              \
+      return ::util::StatusBuilder(status_macro_internal_adaptor)
 
 // Internal helper for concatenating macro values.
 #define STATUS_MACROS_CONCAT_NAME_INNER(x, y) x##y
