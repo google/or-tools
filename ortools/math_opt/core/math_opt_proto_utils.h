@@ -23,6 +23,7 @@
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_update.pb.h"
+#include "ortools/math_opt/result.pb.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 
 namespace operations_research {
@@ -89,6 +90,12 @@ class SparseVectorFilterPredicate {
 // Returns the callback_registration.request_registration as a set of enums.
 absl::flat_hash_set<CallbackEventProto> EventSet(
     const CallbackRegistrationProto& callback_registration);
+
+TerminationProto TerminateForLimit(LimitProto limit,
+                                   absl::string_view detail = {});
+
+TerminationProto TerminateForReason(TerminationReasonProto reason,
+                                    absl::string_view detail = {});
 
 ////////////////////////////////////////////////////////////////////////////////
 // Inline functions implementations.

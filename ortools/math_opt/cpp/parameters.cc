@@ -1,0 +1,223 @@
+// Copyright 2010-2021 Google LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#include "ortools/math_opt/cpp/parameters.h"
+
+#include <optional>
+#include <string>
+
+#include "absl/strings/string_view.h"
+#include "absl/types/span.h"
+#include "ortools/math_opt/solvers/gurobi.pb.h"
+#include "ortools/port/proto_utils.h"
+#include "absl/status/status.h"
+#include "ortools/base/status_macros.h"
+#include "ortools/base/protoutil.h"
+
+namespace operations_research {
+namespace math_opt {
+
+std::optional<absl::string_view> Enum<SolverType>::ToOptString(
+    SolverType value) {
+  switch (value) {
+    case SolverType::kGscip:
+      return "gscip";
+    case SolverType::kGurobi:
+      return "gurobi";
+    case SolverType::kGlop:
+      return "glop";
+    case SolverType::kCpSat:
+      return "cp_sat";
+    case SolverType::kGlpk:
+      return "glpk";
+  }
+  return std::nullopt;
+}
+
+absl::Span<const SolverType> Enum<SolverType>::AllValues() {
+  static constexpr SolverType kSolverTypeValues[] = {
+      SolverType::kGscip, SolverType::kGurobi, SolverType::kGlop,
+      SolverType::kCpSat,
+      SolverType::kGlpk,
+  };
+  return absl::MakeConstSpan(kSolverTypeValues);
+}
+
+bool AbslParseFlag(const absl::string_view text, SolverType* const value,
+                   std::string* const error) {
+  const std::optional enum_value = EnumFromString<SolverType>(text);
+  if (!enum_value.has_value()) {
+    *error = "unknown value for enumeration";
+    return false;
+  }
+
+  *value = *enum_value;
+  return true;
+}
+
+std::string AbslUnparseFlag(const SolverType value) {
+  std::ostringstream oss;
+  oss << value;
+  return oss.str();
+}
+
+std::optional<absl::string_view> Enum<LPAlgorithm>::ToOptString(
+    LPAlgorithm value) {
+  switch (value) {
+    case LPAlgorithm::kPrimalSimplex:
+      return "primal_simplex";
+    case LPAlgorithm::kDualSimplex:
+      return "dual_simplex";
+    case LPAlgorithm::kBarrier:
+      return "barrier";
+  }
+  return std::nullopt;
+}
+
+absl::Span<const LPAlgorithm> Enum<LPAlgorithm>::AllValues() {
+  static constexpr LPAlgorithm kLPAlgorithmValues[] = {
+      LPAlgorithm::kPrimalSimplex,
+      LPAlgorithm::kDualSimplex,
+      LPAlgorithm::kBarrier,
+  };
+  return absl::MakeConstSpan(kLPAlgorithmValues);
+}
+
+std::optional<absl::string_view> Enum<Emphasis>::ToOptString(Emphasis value) {
+  switch (value) {
+    case Emphasis::kOff:
+      return "off";
+    case Emphasis::kLow:
+      return "low";
+    case Emphasis::kMedium:
+      return "medium";
+    case Emphasis::kHigh:
+      return "high";
+    case Emphasis::kVeryHigh:
+      return "very_high";
+  }
+  return std::nullopt;
+}
+
+absl::Span<const Emphasis> Enum<Emphasis>::AllValues() {
+  static constexpr Emphasis kEmphasisValues[] = {
+      Emphasis::kOff,  Emphasis::kLow,      Emphasis::kMedium,
+      Emphasis::kHigh, Emphasis::kVeryHigh,
+  };
+  return absl::MakeConstSpan(kEmphasisValues);
+}
+
+StrictnessProto Strictness::Proto() const {
+  StrictnessProto result;
+  result.set_bad_parameter(bad_parameter);
+  return result;
+}
+
+Strictness Strictness::FromProto(const StrictnessProto& proto) {
+  return {.bad_parameter = proto.bad_parameter()};
+}
+
+GurobiParametersProto GurobiParameters::Proto() const {
+  GurobiParametersProto result;
+  for (const auto& [key, val] : param_values) {
+    GurobiParametersProto::Parameter& p = *result.add_parameters();
+    p.set_name(key);
+    p.set_value(val);
+  }
+  return result;
+}
+
+GurobiParameters GurobiParameters::FromProto(
+    const GurobiParametersProto& proto) {
+  GurobiParameters result;
+  for (const GurobiParametersProto::Parameter& p : proto.parameters()) {
+    result.param_values[p.name()] = p.value();
+  }
+  return result;
+}
+
+SolveParametersProto SolveParameters::Proto() const {
+  SolveParametersProto result;
+  *result.mutable_strictness() = strictness.Proto();
+  result.set_enable_output(enable_output);
+  if (time_limit < absl::InfiniteDuration()) {
+    CHECK_OK(util_time::EncodeGoogleApiProto(time_limit,
+                                             result.mutable_time_limit()));
+  }
+  if (iteration_limit.has_value()) {
+    result.set_iteration_limit(*iteration_limit);
+  }
+  if (threads.has_value()) {
+    result.set_threads(*threads);
+  }
+  if (random_seed.has_value()) {
+    result.set_random_seed(*random_seed);
+  }
+  if (relative_gap_limit.has_value()) {
+    result.set_relative_gap_limit(*relative_gap_limit);
+  }
+  if (absolute_gap_limit.has_value()) {
+    result.set_absolute_gap_limit(*absolute_gap_limit);
+  }
+  result.set_lp_algorithm(EnumToProto(lp_algorithm));
+  result.set_presolve(EnumToProto(presolve));
+  result.set_cuts(EnumToProto(cuts));
+  result.set_heuristics(EnumToProto(heuristics));
+  result.set_scaling(EnumToProto(scaling));
+  *result.mutable_gscip() = gscip;
+  *result.mutable_gurobi() = gurobi.Proto();
+  *result.mutable_glop() = glop;
+  *result.mutable_cp_sat() = cp_sat;
+  return result;
+}
+
+absl::StatusOr<SolveParameters> SolveParameters::FromProto(
+    const SolveParametersProto& proto) {
+  SolveParameters result;
+  result.strictness = Strictness::FromProto(proto.strictness());
+  result.enable_output = proto.enable_output();
+  if (proto.has_time_limit()) {
+    ASSIGN_OR_RETURN(result.time_limit,
+                     util_time::DecodeGoogleApiProto(proto.time_limit()));
+  } else {
+    result.time_limit = absl::InfiniteDuration();
+  }
+  if (proto.has_iteration_limit()) {
+    result.iteration_limit = proto.iteration_limit();
+  }
+  if (proto.has_threads()) {
+    result.threads = proto.threads();
+  }
+  if (proto.has_random_seed()) {
+    result.random_seed = proto.random_seed();
+  }
+  if (proto.has_absolute_gap_limit()) {
+    result.absolute_gap_limit = proto.absolute_gap_limit();
+  }
+  if (proto.has_relative_gap_limit()) {
+    result.relative_gap_limit = proto.relative_gap_limit();
+  }
+  result.lp_algorithm = EnumFromProto(proto.lp_algorithm());
+  result.presolve = EnumFromProto(proto.presolve());
+  result.cuts = EnumFromProto(proto.cuts());
+  result.heuristics = EnumFromProto(proto.heuristics());
+  result.scaling = EnumFromProto(proto.scaling());
+  result.gscip = proto.gscip();
+  result.gurobi = GurobiParameters::FromProto(proto.gurobi());
+  result.glop = proto.glop();
+  result.cp_sat = proto.cp_sat();
+  return result;
+}
+
+}  // namespace math_opt
+}  // namespace operations_research

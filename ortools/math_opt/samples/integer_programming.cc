@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Simple linear programming example
+// Simple integer programming example
 
 #include <iostream>
 #include <limits>
@@ -24,12 +24,10 @@
 #include "ortools/math_opt/cpp/math_opt.h"
 
 namespace {
-using ::operations_research::math_opt::MathOpt;
-using ::operations_research::math_opt::Result;
-using ::operations_research::math_opt::SolveParametersProto;
-using ::operations_research::math_opt::SOLVER_TYPE_GSCIP;
-using ::operations_research::math_opt::SolveResultProto;
-using ::operations_research::math_opt::SolveStatsProto;
+using ::operations_research::math_opt::Model;
+using ::operations_research::math_opt::SolveResult;
+using ::operations_research::math_opt::SolverType;
+using ::operations_research::math_opt::TerminationReason;
 using ::operations_research::math_opt::Variable;
 using ::operations_research::math_opt::VariableMap;
 
@@ -43,32 +41,32 @@ constexpr double kInf = std::numeric_limits<double>::infinity();
 //            y in {0.0, 1.0, 2.0, ...,
 //
 void SolveSimpleMIP() {
-  MathOpt optimizer(SOLVER_TYPE_GSCIP, "Integer programming example");
+  Model model("Integer programming example");
 
   // Variables
-  const Variable x = optimizer.AddIntegerVariable(0.0, kInf, "x");
-  const Variable y = optimizer.AddIntegerVariable(0.0, kInf, "y");
+  const Variable x = model.AddIntegerVariable(0.0, kInf, "x");
+  const Variable y = model.AddIntegerVariable(0.0, kInf, "y");
 
   // Constraints
-  optimizer.AddLinearConstraint(x + 7 * y <= 17.5, "c1");
-  optimizer.AddLinearConstraint(x <= 3.5, "c2");
+  model.AddLinearConstraint(x + 7 * y <= 17.5, "c1");
+  model.AddLinearConstraint(x <= 3.5, "c2");
 
   // Objective
-  optimizer.objective().Maximize(x + 10 * y);
+  model.Maximize(x + 10 * y);
 
-  std::cout << "Num variables: " << optimizer.num_variables() << std::endl;
-  std::cout << "Num constraints: " << optimizer.num_linear_constraints()
+  std::cout << "Num variables: " << model.num_variables() << std::endl;
+  std::cout << "Num constraints: " << model.num_linear_constraints()
             << std::endl;
 
-  const Result result = optimizer.Solve(SolveParametersProto()).value();
+  const SolveResult result = Solve(model, SolverType::kGscip).value();
 
   // Check for warnings.
   for (const auto& warning : result.warnings) {
     LOG(ERROR) << "Solver warning: " << warning << std::endl;
   }
   // Check that the problem has an optimal solution.
-  QCHECK_EQ(result.termination_reason, SolveResultProto::OPTIMAL)
-      << "Failed to find an optimal solution: " << result.termination_detail;
+  QCHECK_EQ(result.termination.reason, TerminationReason::kOptimal)
+      << "Failed to find an optimal solution: " << result.termination;
 
   std::cout << "Problem solved in " << result.solve_time() << std::endl;
   std::cout << "Objective value: " << result.objective_value() << std::endl;
@@ -78,10 +76,6 @@ void SolveSimpleMIP() {
 
   std::cout << "Variable values: [x=" << x_val << ", y=" << y_val << "]"
             << std::endl;
-  const SolveStatsProto& stat = result.solve_stats;
-  std::cout << "Simplex iterations: " << stat.simplex_iterations() << std::endl;
-  std::cout << "Barrier iterations: " << stat.barrier_iterations() << std::endl;
-  std::cout << "Branch and bound nodes: " << stat.node_count() << std::endl;
 }
 }  // namespace
 

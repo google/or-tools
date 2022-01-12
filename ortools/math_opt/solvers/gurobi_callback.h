@@ -22,7 +22,9 @@
 #include "absl/time/time.h"
 #include "ortools/base/linked_hash_map.h"
 #include "ortools/math_opt/callback.pb.h"
+#include "ortools/math_opt/core/solve_interrupter.h"
 #include "ortools/math_opt/core/solver_interface.h"
+#include "ortools/math_opt/solvers/gurobi/g_gurobi.h"
 #include "ortools/math_opt/solvers/message_callback_data.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 
@@ -33,6 +35,7 @@ namespace math_opt {
 
 struct GurobiCallbackInput {
   SolverInterface::Callback user_cb;
+  SolverInterface::MessageCallback message_cb;
   const gtl::linked_hash_map<int64_t, int>& variable_ids;
   int num_gurobi_vars = 0;
   // events[i] indicates if we should run user_cb when Gurobi's callback is
@@ -54,16 +57,17 @@ struct GurobiCallbackInput {
 std::vector<bool> EventToGurobiWhere(
     const absl::flat_hash_set<CallbackEventProto>& events);
 
-absl::Status GurobiCallbackImpl(GRBmodel* grb_model, void* cbdata, int where,
+absl::Status GurobiCallbackImpl(const Gurobi::CallbackContext& context,
                                 const GurobiCallbackInput& callback_input,
-                                MessageCallbackData& message_callback_data);
+                                MessageCallbackData& message_callback_data,
+                                SolveInterrupter* local_interrupter);
 
-// Makes the final calls to the user callback with any buffered event if
-// necessary. It must be called once at the end of the solve, and only if all
-// previous callbacks succeeded (and the solve succeeded).
-absl::Status GurobiCallbackImplFlush(
-    const GurobiCallbackInput& callback_input,
-    MessageCallbackData& message_callback_data);
+// Makes the final calls to the message callback with any unfinished line if
+// necessary. It must be called once at the end of the solve, even when the
+// solve or one callback failed (in case the last unfinished line contains some
+// details about that).
+void GurobiCallbackImplFlush(const GurobiCallbackInput& callback_input,
+                             MessageCallbackData& message_callback_data);
 
 }  // namespace math_opt
 }  // namespace operations_research

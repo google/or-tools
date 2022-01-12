@@ -20,6 +20,25 @@ package operations_research.math_opt;
 import "ortools/math_opt/solution.proto";
 import "ortools/math_opt/sparse_containers.proto";
 
+option java_package = "com.google.ortools.mathopt";
+option java_multiple_files = true;
+
+// TODO(b/183616124): Add dual_values/reduced_cost hints and hint-priorities
+// to variable_values.
+
+// Initial solution hint for warm starting a solver. This can be a full solution
+// (all values specified) or a partial solution (only some values specified). In
+// addition, a full solution does not need to be feasible. The solver may try to
+// complete a partial solution or to repair a full solution that is infeasible.
+message SolutionHintProto {
+  // A possibly partial assignment of values to the primal variables of the
+  // problem. The solver-independent requirements for this sub-message are:
+  //  * variable_values.ids are elements of VariablesProto.ids.
+  //  * variable_values.values must all be finite.
+  SparseDoubleVectorProto variable_values = 1;
+}
+
+// TODO(b/183628247): follow naming convention in fields below.
 // Parameters to control a single solve that that are specific to the input
 // model (see SolveParametersProto for model independent parameters).
 message ModelSolveParametersProto {
@@ -29,7 +48,7 @@ message ModelSolveParametersProto {
   //
   // Requirements:
   //  * filtered_ids are elements of VariablesProto.ids.
-  SparseVectorFilterProto primal_variables_filter = 1;
+  SparseVectorFilterProto variable_values_filter = 1;
 
   // Filter that is applied to all returned sparse containers keyed by linear
   // constraints in DualSolutionProto and DualRay
@@ -37,7 +56,7 @@ message ModelSolveParametersProto {
   //
   // Requirements:
   //  * filtered_ids are elements of LinearConstraints.ids.
-  SparseVectorFilterProto dual_linear_constraints_filter = 2;
+  SparseVectorFilterProto dual_values_filter = 2;
 
   // Filter that is applied to all returned sparse containers keyed by variables
   // in DualSolutionProto and DualRay (DualSolutionProto.reduced_costs,
@@ -45,12 +64,28 @@ message ModelSolveParametersProto {
   //
   // Requirements:
   //  * filtered_ids are elements of VariablesProto.ids.
-  SparseVectorFilterProto dual_variables_filter = 3;
+  SparseVectorFilterProto reduced_costs_filter = 3;
 
   // Optional initial basis for warm starting simplex LP solvers. If set, it is
   // expected to be valid according to `ValidateBasis` in
   // `validators/solution_validator.h` for the current `ModelSummary`.
   BasisProto initial_basis = 4;
 
-  // TODO(b/183616124): Support hint and branching priorities.
+  // TODO(b/183616124): Add multiple solution start support for Gurobi/GSCIP and
+  // add associated tests.
+
+  // Optional solution hints. If set, they are expected to be valid according to
+  // the message description above or equivalently according to
+  // `ValidateSolutionHint` in `validators/model_parameters_validator.cc` for
+  // the current `ModelSummary`.
+  repeated SolutionHintProto solution_hints = 5;
+
+  // Optional branching priorities. Variables with higher values will be
+  // branched on first. Variables for which priorities are not set get the
+  // solver's default priority (usualy zero).
+  //
+  // Requirements:
+  //  * branching_priorities.values must be finite.
+  //  * branching_priorities.ids must be elements of VariablesProto.ids.
+  SparseInt32VectorProto branching_priorities = 6;
 }

@@ -70,6 +70,7 @@ class IdUpdateValidator {
                     const absl::Span<const int64_t> new_ids)
       : old_ids_(old_ids), deleted_ids_(deleted_ids), new_ids_(new_ids) {}
 
+  // Returns true if the sets of ids passed to the constructor are valid.
   absl::Status IsValid() const;
 
   // Checks that ids is a subset of NOT_DELETED = old_ids_ - deleted_ids_.
@@ -92,8 +93,8 @@ class IdUpdateValidator {
  private:
   // NOT OWNED
   const IdNameBiMap& old_ids_;
-  absl::Span<const int64_t> deleted_ids_;
-  absl::Span<const int64_t> new_ids_;
+  const absl::Span<const int64_t> deleted_ids_;
+  const absl::Span<const int64_t> new_ids_;
 };
 
 }  // namespace math_opt

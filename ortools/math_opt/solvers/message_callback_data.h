@@ -14,22 +14,20 @@
 #ifndef OR_TOOLS_MATH_OPT_SOLVERS_MESSAGE_CALLBACK_DATA_H_
 #define OR_TOOLS_MATH_OPT_SOLVERS_MESSAGE_CALLBACK_DATA_H_
 
+#include <optional>
 #include <string>
-
-#include "absl/strings/string_view.h"
-#include "absl/types/optional.h"
-#include "ortools/math_opt/callback.pb.h"
+#include <string_view>
+#include <vector>
 
 namespace operations_research {
 namespace math_opt {
 
-// Buffer for solvers messages that enforces the contract of
-// CallbackDataProto.messages for CALLBACK_EVENT_MESSAGE events.
+// Buffer for solvers messages that enforces the contract of MessageCallback.
 //
 // This contract mandates that each message is a full finished line. As a
 // consequence, if the solver calls the callback with a partial last line, this
-// one must not be passed immediately in CallbackDataProto.messages but kept
-// until the end of the line is reached (or the solve is done).
+// one must not be passed immediately to MessageCallback but kept until the end
+// of the line is reached (or the solve is done).
 //
 // To implement that this class has two methods:
 //
@@ -45,23 +43,17 @@ class MessageCallbackData {
   MessageCallbackData(const MessageCallbackData&) = delete;
   MessageCallbackData& operator=(const MessageCallbackData&) = delete;
 
-  // Parses the input message, returning a message callback data proto with all
-  // finished lines. Returns nullopt if the input message did not contained any
+  // Parses the input message, returning a vector with all finished
+  // lines. Returns an empty vector if the input message did not contained any
   // '\n'.
   //
   // It updates this object with the last unfinished line to use it to complete
   // the next message.
-  //
-  // Note that CallbackDataProto.runtime field is not set. It must be set by the
-  // caller appropriately.
-  absl::optional<CallbackDataProto> Parse(absl::string_view message);
+  std::vector<std::string> Parse(std::string_view message);
 
-  // Returns a message callback data proto with the last unfinished line if it
-  // exists.
-  //
-  // Note that CallbackDataProto.runtime field is not set. It must be set by the
-  // caller appropriately.
-  absl::optional<CallbackDataProto> Flush();
+  // Returns a vector with the last unfinished line if it exists, else an empty
+  // vector.
+  std::vector<std::string> Flush();
 
  private:
   // The last message line not ending with '\n'.

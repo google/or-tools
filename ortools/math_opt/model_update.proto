@@ -19,6 +19,9 @@ package operations_research.math_opt;
 import "ortools/math_opt/model.proto";
 import "ortools/math_opt/sparse_containers.proto";
 
+option java_package = "com.google.ortools.mathopt";
+option java_multiple_files = true;
+
 // Updates to existing variables in a ModelProto.
 //
 // Applies only to existing variables in a model, for new variables, see
@@ -66,6 +69,24 @@ message ObjectiveUpdatesProto {
   //  * The value 0.0 removes a variable from the linear objective. This
   //    value should only be used for existing variables.
   SparseDoubleVectorProto linear_coefficients = 3;
+
+  // Updates ModelProto.objective.quadratic_coefficients
+  //
+  // Requirements in addition to those on SparseDoubleMatrixProto messages:
+  //  * Each element of quadratic_coefficients.row_ids and each element of
+  //    quadratic_coefficients.column_ids must be a variable id, either an
+  //    existing one (from ModelProto.variables.ids) or a new one (from
+  //    ModelUpdateProto.new_variables.ids).
+  //  * The matrix must be upper triangular: for each i,
+  //    quadratic_coefficients.row_ids[i] <=
+  //    quadratic_coefficients.column_ids[i].
+  //
+  // Notes:
+  //  * Unset values are unchanged.
+  //  * The value 0.0 removes a quadratic term (i.e. product of two variables)
+  //    from the quadratic objective. This value should only be used for
+  //    existing quadratic terms appearing in the objective.
+  SparseDoubleMatrixProto quadratic_coefficients = 4;
 }
 
 // Updates to existing linear constraints in a ModelProto.
@@ -113,14 +134,13 @@ message ModelUpdateProto {
   LinearConstraintUpdatesProto linear_constraint_updates = 4;
 
   // Add new variables to the model. All new_variables.ids must be greater than
-  // the existing model's largest variable id. All nonempty names should be
-  // distinct from existing names. TODO(b/169575522): we may relax this.
+  // any ids used in the initial model and previous updates. All nonempty names
+  // should be distinct from existing names.
   VariablesProto new_variables = 5;
 
   // Add new linear constraints to the model. All new_linear_constraints.ids
-  // must be greater than the existing model's largest linear constraints id.
-  // All nonempty names should be distinct from existing names.
-  // TODO(b/169575522): we may relax this.
+  // must be greater than any ids used in the initial model and previous
+  // updates. All nonempty names should be distinct from existing names.
   LinearConstraintsProto new_linear_constraints = 6;
 
   // Updates the objective, both for existing and new variables.

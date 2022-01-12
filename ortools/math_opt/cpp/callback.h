@@ -11,13 +11,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Data types for using callbacks with MathOpt.
+// Data types for using callbacks with Solve() and IncrementalSolver.
 //
 // Callbacks allow to user to observe the progress of a solver and modify its
 // behavior mid solve. This is supported by allowing the user to a function of
-// type MathOpt::Callback as an optional argument to MathOpt::Solve(). This
-// function is called periodically throughout the solve process. This file
-// defines the data types needed to use this callback.
+// type Callback as an optional argument to Solve() and
+// IncrementalSolver::Solve(). This function is called periodically throughout
+// the solve process. This file defines the data types needed to use this
+// callback.
 //
 // The example below registers a callback that listens for feasible solutions
 // the solvers finds along the way and accumulates them in a list for analysis
@@ -26,14 +27,15 @@
 //   using ::operations_research::math_opt::CallbackData;
 //   using ::operations_research::math_opt::CallbackRegistration;
 //   using ::operations_research::math_opt::CallbackResult;
-//   using ::operations_research::math_opt::MathOpt;
-//   using ::operations_research::math_opt::Result;
+//   using ::operations_research::math_opt::Model;
+//   using ::operations_research::math_opt::SolveResult;
+//   using ::operations_research::math_opt::Solve;
 //   using ::operations_research::math_opt::Variable;
 //   using ::operations_research::math_opt::VariableMap;
 //
-//   MathOpt model(operations_research::math_opt::SOLVER_TYPE_GUROBI);
+//   Model model;
 //   Variable x = model.AddBinaryVariable();
-//   model.objective().Maximize(x);
+//   model.Maximize(x);
 //   CallbackRegistration cb_reg;
 //   cb_reg.events = {
 //       operations_research::math_opt::CALLBACK_EVENT_MIP_SOLUTION};
@@ -44,84 +46,98 @@
 //     solutions.push_back(*cb_data.solution);
 //     return CallbackResult();
 //   };
-//   absl::StatusOr<Result> result = opt.Solve({}, {}, cb_reb, cb);
+//   absl::StatusOr<SolveResult> result = Solve(
+//     model, operations_research::math_opt::SOLVER_TYPE_GUROBI,
+//     /*parameters=*/{}, /*model_parameters=*/{}, cb_reb, cb);
 //
 // At the termination of the example, solutions will have {{x, 1.0}}, and
 // possibly {{x, 0.0}} as well.
 //
-// If the callback argument to MathOpt::Solve() is not null, it will be invoked
-// on the events specified by the callback_registration argument (and when the
+// If the callback argument to Solve() is not null, it will be invoked on the
+// events specified by the callback_registration argument (and when the
 // callback is null, callback_registration must not request any events or will
 // CHECK fail). Some solvers do not support callbacks or certain events, in this
 // case the callback is ignored. TODO(b/180617976): change this behavior.
 //
-// Some solvers may call callback from multiple threads (SCIP will, Gurobi
-// will not). You should either solve with one thread (see
-// solver_parameters.common_parameters.threads), write a threadsafe callback,
-// or consult the documentation of your underlying solver.
+// Some solvers may call callback from multiple threads (SCIP will, Gurobi will
+// not). You should either solve with one thread (see
+// solver_parameters.threads), write a threadsafe callback, or consult
+// the documentation of your underlying solver.
 #ifndef OR_TOOLS_MATH_OPT_CPP_CALLBACK_H_
 #define OR_TOOLS_MATH_OPT_CPP_CALLBACK_H_
 
-#include <string>
+#include <functional>
+#include <optional>
 #include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
 #include "absl/time/time.h"
-#include "absl/types/optional.h"
+#include "absl/types/span.h"
 #include "ortools/math_opt/callback.pb.h"
-#include "ortools/math_opt/core/indexed_model.h"
+#include "ortools/math_opt/core/model_storage.h"
+#include "ortools/math_opt/cpp/enums.h"  // IWYU pragma: export
 #include "ortools/math_opt/cpp/map_filter.h"
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
 
 namespace operations_research {
 namespace math_opt {
 
-// The input to the MathOpt::Callback function.
-//
-// The information available depends on the current event.
-struct CallbackData {
-  // Users will typically not need this function.
-  // Will CHECK fail if proto is not valid.
-  CallbackData(IndexedModel* model, const CallbackDataProto& proto);
-  CallbackData() = default;
+struct CallbackData;
+struct CallbackResult;
 
-  // The current state of the underlying solver.
-  CallbackEventProto event = CALLBACK_EVENT_UNSPECIFIED;
+using Callback = std::function<CallbackResult(const CallbackData&)>;
 
-  // If event == CALLBACK_EVENT_MIP_NODE, the primal_solution contains the
-  //   primal solution to the current LP-node relaxation. In some cases, no
-  //   solution will be available (e.g. because LP was infeasible or the solve
-  //   was imprecise).
-  // If event == CALLBACK_EVENT_MIP_SOLUTION, the primal_solution contains the
-  //   newly found primal (integer) feasible solution. The solution is always
-  //   present.
-  // Otherwise, the primal_solution is not available.
-  absl::optional<VariableMap<double>> solution;
+// The supported events for LP/MIP callbacks.
+enum class CallbackEvent {
+  // The solver is currently running presolve.
+  //
+  // This event is supported for MIP & LP models by SolverType::kGurobi. Other
+  // solvers don't support this event.
+  kPresolve = CALLBACK_EVENT_PRESOLVE,
 
-  // If event == CALLBACK_EVENT_MESSAGE, contains the messages from the solver.
-  //   Each message represents a single output line from the solver, and each
-  //   message does not contain any '\n' characters.
-  // Otherwise, messages is empty.
-  std::vector<std::string> messages;
+  // The solver is currently running the simplex method.
+  //
+  // This event is supported for MIP & LP models by SolverType::kGurobi. Other
+  // solvers don't support this event.
+  kSimplex = CALLBACK_EVENT_SIMPLEX,
 
-  // Time since `Solve()` was called. Available for all events except
-  // CALLBACK_EVENT_POLLING.
-  absl::Duration runtime;
+  // The solver is in the MIP loop (called periodically before starting a new
+  // node). Useful for early termination. Note that this event does not provide
+  // information on LP relaxations nor about new incumbent solutions.
+  //
+  // This event is supported for MIP models only by SolverType::kGurobi. Other
+  // solvers don't support this event.
+  kMip = CALLBACK_EVENT_MIP,
 
-  // Only available for event == CALLBACK_EVENT_PRESOLVE.
-  CallbackDataProto::PresolveStats presolve_stats;
+  // Called every time a new MIP incumbent is found.
+  //
+  // This event is fully supported for MIP models by SolverType::kGurobi. CP-SAT
+  // has partial support: you can view the solutions and request termination,
+  // but you cannot add lazy constraints. Other solvers don't support this
+  // event.
+  kMipSolution = CALLBACK_EVENT_MIP_SOLUTION,
 
-  // Only available for event == CALLBACK_EVENT_SIMPLEX.
-  CallbackDataProto::SimplexStats simplex_stats;
+  // Called inside a MIP node. Note that there is no guarantee that the
+  // callback function will be called on every node. That behavior is
+  // solver-dependent.
+  //
+  // Disabling cuts using CommonSolveParameters may interfere with this event
+  // being called and/or adding cuts at this event, the behavior is solver
+  // specific.
+  //
+  // This event is supported for MIP models only by SolverType::kGurobi. Other
+  // solvers don't support this event.
+  kMipNode = CALLBACK_EVENT_MIP_NODE,
 
-  // Only available for event == CALLBACK_EVENT_BARRIER.
-  CallbackDataProto::BarrierStats barrier_stats;
-
-  // Only available for event of CALLBACK_EVENT_MIP, CALLBACK_EVENT_MIP_NODE, or
-  // CALLBACK_EVENT_MIP_SOLUTION.
-  CallbackDataProto::MipStats mip_stats;
+  // Called in each iterate of an interior point/barrier method.
+  //
+  // This event is supported for LP models only by SolverType::kGurobi. Other
+  // solvers don't support this event.
+  kBarrier = CALLBACK_EVENT_BARRIER,
 };
+
+MATH_OPT_DEFINE_ENUM(CallbackEvent, CALLBACK_EVENT_UNSPECIFIED);
 
 // Provided with a callback at the start of a Solve() to inform the solver:
 //   * what information the callback needs,
@@ -132,31 +148,77 @@ struct CallbackRegistration {
 
   // Returns the model referenced variables, or null if no variables are
   // referenced. Will CHECK fail if variables are not from the same model.
-  IndexedModel* model() const;
+  const ModelStorage* storage() const;
 
   // The events the solver should invoke the callback at.
-  absl::flat_hash_set<CallbackEventProto> events;
+  //
+  // A solver will return an InvalidArgument status when called with registered
+  // events that are not supported for the selected solver and the type of
+  // model. For example registring for CallbackEvent::kMip with a model that
+  // only contains continuous variables will fail for most solvers (see the
+  // documentation of each event to see which solvers support them and in which
+  // case).
+  absl::flat_hash_set<CallbackEvent> events;
 
   // Restricts the variable returned in CallbackData.solution for event
-  // CALLBACK_EVENT_MIP_SOLUTION. This can improve performance.
+  // CallbackEvent::kMipSolution. This can improve performance.
   MapFilter<Variable> mip_solution_filter;
 
   // Restricts the variable returned in CallbackData.solution for event
-  // CALLBACK_EVENT_MIP_NODE. This can improve performance.
+  // CallbackEvent::kMipNode. This can improve performance.
   MapFilter<Variable> mip_node_filter;
 
-  // If the callback will ever add "user cuts" at event CALLBACK_EVENT_MIP_NODE
+  // If the callback will ever add "user cuts" at event CallbackEvent::kMipNode
   // during the solve process (a linear constraint that excludes the current LP
   // solution but does not cut off any integer points).
   bool add_cuts = false;
 
   // If the callback will ever add "lazy constraints" at event
-  // CALLBACK_EVENT_MIP_NODE or CALLBACK_EVENT_MIP_SOLUTION during the solve
+  // CallbackEvent::kMipNode or CallbackEvent::kMipSolution during the solve
   // process (a linear constraint that excludes integer points).
   bool add_lazy_constraints = false;
 };
 
-// The value returned by the MathOpt::Callback function.
+// The input to the Callback function.
+//
+// The information available depends on the current event.
+struct CallbackData {
+  // Users will typically not need this function.
+  // Will CHECK fail if proto is not valid.
+  CallbackData(const ModelStorage* storage, const CallbackDataProto& proto);
+
+  // The current state of the underlying solver.
+  CallbackEvent event;
+
+  // If event == CallbackEvent::kMipNode, the primal_solution contains the
+  //   primal solution to the current LP-node relaxation. In some cases, no
+  //   solution will be available (e.g. because LP was infeasible or the solve
+  //   was imprecise).
+  // If event == CallbackEvent::kMipSolution, the primal_solution contains the
+  //   newly found primal (integer) feasible solution. The solution is always
+  //   present.
+  // Otherwise, the primal_solution is not available.
+  std::optional<VariableMap<double>> solution;
+
+  // Time since `Solve()` was called. Available for all events except
+  // CallbackEvent::kPolling.
+  absl::Duration runtime;
+
+  // Only available for event == CallbackEvent::kPresolve.
+  CallbackDataProto::PresolveStats presolve_stats;
+
+  // Only available for event == CallbackEvent::kSimplex.
+  CallbackDataProto::SimplexStats simplex_stats;
+
+  // Only available for event == CallbackEvent::kBarrier.
+  CallbackDataProto::BarrierStats barrier_stats;
+
+  // Only available for event of CallbackEvent::kMip, CallbackEvent::kMipNode,
+  // or CallbackEvent::kMipSolution.
+  CallbackDataProto::MipStats mip_stats;
+};
+
+// The value returned by the Callback function.
 struct CallbackResult {
   // Prefer AddUserCut and AddLazyConstraint below instead of using this
   // directly.
@@ -164,18 +226,20 @@ struct CallbackResult {
     BoundedLinearExpression linear_constraint;
     bool is_lazy = false;
 
-    IndexedModel* model() const { return linear_constraint.expression.model(); }
+    const ModelStorage* storage() const {
+      return linear_constraint.expression.storage();
+    }
   };
 
   // Adds a "user cut," a linear constraint that excludes the current LP
   // solution but does not cut off any integer points. Use only for
-  // CALLBACK_EVENT_MIP_NODE.
+  // CallbackEvent::kMipNode.
   void AddUserCut(BoundedLinearExpression linear_constraint) {
     new_constraints.push_back({std::move(linear_constraint), false});
   }
 
   // Adds a "lazy constraint," a linear constraint that excludes integer points.
-  // Use only for CALLBACK_EVENT_MIP_NODE and CALLBACK_EVENT_MIP_SOLUTION.
+  // Use only for CallbackEvent::kMipNode and CallbackEvent::kMipSolution.
   void AddLazyConstraint(BoundedLinearExpression linear_constraint) {
     new_constraints.push_back({std::move(linear_constraint), true});
   }
@@ -187,7 +251,7 @@ struct CallbackResult {
   // referenced. Will CHECK fail if variables are not from the same model.
   //
   // Runs in O(num constraints + num suggested solutions).
-  IndexedModel* model() const;
+  const ModelStorage* storage() const;
 
   // Stop the solve process and return early. Can be called from any event.
   bool terminate = false;

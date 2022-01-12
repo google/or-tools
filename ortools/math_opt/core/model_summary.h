@@ -34,6 +34,11 @@ namespace math_opt {
 //
 // The following invariants are enforced:
 //  * Ids must be unique and increasing (in insertion order).
+//  * Ids are non-negative.
+//  * Ids are not equal to std::numeric_limits<int64_t>::max()
+//    TODO(b/213918209): make sure this is enforced in validators or remove this
+//    restriction.
+//  * Ids removed are never reused.
 //  * Names must be either empty or unique.
 class IdNameBiMap {
  public:
@@ -44,18 +49,30 @@ class IdNameBiMap {
   // validation code.
   IdNameBiMap(std::initializer_list<std::pair<int64_t, absl::string_view>> ids);
 
-  // Will CHECK fail if id is <= largest_id().
-  // Will CHECK fail if id is present or if name is nonempty and present.
+  // Inserts the provided id and associate the provided name to it. CHECKs that
+  // id >= next_free_id() and that when the name is nonempty it is not already
+  // present. As a side effect it updates next_free_id to id + 1.
   inline void Insert(int64_t id, std::string name);
 
-  // Will CHECK fail if id is not present.
+  // Removes the given id. CHECKs that it is present.
   inline void Erase(int64_t id);
 
   inline bool HasId(int64_t id) const;
   inline bool HasName(absl::string_view name) const;
   inline bool Empty() const;
   inline int Size() const;
-  inline int64_t LargestId() const;
+
+  // The next id that has never been used (0 initially since ids are
+  // non-negative).
+  inline int64_t next_free_id() const;
+
+  // Updates next_free_id(). CHECKs that the provided id is greater than any
+  // exiting id and non negative.
+  //
+  // In practice this should only be used to increase the next_free_id() value
+  // in cases where a ModelSummary is built with an existing model but we know
+  // some ids of removed elements have already been used.
+  inline void SetNextFreeId(int64_t new_next_free_id);
 
   // Iteration order is in increasing id order.
   const gtl::linked_hash_map<int64_t, std::string>& id_to_name() const {
@@ -67,6 +84,9 @@ class IdNameBiMap {
   }
 
  private:
+  // Next unused id.
+  int64_t next_free_id_ = 0;
+
   // Pointer stability for name strings and iterating in insertion order are
   // both needed (so we do not use flat_hash_map).
   gtl::linked_hash_map<int64_t, std::string> id_to_name_;
@@ -83,9 +103,14 @@ struct ModelSummary {
 ////////////////////////////////////////////////////////////////////////////////
 
 void IdNameBiMap::Insert(const int64_t id, std::string name) {
-  if (!id_to_name_.empty()) {
-    CHECK_GT(id, LargestId()) << name;
-  }
+  CHECK_GE(id, next_free_id_);
+  // TODO(b/213918209): this is not mandatory for a valid model at this point so
+  // this is a bit incorrect. The correct thing to do would be to have an
+  // optional<int64_t> for the next_free_id_ and forbid any new id when we reach
+  // the max but this may be overkill.
+  CHECK_LT(id, std::numeric_limits<int64_t>::max());
+  next_free_id_ = id + 1;
+
   const auto [it, success] = id_to_name_.emplace(id, std::move(name));
   CHECK(success) << "id: " << id;
   const absl::string_view name_view(it->second);
@@ -116,9 +141,16 @@ bool IdNameBiMap::Empty() const { return id_to_name_.empty(); }
 
 int IdNameBiMap::Size() const { return id_to_name_.size(); }
 
-int64_t IdNameBiMap::LargestId() const {
-  CHECK(!Empty());
-  return id_to_name_.back().first;
+int64_t IdNameBiMap::next_free_id() const { return next_free_id_; }
+
+void IdNameBiMap::SetNextFreeId(const int64_t new_next_free_id) {
+  if (!Empty()) {
+    const int64_t largest_id = id_to_name_.back().first;
+    CHECK_GT(new_next_free_id, largest_id);
+  } else {
+    CHECK_GE(new_next_free_id, 0);
+  }
+  next_free_id_ = new_next_free_id;
 }
 
 }  // namespace math_opt

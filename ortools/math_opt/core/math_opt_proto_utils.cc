@@ -75,5 +75,26 @@ absl::flat_hash_set<CallbackEventProto> EventSet(
   return events;
 }
 
+TerminationProto TerminateForLimit(const LimitProto limit,
+                                   const absl::string_view detail) {
+  TerminationProto result;
+  result.set_reason(TERMINATION_REASON_LIMIT_REACHED);
+  result.set_limit(limit);
+  if (!detail.empty()) {
+    result.set_detail(std::string(detail));
+  }
+  return result;
+}
+
+TerminationProto TerminateForReason(const TerminationReasonProto reason,
+                                    const absl::string_view detail) {
+  TerminationProto result;
+  result.set_reason(reason);
+  if (!detail.empty()) {
+    result.set_detail(std::string(detail));
+  }
+  return result;
+}
+
 }  // namespace math_opt
 }  // namespace operations_research

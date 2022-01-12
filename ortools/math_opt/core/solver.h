@@ -17,9 +17,12 @@
 #include <functional>
 #include <memory>
 
+#include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/synchronization/mutex.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/model_summary.h"
+#include "ortools/math_opt/core/solve_interrupter.h"
 #include "ortools/math_opt/core/solver_interface.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_parameters.pb.h"
@@ -35,46 +38,87 @@ namespace math_opt {
 // Use the New() function to build a new solver instance; then call Solve() to
 // solve the model. You can then update the model using Update() and resolve.
 //
+// Thread-safety: methods Solve() and Update() must not be called concurrently;
+// they will immediately return with an error status if this happens. Some
+// solvers may add more restriction regarding threading. Please see
+// SOLVER_TYPE_XXX documentation for details.
+//
 // Usage:
 //   const ModelProto model = ...;
 //   const auto solver = Solver::New(SOLVER_TYPE_GSCIP,
 //                                   model,
-//                                   SolverInitializerProto{});
+//                                   /*arguments=*/{});
 //   CHECK_OK(solver.status());
-//   const SolveParametersProto solve_params = ...;
+//   Solver::SolveArgs solve_arguments;
+//   ...
 //
 //   // First solve of the initial Model.
-//   const auto first_solution = (*solver)->Solve(solve_params);
+//   const auto first_solution = (*solver)->Solve(solve_arguments);
 //   CHECK_OK(first_solution.status());
 //   // Use the first_solution here.
 //
 //   // Update the Model with a ModelUpdate.
 //   const ModelUpdate update = ...;
 //   CHECK_OK((*solver)->Update(update));
-//   const auto second_solution = (*solver)->Solve(solve_params);
+//   const auto second_solution = (*solver)->Solve(solve_arguments);
 //   CHECK_OK(second_solution.status());
 //   // Use the second_solution of the updated problem here.
 //
 class Solver {
  public:
-  // Callback function type.
+  using InitArgs = SolverInterface::InitArgs;
+
+  // Callback function for messages callback sent by the solver.
+  //
+  // Each message represents a single output line from the solver, and each
+  // message does not contain any '\n' character in it.
+  //
+  // Thread-safety: a callback may be called concurrently from multiple
+  // threads. The users is expected to use proper synchronization primitives to
+  // deal with that.
+  using MessageCallback = SolverInterface::MessageCallback;
+
+  // Callback function type for MIP/LP callbacks.
   using Callback = std::function<CallbackResultProto(const CallbackDataProto&)>;
+
+  // Arguments used when calling Solve() to solve the problem.
+  struct SolveArgs {
+    SolveParametersProto parameters;
+    ModelSolveParametersProto model_parameters;
+
+    // An optional callback for messages emitted by the solver.
+    //
+    // When set it enables the solver messages and ignores the `enable_output`
+    // in solve parameters; messages are redirected to the callback and not
+    // printed on stdout/stderr/logs anymore.
+    MessageCallback message_callback = nullptr;
+
+    CallbackRegistrationProto callback_registration;
+    Callback user_cb = nullptr;
+
+    // An optional interrupter that the solver can use to interrupt the solve
+    // early.
+    SolveInterrupter* interrupter = nullptr;
+  };
+
+  // A shortcut for calling Solver::New() and then Solver::Solve().
+  static absl::StatusOr<SolveResultProto> NonIncrementalSolve(
+      const ModelProto& model, SolverTypeProto solver_type,
+      const InitArgs& init_args, const SolveArgs& solve_args);
 
   // Builds a solver of the given type with the provided model and
   // initialization parameters.
   static absl::StatusOr<std::unique_ptr<Solver>> New(
-      SolverType solver_type, const ModelProto& model,
-      const SolverInitializerProto& initializer);
+      SolverTypeProto solver_type, const ModelProto& model,
+      const InitArgs& arguments);
 
   Solver(const Solver&) = delete;
   Solver& operator=(const Solver&) = delete;
 
+  ~Solver();
+
   // Solves the current model (included all updates).
-  absl::StatusOr<SolveResultProto> Solve(
-      const SolveParametersProto& parameters,
-      const ModelSolveParametersProto& model_parameters = {},
-      const CallbackRegistrationProto& callback_registration = {},
-      Callback user_cb = nullptr);
+  absl::StatusOr<SolveResultProto> Solve(const SolveArgs& arguments);
 
   // Updates the model to solve and returns true, or returns false if this
   // update is not supported by the underlying solver.
@@ -87,10 +131,21 @@ class Solver {
   Solver(std::unique_ptr<SolverInterface> underlying_solver,
          ModelSummary model_summary);
 
+  // Mutex used to ensure that Solve() and Update() are not called concurrently.
+  absl::Mutex mutex_;
+
   const std::unique_ptr<SolverInterface> underlying_solver_;
   ModelSummary model_summary_;
 };
 
+namespace internal {
+
+// Validates that the input streamable and non_streamable init arguments are
+// either not set or are the one of solver_type.
+absl::Status ValidateInitArgs(const Solver::InitArgs& init_args,
+                              SolverTypeProto solver_type);
+
+}  // namespace internal
 }  // namespace math_opt
 }  // namespace operations_research
 

@@ -18,6 +18,9 @@ package operations_research.math_opt;
 
 import "ortools/math_opt/sparse_containers.proto";
 
+option java_package = "com.google.ortools.mathopt";
+option java_multiple_files = true;
+
 // As used below, we define "#variables" = size(VariablesProto.ids).
 message VariablesProto {
   // Must be nonnegative and strictly increasing.
@@ -50,7 +53,21 @@ message ObjectiveProto {
   //  * linear_coefficients.values can be zero, but this just wastes space.
   SparseDoubleVectorProto linear_coefficients = 3;
 
-  // TODO(user): add support for a quadratic objective term.
+  // Objective terms that are quadratic in the decision variables.
+  //
+  // Requirements in addition to those on SparseDoubleMatrixProto messages:
+  //  * Each element of quadratic_coefficients.row_ids and each element of
+  //    quadratic_coefficients.column_ids must be an element of
+  //    VariablesProto.ids.
+  //  * The matrix must be upper triangular: for each i,
+  //    quadratic_coefficients.row_ids[i] <=
+  //    quadratic_coefficients.column_ids[i].
+  //
+  // Notes:
+  //  * Terms not explicitly stored have zero coefficient.
+  //  * Elements of quadratic_coefficients.coefficients can be zero, but this
+  //    just wastes space.
+  SparseDoubleMatrixProto quadratic_coefficients = 4;
 }
 
 // As used below, we define "#linear constraints" =

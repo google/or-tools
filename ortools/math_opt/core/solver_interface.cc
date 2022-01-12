@@ -39,7 +39,7 @@ AllSolversRegistry* AllSolversRegistry::Instance() {
   return instance;
 }
 
-void AllSolversRegistry::Register(const SolverType solver_type,
+void AllSolversRegistry::Register(const SolverTypeProto solver_type,
                                   SolverInterface::Factory factory) {
   bool inserted;
   {
@@ -52,8 +52,8 @@ void AllSolversRegistry::Register(const SolverType solver_type,
 }
 
 absl::StatusOr<std::unique_ptr<SolverInterface>> AllSolversRegistry::Create(
-    SolverType solver_type, const ModelProto& model,
-    const SolverInitializerProto& initializer) const {
+    SolverTypeProto solver_type, const ModelProto& model,
+    const SolverInterface::InitArgs& init_args) const {
   const SolverInterface::Factory* factory = nullptr;
   {
     const absl::MutexLock lock(&mutex_);
@@ -64,16 +64,16 @@ absl::StatusOr<std::unique_ptr<SolverInterface>> AllSolversRegistry::Create(
         absl::StrCat("Solver type: ", ProtoEnumToString(solver_type),
                      " is not registered."));
   }
-  return (*factory)(model, initializer);
+  return (*factory)(model, init_args);
 }
 
-bool AllSolversRegistry::IsRegistered(const SolverType solver_type) const {
+bool AllSolversRegistry::IsRegistered(const SolverTypeProto solver_type) const {
   const absl::MutexLock lock(&mutex_);
   return registered_solvers_.contains(solver_type);
 }
 
-std::vector<SolverType> AllSolversRegistry::RegisteredSolvers() const {
-  std::vector<SolverType> result;
+std::vector<SolverTypeProto> AllSolversRegistry::RegisteredSolvers() const {
+  std::vector<SolverTypeProto> result;
   {
     const absl::MutexLock lock(&mutex_);
     for (const auto& kv_pair : registered_solvers_) {

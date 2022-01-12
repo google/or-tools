@@ -19,11 +19,15 @@
 #include <string>
 #include <vector>
 
+#include "absl/base/attributes.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
 #include "ortools/math_opt/callback.pb.h"
+#include "ortools/math_opt/core/non_streamable_solver_init_arguments.h"
+#include "ortools/math_opt/core/solve_interrupter.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_parameters.pb.h"
 #include "ortools/math_opt/model_update.pb.h"
@@ -32,12 +36,21 @@
 
 namespace operations_research {
 namespace math_opt {
+namespace internal {
+
+// The message of the InvalidArgumentError returned by solvers that are passed a
+// non null message callback when they don't support it.
+inline constexpr absl::string_view kMessageCallbackNotSupported =
+    "This solver does not support message callbacks.";
+
+}  // namespace internal
 
 // Interface implemented by actual solvers.
 //
 // This interface is not meant to be used directly. The actual API is the one of
 // the Solver class. The Solver class validates the models before calling this
-// interface.
+// interface. It also makes sure no concurrent calls happen on Solve(),
+// CanUpdate() and Update().
 //
 // Implementations of this interface should not have public constructors but
 // instead have a static `New` function with the signature of Factory function
@@ -45,6 +58,22 @@ namespace math_opt {
 // MATH_OPT_REGISTER_SOLVER().
 class SolverInterface {
  public:
+  // Initialization arguments.
+  struct InitArgs {
+    // All parameters that can be stored in a proto and exchange with other
+    // processes.
+    SolverInitializerProto streamable;
+
+    // All parameters that can't be exchanged with another process. The caller
+    // keeps ownership of non_streamable.
+    const NonStreamableSolverInitArguments* non_streamable = nullptr;
+  };
+
+  // A callback function (if non null) for messages emitted by the solver.
+  //
+  // See Solver::MessageCallback documentation for details.
+  using MessageCallback = std::function<void(const std::vector<std::string>&)>;
+
   // A callback function (if non null) is a function that validates its input
   // and its output, and if fails, return a status. The invariant is that the
   // solver implementation can rely on receiving valid data. The implementation
@@ -60,10 +89,12 @@ class SolverInterface {
   // and no public constructors.
   //
   // The implementation should assume the input ModelProto is valid and is free
-  // to CHECK-fail if this is not the case.
+  // to CHECK-fail if this is not the case. It should also assume that the input
+  // init_args.streamable and init_args.non_streamable are also either not set
+  // of set to the arguments of the correct solver.
   using Factory =
       std::function<absl::StatusOr<std::unique_ptr<SolverInterface>>(
-          const ModelProto& model, const SolverInitializerProto& initializer)>;
+          const ModelProto& model, const InitArgs& init_args)>;
 
   SolverInterface() = default;
   SolverInterface(const SolverInterface&) = delete;
@@ -77,10 +108,25 @@ class SolverInterface {
   // expression), the implementation should not keep a reference or copy of
   // them, as they may become invalid reference after the invocation if this
   // function.
+  //
+  // Parameters `message_cb`, `cb` and `interrupter` are optional. They are
+  // nullptr when not set.
+  //
+  // When parameter `message_cb` is not null and the underlying solver does not
+  // supports message callbacks, it must return an InvalidArgumentError with the
+  // message internal::kMessageCallbackNotSupported.
+  //
+  // Solvers should return a InvalidArgumentError when called with events on
+  // callback_registration that are not supported by the solver for the type of
+  // model being solved (for example MIP events if the model is an LP, or events
+  // that are not emitted by the solver). Solvers should use
+  // CheckRegisteredCallbackEvents() to implement that.
   virtual absl::StatusOr<SolveResultProto> Solve(
       const SolveParametersProto& parameters,
       const ModelSolveParametersProto& model_parameters,
-      const CallbackRegistrationProto& callback_registration, Callback cb) = 0;
+      MessageCallback message_cb,
+      const CallbackRegistrationProto& callback_registration, Callback cb,
+      SolveInterrupter* interrupter) = 0;
 
   // Updates the model to solve.
   //
@@ -107,19 +153,19 @@ class AllSolversRegistry {
   // MATH_OPT_REGISTER_SOLVER defined below.
   //
   // Required: factory must be threadsafe.
-  void Register(SolverType solver_type, SolverInterface::Factory factory);
+  void Register(SolverTypeProto solver_type, SolverInterface::Factory factory);
 
   // Invokes the factory associated to the solver type with the provided
   // arguments.
   absl::StatusOr<std::unique_ptr<SolverInterface>> Create(
-      SolverType solver_type, const ModelProto& model,
-      const SolverInitializerProto& initializer) const;
+      SolverTypeProto solver_type, const ModelProto& model,
+      const SolverInterface::InitArgs& init_args) const;
 
   // Whether a solver type is supported.
-  bool IsRegistered(SolverType solver_type) const;
+  bool IsRegistered(SolverTypeProto solver_type) const;
 
   // List all supported solver types.
-  std::vector<SolverType> RegisteredSolvers() const;
+  std::vector<SolverTypeProto> RegisteredSolvers() const;
 
   // Returns a human-readable list of supported solver types.
   std::string RegisteredSolversToString() const;
@@ -128,7 +174,8 @@ class AllSolversRegistry {
   AllSolversRegistry() = default;
 
   mutable absl::Mutex mutex_;
-  absl::flat_hash_map<SolverType, SolverInterface::Factory> registered_solvers_;
+  absl::flat_hash_map<SolverTypeProto, SolverInterface::Factory>
+      registered_solvers_;
 };
 
 // Use to ensure that a solver is registered exactly one time. Invoke in each cc
@@ -139,7 +186,7 @@ class AllSolversRegistry {
 // Can only be used once per cc file.
 //
 // Arguments:
-//   solver_type: A SolverType proto enum.
+//   solver_type: A SolverTypeProto proto enum.
 //   solver_factory: A SolverInterface::Factory for solver_type.
 #define MATH_OPT_REGISTER_SOLVER(solver_type, solver_factory)              \
   namespace {                                                              \

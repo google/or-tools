@@ -21,8 +21,8 @@
 #include <utility>
 #include <vector>
 
-#include "testing/base/public/gmock.h"
-#include "testing/base/public/gunit.h"
+#include "gmock/gmock.h"
+#include "gtest/gtest.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 

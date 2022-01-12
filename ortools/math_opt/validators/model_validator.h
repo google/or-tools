@@ -22,14 +22,32 @@
 namespace operations_research {
 namespace math_opt {
 
+// Runs in O(size of model) and allocates O(#variables + #linear constraints)
+// memory.
 absl::Status ValidateModel(const ModelProto& model, bool check_names = true);
 
+// Validates the update as-is; without any knowledge of the model or previous
+// updates. Some tests of the validity of ids are also not done.
+//
 // Performance: runs in O(size of update).
+//
+// See ValidateModelUpdateAndSummary() for a version that does a full
+// validation taking into account the model and previous updates.
 absl::Status ValidateModelUpdate(const ModelUpdateProto& model_update,
                                  bool check_names = true);
 
+// Validates the update taking into account the model and previous updates (via
+// the provided summary).
+//
+// Note that this function uses model_summary.(variables|linear_constraints)'s
+// next_free_id() to test that new variables/constraints ids are valid.
+//
 // Performance: runs in O(size of update), allocates at most
 // O(#new or deleted variables + #new or deleted linear constraints).
+//
+// It internally calls ValidateModelUpdate() which validates all predicates that
+// can be validated without knowledge of the initial model and the previous
+// updates.
 absl::Status ValidateModelUpdateAndSummary(const ModelUpdateProto& model_update,
                                            const ModelSummary& model_summary,
                                            bool check_names = true);

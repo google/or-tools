@@ -17,16 +17,20 @@
 #include <cstdint>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "ortools/base/logging.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
+#include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/base/linked_hash_map.h"
 #include "ortools/math_opt/callback.pb.h"
+#include "ortools/math_opt/core/solve_interrupter.h"
 #include "ortools/math_opt/core/solver_interface.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_parameters.pb.h"
@@ -34,6 +38,7 @@
 #include "ortools/math_opt/parameters.pb.h"
 #include "ortools/math_opt/result.pb.h"
 #include "ortools/math_opt/solution.pb.h"
+#include "ortools/math_opt/solvers/gurobi/g_gurobi.h"
 #include "ortools/math_opt/solvers/gurobi_callback.h"
 #include "ortools/math_opt/solvers/message_callback_data.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
@@ -46,28 +51,42 @@ namespace math_opt {
 class GurobiSolver : public SolverInterface {
  public:
   static absl::StatusOr<std::unique_ptr<GurobiSolver>> New(
-      const ModelProto& input_model, const SolverInitializerProto& initializer);
-
-  ~GurobiSolver() override;
+      const ModelProto& input_model,
+      const SolverInterface::InitArgs& init_args);
 
   absl::StatusOr<SolveResultProto> Solve(
       const SolveParametersProto& parameters,
       const ModelSolveParametersProto& model_parameters,
-      const CallbackRegistrationProto& callback_registration,
-      Callback cb) override;
+      MessageCallback message_cb,
+      const CallbackRegistrationProto& callback_registration, Callback cb,
+      SolveInterrupter* interrupter) override;
   absl::Status Update(const ModelUpdateProto& model_update) override;
   bool CanUpdate(const ModelUpdateProto& model_update) override;
 
  private:
   struct GurobiCallbackData {
-    explicit GurobiCallbackData(GurobiCallbackInput callback_input)
-        : callback_input(std::move(callback_input)) {}
+    explicit GurobiCallbackData(GurobiCallbackInput callback_input,
+                                SolveInterrupter* const local_interrupter)
+        : callback_input(std::move(callback_input)),
+          local_interrupter(local_interrupter) {}
     const GurobiCallbackInput callback_input;
+
+    // Interrupter triggered when either the user interrupter passed to Solve()
+    // is triggered or after one user callback returned a true `terminate`.
+    //
+    // This is not the user interrupter though so it safe for callbacks to
+    // trigger it.
+    //
+    // It is optional; it is not null when either we have a LP/MIP callback or a
+    // user interrupter. But it can be null if we only have a message callback.
+    SolveInterrupter* const local_interrupter;
+
     MessageCallbackData message_callback_data;
+
     absl::Status status = absl::OkStatus();
   };
 
-  GurobiSolver() = default;
+  explicit GurobiSolver(std::unique_ptr<Gurobi> g_gurobi);
 
   // For easing reading the code, we declare these types:
   using VariableId = int64_t;
@@ -100,19 +119,61 @@ class GurobiSolver : public SolverInterface {
         : id(input_id), constraint_data(input_constraint) {}
   };
 
-  using IdHashMap = gtl::linked_hash_map<int64_t, int>;
-  using ConstraintMap = gtl::linked_hash_map<int64_t, ConstraintData>;
+  struct SolutionClaims {
+    bool primal_feasible_solution_exists;
+    bool dual_feasible_solution_exists;
+  };
 
-  // Returns a termination reason and a detailed explanation string.
-  static absl::StatusOr<
-      std::pair<SolveResultProto::TerminationReason, std::string>>
-  ConvertTerminationReason(int gurobi_status, bool has_feasible_solution);
-  absl::Status ExtractSolveResultProto(
-      bool is_maximize, SolveResultProto& result,
+  struct SolutionsAndClaims {
+    std::vector<SolutionProto> solutions;
+    SolutionClaims solution_claims;
+  };
+
+  template <typename SolutionType>
+  struct SolutionAndClaim {
+    std::optional<SolutionType> solution;
+    bool feasible_solution_exists = false;
+  };
+
+  using IdHashMap = gtl::linked_hash_map<int64_t, int>;
+
+  absl::StatusOr<ProblemStatusProto> GetProblemStatus(
+      const int grb_termination, const SolutionClaims solution_claims);
+  absl::StatusOr<SolveResultProto> ExtractSolveResultProto(
+      absl::Time start, const ModelSolveParametersProto& model_parameters);
+  absl::Status FillRays(const ModelSolveParametersProto& model_parameters,
+                        SolveResultProto& result);
+  absl::StatusOr<GurobiSolver::SolutionsAndClaims> GetSolutions(
       const ModelSolveParametersProto& model_parameters);
-  absl::Status ResetParameters();
-  absl::Status SetParameter(const std::string& param_name,
-                            const std::string& param_value);
+  absl::StatusOr<SolveStatsProto> GetSolveStats(absl::Time start,
+                                                SolutionClaims solution_claims);
+
+  absl::StatusOr<double> GetBestDualBound();
+  absl::StatusOr<double> GetBestPrimalBound(bool has_primal_feasible_solution);
+  bool PrimalSolutionQualityAvailable() const;
+  absl::StatusOr<double> GetPrimalSolutionQuality() const;
+
+  // Warning: is read from gurobi, take care with gurobi update.
+  absl::StatusOr<bool> IsMaximize() const;
+
+  static absl::StatusOr<TerminationProto> ConvertTerminationReason(
+      int gurobi_status, SolutionClaims solution_claims);
+
+  absl::StatusOr<SolutionsAndClaims> GetQpSolution(
+      const ModelSolveParametersProto& model_parameters);
+  absl::StatusOr<SolutionsAndClaims> GetLpSolution(
+      const ModelSolveParametersProto& model_parameters);
+  absl::StatusOr<SolutionsAndClaims> GetMipSolutions(
+      const ModelSolveParametersProto& model_parameters);
+
+  // return bool field should be true if a primal solution exists.
+  absl::StatusOr<SolutionAndClaim<PrimalSolutionProto>>
+  GetConvexPrimalSolutionIfAvailable(
+      const ModelSolveParametersProto& model_parameters);
+  absl::StatusOr<SolutionAndClaim<DualSolutionProto>>
+  GetLpDualSolutionIfAvailable(
+      const ModelSolveParametersProto& model_parameters);
+  absl::StatusOr<std::optional<BasisProto>> GetBasisIfAvailable();
 
   // Returns a list of errors for failures only (and the empty list when all
   // parameters succeed).
@@ -122,28 +183,26 @@ class GurobiSolver : public SolverInterface {
   absl::Status AddNewVariables(const VariablesProto& new_variables);
   absl::Status AddNewSlacks(const std::vector<SlackInfo>& new_slacks);
   absl::Status ChangeCoefficients(const SparseDoubleMatrixProto& matrix);
-  absl::Status GurobiCodeToUtilStatus(int error_code, const char* source_file,
-                                      int source_line,
-                                      const char* statement) const;
-  absl::Status LoadEnvironment();
+  // NOTE: Clears any existing quadratic objective terms.
+  absl::Status ResetQuadraticObjectiveTerms(
+      const SparseDoubleMatrixProto& terms);
+  // Updates objective so that it is the sum of everything in terms, plus all
+  // other terms prexisting in the objective that are not overwritten by terms.
+  absl::Status UpdateQuadraticObjectiveTerms(
+      const SparseDoubleMatrixProto& terms);
   absl::Status LoadModel(const ModelProto& input_model);
-  std::string GurobiErrorMessage(int error_code) const;
-  std::string LogGurobiCode(int error_code, const char* source_file,
-                            int source_line, const char* statement,
-                            absl::string_view extra_message) const;
+
   absl::Status UpdateDoubleListAttribute(const SparseDoubleVectorProto& update,
                                          const char* attribute_name,
                                          const IdHashMap& id_hash_map);
+  absl::Status UpdateInt32ListAttribute(const SparseInt32VectorProto& update,
+                                        const char* attribute_name,
+                                        const IdHashMap& id_hash_map);
   absl::Status UpdateGurobiIndices();
   absl::Status UpdateLinearConstraints(
       const LinearConstraintUpdatesProto& update,
       std::vector<GurobiVariableIndex>& deleted_variables_index);
-  absl::StatusOr<int> GetIntAttr(const char* name) const;
-  absl::StatusOr<double> GetDoubleAttr(const char* name) const;
-  absl::Status GetIntAttrArray(const char* name,
-                               absl::Span<int> attr_out) const;
-  absl::Status GetDoubleAttrArray(const char* name,
-                                  absl::Span<double> attr_out) const;
+
   int num_gurobi_constraints() const;
   int get_model_index(GurobiVariableIndex index) const { return index; }
   int get_model_index(const ConstraintData& index) const {
@@ -165,32 +224,15 @@ class GurobiSolver : public SolverInterface {
       const SparseVectorFilterProto& linear_constraints_filter,
       const SparseVectorFilterProto& variables_filter, bool is_maximize);
   absl::StatusOr<bool> IsLP() const;
+  absl::StatusOr<bool> IsQP() const;
 
   absl::StatusOr<std::unique_ptr<GurobiCallbackData>> RegisterCallback(
       const CallbackRegistrationProto& registration, Callback cb,
-      absl::Time start);
-  static int GurobiCallback(GRBmodel* model, void* cbdata, int where,
-                            void* usrdata);
+      const MessageCallback message_cb, absl::Time start,
+      SolveInterrupter* interrupter);
 
-  // Note: Gurobi environments CAN be shared across several models, however
-  // there are some caveats:
-  //   - Environments are not thread-safe.
-  //   - Once a gurobi_model_ is created, it makes an internal copy of the
-  //     "master" environment, so, later changes to that environment will not
-  //     be reflected in the gurobi_model_, for that reason we also keep
-  //     around a pointer to the gurobi_model_ environment in the
-  //     `active_env_` (which should not be freed).
-  //   - Every "master" environment counts as a "use" of a Gurobi License.
-  //     This means that if you have a limited usage count of licenses, this
-  //     implementation will be consuming more licenses. On the other hand, if
-  //     you have a machine license, a site license, or an academic license,
-  //     this disadvantage goes away.
-  //
-  // TODO(user) implement a sharing master Gurobi environment mode.
-  // This would be akin to the `default environment` of Gurobi in python.
-  GRBenv* master_env_ = nullptr;
-  GRBenv* active_env_ = nullptr;
-  GRBmodel* gurobi_model_ = nullptr;
+  const std::unique_ptr<Gurobi> gurobi_;
+
   // Note that we use linked_hash_map because the index of the gurobi_model_
   // variables/constraints is exactly the order in which they are added to the
   // model.
@@ -225,6 +267,13 @@ class GurobiSolver : public SolverInterface {
   // variables and constraints that need deletion. Finally flush changes at
   // the gurobi model level (if any deletion was performed).
   int num_gurobi_variables_ = 0;
+  // Gurobi does not expose a way to query quadratic objective terms from the
+  // model, so we track them. Notes:
+  //   * Keys are in upper triangular order (.first <= .second)
+  //   * Terms not in the map have zero coefficients
+  // Note also that the map may also have entries with zero coefficient value.
+  absl::flat_hash_map<std::pair<VariableId, VariableId>, double>
+      quadratic_objective_coefficients_;
 
   static constexpr int kGrbBasicConstraint = 0;
   static constexpr int kGrbNonBasicConstraint = -1;

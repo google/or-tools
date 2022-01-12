@@ -115,10 +115,11 @@ constexpr double kZeroTol = 1.0e-8;
 namespace {
 using ::operations_research::MathUtil;
 using ::operations_research::math_opt::LinearExpression;
-using ::operations_research::math_opt::MathOpt;
-using ::operations_research::math_opt::Result;
-using ::operations_research::math_opt::SolveParametersProto;
+using ::operations_research::math_opt::Model;
+using ::operations_research::math_opt::SolveArguments;
+using ::operations_research::math_opt::SolveResult;
 using ::operations_research::math_opt::SolverType;
+using ::operations_research::math_opt::TerminationReason;
 using ::operations_research::math_opt::Variable;
 using ::operations_research::math_opt::VariableMap;
 
@@ -138,10 +139,8 @@ struct Graph {
 };
 
 struct FlowModel {
-  explicit FlowModel(SolverType solver_type) {
-    model = std::make_unique<MathOpt>(solver_type, "LagrangianProblem");
-  }
-  std::unique_ptr<MathOpt> model;
+  FlowModel() : model(std::make_unique<Model>("LagrangianProblem")) {}
+  std::unique_ptr<Model> model;
   LinearExpression cost;
   LinearExpression resource_1;
   LinearExpression resource_2;
@@ -150,8 +149,8 @@ struct FlowModel {
 
 // Populates `model` with variables and constraints of a shortest path problem.
 FlowModel CreateShortestPathModel(const Graph graph) {
-  FlowModel flow_model(operations_research::math_opt::SOLVER_TYPE_GSCIP);
-  MathOpt& model = *flow_model.model;
+  FlowModel flow_model;
+  Model& model = *flow_model.model;
   for (const Arc& arc : graph.arcs) {
     Variable var = model.AddContinuousVariable(
         /*lower_bound=*/0, /*upper_bound=*/1,
@@ -210,8 +209,8 @@ Graph CreateSampleNetwork() {
 // Solves the constrained shortest path as an MIP.
 FlowModel SolveMip(const Graph graph, const double max_resource_1,
                    const double max_resource_2) {
-  FlowModel flow_model(operations_research::math_opt::SOLVER_TYPE_GSCIP);
-  MathOpt& model = *flow_model.model;
+  FlowModel flow_model;
+  Model& model = *flow_model.model;
   for (const Arc& arc : graph.arcs) {
     Variable var = model.AddBinaryVariable(
         /*name=*/absl::StrFormat("x_%d_%d", arc.i, arc.j));
@@ -240,10 +239,8 @@ FlowModel SolveMip(const Graph graph, const double max_resource_1,
                             "resource_ctr_1");
   model.AddLinearConstraint(flow_model.resource_2 <= max_resource_2,
                             "resource_ctr_2");
-  model.objective().Minimize(flow_model.cost);
-  SolveParametersProto params;
-  params.mutable_common_parameters()->set_enable_output(false);
-  const Result result = model.Solve(params).value();
+  model.Minimize(flow_model.cost);
+  const SolveResult result = Solve(model, SolverType::kGscip).value();
   const VariableMap<double>& variable_values = result.variable_values();
   std::cout << "MIP Solution with 2 side constraints" << std::endl;
   std::cout << absl::StrFormat("MIP objective value: %6.3f",
@@ -262,10 +259,8 @@ FlowModel SolveMip(const Graph graph, const double max_resource_1,
 void SolveLinearRelaxation(FlowModel& flow_model, const Graph& graph,
                            const double max_resource_1,
                            const double max_resource_2) {
-  MathOpt& model = *flow_model.model;
-  SolveParametersProto params;
-  params.mutable_common_parameters()->set_enable_output(false);
-  const Result result = model.Solve(params).value();
+  Model& model = *flow_model.model;
+  const SolveResult result = Solve(model, SolverType::kGscip).value();
   const VariableMap<double>& variable_values = result.variable_values();
   std::cout << "LP relaxation with 2 side constraints" << std::endl;
   std::cout << absl::StrFormat("LP objective value: %6.3f",
@@ -282,12 +277,10 @@ void SolveLagrangianRelaxation(const Graph graph, const double max_resource_1,
                                const double max_resource_2) {
   // Model, variables, and linear expressions.
   FlowModel flow_model = CreateShortestPathModel(graph);
-  MathOpt& model = *flow_model.model;
+  Model& model = *flow_model.model;
   LinearExpression& cost = flow_model.cost;
   LinearExpression& resource_1 = flow_model.resource_1;
   LinearExpression& resource_2 = flow_model.resource_2;
-  SolveParametersProto params;
-  params.mutable_common_parameters()->set_enable_output(false);
 
   // Dualized constraints and dual variable iterates.
   std::vector<double> mu;
@@ -307,14 +300,14 @@ void SolveLagrangianRelaxation(const Graph graph, const double max_resource_1,
     grad_mu.push_back(max_resource_1 - resource_1);
     model.AddLinearConstraint(resource_2 <= max_resource_2);
     for (Variable& var : flow_model.flow_vars) {
-      var.set_integer();
+      model.set_integer(var);
     }
   } else if (!dualized_resource_1 && dualized_resource_2) {
     mu.push_back(initial_dual_value);
     grad_mu.push_back(max_resource_2 - resource_2);
     model.AddLinearConstraint(resource_1 <= max_resource_1);
     for (Variable& var : flow_model.flow_vars) {
-      var.set_integer();
+      model.set_integer(var);
     }
   } else {
     mu.push_back(initial_dual_value);
@@ -334,8 +327,8 @@ void SolveLagrangianRelaxation(const Graph graph, const double max_resource_1,
       << "Number of iterations must be strictly positive.";
 
   // Upper and lower bounds on the full problem.
-  double upper_bound = std::numeric_limits<double>().infinity();
-  double lower_bound = -std::numeric_limits<double>().infinity();
+  double upper_bound = std::numeric_limits<double>::infinity();
+  double lower_bound = -std::numeric_limits<double>::infinity();
   double best_solution_resource_1 = 0;
   double best_solution_resource_2 = 0;
 
@@ -352,8 +345,10 @@ void SolveLagrangianRelaxation(const Graph graph, const double max_resource_1,
     for (int k = 0; k < mu.size(); ++k) {
       lagrangian_function += mu[k] * grad_mu[k];
     }
-    model.objective().Minimize(lagrangian_function);
-    Result result = model.Solve(params).value();
+    model.Minimize(lagrangian_function);
+    SolveResult result = Solve(model, SolverType::kGscip).value();
+    CHECK_EQ(result.termination.reason, TerminationReason::kOptimal)
+        << result.termination;
     const VariableMap<double>& vars_val = result.variable_values();
     bool feasible = true;
 
@@ -430,9 +425,9 @@ void SolveLagrangianRelaxation(const Graph graph, const double max_resource_1,
 
 void RelaxModel(FlowModel& flow_model) {
   for (Variable& var : flow_model.flow_vars) {
-    var.set_continuous();
-    var.set_lower_bound(0.0);
-    var.set_upper_bound(1.0);
+    flow_model.model->set_continuous(var);
+    flow_model.model->set_lower_bound(var, 0.0);
+    flow_model.model->set_upper_bound(var, 1.0);
   }
 }
 

@@ -57,6 +57,8 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/types/span.h"
 #include "ortools/base/map_util.h"
+#include "ortools/math_opt/core/arrow_operator_proxy.h"  // IWYU pragma: export
+#include "ortools/math_opt/core/sparse_vector.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 
 namespace operations_research {
@@ -96,8 +98,10 @@ class SparseVectorView {
     using difference_type = int;
     using iterator_category = std::forward_iterator_tag;
 
-    value_type operator*() const;
+    reference operator*() const;
+    inline internal::ArrowOperatorProxy<reference> operator->() const;
     const_iterator& operator++();
+    bool operator==(const const_iterator& other) const;
     bool operator!=(const const_iterator& other) const;
 
    private:
@@ -160,6 +164,13 @@ SparseVectorView<T> MakeView(const SparseVectorProto& sparse_vector) {
   return SparseVectorView<T>(sparse_vector.ids(), sparse_vector.values());
 }
 
+// Returns a view for values in a SparseVector. For this case it is preferred
+// over the two-argument overloads. See other overloads for other values-types.
+template <typename T>
+SparseVectorView<T> MakeView(const SparseVector<T>& sparse_vector) {
+  return SparseVectorView<T>(sparse_vector.ids, sparse_vector.values);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Inline implementations
 ////////////////////////////////////////////////////////////////////////////////
@@ -174,9 +185,16 @@ SparseVectorView<T>::const_iterator::const_iterator(
 }
 
 template <typename T>
-typename SparseVectorView<T>::const_iterator::value_type
+typename SparseVectorView<T>::const_iterator::reference
 SparseVectorView<T>::const_iterator::operator*() const {
   return {view_->ids(index_), view_->values(index_)};
+}
+
+template <typename T>
+internal::ArrowOperatorProxy<
+    typename SparseVectorView<T>::const_iterator::reference>
+SparseVectorView<T>::const_iterator::operator->() const {
+  return internal::ArrowOperatorProxy<reference>(**this);
 }
 
 template <typename T>
@@ -188,10 +206,16 @@ SparseVectorView<T>::const_iterator::operator++() {
 }
 
 template <typename T>
-bool SparseVectorView<T>::const_iterator::operator!=(
+bool SparseVectorView<T>::const_iterator::operator==(
     const const_iterator& other) const {
   DCHECK_EQ(view_, other.view_);
-  return index_ != other.index_;
+  return index_ == other.index_;
+}
+
+template <typename T>
+bool SparseVectorView<T>::const_iterator::operator!=(
+    const const_iterator& other) const {
+  return !(*this == other);
 }
 
 template <typename T>

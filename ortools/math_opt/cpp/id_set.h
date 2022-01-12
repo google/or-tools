@@ -20,8 +20,8 @@
 
 #include "ortools/base/logging.h"
 #include "absl/container/flat_hash_set.h"
-#include "ortools/math_opt/core/indexed_model.h"
-#include "ortools/math_opt/cpp/arrow_operator_proxy.h"
+#include "ortools/math_opt/core/arrow_operator_proxy.h"
+#include "ortools/math_opt/core/model_storage.h"
 #include "ortools/math_opt/cpp/key_types.h"
 
 namespace operations_research {
@@ -104,7 +104,7 @@ class IdSet {
   inline IdSet(std::initializer_list<value_type> ilist);
 
   // Typically for internal use only.
-  inline IdSet(IndexedModel* model, StorageType values);
+  inline IdSet(const ModelStorage* storage, StorageType values);
 
   inline const_iterator cbegin() const;
   inline const_iterator begin() const;
@@ -140,27 +140,27 @@ class IdSet {
       const K& k) const;
 
   const StorageType& raw_set() const { return set_; }
-  IndexedModel* model() const { return model_; }
+  const ModelStorage* storage() const { return storage_; }
 
   friend bool operator==(const IdSet& lhs, const IdSet& rhs) {
-    return lhs.model_ == rhs.model_ && lhs.set_ == rhs.set_;
+    return lhs.storage_ == rhs.storage_ && lhs.set_ == rhs.set_;
   }
   friend bool operator!=(const IdSet& lhs, const IdSet& rhs) {
     return !(lhs == rhs);
   }
 
  private:
-  // CHECKs that model_ and k.model() matches when this set is not empty
-  // (i.e. its model_ is not null). When it is empty, simply check that
-  // k.model() is not null.
+  // CHECKs that storage_ and k.storage() matches when this set is not empty
+  // (i.e. its storage_ is not null). When it is empty, simply check that
+  // k.storage() is not null.
   inline void CheckModel(const K& k) const;
-  // Sets model_ to k.model() if this set is empty (i.e. its model_ is
-  // null). Else CHECK that it has the same model. It also CHECK that k.model()
-  // is not null.
+  // Sets storage_ to k.storage() if this set is empty (i.e. its storage_ is
+  // null). Else CHECK that it has the same storage. It also CHECK that
+  // k.storage() is not null.
   inline void CheckOrSetModel(const K& k);
 
-  // Invariant: model == nullptr if and only if set_.empty().
-  IndexedModel* model_ = nullptr;
+  // Invariant: storage == nullptr if and only if set_.empty().
+  const ModelStorage* storage_ = nullptr;
   StorageType set_;
 };
 
@@ -184,7 +184,7 @@ void swap(IdSet<K>& a, IdSet<K>& b) {
 template <typename K>
 typename IdSet<K>::const_iterator::reference
 IdSet<K>::const_iterator::operator*() const {
-  return K(set_->model_, *storage_iterator_);
+  return K(set_->storage_, *storage_iterator_);
 }
 
 template <typename K>
@@ -216,10 +216,10 @@ IdSet<K>::const_iterator::const_iterator(
 ////////////////////////////////////////////////////////////////////////////////
 
 template <typename K>
-IdSet<K>::IdSet(IndexedModel* model, StorageType values)
-    : model_(model), set_(std::move(values)) {
+IdSet<K>::IdSet(const ModelStorage* storage, StorageType values)
+    : storage_(storage), set_(std::move(values)) {
   if (!set_.empty()) {
-    CHECK(model_ != nullptr);
+    CHECK(storage_ != nullptr);
   }
 }
 
@@ -256,7 +256,7 @@ typename IdSet<K>::const_iterator IdSet<K>::end() const {
 
 template <typename K>
 void IdSet<K>::clear() {
-  model_ = nullptr;
+  storage_ = nullptr;
   set_.clear();
 }
 
@@ -293,7 +293,7 @@ int IdSet<K>::erase(const K& k) {
   CheckModel(k);
   const int ret = set_.erase(k.typed_id());
   if (set_.empty()) {
-    model_ = nullptr;
+    storage_ = nullptr;
   }
   return ret;
 }
@@ -302,7 +302,7 @@ template <typename K>
 void IdSet<K>::erase(const const_iterator pos) {
   set_.erase(pos.storage_iterator_);
   if (set_.empty()) {
-    model_ = nullptr;
+    storage_ = nullptr;
   }
 }
 
@@ -311,7 +311,7 @@ typename IdSet<K>::const_iterator IdSet<K>::erase(const const_iterator first,
                                                   const const_iterator last) {
   auto ret = set_.erase(first.storage_iterator_, last.storage_iterator_);
   if (set_.empty()) {
-    model_ = nullptr;
+    storage_ = nullptr;
   }
   return const_iterator(this, std::move(ret));
 }
@@ -319,7 +319,7 @@ typename IdSet<K>::const_iterator IdSet<K>::erase(const const_iterator first,
 template <typename K>
 void IdSet<K>::swap(IdSet& other) {
   using std::swap;
-  swap(model_, other.model_);
+  swap(storage_, other.storage_);
   swap(set_, other.set_);
 }
 
@@ -353,18 +353,18 @@ IdSet<K>::equal_range(const K& k) const {
 
 template <typename K>
 void IdSet<K>::CheckModel(const K& k) const {
-  CHECK(k.model() != nullptr) << internal::kKeyHasNullIndexedModel;
-  CHECK(model_ == nullptr || model_ == k.model())
-      << internal::kObjectsFromOtherIndexedModel;
+  CHECK(k.storage() != nullptr) << internal::kKeyHasNullModelStorage;
+  CHECK(storage_ == nullptr || storage_ == k.storage())
+      << internal::kObjectsFromOtherModelStorage;
 }
 
 template <typename K>
 void IdSet<K>::CheckOrSetModel(const K& k) {
-  CHECK(k.model() != nullptr) << internal::kKeyHasNullIndexedModel;
-  if (model_ == nullptr) {
-    model_ = k.model();
+  CHECK(k.storage() != nullptr) << internal::kKeyHasNullModelStorage;
+  if (storage_ == nullptr) {
+    storage_ = k.storage();
   } else {
-    CHECK_EQ(model_, k.model()) << internal::kObjectsFromOtherIndexedModel;
+    CHECK_EQ(storage_, k.storage()) << internal::kObjectsFromOtherModelStorage;
   }
 }
 

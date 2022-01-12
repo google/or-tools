@@ -15,18 +15,18 @@
 
 #include <algorithm>
 #include <optional>
-#include <string>
 #include <utility>
 #include <vector>
 
 #include "ortools/base/logging.h"
 #include "absl/container/flat_hash_set.h"
-#include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/string_view.h"
 #include "absl/time/time.h"
+#include "absl/types/span.h"
 #include "ortools/base/int_type.h"
 #include "ortools/math_opt/callback.pb.h"
-#include "ortools/math_opt/core/indexed_model.h"
+#include "ortools/math_opt/core/model_storage.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/cpp/key_types.h"
 #include "ortools/math_opt/cpp/map_filter.h"
@@ -49,22 +49,23 @@ std::vector<std::pair<VariableId, double>> SortedVariableValues(
 }
 
 // Container must be an iterable on some type T where
-//   IndexedModel* T::model() const
+//   const ModelStorage* T::storage() const
 // is defined.
 //
-// CHECKs that the non-null models the same, and returns the unique non-null
-// model if it exists, otherwise null.
+// CHECKs that the non-null model storages are the same, and returns the unique
+// non-null model storage if it exists, otherwise null.
 template <typename Container>
-IndexedModel* ConsistentModel(const Container& model_items,
-                              IndexedModel* const init_model = nullptr) {
-  IndexedModel* result = init_model;
+const ModelStorage* ConsistentModelStorage(
+    const Container& model_items,
+    const ModelStorage* const init_model = nullptr) {
+  const ModelStorage* result = init_model;
   for (const auto& item : model_items) {
-    IndexedModel* const model = item.model();
-    if (model != nullptr) {
+    const ModelStorage* const storage = item.storage();
+    if (storage != nullptr) {
       if (result == nullptr) {
-        result = model;
+        result = storage;
       } else {
-        CHECK_EQ(model, result) << internal::kObjectsFromOtherIndexedModel;
+        CHECK_EQ(storage, result) << internal::kObjectsFromOtherModelStorage;
       }
     }
   }
@@ -73,35 +74,65 @@ IndexedModel* ConsistentModel(const Container& model_items,
 
 }  // namespace
 
-CallbackData::CallbackData(IndexedModel* model, const CallbackDataProto& proto)
-    : event(proto.event()),
-      messages(proto.messages().begin(), proto.messages().end()),
+std::optional<absl::string_view> Enum<CallbackEvent>::ToOptString(
+    CallbackEvent value) {
+  switch (value) {
+    case CallbackEvent::kPresolve:
+      return "presolve";
+    case CallbackEvent::kSimplex:
+      return "simplex";
+    case CallbackEvent::kMip:
+      return "mip";
+    case CallbackEvent::kMipSolution:
+      return "mip_solution";
+    case CallbackEvent::kMipNode:
+      return "mip_node";
+    case CallbackEvent::kBarrier:
+      return "barrier";
+  }
+  return std::nullopt;
+}
+
+absl::Span<const CallbackEvent> Enum<CallbackEvent>::AllValues() {
+  static constexpr CallbackEvent kCallbackEventValues[] = {
+      CallbackEvent::kPresolve, CallbackEvent::kSimplex,
+      CallbackEvent::kMip,      CallbackEvent::kMipSolution,
+      CallbackEvent::kMipNode,  CallbackEvent::kBarrier,
+  };
+  return absl::MakeConstSpan(kCallbackEventValues);
+}
+
+CallbackData::CallbackData(const ModelStorage* storage,
+                           const CallbackDataProto& proto)
+    // iOS 11 does not support .value() hence we use operator* here and CHECK
+    // below that we have a value.
+    : event(*EnumFromProto(proto.event())),
       presolve_stats(proto.presolve_stats()),
       simplex_stats(proto.simplex_stats()),
       barrier_stats(proto.barrier_stats()),
       mip_stats(proto.mip_stats()) {
-  if (proto.has_primal_solution()) {
+  CHECK(EnumFromProto(proto.event()).has_value());
+  if (proto.has_primal_solution_vector()) {
     solution = VariableMap<double>(
-        model, MakeView(proto.primal_solution().variable_values())
-                   .as_map<VariableId>());
+        storage, MakeView(proto.primal_solution_vector()).as_map<VariableId>());
   }
   auto maybe_time = util_time::DecodeGoogleApiProto(proto.runtime());
   CHECK_OK(maybe_time.status());
   runtime = *maybe_time;
 }
 
-IndexedModel* CallbackRegistration::model() const {
-  return internal::ConsistentModel(
-      {mip_node_filter.model(), mip_solution_filter.model()});
+const ModelStorage* CallbackRegistration::storage() const {
+  return internal::ConsistentModelStorage(
+      {mip_node_filter.storage(), mip_solution_filter.storage()});
 }
 
 CallbackRegistrationProto CallbackRegistration::Proto() const {
-  // Ensure that the underlying IndexedModel is consistent (or CHECK fail).
-  model();
+  // Ensure that the underlying ModelStorage is consistent (or CHECK fail).
+  storage();
 
   CallbackRegistrationProto result;
-  for (const CallbackEventProto event : events) {
-    result.add_request_registration(event);
+  for (const CallbackEvent event : events) {
+    result.add_request_registration(EnumToProto(event));
   }
   std::sort(result.mutable_request_registration()->begin(),
             result.mutable_request_registration()->end());
@@ -112,22 +143,22 @@ CallbackRegistrationProto CallbackRegistration::Proto() const {
   return result;
 }
 
-IndexedModel* CallbackResult::model() const {
-  IndexedModel* result = ConsistentModel(new_constraints);
-  return ConsistentModel(suggested_solutions, result);
+const ModelStorage* CallbackResult::storage() const {
+  const ModelStorage* result = ConsistentModelStorage(new_constraints);
+  return ConsistentModelStorage(suggested_solutions, result);
 }
 
 CallbackResultProto CallbackResult::Proto() const {
-  // Ensure that the underlying IndexedModel is consistent (or CHECK fail).
-  model();
+  // Ensure that the underlying ModelStorage is consistent (or CHECK fail).
+  storage();
 
   CallbackResultProto result;
   result.set_terminate(terminate);
   for (const VariableMap<double>& solution : suggested_solutions) {
-    PrimalSolutionProto* solution_proto = result.add_suggested_solution();
+    SparseDoubleVectorProto* solution_vector = result.add_suggested_solutions();
     for (const auto& [typed_id, value] : SortedVariableValues(solution)) {
-      solution_proto->mutable_variable_values()->add_ids(typed_id.value());
-      solution_proto->mutable_variable_values()->add_values(value);
+      solution_vector->add_ids(typed_id.value());
+      solution_vector->add_values(value);
     }
   }
   for (const GeneratedLinearConstraint& constraint : new_constraints) {

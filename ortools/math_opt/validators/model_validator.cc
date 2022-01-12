@@ -30,6 +30,7 @@
 #include "ortools/math_opt/validators/ids_validator.h"
 #include "ortools/math_opt/validators/name_validator.h"
 #include "ortools/math_opt/validators/scalar_validator.h"
+#include "ortools/math_opt/validators/sparse_matrix_validator.h"
 #include "ortools/math_opt/validators/sparse_vector_validator.h"
 #include "ortools/base/status_macros.h"
 
@@ -90,26 +91,42 @@ absl::Status VariableUpdatesValidForState(
 
 absl::Status ObjectiveValid(const ObjectiveProto& objective,
                             absl::Span<const int64_t> variable_ids) {
+  // 1. Validate offset
   RETURN_IF_ERROR(CheckScalarNoNanNoInf(objective.offset()))
       << "Objective offset invalid";
-  auto coefficients = MakeView(objective.linear_coefficients());
+  // 2. Validate linear terms
+  const auto linear_coefficients = MakeView(objective.linear_coefficients());
   RETURN_IF_ERROR(CheckIdsAndValues(
-      coefficients,
+      linear_coefficients,
       {.allow_positive_infinity = false, .allow_negative_infinity = false}))
       << "Linear objective coefficients bad";
-  RETURN_IF_ERROR(CheckSortedIdsSubset(coefficients.ids(), variable_ids))
+  RETURN_IF_ERROR(CheckSortedIdsSubset(linear_coefficients.ids(), variable_ids))
       << "Objective.linear_coefficients.ids not found in Variables.ids";
+  // 3. Validate quadratic terms
+  RETURN_IF_ERROR(SparseMatrixValid(objective.quadratic_coefficients(),
+                                    /*enforce_upper_triangular=*/true))
+      << "Objective.quadratic_coefficients invalid";
+  RETURN_IF_ERROR(SparseMatrixIdsAreKnown(objective.quadratic_coefficients(),
+                                          variable_ids, variable_ids))
+      << "Objective.quadratic_coefficients invalid";
   return absl::OkStatus();
 }
 
+// NOTE: This method does not check requirements on the IDs
 absl::Status ObjectiveUpdatesValid(
     const ObjectiveUpdatesProto& objective_updates) {
+  // 1. Validate offset
   RETURN_IF_ERROR(CheckScalarNoNanNoInf(objective_updates.offset_update()))
       << "Offset update invalid";
+  // 2. Validate linear terms
   RETURN_IF_ERROR(CheckIdsAndValues(
       MakeView(objective_updates.linear_coefficients()),
       {.allow_positive_infinity = false, .allow_negative_infinity = false}))
       << "Linear objective coefficients bad";
+  // 3. Validate quadratic terms
+  RETURN_IF_ERROR(SparseMatrixValid(objective_updates.quadratic_coefficients(),
+                                    /*enforce_upper_triangular=*/true))
+      << "Objective.quadratic_coefficients invalid";
   return absl::OkStatus();
 }
 
@@ -119,6 +136,12 @@ absl::Status ObjectiveUpdatesValidForModel(
   RETURN_IF_ERROR(id_validator.CheckSortedIdsSubsetOfFinal(
       objective_updates.linear_coefficients().ids()))
       << "Linear coefficients ids not found in variable ids";
+  RETURN_IF_ERROR(id_validator.CheckSortedIdsSubsetOfFinal(
+      objective_updates.quadratic_coefficients().row_ids()))
+      << "Quadratic coefficient ids bad";
+  RETURN_IF_ERROR(id_validator.CheckIdsSubsetOfFinal(
+      objective_updates.quadratic_coefficients().column_ids()))
+      << "Quadratic coefficient ids bad";
   return absl::OkStatus();
 }
 
@@ -164,71 +187,6 @@ absl::Status LinearConstraintUpdatesValidForState(
   return absl::OkStatus();
 }
 
-absl::Status LinearConstraintMatrixValid(
-    const SparseDoubleMatrixProto& matrix) {
-  const int nnz = matrix.row_ids_size();
-  if (nnz != matrix.column_ids_size()) {
-    return absl::InvalidArgumentError(
-        absl::StrCat("Expected row_id.size=", nnz,
-                     " equal to column_ids.size=", matrix.column_ids_size()));
-  }
-  if (nnz != matrix.coefficients_size()) {
-    return absl::InvalidArgumentError(absl::StrCat(
-        "Expected row_id.size=", nnz,
-        " equal to coefficients.size=", matrix.coefficients_size()));
-  }
-  int64_t previous_row = -1;
-  int64_t previous_col = -1;
-  for (int i = 0; i < nnz; ++i) {
-    const int64_t row = matrix.row_ids(i);
-    if (row < 0) {
-      return absl::InvalidArgumentError(
-          absl::StrCat("row_ids should be nonnegative, but found id: ", row,
-                       " (at index: ", i, ")"));
-    }
-    const int64_t col = matrix.column_ids(i);
-    if (col < 0) {
-      return absl::InvalidArgumentError(
-          absl::StrCat("column_ids should be nonnegative, but found id: ", col,
-                       " (at index: ", i, ")"));
-    }
-    if (row < previous_row) {
-      return absl::InvalidArgumentError(
-          absl::StrCat("row_ids should nondecreasing, but found ids [",
-                       previous_row, row, "] at indices [", i - 1, i, "]"));
-    } else if (row == previous_row) {
-      if (previous_col >= col) {
-        return absl::InvalidArgumentError(
-            absl::StrCat("column_ids should be strictly increasing within a "
-                         "row, but for row_id: ",
-                         row, " found [", previous_col, ", ", col,
-                         "] at indices, [", i - 1, ", ", i, "]"));
-      }
-    }
-    // When row > previous_row, we have a new row, nothing to check.
-    if (!std::isfinite(matrix.coefficients(i))) {
-      return absl::InvalidArgumentError(absl::StrCat(
-          "Expected finite coefficients without NaN, but at row_id: ", row,
-          ", column_id: ", col, " found coefficient: ", matrix.coefficients(i),
-          " (at index: ", i, ")"));
-    }
-    previous_row = row;
-    previous_col = col;
-  }
-  return absl::OkStatus();
-}
-
-absl::Status LinearConstraintMatrixIdsAreKnown(
-    const SparseDoubleMatrixProto& matrix,
-    absl::Span<const int64_t> linear_constraint_ids,
-    absl::Span<const int64_t> variable_ids) {
-  RETURN_IF_ERROR(CheckSortedIdsSubset(matrix.row_ids(), linear_constraint_ids))
-      << "Unknown linear_constraint_id";
-  RETURN_IF_ERROR(CheckUnsortedIdsSubset(matrix.column_ids(), variable_ids))
-      << "Unknown variable_id";
-  return absl::OkStatus();
-}
-
 absl::Status LinearConstraintMatrixIdsValidForUpdate(
     const SparseDoubleMatrixProto& matrix,
     const IdUpdateValidator& linear_constraint_id_validator,
@@ -256,11 +214,11 @@ absl::Status ValidateModel(const ModelProto& model, const bool check_names) {
   RETURN_IF_ERROR(
       LinearConstraintsValid(model.linear_constraints(), check_names))
       << "Model.linear_constraints are invalid";
-  RETURN_IF_ERROR(LinearConstraintMatrixValid(model.linear_constraint_matrix()))
+  RETURN_IF_ERROR(SparseMatrixValid(model.linear_constraint_matrix()))
       << "Model.linear_constraint_matrix invalid";
-  RETURN_IF_ERROR(LinearConstraintMatrixIdsAreKnown(
-      model.linear_constraint_matrix(), model.linear_constraints().ids(),
-      model.variables().ids()))
+  RETURN_IF_ERROR(SparseMatrixIdsAreKnown(model.linear_constraint_matrix(),
+                                          model.linear_constraints().ids(),
+                                          model.variables().ids()))
       << "Model.linear_constraint_matrix ids are inconsistent";
   return absl::OkStatus();
 }
@@ -289,8 +247,8 @@ absl::Status ValidateModelUpdate(const ModelUpdateProto& model_update,
       << "ModelUpdateProto.new_linear_constraints invalid";
   RETURN_IF_ERROR(ObjectiveUpdatesValid(model_update.objective_updates()))
       << "ModelUpdateProto.objective_update invalid";
-  RETURN_IF_ERROR(LinearConstraintMatrixValid(
-      model_update.linear_constraint_matrix_updates()))
+  RETURN_IF_ERROR(
+      SparseMatrixValid(model_update.linear_constraint_matrix_updates()))
       << "Model.linear_constraint_matrix_updates invalid";
   return absl::OkStatus();
 }

@@ -17,24 +17,28 @@
 #include "absl/status/status.h"
 #include "ortools/math_opt/core/model_summary.h"
 #include "ortools/math_opt/model_parameters.pb.h"
-#include "ortools/math_opt/result.pb.h"
 #include "ortools/math_opt/solution.pb.h"
+#include "ortools/math_opt/sparse_containers.pb.h"
 
 namespace operations_research {
 namespace math_opt {
 
-// Runs in O(size of model) and allocates O(#variables + #linear constraints)
-// memory.
-class SparseVectorFilterProto;
-
-// Validates the input result.
-absl::Status ValidateResult(const SolveResultProto& result,
-                            const ModelSolveParametersProto& parameters,
-                            const ModelSummary& model_summary);
+absl::Status ValidateSolution(const SolutionProto& solution,
+                              const ModelSolveParametersProto& parameters,
+                              const ModelSummary& model_summary);
 
 absl::Status ValidatePrimalSolution(const PrimalSolutionProto& primal_solution,
                                     const SparseVectorFilterProto& filter,
                                     const ModelSummary& model_summary);
+
+// Used to validate callback solutions, which are represented by a
+// SparseDoubleVectorProto and not the full PrimalSolutionProto message. Does
+// the same checks on a SparseDoubleVectorProto that ValidatePrimalSolution does
+// on the variable_values sub-message of a PrimalSolutionProto.
+absl::Status ValidatePrimalSolutionVector(const SparseDoubleVectorProto& vector,
+                                          const SparseVectorFilterProto& filter,
+                                          const ModelSummary& model_summary);
+
 absl::Status ValidatePrimalRay(const PrimalRayProto& primal_ray,
                                const SparseVectorFilterProto& filter,
                                const ModelSummary& model_summary);
@@ -42,12 +46,14 @@ absl::Status ValidatePrimalRay(const PrimalRayProto& primal_ray,
 absl::Status ValidateDualSolution(const DualSolutionProto& dual_solution,
                                   const ModelSolveParametersProto& parameters,
                                   const ModelSummary& model_summary);
+
 absl::Status ValidateDualRay(const DualRayProto& dual_ray,
                              const ModelSolveParametersProto& parameters,
                              const ModelSummary& model_summary);
 
 absl::Status ValidateBasis(const BasisProto& basis,
-                           const ModelSummary& model_summary);
+                           const ModelSummary& model_summary,
+                           bool check_dual_feasibility = true);
 
 }  // namespace math_opt
 }  // namespace operations_research

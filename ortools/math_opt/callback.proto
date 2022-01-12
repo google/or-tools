@@ -24,60 +24,82 @@ syntax = "proto3";
 package operations_research.math_opt;
 
 import "google/protobuf/duration.proto";
-import "ortools/math_opt/solution.proto";
 import "ortools/math_opt/sparse_containers.proto";
+
+option java_package = "com.google.ortools.mathopt";
+option java_multiple_files = true;
 
 // This is the list of supported events.
 enum CallbackEventProto {
   CALLBACK_EVENT_UNSPECIFIED = 0;
-  // Quick ping from the solver saying “I am still working, and not stuck”.
-  CALLBACK_EVENT_POLLING = 1;
+
   // The solver is currently running presolve.
-  CALLBACK_EVENT_PRESOLVE = 2;
+  //
+  // This event is supported for MIP & LP models by SOLVER_TYPE_GUROBI. Other
+  // solvers don't support this event.
+  CALLBACK_EVENT_PRESOLVE = 1;
+
   // The solver is currently running the simplex method.
-  CALLBACK_EVENT_SIMPLEX = 3;
+  //
+  // This event is supported for MIP & LP models by SOLVER_TYPE_GUROBI. Other
+  // solvers don't support this event.
+  CALLBACK_EVENT_SIMPLEX = 2;
+
   // The solver is in the MIP loop (called periodically before starting a new
   // node). Useful for early termination. Note that this event does not provide
   // information on LP relaxations nor about new incumbent solutions.
-  CALLBACK_EVENT_MIP = 4;
+  //
+  // This event is supported for MIP models only by SOLVER_TYPE_GUROBI. Other
+  // solvers don't support this event.
+  CALLBACK_EVENT_MIP = 3;
+
   // Called every time a new MIP incumbent is found.
-  CALLBACK_EVENT_MIP_SOLUTION = 5;
+  //
+  // This event is fully supported for MIP models by SOLVER_TYPE_GUROBI. CP-SAT
+  // has partial support: you can view the solutions and request termination,
+  // but you cannot add lazy constraints. Other solvers don't support this
+  // event.
+  CALLBACK_EVENT_MIP_SOLUTION = 4;
+
   // Called inside a MIP node. Note that there is no guarantee that the
   // callback function will be called on every node. That behavior is
   // solver-dependent.
-  CALLBACK_EVENT_MIP_NODE = 6;
+  //
+  // Disabling cuts using CommonSolveParametersProto may interfere with this
+  // event being called and/or adding cuts at this event, the behavior is solver
+  // specific.
+  //
+  // This event is supported for MIP models only by SOLVER_TYPE_GUROBI. Other
+  // solvers don't support this event.
+  CALLBACK_EVENT_MIP_NODE = 5;
+
   // Called in each iterate of an interior point/barrier method.
-  CALLBACK_EVENT_BARRIER = 7;
-  // Called when the solver wants to log a message.
-  CALLBACK_EVENT_MESSAGE = 8;
+  //
+  // This event is supported for LP models only by SOLVER_TYPE_GUROBI. Other
+  // solvers don't support this event.
+  CALLBACK_EVENT_BARRIER = 6;
 }
 
 // The callback function input data.
 // Note that depending on the event, some information might be unavailable.
 message CallbackDataProto {
   CallbackEventProto event = 1;
-  // if event == CALLBACK_EVENT_MIP_NODE, the primal_solution contains the
-  //    primal solution to the current LP-node relaxation. In some cases, no
-  //    solution will be available (e.g. because LP was infeasible or the solve
-  //    was imprecise).
-  // if event == CALLBACK_EVENT_MIP_SOLUTION, the primal_solution contains the
-  //    newly found primal (integer) feasible solution.
-  // Otherwise, the primal_solution is not available.
+  // if event == CALLBACK_EVENT_MIP_NODE, the primal_solution_vector contains
+  //    the variable values of the primal solution for the current LP-node
+  //    relaxation. In some cases, no solution will be available (e.g. because
+  //    LP was infeasible or the solve was imprecise).
+  // if event == CALLBACK_EVENT_MIP_SOLUTION, the primal_solution_vector
+  //    contains variable values for the newly found primal (integer) feasible
+  //    solution.
+  // Otherwise, the primal_solution_vector is not available.
   //
   // Note that, because of variable filters, it is possible that when a solution
   // is found, it is empty. The message will be set but left empty in this case,
   // while it will be unset when no solution is available.
-  //
-  // TODO(b/186740537): change the type to SparseDoubleVectorProto.
-  PrimalSolutionProto primal_solution = 2;
-
-  // If event == CALLBACK_EVENT_MESSAGE, return the messages from the solver.
-  // Each message represents a single output line from the solver, and each
-  // message does not contain any '\n' character in it.
-  repeated string messages = 3;
+  SparseDoubleVectorProto primal_solution_vector = 2;
 
   // Running time since the `Solve` call.
-  google.protobuf.Duration runtime = 4;
+  google.protobuf.Duration runtime = 3;
 
   // Presolve stats. Only available during CALLBACK_EVENT_PRESOLVE.
   message PresolveStats {
@@ -86,7 +108,7 @@ message CallbackDataProto {
     optional int64 bound_changes = 3;
     optional int64 coefficient_changes = 4;
   }
-  PresolveStats presolve_stats = 5;
+  PresolveStats presolve_stats = 4;
 
   // Simplex stats. Only available during CALLBACK_EVENT_SIMPLEX.
   message SimplexStats {
@@ -96,7 +118,7 @@ message CallbackDataProto {
     optional double dual_infeasibility = 4;
     optional bool is_pertubated = 5;
   }
-  SimplexStats simplex_stats = 6;
+  SimplexStats simplex_stats = 5;
 
   // Barrier stats. Only available during CALLBACK_EVENT_BARRIER.
   message BarrierStats {
@@ -107,9 +129,10 @@ message CallbackDataProto {
     optional double primal_infeasibility = 5;
     optional double dual_infeasibility = 6;
   }
-  BarrierStats barrier_stats = 7;
+  BarrierStats barrier_stats = 6;
 
   // MIP B&B stats. Only available during CALLBACK_EVENT_MIPxxxx events.
+  // Not supported for CP-SAT.
   message MipStats {
     optional double primal_bound = 1;
     optional double dual_bound = 2;
@@ -119,7 +142,7 @@ message CallbackDataProto {
     optional int32 number_of_solutions_found = 6;
     optional int32 cutting_planes_in_lp = 7;
   }
-  MipStats mip_stats = 8;
+  MipStats mip_stats = 7;
 }
 
 // Return value of a callback function.
@@ -142,6 +165,7 @@ message CallbackResultProto {
 
   // Ends the solve early.
   bool terminate = 1;
+
   // TODO(b/172214608): SCIP allows to reject a feasible solution without
   // providing a cut. This is something we might support at a later stage.
 
@@ -149,21 +173,26 @@ message CallbackResultProto {
   // GeneratedLinearConstraint::is_lazy for details.
   repeated GeneratedLinearConstraint cuts = 4;
 
+  // Use only for CALLBACK_EVENT_MIP_NODE.
+  //
   // Note that some solvers (e.g. Gurobi) support partially-defined solutions.
   // The most common use case is to specify a value for each variable in the
   // model. If a variable is not present in the primal solution, its value is
   // taken to be undefined, and is up to the underlying solver to deal with it.
   // For example, Gurobi will try to solve a Sub-MIP to get a fully feasible
   // solution if necessary.
-  //
-  // TODO(b/183631989) rename to suggested_solutions.
-  // TODO(b/186740537): change the type to SparseDoubleVectorProto.
-  repeated PrimalSolutionProto suggested_solution = 5;
+  repeated SparseDoubleVectorProto suggested_solutions = 5;
 }
 
 message CallbackRegistrationProto {
-  // What events you want to get a callback at.
-  // By default, there are no callbacks on any event.
+  // The events the solver should invoke the callback at.
+  //
+  // A solver will return an InvalidArgument status when called with registered
+  // events that are not supported for the selected solver and the type of
+  // model. For example registring for CALLBACK_EVENT_MIP with a model that only
+  // contains continuous variables will fail for most solvers (see the
+  // documentation of each event to see which solvers support them and in which
+  // case).
   repeated CallbackEventProto request_registration = 1;
 
   // If CALLBACK_EVENT_MIP_SOLUTION is in `request_registration`, then

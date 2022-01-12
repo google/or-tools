@@ -16,6 +16,7 @@
 
 #include <stdint.h>
 
+#include <atomic>
 #include <memory>
 #include <string>
 #include <utility>
@@ -30,12 +31,14 @@
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/math_opt/callback.pb.h"
+#include "ortools/math_opt/core/solve_interrupter.h"
 #include "ortools/math_opt/core/solver_interface.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_parameters.pb.h"
 #include "ortools/math_opt/model_update.pb.h"
 #include "ortools/math_opt/parameters.pb.h"
 #include "ortools/math_opt/result.pb.h"
+#include "ortools/math_opt/solution.pb.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 
 namespace operations_research {
@@ -44,22 +47,22 @@ namespace math_opt {
 class GlopSolver : public SolverInterface {
  public:
   static absl::StatusOr<std::unique_ptr<SolverInterface>> New(
-      const ModelProto& model, const SolverInitializerProto& initializer);
+      const ModelProto& model, const InitArgs& init_args);
 
   absl::StatusOr<SolveResultProto> Solve(
       const SolveParametersProto& parameters,
       const ModelSolveParametersProto& model_parameters,
-      const CallbackRegistrationProto& callback_registration,
-      Callback cb) override;
+      MessageCallback message_cb,
+      const CallbackRegistrationProto& callback_registration, Callback cb,
+      SolveInterrupter* interrupter) override;
   absl::Status Update(const ModelUpdateProto& model_update) override;
   bool CanUpdate(const ModelUpdateProto& model_update) override;
 
   // Returns the merged parameters and a list of warnings from any parameter
   // settings that are invalid for this solver.
   static std::pair<glop::GlopParameters, std::vector<std::string>>
-  MergeCommonParameters(
-      const CommonSolveParametersProto& common_solver_parameters,
-      const glop::GlopParameters& glop_parameters);
+  MergeSolveParameters(const SolveParametersProto& solver_parameters,
+                       bool setting_initial_basis, bool has_message_callback);
 
  private:
   GlopSolver();
@@ -79,9 +82,20 @@ class GlopSolver : public SolverInterface {
   void UpdateLinearConstraintBounds(
       const LinearConstraintUpdatesProto& linear_constraint_updates);
 
-  void FillSolveResult(glop::ProblemStatus status,
-                       const ModelSolveParametersProto& model_parameters,
-                       SolveResultProto& solve_result);
+  void FillSolution(glop::ProblemStatus status,
+                    const ModelSolveParametersProto& model_parameters,
+                    SolveResultProto& solve_result);
+  absl::Status FillSolveResult(
+      glop::ProblemStatus status,
+      const ModelSolveParametersProto& model_parameters,
+      const SolveInterrupter* interrupter, absl::Duration solve_time,
+      SolveResultProto& solve_result);
+
+  absl::Status FillSolveStats(const glop::ProblemStatus status,
+                              absl::Duration solve_time,
+                              SolveStatsProto& solve_stats);
+
+  void SetGlopBasis(const BasisProto& basis);
 
   glop::LinearProgram linear_program_;
   glop::LPSolver lp_solver_;

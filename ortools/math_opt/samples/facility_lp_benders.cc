@@ -44,15 +44,15 @@ ABSL_FLAG(
     "Fraction of a facility's capacity that can be used by each location.");
 
 namespace {
-using ::operations_research::math_opt::GurobiParametersProto;
+using ::operations_research::math_opt::IncrementalSolver;
 using ::operations_research::math_opt::LinearConstraint;
 using ::operations_research::math_opt::LinearExpression;
-using ::operations_research::math_opt::MathOpt;
-using ::operations_research::math_opt::Objective;
-using ::operations_research::math_opt::Result;
-using ::operations_research::math_opt::SolveParametersProto;
-using ::operations_research::math_opt::SolveResultProto;
+using ::operations_research::math_opt::Model;
+using ::operations_research::math_opt::SolveArguments;
+using ::operations_research::math_opt::SolveResult;
+using ::operations_research::math_opt::SolverType;
 using ::operations_research::math_opt::Sum;
+using ::operations_research::math_opt::TerminationReason;
 using ::operations_research::math_opt::Variable;
 
 // First element is a facility and second is a location.
@@ -175,17 +175,15 @@ void FullProblem(const Network& network, const double location_demand,
   const int num_facilities = network.num_facilities();
   const int num_locations = network.num_locations();
 
-  MathOpt model(operations_research::math_opt::SOLVER_TYPE_GUROBI,
-                "Full network design problem");
-  const Objective objective = model.objective();
-  objective.set_minimize();
+  Model model("Full network design problem");
+  model.set_minimize();
 
   // Capacity variables
   std::vector<Variable> z;
   for (int j = 0; j < num_facilities; j++) {
     const Variable z_j = model.AddContinuousVariable(0.0, kInf);
     z.push_back(z_j);
-    objective.set_linear_coefficient(z_j, facility_cost);
+    model.set_objective_coefficient(z_j, facility_cost);
   }
 
   // Flow variables
@@ -193,7 +191,7 @@ void FullProblem(const Network& network, const double location_demand,
   for (const auto& edge : network.edges()) {
     const Variable x_edge = model.AddContinuousVariable(0.0, kInf);
     x.insert({edge, x_edge});
-    objective.set_linear_coefficient(x_edge, network.edge_cost(edge));
+    model.set_objective_coefficient(x_edge, network.edge_cost(edge));
   }
 
   // Demand constraints
@@ -220,12 +218,12 @@ void FullProblem(const Network& network, const double location_demand,
       model.AddLinearConstraint(x.at(edge) <= location_fraction * z[facility]);
     }
   }
-  const Result result = model.Solve(SolveParametersProto()).value();
+  const SolveResult result = Solve(model, SolverType::kGurobi).value();
   for (const auto& warning : result.warnings) {
     LOG(WARNING) << "Solver warning: " << warning << std::endl;
   }
-  QCHECK_EQ(result.termination_reason, SolveResultProto::OPTIMAL)
-      << "Failed to find an optimal solution: " << result.termination_detail;
+  QCHECK_EQ(result.termination.reason, TerminationReason::kOptimal)
+      << "Failed to find an optimal solution: " << result.termination;
   std::cout << "Full problem optimal objective: "
             << absl::StrFormat("%.9f", result.objective_value()) << std::endl;
 }
@@ -244,8 +242,7 @@ void Benders(const Network network, const double location_demand,
   //                                       z_f >= 0     for all f in F
   //          sum(fcut_f^i z_f) + fcut_const^i <= 0      for i = 1,...
   //          sum(ocut_f^j z_f) + ocut_const^j <= w      for j = 1,...
-  MathOpt first_stage_model(operations_research::math_opt::SOLVER_TYPE_GUROBI,
-                            "First stage problem");
+  Model first_stage_model("First stage problem");
   std::vector<Variable> z;
   for (int j = 0; j < num_facilities; j++) {
     z.push_back(first_stage_model.AddContinuousVariable(0.0, kInf));
@@ -253,10 +250,7 @@ void Benders(const Network network, const double location_demand,
 
   const Variable w = first_stage_model.AddContinuousVariable(0.0, kInf);
 
-  first_stage_model.objective().Minimize(facility_cost * Sum(z) + w);
-
-  SolveParametersProto first_stage_params;
-  first_stage_params.mutable_common_parameters()->set_enable_output(false);
+  first_stage_model.Minimize(facility_cost * Sum(z) + w);
 
   // Setup second stage model.
   //   min sum(h_e * x_e : e in E)
@@ -267,16 +261,14 @@ void Benders(const Network network, const double location_demand,
   //                                       x_e >= 0     for all e in E
   //
   // where zz_f are fixed values for z_f from the first stage model.
-  MathOpt second_stage_model(operations_research::math_opt::SOLVER_TYPE_GUROBI,
-                             "Second stage model");
-  const Objective second_stage_objective = second_stage_model.objective();
-  second_stage_objective.set_minimize();
+  Model second_stage_model("Second stage model");
+  second_stage_model.set_minimize();
   absl::flat_hash_map<Edge, Variable> x;
   for (const auto& edge : network.edges()) {
     const Variable x_edge = second_stage_model.AddContinuousVariable(0.0, kInf);
     x.insert({edge, x_edge});
-    second_stage_objective.set_linear_coefficient(x_edge,
-                                                  network.edge_cost(edge));
+    second_stage_model.set_objective_coefficient(x_edge,
+                                                 network.edge_cost(edge));
   }
   std::vector<LinearConstraint> demand_constraints;
 
@@ -298,25 +290,26 @@ void Benders(const Network network, const double location_demand,
         second_stage_model.AddLinearConstraint(linear_expression <= kInf));
   }
 
-  SolveParametersProto second_stage_params;
-  second_stage_params.mutable_common_parameters()->set_enable_output(false);
-  GurobiParametersProto::Parameter* param1 =
-      second_stage_params.mutable_gurobi_parameters()->add_parameters();
-  param1->set_name("InfUnbdInfo");
-  param1->set_value("1");
+  SolveArguments second_stage_args;
+  second_stage_args.parameters.gurobi.param_values["InfUnbdInfo"] = "1";
 
   // Start Benders
   int iteration = 0;
   double best_upper_bound = kInf;
+  const std::unique_ptr<IncrementalSolver> first_stage_solver =
+      IncrementalSolver::New(first_stage_model, SolverType::kGurobi).value();
+  const std::unique_ptr<IncrementalSolver> second_stage_solver =
+      IncrementalSolver::New(second_stage_model, SolverType::kGurobi).value();
   while (true) {
     LOG(INFO) << "Iteration: " << iteration;
     // Solve and process first stage.
-    const Result first_stage_result =
-        first_stage_model.Solve(first_stage_params).value();
+    const SolveResult first_stage_result = first_stage_solver->Solve().value();
     for (const auto& warning : first_stage_result.warnings) {
       LOG(WARNING) << "Solver warning: " << warning << std::endl;
     }
-    QCHECK_EQ(first_stage_result.termination_reason, SolveResultProto::OPTIMAL);
+    QCHECK_EQ(first_stage_result.termination.reason,
+              TerminationReason::kOptimal)
+        << first_stage_result.termination;
     const double lower_bound = first_stage_result.objective_value();
     LOG(INFO) << "LB = " << lower_bound;
 
@@ -325,19 +318,21 @@ void Benders(const Network network, const double location_demand,
       const double capacity_value =
           first_stage_result.variable_values().at(z[facility]);
       for (const auto& edge : network.edges_incident_to_facility(facility)) {
-        x.at(edge).set_upper_bound(location_fraction * capacity_value);
+        second_stage_model.set_upper_bound(x.at(edge),
+                                           location_fraction * capacity_value);
       }
-      supply_constraints[facility].set_upper_bound(capacity_value);
+      second_stage_model.set_upper_bound(supply_constraints[facility],
+                                         capacity_value);
     }
 
     // Solve and process second stage.
-    const Result second_stage_result =
-        second_stage_model.Solve(second_stage_params).value();
+    const SolveResult second_stage_result =
+        second_stage_solver->Solve(second_stage_args).value();
     for (const auto& warning : second_stage_result.warnings) {
       LOG(WARNING) << "Solver warning: " << warning << std::endl;
     }
-    if (second_stage_result.termination_reason ==
-        SolveResultProto::INFEASIBLE) {
+    if (second_stage_result.termination.reason ==
+        TerminationReason::kInfeasible) {
       // If the second stage problem is infeasible we will get a dual ray
       // (r, y) such that
       //
@@ -397,8 +392,9 @@ void Benders(const Network network, const double location_demand,
       // ocut_f     = sum(r_(f,l)*a : (f,l) in E, r_(f,l) < 0)
       //              + min{y_f, 0}
       // ocut_const = sum*(y_l*d : l in L, y_l > 0)
-      QCHECK_EQ(second_stage_result.termination_reason,
-                SolveResultProto::OPTIMAL);
+      QCHECK_EQ(second_stage_result.termination.reason,
+                TerminationReason::kOptimal)
+          << second_stage_result.termination;
       LOG(INFO) << "Adding optimality cut...";
       LinearExpression optimality_cut_expression;
       double upper_bound = 0.0;

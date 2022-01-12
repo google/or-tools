@@ -18,6 +18,21 @@ package operations_research.math_opt;
 
 import "ortools/math_opt/sparse_containers.proto";
 
+option java_package = "com.google.ortools.mathopt";
+option java_multiple_files = true;
+
+// Feasibility of a primal or dual solution as claimed by the solver.
+enum SolutionStatusProto {
+  // Guard value representing no status.
+  SOLUTION_STATUS_UNSPECIFIED = 0;
+  // Solver does not claim a feasibility status.
+  SOLUTION_STATUS_UNDETERMINED = 1;
+  // Solver claims the solution is feasible.
+  SOLUTION_STATUS_FEASIBLE = 2;
+  // Solver claims the solution is infeasible.
+  SOLUTION_STATUS_INFEASIBLE = 3;
+}
+
 // A solution to an optimization problem.
 //
 // E.g. consider a simple linear program:
@@ -37,9 +52,10 @@ message PrimalSolutionProto {
   SparseDoubleVectorProto variable_values = 1;
 
   // Objective value as computed by the underlying solver.
-  optional double objective_value = 2;
+  double objective_value = 2;
 
-  // TODO(b/185365397): indicate if the solution is feasible.
+  // Feasibility status of the solution according to the underlying solver.
+  SolutionStatusProto feasibility_status = 3;
 }
 
 // A direction of unbounded improvement to an optimization problem;
@@ -97,10 +113,12 @@ message DualSolutionProto {
   //  * reduced_costs.values must all be finite.
   SparseDoubleVectorProto reduced_costs = 2;
 
+  // TODO(b/195295177): consider making this non-optional
   // Objective value as computed by the underlying solver.
   optional double objective_value = 3;
 
-  // TODO(b/185365397): indicate if the solution is feasible.
+  // Feasibility status of the solution according to the underlying solver.
+  SolutionStatusProto feasibility_status = 4;
 }
 
 // A direction of unbounded improvement to the dual of an optimization,
@@ -137,13 +155,25 @@ message DualRayProto {
   // TODO(b/185365397): indicate if the ray is feasible.
 }
 
-enum BasisStatus {
-  INVALID = 0;
-  FREE = 1;
-  AT_LOWER_BOUND = 2;
-  AT_UPPER_BOUND = 3;
-  FIXED_VALUE = 4;
-  BASIC = 5;
+// Status of a variable/constraint in a LP basis.
+enum BasisStatusProto {
+  // Guard value representing no status.
+  BASIS_STATUS_UNSPECIFIED = 0;
+
+  // The variable/constraint is free (it has no finite bounds).
+  BASIS_STATUS_FREE = 1;
+
+  // The variable/constraint is at its lower bound (which must be finite).
+  BASIS_STATUS_AT_LOWER_BOUND = 2;
+
+  // The variable/constraint is at its upper bound (which must be finite).
+  BASIS_STATUS_AT_UPPER_BOUND = 3;
+
+  // The variable/constraint has identical finite lower and upper bounds.
+  BASIS_STATUS_FIXED_VALUE = 4;
+
+  // The variable/constraint is basic.
+  BASIS_STATUS_BASIC = 5;
 }
 
 // A sparse representation of a vector of basis statuses.
@@ -152,14 +182,14 @@ message SparseBasisStatusVector {
   repeated int64 ids = 1;
 
   // Must have equal length to ids.
-  repeated BasisStatus values = 2;
+  repeated BasisStatusProto values = 2;
 }
 
 // A combinatorial characterization for a solution to a linear program.
 //
 // The simplex method for solving linear programs always returns a "basic
 // feasible solution" which can be described combinatorially by a Basis. A basis
-// assigns a BasisStatus for every variable and linear constraint.
+// assigns a BasisStatusProto for every variable and linear constraint.
 //
 // E.g. consider a standard form LP:
 //   min c * x
@@ -193,4 +223,26 @@ message BasisProto {
   // Requirements:
   //  * constraint_status.ids is equal to VariablesProto.ids.
   SparseBasisStatusVector variable_status = 2;
+
+  // This is an advanced status. For single-sided LPs it should be equal to the
+  // feasibility status of the associated dual solution. For two-sided LPs it
+  // may be different in some edge cases (e.g. incomplete solves with primal
+  // simplex). For more details see go/mathopt-basis-advanced#dualfeasibility.
+  SolutionStatusProto basic_dual_feasibility = 3;
+}
+
+// What is included in a solution depends on the kind of problem and solver.
+// The current common patterns are
+//   1. MIP solvers return only a primal solution.
+//   2. Simplex LP solvers often return a basis and the primal and dual
+//      solutions associated to this basis.
+//   3. Other continuous solvers often return a primal and dual solution
+//      solution that are connected in a solver-dependent form.
+//
+// Requirements:
+//  * at least one field must be set; a solution can't be empty.
+message SolutionProto {
+  optional PrimalSolutionProto primal_solution = 1;
+  optional DualSolutionProto dual_solution = 2;
+  optional BasisProto basis = 3;
 }

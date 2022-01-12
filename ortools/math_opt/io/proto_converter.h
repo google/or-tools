@@ -18,21 +18,20 @@
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/math_opt/model.pb.h"
 
-namespace operations_research {
-namespace math_opt {
+namespace operations_research::math_opt {
 
-absl::StatusOr<::operations_research::math_opt::ModelProto>
-MPModelProtoToMathOptModel(const ::operations_research::MPModelProto& model);
+// Returns a ModelProto equivalent to the input linear_solver Model.
+absl::StatusOr<ModelProto> MPModelProtoToMathOptModel(
+    const MPModelProto& model);
 
-// Returns a MPModelProto equivalent to the input math_opt Model.
+// Returns a linear_solver MPModelProto equivalent to the input math_opt Model.
 //
 // Variables are created in the same order as they appear in
 // `model.variables`. Hence the returned `.variable(i)` corresponds to input
 // `model.variables.ids(i)`.
-absl::StatusOr<::operations_research::MPModelProto> MathOptModelToMPModelProto(
-    const ::operations_research::math_opt::ModelProto& model);
+absl::StatusOr<MPModelProto> MathOptModelToMPModelProto(
+    const ModelProto& model);
 
-}  // namespace math_opt
-}  // namespace operations_research
+}  // namespace operations_research::math_opt
 
 #endif  // OR_TOOLS_MATH_OPT_IO_PROTO_CONVERTER_H_

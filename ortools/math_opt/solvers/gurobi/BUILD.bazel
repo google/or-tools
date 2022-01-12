@@ -1,0 +1,23 @@
+package(default_visibility = ["//ortools/math_opt:__subpackages__"])
+
+cc_library(
+    name = "g_gurobi",
+    srcs = [
+        "g_gurobi.cc",
+    ],
+    hdrs = [
+        "g_gurobi.h",
+    ],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:cleanup",
+        "//ortools/base:source_location",
+        "//ortools/base:status_macros",
+        "//ortools/gurobi:environment",
+        "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/types:span",
+    ],
+)

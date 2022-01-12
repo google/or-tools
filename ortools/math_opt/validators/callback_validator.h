@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_MATH_OPT_VALIDATORS_CALLBACK_VALIDATOR_H_
 #define OR_TOOLS_MATH_OPT_VALIDATORS_CALLBACK_VALIDATOR_H_
 
+#include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/model_summary.h"
@@ -40,6 +41,12 @@ absl::Status ValidateCallbackResultProto(
     const CallbackResultProto& callback_result, CallbackEventProto event,
     const CallbackRegistrationProto& callback_registration,
     const ModelSummary& model_summary);
+
+// Returns an InvalidArgumentError if some of the registered events are not
+// supported.
+absl::Status CheckRegisteredCallbackEvents(
+    const CallbackRegistrationProto& registration,
+    const absl::flat_hash_set<CallbackEventProto>& supported_events);
 
 }  // namespace math_opt
 }  // namespace operations_research

@@ -17,9 +17,7 @@
 #include <cstdint>
 #include <memory>
 #include <string>
-#include <utility>
 
-#include "ortools/base/integral_types.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
@@ -29,7 +27,9 @@
 #include "scip/type_var.h"
 #include "ortools/gscip/gscip.h"
 #include "ortools/gscip/gscip.pb.h"
+#include "ortools/gscip/gscip_event_handler.h"
 #include "ortools/math_opt/callback.pb.h"
+#include "ortools/math_opt/core/solve_interrupter.h"
 #include "ortools/math_opt/core/solver_interface.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_parameters.pb.h"
@@ -44,22 +44,59 @@ namespace math_opt {
 class GScipSolver : public SolverInterface {
  public:
   static absl::StatusOr<std::unique_ptr<SolverInterface>> New(
-      const ModelProto& model, const SolverInitializerProto& initializer);
+      const ModelProto& model, const InitArgs& init_args);
 
   absl::StatusOr<SolveResultProto> Solve(
       const SolveParametersProto& parameters,
       const ModelSolveParametersProto& model_parameters,
-      const CallbackRegistrationProto& callback_registration,
-      Callback cb) override;
+      MessageCallback message_cb,
+      const CallbackRegistrationProto& callback_registration, Callback cb,
+      SolveInterrupter* interrupter) override;
   absl::Status Update(const ModelUpdateProto& model_update) override;
   bool CanUpdate(const ModelUpdateProto& model_update) override;
 
-  static GScipParameters MergeCommonParameters(
-      const CommonSolveParametersProto& common_solver_parameters,
-      const GScipParameters& gscip_parameters);
+  static GScipParameters MergeParameters(
+      const SolveParametersProto& solve_parameters);
 
  private:
-  GScipSolver() = default;
+  // Event handler that it used to call SCIPinterruptSolve() is a safe manner.
+  //
+  // At the start of SCIPsolve(), SCIP resets `userinterrupt` to false. It does
+  // the same in SCIPpresolve(), which is called at the beginning of SCIPsolve()
+  // but also at the beginning of each restart. the `userinterrupt` can also be
+  // reset when the transformed problem is freed when the parameter
+  // "misc/resetstat" is used. On top of that, it is not possible to call
+  // SCIPinterruptSolve() in SCIP_STAGE_INITSOLVE stage; which occurs in the
+  // middle of the solve and at restarts.
+  //
+  // If this was no enough, SCIPinterruptSolve() calls SCIPcheckStage() which is
+  // not thread-safe.
+  //
+  // As a consequence, although it is possible to call SCIPinterruptSolve() from
+  // another thread, it is unreliable at best. Here we take a safer approach: we
+  // call it only from the Exec() of an even handler. This solves all thread
+  // safety issues and, if we have been careful, also ensures we don't call it
+  // in the wrong stage. This also solves the issue the multiple resets of the
+  // `userinterrupt` flag since each time we are called after the interrupter
+  // has been triggered, we simply call SCIPinterruptSolve() until SCIP finally
+  // listens.
+  struct InterruptEventHandler : public GScipEventHandler {
+    InterruptEventHandler();
+
+    SCIP_RETCODE Init(GScip* gscip) override;
+    SCIP_RETCODE Execute(GScipEventHandlerContext) override;
+
+    // Calls SCIPinterruptSolve() if the interrupter is set and triggered and
+    // SCIP is in a valid stage for that.
+    SCIP_RETCODE TryCallInterruptIfNeeded(GScip* gscip);
+
+    // This will be set before SCIPsolve() is called and reset after the end of
+    // the call. It may be null when the user does not provide an interrupter;
+    // in that case we don't register any event.
+    SolveInterrupter* interrupter = nullptr;
+  };
+
+  explicit GScipSolver(std::unique_ptr<GScip> gscip);
 
   absl::Status AddVariables(const VariablesProto& variables,
                             const absl::flat_hash_map<int64_t, double>&
@@ -73,16 +110,12 @@ class GScipSolver : public SolverInterface {
       const SparseDoubleMatrixProto& linear_constraint_matrix);
   absl::flat_hash_set<SCIP_VAR*> LookupAllVariables(
       absl::Span<const int64_t> variable_ids);
-  static absl::StatusOr<
-      std::pair<SolveResultProto::TerminationReason, std::string>>
-  ConvertTerminationReason(GScipOutput::Status gscip_status,
-                           const std::string& gscip_status_detail,
-                           bool has_feasible_solution);
   absl::StatusOr<SolveResultProto> CreateSolveResultProto(
       GScipResult gscip_result,
       const ModelSolveParametersProto& model_parameters);
 
-  std::unique_ptr<GScip> gscip_;
+  const std::unique_ptr<GScip> gscip_;
+  InterruptEventHandler interrupt_event_handler_;
   absl::flat_hash_map<int64_t, SCIP_VAR*> variables_;
   absl::flat_hash_map<int64_t, SCIP_CONS*> linear_constraints_;
   int64_t next_unused_variable_id_ = 0;

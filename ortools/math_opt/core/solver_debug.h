@@ -11,33 +11,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_MATH_OPT_CPP_ARROW_OPERATOR_PROXY_H_
-#define OR_TOOLS_MATH_OPT_CPP_ARROW_OPERATOR_PROXY_H_
+#ifndef OR_TOOLS_MATH_OPT_CORE_SOLVER_DEBUG_H_
+#define OR_TOOLS_MATH_OPT_CORE_SOLVER_DEBUG_H_
 
-#include <utility>  // IWYU pragma: keep
+#include <atomic>
+#include <cstdint>
 
 namespace operations_research {
 namespace math_opt {
 namespace internal {
 
-// Proxy used to implement operator-> on iterators that return temporary
-// objects.
+// The number of Solver instances that currently exist.
 //
-// The operator-> in C++ is interpreted by a drill-down operation that looks for
-// a pointer. It is not possible to return a value. So this class is used as a
-// proxy to return a pointer from a value.
-template <typename T>
-class ArrowOperatorProxy {
- public:
-  explicit ArrowOperatorProxy(T value) : value_(std::move(value)) {}
-  const T* operator->() const { return &value_; }
-
- private:
-  T value_;
-};
+// This variable is intended to be used by MathOpt unit tests in other languages
+// to test the proper garbage collection. It should never be used in any other
+// context.
+extern std::atomic<int64_t> debug_num_solver;
 
 }  // namespace internal
 }  // namespace math_opt
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_MATH_OPT_CPP_ARROW_OPERATOR_PROXY_H_
+#endif  // OR_TOOLS_MATH_OPT_CORE_SOLVER_DEBUG_H_

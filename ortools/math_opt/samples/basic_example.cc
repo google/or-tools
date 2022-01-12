@@ -33,31 +33,28 @@ namespace {
 
 void SolveVersion1() {
   using ::operations_research::math_opt::LinearConstraint;
-  using ::operations_research::math_opt::MathOpt;
-  using ::operations_research::math_opt::Objective;
-  using ::operations_research::math_opt::Result;
-  using ::operations_research::math_opt::SolveParametersProto;
-  using ::operations_research::math_opt::SolveResultProto;
+  using ::operations_research::math_opt::Model;
+  using ::operations_research::math_opt::SolveResult;
+  using ::operations_research::math_opt::SolverType;
+  using ::operations_research::math_opt::TerminationReason;
   using ::operations_research::math_opt::Variable;
 
-  MathOpt optimizer(operations_research::math_opt::SOLVER_TYPE_GSCIP,
-                    "my_model");
-  const Variable x = optimizer.AddBinaryVariable("x");
-  const Variable y = optimizer.AddContinuousVariable(0.0, 2.5, "y");
-  const LinearConstraint c = optimizer.AddLinearConstraint(
+  Model model("my_model");
+  const Variable x = model.AddBinaryVariable("x");
+  const Variable y = model.AddContinuousVariable(0.0, 2.5, "y");
+  const LinearConstraint c = model.AddLinearConstraint(
       -std::numeric_limits<double>::infinity(), 1.5, "c");
-  c.set_coefficient(x, 1.0);
-  c.set_coefficient(y, 1.0);
-  const Objective obj = optimizer.objective();
-  obj.set_linear_coefficient(x, 2.0);
-  obj.set_linear_coefficient(y, 1.0);
-  obj.set_maximize();
-  const Result result = optimizer.Solve(SolveParametersProto()).value();
+  model.set_coefficient(c, x, 1.0);
+  model.set_coefficient(c, y, 1.0);
+  model.set_objective_coefficient(x, 2.0);
+  model.set_objective_coefficient(y, 1.0);
+  model.set_maximize();
+  const SolveResult result = Solve(model, SolverType::kGscip).value();
   for (const auto& warning : result.warnings) {
     std::cerr << "Solver warning: " << warning << std::endl;
   }
-  CHECK_EQ(result.termination_reason, SolveResultProto::OPTIMAL)
-      << result.termination_detail;
+  CHECK_EQ(result.termination.reason, TerminationReason::kOptimal)
+      << result.termination;
   // The following code will print:
   //  objective value: 2.5
   //  value for variable x: 1
@@ -68,29 +65,28 @@ void SolveVersion1() {
 
 void SolveVersion2() {
   using ::operations_research::math_opt::LinearExpression;
-  using ::operations_research::math_opt::MathOpt;
-  using ::operations_research::math_opt::Result;
-  using ::operations_research::math_opt::SolveParametersProto;
-  using ::operations_research::math_opt::SolveResultProto;
+  using ::operations_research::math_opt::Model;
+  using ::operations_research::math_opt::SolveResult;
+  using ::operations_research::math_opt::SolverType;
+  using ::operations_research::math_opt::TerminationReason;
   using ::operations_research::math_opt::Variable;
 
-  MathOpt optimizer(operations_research::math_opt::SOLVER_TYPE_GSCIP,
-                    "my_model");
-  const Variable x = optimizer.AddBinaryVariable("x");
-  const Variable y = optimizer.AddContinuousVariable(0.0, 2.5, "y");
+  Model model("my_model");
+  const Variable x = model.AddBinaryVariable("x");
+  const Variable y = model.AddContinuousVariable(0.0, 2.5, "y");
   // We can directly use linear combinations of variables ...
-  optimizer.AddLinearConstraint(x + y <= 1.5, "c");
+  model.AddLinearConstraint(x + y <= 1.5, "c");
   // ... or build them incrementally.
   LinearExpression objective_expression;
   objective_expression += 2 * x;
   objective_expression += y;
-  optimizer.objective().Maximize(objective_expression);
-  const Result result = optimizer.Solve(SolveParametersProto()).value();
+  model.Maximize(objective_expression);
+  const SolveResult result = Solve(model, SolverType::kGscip).value();
   for (const auto& warning : result.warnings) {
     std::cerr << "Solver warning: " << warning << std::endl;
   }
-  CHECK_EQ(result.termination_reason, SolveResultProto::OPTIMAL)
-      << result.termination_detail;
+  CHECK_EQ(result.termination.reason, TerminationReason::kOptimal)
+      << result.termination;
   // The following code will print:
   //  objective value: 2.5
   //  value for variable x: 1

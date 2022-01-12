@@ -11,12 +11,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// An object oriented wrapper for variables in IndexedModel with support for
-// arithmetic operations to build linear expressions and express linear
-// constraints.
+// An object oriented wrapper for variables in ModelStorage (used internally by
+// Model) with support for arithmetic operations to build linear expressions and
+// express linear constraints.
 //
 // Types are:
-//   - Variable: a reference to a variable of an IndexedModel.
+//   - Variable: a reference to a variable of an ModelStorage.
 //
 //   - LinearExpression: a weighted sum of variables with an optional offset;
 //     something like `3*x + 2*y + 5`.
@@ -32,6 +32,16 @@
 //   - BoundedLinearExpression: the result of the comparison of a linear
 //     expression with two bounds, an upper bound and a lower bound. For example
 //     `2 <= 3*x + 2*y + 5 <= 3`; or `4 >= 3*x + 2*y + 5 >= 1`.
+//
+//   - QuadraticTermKey: a key used internally to represent a pair of Variables.
+//
+//   - QuadraticTerm: a term representing the product of a scalar coefficient
+//     and two Variables (possibly the same); something like `2*x*y` or `3*x*x`.
+//     It is used as an intermediate in the arithmetic operations that build
+//     quadratic expressions.
+//
+//   - QuadraticExpression: a sum of a quadratic terms, linear terms, and a
+//     scalar offset; something like `3*x*y + 2*x*x + 4x + 5`.
 //
 //   - VariablesEquality: the result of comparing two Variable instances with
 //     the == operator. For example `a == b`. This intermediate class support
@@ -90,22 +100,26 @@
 #include "ortools/base/logging.h"
 #include "absl/container/flat_hash_map.h"
 #include "ortools/base/int_type.h"
-#include "ortools/math_opt/core/indexed_model.h"
+#include "ortools/math_opt/core/model_storage.h"
 #include "ortools/math_opt/cpp/id_map.h"  // IWYU pragma: export
+#include "ortools/math_opt/cpp/key_types.h"  // IWYU pragma: export
 
 namespace operations_research {
 namespace math_opt {
 
-// A value type that references a variable from IndexedModel. Usually this type
+// Forward declaration needed by Variable.
+class LinearExpression;
+
+// A value type that references a variable from ModelStorage. Usually this type
 // is passed by copy.
 class Variable {
  public:
   // The typed integer used for ids.
   using IdType = VariableId;
 
-  // Usually users will obtain variables using MathOpt::AddVariable(). There
-  // should be little for users to build this object from an IndexedModel.
-  inline Variable(IndexedModel* model, VariableId id);
+  // Usually users will obtain variables using Model::AddVariable(). There
+  // should be little for users to build this object from an ModelStorage.
+  inline Variable(const ModelStorage* storage, VariableId id);
 
   // Each call to AddVariable will produce Variables id() increasing by one,
   // starting at zero. Deleted ids are NOT reused. Thus, if no variables are
@@ -113,25 +127,21 @@ class Variable {
   inline int64_t id() const;
 
   inline VariableId typed_id() const;
-  inline IndexedModel* model() const;
+  inline const ModelStorage* storage() const;
 
   inline double lower_bound() const;
   inline double upper_bound() const;
   inline bool is_integer() const;
   inline const std::string& name() const;
 
-  inline void set_lower_bound(double lower_bound) const;
-  inline void set_upper_bound(double upper_bound) const;
-  inline void set_is_integer(bool is_integer) const;
-  inline void set_integer() const;
-  inline void set_continuous() const;
-
   template <typename H>
   friend H AbslHashValue(H h, const Variable& variable);
   friend std::ostream& operator<<(std::ostream& ostr, const Variable& variable);
 
+  inline LinearExpression operator-() const;
+
  private:
-  IndexedModel* model_;
+  const ModelStorage* storage_;
   VariableId id_;
 };
 
@@ -164,11 +174,14 @@ inline LinearTerm operator*(Variable variable, double coefficient);
 inline LinearTerm operator/(LinearTerm term, double coefficient);
 inline LinearTerm operator/(Variable variable, double coefficient);
 
+// Forward declaration so that we may add it as a friend to LinearExpression
+class QuadraticExpression;
+
 // This class represents a sum of variables multiplied by coefficient and an
 // optional offset constant. For example: "3*x + 2*y + 5".
 //
 // All operations, including constructor, will raise an assertion if the
-// operands involve variables from different MathOpt objects.
+// operands involve variables from different Model objects.
 //
 // Contrary to Variable type, expressions owns the linear expression their
 // represent. Hence they are usually passed by reference to prevent unnecessary
@@ -181,14 +194,14 @@ class LinearExpression {
  public:
   // For unit testing purpose, we define optional counters. We have to
   // explicitly define default constructors in that case.
-#ifndef USE_LINEAR_EXPRESSION_COUNTERS
+#ifndef MATH_OPT_USE_EXPRESSION_COUNTERS
   LinearExpression() = default;
-#else   // USE_LINEAR_EXPRESSION_COUNTERS
+#else   // MATH_OPT_USE_EXPRESSION_COUNTERS
   LinearExpression();
   LinearExpression(const LinearExpression& other);
   LinearExpression(LinearExpression&& other);
   LinearExpression& operator=(const LinearExpression& other);
-#endif  // USE_LINEAR_EXPRESSION_COUNTERS
+#endif  // MATH_OPT_USE_EXPRESSION_COUNTERS
   // Usually users should use the overloads of operators to build linear
   // expressions. For example, assuming `x` and `y` are Variable, then `x + 2*y
   // + 5` will build a LinearExpression automatically.
@@ -285,33 +298,34 @@ class LinearExpression {
   // Compute the numeric value of this expression when variables are substituted
   // by their values in variable_values.
   //
-  // Will CHECK fail the underlying model is different or if a variable in
-  // terms() is missing from variables_values.
+  // Will CHECK fail the underlying model storage is different or if a variable
+  // in terms() is missing from variables_values.
   double Evaluate(const VariableMap<double>& variable_values) const;
 
   // Compute the numeric value of this expression when variables are substituted
   // by their values in variable_values, or zero if missing from the map.
   //
-  // Will CHECK fail the underlying model is different.
+  // Will CHECK fail the underlying model storage is different.
   double EvaluateWithDefaultZero(
       const VariableMap<double>& variable_values) const;
 
-  inline IndexedModel* model() const;
+  inline const ModelStorage* storage() const;
   inline const absl::flat_hash_map<VariableId, double>& raw_terms() const;
 
-#ifdef USE_LINEAR_EXPRESSION_COUNTERS
+#ifdef MATH_OPT_USE_EXPRESSION_COUNTERS
   static thread_local int num_calls_default_constructor_;
   static thread_local int num_calls_copy_constructor_;
   static thread_local int num_calls_move_constructor_;
   static thread_local int num_calls_initializer_list_constructor_;
   // Reset all counters in the current thread to 0.
   static void ResetCounters();
-#endif  // USE_LINEAR_EXPRESSION_COUNTERS
+#endif  // MATH_OPT_USE_EXPRESSION_COUNTERS
 
  private:
   friend LinearExpression operator-(LinearExpression expr);
   friend std::ostream& operator<<(std::ostream& ostr,
                                   const LinearExpression& expression);
+  friend QuadraticExpression;
 
   VariableMap<double> terms_;
   double offset_ = 0.0;
@@ -581,49 +595,318 @@ inline BoundedLinearExpression operator==(double lhs, const LinearTerm& rhs);
 inline BoundedLinearExpression operator==(Variable lhs, double rhs);
 inline BoundedLinearExpression operator==(double lhs, Variable rhs);
 
+// Id type used for quadratic terms, i.e. products of two variables.
+using QuadraticProductId = std::pair<VariableId, VariableId>;
+
+// Couples a QuadraticProductId with a ModelStorage, for use with IdMaps.
+// Namely, this key type satisfies the requirements stated in key_types.h.
+// Invariant:
+//   * variable_ids_.first <= variable_ids_.second. The constructor will
+//     silently correct this if not satisfied by the inputs.
+class QuadraticTermKey {
+ public:
+  // NOTE: this definition is for use by IdMap; clients should not rely upon it.
+  using IdType = QuadraticProductId;
+
+  // NOTE: This constructor will silently re-order the passed id so that, upon
+  // exiting the constructor, variable_ids_.first <= variable_ids_.second.
+  inline QuadraticTermKey(const ModelStorage* storage, QuadraticProductId id);
+  // NOTE: This constructor will CHECK fail if the variable models do not agree,
+  // i.e. first_variable.storage() != second_variable.storage(). It will also
+  // silently re-order the passed id so that, upon exiting the constructor,
+  // variable_ids_.first <= variable_ids_.second.
+  inline QuadraticTermKey(Variable first_variable, Variable second_variable);
+
+  inline QuadraticProductId typed_id() const;
+  inline const ModelStorage* storage() const;
+
+  template <typename H>
+  friend H AbslHashValue(H h, const QuadraticTermKey& key);
+
+ private:
+  const ModelStorage* storage_;
+  QuadraticProductId variable_ids_;
+};
+
+inline bool operator==(const QuadraticTermKey lhs, const QuadraticTermKey rhs);
+inline bool operator!=(const QuadraticTermKey lhs, const QuadraticTermKey rhs);
+
+// Represents a quadratic term in a sum: coefficient * variable_1 * variable_2.
+// Invariant:
+//   * first_variable.storage() == second_variable.storage(). The constructor
+//     will CHECK fail if not satisfied.
+class QuadraticTerm {
+ public:
+  QuadraticTerm() = delete;
+  // NOTE: This will CHECK fail if
+  // first_variable.storage() != second_variable.storage().
+  inline QuadraticTerm(Variable first_variable, Variable second_variable,
+                       double coefficient);
+
+  inline double coefficient() const;
+  inline Variable first_variable() const;
+  inline Variable second_variable() const;
+
+  // This is useful for working with IdMaps
+  inline QuadraticTermKey GetKey() const;
+
+  inline QuadraticTerm& operator*=(double value);
+  inline QuadraticTerm& operator/=(double value);
+
+ private:
+  friend QuadraticTerm operator-(QuadraticTerm term);
+  friend QuadraticTerm operator*(double lhs, QuadraticTerm rhs);
+  friend QuadraticTerm operator*(QuadraticTerm lhs, double rhs);
+  friend QuadraticTerm operator/(QuadraticTerm lhs, double rhs);
+
+  Variable first_variable_;
+  Variable second_variable_;
+  double coefficient_;
+};
+// We declare those operator overloads that result in a QuadraticTerm, stated in
+// lexicographic ordering based on lhs type, rhs type):
+inline QuadraticTerm operator-(QuadraticTerm term);
+inline QuadraticTerm operator*(double lhs, QuadraticTerm rhs);
+inline QuadraticTerm operator*(Variable lhs, Variable rhs);
+inline QuadraticTerm operator*(Variable lhs, LinearTerm rhs);
+inline QuadraticTerm operator*(LinearTerm lhs, Variable rhs);
+inline QuadraticTerm operator*(LinearTerm lhs, LinearTerm rhs);
+inline QuadraticTerm operator*(QuadraticTerm lhs, double rhs);
+inline QuadraticTerm operator/(QuadraticTerm lhs, double rhs);
+
+// Implements the API of std::unordered_map<QuadraticTermKey, V>, but forbids
+// QuadraticTermKeys from different models in the same map.
+template <typename V>
+using QuadraticTermMap = IdMap<QuadraticTermKey, V>;
+
+// This class represents a sum of quadratic terms, linear terms, and constant
+// offset. For example: "3*x*y + 2*x + 1".
+//
+// Mixing terms involving variables from different ModelStorage objects will
+// lead to CHECK fails, including from the constructors.
+//
+// The type owns the associated data representing the terms, and so should
+// usually be passed by (const) reference to avoid unnecessary copies.
+//
+// Note for implementers: Care must be taken to ensure that
+// linear_terms_.storage() and quadratic_terms_.storage() do not disagree. That
+// is, it is forbidden that both are non-null and not equal. Use
+// CheckModelsAgree() and the initializer_list constructor to enforce this
+// invariant in any class or friend method.
+class QuadraticExpression {
+ public:
+#ifndef MATH_OPT_USE_EXPRESSION_COUNTERS
+  QuadraticExpression() = default;
+#else   // MATH_OPT_USE_EXPRESSION_COUNTERS
+  QuadraticExpression();
+  QuadraticExpression(const QuadraticExpression& other);
+  QuadraticExpression(QuadraticExpression&& other);
+  QuadraticExpression& operator=(const QuadraticExpression& other);
+#endif  // MATH_OPT_USE_EXPRESSION_COUNTERS
+  // Users should prefer the default constructor and operator overloads to build
+  // expressions.
+  inline QuadraticExpression(
+      std::initializer_list<QuadraticTerm> quadratic_terms,
+      std::initializer_list<LinearTerm> linear_terms, double offset);
+  inline QuadraticExpression(double offset);              // NOLINT
+  inline QuadraticExpression(Variable variable);          // NOLINT
+  inline QuadraticExpression(const LinearTerm& term);     // NOLINT
+  inline QuadraticExpression(LinearExpression expr);      // NOLINT
+  inline QuadraticExpression(const QuadraticTerm& term);  // NOLINT
+
+  inline double offset() const;
+  inline const VariableMap<double>& linear_terms() const;
+  inline const QuadraticTermMap<double>& quadratic_terms() const;
+
+  inline const absl::flat_hash_map<VariableId, double>& raw_linear_terms()
+      const;
+  inline const absl::flat_hash_map<QuadraticProductId, double>&
+  raw_quadratic_terms() const;
+
+  inline QuadraticExpression& operator+=(double value);
+  inline QuadraticExpression& operator+=(Variable variable);
+  inline QuadraticExpression& operator+=(const LinearTerm& term);
+  inline QuadraticExpression& operator+=(const LinearExpression& expr);
+  inline QuadraticExpression& operator+=(const QuadraticTerm& term);
+  inline QuadraticExpression& operator+=(const QuadraticExpression& expr);
+  inline QuadraticExpression& operator-=(double value);
+  inline QuadraticExpression& operator-=(Variable variable);
+  inline QuadraticExpression& operator-=(const LinearTerm& term);
+  inline QuadraticExpression& operator-=(const LinearExpression& expr);
+  inline QuadraticExpression& operator-=(const QuadraticTerm& term);
+  inline QuadraticExpression& operator-=(const QuadraticExpression& expr);
+  inline QuadraticExpression& operator*=(double value);
+  inline QuadraticExpression& operator/=(double value);
+
+  // Compute the numeric value of this expression when variables are substituted
+  // by their values in variable_values.
+  //
+  // Will CHECK fail if the underlying model storage is different, or if a
+  // variable in linear_terms() or quadratic_terms() is missing from
+  // variables_values.
+  double Evaluate(const VariableMap<double>& variable_values) const;
+
+  // Compute the numeric value of this expression when variables are substituted
+  // by their values in variable_values, or zero if missing from the map.
+  //
+  // Will CHECK fail the underlying model storage is different.
+  double EvaluateWithDefaultZero(
+      const VariableMap<double>& variable_values) const;
+
+  inline const ModelStorage* storage() const;
+
+#ifdef MATH_OPT_USE_EXPRESSION_COUNTERS
+  static thread_local int num_calls_default_constructor_;
+  static thread_local int num_calls_copy_constructor_;
+  static thread_local int num_calls_move_constructor_;
+  static thread_local int num_calls_initializer_list_constructor_;
+  static thread_local int num_calls_linear_expression_constructor_;
+  // Reset all counters in the current thread to 0.
+  static void ResetCounters();
+#endif  // MATH_OPT_USE_EXPRESSION_COUNTERS
+
+ private:
+  friend QuadraticExpression operator-(QuadraticExpression expr);
+  friend std::ostream& operator<<(std::ostream& ostr,
+                                  const QuadraticExpression& expr);
+  inline void CheckModelsAgree();
+
+  QuadraticTermMap<double> quadratic_terms_;
+  VariableMap<double> linear_terms_;
+  double offset_ = 0.0;
+};
+
+// We have 6 types that we must consider arithmetic among:
+//   1. double (scalar value)
+//   2. Variable (affine value)
+//   3. LinearTerm (affine value)
+//   4. LinearExpression (affine value)
+//   5. QuadraticTerm (quadratic value)
+//   6. QuadraticExpression (quadratic value)
+// We care only about those methods that result in a QuadraticExpression. For
+// example, multiplying a linear value with a linear value, or adding a scalar
+// to a quadratic value. The single unary method is:
+inline QuadraticExpression operator-(QuadraticExpression expr);
+
+// The binary methods, listed in lexicographic order based on
+// (operator, lhs type #, rhs type #), with the type #s are listed above, are:
+inline QuadraticExpression operator+(double lhs, const QuadraticTerm& rhs);
+inline QuadraticExpression operator+(double lhs, QuadraticExpression rhs);
+inline QuadraticExpression operator+(Variable lhs, const QuadraticTerm& rhs);
+inline QuadraticExpression operator+(Variable lhs, QuadraticExpression rhs);
+inline QuadraticExpression operator+(const LinearTerm& lhs,
+                                     const QuadraticTerm& rhs);
+inline QuadraticExpression operator+(const LinearTerm& lhs,
+                                     QuadraticExpression rhs);
+inline QuadraticExpression operator+(LinearExpression lhs,
+                                     const QuadraticTerm& rhs);
+inline QuadraticExpression operator+(const LinearExpression& lhs,
+                                     QuadraticExpression rhs);
+inline QuadraticExpression operator+(const QuadraticTerm& lhs, double rhs);
+inline QuadraticExpression operator+(const QuadraticTerm& lhs, Variable rhs);
+inline QuadraticExpression operator+(const QuadraticTerm& lhs,
+                                     const LinearTerm& rhs);
+inline QuadraticExpression operator+(const QuadraticTerm& lhs,
+                                     LinearExpression rhs);
+inline QuadraticExpression operator+(const QuadraticTerm& lhs,
+                                     const QuadraticTerm& rhs);
+inline QuadraticExpression operator+(const QuadraticTerm& lhs,
+                                     QuadraticExpression rhs);
+inline QuadraticExpression operator+(QuadraticExpression lhs, double rhs);
+inline QuadraticExpression operator+(QuadraticExpression lhs, Variable rhs);
+inline QuadraticExpression operator+(QuadraticExpression lhs,
+                                     const LinearTerm& rhs);
+inline QuadraticExpression operator+(QuadraticExpression lhs,
+                                     const LinearExpression& rhs);
+inline QuadraticExpression operator+(QuadraticExpression lhs,
+                                     const QuadraticTerm& rhs);
+inline QuadraticExpression operator+(QuadraticExpression lhs,
+                                     const QuadraticExpression& rhs);
+
+inline QuadraticExpression operator-(double lhs, const QuadraticTerm& rhs);
+inline QuadraticExpression operator-(double lhs, QuadraticExpression rhs);
+inline QuadraticExpression operator-(Variable lhs, const QuadraticTerm& rhs);
+inline QuadraticExpression operator-(Variable lhs, QuadraticExpression rhs);
+inline QuadraticExpression operator-(const LinearTerm& lhs,
+                                     const QuadraticTerm& rhs);
+inline QuadraticExpression operator-(const LinearTerm& lhs,
+                                     QuadraticExpression rhs);
+inline QuadraticExpression operator-(LinearExpression lhs,
+                                     const QuadraticTerm& rhs);
+inline QuadraticExpression operator-(const LinearExpression& lhs,
+                                     QuadraticExpression rhs);
+inline QuadraticExpression operator-(const QuadraticTerm& lhs, double rhs);
+inline QuadraticExpression operator-(const QuadraticTerm& lhs, Variable rhs);
+inline QuadraticExpression operator-(const QuadraticTerm& lhs,
+                                     const LinearTerm& rhs);
+inline QuadraticExpression operator-(const QuadraticTerm& lhs,
+                                     LinearExpression rhs);
+inline QuadraticExpression operator-(const QuadraticTerm& lhs,
+                                     const QuadraticTerm& rhs);
+inline QuadraticExpression operator-(const QuadraticTerm& lhs,
+                                     QuadraticExpression rhs);
+inline QuadraticExpression operator-(QuadraticExpression lhs, double rhs);
+inline QuadraticExpression operator-(QuadraticExpression lhs, Variable rhs);
+inline QuadraticExpression operator-(QuadraticExpression lhs,
+                                     const LinearTerm& rhs);
+inline QuadraticExpression operator-(QuadraticExpression lhs,
+                                     const LinearExpression& rhs);
+inline QuadraticExpression operator-(QuadraticExpression lhs,
+                                     const QuadraticTerm& rhs);
+inline QuadraticExpression operator-(QuadraticExpression lhs,
+                                     const QuadraticExpression& rhs);
+
+inline QuadraticExpression operator*(double lhs, QuadraticExpression rhs);
+inline QuadraticExpression operator*(Variable lhs, const LinearExpression& rhs);
+inline QuadraticExpression operator*(LinearTerm lhs,
+                                     const LinearExpression& rhs);
+inline QuadraticExpression operator*(const LinearExpression& lhs, Variable rhs);
+inline QuadraticExpression operator*(const LinearExpression& lhs,
+                                     LinearTerm rhs);
+inline QuadraticExpression operator*(const LinearExpression& lhs,
+                                     const LinearExpression& rhs);
+inline QuadraticExpression operator*(QuadraticExpression lhs, double rhs);
+
+inline QuadraticExpression operator/(QuadraticExpression lhs, double rhs);
+
 ////////////////////////////////////////////////////////////////////////////////
-// Inline function implementations
+////////////////////////////////////////////////////////////////////////////////
+// Inline function implementations /////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////////////////
 // Variable
 ////////////////////////////////////////////////////////////////////////////////
 
-Variable::Variable(IndexedModel* const model, const VariableId id)
-    : model_(model), id_(id) {
-  DCHECK(model != nullptr);
+Variable::Variable(const ModelStorage* const storage, const VariableId id)
+    : storage_(storage), id_(id) {
+  DCHECK(storage != nullptr);
 }
 
 int64_t Variable::id() const { return id_.value(); }
 
 VariableId Variable::typed_id() const { return id_; }
 
-IndexedModel* Variable::model() const { return model_; }
+const ModelStorage* Variable::storage() const { return storage_; }
 
 double Variable::lower_bound() const {
-  return model_->variable_lower_bound(id_);
+  return storage_->variable_lower_bound(id_);
 }
-double Variable::upper_bound() const {
-  return model_->variable_upper_bound(id_);
-}
-bool Variable::is_integer() const { return model_->is_variable_integer(id_); }
-const std::string& Variable::name() const { return model_->variable_name(id_); }
 
-void Variable::set_lower_bound(const double lower_bound) const {
-  model_->set_variable_lower_bound(id_, lower_bound);
+double Variable::upper_bound() const {
+  return storage_->variable_upper_bound(id_);
 }
-void Variable::set_upper_bound(const double upper_bound) const {
-  model_->set_variable_upper_bound(id_, upper_bound);
+
+bool Variable::is_integer() const { return storage_->is_variable_integer(id_); }
+
+const std::string& Variable::name() const {
+  return storage_->variable_name(id_);
 }
-void Variable::set_is_integer(const bool is_integer) const {
-  model_->set_variable_is_integer(id_, is_integer);
-}
-void Variable::set_integer() const { set_is_integer(true); }
-void Variable::set_continuous() const { set_is_integer(false); }
 
 template <typename H>
 H AbslHashValue(H h, const Variable& variable) {
-  return H::combine(std::move(h), variable.id_.value(), variable.model_);
+  return H::combine(std::move(h), variable.id_.value(), variable.storage_);
 }
 
 std::ostream& operator<<(std::ostream& ostr, const Variable& variable) {
@@ -631,6 +914,10 @@ std::ostream& operator<<(std::ostream& ostr, const Variable& variable) {
   // the variable name contains invalid characters.
   ostr << variable.name();
   return ostr;
+}
+
+LinearExpression Variable::operator-() const {
+  return LinearExpression({LinearTerm(*this, -1.0)}, 0.0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -688,9 +975,9 @@ LinearTerm operator/(Variable variable, const double coefficient) {
 LinearExpression::LinearExpression(std::initializer_list<LinearTerm> terms,
                                    const double offset)
     : offset_(offset) {
-#ifdef USE_LINEAR_EXPRESSION_COUNTERS
+#ifdef MATH_OPT_USE_EXPRESSION_COUNTERS
   ++num_calls_initializer_list_constructor_;
-#endif  // USE_LINEAR_EXPRESSION_COUNTERS
+#endif  // MATH_OPT_USE_EXPRESSION_COUNTERS
   for (const auto& term : terms) {
     // The same variable may appear multiple times in the input list; we must
     // accumulate the coefficients.
@@ -962,7 +1249,9 @@ const VariableMap<double>& LinearExpression::terms() const { return terms_; }
 
 double LinearExpression::offset() const { return offset_; }
 
-IndexedModel* LinearExpression::model() const { return terms_.model(); }
+const ModelStorage* LinearExpression::storage() const {
+  return terms_.storage();
+}
 
 const absl::flat_hash_map<VariableId, double>& LinearExpression::raw_terms()
     const {
@@ -979,7 +1268,7 @@ VariablesEquality::VariablesEquality(Variable lhs, Variable rhs)
     : lhs(std::move(lhs)), rhs(std::move(rhs)) {}
 
 inline VariablesEquality::operator bool() const {
-  return lhs.typed_id() == rhs.typed_id() && lhs.model() == rhs.model();
+  return lhs.typed_id() == rhs.typed_id() && lhs.storage() == rhs.storage();
 }
 
 }  // namespace internal
@@ -1303,6 +1592,637 @@ BoundedLinearExpression operator==(const Variable lhs, const double rhs) {
 
 BoundedLinearExpression operator==(const double lhs, const Variable rhs) {
   return lhs == LinearTerm(rhs, 1.0);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// QuadraticTermKey
+////////////////////////////////////////////////////////////////////////////////
+
+QuadraticTermKey::QuadraticTermKey(const ModelStorage* storage,
+                                   const QuadraticProductId id)
+    : storage_(storage), variable_ids_(id) {
+  if (variable_ids_.first > variable_ids_.second) {
+    using std::swap;  // go/using-std-swap
+    swap(variable_ids_.first, variable_ids_.second);
+  }
+}
+
+QuadraticTermKey::QuadraticTermKey(const Variable first_variable,
+                                   const Variable second_variable)
+    : QuadraticTermKey(first_variable.storage(), {first_variable.typed_id(),
+                                                  second_variable.typed_id()}) {
+  CHECK_EQ(first_variable.storage(), second_variable.storage())
+      << internal::kObjectsFromOtherModelStorage;
+}
+
+QuadraticProductId QuadraticTermKey::typed_id() const { return variable_ids_; }
+
+const ModelStorage* QuadraticTermKey::storage() const { return storage_; }
+
+template <typename H>
+H AbslHashValue(H h, const QuadraticTermKey& key) {
+  return H::combine(std::move(h), key.typed_id().first.value(),
+                    key.typed_id().second.value(), key.storage());
+}
+
+bool operator==(const QuadraticTermKey lhs, const QuadraticTermKey rhs) {
+  return lhs.storage() == rhs.storage() && lhs.typed_id() == rhs.typed_id();
+}
+
+bool operator!=(const QuadraticTermKey lhs, const QuadraticTermKey rhs) {
+  return !(lhs == rhs);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// QuadraticTerm (no arithmetic)
+////////////////////////////////////////////////////////////////////////////////
+
+QuadraticTerm::QuadraticTerm(Variable first_variable, Variable second_variable,
+                             const double coefficient)
+    : first_variable_(std::move(first_variable)),
+      second_variable_(std::move(second_variable)),
+      coefficient_(coefficient) {
+  CHECK_EQ(first_variable_.storage(), second_variable_.storage())
+      << internal::kObjectsFromOtherModelStorage;
+}
+
+double QuadraticTerm::coefficient() const { return coefficient_; }
+Variable QuadraticTerm::first_variable() const { return first_variable_; }
+Variable QuadraticTerm::second_variable() const { return second_variable_; }
+
+QuadraticTermKey QuadraticTerm::GetKey() const {
+  return QuadraticTermKey(
+      first_variable_.storage(),
+      std::make_pair(first_variable_.typed_id(), second_variable_.typed_id()));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// QuadraticExpression (no arithmetic)
+////////////////////////////////////////////////////////////////////////////////
+
+QuadraticExpression::QuadraticExpression(
+    const std::initializer_list<QuadraticTerm> quadratic_terms,
+    const std::initializer_list<LinearTerm> linear_terms, const double offset)
+    : offset_(offset) {
+#ifdef MATH_OPT_USE_EXPRESSION_COUNTERS
+  ++num_calls_initializer_list_constructor_;
+#endif  // MATH_OPT_USE_EXPRESSION_COUNTERS
+  for (const LinearTerm& term : linear_terms) {
+    linear_terms_[term.variable] += term.coefficient;
+  }
+  for (const QuadraticTerm& term : quadratic_terms) {
+    quadratic_terms_[term.GetKey()] += term.coefficient();
+  }
+  CheckModelsAgree();
+}
+
+QuadraticExpression::QuadraticExpression(const double offset)
+    : QuadraticExpression({}, {}, offset) {}
+
+QuadraticExpression::QuadraticExpression(const Variable variable)
+    : QuadraticExpression({}, {LinearTerm(variable, 1.0)}, 0.0) {}
+
+QuadraticExpression::QuadraticExpression(const LinearTerm& term)
+    : QuadraticExpression({}, {term}, 0.0) {}
+
+QuadraticExpression::QuadraticExpression(LinearExpression expr)
+    : linear_terms_(std::move(expr.terms_)),
+      offset_(std::exchange(expr.offset_, 0.0)) {
+#ifdef MATH_OPT_USE_EXPRESSION_COUNTERS
+  ++num_calls_linear_expression_constructor_;
+#endif  // MATH_OPT_USE_EXPRESSION_COUNTERS
+}
+
+QuadraticExpression::QuadraticExpression(const QuadraticTerm& term)
+    : QuadraticExpression({term}, {}, 0.0) {}
+
+void QuadraticExpression::CheckModelsAgree() {
+  const ModelStorage* const quadratic_model = quadratic_terms_.storage();
+  const ModelStorage* const linear_model = linear_terms_.storage();
+  if ((linear_model != nullptr) && (quadratic_model != nullptr) &&
+      (quadratic_model != linear_model)) {
+    LOG(FATAL) << internal::kObjectsFromOtherModelStorage;
+  }
+}
+
+const ModelStorage* QuadraticExpression::storage() const {
+  if (quadratic_terms().storage()) {
+    return quadratic_terms().storage();
+  } else {
+    return linear_terms().storage();
+  }
+}
+
+double QuadraticExpression::offset() const { return offset_; }
+
+const VariableMap<double>& QuadraticExpression::linear_terms() const {
+  return linear_terms_;
+}
+
+const QuadraticTermMap<double>& QuadraticExpression::quadratic_terms() const {
+  return quadratic_terms_;
+}
+
+const absl::flat_hash_map<VariableId, double>&
+QuadraticExpression::raw_linear_terms() const {
+  return linear_terms_.raw_map();
+}
+
+const absl::flat_hash_map<QuadraticProductId, double>&
+QuadraticExpression::raw_quadratic_terms() const {
+  return quadratic_terms_.raw_map();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Arithmetic operators (non-member).
+//
+// These are NOT required to explicitly CHECK that the underlying model storages
+// agree between linear_terms_ and quadratic_terms_ unless they are a friend of
+// QuadraticExpression. As much as possible, defer to the assignment operators
+// and the initializer list constructor for QuadraticExpression.
+////////////////////////////////////////////////////////////////////////////////
+
+// ----------------------------- Addition (+) ----------------------------------
+
+QuadraticExpression operator+(const double lhs, const QuadraticTerm& rhs) {
+  return QuadraticExpression({rhs}, {}, lhs);
+}
+
+QuadraticExpression operator+(const double lhs, QuadraticExpression rhs) {
+  rhs += lhs;
+  return rhs;
+}
+
+QuadraticExpression operator+(const Variable lhs, const QuadraticTerm& rhs) {
+  return QuadraticExpression({rhs}, {LinearTerm(lhs, 1.0)}, 0.0);
+}
+
+QuadraticExpression operator+(const Variable lhs, QuadraticExpression rhs) {
+  rhs += LinearTerm(lhs, 1.0);
+  return rhs;
+}
+
+QuadraticExpression operator+(const LinearTerm& lhs, const QuadraticTerm& rhs) {
+  return QuadraticExpression({rhs}, {lhs}, 0.0);
+}
+
+QuadraticExpression operator+(const LinearTerm& lhs, QuadraticExpression rhs) {
+  rhs += lhs;
+  return rhs;
+}
+
+QuadraticExpression operator+(LinearExpression lhs, const QuadraticTerm& rhs) {
+  QuadraticExpression expr(std::move(lhs));
+  expr += rhs;
+  return expr;
+}
+
+QuadraticExpression operator+(const LinearExpression& lhs,
+                              QuadraticExpression rhs) {
+  rhs += lhs;
+  return rhs;
+}
+
+QuadraticExpression operator+(const QuadraticTerm& lhs, const double rhs) {
+  return QuadraticExpression({lhs}, {}, rhs);
+}
+
+QuadraticExpression operator+(const QuadraticTerm& lhs, const Variable rhs) {
+  return QuadraticExpression({lhs}, {LinearTerm(rhs, 1.0)}, 0.0);
+}
+
+QuadraticExpression operator+(const QuadraticTerm& lhs, const LinearTerm& rhs) {
+  return QuadraticExpression({lhs}, {rhs}, 0.0);
+}
+
+QuadraticExpression operator+(const QuadraticTerm& lhs, LinearExpression rhs) {
+  QuadraticExpression expr(std::move(rhs));
+  expr += lhs;
+  return expr;
+}
+
+QuadraticExpression operator+(const QuadraticTerm& lhs,
+                              const QuadraticTerm& rhs) {
+  return QuadraticExpression({lhs, rhs}, {}, 0.0);
+}
+
+QuadraticExpression operator+(const QuadraticTerm& lhs,
+                              QuadraticExpression rhs) {
+  rhs += lhs;
+  return rhs;
+}
+
+QuadraticExpression operator+(QuadraticExpression lhs, const double rhs) {
+  lhs += rhs;
+  return lhs;
+}
+
+QuadraticExpression operator+(QuadraticExpression lhs, const Variable rhs) {
+  lhs += LinearTerm(rhs, 1.0);
+  return lhs;
+}
+
+QuadraticExpression operator+(QuadraticExpression lhs, const LinearTerm& rhs) {
+  lhs += rhs;
+  return lhs;
+}
+
+QuadraticExpression operator+(QuadraticExpression lhs,
+                              const LinearExpression& rhs) {
+  lhs += rhs;
+  return lhs;
+}
+
+QuadraticExpression operator+(QuadraticExpression lhs,
+                              const QuadraticTerm& rhs) {
+  lhs += rhs;
+  return lhs;
+}
+
+QuadraticExpression operator+(QuadraticExpression lhs,
+                              const QuadraticExpression& rhs) {
+  lhs += rhs;
+  return lhs;
+}
+
+// --------------------------- Subtraction (-) ---------------------------------
+
+// NOTE: A friend of QuadraticTerm, but does not touch variables
+QuadraticTerm operator-(QuadraticTerm term) {
+  term.coefficient_ *= -1.0;
+  return term;
+}
+
+// NOTE: A friend of QuadraticExpression, but does not touch variables
+QuadraticExpression operator-(QuadraticExpression expr) {
+  expr.offset_ = -expr.offset_;
+  for (auto term : expr.linear_terms_) {
+    term.second = -term.second;
+  }
+  for (auto term : expr.quadratic_terms_) {
+    term.second = -term.second;
+  }
+  return expr;
+}
+
+QuadraticExpression operator-(const double lhs, const QuadraticTerm& rhs) {
+  return QuadraticExpression({-rhs}, {}, lhs);
+}
+
+QuadraticExpression operator-(const double lhs, QuadraticExpression rhs) {
+  auto expr = -std::move(rhs);
+  expr += lhs;
+  return expr;
+}
+
+QuadraticExpression operator-(const Variable lhs, const QuadraticTerm& rhs) {
+  return QuadraticExpression({-rhs}, {LinearTerm(lhs, 1.0)}, 0.0);
+}
+
+QuadraticExpression operator-(const Variable lhs, QuadraticExpression rhs) {
+  return LinearTerm(lhs, 1.0) - std::move(rhs);
+}
+
+QuadraticExpression operator-(const LinearTerm& lhs, const QuadraticTerm& rhs) {
+  return QuadraticExpression({-rhs}, {lhs}, 0.0);
+}
+
+QuadraticExpression operator-(const LinearTerm& lhs, QuadraticExpression rhs) {
+  auto expr = -std::move(rhs);
+  expr += lhs;
+  return expr;
+}
+
+QuadraticExpression operator-(LinearExpression lhs, const QuadraticTerm& rhs) {
+  QuadraticExpression expr(std::move(lhs));
+  expr -= rhs;
+  return expr;
+}
+
+QuadraticExpression operator-(const LinearExpression& lhs,
+                              QuadraticExpression rhs) {
+  auto expr = -std::move(rhs);
+  expr += lhs;
+  return expr;
+}
+
+QuadraticExpression operator-(const QuadraticTerm& lhs, const double rhs) {
+  return QuadraticExpression({lhs}, {}, -rhs);
+}
+
+QuadraticExpression operator-(const QuadraticTerm& lhs, const Variable rhs) {
+  return QuadraticExpression({lhs}, {LinearTerm(rhs, -1.0)}, 0.0);
+}
+
+QuadraticExpression operator-(const QuadraticTerm& lhs, const LinearTerm& rhs) {
+  return QuadraticExpression({lhs}, {-rhs}, 0.0);
+}
+
+QuadraticExpression operator-(const QuadraticTerm& lhs, LinearExpression rhs) {
+  QuadraticExpression expr(-std::move(rhs));
+  expr += lhs;
+  return expr;
+}
+
+QuadraticExpression operator-(const QuadraticTerm& lhs,
+                              const QuadraticTerm& rhs) {
+  return QuadraticExpression({lhs, -rhs}, {}, 0.0);
+}
+
+QuadraticExpression operator-(const QuadraticTerm& lhs,
+                              QuadraticExpression rhs) {
+  rhs *= -1.0;
+  rhs += lhs;
+  return rhs;
+}
+
+QuadraticExpression operator-(QuadraticExpression lhs, const double rhs) {
+  lhs -= rhs;
+  return lhs;
+}
+
+// NOTE: Out-of-order for compilation purposes
+QuadraticExpression operator-(QuadraticExpression lhs, const LinearTerm& rhs) {
+  lhs -= rhs;
+  return lhs;
+}
+
+QuadraticExpression operator-(QuadraticExpression lhs, const Variable rhs) {
+  lhs -= LinearTerm(rhs, 1.0);
+  return lhs;
+}
+
+// NOTE: operator-(QuadraticExpression, const LinearTerm) appears above
+
+QuadraticExpression operator-(QuadraticExpression lhs,
+                              const LinearExpression& rhs) {
+  lhs -= rhs;
+  return lhs;
+}
+
+QuadraticExpression operator-(QuadraticExpression lhs,
+                              const QuadraticTerm& rhs) {
+  lhs -= rhs;
+  return lhs;
+}
+
+QuadraticExpression operator-(QuadraticExpression lhs,
+                              const QuadraticExpression& rhs) {
+  lhs -= rhs;
+  return lhs;
+}
+
+// ---------------------------- Multiplication (*) -----------------------------
+
+// NOTE: A friend of QuadraticTerm, but does not touch variables
+QuadraticTerm operator*(const double lhs, QuadraticTerm rhs) {
+  rhs.coefficient_ *= lhs;
+  return rhs;
+}
+
+QuadraticExpression operator*(const double lhs, QuadraticExpression rhs) {
+  rhs *= lhs;
+  return rhs;
+}
+
+QuadraticTerm operator*(Variable lhs, Variable rhs) {
+  return QuadraticTerm(std::move(lhs), std::move(rhs), 1.0);
+}
+
+QuadraticTerm operator*(Variable lhs, LinearTerm rhs) {
+  return QuadraticTerm(std::move(lhs), std::move(rhs.variable),
+                       rhs.coefficient);
+}
+
+QuadraticExpression operator*(Variable lhs, const LinearExpression& rhs) {
+  QuadraticExpression expr;
+  for (const auto& [var, coeff] : rhs.terms()) {
+    expr += QuadraticTerm(lhs, var, coeff);
+  }
+  if (rhs.offset() != 0) {
+    expr += LinearTerm(std::move(lhs), rhs.offset());
+  }
+  return expr;
+}
+
+QuadraticTerm operator*(LinearTerm lhs, Variable rhs) {
+  return QuadraticTerm(std::move(lhs.variable), std::move(rhs),
+                       lhs.coefficient);
+}
+
+QuadraticTerm operator*(LinearTerm lhs, LinearTerm rhs) {
+  return QuadraticTerm(std::move(lhs.variable), std::move(rhs.variable),
+                       lhs.coefficient * rhs.coefficient);
+}
+
+QuadraticExpression operator*(LinearTerm lhs, const LinearExpression& rhs) {
+  QuadraticExpression expr;
+  for (const auto& [var, coeff] : rhs.terms()) {
+    expr += QuadraticTerm(lhs.variable, var, lhs.coefficient * coeff);
+  }
+  if (rhs.offset() != 0) {
+    expr += LinearTerm(std::move(lhs.variable), lhs.coefficient * rhs.offset());
+  }
+  return expr;
+}
+
+QuadraticExpression operator*(const LinearExpression& lhs, Variable rhs) {
+  QuadraticExpression expr;
+  for (const auto& [var, coeff] : lhs.terms()) {
+    expr += QuadraticTerm(var, rhs, coeff);
+  }
+  if (lhs.offset() != 0) {
+    expr += LinearTerm(std::move(rhs), lhs.offset());
+  }
+  return expr;
+}
+
+QuadraticExpression operator*(const LinearExpression& lhs, LinearTerm rhs) {
+  QuadraticExpression expr;
+  for (const auto& [var, coeff] : lhs.terms()) {
+    expr += QuadraticTerm(var, rhs.variable, coeff * rhs.coefficient);
+  }
+  if (lhs.offset() != 0) {
+    expr += LinearTerm(std::move(rhs.variable), lhs.offset() * rhs.coefficient);
+  }
+  return expr;
+}
+
+QuadraticExpression operator*(const LinearExpression& lhs,
+                              const LinearExpression& rhs) {
+  QuadraticExpression expr = lhs.offset() * rhs.offset();
+  if (rhs.offset() != 0) {
+    for (const auto& [var, coeff] : lhs.terms()) {
+      expr += LinearTerm(var, coeff * rhs.offset());
+    }
+  }
+  if (lhs.offset() != 0) {
+    for (const auto& [var, coeff] : rhs.terms()) {
+      expr += LinearTerm(var, lhs.offset() * coeff);
+    }
+  }
+  for (const auto& [lhs_var, lhs_coeff] : lhs.terms()) {
+    for (const auto& [rhs_var, rhs_coeff] : rhs.terms()) {
+      expr += QuadraticTerm(lhs_var, rhs_var, lhs_coeff * rhs_coeff);
+    }
+  }
+  return expr;
+}
+
+// NOTE: A friend of QuadraticTerm, but does not touch variables
+QuadraticTerm operator*(QuadraticTerm lhs, const double rhs) {
+  lhs.coefficient_ *= rhs;
+  return lhs;
+}
+
+QuadraticExpression operator*(QuadraticExpression lhs, const double rhs) {
+  lhs *= rhs;
+  return lhs;
+}
+
+// ------------------------------- Division (/) --------------------------------
+
+// NOTE: A friend of QuadraticTerm, but does not touch variables
+QuadraticTerm operator/(QuadraticTerm lhs, const double rhs) {
+  lhs.coefficient_ /= rhs;
+  return lhs;
+}
+
+QuadraticExpression operator/(QuadraticExpression lhs, const double rhs) {
+  lhs /= rhs;
+  return lhs;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// In-place arithmetic operators.
+//
+// These must guarantee that the underlying model storages for linear_terms_ and
+// quadratic_terms_ agree upon exit of the function, using CheckModelsAgree(),
+// the list initializer constructor for QuadraticExpression, or similar logic.
+////////////////////////////////////////////////////////////////////////////////
+
+QuadraticExpression& QuadraticExpression::operator+=(const double value) {
+  offset_ += value;
+  // NOTE: Not touching terms, no need to check models
+  return *this;
+}
+
+QuadraticExpression& QuadraticExpression::operator+=(const Variable variable) {
+  linear_terms_[variable] += 1;
+  CheckModelsAgree();
+  return *this;
+}
+
+QuadraticExpression& QuadraticExpression::operator+=(const LinearTerm& term) {
+  linear_terms_[term.variable] += term.coefficient;
+  CheckModelsAgree();
+  return *this;
+}
+
+QuadraticExpression& QuadraticExpression::operator+=(
+    const LinearExpression& expr) {
+  offset_ += expr.offset();
+  linear_terms_.Add(expr.terms());
+  CheckModelsAgree();
+  return *this;
+}
+
+QuadraticExpression& QuadraticExpression::operator+=(
+    const QuadraticTerm& term) {
+  quadratic_terms_[term.GetKey()] += term.coefficient();
+  CheckModelsAgree();
+  return *this;
+}
+
+QuadraticExpression& QuadraticExpression::operator+=(
+    const QuadraticExpression& expr) {
+  offset_ += expr.offset();
+  linear_terms_.Add(expr.linear_terms());
+  quadratic_terms_.Add(expr.quadratic_terms());
+  CheckModelsAgree();
+  return *this;
+}
+
+QuadraticExpression& QuadraticExpression::operator-=(const double value) {
+  offset_ -= value;
+  // NOTE: Not touching terms, no need to check models
+  return *this;
+}
+
+QuadraticExpression& QuadraticExpression::operator-=(const Variable variable) {
+  linear_terms_[variable] -= 1;
+  CheckModelsAgree();
+  return *this;
+}
+
+QuadraticExpression& QuadraticExpression::operator-=(const LinearTerm& term) {
+  linear_terms_[term.variable] -= term.coefficient;
+  CheckModelsAgree();
+  return *this;
+}
+
+QuadraticExpression& QuadraticExpression::operator-=(
+    const LinearExpression& expr) {
+  offset_ -= expr.offset();
+  linear_terms_.Subtract(expr.terms());
+  CheckModelsAgree();
+  return *this;
+}
+
+QuadraticExpression& QuadraticExpression::operator-=(
+    const QuadraticTerm& term) {
+  quadratic_terms_[term.GetKey()] -= term.coefficient();
+  CheckModelsAgree();
+  return *this;
+}
+
+QuadraticExpression& QuadraticExpression::operator-=(
+    const QuadraticExpression& expr) {
+  offset_ -= expr.offset();
+  linear_terms_.Subtract(expr.linear_terms());
+  quadratic_terms_.Subtract(expr.quadratic_terms());
+  CheckModelsAgree();
+  return *this;
+}
+
+QuadraticTerm& QuadraticTerm::operator*=(const double value) {
+  coefficient_ *= value;
+  // NOTE: Not touching variables in term, just modifying coefficient, so no
+  // need to check that models agree.
+  return *this;
+}
+
+QuadraticExpression& QuadraticExpression::operator*=(const double value) {
+  offset_ *= value;
+  for (auto term : linear_terms_) {
+    term.second *= value;
+  }
+  for (auto term : quadratic_terms_) {
+    term.second *= value;
+  }
+  // NOTE: Not adding/removing/altering variables in expression, just modifying
+  // coefficients, so no need to check that models agree.
+  return *this;
+}
+
+QuadraticTerm& QuadraticTerm::operator/=(const double value) {
+  coefficient_ /= value;
+  // NOTE: Not touching variables in term, just modifying coefficient, so no
+  // need to check that models agree.
+  return *this;
+}
+
+QuadraticExpression& QuadraticExpression::operator/=(const double value) {
+  offset_ /= value;
+  for (auto term : linear_terms_) {
+    term.second /= value;
+  }
+  for (auto term : quadratic_terms_) {
+    term.second /= value;
+  }
+  // NOTE: Not adding/removing/altering variables in expression, just modifying
+  // coefficients, so no need to check that models agree.
+  return *this;
 }
 
 }  // namespace math_opt

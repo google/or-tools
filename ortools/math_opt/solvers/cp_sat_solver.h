@@ -22,8 +22,10 @@
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/types/span.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/math_opt/callback.pb.h"
+#include "ortools/math_opt/core/solve_interrupter.h"
 #include "ortools/math_opt/core/solver_interface.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_parameters.pb.h"
@@ -38,13 +40,14 @@ namespace math_opt {
 class CpSatSolver : public SolverInterface {
  public:
   static absl::StatusOr<std::unique_ptr<SolverInterface>> New(
-      const ModelProto& model, const SolverInitializerProto& initializer);
+      const ModelProto& model, const InitArgs& init_args);
 
   absl::StatusOr<SolveResultProto> Solve(
       const SolveParametersProto& parameters,
       const ModelSolveParametersProto& model_parameters,
-      const CallbackRegistrationProto& callback_registration,
-      Callback cb) override;
+      MessageCallback message_cb,
+      const CallbackRegistrationProto& callback_registration, Callback cb,
+      SolveInterrupter* interrupter) override;
   absl::Status Update(const ModelUpdateProto& model_update) override;
   bool CanUpdate(const ModelUpdateProto& model_update) override;
 
@@ -52,11 +55,8 @@ class CpSatSolver : public SolverInterface {
   CpSatSolver(MPModelProto cp_sat_model, std::vector<int64_t> variable_ids);
 
   // Extract the solution from CP-SAT's response.
-  //
-  // This function assumes it exists, i.e. that the input `response.status` is
-  // feasible or optimal.
-  PrimalSolutionProto ExtractSolution(
-      const MPSolutionResponse& response,
+  SparseDoubleVectorProto ExtractSolution(
+      absl::Span<const double> cp_sat_variable_values,
       const ModelSolveParametersProto& model_parameters) const;
 
   const MPModelProto cp_sat_model_;

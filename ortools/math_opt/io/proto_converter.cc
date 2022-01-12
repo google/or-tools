@@ -44,9 +44,6 @@ absl::Status IsSupported(const MPModelProto& model) {
   if (model.general_constraint_size() > 0) {
     return absl::InvalidArgumentError("General constraints are not supported");
   }
-  if (model.quadratic_objective().coefficient_size() > 0) {
-    return absl::InvalidArgumentError("Quadratic objectives not supported");
-  }
   if (model.solution_hint().var_index_size() > 0) {
     return absl::InvalidArgumentError("Solution Hint not supported");
   }
@@ -85,7 +82,7 @@ MPModelProtoToMathOptModel(const ::operations_research::MPModelProto& model) {
   output.set_name(model.name());
 
   math_opt::VariablesProto* const vars = output.mutable_variables();
-  int objective_non_zeros = 0;
+  int linear_objective_non_zeros = 0;
   const int num_vars = model.variable_size();
   const bool vars_have_name = AnyVarNamed(model);
   vars->mutable_lower_bounds()->Reserve(num_vars);
@@ -97,7 +94,7 @@ MPModelProtoToMathOptModel(const ::operations_research::MPModelProto& model) {
   for (int i = 0; i < model.variable_size(); ++i) {
     const MPVariableProto& var = model.variable(i);
     if (var.objective_coefficient() != 0.0) {
-      ++objective_non_zeros;
+      ++linear_objective_non_zeros;
     }
     vars->add_ids(i);
     vars->add_lower_bounds(var.lower_bound());
@@ -109,16 +106,49 @@ MPModelProtoToMathOptModel(const ::operations_research::MPModelProto& model) {
   }
 
   math_opt::ObjectiveProto* const objective = output.mutable_objective();
-  if (objective_non_zeros > 0) {
+  if (linear_objective_non_zeros > 0) {
     objective->mutable_linear_coefficients()->mutable_ids()->Reserve(
-        objective_non_zeros);
+        linear_objective_non_zeros);
     objective->mutable_linear_coefficients()->mutable_values()->Reserve(
-        objective_non_zeros);
+        linear_objective_non_zeros);
     for (int j = 0; j < num_vars; ++j) {
       const double value = model.variable(j).objective_coefficient();
       if (value == 0.0) continue;
       objective->mutable_linear_coefficients()->add_ids(j);
       objective->mutable_linear_coefficients()->add_values(value);
+    }
+  }
+  const MPQuadraticObjective& origin_qp_terms = model.quadratic_objective();
+  const int num_qp_terms = origin_qp_terms.coefficient().size();
+  if (num_qp_terms > 0) {
+    // ObjectiveProto requires three things that may not be satisfied by
+    // MPQuadraticObjective:
+    //   1. No duplicate entries
+    //   2. No lower triangular entries
+    //   3. Lexicographic sortedness of (row_id, column_id) keys
+    std::vector<std::pair<std::pair<int, int>, double>> qp_terms_in_order;
+    for (int k = 0; k < num_qp_terms; ++k) {
+      int first_index = origin_qp_terms.qvar1_index(k);
+      int second_index = origin_qp_terms.qvar2_index(k);
+      if (first_index > second_index) {
+        std::swap(first_index, second_index);
+      }
+      qp_terms_in_order.emplace_back(std::make_pair(first_index, second_index),
+                                     origin_qp_terms.coefficient(k));
+    }
+    std::sort(qp_terms_in_order.begin(), qp_terms_in_order.end());
+    SparseDoubleMatrixProto& destination_qp_terms =
+        *objective->mutable_quadratic_coefficients();
+    std::pair<int, int> previous = {-1, -1};
+    for (const auto& [indices, coeff] : qp_terms_in_order) {
+      if (indices == previous) {
+        *destination_qp_terms.mutable_coefficients()->rbegin() += coeff;
+      } else {
+        destination_qp_terms.add_row_ids(indices.first);
+        destination_qp_terms.add_column_ids(indices.second);
+        destination_qp_terms.add_coefficients(coeff);
+        previous = indices;
+      }
     }
   }
   objective->set_maximize(model.maximize());
@@ -164,8 +194,8 @@ MPModelProtoToMathOptModel(const ::operations_research::MPModelProto& model) {
     }
     std::sort(terms_in_order.begin(), terms_in_order.end());
     for (const auto& term : terms_in_order) {
-      matrix->add_column_ids(i);
-      matrix->add_row_ids(term.first);
+      matrix->add_row_ids(i);
+      matrix->add_column_ids(term.first);
       matrix->add_coefficients(term.second);
     }
     terms_in_order.clear();
@@ -220,6 +250,17 @@ absl::StatusOr<::operations_research::MPModelProto> MathOptModelToMPModelProto(
     const int var_position = variable_id_to_mp_position[var];
     MPVariableProto* const variable = output.mutable_variable(var_position);
     variable->set_objective_coefficient(coef);
+  }
+  const SparseDoubleMatrixProto& origin_qp_terms =
+      model.objective().quadratic_coefficients();
+  MPQuadraticObjective& destination_qp_terms =
+      *output.mutable_quadratic_objective();
+  for (int k = 0; k < origin_qp_terms.coefficients().size(); ++k) {
+    destination_qp_terms.add_qvar1_index(
+        variable_id_to_mp_position[origin_qp_terms.row_ids(k)]);
+    destination_qp_terms.add_qvar2_index(
+        variable_id_to_mp_position[origin_qp_terms.column_ids(k)]);
+    destination_qp_terms.add_coefficient(origin_qp_terms.coefficients(k));
   }
 
   // TODO(user): use the constraint iterator from scip_solver.cc here.

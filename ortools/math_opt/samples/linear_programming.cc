@@ -30,13 +30,11 @@
 namespace {
 using ::operations_research::math_opt::LinearConstraint;
 using ::operations_research::math_opt::LinearExpression;
-using ::operations_research::math_opt::MathOpt;
-using ::operations_research::math_opt::Result;
-using ::operations_research::math_opt::SolveParametersProto;
-using ::operations_research::math_opt::SOLVER_TYPE_GLOP;
-using ::operations_research::math_opt::SolveResultProto;
-using ::operations_research::math_opt::SolveStatsProto;
+using ::operations_research::math_opt::Model;
+using ::operations_research::math_opt::SolveResult;
+using ::operations_research::math_opt::SolverType;
 using ::operations_research::math_opt::Sum;
+using ::operations_research::math_opt::TerminationReason;
 using ::operations_research::math_opt::Variable;
 
 constexpr double kInf = std::numeric_limits<double>::infinity();
@@ -51,40 +49,39 @@ constexpr double kInf = std::numeric_limits<double>::infinity();
 //            x2 in [0, infinity)
 //
 void SolveSimpleLp() {
-  MathOpt optimizer(SOLVER_TYPE_GLOP, "Linear programming example");
+  Model model("Linear programming example");
 
   // Variables
   std::vector<Variable> x;
   for (int j = 0; j < 3; j++) {
-    x.push_back(
-        optimizer.AddContinuousVariable(0.0, kInf, absl::StrCat("x", j)));
+    x.push_back(model.AddContinuousVariable(0.0, kInf, absl::StrCat("x", j)));
   }
 
   // Constraints
   std::vector<LinearConstraint> constraints;
-  constraints.push_back(optimizer.AddLinearConstraint(
-      10 * x[0] + 4 * x[1] + 5 * x[2] <= 600, "c1"));
-  constraints.push_back(optimizer.AddLinearConstraint(
-      2 * x[0] + 2 * x[1] + 6 * x[2] <= 300, "c2"));
+  constraints.push_back(
+      model.AddLinearConstraint(10 * x[0] + 4 * x[1] + 5 * x[2] <= 600, "c1"));
+  constraints.push_back(
+      model.AddLinearConstraint(2 * x[0] + 2 * x[1] + 6 * x[2] <= 300, "c2"));
   // sum(x[i]) <= 100
-  constraints.push_back(optimizer.AddLinearConstraint(Sum(x) <= 100, "c3"));
+  constraints.push_back(model.AddLinearConstraint(Sum(x) <= 100, "c3"));
 
   // Objective
-  optimizer.objective().Maximize(10 * x[0] + 6 * x[1] + 4 * x[2]);
+  model.Maximize(10 * x[0] + 6 * x[1] + 4 * x[2]);
 
-  std::cout << "Num variables: " << optimizer.num_variables() << std::endl;
-  std::cout << "Num constraints: " << optimizer.num_linear_constraints()
+  std::cout << "Num variables: " << model.num_variables() << std::endl;
+  std::cout << "Num constraints: " << model.num_linear_constraints()
             << std::endl;
 
-  const Result result = optimizer.Solve(SolveParametersProto()).value();
+  const SolveResult result = Solve(model, SolverType::kGlop).value();
 
   // Check for warnings.
   for (const auto& warning : result.warnings) {
     LOG(ERROR) << "Solver warning: " << warning << std::endl;
   }
   // Check that the problem has an optimal solution.
-  QCHECK_EQ(result.termination_reason, SolveResultProto::OPTIMAL)
-      << "Failed to find an optimal solution: " << result.termination_detail;
+  QCHECK_EQ(result.termination.reason, TerminationReason::kOptimal)
+      << "Failed to find an optimal solution: " << result.termination;
 
   std::cout << "Problem solved in " << result.solve_time() << std::endl;
   std::cout << "Objective value: " << result.objective_value() << std::endl;
@@ -98,11 +95,8 @@ void SolveSimpleLp() {
   std::cout << "Reduced costs: ["
             << absl::StrJoin(result.reduced_costs().Values(x), ", ") << "]"
             << std::endl;
-  const SolveStatsProto& stat = result.solve_stats;
-  std::cout << "Simplex iterations: " << stat.simplex_iterations() << std::endl;
-  std::cout << "Barrier iterations: " << stat.barrier_iterations() << std::endl;
 
-  // TODO(user): add basis statuses when they are included in Result
+  // TODO(user): add basis statuses when they are included in SolveResult
 }
 }  // namespace
 
