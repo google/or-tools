@@ -85,7 +85,19 @@ public class CpModel
 
     public Constraint AddLinearConstraint(LinearExpr linear_expr, long lb, long ub)
     {
-        return AddLinearExpressionInDomain(linear_expr, new Domain(lb, ub));
+        Dictionary<IntVar, long> dict = new Dictionary<IntVar, long>();
+        long constant = LinearExpr.GetVarValueMap(linear_expr, 1L, dict);
+        Constraint ct = new Constraint(model_);
+        LinearConstraintProto linear = new LinearConstraintProto();
+        foreach (KeyValuePair<IntVar, long> term in dict)
+        {
+            linear.Vars.Add(term.Key.Index);
+            linear.Coeffs.Add(term.Value);
+        }
+        linear.Domain.Add(lb is Int64.MinValue ? lb : lb - constant);
+        linear.Domain.Add(ub is Int64.MaxValue ? ub : ub - constant);
+        ct.Proto.Linear = linear;
+        return ct;
     }
 
     public Constraint AddLinearExpressionInDomain(LinearExpr linear_expr, Domain domain)
@@ -114,27 +126,43 @@ public class CpModel
         return ct;
     }
 
+    public Constraint AddLinearExpressionNotEqualCst(LinearExpr linear_expr, long value)
+    {
+        Dictionary<IntVar, long> dict = new Dictionary<IntVar, long>();
+        long constant = LinearExpr.GetVarValueMap(linear_expr, 1L, dict);
+        Constraint ct = new Constraint(model_);
+        LinearConstraintProto linear = new LinearConstraintProto();
+        foreach (KeyValuePair<IntVar, long> term in dict)
+        {
+            linear.Vars.Add(term.Key.Index);
+            linear.Coeffs.Add(term.Value);
+        }
+        linear.Domain.Add(Int64.MinValue);
+        linear.Domain.Add(value - constant - 1);
+        linear.Domain.Add(value - constant + 1);
+        linear.Domain.Add(Int64.MaxValue);
+        ct.Proto.Linear = linear;
+        return ct;
+    }
+
     public Constraint Add(BoundedLinearExpression lin)
     {
         switch (lin.CtType)
         {
         case BoundedLinearExpression.Type.BoundExpression: {
-            return AddLinearExpressionInDomain(lin.Left, new Domain(lin.Lb, lin.Ub));
+            return AddLinearConstraint(lin.Left, lin.Lb, lin.Ub);
         }
         case BoundedLinearExpression.Type.VarEqVar: {
-            return AddLinearExpressionInDomain(lin.Left - lin.Right, new Domain(0));
+            return AddLinearConstraint(lin.Left - lin.Right, 0, 0);
         }
         case BoundedLinearExpression.Type.VarDiffVar: {
-            return AddLinearExpressionInDomain(
-                lin.Left - lin.Right, Domain.FromFlatIntervals(new long[] { Int64.MinValue, -1, 1, Int64.MaxValue }));
+            return AddLinearExpressionNotEqualCst(lin.Left - lin.Right, 0);
         }
         case BoundedLinearExpression.Type.VarEqCst: {
-            return AddLinearExpressionInDomain(lin.Left, new Domain(lin.Lb, lin.Lb));
+            return AddLinearConstraint(lin.Left, lin.Lb, lin.Lb);
         }
         case BoundedLinearExpression.Type.VarDiffCst: {
-            return AddLinearExpressionInDomain(
-                lin.Left,
-                Domain.FromFlatIntervals(new long[] { Int64.MinValue, lin.Lb - 1, lin.Lb + 1, Int64.MaxValue }));
+            return AddLinearExpressionNotEqualCst(lin.Left, lin.Lb);
         }
         }
         return null;
