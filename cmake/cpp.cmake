@@ -279,12 +279,14 @@ install(
   "${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
   DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}"
   COMPONENT Devel)
-install(
-  FILES
-  "${PROJECT_SOURCE_DIR}/cmake/FindCbc.cmake"
-  "${PROJECT_SOURCE_DIR}/cmake/FindClp.cmake"
-  DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}/modules"
-  COMPONENT Devel)
+if(USE_COINOR)
+  install(
+    FILES
+    "${PROJECT_SOURCE_DIR}/cmake/FindCbc.cmake"
+    "${PROJECT_SOURCE_DIR}/cmake/FindClp.cmake"
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}/modules"
+    COMPONENT Devel)
+endif()
 
 # add_cxx_sample()
 # CMake function to generate and build C++ sample.
