@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
+    <LangVersion>9.0</LangVersion>
     <TargetFrameworks>netcoreapp3.1;net6.0</TargetFrameworks>
     <RuntimeIdentifiers>win-x64;osx-x64;linux-x64</RuntimeIdentifiers>
     <AssemblyName>@DOTNET_PROJECT@</AssemblyName>

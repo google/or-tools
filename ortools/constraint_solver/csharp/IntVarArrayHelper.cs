@@ -76,7 +76,7 @@ public static class IntVarArrayHelper
     // get solver from array of integer variables
     private static Solver GetSolver(IntVar[] vars)
     {
-        if (vars == null || vars.Length <= 0)
+        if (vars is null || vars.Length <= 0)
             throw new ArgumentException("Array <vars> cannot be null or empty");
 
         return vars[0].solver();
@@ -84,14 +84,14 @@ public static class IntVarArrayHelper
     // get solver from array of integer expressions
     private static Solver GetSolver(IntExpr[] expressions)
     {
-        if (expressions == null || expressions.Length <= 0)
+        if (expressions is null || expressions.Length <= 0)
             throw new ArgumentException("Array <expr> cannot be null or empty");
 
         return expressions[0].solver();
     }
     private static Solver GetSolver(IConstraintWithStatus[] cts)
     {
-        if (cts == null || cts.Length <= 0)
+        if (cts is null || cts.Length <= 0)
             throw new ArgumentException("Array <cts> cannot be null or empty");
 
         return cts[0].solver();

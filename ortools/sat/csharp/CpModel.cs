@@ -71,11 +71,7 @@ public class CpModel
 
     public ILiteral TrueLiteral()
     {
-        if (true_literal_ == null)
-        {
-            true_literal_ = new BoolVar(model_, ConvertConstant(1));
-        }
-        return true_literal_;
+        return true_literal_ ??= new BoolVar(model_, ConvertConstant(1));
     }
 
     public ILiteral FalseLiteral()
@@ -83,8 +79,9 @@ public class CpModel
         return TrueLiteral().Not();
     }
 
-    private long FillLinearConstraint(LinearExpr expr, ref LinearConstraintProto linear)
+    private long FillLinearConstraint(LinearExpr expr, out LinearConstraintProto linear)
     {
+        linear = new LinearConstraintProto();
         Dictionary<IntVar, long> dict = new Dictionary<IntVar, long>();
         long constant = LinearExpr.GetVarValueMap(expr, 1L, dict);
         foreach (KeyValuePair<IntVar, long> term in dict)
@@ -94,12 +91,12 @@ public class CpModel
         }
         return constant;
     }
+
     public Constraint AddLinearConstraint(LinearExpr expr, long lb, long ub)
     {
-        LinearConstraintProto linear = new LinearConstraintProto();
-        long constant = FillLinearConstraint(expr, ref linear);
-        linear.Domain.Add(lb is Int64.MinValue ? lb : lb - constant);
-        linear.Domain.Add(ub is Int64.MaxValue ? ub : ub - constant);
+        long constant = FillLinearConstraint(expr, out var linear);
+        linear.Domain.Add(lb is Int64.MinValue or Int64.MaxValue ? lb : lb - constant);
+        linear.Domain.Add(ub is Int64.MinValue or Int64.MaxValue ? ub : ub - constant);
 
         Constraint ct = new Constraint(model_);
         ct.Proto.Linear = linear;
@@ -108,18 +105,10 @@ public class CpModel
 
     public Constraint AddLinearExpressionInDomain(LinearExpr expr, Domain domain)
     {
-        LinearConstraintProto linear = new LinearConstraintProto();
-        long constant = FillLinearConstraint(expr, ref linear);
+        long constant = FillLinearConstraint(expr, out var linear);
         foreach (long value in domain.FlattenedIntervals())
         {
-            if (value == Int64.MinValue || value == Int64.MaxValue)
-            {
-                linear.Domain.Add(value);
-            }
-            else
-            {
-                linear.Domain.Add(value - constant);
-            }
+            linear.Domain.Add(value is Int64.MinValue or Int64.MaxValue ? value : value - constant);
         }
 
         Constraint ct = new Constraint(model_);
@@ -129,8 +118,7 @@ public class CpModel
 
     private Constraint AddLinearExpressionNotEqualCst(LinearExpr expr, long value)
     {
-        LinearConstraintProto linear = new LinearConstraintProto();
-        long constant = FillLinearConstraint(expr, ref linear);
+        long constant = FillLinearConstraint(expr, out var linear);
         linear.Domain.Add(Int64.MinValue);
         linear.Domain.Add(value - constant - 1);
         linear.Domain.Add(value - constant + 1);
@@ -589,7 +577,7 @@ public class CpModel
 
     bool HasObjective()
     {
-        return model_.Objective != null;
+        return model_.Objective is not null;
     }
 
     // Search Decision.
@@ -610,10 +598,7 @@ public class CpModel
 
     public void AddHint(IntVar var, long value)
     {
-        if (model_.SolutionHint == null)
-        {
-            model_.SolutionHint = new PartialVariableAssignment();
-        }
+        model_.SolutionHint ??= new PartialVariableAssignment();
         model_.SolutionHint.Vars.Add(var.GetIndex());
         model_.SolutionHint.Values.Add(value);
     }
@@ -646,7 +631,7 @@ public class CpModel
     void SetObjective(LinearExpr obj, bool minimize)
     {
         CpObjectiveProto objective = new CpObjectiveProto();
-        if (obj == null)
+        if (obj is null)
         {
             objective.Offset = 0L;
             objective.ScalingFactor = minimize ? 1L : -1;
@@ -705,34 +690,18 @@ public class CpModel
 
     private int ConvertConstant(long value)
     {
-        if (constant_map_.ContainsKey(value))
+        if (constant_map_.TryGetValue(value, out var index))
         {
-            return constant_map_[value];
-        }
-        else
-        {
-            int index = model_.Variables.Count;
-            IntegerVariableProto var = new IntegerVariableProto();
-            var.Domain.Add(value);
-            var.Domain.Add(value);
-            constant_map_.Add(value, index);
-            model_.Variables.Add(var);
             return index;
         }
-    }
 
-    private int GetOrCreateIndex<X>(X x)
-    {
-        if (typeof(X) == typeof(IntVar))
-        {
-            IntVar vx = (IntVar)(Object)x;
-            return vx.Index;
-        }
-        if (typeof(X) == typeof(long) || typeof(X) == typeof(int))
-        {
-            return ConvertConstant(Convert.ToInt64(x));
-        }
-        throw new ArgumentException("Cannot extract index from argument");
+        index = model_.Variables.Count;
+        IntegerVariableProto var = new IntegerVariableProto();
+        var.Domain.Add(value);
+        var.Domain.Add(value);
+        constant_map_.Add(value, index);
+        model_.Variables.Add(var);
+        return index;
     }
 
     public LinearExpr GetLinearExpr<X>(X x)

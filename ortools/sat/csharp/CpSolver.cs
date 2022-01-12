@@ -23,15 +23,15 @@ public class CpSolver
     {
         // Setup search.
         CreateSolveWrapper();
-        if (string_parameters_ != null)
+        if (string_parameters_ is not null)
         {
             solve_wrapper_.SetStringParameters(string_parameters_);
         }
-        if (log_callback_ != null)
+        if (log_callback_ is not null)
         {
             solve_wrapper_.AddLogCallbackFromClass(log_callback_);
         }
-        if (cb != null)
+        if (cb is not null)
         {
             solve_wrapper_.AddSolutionCallback(cb);
         }
@@ -39,7 +39,7 @@ public class CpSolver
         response_ = solve_wrapper_.Solve(model.Model);
 
         // Cleanup search.
-        if (cb != null)
+        if (cb is not null)
         {
             solve_wrapper_.ClearSolutionCallback(cb);
         }
@@ -66,7 +66,7 @@ public class CpSolver
     [MethodImpl(MethodImplOptions.Synchronized)]
     public void StopSearch()
     {
-        if (solve_wrapper_ != null)
+        if (solve_wrapper_ is not null)
         {
             solve_wrapper_.StopSearch();
         }
