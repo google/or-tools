@@ -636,10 +636,10 @@ public class CpModel
             objective.Offset = 0L;
             objective.ScalingFactor = minimize ? 1L : -1;
         }
-        else if (obj is IntVar)
+        else if (obj is IntVar intVar)
         {
             objective.Offset = 0L;
-            objective.Vars.Add(((IntVar)obj).Index);
+            objective.Vars.Add(intVar.Index);
             if (minimize)
             {
                 objective.Coeffs.Add(1L);
