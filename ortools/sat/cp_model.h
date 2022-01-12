@@ -269,11 +269,6 @@ class LinearExpr {
   static LinearExpr WeightedSum(absl::Span<const BoolVar> vars,
                                 absl::Span<const int64_t> coeffs);
 
-  /// Constructs the scalar product of variables and coefficients.
-  // TODO(user): Remove when the operators + and * are implemented.
-  static LinearExpr WeightedSum(std::initializer_list<IntVar> vars,
-                                absl::Span<const int64_t> coeffs);
-
   /// Constructs var * coefficient.
   static LinearExpr Term(IntVar var, int64_t coefficient);
 
