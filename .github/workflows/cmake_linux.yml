@@ -89,7 +89,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: ortools_jar
-          path: './or-tools/build/java/ortools-java/target/*.jar'
+          path: ./or-tools/build/java/ortools-*/target/*.jar
       - name: Upload ortools dotnet
         uses: actions/upload-artifact@v2
         with:
