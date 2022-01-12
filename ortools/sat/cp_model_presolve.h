@@ -237,9 +237,13 @@ class ModelCopy {
   // It returns false iff the model is proven infeasible.
   //
   // It does not clear the constraints part of the working model of the context.
-  bool ImportAndSimplifyConstraints(
-      const CpModelProto& in_model,
-      const std::vector<int>& ignored_constraints);
+  //
+  // Note(user): If first_copy is true, we will reorder the scheduling
+  // constraint so that they only use reference to previously defined intervals.
+  // This allow to be more efficient later in a few preprocessing steps.
+  bool ImportAndSimplifyConstraints(const CpModelProto& in_model,
+                                    const std::vector<int>& ignored_constraints,
+                                    bool first_copy = false);
 
  private:
   // Overwrites the out_model to be unsat. Returns false.
@@ -279,6 +283,10 @@ class ModelCopy {
 // Import the constraints from the in_model to the presolve context.
 // It performs on the fly simplification, and returns false if the
 // model is proved infeasible.
+//
+// This should only be called on the first copy of the user given model.
+// Note that this reorder all constraints that use intervals last. We loose the
+// user-defined order, but hopefully that should not matter too much.
 bool ImportConstraintsWithBasicPresolveIntoContext(const CpModelProto& in_model,
                                                    PresolveContext* context);
 

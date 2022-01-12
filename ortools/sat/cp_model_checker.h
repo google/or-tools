@@ -28,11 +28,15 @@ namespace sat {
 // proto comments. Returns an empty string if it is the case, otherwise fails at
 // the first error and returns a human-readable description of the issue.
 //
+// The extra parameter is internal and mainly for debugging. After the problem
+// has been presolved, we have a stricter set of properties we want to enforce.
+//
 // TODO(user): Add any needed overflow validation because we are far from
 // exhaustive. We could also run a small presolve that tighten variable bounds
 // before the overflow check to facilitate the lives of our users, but it is a
 // some work to put in place.
-std::string ValidateCpModel(const CpModelProto& model);
+std::string ValidateCpModel(const CpModelProto& model,
+                            bool after_presolve = false);
 
 // Verifies that the given variable assignment is a feasible solution of the
 // given model. The values vector should be in one to one correspondence with

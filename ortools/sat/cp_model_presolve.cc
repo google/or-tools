@@ -7115,10 +7115,15 @@ ModelCopy::ModelCopy(PresolveContext* context) : context_(context) {}
 // contains an interval or if we add a field to an existing constraint. Find a
 // way to remind contributor to not forget this.
 bool ModelCopy::ImportAndSimplifyConstraints(
-    const CpModelProto& in_model, const std::vector<int>& ignored_constraints) {
+    const CpModelProto& in_model, const std::vector<int>& ignored_constraints,
+    bool first_copy) {
   const absl::flat_hash_set<int> ignored_constraints_set(
       ignored_constraints.begin(), ignored_constraints.end());
   context_->InitializeNewDomains();
+
+  // If first_copy is true, we reorder the scheduling constraint to be sure they
+  // refer to interval before them.
+  std::vector<int> constraints_using_intervals;
 
   starting_constraint_index_ = context_->working_model->constraints_size();
   for (int c = 0; c < in_model.constraints_size(); ++c) {
@@ -7128,50 +7133,71 @@ bool ModelCopy::ImportAndSimplifyConstraints(
     if (OneEnforcementLiteralIsFalse(ct)) continue;
 
     switch (ct.constraint_case()) {
-      case ConstraintProto::CONSTRAINT_NOT_SET: {
+      case ConstraintProto::CONSTRAINT_NOT_SET:
         break;
-      }
-      case ConstraintProto::kBoolOr: {
+      case ConstraintProto::kBoolOr:
         if (!CopyBoolOr(ct)) return CreateUnsatModel();
         break;
-      }
-      case ConstraintProto::kBoolAnd: {
+      case ConstraintProto::kBoolAnd:
         if (!CopyBoolAnd(ct)) return CreateUnsatModel();
         break;
-      }
-      case ConstraintProto::kLinear: {
+      case ConstraintProto::kLinear:
         if (!CopyLinear(ct)) return CreateUnsatModel();
         break;
-      }
-      case ConstraintProto::kAtMostOne: {
+      case ConstraintProto::kAtMostOne:
         if (!CopyAtMostOne(ct)) return CreateUnsatModel();
         break;
-      }
-      case ConstraintProto::kExactlyOne: {
+      case ConstraintProto::kExactlyOne:
         if (!CopyExactlyOne(ct)) return CreateUnsatModel();
         break;
-      }
-      case ConstraintProto::kInterval: {
+      case ConstraintProto::kInterval:
         if (!CopyInterval(ct, c)) return CreateUnsatModel();
         break;
-      }
-      case ConstraintProto::kNoOverlap: {
-        CopyAndMapNoOverlap(ct);
+      case ConstraintProto::kNoOverlap:
+        if (first_copy) {
+          constraints_using_intervals.push_back(c);
+        } else {
+          CopyAndMapNoOverlap(ct);
+        }
         break;
-      }
-      case ConstraintProto::kNoOverlap2D: {
-        CopyAndMapNoOverlap2D(ct);
+      case ConstraintProto::kNoOverlap2D:
+        if (first_copy) {
+          constraints_using_intervals.push_back(c);
+        } else {
+          CopyAndMapNoOverlap2D(ct);
+        }
         break;
-      }
-      case ConstraintProto::kCumulative: {
-        CopyAndMapCumulative(ct);
+      case ConstraintProto::kCumulative:
+        if (first_copy) {
+          constraints_using_intervals.push_back(c);
+        } else {
+          CopyAndMapCumulative(ct);
+        }
         break;
-      }
-      default: {
+      default:
         *context_->working_model->add_constraints() = ct;
-      }
     }
   }
+
+  // This should be empty if first_copy is false.
+  DCHECK(first_copy || constraints_using_intervals.empty());
+  for (const int c : constraints_using_intervals) {
+    const ConstraintProto& ct = in_model.constraints(c);
+    switch (ct.constraint_case()) {
+      case ConstraintProto::kNoOverlap:
+        CopyAndMapNoOverlap(ct);
+        break;
+      case ConstraintProto::kNoOverlap2D:
+        CopyAndMapNoOverlap2D(ct);
+        break;
+      case ConstraintProto::kCumulative:
+        CopyAndMapCumulative(ct);
+        break;
+      default:
+        LOG(DFATAL) << "Shouldn't be here.";
+    }
+  }
+
   return true;
 }
 
@@ -7427,7 +7453,7 @@ bool ModelCopy::CreateUnsatModel() {
 bool ImportConstraintsWithBasicPresolveIntoContext(const CpModelProto& in_model,
                                                    PresolveContext* context) {
   ModelCopy copier(context);
-  if (copier.ImportAndSimplifyConstraints(in_model, {})) {
+  if (copier.ImportAndSimplifyConstraints(in_model, {}, /*first_copy=*/true)) {
     CopyEverythingExceptVariablesAndConstraintsFieldsIntoContext(in_model,
                                                                  context);
     return true;
@@ -7879,7 +7905,8 @@ CpSolverStatus CpModelPresolver::Presolve() {
   // INVALID model. But for our no-overflow preconditions, we might run into bad
   // situation that causes the final model to be invalid.
   {
-    const std::string error = ValidateCpModel(*context_->working_model);
+    const std::string error =
+        ValidateCpModel(*context_->working_model, /*after_presolve=*/true);
     if (!error.empty()) {
       SOLVER_LOG(logger_, "Error while validating postsolved model: ", error);
       return CpSolverStatus::MODEL_INVALID;

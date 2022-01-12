@@ -113,9 +113,6 @@ message ElementConstraintProto {
 // This is not really a constraint. It is there so it can be referred by other
 // constraints using this "interval" concept.
 //
-// IMPORTANT: All intervals must appear before they are used. This is enforced
-// by our validation.
-//
 // IMPORTANT: For now, this constraint do not enforce any relations on the
 // components, and it is up to the client to add in the model:
 // - enforcement => start + size == end.

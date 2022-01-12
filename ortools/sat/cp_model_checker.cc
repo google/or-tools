@@ -118,8 +118,8 @@ std::string ValidateIntegerVariable(const CpModelProto& model, int v) {
   return "";
 }
 
-std::string ValidateArgumentReferencesInConstraint(const CpModelProto& model,
-                                                   int c) {
+std::string ValidateVariablesUsedInConstraint(const CpModelProto& model,
+                                              int c) {
   const ConstraintProto& ct = model.constraints(c);
   IndexReferences references = GetReferencesUsedByConstraint(ct);
   for (const int v : references.variables) {
@@ -142,12 +142,19 @@ std::string ValidateArgumentReferencesInConstraint(const CpModelProto& model,
                           ProtobufShortDebugString(ct));
     }
   }
+  return "";
+}
+
+std::string ValidateIntervalsUsedInConstraint(bool after_presolve,
+                                              const CpModelProto& model,
+                                              int c) {
+  const ConstraintProto& ct = model.constraints(c);
   for (const int i : UsedIntervals(ct)) {
     if (i < 0 || i >= model.constraints_size()) {
       return absl::StrCat("Out of bound interval ", i, " in constraint #", c,
                           " : ", ProtobufShortDebugString(ct));
     }
-    if (i >= c) {
+    if (after_presolve && i >= c) {
       return absl::StrCat("Interval ", i, " in constraint #", c,
                           " must appear before in the list of constraints :",
                           ProtobufShortDebugString(ct));
@@ -836,32 +843,25 @@ std::string ValidateSolutionHint(const CpModelProto& model) {
 
 }  // namespace
 
-std::string ValidateCpModel(const CpModelProto& model) {
+std::string ValidateCpModel(const CpModelProto& model, bool after_presolve) {
   for (int v = 0; v < model.variables_size(); ++v) {
     RETURN_IF_NOT_EMPTY(ValidateIntegerVariable(model, v));
   }
 
-  // Checks all variable references, and validate intervals before scanning the
-  // rest of the constraints.
-  for (int c = 0; c < model.constraints_size(); ++c) {
-    RETURN_IF_NOT_EMPTY(ValidateArgumentReferencesInConstraint(model, c));
-
-    const ConstraintProto& ct = model.constraints(c);
-    if (ct.constraint_case() == ConstraintProto::kInterval) {
-      RETURN_IF_NOT_EMPTY(ValidateIntervalConstraint(model, ct));
-    }
-  }
+  // We need to validate the intervals used first, so we add these constraints
+  // here so that we can validate them in a second pass.
+  std::vector<int> constraints_using_intervals;
 
   for (int c = 0; c < model.constraints_size(); ++c) {
+    RETURN_IF_NOT_EMPTY(ValidateVariablesUsedInConstraint(model, c));
+
     // By default, a constraint does not support enforcement literals except if
     // explicitly stated by setting this to true below.
     bool support_enforcement = false;
 
     // Other non-generic validations.
-    // TODO(user): validate all constraints.
     const ConstraintProto& ct = model.constraints(c);
-    const ConstraintProto::ConstraintCase type = ct.constraint_case();
-    switch (type) {
+    switch (ct.constraint_case()) {
       case ConstraintProto::ConstraintCase::kBoolOr:
         support_enforcement = true;
         break;
@@ -914,13 +914,17 @@ std::string ValidateCpModel(const CpModelProto& model) {
         RETURN_IF_NOT_EMPTY(ValidateRoutesConstraint(model, ct));
         break;
       case ConstraintProto::ConstraintCase::kInterval:
+        RETURN_IF_NOT_EMPTY(ValidateIntervalConstraint(model, ct));
         support_enforcement = true;
         break;
       case ConstraintProto::ConstraintCase::kCumulative:
-        RETURN_IF_NOT_EMPTY(ValidateCumulativeConstraint(model, ct));
+        constraints_using_intervals.push_back(c);
+        break;
+      case ConstraintProto::ConstraintCase::kNoOverlap:
+        constraints_using_intervals.push_back(c);
         break;
       case ConstraintProto::ConstraintCase::kNoOverlap2D:
-        RETURN_IF_NOT_EMPTY(ValidateNoOverlap2DConstraint(model, ct));
+        constraints_using_intervals.push_back(c);
         break;
       case ConstraintProto::ConstraintCase::kReservoir:
         RETURN_IF_NOT_EMPTY(ValidateReservoirConstraint(model, ct));
@@ -946,6 +950,27 @@ std::string ValidateCpModel(const CpModelProto& model) {
       }
     }
   }
+
+  // Extra validation for constraint using intervals.
+  for (const int c : constraints_using_intervals) {
+    RETURN_IF_NOT_EMPTY(
+        ValidateIntervalsUsedInConstraint(after_presolve, model, c));
+
+    const ConstraintProto& ct = model.constraints(c);
+    switch (ct.constraint_case()) {
+      case ConstraintProto::ConstraintCase::kCumulative:
+        RETURN_IF_NOT_EMPTY(ValidateCumulativeConstraint(model, ct));
+        break;
+      case ConstraintProto::ConstraintCase::kNoOverlap:
+        break;
+      case ConstraintProto::ConstraintCase::kNoOverlap2D:
+        RETURN_IF_NOT_EMPTY(ValidateNoOverlap2DConstraint(model, ct));
+        break;
+      default:
+        LOG(DFATAL) << "Shouldn't be here";
+    }
+  }
+
   if (model.has_objective() && model.has_floating_point_objective()) {
     return "A model cannot have both an objective and a floating point "
            "objective.";
