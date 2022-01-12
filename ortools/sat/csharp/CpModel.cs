@@ -61,7 +61,7 @@ public class CpModel
 
     public IntVar NewConstant(long value, string name)
     {
-        return new IntVar(model_, new Domain(value), name);
+        return new IntVar(model_, value, value, name);
     }
 
     public BoolVar NewBoolVar(string name)
@@ -83,34 +83,33 @@ public class CpModel
         return TrueLiteral().Not();
     }
 
-    public Constraint AddLinearConstraint(LinearExpr linear_expr, long lb, long ub)
+    private long FillLinearConstraint(LinearExpr expr, ref LinearConstraintProto linear)
     {
         Dictionary<IntVar, long> dict = new Dictionary<IntVar, long>();
-        long constant = LinearExpr.GetVarValueMap(linear_expr, 1L, dict);
-        Constraint ct = new Constraint(model_);
-        LinearConstraintProto linear = new LinearConstraintProto();
+        long constant = LinearExpr.GetVarValueMap(expr, 1L, dict);
         foreach (KeyValuePair<IntVar, long> term in dict)
         {
             linear.Vars.Add(term.Key.Index);
             linear.Coeffs.Add(term.Value);
         }
+        return constant;
+    }
+    public Constraint AddLinearConstraint(LinearExpr expr, long lb, long ub)
+    {
+        LinearConstraintProto linear = new LinearConstraintProto();
+        long constant = FillLinearConstraint(expr, ref linear);
         linear.Domain.Add(lb is Int64.MinValue ? lb : lb - constant);
         linear.Domain.Add(ub is Int64.MaxValue ? ub : ub - constant);
+
+        Constraint ct = new Constraint(model_);
         ct.Proto.Linear = linear;
         return ct;
     }
 
-    public Constraint AddLinearExpressionInDomain(LinearExpr linear_expr, Domain domain)
+    public Constraint AddLinearExpressionInDomain(LinearExpr expr, Domain domain)
     {
-        Dictionary<IntVar, long> dict = new Dictionary<IntVar, long>();
-        long constant = LinearExpr.GetVarValueMap(linear_expr, 1L, dict);
-        Constraint ct = new Constraint(model_);
         LinearConstraintProto linear = new LinearConstraintProto();
-        foreach (KeyValuePair<IntVar, long> term in dict)
-        {
-            linear.Vars.Add(term.Key.Index);
-            linear.Coeffs.Add(term.Value);
-        }
+        long constant = FillLinearConstraint(expr, ref linear);
         foreach (long value in domain.FlattenedIntervals())
         {
             if (value == Int64.MinValue || value == Int64.MaxValue)
@@ -122,25 +121,22 @@ public class CpModel
                 linear.Domain.Add(value - constant);
             }
         }
+
+        Constraint ct = new Constraint(model_);
         ct.Proto.Linear = linear;
         return ct;
     }
 
-    public Constraint AddLinearExpressionNotEqualCst(LinearExpr linear_expr, long value)
+    private Constraint AddLinearExpressionNotEqualCst(LinearExpr expr, long value)
     {
-        Dictionary<IntVar, long> dict = new Dictionary<IntVar, long>();
-        long constant = LinearExpr.GetVarValueMap(linear_expr, 1L, dict);
-        Constraint ct = new Constraint(model_);
         LinearConstraintProto linear = new LinearConstraintProto();
-        foreach (KeyValuePair<IntVar, long> term in dict)
-        {
-            linear.Vars.Add(term.Key.Index);
-            linear.Coeffs.Add(term.Value);
-        }
+        long constant = FillLinearConstraint(expr, ref linear);
         linear.Domain.Add(Int64.MinValue);
         linear.Domain.Add(value - constant - 1);
         linear.Domain.Add(value - constant + 1);
         linear.Domain.Add(Int64.MaxValue);
+
+        Constraint ct = new Constraint(model_);
         ct.Proto.Linear = linear;
         return ct;
     }
