@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Runtime.CompilerServices;
+
 namespace Google.OrTools.Sat
 {
 using Google.OrTools.Util;
@@ -23,6 +25,26 @@ public interface ILiteral
     ILiteral Not();
     int GetIndex();
     LinearExpr NotAsExpr();
+}
+
+internal static class HelperExtensions
+{
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void AddOrIncrement(this Dictionary<IntVar, long> dict, IntVar key, long increment)
+    {
+#if NET6_0_OR_GREATER
+        System.Runtime.InteropServices.CollectionsMarshal.GetValueRefOrAddDefault(dict, key, out _) += increment;
+#else
+        if (dict.TryGetValue(key, out var value))
+        {
+            dict[key] = value + increment;
+        }
+        else
+        {
+            dict.Add(key, increment);
+        }
+#endif
+    }
 }
 
 // Holds a term (expression * coefficient)
@@ -93,13 +115,13 @@ public class LinearExpr
 
     public static LinearExpr Term(ILiteral literal, long coeff)
     {
-        if (literal is BoolVar)
+        if (literal is BoolVar boolVar)
         {
-            return Prod((IntVar)literal, coeff);
+            return Prod(boolVar, coeff);
         }
         else
         {
-            return Affine((BoolVar)literal.Not(), -coeff, coeff);
+            return Affine(literal.NotAsExpr(), -coeff, coeff);
         }
     }
 
@@ -296,23 +318,14 @@ public class LinearExpr
                 continue;
             }
 
-            if (term.expr is LinearExprBuilder)
+            if (term.expr is LinearExprBuilder b)
             {
-                LinearExprBuilder b = (LinearExprBuilder)term.expr;
                 constant += term.coefficient * b.Offset;
                 foreach (Term sub in b.Terms)
                 {
-                    if (sub.expr is IntVar) // Quick unroll.
+                    if (sub.expr is IntVar i) // Quick unroll.
                     {
-                        IntVar i = (IntVar)sub.expr;
-                        if (dict.ContainsKey(i))
-                        {
-                            dict[i] += term.coefficient * sub.coefficient;
-                        }
-                        else
-                        {
-                            dict.Add(i, term.coefficient * sub.coefficient);
-                        }
+                        dict.AddOrIncrement(i, term.coefficient * sub.coefficient);
                     }
                     else
                     {
@@ -320,29 +333,13 @@ public class LinearExpr
                     }
                 }
             }
-            else if (term.expr is IntVar)
+            else if (term.expr is IntVar i)
             {
-                IntVar i = (IntVar)term.expr;
-                if (dict.ContainsKey(i))
-                {
-                    dict[i] += term.coefficient;
-                }
-                else
-                {
-                    dict.Add(i, term.coefficient);
-                }
+                dict.AddOrIncrement(i, term.coefficient);
             }
-            else if (term.expr is NotBoolVar)
+            else if (term.expr is NotBoolVar notBoolVar)
             {
-                IntVar i = (IntVar)((NotBoolVar)term.expr).Not();
-                if (dict.ContainsKey(i))
-                {
-                    dict[i] -= term.coefficient;
-                }
-                else
-                {
-                    dict.Add(i, -term.coefficient);
-                }
+                dict.AddOrIncrement((IntVar)notBoolVar.Not(), -term.coefficient);
                 constant += term.coefficient;
             }
             else
@@ -380,7 +377,7 @@ public class LinearExpr
     }
 }
 
-public class LinearExprBuilder : LinearExpr
+public sealed class LinearExprBuilder : LinearExpr
 {
     public LinearExprBuilder()
     {
@@ -420,14 +417,14 @@ public class LinearExprBuilder : LinearExpr
 
     public LinearExprBuilder AddTerm(ILiteral literal, long coefficient)
     {
-        if (literal is BoolVar)
+        if (literal is BoolVar boolVar)
         {
-            terms_.Add(new Term((BoolVar)literal, coefficient));
+            terms_.Add(new Term(boolVar, coefficient));
         }
         else
         {
             offset_ += coefficient;
-            terms_.Add(new Term((BoolVar)literal.Not(), -coefficient));
+            terms_.Add(new Term(literal.NotAsExpr(), -coefficient));
         }
         return this;
     }
@@ -670,7 +667,7 @@ public class IntVar : LinearExpr
 
     public override string ToString()
     {
-        return var_.Name is not null ? var_.Name : var_.ToString();
+        return var_.Name ?? var_.ToString();
     }
 
     public string Name()
@@ -682,7 +679,7 @@ public class IntVar : LinearExpr
     protected IntegerVariableProto var_;
 }
 
-public class BoolVar : IntVar, ILiteral
+public sealed class BoolVar : IntVar, ILiteral
 {
 
     public BoolVar(CpModelProto model, String name) : base(model, 0, 1, name)
@@ -706,7 +703,7 @@ public class BoolVar : IntVar, ILiteral
     private NotBoolVar negation_;
 }
 
-public class NotBoolVar : LinearExpr, ILiteral
+public sealed class NotBoolVar : LinearExpr, ILiteral
 {
     public NotBoolVar(BoolVar boolvar)
     {
@@ -743,7 +740,7 @@ public class NotBoolVar : LinearExpr, ILiteral
     private readonly BoolVar boolvar_;
 }
 
-public class BoundedLinearExpression
+public sealed class BoundedLinearExpression
 {
     public enum Type
     {

@@ -140,9 +140,8 @@ public class CpSolver
                 continue;
             }
 
-            if (term.expr is LinearExprBuilder)
+            if (term.expr is LinearExprBuilder a)
             {
-                LinearExprBuilder a = (LinearExprBuilder)term.expr;
                 constant += term.coefficient * a.Offset;
                 foreach (Term sub in a.Terms)
                 {
@@ -156,9 +155,9 @@ public class CpSolver
                     }
                 }
             }
-            else if (term.expr is IntVar)
+            else if (term.expr is IntVar intVar)
             {
-                int index = ((IntVar)term.expr).GetIndex();
+                int index = intVar.GetIndex();
                 long value = index >= 0 ? response_.Solution[index] : -response_.Solution[-index - 1];
                 constant += term.coefficient * value;
             }

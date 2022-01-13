@@ -32,9 +32,8 @@ public class CpSolverSolutionCallback : SolutionCallback
             if (term.coefficient == 0)
                 continue;
 
-            if (term.expr is LinearExprBuilder)
+            if (term.expr is LinearExprBuilder a)
             {
-                LinearExprBuilder a = (LinearExprBuilder)term.expr;
                 constant += term.coefficient * a.Offset;
                 foreach (Term sub in a.Terms)
                 {
@@ -48,9 +47,9 @@ public class CpSolverSolutionCallback : SolutionCallback
                     }
                 }
             }
-            else if (term.expr is IntVar)
+            else if (term.expr is IntVar intVar)
             {
-                int index = ((IntVar)term.expr).GetIndex();
+                int index = intVar.GetIndex();
                 long value = SolutionIntegerValue(index);
                 constant += term.coefficient * value;
             }
