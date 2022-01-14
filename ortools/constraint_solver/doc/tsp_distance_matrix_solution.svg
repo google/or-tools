@@ -41,7 +41,7 @@ width="1022.6666666666666" height="750.6666666666666" viewBox="-55.3333333333333
 <line x1="798" y1="0" x2="798" y2="640" style="stroke-width:2;stroke:#969696;fill:none"/>
 <line x1="912" y1="0" x2="912" y2="640" style="stroke-width:2;stroke:#969696;fill:none"/>
 <!-- Print routes -->
-<!-- Print route 0: [0, 9, 5, 8, 6, 2, 10, 16, 14, 13, 12, 11, 15, 3, 4, 1, 7, 0] -->
+<!-- Print route 0 -->
 <polyline points="456,320 513.0,360.0 570,400" style="stroke-width:6.666666666666667;stroke:#4285F4;fill:none;marker-mid:url(#arrow_blue)"/>
 <polyline points="570,400 570.0,280.0 570,160" style="stroke-width:6.666666666666667;stroke:#4285F4;fill:none;marker-mid:url(#arrow_blue)"/>
 <polyline points="570,160 627.0,200.0 684,240" style="stroke-width:6.666666666666667;stroke:#4285F4;fill:none;marker-mid:url(#arrow_blue)"/>

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Copyright 2010-2021 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -570,7 +571,7 @@ class SVGPrinter(object):  # pylint: disable=too-many-instance-attributes
         # First print route
         previous_loc_idx = None
         for loc_idx in route:
-            if previous_loc_idx and previous_loc_idx != loc_idx:
+            if previous_loc_idx != None and previous_loc_idx != loc_idx:
                 self._svg.draw_polyline(self._data.locations[previous_loc_idx],
                                         self._data.locations[loc_idx],
                                         self._stroke_width, color, colorname)
@@ -833,10 +834,10 @@ def main():  # pylint: disable=too-many-locals,too-many-branches
                 distance_dimension.CumulVar(delivery_index))
         if args['fifo']:
             routing.SetPickupAndDeliveryPolicyOfAllVehicles(
-                pywrapcp.RoutingModel.FIFO)
+                pywrapcp.RoutingModel.PICKUP_AND_DELIVERY_FIFO)
         if args['lifo']:
             routing.SetPickupAndDeliveryPolicyOfAllVehicles(
-                pywrapcp.RoutingModel.LIFO)
+                pywrapcp.RoutingModel.PICKUP_AND_DELIVERY_LIFO)
 
     if args['starts_ends']:
         dimension_name = 'Distance'

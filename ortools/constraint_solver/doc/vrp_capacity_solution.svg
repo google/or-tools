@@ -41,7 +41,7 @@ width="1022.6666666666666" height="750.6666666666666" viewBox="-55.3333333333333
 <line x1="798" y1="0" x2="798" y2="640" style="stroke-width:2;stroke:#969696;fill:none"/>
 <line x1="912" y1="0" x2="912" y2="640" style="stroke-width:2;stroke:#969696;fill:none"/>
 <!-- Print routes -->
-<!-- Print route 0: [0, 4, 3, 1, 7, 0] -->
+<!-- Print route 0 -->
 <polyline points="456,320 285.0,200.0 114,80" style="stroke-width:6.666666666666667;stroke:#4285F4;fill:none;marker-mid:url(#arrow_blue)"/>
 <polyline points="114,80 57.0,80.0 0,80" style="stroke-width:6.666666666666667;stroke:#4285F4;fill:none;marker-mid:url(#arrow_blue)"/>
 <polyline points="0,80 114.0,40.0 228,0" style="stroke-width:6.666666666666667;stroke:#4285F4;fill:none;marker-mid:url(#arrow_blue)"/>
@@ -55,7 +55,7 @@ width="1022.6666666666666" height="750.6666666666666" viewBox="-55.3333333333333
 <text x="228" y="0" dy="8.88888888888889" style="text-anchor:middle;font-weight:bold;font-size:26.666666666666668;stroke:none;fill:#4285F4">1</text>
 <circle cx="342" cy="240" r="26.666666666666668" style="stroke-width:6.666666666666667;stroke:#4285F4;fill:white"/>
 <text x="342" y="240" dy="8.88888888888889" style="text-anchor:middle;font-weight:bold;font-size:26.666666666666668;stroke:none;fill:#4285F4">7</text>
-<!-- Print route 1: [0, 14, 16, 10, 9, 0] -->
+<!-- Print route 1 -->
 <polyline points="456,320 570.0,440.0 684,560" style="stroke-width:6.666666666666667;stroke:#EA4335;fill:none;marker-mid:url(#arrow_red)"/>
 <polyline points="684,560 741.0,600.0 798,640" style="stroke-width:6.666666666666667;stroke:#EA4335;fill:none;marker-mid:url(#arrow_red)"/>
 <polyline points="798,640 855.0,520.0 912,400" style="stroke-width:6.666666666666667;stroke:#EA4335;fill:none;marker-mid:url(#arrow_red)"/>
@@ -69,7 +69,7 @@ width="1022.6666666666666" height="750.6666666666666" viewBox="-55.3333333333333
 <text x="912" y="400" dy="8.88888888888889" style="text-anchor:middle;font-weight:bold;font-size:26.666666666666668;stroke:none;fill:#EA4335">10</text>
 <circle cx="570" cy="400" r="26.666666666666668" style="stroke-width:6.666666666666667;stroke:#EA4335;fill:white"/>
 <text x="570" y="400" dy="8.88888888888889" style="text-anchor:middle;font-weight:bold;font-size:26.666666666666668;stroke:none;fill:#EA4335">9</text>
-<!-- Print route 2: [0, 12, 11, 15, 13, 0] -->
+<!-- Print route 2 -->
 <polyline points="456,320 342.0,400.0 228,480" style="stroke-width:6.666666666666667;stroke:#FBBC05;fill:none;marker-mid:url(#arrow_yellow)"/>
 <polyline points="228,480 171.0,480.0 114,480" style="stroke-width:6.666666666666667;stroke:#FBBC05;fill:none;marker-mid:url(#arrow_yellow)"/>
 <polyline points="114,480 57.0,560.0 0,640" style="stroke-width:6.666666666666667;stroke:#FBBC05;fill:none;marker-mid:url(#arrow_yellow)"/>
@@ -83,7 +83,7 @@ width="1022.6666666666666" height="750.6666666666666" viewBox="-55.3333333333333
 <text x="0" y="640" dy="8.88888888888889" style="text-anchor:middle;font-weight:bold;font-size:26.666666666666668;stroke:none;fill:#FBBC05">15</text>
 <circle cx="342" cy="560" r="26.666666666666668" style="stroke-width:6.666666666666667;stroke:#FBBC05;fill:white"/>
 <text x="342" y="560" dy="8.88888888888889" style="text-anchor:middle;font-weight:bold;font-size:26.666666666666668;stroke:none;fill:#FBBC05">13</text>
-<!-- Print route 3: [0, 8, 2, 6, 5, 0] -->
+<!-- Print route 3 -->
 <polyline points="456,320 570.0,280.0 684,240" style="stroke-width:6.666666666666667;stroke:#34A853;fill:none;marker-mid:url(#arrow_green)"/>
 <polyline points="684,240 798.0,120.0 912,0" style="stroke-width:6.666666666666667;stroke:#34A853;fill:none;marker-mid:url(#arrow_green)"/>
 <polyline points="912,0 855.0,80.0 798,160" style="stroke-width:6.666666666666667;stroke:#34A853;fill:none;marker-mid:url(#arrow_green)"/>
