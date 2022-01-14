@@ -116,25 +116,21 @@ absl::Status CheckSortedIdsNotBad(const absl::Span<const int64_t> ids,
 }
 }  // namespace
 
-absl::Status CheckIdsNonnegativeAndStrictlyIncreasing(
-    absl::Span<const int64_t> ids) {
+absl::Status CheckIdsRangeAndStrictlyIncreasing(absl::Span<const int64_t> ids) {
   int64_t previous{-1};
-  for (int i = 0; i < ids.size(); ++i) {
-    if (ids[i] <= previous) {
-      std::string error_base = absl::StrCat(
-          "Expected ids to be nonnegative and strictly increasing, but at "
-          "index ",
-          i, ", found id: ", ids[i]);
-      if (i == 0) {
-        return util::InvalidArgumentErrorBuilder()
-               << error_base << " (a negative id)";
-      } else {
-        return util::InvalidArgumentErrorBuilder()
-               << error_base << " and at index " << i - 1
-               << " found id: " << ids[i - 1];
-      }
+  for (int i = 0; i < ids.size(); previous = ids[i], ++i) {
+    if (ids[i] < 0 || ids[i] == std::numeric_limits<int64_t>::max()) {
+      return util::InvalidArgumentErrorBuilder()
+             << "Expected ids to be nonnegative and not max(int64_t) but at "
+                "index "
+             << i << " found id: " << ids[i];
     }
-    previous = ids[i];
+    if (ids[i] <= previous) {
+      return util::InvalidArgumentErrorBuilder()
+             << "Expected ids to be strictly increasing, but at index " << i
+             << " found id: " << ids[i] << " and at index " << i - 1
+             << " found id: " << ids[i - 1];
+    }
   }
   return absl::OkStatus();
 }

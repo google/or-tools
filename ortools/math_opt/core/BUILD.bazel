@@ -119,7 +119,7 @@ cc_library(
         "//ortools/math_opt/validators:model_parameters_validator",
         "//ortools/math_opt/validators:model_validator",
         "//ortools/math_opt/validators:result_validator",
-        "//ortools/math_opt/validators:solver_parameters_validator",
+        "//ortools/math_opt/validators:solve_parameters_validator",
         "//ortools/port:proto_utils",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/status",

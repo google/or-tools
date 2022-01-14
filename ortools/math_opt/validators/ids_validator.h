@@ -24,8 +24,9 @@
 namespace operations_research {
 namespace math_opt {
 
-absl::Status CheckIdsNonnegativeAndStrictlyIncreasing(
-    absl::Span<const int64_t> ids);
+// Checks that the input ids are in [0, max(int64_t)) range and that their are
+// strictly increasing.
+absl::Status CheckIdsRangeAndStrictlyIncreasing(absl::Span<const int64_t> ids);
 
 // Checks that the elements of ids are a subset of universe.
 //

@@ -224,15 +224,37 @@ std::optional<E> EnumFromString(const absl::string_view str);
 //
 // It calls EnumToOptString(), printing the returned value if not nullopt. When
 // nullopt it prints the enum numeric value instead.
-template <typename E, typename>
-std::ostream& operator<<(std::ostream& out, const E value);
+template <typename E,
+          // We must use enable_if here to prevent this overload to be selected
+          // for other types than ones that implement Enum<E>.
+          typename = std::enable_if_t<Enum<E>::kIsImplemented>>
+std::ostream& operator<<(std::ostream& out, const E value) {
+  const std::optional<absl::string_view> opt_str = EnumToOptString(value);
+  if (opt_str.has_value()) {
+    out << *opt_str;
+  } else {
+    out << "<invalid enum (" << static_cast<std::underlying_type_t<E>>(value)
+        << ")>";
+  }
+  return out;
+}
 
 // Overload of operator<< for std::optional<E> when Enum<E> is implemented.
 //
 // When the value is nullopt, it prints "<unspecified>", else it prints the enum
 // value.
-template <typename E, typename>
-std::ostream& operator<<(std::ostream& out, const std::optional<E> value);
+template <typename E,
+          // We must use enable_if here to prevent this overload to be selected
+          // for other types than ones that implement Enum<E>.
+          typename = std::enable_if_t<Enum<E>::kIsImplemented>>
+std::ostream& operator<<(std::ostream& out, const std::optional<E> opt_value) {
+  if (opt_value.has_value()) {
+    out << *opt_value;
+  } else {
+    out << "<unspecified>";
+  }
+  return out;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Template functions implementations after this point.
@@ -278,34 +300,6 @@ std::optional<E> EnumFromString(const absl::string_view str) {
     }
   }
   return std::nullopt;
-}
-
-template <typename E,
-          // We must use enable_if here to prevent this overload to be selected
-          // for other types than ones that implement Enum<E>.
-          typename = std::enable_if_t<Enum<E>::kIsImplemented>>
-std::ostream& operator<<(std::ostream& out, const E value) {
-  const std::optional<absl::string_view> opt_str = EnumToOptString(value);
-  if (opt_str.has_value()) {
-    out << *opt_str;
-  } else {
-    out << "<invalid enum (" << static_cast<std::underlying_type_t<E>>(value)
-        << ")>";
-  }
-  return out;
-}
-
-template <typename E,
-          // We must use enable_if here to prevent this overload to be selected
-          // for other types than ones that implement Enum<E>.
-          typename = std::enable_if_t<Enum<E>::kIsImplemented>>
-std::ostream& operator<<(std::ostream& out, const std::optional<E> opt_value) {
-  if (opt_value.has_value()) {
-    out << *opt_value;
-  } else {
-    out << "<unspecified>";
-  }
-  return out;
 }
 
 // Macros that defines the templates specializations for Enum and EnumProto.

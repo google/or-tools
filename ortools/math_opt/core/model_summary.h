@@ -36,8 +36,6 @@ namespace math_opt {
 //  * Ids must be unique and increasing (in insertion order).
 //  * Ids are non-negative.
 //  * Ids are not equal to std::numeric_limits<int64_t>::max()
-//    TODO(b/213918209): make sure this is enforced in validators or remove this
-//    restriction.
 //  * Ids removed are never reused.
 //  * Names must be either empty or unique.
 class IdNameBiMap {
@@ -104,10 +102,6 @@ struct ModelSummary {
 
 void IdNameBiMap::Insert(const int64_t id, std::string name) {
   CHECK_GE(id, next_free_id_);
-  // TODO(b/213918209): this is not mandatory for a valid model at this point so
-  // this is a bit incorrect. The correct thing to do would be to have an
-  // optional<int64_t> for the next_free_id_ and forbid any new id when we reach
-  // the max but this may be overkill.
   CHECK_LT(id, std::numeric_limits<int64_t>::max());
   next_free_id_ = id + 1;
 

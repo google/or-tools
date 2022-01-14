@@ -55,7 +55,9 @@ class GScipSolver : public SolverInterface {
   absl::Status Update(const ModelUpdateProto& model_update) override;
   bool CanUpdate(const ModelUpdateProto& model_update) override;
 
-  static GScipParameters MergeParameters(
+  // Returns the merged parameters and a list of warnings for unsupported
+  // parameters.
+  static std::pair<GScipParameters, std::vector<std::string>> MergeParameters(
       const SolveParametersProto& solve_parameters);
 
  private:
@@ -112,7 +114,8 @@ class GScipSolver : public SolverInterface {
       absl::Span<const int64_t> variable_ids);
   absl::StatusOr<SolveResultProto> CreateSolveResultProto(
       GScipResult gscip_result,
-      const ModelSolveParametersProto& model_parameters);
+      const ModelSolveParametersProto& model_parameters,
+      std::optional<double> cutoff);
 
   const std::unique_ptr<GScip> gscip_;
   InterruptEventHandler interrupt_event_handler_;

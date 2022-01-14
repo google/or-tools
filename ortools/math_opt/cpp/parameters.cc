@@ -157,6 +157,18 @@ SolveParametersProto SolveParameters::Proto() const {
   if (iteration_limit.has_value()) {
     result.set_iteration_limit(*iteration_limit);
   }
+  if (cutoff_limit.has_value()) {
+    result.set_cutoff_limit(*cutoff_limit);
+  }
+  if (objective_limit.has_value()) {
+    result.set_objective_limit(*objective_limit);
+  }
+  if (best_bound_limit.has_value()) {
+    result.set_best_bound_limit(*best_bound_limit);
+  }
+  if (solution_limit.has_value()) {
+    result.set_solution_limit(*solution_limit);
+  }
   if (threads.has_value()) {
     result.set_threads(*threads);
   }
@@ -194,6 +206,18 @@ absl::StatusOr<SolveParameters> SolveParameters::FromProto(
   }
   if (proto.has_iteration_limit()) {
     result.iteration_limit = proto.iteration_limit();
+  }
+  if (proto.has_cutoff_limit()) {
+    result.cutoff_limit = proto.cutoff_limit();
+  }
+  if (proto.has_objective_limit()) {
+    result.objective_limit = proto.objective_limit();
+  }
+  if (proto.has_best_bound_limit()) {
+    result.best_bound_limit = proto.best_bound_limit();
+  }
+  if (proto.has_solution_limit()) {
+    result.solution_limit = proto.solution_limit();
   }
   if (proto.has_threads()) {
     result.threads = proto.threads();

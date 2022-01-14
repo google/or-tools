@@ -83,6 +83,18 @@ PdlpSolver::MergeParameters(const SolveParametersProto& parameters) {
         absl::ToDoubleSeconds(
             util_time::DecodeGoogleApiProto(parameters.time_limit()).value()));
   }
+  if (parameters.has_cutoff_limit()) {
+    warnings.push_back("parameter cutoff_limit not supported for PDLP");
+  }
+  if (parameters.has_objective_limit()) {
+    warnings.push_back("parameter best_objective_limit not supported for PDLP");
+  }
+  if (parameters.has_best_bound_limit()) {
+    warnings.push_back("parameter best_bound_limit not supported for PDLP");
+  }
+  if (parameters.has_solution_limit()) {
+    warnings.push_back("parameter solution_limit not supported for PDLP");
+  }
   if (parameters.has_random_seed()) {
     warnings.push_back("parameter random_seed not supported for PDLP");
   }

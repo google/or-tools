@@ -51,6 +51,7 @@ enum SolverTypeProto {
   // It supports solving IPs and can scale MIPs to solve them as IPs.
   SOLVER_TYPE_CP_SAT = 4;
 
+  SOLVER_TYPE_RESERVED_FIVE = 5;
 
   // GNU Linear Programming Kit (GLPK).
   //
@@ -68,6 +69,7 @@ enum SolverTypeProto {
   // for details.
   SOLVER_TYPE_GLPK = 6;
 
+  SOLVER_TYPE_RESERVED_SEVEN = 7;
 }
 
 // Selects an algorithm for solving linear programs.
@@ -162,8 +164,45 @@ message SolveParametersProto {
   // (e.g. it could be the relative GAP divided by the objective value of the
   // feasible solution if this is non-zero). Solvers consider a solution optimal
   // if its GAPs are below these limits (most solvers use both versions).
+  // TODO(b/213603287): rename as relative_gap_tolerance and
+  // absolute_gap_tolerance.
   optional double relative_gap_limit = 17;
   optional double absolute_gap_limit = 18;
+
+  // The solver stops early if it can prove there are no primal solutions at
+  // least as good as cutoff.
+  //
+  // On an early stop, the solver returns termination reason LIMIT_REACHED and
+  // with limit CUTOFF and is not required to give any extra solution
+  // information. Has no effect on the return value if there is no early stop.
+  //
+  // It is recommended that you use a tolerance if you want solutions with
+  // objective exactly equal to cutoff to be returned.
+  //
+  // See the user guide for more details and a comparison with best_bound_limit.
+  optional double cutoff_limit = 20;
+
+  // The solver stops early as soon as it finds a solution at least this good,
+  // with termination reason LIMIT_REACHED and limit LIMIT_OBJECTIVE.
+  optional double objective_limit = 21;
+
+  // The solver stops early as soon as it proves the best bound is at least this
+  // good, with termination reason LIMIT_REACHED and limit LIMIT_OBJECTIVE.
+  //
+  // See the user guide for more details and a comparison with cutoff_limit.
+  optional double best_bound_limit = 22;
+
+  // The solver stops early after finding this many feasible solutions, with
+  // termination reason LIMIT_REACHED and limit LIMIT_SOLUTION. Must be greater
+  // than zero if set. It is often used get the solver to stop on the first
+  // feasible solution found. Note that there is no guarantee on the objective
+  // value for any of the returned solutions.
+  //
+  // Solvers will typically not return more solutions than the solution limit,
+  // but this is not enforced by MathOpt, see also b/214041169.
+  //
+  // Currently supported for Gurobi and SCIP, and for CP-SAT only with value 1.
+  optional int32 solution_limit = 23;
 
   // Enables printing the solver implementation traces. The location of those
   // traces depend on the solver. For SCIP and Gurobi this will be the standard

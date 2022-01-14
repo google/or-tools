@@ -100,6 +100,27 @@ std::vector<std::string> SetSolveParameters(
   if (parameters.has_absolute_gap_limit()) {
     sat_parameters.set_absolute_gap_limit(parameters.absolute_gap_limit());
   }
+  if (parameters.has_cutoff_limit()) {
+    warnings.push_back(
+        "The cutoff_limit parameter is not supported for CP-SAT.");
+  }
+  if (parameters.has_best_bound_limit()) {
+    warnings.push_back(
+        "The best_bound_limit parameter is not supported for CP-SAT.");
+  }
+  if (parameters.has_objective_limit()) {
+    warnings.push_back(
+        "The objective_limit parameter is not supported for CP-SAT.");
+  }
+  if (parameters.has_solution_limit()) {
+    if (parameters.solution_limit() == 1) {
+      sat_parameters.set_stop_after_first_solution(true);
+    } else {
+      warnings.push_back(absl::StrCat(
+          "The CP-SAT solver only supports value 1 for solution_limit, found: ",
+          parameters.solution_limit()));
+    }
+  }
 
   if (parameters.lp_algorithm() != LP_ALGORITHM_UNSPECIFIED) {
     warnings.push_back(

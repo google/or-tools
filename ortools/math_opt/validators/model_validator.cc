@@ -46,7 +46,7 @@ constexpr double kInf = std::numeric_limits<double>::infinity();
 
 absl::Status VariablesValid(const VariablesProto& variables,
                             const bool check_names) {
-  RETURN_IF_ERROR(CheckIdsNonnegativeAndStrictlyIncreasing(variables.ids()))
+  RETURN_IF_ERROR(CheckIdsRangeAndStrictlyIncreasing(variables.ids()))
       << "Bad variable ids";
   RETURN_IF_ERROR(
       CheckValues(MakeView(variables.ids(), variables.lower_bounds()),
@@ -147,8 +147,7 @@ absl::Status ObjectiveUpdatesValidForModel(
 
 absl::Status LinearConstraintsValid(
     const LinearConstraintsProto& linear_constraints, const bool check_names) {
-  RETURN_IF_ERROR(
-      CheckIdsNonnegativeAndStrictlyIncreasing(linear_constraints.ids()))
+  RETURN_IF_ERROR(CheckIdsRangeAndStrictlyIncreasing(linear_constraints.ids()))
       << "Bad linear constraint ids";
   RETURN_IF_ERROR(CheckValues(
       MakeView(linear_constraints.ids(), linear_constraints.lower_bounds()),
@@ -229,11 +228,11 @@ absl::Status ValidateModel(const ModelProto& model, const bool check_names) {
 
 absl::Status ValidateModelUpdate(const ModelUpdateProto& model_update,
                                  const bool check_names) {
-  RETURN_IF_ERROR(CheckIdsNonnegativeAndStrictlyIncreasing(
+  RETURN_IF_ERROR(CheckIdsRangeAndStrictlyIncreasing(
       model_update.deleted_linear_constraint_ids()))
       << "ModelUpdateProto.deleted_linear_constraint_ids invalid";
-  RETURN_IF_ERROR(CheckIdsNonnegativeAndStrictlyIncreasing(
-      model_update.deleted_variable_ids()))
+  RETURN_IF_ERROR(
+      CheckIdsRangeAndStrictlyIncreasing(model_update.deleted_variable_ids()))
       << "ModelUpdateProto.deleted_variable_ids invalid";
   RETURN_IF_ERROR(VariableUpdatesValid(model_update.variable_updates()))
       << "ModelUpdateProto.variable_updates invalid";

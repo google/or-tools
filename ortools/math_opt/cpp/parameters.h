@@ -211,6 +211,41 @@ struct SolveParameters {
   std::optional<double> relative_gap_limit;
   std::optional<double> absolute_gap_limit;
 
+  // The solver stops early if it can prove there are no primal solutions at
+  // least as good as cutoff.
+  //
+  // On an early stop, the solver returns termination reason kLimitReached and
+  // with limit kCutoff and is not required to give any extra solution
+  // information. Has no effect on the return value if there is no early stop.
+  //
+  // It is recommended that you use a tolerance if you want solutions with
+  // objective exactly equal to cutoff to be returned.
+  //
+  // See the user guide for more details and a comparison with best_bound_limit.
+  std::optional<double> cutoff_limit;
+
+  // The solver stops early as soon as it finds a solution at least this good,
+  // with termination reason kLimitReached and limit kObjective.
+  std::optional<double> objective_limit;
+
+  // The solver stops early as soon as it proves the best bound is at least this
+  // good, with termination reason kLimitReached and limit kObjective.
+  //
+  // See the user guide for a comparison with cutoff_limit.
+  std::optional<double> best_bound_limit;
+
+  // The solver stops early after finding this many feasible solutions, with
+  // termination reason kLimitReached and limit kSolution. Must be greater than
+  // zero if set. It is often used get the solver to stop on the first feasible
+  // solution found. Note that there is no guarantee on the objective value for
+  // any of the returned solutions.
+  //
+  // Solvers will typically not return more solutions than the solution limit,
+  // but this is not enforced by MathOpt, see also b/214041169.
+  //
+  // Currently supported for Gurobi and SCIP, and for CP-SAT only with value 1.
+  std::optional<int32_t> solution_limit;
+
   // If unset, use the solver default. If set, it must be >= 1.
   std::optional<int32_t> threads;
 

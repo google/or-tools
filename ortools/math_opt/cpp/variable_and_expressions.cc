@@ -13,19 +13,19 @@
 
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
 
-#include <string>
+#include <cmath>
+#include <limits>
 #include <utility>
 #include <vector>
 
 #include "ortools/base/logging.h"
-#include "absl/base/attributes.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/int_type.h"
-#include "ortools/math_opt/core/model_storage.h"
-#include "ortools/math_opt/cpp/key_types.h"
 
 namespace operations_research {
 namespace math_opt {
+
+constexpr double kInf = std::numeric_limits<double>::infinity();
 
 #ifdef MATH_OPT_USE_EXPRESSION_COUNTERS
 LinearExpression::LinearExpression() { ++num_calls_default_constructor_; }
@@ -91,36 +91,90 @@ double LinearExpression::EvaluateWithDefaultZero(
   return result;
 }
 
+namespace {
+
+// Streaming formatter for a coefficient of a linear/quadratic term, along with
+// any leading "+"/"-"'s to connect it with preceding terms in a sum, and
+// potentially a "*" postfix. The `is_first` parameter specifies if the term is
+// the first appearing in the sum, in which case the handling of the +/-
+// connectors is different.
+struct LeadingCoefficientFormatter {
+  LeadingCoefficientFormatter(const double coeff, const bool is_first)
+      : coeff(coeff), is_first(is_first) {}
+  const double coeff;
+  const bool is_first;
+};
+
+std::ostream& operator<<(std::ostream& out,
+                         const LeadingCoefficientFormatter formatter) {
+  const double coeff = formatter.coeff;
+  if (formatter.is_first) {
+    if (coeff == 1.0) {
+      // Do nothing.
+    } else if (coeff == -1.0) {
+      out << "-";
+    } else {
+      out << coeff << "*";
+    }
+  } else {
+    if (coeff == 1.0) {
+      out << " + ";
+    } else if (coeff == -1.0) {
+      out << " - ";
+    } else if (std::isnan(coeff)) {
+      out << " + nan*";
+    } else if (coeff >= 0) {
+      out << " + " << coeff << "*";
+    } else {
+      out << " - " << -coeff << "*";
+    }
+  }
+  return out;
+}
+
+// Streaming formatter for a constant in a linear/quadratic expression.
+struct ConstantFormatter {
+  ConstantFormatter(const double constant, const bool is_first)
+      : constant(constant), is_first(is_first) {}
+  const double constant;
+  const bool is_first;
+};
+
+std::ostream& operator<<(std::ostream& out, const ConstantFormatter formatter) {
+  const double constant = formatter.constant;
+  if (formatter.is_first) {
+    out << constant;
+  } else if (constant == 0) {
+    // Do nothing.
+  } else if (std::isnan(constant)) {
+    out << " + nan";
+  } else if (constant > 0) {
+    out << " + " << constant;
+  } else {
+    out << " - " << -constant;
+  }
+  return out;
+}
+
+}  // namespace
+
 std::ostream& operator<<(std::ostream& ostr,
                          const LinearExpression& expression) {
   // TODO(b/169415597): improve linear expression format:
   //  - use bijective formatting in base10 of the double factors.
-  //  - handle negative coefficients, replacing `... + -3*x ` by `... - 3*x`.
   //  - make sure to quote the variable name so that we support:
   //    * variable names contains +, -, ...
   //    * variable names resembling anonymous variable names.
   const std::vector<Variable> sorted_variables = expression.terms_.SortedKeys();
   bool first = true;
   for (const auto v : sorted_variables) {
-    if (first) {
+    const double coeff = expression.terms_.at(v);
+    if (coeff != 0) {
+      ostr << LeadingCoefficientFormatter(coeff, first) << v;
       first = false;
-    } else {
-      ostr << " + ";
-    }
-    ostr << expression.terms_.at(v) << "*";
-    const std::string& name =
-        expression.terms_.storage()->variable_name(v.typed_id());
-    if (name.empty()) {
-      ostr << "[" << v << "]";
-    } else {
-      ostr << name;
     }
   }
-
-  if (!first) {
-    ostr << " + ";
-  }
-  ostr << expression.offset();
+  ostr << ConstantFormatter(expression.offset(), first);
 
   return ostr;
 }
@@ -129,9 +183,17 @@ std::ostream& operator<<(std::ostream& ostr,
                          const BoundedLinearExpression& bounded_expression) {
   // TODO(b/170991498): use bijective conversion from double to base-10 string
   // to make sure we can reproduce bugs.
-  ostr << bounded_expression.lower_bound
-       << " <= " << bounded_expression.expression
-       << " <= " << bounded_expression.upper_bound;
+  const double lb = bounded_expression.lower_bound;
+  const double ub = bounded_expression.upper_bound;
+  if (lb == ub) {
+    ostr << bounded_expression.expression << " = " << lb;
+  } else if (lb == -kInf) {
+    ostr << bounded_expression.expression << " ≤ " << ub;
+  } else if (ub == kInf) {
+    ostr << bounded_expression.expression << " ≥ " << lb;
+  } else {
+    ostr << lb << " ≤ " << bounded_expression.expression << " ≤ " << ub;
+  }
   return ostr;
 }
 
@@ -173,15 +235,16 @@ double QuadraticExpression::EvaluateWithDefaultZero(
 }
 
 std::ostream& operator<<(std::ostream& ostr, const QuadraticExpression& expr) {
-  // TODO(b/169415597): improve quadratic expression formatting.
+  // TODO(b/169415597): improve quadratic expression formatting. See b/170991498
+  // for desired improvements for LinearExpression streaming which are also
+  // applicable here.
   bool first = true;
   for (const auto v : expr.quadratic_terms().SortedKeys()) {
-    if (first) {
+    const double coeff = expr.quadratic_terms().at(v);
+    if (coeff != 0) {
+      ostr << LeadingCoefficientFormatter(coeff, first);
       first = false;
-    } else {
-      ostr << " + ";
     }
-    ostr << expr.quadratic_terms().at(v) << "*";
     const Variable first_variable(expr.quadratic_terms().storage(),
                                   v.typed_id().first);
     const Variable second_variable(expr.quadratic_terms().storage(),
@@ -193,19 +256,13 @@ std::ostream& operator<<(std::ostream& ostr, const QuadraticExpression& expr) {
     }
   }
   for (const auto v : expr.linear_terms().SortedKeys()) {
-    if (first) {
+    const double coeff = expr.linear_terms().at(v);
+    if (coeff != 0) {
+      ostr << LeadingCoefficientFormatter(coeff, first) << v;
       first = false;
-    } else {
-      ostr << " + ";
     }
-    ostr << expr.linear_terms().at(v) << "*" << v;
   }
-
-  if (!first) {
-    ostr << " + ";
-  }
-  ostr << expr.offset();
-
+  ostr << ConstantFormatter(expr.offset(), first);
   return ostr;
 }
 

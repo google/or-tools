@@ -910,9 +910,13 @@ H AbslHashValue(H h, const Variable& variable) {
 }
 
 std::ostream& operator<<(std::ostream& ostr, const Variable& variable) {
-  // TODO(b/170992529): handle the case of empty variable name and quoting when
-  // the variable name contains invalid characters.
-  ostr << variable.name();
+  // TODO(b/170992529): handle quoting of invalid characters in the name.
+  const std::string& name = variable.name();
+  if (name.empty()) {
+    ostr << "__var#" << variable.id() << "__";
+  } else {
+    ostr << name;
+  }
   return ostr;
 }
 

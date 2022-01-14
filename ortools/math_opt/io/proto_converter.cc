@@ -15,11 +15,11 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <iterator>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "ortools/base/integral_types.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
@@ -253,14 +253,16 @@ absl::StatusOr<::operations_research::MPModelProto> MathOptModelToMPModelProto(
   }
   const SparseDoubleMatrixProto& origin_qp_terms =
       model.objective().quadratic_coefficients();
-  MPQuadraticObjective& destination_qp_terms =
-      *output.mutable_quadratic_objective();
-  for (int k = 0; k < origin_qp_terms.coefficients().size(); ++k) {
-    destination_qp_terms.add_qvar1_index(
-        variable_id_to_mp_position[origin_qp_terms.row_ids(k)]);
-    destination_qp_terms.add_qvar2_index(
-        variable_id_to_mp_position[origin_qp_terms.column_ids(k)]);
-    destination_qp_terms.add_coefficient(origin_qp_terms.coefficients(k));
+  if (!origin_qp_terms.coefficients().empty()) {
+    MPQuadraticObjective& destination_qp_terms =
+        *output.mutable_quadratic_objective();
+    for (int k = 0; k < origin_qp_terms.coefficients().size(); ++k) {
+      destination_qp_terms.add_qvar1_index(
+          variable_id_to_mp_position[origin_qp_terms.row_ids(k)]);
+      destination_qp_terms.add_qvar2_index(
+          variable_id_to_mp_position[origin_qp_terms.column_ids(k)]);
+      destination_qp_terms.add_coefficient(origin_qp_terms.coefficients(k));
+    }
   }
 
   // TODO(user): use the constraint iterator from scip_solver.cc here.

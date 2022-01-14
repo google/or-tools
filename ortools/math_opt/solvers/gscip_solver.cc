@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <string>
@@ -31,6 +32,7 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
@@ -68,6 +70,8 @@ namespace operations_research {
 namespace math_opt {
 
 namespace {
+
+constexpr double kInf = std::numeric_limits<double>::infinity();
 
 int64_t SafeId(const VariablesProto& variables, int index) {
   if (variables.ids().empty()) {
@@ -398,13 +402,14 @@ GScipParameters::MetaParamValue ConvertMathOptEmphasis(EmphasisProto emphasis) {
   }
 }
 
-GScipParameters GScipSolver::MergeParameters(
-    const SolveParametersProto& solve_parameters) {
+std::pair<GScipParameters, std::vector<std::string>>
+GScipSolver::MergeParameters(const SolveParametersProto& solve_parameters) {
   // First build the result by translating common parameters to a
   // GScipParameters, and then merging with user provided gscip_parameters.
   // This results in user provided solver specific parameters overwriting
   // common parameters should there be any conflict.
   GScipParameters result;
+  std::vector<std::string> warnings;
 
   // By default SCIP catches Ctrl-C but we don't want this behavior when the
   // users uses SCIP through MathOpt.
@@ -428,6 +433,22 @@ GScipParameters GScipSolver::MergeParameters(
   if (solve_parameters.has_absolute_gap_limit()) {
     (*result.mutable_real_params())["limits/absgap"] =
         solve_parameters.absolute_gap_limit();
+  }
+
+  if (solve_parameters.has_objective_limit()) {
+    warnings.push_back("parameter objective_limit not supported for gSCIP.");
+  }
+  if (solve_parameters.has_best_bound_limit()) {
+    warnings.push_back("parameter best_bound_limit not supported for gSCIP.");
+  }
+
+  if (solve_parameters.has_cutoff_limit()) {
+    result.set_objective_limit(solve_parameters.cutoff_limit());
+  }
+
+  if (solve_parameters.has_solution_limit()) {
+    (*result.mutable_int_params())["limits/solutions"] =
+        solve_parameters.solution_limit();
   }
 
   // GScip has also GScipSetOutputEnabled() but this changes the log
@@ -496,7 +517,7 @@ GScipParameters GScipSolver::MergeParameters(
 
   result.MergeFrom(solve_parameters.gscip());
 
-  return result;
+  return {std::move(result), std::move(warnings)};
 }
 
 namespace {
@@ -514,7 +535,8 @@ std::string JoinDetails(const std::string& gscip_detail,
 
 ProblemStatusProto GetProblemStatusProto(const GScipOutput::Status gscip_status,
                                          const bool has_feasible_solution,
-                                         const bool has_finite_dual_bound) {
+                                         const bool has_finite_dual_bound,
+                                         const bool was_cutoff) {
   ProblemStatusProto problem_status;
   if (has_feasible_solution) {
     problem_status.set_primal_status(FEASIBILITY_STATUS_FEASIBLE);
@@ -528,7 +550,9 @@ ProblemStatusProto GetProblemStatusProto(const GScipOutput::Status gscip_status,
       problem_status.set_dual_status(FEASIBILITY_STATUS_FEASIBLE);
       break;
     case GScipOutput::INFEASIBLE:
-      problem_status.set_primal_status(FEASIBILITY_STATUS_INFEASIBLE);
+      if (!was_cutoff) {
+        problem_status.set_primal_status(FEASIBILITY_STATUS_INFEASIBLE);
+      }
       break;
     case GScipOutput::UNBOUNDED:
       problem_status.set_dual_status(FEASIBILITY_STATUS_INFEASIBLE);
@@ -547,7 +571,8 @@ ProblemStatusProto GetProblemStatusProto(const GScipOutput::Status gscip_status,
 
 absl::StatusOr<TerminationProto> ConvertTerminationReason(
     const GScipOutput::Status gscip_status,
-    const std::string& gscip_status_detail, const bool has_feasible_solution) {
+    const std::string& gscip_status_detail, const bool has_feasible_solution,
+    const bool had_cutoff) {
   switch (gscip_status) {
     case GScipOutput::USER_INTERRUPT:
       return TerminateForLimit(
@@ -591,8 +616,12 @@ absl::StatusOr<TerminationProto> ConvertTerminationReason(
           JoinDetails(gscip_status_detail,
                       "underlying gSCIP status: GAP_LIMIT"));
     case GScipOutput::INFEASIBLE:
-      return TerminateForReason(TERMINATION_REASON_INFEASIBLE,
-                                gscip_status_detail);
+      if (had_cutoff) {
+        return TerminateForLimit(LIMIT_CUTOFF, gscip_status_detail);
+      } else {
+        return TerminateForReason(TERMINATION_REASON_INFEASIBLE,
+                                  gscip_status_detail);
+      }
     case GScipOutput::UNBOUNDED: {
       if (has_feasible_solution) {
         return TerminateForReason(
@@ -635,21 +664,29 @@ absl::StatusOr<TerminationProto> ConvertTerminationReason(
 }  // namespace
 
 absl::StatusOr<SolveResultProto> GScipSolver::CreateSolveResultProto(
-    GScipResult gscip_result,
-    const ModelSolveParametersProto& model_parameters) {
+    GScipResult gscip_result, const ModelSolveParametersProto& model_parameters,
+    const std::optional<double> cutoff) {
   SolveResultProto solve_result;
   ASSIGN_OR_RETURN(
       *solve_result.mutable_termination(),
-      ConvertTerminationReason(gscip_result.gscip_output.status(),
-                               gscip_result.gscip_output.status_detail(),
-                               !gscip_result.solutions.empty()));
-  *solve_result.mutable_solve_stats()->mutable_problem_status() =
-      GetProblemStatusProto(
-          gscip_result.gscip_output.status(), !gscip_result.solutions.empty(),
-          std::isfinite(gscip_result.gscip_output.stats().best_bound()));
-
-  const int num_solutions = gscip_result.solutions.size();
-  CHECK_EQ(num_solutions, gscip_result.objective_values.size());
+      ConvertTerminationReason(
+          gscip_result.gscip_output.status(),
+          gscip_result.gscip_output.status_detail(),
+          /*has_feasible_solution=*/!gscip_result.solutions.empty(),
+          /*had_cutoff=*/cutoff.has_value()));
+  const bool is_maximize = gscip_->ObjectiveIsMaximize();
+  // When an objective limit is set, SCIP returns the solutions worse than the
+  // limit, we need to filter these out manually.
+  const auto meets_cutoff = [cutoff, is_maximize](const double obj_value) {
+    if (!cutoff.has_value()) {
+      return true;
+    }
+    if (is_maximize) {
+      return obj_value >= *cutoff;
+    } else {
+      return obj_value <= *cutoff;
+    }
+  };
 
   LazyInitialized<std::vector<int64_t>> sorted_variables([&]() {
     std::vector<int64_t> sorted;
@@ -660,7 +697,12 @@ absl::StatusOr<SolveResultProto> GScipSolver::CreateSolveResultProto(
     std::sort(sorted.begin(), sorted.end());
     return sorted;
   });
+  CHECK_EQ(gscip_result.solutions.size(), gscip_result.objective_values.size());
   for (int i = 0; i < gscip_result.solutions.size(); ++i) {
+    // GScip ensures the solutions are returned best objective first.
+    if (!meets_cutoff(gscip_result.objective_values[i])) {
+      break;
+    }
     SolutionProto* const solution = solve_result.add_solutions();
     PrimalSolutionProto* const primal_solution =
         solution->mutable_primal_solution();
@@ -676,12 +718,24 @@ absl::StatusOr<SolveResultProto> GScipSolver::CreateSolveResultProto(
                                gscip_result.primal_ray,
                                model_parameters.variable_values_filter());
   }
-  // TODO(user): add support for the basis and dual solutions in gscip, then
-  //  populate them here.
+  const bool has_feasible_solution = solve_result.solutions_size() > 0;
+  *solve_result.mutable_solve_stats()->mutable_problem_status() =
+      GetProblemStatusProto(
+          gscip_result.gscip_output.status(),
+          /*has_feasible_solution=*/has_feasible_solution,
+          /*has_finite_dual_bound=*/
+          std::isfinite(gscip_result.gscip_output.stats().best_bound()),
+          /*was_cutoff=*/solve_result.termination().limit() == LIMIT_CUTOFF);
   SolveStatsProto* const common_stats = solve_result.mutable_solve_stats();
   const GScipSolvingStats& gscip_stats = gscip_result.gscip_output.stats();
   common_stats->set_best_dual_bound(gscip_stats.best_bound());
-  common_stats->set_best_primal_bound(gscip_stats.best_objective());
+  // If we found no solutions meeting the cutoff, we have no primal bound.
+  if (has_feasible_solution) {
+    common_stats->set_best_primal_bound(gscip_stats.best_objective());
+  } else {
+    common_stats->set_best_primal_bound(is_maximize ? -kInf : kInf);
+  }
+
   common_stats->set_node_count(gscip_stats.node_count());
   common_stats->set_simplex_iterations(gscip_stats.primal_simplex_iterations() +
                                        gscip_stats.dual_simplex_iterations());
@@ -741,7 +795,10 @@ absl::StatusOr<SolveResultProto> GScipSolver::Solve(
         std::make_unique<GScipSolverMessageCallbackHandler>(message_cb);
   }
 
-  const GScipParameters gscip_parameters = MergeParameters(parameters);
+  const auto [gscip_parameters, warnings] = MergeParameters(parameters);
+  if (parameters.strictness().bad_parameter() && !warnings.empty()) {
+    return absl::InvalidArgumentError(absl::StrJoin(warnings, "; "));
+  }
   // TODO(user): reorganize gscip to respect warning is error argument on bad
   //  parameters.
 
@@ -781,7 +838,13 @@ absl::StatusOr<SolveResultProto> GScipSolver::Solve(
 
   ASSIGN_OR_RETURN(
       SolveResultProto result,
-      CreateSolveResultProto(std::move(gscip_result), model_parameters));
+      CreateSolveResultProto(std::move(gscip_result), model_parameters,
+                             parameters.has_cutoff_limit()
+                                 ? std::make_optional(parameters.cutoff_limit())
+                                 : std::nullopt));
+  for (const std::string& warning : warnings) {
+    result.add_warnings(warning);
+  }
   CHECK_OK(util_time::EncodeGoogleApiProto(
       absl::Now() - start, result.mutable_solve_stats()->mutable_solve_time()));
   return result;

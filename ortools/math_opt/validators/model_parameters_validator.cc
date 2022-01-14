@@ -58,7 +58,7 @@ absl::Status ValidateBranchingPriorities(
 
 absl::Status ValidateSparseVectorFilter(const SparseVectorFilterProto& v,
                                         const IdNameBiMap& valid_ids) {
-  RETURN_IF_ERROR(CheckIdsNonnegativeAndStrictlyIncreasing(v.filtered_ids()));
+  RETURN_IF_ERROR(CheckIdsRangeAndStrictlyIncreasing(v.filtered_ids()));
   RETURN_IF_ERROR(
       CheckIdsSubset(v.filtered_ids(), valid_ids, "filtered_ids", "model IDs"));
   if (!v.filter_by_ids() && !v.filtered_ids().empty()) {

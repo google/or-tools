@@ -213,6 +213,13 @@ enum class Limit {
   // The algorithm stopped because it ran out of memory.
   kMemory = LIMIT_MEMORY,
 
+  // The solver was run with a cutoff (e.g. SolveParameters.cutoff_limit was
+  // set) on the objective, indicating that the user did not want any solution
+  // worse than the cutoff, and the solver concluded there were no solutions at
+  // least as good as the cutoff. Typically no further solution information is
+  // provided.
+  kCutoff = LIMIT_CUTOFF,
+
   // The algorithm stopped because it found a solution better than a minimum
   // limit set by the user.
   kObjective = LIMIT_OBJECTIVE,

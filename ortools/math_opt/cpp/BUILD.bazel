@@ -242,7 +242,6 @@ cc_library(
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/synchronization",
-        #"@com_google_absl//absl/types:source_location",
     ],
 )
 
@@ -269,8 +268,6 @@ cc_library(
         "//ortools/gscip:gscip_cc_proto",
         "//ortools/math_opt:parameters_cc_proto",
         "//ortools/math_opt/solvers:gurobi_cc_proto",
-        #"//ortools/math_opt/solvers:osqp_settings_cc_proto",
-        #"//ortools/pdlp:solvers_cc_proto",
         "//ortools/port:proto_utils",
         "//ortools/sat:sat_parameters_cc_proto",
         "@com_google_absl//absl/status",

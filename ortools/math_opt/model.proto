@@ -23,7 +23,8 @@ option java_multiple_files = true;
 
 // As used below, we define "#variables" = size(VariablesProto.ids).
 message VariablesProto {
-  // Must be nonnegative and strictly increasing.
+  // Must be nonnegative and strictly increasing. The max(int64) value can't be
+  // used.
   repeated int64 ids = 1;
   // Should have length equal to #variables, values in [-inf, inf).
   repeated double lower_bounds = 2;
@@ -73,7 +74,8 @@ message ObjectiveProto {
 // As used below, we define "#linear constraints" =
 // size(LinearConstraintsProto.ids).
 message LinearConstraintsProto {
-  // Must be nonnegative and strictly increasing.
+  // Must be nonnegative and strictly increasing. The max(int64) value can't be
+  // used.
   repeated int64 ids = 1;
   // Should have length equal to #linear constraints, values in [-inf, inf).
   repeated double lower_bounds = 2;

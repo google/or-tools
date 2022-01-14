@@ -236,6 +236,12 @@ absl::Status ValidateTerminationConsistency(const SolveResultProto& result) {
     case TERMINATION_REASON_LIMIT_REACHED:
       // TODO(b/211677729): update when TERMINATION_REASON_FEASIBLE is added.
       // No primal or dual requirements so we check consistency.
+      if (result.termination().limit() == LIMIT_CUTOFF) {
+        if (result.solutions_size() > 0) {
+          return absl::InvalidArgumentError(
+              "For LIMIT_CUTOFF expected no solutions");
+        }
+      }
       RETURN_IF_ERROR(CheckPrimalSolutionAndStatusConsistency(result));
       RETURN_IF_ERROR(CheckDualSolutionAndStatusConsistency(result));
       return absl::OkStatus();

@@ -228,23 +228,6 @@ MessageCallback PrinterMessageCallback(std::ostream& output_stream,
       [=](const std::vector<std::string>& messages) { impl->Call(messages); };
 }
 
-MessageCallback InfoLoggerMessageCallback(const absl::string_view prefix,
-                                          const absl::SourceLocation loc) {
-  return [=](const std::vector<std::string>& messages) {
-    for (const std::string& message : messages) {
-      LOG(INFO).AtLocation(loc) << prefix << message;
-    }
-  };
-}
-
-MessageCallback VLoggerMessageCallback(int level, absl::string_view prefix,
-                                       absl::SourceLocation loc) {
-  return [=](const std::vector<std::string>& messages) {
-    for (const std::string& message : messages) {
-      VLOG(level).AtLocation(loc) << prefix << message;
-    }
-  };
-}
 
 }  // namespace math_opt
 }  // namespace operations_research

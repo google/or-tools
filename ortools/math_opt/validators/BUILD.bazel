@@ -154,9 +154,9 @@ cc_library(
 )
 
 cc_library(
-    name = "solver_parameters_validator",
-    srcs = ["solver_parameters_validator.cc"],
-    hdrs = ["solver_parameters_validator.h"],
+    name = "solve_parameters_validator",
+    srcs = ["solve_parameters_validator.cc"],
+    hdrs = ["solve_parameters_validator.h"],
     deps = [
         "//ortools/base:protoutil",
         "//ortools/base:status_macros",

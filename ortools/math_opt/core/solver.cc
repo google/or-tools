@@ -42,7 +42,7 @@
 #include "ortools/math_opt/validators/model_parameters_validator.h"
 #include "ortools/math_opt/validators/model_validator.h"
 #include "ortools/math_opt/validators/result_validator.h"
-#include "ortools/math_opt/validators/solver_parameters_validator.h"
+#include "ortools/math_opt/validators/solve_parameters_validator.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/base/status_macros.h"
 
@@ -196,7 +196,7 @@ absl::StatusOr<SolveResultProto> Solver::Solve(const SolveArgs& arguments) {
   // can be filtered, this should be included in the solver_interface
   // implementations.
 
-  RETURN_IF_ERROR(ValidateSolverParameters(arguments.parameters))
+  RETURN_IF_ERROR(ValidateSolveParameters(arguments.parameters))
       << "invalid parameters";
   RETURN_IF_ERROR(
       ValidateModelSolveParameters(arguments.model_parameters, model_summary_))

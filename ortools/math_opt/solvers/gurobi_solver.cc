@@ -93,16 +93,6 @@ absl::StatusOr<std::unique_ptr<Gurobi>> GurobiFromInitArgs(
   }
 }
 
-std::vector<std::string> RepeatedPtrFieldToVec(
-    const google::protobuf::RepeatedPtrField<std::string>& proto_string_vec) {
-  std::vector<std::string> result;
-  result.reserve(proto_string_vec.size());
-  for (const std::string& str : proto_string_vec) {
-    result.push_back(str);
-  }
-  return result;
-}
-
 inline BasisStatusProto ConvertVariableStatus(const int status) {
   switch (status) {
     case GRB_BASIC:
@@ -178,6 +168,34 @@ GurobiParametersProto MergeParameters(
         merged_parameters.add_parameters();
     parameter->set_name(GRB_DBL_PAR_MIPGAP);
     parameter->set_value(absl::StrCat(relative_gap_limit));
+  }
+
+  if (solve_parameters.has_cutoff_limit()) {
+    GurobiParametersProto::Parameter* const parameter =
+        merged_parameters.add_parameters();
+    parameter->set_name(GRB_DBL_PAR_CUTOFF);
+    parameter->set_value(absl::StrCat(solve_parameters.cutoff_limit()));
+  }
+
+  if (solve_parameters.has_objective_limit()) {
+    GurobiParametersProto::Parameter* const parameter =
+        merged_parameters.add_parameters();
+    parameter->set_name(GRB_DBL_PAR_BESTOBJSTOP);
+    parameter->set_value(absl::StrCat(solve_parameters.objective_limit()));
+  }
+
+  if (solve_parameters.has_best_bound_limit()) {
+    GurobiParametersProto::Parameter* const parameter =
+        merged_parameters.add_parameters();
+    parameter->set_name(GRB_DBL_PAR_BESTBDSTOP);
+    parameter->set_value(absl::StrCat(solve_parameters.best_bound_limit()));
+  }
+
+  if (solve_parameters.has_solution_limit()) {
+    GurobiParametersProto::Parameter* const parameter =
+        merged_parameters.add_parameters();
+    parameter->set_name(GRB_INT_PAR_SOLUTIONLIMIT);
+    parameter->set_value(absl::StrCat(solve_parameters.solution_limit()));
   }
 
   if (solve_parameters.has_random_seed()) {
@@ -374,6 +392,27 @@ const absl::flat_hash_set<CallbackEventProto>& SupportedLPEvents() {
   return *kEvents;
 }
 
+// Gurobi names (model, variables and constraints) must be no longer than 255
+// characters; or Gurobi fails with an error.
+constexpr std::size_t kMaxNameSize = 255;
+
+// Returns a string of at most kMaxNameSize max size.
+std::string TruncateName(const std::string_view original_name) {
+  return std::string(
+      original_name.substr(0, std::min(kMaxNameSize, original_name.size())));
+}
+
+// Truncate the names of variables and constraints.
+std::vector<std::string> TruncateNames(
+    const google::protobuf::RepeatedPtrField<std::string>& original_names) {
+  std::vector<std::string> result;
+  result.reserve(original_names.size());
+  for (const std::string& original_name : original_names) {
+    result.push_back(TruncateName(original_name));
+  }
+  return result;
+}
+
 }  // namespace
 
 GurobiSolver::GurobiSolver(std::unique_ptr<Gurobi> g_gurobi)
@@ -400,7 +439,7 @@ absl::StatusOr<TerminationProto> GurobiSolver::ConvertTerminationReason(
       return TerminateForReason(TERMINATION_REASON_INFEASIBLE_OR_UNBOUNDED,
                                 "Gurobi status GRB_INF_OR_UNBD");
     case GRB_CUTOFF:
-      return TerminateForLimit(LIMIT_OBJECTIVE, "Gurobi status GRB_CUTOFF");
+      return TerminateForLimit(LIMIT_CUTOFF, "Gurobi status GRB_CUTOFF");
     case GRB_ITERATION_LIMIT:
       return TerminateForLimit(LIMIT_ITERATION);
     case GRB_NODE_LIMIT:
@@ -416,8 +455,7 @@ absl::StatusOr<TerminationProto> GurobiSolver::ConvertTerminationReason(
     case GRB_SUBOPTIMAL:
       return TerminateForReason(TERMINATION_REASON_IMPRECISE);
     case GRB_USER_OBJ_LIMIT:
-      return TerminateForLimit(LIMIT_OBJECTIVE,
-                               "Gurobi status GRB_USR_OBJ_LIMIT");
+      return TerminateForLimit(LIMIT_OBJECTIVE);
     case GRB_LOADED:
       return absl::InternalError(
           "Error creating termination reason, unexpected gurobi status code "
@@ -1184,7 +1222,7 @@ absl::Status GurobiSolver::AddNewVariables(
   // We need to copy the names, RepeatedPtrField cannot be converted to
   // absl::Span<std::string>.
   const std::vector<std::string> variable_names =
-      RepeatedPtrFieldToVec(new_variables.names());
+      TruncateNames(new_variables.names());
   RETURN_IF_ERROR(gurobi_->AddVars(
       /*obj=*/{},
       /*lb=*/new_variables.lower_bounds(),
@@ -1247,7 +1285,7 @@ absl::Status GurobiSolver::AddNewConstraints(
   // We need to copy the names, RepeatedPtrField cannot be converted to
   // absl::Span<std::string>.
   const std::vector<std::string> constraint_names =
-      RepeatedPtrFieldToVec(constraints.names());
+      TruncateNames(constraints.names());
   // Constraints are translated into:
   // 1.  ax <= upper_bound (if lower bound <= -GRB_INFINITY, and upper_bound
   //                        is finite and less than GRB_INFINITY)
@@ -1346,8 +1384,8 @@ absl::Status GurobiSolver::UpdateInt32ListAttribute(
 
 absl::Status GurobiSolver::LoadModel(const ModelProto& input_model) {
   CHECK(gurobi_ != nullptr);
-  RETURN_IF_ERROR(
-      gurobi_->SetStringAttr(GRB_STR_ATTR_MODELNAME, input_model.name()));
+  RETURN_IF_ERROR(gurobi_->SetStringAttr(GRB_STR_ATTR_MODELNAME,
+                                         TruncateName(input_model.name())));
   RETURN_IF_ERROR(AddNewVariables(input_model.variables()));
 
   RETURN_IF_ERROR(AddNewConstraints(input_model.linear_constraints()));

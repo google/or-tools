@@ -363,6 +363,18 @@ GlopSolver::MergeSolveParameters(const SolveParametersProto& solver_parameters,
                      "heuristics was set to: ",
                      ProtoEnumToString(solver_parameters.heuristics())));
   }
+  if (solver_parameters.has_cutoff_limit()) {
+    warnings.push_back("GLOP does not support 'cutoff_limit' parameter");
+  }
+  if (solver_parameters.has_objective_limit()) {
+    warnings.push_back("GLOP does not support 'objective_limit' parameter");
+  }
+  if (solver_parameters.has_best_bound_limit()) {
+    warnings.push_back("GLOP does not support 'best_bound_limit' parameter");
+  }
+  if (solver_parameters.has_solution_limit()) {
+    warnings.push_back("GLOP does not support 'solution_limit' parameter");
+  }
   return std::make_pair(std::move(result), std::move(warnings));
 }
 
@@ -762,6 +774,11 @@ absl::StatusOr<std::unique_ptr<SolverInterface>> GlopSolver::New(
         "Glop does not support quadratic objectives");
   }
   auto solver = absl::WrapUnique(new GlopSolver);
+  // By default Glop CHECKs that bounds are always consistent (lb < ub); thus it
+  // would fail if the initial model or later updates temporarily set inverted
+  // bounds.
+  solver->linear_program_.SetDcheckBounds(false);
+
   solver->linear_program_.SetName(model.name());
   solver->linear_program_.SetMaximizationProblem(model.objective().maximize());
   solver->linear_program_.SetObjectiveOffset(model.objective().offset());

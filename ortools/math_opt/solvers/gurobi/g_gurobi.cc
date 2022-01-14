@@ -13,7 +13,9 @@
 
 #include "ortools/math_opt/solvers/gurobi/g_gurobi.h"
 
+#include <string>
 #include <string_view>
+#include <utility>
 
 #include "ortools/base/cleanup.h"
 #include "absl/status/status.h"

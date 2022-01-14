@@ -124,6 +124,8 @@ std::optional<absl::string_view> Enum<Limit>::ToOptString(Limit value) {
       return "solution";
     case Limit::kMemory:
       return "memory";
+    case Limit::kCutoff:
+      return "cutoff";
     case Limit::kObjective:
       return "objective";
     case Limit::kNorm:
@@ -140,10 +142,10 @@ std::optional<absl::string_view> Enum<Limit>::ToOptString(Limit value) {
 
 absl::Span<const Limit> Enum<Limit>::AllValues() {
   static constexpr Limit kLimitValues[] = {
-      Limit::kUndetermined, Limit::kIteration, Limit::kTime,
-      Limit::kNode,         Limit::kSolution,  Limit::kMemory,
-      Limit::kObjective,    Limit::kNorm,      Limit::kInterrupted,
-      Limit::kSlowProgress, Limit::kOther};
+      Limit::kUndetermined, Limit::kIteration,    Limit::kTime,
+      Limit::kNode,         Limit::kSolution,     Limit::kMemory,
+      Limit::kCutoff,       Limit::kObjective,    Limit::kNorm,
+      Limit::kInterrupted,  Limit::kSlowProgress, Limit::kOther};
   return absl::MakeConstSpan(kLimitValues);
 }
 

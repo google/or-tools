@@ -192,7 +192,7 @@ absl::StatusOr<CuttingStockSolution> SolveCuttingStock(
     ASSIGN_OR_RETURN(math_opt::SolveResult solve_result, solver->Solve());
     if (solve_result.termination.reason !=
         math_opt::TerminationReason::kOptimal) {
-      return absl::InternalErrorBuilder()
+      return util::InternalErrorBuilder()
              << "Failed to solve leader LP problem at iteration "
              << pricing_round << " termination: " << solve_result.termination;
     }
@@ -222,7 +222,7 @@ absl::StatusOr<CuttingStockSolution> SolveCuttingStock(
                    math_opt::Solve(model, math_opt::SolverType::kCpSat));
   if (solve_result.termination.reason !=
       math_opt::TerminationReason::kOptimal) {
-    return absl::InternalErrorBuilder()
+    return util::InternalErrorBuilder()
            << "Failed to solve final cutting stock MIP, termination: "
            << solve_result.termination;
   }
