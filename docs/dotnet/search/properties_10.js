@@ -25,7 +25,7 @@ var searchData=
   ['solutions_22',['Solutions',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RegularLimitParameters.html#a797579dec28a4edcbb61e97ef00ef5d1',1,'Google::OrTools::ConstraintSolver::RegularLimitParameters']]],
   ['solvelog_23',['SolveLog',['../classGoogle_1_1OrTools_1_1Sat_1_1CpSolverResponse.html#a1a19180e0b7563c4036a332d5e8479b2',1,'Google::OrTools::Sat::CpSolverResponse']]],
   ['solverparameters_24',['SolverParameters',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModelParameters.html#a8c08b03a7f67ab0d27174bfa1d815319',1,'Google::OrTools::ConstraintSolver::RoutingModelParameters']]],
-  ['sorted_5fvehicle_5fclasses_5fper_5ftype_25',['sorted_vehicle_classes_per_type',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel_1_1VehicleTypeContainer.html#a51b209182f9a4815c1be4ecc29c9740b',1,'Google::OrTools::ConstraintSolver::RoutingModel::VehicleTypeContainer']]],
+  ['sorted_5fvehicle_5fclasses_5fper_5ftype_25',['sorted_vehicle_classes_per_type',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel_1_1VehicleTypeContainer.html#a288c718698b85bad4c7b4cc5b6fb7a54',1,'Google::OrTools::ConstraintSolver::RoutingModel::VehicleTypeContainer']]],
   ['start_26',['Start',['../classGoogle_1_1OrTools_1_1Sat_1_1IntervalConstraintProto.html#a8ca885c18df6143dfefbe2854ce4f26f',1,'Google::OrTools::Sat::IntervalConstraintProto']]],
   ['startingstate_27',['StartingState',['../classGoogle_1_1OrTools_1_1Sat_1_1AutomatonConstraintProto.html#a92627f99fde3eb982f9a8164c31e00ac',1,'Google::OrTools::Sat::AutomatonConstraintProto']]],
   ['status_28',['Status',['../classGoogle_1_1OrTools_1_1Sat_1_1CpSolverResponse.html#af8c4e500639499166e90eea40ca84613',1,'Google::OrTools::Sat::CpSolverResponse']]],

@@ -1,0 +1,11 @@
+digraph "linearsolver"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  compound=true
+  subgraph clusterdir_c2366ecc8bf89298d2ab512247846781 {
+    graph [ bgcolor="#edf0f7", pencolor="grey50", style="filled,dashed,", label="ortools", fontname="Helvetica", fontsize="10", URL="dir_c2366ecc8bf89298d2ab512247846781.html"]
+  dir_3f0a7afb16de203a266ccb121f423bae [shape=box, label="linearsolver", style="filled,bold,", fillcolor="#edf0f7", color="grey25", URL="dir_3f0a7afb16de203a266ccb121f423bae.html"];
+  }
+}

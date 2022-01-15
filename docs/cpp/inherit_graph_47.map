@@ -1,9 +1,0 @@
-<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classoperations__research_1_1_base_knapsack_solver.html" title=" " alt="" coords="5,148,164,175"/>
-<area shape="rect" id="node2" href="$classoperations__research_1_1_knapsack64_items_solver.html" title=" " alt="" coords="238,5,417,32"/>
-<area shape="rect" id="node3" href="$classoperations__research_1_1_knapsack_brute_force_solver.html" title=" " alt="" coords="229,56,425,83"/>
-<area shape="rect" id="node4" href="$classoperations__research_1_1_knapsack_divide_and_conquer_solver.html" title=" " alt="" coords="224,107,431,149"/>
-<area shape="rect" id="node5" href="$classoperations__research_1_1_knapsack_dynamic_programming_solver.html" title=" " alt="" coords="212,173,443,214"/>
-<area shape="rect" id="node6" href="$classoperations__research_1_1_knapsack_generic_solver.html" title=" " alt="" coords="239,239,415,265"/>
-<area shape="rect" id="node7" href="$classoperations__research_1_1_knapsack_m_i_p_solver.html" title=" " alt="" coords="253,289,402,316"/>
-</map>

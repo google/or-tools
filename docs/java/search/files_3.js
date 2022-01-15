@@ -9,7 +9,6 @@ var searchData=
   ['demon_2ejava_6',['Demon.java',['../Demon_8java.html',1,'']]],
   ['densematrixproto_2ejava_7',['DenseMatrixProto.java',['../DenseMatrixProto_8java.html',1,'']]],
   ['densematrixprotoorbuilder_2ejava_8',['DenseMatrixProtoOrBuilder.java',['../DenseMatrixProtoOrBuilder_8java.html',1,'']]],
-  ['difference_2ejava_9',['Difference.java',['../Difference_8java.html',1,'']]],
-  ['disjunctiveconstraint_2ejava_10',['DisjunctiveConstraint.java',['../DisjunctiveConstraint_8java.html',1,'']]],
-  ['doublelinearexpr_2ejava_11',['DoubleLinearExpr.java',['../DoubleLinearExpr_8java.html',1,'']]]
+  ['disjunctiveconstraint_2ejava_9',['DisjunctiveConstraint.java',['../DisjunctiveConstraint_8java.html',1,'']]],
+  ['doublelinearexpr_2ejava_10',['DoubleLinearExpr.java',['../DoubleLinearExpr_8java.html',1,'']]]
 ];

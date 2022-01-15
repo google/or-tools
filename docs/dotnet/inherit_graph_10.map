@@ -1,9 +1,0 @@
-<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$interfaceGoogle_1_1OrTools_1_1Sat_1_1ILiteral.html" title=" " alt="" coords="17,31,84,57"/>
-<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1Sat_1_1IntVar.html" title=" " alt="" coords="190,56,249,83"/>
-<area shape="rect" id="node3" href="$classGoogle_1_1OrTools_1_1Sat_1_1NotBooleanVariable.html" title=" " alt="" coords="144,5,295,32"/>
-<area shape="rect" id="node4" href="$classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html" title=" " alt="" coords="5,107,96,133"/>
-<area shape="rect" id="node5" href="$classGoogle_1_1OrTools_1_1Sat_1_1ConstantExpr.html" title=" " alt="" coords="165,107,274,133"/>
-<area shape="rect" id="node6" href="$classGoogle_1_1OrTools_1_1Sat_1_1ProductCst.html" title=" " alt="" coords="173,157,265,184"/>
-<area shape="rect" id="node7" href="$classGoogle_1_1OrTools_1_1Sat_1_1SumArray.html" title=" " alt="" coords="176,208,263,235"/>
-</map>

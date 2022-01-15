@@ -1,0 +1,34 @@
+digraph "Graphical Class Hierarchy"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node0 [label="Message",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node0 -> Node1 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 [label="AssignmentProto",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classoperations__research_1_1_assignment_proto.html",tooltip=" "];
+  Node0 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="ConstraintRuns",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classoperations__research_1_1_constraint_runs.html",tooltip=" "];
+  Node0 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="ConstraintSolverParameters",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classoperations__research_1_1_constraint_solver_parameters.html",tooltip=" "];
+  Node0 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="DemonRuns",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classoperations__research_1_1_demon_runs.html",tooltip=" "];
+  Node0 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="IntVarAssignment",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classoperations__research_1_1_int_var_assignment.html",tooltip=" "];
+  Node0 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="IntervalVarAssignment",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classoperations__research_1_1_interval_var_assignment.html",tooltip=" "];
+  Node0 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="RegularLimitParameters",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classoperations__research_1_1_regular_limit_parameters.html",tooltip=" "];
+  Node0 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="RoutingModelParameters",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classoperations__research_1_1_routing_model_parameters.html",tooltip=" "];
+  Node0 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="RoutingSearchParameters",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classoperations__research_1_1_routing_search_parameters.html",tooltip=" "];
+  Node0 -> Node10 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="RoutingSearchParameters\l_ImprovementSearchLimitParameters",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classoperations__research_1_1_routing_search_parameters___improvement_search_limit_parameters.html",tooltip=" "];
+  Node0 -> Node11 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="RoutingSearchParameters\l_LocalSearchNeighborhoodOperators",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classoperations__research_1_1_routing_search_parameters___local_search_neighborhood_operators.html",tooltip=" "];
+  Node0 -> Node12 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="SequenceVarAssignment",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classoperations__research_1_1_sequence_var_assignment.html",tooltip=" "];
+  Node0 -> Node13 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="WorkerInfo",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classoperations__research_1_1_worker_info.html",tooltip=" "];
+}

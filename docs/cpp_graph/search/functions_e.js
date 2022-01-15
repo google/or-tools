@@ -2,7 +2,7 @@ var searchData=
 [
   ['pathhascycle_0',['PathHasCycle',['../namespaceutil.html#a3215b610ebe65cde55008dc1367c434e',1,'util']]],
   ['permutationindexcomparisonbyarchead_1',['PermutationIndexComparisonByArcHead',['../classoperations__research_1_1_permutation_index_comparison_by_arc_head.html#aaf93c351ba18edcfcc2949a6c31fc9b1',1,'operations_research::PermutationIndexComparisonByArcHead']]],
-  ['permute_2',['Permute',['../namespaceutil.html#ac497881c4166bc694adc4bee62746118',1,'util::Permute(const IntVector &amp;permutation, std::vector&lt; bool &gt; *array_to_permute)'],['../namespaceutil.html#a8c227a057c1ce9d46b1185abf77ad91e',1,'util::Permute(const IntVector &amp;permutation, Array *array_to_permute)']]],
+  ['permute_2',['Permute',['../namespaceutil.html#a8c227a057c1ce9d46b1185abf77ad91e',1,'util::Permute(const IntVector &amp;permutation, Array *array_to_permute)'],['../namespaceutil.html#ac497881c4166bc694adc4bee62746118',1,'util::Permute(const IntVector &amp;permutation, std::vector&lt; bool &gt; *array_to_permute)']]],
   ['permutewithexplicitelementtype_3',['PermuteWithExplicitElementType',['../namespaceutil.html#a9470623ca7db3c4a62ce3b326c6b07d8',1,'util']]],
   ['pop_4',['Pop',['../classoperations__research_1_1_priority_queue_with_restricted_push.html#af355586ee86be2298efe2e81367eeffe',1,'operations_research::PriorityQueueWithRestrictedPush']]],
   ['priorityqueuewithrestrictedpush_5',['PriorityQueueWithRestrictedPush',['../classoperations__research_1_1_priority_queue_with_restricted_push.html#a3b2c821405c1875d5f8975e1ceae6a60',1,'operations_research::PriorityQueueWithRestrictedPush']]],

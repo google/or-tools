@@ -1,0 +1,10 @@
+digraph "Graphical Class Hierarchy"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node0 [label="true_type",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node0 -> Node1 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 [label="is_proto_enum\< ::operations\l_research::FlowModelProto\l_ProblemType \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structis__proto__enum_3_01_1_1operations__research_1_1_flow_model_proto___problem_type_01_4.html",tooltip=" "];
+}

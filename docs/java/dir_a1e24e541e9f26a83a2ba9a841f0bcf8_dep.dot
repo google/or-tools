@@ -1,0 +1,16 @@
+digraph "ortools"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  compound=true
+  subgraph clusterdir_265fd14d4e9a0ce57ad38de5d64bb540 {
+    graph [ bgcolor="#edf0f7", pencolor="grey50", style="filled,dashed,", label="google", fontname="Helvetica", fontsize="10", URL="dir_265fd14d4e9a0ce57ad38de5d64bb540.html"]
+  subgraph clusterdir_a1e24e541e9f26a83a2ba9a841f0bcf8 {
+    graph [ bgcolor="#edf0f7", pencolor="grey25", style="filled,bold,", label="", fontname="Helvetica", fontsize="10", URL="dir_a1e24e541e9f26a83a2ba9a841f0bcf8.html"]
+    dir_a1e24e541e9f26a83a2ba9a841f0bcf8 [shape=plaintext, label="ortools"];
+  dir_a515ab52e7d6f77ddc8659140a08db8f [shape=box, label="constraintsolver", style="filled,", fillcolor="#a2b4d6", color="grey25", URL="dir_a515ab52e7d6f77ddc8659140a08db8f.html"];
+  dir_0070805acb68ef04688e7c31a1e72654 [shape=box, label="sat", style="filled,", fillcolor="#a2b4d6", color="grey25", URL="dir_0070805acb68ef04688e7c31a1e72654.html"];
+  }
+  }
+}

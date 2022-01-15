@@ -1,7 +1,0 @@
-<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" title=" " alt="" coords="5,56,92,83"/>
-<area shape="rect" id="node2" href="$class_swig_1_1_director_exception.html" title=" " alt="" coords="140,56,279,83"/>
-<area shape="rect" id="node3" href="$class_swig_1_1_director_method_exception.html" title=" " alt="" coords="349,5,535,32"/>
-<area shape="rect" id="node4" href="$class_swig_1_1_director_pure_virtual_exception.html" title=" " alt="" coords="337,56,547,83"/>
-<area shape="rect" id="node5" href="$class_swig_1_1_director_type_mismatch_exception.html" title=" " alt="" coords="327,107,557,133"/>
-</map>

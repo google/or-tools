@@ -1,0 +1,48 @@
+digraph "Graphical Class Hierarchy"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node0 [label="Preprocessor",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classoperations__research_1_1glop_1_1_preprocessor.html",tooltip=" "];
+  Node0 -> Node1 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 [label="AddSlackVariablesPreprocessor",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classoperations__research_1_1glop_1_1_add_slack_variables_preprocessor.html",tooltip=" "];
+  Node0 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="DoubletonEqualityRowPreprocessor",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classoperations__research_1_1glop_1_1_doubleton_equality_row_preprocessor.html",tooltip=" "];
+  Node0 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="DoubletonFreeColumnPreprocessor",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classoperations__research_1_1glop_1_1_doubleton_free_column_preprocessor.html",tooltip=" "];
+  Node0 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="DualizerPreprocessor",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classoperations__research_1_1glop_1_1_dualizer_preprocessor.html",tooltip=" "];
+  Node0 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="EmptyColumnPreprocessor",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classoperations__research_1_1glop_1_1_empty_column_preprocessor.html",tooltip=" "];
+  Node0 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="EmptyConstraintPreprocessor",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classoperations__research_1_1glop_1_1_empty_constraint_preprocessor.html",tooltip=" "];
+  Node0 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="FixedVariablePreprocessor",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classoperations__research_1_1glop_1_1_fixed_variable_preprocessor.html",tooltip=" "];
+  Node0 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="ForcingAndImpliedFreeConstraint\lPreprocessor",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classoperations__research_1_1glop_1_1_forcing_and_implied_free_constraint_preprocessor.html",tooltip=" "];
+  Node0 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="FreeConstraintPreprocessor",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classoperations__research_1_1glop_1_1_free_constraint_preprocessor.html",tooltip=" "];
+  Node0 -> Node10 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="ImpliedFreePreprocessor",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classoperations__research_1_1glop_1_1_implied_free_preprocessor.html",tooltip=" "];
+  Node0 -> Node11 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="MainLpPreprocessor",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classoperations__research_1_1glop_1_1_main_lp_preprocessor.html",tooltip=" "];
+  Node0 -> Node12 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="ProportionalColumnPreprocessor",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classoperations__research_1_1glop_1_1_proportional_column_preprocessor.html",tooltip=" "];
+  Node0 -> Node13 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="ProportionalRowPreprocessor",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classoperations__research_1_1glop_1_1_proportional_row_preprocessor.html",tooltip=" "];
+  Node0 -> Node14 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="RemoveNearZeroEntriesPreprocessor",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classoperations__research_1_1glop_1_1_remove_near_zero_entries_preprocessor.html",tooltip=" "];
+  Node0 -> Node15 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="ScalingPreprocessor",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classoperations__research_1_1glop_1_1_scaling_preprocessor.html",tooltip=" "];
+  Node0 -> Node16 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="ShiftVariableBoundsPreprocessor",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classoperations__research_1_1glop_1_1_shift_variable_bounds_preprocessor.html",tooltip=" "];
+  Node0 -> Node17 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node17 [label="SingletonColumnSignPreprocessor",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classoperations__research_1_1glop_1_1_singleton_column_sign_preprocessor.html",tooltip=" "];
+  Node0 -> Node18 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node18 [label="SingletonPreprocessor",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classoperations__research_1_1glop_1_1_singleton_preprocessor.html",tooltip=" "];
+  Node0 -> Node19 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node19 [label="ToMinimizationPreprocessor",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classoperations__research_1_1glop_1_1_to_minimization_preprocessor.html",tooltip=" "];
+  Node0 -> Node20 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node20 [label="UnconstrainedVariablePreprocessor",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classoperations__research_1_1glop_1_1_unconstrained_variable_preprocessor.html",tooltip=" "];
+}

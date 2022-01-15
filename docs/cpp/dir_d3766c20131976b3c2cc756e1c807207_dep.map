@@ -1,9 +1,0 @@
-<map id="init" name="init">
-<area shape="rect" id="node1" href="dir_d3766c20131976b3c2cc756e1c807207.html" title="init" alt="" coords="27,52,99,100"/>
-<area shape="rect" id="node2" href="dir_8f9dc966244f4c6e9b2fa0dee1e4ef1a.html" title="base" alt="" coords="25,244,97,292"/>
-<area shape="rect" id="edge2-headlabel" href="dir_000016_000002.html" title="3" alt="" coords="58,217,67,232"/>
-<area shape="rect" id="node3" href="dir_b58ef2c5f6b67bda9423238e62144661.html" title="init" alt="" coords="63,148,135,196"/>
-<area shape="rect" id="edge3-headlabel" href="dir_000016_000026.html" title="3" alt="" coords="87,121,96,135"/>
-<area shape="rect" id="edge1-headlabel" href="dir_000026_000002.html" title="2" alt="" coords="80,223,90,238"/>
-<area shape="rect" id="clust1" href="dir_dd9e6105f85b4b8d1432afc92516bdf4.html" title="ortools" alt="" coords="16,16,109,111"/>
-</map>

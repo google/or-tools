@@ -6,5 +6,6 @@ var searchData=
   ['baseobject_3',['BaseObject',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html',1,'Google::OrTools::ConstraintSolver']]],
   ['boolargumentproto_4',['BoolArgumentProto',['../classGoogle_1_1OrTools_1_1Sat_1_1BoolArgumentProto.html',1,'Google::OrTools::Sat']]],
   ['booleanvar_5',['BooleanVar',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BooleanVar.html',1,'Google::OrTools::ConstraintSolver']]],
-  ['boundedlinearexpression_6',['BoundedLinearExpression',['../classGoogle_1_1OrTools_1_1Sat_1_1BoundedLinearExpression.html',1,'Google::OrTools::Sat']]]
+  ['boolvar_6',['BoolVar',['../classGoogle_1_1OrTools_1_1Sat_1_1BoolVar.html',1,'Google::OrTools::Sat']]],
+  ['boundedlinearexpression_7',['BoundedLinearExpression',['../classGoogle_1_1OrTools_1_1Sat_1_1BoundedLinearExpression.html',1,'Google::OrTools::Sat']]]
 ];

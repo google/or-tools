@@ -1,0 +1,22 @@
+digraph "Graphical Class Hierarchy"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node0 [label="Constraint",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classGoogle_1_1OrTools_1_1Sat_1_1Constraint.html",tooltip=" "];
+  Node0 -> Node1 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 [label="AutomatonConstraint",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classGoogle_1_1OrTools_1_1Sat_1_1AutomatonConstraint.html",tooltip="Specialized automaton constraint."];
+  Node0 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CircuitConstraint",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classGoogle_1_1OrTools_1_1Sat_1_1CircuitConstraint.html",tooltip="Specialized circuit constraint."];
+  Node0 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CumulativeConstraint",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classGoogle_1_1OrTools_1_1Sat_1_1CumulativeConstraint.html",tooltip="Specialized cumulative constraint."];
+  Node0 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="MultipleCircuitConstraint",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classGoogle_1_1OrTools_1_1Sat_1_1MultipleCircuitConstraint.html",tooltip="Specialized multiple circuit constraint."];
+  Node0 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="NoOverlap2dConstraint",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classGoogle_1_1OrTools_1_1Sat_1_1NoOverlap2dConstraint.html",tooltip="Specialized NoOverlap2D constraint."];
+  Node0 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="ReservoirConstraint",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classGoogle_1_1OrTools_1_1Sat_1_1ReservoirConstraint.html",tooltip="Specialized reservoir constraint."];
+  Node0 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="TableConstraint",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classGoogle_1_1OrTools_1_1Sat_1_1TableConstraint.html",tooltip="Specialized assignment constraint."];
+}

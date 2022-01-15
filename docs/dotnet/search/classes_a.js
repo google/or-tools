@@ -9,5 +9,6 @@ var searchData=
   ['mpconstraintvectorenumerator_6',['MPConstraintVectorEnumerator',['../classGoogle_1_1OrTools_1_1LinearSolver_1_1MPConstraintVector_1_1MPConstraintVectorEnumerator.html',1,'Google::OrTools::LinearSolver::MPConstraintVector']]],
   ['mpsolverparameters_7',['MPSolverParameters',['../classGoogle_1_1OrTools_1_1LinearSolver_1_1MPSolverParameters.html',1,'Google::OrTools::LinearSolver']]],
   ['mpvariablevector_8',['MPVariableVector',['../classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector.html',1,'Google::OrTools::LinearSolver']]],
-  ['mpvariablevectorenumerator_9',['MPVariableVectorEnumerator',['../classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector_1_1MPVariableVectorEnumerator.html',1,'Google::OrTools::LinearSolver::MPVariableVector']]]
+  ['mpvariablevectorenumerator_9',['MPVariableVectorEnumerator',['../classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector_1_1MPVariableVectorEnumerator.html',1,'Google::OrTools::LinearSolver::MPVariableVector']]],
+  ['multiplecircuitconstraint_10',['MultipleCircuitConstraint',['../classGoogle_1_1OrTools_1_1Sat_1_1MultipleCircuitConstraint.html',1,'Google::OrTools::Sat']]]
 ];

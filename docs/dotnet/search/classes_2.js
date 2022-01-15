@@ -2,8 +2,8 @@ var searchData=
 [
   ['castconstraint_0',['CastConstraint',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1CastConstraint.html',1,'Google::OrTools::ConstraintSolver']]],
   ['changevalue_1',['ChangeValue',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ChangeValue.html',1,'Google::OrTools::ConstraintSolver']]],
-  ['circuitconstraintproto_2',['CircuitConstraintProto',['../classGoogle_1_1OrTools_1_1Sat_1_1CircuitConstraintProto.html',1,'Google::OrTools::Sat']]],
-  ['constantexpr_3',['ConstantExpr',['../classGoogle_1_1OrTools_1_1Sat_1_1ConstantExpr.html',1,'Google::OrTools::Sat']]],
+  ['circuitconstraint_2',['CircuitConstraint',['../classGoogle_1_1OrTools_1_1Sat_1_1CircuitConstraint.html',1,'Google::OrTools::Sat']]],
+  ['circuitconstraintproto_3',['CircuitConstraintProto',['../classGoogle_1_1OrTools_1_1Sat_1_1CircuitConstraintProto.html',1,'Google::OrTools::Sat']]],
   ['constraint_4',['Constraint',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html',1,'Constraint'],['../classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html',1,'Constraint'],['../classGoogle_1_1OrTools_1_1Sat_1_1Constraint.html',1,'Constraint']]],
   ['constraintequality_5',['ConstraintEquality',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ConstraintEquality.html',1,'Google::OrTools::ConstraintSolver']]],
   ['constraintproto_6',['ConstraintProto',['../classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html',1,'Google::OrTools::Sat']]],
@@ -19,5 +19,6 @@ var searchData=
   ['cpsolverresponse_16',['CpSolverResponse',['../classGoogle_1_1OrTools_1_1Sat_1_1CpSolverResponse.html',1,'Google::OrTools::Sat']]],
   ['cpsolversolution_17',['CpSolverSolution',['../classGoogle_1_1OrTools_1_1Sat_1_1CpSolverSolution.html',1,'Google::OrTools::Sat']]],
   ['cpsolversolutioncallback_18',['CpSolverSolutionCallback',['../classGoogle_1_1OrTools_1_1Sat_1_1CpSolverSolutionCallback.html',1,'Google::OrTools::Sat']]],
-  ['cumulativeconstraintproto_19',['CumulativeConstraintProto',['../classGoogle_1_1OrTools_1_1Sat_1_1CumulativeConstraintProto.html',1,'Google::OrTools::Sat']]]
+  ['cumulativeconstraint_19',['CumulativeConstraint',['../classGoogle_1_1OrTools_1_1Sat_1_1CumulativeConstraint.html',1,'Google::OrTools::Sat']]],
+  ['cumulativeconstraintproto_20',['CumulativeConstraintProto',['../classGoogle_1_1OrTools_1_1Sat_1_1CumulativeConstraintProto.html',1,'Google::OrTools::Sat']]]
 ];

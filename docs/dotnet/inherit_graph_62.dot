@@ -1,0 +1,8 @@
+digraph "Graphical Class Hierarchy"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node0 [label="RoutingSearchParameters.\lTypes",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types.html",tooltip="Container for nested types declared in the RoutingSearchParameters message type."];
+}
