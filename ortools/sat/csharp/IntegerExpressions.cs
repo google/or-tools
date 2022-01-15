@@ -15,598 +15,590 @@ using System.Runtime.CompilerServices;
 
 namespace Google.OrTools.Sat
 {
-using Google.OrTools.Util;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+    using Google.OrTools.Util;
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
 
-public interface ILiteral
-{
-    ILiteral Not();
-    int GetIndex();
-    LinearExpr NotAsExpr();
-}
+    public interface ILiteral {
+        ILiteral Not();
+        int GetIndex();
+        LinearExpr NotAsExpr();
+    }
 
-internal static class HelperExtensions
-{
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void AddOrIncrement(this Dictionary<IntVar, long> dict, IntVar key, long increment)
+    internal static class HelperExtensions
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void AddOrIncrement(this Dictionary<IntVar, long> dict, IntVar key, long increment)
+        {
 #if NET6_0_OR_GREATER
-        System.Runtime.InteropServices.CollectionsMarshal.GetValueRefOrAddDefault(dict, key, out _) += increment;
+            System.Runtime.InteropServices.CollectionsMarshal.GetValueRefOrAddDefault(dict, key, out _) += increment;
 #else
-        if (dict.TryGetValue(key, out var value))
-        {
-            dict[key] = value + increment;
-        }
-        else
-        {
-            dict.Add(key, increment);
-        }
-#endif
-    }
-}
-
-// Holds a term (expression * coefficient)
-public struct Term
-{
-    public LinearExpr expr;
-    public long coefficient;
-
-    public Term(LinearExpr e, long c)
-    {
-        this.expr = e;
-        this.coefficient = c;
-    }
-}
-
-// Holds a linear expression.
-public class LinearExpr
-{
-    public static LinearExpr Sum(IEnumerable<LinearExpr> exprs)
-    {
-        return NewBuilder().AddSum(exprs);
-    }
-
-    public static LinearExpr Sum(IEnumerable<ILiteral> literals)
-    {
-        return NewBuilder().AddSum(literals);
-    }
-
-    public static LinearExpr Sum(IEnumerable<BoolVar> vars)
-    {
-        return NewBuilder().AddSum(vars);
-    }
-
-    public static LinearExpr WeightedSum(IEnumerable<LinearExpr> exprs, IEnumerable<int> coeffs)
-    {
-        return NewBuilder().AddWeightedSum(exprs, coeffs);
-    }
-
-    public static LinearExpr WeightedSum(IEnumerable<LinearExpr> exprs, IEnumerable<long> coeffs)
-    {
-        return NewBuilder().AddWeightedSum(exprs, coeffs);
-    }
-
-    public static LinearExpr WeightedSum(IEnumerable<ILiteral> literals, IEnumerable<int> coeffs)
-    {
-        return NewBuilder().AddWeightedSum(literals, coeffs);
-    }
-
-    public static LinearExpr WeightedSum(IEnumerable<ILiteral> literals, IEnumerable<long> coeffs)
-    {
-        return NewBuilder().AddWeightedSum(literals, coeffs);
-    }
-
-    public static LinearExpr WeightedSum(IEnumerable<BoolVar> vars, IEnumerable<int> coeffs)
-    {
-        return NewBuilder().AddWeightedSum(vars, coeffs);
-    }
-
-    public static LinearExpr WeightedSum(IEnumerable<BoolVar> vars, IEnumerable<long> coeffs)
-    {
-        return NewBuilder().AddWeightedSum(vars, coeffs);
-    }
-
-    public static LinearExpr Term(LinearExpr expr, long coeff)
-    {
-        return Prod(expr, coeff);
-    }
-
-    public static LinearExpr Term(ILiteral literal, long coeff)
-    {
-        if (literal is BoolVar boolVar)
-        {
-            return Prod(boolVar, coeff);
-        }
-        else
-        {
-            return Affine(literal.NotAsExpr(), -coeff, coeff);
-        }
-    }
-
-    public static LinearExpr Term(BoolVar var, long coeff)
-    {
-        return Prod(var, coeff);
-    }
-
-    public static LinearExpr Affine(LinearExpr expr, long coeff, long offset)
-    {
-        if (offset == 0)
-        {
-            return Prod(expr, coeff);
-        }
-        return NewBuilder().AddTerm(expr, coeff).Add(offset);
-    }
-
-    public static LinearExpr Affine(ILiteral literal, long coeff, long offset)
-    {
-        return NewBuilder().AddTerm(literal, coeff).Add(offset);
-    }
-
-    public static LinearExpr Affine(BoolVar var, long coeff, long offset)
-    {
-        return NewBuilder().AddTerm(var, coeff).Add(offset);
-    }
-
-    public static LinearExpr Constant(long value)
-    {
-        return NewBuilder().Add(value);
-    }
-
-    public static LinearExprBuilder NewBuilder()
-    {
-        return new LinearExprBuilder();
-    }
-
-    public static LinearExpr operator +(LinearExpr a, LinearExpr b)
-    {
-        return NewBuilder().Add(a).Add(b);
-    }
-
-    public static LinearExpr operator +(LinearExpr a, long v)
-    {
-        return NewBuilder().Add(a).Add(v);
-    }
-
-    public static LinearExpr operator +(long v, LinearExpr a)
-    {
-        return NewBuilder().Add(a).Add(v);
-    }
-
-    public static LinearExpr operator -(LinearExpr a, LinearExpr b)
-    {
-        return NewBuilder().Add(a).AddTerm(b, -1);
-    }
-
-    public static LinearExpr operator -(LinearExpr a, long v)
-    {
-        return NewBuilder().Add(a).Add(-v);
-    }
-
-    public static LinearExpr operator -(long v, LinearExpr a)
-    {
-        return NewBuilder().AddTerm(a, -1).Add(v);
-    }
-
-    public static LinearExpr operator *(LinearExpr a, long v)
-    {
-        return Prod(a, v);
-    }
-
-    public static LinearExpr operator *(long v, LinearExpr a)
-    {
-        return Prod(a, v);
-    }
-
-    public static LinearExpr operator -(LinearExpr a)
-    {
-        return Prod(a, -1);
-    }
-
-    public static BoundedLinearExpression operator ==(LinearExpr a, LinearExpr b)
-    {
-        return new BoundedLinearExpression(a, b, true);
-    }
-
-    public static BoundedLinearExpression operator !=(LinearExpr a, LinearExpr b)
-    {
-        return new BoundedLinearExpression(a, b, false);
-    }
-
-    public static BoundedLinearExpression operator ==(LinearExpr a, long v)
-    {
-        return new BoundedLinearExpression(a, v, true);
-    }
-
-    public static BoundedLinearExpression operator !=(LinearExpr a, long v)
-    {
-        return new BoundedLinearExpression(a, v, false);
-    }
-
-    public static BoundedLinearExpression operator >=(LinearExpr a, long v)
-    {
-        return new BoundedLinearExpression(v, a, Int64.MaxValue);
-    }
-
-    public static BoundedLinearExpression operator >=(long v, LinearExpr a)
-    {
-        return a <= v;
-    }
-
-    public static BoundedLinearExpression operator>(LinearExpr a, long v)
-    {
-        return new BoundedLinearExpression(v + 1, a, Int64.MaxValue);
-    }
-
-    public static BoundedLinearExpression operator>(long v, LinearExpr a)
-    {
-        return a < v;
-    }
-
-    public static BoundedLinearExpression operator <=(LinearExpr a, long v)
-    {
-        return new BoundedLinearExpression(Int64.MinValue, a, v);
-    }
-
-    public static BoundedLinearExpression operator <=(long v, LinearExpr a)
-    {
-        return a >= v;
-    }
-
-    public static BoundedLinearExpression operator<(LinearExpr a, long v)
-    {
-        return new BoundedLinearExpression(Int64.MinValue, a, v - 1);
-    }
-
-    public static BoundedLinearExpression operator<(long v, LinearExpr a)
-    {
-        return a > v;
-    }
-
-    public static BoundedLinearExpression operator >=(LinearExpr a, LinearExpr b)
-    {
-        return new BoundedLinearExpression(0, a - b, Int64.MaxValue);
-    }
-
-    public static BoundedLinearExpression operator>(LinearExpr a, LinearExpr b)
-    {
-        return new BoundedLinearExpression(1, a - b, Int64.MaxValue);
-    }
-
-    public static BoundedLinearExpression operator <=(LinearExpr a, LinearExpr b)
-    {
-        return new BoundedLinearExpression(Int64.MinValue, a - b, 0);
-    }
-
-    public static BoundedLinearExpression operator<(LinearExpr a, LinearExpr b)
-    {
-        return new BoundedLinearExpression(Int64.MinValue, a - b, -1);
-    }
-
-    public static LinearExpr Prod(LinearExpr e, long v)
-    {
-        if (v == 0)
-        {
-            return NewBuilder();
-        }
-        else if (v == 1)
-        {
-            return e;
-        }
-        else
-        {
-            return NewBuilder().AddTerm(e, v);
-        }
-    }
-
-    public static long GetVarValueMap(LinearExpr e, long initial_coeff, Dictionary<IntVar, long> dict)
-    {
-        List<Term> terms = new List<Term>();
-        if (e is not null)
-        {
-            terms.Add(new Term(e, initial_coeff));
-        }
-        long constant = 0;
-
-        while (terms.Count > 0)
-        {
-            Term term = terms[0];
-            terms.RemoveAt(0);
-            if (term.coefficient == 0 || term.expr is null)
+            if (dict.TryGetValue(key, out var value))
             {
-                continue;
-            }
-
-            if (term.expr is LinearExprBuilder b)
-            {
-                constant += term.coefficient * b.Offset;
-                foreach (Term sub in b.Terms)
-                {
-                    if (sub.expr is IntVar i) // Quick unroll.
-                    {
-                        dict.AddOrIncrement(i, term.coefficient * sub.coefficient);
-                    }
-                    else
-                    {
-                        terms.Add(new Term(sub.expr, sub.coefficient * term.coefficient));
-                    }
-                }
-            }
-            else if (term.expr is IntVar i)
-            {
-                dict.AddOrIncrement(i, term.coefficient);
-            }
-            else if (term.expr is NotBoolVar notBoolVar)
-            {
-                dict.AddOrIncrement((IntVar)notBoolVar.Not(), -term.coefficient);
-                constant += term.coefficient;
+                dict[key] = value + increment;
             }
             else
             {
-                throw new ArgumentException("Cannot interpret '" + term.expr.ToString() + "' in an integer expression");
+                dict.Add(key, increment);
             }
+#endif
         }
-        return constant;
     }
 
-    public static LinearExpr RebuildLinearExprFromLinearExpressionProto(LinearExpressionProto proto, CpModelProto model)
+    // Holds a term (expression * coefficient)
+    public struct Term
     {
-        int numElements = proto.Vars.Count;
-        long offset = proto.Offset;
-        if (numElements == 0)
+        public LinearExpr expr;
+        public long coefficient;
+
+        public Term(LinearExpr e, long c)
         {
-            return LinearExpr.Constant(offset);
+            this.expr = e;
+            this.coefficient = c;
         }
-        else if (numElements == 1)
+    }
+
+    // Holds a linear expression.
+    public class LinearExpr
+    {
+        public static LinearExpr Sum(IEnumerable<LinearExpr> exprs)
         {
-            IntVar var = new IntVar(model, proto.Vars[0]);
-            long coeff = proto.Coeffs[0];
-            return LinearExpr.Affine(var, coeff, offset);
+            return NewBuilder().AddSum(exprs);
         }
-        else
+
+        public static LinearExpr Sum(IEnumerable<ILiteral> literals)
         {
-            LinearExprBuilder builder = LinearExpr.NewBuilder();
-            for (int i = 0; i < numElements; ++i)
+            return NewBuilder().AddSum(literals);
+        }
+
+        public static LinearExpr Sum(IEnumerable<BoolVar> vars)
+        {
+            return NewBuilder().AddSum(vars);
+        }
+
+        public static LinearExpr WeightedSum(IEnumerable<LinearExpr> exprs, IEnumerable<int> coeffs)
+        {
+            return NewBuilder().AddWeightedSum(exprs, coeffs);
+        }
+
+        public static LinearExpr WeightedSum(IEnumerable<LinearExpr> exprs, IEnumerable<long> coeffs)
+        {
+            return NewBuilder().AddWeightedSum(exprs, coeffs);
+        }
+
+        public static LinearExpr WeightedSum(IEnumerable<ILiteral> literals, IEnumerable<int> coeffs)
+        {
+            return NewBuilder().AddWeightedSum(literals, coeffs);
+        }
+
+        public static LinearExpr WeightedSum(IEnumerable<ILiteral> literals, IEnumerable<long> coeffs)
+        {
+            return NewBuilder().AddWeightedSum(literals, coeffs);
+        }
+
+        public static LinearExpr WeightedSum(IEnumerable<BoolVar> vars, IEnumerable<int> coeffs)
+        {
+            return NewBuilder().AddWeightedSum(vars, coeffs);
+        }
+
+        public static LinearExpr WeightedSum(IEnumerable<BoolVar> vars, IEnumerable<long> coeffs)
+        {
+            return NewBuilder().AddWeightedSum(vars, coeffs);
+        }
+
+        public static LinearExpr Term(LinearExpr expr, long coeff)
+        {
+            return Prod(expr, coeff);
+        }
+
+        public static LinearExpr Term(ILiteral literal, long coeff)
+        {
+            if (literal is BoolVar boolVar)
             {
-                builder.AddTerm(new IntVar(model, proto.Vars[i]), proto.Coeffs[i]);
+                return Prod(boolVar, coeff);
             }
-            builder.Add(offset);
-            return builder;
+            else
+            {
+                return Affine(literal.NotAsExpr(), -coeff, coeff);
+            }
         }
-    }
-}
 
-public sealed class LinearExprBuilder : LinearExpr
-{
-    public LinearExprBuilder()
-    {
-        terms_ = new List<Term>();
-        offset_ = 0;
-    }
-
-    public LinearExprBuilder Add(LinearExpr expr)
-    {
-        AddTerm(expr, 1);
-        return this;
-    }
-
-    public LinearExprBuilder Add(ILiteral literal)
-    {
-        AddTerm(literal, 1);
-        return this;
-    }
-
-    public LinearExprBuilder Add(BoolVar var)
-    {
-        AddTerm(var, 1);
-        return this;
-    }
-
-    public LinearExprBuilder Add(long constant)
-    {
-        offset_ += constant;
-        return this;
-    }
-
-    public LinearExprBuilder AddTerm(LinearExpr expr, long coefficient)
-    {
-        terms_.Add(new Term(expr, coefficient));
-        return this;
-    }
-
-    public LinearExprBuilder AddTerm(ILiteral literal, long coefficient)
-    {
-        if (literal is BoolVar boolVar)
+        public static LinearExpr Term(BoolVar var, long coeff)
         {
-            terms_.Add(new Term(boolVar, coefficient));
+            return Prod(var, coeff);
         }
-        else
+
+        public static LinearExpr Affine(LinearExpr expr, long coeff, long offset)
         {
-            offset_ += coefficient;
-            terms_.Add(new Term(literal.NotAsExpr(), -coefficient));
+            if (offset == 0)
+            {
+                return Prod(expr, coeff);
+            }
+            return NewBuilder().AddTerm(expr, coeff).Add(offset);
         }
-        return this;
+
+        public static LinearExpr Affine(ILiteral literal, long coeff, long offset)
+        {
+            return NewBuilder().AddTerm(literal, coeff).Add(offset);
+        }
+
+        public static LinearExpr Affine(BoolVar var, long coeff, long offset)
+        {
+            return NewBuilder().AddTerm(var, coeff).Add(offset);
+        }
+
+        public static LinearExpr Constant(long value)
+        {
+            return NewBuilder().Add(value);
+        }
+
+        public static LinearExprBuilder NewBuilder()
+        {
+            return new LinearExprBuilder();
+        }
+
+        public static LinearExpr operator +(LinearExpr a, LinearExpr b)
+        {
+            return NewBuilder().Add(a).Add(b);
+        }
+
+        public static LinearExpr operator +(LinearExpr a, long v)
+        {
+            return NewBuilder().Add(a).Add(v);
+        }
+
+        public static LinearExpr operator +(long v, LinearExpr a)
+        {
+            return NewBuilder().Add(a).Add(v);
+        }
+
+        public static LinearExpr operator -(LinearExpr a, LinearExpr b)
+        {
+            return NewBuilder().Add(a).AddTerm(b, -1);
+        }
+
+        public static LinearExpr operator -(LinearExpr a, long v)
+        {
+            return NewBuilder().Add(a).Add(-v);
+        }
+
+        public static LinearExpr operator -(long v, LinearExpr a)
+        {
+            return NewBuilder().AddTerm(a, -1).Add(v);
+        }
+
+        public static LinearExpr operator *(LinearExpr a, long v)
+        {
+            return Prod(a, v);
+        }
+
+        public static LinearExpr operator *(long v, LinearExpr a)
+        {
+            return Prod(a, v);
+        }
+
+        public static LinearExpr operator -(LinearExpr a)
+        {
+            return Prod(a, -1);
+        }
+
+        public static BoundedLinearExpression operator ==(LinearExpr a, LinearExpr b)
+        {
+            return new BoundedLinearExpression(a, b, true);
+        }
+
+        public static BoundedLinearExpression operator !=(LinearExpr a, LinearExpr b)
+        {
+            return new BoundedLinearExpression(a, b, false);
+        }
+
+        public static BoundedLinearExpression operator ==(LinearExpr a, long v)
+        {
+            return new BoundedLinearExpression(a, v, true);
+        }
+
+        public static BoundedLinearExpression operator !=(LinearExpr a, long v)
+        {
+            return new BoundedLinearExpression(a, v, false);
+        }
+
+        public static BoundedLinearExpression operator >=(LinearExpr a, long v)
+        {
+            return new BoundedLinearExpression(v, a, Int64.MaxValue);
+        }
+
+        public static BoundedLinearExpression operator >=(long v, LinearExpr a)
+        {
+            return a <= v;
+        }
+
+        public static BoundedLinearExpression operator>(LinearExpr a, long v)
+        {
+            return new BoundedLinearExpression(v + 1, a, Int64.MaxValue);
+        }
+
+        public static BoundedLinearExpression operator>(long v, LinearExpr a)
+        {
+            return a < v;
+        }
+
+        public static BoundedLinearExpression operator <=(LinearExpr a, long v)
+        {
+            return new BoundedLinearExpression(Int64.MinValue, a, v);
+        }
+
+        public static BoundedLinearExpression operator <=(long v, LinearExpr a)
+        {
+            return a >= v;
+        }
+
+        public static BoundedLinearExpression operator<(LinearExpr a, long v)
+        {
+            return new BoundedLinearExpression(Int64.MinValue, a, v - 1);
+        }
+
+        public static BoundedLinearExpression operator<(long v, LinearExpr a)
+        {
+            return a > v;
+        }
+
+        public static BoundedLinearExpression operator >=(LinearExpr a, LinearExpr b)
+        {
+            return new BoundedLinearExpression(0, a - b, Int64.MaxValue);
+        }
+
+        public static BoundedLinearExpression operator>(LinearExpr a, LinearExpr b)
+        {
+            return new BoundedLinearExpression(1, a - b, Int64.MaxValue);
+        }
+
+        public static BoundedLinearExpression operator <=(LinearExpr a, LinearExpr b)
+        {
+            return new BoundedLinearExpression(Int64.MinValue, a - b, 0);
+        }
+
+        public static BoundedLinearExpression operator<(LinearExpr a, LinearExpr b)
+        {
+            return new BoundedLinearExpression(Int64.MinValue, a - b, -1);
+        }
+
+        public static LinearExpr Prod(LinearExpr e, long v)
+        {
+            if (v == 0)
+            {
+                return NewBuilder();
+            }
+            else if (v == 1)
+            {
+                return e;
+            }
+            else
+            {
+                return NewBuilder().AddTerm(e, v);
+            }
+        }
+
+        public static long GetVarValueMap(LinearExpr e, long initial_coeff, Dictionary<IntVar, long> dict)
+        {
+            List<Term> terms = new List<Term>();
+            if (e is not null)
+            {
+                terms.Add(new Term(e, initial_coeff));
+            }
+            long constant = 0;
+
+            while (terms.Count > 0)
+            {
+                Term term = terms[0];
+                terms.RemoveAt(0);
+                if (term.coefficient == 0 || term.expr is null)
+                {
+                    continue;
+                }
+
+                if (term.expr is LinearExprBuilder b)
+                {
+                    constant += term.coefficient * b.Offset;
+                    foreach (Term sub in b.Terms)
+                    {
+                        if (sub.expr is IntVar i) // Quick unroll.
+                        {
+                            dict.AddOrIncrement(i, term.coefficient * sub.coefficient);
+                        }
+                        else
+                        {
+                            terms.Add(new Term(sub.expr, sub.coefficient * term.coefficient));
+                        }
+                    }
+                }
+                else if (term.expr is IntVar i)
+                {
+                    dict.AddOrIncrement(i, term.coefficient);
+                }
+                else if (term.expr is NotBoolVar notBoolVar)
+                {
+                    dict.AddOrIncrement((IntVar)notBoolVar.Not(), -term.coefficient);
+                    constant += term.coefficient;
+                }
+                else
+                {
+                    throw new ArgumentException("Cannot interpret '" + term.expr.ToString() +
+                                                "' in an integer expression");
+                }
+            }
+            return constant;
+        }
+
+        public static LinearExpr RebuildLinearExprFromLinearExpressionProto(LinearExpressionProto proto,
+                                                                            CpModelProto model)
+        {
+            int numElements = proto.Vars.Count;
+            long offset = proto.Offset;
+            if (numElements == 0)
+            {
+                return LinearExpr.Constant(offset);
+            }
+            else if (numElements == 1)
+            {
+                IntVar var = new IntVar(model, proto.Vars[0]);
+                long coeff = proto.Coeffs[0];
+                return LinearExpr.Affine(var, coeff, offset);
+            }
+            else
+            {
+                LinearExprBuilder builder = LinearExpr.NewBuilder();
+                for (int i = 0; i < numElements; ++i)
+                {
+                    builder.AddTerm(new IntVar(model, proto.Vars[i]), proto.Coeffs[i]);
+                }
+                builder.Add(offset);
+                return builder;
+            }
+        }
     }
 
-    public LinearExprBuilder AddTerm(BoolVar var, long coefficient)
+    public sealed class LinearExprBuilder : LinearExpr
     {
-        terms_.Add(new Term(var, coefficient));
-        return this;
-    }
+        public LinearExprBuilder()
+        {
+            terms_ = new List<Term>();
+            offset_ = 0;
+        }
 
-    public LinearExprBuilder AddSum(IEnumerable<LinearExpr> exprs)
-    {
-        foreach (LinearExpr expr in exprs)
+        public LinearExprBuilder Add(LinearExpr expr)
         {
             AddTerm(expr, 1);
+            return this;
         }
-        return this;
-    }
 
-    public LinearExprBuilder AddSum(IEnumerable<ILiteral> literals)
-    {
-        foreach (ILiteral literal in literals)
+        public LinearExprBuilder Add(ILiteral literal)
         {
             AddTerm(literal, 1);
+            return this;
         }
-        return this;
-    }
 
-    public LinearExprBuilder AddSum(IEnumerable<BoolVar> vars)
-    {
-        foreach (BoolVar var in vars)
+        public LinearExprBuilder Add(BoolVar var)
         {
             AddTerm(var, 1);
+            return this;
         }
-        return this;
-    }
-    public LinearExprBuilder AddWeightedSum(IEnumerable<LinearExpr> exprs, IEnumerable<long> coefficients)
-    {
-        foreach (var p in exprs.Zip(coefficients, (e, c) => new { Expr = e, Coeff = c }))
+
+        public LinearExprBuilder Add(long constant)
         {
-            AddTerm(p.Expr, p.Coeff);
+            offset_ += constant;
+            return this;
+        }
+
+        public LinearExprBuilder AddTerm(LinearExpr expr, long coefficient)
+        {
+            terms_.Add(new Term(expr, coefficient));
+            return this;
+        }
+
+        public LinearExprBuilder AddTerm(ILiteral literal, long coefficient)
+        {
+            if (literal is BoolVar boolVar)
+            {
+                terms_.Add(new Term(boolVar, coefficient));
+            }
+            else
+            {
+                offset_ += coefficient;
+                terms_.Add(new Term(literal.NotAsExpr(), -coefficient));
+            }
+            return this;
+        }
+
+        public LinearExprBuilder AddTerm(BoolVar var, long coefficient)
+        {
+            terms_.Add(new Term(var, coefficient));
+            return this;
+        }
+
+        public LinearExprBuilder AddSum(IEnumerable<LinearExpr> exprs)
+        {
+            foreach (LinearExpr expr in exprs)
+            {
+                AddTerm(expr, 1);
+            }
+            return this;
+        }
+
+        public LinearExprBuilder AddSum(IEnumerable<ILiteral> literals)
+        {
+            foreach (ILiteral literal in literals)
+            {
+                AddTerm(literal, 1);
+            }
+            return this;
+        }
+
+        public LinearExprBuilder AddSum(IEnumerable<BoolVar> vars)
+        {
+            foreach (BoolVar var in vars)
+            {
+                AddTerm(var, 1);
+            }
+            return this;
+        }
+        public LinearExprBuilder AddWeightedSum(IEnumerable<LinearExpr> exprs, IEnumerable<long> coefficients)
+        {
+            foreach (var p in exprs.Zip(coefficients, (e, c) => new { Expr = e, Coeff = c })) {
+                AddTerm(p.Expr, p.Coeff);
         }
         return this;
     }
 
     public LinearExprBuilder AddWeightedSum(IEnumerable<LinearExpr> exprs, IEnumerable<int> coefficients)
     {
-        foreach (var p in exprs.Zip(coefficients, (e, c) => new { Expr = e, Coeff = c }))
-        {
-            AddTerm(p.Expr, p.Coeff);
-        }
-        return this;
+        foreach (var p in exprs.Zip(coefficients, (e, c) => new { Expr = e, Coeff = c })) { AddTerm(p.Expr, p.Coeff);
     }
+    return this;
+}
 
-    public LinearExprBuilder AddWeightedSum(IEnumerable<ILiteral> literals, IEnumerable<int> coefficients)
+public LinearExprBuilder AddWeightedSum(IEnumerable<ILiteral> literals, IEnumerable<int> coefficients)
+{
+    foreach (var p in literals.Zip(coefficients, (l, c) => new { Literal = l, Coeff = c })) {
+        AddTerm(p.Literal, p.Coeff);
+}
+return this;
+}
+
+public LinearExprBuilder AddWeightedSum(IEnumerable<ILiteral> literals, IEnumerable<long> coefficients)
+{
+    foreach (var p in literals.Zip(coefficients, (l, c) => new { Literal = l, Coeff = c })) {
+        AddTerm(p.Literal, p.Coeff);
+}
+return this;
+}
+
+public LinearExprBuilder AddWeightedSum(IEnumerable<BoolVar> vars, IEnumerable<long> coefficients)
+{
+    foreach (var p in vars.Zip(coefficients, (v, c) => new { Var = v, Coeff = c })) { AddTerm(p.Var, p.Coeff);
+}
+return this;
+}
+
+public LinearExprBuilder AddWeightedSum(IEnumerable<BoolVar> vars, IEnumerable<int> coefficients)
+{
+    foreach (var p in vars.Zip(coefficients, (v, c) => new { Var = v, Coeff = c })) { AddTerm(p.Var, p.Coeff);
+}
+return this;
+}
+
+public override string ToString()
+{
+    string result = "";
+    foreach (Term term in terms_)
     {
-        foreach (var p in literals.Zip(coefficients, (l, c) => new { Literal = l, Coeff = c }))
+        bool first = String.IsNullOrEmpty(result);
+        if (term.expr is null || term.coefficient == 0)
         {
-            AddTerm(p.Literal, p.Coeff);
+            continue;
         }
-        return this;
-    }
-
-    public LinearExprBuilder AddWeightedSum(IEnumerable<ILiteral> literals, IEnumerable<long> coefficients)
-    {
-        foreach (var p in literals.Zip(coefficients, (l, c) => new { Literal = l, Coeff = c }))
+        if (term.coefficient == 1)
         {
-            AddTerm(p.Literal, p.Coeff);
-        }
-        return this;
-    }
-
-    public LinearExprBuilder AddWeightedSum(IEnumerable<BoolVar> vars, IEnumerable<long> coefficients)
-    {
-        foreach (var p in vars.Zip(coefficients, (v, c) => new { Var = v, Coeff = c }))
-        {
-            AddTerm(p.Var, p.Coeff);
-        }
-        return this;
-    }
-
-    public LinearExprBuilder AddWeightedSum(IEnumerable<BoolVar> vars, IEnumerable<int> coefficients)
-    {
-        foreach (var p in vars.Zip(coefficients, (v, c) => new { Var = v, Coeff = c }))
-        {
-            AddTerm(p.Var, p.Coeff);
-        }
-        return this;
-    }
-
-    public override string ToString()
-    {
-        string result = "";
-        foreach (Term term in terms_)
-        {
-            bool first = String.IsNullOrEmpty(result);
-            if (term.expr is null || term.coefficient == 0)
+            if (!first)
             {
-                continue;
+                result += " + ";
             }
-            if (term.coefficient == 1)
-            {
-                if (!first)
-                {
-                    result += " + ";
-                }
 
-                result += term.expr.ToString();
+            result += term.expr.ToString();
+        }
+        else if (term.coefficient > 0)
+        {
+            if (!first)
+            {
+                result += " + ";
             }
-            else if (term.coefficient > 0)
-            {
-                if (!first)
-                {
-                    result += " + ";
-                }
 
+            result += String.Format("{0} * {1}", term.coefficient, term.expr.ToString());
+        }
+        else if (term.coefficient == -1)
+        {
+            if (!first)
+            {
+                result += String.Format(" - {0}", term.expr.ToString());
+            }
+            else
+            {
+                result += String.Format("-{0}", term.expr.ToString());
+            }
+        }
+        else
+        {
+            if (!first)
+            {
+                result += String.Format(" - {0} * {1}", -term.coefficient, term.expr.ToString());
+            }
+            else
+            {
                 result += String.Format("{0} * {1}", term.coefficient, term.expr.ToString());
             }
-            else if (term.coefficient == -1)
-            {
-                if (!first)
-                {
-                    result += String.Format(" - {0}", term.expr.ToString());
-                }
-                else
-                {
-                    result += String.Format("-{0}", term.expr.ToString());
-                }
-            }
-            else
-            {
-                if (!first)
-                {
-                    result += String.Format(" - {0} * {1}", -term.coefficient, term.expr.ToString());
-                }
-                else
-                {
-                    result += String.Format("{0} * {1}", term.coefficient, term.expr.ToString());
-                }
-            }
         }
-        if (offset_ > 0)
-        {
-            if (!String.IsNullOrEmpty(result))
-            {
-                result += String.Format(" + {0}", offset_);
-            }
-            else
-            {
-                result += String.Format("{0}", offset_);
-            }
-        }
-        else if (offset_ < 0)
-        {
-            if (!String.IsNullOrEmpty(result))
-            {
-                result += String.Format(" - {0}", -offset_);
-            }
-            else
-            {
-                result += String.Format("{0}", offset_);
-            }
-        }
-        return result;
     }
-
-    public long Offset
+    if (offset_ > 0)
     {
-        get {
-            return offset_;
+        if (!String.IsNullOrEmpty(result))
+        {
+            result += String.Format(" + {0}", offset_);
+        }
+        else
+        {
+            result += String.Format("{0}", offset_);
         }
     }
-
-    public List<Term> Terms
+    else if (offset_ < 0)
     {
-        get {
-            return terms_;
+        if (!String.IsNullOrEmpty(result))
+        {
+            result += String.Format(" - {0}", -offset_);
+        }
+        else
+        {
+            result += String.Format("{0}", offset_);
         }
     }
+    return result;
+}
 
-    private long offset_;
-    private List<Term> terms_;
+public long Offset
+{
+    get {
+        return offset_;
+    }
+}
+
+public List<Term> Terms
+{
+    get {
+        return terms_;
+    }
+}
+
+private long offset_;
+private List<Term> terms_;
 }
 
 public class IntVar : LinearExpr
