@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Google.OrTools.Sat
+namespace Google.OrTools.Sat 
 {
 using System;
 using System.Collections.Generic;
@@ -135,7 +135,7 @@ public class CpModel
     }
     /**
      * <summary>
-     * Adds <c>lb ≤ expr ≤ ub</c>
+     * Adds <c>lb ≤ expr ≤ ub</c>.
      * </summary>
      */
     public Constraint AddLinearConstraint(LinearExpr expr, long lb, long ub)
@@ -152,7 +152,7 @@ public class CpModel
 
     /**
      * <summary>
-     * Adds <c>expr ∈ domain</c>
+     * Adds <c>expr ∈ domain</c>.
      * </summary>
      */
     public Constraint AddLinearExpressionInDomain(LinearExpr expr, Domain domain)
@@ -214,7 +214,7 @@ public class CpModel
 
     /**
      * <summary>
-     * Adds the constraint <c>AllDifferent(exprs)</c>
+     * Adds the constraint <c>AllDifferent(exprs)</c>.
      * </summary>
      */
     public Constraint AddAllDifferent(IEnumerable<LinearExpr> exprs)
@@ -233,7 +233,7 @@ public class CpModel
 
     /**
      * <summary>
-     * Adds the element constraint: <c> variables[index] == target</c>
+     * Adds the element constraint: <c>variables[index] == target</c>.
      * </summary>
      */
     public Constraint AddElement(IntVar index, IEnumerable<IntVar> vars, IntVar target)
@@ -254,7 +254,7 @@ public class CpModel
 
     /**
      * <summary>
-     * Adds the element constraint: <c> values[index] == target</c>
+     * Adds the element constraint: <c> values[index] == target</c>.
      * </summary>
      */
     public Constraint AddElement(IntVar index, IEnumerable<long> values, IntVar target)
@@ -275,7 +275,7 @@ public class CpModel
 
     /**
      * <summary>
-     * Adds the element constraint: <c> values[index] == target</c>
+     * Adds the element constraint: <c> values[index] == target</c>.
      * </summary>
      */
     public Constraint AddElement(IntVar index, IEnumerable<int> values, IntVar target)
@@ -331,7 +331,7 @@ public class CpModel
 
     /**
      * <summary>
-     * Adds <c> AllowedAssignments(variables)</c>
+     * Adds <c> AllowedAssignments(variables)</c>.
      * </summary>
      *
      * <remarks>An AllowedAssignments constraint is a constraint on an array of variables that forces, when
@@ -360,7 +360,7 @@ public class CpModel
 
     /**
      * <summary>
-     * Adds <c> ForbiddenAssignments(variables)</c>
+     * Adds <c> ForbiddenAssignments(variables)</c>.
      * </summary>
      *
      * <remarks>A ForbiddenAssignments constraint is a constraint on an array of variables where the list of
@@ -396,7 +396,7 @@ public class CpModel
      * contains the final states. </para>
      *
      * <para>Between two consecutive phases i and i + 1, the automaton creates a set of arcs. For each
-     * transition (tail, label, head), it will add an arc from the state <c>tail</c> of phase i and the
+     * transition (<c>tail</c>, <c>label</c>, <c>head</c>), it will add an arc from the state <c>tail</c> of phase i and the
      * state <c>head</c> of phase i + 1. This arc labeled by the value <c>label</c> of the variables
      * <c>variables[i]</c>. That is, this arc can only be selected <c>variables[i]</c>a is assigned the value
      * <c>label</c>. </para>
@@ -432,7 +432,7 @@ public class CpModel
 
     /**
      * <summary>
-     * Adds <c> Inverse(variables, inverseVariables)</c>
+     * Adds <c> Inverse(variables, inverseVariables)</c>.
      * </summary>
      *
      * <remarks>An inverse constraint enforces that if <c>direct[i] == j</c>, then
@@ -543,7 +543,7 @@ public class CpModel
 
     /**
      * <summary>
-     * Adds <c>a ⇒ b</c>
+     * Adds <c>a ⇒ b</c>.
      * </summary>
      */
     public Constraint AddImplication(ILiteral a, ILiteral b)
@@ -560,7 +560,7 @@ public class CpModel
 
     /**
      * <summary>
-     * Adds <c>Or(literals) == true</c>
+     * Adds <c>Or(literals) == true</c>.
      * </summary>
      */
     public Constraint AddBoolOr(IEnumerable<ILiteral> literals)
@@ -579,7 +579,7 @@ public class CpModel
 
     /**
      * <summary>
-     * Same as AddBoolOr: <c>∑(literals) ≥ 1</c>
+     * Same as AddBoolOr: <c>∑(literals) ≥ 1</c>.
      * </summary>
      */
     public Constraint AddAtLeastOne(IEnumerable<ILiteral> literals)
@@ -589,7 +589,7 @@ public class CpModel
 
     /**
      * <summary>
-     * Adds <c> AtMostOne(literals): ∑(literals) ≤ 1</c>
+     * Adds <c> AtMostOne(literals): ∑(literals) ≤ 1</c>.
      * </summary>
      */
     public Constraint AddAtMostOne(IEnumerable<ILiteral> literals)
@@ -608,7 +608,7 @@ public class CpModel
 
     /**
      * <summary>
-     * Adds <c> ExactlyOne(literals): ∑(literals) == 1</c>
+     * Adds <c> ExactlyOne(literals): ∑(literals) == 1</c>.
      * </summary>
      */
     public Constraint AddExactlyOne(IEnumerable<ILiteral> literals)
@@ -627,7 +627,7 @@ public class CpModel
 
     /**
      * <summary>
-     * Adds <c>And(literals) == true</c>
+     * Adds <c>And(literals) == true</c>.
      * </summary>
      */
     public Constraint AddBoolAnd(IEnumerable<ILiteral> literals)
@@ -646,7 +646,7 @@ public class CpModel
 
     /**
      * <summary>
-     * Adds <c>XOr(literals) == true</c>
+     * Adds <c>XOr(literals) == true</c>.
      * </summary>
      */
     public Constraint AddBoolXor(IEnumerable<ILiteral> literals)
@@ -665,7 +665,7 @@ public class CpModel
 
     /**
      * <summary>
-     * Adds <c>target == Min(exprs)</c>
+     * Adds <c>target == Min(exprs)</c>.
      * </summary>
      */
     public Constraint AddMinEquality(LinearExpr target, IEnumerable<LinearExpr> exprs)
@@ -685,7 +685,7 @@ public class CpModel
 
     /**
      * <summary>
-     * Adds <c>target == Max(exprs)</c>
+     * Adds <c>target == Max(exprs)</c>.
      * </summary>
      */
     public Constraint AddMaxEquality(LinearExpr target, IEnumerable<LinearExpr> exprs)
@@ -705,7 +705,7 @@ public class CpModel
 
     /**
      * <summary>
-     * Adds <c>target == num / denom</c> (integer division)
+     * Adds <c>target == num / denom</c> (integer division rounded towards 0).
      * </summary>
      */
     public Constraint AddDivisionEquality<T, N, D>(T target, N num, D denom)
@@ -723,7 +723,7 @@ public class CpModel
 
     /**
      * <summary>
-     * Adds <c>target == abs(expr)</c>
+     * Adds <c>target == abs(expr)</c>.
      * </summary>
      */
     public Constraint AddAbsEquality(LinearExpr target, LinearExpr expr)
@@ -741,7 +741,7 @@ public class CpModel
 
     /**
      * <summary>
-     * Adds <c>target == v % m</c>
+     * Adds <c>target == v % m</c>.
      * </summary>
      */
     public Constraint AddModuloEquality<T, V, M>(T target, V v, M m)
@@ -759,7 +759,7 @@ public class CpModel
 
     /**
      * <summary>
-     * Adds <c>target == ∏(exprs)</c>
+     * Adds <c>target == ∏(exprs)</c>.
      * </summary>
      */
     public Constraint AddMultiplicationEquality(LinearExpr target, IEnumerable<LinearExpr> exprs)
@@ -779,7 +779,7 @@ public class CpModel
 
     /**
      * <summary>
-     * Adds <c>target == left * right</c>
+     * Adds <c>target == left * right</c>.
      * </summary>
      */
     public Constraint AddMultiplicationEquality(LinearExpr target, LinearExpr left, LinearExpr right)
@@ -938,7 +938,7 @@ public class CpModel
 
     /**
      * <summary>
-     * Adds <c>NoOverlap2D(xIntervals, yIntervals)</c>
+     * Adds <c>NoOverlap2D()</c>.
      * </summary>
      *
      * <remarks>
@@ -961,7 +961,7 @@ public class CpModel
 
     /**
      * <summary>
-     * Adds <c>Cumulative(capacity)</c>
+     * Adds <c>Cumulative(capacity)</c>.
      * </summary>
      *
      * <remarks>
@@ -991,19 +991,19 @@ public class CpModel
 
     // Objective.
 
-    /** <summary>Adds a minimization objective of a linear expression</summary>*/
+    /** <summary>Adds a minimization objective of a linear expression.</summary>*/
     public void Minimize(LinearExpr obj)
     {
         SetObjective(obj, true);
     }
 
-    /** <summary>Adds a maximization objective of a linear expression</summary>*/
+    /** <summary>Adds a maximization objective of a linear expression.</summary>*/
     public void Maximize(LinearExpr obj)
     {
         SetObjective(obj, false);
     }
 
-    /** <summary>Clears the objective</summary>*/
+    /** <summary>Clears the objective.</summary>*/
     void ClearObjective()
     {
         model_.Objective = null;
@@ -1017,7 +1017,7 @@ public class CpModel
 
     // Search Decision.
 
-    /** <summary>Adds <c> DecisionStrategy(variables, var_str, dom_str)</c></summary>. */
+    /** <summary>Adds <c> DecisionStrategy(variables, var_str, dom_str)</c>.</summary>. */
     public void AddDecisionStrategy(IEnumerable<IntVar> vars,
                                     DecisionStrategyProto.Types.VariableSelectionStrategy var_str,
                                     DecisionStrategyProto.Types.DomainReductionStrategy dom_str)
@@ -1062,7 +1062,7 @@ public class CpModel
         }
     }
 
-    /** <summary>Clears all assumptions </summary>*/
+    /** <summary>Clears all assumptions from the model.</summary>*/
     public void ClearAssumptions()
     {
         model_.Assumptions.Clear();
@@ -1145,8 +1145,8 @@ public class CpModel
     }
 
     /**
-     * <summary
-     * >Returns a non empty string explaining the issue if the model is invalid.
+     * <summary>
+     * Returns a non empty string explaining the issue if the model is invalid.
      * </summary>
      */
     public String Validate()
