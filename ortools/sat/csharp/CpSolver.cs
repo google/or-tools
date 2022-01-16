@@ -66,7 +66,8 @@ public class CpSolver
     }
 
     /** <summary> Deprecated, use Solve() instead. </summary> */
-    [ObsoleteAttribute("This method is obsolete. Call Solve instead with the enumerate_all_solutions parameter.", false)]
+    [ObsoleteAttribute("This method is obsolete. Call Solve instead with the enumerate_all_solutions parameter.",
+                       false)]
     public CpSolverStatus SearchAllSolutions(CpModel model, SolutionCallback cb)
     {
         string old_parameters = string_parameters_;
@@ -147,9 +148,9 @@ public class CpSolver
         }
     }
 
-    /** 
+    /**
      * <summary>
-     * Returns the value of a linear expression in the last solution found. 
+     * Returns the value of a linear expression in the last solution found.
      * </summary>
      */
     public long Value(LinearExpr e)
@@ -200,9 +201,9 @@ public class CpSolver
         return constant;
     }
 
-    /** 
+    /**
      * <summary>
-     * Returns the Boolean value of a literal in the last solution found. 
+     * Returns the Boolean value of a literal in the last solution found.
      * </summary>
      */
     public Boolean BooleanValue(ILiteral literal)

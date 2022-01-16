@@ -24,9 +24,9 @@ namespace Google.OrTools.Sat
  */
 public class CpSolverSolutionCallback : SolutionCallback
 {
-    /** 
+    /**
      * <summary>
-     * Returns the value of a linear expression in the current solution. 
+     * Returns the value of a linear expression in the current solution.
      * </summary>
      */
     public long Value(LinearExpr e)
@@ -75,9 +75,9 @@ public class CpSolverSolutionCallback : SolutionCallback
         return constant;
     }
 
-    /** 
+    /**
      * <summary>
-     * Returns the Boolean value of a literal in the current solution. 
+     * Returns the Boolean value of a literal in the current solution.
      * </summary>
      */
     public Boolean BooleanValue(ILiteral literal)
@@ -94,7 +94,7 @@ public class CpSolverSolutionCallback : SolutionCallback
     }
 }
 
-/** 
+/**
  * <summary>
  * A specialized solution printer.
  * </summary>

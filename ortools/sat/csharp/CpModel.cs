@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Google.OrTools.Sat 
+namespace Google.OrTools.Sat
 {
 using System;
 using System.Collections.Generic;
@@ -396,8 +396,8 @@ public class CpModel
      * contains the final states. </para>
      *
      * <para>Between two consecutive phases i and i + 1, the automaton creates a set of arcs. For each
-     * transition (<c>tail</c>, <c>label</c>, <c>head</c>), it will add an arc from the state <c>tail</c> of phase i and the
-     * state <c>head</c> of phase i + 1. This arc labeled by the value <c>label</c> of the variables
+     * transition (<c>tail</c>, <c>label</c>, <c>head</c>), it will add an arc from the state <c>tail</c> of phase i and
+     * the state <c>head</c> of phase i + 1. This arc labeled by the value <c>label</c> of the variables
      * <c>variables[i]</c>. That is, this arc can only be selected <c>variables[i]</c>a is assigned the value
      * <c>label</c>. </para>
      *

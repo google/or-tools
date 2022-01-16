@@ -85,10 +85,10 @@ public struct Term
 }
 
 /**
-  * <summary>
-  * Holds a linear expression: <c>sum (ai * xi) + b</c>.
-  * </summary>
-  */
+ * <summary>
+ * Holds a linear expression: <c>sum (ai * xi) + b</c>.
+ * </summary>
+ */
 public class LinearExpr
 {
     /** <summary> Creates <c>Sum(exprs)</c>.</summary> */

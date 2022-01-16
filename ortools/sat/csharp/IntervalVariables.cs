@@ -13,7 +13,7 @@
 
 namespace Google.OrTools.Sat
 {
-/** 
+/**
  * <summary>An interval variable </summary>
  *
  * <remarks>
