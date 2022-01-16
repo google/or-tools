@@ -24,7 +24,8 @@ using System.Linq;
  *
  * <remarks>Constraints created by the CpModel class are automatically added to the model. One needs this
  * class to add an enforcement literal to a constraint. </remarks>
- */public class Constraint
+ */
+public class Constraint
 {
     public Constraint(CpModelProto model)
     {
