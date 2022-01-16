@@ -5724,8 +5724,8 @@
       <type>static LinearExprBuilder</type>
       <name>NewBuilder</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a87be2bb223afa5e24e302f34f8127abc</anchor>
-      <arglist>()</arglist>
+      <anchor>afb1662404c8dbace4d7176b9709828de</anchor>
+      <arglist>(int sizeHint=2)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
@@ -20427,8 +20427,8 @@
       <type>static LinearExprBuilder</type>
       <name>NewBuilder</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a87be2bb223afa5e24e302f34f8127abc</anchor>
-      <arglist>()</arglist>
+      <anchor>afb1662404c8dbace4d7176b9709828de</anchor>
+      <arglist>(int sizeHint=2)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
@@ -25099,8 +25099,8 @@
       <type>static LinearExprBuilder</type>
       <name>NewBuilder</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a87be2bb223afa5e24e302f34f8127abc</anchor>
-      <arglist>()</arglist>
+      <anchor>afb1662404c8dbace4d7176b9709828de</anchor>
+      <arglist>(int sizeHint=2)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
@@ -25325,8 +25325,8 @@
       <type></type>
       <name>LinearExprBuilder</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExprBuilder.html</anchorfile>
-      <anchor>ad0362476f1cdaf74eedeb89598c6ba1c</anchor>
-      <arglist>()</arglist>
+      <anchor>a52114bbfd90f4251bda0f525b30839cc</anchor>
+      <arglist>(int sizeHint=2)</arglist>
     </member>
     <member kind="function">
       <type>LinearExprBuilder</type>
@@ -25563,8 +25563,8 @@
       <type>static LinearExprBuilder</type>
       <name>NewBuilder</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a87be2bb223afa5e24e302f34f8127abc</anchor>
-      <arglist>()</arglist>
+      <anchor>afb1662404c8dbace4d7176b9709828de</anchor>
+      <arglist>(int sizeHint=2)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
@@ -32604,8 +32604,8 @@
       <type>static LinearExprBuilder</type>
       <name>NewBuilder</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a87be2bb223afa5e24e302f34f8127abc</anchor>
-      <arglist>()</arglist>
+      <anchor>afb1662404c8dbace4d7176b9709828de</anchor>
+      <arglist>(int sizeHint=2)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>

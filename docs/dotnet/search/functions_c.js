@@ -143,7 +143,7 @@ var searchData=
   ['new_5ftyperegulationsconstraint_140',['new_TypeRegulationsConstraint',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html#a1301bde5ab7d36d5fbcd92acdad5caed',1,'Google::OrTools::ConstraintSolver::operations_research_constraint_solverPINVOKE']]],
   ['new_5ftyperequirementchecker_141',['new_TypeRequirementChecker',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html#ad93500657d69b1a07020aaafc568f629',1,'Google::OrTools::ConstraintSolver::operations_research_constraint_solverPINVOKE']]],
   ['newboolvar_142',['NewBoolVar',['../classGoogle_1_1OrTools_1_1Sat_1_1CpModel.html#a5270729bb2b6019e3138759b46e57669',1,'Google::OrTools::Sat::CpModel']]],
-  ['newbuilder_143',['NewBuilder',['../classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html#a87be2bb223afa5e24e302f34f8127abc',1,'Google::OrTools::Sat::LinearExpr']]],
+  ['newbuilder_143',['NewBuilder',['../classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html#afb1662404c8dbace4d7176b9709828de',1,'Google::OrTools::Sat::LinearExpr']]],
   ['newconstant_144',['NewConstant',['../classGoogle_1_1OrTools_1_1Sat_1_1CpModel.html#a679cc01b7a15c484f579e813cd57f3f9',1,'Google::OrTools::Sat::CpModel']]],
   ['newfixedsizeintervalvar_3c_20s_20_3e_145',['NewFixedSizeIntervalVar&lt; S &gt;',['../classGoogle_1_1OrTools_1_1Sat_1_1CpModel.html#a2beb5b892682cb8bf8942b1468ca821f',1,'Google::OrTools::Sat::CpModel']]],
   ['newintervalvar_3c_20s_2c_20d_2c_20e_20_3e_146',['NewIntervalVar&lt; S, D, E &gt;',['../classGoogle_1_1OrTools_1_1Sat_1_1CpModel.html#a0c5b01dddfe0ba429167ed1c09064b7b',1,'Google::OrTools::Sat::CpModel']]],

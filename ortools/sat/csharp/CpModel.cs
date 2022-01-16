@@ -135,7 +135,7 @@ public class CpModel
     }
     /**
      * <summary>
-     * Adds <code>lb \lt;= expr \lt;= ub</code>
+     * Adds <c>lb ≤ expr ≤ ub</c>
      * </summary>
      */
     public Constraint AddLinearConstraint(LinearExpr expr, long lb, long ub)
@@ -152,7 +152,7 @@ public class CpModel
 
     /**
      * <summary>
-     * Adds <code>expr ∈ domain</code>
+     * Adds <c>expr ∈ domain</c>
      * </summary>
      */
     public Constraint AddLinearExpressionInDomain(LinearExpr expr, Domain domain)
@@ -214,7 +214,7 @@ public class CpModel
 
     /**
      * <summary>
-     * Adds the constraint <code>AllDifferent(exprs)</code>
+     * Adds the constraint <c>AllDifferent(exprs)</c>
      * </summary>
      */
     public Constraint AddAllDifferent(IEnumerable<LinearExpr> exprs)
@@ -233,7 +233,7 @@ public class CpModel
 
     /**
      * <summary>
-     * Adds the element constraint: <code> variables[index] == target</code>
+     * Adds the element constraint: <c> variables[index] == target</c>
      * </summary>
      */
     public Constraint AddElement(IntVar index, IEnumerable<IntVar> vars, IntVar target)
@@ -254,7 +254,7 @@ public class CpModel
 
     /**
      * <summary>
-     * Adds the element constraint: <code> values[index] == target</code>
+     * Adds the element constraint: <c> values[index] == target</c>
      * </summary>
      */
     public Constraint AddElement(IntVar index, IEnumerable<long> values, IntVar target)
@@ -275,7 +275,7 @@ public class CpModel
 
     /**
      * <summary>
-     * Adds the element constraint: <code> values[index] == target</code>
+     * Adds the element constraint: <c> values[index] == target</c>
      * </summary>
      */
     public Constraint AddElement(IntVar index, IEnumerable<int> values, IntVar target)
@@ -300,7 +300,7 @@ public class CpModel
      * </summary>
      *
      * <remarks> A circuit is a unique Hamiltonian path in a subgraph of the total graph. In case a node 'i'
-     * is not in the path, then there must be a loop arc <code> i -> i</code> associated with a true
+     * is not in the path, then there must be a loop arc <c> i -> i</c> associated with a true
      * literal. Otherwise this constraint will fail.
      * </remarks>
      */
@@ -331,7 +331,7 @@ public class CpModel
 
     /**
      * <summary>
-     * Adds <code> AllowedAssignments(variables)</code>
+     * Adds <c> AllowedAssignments(variables)</c>
      * </summary>
      *
      * <remarks>An AllowedAssignments constraint is a constraint on an array of variables that forces, when
@@ -360,7 +360,7 @@ public class CpModel
 
     /**
      * <summary>
-     * Adds <code> ForbiddenAssignments(variables)</code>
+     * Adds <c> ForbiddenAssignments(variables)</c>
      * </summary>
      *
      * <remarks>A ForbiddenAssignments constraint is a constraint on an array of variables where the list of
@@ -432,7 +432,7 @@ public class CpModel
 
     /**
      * <summary>
-     * Adds <code> Inverse(variables, inverseVariables)</code>
+     * Adds <c> Inverse(variables, inverseVariables)</c>
      * </summary>
      *
      * <remarks>An inverse constraint enforces that if 'variables[i]' is assigned a value 'j', then
@@ -476,17 +476,17 @@ public class CpModel
      * <para>Given an event (time, levelChange, active), if active is true, and if time is assigned a
      * value t, then the level of the reservoir changes by levelChange (which is constant) at time t.
      * Therefore, at any time t:
-     * <code>sum(levelChanges[i] * actives[i] if times[i] \lt;= t) in [min_level, max_level]</code>
+     * <code>∑(levelChanges[i] * actives[i] if times[i] ≤ t) in [min_level, max_level]</code>
      * </para>
      *
-     * <para>Note that min level must be \lt;= 0, and the max level must be \gt;= 0. Please use fixed
+     * <para>Note that min level must be ≤ 0, and the max level must be ≥ 0. Please use fixed
      * level_changes to simulate an initial state. </para>
      * </remarks>
      *
      * <param name="minLevel"> at any time, the level of the reservoir must be greater of equal than the min
-     *     level. minLevel must me \lt;= 0 </param>
+     *     level. minLevel must me ≤ 0 </param>
      * <param name="maxLevel"> at any time, the level of the reservoir must be less or equal than the max
-     *     level. maxLevel must be \gt;= 0 </param>
+     *     level. maxLevel must be ≥ 0 </param>
      * <returns> an instance of the ReservoirConstraint class </returns>
      */
     public ReservoirConstraint AddReservoirConstraint(long minLevel, long maxLevel)
@@ -543,7 +543,7 @@ public class CpModel
 
     /**
      * <summary>
-     * Adds <code>a => b</code>
+     * Adds <c>a ⇒ b</c>
      * </summary>
      */
     public Constraint AddImplication(ILiteral a, ILiteral b)
@@ -560,7 +560,7 @@ public class CpModel
 
     /**
      * <summary>
-     * Adds <code>Or(literals) == true</code>
+     * Adds <c>Or(literals) == true</c>
      * </summary>
      */
     public Constraint AddBoolOr(IEnumerable<ILiteral> literals)
@@ -579,7 +579,7 @@ public class CpModel
 
     /**
      * <summary>
-     * Same as AddBoolOr: <code>Sum(literals) >= 1</code>
+     * Same as AddBoolOr: <c>∑(literals) ≥ 1</c>
      * </summary>
      */
     public Constraint AddAtLeastOne(IEnumerable<ILiteral> literals)
@@ -589,7 +589,7 @@ public class CpModel
 
     /**
      * <summary>
-     * Adds <code> AtMostOne(literals): Sum(literals) \lt;= 1</code>
+     * Adds <c> AtMostOne(literals): ∑(literals) ≤ 1</c>
      * </summary>
      */
     public Constraint AddAtMostOne(IEnumerable<ILiteral> literals)
@@ -608,7 +608,7 @@ public class CpModel
 
     /**
      * <summary>
-     * Adds <code> ExactlyOne(literals): Sum(literals) == 1</code>
+     * Adds <c> ExactlyOne(literals): ∑(literals) == 1</c>
      * </summary>
      */
     public Constraint AddExactlyOne(IEnumerable<ILiteral> literals)
@@ -627,7 +627,7 @@ public class CpModel
 
     /**
      * <summary>
-     * Adds <code>And(literals) == true</code>
+     * Adds <c>And(literals) == true</c>
      * </summary>
      */
     public Constraint AddBoolAnd(IEnumerable<ILiteral> literals)
@@ -646,7 +646,7 @@ public class CpModel
 
     /**
      * <summary>
-     * Adds <code>XOr(literals) == true</code>
+     * Adds <c>XOr(literals) == true</c>
      * </summary>
      */
     public Constraint AddBoolXor(IEnumerable<ILiteral> literals)
@@ -665,7 +665,7 @@ public class CpModel
 
     /**
      * <summary>
-     * Adds <code>target == Min(exprs)</code>
+     * Adds <c>target == Min(exprs)</c>
      * </summary>
      */
     public Constraint AddMinEquality(LinearExpr target, IEnumerable<LinearExpr> exprs)
@@ -685,7 +685,7 @@ public class CpModel
 
     /**
      * <summary>
-     * Adds <code>target == Max(exprs)</code>
+     * Adds <c>target == Max(exprs)</c>
      * </summary>
      */
     public Constraint AddMaxEquality(LinearExpr target, IEnumerable<LinearExpr> exprs)
@@ -705,7 +705,7 @@ public class CpModel
 
     /**
      * <summary>
-     * Adds <code>target == num / denom</code> (integer division)
+     * Adds <c>target == num / denom</c> (integer division)
      * </summary>
      */
     public Constraint AddDivisionEquality<T, N, D>(T target, N num, D denom)
@@ -723,7 +723,7 @@ public class CpModel
 
     /**
      * <summary>
-     * Adds <code>target == abs(expr)</code>
+     * Adds <c>target == abs(expr)</c>
      * </summary>
      */
     public Constraint AddAbsEquality(LinearExpr target, LinearExpr expr)
@@ -741,7 +741,7 @@ public class CpModel
 
     /**
      * <summary>
-     * Adds <code>target == v % m</code>
+     * Adds <c>target == v % m</c>
      * </summary>
      */
     public Constraint AddModuloEquality<T, V, M>(T target, V v, M m)
@@ -759,7 +759,7 @@ public class CpModel
 
     /**
      * <summary>
-     * Adds <code>target == PROD(exprs)</code>
+     * Adds <c>target == ∏(exprs)</c>
      * </summary>
      */
     public Constraint AddMultiplicationEquality(LinearExpr target, IEnumerable<LinearExpr> exprs)
@@ -779,7 +779,7 @@ public class CpModel
 
     /**
      * <summary>
-     * Adds <code>target == left * right</code>
+     * Adds <c>target == left * right</c>
      * </summary>
      */
     public Constraint AddMultiplicationEquality(LinearExpr target, LinearExpr left, LinearExpr right)
@@ -803,7 +803,7 @@ public class CpModel
      * </summary>
      *
      * <remarks>An interval variable is a constraint, that is itself used in other constraints like
-     * NoOverlap. Internally, it ensures that <code>start + size == end</code>.
+     * NoOverlap. Internally, it ensures that <c>start + size == end</c>.
      * </remarks>
      *
      * <param name="start"> the start of the interval. It needs to be an affine or constant expression. </param>
@@ -859,7 +859,7 @@ public class CpModel
      * </summary>
      *
      * <remarks>An interval variable is a constraint, that is itself used in other constraints like
-     * NoOverlap. Internally, it ensures that <code>is_present => start + size == end</code>.
+     * NoOverlap. Internally, it ensures that <c>is_present ⇒ start + size == end</c>.
      * </remarks>
      *
      * <param name="start"> the start of the interval. It needs to be an affine or constant expression. </param>
@@ -914,7 +914,7 @@ public class CpModel
     }
 
     /**
-     * Adds <code> NoOverlap(intervalVars)</code>.
+     * Adds <c> NoOverlap(intervalVars)</c>.
      *
      * <remarks>A NoOverlap constraint ensures that all present intervals do not overlap in time.
      * </remarks>
@@ -938,7 +938,7 @@ public class CpModel
 
     /**
      * <summary>
-     * Adds <code>NoOverlap2D(xIntervals, yIntervals)</code>
+     * Adds <c>NoOverlap2D(xIntervals, yIntervals)</c>
      * </summary>
      *
      * <remarks>
@@ -961,15 +961,15 @@ public class CpModel
 
     /**
      * <summary>
-     * Adds <code>Cumulative(capacity)</code>
+     * Adds <c>Cumulative(capacity)</c>
      * </summary>
      *
      * <remarks>
      * This constraint enforces that:
      * <code>
      * forall t:
-     *      sum(demands[i] if (start(intervals[t]) \lt;= t \lt; end(intervals[t])) and (t is
-     *          present)\lt;= capacity
+     *      ∑(demands[i] if (start(intervals[t]) ≤ t &lt; end(intervals[t])) and (t is
+     *          present) ≤ capacity
      * </code>
      * </remarks>
      *
@@ -1017,7 +1017,7 @@ public class CpModel
 
     // Search Decision.
 
-    /** <summary>Adds <code> DecisionStrategy(variables, var_str, dom_str)</code></summary>. */
+    /** <summary>Adds <c> DecisionStrategy(variables, var_str, dom_str)</c></summary>. */
     public void AddDecisionStrategy(IEnumerable<IntVar> vars,
                                     DecisionStrategyProto.Types.VariableSelectionStrategy var_str,
                                     DecisionStrategyProto.Types.DomainReductionStrategy dom_str)
