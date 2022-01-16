@@ -61,9 +61,13 @@ public class Constraint
 }
 
 /**
+ *<summary>
  * Specialized circuit constraint.
+ * </summary>
  *
- * <p>This constraint allows adding arcs to the circuit constraint incrementally.
+ * <remarks>
+ * This constraint allows adding arcs to the circuit constraint incrementally.
+ * </remarks>
  */
 public class CircuitConstraint : Constraint
 {
@@ -72,11 +76,13 @@ public class CircuitConstraint : Constraint
     }
 
     /**
+     * <summary>
      * Add an arc to the graph of the circuit constraint.
+     * </summary>
      *
-     * @param tail the index of the tail node.
-     * @param head the index of the head node.
-     * @param literal it will be set to true if the arc is selected.
+     * <param name="tail"> the index of the tail node</param>
+     * <param name="head"> the index of the head node</param>
+     * <param name="literal"> it will be set to true if the arc is selected</param>
      */
     public CircuitConstraint AddArc(int tail, int head, ILiteral literal)
     {
@@ -89,9 +95,13 @@ public class CircuitConstraint : Constraint
 }
 
 /**
+ *<summary>
  * Specialized multiple circuit constraint.
+ * </summary>
  *
- * <p>This constraint allows adding arcs to the multiple circuit constraint incrementally.
+ * <remarks>
+ * This constraint allows adding arcs to the multiple circuit constraint incrementally.
+ * </remarks>
  */
 public class MultipleCircuitConstraint : Constraint
 {
@@ -100,11 +110,13 @@ public class MultipleCircuitConstraint : Constraint
     }
 
     /**
-     * Add an arc to the graph of the circuit constraint.
+     * <summary>
+     * Add an arc to the graph of the multiple circuit constraint.
+     * </summary>
      *
-     * @param tail the index of the tail node.
-     * @param head the index of the head node.
-     * @param literal it will be set to true if the arc is selected.
+     * <param name="tail"> the index of the tail node</param>
+     * <param name="head"> the index of the head node</param>
+     * <param name="literal"> it will be set to true if the arc is selected</param>
      */
     public MultipleCircuitConstraint AddArc(int tail, int head, ILiteral literal)
     {
@@ -117,10 +129,12 @@ public class MultipleCircuitConstraint : Constraint
 }
 
 /**
+ * <summary>
  * Specialized assignment constraint.
+ * </summary>
  *
- * <p>This constraint allows adding tuples to the allowed/forbidden assignment constraint
- * incrementally.
+ * <remarks>This constraint allows adding tuples to the allowed/forbidden assignment constraint
+ * incrementally.</remarks>
  */
 public class TableConstraint : Constraint
 {
@@ -129,11 +143,13 @@ public class TableConstraint : Constraint
     }
 
     /**
+     * <summary>
      * Adds a tuple of possible/forbidden values to the constraint.
+     * </summary>
      *
-     * @param tuple the tuple to add to the constraint.
-     * @throws CpModel.WrongLength if the tuple does not have the same length as the array of
-     *     variables of the constraint.
+     * <param name="tuple"> the tuple to add to the constraint</param>
+     * <exception cref="ArgumentException"> if the tuple does not have the same length as the array of
+     *     variables of the constraint</exception>
      */
     public TableConstraint AddTuple(IEnumerable<int> tuple)
     {
@@ -153,11 +169,13 @@ public class TableConstraint : Constraint
     }
 
     /**
+     * <summary>
      * Adds a tuple of possible/forbidden values to the constraint.
+     * </summary>
      *
-     * @param tuple the tuple to add to the constraint.
-     * @throws CpModel.WrongLength if the tuple does not have the same length as the array of
-     *     variables of the constraint.
+     * <param name="tuple"> the tuple to add to the constraint</param>
+     * <exception cref="ArgumentException"> if the tuple does not have the same length as the array of
+     *     variables of the constraint</exception>
      */
     public TableConstraint AddTuple(IEnumerable<long> tuple)
     {
@@ -177,11 +195,13 @@ public class TableConstraint : Constraint
     }
 
     /**
-     * Adds a set of tuple of possible/forbidden values to the constraint.
+     * <summary>
+     * Adds a set of tuples of possible/forbidden values to the constraint.
+     * </summary>
      *
-     * @param tuples the set of tuples to add to the constraint.
-     * @throws CpModel.WrongLength if tuples do not have the same length as the array of
-     *     variables of the constraint.
+     * <param name="tuples"> the set of tuple to add to the constraint</param>
+     * <exception cref="ArgumentException"> if the tuple does not have the same length as the array of
+     *     variables of the constraint</exception>
      */
     public TableConstraint AddTuples(int[,] tuples)
     {
@@ -203,11 +223,13 @@ public class TableConstraint : Constraint
     }
 
     /**
-     * Adds a set of tuple of possible/forbidden values to the constraint.
+     * <summary>
+     * Adds a set of tuples of possible/forbidden values to the constraint.
+     * </summary>
      *
-     * @param tuples the set of tuples to add to the constraint.
-     * @throws CpModel.WrongLength if tuples do not have the same length as the array of
-     *     variables of the constraint.
+     * <param name="tuples"> the set of tuple to add to the constraint</param>
+     * <exception cref="ArgumentException"> if the tuple does not have the same length as the array of
+     *     variables of the constraint</exception>
      */
     public TableConstraint AddTuples(long[,] tuples)
     {
@@ -230,9 +252,13 @@ public class TableConstraint : Constraint
 }
 
 /**
+ * <summary>
  * Specialized automaton constraint.
+ * </summary>
  *
- * <p>This constraint allows adding transitions to the automaton constraint incrementally.
+ * <remarks>
+ * This constraint allows adding transitions to the automaton constraint incrementally.
+ * </remarks>
  */
 public class AutomatonConstraint : Constraint
 {
@@ -240,7 +266,11 @@ public class AutomatonConstraint : Constraint
     {
     }
 
-    /// Adds a transitions to the automaton.
+    /*
+     * <summary>
+     * Adds a transitions to the automaton.
+     * </summary>
+     */
     public AutomatonConstraint AddTransition(int tail, int head, long label)
     {
         AutomatonConstraintProto aut = Proto.Automaton;
@@ -252,10 +282,14 @@ public class AutomatonConstraint : Constraint
 }
 
 /**
+ * <summary>
  * Specialized reservoir constraint.
+ * </summary>
  *
- * <p>This constraint allows adding events (time, levelChange, isActive (optional)) to the reservoir
+ * <remarks>
+ * This constraint allows adding events (time, levelChange, isActive (optional)) to the reservoir
  * constraint incrementally.
+ * </remarks>
  */
 public class ReservoirConstraint : Constraint
 {
@@ -265,10 +299,14 @@ public class ReservoirConstraint : Constraint
     }
 
     /**
+     * <summary>
      * Adds a mandatory event
+     * </summary>
      *
-     * <p>It will increase the used capacity by `levelChange` at time `time`. `time` must be an affine
+     * <remarks>
+     * It will increase the used capacity by `level_change` at time `time`. `time` must be an affine
      * expression.
+     * </remarks>
      */
     public ReservoirConstraint AddEvent<T, L>(T time, L level_change)
     {
@@ -280,10 +318,14 @@ public class ReservoirConstraint : Constraint
     }
 
     /**
+     * <summary>
      * Adds an optional event
+     * </summary>
      *
-     * <p>If `isActive` is true, It will increase the used capacity by `levelChange` at time `time`.
+     * <remarks>
+     * If `is_active` is true, It will increase the used capacity by `level_change` at time `time`.
      * `time` must be an affine expression.
+     * </remarks>
      */
     public ReservoirConstraint AddOptionalEvent<T, L>(T time, L level_change, ILiteral literal)
     {
@@ -298,10 +340,14 @@ public class ReservoirConstraint : Constraint
 }
 
 /**
+ * <summary>
  * Specialized cumulative constraint.
+ * </summary>
  *
- * <p>This constraint allows adding (interval, demand) pairs to the cumulative constraint
+ * <remarks>
+ * This constraint allows adding (interval, demand) pairs to the cumulative constraint
  * incrementally.
+ * </remarks>
  */
 public class CumulativeConstraint : Constraint
 {
@@ -310,7 +356,7 @@ public class CumulativeConstraint : Constraint
         this.cp_model_ = cp_model;
     }
 
-    /// Adds a pair (interval, demand) to the constraint.
+    /** <summary>Adds a pair (interval, demand) to the constraint. </summary> */
     public CumulativeConstraint AddDemand<D>(IntervalVar interval, D demand)
     {
         CumulativeConstraintProto cumul = Proto.Cumulative;
@@ -320,7 +366,7 @@ public class CumulativeConstraint : Constraint
         return this;
     }
 
-    /// Adds all pairs (interval, demand) to the constraint.
+    /** <summary>Adds all pairs (interval, demand) to the constraint. </summary> */
     public CumulativeConstraint AddDemands<D>(IEnumerable<IntervalVar> intervals, IEnumerable<D> demands)
     {
         CumulativeConstraintProto cumul = Proto.Cumulative;
@@ -337,9 +383,13 @@ public class CumulativeConstraint : Constraint
 }
 
 /**
+ * <summary>
  * Specialized NoOverlap2D constraint.
+ * </summary>
  *
- * <p>This constraint allows adding rectanles to the NoOverlap2D constraint incrementally.
+ * <remarks>
+ * This constraint allows adding rectanles to the NoOverlap2D constraint incrementally.
+ * </remarks>
  */
 public class NoOverlap2dConstraint : Constraint
 {
@@ -347,7 +397,7 @@ public class NoOverlap2dConstraint : Constraint
     {
     }
 
-    /// Adds a rectangle (xInterval, yInterval) to the constraint.
+    /** <summary>Adds a rectangle (xInterval, yInterval) to the constraint. </summary> */
     public NoOverlap2dConstraint AddRectangle(IntervalVar xInterval, IntervalVar yInterval)
     {
         Proto.NoOverlap2D.XIntervals.Add(xInterval.GetIndex());

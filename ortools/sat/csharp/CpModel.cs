@@ -30,6 +30,11 @@ public class CpModel
 
     // Getters.
 
+    /**
+     * <summary>
+     * The underlying CpModelProto.
+     * </summary>
+     */
     public CpModelProto Model
     {
         get {
@@ -44,36 +49,70 @@ public class CpModel
 
     // Integer variables and constraints.
 
+    /**
+     * <summary>
+     * Creates an integer variable with domain [lb, ub].
+     * </summary>
+     *
+     * <param name="lb"> the lower bound of the domain</param>
+     * <param name="ub"> the upper bound of the domain</param>
+     * <param name="name"> the name of the variable</param>
+     * <returns> a variable with the given domain</returns>
+     */
     public IntVar NewIntVar(long lb, long ub, string name)
     {
         return new IntVar(model_, lb, ub, name);
     }
 
+    /**
+     * <summary>
+     * Creates an integer variable with given domain.
+     * </summary>
+     *
+     * <param name="domain"> an instance of the Domain class</param>
+     * <param name="name"> the name of the variable</param>
+     * <returns> a variable with the given domain</returns>
+     */
     public IntVar NewIntVarFromDomain(Domain domain, string name)
     {
         return new IntVar(model_, domain, name);
     }
 
+    /**
+     * <summary>
+     * Creates a constant variable.
+     * </summary>
+     */
     public IntVar NewConstant(long value)
     {
         return new IntVar(model_, ConvertConstant(value));
     }
 
-    public IntVar NewConstant(long value, string name)
-    {
-        return new IntVar(model_, value, value, name);
-    }
-
+    /**
+     * <summary>
+     * Creates an Boolean variable with given domain.
+     * </summary>
+     */
     public BoolVar NewBoolVar(string name)
     {
         return new BoolVar(model_, name);
     }
 
+    /**
+     * <summary>
+     * Returns a constant true literal.
+     * </summary>
+     */
     public ILiteral TrueLiteral()
     {
         return true_literal_ ??= new BoolVar(model_, ConvertConstant(1));
     }
 
+    /**
+     * <summary>
+     * Returns a constant false literal.
+     * </summary>
+     */
     public ILiteral FalseLiteral()
     {
         return TrueLiteral().Not();
@@ -94,7 +133,11 @@ public class CpModel
         }
         return constant;
     }
-
+    /**
+     * <summary>
+     * Adds <code>lb \lt;= expr \lt;= ub</code>
+     * </summary>
+     */
     public Constraint AddLinearConstraint(LinearExpr expr, long lb, long ub)
     {
         long constant = FillLinearConstraint(expr, out var linear);
@@ -107,6 +150,11 @@ public class CpModel
         return ct;
     }
 
+    /**
+     * <summary>
+     * Adds <code>expr ∈ domain</code>
+     * </summary>
+     */
     public Constraint AddLinearExpressionInDomain(LinearExpr expr, Domain domain)
     {
         long constant = FillLinearConstraint(expr, out var linear);
@@ -136,6 +184,11 @@ public class CpModel
         return ct;
     }
 
+    /**
+     * <summary>
+     * Adds a linear constraint to the model.
+     * </summary>
+     */
     public Constraint Add(BoundedLinearExpression lin)
     {
         switch (lin.CtType)
@@ -159,6 +212,11 @@ public class CpModel
         return null;
     }
 
+    /**
+     * <summary>
+     * Adds the constraint <code>AllDifferent(exprs)</code>
+     * </summary>
+     */
     public Constraint AddAllDifferent(IEnumerable<LinearExpr> exprs)
     {
         AllDifferentConstraintProto alldiff = new AllDifferentConstraintProto();
@@ -173,6 +231,11 @@ public class CpModel
         return ct;
     }
 
+    /**
+     * <summary>
+     * Adds the element constraint: <code> variables[index] == target</code>
+     * </summary>
+     */
     public Constraint AddElement(IntVar index, IEnumerable<IntVar> vars, IntVar target)
     {
         ElementConstraintProto element = new ElementConstraintProto();
@@ -189,6 +252,11 @@ public class CpModel
         return ct;
     }
 
+    /**
+     * <summary>
+     * Adds the element constraint: <code> values[index] == target</code>
+     * </summary>
+     */
     public Constraint AddElement(IntVar index, IEnumerable<long> values, IntVar target)
     {
         ElementConstraintProto element = new ElementConstraintProto();
@@ -205,6 +273,11 @@ public class CpModel
         return ct;
     }
 
+    /**
+     * <summary>
+     * Adds the element constraint: <code> values[index] == target</code>
+     * </summary>
+     */
     public Constraint AddElement(IntVar index, IEnumerable<int> values, IntVar target)
     {
         ElementConstraintProto element = new ElementConstraintProto();
@@ -221,6 +294,16 @@ public class CpModel
         return ct;
     }
 
+    /**
+     * <summary>
+     * Adds and returns an empty circuit constraint.
+     * </summary>
+     *
+     * <remarks> A circuit is a unique Hamiltonian path in a subgraph of the total graph. In case a node 'i'
+     * is not in the path, then there must be a loop arc <code> i -> i</code> associated with a true
+     * literal. Otherwise this constraint will fail.
+     * </remarks>
+     */
     public CircuitConstraint AddCircuit()
     {
         CircuitConstraint ct = new CircuitConstraint(model_);
@@ -228,6 +311,17 @@ public class CpModel
         return ct;
     }
 
+    /**
+     * <summary>
+     * Adds and returns an empty multiple circuit constraint.
+     * </summary>
+     *
+     * <remarks> A multiple circuit is set of cycles in a subgraph of the total graph. The node index by 0
+     * must be part of all cycles of length > 1. Each node with index > 0 belongs to exactly one
+     * cycle. If such node does not belong in any cycle of length > 1, then there must be a looping
+     * arc on this node attached to a literal that will be true. Otherwise, the constraint will fail.
+     * </remarks>
+     */
     public MultipleCircuitConstraint AddMultipleCircuit()
     {
         MultipleCircuitConstraint ct = new MultipleCircuitConstraint(model_);
@@ -235,6 +329,21 @@ public class CpModel
         return ct;
     }
 
+    /**
+     * <summary>
+     * Adds <code> AllowedAssignments(variables)</code>
+     * </summary>
+     *
+     * <remarks>An AllowedAssignments constraint is a constraint on an array of variables that forces, when
+     * all variables are fixed to a single value, that the corresponding list of values is equal to
+     * one of the tuples of the tupleList.
+     * </remarks>
+     *
+     * <param name="vars"> a list of variables</param>
+     * <returns> an instance of the TableConstraint class without any tuples. Tuples can be added
+     * directly to the table constraint
+     * </returns>
+     */
     public TableConstraint AddAllowedAssignments(IEnumerable<IntVar> vars)
     {
         TableConstraintProto table = new TableConstraintProto();
@@ -249,6 +358,20 @@ public class CpModel
         return ct;
     }
 
+    /**
+     * <summary>
+     * Adds <code> ForbiddenAssignments(variables)</code>
+     * </summary>
+     *
+     * <remarks>A ForbiddenAssignments constraint is a constraint on an array of variables where the list of
+     * impossible combinations is provided in the tuples list.
+     * </remarks>
+     *
+     * <param name="vars"> a list of variables</param>
+     * <returns> an instance of the TableConstraint class without any tuples. Tuples can be added
+     * directly to the table constraint
+     * </returns>
+     */
     public TableConstraint AddForbiddenAssignments(IEnumerable<IntVar> vars)
     {
         TableConstraint ct = AddAllowedAssignments(vars);
@@ -256,6 +379,39 @@ public class CpModel
         return ct;
     }
 
+    /**
+     * <summary>
+     * Adds an automaton constraint.
+     * </summary>
+     *
+     * <remarks>
+     * <para>An automaton constraint takes a list of variables (of size n), an initial state, a set of
+     * final states, and a set of transitions that will be added incrementally directly on the
+     * returned AutomatonConstraint instance. A transition is a triplet ('tail', 'transition',
+     * 'head'), where 'tail' and 'head' are states, and 'transition' is the label of an arc from
+     * 'head' to 'tail', corresponding to the value of one variable in the list of variables. </para>
+     *
+     * <para>This automaton will be unrolled into a flow with n + 1 phases. Each phase contains the
+     * possible states of the automaton. The first state contains the initial state. The last phase
+     * contains the final states. </para>
+     *
+     * <para>Between two consecutive phases i and i + 1, the automaton creates a set of arcs. For each
+     * transition (tail, label, head), it will add an arc from the state 'tail' of phase i and the
+     * state 'head' of phase i + 1. This arc labeled by the value 'label' of the variables
+     * 'variables[i]'. That is, this arc can only be selected if 'variables[i]' is assigned the value
+     * 'label'. </para>
+     *
+     * <para>A feasible solution of this constraint is an assignment of variables such that, starting
+     * from the initial state in phase 0, there is a path labeled by the values of the variables that
+     * ends in one of the final states in the final phase. </para>
+     * </remarks>
+     *
+     * <param name="vars"> a non empty list of variables whose values correspond to the labels
+     *     of the arcs traversed by the automaton</param>
+     * <param name="starting_state"> the initial state of the automaton</param>
+     * <param name="final_states"> a non empty list of admissible final states </param>
+     * <returns> an instance of the Constraint class </returns>
+     */
     public AutomatonConstraint AddAutomaton(IEnumerable<IntVar> vars, long starting_state,
                                             IEnumerable<long> final_states)
     {
@@ -274,6 +430,19 @@ public class CpModel
         return ct;
     }
 
+    /**
+     * <summary>
+     * Adds <code> Inverse(variables, inverseVariables)</code>
+     * </summary>
+     *
+     * <remarks>An inverse constraint enforces that if 'variables[i]' is assigned a value 'j', then
+     * inverseVariables[j] is assigned a value 'i'. And vice versa.
+     * </remarks>
+     *
+     * <param name="direct"> an array of integer variables</param>
+     * <param name="reverse"> an array of integer variables</param>
+     * <returns> an instance of the Constraint class </returns>
+     */
     public Constraint AddInverse(IEnumerable<IntVar> direct, IEnumerable<IntVar> reverse)
     {
         InverseConstraintProto inverse = new InverseConstraintProto();
@@ -294,6 +463,32 @@ public class CpModel
         return ct;
     }
 
+    /**
+     * <summary>
+     * Adds a reservoir constraint with optional refill/emptying events.
+     * </summary>
+     *
+     * <remarks>
+     * <para>Maintain a reservoir level within bounds. The water level starts at 0, and at any time, it
+     * must be within [min_level, max_level].
+     * </para>
+     *
+     * <para>Given an event (time, levelChange, active), if active is true, and if time is assigned a
+     * value t, then the level of the reservoir changes by levelChange (which is constant) at time t.
+     * Therefore, at any time t:
+     * <code>sum(levelChanges[i] * actives[i] if times[i] \lt;= t) in [min_level, max_level]</code>
+     * </para>
+     *
+     * <para>Note that min level must be \lt;= 0, and the max level must be \gt;= 0. Please use fixed
+     * level_changes to simulate an initial state. </para>
+     * </remarks>
+     *
+     * <param name="minLevel"> at any time, the level of the reservoir must be greater of equal than the min
+     *     level. minLevel must me \lt;= 0 </param>
+     * <param name="maxLevel"> at any time, the level of the reservoir must be less or equal than the max
+     *     level. maxLevel must be \gt;= 0 </param>
+     * <returns> an instance of the ReservoirConstraint class </returns>
+     */
     public ReservoirConstraint AddReservoirConstraint(long minLevel, long maxLevel)
     {
         ReservoirConstraintProto res = new ReservoirConstraintProto();
@@ -346,6 +541,11 @@ public class CpModel
         }
     }
 
+    /**
+     * <summary>
+     * Adds <code>a => b</code>
+     * </summary>
+     */
     public Constraint AddImplication(ILiteral a, ILiteral b)
     {
         BoolArgumentProto or = new BoolArgumentProto();
@@ -358,6 +558,11 @@ public class CpModel
         return ct;
     }
 
+    /**
+     * <summary>
+     * Adds <code>Or(literals) == true</code>
+     * </summary>
+     */
     public Constraint AddBoolOr(IEnumerable<ILiteral> literals)
     {
         BoolArgumentProto bool_argument = new BoolArgumentProto();
@@ -372,11 +577,21 @@ public class CpModel
         return ct;
     }
 
+    /**
+     * <summary>
+     * Same as AddBoolOr: <code>Sum(literals) >= 1</code>
+     * </summary>
+     */
     public Constraint AddAtLeastOne(IEnumerable<ILiteral> literals)
     {
         return AddBoolOr(literals);
     }
 
+    /**
+     * <summary>
+     * Adds <code> AtMostOne(literals): Sum(literals) \lt;= 1</code>
+     * </summary>
+     */
     public Constraint AddAtMostOne(IEnumerable<ILiteral> literals)
     {
         BoolArgumentProto bool_argument = new BoolArgumentProto();
@@ -391,6 +606,11 @@ public class CpModel
         return ct;
     }
 
+    /**
+     * <summary>
+     * Adds <code> ExactlyOne(literals): Sum(literals) == 1</code>
+     * </summary>
+     */
     public Constraint AddExactlyOne(IEnumerable<ILiteral> literals)
     {
         BoolArgumentProto bool_argument = new BoolArgumentProto();
@@ -405,6 +625,11 @@ public class CpModel
         return ct;
     }
 
+    /**
+     * <summary>
+     * Adds <code>And(literals) == true</code>
+     * </summary>
+     */
     public Constraint AddBoolAnd(IEnumerable<ILiteral> literals)
     {
         BoolArgumentProto bool_argument = new BoolArgumentProto();
@@ -419,6 +644,11 @@ public class CpModel
         return ct;
     }
 
+    /**
+     * <summary>
+     * Adds <code>XOr(literals) == true</code>
+     * </summary>
+     */
     public Constraint AddBoolXor(IEnumerable<ILiteral> literals)
     {
         BoolArgumentProto bool_argument = new BoolArgumentProto();
@@ -433,6 +663,11 @@ public class CpModel
         return ct;
     }
 
+    /**
+     * <summary>
+     * Adds <code>target == Min(exprs)</code>
+     * </summary>
+     */
     public Constraint AddMinEquality(LinearExpr target, IEnumerable<LinearExpr> exprs)
     {
         LinearArgumentProto lin = new LinearArgumentProto();
@@ -448,6 +683,11 @@ public class CpModel
         return ct;
     }
 
+    /**
+     * <summary>
+     * Adds <code>target == Max(exprs)</code>
+     * </summary>
+     */
     public Constraint AddMaxEquality(LinearExpr target, IEnumerable<LinearExpr> exprs)
     {
         LinearArgumentProto lin = new LinearArgumentProto();
@@ -463,6 +703,11 @@ public class CpModel
         return ct;
     }
 
+    /**
+     * <summary>
+     * Adds <code>target == num / denom</code> (integer division)
+     * </summary>
+     */
     public Constraint AddDivisionEquality<T, N, D>(T target, N num, D denom)
     {
         LinearArgumentProto div = new LinearArgumentProto();
@@ -476,6 +721,11 @@ public class CpModel
         return ct;
     }
 
+    /**
+     * <summary>
+     * Adds <code>target == abs(expr)</code>
+     * </summary>
+     */
     public Constraint AddAbsEquality(LinearExpr target, LinearExpr expr)
     {
         LinearArgumentProto abs = new LinearArgumentProto();
@@ -489,6 +739,11 @@ public class CpModel
         return ct;
     }
 
+    /**
+     * <summary>
+     * Adds <code>target == v % m</code>
+     * </summary>
+     */
     public Constraint AddModuloEquality<T, V, M>(T target, V v, M m)
     {
         LinearArgumentProto mod = new LinearArgumentProto();
@@ -502,6 +757,11 @@ public class CpModel
         return ct;
     }
 
+    /**
+     * <summary>
+     * Adds <code>target == PROD(exprs)</code>
+     * </summary>
+     */
     public Constraint AddMultiplicationEquality(LinearExpr target, IEnumerable<LinearExpr> exprs)
     {
         LinearArgumentProto prod = new LinearArgumentProto();
@@ -517,6 +777,11 @@ public class CpModel
         return ct;
     }
 
+    /**
+     * <summary>
+     * Adds <code>target == left * right</code>
+     * </summary>
+     */
     public Constraint AddMultiplicationEquality(LinearExpr target, LinearExpr left, LinearExpr right)
     {
         LinearArgumentProto prod = new LinearArgumentProto();
@@ -532,56 +797,131 @@ public class CpModel
 
     // Scheduling support
 
-    public IntervalVar NewIntervalVar<S, D, E>(S start, D duration, E end, string name)
+    /**
+     * <summary>
+     * Creates an interval variable from three affine expressions start, size, and end.
+     * </summary>
+     *
+     * <remarks>An interval variable is a constraint, that is itself used in other constraints like
+     * NoOverlap. Internally, it ensures that <code>start + size == end</code>.
+     * </remarks>
+     *
+     * <param name="start"> the start of the interval. It needs to be an affine or constant expression. </param>
+     * <param name="size"> the size of the interval. It needs to be an affine or constant expression. </param>
+     * <param name="end"> the end of the interval. It needs to be an affine or constant expression. </param>
+     * <param name="name"> the name of the interval variable </param>
+     * <returns> An IntervalVar object</returns>
+     */
+    public IntervalVar NewIntervalVar<S, D, E>(S start, D size, E end, string name)
     {
         LinearExpr startExpr = GetLinearExpr(start);
-        LinearExpr durationExpr = GetLinearExpr(duration);
+        LinearExpr sizeExpr = GetLinearExpr(size);
         LinearExpr endExpr = GetLinearExpr(end);
-        Add(startExpr + durationExpr == endExpr);
+        Add(startExpr + sizeExpr == endExpr);
 
         LinearExpressionProto startProto = GetLinearExpressionProto(startExpr);
-        LinearExpressionProto durationProto = GetLinearExpressionProto(durationExpr);
+        LinearExpressionProto sizeProto = GetLinearExpressionProto(sizeExpr);
         LinearExpressionProto endProto = GetLinearExpressionProto(endExpr);
-        return new IntervalVar(model_, startProto, durationProto, endProto, name);
+        return new IntervalVar(model_, startProto, sizeProto, endProto, name);
     }
 
-    public IntervalVar NewFixedSizeIntervalVar<S>(S start, long duration, string name)
+    /**
+     * <summary>
+     * Creates an interval variable from an affine expression start, and a fixed size.
+     * </summary>
+     *
+     * <remarks>An interval variable is a constraint, that is itself used in other constraints like
+     * NoOverlap.
+     * </remarks>
+     *
+     * <param name="start"> the start of the interval. It needs to be an affine or constant expression.         *
+     * </param>
+     * <param name="size"> the fixed size of the interval </param>
+     * <param name="name"> the name of the interval variable </param>
+     * <returns> An IntervalVar object</returns>
+     */
+    public IntervalVar NewFixedSizeIntervalVar<S>(S start, long size, string name)
     {
         LinearExpr startExpr = GetLinearExpr(start);
-        LinearExpr durationExpr = GetLinearExpr(duration);
-        LinearExpr endExpr = LinearExpr.Sum(new LinearExpr[] { startExpr, durationExpr });
+        LinearExpr sizeExpr = GetLinearExpr(size);
+        LinearExpr endExpr = LinearExpr.Sum(new LinearExpr[] { startExpr, sizeExpr });
 
         LinearExpressionProto startProto = GetLinearExpressionProto(startExpr);
-        LinearExpressionProto durationProto = GetLinearExpressionProto(durationExpr);
+        LinearExpressionProto sizeProto = GetLinearExpressionProto(sizeExpr);
         LinearExpressionProto endProto = GetLinearExpressionProto(endExpr);
-        return new IntervalVar(model_, startProto, durationProto, endProto, name);
+        return new IntervalVar(model_, startProto, sizeProto, endProto, name);
     }
 
-    public IntervalVar NewOptionalIntervalVar<S, D, E>(S start, D duration, E end, ILiteral is_present, string name)
+    /**
+     * <summary>
+     * Creates an optional interval variable from three affine expressions start, size, and end, and a literal
+     * is_present.
+     * </summary>
+     *
+     * <remarks>An interval variable is a constraint, that is itself used in other constraints like
+     * NoOverlap. Internally, it ensures that <code>is_present => start + size == end</code>.
+     * </remarks>
+     *
+     * <param name="start"> the start of the interval. It needs to be an affine or constant expression. </param>
+     * <param name="size"> the size of the interval. It needs to be an affine or constant expression. </param>
+     * <param name="end"> the end of the interval. It needs to be an affine or constant expression. </param>
+     * <param name="is_present"> a literal that indicates if the interval is active or not. A inactive interval
+     *     is simply ignored by all constraints.</param>
+     * <param name="name"> the name of the interval variable </param>
+     * <returns> An IntervalVar object</returns>
+     */
+    public IntervalVar NewOptionalIntervalVar<S, D, E>(S start, D size, E end, ILiteral is_present, string name)
     {
         LinearExpr startExpr = GetLinearExpr(start);
-        LinearExpr durationExpr = GetLinearExpr(duration);
+        LinearExpr sizeExpr = GetLinearExpr(size);
         LinearExpr endExpr = GetLinearExpr(end);
-        Add(startExpr + durationExpr == endExpr).OnlyEnforceIf(is_present);
+        Add(startExpr + sizeExpr == endExpr).OnlyEnforceIf(is_present);
 
         LinearExpressionProto startProto = GetLinearExpressionProto(startExpr);
-        LinearExpressionProto durationProto = GetLinearExpressionProto(durationExpr);
+        LinearExpressionProto sizeProto = GetLinearExpressionProto(sizeExpr);
         LinearExpressionProto endProto = GetLinearExpressionProto(endExpr);
-        return new IntervalVar(model_, startProto, durationProto, endProto, is_present.GetIndex(), name);
+        return new IntervalVar(model_, startProto, sizeProto, endProto, is_present.GetIndex(), name);
     }
 
-    public IntervalVar NewOptionalFixedSizeIntervalVar<S>(S start, long duration, ILiteral is_present, string name)
+    /**
+     * <summary>
+     * Creates an optional interval variable from an affine expression start, a fixed size, and a literal
+     * is_present.
+     * </summary>
+     *
+     * <remarks>An interval variable is a constraint, that is itself used in other constraints like
+     * NoOverlap.
+     * </remarks>
+     *
+     * <param name="start"> the start of the interval. It needs to be an affine or constant expression.         *
+     * </param>
+     * <param name="size"> the fixed size of the interval </param>
+     * <param name="is_present"> a literal that indicates if the interval is active or not. A inactive interval
+     *     is simply ignored by all constraints.</param>
+     * <param name="name"> the name of the interval variable </param>
+     * <returns> An IntervalVar object</returns>
+     */
+    public IntervalVar NewOptionalFixedSizeIntervalVar<S>(S start, long size, ILiteral is_present, string name)
     {
         LinearExpr startExpr = GetLinearExpr(start);
-        LinearExpr durationExpr = GetLinearExpr(duration);
-        LinearExpr endExpr = LinearExpr.Sum(new LinearExpr[] { startExpr, durationExpr });
+        LinearExpr sizeExpr = GetLinearExpr(size);
+        LinearExpr endExpr = LinearExpr.Sum(new LinearExpr[] { startExpr, sizeExpr });
 
         LinearExpressionProto startProto = GetLinearExpressionProto(startExpr);
-        LinearExpressionProto durationProto = GetLinearExpressionProto(durationExpr);
+        LinearExpressionProto sizeProto = GetLinearExpressionProto(sizeExpr);
         LinearExpressionProto endProto = GetLinearExpressionProto(endExpr);
-        return new IntervalVar(model_, startProto, durationProto, endProto, is_present.GetIndex(), name);
+        return new IntervalVar(model_, startProto, sizeProto, endProto, is_present.GetIndex(), name);
     }
 
+    /**
+     * Adds <code> NoOverlap(intervalVars)</code>.
+     *
+     * <remarks>A NoOverlap constraint ensures that all present intervals do not overlap in time.
+     * </remarks>
+     *
+     * <param name="intervals"> the list of interval variables to constrain</param>
+     * <returns> an instance of the Constraint class</returns>
+     */
     public Constraint AddNoOverlap(IEnumerable<IntervalVar> intervals)
     {
         NoOverlapConstraintProto no_overlap = new NoOverlapConstraintProto();
@@ -596,6 +936,22 @@ public class CpModel
         return ct;
     }
 
+    /**
+     * <summary>
+     * Adds <code>NoOverlap2D(xIntervals, yIntervals)</code>
+     * </summary>
+     *
+     * <remarks>
+     * <para>A NoOverlap2D constraint ensures that all present rectangles do not overlap on a plan. Each
+     * rectangle is aligned with the X and Y axis, and is defined by two intervals which represent its
+     * projection onto the X and Y axis. </para>
+     *
+     * <para>Furthermore, one box is optional if at least one of the x or y interval is optional. </para>
+     * </remarks>
+     *
+     * <returns> an instance of the NoOverlap2dConstraint class. This class allows adding rectangles
+     *     incrementally</returns>
+     */
     public NoOverlap2dConstraint AddNoOverlap2D()
     {
         NoOverlap2dConstraint ct = new NoOverlap2dConstraint(model_);
@@ -603,6 +959,25 @@ public class CpModel
         return ct;
     }
 
+    /**
+     * <summary>
+     * Adds <code>Cumulative(capacity)</code>
+     * </summary>
+     *
+     * <remarks>
+     * This constraint enforces that:
+     * <code>
+     * forall t:
+     *      sum(demands[i] if (start(intervals[t]) \lt;= t \lt; end(intervals[t])) and (t is
+     *          present)\lt;= capacity
+     * </code>
+     * </remarks>
+     *
+     * <param name="capacity"> the maximum capacity of the cumulative constraint. It must be a positive affine
+     *     expression </param>
+     * <returns> an instance of the CumulativeConstraint class. this class allows adding (interval,
+     *     demand) pairs incrementally </returns>
+     */
     public CumulativeConstraint AddCumulative<C>(C capacity)
     {
         CumulativeConstraintProto cumul = new CumulativeConstraintProto();
@@ -615,21 +990,26 @@ public class CpModel
     }
 
     // Objective.
+
+    /** <summary>Adds a minimization objective of a linear expression</summary>*/
     public void Minimize(LinearExpr obj)
     {
         SetObjective(obj, true);
     }
 
+    /** <summary>Adds a maximization objective of a linear expression</summary>*/
     public void Maximize(LinearExpr obj)
     {
         SetObjective(obj, false);
     }
 
+    /** <summary>Clears the objective</summary>*/
     void ClearObjective()
     {
         model_.Objective = null;
     }
 
+    /** <summary>Returns whether the model contains an objective.</summary>*/
     bool HasObjective()
     {
         return model_.Objective is not null;
@@ -637,6 +1017,7 @@ public class CpModel
 
     // Search Decision.
 
+    /** <summary>Adds <code> DecisionStrategy(variables, var_str, dom_str)</code></summary>. */
     public void AddDecisionStrategy(IEnumerable<IntVar> vars,
                                     DecisionStrategyProto.Types.VariableSelectionStrategy var_str,
                                     DecisionStrategyProto.Types.DomainReductionStrategy dom_str)
@@ -652,6 +1033,7 @@ public class CpModel
         model_.SearchStrategy.Add(ds);
     }
 
+    /** <summary>Adds variable hinting to the model.</summary>*/
     public void AddHint(IntVar var, long value)
     {
         model_.SolutionHint ??= new PartialVariableAssignment();
@@ -659,16 +1041,19 @@ public class CpModel
         model_.SolutionHint.Values.Add(value);
     }
 
+    /** <summary>Clears all hinting from the model.</summary>*/
     public void ClearHints()
     {
         model_.SolutionHint = null;
     }
 
+    /** <summary>Adds a literal to the model as assumption.</summary>*/
     public void AddAssumption(ILiteral lit)
     {
         model_.Assumptions.Add(lit.GetIndex());
     }
 
+    /** <summary>Adds multiple literals to the model as assumptions.</summary>*/
     public void AddAssumptions(IEnumerable<ILiteral> literals)
     {
         foreach (ILiteral lit in literals)
@@ -677,6 +1062,7 @@ public class CpModel
         }
     }
 
+    /** <summary>Clears all assumptions </summary>*/
     public void ClearAssumptions()
     {
         model_.Assumptions.Clear();
@@ -737,16 +1123,32 @@ public class CpModel
         model_.Objective = objective;
     }
 
+    /** <summary>Returns some statistics on model as a string. </summary>*/
     public String ModelStats()
     {
         return CpSatHelper.ModelStats(model_);
     }
 
-    public Boolean ExportToFile(String filename)
+    /**
+     * <summary>
+     * Write the model as a protocol buffer to 'file'.
+     * </summary>
+     *
+     * <param name="file"> file to write the model to. If the filename ends with 'txt', the
+     *    model will be written as a text file, otherwise, the binary format will be used. </param>
+     *
+     * <returns> true if the model was correctly written </returns>
+     */
+    public Boolean ExportToFile(String file)
     {
-        return CpSatHelper.WriteModelToFile(model_, filename);
+        return CpSatHelper.WriteModelToFile(model_, file);
     }
 
+    /**
+     * <summary
+     * >Returns a non empty string explaining the issue if the model is invalid.
+     * </summary>
+     */
     public String Validate()
     {
         return CpSatHelper.ValidateModel(model_);

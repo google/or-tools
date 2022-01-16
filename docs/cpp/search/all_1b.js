@@ -8,7 +8,10 @@ var searchData=
   ['zvector_5',['ZVector',['../classoperations__research_1_1_z_vector.html',1,'ZVector&lt; T &gt;'],['../classoperations__research_1_1_z_vector.html#a7b5b213644aebe8cf8e122660e678647',1,'operations_research::ZVector::ZVector()'],['../classoperations__research_1_1_z_vector.html#a702f8ccc0794caa3dcc83656df658c71',1,'operations_research::ZVector::ZVector(int64_t min_index, int64_t max_index)']]],
   ['zvector_2eh_6',['zvector.h',['../zvector_8h.html',1,'']]],
   ['zvector_3c_20arcindex_20_3e_7',['ZVector&lt; ArcIndex &gt;',['../classoperations__research_1_1_z_vector.html',1,'operations_research']]],
-  ['zvector_3c_20costvalue_20_3e_8',['ZVector&lt; CostValue &gt;',['../classoperations__research_1_1_z_vector.html',1,'operations_research']]],
-  ['zvector_3c_20flowquantity_20_3e_9',['ZVector&lt; FlowQuantity &gt;',['../classoperations__research_1_1_z_vector.html',1,'operations_research']]],
-  ['zvector_3c_20nodeheight_20_3e_10',['ZVector&lt; NodeHeight &gt;',['../classoperations__research_1_1_z_vector.html',1,'operations_research']]]
+  ['zvector_3c_20arcindextype_20_3e_8',['ZVector&lt; ArcIndexType &gt;',['../classoperations__research_1_1_z_vector.html',1,'operations_research']]],
+  ['zvector_3c_20costvalue_20_3e_9',['ZVector&lt; CostValue &gt;',['../classoperations__research_1_1_z_vector.html',1,'operations_research']]],
+  ['zvector_3c_20flowquantity_20_3e_10',['ZVector&lt; FlowQuantity &gt;',['../classoperations__research_1_1_z_vector.html',1,'operations_research']]],
+  ['zvector_3c_20nodeheight_20_3e_11',['ZVector&lt; NodeHeight &gt;',['../classoperations__research_1_1_z_vector.html',1,'operations_research']]],
+  ['zvector_3c_20nodeindex_20_3e_12',['ZVector&lt; NodeIndex &gt;',['../classoperations__research_1_1_z_vector.html',1,'operations_research']]],
+  ['zvector_3c_20nodeindextype_20_3e_13',['ZVector&lt; NodeIndexType &gt;',['../classoperations__research_1_1_z_vector.html',1,'operations_research']]]
 ];

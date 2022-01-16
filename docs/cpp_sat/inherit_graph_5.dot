@@ -1,0 +1,8 @@
+digraph "Graphical Class Hierarchy"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node0 [label="Domain::DomainIterator",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classoperations__research_1_1_domain_1_1_domain_iterator.html",tooltip="Allows to iterate over all values of a domain in order with for (const int64_t v : domain...."];
+}

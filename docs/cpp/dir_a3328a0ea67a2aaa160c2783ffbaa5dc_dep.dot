@@ -1,0 +1,15 @@
+digraph "util"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  compound=true
+  subgraph clusterdir_a7cc1eeded8f693d0da6c729bc88c45a {
+    graph [ bgcolor="#edf0f7", pencolor="grey25", style="filled,dashed,", label="ortools", fontname="Helvetica", fontsize="10", URL="dir_a7cc1eeded8f693d0da6c729bc88c45a.html"]
+  dir_1d809996d73818785b8e0bc2ff6c7fae [shape=box, label="port", style="filled,", fillcolor="#a2b4d6", color="grey25", URL="dir_1d809996d73818785b8e0bc2ff6c7fae.html"];
+  dir_8f9dc966244f4c6e9b2fa0dee1e4ef1a [shape=box, label="base", style="filled,", fillcolor="#a2b4d6", color="grey25", URL="dir_8f9dc966244f4c6e9b2fa0dee1e4ef1a.html"];
+  dir_a3328a0ea67a2aaa160c2783ffbaa5dc [shape=box, label="util", style="filled,bold,", fillcolor="#edf0f7", color="grey25", URL="dir_a3328a0ea67a2aaa160c2783ffbaa5dc.html"];
+  }
+  dir_a3328a0ea67a2aaa160c2783ffbaa5dc->dir_1d809996d73818785b8e0bc2ff6c7fae [headlabel="2", labeldistance=1.5 headhref="dir_000040_000030.html"];
+  dir_a3328a0ea67a2aaa160c2783ffbaa5dc->dir_8f9dc966244f4c6e9b2fa0dee1e4ef1a [headlabel="76", labeldistance=1.5 headhref="dir_000040_000002.html"];
+}

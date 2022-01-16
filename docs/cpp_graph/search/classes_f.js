@@ -15,5 +15,6 @@ var searchData=
   ['stargraphbase_3c_20nodeindextype_2c_20arcindextype_2c_20forwardstaticgraph_3c_20nodeindextype_2c_20arcindextype_20_3e_20_3e_12',['StarGraphBase&lt; NodeIndexType, ArcIndexType, ForwardStaticGraph&lt; NodeIndexType, ArcIndexType &gt; &gt;',['../classoperations__research_1_1_star_graph_base.html',1,'operations_research']]],
   ['staticgraph_13',['StaticGraph',['../classutil_1_1_static_graph.html',1,'util']]],
   ['stronglyconnectedcomponentsfinder_14',['StronglyConnectedComponentsFinder',['../class_strongly_connected_components_finder.html',1,'']]],
-  ['svector_15',['SVector',['../classutil_1_1_s_vector.html',1,'util']]]
+  ['svector_15',['SVector',['../classutil_1_1_s_vector.html',1,'util']]],
+  ['svector_3c_20int32_5ft_20_3e_16',['SVector&lt; int32_t &gt;',['../classutil_1_1_s_vector.html',1,'util']]]
 ];

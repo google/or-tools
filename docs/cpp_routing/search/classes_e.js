@@ -11,12 +11,13 @@ var searchData=
   ['sequencevarlocalsearchoperator_8',['SequenceVarLocalSearchOperator',['../classoperations__research_1_1_sequence_var_local_search_operator.html',1,'operations_research']]],
   ['simpleboundcosts_9',['SimpleBoundCosts',['../classoperations__research_1_1_simple_bound_costs.html',1,'operations_research']]],
   ['simplerevfifo_10',['SimpleRevFIFO',['../classoperations__research_1_1_simple_rev_f_i_f_o.html',1,'operations_research']]],
-  ['smallrevbitset_11',['SmallRevBitSet',['../classoperations__research_1_1_small_rev_bit_set.html',1,'operations_research']]],
-  ['solutioncollector_12',['SolutionCollector',['../classoperations__research_1_1_solution_collector.html',1,'operations_research']]],
-  ['solutiondata_13',['SolutionData',['../structoperations__research_1_1_solution_collector_1_1_solution_data.html',1,'operations_research::SolutionCollector']]],
-  ['solutionpool_14',['SolutionPool',['../classoperations__research_1_1_solution_pool.html',1,'operations_research']]],
-  ['solver_15',['Solver',['../classoperations__research_1_1_solver.html',1,'operations_research']]],
-  ['statedependenttransit_16',['StateDependentTransit',['../structoperations__research_1_1_routing_model_1_1_state_dependent_transit.html',1,'operations_research::RoutingModel']]],
-  ['swapindexpairoperator_17',['SwapIndexPairOperator',['../classoperations__research_1_1_swap_index_pair_operator.html',1,'operations_research']]],
-  ['symmetrybreaker_18',['SymmetryBreaker',['../classoperations__research_1_1_symmetry_breaker.html',1,'operations_research']]]
+  ['simplerevfifo_3c_20operations_5fresearch_3a_3ademon_20_2a_20_3e_11',['SimpleRevFIFO&lt; operations_research::Demon * &gt;',['../classoperations__research_1_1_simple_rev_f_i_f_o.html',1,'operations_research']]],
+  ['smallrevbitset_12',['SmallRevBitSet',['../classoperations__research_1_1_small_rev_bit_set.html',1,'operations_research']]],
+  ['solutioncollector_13',['SolutionCollector',['../classoperations__research_1_1_solution_collector.html',1,'operations_research']]],
+  ['solutiondata_14',['SolutionData',['../structoperations__research_1_1_solution_collector_1_1_solution_data.html',1,'operations_research::SolutionCollector']]],
+  ['solutionpool_15',['SolutionPool',['../classoperations__research_1_1_solution_pool.html',1,'operations_research']]],
+  ['solver_16',['Solver',['../classoperations__research_1_1_solver.html',1,'operations_research']]],
+  ['statedependenttransit_17',['StateDependentTransit',['../structoperations__research_1_1_routing_model_1_1_state_dependent_transit.html',1,'operations_research::RoutingModel']]],
+  ['swapindexpairoperator_18',['SwapIndexPairOperator',['../classoperations__research_1_1_swap_index_pair_operator.html',1,'operations_research']]],
+  ['symmetrybreaker_19',['SymmetryBreaker',['../classoperations__research_1_1_symmetry_breaker.html',1,'operations_research']]]
 ];

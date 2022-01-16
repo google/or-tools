@@ -1,0 +1,14 @@
+digraph "Graphical Class Hierarchy"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node0 [label="AssignmentElement",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classoperations__research_1_1_assignment_element.html",tooltip=" "];
+  Node0 -> Node1 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 [label="IntVarElement",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classoperations__research_1_1_int_var_element.html",tooltip=" "];
+  Node0 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="IntervalVarElement",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classoperations__research_1_1_interval_var_element.html",tooltip=" "];
+  Node0 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="SequenceVarElement",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classoperations__research_1_1_sequence_var_element.html",tooltip="The SequenceVarElement stores a partial representation of ranked interval variables in the underlying..."];
+}

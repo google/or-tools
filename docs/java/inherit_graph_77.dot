@@ -1,0 +1,10 @@
+digraph "Graphical Class Hierarchy"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node0 [label="SolutionCallback",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classcom_1_1google_1_1ortools_1_1sat_1_1SolutionCallback.html",tooltip=" "];
+  Node0 -> Node1 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 [label="CpSolverSolutionCallback",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classcom_1_1google_1_1ortools_1_1sat_1_1CpSolverSolutionCallback.html",tooltip="Parent class to create a callback called at each solution."];
+}

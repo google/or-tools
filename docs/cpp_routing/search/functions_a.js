@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['last_0',['Last',['../classoperations__research_1_1_path_state_1_1_chain.html#ad8d07b9af4954b2b23deefb7b8622cde',1,'operations_research::PathState::Chain::Last()'],['../classoperations__research_1_1_simple_rev_f_i_f_o.html#a8e1916ec93af03f2667921b00287c6c2',1,'operations_research::SimpleRevFIFO::Last() const']]],
+  ['last_0',['Last',['../classoperations__research_1_1_simple_rev_f_i_f_o.html#a8e1916ec93af03f2667921b00287c6c2',1,'operations_research::SimpleRevFIFO::Last()'],['../classoperations__research_1_1_path_state_1_1_chain.html#ad8d07b9af4954b2b23deefb7b8622cde',1,'operations_research::PathState::Chain::Last()']]],
   ['lastvalue_1',['LastValue',['../classoperations__research_1_1_simple_rev_f_i_f_o.html#aa2770463f2ad695d4d3b18e7cada907f',1,'operations_research::SimpleRevFIFO']]],
   ['lessthan_2',['LessThan',['../structoperations__research_1_1_routing_model_1_1_cost_class.html#aecd5ad315b3f45eef0d567ad99008eaf',1,'operations_research::RoutingModel::CostClass::LessThan()'],['../structoperations__research_1_1_routing_model_1_1_vehicle_class.html#aac2b6fe6489b8e1ae6867681a5ae83ef',1,'operations_research::RoutingModel::VehicleClass::LessThan()']]],
   ['lightpairrelocateoperator_3',['LightPairRelocateOperator',['../classoperations__research_1_1_light_pair_relocate_operator.html#abbb14cebfe6adf36fb5a9c6a30768080',1,'operations_research::LightPairRelocateOperator']]],

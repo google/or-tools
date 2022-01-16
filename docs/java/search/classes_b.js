@@ -49,5 +49,6 @@ var searchData=
   ['mpsosconstraintorbuilder_46',['MPSosConstraintOrBuilder',['../interfacecom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraintOrBuilder.html',1,'com::google::ortools::linearsolver']]],
   ['mpvariable_47',['MPVariable',['../classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPVariable.html',1,'com::google::ortools::linearsolver']]],
   ['mpvariableproto_48',['MPVariableProto',['../classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPVariableProto.html',1,'com::google::ortools::linearsolver']]],
-  ['mpvariableprotoorbuilder_49',['MPVariableProtoOrBuilder',['../interfacecom_1_1google_1_1ortools_1_1linearsolver_1_1MPVariableProtoOrBuilder.html',1,'com::google::ortools::linearsolver']]]
+  ['mpvariableprotoorbuilder_49',['MPVariableProtoOrBuilder',['../interfacecom_1_1google_1_1ortools_1_1linearsolver_1_1MPVariableProtoOrBuilder.html',1,'com::google::ortools::linearsolver']]],
+  ['multiplecircuitconstraint_50',['MultipleCircuitConstraint',['../classcom_1_1google_1_1ortools_1_1sat_1_1MultipleCircuitConstraint.html',1,'com::google::ortools::sat']]]
 ];

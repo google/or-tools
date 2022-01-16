@@ -22,7 +22,7 @@ var searchData=
   ['intexprequality_19',['IntExprEquality',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExprEquality.html',1,'Google::OrTools::ConstraintSolver']]],
   ['inttupleset_20',['IntTupleSet',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntTupleSet.html',1,'Google::OrTools::ConstraintSolver']]],
   ['intvar_21',['IntVar',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVar.html',1,'IntVar'],['../classGoogle_1_1OrTools_1_1Sat_1_1IntVar.html',1,'IntVar']]],
-  ['intvararrayhelper_22',['IntVarArrayHelper',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarArrayHelper.html',1,'IntVarArrayHelper'],['../classGoogle_1_1OrTools_1_1Sat_1_1IntVarArrayHelper.html',1,'IntVarArrayHelper']]],
+  ['intvararrayhelper_22',['IntVarArrayHelper',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarArrayHelper.html',1,'Google::OrTools::ConstraintSolver']]],
   ['intvarelement_23',['IntVarElement',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarElement.html',1,'Google::OrTools::ConstraintSolver']]],
   ['intvarenumerator_24',['IntVarEnumerator',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarEnumerator.html',1,'Google::OrTools::ConstraintSolver']]],
   ['intvariterator_25',['IntVarIterator',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarIterator.html',1,'Google::OrTools::ConstraintSolver']]],

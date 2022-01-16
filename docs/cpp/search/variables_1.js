@@ -1,10 +1,10 @@
 var searchData=
 [
-  ['a_0',['a',['../constraint__solver_2table_8cc.html#acb18315d548212835cd8ed4287e6c0b6',1,'a():&#160;table.cc'],['../structoperations__research_1_1sat_1_1_binary_clause.html#a886d202fca076745c336601d66363bb9',1,'operations_research::sat::BinaryClause::a()']]],
+  ['a_0',['a',['../structoperations__research_1_1sat_1_1_binary_clause.html#a886d202fca076745c336601d66363bb9',1,'operations_research::sat::BinaryClause::a()'],['../constraint__solver_2table_8cc.html#acb18315d548212835cd8ed4287e6c0b6',1,'a():&#160;table.cc']]],
   ['absl_5fattribute_5fpacked_1',['ABSL_ATTRIBUTE_PACKED',['../namespacegtl.html#a89ffad389c014361a4b7dc1da96194a6',1,'gtl']]],
   ['accept_5fpath_5fend_5fbase_2',['accept_path_end_base',['../structoperations__research_1_1_path_operator_1_1_iteration_parameters.html#a06ba9faa1da8bc11b9bad1b28184d66a',1,'operations_research::PathOperator::IterationParameters']]],
   ['activated_5f_3',['activated_',['../classoperations__research_1_1_var_local_search_operator.html#a7135085df615773e63a206e65ea21d53',1,'operations_research::VarLocalSearchOperator']]],
-  ['active_4',['active',['../structoperations__research_1_1fz_1_1_constraint.html#a03c996f9fcf0e10baeb3e700be0c409a',1,'operations_research::fz::Constraint::active()'],['../structoperations__research_1_1fz_1_1_variable.html#a03c996f9fcf0e10baeb3e700be0c409a',1,'operations_research::fz::Variable::active()']]],
+  ['active_4',['active',['../structoperations__research_1_1fz_1_1_variable.html#a03c996f9fcf0e10baeb3e700be0c409a',1,'operations_research::fz::Variable::active()'],['../structoperations__research_1_1fz_1_1_constraint.html#a03c996f9fcf0e10baeb3e700be0c409a',1,'operations_research::fz::Constraint::active()']]],
   ['active_5fcount_5',['active_count',['../structoperations__research_1_1sat_1_1_linear_constraint_manager_1_1_constraint_info.html#a64cbd77208a462a2d718ed0be41d4b6c',1,'operations_research::sat::LinearConstraintManager::ConstraintInfo']]],
   ['active_5flock_5fbased_6',['ACTIVE_LOCK_BASED',['../classoperations__research_1_1sat_1_1_sat_parameters.html#a93b17ac067d83120d7c2d3c680adf8c5',1,'operations_research::sat::SatParameters']]],
   ['active_5fnode_5fby_5fheight_5f_7',['active_node_by_height_',['../classoperations__research_1_1_generic_max_flow.html#afc300bdfdbe5ce3296bacd00acce0b3f',1,'operations_research::GenericMaxFlow']]],
@@ -41,7 +41,7 @@ var searchData=
   ['assignment_5fpenalized_5fvalue_5f_38',['assignment_penalized_value_',['../search_8cc.html#a04d23c96b3a7905eaf9215f574c163ea',1,'search.cc']]],
   ['at_5fmost_5fones_39',['at_most_ones',['../structoperations__research_1_1sat_1_1_linear_relaxation.html#a0bffb74eb458b339aa75f20b6c982a60',1,'operations_research::sat::LinearRelaxation']]],
   ['attempted_5fincremental_5fsolve_40',['attempted_incremental_solve',['../structoperations__research_1_1math__opt_1_1_result.html#a33beca02bf1e747c6d65374e00cf0d26',1,'operations_research::math_opt::Result']]],
-  ['automatic_41',['AUTOMATIC',['../classoperations__research_1_1_local_search_metaheuristic.html#ab820869f796cee456ca2c626b27ab991',1,'operations_research::LocalSearchMetaheuristic::AUTOMATIC()'],['../classoperations__research_1_1_first_solution_strategy.html#a9af610cf53b13943acd6c4cb7be7c43c',1,'operations_research::FirstSolutionStrategy::AUTOMATIC()']]],
+  ['automatic_41',['AUTOMATIC',['../classoperations__research_1_1_first_solution_strategy.html#a9af610cf53b13943acd6c4cb7be7c43c',1,'operations_research::FirstSolutionStrategy::AUTOMATIC()'],['../classoperations__research_1_1_local_search_metaheuristic.html#ab820869f796cee456ca2c626b27ab991',1,'operations_research::LocalSearchMetaheuristic::AUTOMATIC()']]],
   ['automatic_5fsearch_42',['AUTOMATIC_SEARCH',['../classoperations__research_1_1sat_1_1_sat_parameters.html#ab620cb0acc7c1245958c5783e1b4767e',1,'operations_research::sat::SatParameters']]],
   ['average_5f_43',['average_',['../classoperations__research_1_1_distribution_stat.html#a8bcdcd42ddc8f439c264f0bc06eb2d1d',1,'operations_research::DistributionStat']]]
 ];
