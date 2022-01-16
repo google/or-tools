@@ -1,5 +1,8 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classoperations__research_1_1_star_graph_base.html" title=" " alt="" coords="5,5,276,61"/>
-<area shape="rect" id="node2" href="$classoperations__research_1_1_ebert_graph_base.html" title=" " alt="" coords="324,5,595,61"/>
-<area shape="rect" id="node3" href="$classoperations__research_1_1_forward_ebert_graph.html" title=" " alt="" coords="643,13,859,54"/>
+<area shape="rect" id="node1" href="$classoperations__research_1_1_stat.html" title=" " alt="" coords="5,81,52,108"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1_distribution_stat.html" title=" " alt="" coords="100,81,212,108"/>
+<area shape="rect" id="node3" href="$classoperations__research_1_1_double_distribution.html" title=" " alt="" coords="260,5,389,32"/>
+<area shape="rect" id="node4" href="$classoperations__research_1_1_integer_distribution.html" title=" " alt="" coords="261,56,389,83"/>
+<area shape="rect" id="node5" href="$classoperations__research_1_1_ratio_distribution.html" title=" " alt="" coords="265,107,384,133"/>
+<area shape="rect" id="node6" href="$classoperations__research_1_1_time_distribution.html" title=" " alt="" coords="266,157,383,184"/>
 </map>

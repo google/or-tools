@@ -1,31 +1,141 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" title=" " alt="" coords="5,770,99,797"/>
-<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector_1_1Int64VectorEnumerator.html" title="Note that the IEnumerator documentation requires an InvalidOperationException to be thrown whenever t..." alt="" coords="158,371,385,398"/>
-<area shape="rect" id="node3" href="$classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html" title="Note that the IEnumerator documentation requires an InvalidOperationException to be thrown whenever t..." alt="" coords="173,423,370,464"/>
-<area shape="rect" id="node4" href="$classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector_1_1IntVectorEnumerator.html" title="Note that the IEnumerator documentation requires an InvalidOperationException to be thrown whenever t..." alt="" coords="172,489,371,515"/>
-<area shape="rect" id="node5" href="$classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector_1_1IntVectorVectorEnumerator.html" title="Note that the IEnumerator documentation requires an InvalidOperationException to be thrown whenever t..." alt="" coords="187,540,356,581"/>
-<area shape="rect" id="node6" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DecisionBuilderVector_1_1DecisionBuilderVectorEnumerator.html" title="Note that the IEnumerator documentation requires an InvalidOperationException to be thrown whenever t..." alt="" coords="169,605,374,647"/>
-<area shape="rect" id="node7" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector_1_1Int64VectorEnumerator.html" title="Note that the IEnumerator documentation requires an InvalidOperationException to be thrown whenever t..." alt="" coords="158,671,385,698"/>
-<area shape="rect" id="node8" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html" title="Note that the IEnumerator documentation requires an InvalidOperationException to be thrown whenever t..." alt="" coords="173,723,370,764"/>
-<area shape="rect" id="node9" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarVector_1_1IntVarVectorEnumerator.html" title="Note that the IEnumerator documentation requires an InvalidOperationException to be thrown whenever t..." alt="" coords="187,788,356,829"/>
-<area shape="rect" id="node10" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVector_1_1IntVectorEnumerator.html" title="Note that the IEnumerator documentation requires an InvalidOperationException to be thrown whenever t..." alt="" coords="172,854,371,881"/>
-<area shape="rect" id="node11" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVectorVector_1_1IntVectorVectorEnumerator.html" title="Note that the IEnumerator documentation requires an InvalidOperationException to be thrown whenever t..." alt="" coords="187,905,356,947"/>
-<area shape="rect" id="node12" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntervalVarVector_1_1IntervalVarVectorEnumerator.html" title="Note that the IEnumerator documentation requires an InvalidOperationException to be thrown whenever t..." alt="" coords="187,971,355,1012"/>
-<area shape="rect" id="node13" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchFilterVector_1_1LocalSearchFilterVectorEnumerator.html" title="Note that the IEnumerator documentation requires an InvalidOperationException to be thrown whenever t..." alt="" coords="157,1036,385,1077"/>
-<area shape="rect" id="node14" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchOperatorVector_1_1LocalSearchOperatorVectorEnumerator.html" title="Note that the IEnumerator documentation requires an InvalidOperationException to be thrown whenever t..." alt="" coords="147,1101,396,1143"/>
-<area shape="rect" id="node15" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SearchMonitorVector_1_1SearchMonitorVectorEnumerator.html" title="Note that the IEnumerator documentation requires an InvalidOperationException to be thrown whenever t..." alt="" coords="177,1167,365,1208"/>
-<area shape="rect" id="node16" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SequenceVarVector_1_1SequenceVarVectorEnumerator.html" title="Note that the IEnumerator documentation requires an InvalidOperationException to be thrown whenever t..." alt="" coords="172,1232,371,1273"/>
-<area shape="rect" id="node17" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SymmetryBreakerVector_1_1SymmetryBreakerVectorEnumerator.html" title="Note that the IEnumerator documentation requires an InvalidOperationException to be thrown whenever t..." alt="" coords="157,1297,385,1339"/>
-<area shape="rect" id="node18" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1DoubleVector_1_1DoubleVectorEnumerator.html" title="Note that the IEnumerator documentation requires an InvalidOperationException to be thrown whenever t..." alt="" coords="180,1363,363,1404"/>
-<area shape="rect" id="node19" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector_1_1Int64VectorEnumerator.html" title="Note that the IEnumerator documentation requires an InvalidOperationException to be thrown whenever t..." alt="" coords="158,1429,385,1455"/>
-<area shape="rect" id="node20" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html" title="Note that the IEnumerator documentation requires an InvalidOperationException to be thrown whenever t..." alt="" coords="173,1480,370,1521"/>
-<area shape="rect" id="node21" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1IntVector_1_1IntVectorEnumerator.html" title="Note that the IEnumerator documentation requires an InvalidOperationException to be thrown whenever t..." alt="" coords="172,1546,371,1573"/>
-<area shape="rect" id="node22" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1IntVectorVector_1_1IntVectorVectorEnumerator.html" title="Note that the IEnumerator documentation requires an InvalidOperationException to be thrown whenever t..." alt="" coords="187,1597,356,1639"/>
-<area shape="rect" id="node23" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1MPConstraintVector_1_1MPConstraintVectorEnumerator.html" title="Note that the IEnumerator documentation requires an InvalidOperationException to be thrown whenever t..." alt="" coords="160,5,383,47"/>
-<area shape="rect" id="node24" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector_1_1MPVariableVectorEnumerator.html" title="Note that the IEnumerator documentation requires an InvalidOperationException to be thrown whenever t..." alt="" coords="174,71,369,112"/>
-<area shape="rect" id="node25" href="$classGoogle_1_1OrTools_1_1Util_1_1Int64Vector_1_1Int64VectorEnumerator.html" title="Note that the IEnumerator documentation requires an InvalidOperationException to be thrown whenever t..." alt="" coords="158,137,385,163"/>
-<area shape="rect" id="node26" href="$classGoogle_1_1OrTools_1_1Util_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html" title="Note that the IEnumerator documentation requires an InvalidOperationException to be thrown whenever t..." alt="" coords="173,188,370,229"/>
-<area shape="rect" id="node27" href="$classGoogle_1_1OrTools_1_1Util_1_1IntVector_1_1IntVectorEnumerator.html" title="Note that the IEnumerator documentation requires an InvalidOperationException to be thrown whenever t..." alt="" coords="172,254,371,281"/>
-<area shape="rect" id="node28" href="$classGoogle_1_1OrTools_1_1Util_1_1IntVectorVector_1_1IntVectorVectorEnumerator.html" title="Note that the IEnumerator documentation requires an InvalidOperationException to be thrown whenever t..." alt="" coords="187,305,356,347"/>
-<area shape="rect" id="node29" title=" " alt="" coords="5,821,99,847"/>
+<area shape="rect" id="node1" href="$interfaceGoogle_1_1OrTools_1_1ConstraintSolver_1_1IConstraintWithStatus.html" title=" " alt="" coords="459,752,609,779"/>
+<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html" title=" " alt="" coords="735,689,833,716"/>
+<area shape="rect" id="node6" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html" title=" " alt="" coords="743,892,825,919"/>
+<area shape="rect" id="node3" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ConstraintEquality.html" title=" " alt="" coords="989,613,1118,640"/>
+<area shape="rect" id="node4" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExprEquality.html" title=" " alt="" coords="998,664,1109,691"/>
+<area shape="rect" id="node5" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1WrappedConstraint.html" title=" " alt="" coords="987,715,1120,741"/>
+<area shape="rect" id="node7" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1CastConstraint.html" title=" " alt="" coords="998,765,1109,792"/>
+<area shape="rect" id="node8" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DisjunctiveConstraint.html" title=" " alt="" coords="980,816,1127,843"/>
+<area shape="rect" id="node9" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1GlobalVehicleBreaksConstraint.html" title=" " alt="" coords="952,867,1155,893"/>
+<area shape="rect" id="node10" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1NetConstraint.html" title=" " alt="" coords="1002,917,1105,944"/>
+<area shape="rect" id="node11" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Pack.html" title=" " alt="" coords="1027,968,1079,995"/>
+<area shape="rect" id="node12" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1TypeRegulationsConstraint.html" title=" " alt="" coords="964,1019,1143,1045"/>
+<area shape="rect" id="node13" title=" " alt="" coords="28,360,119,387"/>
+<area shape="rect" id="node14" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DecisionBuilderVector.html" title=" " alt="" coords="217,56,367,83"/>
+<area shape="rect" id="node15" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntervalVarVector.html" title=" " alt="" coords="231,107,353,133"/>
+<area shape="rect" id="node16" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarVector.html" title=" " alt="" coords="245,157,339,184"/>
+<area shape="rect" id="node17" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchFilterVector.html" title=" " alt="" coords="211,208,373,235"/>
+<area shape="rect" id="node18" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchOperatorVector.html" title=" " alt="" coords="201,259,383,285"/>
+<area shape="rect" id="node19" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SearchMonitorVector.html" title=" " alt="" coords="220,309,364,336"/>
+<area shape="rect" id="node20" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SequenceVarVector.html" title=" " alt="" coords="223,360,361,387"/>
+<area shape="rect" id="node21" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Solver.html" title=" " alt="" coords="263,563,321,589"/>
+<area shape="rect" id="node22" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SymmetryBreakerVector.html" title=" " alt="" coords="209,411,375,437"/>
+<area shape="rect" id="node23" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1MPConstraintVector.html" title=" " alt="" coords="222,461,362,488"/>
+<area shape="rect" id="node24" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector.html" title=" " alt="" coords="229,512,355,539"/>
+<area shape="rect" id="node25" title=" " alt="" coords="245,5,339,32"/>
+<area shape="rect" id="node26" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarIterator.html" title=" " alt="" coords="485,867,583,893"/>
+<area shape="rect" id="node27" title=" " alt="" coords="26,765,121,792"/>
+<area shape="rect" id="node28" href="$classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html" title=" " alt="" coords="247,613,337,640"/>
+<area shape="rect" id="node29" href="$classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html" title=" " alt="" coords="229,1069,355,1096"/>
+<area shape="rect" id="node30" href="$classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html" title=" " alt="" coords="255,664,329,691"/>
+<area shape="rect" id="node31" href="$classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html" title=" " alt="" coords="235,1120,349,1147"/>
+<area shape="rect" id="node32" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html" title=" " alt="" coords="247,715,337,741"/>
+<area shape="rect" id="node33" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64VectorVector.html" title=" " alt="" coords="229,1171,355,1197"/>
+<area shape="rect" id="node34" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVector.html" title=" " alt="" coords="255,765,329,792"/>
+<area shape="rect" id="node35" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVectorVector.html" title=" " alt="" coords="235,1221,349,1248"/>
+<area shape="rect" id="node36" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1DoubleVector.html" title=" " alt="" coords="241,816,343,843"/>
+<area shape="rect" id="node37" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html" title=" " alt="" coords="247,867,337,893"/>
+<area shape="rect" id="node38" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64VectorVector.html" title=" " alt="" coords="229,1272,355,1299"/>
+<area shape="rect" id="node39" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1IntVector.html" title=" " alt="" coords="255,917,329,944"/>
+<area shape="rect" id="node40" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1IntVectorVector.html" title=" " alt="" coords="235,1323,349,1349"/>
+<area shape="rect" id="node41" href="$classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html" title=" " alt="" coords="247,968,337,995"/>
+<area shape="rect" id="node42" href="$classGoogle_1_1OrTools_1_1Util_1_1Int64VectorVector.html" title=" " alt="" coords="229,1373,355,1400"/>
+<area shape="rect" id="node43" href="$classGoogle_1_1OrTools_1_1Util_1_1IntVector.html" title=" " alt="" coords="255,1019,329,1045"/>
+<area shape="rect" id="node44" href="$classGoogle_1_1OrTools_1_1Util_1_1IntVectorVector.html" title=" " alt="" coords="235,1424,349,1451"/>
+<area shape="rect" id="node45" title=" " alt="" coords="26,259,121,285"/>
+<area shape="rect" id="node46" title=" " alt="" coords="26,1247,121,1273"/>
+<area shape="rect" id="node47" title=" " alt="" coords="50,512,97,539"/>
+<area shape="rect" id="node48" title=" " alt="" coords="50,309,97,336"/>
+<area shape="rect" id="node49" title=" " alt="" coords="5,1804,141,1831"/>
+<area shape="rect" id="node50" href="$classGoogle_1_1OrTools_1_1Algorithms_1_1KnapsackSolver.html" title=" " alt="" coords="233,1525,351,1552"/>
+<area shape="rect" id="node51" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1AssignmentElement.html" title=" " alt="" coords="223,1576,361,1603"/>
+<area shape="rect" id="node55" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1AssignmentIntContainer.html" title=" " alt="" coords="211,1627,373,1653"/>
+<area shape="rect" id="node56" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1AssignmentIntervalContainer.html" title=" " alt="" coords="197,1677,387,1704"/>
+<area shape="rect" id="node57" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1AssignmentSequenceContainer.html" title=" " alt="" coords="189,1728,395,1755"/>
+<area shape="rect" id="node58" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html" title=" " alt="" coords="247,1475,337,1501"/>
+<area shape="rect" id="node98" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DefaultPhaseParameters.html" title=" " alt="" coords="208,1779,376,1805"/>
+<area shape="rect" id="node99" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html" title=" " alt="" coords="259,1829,325,1856"/>
+<area shape="rect" id="node100" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntBoolPair.html" title=" " alt="" coords="249,1880,335,1907"/>
+<area shape="rect" id="node101" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntTupleSet.html" title=" " alt="" coords="247,1931,337,1957"/>
+<area shape="rect" id="node102" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchFilterManager_1_1FilterEvent.html" title=" " alt="" coords="204,1982,380,2023"/>
+<area shape="rect" id="node103" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchPhaseParameters.html" title=" " alt="" coords="193,2048,391,2075"/>
+<area shape="rect" id="node104" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ModelCache.html" title=" " alt="" coords="245,2099,339,2125"/>
+<area shape="rect" id="node105" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RevBool.html" title=" " alt="" coords="256,2149,328,2176"/>
+<area shape="rect" id="node106" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RevInteger.html" title=" " alt="" coords="249,2200,335,2227"/>
+<area shape="rect" id="node107" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RevPartialSequence.html" title=" " alt="" coords="221,2251,363,2277"/>
+<area shape="rect" id="node108" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingDimension.html" title=" " alt="" coords="227,2301,357,2328"/>
+<area shape="rect" id="node109" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingIndexManager.html" title=" " alt="" coords="217,2352,367,2379"/>
+<area shape="rect" id="node110" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html" title=" " alt="" coords="241,2403,343,2429"/>
+<area shape="rect" id="node111" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel_1_1ResourceGroup.html" title=" " alt="" coords="193,2453,391,2480"/>
+<area shape="rect" id="node112" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel_1_1ResourceGroup_1_1Attributes.html" title=" " alt="" coords="191,2505,393,2546"/>
+<area shape="rect" id="node113" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel_1_1ResourceGroup_1_1Resource.html" title=" " alt="" coords="191,2570,393,2611"/>
+<area shape="rect" id="node114" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel_1_1VehicleTypeContainer.html" title=" " alt="" coords="203,2635,381,2677"/>
+<area shape="rect" id="node115" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel_1_1VehicleTypeContainer_1_1VehicleClassEntry.html" title=" " alt="" coords="197,2701,387,2742"/>
+<area shape="rect" id="node116" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Solver_1_1IntegerCastInfo.html" title=" " alt="" coords="216,2767,368,2793"/>
+<area shape="rect" id="node117" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1TypeRegulationsChecker.html" title=" " alt="" coords="208,2817,376,2844"/>
+<area shape="rect" id="node120" href="$classGoogle_1_1OrTools_1_1Graph_1_1LinearSumAssignment.html" title=" " alt="" coords="215,2868,369,2895"/>
+<area shape="rect" id="node121" href="$classGoogle_1_1OrTools_1_1Graph_1_1MaxFlow.html" title=" " alt="" coords="255,2919,329,2945"/>
+<area shape="rect" id="node122" href="$classGoogle_1_1OrTools_1_1Graph_1_1MinCostFlowBase.html" title=" " alt="" coords="227,2969,357,2996"/>
+<area shape="rect" id="node124" href="$classGoogle_1_1OrTools_1_1Init_1_1CppBridge.html" title=" " alt="" coords="251,3020,333,3047"/>
+<area shape="rect" id="node125" href="$classGoogle_1_1OrTools_1_1Init_1_1CppFlags.html" title=" " alt="" coords="253,3071,331,3097"/>
+<area shape="rect" id="node126" href="$classGoogle_1_1OrTools_1_1Init_1_1OrToolsVersion.html" title=" " alt="" coords="237,3121,347,3148"/>
+<area shape="rect" id="node127" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html" title=" " alt="" coords="251,3172,333,3199"/>
+<area shape="rect" id="node128" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1MPSolverParameters.html" title=" " alt="" coords="219,3223,365,3249"/>
+<area shape="rect" id="node129" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1Objective.html" title=" " alt="" coords="253,3273,331,3300"/>
+<area shape="rect" id="node130" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1Solver.html" title=" " alt="" coords="263,3324,321,3351"/>
+<area shape="rect" id="node131" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1Variable.html" title=" " alt="" coords="258,3375,326,3401"/>
+<area shape="rect" id="node132" href="$classGoogle_1_1OrTools_1_1Sat_1_1CpSatHelper.html" title=" " alt="" coords="243,3425,341,3452"/>
+<area shape="rect" id="node133" href="$classGoogle_1_1OrTools_1_1Sat_1_1LogCallback.html" title=" " alt="" coords="245,3476,339,3503"/>
+<area shape="rect" id="node135" href="$classGoogle_1_1OrTools_1_1Sat_1_1SolutionCallback.html" title=" " alt="" coords="232,3527,352,3553"/>
+<area shape="rect" id="node138" href="$classGoogle_1_1OrTools_1_1Sat_1_1SolveWrapper.html" title=" " alt="" coords="241,3577,343,3604"/>
+<area shape="rect" id="node139" href="$classGoogle_1_1OrTools_1_1Util_1_1Domain.html" title=" " alt="" coords="259,3628,325,3655"/>
+<area shape="rect" id="node52" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntervalVarElement.html" title=" " alt="" coords="468,1728,600,1755"/>
+<area shape="rect" id="node53" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarElement.html" title=" " alt="" coords="482,1779,586,1805"/>
+<area shape="rect" id="node54" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SequenceVarElement.html" title=" " alt="" coords="461,1829,607,1856"/>
+<area shape="rect" id="node59" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Decision.html" title=" " alt="" coords="497,1171,571,1197"/>
+<area shape="rect" id="node61" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DecisionBuilder.html" title=" " alt="" coords="477,1221,591,1248"/>
+<area shape="rect" id="node63" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DecisionVisitor.html" title=" " alt="" coords="479,1272,589,1299"/>
+<area shape="rect" id="node65" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Demon.html" title=" " alt="" coords="502,1323,566,1349"/>
+<area shape="rect" id="node67" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchFilter.html" title=" " alt="" coords="473,1373,595,1400"/>
+<area shape="rect" id="node69" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchFilterManager.html" title=" " alt="" coords="447,1424,621,1451"/>
+<area shape="rect" id="node70" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchOperator.html" title=" " alt="" coords="462,1475,606,1501"/>
+<area shape="rect" id="node78" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ModelVisitor.html" title=" " alt="" coords="487,1525,581,1552"/>
+<area shape="rect" id="node79" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1PropagationBaseObject.html" title=" " alt="" coords="455,1044,613,1071"/>
+<area shape="rect" id="node87" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModelVisitor.html" title=" " alt="" coords="465,1576,603,1603"/>
+<area shape="rect" id="node88" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SearchMonitor.html" title=" " alt="" coords="481,1627,587,1653"/>
+<area shape="rect" id="node97" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SolutionPool.html" title=" " alt="" coords="487,1677,581,1704"/>
+<area shape="rect" id="node60" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1NetDecision.html" title="This class acts as a intermediate step between a c++ decision and a .Net one." alt="" coords="737,1171,831,1197"/>
+<area shape="rect" id="node62" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1NetDecisionBuilder.html" title="This class acts as a intermediate step between a c++ decision builder and a .Net one." alt="" coords="717,1221,851,1248"/>
+<area shape="rect" id="node64" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SymmetryBreaker.html" title=" " alt="" coords="721,1272,847,1299"/>
+<area shape="rect" id="node66" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1NetDemon.html" title=" " alt="" coords="741,1323,827,1349"/>
+<area shape="rect" id="node68" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarLocalSearchFilter.html" title=" " alt="" coords="705,1373,863,1400"/>
+<area shape="rect" id="node71" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarLocalSearchOperatorTemplate.html" title=" " alt="" coords="695,1425,873,1466"/>
+<area shape="rect" id="node76" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SequenceVarLocalSearchOperatorTemplate.html" title=" " alt="" coords="673,1490,895,1531"/>
+<area shape="rect" id="node72" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarLocalSearchOperator.html" title=" " alt="" coords="964,1432,1143,1459"/>
+<area shape="rect" id="node73" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseLns.html" title=" " alt="" coords="1225,1381,1298,1408"/>
+<area shape="rect" id="node74" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ChangeValue.html" title=" " alt="" coords="1212,1432,1311,1459"/>
+<area shape="rect" id="node75" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1PathOperator.html" title=" " alt="" coords="1212,1483,1311,1509"/>
+<area shape="rect" id="node77" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SequenceVarLocalSearchOperator.html" title=" " alt="" coords="943,1497,1164,1524"/>
+<area shape="rect" id="node80" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Assignment.html" title=" " alt="" coords="739,968,829,995"/>
+<area shape="rect" id="node81" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntervalVar.html" title=" " alt="" coords="742,1019,826,1045"/>
+<area shape="rect" id="node82" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html" title=" " alt="" coords="752,1069,816,1096"/>
+<area shape="rect" id="node86" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SequenceVar.html" title=" " alt="" coords="735,1120,833,1147"/>
+<area shape="rect" id="node83" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseIntExpr.html" title=" " alt="" coords="1006,1069,1101,1096"/>
+<area shape="rect" id="node84" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVar.html" title=" " alt="" coords="1025,1120,1081,1147"/>
+<area shape="rect" id="node85" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BooleanVar.html" title=" " alt="" coords="1217,1120,1305,1147"/>
+<area shape="rect" id="node89" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMonitor.html" title=" " alt="" coords="715,1556,853,1583"/>
+<area shape="rect" id="node90" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1OptimizeVar.html" title=" " alt="" coords="737,1607,831,1633"/>
+<area shape="rect" id="node91" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1PropagationMonitor.html" title=" " alt="" coords="717,1657,851,1684"/>
+<area shape="rect" id="node92" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SearchLimit.html" title=" " alt="" coords="739,1708,829,1735"/>
+<area shape="rect" id="node95" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SearchLog.html" title=" " alt="" coords="742,1759,826,1785"/>
+<area shape="rect" id="node96" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SolutionCollector.html" title=" " alt="" coords="723,1809,845,1836"/>
+<area shape="rect" id="node93" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ImprovementSearchLimit.html" title=" " alt="" coords="970,1683,1137,1709"/>
+<area shape="rect" id="node94" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RegularLimit.html" title=" " alt="" coords="1006,1733,1101,1760"/>
+<area shape="rect" id="node118" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1TypeIncompatibilityChecker.html" title=" " alt="" coords="443,2792,625,2819"/>
+<area shape="rect" id="node119" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1TypeRequirementChecker.html" title=" " alt="" coords="447,2843,621,2869"/>
+<area shape="rect" id="node123" href="$classGoogle_1_1OrTools_1_1Graph_1_1MinCostFlow.html" title=" " alt="" coords="485,2969,583,2996"/>
+<area shape="rect" id="node134" href="$classGoogle_1_1OrTools_1_1Sat_1_1LogCallbackDelegate.html" title=" " alt="" coords="461,3476,607,3503"/>
+<area shape="rect" id="node136" href="$classGoogle_1_1OrTools_1_1Sat_1_1CpSolverSolutionCallback.html" title="Parent class to create a callback called at each solution." alt="" coords="447,3527,621,3553"/>
+<area shape="rect" id="node137" href="$classGoogle_1_1OrTools_1_1Sat_1_1ObjectiveSolutionPrinter.html" title="A specialized solution printer." alt="" coords="703,3527,865,3553"/>
 </map>

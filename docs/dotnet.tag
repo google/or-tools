@@ -1,27 +1,576 @@
 <?xml version='1.0' encoding='UTF-8' standalone='yes' ?>
-<tagfile doxygen_version="1.9.3">
+<tagfile>
+  <compound kind="file">
+    <name>.NETCoreApp,Version=v3.1.AssemblyAttributes.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/dotnet/CreateSigningKey/obj/Debug/netcoreapp3.1/</path>
+    <filename>_8NETCoreApp_00Version_0Av3_81_8AssemblyAttributes_8cs</filename>
+  </compound>
+  <compound kind="file">
+    <name>Assignment.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>Assignment_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::Assignment</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>AssignmentElement.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>AssignmentElement_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::AssignmentElement</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>AssignmentIntContainer.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>AssignmentIntContainer_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::AssignmentIntContainer</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>AssignmentIntervalContainer.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>AssignmentIntervalContainer_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::AssignmentIntervalContainer</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>AssignmentSequenceContainer.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>AssignmentSequenceContainer_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::AssignmentSequenceContainer</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>BaseIntExpr.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>BaseIntExpr_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::BaseIntExpr</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>BaseLns.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>BaseLns_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::BaseLns</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>BaseObject.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>BaseObject_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::BaseObject</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>BooleanVar.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>BooleanVar_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::BooleanVar</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>CastConstraint.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>CastConstraint_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::CastConstraint</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>ChangeValue.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>ChangeValue_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::ChangeValue</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>constraint_solver/Constraint.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>constraint__solver_2Constraint_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::Constraint</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>linear_solver/Constraint.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/linear_solver/</path>
+    <filename>linear__solver_2Constraint_8cs</filename>
+    <class kind="class">Google::OrTools::LinearSolver::Constraint</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::LinearSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>Constraints.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/sat/csharp/</path>
+    <filename>Constraints_8cs</filename>
+    <class kind="class">Google::OrTools::Sat::Constraint</class>
+    <class kind="class">Google::OrTools::Sat::CircuitConstraint</class>
+    <class kind="class">Google::OrTools::Sat::MultipleCircuitConstraint</class>
+    <class kind="class">Google::OrTools::Sat::TableConstraint</class>
+    <class kind="class">Google::OrTools::Sat::AutomatonConstraint</class>
+    <class kind="class">Google::OrTools::Sat::ReservoirConstraint</class>
+    <class kind="class">Google::OrTools::Sat::CumulativeConstraint</class>
+    <class kind="class">Google::OrTools::Sat::NoOverlap2dConstraint</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::Sat</namespace>
+  </compound>
+  <compound kind="file">
+    <name>CpModel.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/sat/csharp/</path>
+    <filename>CpModel_8cs</filename>
+    <class kind="class">Google::OrTools::Sat::CpModel</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::Sat</namespace>
+  </compound>
+  <compound kind="file">
+    <name>CpModel.pb.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/sat/</path>
+    <filename>CpModel_8pb_8cs</filename>
+    <class kind="class">Google::OrTools::Sat::CpModelReflection</class>
+    <class kind="class">Google::OrTools::Sat::IntegerVariableProto</class>
+    <class kind="class">Google::OrTools::Sat::BoolArgumentProto</class>
+    <class kind="class">Google::OrTools::Sat::LinearExpressionProto</class>
+    <class kind="class">Google::OrTools::Sat::LinearArgumentProto</class>
+    <class kind="class">Google::OrTools::Sat::AllDifferentConstraintProto</class>
+    <class kind="class">Google::OrTools::Sat::LinearConstraintProto</class>
+    <class kind="class">Google::OrTools::Sat::ElementConstraintProto</class>
+    <class kind="class">Google::OrTools::Sat::IntervalConstraintProto</class>
+    <class kind="class">Google::OrTools::Sat::NoOverlapConstraintProto</class>
+    <class kind="class">Google::OrTools::Sat::NoOverlap2DConstraintProto</class>
+    <class kind="class">Google::OrTools::Sat::CumulativeConstraintProto</class>
+    <class kind="class">Google::OrTools::Sat::ReservoirConstraintProto</class>
+    <class kind="class">Google::OrTools::Sat::CircuitConstraintProto</class>
+    <class kind="class">Google::OrTools::Sat::RoutesConstraintProto</class>
+    <class kind="class">Google::OrTools::Sat::TableConstraintProto</class>
+    <class kind="class">Google::OrTools::Sat::InverseConstraintProto</class>
+    <class kind="class">Google::OrTools::Sat::AutomatonConstraintProto</class>
+    <class kind="class">Google::OrTools::Sat::ListOfVariablesProto</class>
+    <class kind="class">Google::OrTools::Sat::ConstraintProto</class>
+    <class kind="class">Google::OrTools::Sat::CpObjectiveProto</class>
+    <class kind="class">Google::OrTools::Sat::FloatObjectiveProto</class>
+    <class kind="class">Google::OrTools::Sat::DecisionStrategyProto</class>
+    <class kind="class">Google::OrTools::Sat::DecisionStrategyProto::Types</class>
+    <class kind="class">Google::OrTools::Sat::DecisionStrategyProto::Types::AffineTransformation</class>
+    <class kind="class">Google::OrTools::Sat::PartialVariableAssignment</class>
+    <class kind="class">Google::OrTools::Sat::SparsePermutationProto</class>
+    <class kind="class">Google::OrTools::Sat::DenseMatrixProto</class>
+    <class kind="class">Google::OrTools::Sat::SymmetryProto</class>
+    <class kind="class">Google::OrTools::Sat::CpModelProto</class>
+    <class kind="class">Google::OrTools::Sat::CpSolverSolution</class>
+    <class kind="class">Google::OrTools::Sat::CpSolverResponse</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::Sat</namespace>
+    <member kind="typedef">
+      <type>global::Google.Protobuf</type>
+      <name>pb</name>
+      <anchorfile>CpModel_8pb_8cs.html</anchorfile>
+      <anchor>a3a8b1403f9034aa88aad1ce2c733db60</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>global::Google.Protobuf.Collections</type>
+      <name>pbc</name>
+      <anchorfile>CpModel_8pb_8cs.html</anchorfile>
+      <anchor>acf353ca81053b715ef0a189df5a75499</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>global::Google.Protobuf.Reflection</type>
+      <name>pbr</name>
+      <anchorfile>CpModel_8pb_8cs.html</anchorfile>
+      <anchor>a4c9bca18934bf8b310b9d65812404c69</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>global::System.Collections.Generic</type>
+      <name>scg</name>
+      <anchorfile>CpModel_8pb_8cs.html</anchorfile>
+      <anchor>a6de48d7be2d1c733071a3f897657ee05</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumeration">
+      <type></type>
+      <name>CpSolverStatus</name>
+      <anchorfile>namespaceGoogle_1_1OrTools_1_1Sat.html</anchorfile>
+      <anchor>abd593c9e6d551c806d04abc386a505e8</anchor>
+      <arglist></arglist>
+      <enumvalue file="namespaceGoogle_1_1OrTools_1_1Sat.html" anchor="abd593c9e6d551c806d04abc386a505e8a88183b946cc5f0e8c96b2e66e1c74a7e">Unknown</enumvalue>
+      <enumvalue file="namespaceGoogle_1_1OrTools_1_1Sat.html" anchor="abd593c9e6d551c806d04abc386a505e8aa1cc2f9a5c97bd1133373ebbc79fd554">ModelInvalid</enumvalue>
+      <enumvalue file="namespaceGoogle_1_1OrTools_1_1Sat.html" anchor="abd593c9e6d551c806d04abc386a505e8a8d5e8c47cdc7636fcebc73dda4c595f7">Feasible</enumvalue>
+      <enumvalue file="namespaceGoogle_1_1OrTools_1_1Sat.html" anchor="abd593c9e6d551c806d04abc386a505e8a54def92f4c562f166a6abbcbceadeb46">Infeasible</enumvalue>
+      <enumvalue file="namespaceGoogle_1_1OrTools_1_1Sat.html" anchor="abd593c9e6d551c806d04abc386a505e8acb61fef1e5e79e07a80421cb9a073a80">Optimal</enumvalue>
+    </member>
+  </compound>
+  <compound kind="file">
+    <name>CppBridge.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/init/</path>
+    <filename>CppBridge_8cs</filename>
+    <class kind="class">Google::OrTools::Init::CppBridge</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::Init</namespace>
+  </compound>
+  <compound kind="file">
+    <name>CppFlags.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/init/</path>
+    <filename>CppFlags_8cs</filename>
+    <class kind="class">Google::OrTools::Init::CppFlags</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::Init</namespace>
+  </compound>
+  <compound kind="file">
+    <name>CpSatHelper.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/sat/</path>
+    <filename>CpSatHelper_8cs</filename>
+    <class kind="class">Google::OrTools::Sat::CpSatHelper</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::Sat</namespace>
+  </compound>
+  <compound kind="file">
+    <name>CpSolver.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/sat/csharp/</path>
+    <filename>CpSolver_8cs</filename>
+    <class kind="class">Google::OrTools::Sat::CpSolver</class>
+    <class kind="class">Google::OrTools::Sat::LogCallbackDelegate</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::Sat</namespace>
+  </compound>
+  <compound kind="file">
+    <name>CreateSigningKey.AssemblyInfo.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/dotnet/CreateSigningKey/obj/Debug/netcoreapp3.1/</path>
+    <filename>CreateSigningKey_8AssemblyInfo_8cs</filename>
+  </compound>
+  <compound kind="file">
+    <name>Decision.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>Decision_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::Decision</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>DecisionBuilder.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>DecisionBuilder_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::DecisionBuilder</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>DecisionBuilderVector.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>DecisionBuilderVector_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::DecisionBuilderVector</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::DecisionBuilderVector::DecisionBuilderVectorEnumerator</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>DecisionVisitor.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>DecisionVisitor_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::DecisionVisitor</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>DefaultPhaseParameters.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>DefaultPhaseParameters_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::DefaultPhaseParameters</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>Demon.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>Demon_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::Demon</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>DisjunctiveConstraint.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>DisjunctiveConstraint_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::DisjunctiveConstraint</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>constraint_solver/Domain.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>constraint__solver_2Domain_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::Domain</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>util/Domain.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/util/</path>
+    <filename>util_2Domain_8cs</filename>
+    <class kind="class">Google::OrTools::Util::Domain</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::Util</namespace>
+  </compound>
+  <compound kind="file">
+    <name>DoubleVector.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/linear_solver/</path>
+    <filename>DoubleVector_8cs</filename>
+    <class kind="class">Google::OrTools::LinearSolver::DoubleVector</class>
+    <class kind="class">Google::OrTools::LinearSolver::DoubleVector::DoubleVectorEnumerator</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::LinearSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>GlobalVehicleBreaksConstraint.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>GlobalVehicleBreaksConstraint_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::GlobalVehicleBreaksConstraint</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>ImprovementSearchLimit.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>ImprovementSearchLimit_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::ImprovementSearchLimit</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>algorithms/Int64Vector.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/algorithms/</path>
+    <filename>algorithms_2Int64Vector_8cs</filename>
+    <class kind="class">Google::OrTools::Algorithms::Int64Vector</class>
+    <class kind="class">Google::OrTools::Algorithms::Int64Vector::Int64VectorEnumerator</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::Algorithms</namespace>
+  </compound>
+  <compound kind="file">
+    <name>constraint_solver/Int64Vector.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>constraint__solver_2Int64Vector_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::Int64Vector</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::Int64Vector::Int64VectorEnumerator</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>linear_solver/Int64Vector.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/linear_solver/</path>
+    <filename>linear__solver_2Int64Vector_8cs</filename>
+    <class kind="class">Google::OrTools::LinearSolver::Int64Vector</class>
+    <class kind="class">Google::OrTools::LinearSolver::Int64Vector::Int64VectorEnumerator</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::LinearSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>util/Int64Vector.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/util/</path>
+    <filename>util_2Int64Vector_8cs</filename>
+    <class kind="class">Google::OrTools::Util::Int64Vector</class>
+    <class kind="class">Google::OrTools::Util::Int64Vector::Int64VectorEnumerator</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::Util</namespace>
+  </compound>
+  <compound kind="file">
+    <name>algorithms/Int64VectorVector.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/algorithms/</path>
+    <filename>algorithms_2Int64VectorVector_8cs</filename>
+    <class kind="class">Google::OrTools::Algorithms::Int64VectorVector</class>
+    <class kind="class">Google::OrTools::Algorithms::Int64VectorVector::Int64VectorVectorEnumerator</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::Algorithms</namespace>
+  </compound>
+  <compound kind="file">
+    <name>constraint_solver/Int64VectorVector.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>constraint__solver_2Int64VectorVector_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::Int64VectorVector</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::Int64VectorVector::Int64VectorVectorEnumerator</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>linear_solver/Int64VectorVector.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/linear_solver/</path>
+    <filename>linear__solver_2Int64VectorVector_8cs</filename>
+    <class kind="class">Google::OrTools::LinearSolver::Int64VectorVector</class>
+    <class kind="class">Google::OrTools::LinearSolver::Int64VectorVector::Int64VectorVectorEnumerator</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::LinearSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>util/Int64VectorVector.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/util/</path>
+    <filename>util_2Int64VectorVector_8cs</filename>
+    <class kind="class">Google::OrTools::Util::Int64VectorVector</class>
+    <class kind="class">Google::OrTools::Util::Int64VectorVector::Int64VectorVectorEnumerator</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::Util</namespace>
+  </compound>
   <compound kind="file">
     <name>IntArrayHelper.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/constraint_solver/csharp/</path>
-    <filename>IntArrayHelper_8cs.html</filename>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/constraint_solver/csharp/</path>
+    <filename>IntArrayHelper_8cs</filename>
     <class kind="class">Google::OrTools::ConstraintSolver::IntArrayHelper</class>
     <namespace>Google</namespace>
     <namespace>Google::OrTools</namespace>
     <namespace>Google::OrTools::ConstraintSolver</namespace>
   </compound>
   <compound kind="file">
+    <name>IntBoolPair.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>IntBoolPair_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::IntBoolPair</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>IntegerExpressions.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/sat/csharp/</path>
+    <filename>IntegerExpressions_8cs</filename>
+    <class kind="interface">Google::OrTools::Sat::ILiteral</class>
+    <class kind="class">Google::OrTools::Sat::HelperExtensions</class>
+    <class kind="struct">Google::OrTools::Sat::Term</class>
+    <class kind="class">Google::OrTools::Sat::LinearExpr</class>
+    <class kind="class">Google::OrTools::Sat::LinearExprBuilder</class>
+    <class kind="class">Google::OrTools::Sat::IntVar</class>
+    <class kind="class">Google::OrTools::Sat::BoolVar</class>
+    <class kind="class">Google::OrTools::Sat::NotBoolVar</class>
+    <class kind="class">Google::OrTools::Sat::BoundedLinearExpression</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::Sat</namespace>
+  </compound>
+  <compound kind="file">
+    <name>IntervalVar.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>IntervalVar_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::IntervalVar</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
     <name>IntervalVarArrayHelper.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/constraint_solver/csharp/</path>
-    <filename>IntervalVarArrayHelper_8cs.html</filename>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/constraint_solver/csharp/</path>
+    <filename>IntervalVarArrayHelper_8cs</filename>
     <class kind="class">Google::OrTools::ConstraintSolver::IntervalVarArrayHelper</class>
     <namespace>Google</namespace>
     <namespace>Google::OrTools</namespace>
     <namespace>Google::OrTools::ConstraintSolver</namespace>
   </compound>
   <compound kind="file">
+    <name>IntervalVarElement.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>IntervalVarElement_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::IntervalVarElement</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>IntervalVariables.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/sat/csharp/</path>
+    <filename>IntervalVariables_8cs</filename>
+    <class kind="class">Google::OrTools::Sat::IntervalVar</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::Sat</namespace>
+  </compound>
+  <compound kind="file">
+    <name>IntervalVarVector.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>IntervalVarVector_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::IntervalVarVector</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::IntervalVarVector::IntervalVarVectorEnumerator</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>IntExpr.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>IntExpr_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::IntExpr</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>IntTupleSet.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>IntTupleSet_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::IntTupleSet</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>IntVar.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>IntVar_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::IntVar</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
     <name>IntVarArrayHelper.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/constraint_solver/csharp/</path>
-    <filename>IntVarArrayHelper_8cs.html</filename>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/constraint_solver/csharp/</path>
+    <filename>IntVarArrayHelper_8cs</filename>
     <class kind="class">Google::OrTools::ConstraintSolver::IntVarArrayHelper</class>
     <class kind="class">Google::OrTools::ConstraintSolver::IntVarVector</class>
     <class kind="class">Google::OrTools::ConstraintSolver::SearchMonitorVector</class>
@@ -36,9 +585,348 @@
     <namespace>Google::OrTools::ConstraintSolver</namespace>
   </compound>
   <compound kind="file">
+    <name>IntVarElement.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>IntVarElement_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::IntVarElement</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>IntVarIterator.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>IntVarIterator_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::IntVarIterator</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>IntVarLocalSearchFilter.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>IntVarLocalSearchFilter_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::IntVarLocalSearchFilter</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>IntVarLocalSearchOperator.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>IntVarLocalSearchOperator_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::IntVarLocalSearchOperator</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>IntVarLocalSearchOperatorTemplate.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>IntVarLocalSearchOperatorTemplate_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::IntVarLocalSearchOperatorTemplate</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>IntVarVector.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>IntVarVector_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::IntVarVector</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::IntVarVector::IntVarVectorEnumerator</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>algorithms/IntVector.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/algorithms/</path>
+    <filename>algorithms_2IntVector_8cs</filename>
+    <class kind="class">Google::OrTools::Algorithms::IntVector</class>
+    <class kind="class">Google::OrTools::Algorithms::IntVector::IntVectorEnumerator</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::Algorithms</namespace>
+  </compound>
+  <compound kind="file">
+    <name>constraint_solver/IntVector.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>constraint__solver_2IntVector_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::IntVector</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::IntVector::IntVectorEnumerator</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>linear_solver/IntVector.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/linear_solver/</path>
+    <filename>linear__solver_2IntVector_8cs</filename>
+    <class kind="class">Google::OrTools::LinearSolver::IntVector</class>
+    <class kind="class">Google::OrTools::LinearSolver::IntVector::IntVectorEnumerator</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::LinearSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>util/IntVector.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/util/</path>
+    <filename>util_2IntVector_8cs</filename>
+    <class kind="class">Google::OrTools::Util::IntVector</class>
+    <class kind="class">Google::OrTools::Util::IntVector::IntVectorEnumerator</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::Util</namespace>
+  </compound>
+  <compound kind="file">
+    <name>algorithms/IntVectorVector.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/algorithms/</path>
+    <filename>algorithms_2IntVectorVector_8cs</filename>
+    <class kind="class">Google::OrTools::Algorithms::IntVectorVector</class>
+    <class kind="class">Google::OrTools::Algorithms::IntVectorVector::IntVectorVectorEnumerator</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::Algorithms</namespace>
+  </compound>
+  <compound kind="file">
+    <name>constraint_solver/IntVectorVector.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>constraint__solver_2IntVectorVector_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::IntVectorVector</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::IntVectorVector::IntVectorVectorEnumerator</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>linear_solver/IntVectorVector.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/linear_solver/</path>
+    <filename>linear__solver_2IntVectorVector_8cs</filename>
+    <class kind="class">Google::OrTools::LinearSolver::IntVectorVector</class>
+    <class kind="class">Google::OrTools::LinearSolver::IntVectorVector::IntVectorVectorEnumerator</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::LinearSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>util/IntVectorVector.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/util/</path>
+    <filename>util_2IntVectorVector_8cs</filename>
+    <class kind="class">Google::OrTools::Util::IntVectorVector</class>
+    <class kind="class">Google::OrTools::Util::IntVectorVector::IntVectorVectorEnumerator</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::Util</namespace>
+  </compound>
+  <compound kind="file">
+    <name>KnapsackSolver.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/algorithms/</path>
+    <filename>KnapsackSolver_8cs</filename>
+    <class kind="class">Google::OrTools::Algorithms::KnapsackSolver</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::Algorithms</namespace>
+  </compound>
+  <compound kind="file">
+    <name>LinearConstraint.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/linear_solver/csharp/</path>
+    <filename>LinearConstraint_8cs</filename>
+    <class kind="class">Google::OrTools::LinearSolver::LinearConstraint</class>
+    <class kind="class">Google::OrTools::LinearSolver::RangeConstraint</class>
+    <class kind="class">Google::OrTools::LinearSolver::Equality</class>
+    <class kind="class">Google::OrTools::LinearSolver::VarEquality</class>
+    <class kind="class">Google::OrTools::LinearSolver::MPConstraintVector</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::LinearSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>LinearExpr.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/linear_solver/csharp/</path>
+    <filename>LinearExpr_8cs</filename>
+    <class kind="class">Google::OrTools::LinearSolver::LinearExpr</class>
+    <class kind="class">Google::OrTools::LinearSolver::LinearExprArrayHelper</class>
+    <class kind="class">Google::OrTools::LinearSolver::ProductCst</class>
+    <class kind="class">Google::OrTools::LinearSolver::SumCst</class>
+    <class kind="class">Google::OrTools::LinearSolver::VarWrapper</class>
+    <class kind="class">Google::OrTools::LinearSolver::Sum</class>
+    <class kind="class">Google::OrTools::LinearSolver::SumArray</class>
+    <class kind="class">Google::OrTools::LinearSolver::SumVarArray</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::LinearSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>LinearSumAssignment.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/graph/</path>
+    <filename>LinearSumAssignment_8cs</filename>
+    <class kind="class">Google::OrTools::Graph::LinearSumAssignment</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::Graph</namespace>
+  </compound>
+  <compound kind="file">
+    <name>LocalSearchFilter.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>LocalSearchFilter_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::LocalSearchFilter</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>LocalSearchFilterManager.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>LocalSearchFilterManager_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::LocalSearchFilterManager</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::LocalSearchFilterManager::FilterEvent</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>LocalSearchFilterVector.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>LocalSearchFilterVector_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::LocalSearchFilterVector</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::LocalSearchFilterVector::LocalSearchFilterVectorEnumerator</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>LocalSearchMonitor.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>LocalSearchMonitor_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::LocalSearchMonitor</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>LocalSearchOperator.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>LocalSearchOperator_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::LocalSearchOperator</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>LocalSearchOperatorVector.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>LocalSearchOperatorVector_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::LocalSearchOperatorVector</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::LocalSearchOperatorVector::LocalSearchOperatorVectorEnumerator</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>LocalSearchPhaseParameters.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>LocalSearchPhaseParameters_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::LocalSearchPhaseParameters</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>LogCallback.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/sat/</path>
+    <filename>LogCallback_8cs</filename>
+    <class kind="class">Google::OrTools::Sat::LogCallback</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::Sat</namespace>
+  </compound>
+  <compound kind="file">
+    <name>MaxFlow.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/graph/</path>
+    <filename>MaxFlow_8cs</filename>
+    <class kind="class">Google::OrTools::Graph::MaxFlow</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::Graph</namespace>
+  </compound>
+  <compound kind="file">
+    <name>MinCostFlow.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/graph/</path>
+    <filename>MinCostFlow_8cs</filename>
+    <class kind="class">Google::OrTools::Graph::MinCostFlow</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::Graph</namespace>
+  </compound>
+  <compound kind="file">
+    <name>MinCostFlowBase.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/graph/</path>
+    <filename>MinCostFlowBase_8cs</filename>
+    <class kind="class">Google::OrTools::Graph::MinCostFlowBase</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::Graph</namespace>
+  </compound>
+  <compound kind="file">
+    <name>ModelCache.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>ModelCache_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::ModelCache</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>ModelVisitor.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>ModelVisitor_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::ModelVisitor</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>MPConstraintVector.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/linear_solver/</path>
+    <filename>MPConstraintVector_8cs</filename>
+    <class kind="class">Google::OrTools::LinearSolver::MPConstraintVector</class>
+    <class kind="class">Google::OrTools::LinearSolver::MPConstraintVector::MPConstraintVectorEnumerator</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::LinearSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>MPSolverParameters.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/linear_solver/</path>
+    <filename>MPSolverParameters_8cs</filename>
+    <class kind="class">Google::OrTools::LinearSolver::MPSolverParameters</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::LinearSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>MPVariableVector.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/linear_solver/</path>
+    <filename>MPVariableVector_8cs</filename>
+    <class kind="class">Google::OrTools::LinearSolver::MPVariableVector</class>
+    <class kind="class">Google::OrTools::LinearSolver::MPVariableVector::MPVariableVectorEnumerator</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::LinearSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>NestedArrayHelper.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/util/csharp/</path>
+    <filename>NestedArrayHelper_8cs</filename>
+    <class kind="class">Google::OrTools::NestedArrayHelper</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+  </compound>
+  <compound kind="file">
     <name>NetDecisionBuilder.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/constraint_solver/csharp/</path>
-    <filename>NetDecisionBuilder_8cs.html</filename>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/constraint_solver/csharp/</path>
+    <filename>NetDecisionBuilder_8cs</filename>
     <class kind="class">Google::OrTools::ConstraintSolver::NetDecisionBuilder</class>
     <class kind="class">Google::OrTools::ConstraintSolver::NetDecision</class>
     <class kind="class">Google::OrTools::ConstraintSolver::NetDemon</class>
@@ -50,68 +938,18 @@
     <namespace>Google::OrTools::ConstraintSolver</namespace>
   </compound>
   <compound kind="file">
-    <name>constraint_solver/csharp/SolverHelper.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/constraint_solver/csharp/</path>
-    <filename>constraint__solver_2csharp_2SolverHelper_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::Solver</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::IntExpr</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::Constraint</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>linear_solver/csharp/SolverHelper.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/linear_solver/csharp/</path>
-    <filename>linear__solver_2csharp_2SolverHelper_8cs.html</filename>
-    <class kind="class">Google::OrTools::LinearSolver::Solver</class>
+    <name>Objective.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/linear_solver/</path>
+    <filename>Objective_8cs</filename>
+    <class kind="class">Google::OrTools::LinearSolver::Objective</class>
     <namespace>Google</namespace>
     <namespace>Google::OrTools</namespace>
     <namespace>Google::OrTools::LinearSolver</namespace>
   </compound>
   <compound kind="file">
-    <name>ValCstPair.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/constraint_solver/csharp/</path>
-    <filename>ValCstPair_8cs.html</filename>
-    <class kind="interface">Google::OrTools::ConstraintSolver::IConstraintWithStatus</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::BaseEquality</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::WrappedConstraint</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::IntExprEquality</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::ConstraintEquality</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>.NETCoreApp,Version=v3.1.AssemblyAttributes.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/dotnet/CreateSigningKey/obj/Debug/netcoreapp3.1/</path>
-    <filename>_8NETCoreApp_00Version_0av3_81_8AssemblyAttributes_8cs.html</filename>
-  </compound>
-  <compound kind="file">
-    <name>CreateSigningKey.AssemblyInfo.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/dotnet/CreateSigningKey/obj/Debug/netcoreapp3.1/</path>
-    <filename>CreateSigningKey_8AssemblyInfo_8cs.html</filename>
-  </compound>
-  <compound kind="file">
-    <name>Program.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/dotnet/CreateSigningKey/</path>
-    <filename>Program_8cs.html</filename>
-    <class kind="class">CreateSigningKey::Program</class>
-    <namespace>CreateSigningKey</namespace>
-  </compound>
-  <compound kind="file">
-    <name>KnapsackSolver.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/algorithms/</path>
-    <filename>KnapsackSolver_8cs.html</filename>
-    <class kind="class">Google::OrTools::Algorithms::KnapsackSolver</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::Algorithms</namespace>
-  </compound>
-  <compound kind="file">
     <name>operations_research_algorithms.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/algorithms/</path>
-    <filename>operations__research__algorithms_8cs.html</filename>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/algorithms/</path>
+    <filename>operations__research__algorithms_8cs</filename>
     <class kind="class">Google::OrTools::Algorithms::operations_research_algorithms</class>
     <namespace>Google</namespace>
     <namespace>Google::OrTools</namespace>
@@ -119,8 +957,8 @@
   </compound>
   <compound kind="file">
     <name>operations_research_algorithmsPINVOKE.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/algorithms/</path>
-    <filename>operations__research__algorithmsPINVOKE_8cs.html</filename>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/algorithms/</path>
+    <filename>operations__research__algorithmsPINVOKE_8cs</filename>
     <class kind="class">Google::OrTools::Algorithms::operations_research_algorithmsPINVOKE</class>
     <class kind="class">Google::OrTools::Algorithms::operations_research_algorithmsPINVOKE::SWIGExceptionHelper</class>
     <class kind="class">Google::OrTools::Algorithms::operations_research_algorithmsPINVOKE::SWIGPendingException</class>
@@ -130,411 +968,9 @@
     <namespace>Google::OrTools::Algorithms</namespace>
   </compound>
   <compound kind="file">
-    <name>Assignment.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>Assignment_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::Assignment</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>AssignmentElement.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>AssignmentElement_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::AssignmentElement</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>AssignmentIntContainer.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>AssignmentIntContainer_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::AssignmentIntContainer</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>AssignmentIntervalContainer.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>AssignmentIntervalContainer_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::AssignmentIntervalContainer</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>AssignmentSequenceContainer.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>AssignmentSequenceContainer_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::AssignmentSequenceContainer</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>BaseIntExpr.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>BaseIntExpr_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::BaseIntExpr</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>BaseLns.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>BaseLns_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::BaseLns</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>BaseObject.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>BaseObject_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::BaseObject</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>BooleanVar.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>BooleanVar_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::BooleanVar</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>CastConstraint.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>CastConstraint_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::CastConstraint</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>ChangeValue.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>ChangeValue_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::ChangeValue</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>constraint_solver/Constraint.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>constraint__solver_2Constraint_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::Constraint</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>linear_solver/Constraint.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/linear_solver/</path>
-    <filename>linear__solver_2Constraint_8cs.html</filename>
-    <class kind="class">Google::OrTools::LinearSolver::Constraint</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::LinearSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>Decision.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>Decision_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::Decision</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>DecisionBuilder.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>DecisionBuilder_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::DecisionBuilder</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>DecisionBuilderVector.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>DecisionBuilderVector_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::DecisionBuilderVector</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::DecisionBuilderVector::DecisionBuilderVectorEnumerator</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>DecisionVisitor.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>DecisionVisitor_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::DecisionVisitor</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>DefaultPhaseParameters.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>DefaultPhaseParameters_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::DefaultPhaseParameters</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>Demon.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>Demon_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::Demon</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>DisjunctiveConstraint.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>DisjunctiveConstraint_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::DisjunctiveConstraint</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>GlobalVehicleBreaksConstraint.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>GlobalVehicleBreaksConstraint_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::GlobalVehicleBreaksConstraint</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>ImprovementSearchLimit.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>ImprovementSearchLimit_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::ImprovementSearchLimit</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>IntBoolPair.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>IntBoolPair_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::IntBoolPair</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>IntervalVar.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>IntervalVar_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::IntervalVar</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>IntervalVarElement.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>IntervalVarElement_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::IntervalVarElement</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>IntervalVarVector.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>IntervalVarVector_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::IntervalVarVector</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::IntervalVarVector::IntervalVarVectorEnumerator</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>IntExpr.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>IntExpr_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::IntExpr</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>IntTupleSet.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>IntTupleSet_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::IntTupleSet</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>IntVar.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>IntVar_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::IntVar</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>IntVarElement.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>IntVarElement_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::IntVarElement</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>IntVarIterator.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>IntVarIterator_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::IntVarIterator</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>IntVarLocalSearchFilter.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>IntVarLocalSearchFilter_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::IntVarLocalSearchFilter</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>IntVarLocalSearchOperator.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>IntVarLocalSearchOperator_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::IntVarLocalSearchOperator</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>IntVarLocalSearchOperatorTemplate.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>IntVarLocalSearchOperatorTemplate_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::IntVarLocalSearchOperatorTemplate</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>IntVarVector.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>IntVarVector_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::IntVarVector</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::IntVarVector::IntVarVectorEnumerator</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>LocalSearchFilter.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>LocalSearchFilter_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::LocalSearchFilter</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>LocalSearchFilterManager.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>LocalSearchFilterManager_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::LocalSearchFilterManager</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::LocalSearchFilterManager::FilterEvent</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>LocalSearchFilterVector.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>LocalSearchFilterVector_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::LocalSearchFilterVector</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::LocalSearchFilterVector::LocalSearchFilterVectorEnumerator</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>LocalSearchMonitor.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>LocalSearchMonitor_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::LocalSearchMonitor</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>LocalSearchOperator.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>LocalSearchOperator_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::LocalSearchOperator</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>LocalSearchOperatorVector.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>LocalSearchOperatorVector_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::LocalSearchOperatorVector</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::LocalSearchOperatorVector::LocalSearchOperatorVectorEnumerator</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>LocalSearchPhaseParameters.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>LocalSearchPhaseParameters_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::LocalSearchPhaseParameters</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>ModelCache.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>ModelCache_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::ModelCache</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>ModelVisitor.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>ModelVisitor_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::ModelVisitor</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
     <name>operations_research_constraint_solver.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>operations__research__constraint__solver_8cs.html</filename>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>operations__research__constraint__solver_8cs</filename>
     <class kind="class">Google::OrTools::ConstraintSolver::operations_research_constraint_solver</class>
     <namespace>Google</namespace>
     <namespace>Google::OrTools</namespace>
@@ -542,8 +978,8 @@
   </compound>
   <compound kind="file">
     <name>operations_research_constraint_solverPINVOKE.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>operations__research__constraint__solverPINVOKE_8cs.html</filename>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>operations__research__constraint__solverPINVOKE_8cs</filename>
     <class kind="class">Google::OrTools::ConstraintSolver::operations_research_constraint_solverPINVOKE</class>
     <class kind="class">Google::OrTools::ConstraintSolver::operations_research_constraint_solverPINVOKE::SWIGExceptionHelper</class>
     <class kind="class">Google::OrTools::ConstraintSolver::operations_research_constraint_solverPINVOKE::SWIGPendingException</class>
@@ -637,502 +1073,9 @@
     </member>
   </compound>
   <compound kind="file">
-    <name>OptimizeVar.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>OptimizeVar_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::OptimizeVar</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>Pack.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>Pack_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::Pack</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>PathOperator.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>PathOperator_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::PathOperator</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>PropagationBaseObject.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>PropagationBaseObject_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::PropagationBaseObject</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>PropagationMonitor.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>PropagationMonitor_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::PropagationMonitor</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>RegularLimit.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>RegularLimit_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::RegularLimit</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>RevBool.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>RevBool_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::RevBool</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>RevInteger.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>RevInteger_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::RevInteger</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>RevPartialSequence.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>RevPartialSequence_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::RevPartialSequence</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>RoutingDimension.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>RoutingDimension_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::RoutingDimension</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>RoutingEnums.pb.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>RoutingEnums_8pb_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::RoutingEnumsReflection</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::FirstSolutionStrategy</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::FirstSolutionStrategy::Types</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::LocalSearchMetaheuristic</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::LocalSearchMetaheuristic::Types</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-    <member kind="typedef">
-      <type>global::Google.Protobuf</type>
-      <name>pb</name>
-      <anchorfile>RoutingEnums_8pb_8cs.html</anchorfile>
-      <anchor>a3a8b1403f9034aa88aad1ce2c733db60</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="typedef">
-      <type>global::Google.Protobuf.Collections</type>
-      <name>pbc</name>
-      <anchorfile>RoutingEnums_8pb_8cs.html</anchorfile>
-      <anchor>acf353ca81053b715ef0a189df5a75499</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="typedef">
-      <type>global::Google.Protobuf.Reflection</type>
-      <name>pbr</name>
-      <anchorfile>RoutingEnums_8pb_8cs.html</anchorfile>
-      <anchor>a4c9bca18934bf8b310b9d65812404c69</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="typedef">
-      <type>global::System.Collections.Generic</type>
-      <name>scg</name>
-      <anchorfile>RoutingEnums_8pb_8cs.html</anchorfile>
-      <anchor>a6de48d7be2d1c733071a3f897657ee05</anchor>
-      <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="file">
-    <name>RoutingIndexManager.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>RoutingIndexManager_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::RoutingIndexManager</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>RoutingModel.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>RoutingModel_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::RoutingModel</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::RoutingModel::VehicleTypeContainer</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::RoutingModel::VehicleTypeContainer::VehicleClassEntry</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::RoutingModel::ResourceGroup</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::RoutingModel::ResourceGroup::Attributes</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::RoutingModel::ResourceGroup::Resource</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>RoutingModelVisitor.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>RoutingModelVisitor_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::RoutingModelVisitor</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>RoutingParameters.pb.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>RoutingParameters_8pb_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::RoutingParametersReflection</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::RoutingSearchParameters</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::RoutingSearchParameters::Types</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::RoutingSearchParameters::Types::LocalSearchNeighborhoodOperators</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::RoutingSearchParameters::Types::ImprovementSearchLimitParameters</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::RoutingModelParameters</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-    <member kind="typedef">
-      <type>global::Google.Protobuf</type>
-      <name>pb</name>
-      <anchorfile>RoutingParameters_8pb_8cs.html</anchorfile>
-      <anchor>a3a8b1403f9034aa88aad1ce2c733db60</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="typedef">
-      <type>global::Google.Protobuf.Collections</type>
-      <name>pbc</name>
-      <anchorfile>RoutingParameters_8pb_8cs.html</anchorfile>
-      <anchor>acf353ca81053b715ef0a189df5a75499</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="typedef">
-      <type>global::Google.Protobuf.Reflection</type>
-      <name>pbr</name>
-      <anchorfile>RoutingParameters_8pb_8cs.html</anchorfile>
-      <anchor>a4c9bca18934bf8b310b9d65812404c69</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="typedef">
-      <type>global::System.Collections.Generic</type>
-      <name>scg</name>
-      <anchorfile>RoutingParameters_8pb_8cs.html</anchorfile>
-      <anchor>a6de48d7be2d1c733071a3f897657ee05</anchor>
-      <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="file">
-    <name>SearchLimit.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>SearchLimit_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::SearchLimit</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>SearchLimit.pb.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>SearchLimit_8pb_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::SearchLimitReflection</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::RegularLimitParameters</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-    <member kind="typedef">
-      <type>global::Google.Protobuf</type>
-      <name>pb</name>
-      <anchorfile>SearchLimit_8pb_8cs.html</anchorfile>
-      <anchor>a3a8b1403f9034aa88aad1ce2c733db60</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="typedef">
-      <type>global::Google.Protobuf.Collections</type>
-      <name>pbc</name>
-      <anchorfile>SearchLimit_8pb_8cs.html</anchorfile>
-      <anchor>acf353ca81053b715ef0a189df5a75499</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="typedef">
-      <type>global::Google.Protobuf.Reflection</type>
-      <name>pbr</name>
-      <anchorfile>SearchLimit_8pb_8cs.html</anchorfile>
-      <anchor>a4c9bca18934bf8b310b9d65812404c69</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="typedef">
-      <type>global::System.Collections.Generic</type>
-      <name>scg</name>
-      <anchorfile>SearchLimit_8pb_8cs.html</anchorfile>
-      <anchor>a6de48d7be2d1c733071a3f897657ee05</anchor>
-      <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="file">
-    <name>SearchLog.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>SearchLog_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::SearchLog</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>SearchMonitor.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>SearchMonitor_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::SearchMonitor</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>SearchMonitorVector.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>SearchMonitorVector_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::SearchMonitorVector</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::SearchMonitorVector::SearchMonitorVectorEnumerator</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>SequenceVar.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>SequenceVar_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::SequenceVar</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>SequenceVarElement.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>SequenceVarElement_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::SequenceVarElement</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>SequenceVarLocalSearchOperator.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>SequenceVarLocalSearchOperator_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::SequenceVarLocalSearchOperator</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>SequenceVarLocalSearchOperatorTemplate.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>SequenceVarLocalSearchOperatorTemplate_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::SequenceVarLocalSearchOperatorTemplate</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>SequenceVarVector.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>SequenceVarVector_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::SequenceVarVector</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::SequenceVarVector::SequenceVarVectorEnumerator</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>SolutionCollector.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>SolutionCollector_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::SolutionCollector</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>SolutionPool.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>SolutionPool_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::SolutionPool</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>constraint_solver/Solver.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>constraint__solver_2Solver_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::Solver</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::Solver::IntegerCastInfo</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>linear_solver/Solver.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/linear_solver/</path>
-    <filename>linear__solver_2Solver_8cs.html</filename>
-    <class kind="class">Google::OrTools::LinearSolver::Solver</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::LinearSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>SolverParameters.pb.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>SolverParameters_8pb_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::SolverParametersReflection</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::ConstraintSolverParameters</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::ConstraintSolverParameters::Types</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-    <member kind="typedef">
-      <type>global::Google.Protobuf</type>
-      <name>pb</name>
-      <anchorfile>SolverParameters_8pb_8cs.html</anchorfile>
-      <anchor>a3a8b1403f9034aa88aad1ce2c733db60</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="typedef">
-      <type>global::Google.Protobuf.Collections</type>
-      <name>pbc</name>
-      <anchorfile>SolverParameters_8pb_8cs.html</anchorfile>
-      <anchor>acf353ca81053b715ef0a189df5a75499</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="typedef">
-      <type>global::Google.Protobuf.Reflection</type>
-      <name>pbr</name>
-      <anchorfile>SolverParameters_8pb_8cs.html</anchorfile>
-      <anchor>a4c9bca18934bf8b310b9d65812404c69</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="typedef">
-      <type>global::System.Collections.Generic</type>
-      <name>scg</name>
-      <anchorfile>SolverParameters_8pb_8cs.html</anchorfile>
-      <anchor>a6de48d7be2d1c733071a3f897657ee05</anchor>
-      <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="file">
-    <name>SymmetryBreaker.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>SymmetryBreaker_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::SymmetryBreaker</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>SymmetryBreakerVector.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>SymmetryBreakerVector_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::SymmetryBreakerVector</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::SymmetryBreakerVector::SymmetryBreakerVectorEnumerator</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>TypeIncompatibilityChecker.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>TypeIncompatibilityChecker_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::TypeIncompatibilityChecker</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>TypeRegulationsChecker.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>TypeRegulationsChecker_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::TypeRegulationsChecker</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>TypeRegulationsConstraint.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>TypeRegulationsConstraint_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::TypeRegulationsConstraint</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>TypeRequirementChecker.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>TypeRequirementChecker_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::TypeRequirementChecker</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>LinearSumAssignment.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/graph/</path>
-    <filename>LinearSumAssignment_8cs.html</filename>
-    <class kind="class">Google::OrTools::Graph::LinearSumAssignment</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::Graph</namespace>
-  </compound>
-  <compound kind="file">
-    <name>MaxFlow.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/graph/</path>
-    <filename>MaxFlow_8cs.html</filename>
-    <class kind="class">Google::OrTools::Graph::MaxFlow</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::Graph</namespace>
-  </compound>
-  <compound kind="file">
-    <name>MinCostFlow.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/graph/</path>
-    <filename>MinCostFlow_8cs.html</filename>
-    <class kind="class">Google::OrTools::Graph::MinCostFlow</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::Graph</namespace>
-  </compound>
-  <compound kind="file">
-    <name>MinCostFlowBase.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/graph/</path>
-    <filename>MinCostFlowBase_8cs.html</filename>
-    <class kind="class">Google::OrTools::Graph::MinCostFlowBase</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::Graph</namespace>
-  </compound>
-  <compound kind="file">
     <name>operations_research_graph.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/graph/</path>
-    <filename>operations__research__graph_8cs.html</filename>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/graph/</path>
+    <filename>operations__research__graph_8cs</filename>
     <class kind="class">Google::OrTools::Graph::operations_research_graph</class>
     <namespace>Google</namespace>
     <namespace>Google::OrTools</namespace>
@@ -1140,8 +1083,8 @@
   </compound>
   <compound kind="file">
     <name>operations_research_graphPINVOKE.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/graph/</path>
-    <filename>operations__research__graphPINVOKE_8cs.html</filename>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/graph/</path>
+    <filename>operations__research__graphPINVOKE_8cs</filename>
     <class kind="class">Google::OrTools::Graph::operations_research_graphPINVOKE</class>
     <class kind="class">Google::OrTools::Graph::operations_research_graphPINVOKE::SWIGExceptionHelper</class>
     <class kind="class">Google::OrTools::Graph::operations_research_graphPINVOKE::SWIGPendingException</class>
@@ -1151,27 +1094,9 @@
     <namespace>Google::OrTools::Graph</namespace>
   </compound>
   <compound kind="file">
-    <name>CppBridge.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/init/</path>
-    <filename>CppBridge_8cs.html</filename>
-    <class kind="class">Google::OrTools::Init::CppBridge</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::Init</namespace>
-  </compound>
-  <compound kind="file">
-    <name>CppFlags.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/init/</path>
-    <filename>CppFlags_8cs.html</filename>
-    <class kind="class">Google::OrTools::Init::CppFlags</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::Init</namespace>
-  </compound>
-  <compound kind="file">
     <name>operations_research_init.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/init/</path>
-    <filename>operations__research__init_8cs.html</filename>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/init/</path>
+    <filename>operations__research__init_8cs</filename>
     <class kind="class">Google::OrTools::Init::operations_research_init</class>
     <namespace>Google</namespace>
     <namespace>Google::OrTools</namespace>
@@ -1179,8 +1104,8 @@
   </compound>
   <compound kind="file">
     <name>operations_research_initPINVOKE.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/init/</path>
-    <filename>operations__research__initPINVOKE_8cs.html</filename>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/init/</path>
+    <filename>operations__research__initPINVOKE_8cs</filename>
     <class kind="class">Google::OrTools::Init::operations_research_initPINVOKE</class>
     <class kind="class">Google::OrTools::Init::operations_research_initPINVOKE::SWIGExceptionHelper</class>
     <class kind="class">Google::OrTools::Init::operations_research_initPINVOKE::SWIGPendingException</class>
@@ -1190,66 +1115,9 @@
     <namespace>Google::OrTools::Init</namespace>
   </compound>
   <compound kind="file">
-    <name>OrToolsVersion.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/init/</path>
-    <filename>OrToolsVersion_8cs.html</filename>
-    <class kind="class">Google::OrTools::Init::OrToolsVersion</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::Init</namespace>
-  </compound>
-  <compound kind="file">
-    <name>DoubleVector.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/linear_solver/</path>
-    <filename>DoubleVector_8cs.html</filename>
-    <class kind="class">Google::OrTools::LinearSolver::DoubleVector</class>
-    <class kind="class">Google::OrTools::LinearSolver::DoubleVector::DoubleVectorEnumerator</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::LinearSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>MPConstraintVector.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/linear_solver/</path>
-    <filename>MPConstraintVector_8cs.html</filename>
-    <class kind="class">Google::OrTools::LinearSolver::MPConstraintVector</class>
-    <class kind="class">Google::OrTools::LinearSolver::MPConstraintVector::MPConstraintVectorEnumerator</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::LinearSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>MPSolverParameters.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/linear_solver/</path>
-    <filename>MPSolverParameters_8cs.html</filename>
-    <class kind="class">Google::OrTools::LinearSolver::MPSolverParameters</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::LinearSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>MPVariableVector.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/linear_solver/</path>
-    <filename>MPVariableVector_8cs.html</filename>
-    <class kind="class">Google::OrTools::LinearSolver::MPVariableVector</class>
-    <class kind="class">Google::OrTools::LinearSolver::MPVariableVector::MPVariableVectorEnumerator</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::LinearSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>Objective.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/linear_solver/</path>
-    <filename>Objective_8cs.html</filename>
-    <class kind="class">Google::OrTools::LinearSolver::Objective</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::LinearSolver</namespace>
-  </compound>
-  <compound kind="file">
     <name>operations_research_linear_solver.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/linear_solver/</path>
-    <filename>operations__research__linear__solver_8cs.html</filename>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/linear_solver/</path>
+    <filename>operations__research__linear__solver_8cs</filename>
     <class kind="class">Google::OrTools::LinearSolver::operations_research_linear_solver</class>
     <namespace>Google</namespace>
     <namespace>Google::OrTools</namespace>
@@ -1257,8 +1125,8 @@
   </compound>
   <compound kind="file">
     <name>operations_research_linear_solverPINVOKE.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/linear_solver/</path>
-    <filename>operations__research__linear__solverPINVOKE_8cs.html</filename>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/linear_solver/</path>
+    <filename>operations__research__linear__solverPINVOKE_8cs</filename>
     <class kind="class">Google::OrTools::LinearSolver::operations_research_linear_solverPINVOKE</class>
     <class kind="class">Google::OrTools::LinearSolver::operations_research_linear_solverPINVOKE::SWIGExceptionHelper</class>
     <class kind="class">Google::OrTools::LinearSolver::operations_research_linear_solverPINVOKE::SWIGPendingException</class>
@@ -1268,116 +1136,9 @@
     <namespace>Google::OrTools::LinearSolver</namespace>
   </compound>
   <compound kind="file">
-    <name>Variable.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/linear_solver/</path>
-    <filename>Variable_8cs.html</filename>
-    <class kind="class">Google::OrTools::LinearSolver::Variable</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::LinearSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>CpModel.pb.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/sat/</path>
-    <filename>CpModel_8pb_8cs.html</filename>
-    <class kind="class">Google::OrTools::Sat::CpModelReflection</class>
-    <class kind="class">Google::OrTools::Sat::IntegerVariableProto</class>
-    <class kind="class">Google::OrTools::Sat::BoolArgumentProto</class>
-    <class kind="class">Google::OrTools::Sat::LinearExpressionProto</class>
-    <class kind="class">Google::OrTools::Sat::LinearArgumentProto</class>
-    <class kind="class">Google::OrTools::Sat::AllDifferentConstraintProto</class>
-    <class kind="class">Google::OrTools::Sat::LinearConstraintProto</class>
-    <class kind="class">Google::OrTools::Sat::ElementConstraintProto</class>
-    <class kind="class">Google::OrTools::Sat::IntervalConstraintProto</class>
-    <class kind="class">Google::OrTools::Sat::NoOverlapConstraintProto</class>
-    <class kind="class">Google::OrTools::Sat::NoOverlap2DConstraintProto</class>
-    <class kind="class">Google::OrTools::Sat::CumulativeConstraintProto</class>
-    <class kind="class">Google::OrTools::Sat::ReservoirConstraintProto</class>
-    <class kind="class">Google::OrTools::Sat::CircuitConstraintProto</class>
-    <class kind="class">Google::OrTools::Sat::RoutesConstraintProto</class>
-    <class kind="class">Google::OrTools::Sat::TableConstraintProto</class>
-    <class kind="class">Google::OrTools::Sat::InverseConstraintProto</class>
-    <class kind="class">Google::OrTools::Sat::AutomatonConstraintProto</class>
-    <class kind="class">Google::OrTools::Sat::ListOfVariablesProto</class>
-    <class kind="class">Google::OrTools::Sat::ConstraintProto</class>
-    <class kind="class">Google::OrTools::Sat::CpObjectiveProto</class>
-    <class kind="class">Google::OrTools::Sat::FloatObjectiveProto</class>
-    <class kind="class">Google::OrTools::Sat::DecisionStrategyProto</class>
-    <class kind="class">Google::OrTools::Sat::DecisionStrategyProto::Types</class>
-    <class kind="class">Google::OrTools::Sat::DecisionStrategyProto::Types::AffineTransformation</class>
-    <class kind="class">Google::OrTools::Sat::PartialVariableAssignment</class>
-    <class kind="class">Google::OrTools::Sat::SparsePermutationProto</class>
-    <class kind="class">Google::OrTools::Sat::DenseMatrixProto</class>
-    <class kind="class">Google::OrTools::Sat::SymmetryProto</class>
-    <class kind="class">Google::OrTools::Sat::CpModelProto</class>
-    <class kind="class">Google::OrTools::Sat::CpSolverSolution</class>
-    <class kind="class">Google::OrTools::Sat::CpSolverResponse</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::Sat</namespace>
-    <member kind="typedef">
-      <type>global::Google.Protobuf</type>
-      <name>pb</name>
-      <anchorfile>CpModel_8pb_8cs.html</anchorfile>
-      <anchor>a3a8b1403f9034aa88aad1ce2c733db60</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="typedef">
-      <type>global::Google.Protobuf.Collections</type>
-      <name>pbc</name>
-      <anchorfile>CpModel_8pb_8cs.html</anchorfile>
-      <anchor>acf353ca81053b715ef0a189df5a75499</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="typedef">
-      <type>global::Google.Protobuf.Reflection</type>
-      <name>pbr</name>
-      <anchorfile>CpModel_8pb_8cs.html</anchorfile>
-      <anchor>a4c9bca18934bf8b310b9d65812404c69</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="typedef">
-      <type>global::System.Collections.Generic</type>
-      <name>scg</name>
-      <anchorfile>CpModel_8pb_8cs.html</anchorfile>
-      <anchor>a6de48d7be2d1c733071a3f897657ee05</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumeration">
-      <type></type>
-      <name>CpSolverStatus</name>
-      <anchorfile>namespaceGoogle_1_1OrTools_1_1Sat.html</anchorfile>
-      <anchor>abd593c9e6d551c806d04abc386a505e8</anchor>
-      <arglist></arglist>
-      <enumvalue file="namespaceGoogle_1_1OrTools_1_1Sat.html" anchor="abd593c9e6d551c806d04abc386a505e8a88183b946cc5f0e8c96b2e66e1c74a7e">Unknown</enumvalue>
-      <enumvalue file="namespaceGoogle_1_1OrTools_1_1Sat.html" anchor="abd593c9e6d551c806d04abc386a505e8aa1cc2f9a5c97bd1133373ebbc79fd554">ModelInvalid</enumvalue>
-      <enumvalue file="namespaceGoogle_1_1OrTools_1_1Sat.html" anchor="abd593c9e6d551c806d04abc386a505e8a8d5e8c47cdc7636fcebc73dda4c595f7">Feasible</enumvalue>
-      <enumvalue file="namespaceGoogle_1_1OrTools_1_1Sat.html" anchor="abd593c9e6d551c806d04abc386a505e8a54def92f4c562f166a6abbcbceadeb46">Infeasible</enumvalue>
-      <enumvalue file="namespaceGoogle_1_1OrTools_1_1Sat.html" anchor="abd593c9e6d551c806d04abc386a505e8acb61fef1e5e79e07a80421cb9a073a80">Optimal</enumvalue>
-    </member>
-  </compound>
-  <compound kind="file">
-    <name>CpSatHelper.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/sat/</path>
-    <filename>CpSatHelper_8cs.html</filename>
-    <class kind="class">Google::OrTools::Sat::CpSatHelper</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::Sat</namespace>
-  </compound>
-  <compound kind="file">
-    <name>LogCallback.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/sat/</path>
-    <filename>LogCallback_8cs.html</filename>
-    <class kind="class">Google::OrTools::Sat::LogCallback</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::Sat</namespace>
-  </compound>
-  <compound kind="file">
     <name>operations_research_sat.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/sat/</path>
-    <filename>operations__research__sat_8cs.html</filename>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/sat/</path>
+    <filename>operations__research__sat_8cs</filename>
     <class kind="class">Google::OrTools::Sat::operations_research_sat</class>
     <namespace>Google</namespace>
     <namespace>Google::OrTools</namespace>
@@ -1385,8 +1146,8 @@
   </compound>
   <compound kind="file">
     <name>operations_research_satPINVOKE.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/sat/</path>
-    <filename>operations__research__satPINVOKE_8cs.html</filename>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/sat/</path>
+    <filename>operations__research__satPINVOKE_8cs</filename>
     <class kind="class">Google::OrTools::Sat::operations_research_satPINVOKE</class>
     <class kind="class">Google::OrTools::Sat::operations_research_satPINVOKE::SWIGExceptionHelper</class>
     <class kind="class">Google::OrTools::Sat::operations_research_satPINVOKE::SWIGPendingException</class>
@@ -1396,251 +1157,9 @@
     <namespace>Google::OrTools::Sat</namespace>
   </compound>
   <compound kind="file">
-    <name>SatParameters.pb.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/sat/</path>
-    <filename>SatParameters_8pb_8cs.html</filename>
-    <class kind="class">Google::OrTools::Sat::SatParametersReflection</class>
-    <class kind="class">Google::OrTools::Sat::SatParameters</class>
-    <class kind="class">Google::OrTools::Sat::SatParameters::Types</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::Sat</namespace>
-    <member kind="typedef">
-      <type>global::Google.Protobuf</type>
-      <name>pb</name>
-      <anchorfile>SatParameters_8pb_8cs.html</anchorfile>
-      <anchor>a3a8b1403f9034aa88aad1ce2c733db60</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="typedef">
-      <type>global::Google.Protobuf.Collections</type>
-      <name>pbc</name>
-      <anchorfile>SatParameters_8pb_8cs.html</anchorfile>
-      <anchor>acf353ca81053b715ef0a189df5a75499</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="typedef">
-      <type>global::Google.Protobuf.Reflection</type>
-      <name>pbr</name>
-      <anchorfile>SatParameters_8pb_8cs.html</anchorfile>
-      <anchor>a4c9bca18934bf8b310b9d65812404c69</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="typedef">
-      <type>global::System.Collections.Generic</type>
-      <name>scg</name>
-      <anchorfile>SatParameters_8pb_8cs.html</anchorfile>
-      <anchor>a6de48d7be2d1c733071a3f897657ee05</anchor>
-      <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="file">
-    <name>SolutionCallback.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/sat/</path>
-    <filename>SolutionCallback_8cs.html</filename>
-    <class kind="class">Google::OrTools::Sat::SolutionCallback</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::Sat</namespace>
-  </compound>
-  <compound kind="file">
-    <name>SolveWrapper.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/sat/</path>
-    <filename>SolveWrapper_8cs.html</filename>
-    <class kind="class">Google::OrTools::Sat::SolveWrapper</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::Sat</namespace>
-    <member kind="function">
-      <type>delegate void</type>
-      <name>StringToVoidDelegate</name>
-      <anchorfile>namespaceGoogle_1_1OrTools_1_1Sat.html</anchorfile>
-      <anchor>adc71c96c5becb4eba83715b1b4fd5a64</anchor>
-      <arglist>(string message)</arglist>
-    </member>
-  </compound>
-  <compound kind="file">
-    <name>constraint_solver/Domain.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>constraint__solver_2Domain_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::Domain</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>util/Domain.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/util/</path>
-    <filename>util_2Domain_8cs.html</filename>
-    <class kind="class">Google::OrTools::Util::Domain</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::Util</namespace>
-  </compound>
-  <compound kind="file">
-    <name>algorithms/Int64Vector.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/algorithms/</path>
-    <filename>algorithms_2Int64Vector_8cs.html</filename>
-    <class kind="class">Google::OrTools::Algorithms::Int64Vector</class>
-    <class kind="class">Google::OrTools::Algorithms::Int64Vector::Int64VectorEnumerator</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::Algorithms</namespace>
-  </compound>
-  <compound kind="file">
-    <name>constraint_solver/Int64Vector.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>constraint__solver_2Int64Vector_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::Int64Vector</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::Int64Vector::Int64VectorEnumerator</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>linear_solver/Int64Vector.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/linear_solver/</path>
-    <filename>linear__solver_2Int64Vector_8cs.html</filename>
-    <class kind="class">Google::OrTools::LinearSolver::Int64Vector</class>
-    <class kind="class">Google::OrTools::LinearSolver::Int64Vector::Int64VectorEnumerator</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::LinearSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>util/Int64Vector.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/util/</path>
-    <filename>util_2Int64Vector_8cs.html</filename>
-    <class kind="class">Google::OrTools::Util::Int64Vector</class>
-    <class kind="class">Google::OrTools::Util::Int64Vector::Int64VectorEnumerator</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::Util</namespace>
-  </compound>
-  <compound kind="file">
-    <name>algorithms/Int64VectorVector.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/algorithms/</path>
-    <filename>algorithms_2Int64VectorVector_8cs.html</filename>
-    <class kind="class">Google::OrTools::Algorithms::Int64VectorVector</class>
-    <class kind="class">Google::OrTools::Algorithms::Int64VectorVector::Int64VectorVectorEnumerator</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::Algorithms</namespace>
-  </compound>
-  <compound kind="file">
-    <name>constraint_solver/Int64VectorVector.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>constraint__solver_2Int64VectorVector_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::Int64VectorVector</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::Int64VectorVector::Int64VectorVectorEnumerator</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>linear_solver/Int64VectorVector.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/linear_solver/</path>
-    <filename>linear__solver_2Int64VectorVector_8cs.html</filename>
-    <class kind="class">Google::OrTools::LinearSolver::Int64VectorVector</class>
-    <class kind="class">Google::OrTools::LinearSolver::Int64VectorVector::Int64VectorVectorEnumerator</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::LinearSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>util/Int64VectorVector.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/util/</path>
-    <filename>util_2Int64VectorVector_8cs.html</filename>
-    <class kind="class">Google::OrTools::Util::Int64VectorVector</class>
-    <class kind="class">Google::OrTools::Util::Int64VectorVector::Int64VectorVectorEnumerator</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::Util</namespace>
-  </compound>
-  <compound kind="file">
-    <name>algorithms/IntVector.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/algorithms/</path>
-    <filename>algorithms_2IntVector_8cs.html</filename>
-    <class kind="class">Google::OrTools::Algorithms::IntVector</class>
-    <class kind="class">Google::OrTools::Algorithms::IntVector::IntVectorEnumerator</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::Algorithms</namespace>
-  </compound>
-  <compound kind="file">
-    <name>constraint_solver/IntVector.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>constraint__solver_2IntVector_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::IntVector</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::IntVector::IntVectorEnumerator</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>linear_solver/IntVector.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/linear_solver/</path>
-    <filename>linear__solver_2IntVector_8cs.html</filename>
-    <class kind="class">Google::OrTools::LinearSolver::IntVector</class>
-    <class kind="class">Google::OrTools::LinearSolver::IntVector::IntVectorEnumerator</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::LinearSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>util/IntVector.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/util/</path>
-    <filename>util_2IntVector_8cs.html</filename>
-    <class kind="class">Google::OrTools::Util::IntVector</class>
-    <class kind="class">Google::OrTools::Util::IntVector::IntVectorEnumerator</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::Util</namespace>
-  </compound>
-  <compound kind="file">
-    <name>algorithms/IntVectorVector.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/algorithms/</path>
-    <filename>algorithms_2IntVectorVector_8cs.html</filename>
-    <class kind="class">Google::OrTools::Algorithms::IntVectorVector</class>
-    <class kind="class">Google::OrTools::Algorithms::IntVectorVector::IntVectorVectorEnumerator</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::Algorithms</namespace>
-  </compound>
-  <compound kind="file">
-    <name>constraint_solver/IntVectorVector.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
-    <filename>constraint__solver_2IntVectorVector_8cs.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::IntVectorVector</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::IntVectorVector::IntVectorVectorEnumerator</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::ConstraintSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>linear_solver/IntVectorVector.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/linear_solver/</path>
-    <filename>linear__solver_2IntVectorVector_8cs.html</filename>
-    <class kind="class">Google::OrTools::LinearSolver::IntVectorVector</class>
-    <class kind="class">Google::OrTools::LinearSolver::IntVectorVector::IntVectorVectorEnumerator</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::LinearSolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>util/IntVectorVector.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/util/</path>
-    <filename>util_2IntVectorVector_8cs.html</filename>
-    <class kind="class">Google::OrTools::Util::IntVectorVector</class>
-    <class kind="class">Google::OrTools::Util::IntVectorVector::IntVectorVectorEnumerator</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::Util</namespace>
-  </compound>
-  <compound kind="file">
     <name>operations_research_util.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/util/</path>
-    <filename>operations__research__util_8cs.html</filename>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/util/</path>
+    <filename>operations__research__util_8cs</filename>
     <class kind="class">Google::OrTools::Util::operations_research_util</class>
     <namespace>Google</namespace>
     <namespace>Google::OrTools</namespace>
@@ -1648,8 +1167,8 @@
   </compound>
   <compound kind="file">
     <name>operations_research_utilPINVOKE.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/util/</path>
-    <filename>operations__research__utilPINVOKE_8cs.html</filename>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/util/</path>
+    <filename>operations__research__utilPINVOKE_8cs</filename>
     <class kind="class">Google::OrTools::Util::operations_research_utilPINVOKE</class>
     <class kind="class">Google::OrTools::Util::operations_research_utilPINVOKE::SWIGExceptionHelper</class>
     <class kind="class">Google::OrTools::Util::operations_research_utilPINVOKE::SWIGPendingException</class>
@@ -1659,9 +1178,18 @@
     <namespace>Google::OrTools::Util</namespace>
   </compound>
   <compound kind="file">
+    <name>OptimizeVar.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>OptimizeVar_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::OptimizeVar</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
     <name>OptionalBoolean.pb.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/util/</path>
-    <filename>OptionalBoolean_8pb_8cs.html</filename>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/util/</path>
+    <filename>OptionalBoolean_8pb_8cs</filename>
     <class kind="class">Google::OrTools::Util::OptionalBooleanReflection</class>
     <namespace>Google</namespace>
     <namespace>Google::OrTools</namespace>
@@ -1706,108 +1234,268 @@
     </member>
   </compound>
   <compound kind="file">
-    <name>LinearConstraint.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/linear_solver/csharp/</path>
-    <filename>LinearConstraint_8cs.html</filename>
-    <class kind="class">Google::OrTools::LinearSolver::LinearConstraint</class>
-    <class kind="class">Google::OrTools::LinearSolver::RangeConstraint</class>
-    <class kind="class">Google::OrTools::LinearSolver::Equality</class>
-    <class kind="class">Google::OrTools::LinearSolver::VarEquality</class>
-    <class kind="class">Google::OrTools::LinearSolver::MPConstraintVector</class>
+    <name>OrToolsVersion.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/init/</path>
+    <filename>OrToolsVersion_8cs</filename>
+    <class kind="class">Google::OrTools::Init::OrToolsVersion</class>
     <namespace>Google</namespace>
     <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::LinearSolver</namespace>
+    <namespace>Google::OrTools::Init</namespace>
   </compound>
   <compound kind="file">
-    <name>LinearExpr.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/linear_solver/csharp/</path>
-    <filename>LinearExpr_8cs.html</filename>
-    <class kind="class">Google::OrTools::LinearSolver::LinearExpr</class>
-    <class kind="class">Google::OrTools::LinearSolver::LinearExprArrayHelper</class>
-    <class kind="class">Google::OrTools::LinearSolver::ProductCst</class>
-    <class kind="class">Google::OrTools::LinearSolver::SumCst</class>
-    <class kind="class">Google::OrTools::LinearSolver::VarWrapper</class>
-    <class kind="class">Google::OrTools::LinearSolver::Sum</class>
-    <class kind="class">Google::OrTools::LinearSolver::SumArray</class>
-    <class kind="class">Google::OrTools::LinearSolver::SumVarArray</class>
+    <name>Pack.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>Pack_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::Pack</class>
     <namespace>Google</namespace>
     <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::LinearSolver</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
   </compound>
   <compound kind="file">
-    <name>VariableHelper.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/linear_solver/csharp/</path>
-    <filename>VariableHelper_8cs.html</filename>
-    <class kind="class">Google::OrTools::LinearSolver::Variable</class>
-    <class kind="class">Google::OrTools::LinearSolver::MPVariableVector</class>
+    <name>PathOperator.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>PathOperator_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::PathOperator</class>
     <namespace>Google</namespace>
     <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::LinearSolver</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
   </compound>
   <compound kind="file">
-    <name>Constraints.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/sat/csharp/</path>
-    <filename>Constraints_8cs.html</filename>
-    <class kind="class">Google::OrTools::Sat::Constraint</class>
-    <class kind="class">Google::OrTools::Sat::CircuitConstraint</class>
-    <class kind="class">Google::OrTools::Sat::MultipleCircuitConstraint</class>
-    <class kind="class">Google::OrTools::Sat::TableConstraint</class>
-    <class kind="class">Google::OrTools::Sat::AutomatonConstraint</class>
-    <class kind="class">Google::OrTools::Sat::ReservoirConstraint</class>
-    <class kind="class">Google::OrTools::Sat::CumulativeConstraint</class>
-    <class kind="class">Google::OrTools::Sat::NoOverlap2dConstraint</class>
+    <name>Program.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/dotnet/CreateSigningKey/</path>
+    <filename>Program_8cs</filename>
+    <class kind="class">CreateSigningKey::Program</class>
+    <namespace>CreateSigningKey</namespace>
+  </compound>
+  <compound kind="file">
+    <name>PropagationBaseObject.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>PropagationBaseObject_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::PropagationBaseObject</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>PropagationMonitor.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>PropagationMonitor_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::PropagationMonitor</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>ProtoHelper.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/util/csharp/</path>
+    <filename>ProtoHelper_8cs</filename>
+    <class kind="class">Google::OrTools::ProtoHelper</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+  </compound>
+  <compound kind="file">
+    <name>RegularLimit.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>RegularLimit_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::RegularLimit</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>RevBool.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>RevBool_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::RevBool</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>RevInteger.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>RevInteger_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::RevInteger</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>RevPartialSequence.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>RevPartialSequence_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::RevPartialSequence</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>RoutingDimension.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>RoutingDimension_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::RoutingDimension</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>RoutingEnums.pb.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>RoutingEnums_8pb_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::RoutingEnumsReflection</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::FirstSolutionStrategy</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::FirstSolutionStrategy::Types</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::LocalSearchMetaheuristic</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::LocalSearchMetaheuristic::Types</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+    <member kind="typedef">
+      <type>global::Google.Protobuf</type>
+      <name>pb</name>
+      <anchorfile>RoutingEnums_8pb_8cs.html</anchorfile>
+      <anchor>a3a8b1403f9034aa88aad1ce2c733db60</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>global::Google.Protobuf.Collections</type>
+      <name>pbc</name>
+      <anchorfile>RoutingEnums_8pb_8cs.html</anchorfile>
+      <anchor>acf353ca81053b715ef0a189df5a75499</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>global::Google.Protobuf.Reflection</type>
+      <name>pbr</name>
+      <anchorfile>RoutingEnums_8pb_8cs.html</anchorfile>
+      <anchor>a4c9bca18934bf8b310b9d65812404c69</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>global::System.Collections.Generic</type>
+      <name>scg</name>
+      <anchorfile>RoutingEnums_8pb_8cs.html</anchorfile>
+      <anchor>a6de48d7be2d1c733071a3f897657ee05</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="file">
+    <name>RoutingIndexManager.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>RoutingIndexManager_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::RoutingIndexManager</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>RoutingModel.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>RoutingModel_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::RoutingModel</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::RoutingModel::VehicleTypeContainer</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::RoutingModel::VehicleTypeContainer::VehicleClassEntry</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::RoutingModel::ResourceGroup</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::RoutingModel::ResourceGroup::Attributes</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::RoutingModel::ResourceGroup::Resource</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>RoutingModelVisitor.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>RoutingModelVisitor_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::RoutingModelVisitor</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>RoutingParameters.pb.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>RoutingParameters_8pb_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::RoutingParametersReflection</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::RoutingSearchParameters</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::RoutingSearchParameters::Types</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::RoutingSearchParameters::Types::LocalSearchNeighborhoodOperators</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::RoutingSearchParameters::Types::ImprovementSearchLimitParameters</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::RoutingModelParameters</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+    <member kind="typedef">
+      <type>global::Google.Protobuf</type>
+      <name>pb</name>
+      <anchorfile>RoutingParameters_8pb_8cs.html</anchorfile>
+      <anchor>a3a8b1403f9034aa88aad1ce2c733db60</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>global::Google.Protobuf.Collections</type>
+      <name>pbc</name>
+      <anchorfile>RoutingParameters_8pb_8cs.html</anchorfile>
+      <anchor>acf353ca81053b715ef0a189df5a75499</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>global::Google.Protobuf.Reflection</type>
+      <name>pbr</name>
+      <anchorfile>RoutingParameters_8pb_8cs.html</anchorfile>
+      <anchor>a4c9bca18934bf8b310b9d65812404c69</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>global::System.Collections.Generic</type>
+      <name>scg</name>
+      <anchorfile>RoutingParameters_8pb_8cs.html</anchorfile>
+      <anchor>a6de48d7be2d1c733071a3f897657ee05</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="file">
+    <name>SatParameters.pb.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/sat/</path>
+    <filename>SatParameters_8pb_8cs</filename>
+    <class kind="class">Google::OrTools::Sat::SatParametersReflection</class>
+    <class kind="class">Google::OrTools::Sat::SatParameters</class>
+    <class kind="class">Google::OrTools::Sat::SatParameters::Types</class>
     <namespace>Google</namespace>
     <namespace>Google::OrTools</namespace>
     <namespace>Google::OrTools::Sat</namespace>
-  </compound>
-  <compound kind="file">
-    <name>CpModel.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/sat/csharp/</path>
-    <filename>CpModel_8cs.html</filename>
-    <class kind="class">Google::OrTools::Sat::CpModel</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::Sat</namespace>
-  </compound>
-  <compound kind="file">
-    <name>CpSolver.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/sat/csharp/</path>
-    <filename>CpSolver_8cs.html</filename>
-    <class kind="class">Google::OrTools::Sat::CpSolver</class>
-    <class kind="class">Google::OrTools::Sat::LogCallbackDelegate</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::Sat</namespace>
-  </compound>
-  <compound kind="file">
-    <name>IntegerExpressions.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/sat/csharp/</path>
-    <filename>IntegerExpressions_8cs.html</filename>
-    <class kind="interface">Google::OrTools::Sat::ILiteral</class>
-    <class kind="struct">Google::OrTools::Sat::Term</class>
-    <class kind="class">Google::OrTools::Sat::LinearExpr</class>
-    <class kind="class">Google::OrTools::Sat::LinearExprBuilder</class>
-    <class kind="class">Google::OrTools::Sat::IntVar</class>
-    <class kind="class">Google::OrTools::Sat::BoolVar</class>
-    <class kind="class">Google::OrTools::Sat::NotBoolVar</class>
-    <class kind="class">Google::OrTools::Sat::BoundedLinearExpression</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::Sat</namespace>
-  </compound>
-  <compound kind="file">
-    <name>IntervalVariables.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/sat/csharp/</path>
-    <filename>IntervalVariables_8cs.html</filename>
-    <class kind="class">Google::OrTools::Sat::IntervalVar</class>
-    <namespace>Google</namespace>
-    <namespace>Google::OrTools</namespace>
-    <namespace>Google::OrTools::Sat</namespace>
+    <member kind="typedef">
+      <type>global::Google.Protobuf</type>
+      <name>pb</name>
+      <anchorfile>SatParameters_8pb_8cs.html</anchorfile>
+      <anchor>a3a8b1403f9034aa88aad1ce2c733db60</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>global::Google.Protobuf.Collections</type>
+      <name>pbc</name>
+      <anchorfile>SatParameters_8pb_8cs.html</anchorfile>
+      <anchor>acf353ca81053b715ef0a189df5a75499</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>global::Google.Protobuf.Reflection</type>
+      <name>pbr</name>
+      <anchorfile>SatParameters_8pb_8cs.html</anchorfile>
+      <anchor>a4c9bca18934bf8b310b9d65812404c69</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>global::System.Collections.Generic</type>
+      <name>scg</name>
+      <anchorfile>SatParameters_8pb_8cs.html</anchorfile>
+      <anchor>a6de48d7be2d1c733071a3f897657ee05</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="file">
     <name>SearchHelpers.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/sat/csharp/</path>
-    <filename>SearchHelpers_8cs.html</filename>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/sat/csharp/</path>
+    <filename>SearchHelpers_8cs</filename>
     <class kind="class">Google::OrTools::Sat::CpSolverSolutionCallback</class>
     <class kind="class">Google::OrTools::Sat::ObjectiveSolutionPrinter</class>
     <namespace>Google</namespace>
@@ -1815,20 +1503,333 @@
     <namespace>Google::OrTools::Sat</namespace>
   </compound>
   <compound kind="file">
-    <name>NestedArrayHelper.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/util/csharp/</path>
-    <filename>NestedArrayHelper_8cs.html</filename>
-    <class kind="class">Google::OrTools::NestedArrayHelper</class>
+    <name>SearchLimit.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>SearchLimit_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::SearchLimit</class>
     <namespace>Google</namespace>
     <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
   </compound>
   <compound kind="file">
-    <name>ProtoHelper.cs</name>
-    <path>/Users/lperron/Work/or-tools/ortools/util/csharp/</path>
-    <filename>ProtoHelper_8cs.html</filename>
-    <class kind="class">Google::OrTools::ProtoHelper</class>
+    <name>SearchLimit.pb.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>SearchLimit_8pb_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::SearchLimitReflection</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::RegularLimitParameters</class>
     <namespace>Google</namespace>
     <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+    <member kind="typedef">
+      <type>global::Google.Protobuf</type>
+      <name>pb</name>
+      <anchorfile>SearchLimit_8pb_8cs.html</anchorfile>
+      <anchor>a3a8b1403f9034aa88aad1ce2c733db60</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>global::Google.Protobuf.Collections</type>
+      <name>pbc</name>
+      <anchorfile>SearchLimit_8pb_8cs.html</anchorfile>
+      <anchor>acf353ca81053b715ef0a189df5a75499</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>global::Google.Protobuf.Reflection</type>
+      <name>pbr</name>
+      <anchorfile>SearchLimit_8pb_8cs.html</anchorfile>
+      <anchor>a4c9bca18934bf8b310b9d65812404c69</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>global::System.Collections.Generic</type>
+      <name>scg</name>
+      <anchorfile>SearchLimit_8pb_8cs.html</anchorfile>
+      <anchor>a6de48d7be2d1c733071a3f897657ee05</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="file">
+    <name>SearchLog.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>SearchLog_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::SearchLog</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>SearchMonitor.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>SearchMonitor_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::SearchMonitor</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>SearchMonitorVector.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>SearchMonitorVector_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::SearchMonitorVector</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::SearchMonitorVector::SearchMonitorVectorEnumerator</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>SequenceVar.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>SequenceVar_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::SequenceVar</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>SequenceVarElement.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>SequenceVarElement_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::SequenceVarElement</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>SequenceVarLocalSearchOperator.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>SequenceVarLocalSearchOperator_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::SequenceVarLocalSearchOperator</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>SequenceVarLocalSearchOperatorTemplate.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>SequenceVarLocalSearchOperatorTemplate_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::SequenceVarLocalSearchOperatorTemplate</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>SequenceVarVector.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>SequenceVarVector_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::SequenceVarVector</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::SequenceVarVector::SequenceVarVectorEnumerator</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>SolutionCallback.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/sat/</path>
+    <filename>SolutionCallback_8cs</filename>
+    <class kind="class">Google::OrTools::Sat::SolutionCallback</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::Sat</namespace>
+  </compound>
+  <compound kind="file">
+    <name>SolutionCollector.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>SolutionCollector_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::SolutionCollector</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>SolutionPool.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>SolutionPool_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::SolutionPool</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>constraint_solver/Solver.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>constraint__solver_2Solver_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::Solver</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::Solver::IntegerCastInfo</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>linear_solver/Solver.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/linear_solver/</path>
+    <filename>linear__solver_2Solver_8cs</filename>
+    <class kind="class">Google::OrTools::LinearSolver::Solver</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::LinearSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>constraint_solver/csharp/SolverHelper.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/constraint_solver/csharp/</path>
+    <filename>constraint__solver_2csharp_2SolverHelper_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::Solver</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::IntExpr</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::Constraint</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>linear_solver/csharp/SolverHelper.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/linear_solver/csharp/</path>
+    <filename>linear__solver_2csharp_2SolverHelper_8cs</filename>
+    <class kind="class">Google::OrTools::LinearSolver::Solver</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::LinearSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>SolverParameters.pb.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>SolverParameters_8pb_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::SolverParametersReflection</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::ConstraintSolverParameters</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::ConstraintSolverParameters::Types</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+    <member kind="typedef">
+      <type>global::Google.Protobuf</type>
+      <name>pb</name>
+      <anchorfile>SolverParameters_8pb_8cs.html</anchorfile>
+      <anchor>a3a8b1403f9034aa88aad1ce2c733db60</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>global::Google.Protobuf.Collections</type>
+      <name>pbc</name>
+      <anchorfile>SolverParameters_8pb_8cs.html</anchorfile>
+      <anchor>acf353ca81053b715ef0a189df5a75499</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>global::Google.Protobuf.Reflection</type>
+      <name>pbr</name>
+      <anchorfile>SolverParameters_8pb_8cs.html</anchorfile>
+      <anchor>a4c9bca18934bf8b310b9d65812404c69</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>global::System.Collections.Generic</type>
+      <name>scg</name>
+      <anchorfile>SolverParameters_8pb_8cs.html</anchorfile>
+      <anchor>a6de48d7be2d1c733071a3f897657ee05</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="file">
+    <name>SolveWrapper.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/sat/</path>
+    <filename>SolveWrapper_8cs</filename>
+    <class kind="class">Google::OrTools::Sat::SolveWrapper</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::Sat</namespace>
+    <member kind="function">
+      <type>delegate void</type>
+      <name>StringToVoidDelegate</name>
+      <anchorfile>namespaceGoogle_1_1OrTools_1_1Sat.html</anchorfile>
+      <anchor>adc71c96c5becb4eba83715b1b4fd5a64</anchor>
+      <arglist>(string message)</arglist>
+    </member>
+  </compound>
+  <compound kind="file">
+    <name>SymmetryBreaker.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>SymmetryBreaker_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::SymmetryBreaker</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>SymmetryBreakerVector.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>SymmetryBreakerVector_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::SymmetryBreakerVector</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::SymmetryBreakerVector::SymmetryBreakerVectorEnumerator</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>TypeIncompatibilityChecker.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>TypeIncompatibilityChecker_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::TypeIncompatibilityChecker</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>TypeRegulationsChecker.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>TypeRegulationsChecker_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::TypeRegulationsChecker</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>TypeRegulationsConstraint.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>TypeRegulationsConstraint_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::TypeRegulationsConstraint</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>TypeRequirementChecker.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/constraint_solver/</path>
+    <filename>TypeRequirementChecker_8cs</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::TypeRequirementChecker</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>ValCstPair.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/constraint_solver/csharp/</path>
+    <filename>ValCstPair_8cs</filename>
+    <class kind="interface">Google::OrTools::ConstraintSolver::IConstraintWithStatus</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::BaseEquality</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::WrappedConstraint</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::IntExprEquality</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::ConstraintEquality</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::ConstraintSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>Variable.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/linear_solver/</path>
+    <filename>Variable_8cs</filename>
+    <class kind="class">Google::OrTools::LinearSolver::Variable</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::LinearSolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>VariableHelper.cs</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/linear_solver/csharp/</path>
+    <filename>VariableHelper_8cs</filename>
+    <class kind="class">Google::OrTools::LinearSolver::Variable</class>
+    <class kind="class">Google::OrTools::LinearSolver::MPVariableVector</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::LinearSolver</namespace>
   </compound>
   <compound kind="class">
     <name>Google::OrTools::Sat::DecisionStrategyProto::Types::AffineTransformation</name>
@@ -1910,21 +1911,21 @@
       <anchor>a67eef3374888e85bdb523ae39a13e2ac</anchor>
       <arglist>(pb::CodedInputStream input)</arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>IndexFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types_1_1AffineTransformation.html</anchorfile>
       <anchor>a1cf9ee00ed574678bb2dca73a4b7d0bf</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>OffsetFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types_1_1AffineTransformation.html</anchorfile>
       <anchor>a12f0687287af579e61b58dff9a12bb94</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>PositiveCoeffFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types_1_1AffineTransformation.html</anchorfile>
@@ -2047,7 +2048,7 @@
       <anchor>a67eef3374888e85bdb523ae39a13e2ac</anchor>
       <arglist>(pb::CodedInputStream input)</arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>ExprsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1AllDifferentConstraintProto.html</anchorfile>
@@ -2550,24 +2551,24 @@
       <arglist>(SequenceVar var)</arglist>
     </member>
     <member kind="function">
-      <type>int[]</type>
+      <type>int []</type>
       <name>ForwardSequence</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Assignment.html</anchorfile>
-      <anchor>a6648a478b6ab5a28e885f061ec9e2b3d</anchor>
+      <anchor>afa335829413076bec63721012a68aff7</anchor>
       <arglist>(SequenceVar var)</arglist>
     </member>
     <member kind="function">
-      <type>int[]</type>
+      <type>int []</type>
       <name>BackwardSequence</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Assignment.html</anchorfile>
-      <anchor>a3ecd4017df326d83ba682fafe6f8e467</anchor>
+      <anchor>a9b4760f2df5ec77c24b26e0f4befd461</anchor>
       <arglist>(SequenceVar var)</arglist>
     </member>
     <member kind="function">
-      <type>int[]</type>
+      <type>int []</type>
       <name>Unperformed</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Assignment.html</anchorfile>
-      <anchor>a1397701eaeb4c2e9fbbb170e6a1fcdfd</anchor>
+      <anchor>a0e654b857c6edaf1e2c87030ac45617a</anchor>
       <arglist>(SequenceVar var)</arglist>
     </member>
     <member kind="function">
@@ -3516,42 +3517,42 @@
       <anchor>a67eef3374888e85bdb523ae39a13e2ac</anchor>
       <arglist>(pb::CodedInputStream input)</arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>StartingStateFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1AutomatonConstraintProto.html</anchorfile>
       <anchor>a21618262d8bbcca3f2bfc3a4fa474181</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>FinalStatesFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1AutomatonConstraintProto.html</anchorfile>
       <anchor>aae99ac76499416ea50ea2e4e171af868</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>TransitionTailFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1AutomatonConstraintProto.html</anchorfile>
       <anchor>a29537ac7b72ba684f770fcb5792dc19e</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>TransitionHeadFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1AutomatonConstraintProto.html</anchorfile>
       <anchor>a4d53f3cdf023917a671e40482ca5510b</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>TransitionLabelFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1AutomatonConstraintProto.html</anchorfile>
       <anchor>afa6f9c069cd087a4731d12264dae3a38</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>VarsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1AutomatonConstraintProto.html</anchorfile>
@@ -3670,44 +3671,44 @@
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html</anchorfile>
-      <anchor>a0e0e06938bef414a9aec4fc74c53a087</anchor>
+      <anchor>a1e9e7690ae529ae3fa6111d2ef9188fe</anchor>
       <arglist>(BaseEquality a, BaseEquality b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html</anchorfile>
-      <anchor>abbf98b0988fce8a27370dc48c9a68ef2</anchor>
+      <anchor>a2981e6efdc44011c7ce8785cedeb6812</anchor>
       <arglist>(BaseEquality a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html</anchorfile>
-      <anchor>acf5f3a3fc254ad4d6cca03862c774b6f</anchor>
+      <anchor>a0d7c1da056b5c333e710b5888a91cbb8</anchor>
       <arglist>(long v, BaseEquality a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html</anchorfile>
-      <anchor>a148df138f6aea988b6a249b9e5b3dc7e</anchor>
+      <anchor>a07fb94091b6bf5bc57ce0b7c3c1e5b1c</anchor>
       <arglist>(BaseEquality a, BaseEquality b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html</anchorfile>
-      <anchor>acf99575703d76316eaecd2ad2373648e</anchor>
+      <anchor>a569aabaa30ef6c169733e777da973793</anchor>
       <arglist>(BaseEquality a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html</anchorfile>
-      <anchor>a95fba945abcbd181d8b8a646d5e3bc2c</anchor>
+      <anchor>a6d5bb384f2cd17517bb3e29abc6d8f97</anchor>
       <arglist>(long v, BaseEquality a)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -3719,9 +3720,9 @@
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html</anchorfile>
-      <anchor>a82a4dfab5c2fd36752f3bc36078e961f</anchor>
+      <anchor>a4f1aec22b07c58354c8b84fa153fec2c</anchor>
       <arglist>(BaseEquality a)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -3740,30 +3741,30 @@
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html</anchorfile>
-      <anchor>a1d0f2204bb12fe53bbf9d3259194e193</anchor>
+      <anchor>a3ded344d26209f60e212d22ddd5294cc</anchor>
       <arglist>(BaseEquality a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html</anchorfile>
-      <anchor>a61a91223214df387a58ca31ae428bf09</anchor>
+      <anchor>a050a0f9faf28fe0e6b32d58b3b1350d9</anchor>
       <arglist>(long v, BaseEquality a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html</anchorfile>
-      <anchor>adc7db138385e0cd872db06d561f40a4b</anchor>
+      <anchor>afaeb0aeebe0319c03a41da6e2ab429ae</anchor>
       <arglist>(BaseEquality a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html</anchorfile>
-      <anchor>ae3d4e559e8ad54d5839169fd8d6706ec</anchor>
+      <anchor>a9323d30eb45c0f150b98387e52e6cba1</anchor>
       <arglist>(long v, BaseEquality a)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -3810,9 +3811,9 @@
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html</anchorfile>
-      <anchor>a752dd00e581a517f21015e4bd0386ec9</anchor>
+      <anchor>a3a3acc39a58e38525e522045fa85572c</anchor>
       <arglist>(BaseEquality a, BaseEquality b)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -3845,9 +3846,9 @@
     </member>
     <member kind="function" static="yes">
       <type>static ConstraintEquality</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html</anchorfile>
-      <anchor>af9d17bfc39833f13248c13dbd086d1f9</anchor>
+      <anchor>a8026d2d8461621d54bcc5c7d98546b4d</anchor>
       <arglist>(BaseEquality a, BaseEquality b)</arglist>
     </member>
   </compound>
@@ -3922,8 +3923,8 @@
       <type>virtual void</type>
       <name>Range</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>a3961fbda887e5f284a4fe7bca77bcfd6</anchor>
-      <arglist>(out long l, out long u)</arglist>
+      <anchor>aa445be31190760ad747beef97d859066</anchor>
+      <arglist>(out int l, out int u)</arglist>
     </member>
     <member kind="function" virtualness="virtual">
       <type>virtual void</type>
@@ -4235,51 +4236,51 @@
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>a6fbd3329dde0c841750d236f873a0de6</anchor>
+      <anchor>a89868c72ebbfd2d207e6504eb297acad</anchor>
       <arglist>(IntExpr a, IntExpr b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>ad1b5d5c18624d8e8dc593444d53aa0d6</anchor>
+      <anchor>a2e43f33e8ea8c8d10278af7c8a0c5b6e</anchor>
       <arglist>(IntExpr a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>a30975d1b3a4a12d649a144a09a099f66</anchor>
+      <anchor>ae1722d63837d0f0c26b86aa91ab99013</anchor>
       <arglist>(long v, IntExpr a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>ab95b83abb0f63e1bf6d5b882ec07b9be</anchor>
+      <anchor>aadecd477cbdb5a12a370ddfdf2091188</anchor>
       <arglist>(IntExpr a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>a3fbafcc6a6bb5ff137c256673905a5df</anchor>
+      <anchor>a3dfaa09986e064ad6f4a202374c563c9</anchor>
       <arglist>(IntExpr a, IntExpr b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>a88298c7b99bc18247ee13890f7501de1</anchor>
+      <anchor>a439b193f98ee4f7975ec2ba248b04125</anchor>
       <arglist>(IntExpr a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>a00cb062e053684dc4d306e58afff7bd3</anchor>
+      <anchor>a731b50dfc2d422a8b7591e495638bc36</anchor>
       <arglist>(long v, IntExpr a)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -4291,9 +4292,9 @@
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator%</name>
+      <name>operator %</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>a67ba73b346b6d6cd54f849ba33ddca0d</anchor>
+      <anchor>add4af2abf4931c52426112d27955e3ce</anchor>
       <arglist>(IntExpr a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -4312,30 +4313,30 @@
     </member>
     <member kind="function" static="yes">
       <type>static IntExprEquality</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>a77d645a37c2b5aa317600025db4faaf0</anchor>
+      <anchor>a31280487f5ffa19fed90072263f7180f</anchor>
       <arglist>(IntExpr a, IntExpr b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>a0f3e81581ed5684569ed00e7b7ec4cbc</anchor>
+      <anchor>ab45bea6a43e490ebbcbc0b139dbf6bc1</anchor>
       <arglist>(IntExpr a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>a294803e69e08cfe99cc45c93ddc8e7b2</anchor>
+      <anchor>a93ac1977ffcd5ef960d1c33749e015bf</anchor>
       <arglist>(IntExpr a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>a1bc11ad3791245aca9fa33a3d0880b09</anchor>
+      <anchor>a7834fb100482e4382ce69499166f5b52</anchor>
       <arglist>(IntExpr a, IntExpr b)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -4841,7 +4842,7 @@
       <anchor>a67eef3374888e85bdb523ae39a13e2ac</anchor>
       <arglist>(pb::CodedInputStream input)</arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>LiteralsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1BoolArgumentProto.html</anchorfile>
@@ -5172,8 +5173,8 @@
       <type>virtual void</type>
       <name>Range</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>a3961fbda887e5f284a4fe7bca77bcfd6</anchor>
-      <arglist>(out long l, out long u)</arglist>
+      <anchor>aa445be31190760ad747beef97d859066</anchor>
+      <arglist>(out int l, out int u)</arglist>
     </member>
     <member kind="function" virtualness="virtual">
       <type>virtual void</type>
@@ -5380,51 +5381,51 @@
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>a6fbd3329dde0c841750d236f873a0de6</anchor>
+      <anchor>a89868c72ebbfd2d207e6504eb297acad</anchor>
       <arglist>(IntExpr a, IntExpr b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>ad1b5d5c18624d8e8dc593444d53aa0d6</anchor>
+      <anchor>a2e43f33e8ea8c8d10278af7c8a0c5b6e</anchor>
       <arglist>(IntExpr a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>a30975d1b3a4a12d649a144a09a099f66</anchor>
+      <anchor>ae1722d63837d0f0c26b86aa91ab99013</anchor>
       <arglist>(long v, IntExpr a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>ab95b83abb0f63e1bf6d5b882ec07b9be</anchor>
+      <anchor>aadecd477cbdb5a12a370ddfdf2091188</anchor>
       <arglist>(IntExpr a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>a3fbafcc6a6bb5ff137c256673905a5df</anchor>
+      <anchor>a3dfaa09986e064ad6f4a202374c563c9</anchor>
       <arglist>(IntExpr a, IntExpr b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>a88298c7b99bc18247ee13890f7501de1</anchor>
+      <anchor>a439b193f98ee4f7975ec2ba248b04125</anchor>
       <arglist>(IntExpr a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>a00cb062e053684dc4d306e58afff7bd3</anchor>
+      <anchor>a731b50dfc2d422a8b7591e495638bc36</anchor>
       <arglist>(long v, IntExpr a)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -5436,9 +5437,9 @@
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator%</name>
+      <name>operator %</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>a67ba73b346b6d6cd54f849ba33ddca0d</anchor>
+      <anchor>add4af2abf4931c52426112d27955e3ce</anchor>
       <arglist>(IntExpr a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -5457,30 +5458,30 @@
     </member>
     <member kind="function" static="yes">
       <type>static IntExprEquality</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>a77d645a37c2b5aa317600025db4faaf0</anchor>
+      <anchor>a31280487f5ffa19fed90072263f7180f</anchor>
       <arglist>(IntExpr a, IntExpr b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>a0f3e81581ed5684569ed00e7b7ec4cbc</anchor>
+      <anchor>ab45bea6a43e490ebbcbc0b139dbf6bc1</anchor>
       <arglist>(IntExpr a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>a294803e69e08cfe99cc45c93ddc8e7b2</anchor>
+      <anchor>a93ac1977ffcd5ef960d1c33749e015bf</anchor>
       <arglist>(IntExpr a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>a1bc11ad3791245aca9fa33a3d0880b09</anchor>
+      <anchor>a7834fb100482e4382ce69499166f5b52</anchor>
       <arglist>(IntExpr a, IntExpr b)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -5750,44 +5751,44 @@
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>ae10ffffedef48bf520a489f2612cbba5</anchor>
+      <anchor>a6f2fb85a2e5a469df5f3105fab0efef1</anchor>
       <arglist>(LinearExpr a, LinearExpr b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a17c8f730846d3c1f6f60f63b3001f6da</anchor>
+      <anchor>a89d513f85640324ec27c1f420dafb1c9</anchor>
       <arglist>(LinearExpr a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a8ecc4393656acfe383e7df621f54d275</anchor>
+      <anchor>a7c833ed5867d734e99c1c12698842350</anchor>
       <arglist>(long v, LinearExpr a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a532c2d44559645b8247bd747f7ff9035</anchor>
+      <anchor>aee57ed93140d54a69f346e9036a29787</anchor>
       <arglist>(LinearExpr a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a1e12fe9fe4168c5f6eae3de78c1dafae</anchor>
+      <anchor>a7d301dbed96e58c91c07a62925f5b4ff</anchor>
       <arglist>(LinearExpr a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a13edcfdb0419c8f3ac7fb81141f31de1</anchor>
+      <anchor>a6809df149a670aac1b539f9fff8179d7</anchor>
       <arglist>(long v, LinearExpr a)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -5806,37 +5807,37 @@
     </member>
     <member kind="function" static="yes">
       <type>static BoundedLinearExpression</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>ad84654155044b33c43239a95578da09d</anchor>
+      <anchor>a3d67398a321381867ab429e1c5021406</anchor>
       <arglist>(LinearExpr a, LinearExpr b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static BoundedLinearExpression</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>abb7c3c009f29584a7cfb865819bc8c97</anchor>
+      <anchor>a11ef43d386f627fcefce4df72ddced11</anchor>
       <arglist>(LinearExpr a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static BoundedLinearExpression</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a46f9da7b0cb2d72fafaa079ddf9f50c8</anchor>
+      <anchor>a0d57d59d2e14c8f2911af5050c5468f7</anchor>
       <arglist>(LinearExpr a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static BoundedLinearExpression</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a25d51806de41e128eace638e82a54715</anchor>
+      <anchor>aaae9f1192b17faddce8c9a7ef45593db</anchor>
       <arglist>(long v, LinearExpr a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static BoundedLinearExpression</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>abbae92c434e1bf30a9f20a38846858b6</anchor>
+      <anchor>a4a581963c24e8544acf3447e4563a1dd</anchor>
       <arglist>(LinearExpr a, LinearExpr b)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -6032,9 +6033,9 @@
     </member>
     <member kind="function" static="yes">
       <type>static BoundedLinearExpression</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1BoundedLinearExpression.html</anchorfile>
-      <anchor>aef12235d19368ac75deb93373c7507a8</anchor>
+      <anchor>aae452668988a55d7ee8ee41b0a0aa91a</anchor>
       <arglist>(BoundedLinearExpression a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -6310,51 +6311,51 @@
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>aa2c1764ab50332bd00750395d7fe005d</anchor>
+      <anchor>abecdcc8d8af528ebfa18a2040752302f</anchor>
       <arglist>(Constraint a, Constraint b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a8d9c7e7b51047c7db785cb28c5ac2ee5</anchor>
+      <anchor>a54e0abb69270881eb908a546d6d5d9ee</anchor>
       <arglist>(Constraint a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a1e322c1cf071bc63f1a57e49b39c2513</anchor>
+      <anchor>a653d1cc7abbdea943d8f66ba7d368609</anchor>
       <arglist>(long v, Constraint a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a11dca67868602a4f4de7ed771a30ceab</anchor>
+      <anchor>af699870283706fc529d1dd0977a6134c</anchor>
       <arglist>(Constraint a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>aa4e01ca5dffc9a82f2918fb856304830</anchor>
+      <anchor>aad72c90dda324071d4259d4605f307a7</anchor>
       <arglist>(Constraint a, Constraint b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a558540d48bd60ab61117ad29bad52d92</anchor>
+      <anchor>a7b750177d977e8b79272338810919482</anchor>
       <arglist>(Constraint a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a9e0c0e2832a3dc3fcac688c4765264c0</anchor>
+      <anchor>a4fd6826e14f45a9ace0e70de018f6bc5</anchor>
       <arglist>(long v, Constraint a)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -6387,44 +6388,44 @@
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a4f22441dd26b5b4573b03e45834f63aa</anchor>
+      <anchor>ab402599c4824a325a082fc2c4fb53f11</anchor>
       <arglist>(Constraint a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a778cc85ae8fccf10cfc6261178db802d</anchor>
+      <anchor>a2c2d0cfc4fbda5201fd72d0c45b34871</anchor>
       <arglist>(long v, Constraint a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static ConstraintEquality</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a20acd922ca3df55d3e35766688bc0e67</anchor>
+      <anchor>aedddba2bbb98221d2225060342b53d5a</anchor>
       <arglist>(Constraint a, Constraint b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>adbd7920d8327cad94b73194a582aa336</anchor>
+      <anchor>ae566909a25a52ba0c2b3916f8e819286</anchor>
       <arglist>(Constraint a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a46db71728ad83f5ccdf7bee3c65c137b</anchor>
+      <anchor>ae1498847694a400996ab1e4d7b6a6a05</anchor>
       <arglist>(long v, Constraint a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>abc2fa3846e0e78e7181dfd405c250f0b</anchor>
+      <anchor>a4c1ad71dd084886567d5de385d6bd646</anchor>
       <arglist>(Constraint a, Constraint b)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -6945,21 +6946,21 @@
       <anchor>a67eef3374888e85bdb523ae39a13e2ac</anchor>
       <arglist>(pb::CodedInputStream input)</arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>TailsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CircuitConstraintProto.html</anchorfile>
       <anchor>a6c5d1d9104f2c608ece1aa00382bfdaf</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>HeadsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CircuitConstraintProto.html</anchorfile>
       <anchor>abd46b69d50465e17558b20b71758c994</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>LiteralsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CircuitConstraintProto.html</anchorfile>
@@ -6999,6 +7000,161 @@
       <name>Literals</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CircuitConstraintProto.html</anchorfile>
       <anchor>a0ebc277003365eb60a1d77d124f5f36b</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>Google::OrTools::Sat::Constraint</name>
+    <filename>classGoogle_1_1OrTools_1_1Sat_1_1Constraint.html</filename>
+    <member kind="function">
+      <type></type>
+      <name>Constraint</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1Constraint.html</anchorfile>
+      <anchor>ae6bc716f815091d4b0070c9641577f47</anchor>
+      <arglist>(CpModelProto model)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>OnlyEnforceIf</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1Constraint.html</anchorfile>
+      <anchor>a522f9914657da8db5752d617a695e57c</anchor>
+      <arglist>(ILiteral lit)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>OnlyEnforceIf</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1Constraint.html</anchorfile>
+      <anchor>a43569426742f0a055b51795ee4044bf6</anchor>
+      <arglist>(ILiteral[] lits)</arglist>
+    </member>
+    <member kind="property">
+      <type>int</type>
+      <name>Index</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1Constraint.html</anchorfile>
+      <anchor>a075e1e3c9dd399cef584d7338cc37938</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>ConstraintProto</type>
+      <name>Proto</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1Constraint.html</anchorfile>
+      <anchor>abb8f8a3f42258bbbf87b0f9a04999733</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>Google::OrTools::LinearSolver::Constraint</name>
+    <filename>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</filename>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
+      <anchor>a6e2d745cdb7a7b983f861ed6a9a541a7</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>string</type>
+      <name>Name</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
+      <anchor>a26f76217e5014e355033cfe094fcc168</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetCoefficient</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
+      <anchor>accb6f7442b6b1f579e607835c9c4b73a</anchor>
+      <arglist>(Variable var, double coeff)</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>GetCoefficient</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
+      <anchor>ab567ef6289bfbb3c3596c120283a3fc5</anchor>
+      <arglist>(Variable var)</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>Lb</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
+      <anchor>af426860d2823fa5cceac6055c7bf301e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>Ub</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
+      <anchor>a6f8a363969c7e14fb25fa7724dc245e1</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetLb</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
+      <anchor>a6014cf998860d04211115246a59641e1</anchor>
+      <arglist>(double lb)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetUb</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
+      <anchor>a6035628c277896af3b288ecc64b6835b</anchor>
+      <arglist>(double ub)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetBounds</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
+      <anchor>a02bfb5cd5deeb2d5149f6976ee0456d6</anchor>
+      <arglist>(double lb, double ub)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>IsLazy</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
+      <anchor>a6193adc6012f81986b2b8065123d70a1</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetIsLazy</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
+      <anchor>a6543ebfd3d2eea989634870bf746ff5a</anchor>
+      <arglist>(bool laziness)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>Index</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
+      <anchor>aabeb89fa1068ac3b51e6c180561b400d</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>DualValue</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
+      <anchor>afd6ce55a8de1d40ae23b1c72fc6244cf</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Solver.BasisStatus</type>
+      <name>BasisStatus</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
+      <anchor>afc32fa59be94007072a914557fd4dab8</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
+      <anchor>a8ad4348ef0f9969025bab397e7e27e26</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>bool</type>
+      <name>swigCMemOwn</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
+      <anchor>abc050282310ee35f8b4bac77b6103375</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -7235,44 +7391,44 @@
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>aa2c1764ab50332bd00750395d7fe005d</anchor>
+      <anchor>abecdcc8d8af528ebfa18a2040752302f</anchor>
       <arglist>(Constraint a, Constraint b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a8d9c7e7b51047c7db785cb28c5ac2ee5</anchor>
+      <anchor>a54e0abb69270881eb908a546d6d5d9ee</anchor>
       <arglist>(Constraint a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a1e322c1cf071bc63f1a57e49b39c2513</anchor>
+      <anchor>a653d1cc7abbdea943d8f66ba7d368609</anchor>
       <arglist>(long v, Constraint a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>aa4e01ca5dffc9a82f2918fb856304830</anchor>
+      <anchor>aad72c90dda324071d4259d4605f307a7</anchor>
       <arglist>(Constraint a, Constraint b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a558540d48bd60ab61117ad29bad52d92</anchor>
+      <anchor>a7b750177d977e8b79272338810919482</anchor>
       <arglist>(Constraint a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a9e0c0e2832a3dc3fcac688c4765264c0</anchor>
+      <anchor>a4fd6826e14f45a9ace0e70de018f6bc5</anchor>
       <arglist>(long v, Constraint a)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -7284,9 +7440,9 @@
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a11dca67868602a4f4de7ed771a30ceab</anchor>
+      <anchor>af699870283706fc529d1dd0977a6134c</anchor>
       <arglist>(Constraint a)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -7305,30 +7461,30 @@
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a4f22441dd26b5b4573b03e45834f63aa</anchor>
+      <anchor>ab402599c4824a325a082fc2c4fb53f11</anchor>
       <arglist>(Constraint a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a778cc85ae8fccf10cfc6261178db802d</anchor>
+      <anchor>a2c2d0cfc4fbda5201fd72d0c45b34871</anchor>
       <arglist>(long v, Constraint a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>adbd7920d8327cad94b73194a582aa336</anchor>
+      <anchor>ae566909a25a52ba0c2b3916f8e819286</anchor>
       <arglist>(Constraint a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a46db71728ad83f5ccdf7bee3c65c137b</anchor>
+      <anchor>ae1498847694a400996ab1e4d7b6a6a05</anchor>
       <arglist>(long v, Constraint a)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -7375,9 +7531,9 @@
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>abc2fa3846e0e78e7181dfd405c250f0b</anchor>
+      <anchor>a4c1ad71dd084886567d5de385d6bd646</anchor>
       <arglist>(Constraint a, Constraint b)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -7410,9 +7566,9 @@
     </member>
     <member kind="function" static="yes">
       <type>static ConstraintEquality</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a20acd922ca3df55d3e35766688bc0e67</anchor>
+      <anchor>aedddba2bbb98221d2225060342b53d5a</anchor>
       <arglist>(Constraint a, Constraint b)</arglist>
     </member>
     <member kind="function" protection="protected">
@@ -7427,161 +7583,6 @@
       <name>swigCMemOwn</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
       <anchor>abc050282310ee35f8b4bac77b6103375</anchor>
-      <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>Google::OrTools::LinearSolver::Constraint</name>
-    <filename>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</filename>
-    <member kind="function">
-      <type>void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
-      <anchor>a6e2d745cdb7a7b983f861ed6a9a541a7</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>string</type>
-      <name>Name</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
-      <anchor>a26f76217e5014e355033cfe094fcc168</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SetCoefficient</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
-      <anchor>accb6f7442b6b1f579e607835c9c4b73a</anchor>
-      <arglist>(Variable var, double coeff)</arglist>
-    </member>
-    <member kind="function">
-      <type>double</type>
-      <name>GetCoefficient</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
-      <anchor>ab567ef6289bfbb3c3596c120283a3fc5</anchor>
-      <arglist>(Variable var)</arglist>
-    </member>
-    <member kind="function">
-      <type>double</type>
-      <name>Lb</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
-      <anchor>af426860d2823fa5cceac6055c7bf301e</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>double</type>
-      <name>Ub</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
-      <anchor>a6f8a363969c7e14fb25fa7724dc245e1</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SetLb</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
-      <anchor>a6014cf998860d04211115246a59641e1</anchor>
-      <arglist>(double lb)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SetUb</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
-      <anchor>a6035628c277896af3b288ecc64b6835b</anchor>
-      <arglist>(double ub)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SetBounds</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
-      <anchor>a02bfb5cd5deeb2d5149f6976ee0456d6</anchor>
-      <arglist>(double lb, double ub)</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>IsLazy</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
-      <anchor>a6193adc6012f81986b2b8065123d70a1</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SetIsLazy</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
-      <anchor>a6543ebfd3d2eea989634870bf746ff5a</anchor>
-      <arglist>(bool laziness)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>Index</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
-      <anchor>aabeb89fa1068ac3b51e6c180561b400d</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>double</type>
-      <name>DualValue</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
-      <anchor>afd6ce55a8de1d40ae23b1c72fc6244cf</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>Solver.BasisStatus</type>
-      <name>BasisStatus</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
-      <anchor>afc32fa59be94007072a914557fd4dab8</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" virtualness="virtual">
-      <type>virtual void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
-      <anchor>a8ad4348ef0f9969025bab397e7e27e26</anchor>
-      <arglist>(bool disposing)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>bool</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
-      <anchor>abc050282310ee35f8b4bac77b6103375</anchor>
-      <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>Google::OrTools::Sat::Constraint</name>
-    <filename>classGoogle_1_1OrTools_1_1Sat_1_1Constraint.html</filename>
-    <member kind="function">
-      <type></type>
-      <name>Constraint</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1Constraint.html</anchorfile>
-      <anchor>ae6bc716f815091d4b0070c9641577f47</anchor>
-      <arglist>(CpModelProto model)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>OnlyEnforceIf</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1Constraint.html</anchorfile>
-      <anchor>a522f9914657da8db5752d617a695e57c</anchor>
-      <arglist>(ILiteral lit)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>OnlyEnforceIf</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1Constraint.html</anchorfile>
-      <anchor>a43569426742f0a055b51795ee4044bf6</anchor>
-      <arglist>(ILiteral[] lits)</arglist>
-    </member>
-    <member kind="property">
-      <type>int</type>
-      <name>Index</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1Constraint.html</anchorfile>
-      <anchor>a075e1e3c9dd399cef584d7338cc37938</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>ConstraintProto</type>
-      <name>Proto</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1Constraint.html</anchorfile>
-      <anchor>abb8f8a3f42258bbbf87b0f9a04999733</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -7682,51 +7683,51 @@
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html</anchorfile>
-      <anchor>a0e0e06938bef414a9aec4fc74c53a087</anchor>
+      <anchor>a1e9e7690ae529ae3fa6111d2ef9188fe</anchor>
       <arglist>(BaseEquality a, BaseEquality b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html</anchorfile>
-      <anchor>abbf98b0988fce8a27370dc48c9a68ef2</anchor>
+      <anchor>a2981e6efdc44011c7ce8785cedeb6812</anchor>
       <arglist>(BaseEquality a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html</anchorfile>
-      <anchor>acf5f3a3fc254ad4d6cca03862c774b6f</anchor>
+      <anchor>a0d7c1da056b5c333e710b5888a91cbb8</anchor>
       <arglist>(long v, BaseEquality a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html</anchorfile>
-      <anchor>a82a4dfab5c2fd36752f3bc36078e961f</anchor>
+      <anchor>a4f1aec22b07c58354c8b84fa153fec2c</anchor>
       <arglist>(BaseEquality a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html</anchorfile>
-      <anchor>a148df138f6aea988b6a249b9e5b3dc7e</anchor>
+      <anchor>a07fb94091b6bf5bc57ce0b7c3c1e5b1c</anchor>
       <arglist>(BaseEquality a, BaseEquality b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html</anchorfile>
-      <anchor>acf99575703d76316eaecd2ad2373648e</anchor>
+      <anchor>a569aabaa30ef6c169733e777da973793</anchor>
       <arglist>(BaseEquality a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html</anchorfile>
-      <anchor>a95fba945abcbd181d8b8a646d5e3bc2c</anchor>
+      <anchor>a6d5bb384f2cd17517bb3e29abc6d8f97</anchor>
       <arglist>(long v, BaseEquality a)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -7759,44 +7760,44 @@
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html</anchorfile>
-      <anchor>a1d0f2204bb12fe53bbf9d3259194e193</anchor>
+      <anchor>a3ded344d26209f60e212d22ddd5294cc</anchor>
       <arglist>(BaseEquality a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html</anchorfile>
-      <anchor>a61a91223214df387a58ca31ae428bf09</anchor>
+      <anchor>a050a0f9faf28fe0e6b32d58b3b1350d9</anchor>
       <arglist>(long v, BaseEquality a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static ConstraintEquality</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html</anchorfile>
-      <anchor>af9d17bfc39833f13248c13dbd086d1f9</anchor>
+      <anchor>a8026d2d8461621d54bcc5c7d98546b4d</anchor>
       <arglist>(BaseEquality a, BaseEquality b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html</anchorfile>
-      <anchor>adc7db138385e0cd872db06d561f40a4b</anchor>
+      <anchor>afaeb0aeebe0319c03a41da6e2ab429ae</anchor>
       <arglist>(BaseEquality a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html</anchorfile>
-      <anchor>ae3d4e559e8ad54d5839169fd8d6706ec</anchor>
+      <anchor>a9323d30eb45c0f150b98387e52e6cba1</anchor>
       <arglist>(long v, BaseEquality a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html</anchorfile>
-      <anchor>a752dd00e581a517f21015e4bd0386ec9</anchor>
+      <anchor>a3a3acc39a58e38525e522045fa85572c</anchor>
       <arglist>(BaseEquality a, BaseEquality b)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -7981,175 +7982,175 @@
       <anchor>a67eef3374888e85bdb523ae39a13e2ac</anchor>
       <arglist>(pb::CodedInputStream input)</arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>NameFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
       <anchor>a8472f6241944a1949eb4435a1853734b</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>EnforcementLiteralFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
       <anchor>a240791e4d9b3e89dfc408c91f0d4ee70</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>BoolOrFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
       <anchor>a748f44fae01a2acb8ea55e9c27445bd3</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>BoolAndFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
       <anchor>a10822b8ca0e0036ec170a0db5e2694b8</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>AtMostOneFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
       <anchor>ac3608c3e48eb8c6e8b9dfb673dfb2002</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>ExactlyOneFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
       <anchor>a7a33aef97bea0d4d3ff1fa71e3423d3f</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>BoolXorFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
       <anchor>a56b758450c2ad7bd5fe2327b1cc045a5</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>IntDivFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
       <anchor>adce82e25617358aa2d42b45411ceeab6</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>IntModFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
       <anchor>a116182095bc026a9c8565145dff47792</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>IntProdFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
       <anchor>a2e7910aea48894a521857cebb436fcd1</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>LinMaxFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
       <anchor>a46d8012040c3b4ca56c67ff80eedd90a</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>LinearFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
       <anchor>a7d4fd38c619a212165c4e1b49e87f8d8</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>AllDiffFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
       <anchor>a9f7e1be1d4a479a33efb25cfdb388561</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>ElementFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
       <anchor>ab2b44e254071e6d8e1baf770b708bf1f</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>CircuitFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
       <anchor>a268797cc5761ded6d8acce0baaa0d001</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>RoutesFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
       <anchor>a0190c0005741bec37ddfe36d01de139a</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>TableFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
       <anchor>a3678c1082c1966d2023931c59cb013dd</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>AutomatonFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
       <anchor>a459a374d4eaae035d50c06f50cef1005</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>InverseFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
       <anchor>a69dbd9a3707b2f3e27f9004e1cfe2fbc</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>ReservoirFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
       <anchor>a1d76d2f93e959b13379065a9feb14d5c</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>IntervalFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
       <anchor>a91b1630e3f26dfc3faed1ef18242a538</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>NoOverlapFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
       <anchor>a209fc4f0f5b13bdb4991d02cfc639e21</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>NoOverlap2DFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
       <anchor>add1f46ce1b81847f9d770d02fef58d7b</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>CumulativeFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
       <anchor>ad586d81951da5f54a4caaff4b38014dc</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>DummyConstraintFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
@@ -8185,164 +8186,164 @@
       <arglist></arglist>
     </member>
     <member kind="property">
-      <type>global::Google.OrTools.Sat.BoolArgumentProto</type>
+      <type>global::Google.OrTools.Sat.BoolArgumentProto??</type>
       <name>BoolOr</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
-      <anchor>a13f8a96dc8af64b6512ecd2923e5600a</anchor>
+      <anchor>a58ecc1b199de429f2014beb2efbf27ca</anchor>
       <arglist></arglist>
     </member>
     <member kind="property">
-      <type>global::Google.OrTools.Sat.BoolArgumentProto</type>
+      <type>global::Google.OrTools.Sat.BoolArgumentProto??</type>
       <name>BoolAnd</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
-      <anchor>a1a064bbdab8beaeb5e0acbf8d54517f2</anchor>
+      <anchor>aff662fdffbce4eec0c56ed844e853a57</anchor>
       <arglist></arglist>
     </member>
     <member kind="property">
-      <type>global::Google.OrTools.Sat.BoolArgumentProto</type>
+      <type>global::Google.OrTools.Sat.BoolArgumentProto??</type>
       <name>AtMostOne</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
-      <anchor>a85cddeffd8c422e372067014267ade2b</anchor>
+      <anchor>a1802b75d81bbcdc0595720358c6c385b</anchor>
       <arglist></arglist>
     </member>
     <member kind="property">
-      <type>global::Google.OrTools.Sat.BoolArgumentProto</type>
+      <type>global::Google.OrTools.Sat.BoolArgumentProto??</type>
       <name>ExactlyOne</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
-      <anchor>ad3b22d2fdd78333c41214a8615441fd8</anchor>
+      <anchor>af8c9c803561f368036a6998b041c8bb2</anchor>
       <arglist></arglist>
     </member>
     <member kind="property">
-      <type>global::Google.OrTools.Sat.BoolArgumentProto</type>
+      <type>global::Google.OrTools.Sat.BoolArgumentProto??</type>
       <name>BoolXor</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
-      <anchor>af2c0bf678897efc844cb40905edb97c9</anchor>
+      <anchor>a170f874a008c58955bc9324ecc693d01</anchor>
       <arglist></arglist>
     </member>
     <member kind="property">
-      <type>global::Google.OrTools.Sat.LinearArgumentProto</type>
+      <type>global::Google.OrTools.Sat.LinearArgumentProto??</type>
       <name>IntDiv</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
-      <anchor>a2e11c96b23dcc7ac6c9dd104dcae0849</anchor>
+      <anchor>af80bff693660c3e86e8c9221ec4ced7a</anchor>
       <arglist></arglist>
     </member>
     <member kind="property">
-      <type>global::Google.OrTools.Sat.LinearArgumentProto</type>
+      <type>global::Google.OrTools.Sat.LinearArgumentProto??</type>
       <name>IntMod</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
-      <anchor>abdcf4edded552845aafc85101eaeecb3</anchor>
+      <anchor>a028379f031a1323aefe25938548d7f58</anchor>
       <arglist></arglist>
     </member>
     <member kind="property">
-      <type>global::Google.OrTools.Sat.LinearArgumentProto</type>
+      <type>global::Google.OrTools.Sat.LinearArgumentProto??</type>
       <name>IntProd</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
-      <anchor>a108ec638e34a58b7e1f1ea7a73d43cf8</anchor>
+      <anchor>aa7fb724fbf110ec4f049b06c8e7d86b0</anchor>
       <arglist></arglist>
     </member>
     <member kind="property">
-      <type>global::Google.OrTools.Sat.LinearArgumentProto</type>
+      <type>global::Google.OrTools.Sat.LinearArgumentProto??</type>
       <name>LinMax</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
-      <anchor>a6a22b8712bf14c2be29a11f90db2ec98</anchor>
+      <anchor>ad4a8d996cee82203f7da63eec5aa3110</anchor>
       <arglist></arglist>
     </member>
     <member kind="property">
-      <type>global::Google.OrTools.Sat.LinearConstraintProto</type>
+      <type>global::Google.OrTools.Sat.LinearConstraintProto??</type>
       <name>Linear</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
-      <anchor>a6cd09ff66e6d1634531d80d92b36df2f</anchor>
+      <anchor>a853c522be15f36ff78504a1c6540ebd7</anchor>
       <arglist></arglist>
     </member>
     <member kind="property">
-      <type>global::Google.OrTools.Sat.AllDifferentConstraintProto</type>
+      <type>global::Google.OrTools.Sat.AllDifferentConstraintProto??</type>
       <name>AllDiff</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
-      <anchor>a7a6f76b8f29083a12fa2d8f15204201a</anchor>
+      <anchor>af3654af7bd9cfbe6d1d308f87b2b8b00</anchor>
       <arglist></arglist>
     </member>
     <member kind="property">
-      <type>global::Google.OrTools.Sat.ElementConstraintProto</type>
+      <type>global::Google.OrTools.Sat.ElementConstraintProto??</type>
       <name>Element</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
-      <anchor>aacc7c7ad1b7f37a9471c9009407538f0</anchor>
+      <anchor>a79f9b8d15c1429a821fd15839e680b99</anchor>
       <arglist></arglist>
     </member>
     <member kind="property">
-      <type>global::Google.OrTools.Sat.CircuitConstraintProto</type>
+      <type>global::Google.OrTools.Sat.CircuitConstraintProto??</type>
       <name>Circuit</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
-      <anchor>a7f6135607a22ab275a5e6f3e90d8ed5f</anchor>
+      <anchor>a2c02c379b75aaeac85ac63b24607ad52</anchor>
       <arglist></arglist>
     </member>
     <member kind="property">
-      <type>global::Google.OrTools.Sat.RoutesConstraintProto</type>
+      <type>global::Google.OrTools.Sat.RoutesConstraintProto??</type>
       <name>Routes</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
-      <anchor>af34103950496a5a9561449692d9c4faa</anchor>
+      <anchor>a134d17a5f3d3ca04c0e02765d40228ad</anchor>
       <arglist></arglist>
     </member>
     <member kind="property">
-      <type>global::Google.OrTools.Sat.TableConstraintProto</type>
+      <type>global::Google.OrTools.Sat.TableConstraintProto??</type>
       <name>Table</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
-      <anchor>a521cc9737a13d023a960b41bf915835d</anchor>
+      <anchor>a69726e4a41b67059af3b7a33a6386702</anchor>
       <arglist></arglist>
     </member>
     <member kind="property">
-      <type>global::Google.OrTools.Sat.AutomatonConstraintProto</type>
+      <type>global::Google.OrTools.Sat.AutomatonConstraintProto??</type>
       <name>Automaton</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
-      <anchor>a4f7fffa1d6c32f4c5d1aa60fc5f98a58</anchor>
+      <anchor>a95566a55184788aeb9640027ec24fac3</anchor>
       <arglist></arglist>
     </member>
     <member kind="property">
-      <type>global::Google.OrTools.Sat.InverseConstraintProto</type>
+      <type>global::Google.OrTools.Sat.InverseConstraintProto??</type>
       <name>Inverse</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
-      <anchor>ab2e0d80d7f79fa6ed06b5874df33e544</anchor>
+      <anchor>a25275f76551b1a5aa2e2cba16570fe1a</anchor>
       <arglist></arglist>
     </member>
     <member kind="property">
-      <type>global::Google.OrTools.Sat.ReservoirConstraintProto</type>
+      <type>global::Google.OrTools.Sat.ReservoirConstraintProto??</type>
       <name>Reservoir</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
-      <anchor>af0f34449bf2a8125a24f04e442d60ca8</anchor>
+      <anchor>a40ab4af34279fafa7f0ed621b1d7542f</anchor>
       <arglist></arglist>
     </member>
     <member kind="property">
-      <type>global::Google.OrTools.Sat.IntervalConstraintProto</type>
+      <type>global::Google.OrTools.Sat.IntervalConstraintProto??</type>
       <name>Interval</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
-      <anchor>a4fe368639b2226069887a1957f8a7366</anchor>
+      <anchor>ae0f115317f8f86f279a1e01a585e9e46</anchor>
       <arglist></arglist>
     </member>
     <member kind="property">
-      <type>global::Google.OrTools.Sat.NoOverlapConstraintProto</type>
+      <type>global::Google.OrTools.Sat.NoOverlapConstraintProto??</type>
       <name>NoOverlap</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
-      <anchor>a75da617f2c41d0b998bd8f8928e6e2dd</anchor>
+      <anchor>aaed75d014668717bf7af6c8093b7d812</anchor>
       <arglist></arglist>
     </member>
     <member kind="property">
-      <type>global::Google.OrTools.Sat.NoOverlap2DConstraintProto</type>
+      <type>global::Google.OrTools.Sat.NoOverlap2DConstraintProto??</type>
       <name>NoOverlap2D</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
-      <anchor>a11e43f2f6c713f513a8377c3bf490c58</anchor>
+      <anchor>aa31975e0eb4ae77e88158d49ffe08fac</anchor>
       <arglist></arglist>
     </member>
     <member kind="property">
-      <type>global::Google.OrTools.Sat.CumulativeConstraintProto</type>
+      <type>global::Google.OrTools.Sat.CumulativeConstraintProto??</type>
       <name>Cumulative</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
-      <anchor>a3fa226d2daf5fff7af6f6b1ecece80f3</anchor>
+      <anchor>a7b1f34e8135307750e396c0e92d59327</anchor>
       <arglist></arglist>
     </member>
     <member kind="property">
-      <type>global::Google.OrTools.Sat.ListOfVariablesProto</type>
+      <type>global::Google.OrTools.Sat.ListOfVariablesProto??</type>
       <name>DummyConstraint</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
-      <anchor>ad53efcc141624094676652f08869d0aa</anchor>
+      <anchor>a79a078474729d4fdd7d947194040cae6</anchor>
       <arglist></arglist>
     </member>
     <member kind="property">
@@ -8434,189 +8435,189 @@
       <anchor>a67eef3374888e85bdb523ae39a13e2ac</anchor>
       <arglist>(pb::CodedInputStream input)</arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>CompressTrailFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ConstraintSolverParameters.html</anchorfile>
       <anchor>af439fd5e1d9c6d50d4bf465da57b8913</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>TrailBlockSizeFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ConstraintSolverParameters.html</anchorfile>
       <anchor>a2dcdc12643b46a7f26390fdd1eb64055</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>ArraySplitSizeFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ConstraintSolverParameters.html</anchorfile>
       <anchor>a6c08fd16c620d05ab0db7af95c0d81c5</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>StoreNamesFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ConstraintSolverParameters.html</anchorfile>
       <anchor>acd4cf09d43d307b4f156dacb2e2efd03</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>NameCastVariablesFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ConstraintSolverParameters.html</anchorfile>
       <anchor>a6cf52834423208b8cfb5e461bf0df865</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>NameAllVariablesFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ConstraintSolverParameters.html</anchorfile>
       <anchor>a4ca86fb9aaa52e146385f615c0130938</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>ProfilePropagationFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ConstraintSolverParameters.html</anchorfile>
       <anchor>aaf41fd0770f48ed386dcaf8024a4d6ce</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>ProfileFileFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ConstraintSolverParameters.html</anchorfile>
       <anchor>a741aef11e6f351590cee2523895a160a</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>ProfileLocalSearchFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ConstraintSolverParameters.html</anchorfile>
       <anchor>ad6ff9efff967ae3bbf6cf97f5c8e2697</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>PrintLocalSearchProfileFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ConstraintSolverParameters.html</anchorfile>
       <anchor>a4cbcfd0596ffabfa2ab4271b60546fb7</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>TracePropagationFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ConstraintSolverParameters.html</anchorfile>
       <anchor>a35852284409a38763a205f8e09290b59</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>TraceSearchFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ConstraintSolverParameters.html</anchorfile>
       <anchor>a3705ab436e13942990122685bd8c71cb</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>PrintModelFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ConstraintSolverParameters.html</anchorfile>
       <anchor>a36b2bf25884050f4c41450eaf2f5959d</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>PrintModelStatsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ConstraintSolverParameters.html</anchorfile>
       <anchor>af0bdd5a48833cca496e3587319d31464</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>PrintAddedConstraintsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ConstraintSolverParameters.html</anchorfile>
       <anchor>a153f2dc03baf8bfea617d782c44fbc16</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>DisableSolveFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ConstraintSolverParameters.html</anchorfile>
       <anchor>ae41d306371ef7d0c014f7f3823419f11</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseSmallTableFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ConstraintSolverParameters.html</anchorfile>
       <anchor>a3d91c01349f33d1c19b7d6ec13a92c49</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseCumulativeEdgeFinderFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ConstraintSolverParameters.html</anchorfile>
       <anchor>a6ae0e55fe59b98e1f0f37192175971d3</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseCumulativeTimeTableFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ConstraintSolverParameters.html</anchorfile>
       <anchor>a2c65fa6f6d4e77a2377c4446939a22e9</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseCumulativeTimeTableSyncFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ConstraintSolverParameters.html</anchorfile>
       <anchor>aadd8e140e68bcde72ca35d57e255e935</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseSequenceHighDemandTasksFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ConstraintSolverParameters.html</anchorfile>
       <anchor>a1117f163d5ee06af8d16bbcde6af7f05</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseAllPossibleDisjunctionsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ConstraintSolverParameters.html</anchorfile>
       <anchor>afa761c766b7b76a7ee78ccb40203f0cb</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>MaxEdgeFinderSizeFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ConstraintSolverParameters.html</anchorfile>
       <anchor>a32f2157fb404bb215b6e0152a723f358</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>DiffnUseCumulativeFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ConstraintSolverParameters.html</anchorfile>
       <anchor>ae4897c787857b7abe469786c3c17c072</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseElementRmqFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ConstraintSolverParameters.html</anchorfile>
       <anchor>a724049f32acc57dedc4bc3926b37328f</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>SkipLocallyOptimalPathsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ConstraintSolverParameters.html</anchorfile>
       <anchor>a241aef7fe87b441a32c446f168065cac</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>CheckSolutionPeriodFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ConstraintSolverParameters.html</anchorfile>
@@ -9310,63 +9311,63 @@
       <anchor>a67eef3374888e85bdb523ae39a13e2ac</anchor>
       <arglist>(pb::CodedInputStream input)</arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>NameFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpModelProto.html</anchorfile>
       <anchor>a8472f6241944a1949eb4435a1853734b</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>VariablesFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpModelProto.html</anchorfile>
       <anchor>a86ecd6586e36e20b6bcc9bd63ec4b589</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>ConstraintsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpModelProto.html</anchorfile>
       <anchor>aea6e5dbd296449ce5723ea611d54012a</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>ObjectiveFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpModelProto.html</anchorfile>
       <anchor>ac8c3674c210726c418ea3147bee6a859</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>FloatingPointObjectiveFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpModelProto.html</anchorfile>
       <anchor>ae28dd2113cc7633ab3d5af22614c48db</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>SearchStrategyFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpModelProto.html</anchorfile>
       <anchor>ae654c338cd096d02316da17102478fc2</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>SolutionHintFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpModelProto.html</anchorfile>
       <anchor>ab189a904a65e70e41d9830dc8246e54b</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>AssumptionsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpModelProto.html</anchorfile>
       <anchor>a57ad2286f87715534af170f0e043b994</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>SymmetryFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpModelProto.html</anchorfile>
@@ -9542,56 +9543,56 @@
       <anchor>a67eef3374888e85bdb523ae39a13e2ac</anchor>
       <arglist>(pb::CodedInputStream input)</arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>VarsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpObjectiveProto.html</anchorfile>
       <anchor>a21a2e981c9fba2735b6ba452e5fba670</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>CoeffsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpObjectiveProto.html</anchorfile>
       <anchor>a7910a4b4e23721189862a82c6fb49521</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>OffsetFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpObjectiveProto.html</anchorfile>
       <anchor>a12f0687287af579e61b58dff9a12bb94</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>ScalingFactorFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpObjectiveProto.html</anchorfile>
       <anchor>ac27dc927e87b408814a647066366488e</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>DomainFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpObjectiveProto.html</anchorfile>
       <anchor>a01f10f58a6dc930134078b60c77cdbd6</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>ScalingWasExactFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpObjectiveProto.html</anchorfile>
       <anchor>a8acac67f41adbaa9729a5be42f3c25de</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>IntegerOffsetFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpObjectiveProto.html</anchorfile>
       <anchor>a21218caa92bfc562dbd4ec4bd123d0d4</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>IntegerScalingFactorFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpObjectiveProto.html</anchorfile>
@@ -9954,7 +9955,7 @@
       <type>IList&lt; int &gt;</type>
       <name>SufficientAssumptionsForInfeasibility</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolver.html</anchorfile>
-      <anchor>a62ec955bc6789a6555786f31f6b612a8</anchor>
+      <anchor>a090e2f15fb19c558f7c1820b4980a5fa</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -10073,154 +10074,154 @@
       <anchor>a67eef3374888e85bdb523ae39a13e2ac</anchor>
       <arglist>(pb::CodedInputStream input)</arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>StatusFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverResponse.html</anchorfile>
       <anchor>a6d99cd3d9fbf9a22ccee09c4237c74a3</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>SolutionFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverResponse.html</anchorfile>
       <anchor>a31df2281a990278371c99beb70a1694b</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>ObjectiveValueFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverResponse.html</anchorfile>
       <anchor>a89a6991ec5fba337f25290ccb1dae712</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>BestObjectiveBoundFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverResponse.html</anchorfile>
       <anchor>a03165d75d99c9c7ee51fca0e88d8ddb1</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>AdditionalSolutionsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverResponse.html</anchorfile>
       <anchor>a78d8baf4a1eecb7e0930f5ac9d6fb8dd</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>TightenedVariablesFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverResponse.html</anchorfile>
       <anchor>a8723462f5f20fe54037dfb73f1994a37</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>SufficientAssumptionsForInfeasibilityFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverResponse.html</anchorfile>
       <anchor>a0dfac80c60a3dc823fbe45f9a3f29437</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>IntegerObjectiveFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverResponse.html</anchorfile>
       <anchor>a5de3865386df4fa38dceb6f500880769</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>InnerObjectiveLowerBoundFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverResponse.html</anchorfile>
       <anchor>adec23a548ab7bafc61e03ff483f483a3</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>NumBooleansFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverResponse.html</anchorfile>
       <anchor>ab8024742a67c50c7815d6c6849eab2c1</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>NumConflictsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverResponse.html</anchorfile>
       <anchor>a5686ae2ba01240ff8ef9d2a2a8416e99</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>NumBranchesFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverResponse.html</anchorfile>
       <anchor>ab8c69feef997bb69118e150ac46601bb</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>NumBinaryPropagationsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverResponse.html</anchorfile>
       <anchor>aaa276c129499e94eb7a37f86dc8ae972</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>NumIntegerPropagationsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverResponse.html</anchorfile>
       <anchor>a443b67c4298d126cc56665818c289d02</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>NumRestartsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverResponse.html</anchorfile>
       <anchor>aafb35ba0e67b96dba127bedcc599a58c</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>NumLpIterationsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverResponse.html</anchorfile>
       <anchor>a9b32616fcfacc5f5dc694cfc1553c250</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>WallTimeFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverResponse.html</anchorfile>
       <anchor>a2ec982fcbadf2d3a3aa43cc83a241a64</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UserTimeFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverResponse.html</anchorfile>
       <anchor>a9cf4f7ac693857739413c6fef8c39b26</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>DeterministicTimeFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverResponse.html</anchorfile>
       <anchor>ae6ba8e632a004b49b83b99cb81469457</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>GapIntegralFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverResponse.html</anchorfile>
       <anchor>a4b042435dc82fffc308cb06570bb5a9c</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>SolutionInfoFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverResponse.html</anchorfile>
       <anchor>aebb6a9095483a3d450a5050e9ad2d334</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>SolveLogFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverResponse.html</anchorfile>
@@ -10476,7 +10477,7 @@
       <anchor>a67eef3374888e85bdb523ae39a13e2ac</anchor>
       <arglist>(pb::CodedInputStream input)</arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>ValuesFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverSolution.html</anchorfile>
@@ -10784,21 +10785,21 @@
       <anchor>a67eef3374888e85bdb523ae39a13e2ac</anchor>
       <arglist>(pb::CodedInputStream input)</arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>CapacityFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CumulativeConstraintProto.html</anchorfile>
       <anchor>a4606e66166401ecf762b7a7ef9402d98</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>IntervalsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CumulativeConstraintProto.html</anchorfile>
       <anchor>a6f302abd4751b44561d0c4c124f141ee</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>DemandsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CumulativeConstraintProto.html</anchorfile>
@@ -11052,10 +11053,10 @@
       <arglist>(int index, DecisionBuilder[] array, int arrayIndex, int count)</arglist>
     </member>
     <member kind="function">
-      <type>DecisionBuilder[]</type>
+      <type>DecisionBuilder []</type>
       <name>ToArray</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DecisionBuilderVector.html</anchorfile>
-      <anchor>ad68a388425b60487b84c947af963b7a4</anchor>
+      <anchor>aad42e6be43a3dc34307a4f17b039dd2d</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -11389,28 +11390,28 @@
       <anchor>a67eef3374888e85bdb523ae39a13e2ac</anchor>
       <arglist>(pb::CodedInputStream input)</arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>VariablesFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto.html</anchorfile>
       <anchor>a86ecd6586e36e20b6bcc9bd63ec4b589</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>VariableSelectionStrategyFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto.html</anchorfile>
       <anchor>ac1a8e55cda97d3f2962bd5836820032d</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>DomainReductionStrategyFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto.html</anchorfile>
       <anchor>a8cd10aa058c00bcd4edd06ea1ced9e81</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>TransformationsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto.html</anchorfile>
@@ -11707,10 +11708,10 @@
       <arglist></arglist>
     </member>
     <member kind="property">
-      <type>DecisionBuilder</type>
+      <type>DecisionBuilder?</type>
       <name>decision_builder</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DefaultPhaseParameters.html</anchorfile>
-      <anchor>a7191efa1f079919ce26ea355ad9eeb34</anchor>
+      <anchor>a921092e0496dec7138a900454650e821</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -11883,21 +11884,21 @@
       <anchor>a67eef3374888e85bdb523ae39a13e2ac</anchor>
       <arglist>(pb::CodedInputStream input)</arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>NumRowsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1DenseMatrixProto.html</anchorfile>
       <anchor>ad66355388e79ecab9bb74b945f974a35</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>NumColsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1DenseMatrixProto.html</anchorfile>
       <anchor>a1ded302ba3a2e9ceeaea07bc97cd9837</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>EntriesFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1DenseMatrixProto.html</anchorfile>
@@ -12184,51 +12185,51 @@
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>aa2c1764ab50332bd00750395d7fe005d</anchor>
+      <anchor>abecdcc8d8af528ebfa18a2040752302f</anchor>
       <arglist>(Constraint a, Constraint b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a8d9c7e7b51047c7db785cb28c5ac2ee5</anchor>
+      <anchor>a54e0abb69270881eb908a546d6d5d9ee</anchor>
       <arglist>(Constraint a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a1e322c1cf071bc63f1a57e49b39c2513</anchor>
+      <anchor>a653d1cc7abbdea943d8f66ba7d368609</anchor>
       <arglist>(long v, Constraint a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a11dca67868602a4f4de7ed771a30ceab</anchor>
+      <anchor>af699870283706fc529d1dd0977a6134c</anchor>
       <arglist>(Constraint a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>aa4e01ca5dffc9a82f2918fb856304830</anchor>
+      <anchor>aad72c90dda324071d4259d4605f307a7</anchor>
       <arglist>(Constraint a, Constraint b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a558540d48bd60ab61117ad29bad52d92</anchor>
+      <anchor>a7b750177d977e8b79272338810919482</anchor>
       <arglist>(Constraint a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a9e0c0e2832a3dc3fcac688c4765264c0</anchor>
+      <anchor>a4fd6826e14f45a9ace0e70de018f6bc5</anchor>
       <arglist>(long v, Constraint a)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -12261,44 +12262,44 @@
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a4f22441dd26b5b4573b03e45834f63aa</anchor>
+      <anchor>ab402599c4824a325a082fc2c4fb53f11</anchor>
       <arglist>(Constraint a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a778cc85ae8fccf10cfc6261178db802d</anchor>
+      <anchor>a2c2d0cfc4fbda5201fd72d0c45b34871</anchor>
       <arglist>(long v, Constraint a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static ConstraintEquality</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a20acd922ca3df55d3e35766688bc0e67</anchor>
+      <anchor>aedddba2bbb98221d2225060342b53d5a</anchor>
       <arglist>(Constraint a, Constraint b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>adbd7920d8327cad94b73194a582aa336</anchor>
+      <anchor>ae566909a25a52ba0c2b3916f8e819286</anchor>
       <arglist>(Constraint a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a46db71728ad83f5ccdf7bee3c65c137b</anchor>
+      <anchor>ae1498847694a400996ab1e4d7b6a6a05</anchor>
       <arglist>(long v, Constraint a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>abc2fa3846e0e78e7181dfd405c250f0b</anchor>
+      <anchor>a4c1ad71dd084886567d5de385d6bd646</anchor>
       <arglist>(Constraint a, Constraint b)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -12380,164 +12381,6 @@
     </member>
   </compound>
   <compound kind="class">
-    <name>Google::OrTools::ConstraintSolver::Domain</name>
-    <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</filename>
-    <member kind="function">
-      <type>void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
-      <anchor>a6e2d745cdb7a7b983f861ed6a9a541a7</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>Domain</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
-      <anchor>a9f9601f2f55637f70394aa8eea61345a</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>Domain</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
-      <anchor>a3b0c688c8580d07c0b67fdc9d42d23be</anchor>
-      <arglist>(long value)</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>Domain</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
-      <anchor>a154f0cfa747f1a5fa3ec046d5c304315</anchor>
-      <arglist>(long left, long right)</arglist>
-    </member>
-    <member kind="function">
-      <type>long[]</type>
-      <name>FlattenedIntervals</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
-      <anchor>a879d4b33230edbbf2e3091bf8059bafb</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>IsEmpty</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
-      <anchor>a357657ded604ecb97b76251146f7ac75</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>long</type>
-      <name>Size</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
-      <anchor>a925698fef52feb70dd9c917e360a850e</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>long</type>
-      <name>Min</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
-      <anchor>ad132aa17bd7af00f0e9e47e88131b1e8</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>long</type>
-      <name>Max</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
-      <anchor>a7ee6ae2c7b5f55ad5bbe78b79004d87a</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>Contains</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
-      <anchor>ab613fee6b08a7ec8047fd89a9f903d43</anchor>
-      <arglist>(long value)</arglist>
-    </member>
-    <member kind="function">
-      <type>Domain</type>
-      <name>Complement</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
-      <anchor>a4d8d2d1b41195b2e491b29cf6220b78d</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>Domain</type>
-      <name>Negation</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
-      <anchor>a99f401d076ce2277855769d8a9be38eb</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>Domain</type>
-      <name>IntersectionWith</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
-      <anchor>ad3802e7b8dc8deb2f7b0c098785b4d3b</anchor>
-      <arglist>(Domain domain)</arglist>
-    </member>
-    <member kind="function">
-      <type>Domain</type>
-      <name>UnionWith</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
-      <anchor>ab27330f9c6e8e5b9b2d1af6f7d40f9ab</anchor>
-      <arglist>(Domain domain)</arglist>
-    </member>
-    <member kind="function">
-      <type>Domain</type>
-      <name>AdditionWith</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
-      <anchor>ababa690b367f2dbe09846fcbefab83aa</anchor>
-      <arglist>(Domain domain)</arglist>
-    </member>
-    <member kind="function">
-      <type>override string</type>
-      <name>ToString</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
-      <anchor>aa73e7c4dd1df5fd5fbf81c7764ee1533</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static Domain</type>
-      <name>AllValues</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
-      <anchor>a5669c93d2e233c82a5a33910fcbe8fe0</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static Domain</type>
-      <name>FromValues</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
-      <anchor>a29b21eafd928cfacebd50a5b29734d3f</anchor>
-      <arglist>(long[] values)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static Domain</type>
-      <name>FromIntervals</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
-      <anchor>aed92e127fa43920c2f1b7d8086ebbba0</anchor>
-      <arglist>(long[][] intervals)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static Domain</type>
-      <name>FromFlatIntervals</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
-      <anchor>a87c52024e24cc5e125483d1ac5018838</anchor>
-      <arglist>(long[] flat_intervals)</arglist>
-    </member>
-    <member kind="function" protection="protected" virtualness="virtual">
-      <type>virtual void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
-      <anchor>a8ad4348ef0f9969025bab397e7e27e26</anchor>
-      <arglist>(bool disposing)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>bool</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
-      <anchor>abc050282310ee35f8b4bac77b6103375</anchor>
-      <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="class">
     <name>Google::OrTools::Util::Domain</name>
     <filename>classGoogle_1_1OrTools_1_1Util_1_1Domain.html</filename>
     <member kind="function">
@@ -12569,10 +12412,10 @@
       <arglist>(long left, long right)</arglist>
     </member>
     <member kind="function">
-      <type>long[]</type>
+      <type>long []</type>
       <name>FlattenedIntervals</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Domain.html</anchorfile>
-      <anchor>a879d4b33230edbbf2e3091bf8059bafb</anchor>
+      <anchor>a9d02744eecfcdc96f72d9dea6b4b3d10</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -12691,6 +12534,164 @@
       <type>bool</type>
       <name>swigCMemOwn</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Domain.html</anchorfile>
+      <anchor>abc050282310ee35f8b4bac77b6103375</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>Google::OrTools::ConstraintSolver::Domain</name>
+    <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</filename>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
+      <anchor>a6e2d745cdb7a7b983f861ed6a9a541a7</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>Domain</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
+      <anchor>a9f9601f2f55637f70394aa8eea61345a</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>Domain</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
+      <anchor>a3b0c688c8580d07c0b67fdc9d42d23be</anchor>
+      <arglist>(long value)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>Domain</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
+      <anchor>a154f0cfa747f1a5fa3ec046d5c304315</anchor>
+      <arglist>(long left, long right)</arglist>
+    </member>
+    <member kind="function">
+      <type>long []</type>
+      <name>FlattenedIntervals</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
+      <anchor>a9d02744eecfcdc96f72d9dea6b4b3d10</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>IsEmpty</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
+      <anchor>a357657ded604ecb97b76251146f7ac75</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>long</type>
+      <name>Size</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
+      <anchor>a925698fef52feb70dd9c917e360a850e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>long</type>
+      <name>Min</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
+      <anchor>ad132aa17bd7af00f0e9e47e88131b1e8</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>long</type>
+      <name>Max</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
+      <anchor>a7ee6ae2c7b5f55ad5bbe78b79004d87a</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>Contains</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
+      <anchor>ab613fee6b08a7ec8047fd89a9f903d43</anchor>
+      <arglist>(long value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Domain</type>
+      <name>Complement</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
+      <anchor>a4d8d2d1b41195b2e491b29cf6220b78d</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Domain</type>
+      <name>Negation</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
+      <anchor>a99f401d076ce2277855769d8a9be38eb</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Domain</type>
+      <name>IntersectionWith</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
+      <anchor>ad3802e7b8dc8deb2f7b0c098785b4d3b</anchor>
+      <arglist>(Domain domain)</arglist>
+    </member>
+    <member kind="function">
+      <type>Domain</type>
+      <name>UnionWith</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
+      <anchor>ab27330f9c6e8e5b9b2d1af6f7d40f9ab</anchor>
+      <arglist>(Domain domain)</arglist>
+    </member>
+    <member kind="function">
+      <type>Domain</type>
+      <name>AdditionWith</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
+      <anchor>ababa690b367f2dbe09846fcbefab83aa</anchor>
+      <arglist>(Domain domain)</arglist>
+    </member>
+    <member kind="function">
+      <type>override string</type>
+      <name>ToString</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
+      <anchor>aa73e7c4dd1df5fd5fbf81c7764ee1533</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static Domain</type>
+      <name>AllValues</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
+      <anchor>a5669c93d2e233c82a5a33910fcbe8fe0</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static Domain</type>
+      <name>FromValues</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
+      <anchor>a29b21eafd928cfacebd50a5b29734d3f</anchor>
+      <arglist>(long[] values)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static Domain</type>
+      <name>FromIntervals</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
+      <anchor>aed92e127fa43920c2f1b7d8086ebbba0</anchor>
+      <arglist>(long[][] intervals)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static Domain</type>
+      <name>FromFlatIntervals</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
+      <anchor>a87c52024e24cc5e125483d1ac5018838</anchor>
+      <arglist>(long[] flat_intervals)</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
+      <anchor>a8ad4348ef0f9969025bab397e7e27e26</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>bool</type>
+      <name>swigCMemOwn</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Domain.html</anchorfile>
       <anchor>abc050282310ee35f8b4bac77b6103375</anchor>
       <arglist></arglist>
     </member>
@@ -12742,10 +12743,10 @@
       <arglist>(int index, double[] array, int arrayIndex, int count)</arglist>
     </member>
     <member kind="function">
-      <type>double[]</type>
+      <type>double []</type>
       <name>ToArray</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1DoubleVector.html</anchorfile>
-      <anchor>a77cc8039a6d8666f1ef786c30a877c53</anchor>
+      <anchor>adf109e0e2008229e56ef6f898425311d</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -13064,21 +13065,21 @@
       <anchor>a67eef3374888e85bdb523ae39a13e2ac</anchor>
       <arglist>(pb::CodedInputStream input)</arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>IndexFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ElementConstraintProto.html</anchorfile>
       <anchor>a1cf9ee00ed574678bb2dca73a4b7d0bf</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>TargetFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ElementConstraintProto.html</anchorfile>
       <anchor>a0a9e2febdf60d2301a87c0247cf8ddbf</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>VarsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ElementConstraintProto.html</anchorfile>
@@ -13186,10 +13187,10 @@
       <arglist></arglist>
     </member>
     <member kind="property">
-      <type>LocalSearchFilter</type>
+      <type>LocalSearchFilter?</type>
       <name>filter</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchFilterManager_1_1FilterEvent.html</anchorfile>
-      <anchor>a64a5416a19764d0a3c96ec27135b2b2a</anchor>
+      <anchor>a6bce2628ffc057864fa099566d08f62d</anchor>
       <arglist></arglist>
     </member>
     <member kind="property">
@@ -13376,28 +13377,28 @@
       <anchor>a67eef3374888e85bdb523ae39a13e2ac</anchor>
       <arglist>(pb::CodedInputStream input)</arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>VarsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1FloatObjectiveProto.html</anchorfile>
       <anchor>a21a2e981c9fba2735b6ba452e5fba670</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>CoeffsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1FloatObjectiveProto.html</anchorfile>
       <anchor>a7910a4b4e23721189862a82c6fb49521</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>OffsetFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1FloatObjectiveProto.html</anchorfile>
       <anchor>a12f0687287af579e61b58dff9a12bb94</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>MaximizeFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1FloatObjectiveProto.html</anchorfile>
@@ -13677,51 +13678,51 @@
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>aa2c1764ab50332bd00750395d7fe005d</anchor>
+      <anchor>abecdcc8d8af528ebfa18a2040752302f</anchor>
       <arglist>(Constraint a, Constraint b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a8d9c7e7b51047c7db785cb28c5ac2ee5</anchor>
+      <anchor>a54e0abb69270881eb908a546d6d5d9ee</anchor>
       <arglist>(Constraint a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a1e322c1cf071bc63f1a57e49b39c2513</anchor>
+      <anchor>a653d1cc7abbdea943d8f66ba7d368609</anchor>
       <arglist>(long v, Constraint a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a11dca67868602a4f4de7ed771a30ceab</anchor>
+      <anchor>af699870283706fc529d1dd0977a6134c</anchor>
       <arglist>(Constraint a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>aa4e01ca5dffc9a82f2918fb856304830</anchor>
+      <anchor>aad72c90dda324071d4259d4605f307a7</anchor>
       <arglist>(Constraint a, Constraint b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a558540d48bd60ab61117ad29bad52d92</anchor>
+      <anchor>a7b750177d977e8b79272338810919482</anchor>
       <arglist>(Constraint a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a9e0c0e2832a3dc3fcac688c4765264c0</anchor>
+      <anchor>a4fd6826e14f45a9ace0e70de018f6bc5</anchor>
       <arglist>(long v, Constraint a)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -13754,44 +13755,44 @@
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a4f22441dd26b5b4573b03e45834f63aa</anchor>
+      <anchor>ab402599c4824a325a082fc2c4fb53f11</anchor>
       <arglist>(Constraint a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a778cc85ae8fccf10cfc6261178db802d</anchor>
+      <anchor>a2c2d0cfc4fbda5201fd72d0c45b34871</anchor>
       <arglist>(long v, Constraint a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static ConstraintEquality</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a20acd922ca3df55d3e35766688bc0e67</anchor>
+      <anchor>aedddba2bbb98221d2225060342b53d5a</anchor>
       <arglist>(Constraint a, Constraint b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>adbd7920d8327cad94b73194a582aa336</anchor>
+      <anchor>ae566909a25a52ba0c2b3916f8e819286</anchor>
       <arglist>(Constraint a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a46db71728ad83f5ccdf7bee3c65c137b</anchor>
+      <anchor>ae1498847694a400996ab1e4d7b6a6a05</anchor>
       <arglist>(long v, Constraint a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>abc2fa3846e0e78e7181dfd405c250f0b</anchor>
+      <anchor>a4c1ad71dd084886567d5de385d6bd646</anchor>
       <arglist>(Constraint a, Constraint b)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -13870,6 +13871,31 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
       <anchor>abc050282310ee35f8b4bac77b6103375</anchor>
       <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>Google::OrTools::Sat::HelperExtensions</name>
+    <filename>classGoogle_1_1OrTools_1_1Sat_1_1HelperExtensions.html</filename>
+    <member kind="function" static="yes">
+      <type>static void</type>
+      <name>AddOrIncrement</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1HelperExtensions.html</anchorfile>
+      <anchor>a7eb9e1f96309a271edc58546b7ac2182</anchor>
+      <arglist>(this Dictionary&lt; IntVar, long &gt; dict, IntVar key, long increment)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static void</type>
+      <name>TrySetCapacity&lt; TField, TValues &gt;</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1HelperExtensions.html</anchorfile>
+      <anchor>a968105d5ab4eb42a17d3f7b9250583ba</anchor>
+      <arglist>(this RepeatedField&lt; TField &gt; field, IEnumerable&lt; TValues &gt; values)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static void</type>
+      <name>TryEnsureCapacity&lt; TValue, TValues &gt;</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1HelperExtensions.html</anchorfile>
+      <anchor>a90dfe4a075072c8d9b98456a18af8db0</anchor>
+      <arglist>(this List&lt; TValue &gt; list, IEnumerable&lt; TValues &gt; values)</arglist>
     </member>
   </compound>
   <compound kind="interface">
@@ -14630,14 +14656,14 @@
       <anchor>a67eef3374888e85bdb523ae39a13e2ac</anchor>
       <arglist>(pb::CodedInputStream input)</arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>ImprovementRateCoefficientFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types_1_1ImprovementSearchLimitParameters.html</anchorfile>
       <anchor>a0a1aa387c20ad684c2a13df3b39bdeb0</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>ImprovementRateSolutionsDistanceFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types_1_1ImprovementSearchLimitParameters.html</anchorfile>
@@ -14670,506 +14696,6 @@
       <name>ImprovementRateSolutionsDistance</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types_1_1ImprovementSearchLimitParameters.html</anchorfile>
       <anchor>af793fa28e7425662ec9b16e4d8cbf3ec</anchor>
-      <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>Google::OrTools::Algorithms::Int64Vector</name>
-    <filename>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</filename>
-    <class kind="class">Google::OrTools::Algorithms::Int64Vector::Int64VectorEnumerator</class>
-    <member kind="function">
-      <type>void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
-      <anchor>a6e2d745cdb7a7b983f861ed6a9a541a7</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>Int64Vector</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
-      <anchor>a6a49be260c8004de3e132a6ab45572e7</anchor>
-      <arglist>(global::System.Collections.IEnumerable c)</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>Int64Vector</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
-      <anchor>ad4667d4b8f13130fe31654d53966f402</anchor>
-      <arglist>(global::System.Collections.Generic.IEnumerable&lt; long &gt; c)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>CopyTo</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
-      <anchor>af7f404fe2f0b77489ca3577321a5ff94</anchor>
-      <arglist>(long[] array)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>CopyTo</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
-      <anchor>a864e771b3e40d6fc7a9c5516e45e4ec3</anchor>
-      <arglist>(long[] array, int arrayIndex)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>CopyTo</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
-      <anchor>a9e8ff310cc3c27b59e4106f850ceaddf</anchor>
-      <arglist>(int index, long[] array, int arrayIndex, int count)</arglist>
-    </member>
-    <member kind="function">
-      <type>long[]</type>
-      <name>ToArray</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
-      <anchor>ae01bdf98e2fdd2f4aa06987d413dd520</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>Int64VectorEnumerator</type>
-      <name>GetEnumerator</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
-      <anchor>ae04db1268d449f52e48e7a9438c71133</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Clear</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
-      <anchor>aa71d36872f416feaa853788a7a7a7ef8</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Add</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
-      <anchor>ad949437cf1764aade5c7cbd8fa1c3166</anchor>
-      <arglist>(long x)</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>Int64Vector</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
-      <anchor>a168c7db87ed48a1dcd19a820777c8588</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>Int64Vector</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
-      <anchor>a6a9e1be5830bb86d1685684806b1e2a0</anchor>
-      <arglist>(Int64Vector other)</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>Int64Vector</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
-      <anchor>a22b1c99dbcaab231c739f7065ef53d72</anchor>
-      <arglist>(int capacity)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>AddRange</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
-      <anchor>a95bd186cde6219880908b76539a33cc2</anchor>
-      <arglist>(Int64Vector values)</arglist>
-    </member>
-    <member kind="function">
-      <type>Int64Vector</type>
-      <name>GetRange</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
-      <anchor>a23e49836eb5994aab1368bd5941eb51f</anchor>
-      <arglist>(int index, int count)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Insert</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
-      <anchor>a416ba24ab2201269f8a88f4387c08466</anchor>
-      <arglist>(int index, long x)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>InsertRange</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
-      <anchor>a0b4a425bb17806845a83bfd79a751c3f</anchor>
-      <arglist>(int index, Int64Vector values)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>RemoveAt</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
-      <anchor>ad7c925d24a4e07389d2331e0508618ea</anchor>
-      <arglist>(int index)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>RemoveRange</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
-      <anchor>ab8469187c24ee20858b41527b2f5e687</anchor>
-      <arglist>(int index, int count)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Reverse</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
-      <anchor>ae1b551cc51c9d556342b27b466a7c7cb</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Reverse</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
-      <anchor>af6cbf16084ead2a02440396e021b9b46</anchor>
-      <arglist>(int index, int count)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SetRange</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
-      <anchor>a5be311234f0316371a033933cfa86db2</anchor>
-      <arglist>(int index, Int64Vector values)</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>Contains</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
-      <anchor>ab613fee6b08a7ec8047fd89a9f903d43</anchor>
-      <arglist>(long value)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>IndexOf</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
-      <anchor>ad76f98ad1530aa6d37aa16a8b8edfa55</anchor>
-      <arglist>(long value)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>LastIndexOf</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
-      <anchor>a300b9003c478a3c63d9a3fc7569109dc</anchor>
-      <arglist>(long value)</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>Remove</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
-      <anchor>a18fdf2670c2e0bf3e42aa86d370c47ef</anchor>
-      <arglist>(long value)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static Int64Vector</type>
-      <name>Repeat</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
-      <anchor>a583c1ef8f0b3432dc556fb875e523816</anchor>
-      <arglist>(long value, int count)</arglist>
-    </member>
-    <member kind="function" protection="protected" virtualness="virtual">
-      <type>virtual void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
-      <anchor>a8ad4348ef0f9969025bab397e7e27e26</anchor>
-      <arglist>(bool disposing)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>bool</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
-      <anchor>abc050282310ee35f8b4bac77b6103375</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>bool</type>
-      <name>IsFixedSize</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
-      <anchor>a8ec7d7c5cd2656150a6237ce80df4d20</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>bool</type>
-      <name>IsReadOnly</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
-      <anchor>ad1b02f19e753582b3c5f9ed71bb0318a</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>long</type>
-      <name>this[int index]</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
-      <anchor>a079ebfe25f43ff6a4f4714f4abf56bba</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>int</type>
-      <name>Capacity</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
-      <anchor>a5ad7f82470f145a0d6ae871ff7b623f3</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>int</type>
-      <name>Count</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
-      <anchor>aad462966ed963f892117056de1eba502</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>bool</type>
-      <name>IsSynchronized</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
-      <anchor>a94b969d24485ca893c76b3323b3326f4</anchor>
-      <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>Google::OrTools::ConstraintSolver::Int64Vector</name>
-    <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::Int64Vector::Int64VectorEnumerator</class>
-    <member kind="function">
-      <type>void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>a6e2d745cdb7a7b983f861ed6a9a541a7</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>Int64Vector</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>a6a49be260c8004de3e132a6ab45572e7</anchor>
-      <arglist>(global::System.Collections.IEnumerable c)</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>Int64Vector</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>ad4667d4b8f13130fe31654d53966f402</anchor>
-      <arglist>(global::System.Collections.Generic.IEnumerable&lt; long &gt; c)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>CopyTo</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>af7f404fe2f0b77489ca3577321a5ff94</anchor>
-      <arglist>(long[] array)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>CopyTo</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>a864e771b3e40d6fc7a9c5516e45e4ec3</anchor>
-      <arglist>(long[] array, int arrayIndex)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>CopyTo</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>a9e8ff310cc3c27b59e4106f850ceaddf</anchor>
-      <arglist>(int index, long[] array, int arrayIndex, int count)</arglist>
-    </member>
-    <member kind="function">
-      <type>long[]</type>
-      <name>ToArray</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>ae01bdf98e2fdd2f4aa06987d413dd520</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>Int64VectorEnumerator</type>
-      <name>GetEnumerator</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>ae04db1268d449f52e48e7a9438c71133</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Clear</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>aa71d36872f416feaa853788a7a7a7ef8</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Add</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>ad949437cf1764aade5c7cbd8fa1c3166</anchor>
-      <arglist>(long x)</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>Int64Vector</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>a168c7db87ed48a1dcd19a820777c8588</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>Int64Vector</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>a6a9e1be5830bb86d1685684806b1e2a0</anchor>
-      <arglist>(Int64Vector other)</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>Int64Vector</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>a22b1c99dbcaab231c739f7065ef53d72</anchor>
-      <arglist>(int capacity)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>AddRange</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>a95bd186cde6219880908b76539a33cc2</anchor>
-      <arglist>(Int64Vector values)</arglist>
-    </member>
-    <member kind="function">
-      <type>Int64Vector</type>
-      <name>GetRange</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>a23e49836eb5994aab1368bd5941eb51f</anchor>
-      <arglist>(int index, int count)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Insert</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>a416ba24ab2201269f8a88f4387c08466</anchor>
-      <arglist>(int index, long x)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>InsertRange</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>a0b4a425bb17806845a83bfd79a751c3f</anchor>
-      <arglist>(int index, Int64Vector values)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>RemoveAt</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>ad7c925d24a4e07389d2331e0508618ea</anchor>
-      <arglist>(int index)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>RemoveRange</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>ab8469187c24ee20858b41527b2f5e687</anchor>
-      <arglist>(int index, int count)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Reverse</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>ae1b551cc51c9d556342b27b466a7c7cb</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Reverse</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>af6cbf16084ead2a02440396e021b9b46</anchor>
-      <arglist>(int index, int count)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SetRange</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>a5be311234f0316371a033933cfa86db2</anchor>
-      <arglist>(int index, Int64Vector values)</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>Contains</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>ab613fee6b08a7ec8047fd89a9f903d43</anchor>
-      <arglist>(long value)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>IndexOf</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>ad76f98ad1530aa6d37aa16a8b8edfa55</anchor>
-      <arglist>(long value)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>LastIndexOf</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>a300b9003c478a3c63d9a3fc7569109dc</anchor>
-      <arglist>(long value)</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>Remove</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>a18fdf2670c2e0bf3e42aa86d370c47ef</anchor>
-      <arglist>(long value)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static Int64Vector</type>
-      <name>Repeat</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>a583c1ef8f0b3432dc556fb875e523816</anchor>
-      <arglist>(long value, int count)</arglist>
-    </member>
-    <member kind="function" protection="protected" virtualness="virtual">
-      <type>virtual void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>a8ad4348ef0f9969025bab397e7e27e26</anchor>
-      <arglist>(bool disposing)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>bool</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>abc050282310ee35f8b4bac77b6103375</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>bool</type>
-      <name>IsFixedSize</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>a8ec7d7c5cd2656150a6237ce80df4d20</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>bool</type>
-      <name>IsReadOnly</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>ad1b02f19e753582b3c5f9ed71bb0318a</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>long</type>
-      <name>this[int index]</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>a079ebfe25f43ff6a4f4714f4abf56bba</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>int</type>
-      <name>Capacity</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>a5ad7f82470f145a0d6ae871ff7b623f3</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>int</type>
-      <name>Count</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>aad462966ed963f892117056de1eba502</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>bool</type>
-      <name>IsSynchronized</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>a94b969d24485ca893c76b3323b3326f4</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -15220,10 +14746,10 @@
       <arglist>(int index, long[] array, int arrayIndex, int count)</arglist>
     </member>
     <member kind="function">
-      <type>long[]</type>
+      <type>long []</type>
       <name>ToArray</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>ae01bdf98e2fdd2f4aa06987d413dd520</anchor>
+      <anchor>aac5141816359b1f2e374b9f1356cf734</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -15419,6 +14945,256 @@
       <type>bool</type>
       <name>IsSynchronized</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>a94b969d24485ca893c76b3323b3326f4</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>Google::OrTools::Algorithms::Int64Vector</name>
+    <filename>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</filename>
+    <class kind="class">Google::OrTools::Algorithms::Int64Vector::Int64VectorEnumerator</class>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
+      <anchor>a6e2d745cdb7a7b983f861ed6a9a541a7</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>Int64Vector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
+      <anchor>a6a49be260c8004de3e132a6ab45572e7</anchor>
+      <arglist>(global::System.Collections.IEnumerable c)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>Int64Vector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
+      <anchor>ad4667d4b8f13130fe31654d53966f402</anchor>
+      <arglist>(global::System.Collections.Generic.IEnumerable&lt; long &gt; c)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>CopyTo</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
+      <anchor>af7f404fe2f0b77489ca3577321a5ff94</anchor>
+      <arglist>(long[] array)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>CopyTo</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
+      <anchor>a864e771b3e40d6fc7a9c5516e45e4ec3</anchor>
+      <arglist>(long[] array, int arrayIndex)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>CopyTo</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
+      <anchor>a9e8ff310cc3c27b59e4106f850ceaddf</anchor>
+      <arglist>(int index, long[] array, int arrayIndex, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>long []</type>
+      <name>ToArray</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
+      <anchor>aac5141816359b1f2e374b9f1356cf734</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Int64VectorEnumerator</type>
+      <name>GetEnumerator</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
+      <anchor>ae04db1268d449f52e48e7a9438c71133</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Clear</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
+      <anchor>aa71d36872f416feaa853788a7a7a7ef8</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Add</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
+      <anchor>ad949437cf1764aade5c7cbd8fa1c3166</anchor>
+      <arglist>(long x)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>Int64Vector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
+      <anchor>a168c7db87ed48a1dcd19a820777c8588</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>Int64Vector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
+      <anchor>a6a9e1be5830bb86d1685684806b1e2a0</anchor>
+      <arglist>(Int64Vector other)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>Int64Vector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
+      <anchor>a22b1c99dbcaab231c739f7065ef53d72</anchor>
+      <arglist>(int capacity)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>AddRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
+      <anchor>a95bd186cde6219880908b76539a33cc2</anchor>
+      <arglist>(Int64Vector values)</arglist>
+    </member>
+    <member kind="function">
+      <type>Int64Vector</type>
+      <name>GetRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
+      <anchor>a23e49836eb5994aab1368bd5941eb51f</anchor>
+      <arglist>(int index, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Insert</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
+      <anchor>a416ba24ab2201269f8a88f4387c08466</anchor>
+      <arglist>(int index, long x)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>InsertRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
+      <anchor>a0b4a425bb17806845a83bfd79a751c3f</anchor>
+      <arglist>(int index, Int64Vector values)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>RemoveAt</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
+      <anchor>ad7c925d24a4e07389d2331e0508618ea</anchor>
+      <arglist>(int index)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>RemoveRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
+      <anchor>ab8469187c24ee20858b41527b2f5e687</anchor>
+      <arglist>(int index, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Reverse</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
+      <anchor>ae1b551cc51c9d556342b27b466a7c7cb</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Reverse</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
+      <anchor>af6cbf16084ead2a02440396e021b9b46</anchor>
+      <arglist>(int index, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
+      <anchor>a5be311234f0316371a033933cfa86db2</anchor>
+      <arglist>(int index, Int64Vector values)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>Contains</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
+      <anchor>ab613fee6b08a7ec8047fd89a9f903d43</anchor>
+      <arglist>(long value)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>IndexOf</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
+      <anchor>ad76f98ad1530aa6d37aa16a8b8edfa55</anchor>
+      <arglist>(long value)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>LastIndexOf</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
+      <anchor>a300b9003c478a3c63d9a3fc7569109dc</anchor>
+      <arglist>(long value)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>Remove</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
+      <anchor>a18fdf2670c2e0bf3e42aa86d370c47ef</anchor>
+      <arglist>(long value)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static Int64Vector</type>
+      <name>Repeat</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
+      <anchor>a583c1ef8f0b3432dc556fb875e523816</anchor>
+      <arglist>(long value, int count)</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
+      <anchor>a8ad4348ef0f9969025bab397e7e27e26</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>bool</type>
+      <name>swigCMemOwn</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
+      <anchor>abc050282310ee35f8b4bac77b6103375</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>bool</type>
+      <name>IsFixedSize</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
+      <anchor>a8ec7d7c5cd2656150a6237ce80df4d20</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>bool</type>
+      <name>IsReadOnly</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
+      <anchor>ad1b02f19e753582b3c5f9ed71bb0318a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>long</type>
+      <name>this[int index]</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
+      <anchor>a079ebfe25f43ff6a4f4714f4abf56bba</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>int</type>
+      <name>Capacity</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
+      <anchor>a5ad7f82470f145a0d6ae871ff7b623f3</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>int</type>
+      <name>Count</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
+      <anchor>aad462966ed963f892117056de1eba502</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>bool</type>
+      <name>IsSynchronized</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
       <anchor>a94b969d24485ca893c76b3323b3326f4</anchor>
       <arglist></arglist>
     </member>
@@ -15470,10 +15246,10 @@
       <arglist>(int index, long[] array, int arrayIndex, int count)</arglist>
     </member>
     <member kind="function">
-      <type>long[]</type>
+      <type>long []</type>
       <name>ToArray</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
-      <anchor>ae01bdf98e2fdd2f4aa06987d413dd520</anchor>
+      <anchor>aac5141816359b1f2e374b9f1356cf734</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -15674,80 +15450,252 @@
     </member>
   </compound>
   <compound kind="class">
-    <name>Google::OrTools::Algorithms::Int64Vector::Int64VectorEnumerator</name>
-    <filename>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector_1_1Int64VectorEnumerator.html</filename>
-    <member kind="function">
-      <type></type>
-      <name>Int64VectorEnumerator</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector_1_1Int64VectorEnumerator.html</anchorfile>
-      <anchor>aee4964ae714b19adc31fd9cb2fded47f</anchor>
-      <arglist>(Int64Vector collection)</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>MoveNext</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector_1_1Int64VectorEnumerator.html</anchorfile>
-      <anchor>ad5316c283894d57be1450edab878aed0</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Reset</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector_1_1Int64VectorEnumerator.html</anchorfile>
-      <anchor>a372de693ad40b3f42839c8ec6ac845f4</anchor>
-      <arglist>()</arglist>
-    </member>
+    <name>Google::OrTools::ConstraintSolver::Int64Vector</name>
+    <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::Int64Vector::Int64VectorEnumerator</class>
     <member kind="function">
       <type>void</type>
       <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector_1_1Int64VectorEnumerator.html</anchorfile>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
       <anchor>a6e2d745cdb7a7b983f861ed6a9a541a7</anchor>
       <arglist>()</arglist>
     </member>
-    <member kind="property">
-      <type>long</type>
-      <name>Current</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector_1_1Int64VectorEnumerator.html</anchorfile>
-      <anchor>ae0cbc115a66699ead8d93fddccf271ef</anchor>
+    <member kind="function">
+      <type></type>
+      <name>Int64Vector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>a6a49be260c8004de3e132a6ab45572e7</anchor>
+      <arglist>(global::System.Collections.IEnumerable c)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>Int64Vector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>ad4667d4b8f13130fe31654d53966f402</anchor>
+      <arglist>(global::System.Collections.Generic.IEnumerable&lt; long &gt; c)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>CopyTo</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>af7f404fe2f0b77489ca3577321a5ff94</anchor>
+      <arglist>(long[] array)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>CopyTo</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>a864e771b3e40d6fc7a9c5516e45e4ec3</anchor>
+      <arglist>(long[] array, int arrayIndex)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>CopyTo</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>a9e8ff310cc3c27b59e4106f850ceaddf</anchor>
+      <arglist>(int index, long[] array, int arrayIndex, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>long []</type>
+      <name>ToArray</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>aac5141816359b1f2e374b9f1356cf734</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Int64VectorEnumerator</type>
+      <name>GetEnumerator</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>ae04db1268d449f52e48e7a9438c71133</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Clear</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>aa71d36872f416feaa853788a7a7a7ef8</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Add</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>ad949437cf1764aade5c7cbd8fa1c3166</anchor>
+      <arglist>(long x)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>Int64Vector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>a168c7db87ed48a1dcd19a820777c8588</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>Int64Vector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>a6a9e1be5830bb86d1685684806b1e2a0</anchor>
+      <arglist>(Int64Vector other)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>Int64Vector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>a22b1c99dbcaab231c739f7065ef53d72</anchor>
+      <arglist>(int capacity)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>AddRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>a95bd186cde6219880908b76539a33cc2</anchor>
+      <arglist>(Int64Vector values)</arglist>
+    </member>
+    <member kind="function">
+      <type>Int64Vector</type>
+      <name>GetRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>a23e49836eb5994aab1368bd5941eb51f</anchor>
+      <arglist>(int index, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Insert</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>a416ba24ab2201269f8a88f4387c08466</anchor>
+      <arglist>(int index, long x)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>InsertRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>a0b4a425bb17806845a83bfd79a751c3f</anchor>
+      <arglist>(int index, Int64Vector values)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>RemoveAt</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>ad7c925d24a4e07389d2331e0508618ea</anchor>
+      <arglist>(int index)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>RemoveRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>ab8469187c24ee20858b41527b2f5e687</anchor>
+      <arglist>(int index, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Reverse</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>ae1b551cc51c9d556342b27b466a7c7cb</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Reverse</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>af6cbf16084ead2a02440396e021b9b46</anchor>
+      <arglist>(int index, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>a5be311234f0316371a033933cfa86db2</anchor>
+      <arglist>(int index, Int64Vector values)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>Contains</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>ab613fee6b08a7ec8047fd89a9f903d43</anchor>
+      <arglist>(long value)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>IndexOf</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>ad76f98ad1530aa6d37aa16a8b8edfa55</anchor>
+      <arglist>(long value)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>LastIndexOf</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>a300b9003c478a3c63d9a3fc7569109dc</anchor>
+      <arglist>(long value)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>Remove</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>a18fdf2670c2e0bf3e42aa86d370c47ef</anchor>
+      <arglist>(long value)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static Int64Vector</type>
+      <name>Repeat</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>a583c1ef8f0b3432dc556fb875e523816</anchor>
+      <arglist>(long value, int count)</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>a8ad4348ef0f9969025bab397e7e27e26</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>bool</type>
+      <name>swigCMemOwn</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>abc050282310ee35f8b4bac77b6103375</anchor>
       <arglist></arglist>
     </member>
-  </compound>
-  <compound kind="class">
-    <name>Google::OrTools::ConstraintSolver::Int64Vector::Int64VectorEnumerator</name>
-    <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector_1_1Int64VectorEnumerator.html</filename>
-    <member kind="function">
-      <type></type>
-      <name>Int64VectorEnumerator</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector_1_1Int64VectorEnumerator.html</anchorfile>
-      <anchor>aee4964ae714b19adc31fd9cb2fded47f</anchor>
-      <arglist>(Int64Vector collection)</arglist>
-    </member>
-    <member kind="function">
+    <member kind="property">
       <type>bool</type>
-      <name>MoveNext</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector_1_1Int64VectorEnumerator.html</anchorfile>
-      <anchor>ad5316c283894d57be1450edab878aed0</anchor>
-      <arglist>()</arglist>
+      <name>IsFixedSize</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>a8ec7d7c5cd2656150a6237ce80df4d20</anchor>
+      <arglist></arglist>
     </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Reset</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector_1_1Int64VectorEnumerator.html</anchorfile>
-      <anchor>a372de693ad40b3f42839c8ec6ac845f4</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector_1_1Int64VectorEnumerator.html</anchorfile>
-      <anchor>a6e2d745cdb7a7b983f861ed6a9a541a7</anchor>
-      <arglist>()</arglist>
+    <member kind="property">
+      <type>bool</type>
+      <name>IsReadOnly</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>ad1b02f19e753582b3c5f9ed71bb0318a</anchor>
+      <arglist></arglist>
     </member>
     <member kind="property">
       <type>long</type>
-      <name>Current</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector_1_1Int64VectorEnumerator.html</anchorfile>
-      <anchor>ae0cbc115a66699ead8d93fddccf271ef</anchor>
+      <name>this[int index]</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>a079ebfe25f43ff6a4f4714f4abf56bba</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>int</type>
+      <name>Capacity</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>a5ad7f82470f145a0d6ae871ff7b623f3</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>int</type>
+      <name>Count</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>aad462966ed963f892117056de1eba502</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>bool</type>
+      <name>IsSynchronized</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>a94b969d24485ca893c76b3323b3326f4</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -15786,6 +15734,45 @@
       <type>long</type>
       <name>Current</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector_1_1Int64VectorEnumerator.html</anchorfile>
+      <anchor>ae0cbc115a66699ead8d93fddccf271ef</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>Google::OrTools::Algorithms::Int64Vector::Int64VectorEnumerator</name>
+    <filename>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector_1_1Int64VectorEnumerator.html</filename>
+    <member kind="function">
+      <type></type>
+      <name>Int64VectorEnumerator</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector_1_1Int64VectorEnumerator.html</anchorfile>
+      <anchor>aee4964ae714b19adc31fd9cb2fded47f</anchor>
+      <arglist>(Int64Vector collection)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>MoveNext</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector_1_1Int64VectorEnumerator.html</anchorfile>
+      <anchor>ad5316c283894d57be1450edab878aed0</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Reset</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector_1_1Int64VectorEnumerator.html</anchorfile>
+      <anchor>a372de693ad40b3f42839c8ec6ac845f4</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector_1_1Int64VectorEnumerator.html</anchorfile>
+      <anchor>a6e2d745cdb7a7b983f861ed6a9a541a7</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="property">
+      <type>long</type>
+      <name>Current</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector_1_1Int64VectorEnumerator.html</anchorfile>
       <anchor>ae0cbc115a66699ead8d93fddccf271ef</anchor>
       <arglist></arglist>
     </member>
@@ -15830,224 +15817,41 @@
     </member>
   </compound>
   <compound kind="class">
-    <name>Google::OrTools::Algorithms::Int64VectorVector</name>
-    <filename>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</filename>
-    <class kind="class">Google::OrTools::Algorithms::Int64VectorVector::Int64VectorVectorEnumerator</class>
+    <name>Google::OrTools::ConstraintSolver::Int64Vector::Int64VectorEnumerator</name>
+    <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector_1_1Int64VectorEnumerator.html</filename>
+    <member kind="function">
+      <type></type>
+      <name>Int64VectorEnumerator</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector_1_1Int64VectorEnumerator.html</anchorfile>
+      <anchor>aee4964ae714b19adc31fd9cb2fded47f</anchor>
+      <arglist>(Int64Vector collection)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>MoveNext</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector_1_1Int64VectorEnumerator.html</anchorfile>
+      <anchor>ad5316c283894d57be1450edab878aed0</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Reset</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector_1_1Int64VectorEnumerator.html</anchorfile>
+      <anchor>a372de693ad40b3f42839c8ec6ac845f4</anchor>
+      <arglist>()</arglist>
+    </member>
     <member kind="function">
       <type>void</type>
       <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector_1_1Int64VectorEnumerator.html</anchorfile>
       <anchor>a6e2d745cdb7a7b983f861ed6a9a541a7</anchor>
       <arglist>()</arglist>
     </member>
-    <member kind="function">
-      <type></type>
-      <name>Int64VectorVector</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>aa4e1218343e463f5f899d4dabd17d75d</anchor>
-      <arglist>(global::System.Collections.IEnumerable c)</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>Int64VectorVector</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>a97082d691c3ac39ed1328141b1c03c1b</anchor>
-      <arglist>(global::System.Collections.Generic.IEnumerable&lt; Int64Vector &gt; c)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>CopyTo</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>aab470cd15c2491146c4bd82c1c32628e</anchor>
-      <arglist>(Int64Vector[] array)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>CopyTo</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>aa78674e378deb48dfeb3682280a43c15</anchor>
-      <arglist>(Int64Vector[] array, int arrayIndex)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>CopyTo</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>a54cad1de1fee640a41791b1ff49ed327</anchor>
-      <arglist>(int index, Int64Vector[] array, int arrayIndex, int count)</arglist>
-    </member>
-    <member kind="function">
-      <type>Int64Vector[]</type>
-      <name>ToArray</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>af46826a4313608f4a4c5ade093145b99</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>Int64VectorVectorEnumerator</type>
-      <name>GetEnumerator</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>affe2a474d8ea951f5111f38a144fcbb4</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Clear</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>aa71d36872f416feaa853788a7a7a7ef8</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Add</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>a70061e8f961ae224b4f9bc97d03dc006</anchor>
-      <arglist>(Int64Vector x)</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>Int64VectorVector</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>ac29f248ef12130ecefd853146e93ac56</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>Int64VectorVector</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>a749e441c4728c2cbfe07f58e284ef964</anchor>
-      <arglist>(Int64VectorVector other)</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>Int64VectorVector</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>a6e51de2ec9b31594c9dc6a5ab1aef90a</anchor>
-      <arglist>(int capacity)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>AddRange</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>ab89a4c7e823605cd8a1d9bc4afedac80</anchor>
-      <arglist>(Int64VectorVector values)</arglist>
-    </member>
-    <member kind="function">
-      <type>Int64VectorVector</type>
-      <name>GetRange</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>ad66371058d32d6823490b279d84adc59</anchor>
-      <arglist>(int index, int count)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Insert</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>ab750a1b9314a73aa9f522daeaf130652</anchor>
-      <arglist>(int index, Int64Vector x)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>InsertRange</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>acac24388a81156ec7ad8ed74428bdba7</anchor>
-      <arglist>(int index, Int64VectorVector values)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>RemoveAt</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>ad7c925d24a4e07389d2331e0508618ea</anchor>
-      <arglist>(int index)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>RemoveRange</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>ab8469187c24ee20858b41527b2f5e687</anchor>
-      <arglist>(int index, int count)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Reverse</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>ae1b551cc51c9d556342b27b466a7c7cb</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Reverse</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>af6cbf16084ead2a02440396e021b9b46</anchor>
-      <arglist>(int index, int count)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SetRange</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>a8ecee415e6348798c10e6ba9a89fd8de</anchor>
-      <arglist>(int index, Int64VectorVector values)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static Int64VectorVector</type>
-      <name>Repeat</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>a89f2dd9f5a449e5028c7b513c96b25d6</anchor>
-      <arglist>(Int64Vector value, int count)</arglist>
-    </member>
-    <member kind="function" protection="protected" virtualness="virtual">
-      <type>virtual void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>a8ad4348ef0f9969025bab397e7e27e26</anchor>
-      <arglist>(bool disposing)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>bool</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>abc050282310ee35f8b4bac77b6103375</anchor>
-      <arglist></arglist>
-    </member>
     <member kind="property">
-      <type>bool</type>
-      <name>IsFixedSize</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>a8ec7d7c5cd2656150a6237ce80df4d20</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>bool</type>
-      <name>IsReadOnly</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>ad1b02f19e753582b3c5f9ed71bb0318a</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>Int64Vector</type>
-      <name>this[int index]</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>a0ae915dc21e94fb0ad3e53e34df91777</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>int</type>
-      <name>Capacity</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>a5ad7f82470f145a0d6ae871ff7b623f3</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>int</type>
-      <name>Count</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>aad462966ed963f892117056de1eba502</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>bool</type>
-      <name>IsSynchronized</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>a94b969d24485ca893c76b3323b3326f4</anchor>
+      <type>long</type>
+      <name>Current</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector_1_1Int64VectorEnumerator.html</anchorfile>
+      <anchor>ae0cbc115a66699ead8d93fddccf271ef</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -16098,10 +15902,10 @@
       <arglist>(int index, Int64Vector[] array, int arrayIndex, int count)</arglist>
     </member>
     <member kind="function">
-      <type>Int64Vector[]</type>
+      <type>Int64Vector []</type>
       <name>ToArray</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64VectorVector.html</anchorfile>
-      <anchor>af46826a4313608f4a4c5ade093145b99</anchor>
+      <anchor>a3518712c5b9cf1a09552c550fc1ffe5e</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -16320,10 +16124,10 @@
       <arglist>(int index, Int64Vector[] array, int arrayIndex, int count)</arglist>
     </member>
     <member kind="function">
-      <type>Int64Vector[]</type>
+      <type>Int64Vector []</type>
       <name>ToArray</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64VectorVector.html</anchorfile>
-      <anchor>af46826a4313608f4a4c5ade093145b99</anchor>
+      <anchor>a3518712c5b9cf1a09552c550fc1ffe5e</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -16491,6 +16295,228 @@
       <type>bool</type>
       <name>IsSynchronized</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64VectorVector.html</anchorfile>
+      <anchor>a94b969d24485ca893c76b3323b3326f4</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>Google::OrTools::Algorithms::Int64VectorVector</name>
+    <filename>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</filename>
+    <class kind="class">Google::OrTools::Algorithms::Int64VectorVector::Int64VectorVectorEnumerator</class>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>a6e2d745cdb7a7b983f861ed6a9a541a7</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>Int64VectorVector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>aa4e1218343e463f5f899d4dabd17d75d</anchor>
+      <arglist>(global::System.Collections.IEnumerable c)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>Int64VectorVector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>a97082d691c3ac39ed1328141b1c03c1b</anchor>
+      <arglist>(global::System.Collections.Generic.IEnumerable&lt; Int64Vector &gt; c)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>CopyTo</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>aab470cd15c2491146c4bd82c1c32628e</anchor>
+      <arglist>(Int64Vector[] array)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>CopyTo</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>aa78674e378deb48dfeb3682280a43c15</anchor>
+      <arglist>(Int64Vector[] array, int arrayIndex)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>CopyTo</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>a54cad1de1fee640a41791b1ff49ed327</anchor>
+      <arglist>(int index, Int64Vector[] array, int arrayIndex, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>Int64Vector []</type>
+      <name>ToArray</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>a3518712c5b9cf1a09552c550fc1ffe5e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Int64VectorVectorEnumerator</type>
+      <name>GetEnumerator</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>affe2a474d8ea951f5111f38a144fcbb4</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Clear</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>aa71d36872f416feaa853788a7a7a7ef8</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Add</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>a70061e8f961ae224b4f9bc97d03dc006</anchor>
+      <arglist>(Int64Vector x)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>Int64VectorVector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>ac29f248ef12130ecefd853146e93ac56</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>Int64VectorVector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>a749e441c4728c2cbfe07f58e284ef964</anchor>
+      <arglist>(Int64VectorVector other)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>Int64VectorVector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>a6e51de2ec9b31594c9dc6a5ab1aef90a</anchor>
+      <arglist>(int capacity)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>AddRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>ab89a4c7e823605cd8a1d9bc4afedac80</anchor>
+      <arglist>(Int64VectorVector values)</arglist>
+    </member>
+    <member kind="function">
+      <type>Int64VectorVector</type>
+      <name>GetRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>ad66371058d32d6823490b279d84adc59</anchor>
+      <arglist>(int index, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Insert</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>ab750a1b9314a73aa9f522daeaf130652</anchor>
+      <arglist>(int index, Int64Vector x)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>InsertRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>acac24388a81156ec7ad8ed74428bdba7</anchor>
+      <arglist>(int index, Int64VectorVector values)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>RemoveAt</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>ad7c925d24a4e07389d2331e0508618ea</anchor>
+      <arglist>(int index)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>RemoveRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>ab8469187c24ee20858b41527b2f5e687</anchor>
+      <arglist>(int index, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Reverse</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>ae1b551cc51c9d556342b27b466a7c7cb</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Reverse</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>af6cbf16084ead2a02440396e021b9b46</anchor>
+      <arglist>(int index, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>a8ecee415e6348798c10e6ba9a89fd8de</anchor>
+      <arglist>(int index, Int64VectorVector values)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static Int64VectorVector</type>
+      <name>Repeat</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>a89f2dd9f5a449e5028c7b513c96b25d6</anchor>
+      <arglist>(Int64Vector value, int count)</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>a8ad4348ef0f9969025bab397e7e27e26</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>bool</type>
+      <name>swigCMemOwn</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>abc050282310ee35f8b4bac77b6103375</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>bool</type>
+      <name>IsFixedSize</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>a8ec7d7c5cd2656150a6237ce80df4d20</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>bool</type>
+      <name>IsReadOnly</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>ad1b02f19e753582b3c5f9ed71bb0318a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>Int64Vector</type>
+      <name>this[int index]</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>a0ae915dc21e94fb0ad3e53e34df91777</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>int</type>
+      <name>Capacity</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>a5ad7f82470f145a0d6ae871ff7b623f3</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>int</type>
+      <name>Count</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>aad462966ed963f892117056de1eba502</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>bool</type>
+      <name>IsSynchronized</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
       <anchor>a94b969d24485ca893c76b3323b3326f4</anchor>
       <arglist></arglist>
     </member>
@@ -16542,10 +16568,10 @@
       <arglist>(int index, Int64Vector[] array, int arrayIndex, int count)</arglist>
     </member>
     <member kind="function">
-      <type>Int64Vector[]</type>
+      <type>Int64Vector []</type>
       <name>ToArray</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64VectorVector.html</anchorfile>
-      <anchor>af46826a4313608f4a4c5ade093145b99</anchor>
+      <anchor>a3518712c5b9cf1a09552c550fc1ffe5e</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -16714,45 +16740,6 @@
       <name>IsSynchronized</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64VectorVector.html</anchorfile>
       <anchor>a94b969d24485ca893c76b3323b3326f4</anchor>
-      <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>Google::OrTools::Algorithms::Int64VectorVector::Int64VectorVectorEnumerator</name>
-    <filename>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html</filename>
-    <member kind="function">
-      <type></type>
-      <name>Int64VectorVectorEnumerator</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html</anchorfile>
-      <anchor>a54c1e4d98a58129ce7291654a685ff8e</anchor>
-      <arglist>(Int64VectorVector collection)</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>MoveNext</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html</anchorfile>
-      <anchor>ad5316c283894d57be1450edab878aed0</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Reset</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html</anchorfile>
-      <anchor>a372de693ad40b3f42839c8ec6ac845f4</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html</anchorfile>
-      <anchor>a6e2d745cdb7a7b983f861ed6a9a541a7</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="property">
-      <type>Int64Vector</type>
-      <name>Current</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html</anchorfile>
-      <anchor>af75fd7b0112445ab143de51a22c28f77</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -16874,6 +16861,45 @@
     </member>
   </compound>
   <compound kind="class">
+    <name>Google::OrTools::Algorithms::Int64VectorVector::Int64VectorVectorEnumerator</name>
+    <filename>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html</filename>
+    <member kind="function">
+      <type></type>
+      <name>Int64VectorVectorEnumerator</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html</anchorfile>
+      <anchor>a54c1e4d98a58129ce7291654a685ff8e</anchor>
+      <arglist>(Int64VectorVector collection)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>MoveNext</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html</anchorfile>
+      <anchor>ad5316c283894d57be1450edab878aed0</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Reset</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html</anchorfile>
+      <anchor>a372de693ad40b3f42839c8ec6ac845f4</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html</anchorfile>
+      <anchor>a6e2d745cdb7a7b983f861ed6a9a541a7</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="property">
+      <type>Int64Vector</type>
+      <name>Current</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html</anchorfile>
+      <anchor>af75fd7b0112445ab143de51a22c28f77</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
     <name>Google::OrTools::ConstraintSolver::IntArrayHelper</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntArrayHelper.html</filename>
     <member kind="function" static="yes">
@@ -16990,24 +17016,24 @@
       <arglist></arglist>
     </member>
     <member kind="property">
-      <type>IntVar</type>
+      <type>IntVar?</type>
       <name>variable</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Solver_1_1IntegerCastInfo.html</anchorfile>
-      <anchor>a6f3b9eaa491b9a22f03a4141cfd76726</anchor>
+      <anchor>af1872c5435fe7c6e2a0692850b0fe8e2</anchor>
       <arglist></arglist>
     </member>
     <member kind="property">
-      <type>IntExpr</type>
+      <type>IntExpr?</type>
       <name>expression</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Solver_1_1IntegerCastInfo.html</anchorfile>
-      <anchor>aa222edce269ea872399a6fb3c80a9aa4</anchor>
+      <anchor>a8a8c3904fa6f3b8be03f1ea51d2f7a47</anchor>
       <arglist></arglist>
     </member>
     <member kind="property">
-      <type>Constraint</type>
+      <type>Constraint?</type>
       <name>maintainer</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Solver_1_1IntegerCastInfo.html</anchorfile>
-      <anchor>aa35c65c996475f6fd06b2cf26f6a9fdd</anchor>
+      <anchor>a724c505303549f34fba8b4935824ea73</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -17091,14 +17117,14 @@
       <anchor>a67eef3374888e85bdb523ae39a13e2ac</anchor>
       <arglist>(pb::CodedInputStream input)</arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>NameFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntegerVariableProto.html</anchorfile>
       <anchor>a8472f6241944a1949eb4435a1853734b</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>DomainFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntegerVariableProto.html</anchorfile>
@@ -17214,21 +17240,21 @@
       <anchor>a67eef3374888e85bdb523ae39a13e2ac</anchor>
       <arglist>(pb::CodedInputStream input)</arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>StartFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntervalConstraintProto.html</anchorfile>
       <anchor>a3f1c9bd3ca2be1e821f052fd111ea55e</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>EndFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntervalConstraintProto.html</anchorfile>
       <anchor>a665af0b1f5156e004b15984d10d758c9</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>SizeFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntervalConstraintProto.html</anchorfile>
@@ -18386,10 +18412,10 @@
       <arglist>(int index, IntervalVar[] array, int arrayIndex, int count)</arglist>
     </member>
     <member kind="function">
-      <type>IntervalVar[]</type>
+      <type>IntervalVar []</type>
       <name>ToArray</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntervalVarVector.html</anchorfile>
-      <anchor>a97cd5cfb599840d2d9223b17e132c808</anchor>
+      <anchor>a81d8bf744d6e47873bdb36902474fb31</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -18693,8 +18719,8 @@
       <type>virtual void</type>
       <name>Range</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>a3961fbda887e5f284a4fe7bca77bcfd6</anchor>
-      <arglist>(out long l, out long u)</arglist>
+      <anchor>aa445be31190760ad747beef97d859066</anchor>
+      <arglist>(out int l, out int u)</arglist>
     </member>
     <member kind="function" virtualness="virtual">
       <type>virtual void</type>
@@ -19020,44 +19046,44 @@
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>a6fbd3329dde0c841750d236f873a0de6</anchor>
+      <anchor>a89868c72ebbfd2d207e6504eb297acad</anchor>
       <arglist>(IntExpr a, IntExpr b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>ad1b5d5c18624d8e8dc593444d53aa0d6</anchor>
+      <anchor>a2e43f33e8ea8c8d10278af7c8a0c5b6e</anchor>
       <arglist>(IntExpr a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>a30975d1b3a4a12d649a144a09a099f66</anchor>
+      <anchor>ae1722d63837d0f0c26b86aa91ab99013</anchor>
       <arglist>(long v, IntExpr a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>a3fbafcc6a6bb5ff137c256673905a5df</anchor>
+      <anchor>a3dfaa09986e064ad6f4a202374c563c9</anchor>
       <arglist>(IntExpr a, IntExpr b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>a88298c7b99bc18247ee13890f7501de1</anchor>
+      <anchor>a439b193f98ee4f7975ec2ba248b04125</anchor>
       <arglist>(IntExpr a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>a00cb062e053684dc4d306e58afff7bd3</anchor>
+      <anchor>a731b50dfc2d422a8b7591e495638bc36</anchor>
       <arglist>(long v, IntExpr a)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -19069,16 +19095,16 @@
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator%</name>
+      <name>operator %</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>a67ba73b346b6d6cd54f849ba33ddca0d</anchor>
+      <anchor>add4af2abf4931c52426112d27955e3ce</anchor>
       <arglist>(IntExpr a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>ab95b83abb0f63e1bf6d5b882ec07b9be</anchor>
+      <anchor>aadecd477cbdb5a12a370ddfdf2091188</anchor>
       <arglist>(IntExpr a)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -19090,9 +19116,9 @@
     </member>
     <member kind="function" static="yes">
       <type>static IntExprEquality</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>a77d645a37c2b5aa317600025db4faaf0</anchor>
+      <anchor>a31280487f5ffa19fed90072263f7180f</anchor>
       <arglist>(IntExpr a, IntExpr b)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -19104,16 +19130,16 @@
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>a0f3e81581ed5684569ed00e7b7ec4cbc</anchor>
+      <anchor>ab45bea6a43e490ebbcbc0b139dbf6bc1</anchor>
       <arglist>(IntExpr a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>a294803e69e08cfe99cc45c93ddc8e7b2</anchor>
+      <anchor>a93ac1977ffcd5ef960d1c33749e015bf</anchor>
       <arglist>(IntExpr a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -19139,9 +19165,9 @@
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>a1bc11ad3791245aca9fa33a3d0880b09</anchor>
+      <anchor>a7834fb100482e4382ce69499166f5b52</anchor>
       <arglist>(IntExpr a, IntExpr b)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -19277,51 +19303,51 @@
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html</anchorfile>
-      <anchor>a0e0e06938bef414a9aec4fc74c53a087</anchor>
+      <anchor>a1e9e7690ae529ae3fa6111d2ef9188fe</anchor>
       <arglist>(BaseEquality a, BaseEquality b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html</anchorfile>
-      <anchor>abbf98b0988fce8a27370dc48c9a68ef2</anchor>
+      <anchor>a2981e6efdc44011c7ce8785cedeb6812</anchor>
       <arglist>(BaseEquality a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html</anchorfile>
-      <anchor>acf5f3a3fc254ad4d6cca03862c774b6f</anchor>
+      <anchor>a0d7c1da056b5c333e710b5888a91cbb8</anchor>
       <arglist>(long v, BaseEquality a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html</anchorfile>
-      <anchor>a82a4dfab5c2fd36752f3bc36078e961f</anchor>
+      <anchor>a4f1aec22b07c58354c8b84fa153fec2c</anchor>
       <arglist>(BaseEquality a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html</anchorfile>
-      <anchor>a148df138f6aea988b6a249b9e5b3dc7e</anchor>
+      <anchor>a07fb94091b6bf5bc57ce0b7c3c1e5b1c</anchor>
       <arglist>(BaseEquality a, BaseEquality b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html</anchorfile>
-      <anchor>acf99575703d76316eaecd2ad2373648e</anchor>
+      <anchor>a569aabaa30ef6c169733e777da973793</anchor>
       <arglist>(BaseEquality a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html</anchorfile>
-      <anchor>a95fba945abcbd181d8b8a646d5e3bc2c</anchor>
+      <anchor>a6d5bb384f2cd17517bb3e29abc6d8f97</anchor>
       <arglist>(long v, BaseEquality a)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -19354,44 +19380,44 @@
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html</anchorfile>
-      <anchor>a1d0f2204bb12fe53bbf9d3259194e193</anchor>
+      <anchor>a3ded344d26209f60e212d22ddd5294cc</anchor>
       <arglist>(BaseEquality a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html</anchorfile>
-      <anchor>a61a91223214df387a58ca31ae428bf09</anchor>
+      <anchor>a050a0f9faf28fe0e6b32d58b3b1350d9</anchor>
       <arglist>(long v, BaseEquality a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static ConstraintEquality</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html</anchorfile>
-      <anchor>af9d17bfc39833f13248c13dbd086d1f9</anchor>
+      <anchor>a8026d2d8461621d54bcc5c7d98546b4d</anchor>
       <arglist>(BaseEquality a, BaseEquality b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html</anchorfile>
-      <anchor>adc7db138385e0cd872db06d561f40a4b</anchor>
+      <anchor>afaeb0aeebe0319c03a41da6e2ab429ae</anchor>
       <arglist>(BaseEquality a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html</anchorfile>
-      <anchor>ae3d4e559e8ad54d5839169fd8d6706ec</anchor>
+      <anchor>a9323d30eb45c0f150b98387e52e6cba1</anchor>
       <arglist>(long v, BaseEquality a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html</anchorfile>
-      <anchor>a752dd00e581a517f21015e4bd0386ec9</anchor>
+      <anchor>a3a3acc39a58e38525e522045fa85572c</anchor>
       <arglist>(BaseEquality a, BaseEquality b)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -19606,6 +19632,403 @@
       <name>swigCMemOwn</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntTupleSet.html</anchorfile>
       <anchor>abc050282310ee35f8b4bac77b6103375</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>Google::OrTools::Sat::IntVar</name>
+    <filename>classGoogle_1_1OrTools_1_1Sat_1_1IntVar.html</filename>
+    <base>Google::OrTools::Sat::LinearExpr</base>
+    <member kind="function">
+      <type></type>
+      <name>IntVar</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntVar.html</anchorfile>
+      <anchor>a3a58980d5c93bafcb89d00eb8f38b500</anchor>
+      <arglist>(CpModelProto model, Domain domain, string name)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>IntVar</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntVar.html</anchorfile>
+      <anchor>a9cee720e491795c3c06fc22b3e53797f</anchor>
+      <arglist>(CpModelProto model, long lb, long ub, string name)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>IntVar</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntVar.html</anchorfile>
+      <anchor>a32f607cb793b2b2290211b688db33636</anchor>
+      <arglist>(CpModelProto model, int index)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>GetIndex</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntVar.html</anchorfile>
+      <anchor>a04968eb2a77be01bc897e7441d9b8640</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>override string</type>
+      <name>ToString</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntVar.html</anchorfile>
+      <anchor>aa73e7c4dd1df5fd5fbf81c7764ee1533</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>string</type>
+      <name>Name</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntVar.html</anchorfile>
+      <anchor>a26f76217e5014e355033cfe094fcc168</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>Sum</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
+      <anchor>a2613d34ea7eb0bbc127e4f8058eab8db</anchor>
+      <arglist>(IEnumerable&lt; LinearExpr &gt; exprs)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>Sum</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
+      <anchor>ae0b76aaf6f8f48399f25071c60d0e678</anchor>
+      <arglist>(IEnumerable&lt; ILiteral &gt; literals)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>Sum</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
+      <anchor>a86e0ae6f314ff030727953d0440d525f</anchor>
+      <arglist>(IEnumerable&lt; BoolVar &gt; vars)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>WeightedSum</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
+      <anchor>a8f71b95fd387faad907076af1e342c2e</anchor>
+      <arglist>(IEnumerable&lt; LinearExpr &gt; exprs, IEnumerable&lt; int &gt; coeffs)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>WeightedSum</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
+      <anchor>a836c07fb2840249288a86bd62f03c2d4</anchor>
+      <arglist>(IEnumerable&lt; LinearExpr &gt; exprs, IEnumerable&lt; long &gt; coeffs)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>WeightedSum</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
+      <anchor>a6932a63a4340bacee4159d840f7c0649</anchor>
+      <arglist>(IEnumerable&lt; ILiteral &gt; literals, IEnumerable&lt; int &gt; coeffs)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>WeightedSum</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
+      <anchor>af3140b8acbf67ef9c3274c07cabe0c12</anchor>
+      <arglist>(IEnumerable&lt; ILiteral &gt; literals, IEnumerable&lt; long &gt; coeffs)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>WeightedSum</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
+      <anchor>a8bd53007e8eda17c471371399243acec</anchor>
+      <arglist>(IEnumerable&lt; BoolVar &gt; vars, IEnumerable&lt; int &gt; coeffs)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>WeightedSum</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
+      <anchor>a541ca3780d69ff5979a18d8ddfb3a45d</anchor>
+      <arglist>(IEnumerable&lt; BoolVar &gt; vars, IEnumerable&lt; long &gt; coeffs)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>Term</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
+      <anchor>ad3c74a2411dd598a6f12e8727e6d9325</anchor>
+      <arglist>(LinearExpr expr, long coeff)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>Term</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
+      <anchor>a7e30816dc76b14a4bd192261dc51b29b</anchor>
+      <arglist>(ILiteral literal, long coeff)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>Term</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
+      <anchor>a370e6be05eb8c44052c8810f78651946</anchor>
+      <arglist>(BoolVar var, long coeff)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>Affine</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
+      <anchor>a05aac64ac0460850c2fbea1a101d19ec</anchor>
+      <arglist>(LinearExpr expr, long coeff, long offset)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>Affine</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
+      <anchor>abd9f8a46e826ad06179545e0cacb7c6a</anchor>
+      <arglist>(ILiteral literal, long coeff, long offset)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>Affine</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
+      <anchor>a2b995c235c9bd9ae926325a2d22d0f02</anchor>
+      <arglist>(BoolVar var, long coeff, long offset)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>Constant</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
+      <anchor>a1f02362350f8a28917d4b52b3731832a</anchor>
+      <arglist>(long value)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExprBuilder</type>
+      <name>NewBuilder</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
+      <anchor>afb1662404c8dbace4d7176b9709828de</anchor>
+      <arglist>(int sizeHint=2)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>operator+</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
+      <anchor>a8dce68ee7a75412eefc193e25cce2359</anchor>
+      <arglist>(LinearExpr a, LinearExpr b)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>operator+</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
+      <anchor>ad663ed9dbf66f56c8d08cf731ecf7f37</anchor>
+      <arglist>(LinearExpr a, long v)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>operator+</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
+      <anchor>a225f57c5574d2becdb9dab72a171f014</anchor>
+      <arglist>(long v, LinearExpr a)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>operator -</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
+      <anchor>a6f2fb85a2e5a469df5f3105fab0efef1</anchor>
+      <arglist>(LinearExpr a, LinearExpr b)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>operator -</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
+      <anchor>a89d513f85640324ec27c1f420dafb1c9</anchor>
+      <arglist>(LinearExpr a, long v)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>operator -</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
+      <anchor>a7c833ed5867d734e99c1c12698842350</anchor>
+      <arglist>(long v, LinearExpr a)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>operator -</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
+      <anchor>aee57ed93140d54a69f346e9036a29787</anchor>
+      <arglist>(LinearExpr a)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>operator *</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
+      <anchor>a7d301dbed96e58c91c07a62925f5b4ff</anchor>
+      <arglist>(LinearExpr a, long v)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>operator *</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
+      <anchor>a6809df149a670aac1b539f9fff8179d7</anchor>
+      <arglist>(long v, LinearExpr a)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static BoundedLinearExpression</type>
+      <name>operator==</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
+      <anchor>a2d6562cf3fba04c61534536144ede4d6</anchor>
+      <arglist>(LinearExpr a, LinearExpr b)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static BoundedLinearExpression</type>
+      <name>operator==</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
+      <anchor>a06447e490a2111ef9913c3e47421bedd</anchor>
+      <arglist>(LinearExpr a, long v)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static BoundedLinearExpression</type>
+      <name>operator !=</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
+      <anchor>a3d67398a321381867ab429e1c5021406</anchor>
+      <arglist>(LinearExpr a, LinearExpr b)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static BoundedLinearExpression</type>
+      <name>operator !=</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
+      <anchor>a11ef43d386f627fcefce4df72ddced11</anchor>
+      <arglist>(LinearExpr a, long v)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static BoundedLinearExpression</type>
+      <name>operator &gt;=</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
+      <anchor>a0d57d59d2e14c8f2911af5050c5468f7</anchor>
+      <arglist>(LinearExpr a, long v)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static BoundedLinearExpression</type>
+      <name>operator &gt;=</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
+      <anchor>aaae9f1192b17faddce8c9a7ef45593db</anchor>
+      <arglist>(long v, LinearExpr a)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static BoundedLinearExpression</type>
+      <name>operator &gt;=</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
+      <anchor>a4a581963c24e8544acf3447e4563a1dd</anchor>
+      <arglist>(LinearExpr a, LinearExpr b)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static BoundedLinearExpression</type>
+      <name>operator&gt;</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
+      <anchor>a3bae8651c881b972b75d231715497ca8</anchor>
+      <arglist>(LinearExpr a, long v)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static BoundedLinearExpression</type>
+      <name>operator&gt;</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
+      <anchor>acd3362f92799c401108b9b6033f54177</anchor>
+      <arglist>(long v, LinearExpr a)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static BoundedLinearExpression</type>
+      <name>operator&gt;</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
+      <anchor>aaf2cf1bbc8f5b4a8f8b9e7b3e2c24bd6</anchor>
+      <arglist>(LinearExpr a, LinearExpr b)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static BoundedLinearExpression</type>
+      <name>operator&lt;=</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
+      <anchor>a4940d2d211b060f27b9d004aefac7c7b</anchor>
+      <arglist>(LinearExpr a, long v)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static BoundedLinearExpression</type>
+      <name>operator&lt;=</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
+      <anchor>adb3e796709a6e6db5b5e0c2d4c9aba54</anchor>
+      <arglist>(long v, LinearExpr a)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static BoundedLinearExpression</type>
+      <name>operator&lt;=</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
+      <anchor>a4a29b47550e782bca1910689acb91042</anchor>
+      <arglist>(LinearExpr a, LinearExpr b)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static BoundedLinearExpression</type>
+      <name>operator&lt;</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
+      <anchor>a2a6440fd540cf11765aa8d30e8c05518</anchor>
+      <arglist>(LinearExpr a, long v)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static BoundedLinearExpression</type>
+      <name>operator&lt;</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
+      <anchor>ab2f49472188e709d5e1d41b4c0413535</anchor>
+      <arglist>(long v, LinearExpr a)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static BoundedLinearExpression</type>
+      <name>operator&lt;</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
+      <anchor>a946a2203dba365cc88f221f85d6460d4</anchor>
+      <arglist>(LinearExpr a, LinearExpr b)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>Prod</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
+      <anchor>a57fd2462cee619f6bce6d8adc2189ffa</anchor>
+      <arglist>(LinearExpr e, long v)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static long</type>
+      <name>GetVarValueMap</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
+      <anchor>ac10f0ce08a15667c91e7b17f1556187f</anchor>
+      <arglist>(LinearExpr e, long initial_coeff, Dictionary&lt; IntVar, long &gt; dict)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>RebuildLinearExprFromLinearExpressionProto</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
+      <anchor>ad65b1f9128e66e846be3f63fe426dc7b</anchor>
+      <arglist>(LinearExpressionProto proto, CpModelProto model)</arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>readonly int</type>
+      <name>index_</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntVar.html</anchorfile>
+      <anchor>a579047f5aef82c51e30bf014bb7aaa45</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>IntegerVariableProto</type>
+      <name>var_</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntVar.html</anchorfile>
+      <anchor>af1b87e56683899fb950b73653317a81f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>int</type>
+      <name>Index</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntVar.html</anchorfile>
+      <anchor>a075e1e3c9dd399cef584d7338cc37938</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>IntegerVariableProto</type>
+      <name>Proto</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntVar.html</anchorfile>
+      <anchor>aa46fc618ab3b2546f071ce5a4b9b0726</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>Domain</type>
+      <name>Domain</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntVar.html</anchorfile>
+      <anchor>a8fe1270773d2f3240580446f0fd81eb6</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -19834,8 +20257,8 @@
       <type>virtual void</type>
       <name>Range</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>a3961fbda887e5f284a4fe7bca77bcfd6</anchor>
-      <arglist>(out long l, out long u)</arglist>
+      <anchor>aa445be31190760ad747beef97d859066</anchor>
+      <arglist>(out int l, out int u)</arglist>
     </member>
     <member kind="function" virtualness="virtual">
       <type>virtual void</type>
@@ -20105,51 +20528,51 @@
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>a6fbd3329dde0c841750d236f873a0de6</anchor>
+      <anchor>a89868c72ebbfd2d207e6504eb297acad</anchor>
       <arglist>(IntExpr a, IntExpr b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>ad1b5d5c18624d8e8dc593444d53aa0d6</anchor>
+      <anchor>a2e43f33e8ea8c8d10278af7c8a0c5b6e</anchor>
       <arglist>(IntExpr a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>a30975d1b3a4a12d649a144a09a099f66</anchor>
+      <anchor>ae1722d63837d0f0c26b86aa91ab99013</anchor>
       <arglist>(long v, IntExpr a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>ab95b83abb0f63e1bf6d5b882ec07b9be</anchor>
+      <anchor>aadecd477cbdb5a12a370ddfdf2091188</anchor>
       <arglist>(IntExpr a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>a3fbafcc6a6bb5ff137c256673905a5df</anchor>
+      <anchor>a3dfaa09986e064ad6f4a202374c563c9</anchor>
       <arglist>(IntExpr a, IntExpr b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>a88298c7b99bc18247ee13890f7501de1</anchor>
+      <anchor>a439b193f98ee4f7975ec2ba248b04125</anchor>
       <arglist>(IntExpr a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>a00cb062e053684dc4d306e58afff7bd3</anchor>
+      <anchor>a731b50dfc2d422a8b7591e495638bc36</anchor>
       <arglist>(long v, IntExpr a)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -20161,9 +20584,9 @@
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator%</name>
+      <name>operator %</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>a67ba73b346b6d6cd54f849ba33ddca0d</anchor>
+      <anchor>add4af2abf4931c52426112d27955e3ce</anchor>
       <arglist>(IntExpr a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -20182,30 +20605,30 @@
     </member>
     <member kind="function" static="yes">
       <type>static IntExprEquality</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>a77d645a37c2b5aa317600025db4faaf0</anchor>
+      <anchor>a31280487f5ffa19fed90072263f7180f</anchor>
       <arglist>(IntExpr a, IntExpr b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>a0f3e81581ed5684569ed00e7b7ec4cbc</anchor>
+      <anchor>ab45bea6a43e490ebbcbc0b139dbf6bc1</anchor>
       <arglist>(IntExpr a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>a294803e69e08cfe99cc45c93ddc8e7b2</anchor>
+      <anchor>a93ac1977ffcd5ef960d1c33749e015bf</anchor>
       <arglist>(IntExpr a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>a1bc11ad3791245aca9fa33a3d0880b09</anchor>
+      <anchor>a7834fb100482e4382ce69499166f5b52</anchor>
       <arglist>(IntExpr a, IntExpr b)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -20262,403 +20685,6 @@
       <name>swigCMemOwn</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
       <anchor>abc050282310ee35f8b4bac77b6103375</anchor>
-      <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>Google::OrTools::Sat::IntVar</name>
-    <filename>classGoogle_1_1OrTools_1_1Sat_1_1IntVar.html</filename>
-    <base>Google::OrTools::Sat::LinearExpr</base>
-    <member kind="function">
-      <type></type>
-      <name>IntVar</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntVar.html</anchorfile>
-      <anchor>a3a58980d5c93bafcb89d00eb8f38b500</anchor>
-      <arglist>(CpModelProto model, Domain domain, string name)</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>IntVar</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntVar.html</anchorfile>
-      <anchor>a9cee720e491795c3c06fc22b3e53797f</anchor>
-      <arglist>(CpModelProto model, long lb, long ub, string name)</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>IntVar</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntVar.html</anchorfile>
-      <anchor>a32f607cb793b2b2290211b688db33636</anchor>
-      <arglist>(CpModelProto model, int index)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>GetIndex</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntVar.html</anchorfile>
-      <anchor>a04968eb2a77be01bc897e7441d9b8640</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>override string</type>
-      <name>ToString</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntVar.html</anchorfile>
-      <anchor>aa73e7c4dd1df5fd5fbf81c7764ee1533</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>string</type>
-      <name>Name</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntVar.html</anchorfile>
-      <anchor>a26f76217e5014e355033cfe094fcc168</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>Sum</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a2613d34ea7eb0bbc127e4f8058eab8db</anchor>
-      <arglist>(IEnumerable&lt; LinearExpr &gt; exprs)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>Sum</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>ae0b76aaf6f8f48399f25071c60d0e678</anchor>
-      <arglist>(IEnumerable&lt; ILiteral &gt; literals)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>Sum</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a86e0ae6f314ff030727953d0440d525f</anchor>
-      <arglist>(IEnumerable&lt; BoolVar &gt; vars)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>WeightedSum</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a8f71b95fd387faad907076af1e342c2e</anchor>
-      <arglist>(IEnumerable&lt; LinearExpr &gt; exprs, IEnumerable&lt; int &gt; coeffs)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>WeightedSum</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a836c07fb2840249288a86bd62f03c2d4</anchor>
-      <arglist>(IEnumerable&lt; LinearExpr &gt; exprs, IEnumerable&lt; long &gt; coeffs)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>WeightedSum</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a6932a63a4340bacee4159d840f7c0649</anchor>
-      <arglist>(IEnumerable&lt; ILiteral &gt; literals, IEnumerable&lt; int &gt; coeffs)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>WeightedSum</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>af3140b8acbf67ef9c3274c07cabe0c12</anchor>
-      <arglist>(IEnumerable&lt; ILiteral &gt; literals, IEnumerable&lt; long &gt; coeffs)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>WeightedSum</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a8bd53007e8eda17c471371399243acec</anchor>
-      <arglist>(IEnumerable&lt; BoolVar &gt; vars, IEnumerable&lt; int &gt; coeffs)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>WeightedSum</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a541ca3780d69ff5979a18d8ddfb3a45d</anchor>
-      <arglist>(IEnumerable&lt; BoolVar &gt; vars, IEnumerable&lt; long &gt; coeffs)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>Term</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>ad3c74a2411dd598a6f12e8727e6d9325</anchor>
-      <arglist>(LinearExpr expr, long coeff)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>Term</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a7e30816dc76b14a4bd192261dc51b29b</anchor>
-      <arglist>(ILiteral literal, long coeff)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>Term</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a370e6be05eb8c44052c8810f78651946</anchor>
-      <arglist>(BoolVar var, long coeff)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>Affine</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a05aac64ac0460850c2fbea1a101d19ec</anchor>
-      <arglist>(LinearExpr expr, long coeff, long offset)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>Affine</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>abd9f8a46e826ad06179545e0cacb7c6a</anchor>
-      <arglist>(ILiteral literal, long coeff, long offset)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>Affine</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a2b995c235c9bd9ae926325a2d22d0f02</anchor>
-      <arglist>(BoolVar var, long coeff, long offset)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>Constant</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a1f02362350f8a28917d4b52b3731832a</anchor>
-      <arglist>(long value)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExprBuilder</type>
-      <name>NewBuilder</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>afb1662404c8dbace4d7176b9709828de</anchor>
-      <arglist>(int sizeHint=2)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>operator+</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a8dce68ee7a75412eefc193e25cce2359</anchor>
-      <arglist>(LinearExpr a, LinearExpr b)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>operator+</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>ad663ed9dbf66f56c8d08cf731ecf7f37</anchor>
-      <arglist>(LinearExpr a, long v)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>operator+</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a225f57c5574d2becdb9dab72a171f014</anchor>
-      <arglist>(long v, LinearExpr a)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>operator-</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>ae10ffffedef48bf520a489f2612cbba5</anchor>
-      <arglist>(LinearExpr a, LinearExpr b)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>operator-</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a17c8f730846d3c1f6f60f63b3001f6da</anchor>
-      <arglist>(LinearExpr a, long v)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>operator-</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a8ecc4393656acfe383e7df621f54d275</anchor>
-      <arglist>(long v, LinearExpr a)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>operator-</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a532c2d44559645b8247bd747f7ff9035</anchor>
-      <arglist>(LinearExpr a)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>operator*</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a1e12fe9fe4168c5f6eae3de78c1dafae</anchor>
-      <arglist>(LinearExpr a, long v)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>operator*</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a13edcfdb0419c8f3ac7fb81141f31de1</anchor>
-      <arglist>(long v, LinearExpr a)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static BoundedLinearExpression</type>
-      <name>operator==</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a2d6562cf3fba04c61534536144ede4d6</anchor>
-      <arglist>(LinearExpr a, LinearExpr b)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static BoundedLinearExpression</type>
-      <name>operator==</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a06447e490a2111ef9913c3e47421bedd</anchor>
-      <arglist>(LinearExpr a, long v)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static BoundedLinearExpression</type>
-      <name>operator!=</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>ad84654155044b33c43239a95578da09d</anchor>
-      <arglist>(LinearExpr a, LinearExpr b)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static BoundedLinearExpression</type>
-      <name>operator!=</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>abb7c3c009f29584a7cfb865819bc8c97</anchor>
-      <arglist>(LinearExpr a, long v)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static BoundedLinearExpression</type>
-      <name>operator&gt;=</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a46f9da7b0cb2d72fafaa079ddf9f50c8</anchor>
-      <arglist>(LinearExpr a, long v)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static BoundedLinearExpression</type>
-      <name>operator&gt;=</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a25d51806de41e128eace638e82a54715</anchor>
-      <arglist>(long v, LinearExpr a)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static BoundedLinearExpression</type>
-      <name>operator&gt;=</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>abbae92c434e1bf30a9f20a38846858b6</anchor>
-      <arglist>(LinearExpr a, LinearExpr b)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static BoundedLinearExpression</type>
-      <name>operator&gt;</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a3bae8651c881b972b75d231715497ca8</anchor>
-      <arglist>(LinearExpr a, long v)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static BoundedLinearExpression</type>
-      <name>operator&gt;</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>acd3362f92799c401108b9b6033f54177</anchor>
-      <arglist>(long v, LinearExpr a)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static BoundedLinearExpression</type>
-      <name>operator&gt;</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>aaf2cf1bbc8f5b4a8f8b9e7b3e2c24bd6</anchor>
-      <arglist>(LinearExpr a, LinearExpr b)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static BoundedLinearExpression</type>
-      <name>operator&lt;=</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a4940d2d211b060f27b9d004aefac7c7b</anchor>
-      <arglist>(LinearExpr a, long v)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static BoundedLinearExpression</type>
-      <name>operator&lt;=</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>adb3e796709a6e6db5b5e0c2d4c9aba54</anchor>
-      <arglist>(long v, LinearExpr a)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static BoundedLinearExpression</type>
-      <name>operator&lt;=</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a4a29b47550e782bca1910689acb91042</anchor>
-      <arglist>(LinearExpr a, LinearExpr b)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static BoundedLinearExpression</type>
-      <name>operator&lt;</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a2a6440fd540cf11765aa8d30e8c05518</anchor>
-      <arglist>(LinearExpr a, long v)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static BoundedLinearExpression</type>
-      <name>operator&lt;</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>ab2f49472188e709d5e1d41b4c0413535</anchor>
-      <arglist>(long v, LinearExpr a)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static BoundedLinearExpression</type>
-      <name>operator&lt;</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a946a2203dba365cc88f221f85d6460d4</anchor>
-      <arglist>(LinearExpr a, LinearExpr b)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>Prod</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a57fd2462cee619f6bce6d8adc2189ffa</anchor>
-      <arglist>(LinearExpr e, long v)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static long</type>
-      <name>GetVarValueMap</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>ac10f0ce08a15667c91e7b17f1556187f</anchor>
-      <arglist>(LinearExpr e, long initial_coeff, Dictionary&lt; IntVar, long &gt; dict)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>RebuildLinearExprFromLinearExpressionProto</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>ad65b1f9128e66e846be3f63fe426dc7b</anchor>
-      <arglist>(LinearExpressionProto proto, CpModelProto model)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>readonly int</type>
-      <name>index_</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntVar.html</anchorfile>
-      <anchor>a579047f5aef82c51e30bf014bb7aaa45</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>IntegerVariableProto</type>
-      <name>var_</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntVar.html</anchorfile>
-      <anchor>af1b87e56683899fb950b73653317a81f</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>int</type>
-      <name>Index</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntVar.html</anchorfile>
-      <anchor>a075e1e3c9dd399cef584d7338cc37938</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>IntegerVariableProto</type>
-      <name>Proto</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntVar.html</anchorfile>
-      <anchor>aa46fc618ab3b2546f071ce5a4b9b0726</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>Domain</type>
-      <name>Domain</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntVar.html</anchorfile>
-      <anchor>a8fe1270773d2f3240580446f0fd81eb6</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -20792,10 +20818,10 @@
       <arglist>(this IntVar[] vars, IntTupleSet transitions, long initial_state, int[] final_states)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static IntVar[]</type>
+      <type>static IntVar []</type>
       <name>Flatten</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarArrayHelper.html</anchorfile>
-      <anchor>afcad3473cc8844946dc64707fed4d510</anchor>
+      <anchor>a84681f91fead396baa53981fd5c1eb7a</anchor>
       <arglist>(this IntVar[,] vars)</arglist>
     </member>
   </compound>
@@ -21849,10 +21875,10 @@
       <arglist>(int index, IntVar[] array, int arrayIndex, int count)</arglist>
     </member>
     <member kind="function">
-      <type>IntVar[]</type>
+      <type>IntVar []</type>
       <name>ToArray</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarVector.html</anchorfile>
-      <anchor>a161a4b46c85e938c569659d2060685ec</anchor>
+      <anchor>af3a64424f9c16f9eb9805b65cf48c85a</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -22106,256 +22132,6 @@
     </member>
   </compound>
   <compound kind="class">
-    <name>Google::OrTools::Algorithms::IntVector</name>
-    <filename>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</filename>
-    <class kind="class">Google::OrTools::Algorithms::IntVector::IntVectorEnumerator</class>
-    <member kind="function">
-      <type>void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>a6e2d745cdb7a7b983f861ed6a9a541a7</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>IntVector</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>ad17b6850840a4490e96af830a3d15317</anchor>
-      <arglist>(global::System.Collections.IEnumerable c)</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>IntVector</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>a48a8f4f1dd460c4cb6c11aec8307e5f5</anchor>
-      <arglist>(global::System.Collections.Generic.IEnumerable&lt; int &gt; c)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>CopyTo</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>aa6dd687fe1b77023a954666a5a3ff2ae</anchor>
-      <arglist>(int[] array)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>CopyTo</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>a1df185c6765e85707b6692072815d13e</anchor>
-      <arglist>(int[] array, int arrayIndex)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>CopyTo</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>ab11d342b7d2d62a6d010eeb835bd7131</anchor>
-      <arglist>(int index, int[] array, int arrayIndex, int count)</arglist>
-    </member>
-    <member kind="function">
-      <type>int[]</type>
-      <name>ToArray</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>aff2945485cc1cb411757d937f2d1405a</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>IntVectorEnumerator</type>
-      <name>GetEnumerator</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>acce47eab8f90d4fd2b3fc4b92d54ce47</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Clear</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>aa71d36872f416feaa853788a7a7a7ef8</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Add</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>a9107ed9f8c3a6f1474565e552d1f6b0b</anchor>
-      <arglist>(int x)</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>IntVector</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>a3b5791460a8d60c4be3511ad3723bf7f</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>IntVector</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>a17607481a58e45f080dcb3545c39e11b</anchor>
-      <arglist>(IntVector other)</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>IntVector</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>a6ae5527df773d1820c6d3e93e1bf93d1</anchor>
-      <arglist>(int capacity)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>AddRange</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>a6015f2e70d5406093f7b94e852c2ffce</anchor>
-      <arglist>(IntVector values)</arglist>
-    </member>
-    <member kind="function">
-      <type>IntVector</type>
-      <name>GetRange</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>a6ee302ce4ce9dae79c46e7968ebab4eb</anchor>
-      <arglist>(int index, int count)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Insert</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>ae07f898d1e88769c7f59c2ccdfcdbbe5</anchor>
-      <arglist>(int index, int x)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>InsertRange</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>a702829153a47b2572f8a9f7815199e64</anchor>
-      <arglist>(int index, IntVector values)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>RemoveAt</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>ad7c925d24a4e07389d2331e0508618ea</anchor>
-      <arglist>(int index)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>RemoveRange</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>ab8469187c24ee20858b41527b2f5e687</anchor>
-      <arglist>(int index, int count)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Reverse</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>ae1b551cc51c9d556342b27b466a7c7cb</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Reverse</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>af6cbf16084ead2a02440396e021b9b46</anchor>
-      <arglist>(int index, int count)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SetRange</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>ae6041d2fe2b15700013f812e6be9446f</anchor>
-      <arglist>(int index, IntVector values)</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>Contains</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>aa114e804f0ccb93b71e8a21b2330c4d7</anchor>
-      <arglist>(int value)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>IndexOf</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>adf370c95b19f298ac46467b5eeb115f1</anchor>
-      <arglist>(int value)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>LastIndexOf</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>ab15a3f5e29c3f28c3e59dd12643ba7f5</anchor>
-      <arglist>(int value)</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>Remove</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>a3aa6c7ce9741b5a9c0d42145ca84f03e</anchor>
-      <arglist>(int value)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static IntVector</type>
-      <name>Repeat</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>a4b316347bdd8897d82e08676147d5b19</anchor>
-      <arglist>(int value, int count)</arglist>
-    </member>
-    <member kind="function" protection="protected" virtualness="virtual">
-      <type>virtual void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>a8ad4348ef0f9969025bab397e7e27e26</anchor>
-      <arglist>(bool disposing)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>bool</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>abc050282310ee35f8b4bac77b6103375</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>bool</type>
-      <name>IsFixedSize</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>a8ec7d7c5cd2656150a6237ce80df4d20</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>bool</type>
-      <name>IsReadOnly</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>ad1b02f19e753582b3c5f9ed71bb0318a</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>int</type>
-      <name>this[int index]</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>a88cc3d44636fba7acba737ef32eae1df</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>int</type>
-      <name>Capacity</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>a5ad7f82470f145a0d6ae871ff7b623f3</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>int</type>
-      <name>Count</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>aad462966ed963f892117056de1eba502</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>bool</type>
-      <name>IsSynchronized</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>a94b969d24485ca893c76b3323b3326f4</anchor>
-      <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="class">
     <name>Google::OrTools::ConstraintSolver::IntVector</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVector.html</filename>
     <class kind="class">Google::OrTools::ConstraintSolver::IntVector::IntVectorEnumerator</class>
@@ -22402,10 +22178,10 @@
       <arglist>(int index, int[] array, int arrayIndex, int count)</arglist>
     </member>
     <member kind="function">
-      <type>int[]</type>
+      <type>int []</type>
       <name>ToArray</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVector.html</anchorfile>
-      <anchor>aff2945485cc1cb411757d937f2d1405a</anchor>
+      <anchor>afc0100af38a989438338f8cefc426dd2</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -22652,10 +22428,10 @@
       <arglist>(int index, int[] array, int arrayIndex, int count)</arglist>
     </member>
     <member kind="function">
-      <type>int[]</type>
+      <type>int []</type>
       <name>ToArray</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1IntVector.html</anchorfile>
-      <anchor>aff2945485cc1cb411757d937f2d1405a</anchor>
+      <anchor>afc0100af38a989438338f8cefc426dd2</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -22902,10 +22678,10 @@
       <arglist>(int index, int[] array, int arrayIndex, int count)</arglist>
     </member>
     <member kind="function">
-      <type>int[]</type>
+      <type>int []</type>
       <name>ToArray</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1IntVector.html</anchorfile>
-      <anchor>aff2945485cc1cb411757d937f2d1405a</anchor>
+      <anchor>afc0100af38a989438338f8cefc426dd2</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -23106,41 +22882,252 @@
     </member>
   </compound>
   <compound kind="class">
-    <name>Google::OrTools::Algorithms::IntVector::IntVectorEnumerator</name>
-    <filename>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector_1_1IntVectorEnumerator.html</filename>
-    <member kind="function">
-      <type></type>
-      <name>IntVectorEnumerator</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector_1_1IntVectorEnumerator.html</anchorfile>
-      <anchor>a00063467843745cac6c2e44fc123ceb3</anchor>
-      <arglist>(IntVector collection)</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>MoveNext</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector_1_1IntVectorEnumerator.html</anchorfile>
-      <anchor>ad5316c283894d57be1450edab878aed0</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Reset</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector_1_1IntVectorEnumerator.html</anchorfile>
-      <anchor>a372de693ad40b3f42839c8ec6ac845f4</anchor>
-      <arglist>()</arglist>
-    </member>
+    <name>Google::OrTools::Algorithms::IntVector</name>
+    <filename>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</filename>
+    <class kind="class">Google::OrTools::Algorithms::IntVector::IntVectorEnumerator</class>
     <member kind="function">
       <type>void</type>
       <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector_1_1IntVectorEnumerator.html</anchorfile>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
       <anchor>a6e2d745cdb7a7b983f861ed6a9a541a7</anchor>
       <arglist>()</arglist>
     </member>
+    <member kind="function">
+      <type></type>
+      <name>IntVector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>ad17b6850840a4490e96af830a3d15317</anchor>
+      <arglist>(global::System.Collections.IEnumerable c)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>IntVector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>a48a8f4f1dd460c4cb6c11aec8307e5f5</anchor>
+      <arglist>(global::System.Collections.Generic.IEnumerable&lt; int &gt; c)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>CopyTo</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>aa6dd687fe1b77023a954666a5a3ff2ae</anchor>
+      <arglist>(int[] array)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>CopyTo</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>a1df185c6765e85707b6692072815d13e</anchor>
+      <arglist>(int[] array, int arrayIndex)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>CopyTo</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>ab11d342b7d2d62a6d010eeb835bd7131</anchor>
+      <arglist>(int index, int[] array, int arrayIndex, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>int []</type>
+      <name>ToArray</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>afc0100af38a989438338f8cefc426dd2</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>IntVectorEnumerator</type>
+      <name>GetEnumerator</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>acce47eab8f90d4fd2b3fc4b92d54ce47</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Clear</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>aa71d36872f416feaa853788a7a7a7ef8</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Add</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>a9107ed9f8c3a6f1474565e552d1f6b0b</anchor>
+      <arglist>(int x)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>IntVector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>a3b5791460a8d60c4be3511ad3723bf7f</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>IntVector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>a17607481a58e45f080dcb3545c39e11b</anchor>
+      <arglist>(IntVector other)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>IntVector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>a6ae5527df773d1820c6d3e93e1bf93d1</anchor>
+      <arglist>(int capacity)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>AddRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>a6015f2e70d5406093f7b94e852c2ffce</anchor>
+      <arglist>(IntVector values)</arglist>
+    </member>
+    <member kind="function">
+      <type>IntVector</type>
+      <name>GetRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>a6ee302ce4ce9dae79c46e7968ebab4eb</anchor>
+      <arglist>(int index, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Insert</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>ae07f898d1e88769c7f59c2ccdfcdbbe5</anchor>
+      <arglist>(int index, int x)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>InsertRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>a702829153a47b2572f8a9f7815199e64</anchor>
+      <arglist>(int index, IntVector values)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>RemoveAt</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>ad7c925d24a4e07389d2331e0508618ea</anchor>
+      <arglist>(int index)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>RemoveRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>ab8469187c24ee20858b41527b2f5e687</anchor>
+      <arglist>(int index, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Reverse</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>ae1b551cc51c9d556342b27b466a7c7cb</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Reverse</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>af6cbf16084ead2a02440396e021b9b46</anchor>
+      <arglist>(int index, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>ae6041d2fe2b15700013f812e6be9446f</anchor>
+      <arglist>(int index, IntVector values)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>Contains</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>aa114e804f0ccb93b71e8a21b2330c4d7</anchor>
+      <arglist>(int value)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>IndexOf</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>adf370c95b19f298ac46467b5eeb115f1</anchor>
+      <arglist>(int value)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>LastIndexOf</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>ab15a3f5e29c3f28c3e59dd12643ba7f5</anchor>
+      <arglist>(int value)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>Remove</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>a3aa6c7ce9741b5a9c0d42145ca84f03e</anchor>
+      <arglist>(int value)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static IntVector</type>
+      <name>Repeat</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>a4b316347bdd8897d82e08676147d5b19</anchor>
+      <arglist>(int value, int count)</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>a8ad4348ef0f9969025bab397e7e27e26</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>bool</type>
+      <name>swigCMemOwn</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>abc050282310ee35f8b4bac77b6103375</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>bool</type>
+      <name>IsFixedSize</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>a8ec7d7c5cd2656150a6237ce80df4d20</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>bool</type>
+      <name>IsReadOnly</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>ad1b02f19e753582b3c5f9ed71bb0318a</anchor>
+      <arglist></arglist>
+    </member>
     <member kind="property">
       <type>int</type>
-      <name>Current</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector_1_1IntVectorEnumerator.html</anchorfile>
-      <anchor>a10c0a18b79ec08c16b06575d07564a5f</anchor>
+      <name>this[int index]</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>a88cc3d44636fba7acba737ef32eae1df</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>int</type>
+      <name>Capacity</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>a5ad7f82470f145a0d6ae871ff7b623f3</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>int</type>
+      <name>Count</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>aad462966ed963f892117056de1eba502</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>bool</type>
+      <name>IsSynchronized</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>a94b969d24485ca893c76b3323b3326f4</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -23218,6 +23205,45 @@
       <type>int</type>
       <name>Current</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1IntVector_1_1IntVectorEnumerator.html</anchorfile>
+      <anchor>a10c0a18b79ec08c16b06575d07564a5f</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>Google::OrTools::Algorithms::IntVector::IntVectorEnumerator</name>
+    <filename>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector_1_1IntVectorEnumerator.html</filename>
+    <member kind="function">
+      <type></type>
+      <name>IntVectorEnumerator</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector_1_1IntVectorEnumerator.html</anchorfile>
+      <anchor>a00063467843745cac6c2e44fc123ceb3</anchor>
+      <arglist>(IntVector collection)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>MoveNext</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector_1_1IntVectorEnumerator.html</anchorfile>
+      <anchor>ad5316c283894d57be1450edab878aed0</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Reset</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector_1_1IntVectorEnumerator.html</anchorfile>
+      <anchor>a372de693ad40b3f42839c8ec6ac845f4</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector_1_1IntVectorEnumerator.html</anchorfile>
+      <anchor>a6e2d745cdb7a7b983f861ed6a9a541a7</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="property">
+      <type>int</type>
+      <name>Current</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector_1_1IntVectorEnumerator.html</anchorfile>
       <anchor>a10c0a18b79ec08c16b06575d07564a5f</anchor>
       <arglist></arglist>
     </member>
@@ -23308,10 +23334,10 @@
       <arglist>(int index, IntVector[] array, int arrayIndex, int count)</arglist>
     </member>
     <member kind="function">
-      <type>IntVector[]</type>
+      <type>IntVector []</type>
       <name>ToArray</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>ae1d881c081fb8fd18125a0befe091d81</anchor>
+      <anchor>ae3653e0143110b760a3c56563df175ad</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -23530,10 +23556,10 @@
       <arglist>(int index, IntVector[] array, int arrayIndex, int count)</arglist>
     </member>
     <member kind="function">
-      <type>IntVector[]</type>
+      <type>IntVector []</type>
       <name>ToArray</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVectorVector.html</anchorfile>
-      <anchor>ae1d881c081fb8fd18125a0befe091d81</anchor>
+      <anchor>ae3653e0143110b760a3c56563df175ad</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -23752,10 +23778,10 @@
       <arglist>(int index, IntVector[] array, int arrayIndex, int count)</arglist>
     </member>
     <member kind="function">
-      <type>IntVector[]</type>
+      <type>IntVector []</type>
       <name>ToArray</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1IntVectorVector.html</anchorfile>
-      <anchor>ae1d881c081fb8fd18125a0befe091d81</anchor>
+      <anchor>ae3653e0143110b760a3c56563df175ad</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -23974,10 +24000,10 @@
       <arglist>(int index, IntVector[] array, int arrayIndex, int count)</arglist>
     </member>
     <member kind="function">
-      <type>IntVector[]</type>
+      <type>IntVector []</type>
       <name>ToArray</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1IntVectorVector.html</anchorfile>
-      <anchor>ae1d881c081fb8fd18125a0befe091d81</anchor>
+      <anchor>ae3653e0143110b760a3c56563df175ad</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -24385,14 +24411,14 @@
       <anchor>a67eef3374888e85bdb523ae39a13e2ac</anchor>
       <arglist>(pb::CodedInputStream input)</arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>FDirectFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1InverseConstraintProto.html</anchorfile>
       <anchor>a2e336c21a8a614609f5b1a791b5ad130</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>FInverseFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1InverseConstraintProto.html</anchorfile>
@@ -24617,14 +24643,14 @@
       <anchor>a67eef3374888e85bdb523ae39a13e2ac</anchor>
       <arglist>(pb::CodedInputStream input)</arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>TargetFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearArgumentProto.html</anchorfile>
       <anchor>a0a9e2febdf60d2301a87c0247cf8ddbf</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>ExprsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearArgumentProto.html</anchorfile>
@@ -24758,21 +24784,21 @@
       <anchor>a67eef3374888e85bdb523ae39a13e2ac</anchor>
       <arglist>(pb::CodedInputStream input)</arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>VarsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearConstraintProto.html</anchorfile>
       <anchor>a21a2e981c9fba2735b6ba452e5fba670</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>CoeffsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearConstraintProto.html</anchorfile>
       <anchor>a7910a4b4e23721189862a82c6fb49521</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>DomainFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearConstraintProto.html</anchorfile>
@@ -24813,171 +24839,6 @@
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearConstraintProto.html</anchorfile>
       <anchor>a76a57a11af895d020e17640a5f1ea7d5</anchor>
       <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>Google::OrTools::LinearSolver::LinearExpr</name>
-    <filename>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</filename>
-    <member kind="function" virtualness="virtual">
-      <type>virtual double</type>
-      <name>DoVisit</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>af51e8f2b32c9c1e397be6798aa2c79ff</anchor>
-      <arglist>(Dictionary&lt; Variable, double &gt; coefficients, double multiplier)</arglist>
-    </member>
-    <member kind="function">
-      <type>double</type>
-      <name>Visit</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a433055f200c844a61e58cef630c03fcf</anchor>
-      <arglist>(Dictionary&lt; Variable, double &gt; coefficients)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>operator+</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a548d26025ce5842b43ca805b99646416</anchor>
-      <arglist>(LinearExpr a, double v)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>operator+</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>abd413258d303116f1dfef91f64eb1c2b</anchor>
-      <arglist>(double v, LinearExpr a)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>operator+</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a8dce68ee7a75412eefc193e25cce2359</anchor>
-      <arglist>(LinearExpr a, LinearExpr b)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>operator-</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a84a0cd8a12a4114a5be319387837f019</anchor>
-      <arglist>(LinearExpr a, double v)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>operator-</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>aec3ffacd07d8d90bb255fca7931aa212</anchor>
-      <arglist>(double v, LinearExpr a)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>operator-</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>ae10ffffedef48bf520a489f2612cbba5</anchor>
-      <arglist>(LinearExpr a, LinearExpr b)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>operator-</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a532c2d44559645b8247bd747f7ff9035</anchor>
-      <arglist>(LinearExpr a)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>operator*</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a6ab27638ca270e8e0db700d696c723b1</anchor>
-      <arglist>(LinearExpr a, double v)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>operator/</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a6a2565dc62093400d0faf4daad8f3a2f</anchor>
-      <arglist>(LinearExpr a, double v)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>operator*</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>ae5884c17893b758739964ec63d15816e</anchor>
-      <arglist>(double v, LinearExpr a)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static RangeConstraint</type>
-      <name>operator==</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>adf02d4173330d1866540b5f5ac7f4633</anchor>
-      <arglist>(LinearExpr a, double v)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static RangeConstraint</type>
-      <name>operator==</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a48270aeb3c2bf7d5a67a99aaa7f99579</anchor>
-      <arglist>(double v, LinearExpr a)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static RangeConstraint</type>
-      <name>operator!=</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>ae69414683801db2310c4191e55d46a65</anchor>
-      <arglist>(LinearExpr a, double v)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static RangeConstraint</type>
-      <name>operator!=</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a3124bbb1585a9f54c584fdbd79757250</anchor>
-      <arglist>(double v, LinearExpr a)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static Equality</type>
-      <name>operator==</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>ac2814e3f58b3724aca29b3e1487cd90a</anchor>
-      <arglist>(LinearExpr a, LinearExpr b)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static Equality</type>
-      <name>operator!=</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a9353d050cc6d4a6ad9f92c70243ea28f</anchor>
-      <arglist>(LinearExpr a, LinearExpr b)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static RangeConstraint</type>
-      <name>operator&lt;=</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>aaa5c8ed01cf652f6b12a1d9432104838</anchor>
-      <arglist>(LinearExpr a, double v)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static RangeConstraint</type>
-      <name>operator&gt;=</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>ac7089bc88944bdd4b9500a89c8c78beb</anchor>
-      <arglist>(LinearExpr a, double v)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static RangeConstraint</type>
-      <name>operator&lt;=</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a02ec90c34fea15807c2d4a04a8f4a23d</anchor>
-      <arglist>(LinearExpr a, LinearExpr b)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static RangeConstraint</type>
-      <name>operator&gt;=</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>ae15dfa4bb4e721b3aedf0f22c71b534b</anchor>
-      <arglist>(LinearExpr a, LinearExpr b)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static implicit</type>
-      <name>operator LinearExpr</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>aacf833e03b58cf1fbd1e65300ede9ba9</anchor>
-      <arglist>(Variable a)</arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -25125,44 +24986,44 @@
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>ae10ffffedef48bf520a489f2612cbba5</anchor>
+      <anchor>a6f2fb85a2e5a469df5f3105fab0efef1</anchor>
       <arglist>(LinearExpr a, LinearExpr b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a17c8f730846d3c1f6f60f63b3001f6da</anchor>
+      <anchor>a89d513f85640324ec27c1f420dafb1c9</anchor>
       <arglist>(LinearExpr a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a8ecc4393656acfe383e7df621f54d275</anchor>
+      <anchor>a7c833ed5867d734e99c1c12698842350</anchor>
       <arglist>(long v, LinearExpr a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a1e12fe9fe4168c5f6eae3de78c1dafae</anchor>
+      <anchor>a7d301dbed96e58c91c07a62925f5b4ff</anchor>
       <arglist>(LinearExpr a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a13edcfdb0419c8f3ac7fb81141f31de1</anchor>
+      <anchor>a6809df149a670aac1b539f9fff8179d7</anchor>
       <arglist>(long v, LinearExpr a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a532c2d44559645b8247bd747f7ff9035</anchor>
+      <anchor>aee57ed93140d54a69f346e9036a29787</anchor>
       <arglist>(LinearExpr a)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -25174,9 +25035,9 @@
     </member>
     <member kind="function" static="yes">
       <type>static BoundedLinearExpression</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>ad84654155044b33c43239a95578da09d</anchor>
+      <anchor>a3d67398a321381867ab429e1c5021406</anchor>
       <arglist>(LinearExpr a, LinearExpr b)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -25188,23 +25049,23 @@
     </member>
     <member kind="function" static="yes">
       <type>static BoundedLinearExpression</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>abb7c3c009f29584a7cfb865819bc8c97</anchor>
+      <anchor>a11ef43d386f627fcefce4df72ddced11</anchor>
       <arglist>(LinearExpr a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static BoundedLinearExpression</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a46f9da7b0cb2d72fafaa079ddf9f50c8</anchor>
+      <anchor>a0d57d59d2e14c8f2911af5050c5468f7</anchor>
       <arglist>(LinearExpr a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static BoundedLinearExpression</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a25d51806de41e128eace638e82a54715</anchor>
+      <anchor>aaae9f1192b17faddce8c9a7ef45593db</anchor>
       <arglist>(long v, LinearExpr a)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -25251,9 +25112,9 @@
     </member>
     <member kind="function" static="yes">
       <type>static BoundedLinearExpression</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>abbae92c434e1bf30a9f20a38846858b6</anchor>
+      <anchor>a4a581963c24e8544acf3447e4563a1dd</anchor>
       <arglist>(LinearExpr a, LinearExpr b)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -25297,6 +25158,171 @@
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
       <anchor>ad65b1f9128e66e846be3f63fe426dc7b</anchor>
       <arglist>(LinearExpressionProto proto, CpModelProto model)</arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>Google::OrTools::LinearSolver::LinearExpr</name>
+    <filename>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</filename>
+    <member kind="function" virtualness="virtual">
+      <type>virtual double</type>
+      <name>DoVisit</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>af51e8f2b32c9c1e397be6798aa2c79ff</anchor>
+      <arglist>(Dictionary&lt; Variable, double &gt; coefficients, double multiplier)</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>Visit</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>a433055f200c844a61e58cef630c03fcf</anchor>
+      <arglist>(Dictionary&lt; Variable, double &gt; coefficients)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>operator+</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>a548d26025ce5842b43ca805b99646416</anchor>
+      <arglist>(LinearExpr a, double v)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>operator+</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>abd413258d303116f1dfef91f64eb1c2b</anchor>
+      <arglist>(double v, LinearExpr a)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>operator+</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>a8dce68ee7a75412eefc193e25cce2359</anchor>
+      <arglist>(LinearExpr a, LinearExpr b)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>operator -</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>abfb99d9976a1305f4975ab8faba16da8</anchor>
+      <arglist>(LinearExpr a, double v)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>operator -</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>afead7bb0d10488161febe85185a3f2a0</anchor>
+      <arglist>(double v, LinearExpr a)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>operator -</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>a6f2fb85a2e5a469df5f3105fab0efef1</anchor>
+      <arglist>(LinearExpr a, LinearExpr b)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>operator -</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>aee57ed93140d54a69f346e9036a29787</anchor>
+      <arglist>(LinearExpr a)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>operator *</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>ac808849cccccfe100313ed7c1a2a5cef</anchor>
+      <arglist>(LinearExpr a, double v)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>operator/</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>a6a2565dc62093400d0faf4daad8f3a2f</anchor>
+      <arglist>(LinearExpr a, double v)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>operator *</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>adcd9fd7ae393a65f6a27b6f350543529</anchor>
+      <arglist>(double v, LinearExpr a)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static RangeConstraint</type>
+      <name>operator==</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>adf02d4173330d1866540b5f5ac7f4633</anchor>
+      <arglist>(LinearExpr a, double v)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static RangeConstraint</type>
+      <name>operator==</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>a48270aeb3c2bf7d5a67a99aaa7f99579</anchor>
+      <arglist>(double v, LinearExpr a)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static RangeConstraint</type>
+      <name>operator !=</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>a730034adeae6d72dbc8c8889e355abf8</anchor>
+      <arglist>(LinearExpr a, double v)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static RangeConstraint</type>
+      <name>operator !=</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>a99939d53ee629ff0f185d152fb7808f8</anchor>
+      <arglist>(double v, LinearExpr a)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static Equality</type>
+      <name>operator==</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>ac2814e3f58b3724aca29b3e1487cd90a</anchor>
+      <arglist>(LinearExpr a, LinearExpr b)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static Equality</type>
+      <name>operator !=</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>a207f9c428dd304ebdb185f11b06a0479</anchor>
+      <arglist>(LinearExpr a, LinearExpr b)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static RangeConstraint</type>
+      <name>operator&lt;=</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>aaa5c8ed01cf652f6b12a1d9432104838</anchor>
+      <arglist>(LinearExpr a, double v)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static RangeConstraint</type>
+      <name>operator &gt;=</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>ae164eee911848c8562cfbb4b19b7e9d1</anchor>
+      <arglist>(LinearExpr a, double v)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static RangeConstraint</type>
+      <name>operator&lt;=</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>a02ec90c34fea15807c2d4a04a8f4a23d</anchor>
+      <arglist>(LinearExpr a, LinearExpr b)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static RangeConstraint</type>
+      <name>operator &gt;=</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>a82439106aa777bd1ac8cda600b69c5af</anchor>
+      <arglist>(LinearExpr a, LinearExpr b)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static implicit</type>
+      <name>operator LinearExpr</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>aacf833e03b58cf1fbd1e65300ede9ba9</anchor>
+      <arglist>(Variable a)</arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -25589,44 +25615,44 @@
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>ae10ffffedef48bf520a489f2612cbba5</anchor>
+      <anchor>a6f2fb85a2e5a469df5f3105fab0efef1</anchor>
       <arglist>(LinearExpr a, LinearExpr b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a17c8f730846d3c1f6f60f63b3001f6da</anchor>
+      <anchor>a89d513f85640324ec27c1f420dafb1c9</anchor>
       <arglist>(LinearExpr a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a8ecc4393656acfe383e7df621f54d275</anchor>
+      <anchor>a7c833ed5867d734e99c1c12698842350</anchor>
       <arglist>(long v, LinearExpr a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a532c2d44559645b8247bd747f7ff9035</anchor>
+      <anchor>aee57ed93140d54a69f346e9036a29787</anchor>
       <arglist>(LinearExpr a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a1e12fe9fe4168c5f6eae3de78c1dafae</anchor>
+      <anchor>a7d301dbed96e58c91c07a62925f5b4ff</anchor>
       <arglist>(LinearExpr a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a13edcfdb0419c8f3ac7fb81141f31de1</anchor>
+      <anchor>a6809df149a670aac1b539f9fff8179d7</anchor>
       <arglist>(long v, LinearExpr a)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -25645,37 +25671,37 @@
     </member>
     <member kind="function" static="yes">
       <type>static BoundedLinearExpression</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>ad84654155044b33c43239a95578da09d</anchor>
+      <anchor>a3d67398a321381867ab429e1c5021406</anchor>
       <arglist>(LinearExpr a, LinearExpr b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static BoundedLinearExpression</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>abb7c3c009f29584a7cfb865819bc8c97</anchor>
+      <anchor>a11ef43d386f627fcefce4df72ddced11</anchor>
       <arglist>(LinearExpr a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static BoundedLinearExpression</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a46f9da7b0cb2d72fafaa079ddf9f50c8</anchor>
+      <anchor>a0d57d59d2e14c8f2911af5050c5468f7</anchor>
       <arglist>(LinearExpr a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static BoundedLinearExpression</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a25d51806de41e128eace638e82a54715</anchor>
+      <anchor>aaae9f1192b17faddce8c9a7ef45593db</anchor>
       <arglist>(long v, LinearExpr a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static BoundedLinearExpression</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>abbae92c434e1bf30a9f20a38846858b6</anchor>
+      <anchor>a4a581963c24e8544acf3447e4563a1dd</anchor>
       <arglist>(LinearExpr a, LinearExpr b)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -25857,21 +25883,21 @@
       <anchor>a67eef3374888e85bdb523ae39a13e2ac</anchor>
       <arglist>(pb::CodedInputStream input)</arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>VarsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpressionProto.html</anchorfile>
       <anchor>a21a2e981c9fba2735b6ba452e5fba670</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>CoeffsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpressionProto.html</anchorfile>
       <anchor>a7910a4b4e23721189862a82c6fb49521</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>OffsetFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpressionProto.html</anchorfile>
@@ -26106,7 +26132,7 @@
       <anchor>a67eef3374888e85bdb523ae39a13e2ac</anchor>
       <arglist>(pb::CodedInputStream input)</arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>VarsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ListOfVariablesProto.html</anchorfile>
@@ -26459,10 +26485,10 @@
       <arglist>(int index, LocalSearchFilter[] array, int arrayIndex, int count)</arglist>
     </member>
     <member kind="function">
-      <type>LocalSearchFilter[]</type>
+      <type>LocalSearchFilter []</type>
       <name>ToArray</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchFilterVector.html</anchorfile>
-      <anchor>ac5a2cd7b6e778fa0175386588ce98d48</anchor>
+      <anchor>a6c1ff4bff0f7870c95416cda2f00ab03</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -27351,231 +27377,231 @@
       <anchor>a67eef3374888e85bdb523ae39a13e2ac</anchor>
       <arglist>(pb::CodedInputStream input)</arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseRelocateFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types_1_1LocalSearchNeighborhoodOperators.html</anchorfile>
       <anchor>a68df485e46d53a705e4cc16f37d63210</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseRelocatePairFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types_1_1LocalSearchNeighborhoodOperators.html</anchorfile>
       <anchor>a879022eabbde050f0a8512d9bbdf36d2</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseLightRelocatePairFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types_1_1LocalSearchNeighborhoodOperators.html</anchorfile>
       <anchor>a0c486785966c90434a5a9863f2a1d658</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseRelocateNeighborsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types_1_1LocalSearchNeighborhoodOperators.html</anchorfile>
       <anchor>a348dd118bc992fcdc247eb06ef3b8121</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseRelocateSubtripFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types_1_1LocalSearchNeighborhoodOperators.html</anchorfile>
       <anchor>a37f0440b5710756eda2e8b09b5dec6e3</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseExchangeFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types_1_1LocalSearchNeighborhoodOperators.html</anchorfile>
       <anchor>ad8b12604ae5a02d1ab31c096f5829d12</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseExchangePairFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types_1_1LocalSearchNeighborhoodOperators.html</anchorfile>
       <anchor>ab50b3b9c2e7f322fcbcdbcf786cc2629</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseExchangeSubtripFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types_1_1LocalSearchNeighborhoodOperators.html</anchorfile>
       <anchor>ad10c441c15ddc617b08960ab49daad65</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseCrossFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types_1_1LocalSearchNeighborhoodOperators.html</anchorfile>
       <anchor>a60e08cd9e7e2c8f82dfc5abb386d1635</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseCrossExchangeFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types_1_1LocalSearchNeighborhoodOperators.html</anchorfile>
       <anchor>a2f2ad4aa8ab7397f1880b1fa5c04caf7</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseRelocateExpensiveChainFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types_1_1LocalSearchNeighborhoodOperators.html</anchorfile>
       <anchor>a5fc8f764c37c359d18386d72a5e86771</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseTwoOptFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types_1_1LocalSearchNeighborhoodOperators.html</anchorfile>
       <anchor>a5946ff498726d03431d2696525583e14</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseOrOptFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types_1_1LocalSearchNeighborhoodOperators.html</anchorfile>
       <anchor>a06cca40e00fd5e34c1e4f303b23ca978</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseLinKernighanFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types_1_1LocalSearchNeighborhoodOperators.html</anchorfile>
       <anchor>adc38b6c31a0058b341437bb5d36171f1</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseTspOptFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types_1_1LocalSearchNeighborhoodOperators.html</anchorfile>
       <anchor>ade26563e19e8f0dff0e49b2c75f798a1</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseMakeActiveFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types_1_1LocalSearchNeighborhoodOperators.html</anchorfile>
       <anchor>a27ade3b2406e238e53ba014b3ed732fe</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseRelocateAndMakeActiveFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types_1_1LocalSearchNeighborhoodOperators.html</anchorfile>
       <anchor>a064a7354e631e25b16d2d4002b4e760a</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseMakeInactiveFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types_1_1LocalSearchNeighborhoodOperators.html</anchorfile>
       <anchor>a573c097ecabb41253202e940a76574e4</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseMakeChainInactiveFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types_1_1LocalSearchNeighborhoodOperators.html</anchorfile>
       <anchor>af52b265aee2b216d3323831dc470dce1</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseSwapActiveFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types_1_1LocalSearchNeighborhoodOperators.html</anchorfile>
       <anchor>aac53be7de1fb0cd7fa3d3d66b13ac864</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseExtendedSwapActiveFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types_1_1LocalSearchNeighborhoodOperators.html</anchorfile>
       <anchor>aacee04dee04a7e64c3e7f8c6ae0fa8bf</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseNodePairSwapActiveFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types_1_1LocalSearchNeighborhoodOperators.html</anchorfile>
       <anchor>a5820296952df645fcd4bae3120d64bea</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UsePathLnsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types_1_1LocalSearchNeighborhoodOperators.html</anchorfile>
       <anchor>a51fe69ca21c12fabad5210eac6a4abbf</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseFullPathLnsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types_1_1LocalSearchNeighborhoodOperators.html</anchorfile>
       <anchor>afe55d46273e273032757ae4bba75b2b6</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseTspLnsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types_1_1LocalSearchNeighborhoodOperators.html</anchorfile>
       <anchor>a0b7d1d89695e0e339ec6b33c39d8a52b</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseInactiveLnsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types_1_1LocalSearchNeighborhoodOperators.html</anchorfile>
       <anchor>a781bfb76b2d9fe843dec294db6cbe1f3</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseGlobalCheapestInsertionPathLnsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types_1_1LocalSearchNeighborhoodOperators.html</anchorfile>
       <anchor>a098f76cc9eecd2e8407a1d5463e357ca</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseLocalCheapestInsertionPathLnsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types_1_1LocalSearchNeighborhoodOperators.html</anchorfile>
       <anchor>a40a7c73f9686966b8d20eeeeab62ca82</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseRelocatePathGlobalCheapestInsertionInsertUnperformedFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types_1_1LocalSearchNeighborhoodOperators.html</anchorfile>
       <anchor>aa5e4c40dd0ab3c64a89af4ffac0f8863</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseGlobalCheapestInsertionExpensiveChainLnsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types_1_1LocalSearchNeighborhoodOperators.html</anchorfile>
       <anchor>af76fb29882e3ae10f4be16c6bc47c4d7</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseLocalCheapestInsertionExpensiveChainLnsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types_1_1LocalSearchNeighborhoodOperators.html</anchorfile>
       <anchor>a448e582248691171a33fac83af3b0b29</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseGlobalCheapestInsertionCloseNodesLnsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types_1_1LocalSearchNeighborhoodOperators.html</anchorfile>
       <anchor>aefed9c6c663bf4353ae7141fb6d5b0ec</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseLocalCheapestInsertionCloseNodesLnsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types_1_1LocalSearchNeighborhoodOperators.html</anchorfile>
@@ -27992,10 +28018,10 @@
       <arglist>(int index, LocalSearchOperator[] array, int arrayIndex, int count)</arglist>
     </member>
     <member kind="function">
-      <type>LocalSearchOperator[]</type>
+      <type>LocalSearchOperator []</type>
       <name>ToArray</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchOperatorVector.html</anchorfile>
-      <anchor>a849c597dfb09e5cf9fd9dae058e412a0</anchor>
+      <anchor>a6d2222fedc999bc726e606907001cd6f</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -30679,10 +30705,10 @@
       <arglist>(int index, Constraint[] array, int arrayIndex, int count)</arglist>
     </member>
     <member kind="function">
-      <type>Constraint[]</type>
+      <type>Constraint []</type>
       <name>ToArray</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MPConstraintVector.html</anchorfile>
-      <anchor>aff1194bfb87d067a3e38b823e8da0109</anchor>
+      <anchor>a75d649fbf31e2c55cbe100ee0c43905b</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -31135,10 +31161,10 @@
       <arglist>(int index, Variable[] array, int arrayIndex, int count)</arglist>
     </member>
     <member kind="function">
-      <type>Variable[]</type>
+      <type>Variable []</type>
       <name>ToArray</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector.html</anchorfile>
-      <anchor>a85602e3ce221023a5d7d24af4bc05117</anchor>
+      <anchor>a1de2d8da96ebaa4f5675c7d8c5c4b698</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -31442,24 +31468,24 @@
     <name>Google::OrTools::NestedArrayHelper</name>
     <filename>classGoogle_1_1OrTools_1_1NestedArrayHelper.html</filename>
     <member kind="function" static="yes">
-      <type>static T[]</type>
+      <type>static T []</type>
       <name>GetFlatArray&lt; T &gt;</name>
       <anchorfile>classGoogle_1_1OrTools_1_1NestedArrayHelper.html</anchorfile>
-      <anchor>a2d09c67361ce6601358351c2742419a2</anchor>
+      <anchor>aa88298a1d7215d0e4c4fb7272bcf2c66</anchor>
       <arglist>(T[][] arr)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static T[]</type>
+      <type>static T []</type>
       <name>GetFlatArrayFromMatrix&lt; T &gt;</name>
       <anchorfile>classGoogle_1_1OrTools_1_1NestedArrayHelper.html</anchorfile>
-      <anchor>acddc6341abe90e0813cb8cc4f9c3fe63</anchor>
+      <anchor>a4038c921d751a8ab4e95d6ff0b0a04ce</anchor>
       <arglist>(T[,] arr)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static int[]</type>
+      <type>static int []</type>
       <name>GetArraySecondSize&lt; T &gt;</name>
       <anchorfile>classGoogle_1_1OrTools_1_1NestedArrayHelper.html</anchorfile>
-      <anchor>adc9558f8c9abe03c6da08b9d19686241</anchor>
+      <anchor>a88ceced48dd63107a1f9ab794687f968</anchor>
       <arglist>(T[][] arr)</arglist>
     </member>
   </compound>
@@ -31700,51 +31726,51 @@
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>aa2c1764ab50332bd00750395d7fe005d</anchor>
+      <anchor>abecdcc8d8af528ebfa18a2040752302f</anchor>
       <arglist>(Constraint a, Constraint b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a8d9c7e7b51047c7db785cb28c5ac2ee5</anchor>
+      <anchor>a54e0abb69270881eb908a546d6d5d9ee</anchor>
       <arglist>(Constraint a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a1e322c1cf071bc63f1a57e49b39c2513</anchor>
+      <anchor>a653d1cc7abbdea943d8f66ba7d368609</anchor>
       <arglist>(long v, Constraint a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a11dca67868602a4f4de7ed771a30ceab</anchor>
+      <anchor>af699870283706fc529d1dd0977a6134c</anchor>
       <arglist>(Constraint a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>aa4e01ca5dffc9a82f2918fb856304830</anchor>
+      <anchor>aad72c90dda324071d4259d4605f307a7</anchor>
       <arglist>(Constraint a, Constraint b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a558540d48bd60ab61117ad29bad52d92</anchor>
+      <anchor>a7b750177d977e8b79272338810919482</anchor>
       <arglist>(Constraint a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a9e0c0e2832a3dc3fcac688c4765264c0</anchor>
+      <anchor>a4fd6826e14f45a9ace0e70de018f6bc5</anchor>
       <arglist>(long v, Constraint a)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -31777,44 +31803,44 @@
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a4f22441dd26b5b4573b03e45834f63aa</anchor>
+      <anchor>ab402599c4824a325a082fc2c4fb53f11</anchor>
       <arglist>(Constraint a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a778cc85ae8fccf10cfc6261178db802d</anchor>
+      <anchor>a2c2d0cfc4fbda5201fd72d0c45b34871</anchor>
       <arglist>(long v, Constraint a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static ConstraintEquality</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a20acd922ca3df55d3e35766688bc0e67</anchor>
+      <anchor>aedddba2bbb98221d2225060342b53d5a</anchor>
       <arglist>(Constraint a, Constraint b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>adbd7920d8327cad94b73194a582aa336</anchor>
+      <anchor>ae566909a25a52ba0c2b3916f8e819286</anchor>
       <arglist>(Constraint a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a46db71728ad83f5ccdf7bee3c65c137b</anchor>
+      <anchor>ae1498847694a400996ab1e4d7b6a6a05</anchor>
       <arglist>(long v, Constraint a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>abc2fa3846e0e78e7181dfd405c250f0b</anchor>
+      <anchor>a4c1ad71dd084886567d5de385d6bd646</anchor>
       <arglist>(Constraint a, Constraint b)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -32282,21 +32308,21 @@
       <anchor>a67eef3374888e85bdb523ae39a13e2ac</anchor>
       <arglist>(pb::CodedInputStream input)</arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>XIntervalsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1NoOverlap2DConstraintProto.html</anchorfile>
       <anchor>a545db17add098b42ceaefc7564ae347d</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>YIntervalsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1NoOverlap2DConstraintProto.html</anchorfile>
       <anchor>a7d045d8d8ab4869c187d2d0507e7055b</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>BoxesWithNullAreaCanOverlapFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1NoOverlap2DConstraintProto.html</anchorfile>
@@ -32419,7 +32445,7 @@
       <anchor>a67eef3374888e85bdb523ae39a13e2ac</anchor>
       <arglist>(pb::CodedInputStream input)</arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>IntervalsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1NoOverlapConstraintProto.html</anchorfile>
@@ -32630,44 +32656,44 @@
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>ae10ffffedef48bf520a489f2612cbba5</anchor>
+      <anchor>a6f2fb85a2e5a469df5f3105fab0efef1</anchor>
       <arglist>(LinearExpr a, LinearExpr b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a17c8f730846d3c1f6f60f63b3001f6da</anchor>
+      <anchor>a89d513f85640324ec27c1f420dafb1c9</anchor>
       <arglist>(LinearExpr a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a8ecc4393656acfe383e7df621f54d275</anchor>
+      <anchor>a7c833ed5867d734e99c1c12698842350</anchor>
       <arglist>(long v, LinearExpr a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a532c2d44559645b8247bd747f7ff9035</anchor>
+      <anchor>aee57ed93140d54a69f346e9036a29787</anchor>
       <arglist>(LinearExpr a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a1e12fe9fe4168c5f6eae3de78c1dafae</anchor>
+      <anchor>a7d301dbed96e58c91c07a62925f5b4ff</anchor>
       <arglist>(LinearExpr a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a13edcfdb0419c8f3ac7fb81141f31de1</anchor>
+      <anchor>a6809df149a670aac1b539f9fff8179d7</anchor>
       <arglist>(long v, LinearExpr a)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -32686,37 +32712,37 @@
     </member>
     <member kind="function" static="yes">
       <type>static BoundedLinearExpression</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>ad84654155044b33c43239a95578da09d</anchor>
+      <anchor>a3d67398a321381867ab429e1c5021406</anchor>
       <arglist>(LinearExpr a, LinearExpr b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static BoundedLinearExpression</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>abb7c3c009f29584a7cfb865819bc8c97</anchor>
+      <anchor>a11ef43d386f627fcefce4df72ddced11</anchor>
       <arglist>(LinearExpr a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static BoundedLinearExpression</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a46f9da7b0cb2d72fafaa079ddf9f50c8</anchor>
+      <anchor>a0d57d59d2e14c8f2911af5050c5468f7</anchor>
       <arglist>(LinearExpr a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static BoundedLinearExpression</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>a25d51806de41e128eace638e82a54715</anchor>
+      <anchor>aaae9f1192b17faddce8c9a7ef45593db</anchor>
       <arglist>(long v, LinearExpr a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static BoundedLinearExpression</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
-      <anchor>abbae92c434e1bf30a9f20a38846858b6</anchor>
+      <anchor>a4a581963c24e8544acf3447e4563a1dd</anchor>
       <arglist>(LinearExpr a, LinearExpr b)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -33934,10 +33960,10 @@
       <arglist>(long e, long v)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static long[]</type>
+      <type>static long []</type>
       <name>ToInt64Vector</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solver.html</anchorfile>
-      <anchor>ad5fc5a63def16b2b17f0d3f1f617ee09</anchor>
+      <anchor>a98782de2b28b99f528fc6d098f483d6b</anchor>
       <arglist>(int[] input)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -39684,15 +39710,15 @@
       <type>static global::System.IntPtr</type>
       <name>Solver_MakeScheduleOrPostpone</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
-      <anchor>a4e959f9c3721dc1499a8b4280ea61bde</anchor>
-      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, global::System.Runtime.InteropServices.HandleRef jarg2, long jarg3, ref long jarg4)</arglist>
+      <anchor>aadacb1452909d28e7e7060745a74c14b</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, global::System.Runtime.InteropServices.HandleRef jarg2, long jarg3, ref int jarg4)</arglist>
     </member>
     <member kind="function">
       <type>static global::System.IntPtr</type>
       <name>Solver_MakeScheduleOrExpedite</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
-      <anchor>a7ef8c010c78912c110cb061ed36c8c1b</anchor>
-      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, global::System.Runtime.InteropServices.HandleRef jarg2, long jarg3, ref long jarg4)</arglist>
+      <anchor>a620712c3706375d6214c63ccbb6f1b5d</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, global::System.Runtime.InteropServices.HandleRef jarg2, long jarg3, ref int jarg4)</arglist>
     </member>
     <member kind="function">
       <type>static global::System.IntPtr</type>
@@ -42547,8 +42573,8 @@
       <type>static void</type>
       <name>IntExpr_Range</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
-      <anchor>a895fab9d656037605dc14f85a92d8cee</anchor>
-      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, out long jarg2, out long jarg3)</arglist>
+      <anchor>a77d32d07c577436dd0596cd61617c2a6</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, out int jarg2, out int jarg3)</arglist>
     </member>
     <member kind="function">
       <type>static void</type>
@@ -55904,51 +55930,51 @@
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>aa2c1764ab50332bd00750395d7fe005d</anchor>
+      <anchor>abecdcc8d8af528ebfa18a2040752302f</anchor>
       <arglist>(Constraint a, Constraint b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a8d9c7e7b51047c7db785cb28c5ac2ee5</anchor>
+      <anchor>a54e0abb69270881eb908a546d6d5d9ee</anchor>
       <arglist>(Constraint a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a1e322c1cf071bc63f1a57e49b39c2513</anchor>
+      <anchor>a653d1cc7abbdea943d8f66ba7d368609</anchor>
       <arglist>(long v, Constraint a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a11dca67868602a4f4de7ed771a30ceab</anchor>
+      <anchor>af699870283706fc529d1dd0977a6134c</anchor>
       <arglist>(Constraint a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>aa4e01ca5dffc9a82f2918fb856304830</anchor>
+      <anchor>aad72c90dda324071d4259d4605f307a7</anchor>
       <arglist>(Constraint a, Constraint b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a558540d48bd60ab61117ad29bad52d92</anchor>
+      <anchor>a7b750177d977e8b79272338810919482</anchor>
       <arglist>(Constraint a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a9e0c0e2832a3dc3fcac688c4765264c0</anchor>
+      <anchor>a4fd6826e14f45a9ace0e70de018f6bc5</anchor>
       <arglist>(long v, Constraint a)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -55981,44 +56007,44 @@
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a4f22441dd26b5b4573b03e45834f63aa</anchor>
+      <anchor>ab402599c4824a325a082fc2c4fb53f11</anchor>
       <arglist>(Constraint a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a778cc85ae8fccf10cfc6261178db802d</anchor>
+      <anchor>a2c2d0cfc4fbda5201fd72d0c45b34871</anchor>
       <arglist>(long v, Constraint a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static ConstraintEquality</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a20acd922ca3df55d3e35766688bc0e67</anchor>
+      <anchor>aedddba2bbb98221d2225060342b53d5a</anchor>
       <arglist>(Constraint a, Constraint b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>adbd7920d8327cad94b73194a582aa336</anchor>
+      <anchor>ae566909a25a52ba0c2b3916f8e819286</anchor>
       <arglist>(Constraint a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a46db71728ad83f5ccdf7bee3c65c137b</anchor>
+      <anchor>ae1498847694a400996ab1e4d7b6a6a05</anchor>
       <arglist>(long v, Constraint a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>abc2fa3846e0e78e7181dfd405c250f0b</anchor>
+      <anchor>a4c1ad71dd084886567d5de385d6bd646</anchor>
       <arglist>(Constraint a, Constraint b)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -56179,14 +56205,14 @@
       <anchor>a67eef3374888e85bdb523ae39a13e2ac</anchor>
       <arglist>(pb::CodedInputStream input)</arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>VarsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1PartialVariableAssignment.html</anchorfile>
       <anchor>a21a2e981c9fba2735b6ba452e5fba670</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>ValuesFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1PartialVariableAssignment.html</anchorfile>
@@ -56688,44 +56714,44 @@
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a84a0cd8a12a4114a5be319387837f019</anchor>
+      <anchor>abfb99d9976a1305f4975ab8faba16da8</anchor>
       <arglist>(LinearExpr a, double v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>aec3ffacd07d8d90bb255fca7931aa212</anchor>
+      <anchor>afead7bb0d10488161febe85185a3f2a0</anchor>
       <arglist>(double v, LinearExpr a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>ae10ffffedef48bf520a489f2612cbba5</anchor>
+      <anchor>a6f2fb85a2e5a469df5f3105fab0efef1</anchor>
       <arglist>(LinearExpr a, LinearExpr b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a532c2d44559645b8247bd747f7ff9035</anchor>
+      <anchor>aee57ed93140d54a69f346e9036a29787</anchor>
       <arglist>(LinearExpr a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a6ab27638ca270e8e0db700d696c723b1</anchor>
+      <anchor>ac808849cccccfe100313ed7c1a2a5cef</anchor>
       <arglist>(LinearExpr a, double v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>ae5884c17893b758739964ec63d15816e</anchor>
+      <anchor>adcd9fd7ae393a65f6a27b6f350543529</anchor>
       <arglist>(double v, LinearExpr a)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -56758,23 +56784,23 @@
     </member>
     <member kind="function" static="yes">
       <type>static RangeConstraint</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>ae69414683801db2310c4191e55d46a65</anchor>
+      <anchor>a730034adeae6d72dbc8c8889e355abf8</anchor>
       <arglist>(LinearExpr a, double v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static RangeConstraint</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a3124bbb1585a9f54c584fdbd79757250</anchor>
+      <anchor>a99939d53ee629ff0f185d152fb7808f8</anchor>
       <arglist>(double v, LinearExpr a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static Equality</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a9353d050cc6d4a6ad9f92c70243ea28f</anchor>
+      <anchor>a207f9c428dd304ebdb185f11b06a0479</anchor>
       <arglist>(LinearExpr a, LinearExpr b)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -56793,16 +56819,16 @@
     </member>
     <member kind="function" static="yes">
       <type>static RangeConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>ac7089bc88944bdd4b9500a89c8c78beb</anchor>
+      <anchor>ae164eee911848c8562cfbb4b19b7e9d1</anchor>
       <arglist>(LinearExpr a, double v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static RangeConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>ae15dfa4bb4e721b3aedf0f22c71b534b</anchor>
+      <anchor>a82439106aa777bd1ac8cda600b69c5af</anchor>
       <arglist>(LinearExpr a, LinearExpr b)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -56817,10 +56843,10 @@
     <name>CreateSigningKey::Program</name>
     <filename>classCreateSigningKey_1_1Program.html</filename>
     <member kind="function" static="yes">
-      <type>static byte[]</type>
+      <type>static byte []</type>
       <name>GenerateStrongNameKeyPair</name>
       <anchorfile>classCreateSigningKey_1_1Program.html</anchorfile>
-      <anchor>a62a2523447b5ac39c55b98d0c998d3b9</anchor>
+      <anchor>a3b9360976d18765224dadab4f02f9fe5</anchor>
       <arglist>()</arglist>
     </member>
   </compound>
@@ -57594,10 +57620,10 @@
     <name>Google::OrTools::ProtoHelper</name>
     <filename>classGoogle_1_1OrTools_1_1ProtoHelper.html</filename>
     <member kind="function" static="yes">
-      <type>static byte[]</type>
+      <type>static byte []</type>
       <name>ProtoToByteArray</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ProtoHelper.html</anchorfile>
-      <anchor>a095630d14c43e4045834a37bfdf93216</anchor>
+      <anchor>aa5923ce66c8b2878cf2dc1c77a96d581</anchor>
       <arglist>(IMessage message)</arglist>
     </member>
   </compound>
@@ -58594,42 +58620,42 @@
       <anchor>a67eef3374888e85bdb523ae39a13e2ac</anchor>
       <arglist>(pb::CodedInputStream input)</arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>TimeFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RegularLimitParameters.html</anchorfile>
       <anchor>a838b4ce688fe355d9eda9544ab5c8654</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>BranchesFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RegularLimitParameters.html</anchorfile>
       <anchor>af54fdbafa12ed60f2bc864196cae63b1</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>FailuresFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RegularLimitParameters.html</anchorfile>
       <anchor>a6f56bc6b1432a888a98da4aae818ef5d</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>SolutionsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RegularLimitParameters.html</anchorfile>
       <anchor>a7c95a7da0d0be622c18da62f20f9545f</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>SmartTimeCheckFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RegularLimitParameters.html</anchorfile>
       <anchor>a53cb5720450a2e378076b8e3c7f3ae30</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>CumulativeFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RegularLimitParameters.html</anchorfile>
@@ -58827,35 +58853,35 @@
       <anchor>a67eef3374888e85bdb523ae39a13e2ac</anchor>
       <arglist>(pb::CodedInputStream input)</arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>MinLevelFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ReservoirConstraintProto.html</anchorfile>
       <anchor>a92eeefd6737847ec591080548b5a8df6</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>MaxLevelFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ReservoirConstraintProto.html</anchorfile>
       <anchor>ad1432ea7e4b6a39fe65404777a67668c</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>TimeExprsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ReservoirConstraintProto.html</anchorfile>
       <anchor>a0b5061fc7b6892d656778f88a7a596f8</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>LevelChangesFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ReservoirConstraintProto.html</anchorfile>
       <anchor>aca3857a34476508b42ac20b65754ecdf</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>ActiveLiteralsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ReservoirConstraintProto.html</anchorfile>
@@ -58978,10 +59004,10 @@
       <arglist>(int vehicle)</arglist>
     </member>
     <member kind="function">
-      <type>int[]</type>
+      <type>int []</type>
       <name>GetVehiclesRequiringAResource</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel_1_1ResourceGroup.html</anchorfile>
-      <anchor>a8855fa5b84ca03084ec78d53a3235fdf</anchor>
+      <anchor>a3af7f783631861b50e06195fab9b1b1c</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -59294,35 +59320,35 @@
       <anchor>a67eef3374888e85bdb523ae39a13e2ac</anchor>
       <arglist>(pb::CodedInputStream input)</arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>TailsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1RoutesConstraintProto.html</anchorfile>
       <anchor>a6c5d1d9104f2c608ece1aa00382bfdaf</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>HeadsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1RoutesConstraintProto.html</anchorfile>
       <anchor>abd46b69d50465e17558b20b71758c994</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>LiteralsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1RoutesConstraintProto.html</anchorfile>
       <anchor>a96bd46e0df421199e4f5001ddc6a0d97</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>DemandsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1RoutesConstraintProto.html</anchorfile>
       <anchor>a094e3db64da9466a3afd007266a4b704</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>CapacityFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1RoutesConstraintProto.html</anchorfile>
@@ -59783,10 +59809,10 @@
       <arglist>(int node)</arglist>
     </member>
     <member kind="function">
-      <type>long[]</type>
+      <type>long []</type>
       <name>NodesToIndices</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingIndexManager.html</anchorfile>
-      <anchor>a26d8d443a033a4211556067a674c7ee5</anchor>
+      <anchor>aea720bc3adcb2706aa64af34438fc734</anchor>
       <arglist>(int[] nodes)</arglist>
     </member>
     <member kind="function">
@@ -60013,10 +60039,10 @@
       <arglist>(int rg_index)</arglist>
     </member>
     <member kind="function">
-      <type>int[]</type>
+      <type>int []</type>
       <name>GetDimensionResourceGroupIndices</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html</anchorfile>
-      <anchor>a5e239fdf50df2e86dd15ba8d748a5392</anchor>
+      <anchor>a67f997059734a423444354f9ba75af55</anchor>
       <arglist>(RoutingDimension dimension)</arglist>
     </member>
     <member kind="function">
@@ -60048,17 +60074,17 @@
       <arglist>(long[] indices)</arglist>
     </member>
     <member kind="function">
-      <type>int[]</type>
+      <type>int []</type>
       <name>GetDisjunctionIndices</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html</anchorfile>
-      <anchor>a16f75edc79e327e4bd7357643585000a</anchor>
+      <anchor>ad4c4304d5a39eff44008c27912855f56</anchor>
       <arglist>(long index)</arglist>
     </member>
     <member kind="function">
-      <type>long[]</type>
+      <type>long []</type>
       <name>GetDisjunctionNodeIndices</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html</anchorfile>
-      <anchor>ab9a8fe6ae63172ae45d4340282e23a4e</anchor>
+      <anchor>aa64de910c1033f64fe5293073b6b3276</anchor>
       <arglist>(int index)</arglist>
     </member>
     <member kind="function">
@@ -60181,17 +60207,17 @@
       <arglist>(long index)</arglist>
     </member>
     <member kind="function">
-      <type>int[]</type>
+      <type>int []</type>
       <name>GetSingleNodesOfType</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html</anchorfile>
-      <anchor>aff99e3c465c7f7abfe7fffc706611236</anchor>
+      <anchor>a0a496ec938a128f863c9f4d8a6f184da</anchor>
       <arglist>(int type)</arglist>
     </member>
     <member kind="function">
-      <type>int[]</type>
+      <type>int []</type>
       <name>GetPairIndicesOfType</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html</anchorfile>
-      <anchor>aec24a13bd1239dcac5fd703ab38851e8</anchor>
+      <anchor>a4294a0d0925de99e2ab2c3155ce05ba5</anchor>
       <arglist>(int type)</arglist>
     </member>
     <member kind="function">
@@ -60384,17 +60410,17 @@
       <arglist>(long linear_cost_factor, long quadratic_cost_factor, int vehicle)</arglist>
     </member>
     <member kind="function">
-      <type>long[]</type>
+      <type>long []</type>
       <name>GetAmortizedLinearCostFactorOfVehicles</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html</anchorfile>
-      <anchor>a13865ec33734b33344ec45f46d74e612</anchor>
+      <anchor>a240e063cf4f98e6b1d1df82dd24410ff</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>long[]</type>
+      <type>long []</type>
       <name>GetAmortizedQuadraticCostFactorOfVehicles</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html</anchorfile>
-      <anchor>a5c7c3853afe6aa97f2f3f37305aac206</anchor>
+      <anchor>ab9ed7f4c93c7b37bc0a822e7d5160b23</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -60853,10 +60879,10 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>int[]</type>
+      <type>int []</type>
       <name>GetSameVehicleIndicesOfIndex</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html</anchorfile>
-      <anchor>ab190045bc81c1a453c4519997bb3fb81</anchor>
+      <anchor>a3087c31033f3d79fdc24725894956179</anchor>
       <arglist>(int node)</arglist>
     </member>
     <member kind="function">
@@ -61150,21 +61176,21 @@
       <anchor>a67eef3374888e85bdb523ae39a13e2ac</anchor>
       <arglist>(pb::CodedInputStream input)</arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>SolverParametersFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModelParameters.html</anchorfile>
       <anchor>afaa1810ade99c35bf8cd1f7da5d3ae18</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>ReduceVehicleCostModelFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModelParameters.html</anchorfile>
       <anchor>aa518a008d742c92f8a263c5ddda04ad1</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>MaxCallbackCacheSizeFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModelParameters.html</anchorfile>
@@ -61360,294 +61386,294 @@
       <anchor>a67eef3374888e85bdb523ae39a13e2ac</anchor>
       <arglist>(pb::CodedInputStream input)</arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>FirstSolutionStrategyFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters.html</anchorfile>
       <anchor>a8a448766331cacfb990b7a9febf81392</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseUnfilteredFirstSolutionStrategyFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters.html</anchorfile>
       <anchor>a7bfe00e178eac5c2b68bdfa15a48ed86</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>SavingsNeighborsRatioFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters.html</anchorfile>
       <anchor>af00167069085ff7f7ff1050e69ce4936</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>SavingsMaxMemoryUsageBytesFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters.html</anchorfile>
       <anchor>a0cfc6d63b4402a075e3d3e513d5e853e</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>SavingsAddReverseArcsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters.html</anchorfile>
       <anchor>a860d088e4f5d92bd66d48ecb7ad16cf1</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>SavingsArcCoefficientFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters.html</anchorfile>
       <anchor>ab3802eca7912df8f101ba08adf96bd80</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>SavingsParallelRoutesFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters.html</anchorfile>
       <anchor>aa05c8f187b740c81db5c3e00a50e3c3f</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>CheapestInsertionFarthestSeedsRatioFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters.html</anchorfile>
       <anchor>abcc854488fb461b39525c26819f4e2ec</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>CheapestInsertionFirstSolutionNeighborsRatioFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters.html</anchorfile>
       <anchor>a244b5b3452ebaac714fcf71ed178f970</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>CheapestInsertionFirstSolutionMinNeighborsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters.html</anchorfile>
       <anchor>a62637ef063f9febdb517da5a7c4195c5</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>CheapestInsertionLsOperatorNeighborsRatioFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters.html</anchorfile>
       <anchor>a784efc9c5c87c3f4e6e22eb396fdccac</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>CheapestInsertionLsOperatorMinNeighborsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters.html</anchorfile>
       <anchor>aa4022761c923ba22a587b4843bef822e</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>CheapestInsertionFirstSolutionUseNeighborsRatioForInitializationFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters.html</anchorfile>
       <anchor>a5cdb19278e0c7b74390650fb2d44bc28</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>CheapestInsertionAddUnperformedEntriesFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters.html</anchorfile>
       <anchor>abc31cf3087b95c87fb8d214c91b5e100</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>ChristofidesUseMinimumMatchingFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters.html</anchorfile>
       <anchor>a1e568f2326aaa2691f61fd71309cd5c6</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>LocalSearchOperatorsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters.html</anchorfile>
       <anchor>aea039992919943d301ea33523a7611b0</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseMultiArmedBanditConcatenateOperatorsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters.html</anchorfile>
       <anchor>ac572ea5d3d712dcc6650749872319bc1</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>MultiArmedBanditCompoundOperatorMemoryCoefficientFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters.html</anchorfile>
       <anchor>ad8e98b4d3a5c19d4f138ff1a1c387617</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>MultiArmedBanditCompoundOperatorExplorationCoefficientFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters.html</anchorfile>
       <anchor>a8b12091bfb49ed771e5a1f9ed3d4a285</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>RelocateExpensiveChainNumArcsToConsiderFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters.html</anchorfile>
       <anchor>ada47f2f4e3a40ae9f0aa79fb70652185</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>HeuristicExpensiveChainLnsNumArcsToConsiderFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters.html</anchorfile>
       <anchor>ad6ddede3d98f72a13f7f7437857f80bb</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>HeuristicCloseNodesLnsNumNodesFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters.html</anchorfile>
       <anchor>ac4b27098dcb489749f484b8fadf83403</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>LocalSearchMetaheuristicFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters.html</anchorfile>
       <anchor>a8edc81b3272b9b5442c1883a6e916f77</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>GuidedLocalSearchLambdaCoefficientFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters.html</anchorfile>
       <anchor>af9ea190eec69903560e4715ee0f6e2cf</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseDepthFirstSearchFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters.html</anchorfile>
       <anchor>af80c8cd7a8710b444293855a33e95754</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseCpFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters.html</anchorfile>
       <anchor>a7fb220305460b878f83cedad6404c179</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseCpSatFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters.html</anchorfile>
       <anchor>a1f526d193b9501c5ec9b420d15fe47fa</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseGeneralizedCpSatFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters.html</anchorfile>
       <anchor>a6d871f5b9467989d3b6eced5ad7ed595</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>SatParametersFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters.html</anchorfile>
       <anchor>a50804b99b02cc93ba90df81259604ec3</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>ContinuousSchedulingSolverFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters.html</anchorfile>
       <anchor>ab2b69b0eceb5a9a943266a0ce4e9e93b</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>MixedIntegerSchedulingSolverFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters.html</anchorfile>
       <anchor>a479700f6bb29130f50ff0dacb81aef3c</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>OptimizationStepFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters.html</anchorfile>
       <anchor>ae5eaef5627fd14b4724aee161a3cc290</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>NumberOfSolutionsToCollectFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters.html</anchorfile>
       <anchor>ac51b9060ff1b316b229b2aab14a6b5ba</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>SolutionLimitFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters.html</anchorfile>
       <anchor>ac9fc5fa528415587f5f1c9da38ff3fee</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>TimeLimitFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters.html</anchorfile>
       <anchor>ad1e35ed345f2fb8ee91ae7c1755a067e</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>LnsTimeLimitFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters.html</anchorfile>
       <anchor>a5496365c650ad20b584d71ef38b7fa24</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>ImprovementLimitParametersFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters.html</anchorfile>
       <anchor>a777fd9acbdd0a7a29d826ef7a3dc9291</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseFullPropagationFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters.html</anchorfile>
       <anchor>a1d7b748025793a2308396ad3fda3871a</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>LogSearchFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters.html</anchorfile>
       <anchor>aa83bcd7619630f805639abce305904bf</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>LogCostScalingFactorFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters.html</anchorfile>
       <anchor>a5f89541bb456886121ed6882cf4bab2b</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>LogCostOffsetFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters.html</anchorfile>
       <anchor>a69999aba2a22da2640750222033b3447</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>LogTagFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters.html</anchorfile>
@@ -63227,1190 +63253,1190 @@
       <anchor>a67eef3374888e85bdb523ae39a13e2ac</anchor>
       <arglist>(pb::CodedInputStream input)</arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>NameFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a8472f6241944a1949eb4435a1853734b</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>PreferredVariableOrderFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a05471e1433333bd19beae7b242a33825</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>InitialPolarityFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a500820828f37d001e456a2422ba8eee7</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UsePhaseSavingFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>aa54266cbeddaab6c42ed9dbdf34cfaef</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>PolarityRephaseIncrementFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>ab95f21c7cc824c9e78def433397dceeb</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>RandomPolarityRatioFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>af820f6b5c29f9e6c43750056a9712d0a</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>RandomBranchesRatioFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a2a9382abaa4a1ef52fd6816cd6bf5b10</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseErwaHeuristicFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>ac047021417b3577a7820ffadf951bda0</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>InitialVariablesActivityFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>ac22f121cd7b834a7a98d78827bdf65d4</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>AlsoBumpVariablesInConflictReasonsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a5117b6fe7958c90298e7c82350d2bc6f</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>MinimizationAlgorithmFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a9656537983428d2b7a4c518c5827360c</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>BinaryMinimizationAlgorithmFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>ab5f7bcd0ba4153d9debc88668d60d375</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>SubsumptionDuringConflictAnalysisFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a5b80f0d27df7dad486dc51706f480273</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>ClauseCleanupPeriodFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>ac522e824cba598ae8f4d864477c218d3</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>ClauseCleanupTargetFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>ad99bb40531fe88ccf56e31143d3c19c0</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>ClauseCleanupRatioFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a2be4e421e1ff492b0407dfb4526f71d3</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>ClauseCleanupProtectionFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a9f0f423e959b7762b7e2a15cdcd1c4cb</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>ClauseCleanupLbdBoundFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a63873888b1c8e2c55ecf032e256f1509</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>ClauseCleanupOrderingFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>aa78ced422e971daa54432b0b52c1acb2</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>PbCleanupIncrementFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a0eb8592f930c08aa3702a67b87b13cd9</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>PbCleanupRatioFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a94f22aa2f25d5f36841b308320937f4c</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>MinimizeWithPropagationRestartPeriodFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a02c329ab097d3b170909bf9dc9c4c483</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>MinimizeWithPropagationNumDecisionsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>ab00ac1eae1b5392c40b235495ac21dc1</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>VariableActivityDecayFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a2551f8619ad03e7086f8bcb45fda5b4e</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>MaxVariableActivityValueFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>afe3409b29763ebbd00c12e94940850cc</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>GlucoseMaxDecayFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a684b20345b7edde9728179bd28f4a67e</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>GlucoseDecayIncrementFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a75beed3f66e9e36d3166a8210d216eea</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>GlucoseDecayIncrementPeriodFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>aaaaea4669605d7e97b7d0f7a0d14d204</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>ClauseActivityDecayFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a4a0d660c5528ff5d27fa95111d4e7ca0</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>MaxClauseActivityValueFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>aee2e65a08edc1dde4bdbda4610e3f01a</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>RestartAlgorithmsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>ae4b90ef483ad47a17f79d009c2468779</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>DefaultRestartAlgorithmsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>ae5f3ef9cd5084d6925248680c1b3eb5f</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>RestartPeriodFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>aa4d91af611daeb46c5884e164923a23f</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>RestartRunningWindowSizeFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a4b54ac742c8fff37114b783010d4ba41</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>RestartDlAverageRatioFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>ad119d58b70f54d38baaad2f073dd89a8</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>RestartLbdAverageRatioFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a5c3e3381b9629060647ff1ebc11601a5</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseBlockingRestartFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a716ae8a62b4bcef024b0aa5fa4548ffe</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>BlockingRestartWindowSizeFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a3af41c2a7421da2c381b22099962e707</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>BlockingRestartMultiplierFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a37217e61a28bad0ede8a66e4aed92ecf</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>NumConflictsBeforeStrategyChangesFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>abf5b8e4701a8cc49a103ab96105993c6</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>StrategyChangeIncreaseRatioFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a43630437ec91e4cfe47e55eb7a678bb5</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>MaxTimeInSecondsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a4bd851fff985fc691f29862b8e723b54</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>MaxDeterministicTimeFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a41cab3c29fb03ff7d219a7e07456088b</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>MaxNumberOfConflictsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>aa0c31b2175881e116ee50051883ada73</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>MaxMemoryInMbFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a9d0a903447caf9263381dc923e965333</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>AbsoluteGapLimitFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>ae4ca2a7b1705ba1bb402c13a34d2851b</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>RelativeGapLimitFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>ac6be3b5faf560568b35cbb2bd9355243</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>TreatBinaryClausesSeparatelyFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a406753bac05ef21d1363f4928bbfd490</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>RandomSeedFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>ac87ed0732c275cf10c16d06a19df18c9</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>PermuteVariableRandomlyFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a0608cfc451a98ec69de25f03bdbebf91</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>PermutePresolveConstraintOrderFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a503c622109b824cebf06a4281399b3b3</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseAbslRandomFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a88bb0beac5b2c92fc5e531d740bd083f</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>LogSearchProgressFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a659ee48983ac9e6966b7a4bcd089b686</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>LogSubsolverStatisticsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>ac23a4e84ff44b94431afe94d9cae9032</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>LogPrefixFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>af31bfd7c8405e14eb27680fa26dd746d</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>LogToStdoutFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>aceb0eb37104cc090f6358150ae698b4b</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>LogToResponseFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a62090b96823a5fdb8c6ce5fa64d2a99b</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UsePbResolutionFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>aada9bde7f295c5335217f49b5dd6bb09</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>MinimizeReductionDuringPbResolutionFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a03375205de40c09a040f2db712bfb408</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>CountAssumptionLevelsInLbdFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a414ce31ab1e3bee00e6f430f952a4878</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>PresolveBveThresholdFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>ab07bf994aeab5f75a5ad953260cec78b</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>PresolveBveClauseWeightFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a183ce32a6ef1fa9c7eaca0be00165716</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>PresolveProbingDeterministicTimeLimitFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a49d89fd9f0cbd9c7868c34712f3d64c8</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>PresolveBlockedClauseFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a340b87964a9ac8796b26b4fd91726453</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>PresolveUseBvaFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a73070baf0771deb1d12d4083f5a32385</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>PresolveBvaThresholdFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a36eeee35b07f8ff18c6d2bbecc3260fb</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>MaxPresolveIterationsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>af7940ce3d63a8d11a6bc4fe9eeb9d4d0</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>CpModelPresolveFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a87dc2411d5b5d31c7aa6352326ffbf3b</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>CpModelProbingLevelFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a386e52d4156005e4d5f43520bc5873c0</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>CpModelUseSatPresolveFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>ad95adf88859a8f90e71f0a6cfd70ef32</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseSatInprocessingFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>ad0ad2d34147daee3338d6032678619ed</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>ExpandAlldiffConstraintsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>ab98d18e1a6a284516c23312aeffe0ad3</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>DisableConstraintExpansionFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a297be856ce535e6a817239db326b3752</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>MergeNoOverlapWorkLimitFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a676a49b312382c9bb18d6af1f403b49d</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>MergeAtMostOneWorkLimitFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a2724dbb62f70b716d35daff210f42c28</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>PresolveSubstitutionLevelFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a3a53af612500755ff0160d1410c1788e</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>PresolveExtractIntegerEnforcementFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a79790800189c3db3b89556263ac83e95</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>DebugPostsolveWithFullSolverFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>acdd7521d89208b0fd7806c5ebd84753a</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>DebugMaxNumPresolveOperationsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a540176620cd595ca511ab300f7b330b3</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>DebugCrashOnBadHintFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a419b4857438bcf2edb76698210ec7851</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseOptimizationHintsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a89b7d4703779b8840f834ceca31f39a5</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>MinimizeCoreFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>aa08d207362a445c4193ba7a9ea057427</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>FindMultipleCoresFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>aaceaea35abe7a8dbd02b3a4639ea2a3d</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>CoverOptimizationFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>ac268d03de3ec1f6136a3907f4d57d546</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>MaxSatAssumptionOrderFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a1daa945d22b7eb2fc00fe52d0d25adb5</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>MaxSatReverseAssumptionOrderFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a86da29318aa1884705812e0d568c3983</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>MaxSatStratificationFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a48d9123bbae5a3c04bffe6b407836221</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UsePrecedencesInDisjunctiveConstraintFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>abfd5678703b5f1e6dbca06712438a317</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseOverloadCheckerInCumulativeConstraintFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>abc6cca18ffce7559f0e5852651602f66</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseTimetableEdgeFindingInCumulativeConstraintFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a9cdf2adf2260afd678a4f5212110e79a</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseDisjunctiveConstraintInCumulativeConstraintFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a1ea3136613f2212e9a9427aa2827a89e</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseCumulativeInNoOverlap2DFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a094e91a06cf6849da6f2e8d44485c723</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>LinearizationLevelFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>ac08668953858976abf909a46612a26d2</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>BooleanEncodingLevelFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a87c0693136b953d08317642d7a2f2b68</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>MaxDomainSizeWhenEncodingEqNeqConstraintsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a0f66d7f02215d7a787915f20d7ae5ee2</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>MaxNumCutsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a96915b5dfafa093e12322ae41e2857ad</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>CutLevelFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a4cd1ab5a240ee78e55703cbeb542ba34</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>OnlyAddCutsAtLevelZeroFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>ab0291915fe53f36d8a623789e29ce8fd</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>AddObjectiveCutFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a094d809a747b9c33347206cbd50e5179</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>AddCgCutsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>abc3ae9515834fc391ee24d848f6aae8b</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>AddMirCutsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>ad19e202ea05e07cdc6e9679ca7cfebda</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>AddZeroHalfCutsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a9899da2d4cf1da6cff9af11978f83346</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>AddCliqueCutsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a7a0cc250a777622ed6ac91d012bcec11</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>MaxAllDiffCutSizeFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a176172d811b8a20a383298234fca5973</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>AddLinMaxCutsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a9414058fe768cb2da65a05b7844e9c61</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>MaxIntegerRoundingScalingFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>aef69d4e854bdc0b86e08f6d12c16c422</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>AddLpConstraintsLazilyFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>ab544f87d75ed30b7eb34d76d60e4f7b2</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>MinOrthogonalityForLpConstraintsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a7f6ed4ada94481b6ee4bc17e81254058</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>MaxCutRoundsAtLevelZeroFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>aa0491b7f83b6acb2fc12555a55fe3190</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>MaxConsecutiveInactiveCountFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>ab03d8bda3f9f94238393b55aa84971a2</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>CutMaxActiveCountValueFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a3f75be1d3648fd85d09d433c49e21426</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>CutActiveCountDecayFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a48e8d60322903c5428d819c94a390c40</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>CutCleanupTargetFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>ae499f7df365d76421838bdc18485ab88</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>NewConstraintsBatchSizeFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>ae5362d44f1352bc979e071330cacb7bd</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>SearchBranchingFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a102fc08ff9259f00e2f3423247f63508</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>HintConflictLimitFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>ab3c8ddfc89ddb2b3b000be37f68decc2</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>RepairHintFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a47ebf770a436c4852c295af2c957c1a6</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>FixVariablesToTheirHintedValueFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a70794a2eb1d47cd2764b3eb79848fea3</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>ExploitIntegerLpSolutionFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a8ba571c6fb2abf24d39fd1cf60c3b16a</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>ExploitAllLpSolutionFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a7fc08f1b53d656674debb687a761c39b</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>ExploitBestSolutionFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a86d16e0262d51cfb376c9a1ca37fb268</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>ExploitRelaxationSolutionFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>af29fa7a1abf363afb292c0db30aede70</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>ExploitObjectiveFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a85eb31c04327aa3aff26d5cec9b760d0</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>ProbingPeriodAtRootFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a30ca9b4c54780fafdf828dd4e77edf07</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseProbingSearchFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>af45d81ba760202d006d7f74055574604</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>PseudoCostReliabilityThresholdFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>aa234e084890bc746a0a9f78733d2f11f</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>OptimizeWithCoreFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>aff38ea03c6a7e59dda6b3cb579f64289</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>OptimizeWithLbTreeSearchFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a9b1532b3a927470e9c3bd10b6c778c77</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>BinarySearchNumConflictsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a32c72c923cd7447916b3129825b6105c</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>OptimizeWithMaxHsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a72da7849586893616dda2356aa5ca11e</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>EnumerateAllSolutionsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a1750484cdda1d8bb7688a57d564d9ca5</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>KeepAllFeasibleSolutionsInPresolveFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>af43770a185b7a41fd9407ce4c477b139</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>FillTightenedDomainsInResponseFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>ae387bda94de6242b644d7323b5a2d12b</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>FillAdditionalSolutionsInResponseFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a543ea288da4e2a8b98a23e29de748408</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>InstantiateAllVariablesFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>aa8d9f6b5a1c3e3d5a4365c80a58922bd</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>AutoDetectGreaterThanAtLeastOneOfFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>af12c3077ce49231a15c9ae76753392a3</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>StopAfterFirstSolutionFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>aaec420c99915169cda821b8dd217a045</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>StopAfterPresolveFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a64f3711f2f25205b8ee0d59f3ada9b5f</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>NumSearchWorkersFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>ae22a1e9741dd68e942b36a1f6d57c238</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>InterleaveSearchFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a582c0db36cf4408cfad0cbfd01834368</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>InterleaveBatchSizeFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a944c11473761d186102f0c5ef49412c1</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>ReduceMemoryUsageInInterleaveModeFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a58e0145baa01f68b2779aa35af910cb4</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>ShareObjectiveBoundsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a94704929c7c490e5aa27673cb7e3adab</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>ShareLevelZeroBoundsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>ac9c053fedc97bb7c6adfe209d65c4f6c</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseLnsOnlyFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a7342ea18ba372df1a46fe600e12163be</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>SolutionPoolSizeFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a9802e21b97be83ee872b1b0fb47386bc</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseRinsLnsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a817d56b7e21e716b5c50eb139f59b0ae</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseFeasibilityPumpFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>aa8d3f834c074429ceee16510899a38ae</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>FpRoundingFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>aa7e0bc117ab6b900c8fd626ab6637d0c</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseRelaxationLnsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>ad24388cc844a1469ab0af8e5e2d9a4ee</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>DiversifyLnsParamsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>aff4dbd6641cc697e1c995d4aa5dbe1ad</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>RandomizeSearchFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>ac219654b9a6136e7d7896c3db4a287f7</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>SearchRandomizationToleranceFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a4c0344cf37dc2af727d95275e57d0cac</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseOptionalVariablesFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a672e823358cc7be3752c7147c77f79de</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseExactLpReasonFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a666ee20cdb33d6ee0fb1150058e5294e</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseBranchingInLpFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>addaf7549809d66aba000700168104f51</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseCombinedNoOverlapFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>af76ef74d263a97da9a86c71f510b46be</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>CatchSigintSignalFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>ad67c477bb7009f834de4b19d6432fe5c</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>UseImpliedBoundsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a144751578631466a1f3a334b10321c9d</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>PolishLpSolutionFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>aa04cf59c4c5a3b7ba59c63f77dd2e733</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>ConvertIntervalsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>aa79550651ea341a3d0fb69282c3b0966</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>SymmetryLevelFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a265904f59b486b2108a198173899e922</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>MipMaxBoundFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a47d8ddf8e13200b60151bbc98c62af6e</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>MipVarScalingFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a342251e4179ce68656cd5ffb58e36598</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>MipAutomaticallyScaleVariablesFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a794933de2b387a0be833215b8f4adfd9</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>MipWantedPrecisionFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a41845de10c33a34c3eb9ea3e7675d39f</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>MipMaxActivityExponentFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a8ba8ff4c372e1b1590ba9455551828e3</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>MipCheckPrecisionFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>a66f1be0f52f8f0a4e54b8c1174aa8a46</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>MipComputeTrueObjectiveBoundFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
       <anchor>aa9b38fdfbd8736ad26635ed7e8b1d29f</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>MipMaxValidMagnitudeFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
@@ -64432,10 +64458,10 @@
       <arglist></arglist>
     </member>
     <member kind="property">
-      <type>string</type>
+      <type>string??</type>
       <name>Name</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
-      <anchor>a7ee9065718e6628dc7791b756fa6c0f9</anchor>
+      <anchor>a3642fdd7754edbeb42a8cfc99715e350</anchor>
       <arglist></arglist>
     </member>
     <member kind="property">
@@ -64859,10 +64885,10 @@
       <arglist></arglist>
     </member>
     <member kind="property">
-      <type>string</type>
+      <type>string??</type>
       <name>DefaultRestartAlgorithms</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
-      <anchor>a7e50a6a9adab70ac8c7b19c7d4b9de13</anchor>
+      <anchor>a3818ff8cefc14fdb400e0a8eb06205b1</anchor>
       <arglist></arglist>
     </member>
     <member kind="property">
@@ -65181,10 +65207,10 @@
       <arglist></arglist>
     </member>
     <member kind="property">
-      <type>string</type>
+      <type>string??</type>
       <name>LogPrefix</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html</anchorfile>
-      <anchor>a2adda4c9451535bfd59ff51c31dc748c</anchor>
+      <anchor>ab580db3dcf0afd3aa00ecd0171c8dd34</anchor>
       <arglist></arglist>
     </member>
     <member kind="property">
@@ -68310,10 +68336,10 @@
       <arglist>(int index, SearchMonitor[] array, int arrayIndex, int count)</arglist>
     </member>
     <member kind="function">
-      <type>SearchMonitor[]</type>
+      <type>SearchMonitor []</type>
       <name>ToArray</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SearchMonitorVector.html</anchorfile>
-      <anchor>a75dc0d8f817a16d0ba93e525d521da57</anchor>
+      <anchor>af0db74e15f16888624ce3ac49fae5602</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -68807,24 +68833,24 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>int[]</type>
+      <type>int []</type>
       <name>ForwardSequence</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SequenceVarElement.html</anchorfile>
-      <anchor>af9f3d1c651477d20c799f005abf6ba60</anchor>
+      <anchor>ab4e54bc9fe1c9a761208cfa33f5d3627</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>int[]</type>
+      <type>int []</type>
       <name>BackwardSequence</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SequenceVarElement.html</anchorfile>
-      <anchor>a2c928de3c8250af984c74bc6aadd73cf</anchor>
+      <anchor>aa8fabb40f069521bc27874808cfef816</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>int[]</type>
+      <type>int []</type>
       <name>Unperformed</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SequenceVarElement.html</anchorfile>
-      <anchor>a6679fee56d60ab245e9352e55e407c04</anchor>
+      <anchor>ad7eaa0f79193d179b253e9c61ae52deb</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -68931,17 +68957,17 @@
       <arglist>(SequenceVarVector vars)</arglist>
     </member>
     <member kind="function">
-      <type>int[]</type>
+      <type>int []</type>
       <name>Sequence</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SequenceVarLocalSearchOperator.html</anchorfile>
-      <anchor>aef68727e0d893087a253b4013a4bb065</anchor>
+      <anchor>a584d7019f8f16198559cea193b850164</anchor>
       <arglist>(long index)</arglist>
     </member>
     <member kind="function">
-      <type>int[]</type>
+      <type>int []</type>
       <name>OldSequence</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SequenceVarLocalSearchOperator.html</anchorfile>
-      <anchor>abf758d058f57fac774118c47924f748e</anchor>
+      <anchor>a89d76952fa7b81509f2f9224ecef00fb</anchor>
       <arglist>(long index)</arglist>
     </member>
     <member kind="function">
@@ -69022,10 +69048,10 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>int[]</type>
+      <type>int []</type>
       <name>Value</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SequenceVarLocalSearchOperatorTemplate.html</anchorfile>
-      <anchor>a77b775ca8f96eaf0d3097bf01ecdeb5c</anchor>
+      <anchor>aa33eb1cb84b8566ce47b4fadf3ef38cc</anchor>
       <arglist>(long index)</arglist>
     </member>
     <member kind="function">
@@ -69036,10 +69062,10 @@
       <arglist>(long index)</arglist>
     </member>
     <member kind="function">
-      <type>int[]</type>
+      <type>int []</type>
       <name>OldValue</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SequenceVarLocalSearchOperatorTemplate.html</anchorfile>
-      <anchor>ad2f71d53b286a07f266b888c8e8eca46</anchor>
+      <anchor>ab9a1d63a523665c598f8c7e03d7e199f</anchor>
       <arglist>(long index)</arglist>
     </member>
     <member kind="function">
@@ -69202,10 +69228,10 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>int[]</type>
+      <type>int []</type>
       <name>Value</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SequenceVarLocalSearchOperatorTemplate.html</anchorfile>
-      <anchor>a77b775ca8f96eaf0d3097bf01ecdeb5c</anchor>
+      <anchor>aa33eb1cb84b8566ce47b4fadf3ef38cc</anchor>
       <arglist>(long index)</arglist>
     </member>
     <member kind="function">
@@ -69216,10 +69242,10 @@
       <arglist>(long index)</arglist>
     </member>
     <member kind="function">
-      <type>int[]</type>
+      <type>int []</type>
       <name>OldValue</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SequenceVarLocalSearchOperatorTemplate.html</anchorfile>
-      <anchor>ad2f71d53b286a07f266b888c8e8eca46</anchor>
+      <anchor>ab9a1d63a523665c598f8c7e03d7e199f</anchor>
       <arglist>(long index)</arglist>
     </member>
     <member kind="function">
@@ -69410,10 +69436,10 @@
       <arglist>(int index, SequenceVar[] array, int arrayIndex, int count)</arglist>
     </member>
     <member kind="function">
-      <type>SequenceVar[]</type>
+      <type>SequenceVar []</type>
       <name>ToArray</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SequenceVarVector.html</anchorfile>
-      <anchor>a9bd9acd51e0327f82df0fc4d9b24ec3b</anchor>
+      <anchor>ac5378a75702346b1eac3a9a4f135edb8</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -69962,24 +69988,24 @@
       <arglist>(int n, IntervalVar var)</arglist>
     </member>
     <member kind="function">
-      <type>int[]</type>
+      <type>int []</type>
       <name>ForwardSequence</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SolutionCollector.html</anchorfile>
-      <anchor>aace151a85a251891f0e0e2724c7b1ba6</anchor>
+      <anchor>a0a38b8952ea8125a1b9f5eba98687d29</anchor>
       <arglist>(int n, SequenceVar var)</arglist>
     </member>
     <member kind="function">
-      <type>int[]</type>
+      <type>int []</type>
       <name>BackwardSequence</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SolutionCollector.html</anchorfile>
-      <anchor>aeca16be9affc60a591878618783015c9</anchor>
+      <anchor>ab2985e0887c4e194f6f82f952d7ec2ad</anchor>
       <arglist>(int n, SequenceVar var)</arglist>
     </member>
     <member kind="function">
-      <type>int[]</type>
+      <type>int []</type>
       <name>Unperformed</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SolutionCollector.html</anchorfile>
-      <anchor>a3b6ca16d2cbf3ca2a6c0c32f469988a6</anchor>
+      <anchor>a3b45458915e5cf415b52bdb294815df2</anchor>
       <arglist>(int n, SequenceVar var)</arglist>
     </member>
     <member kind="function">
@@ -70595,157 +70621,157 @@
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Solver.html</filename>
     <class kind="class">Google::OrTools::ConstraintSolver::Solver::IntegerCastInfo</class>
     <member kind="function">
-      <type>IntVar[]</type>
+      <type>IntVar []</type>
       <name>MakeIntVarArray</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Solver.html</anchorfile>
-      <anchor>a80db6bf72b216b0364f1122e05178d0b</anchor>
+      <anchor>aa51a5ba90f5aeaebe8896e0f6bf064db</anchor>
       <arglist>(int count, long min, long max)</arglist>
     </member>
     <member kind="function">
-      <type>IntVar[]</type>
+      <type>IntVar []</type>
       <name>MakeIntVarArray</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Solver.html</anchorfile>
-      <anchor>a63b49a6db650a61e74ebc5254a316a36</anchor>
+      <anchor>a8c2b19499b4f2cda7201c01c1748f0d1</anchor>
       <arglist>(int count, long min, long max, string name)</arglist>
     </member>
     <member kind="function">
-      <type>IntVar[]</type>
+      <type>IntVar []</type>
       <name>MakeIntVarArray</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Solver.html</anchorfile>
-      <anchor>aa323bb60d53bd14651f991f407d87ff9</anchor>
+      <anchor>a7b2d730bfae7d56bb83755c66f59d86c</anchor>
       <arglist>(int count, long[] values)</arglist>
     </member>
     <member kind="function">
-      <type>IntVar[]</type>
+      <type>IntVar []</type>
       <name>MakeIntVarArray</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Solver.html</anchorfile>
-      <anchor>a7f75ef2b453e6b54840b64cba40c6e8e</anchor>
+      <anchor>a57d0797746c64f4ecea328640071beb2</anchor>
       <arglist>(int count, long[] values, string name)</arglist>
     </member>
     <member kind="function">
-      <type>IntVar[]</type>
+      <type>IntVar []</type>
       <name>MakeIntVarArray</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Solver.html</anchorfile>
-      <anchor>a95316f95e0350136b91434a619e5c139</anchor>
+      <anchor>abaa917aa95d65b15b9f5defe053249f4</anchor>
       <arglist>(int count, int[] values)</arglist>
     </member>
     <member kind="function">
-      <type>IntVar[]</type>
+      <type>IntVar []</type>
       <name>MakeIntVarArray</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Solver.html</anchorfile>
-      <anchor>ae5459f6ebc580c9ab50cbb8a6de8b9f8</anchor>
+      <anchor>a012bd0fbb3501ade675463ec3babd823</anchor>
       <arglist>(int count, int[] values, string name)</arglist>
     </member>
     <member kind="function">
-      <type>IntVar[]</type>
+      <type>IntVar []</type>
       <name>MakeBoolVarArray</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Solver.html</anchorfile>
-      <anchor>a68080c6ae3f93cb95df8d69d3400e93d</anchor>
+      <anchor>a658f33384058858406a56cdcbc2a1755</anchor>
       <arglist>(int count)</arglist>
     </member>
     <member kind="function">
-      <type>IntVar[]</type>
+      <type>IntVar []</type>
       <name>MakeBoolVarArray</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Solver.html</anchorfile>
-      <anchor>a34bf8290bf2a6e130cb1847ee00611a9</anchor>
+      <anchor>adea5c3c7514d0097ac665fc75d6a4ac5</anchor>
       <arglist>(int count, string name)</arglist>
     </member>
     <member kind="function">
-      <type>IntVar[,]</type>
+      <type>IntVar [,]</type>
       <name>MakeIntVarMatrix</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Solver.html</anchorfile>
-      <anchor>ae37a8dab779d45e7c87d5b952d338868</anchor>
+      <anchor>a237d42c1615a511d41af52860a040c03</anchor>
       <arglist>(int rows, int cols, long min, long max)</arglist>
     </member>
     <member kind="function">
-      <type>IntVar[,]</type>
+      <type>IntVar [,]</type>
       <name>MakeIntVarMatrix</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Solver.html</anchorfile>
-      <anchor>aeca9af37a025cb1a314528208cfc3562</anchor>
+      <anchor>a276955c15ccd6a8f620b782a8da9a472</anchor>
       <arglist>(int rows, int cols, long min, long max, string name)</arglist>
     </member>
     <member kind="function">
-      <type>IntVar[,]</type>
+      <type>IntVar [,]</type>
       <name>MakeIntVarMatrix</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Solver.html</anchorfile>
-      <anchor>a82329249ede859d7571cd8af3a0df718</anchor>
+      <anchor>a3e8c1935e331a6a13ad900868eb5a58b</anchor>
       <arglist>(int rows, int cols, long[] values)</arglist>
     </member>
     <member kind="function">
-      <type>IntVar[,]</type>
+      <type>IntVar [,]</type>
       <name>MakeIntVarMatrix</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Solver.html</anchorfile>
-      <anchor>a86f8b3ebd345d1db33e6cb2a8099dfb9</anchor>
+      <anchor>a9408604a14b895f70e596c8a79627981</anchor>
       <arglist>(int rows, int cols, long[] values, string name)</arglist>
     </member>
     <member kind="function">
-      <type>IntVar[,]</type>
+      <type>IntVar [,]</type>
       <name>MakeIntVarMatrix</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Solver.html</anchorfile>
-      <anchor>afa7ae9c66d82cdd775611bb40d245ca3</anchor>
+      <anchor>a757e3b6e64470790dda44927164fc8fa</anchor>
       <arglist>(int rows, int cols, int[] values)</arglist>
     </member>
     <member kind="function">
-      <type>IntVar[,]</type>
+      <type>IntVar [,]</type>
       <name>MakeIntVarMatrix</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Solver.html</anchorfile>
-      <anchor>a8a5718d8893187b6f5901d16e8909ecc</anchor>
+      <anchor>a21930008665dc9984deeb3363f96672b</anchor>
       <arglist>(int rows, int cols, int[] values, string name)</arglist>
     </member>
     <member kind="function">
-      <type>IntVar[,]</type>
+      <type>IntVar [,]</type>
       <name>MakeBoolVarMatrix</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Solver.html</anchorfile>
-      <anchor>af9330046b4afd99b73c62492efd93a56</anchor>
+      <anchor>a1b6e9ae3a44ce89deafacaa2712b8f1e</anchor>
       <arglist>(int rows, int cols)</arglist>
     </member>
     <member kind="function">
-      <type>IntVar[,]</type>
+      <type>IntVar [,]</type>
       <name>MakeBoolVarMatrix</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Solver.html</anchorfile>
-      <anchor>aad5059ff03f3b498f8d94447f72ffbc7</anchor>
+      <anchor>a2856484d3c13a7a8b14578be4cebc2fe</anchor>
       <arglist>(int rows, int cols, string name)</arglist>
     </member>
     <member kind="function">
-      <type>IntervalVar[]</type>
+      <type>IntervalVar []</type>
       <name>MakeFixedDurationIntervalVarArray</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Solver.html</anchorfile>
-      <anchor>a51e645f751bd95e2bf940abc71d7f1f4</anchor>
+      <anchor>a952c08b956783517d24303580ab7650b</anchor>
       <arglist>(int count, long start_min, long start_max, long duration, bool optional)</arglist>
     </member>
     <member kind="function">
-      <type>IntervalVar[]</type>
+      <type>IntervalVar []</type>
       <name>MakeFixedDurationIntervalVarArray</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Solver.html</anchorfile>
-      <anchor>abac404aa380e73d3755047b85f1e518d</anchor>
+      <anchor>a016ddb9d551c4d1979712d62dce35006</anchor>
       <arglist>(int count, long start_min, long start_max, long duration, bool optional, string name)</arglist>
     </member>
     <member kind="function">
-      <type>IntervalVar[]</type>
+      <type>IntervalVar []</type>
       <name>MakeFixedDurationIntervalVarArray</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Solver.html</anchorfile>
-      <anchor>a5daca8d14bb300b3c1a82e0bdc0f4b98</anchor>
+      <anchor>a0a3d4c47bd05ee286987df6071637fe3</anchor>
       <arglist>(int count, long[] start_min, long[] start_max, long[] duration, bool optional, string name)</arglist>
     </member>
     <member kind="function">
-      <type>IntervalVar[]</type>
+      <type>IntervalVar []</type>
       <name>MakeFixedDurationIntervalVarArray</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Solver.html</anchorfile>
-      <anchor>af6b2dc2326b7ad5247410206f090fb96</anchor>
+      <anchor>a7a8486483fad9cb291a050acbc9730fd</anchor>
       <arglist>(int count, int[] start_min, int[] start_max, int[] duration, bool optional, string name)</arglist>
     </member>
     <member kind="function">
-      <type>IntervalVar[]</type>
+      <type>IntervalVar []</type>
       <name>MakeFixedDurationIntervalVarArray</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Solver.html</anchorfile>
-      <anchor>a225160bc11dd1f11f7a2566c31155f31</anchor>
+      <anchor>a30d87115825081c02ac011a6290117b9</anchor>
       <arglist>(IntVar[] starts, int[] durations, string name)</arglist>
     </member>
     <member kind="function">
-      <type>IntervalVar[]</type>
+      <type>IntervalVar []</type>
       <name>MakeFixedDurationIntervalVarArray</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Solver.html</anchorfile>
-      <anchor>aeae0ba8dde82c0157ea20513e6ee1504</anchor>
+      <anchor>aead3a5495ade2fad1eede4192dfb0ba3</anchor>
       <arglist>(IntVar[] starts, long[] durations, string name)</arglist>
     </member>
     <member kind="function">
@@ -73146,15 +73172,15 @@
       <type>Decision</type>
       <name>MakeScheduleOrPostpone</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Solver.html</anchorfile>
-      <anchor>a4f45bbfd518433e3b2a8f959bec13f93</anchor>
-      <arglist>(IntervalVar var, long est, ref long marker)</arglist>
+      <anchor>a71c980f42dfbab1af4d3d562d19c5549</anchor>
+      <arglist>(IntervalVar var, long est, ref int marker)</arglist>
     </member>
     <member kind="function">
       <type>Decision</type>
       <name>MakeScheduleOrExpedite</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Solver.html</anchorfile>
-      <anchor>aa6ae59023f193eea54707927c9c6845b</anchor>
-      <arglist>(IntervalVar var, long est, ref long marker)</arglist>
+      <anchor>ab9c349b8088b8e517b4c8d7d01542044</anchor>
+      <arglist>(IntervalVar var, long est, ref int marker)</arglist>
     </member>
     <member kind="function">
       <type>Decision</type>
@@ -74712,10 +74738,10 @@
       <arglist>(MPSolverParameters param)</arglist>
     </member>
     <member kind="function">
-      <type>double[]</type>
+      <type>double []</type>
       <name>ComputeConstraintActivities</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Solver.html</anchorfile>
-      <anchor>afba1d2ab283c8fbb7c95d100d4030476</anchor>
+      <anchor>a43788e71b74cd6047c7ca924ae64c17e</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -74824,115 +74850,115 @@
       <arglist>(int num_theads)</arglist>
     </member>
     <member kind="function">
-      <type>Variable[]</type>
+      <type>Variable []</type>
       <name>MakeVarArray</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Solver.html</anchorfile>
-      <anchor>a43251c83b44aa45c7b7ed6d1e5c11de2</anchor>
+      <anchor>a121f0f006ff4477450b68d691fb0743c</anchor>
       <arglist>(int count, double lb, double ub, bool integer)</arglist>
     </member>
     <member kind="function">
-      <type>Variable[]</type>
+      <type>Variable []</type>
       <name>MakeVarArray</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Solver.html</anchorfile>
-      <anchor>a8e17cac9842c3e5a959b87435f1cd1f3</anchor>
+      <anchor>a4cfd8a44aedfad463400eb57edf2f7e6</anchor>
       <arglist>(int count, double lb, double ub, bool integer, string var_name)</arglist>
     </member>
     <member kind="function">
-      <type>Variable[,]</type>
+      <type>Variable [,]</type>
       <name>MakeVarMatrix</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Solver.html</anchorfile>
-      <anchor>aaf142dcbd89a5c6fa9bb02469b86136d</anchor>
+      <anchor>af81e5274648d04a1325a1f0e7433f8c4</anchor>
       <arglist>(int rows, int cols, double lb, double ub, bool integer)</arglist>
     </member>
     <member kind="function">
-      <type>Variable[,]</type>
+      <type>Variable [,]</type>
       <name>MakeVarMatrix</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Solver.html</anchorfile>
-      <anchor>a62333ddb527b6da914f7c2f2687a3275</anchor>
+      <anchor>a489ef916e794328401d8f758d01a6c7f</anchor>
       <arglist>(int rows, int cols, double lb, double ub, bool integer, string name)</arglist>
     </member>
     <member kind="function">
-      <type>Variable[]</type>
+      <type>Variable []</type>
       <name>MakeNumVarArray</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Solver.html</anchorfile>
-      <anchor>a9143e32a7e386ab4c1844407e47afa3f</anchor>
+      <anchor>aa577eaac1b8af27108f8e127881a3dab</anchor>
       <arglist>(int count, double lb, double ub)</arglist>
     </member>
     <member kind="function">
-      <type>Variable[]</type>
+      <type>Variable []</type>
       <name>MakeNumVarArray</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Solver.html</anchorfile>
-      <anchor>ab9f97159af03a27da99871bc0dd83fa9</anchor>
+      <anchor>afbf3d287cd0a4cef5f2561ab101e78bc</anchor>
       <arglist>(int count, double lb, double ub, string var_name)</arglist>
     </member>
     <member kind="function">
-      <type>Variable[,]</type>
+      <type>Variable [,]</type>
       <name>MakeNumVarMatrix</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Solver.html</anchorfile>
-      <anchor>a7d1b1e06cd236cd8e29a39b46b86e71f</anchor>
+      <anchor>a640f9bb1736b477467db2e389e60052c</anchor>
       <arglist>(int rows, int cols, double lb, double ub)</arglist>
     </member>
     <member kind="function">
-      <type>Variable[,]</type>
+      <type>Variable [,]</type>
       <name>MakeNumVarMatrix</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Solver.html</anchorfile>
-      <anchor>a1630c4feb1ef8b1cad2841feb12b2687</anchor>
+      <anchor>a4b357ac12f744433ffca72f19b8ce6a2</anchor>
       <arglist>(int rows, int cols, double lb, double ub, string name)</arglist>
     </member>
     <member kind="function">
-      <type>Variable[]</type>
+      <type>Variable []</type>
       <name>MakeIntVarArray</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Solver.html</anchorfile>
-      <anchor>aa1e1f4c186beb8f55b9bdcbf1edf88ca</anchor>
+      <anchor>a8d2b4f2415cbc133b8cbe83313cb34dc</anchor>
       <arglist>(int count, double lb, double ub)</arglist>
     </member>
     <member kind="function">
-      <type>Variable[]</type>
+      <type>Variable []</type>
       <name>MakeIntVarArray</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Solver.html</anchorfile>
-      <anchor>acf4780e97b6d647ba4d56c5a891c33ff</anchor>
+      <anchor>a207e6209a623b8244df0dc367191ee15</anchor>
       <arglist>(int count, double lb, double ub, string var_name)</arglist>
     </member>
     <member kind="function">
-      <type>Variable[,]</type>
+      <type>Variable [,]</type>
       <name>MakeIntVarMatrix</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Solver.html</anchorfile>
-      <anchor>a185b7ed19639ddd3fb70a3eeea0ebe8d</anchor>
+      <anchor>a3e62f1c6ea1f60b16a99e07b8bae1b87</anchor>
       <arglist>(int rows, int cols, double lb, double ub)</arglist>
     </member>
     <member kind="function">
-      <type>Variable[,]</type>
+      <type>Variable [,]</type>
       <name>MakeIntVarMatrix</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Solver.html</anchorfile>
-      <anchor>ab52c4573ea10d0c188f7ba8112273a00</anchor>
+      <anchor>ae43515c003d95e1e3fd7d1d62c987149</anchor>
       <arglist>(int rows, int cols, double lb, double ub, string name)</arglist>
     </member>
     <member kind="function">
-      <type>Variable[]</type>
+      <type>Variable []</type>
       <name>MakeBoolVarArray</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Solver.html</anchorfile>
-      <anchor>a7b6c99cccdefa450f23a9f059da1b46f</anchor>
+      <anchor>a72b807f9241c71641490fd19e436977c</anchor>
       <arglist>(int count)</arglist>
     </member>
     <member kind="function">
-      <type>Variable[]</type>
+      <type>Variable []</type>
       <name>MakeBoolVarArray</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Solver.html</anchorfile>
-      <anchor>a45e123763c77f62a08d7b1fb7888e3e1</anchor>
+      <anchor>ae927a8ee96d00db358b50931d2c33a26</anchor>
       <arglist>(int count, string var_name)</arglist>
     </member>
     <member kind="function">
-      <type>Variable[,]</type>
+      <type>Variable [,]</type>
       <name>MakeBoolVarMatrix</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Solver.html</anchorfile>
-      <anchor>a1ce0bd307ec84246550847550ab3a068</anchor>
+      <anchor>ae8ff4abf2f54ddb25299f89a164baf08</anchor>
       <arglist>(int rows, int cols)</arglist>
     </member>
     <member kind="function">
-      <type>Variable[,]</type>
+      <type>Variable [,]</type>
       <name>MakeBoolVarMatrix</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Solver.html</anchorfile>
-      <anchor>a4cac00c6d3b361caeea72b79a5609220</anchor>
+      <anchor>ac31f17a91bae164ec13873df8d809fa7</anchor>
       <arglist>(int rows, int cols, string name)</arglist>
     </member>
     <member kind="function">
@@ -75164,14 +75190,14 @@
       <anchor>a67eef3374888e85bdb523ae39a13e2ac</anchor>
       <arglist>(pb::CodedInputStream input)</arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>SupportFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SparsePermutationProto.html</anchorfile>
       <anchor>a5a5b897de4cf36b81b9f936ad5f7a1c4</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>CycleSizesFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SparsePermutationProto.html</anchorfile>
@@ -75262,44 +75288,44 @@
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a84a0cd8a12a4114a5be319387837f019</anchor>
+      <anchor>abfb99d9976a1305f4975ab8faba16da8</anchor>
       <arglist>(LinearExpr a, double v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>aec3ffacd07d8d90bb255fca7931aa212</anchor>
+      <anchor>afead7bb0d10488161febe85185a3f2a0</anchor>
       <arglist>(double v, LinearExpr a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>ae10ffffedef48bf520a489f2612cbba5</anchor>
+      <anchor>a6f2fb85a2e5a469df5f3105fab0efef1</anchor>
       <arglist>(LinearExpr a, LinearExpr b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a532c2d44559645b8247bd747f7ff9035</anchor>
+      <anchor>aee57ed93140d54a69f346e9036a29787</anchor>
       <arglist>(LinearExpr a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a6ab27638ca270e8e0db700d696c723b1</anchor>
+      <anchor>ac808849cccccfe100313ed7c1a2a5cef</anchor>
       <arglist>(LinearExpr a, double v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>ae5884c17893b758739964ec63d15816e</anchor>
+      <anchor>adcd9fd7ae393a65f6a27b6f350543529</anchor>
       <arglist>(double v, LinearExpr a)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -75332,23 +75358,23 @@
     </member>
     <member kind="function" static="yes">
       <type>static RangeConstraint</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>ae69414683801db2310c4191e55d46a65</anchor>
+      <anchor>a730034adeae6d72dbc8c8889e355abf8</anchor>
       <arglist>(LinearExpr a, double v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static RangeConstraint</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a3124bbb1585a9f54c584fdbd79757250</anchor>
+      <anchor>a99939d53ee629ff0f185d152fb7808f8</anchor>
       <arglist>(double v, LinearExpr a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static Equality</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a9353d050cc6d4a6ad9f92c70243ea28f</anchor>
+      <anchor>a207f9c428dd304ebdb185f11b06a0479</anchor>
       <arglist>(LinearExpr a, LinearExpr b)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -75367,16 +75393,16 @@
     </member>
     <member kind="function" static="yes">
       <type>static RangeConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>ac7089bc88944bdd4b9500a89c8c78beb</anchor>
+      <anchor>ae164eee911848c8562cfbb4b19b7e9d1</anchor>
       <arglist>(LinearExpr a, double v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static RangeConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>ae15dfa4bb4e721b3aedf0f22c71b534b</anchor>
+      <anchor>a82439106aa777bd1ac8cda600b69c5af</anchor>
       <arglist>(LinearExpr a, LinearExpr b)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -75435,44 +75461,44 @@
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a84a0cd8a12a4114a5be319387837f019</anchor>
+      <anchor>abfb99d9976a1305f4975ab8faba16da8</anchor>
       <arglist>(LinearExpr a, double v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>aec3ffacd07d8d90bb255fca7931aa212</anchor>
+      <anchor>afead7bb0d10488161febe85185a3f2a0</anchor>
       <arglist>(double v, LinearExpr a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>ae10ffffedef48bf520a489f2612cbba5</anchor>
+      <anchor>a6f2fb85a2e5a469df5f3105fab0efef1</anchor>
       <arglist>(LinearExpr a, LinearExpr b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a532c2d44559645b8247bd747f7ff9035</anchor>
+      <anchor>aee57ed93140d54a69f346e9036a29787</anchor>
       <arglist>(LinearExpr a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a6ab27638ca270e8e0db700d696c723b1</anchor>
+      <anchor>ac808849cccccfe100313ed7c1a2a5cef</anchor>
       <arglist>(LinearExpr a, double v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>ae5884c17893b758739964ec63d15816e</anchor>
+      <anchor>adcd9fd7ae393a65f6a27b6f350543529</anchor>
       <arglist>(double v, LinearExpr a)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -75505,23 +75531,23 @@
     </member>
     <member kind="function" static="yes">
       <type>static RangeConstraint</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>ae69414683801db2310c4191e55d46a65</anchor>
+      <anchor>a730034adeae6d72dbc8c8889e355abf8</anchor>
       <arglist>(LinearExpr a, double v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static RangeConstraint</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a3124bbb1585a9f54c584fdbd79757250</anchor>
+      <anchor>a99939d53ee629ff0f185d152fb7808f8</anchor>
       <arglist>(double v, LinearExpr a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static Equality</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a9353d050cc6d4a6ad9f92c70243ea28f</anchor>
+      <anchor>a207f9c428dd304ebdb185f11b06a0479</anchor>
       <arglist>(LinearExpr a, LinearExpr b)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -75540,16 +75566,16 @@
     </member>
     <member kind="function" static="yes">
       <type>static RangeConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>ac7089bc88944bdd4b9500a89c8c78beb</anchor>
+      <anchor>ae164eee911848c8562cfbb4b19b7e9d1</anchor>
       <arglist>(LinearExpr a, double v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static RangeConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>ae15dfa4bb4e721b3aedf0f22c71b534b</anchor>
+      <anchor>a82439106aa777bd1ac8cda600b69c5af</anchor>
       <arglist>(LinearExpr a, LinearExpr b)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -75615,44 +75641,44 @@
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a84a0cd8a12a4114a5be319387837f019</anchor>
+      <anchor>abfb99d9976a1305f4975ab8faba16da8</anchor>
       <arglist>(LinearExpr a, double v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>aec3ffacd07d8d90bb255fca7931aa212</anchor>
+      <anchor>afead7bb0d10488161febe85185a3f2a0</anchor>
       <arglist>(double v, LinearExpr a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>ae10ffffedef48bf520a489f2612cbba5</anchor>
+      <anchor>a6f2fb85a2e5a469df5f3105fab0efef1</anchor>
       <arglist>(LinearExpr a, LinearExpr b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a532c2d44559645b8247bd747f7ff9035</anchor>
+      <anchor>aee57ed93140d54a69f346e9036a29787</anchor>
       <arglist>(LinearExpr a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a6ab27638ca270e8e0db700d696c723b1</anchor>
+      <anchor>ac808849cccccfe100313ed7c1a2a5cef</anchor>
       <arglist>(LinearExpr a, double v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>ae5884c17893b758739964ec63d15816e</anchor>
+      <anchor>adcd9fd7ae393a65f6a27b6f350543529</anchor>
       <arglist>(double v, LinearExpr a)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -75685,23 +75711,23 @@
     </member>
     <member kind="function" static="yes">
       <type>static RangeConstraint</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>ae69414683801db2310c4191e55d46a65</anchor>
+      <anchor>a730034adeae6d72dbc8c8889e355abf8</anchor>
       <arglist>(LinearExpr a, double v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static RangeConstraint</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a3124bbb1585a9f54c584fdbd79757250</anchor>
+      <anchor>a99939d53ee629ff0f185d152fb7808f8</anchor>
       <arglist>(double v, LinearExpr a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static Equality</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a9353d050cc6d4a6ad9f92c70243ea28f</anchor>
+      <anchor>a207f9c428dd304ebdb185f11b06a0479</anchor>
       <arglist>(LinearExpr a, LinearExpr b)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -75720,16 +75746,16 @@
     </member>
     <member kind="function" static="yes">
       <type>static RangeConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>ac7089bc88944bdd4b9500a89c8c78beb</anchor>
+      <anchor>ae164eee911848c8562cfbb4b19b7e9d1</anchor>
       <arglist>(LinearExpr a, double v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static RangeConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>ae15dfa4bb4e721b3aedf0f22c71b534b</anchor>
+      <anchor>a82439106aa777bd1ac8cda600b69c5af</anchor>
       <arglist>(LinearExpr a, LinearExpr b)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -75788,44 +75814,44 @@
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a84a0cd8a12a4114a5be319387837f019</anchor>
+      <anchor>abfb99d9976a1305f4975ab8faba16da8</anchor>
       <arglist>(LinearExpr a, double v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>aec3ffacd07d8d90bb255fca7931aa212</anchor>
+      <anchor>afead7bb0d10488161febe85185a3f2a0</anchor>
       <arglist>(double v, LinearExpr a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>ae10ffffedef48bf520a489f2612cbba5</anchor>
+      <anchor>a6f2fb85a2e5a469df5f3105fab0efef1</anchor>
       <arglist>(LinearExpr a, LinearExpr b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a532c2d44559645b8247bd747f7ff9035</anchor>
+      <anchor>aee57ed93140d54a69f346e9036a29787</anchor>
       <arglist>(LinearExpr a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a6ab27638ca270e8e0db700d696c723b1</anchor>
+      <anchor>ac808849cccccfe100313ed7c1a2a5cef</anchor>
       <arglist>(LinearExpr a, double v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>ae5884c17893b758739964ec63d15816e</anchor>
+      <anchor>adcd9fd7ae393a65f6a27b6f350543529</anchor>
       <arglist>(double v, LinearExpr a)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -75858,23 +75884,23 @@
     </member>
     <member kind="function" static="yes">
       <type>static RangeConstraint</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>ae69414683801db2310c4191e55d46a65</anchor>
+      <anchor>a730034adeae6d72dbc8c8889e355abf8</anchor>
       <arglist>(LinearExpr a, double v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static RangeConstraint</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a3124bbb1585a9f54c584fdbd79757250</anchor>
+      <anchor>a99939d53ee629ff0f185d152fb7808f8</anchor>
       <arglist>(double v, LinearExpr a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static Equality</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a9353d050cc6d4a6ad9f92c70243ea28f</anchor>
+      <anchor>a207f9c428dd304ebdb185f11b06a0479</anchor>
       <arglist>(LinearExpr a, LinearExpr b)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -75893,16 +75919,16 @@
     </member>
     <member kind="function" static="yes">
       <type>static RangeConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>ac7089bc88944bdd4b9500a89c8c78beb</anchor>
+      <anchor>ae164eee911848c8562cfbb4b19b7e9d1</anchor>
       <arglist>(LinearExpr a, double v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static RangeConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>ae15dfa4bb4e721b3aedf0f22c71b534b</anchor>
+      <anchor>a82439106aa777bd1ac8cda600b69c5af</anchor>
       <arglist>(LinearExpr a, LinearExpr b)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -75911,38 +75937,6 @@
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
       <anchor>aacf833e03b58cf1fbd1e65300ede9ba9</anchor>
       <arglist>(Variable a)</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>Google::OrTools::Algorithms::operations_research_algorithmsPINVOKE::SWIGExceptionHelper</name>
-    <filename>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGExceptionHelper.html</filename>
-    <member kind="function">
-      <type>delegate void</type>
-      <name>ExceptionDelegate</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
-      <anchor>a2f7b42fc9e57300a8dea7054b35cf1b9</anchor>
-      <arglist>(string message)</arglist>
-    </member>
-    <member kind="function">
-      <type>delegate void</type>
-      <name>ExceptionArgumentDelegate</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
-      <anchor>a11886f6ea7069976960a49740509e6cf</anchor>
-      <arglist>(string message, string paramName)</arglist>
-    </member>
-    <member kind="function">
-      <type>static void</type>
-      <name>SWIGRegisterExceptionCallbacks_operations_research_algorithms</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
-      <anchor>a6491f8665369a63323ed7fd519b0a5fa</anchor>
-      <arglist>(ExceptionDelegate applicationDelegate, ExceptionDelegate arithmeticDelegate, ExceptionDelegate divideByZeroDelegate, ExceptionDelegate indexOutOfRangeDelegate, ExceptionDelegate invalidCastDelegate, ExceptionDelegate invalidOperationDelegate, ExceptionDelegate ioDelegate, ExceptionDelegate nullReferenceDelegate, ExceptionDelegate outOfMemoryDelegate, ExceptionDelegate overflowDelegate, ExceptionDelegate systemExceptionDelegate)</arglist>
-    </member>
-    <member kind="function">
-      <type>static void</type>
-      <name>SWIGRegisterExceptionCallbacksArgument_operations_research_algorithms</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
-      <anchor>a12aac45343728c2520028e1fa4cebdba</anchor>
-      <arglist>(ExceptionArgumentDelegate argumentDelegate, ExceptionArgumentDelegate argumentNullDelegate, ExceptionArgumentDelegate argumentOutOfRangeDelegate)</arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -75974,6 +75968,38 @@
       <name>SWIGRegisterExceptionCallbacksArgument_operations_research_constraint_solver</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
       <anchor>a2093962797ce82969124ef29c723400e</anchor>
+      <arglist>(ExceptionArgumentDelegate argumentDelegate, ExceptionArgumentDelegate argumentNullDelegate, ExceptionArgumentDelegate argumentOutOfRangeDelegate)</arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>Google::OrTools::Algorithms::operations_research_algorithmsPINVOKE::SWIGExceptionHelper</name>
+    <filename>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGExceptionHelper.html</filename>
+    <member kind="function">
+      <type>delegate void</type>
+      <name>ExceptionDelegate</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
+      <anchor>a2f7b42fc9e57300a8dea7054b35cf1b9</anchor>
+      <arglist>(string message)</arglist>
+    </member>
+    <member kind="function">
+      <type>delegate void</type>
+      <name>ExceptionArgumentDelegate</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
+      <anchor>a11886f6ea7069976960a49740509e6cf</anchor>
+      <arglist>(string message, string paramName)</arglist>
+    </member>
+    <member kind="function">
+      <type>static void</type>
+      <name>SWIGRegisterExceptionCallbacks_operations_research_algorithms</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
+      <anchor>a6491f8665369a63323ed7fd519b0a5fa</anchor>
+      <arglist>(ExceptionDelegate applicationDelegate, ExceptionDelegate arithmeticDelegate, ExceptionDelegate divideByZeroDelegate, ExceptionDelegate indexOutOfRangeDelegate, ExceptionDelegate invalidCastDelegate, ExceptionDelegate invalidOperationDelegate, ExceptionDelegate ioDelegate, ExceptionDelegate nullReferenceDelegate, ExceptionDelegate outOfMemoryDelegate, ExceptionDelegate overflowDelegate, ExceptionDelegate systemExceptionDelegate)</arglist>
+    </member>
+    <member kind="function">
+      <type>static void</type>
+      <name>SWIGRegisterExceptionCallbacksArgument_operations_research_algorithms</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
+      <anchor>a12aac45343728c2520028e1fa4cebdba</anchor>
       <arglist>(ExceptionArgumentDelegate argumentDelegate, ExceptionArgumentDelegate argumentNullDelegate, ExceptionArgumentDelegate argumentOutOfRangeDelegate)</arglist>
     </member>
   </compound>
@@ -76042,6 +76068,38 @@
     </member>
   </compound>
   <compound kind="class">
+    <name>Google::OrTools::Util::operations_research_utilPINVOKE::SWIGExceptionHelper</name>
+    <filename>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGExceptionHelper.html</filename>
+    <member kind="function">
+      <type>delegate void</type>
+      <name>ExceptionDelegate</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
+      <anchor>a2f7b42fc9e57300a8dea7054b35cf1b9</anchor>
+      <arglist>(string message)</arglist>
+    </member>
+    <member kind="function">
+      <type>delegate void</type>
+      <name>ExceptionArgumentDelegate</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
+      <anchor>a11886f6ea7069976960a49740509e6cf</anchor>
+      <arglist>(string message, string paramName)</arglist>
+    </member>
+    <member kind="function">
+      <type>static void</type>
+      <name>SWIGRegisterExceptionCallbacks_operations_research_util</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
+      <anchor>a3499bfc42273fc9989c5b708a5ef127a</anchor>
+      <arglist>(ExceptionDelegate applicationDelegate, ExceptionDelegate arithmeticDelegate, ExceptionDelegate divideByZeroDelegate, ExceptionDelegate indexOutOfRangeDelegate, ExceptionDelegate invalidCastDelegate, ExceptionDelegate invalidOperationDelegate, ExceptionDelegate ioDelegate, ExceptionDelegate nullReferenceDelegate, ExceptionDelegate outOfMemoryDelegate, ExceptionDelegate overflowDelegate, ExceptionDelegate systemExceptionDelegate)</arglist>
+    </member>
+    <member kind="function">
+      <type>static void</type>
+      <name>SWIGRegisterExceptionCallbacksArgument_operations_research_util</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
+      <anchor>a015665ed9a89e4fea348f9d6e94414b3</anchor>
+      <arglist>(ExceptionArgumentDelegate argumentDelegate, ExceptionArgumentDelegate argumentNullDelegate, ExceptionArgumentDelegate argumentOutOfRangeDelegate)</arglist>
+    </member>
+  </compound>
+  <compound kind="class">
     <name>Google::OrTools::LinearSolver::operations_research_linear_solverPINVOKE::SWIGExceptionHelper</name>
     <filename>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGExceptionHelper.html</filename>
     <member kind="function">
@@ -76106,63 +76164,6 @@
     </member>
   </compound>
   <compound kind="class">
-    <name>Google::OrTools::Util::operations_research_utilPINVOKE::SWIGExceptionHelper</name>
-    <filename>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGExceptionHelper.html</filename>
-    <member kind="function">
-      <type>delegate void</type>
-      <name>ExceptionDelegate</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
-      <anchor>a2f7b42fc9e57300a8dea7054b35cf1b9</anchor>
-      <arglist>(string message)</arglist>
-    </member>
-    <member kind="function">
-      <type>delegate void</type>
-      <name>ExceptionArgumentDelegate</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
-      <anchor>a11886f6ea7069976960a49740509e6cf</anchor>
-      <arglist>(string message, string paramName)</arglist>
-    </member>
-    <member kind="function">
-      <type>static void</type>
-      <name>SWIGRegisterExceptionCallbacks_operations_research_util</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
-      <anchor>a3499bfc42273fc9989c5b708a5ef127a</anchor>
-      <arglist>(ExceptionDelegate applicationDelegate, ExceptionDelegate arithmeticDelegate, ExceptionDelegate divideByZeroDelegate, ExceptionDelegate indexOutOfRangeDelegate, ExceptionDelegate invalidCastDelegate, ExceptionDelegate invalidOperationDelegate, ExceptionDelegate ioDelegate, ExceptionDelegate nullReferenceDelegate, ExceptionDelegate outOfMemoryDelegate, ExceptionDelegate overflowDelegate, ExceptionDelegate systemExceptionDelegate)</arglist>
-    </member>
-    <member kind="function">
-      <type>static void</type>
-      <name>SWIGRegisterExceptionCallbacksArgument_operations_research_util</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
-      <anchor>a015665ed9a89e4fea348f9d6e94414b3</anchor>
-      <arglist>(ExceptionArgumentDelegate argumentDelegate, ExceptionArgumentDelegate argumentNullDelegate, ExceptionArgumentDelegate argumentOutOfRangeDelegate)</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>Google::OrTools::Algorithms::operations_research_algorithmsPINVOKE::SWIGPendingException</name>
-    <filename>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGPendingException.html</filename>
-    <member kind="function" static="yes">
-      <type>static void</type>
-      <name>Set</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGPendingException.html</anchorfile>
-      <anchor>a82baf4e1ebc3af6128595ba8a17034c6</anchor>
-      <arglist>(global::System.Exception e)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static global::System.Exception</type>
-      <name>Retrieve</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGPendingException.html</anchorfile>
-      <anchor>a99561aa89dd816ba2dd85af036e32227</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="property" static="yes">
-      <type>static bool</type>
-      <name>Pending</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGPendingException.html</anchorfile>
-      <anchor>a7c98814d2667a9273c95e975fd320b6c</anchor>
-      <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="class">
     <name>Google::OrTools::ConstraintSolver::operations_research_constraint_solverPINVOKE::SWIGPendingException</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE_1_1SWIGPendingException.html</filename>
     <member kind="function" static="yes">
@@ -76183,6 +76184,81 @@
       <type>static bool</type>
       <name>Pending</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE_1_1SWIGPendingException.html</anchorfile>
+      <anchor>a7c98814d2667a9273c95e975fd320b6c</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>Google::OrTools::LinearSolver::operations_research_linear_solverPINVOKE::SWIGPendingException</name>
+    <filename>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGPendingException.html</filename>
+    <member kind="function" static="yes">
+      <type>static void</type>
+      <name>Set</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGPendingException.html</anchorfile>
+      <anchor>a82baf4e1ebc3af6128595ba8a17034c6</anchor>
+      <arglist>(global::System.Exception e)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static global::System.Exception</type>
+      <name>Retrieve</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGPendingException.html</anchorfile>
+      <anchor>a99561aa89dd816ba2dd85af036e32227</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="property" static="yes">
+      <type>static bool</type>
+      <name>Pending</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGPendingException.html</anchorfile>
+      <anchor>a7c98814d2667a9273c95e975fd320b6c</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>Google::OrTools::Util::operations_research_utilPINVOKE::SWIGPendingException</name>
+    <filename>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGPendingException.html</filename>
+    <member kind="function" static="yes">
+      <type>static void</type>
+      <name>Set</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGPendingException.html</anchorfile>
+      <anchor>a82baf4e1ebc3af6128595ba8a17034c6</anchor>
+      <arglist>(global::System.Exception e)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static global::System.Exception</type>
+      <name>Retrieve</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGPendingException.html</anchorfile>
+      <anchor>a99561aa89dd816ba2dd85af036e32227</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="property" static="yes">
+      <type>static bool</type>
+      <name>Pending</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGPendingException.html</anchorfile>
+      <anchor>a7c98814d2667a9273c95e975fd320b6c</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>Google::OrTools::Sat::operations_research_satPINVOKE::SWIGPendingException</name>
+    <filename>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE_1_1SWIGPendingException.html</filename>
+    <member kind="function" static="yes">
+      <type>static void</type>
+      <name>Set</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE_1_1SWIGPendingException.html</anchorfile>
+      <anchor>a82baf4e1ebc3af6128595ba8a17034c6</anchor>
+      <arglist>(global::System.Exception e)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static global::System.Exception</type>
+      <name>Retrieve</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE_1_1SWIGPendingException.html</anchorfile>
+      <anchor>a99561aa89dd816ba2dd85af036e32227</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="property" static="yes">
+      <type>static bool</type>
+      <name>Pending</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE_1_1SWIGPendingException.html</anchorfile>
       <anchor>a7c98814d2667a9273c95e975fd320b6c</anchor>
       <arglist></arglist>
     </member>
@@ -76238,114 +76314,28 @@
     </member>
   </compound>
   <compound kind="class">
-    <name>Google::OrTools::LinearSolver::operations_research_linear_solverPINVOKE::SWIGPendingException</name>
-    <filename>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGPendingException.html</filename>
+    <name>Google::OrTools::Algorithms::operations_research_algorithmsPINVOKE::SWIGPendingException</name>
+    <filename>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGPendingException.html</filename>
     <member kind="function" static="yes">
       <type>static void</type>
       <name>Set</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGPendingException.html</anchorfile>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGPendingException.html</anchorfile>
       <anchor>a82baf4e1ebc3af6128595ba8a17034c6</anchor>
       <arglist>(global::System.Exception e)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static global::System.Exception</type>
       <name>Retrieve</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGPendingException.html</anchorfile>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGPendingException.html</anchorfile>
       <anchor>a99561aa89dd816ba2dd85af036e32227</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="property" static="yes">
       <type>static bool</type>
       <name>Pending</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGPendingException.html</anchorfile>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGPendingException.html</anchorfile>
       <anchor>a7c98814d2667a9273c95e975fd320b6c</anchor>
       <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>Google::OrTools::Sat::operations_research_satPINVOKE::SWIGPendingException</name>
-    <filename>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE_1_1SWIGPendingException.html</filename>
-    <member kind="function" static="yes">
-      <type>static void</type>
-      <name>Set</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE_1_1SWIGPendingException.html</anchorfile>
-      <anchor>a82baf4e1ebc3af6128595ba8a17034c6</anchor>
-      <arglist>(global::System.Exception e)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static global::System.Exception</type>
-      <name>Retrieve</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE_1_1SWIGPendingException.html</anchorfile>
-      <anchor>a99561aa89dd816ba2dd85af036e32227</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="property" static="yes">
-      <type>static bool</type>
-      <name>Pending</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE_1_1SWIGPendingException.html</anchorfile>
-      <anchor>a7c98814d2667a9273c95e975fd320b6c</anchor>
-      <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>Google::OrTools::Util::operations_research_utilPINVOKE::SWIGPendingException</name>
-    <filename>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGPendingException.html</filename>
-    <member kind="function" static="yes">
-      <type>static void</type>
-      <name>Set</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGPendingException.html</anchorfile>
-      <anchor>a82baf4e1ebc3af6128595ba8a17034c6</anchor>
-      <arglist>(global::System.Exception e)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static global::System.Exception</type>
-      <name>Retrieve</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGPendingException.html</anchorfile>
-      <anchor>a99561aa89dd816ba2dd85af036e32227</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="property" static="yes">
-      <type>static bool</type>
-      <name>Pending</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGPendingException.html</anchorfile>
-      <anchor>a7c98814d2667a9273c95e975fd320b6c</anchor>
-      <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>Google::OrTools::Algorithms::operations_research_algorithmsPINVOKE::SWIGStringHelper</name>
-    <filename>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGStringHelper.html</filename>
-    <member kind="function">
-      <type>delegate string</type>
-      <name>SWIGStringDelegate</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGStringHelper.html</anchorfile>
-      <anchor>a09806292f70eb61f70057ee6fd528c34</anchor>
-      <arglist>(string message)</arglist>
-    </member>
-    <member kind="function">
-      <type>static void</type>
-      <name>SWIGRegisterStringCallback_operations_research_algorithms</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGStringHelper.html</anchorfile>
-      <anchor>abae544aa94ecba5f3bb316e1cebba97f</anchor>
-      <arglist>(SWIGStringDelegate stringDelegate)</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>Google::OrTools::ConstraintSolver::operations_research_constraint_solverPINVOKE::SWIGStringHelper</name>
-    <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE_1_1SWIGStringHelper.html</filename>
-    <member kind="function">
-      <type>delegate string</type>
-      <name>SWIGStringDelegate</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE_1_1SWIGStringHelper.html</anchorfile>
-      <anchor>a09806292f70eb61f70057ee6fd528c34</anchor>
-      <arglist>(string message)</arglist>
-    </member>
-    <member kind="function">
-      <type>static void</type>
-      <name>SWIGRegisterStringCallback_operations_research_constraint_solver</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE_1_1SWIGStringHelper.html</anchorfile>
-      <anchor>ac9adff8a435815a9ef0bd8865c012bcf</anchor>
-      <arglist>(SWIGStringDelegate stringDelegate)</arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -76363,24 +76353,6 @@
       <name>SWIGRegisterStringCallback_operations_research_graph</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Graph_1_1operations__research__graphPINVOKE_1_1SWIGStringHelper.html</anchorfile>
       <anchor>a6cd5f5702d713b53ce34ef5079c50682</anchor>
-      <arglist>(SWIGStringDelegate stringDelegate)</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>Google::OrTools::Init::operations_research_initPINVOKE::SWIGStringHelper</name>
-    <filename>classGoogle_1_1OrTools_1_1Init_1_1operations__research__initPINVOKE_1_1SWIGStringHelper.html</filename>
-    <member kind="function">
-      <type>delegate string</type>
-      <name>SWIGStringDelegate</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Init_1_1operations__research__initPINVOKE_1_1SWIGStringHelper.html</anchorfile>
-      <anchor>a09806292f70eb61f70057ee6fd528c34</anchor>
-      <arglist>(string message)</arglist>
-    </member>
-    <member kind="function">
-      <type>static void</type>
-      <name>SWIGRegisterStringCallback_operations_research_init</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Init_1_1operations__research__initPINVOKE_1_1SWIGStringHelper.html</anchorfile>
-      <anchor>a992d59c794382c19ed6ec4b51a3ff31d</anchor>
       <arglist>(SWIGStringDelegate stringDelegate)</arglist>
     </member>
   </compound>
@@ -76417,6 +76389,60 @@
       <name>SWIGRegisterStringCallback_operations_research_sat</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE_1_1SWIGStringHelper.html</anchorfile>
       <anchor>afa94cb852e0859f20e424ccf288ec02a</anchor>
+      <arglist>(SWIGStringDelegate stringDelegate)</arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>Google::OrTools::ConstraintSolver::operations_research_constraint_solverPINVOKE::SWIGStringHelper</name>
+    <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE_1_1SWIGStringHelper.html</filename>
+    <member kind="function">
+      <type>delegate string</type>
+      <name>SWIGStringDelegate</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE_1_1SWIGStringHelper.html</anchorfile>
+      <anchor>a09806292f70eb61f70057ee6fd528c34</anchor>
+      <arglist>(string message)</arglist>
+    </member>
+    <member kind="function">
+      <type>static void</type>
+      <name>SWIGRegisterStringCallback_operations_research_constraint_solver</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE_1_1SWIGStringHelper.html</anchorfile>
+      <anchor>ac9adff8a435815a9ef0bd8865c012bcf</anchor>
+      <arglist>(SWIGStringDelegate stringDelegate)</arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>Google::OrTools::Init::operations_research_initPINVOKE::SWIGStringHelper</name>
+    <filename>classGoogle_1_1OrTools_1_1Init_1_1operations__research__initPINVOKE_1_1SWIGStringHelper.html</filename>
+    <member kind="function">
+      <type>delegate string</type>
+      <name>SWIGStringDelegate</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Init_1_1operations__research__initPINVOKE_1_1SWIGStringHelper.html</anchorfile>
+      <anchor>a09806292f70eb61f70057ee6fd528c34</anchor>
+      <arglist>(string message)</arglist>
+    </member>
+    <member kind="function">
+      <type>static void</type>
+      <name>SWIGRegisterStringCallback_operations_research_init</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Init_1_1operations__research__initPINVOKE_1_1SWIGStringHelper.html</anchorfile>
+      <anchor>a992d59c794382c19ed6ec4b51a3ff31d</anchor>
+      <arglist>(SWIGStringDelegate stringDelegate)</arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>Google::OrTools::Algorithms::operations_research_algorithmsPINVOKE::SWIGStringHelper</name>
+    <filename>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGStringHelper.html</filename>
+    <member kind="function">
+      <type>delegate string</type>
+      <name>SWIGStringDelegate</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGStringHelper.html</anchorfile>
+      <anchor>a09806292f70eb61f70057ee6fd528c34</anchor>
+      <arglist>(string message)</arglist>
+    </member>
+    <member kind="function">
+      <type>static void</type>
+      <name>SWIGRegisterStringCallback_operations_research_algorithms</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGStringHelper.html</anchorfile>
+      <anchor>abae544aa94ecba5f3bb316e1cebba97f</anchor>
       <arglist>(SWIGStringDelegate stringDelegate)</arglist>
     </member>
   </compound>
@@ -76651,10 +76677,10 @@
       <arglist>(int index, SymmetryBreaker[] array, int arrayIndex, int count)</arglist>
     </member>
     <member kind="function">
-      <type>SymmetryBreaker[]</type>
+      <type>SymmetryBreaker []</type>
       <name>ToArray</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SymmetryBreakerVector.html</anchorfile>
-      <anchor>a42cf51b148595ce620ca0c08a3335578</anchor>
+      <anchor>a692bdc605734a55935a968a702c5eec1</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -76987,14 +77013,14 @@
       <anchor>a67eef3374888e85bdb523ae39a13e2ac</anchor>
       <arglist>(pb::CodedInputStream input)</arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>PermutationsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SymmetryProto.html</anchorfile>
       <anchor>aa2688565ad584569ba5f839a6b8fc1c1</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>OrbitopesFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SymmetryProto.html</anchorfile>
@@ -77178,21 +77204,21 @@
       <anchor>a67eef3374888e85bdb523ae39a13e2ac</anchor>
       <arglist>(pb::CodedInputStream input)</arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>VarsFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1TableConstraintProto.html</anchorfile>
       <anchor>a21a2e981c9fba2735b6ba452e5fba670</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>ValuesFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1TableConstraintProto.html</anchorfile>
       <anchor>a0f043e9370464c8079c3a67de0ec0d39</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
+    <member kind="variable">
       <type>const int</type>
       <name>NegatedFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1TableConstraintProto.html</anchorfile>
@@ -77548,51 +77574,51 @@
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>aa2c1764ab50332bd00750395d7fe005d</anchor>
+      <anchor>abecdcc8d8af528ebfa18a2040752302f</anchor>
       <arglist>(Constraint a, Constraint b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a8d9c7e7b51047c7db785cb28c5ac2ee5</anchor>
+      <anchor>a54e0abb69270881eb908a546d6d5d9ee</anchor>
       <arglist>(Constraint a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a1e322c1cf071bc63f1a57e49b39c2513</anchor>
+      <anchor>a653d1cc7abbdea943d8f66ba7d368609</anchor>
       <arglist>(long v, Constraint a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a11dca67868602a4f4de7ed771a30ceab</anchor>
+      <anchor>af699870283706fc529d1dd0977a6134c</anchor>
       <arglist>(Constraint a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>aa4e01ca5dffc9a82f2918fb856304830</anchor>
+      <anchor>aad72c90dda324071d4259d4605f307a7</anchor>
       <arglist>(Constraint a, Constraint b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a558540d48bd60ab61117ad29bad52d92</anchor>
+      <anchor>a7b750177d977e8b79272338810919482</anchor>
       <arglist>(Constraint a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a9e0c0e2832a3dc3fcac688c4765264c0</anchor>
+      <anchor>a4fd6826e14f45a9ace0e70de018f6bc5</anchor>
       <arglist>(long v, Constraint a)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -77625,44 +77651,44 @@
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a4f22441dd26b5b4573b03e45834f63aa</anchor>
+      <anchor>ab402599c4824a325a082fc2c4fb53f11</anchor>
       <arglist>(Constraint a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a778cc85ae8fccf10cfc6261178db802d</anchor>
+      <anchor>a2c2d0cfc4fbda5201fd72d0c45b34871</anchor>
       <arglist>(long v, Constraint a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static ConstraintEquality</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a20acd922ca3df55d3e35766688bc0e67</anchor>
+      <anchor>aedddba2bbb98221d2225060342b53d5a</anchor>
       <arglist>(Constraint a, Constraint b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>adbd7920d8327cad94b73194a582aa336</anchor>
+      <anchor>ae566909a25a52ba0c2b3916f8e819286</anchor>
       <arglist>(Constraint a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>a46db71728ad83f5ccdf7bee3c65c137b</anchor>
+      <anchor>ae1498847694a400996ab1e4d7b6a6a05</anchor>
       <arglist>(long v, Constraint a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>abc2fa3846e0e78e7181dfd405c250f0b</anchor>
+      <anchor>a4c1ad71dd084886567d5de385d6bd646</anchor>
       <arglist>(Constraint a, Constraint b)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -77777,80 +77803,6 @@
     </member>
   </compound>
   <compound kind="class">
-    <name>Google::OrTools::ConstraintSolver::ConstraintSolverParameters::Types</name>
-    <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ConstraintSolverParameters_1_1Types.html</filename>
-    <member kind="enumeration">
-      <type></type>
-      <name>TrailCompression</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ConstraintSolverParameters_1_1Types.html</anchorfile>
-      <anchor>a00935459e4b73bd96feed637daa08c81</anchor>
-      <arglist></arglist>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ConstraintSolverParameters_1_1Types.html" anchor="a00935459e4b73bd96feed637daa08c81a48ecb2dc57692eca74074d9ad9fd4890">NoCompression</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ConstraintSolverParameters_1_1Types.html" anchor="a00935459e4b73bd96feed637daa08c81af3564e3865c79bf16f847612f41938c3">CompressWithZlib</enumvalue>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>Google::OrTools::ConstraintSolver::FirstSolutionStrategy::Types</name>
-    <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html</filename>
-    <member kind="enumeration">
-      <type></type>
-      <name>Value</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html</anchorfile>
-      <anchor>a896c037a32087c5c20d97e64a1786880</anchor>
-      <arglist></arglist>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880ac9f88e098f6fe4e4e112eeb05ccb9671">Unset</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880a086247a9b57fde6eefee2a0c4752242d">Automatic</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880afabfac3f293171b27129b62f01763ea5">PathCheapestArc</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880a1e0911afce171548016e1262ca4cfc78">PathMostConstrainedArc</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880aa5ffc082c74d7f8c702155a6efce4cf4">EvaluatorStrategy</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880aab0da0e987457927aebb5111d5d32c12">Savings</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880a8e9014ddfce21beb1b3cd7da888cbdea">Sweep</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880a6c8581a1eb3b87228f884a7c05f0c34e">Christofides</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880a1d6156004a7044ffd2929ad295beb903">AllUnperformed</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880ade71c45f580d33ad42d2adfc24cb4e95">BestInsertion</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880a7a02e970bff8e147c24df62820ab6b83">ParallelCheapestInsertion</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880afe9e99a60a3db81b85536bc3e66d2957">SequentialCheapestInsertion</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880a64c868f9c5a4ff2fd61a48e64f633cc1">LocalCheapestInsertion</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880a0830ffde34397bae96ca6d7301dfbb3a">GlobalCheapestArc</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880ad8f6fc249fb502b8ad0fb30eea3e67c7">LocalCheapestArc</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880abde1196f82e1896a9b57b7a13c796967">FirstUnboundMinValue</enumvalue>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>Google::OrTools::ConstraintSolver::LocalSearchMetaheuristic::Types</name>
-    <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html</filename>
-    <member kind="enumeration">
-      <type></type>
-      <name>Value</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html</anchorfile>
-      <anchor>a896c037a32087c5c20d97e64a1786880</anchor>
-      <arglist></arglist>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880ac9f88e098f6fe4e4e112eeb05ccb9671">Unset</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880a086247a9b57fde6eefee2a0c4752242d">Automatic</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880acb6fff8d60b88e3ae5fe6c65141fc29d">GreedyDescent</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880a497dd969cdc61ecfd0418e401b94ceb3">GuidedLocalSearch</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880a9e54e50d057e08825382c09877dede7f">SimulatedAnnealing</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880a6053a07fb774ef5a566d217916fb3d45">TabuSearch</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880af85ec2ae77c650ad26da12d7a8e11259">GenericTabuSearch</enumvalue>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>Google::OrTools::ConstraintSolver::RoutingSearchParameters::Types</name>
-    <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::RoutingSearchParameters::Types::ImprovementSearchLimitParameters</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::RoutingSearchParameters::Types::LocalSearchNeighborhoodOperators</class>
-    <member kind="enumeration">
-      <type></type>
-      <name>SchedulingSolver</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types.html</anchorfile>
-      <anchor>ac9587d7f4c2cce84c8da033c29a0e609</anchor>
-      <arglist></arglist>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types.html" anchor="ac9587d7f4c2cce84c8da033c29a0e609ac9f88e098f6fe4e4e112eeb05ccb9671">Unset</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types.html" anchor="ac9587d7f4c2cce84c8da033c29a0e609a4ba4895f8b18979368eaf36c076545b7">Glop</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types.html" anchor="ac9587d7f4c2cce84c8da033c29a0e609a3f0d4c1058437102dd3ee312cae84476">CpSat</enumvalue>
-    </member>
-  </compound>
-  <compound kind="class">
     <name>Google::OrTools::Sat::DecisionStrategyProto::Types</name>
     <filename>classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html</filename>
     <class kind="class">Google::OrTools::Sat::DecisionStrategyProto::Types::AffineTransformation</class>
@@ -77877,6 +77829,37 @@
       <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html" anchor="ae17715e4689c1665ecc8d75f1fd97b9ca287c7d1e4bb8b247353867425494399e">SelectLowerHalf</enumvalue>
       <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html" anchor="ae17715e4689c1665ecc8d75f1fd97b9cabb845bb89078e95ab5b64cd1130474c2">SelectUpperHalf</enumvalue>
       <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html" anchor="ae17715e4689c1665ecc8d75f1fd97b9ca1b69d85ba6efd4971b0df87c5188a3b1">SelectMedianValue</enumvalue>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>Google::OrTools::ConstraintSolver::ConstraintSolverParameters::Types</name>
+    <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ConstraintSolverParameters_1_1Types.html</filename>
+    <member kind="enumeration">
+      <type></type>
+      <name>TrailCompression</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ConstraintSolverParameters_1_1Types.html</anchorfile>
+      <anchor>a00935459e4b73bd96feed637daa08c81</anchor>
+      <arglist></arglist>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ConstraintSolverParameters_1_1Types.html" anchor="a00935459e4b73bd96feed637daa08c81a48ecb2dc57692eca74074d9ad9fd4890">NoCompression</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ConstraintSolverParameters_1_1Types.html" anchor="a00935459e4b73bd96feed637daa08c81af3564e3865c79bf16f847612f41938c3">CompressWithZlib</enumvalue>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>Google::OrTools::ConstraintSolver::LocalSearchMetaheuristic::Types</name>
+    <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html</filename>
+    <member kind="enumeration">
+      <type></type>
+      <name>Value</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html</anchorfile>
+      <anchor>a896c037a32087c5c20d97e64a1786880</anchor>
+      <arglist></arglist>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880ac9f88e098f6fe4e4e112eeb05ccb9671">Unset</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880a086247a9b57fde6eefee2a0c4752242d">Automatic</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880acb6fff8d60b88e3ae5fe6c65141fc29d">GreedyDescent</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880a497dd969cdc61ecfd0418e401b94ceb3">GuidedLocalSearch</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880a9e54e50d057e08825382c09877dede7f">SimulatedAnnealing</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880a6053a07fb774ef5a566d217916fb3d45">TabuSearch</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880af85ec2ae77c650ad26da12d7a8e11259">GenericTabuSearch</enumvalue>
     </member>
   </compound>
   <compound kind="class">
@@ -78002,6 +77985,49 @@
       <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1SatParameters_1_1Types.html" anchor="a92e7530522cab73e8c3933ce30215794a6f5df1ce5f547fff782803c39cdd07f7">LockBased</enumvalue>
       <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1SatParameters_1_1Types.html" anchor="a92e7530522cab73e8c3933ce30215794a5577c74b97170a64c5c9c6b86b87cac2">ActiveLockBased</enumvalue>
       <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1SatParameters_1_1Types.html" anchor="a92e7530522cab73e8c3933ce30215794adce97a511aaf409c7912bef68ceaeb2a">PropagationAssisted</enumvalue>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>Google::OrTools::ConstraintSolver::RoutingSearchParameters::Types</name>
+    <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types.html</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::RoutingSearchParameters::Types::ImprovementSearchLimitParameters</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::RoutingSearchParameters::Types::LocalSearchNeighborhoodOperators</class>
+    <member kind="enumeration">
+      <type></type>
+      <name>SchedulingSolver</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types.html</anchorfile>
+      <anchor>ac9587d7f4c2cce84c8da033c29a0e609</anchor>
+      <arglist></arglist>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types.html" anchor="ac9587d7f4c2cce84c8da033c29a0e609ac9f88e098f6fe4e4e112eeb05ccb9671">Unset</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types.html" anchor="ac9587d7f4c2cce84c8da033c29a0e609a4ba4895f8b18979368eaf36c076545b7">Glop</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types.html" anchor="ac9587d7f4c2cce84c8da033c29a0e609a3f0d4c1058437102dd3ee312cae84476">CpSat</enumvalue>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>Google::OrTools::ConstraintSolver::FirstSolutionStrategy::Types</name>
+    <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html</filename>
+    <member kind="enumeration">
+      <type></type>
+      <name>Value</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html</anchorfile>
+      <anchor>a896c037a32087c5c20d97e64a1786880</anchor>
+      <arglist></arglist>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880ac9f88e098f6fe4e4e112eeb05ccb9671">Unset</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880a086247a9b57fde6eefee2a0c4752242d">Automatic</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880afabfac3f293171b27129b62f01763ea5">PathCheapestArc</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880a1e0911afce171548016e1262ca4cfc78">PathMostConstrainedArc</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880aa5ffc082c74d7f8c702155a6efce4cf4">EvaluatorStrategy</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880aab0da0e987457927aebb5111d5d32c12">Savings</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880a8e9014ddfce21beb1b3cd7da888cbdea">Sweep</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880a6c8581a1eb3b87228f884a7c05f0c34e">Christofides</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880a1d6156004a7044ffd2929ad295beb903">AllUnperformed</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880ade71c45f580d33ad42d2adfc24cb4e95">BestInsertion</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880a7a02e970bff8e147c24df62820ab6b83">ParallelCheapestInsertion</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880afe9e99a60a3db81b85536bc3e66d2957">SequentialCheapestInsertion</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880a64c868f9c5a4ff2fd61a48e64f633cc1">LocalCheapestInsertion</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880a0830ffde34397bae96ca6d7301dfbb3a">GlobalCheapestArc</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880ad8f6fc249fb502b8ad0fb30eea3e67c7">LocalCheapestArc</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880abde1196f82e1896a9b57b7a13c796967">FirstUnboundMinValue</enumvalue>
     </member>
   </compound>
   <compound kind="class">
@@ -78154,51 +78180,51 @@
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Variable.html</anchorfile>
-      <anchor>ac140913c4940f0297981f6a80e645af2</anchor>
+      <anchor>a27c33e187badf9adc121f18931aae868</anchor>
       <arglist>(Variable a, double v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Variable.html</anchorfile>
-      <anchor>a8dd639241002f2daea3f1d0087d004b7</anchor>
+      <anchor>a7fb975e8305bec901f074c56484ad8a2</anchor>
       <arglist>(double v, Variable a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Variable.html</anchorfile>
-      <anchor>a31387aa773c577c84368b8eeba7c4a6d</anchor>
+      <anchor>a3d6c85e5983fdd77cd5dc85e0438dba1</anchor>
       <arglist>(Variable a, LinearExpr b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Variable.html</anchorfile>
-      <anchor>ad340769226c96c92b18db06feedf18cb</anchor>
+      <anchor>a07aec9b7b5670cb11f576f0f3e6b3373</anchor>
       <arglist>(LinearExpr a, Variable b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Variable.html</anchorfile>
-      <anchor>acec77646575600e57e29dcf217204982</anchor>
+      <anchor>a83edde696348f42015944f2cc7d165de</anchor>
       <arglist>(Variable a, Variable b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Variable.html</anchorfile>
-      <anchor>aac02b6ba13400a0a8e418caa08c12787</anchor>
+      <anchor>a96b6d7065e21aa5c7b70f7e4fca33106</anchor>
       <arglist>(Variable a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Variable.html</anchorfile>
-      <anchor>a47bce7079778b15d6e6a8bc6b76829b0</anchor>
+      <anchor>a32bfdab33c5ed671587019942b5606b6</anchor>
       <arglist>(Variable a, double v)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -78210,9 +78236,9 @@
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Variable.html</anchorfile>
-      <anchor>a4d385548226e529d3688a058db9a2e46</anchor>
+      <anchor>a9f5f2955ec5d41a0779a388b75e85ba4</anchor>
       <arglist>(double v, Variable a)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -78231,16 +78257,16 @@
     </member>
     <member kind="function" static="yes">
       <type>static RangeConstraint</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Variable.html</anchorfile>
-      <anchor>a0db8cc926d9018329b3675360b662e2d</anchor>
+      <anchor>ab1aeb348e147d3615eab849ae290397e</anchor>
       <arglist>(Variable a, double v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static RangeConstraint</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Variable.html</anchorfile>
-      <anchor>ab0dd1497cdbf19248a5d569e7a7dcca3</anchor>
+      <anchor>a7a34fac0d75261386a5f455727052063</anchor>
       <arglist>(double v, Variable a)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -78266,23 +78292,23 @@
     </member>
     <member kind="function" static="yes">
       <type>static Equality</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Variable.html</anchorfile>
-      <anchor>aeb3530a5f16392757dfa5b3ff42e2518</anchor>
+      <anchor>aabee1dc4c479b9895d742a2526a33f15</anchor>
       <arglist>(Variable a, LinearExpr b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static Equality</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Variable.html</anchorfile>
-      <anchor>a18d3040ac8f592546abc4a96c86ab614</anchor>
+      <anchor>ab144bc6fbf453ac0313fd953bc130c03</anchor>
       <arglist>(LinearExpr a, Variable b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static VarEquality</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Variable.html</anchorfile>
-      <anchor>a929b212d91874d70de05814e378d16c7</anchor>
+      <anchor>afcd158cde343fe226e0de039c43dcf6c</anchor>
       <arglist>(Variable a, Variable b)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -78294,9 +78320,9 @@
     </member>
     <member kind="function" static="yes">
       <type>static RangeConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Variable.html</anchorfile>
-      <anchor>a986ec798ef6a509953b5deae06921c6c</anchor>
+      <anchor>acbaddf869e985377142fa7abb6d78274</anchor>
       <arglist>(Variable a, double v)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -78308,9 +78334,9 @@
     </member>
     <member kind="function" static="yes">
       <type>static RangeConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Variable.html</anchorfile>
-      <anchor>a7ba45776c8c7cee5ee9310f5cf8f6f33</anchor>
+      <anchor>a7c617a018b083543605355600d72f63b</anchor>
       <arglist>(double v, Variable a)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -78322,9 +78348,9 @@
     </member>
     <member kind="function" static="yes">
       <type>static RangeConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Variable.html</anchorfile>
-      <anchor>a353650350672c2d4524a5f277d2732cc</anchor>
+      <anchor>a36cdaf8a2896b9a7257d331d5f772b9d</anchor>
       <arglist>(Variable a, LinearExpr b)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -78336,9 +78362,9 @@
     </member>
     <member kind="function" static="yes">
       <type>static RangeConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Variable.html</anchorfile>
-      <anchor>a4b2f959878a3f8e2e6d39df9ca4c0df9</anchor>
+      <anchor>a256d0187aee95c9a2733baa442487f84</anchor>
       <arglist>(Variable a, Variable b)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -78350,9 +78376,9 @@
     </member>
     <member kind="function" static="yes">
       <type>static RangeConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Variable.html</anchorfile>
-      <anchor>a343ec418e214e053fdacef9f02808135</anchor>
+      <anchor>a3615a6f05fcff1f937028575f7bcbad1</anchor>
       <arglist>(LinearExpr a, Variable b)</arglist>
     </member>
     <member kind="function" protection="protected" virtualness="virtual">
@@ -78425,44 +78451,44 @@
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a84a0cd8a12a4114a5be319387837f019</anchor>
+      <anchor>abfb99d9976a1305f4975ab8faba16da8</anchor>
       <arglist>(LinearExpr a, double v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>aec3ffacd07d8d90bb255fca7931aa212</anchor>
+      <anchor>afead7bb0d10488161febe85185a3f2a0</anchor>
       <arglist>(double v, LinearExpr a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>ae10ffffedef48bf520a489f2612cbba5</anchor>
+      <anchor>a6f2fb85a2e5a469df5f3105fab0efef1</anchor>
       <arglist>(LinearExpr a, LinearExpr b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a532c2d44559645b8247bd747f7ff9035</anchor>
+      <anchor>aee57ed93140d54a69f346e9036a29787</anchor>
       <arglist>(LinearExpr a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a6ab27638ca270e8e0db700d696c723b1</anchor>
+      <anchor>ac808849cccccfe100313ed7c1a2a5cef</anchor>
       <arglist>(LinearExpr a, double v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>ae5884c17893b758739964ec63d15816e</anchor>
+      <anchor>adcd9fd7ae393a65f6a27b6f350543529</anchor>
       <arglist>(double v, LinearExpr a)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -78495,23 +78521,23 @@
     </member>
     <member kind="function" static="yes">
       <type>static RangeConstraint</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>ae69414683801db2310c4191e55d46a65</anchor>
+      <anchor>a730034adeae6d72dbc8c8889e355abf8</anchor>
       <arglist>(LinearExpr a, double v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static RangeConstraint</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a3124bbb1585a9f54c584fdbd79757250</anchor>
+      <anchor>a99939d53ee629ff0f185d152fb7808f8</anchor>
       <arglist>(double v, LinearExpr a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static Equality</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a9353d050cc6d4a6ad9f92c70243ea28f</anchor>
+      <anchor>a207f9c428dd304ebdb185f11b06a0479</anchor>
       <arglist>(LinearExpr a, LinearExpr b)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -78530,16 +78556,16 @@
     </member>
     <member kind="function" static="yes">
       <type>static RangeConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>ac7089bc88944bdd4b9500a89c8c78beb</anchor>
+      <anchor>ae164eee911848c8562cfbb4b19b7e9d1</anchor>
       <arglist>(LinearExpr a, double v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static RangeConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>ae15dfa4bb4e721b3aedf0f22c71b534b</anchor>
+      <anchor>a82439106aa777bd1ac8cda600b69c5af</anchor>
       <arglist>(LinearExpr a, LinearExpr b)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -78643,24 +78669,24 @@
       <arglist></arglist>
     </member>
     <member kind="property">
-      <type>IntVector</type>
+      <type>IntVector?</type>
       <name>type_index_of_vehicle</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel_1_1VehicleTypeContainer.html</anchorfile>
-      <anchor>a1c66b745d16375391e4b9c22edb6d6fc</anchor>
+      <anchor>ab1d347859ce3e259121476c1fb62df3d</anchor>
       <arglist></arglist>
     </member>
     <member kind="property">
-      <type>SWIGTYPE_p_std__vectorT_std__setT_operations_research__RoutingModel__VehicleTypeContainer__VehicleClassEntry_t_t</type>
+      <type>SWIGTYPE_p_std__vectorT_std__setT_operations_research__RoutingModel__VehicleTypeContainer__VehicleClassEntry_t_t?</type>
       <name>sorted_vehicle_classes_per_type</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel_1_1VehicleTypeContainer.html</anchorfile>
-      <anchor>a288c718698b85bad4c7b4cc5b6fb7a54</anchor>
+      <anchor>a51b209182f9a4815c1be4ecc29c9740b</anchor>
       <arglist></arglist>
     </member>
     <member kind="property">
-      <type>SWIGTYPE_p_std__vectorT_std__dequeT_int_t_t</type>
+      <type>SWIGTYPE_p_std__vectorT_std__dequeT_int_t_t?</type>
       <name>vehicles_per_vehicle_class</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel_1_1VehicleTypeContainer.html</anchorfile>
-      <anchor>a4107ac465b437fef7aa5a74dbd25b0dd</anchor>
+      <anchor>a5eeb08c1f880198ff66f325ebbf99cca</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -78768,51 +78794,51 @@
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html</anchorfile>
-      <anchor>a0e0e06938bef414a9aec4fc74c53a087</anchor>
+      <anchor>a1e9e7690ae529ae3fa6111d2ef9188fe</anchor>
       <arglist>(BaseEquality a, BaseEquality b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html</anchorfile>
-      <anchor>abbf98b0988fce8a27370dc48c9a68ef2</anchor>
+      <anchor>a2981e6efdc44011c7ce8785cedeb6812</anchor>
       <arglist>(BaseEquality a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html</anchorfile>
-      <anchor>acf5f3a3fc254ad4d6cca03862c774b6f</anchor>
+      <anchor>a0d7c1da056b5c333e710b5888a91cbb8</anchor>
       <arglist>(long v, BaseEquality a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator-</name>
+      <name>operator -</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html</anchorfile>
-      <anchor>a82a4dfab5c2fd36752f3bc36078e961f</anchor>
+      <anchor>a4f1aec22b07c58354c8b84fa153fec2c</anchor>
       <arglist>(BaseEquality a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html</anchorfile>
-      <anchor>a148df138f6aea988b6a249b9e5b3dc7e</anchor>
+      <anchor>a07fb94091b6bf5bc57ce0b7c3c1e5b1c</anchor>
       <arglist>(BaseEquality a, BaseEquality b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html</anchorfile>
-      <anchor>acf99575703d76316eaecd2ad2373648e</anchor>
+      <anchor>a569aabaa30ef6c169733e777da973793</anchor>
       <arglist>(BaseEquality a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static IntExpr</type>
-      <name>operator*</name>
+      <name>operator *</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html</anchorfile>
-      <anchor>a95fba945abcbd181d8b8a646d5e3bc2c</anchor>
+      <anchor>a6d5bb384f2cd17517bb3e29abc6d8f97</anchor>
       <arglist>(long v, BaseEquality a)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -78845,44 +78871,44 @@
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html</anchorfile>
-      <anchor>a1d0f2204bb12fe53bbf9d3259194e193</anchor>
+      <anchor>a3ded344d26209f60e212d22ddd5294cc</anchor>
       <arglist>(BaseEquality a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html</anchorfile>
-      <anchor>a61a91223214df387a58ca31ae428bf09</anchor>
+      <anchor>a050a0f9faf28fe0e6b32d58b3b1350d9</anchor>
       <arglist>(long v, BaseEquality a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static ConstraintEquality</type>
-      <name>operator!=</name>
+      <name>operator !=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html</anchorfile>
-      <anchor>af9d17bfc39833f13248c13dbd086d1f9</anchor>
+      <anchor>a8026d2d8461621d54bcc5c7d98546b4d</anchor>
       <arglist>(BaseEquality a, BaseEquality b)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html</anchorfile>
-      <anchor>adc7db138385e0cd872db06d561f40a4b</anchor>
+      <anchor>afaeb0aeebe0319c03a41da6e2ab429ae</anchor>
       <arglist>(BaseEquality a, long v)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html</anchorfile>
-      <anchor>ae3d4e559e8ad54d5839169fd8d6706ec</anchor>
+      <anchor>a9323d30eb45c0f150b98387e52e6cba1</anchor>
       <arglist>(long v, BaseEquality a)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static WrappedConstraint</type>
-      <name>operator&gt;=</name>
+      <name>operator &gt;=</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html</anchorfile>
-      <anchor>a752dd00e581a517f21015e4bd0386ec9</anchor>
+      <anchor>a3a3acc39a58e38525e522045fa85572c</anchor>
       <arglist>(BaseEquality a, BaseEquality b)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -79266,6 +79292,7 @@
     <class kind="class">Google::OrTools::Sat::DenseMatrixProto</class>
     <class kind="class">Google::OrTools::Sat::ElementConstraintProto</class>
     <class kind="class">Google::OrTools::Sat::FloatObjectiveProto</class>
+    <class kind="class">Google::OrTools::Sat::HelperExtensions</class>
     <class kind="interface">Google::OrTools::Sat::ILiteral</class>
     <class kind="class">Google::OrTools::Sat::IntegerVariableProto</class>
     <class kind="class">Google::OrTools::Sat::IntervalConstraintProto</class>

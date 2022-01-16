@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['file_0',['file',['../namespacefile.html',1,'']]]
+  ['file',['file',['../namespacefile.html',1,'']]]
 ];

@@ -1,8 +1,11 @@
 var searchData=
 [
-  ['varequality_0',['VarEquality',['../classGoogle_1_1OrTools_1_1LinearSolver_1_1VarEquality.html',1,'Google::OrTools::LinearSolver']]],
-  ['variable_1',['Variable',['../classGoogle_1_1OrTools_1_1LinearSolver_1_1Variable.html',1,'Google::OrTools::LinearSolver']]],
-  ['varwrapper_2',['VarWrapper',['../classGoogle_1_1OrTools_1_1LinearSolver_1_1VarWrapper.html',1,'Google::OrTools::LinearSolver']]],
-  ['vehicleclassentry_3',['VehicleClassEntry',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel_1_1VehicleTypeContainer_1_1VehicleClassEntry.html',1,'Google::OrTools::ConstraintSolver::RoutingModel::VehicleTypeContainer']]],
-  ['vehicletypecontainer_4',['VehicleTypeContainer',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel_1_1VehicleTypeContainer.html',1,'Google::OrTools::ConstraintSolver::RoutingModel']]]
+  ['tableconstraint',['TableConstraint',['../classGoogle_1_1OrTools_1_1Sat_1_1TableConstraint.html',1,'Google::OrTools::Sat']]],
+  ['tableconstraintproto',['TableConstraintProto',['../classGoogle_1_1OrTools_1_1Sat_1_1TableConstraintProto.html',1,'Google::OrTools::Sat']]],
+  ['term',['Term',['../structGoogle_1_1OrTools_1_1Sat_1_1Term.html',1,'Google::OrTools::Sat']]],
+  ['typeincompatibilitychecker',['TypeIncompatibilityChecker',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1TypeIncompatibilityChecker.html',1,'Google::OrTools::ConstraintSolver']]],
+  ['typeregulationschecker',['TypeRegulationsChecker',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1TypeRegulationsChecker.html',1,'Google::OrTools::ConstraintSolver']]],
+  ['typeregulationsconstraint',['TypeRegulationsConstraint',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1TypeRegulationsConstraint.html',1,'Google::OrTools::ConstraintSolver']]],
+  ['typerequirementchecker',['TypeRequirementChecker',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1TypeRequirementChecker.html',1,'Google::OrTools::ConstraintSolver']]],
+  ['types',['Types',['../classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html',1,'DecisionStrategyProto.Types'],['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ConstraintSolverParameters_1_1Types.html',1,'ConstraintSolverParameters.Types'],['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html',1,'LocalSearchMetaheuristic.Types'],['../classGoogle_1_1OrTools_1_1Sat_1_1SatParameters_1_1Types.html',1,'SatParameters.Types'],['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types.html',1,'RoutingSearchParameters.Types'],['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html',1,'FirstSolutionStrategy.Types']]]
 ];

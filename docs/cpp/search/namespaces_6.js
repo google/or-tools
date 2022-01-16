@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['recordio_0',['recordio',['../namespacerecordio.html',1,'']]]
+  ['recordio',['recordio',['../namespacerecordio.html',1,'']]]
 ];

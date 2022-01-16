@@ -1,3 +1,7 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classoperations__research_1_1math__opt_1_1_sparse_vector_view_1_1const__iterator.html" title=" " alt="" coords="5,5,156,47"/>
+<area shape="rect" id="node1" href="$classoperations__research_1_1_star_graph_base.html" title=" " alt="" coords="5,71,243,112"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1_ebert_graph_base.html" title=" " alt="" coords="291,37,528,79"/>
+<area shape="rect" id="node5" href="$classoperations__research_1_1_forward_static_graph.html" title=" " alt="" coords="297,103,521,144"/>
+<area shape="rect" id="node3" href="$classoperations__research_1_1_ebert_graph.html" title=" " alt="" coords="587,5,781,47"/>
+<area shape="rect" id="node4" href="$classoperations__research_1_1_forward_ebert_graph.html" title=" " alt="" coords="576,71,792,112"/>
 </map>

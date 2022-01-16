@@ -1,22 +1,12 @@
 var searchData=
 [
-  ['objective_0',['Objective',['../classGoogle_1_1OrTools_1_1LinearSolver_1_1Objective.html',1,'Google::OrTools::LinearSolver']]],
-  ['objectivesolutionprinter_1',['ObjectiveSolutionPrinter',['../classGoogle_1_1OrTools_1_1Sat_1_1ObjectiveSolutionPrinter.html',1,'Google::OrTools::Sat']]],
-  ['operations_5fresearch_5falgorithms_2',['operations_research_algorithms',['../classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithms.html',1,'Google::OrTools::Algorithms']]],
-  ['operations_5fresearch_5falgorithmspinvoke_3',['operations_research_algorithmsPINVOKE',['../classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE.html',1,'Google::OrTools::Algorithms']]],
-  ['operations_5fresearch_5fconstraint_5fsolver_4',['operations_research_constraint_solver',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solver.html',1,'Google::OrTools::ConstraintSolver']]],
-  ['operations_5fresearch_5fconstraint_5fsolverpinvoke_5',['operations_research_constraint_solverPINVOKE',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html',1,'Google::OrTools::ConstraintSolver']]],
-  ['operations_5fresearch_5fgraph_6',['operations_research_graph',['../classGoogle_1_1OrTools_1_1Graph_1_1operations__research__graph.html',1,'Google::OrTools::Graph']]],
-  ['operations_5fresearch_5fgraphpinvoke_7',['operations_research_graphPINVOKE',['../classGoogle_1_1OrTools_1_1Graph_1_1operations__research__graphPINVOKE.html',1,'Google::OrTools::Graph']]],
-  ['operations_5fresearch_5finit_8',['operations_research_init',['../classGoogle_1_1OrTools_1_1Init_1_1operations__research__init.html',1,'Google::OrTools::Init']]],
-  ['operations_5fresearch_5finitpinvoke_9',['operations_research_initPINVOKE',['../classGoogle_1_1OrTools_1_1Init_1_1operations__research__initPINVOKE.html',1,'Google::OrTools::Init']]],
-  ['operations_5fresearch_5flinear_5fsolver_10',['operations_research_linear_solver',['../classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solver.html',1,'Google::OrTools::LinearSolver']]],
-  ['operations_5fresearch_5flinear_5fsolverpinvoke_11',['operations_research_linear_solverPINVOKE',['../classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE.html',1,'Google::OrTools::LinearSolver']]],
-  ['operations_5fresearch_5fsat_12',['operations_research_sat',['../classGoogle_1_1OrTools_1_1Sat_1_1operations__research__sat.html',1,'Google::OrTools::Sat']]],
-  ['operations_5fresearch_5fsatpinvoke_13',['operations_research_satPINVOKE',['../classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE.html',1,'Google::OrTools::Sat']]],
-  ['operations_5fresearch_5futil_14',['operations_research_util',['../classGoogle_1_1OrTools_1_1Util_1_1operations__research__util.html',1,'Google::OrTools::Util']]],
-  ['operations_5fresearch_5futilpinvoke_15',['operations_research_utilPINVOKE',['../classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE.html',1,'Google::OrTools::Util']]],
-  ['optimizevar_16',['OptimizeVar',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1OptimizeVar.html',1,'Google::OrTools::ConstraintSolver']]],
-  ['optionalbooleanreflection_17',['OptionalBooleanReflection',['../classGoogle_1_1OrTools_1_1Util_1_1OptionalBooleanReflection.html',1,'Google::OrTools::Util']]],
-  ['ortoolsversion_18',['OrToolsVersion',['../classGoogle_1_1OrTools_1_1Init_1_1OrToolsVersion.html',1,'Google::OrTools::Init']]]
+  ['nestedarrayhelper',['NestedArrayHelper',['../classGoogle_1_1OrTools_1_1NestedArrayHelper.html',1,'Google::OrTools']]],
+  ['netconstraint',['NetConstraint',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1NetConstraint.html',1,'Google::OrTools::ConstraintSolver']]],
+  ['netdecision',['NetDecision',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1NetDecision.html',1,'Google::OrTools::ConstraintSolver']]],
+  ['netdecisionbuilder',['NetDecisionBuilder',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1NetDecisionBuilder.html',1,'Google::OrTools::ConstraintSolver']]],
+  ['netdemon',['NetDemon',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1NetDemon.html',1,'Google::OrTools::ConstraintSolver']]],
+  ['nooverlap2dconstraint',['NoOverlap2dConstraint',['../classGoogle_1_1OrTools_1_1Sat_1_1NoOverlap2dConstraint.html',1,'Google::OrTools::Sat']]],
+  ['nooverlap2dconstraintproto',['NoOverlap2DConstraintProto',['../classGoogle_1_1OrTools_1_1Sat_1_1NoOverlap2DConstraintProto.html',1,'Google::OrTools::Sat']]],
+  ['nooverlapconstraintproto',['NoOverlapConstraintProto',['../classGoogle_1_1OrTools_1_1Sat_1_1NoOverlapConstraintProto.html',1,'Google::OrTools::Sat']]],
+  ['notboolvar',['NotBoolVar',['../classGoogle_1_1OrTools_1_1Sat_1_1NotBoolVar.html',1,'Google::OrTools::Sat']]]
 ];
