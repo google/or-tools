@@ -17,8 +17,18 @@ using System.Runtime.CompilerServices;
 
 namespace Google.OrTools.Sat
 {
+/**
+ * <summary>
+ * Wrapper around the SAT solver
+ * </summary>
+ *
+ * <remarks>This class proposes a <code>Solve()</code> method, as well as accessors to get the values of
+ * variables in the best solution, as well as general statistics of the search.
+ * </remarks>
+ */
 public class CpSolver
 {
+    /** <summary>Solves the given model, and returns the solve status</summary> */
     public CpSolverStatus Solve(CpModel model, SolutionCallback cb = null)
     {
         // Setup search.
@@ -54,6 +64,7 @@ public class CpSolver
         return Solve(model, cb);
     }
 
+    [ObsoleteAttribute("This method is obsolete. Call Solve instead with the enumerate_all_solutions parameter.", false)]
     public CpSolverStatus SearchAllSolutions(CpModel model, SolutionCallback cb)
     {
         string old_parameters = string_parameters_;
@@ -64,6 +75,7 @@ public class CpSolver
     }
 
     [MethodImpl(MethodImplOptions.Synchronized)]
+    /** <summary>Stops the search asynchronously</summary> */
     public void StopSearch()
     {
         if (solve_wrapper_ is not null)
@@ -84,11 +96,13 @@ public class CpSolver
         solve_wrapper_ = null;
     }
 
+    /** <summary>Statistics on the solution found as a string </summary>*/
     public String ResponseStats()
     {
         return CpSatHelper.SolverResponseStats(response_);
     }
 
+    /** <summary>The best objective value found during search</summary>*/
     public double ObjectiveValue
     {
         get {
@@ -96,6 +110,11 @@ public class CpSolver
         }
     }
 
+    /**
+     * <summary>
+     * The best lower bound found when minimizing, of the best upper bound found when maximizing
+     * </summary>
+     */
     public double BestObjectiveBound
     {
         get {
@@ -103,6 +122,7 @@ public class CpSolver
         }
     }
 
+    /** The parameters of the search, stored as a string */
     public string StringParameters
     {
         get {
@@ -125,6 +145,11 @@ public class CpSolver
         }
     }
 
+    /** 
+     * <summary>
+     * Returns the value of a linear expression in the last solution found. 
+     * </summary>
+     */
     public long Value(LinearExpr e)
     {
         List<Term> terms = new List<Term>();
@@ -173,6 +198,11 @@ public class CpSolver
         return constant;
     }
 
+    /** 
+     * <summary>
+     * Returns the Boolean value of a linear expression in the last solution found. 
+     * </summary>
+     */
     public Boolean BooleanValue(ILiteral literal)
     {
         if (literal is BoolVar || literal is NotBoolVar)
@@ -193,16 +223,19 @@ public class CpSolver
         }
     }
 
+    /** Returns the number of branches explored during search. */
     public long NumBranches()
     {
         return response_.NumBranches;
     }
 
+    /** Returns the number of conflicts created during search. */
     public long NumConflicts()
     {
         return response_.NumConflicts;
     }
 
+    /** Returns the wall time of the search. */
     public double WallTime()
     {
         return response_.WallTime;
@@ -213,6 +246,10 @@ public class CpSolver
         return response_.SufficientAssumptionsForInfeasibility;
     }
 
+    /**
+     * Returns some information on how the solution was found, or the reason why the model or the
+     * parameters are invalid.
+     */
     public String SolutionInfo()
     {
         return response_.SolutionInfo;

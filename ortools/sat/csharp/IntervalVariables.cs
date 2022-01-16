@@ -13,6 +13,13 @@
 
 namespace Google.OrTools.Sat
 {
+/** 
+ * <summary>An interval variable </summary>
+ *
+ * <remarks>
+ * This class must be constructed from the CpModel class.
+ * </remarks>
+ */
 public class IntervalVar
 {
     public IntervalVar(CpModelProto model, LinearExpressionProto start, LinearExpressionProto size,
@@ -49,6 +56,7 @@ public class IntervalVar
         model_.Constraints.Add(ct);
     }
 
+    /** <summary>The Indexraint in the model proto</summary> */
     public int GetIndex()
     {
         return index_;
