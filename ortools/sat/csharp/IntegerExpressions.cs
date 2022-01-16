@@ -11,14 +11,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Runtime.CompilerServices;
-
 namespace Google.OrTools.Sat
 {
 using Google.OrTools.Util;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using Google.Protobuf.Collections;
 
 public interface ILiteral
 {
@@ -45,6 +46,25 @@ internal static class HelperExtensions
         }
 #endif
     }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void TrySetCapacity<TField, TValues>(this RepeatedField<TField> field, IEnumerable<TValues> values)
+    {
+        if (values is ICollection<TValues> collection)
+        {
+            field.Capacity = collection.Count;
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void TryEnsureCapacity<TValue, TValues>(this List<TValue> list, IEnumerable<TValues> values)
+    {
+        // Check for ICollection as the generic version is not covariant and TValues could be LinearExpr, IntVar, ...
+        if (values is ICollection collection)
+        {
+            list.Capacity = Math.Max(list.Count + collection.Count, list.Capacity);
+        }
+    }
 }
 
 // Holds a term (expression * coefficient)
@@ -65,47 +85,47 @@ public class LinearExpr
 {
     public static LinearExpr Sum(IEnumerable<LinearExpr> exprs)
     {
-        return NewBuilder().AddSum(exprs);
+        return NewBuilder(0).AddSum(exprs);
     }
 
     public static LinearExpr Sum(IEnumerable<ILiteral> literals)
     {
-        return NewBuilder().AddSum(literals);
+        return NewBuilder(0).AddSum(literals);
     }
 
     public static LinearExpr Sum(IEnumerable<BoolVar> vars)
     {
-        return NewBuilder().AddSum(vars);
+        return NewBuilder(0).AddSum(vars);
     }
 
     public static LinearExpr WeightedSum(IEnumerable<LinearExpr> exprs, IEnumerable<int> coeffs)
     {
-        return NewBuilder().AddWeightedSum(exprs, coeffs);
+        return NewBuilder(0).AddWeightedSum(exprs, coeffs);
     }
 
     public static LinearExpr WeightedSum(IEnumerable<LinearExpr> exprs, IEnumerable<long> coeffs)
     {
-        return NewBuilder().AddWeightedSum(exprs, coeffs);
+        return NewBuilder(0).AddWeightedSum(exprs, coeffs);
     }
 
     public static LinearExpr WeightedSum(IEnumerable<ILiteral> literals, IEnumerable<int> coeffs)
     {
-        return NewBuilder().AddWeightedSum(literals, coeffs);
+        return NewBuilder(0).AddWeightedSum(literals, coeffs);
     }
 
     public static LinearExpr WeightedSum(IEnumerable<ILiteral> literals, IEnumerable<long> coeffs)
     {
-        return NewBuilder().AddWeightedSum(literals, coeffs);
+        return NewBuilder(0).AddWeightedSum(literals, coeffs);
     }
 
     public static LinearExpr WeightedSum(IEnumerable<BoolVar> vars, IEnumerable<int> coeffs)
     {
-        return NewBuilder().AddWeightedSum(vars, coeffs);
+        return NewBuilder(0).AddWeightedSum(vars, coeffs);
     }
 
     public static LinearExpr WeightedSum(IEnumerable<BoolVar> vars, IEnumerable<long> coeffs)
     {
-        return NewBuilder().AddWeightedSum(vars, coeffs);
+        return NewBuilder(0).AddWeightedSum(vars, coeffs);
     }
 
     public static LinearExpr Term(LinearExpr expr, long coeff)
@@ -151,12 +171,12 @@ public class LinearExpr
 
     public static LinearExpr Constant(long value)
     {
-        return NewBuilder().Add(value);
+        return NewBuilder(0).Add(value);
     }
 
-    public static LinearExprBuilder NewBuilder()
+    public static LinearExprBuilder NewBuilder(int sizeHint = 2)
     {
-        return new LinearExprBuilder();
+        return new LinearExprBuilder(sizeHint);
     }
 
     public static LinearExpr operator +(LinearExpr a, LinearExpr b)
@@ -288,7 +308,7 @@ public class LinearExpr
     {
         if (v == 0)
         {
-            return NewBuilder();
+            return NewBuilder(0);
         }
         else if (v == 1)
         {
@@ -296,7 +316,7 @@ public class LinearExpr
         }
         else
         {
-            return NewBuilder().AddTerm(e, v);
+            return NewBuilder(1).AddTerm(e, v);
         }
     }
 
@@ -366,7 +386,7 @@ public class LinearExpr
         }
         else
         {
-            LinearExprBuilder builder = LinearExpr.NewBuilder();
+            LinearExprBuilder builder = LinearExpr.NewBuilder(numElements);
             for (int i = 0; i < numElements; ++i)
             {
                 builder.AddTerm(new IntVar(model, proto.Vars[i]), proto.Coeffs[i]);
@@ -379,28 +399,25 @@ public class LinearExpr
 
 public sealed class LinearExprBuilder : LinearExpr
 {
-    public LinearExprBuilder()
+    public LinearExprBuilder(int sizeHint = 2)
     {
-        terms_ = new List<Term>();
+        terms_ = new List<Term>(sizeHint);
         offset_ = 0;
     }
 
     public LinearExprBuilder Add(LinearExpr expr)
     {
-        AddTerm(expr, 1);
-        return this;
+        return AddTerm(expr, 1);
     }
 
     public LinearExprBuilder Add(ILiteral literal)
     {
-        AddTerm(literal, 1);
-        return this;
+        return AddTerm(literal, 1);
     }
 
     public LinearExprBuilder Add(BoolVar var)
     {
-        AddTerm(var, 1);
-        return this;
+        return AddTerm(var, 1);
     }
 
     public LinearExprBuilder Add(long constant)
@@ -437,6 +454,7 @@ public sealed class LinearExprBuilder : LinearExpr
 
     public LinearExprBuilder AddSum(IEnumerable<LinearExpr> exprs)
     {
+        terms_.TryEnsureCapacity(exprs);
         foreach (LinearExpr expr in exprs)
         {
             AddTerm(expr, 1);
@@ -446,6 +464,7 @@ public sealed class LinearExprBuilder : LinearExpr
 
     public LinearExprBuilder AddSum(IEnumerable<ILiteral> literals)
     {
+        terms_.TryEnsureCapacity(literals);
         foreach (ILiteral literal in literals)
         {
             AddTerm(literal, 1);
@@ -455,14 +474,17 @@ public sealed class LinearExprBuilder : LinearExpr
 
     public LinearExprBuilder AddSum(IEnumerable<BoolVar> vars)
     {
+        terms_.TryEnsureCapacity(vars);
         foreach (BoolVar var in vars)
         {
             AddTerm(var, 1);
         }
         return this;
     }
+
     public LinearExprBuilder AddWeightedSum(IEnumerable<LinearExpr> exprs, IEnumerable<long> coefficients)
     {
+        terms_.TryEnsureCapacity(exprs);
         foreach (var p in exprs.Zip(coefficients, (e, c) => new { Expr = e, Coeff = c }))
         {
             AddTerm(p.Expr, p.Coeff);
@@ -472,6 +494,7 @@ public sealed class LinearExprBuilder : LinearExpr
 
     public LinearExprBuilder AddWeightedSum(IEnumerable<LinearExpr> exprs, IEnumerable<int> coefficients)
     {
+        terms_.TryEnsureCapacity(exprs);
         foreach (var p in exprs.Zip(coefficients, (e, c) => new { Expr = e, Coeff = c }))
         {
             AddTerm(p.Expr, p.Coeff);
@@ -481,6 +504,7 @@ public sealed class LinearExprBuilder : LinearExpr
 
     public LinearExprBuilder AddWeightedSum(IEnumerable<ILiteral> literals, IEnumerable<int> coefficients)
     {
+        terms_.TryEnsureCapacity(literals);
         foreach (var p in literals.Zip(coefficients, (l, c) => new { Literal = l, Coeff = c }))
         {
             AddTerm(p.Literal, p.Coeff);
@@ -490,6 +514,7 @@ public sealed class LinearExprBuilder : LinearExpr
 
     public LinearExprBuilder AddWeightedSum(IEnumerable<ILiteral> literals, IEnumerable<long> coefficients)
     {
+        terms_.TryEnsureCapacity(literals);
         foreach (var p in literals.Zip(coefficients, (l, c) => new { Literal = l, Coeff = c }))
         {
             AddTerm(p.Literal, p.Coeff);
@@ -499,6 +524,7 @@ public sealed class LinearExprBuilder : LinearExpr
 
     public LinearExprBuilder AddWeightedSum(IEnumerable<BoolVar> vars, IEnumerable<long> coefficients)
     {
+        terms_.TryEnsureCapacity(vars);
         foreach (var p in vars.Zip(coefficients, (v, c) => new { Var = v, Coeff = c }))
         {
             AddTerm(p.Var, p.Coeff);
@@ -508,6 +534,7 @@ public sealed class LinearExprBuilder : LinearExpr
 
     public LinearExprBuilder AddWeightedSum(IEnumerable<BoolVar> vars, IEnumerable<int> coefficients)
     {
+        terms_.TryEnsureCapacity(vars);
         foreach (var p in vars.Zip(coefficients, (v, c) => new { Var = v, Coeff = c }))
         {
             AddTerm(p.Var, p.Coeff);
@@ -625,6 +652,7 @@ public class IntVar : LinearExpr
         index_ = model.Variables.Count;
         var_ = new IntegerVariableProto();
         var_.Name = name;
+        var_.Domain.Capacity = 2;
         var_.Domain.Add(lb);
         var_.Domain.Add(ub);
         model.Variables.Add(var_);

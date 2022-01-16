@@ -13,9 +13,6 @@
 
 namespace Google.OrTools.Sat
 {
-using System;
-using System.Collections.Generic;
-
 public class IntervalVar
 {
     public IntervalVar(CpModelProto model, LinearExpressionProto start, LinearExpressionProto size,
@@ -31,6 +28,7 @@ public class IntervalVar
         ConstraintProto ct = new ConstraintProto();
         ct.Interval = interval_;
         ct.Name = name;
+        ct.EnforcementLiteral.Capacity = 1;
         ct.EnforcementLiteral.Add(is_present_index);
         model.Constraints.Add(ct);
     }
