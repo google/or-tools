@@ -54,21 +54,25 @@ public class IntervalVar
         return index_;
     }
 
+    /** <summary>The start expression of the interval</summary> */
     public LinearExpr StartExpr()
     {
         return LinearExpr.RebuildLinearExprFromLinearExpressionProto(interval_.Start, model_);
     }
 
+    /** <summary>The size expression of the interval</summary> */
     public LinearExpr SizeExpr()
     {
         return LinearExpr.RebuildLinearExprFromLinearExpressionProto(interval_.Size, model_);
     }
 
+    /** <summary>The end expression of the interval</summary> */
     public LinearExpr EndExpr()
     {
         return LinearExpr.RebuildLinearExprFromLinearExpressionProto(interval_.End, model_);
     }
 
+    /** <summary>The underlying interval proto</summary> */
     public IntervalConstraintProto Proto
     {
         get {

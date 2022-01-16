@@ -299,7 +299,7 @@ public class CpModel
      * Adds and returns an empty circuit constraint.
      * </summary>
      *
-     * <remarks> A circuit is a unique Hamiltonian path in a subgraph of the total graph. In case a node 'i'
+     * <remarks> A circuit is a unique Hamiltonian path in a subgraph of the total graph. In case a node <c>i</c>
      * is not in the path, then there must be a loop arc <c> i -> i</c> associated with a true
      * literal. Otherwise this constraint will fail.
      * </remarks>
@@ -387,19 +387,19 @@ public class CpModel
      * <remarks>
      * <para>An automaton constraint takes a list of variables (of size n), an initial state, a set of
      * final states, and a set of transitions that will be added incrementally directly on the
-     * returned AutomatonConstraint instance. A transition is a triplet ('tail', 'transition',
-     * 'head'), where 'tail' and 'head' are states, and 'transition' is the label of an arc from
-     * 'head' to 'tail', corresponding to the value of one variable in the list of variables. </para>
+     * returned AutomatonConstraint instance. A transition is a triplet (<c>tail</c>, <c>transition</c>,
+     * <c>head</c>), where <c>tail</c> and <c>head</c> are states, and <c>transition</c> is the label of an arc from
+     * <c>head</c> to <c>tail</c>, corresponding to the value of one variable in the list of variables. </para>
      *
      * <para>This automaton will be unrolled into a flow with n + 1 phases. Each phase contains the
      * possible states of the automaton. The first state contains the initial state. The last phase
      * contains the final states. </para>
      *
      * <para>Between two consecutive phases i and i + 1, the automaton creates a set of arcs. For each
-     * transition (tail, label, head), it will add an arc from the state 'tail' of phase i and the
-     * state 'head' of phase i + 1. This arc labeled by the value 'label' of the variables
-     * 'variables[i]'. That is, this arc can only be selected if 'variables[i]' is assigned the value
-     * 'label'. </para>
+     * transition (tail, label, head), it will add an arc from the state <c>tail</c> of phase i and the
+     * state <c>head</c> of phase i + 1. This arc labeled by the value <c>label</c> of the variables
+     * <c>variables[i]</c>. That is, this arc can only be selected <c>variables[i]</c>a is assigned the value
+     * <c>label</c>. </para>
      *
      * <para>A feasible solution of this constraint is an assignment of variables such that, starting
      * from the initial state in phase 0, there is a path labeled by the values of the variables that
@@ -410,7 +410,7 @@ public class CpModel
      *     of the arcs traversed by the automaton</param>
      * <param name="starting_state"> the initial state of the automaton</param>
      * <param name="final_states"> a non empty list of admissible final states </param>
-     * <returns> an instance of the Constraint class </returns>
+     * <returns> an instance of the AutomatonConstraint class </returns>
      */
     public AutomatonConstraint AddAutomaton(IEnumerable<IntVar> vars, long starting_state,
                                             IEnumerable<long> final_states)
@@ -435,8 +435,8 @@ public class CpModel
      * Adds <c> Inverse(variables, inverseVariables)</c>
      * </summary>
      *
-     * <remarks>An inverse constraint enforces that if 'variables[i]' is assigned a value 'j', then
-     * inverseVariables[j] is assigned a value 'i'. And vice versa.
+     * <remarks>An inverse constraint enforces that if <c>direct[i] == j</c>, then
+     * <c>reverse[j] == i</c>, and vice versa.
      * </remarks>
      *
      * <param name="direct"> an array of integer variables</param>
@@ -968,8 +968,8 @@ public class CpModel
      * This constraint enforces that:
      * <code>
      * forall t:
-     *      ∑(demands[i] if (start(intervals[t]) ≤ t &lt; end(intervals[t])) and (t is
-     *          present) ≤ capacity
+     *      ∑( demands[i] if (start(intervals[t]) ≤ t &lt; end(intervals[t])) and
+     *                       (t is present) ) ≤ capacity
      * </code>
      * </remarks>
      *
@@ -1131,10 +1131,10 @@ public class CpModel
 
     /**
      * <summary>
-     * Write the model as a protocol buffer to 'file'.
+     * Write the model as a protocol buffer to <c>file</c>.
      * </summary>
      *
-     * <param name="file"> file to write the model to. If the filename ends with 'txt', the
+     * <param name="file"> file to write the model to. If the filename ends with <c>txt</c>, the
      *    model will be written as a text file, otherwise, the binary format will be used. </param>
      *
      * <returns> true if the model was correctly written </returns>

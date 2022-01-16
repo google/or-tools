@@ -1,8 +1,0 @@
-digraph "Graphical Class Hierarchy"
-{
- // LATEX_PDF_SIZE
-  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
-  node [fontname="Helvetica",fontsize="10",shape=record];
-  rankdir="LR";
-  Node0 [label="TableStruct_ortools\l_2fsat_2fcp_5fmodel\l_2eproto",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$struct_table_struct__ortools__2fsat__2fcp__5fmodel__2eproto.html",tooltip=" "];
-}

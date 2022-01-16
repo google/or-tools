@@ -1,8 +1,0 @@
-digraph "Graphical Class Hierarchy"
-{
- // LATEX_PDF_SIZE
-  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
-  node [fontname="Helvetica",fontsize="10",shape=record];
-  rankdir="LR";
-  Node0 [label="graph_traits\< ForwardStatic\lGraph\< NodeIndexType, ArcIndexType \> \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structoperations__research_1_1graph__traits_3_01_forward_static_graph_3_01_node_index_type_00_01_arc_index_type_01_4_01_4.html",tooltip=" "];
-}

@@ -1,8 +1,0 @@
-digraph "Graphical Class Hierarchy"
-{
- // LATEX_PDF_SIZE
-  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
-  node [fontname="Helvetica",fontsize="10",shape=record];
-  rankdir="LR";
-  Node0 [label="TimeLimit",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classoperations__research_1_1_time_limit.html",tooltip="A simple class to enforce both an elapsed time limit and a deterministic time limit in the same threa..."];
-}

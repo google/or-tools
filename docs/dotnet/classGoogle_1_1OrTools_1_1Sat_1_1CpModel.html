@@ -250,7 +250,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:aa78fecece2fca9a5e14594ba35769637"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns some statistics on model as a string.  <a href="classGoogle_1_1OrTools_1_1Sat_1_1CpModel.html#aa78fecece2fca9a5e14594ba35769637">More...</a><br /></td></tr>
 <tr class="separator:aa78fecece2fca9a5e14594ba35769637"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a43fa6224879e0e57cc10eae0c37012c7"><td class="memItemLeft" align="right" valign="top">Boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1CpModel.html#a43fa6224879e0e57cc10eae0c37012c7">ExportToFile</a> (String file)</td></tr>
-<tr class="memdesc:a43fa6224879e0e57cc10eae0c37012c7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Write the model as a protocol buffer to 'file'.  <a href="classGoogle_1_1OrTools_1_1Sat_1_1CpModel.html#a43fa6224879e0e57cc10eae0c37012c7">More...</a><br /></td></tr>
+<tr class="memdesc:a43fa6224879e0e57cc10eae0c37012c7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Write the model as a protocol buffer to <code>file</code>.  <a href="classGoogle_1_1OrTools_1_1Sat_1_1CpModel.html#a43fa6224879e0e57cc10eae0c37012c7">More...</a><br /></td></tr>
 <tr class="separator:a43fa6224879e0e57cc10eae0c37012c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aea390c07c5c6773c11f6649aa73fa6ca"><td class="memItemLeft" align="right" valign="top">String&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1CpModel.html#aea390c07c5c6773c11f6649aa73fa6ca">Validate</a> ()</td></tr>
 <tr class="memdesc:aea390c07c5c6773c11f6649aa73fa6ca"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a non empty string explaining the issue if the model is invalid.  <a href="classGoogle_1_1OrTools_1_1Sat_1_1CpModel.html#aea390c07c5c6773c11f6649aa73fa6ca">More...</a><br /></td></tr>
@@ -594,9 +594,9 @@ Properties</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Adds an automaton constraint. </p>
-<p >An automaton constraint takes a list of variables (of size n), an initial state, a set of final states, and a set of transitions that will be added incrementally directly on the returned <a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1AutomatonConstraint.html" title="Specialized automaton constraint.">AutomatonConstraint</a> instance. A transition is a triplet ('tail', 'transition', 'head'), where 'tail' and 'head' are states, and 'transition' is the label of an arc from 'head' to 'tail', corresponding to the value of one variable in the list of variables. </p>
+<p >An automaton constraint takes a list of variables (of size n), an initial state, a set of final states, and a set of transitions that will be added incrementally directly on the returned <a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1AutomatonConstraint.html" title="Specialized automaton constraint.">AutomatonConstraint</a> instance. A transition is a triplet (<code>tail</code>, <code>transition</code>, <code>head</code>), where <code>tail</code> and <code>head</code> are states, and <code>transition</code> is the label of an arc from <code>head</code> to <code>tail</code>, corresponding to the value of one variable in the list of variables. </p>
 <p >This automaton will be unrolled into a flow with n + 1 phases. Each phase contains the possible states of the automaton. The first state contains the initial state. The last phase contains the final states. </p>
-<p >Between two consecutive phases i and i + 1, the automaton creates a set of arcs. For each transition (tail, label, head), it will add an arc from the state 'tail' of phase i and the state 'head' of phase i + 1. This arc labeled by the value 'label' of the variables 'variables[i]'. That is, this arc can only be selected if 'variables[i]' is assigned the value 'label'. </p>
+<p >Between two consecutive phases i and i + 1, the automaton creates a set of arcs. For each transition (tail, label, head), it will add an arc from the state <code>tail</code> of phase i and the state <code>head</code> of phase i + 1. This arc labeled by the value <code>label</code> of the variables <code>variables[i]</code>. That is, this arc can only be selected <code>variables[i]</code>a is assigned the value <code>label</code>. </p>
 <p >A feasible solution of this constraint is an assignment of variables such that, starting from the initial state in phase 0, there is a path labeled by the values of the variables that ends in one of the final states in the final phase. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
@@ -606,7 +606,7 @@ Properties</h2></td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>an instance of the <a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1Constraint.html">Constraint</a> class </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>an instance of the <a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1AutomatonConstraint.html" title="Specialized automaton constraint.">AutomatonConstraint</a> class </dd></dl>
 
 <p class="definition">Definition at line <a class="el" href="CpModel_8cs_source.html#l00415">415</a> of file <a class="el" href="CpModel_8cs_source.html">CpModel.cs</a>.</p>
 
@@ -726,7 +726,7 @@ Properties</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Adds and returns an empty circuit constraint. </p>
-<p >A circuit is a unique Hamiltonian path in a subgraph of the total graph. In case a node 'i' is not in the path, then there must be a loop arc <code> i -&gt; i</code> associated with a true literal. Otherwise this constraint will fail. </p>
+<p >A circuit is a unique Hamiltonian path in a subgraph of the total graph. In case a node <code>i</code> is not in the path, then there must be a loop arc <code> i -&gt; i</code> associated with a true literal. Otherwise this constraint will fail. </p>
 
 <p class="definition">Definition at line <a class="el" href="CpModel_8cs_source.html#l00307">307</a> of file <a class="el" href="CpModel_8cs_source.html">CpModel.cs</a>.</p>
 
@@ -758,8 +758,8 @@ Properties</h2></td></tr>
 
 <p>Adds <code>Cumulative(capacity)</code> </p>
 <p >This constraint enforces that: </p><div class="fragment"><div class="line">forall t:</div>
-<div class="line">     ∑(demands[i] <span class="keywordflow">if</span> (start(intervals[t]) ≤ t &lt; end(intervals[t])) and (t is</div>
-<div class="line">         present) ≤ capacity</div>
+<div class="line">     ∑( demands[i] <span class="keywordflow">if</span> (start(intervals[t]) ≤ t &lt; end(intervals[t])) and</div>
+<div class="line">                      (t is present) ) ≤ capacity</div>
 </div><!-- fragment --> <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">capacity</td><td>the maximum capacity of the cumulative constraint. It must be a positive affine expression </td></tr>
@@ -1185,7 +1185,7 @@ Properties</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Adds <code> Inverse(variables, inverseVariables)</code> </p>
-<p >An inverse constraint enforces that if 'variables[i]' is assigned a value 'j', then inverseVariables[j] is assigned a value 'i'. And vice versa. </p>
+<p >An inverse constraint enforces that if <code>direct[i] == j</code>, then <code>reverse[j] == i</code>, and vice versa. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">direct</td><td>an array of integer variables</td></tr>
@@ -1193,7 +1193,7 @@ Properties</h2></td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>an instance of the <a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1Constraint.html">Constraint</a> class </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>an instance of the <a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1Constraint.html" title="Wrapper around a ConstraintProto.">Constraint</a> class </dd></dl>
 
 <p class="definition">Definition at line <a class="el" href="CpModel_8cs_source.html#l00446">446</a> of file <a class="el" href="CpModel_8cs_source.html">CpModel.cs</a>.</p>
 
@@ -1603,7 +1603,7 @@ Properties</h2></td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>an instance of the <a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1Constraint.html">Constraint</a> class</dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>an instance of the <a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1Constraint.html" title="Wrapper around a ConstraintProto.">Constraint</a> class</dd></dl>
 
 <p class="definition">Definition at line <a class="el" href="CpModel_8cs_source.html#l00925">925</a> of file <a class="el" href="CpModel_8cs_source.html">CpModel.cs</a>.</p>
 
@@ -1774,10 +1774,10 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Write the model as a protocol buffer to 'file'. </p>
+<p>Write the model as a protocol buffer to <code>file</code>. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">file</td><td>file to write the model to. If the filename ends with 'txt', the model will be written as a text file, otherwise, the binary format will be used. </td></tr>
+    <tr><td class="paramname">file</td><td>file to write the model to. If the filename ends with <code>txt</code>, the model will be written as a text file, otherwise, the binary format will be used. </td></tr>
   </table>
   </dd>
 </dl>

@@ -1,0 +1,17 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="node1" title=" " alt="" coords="5,526,81,553"/>
+<area shape="rect" id="node2" href="$structis__proto__enum_3_01_1_1operations__research_1_1sat_1_1_cp_solver_status_01_4.html" title=" " alt="" coords="133,5,351,47"/>
+<area shape="rect" id="node3" href="$structis__proto__enum_3_01_1_1operations__research_1_1sat_1_1_decision_strategy_proto___domain_reduction_strategy_01_4.html" title=" " alt="" coords="129,71,355,127"/>
+<area shape="rect" id="node4" href="$structis__proto__enum_3_01_1_1operations__research_1_1sat_1_1_decision_strategy_proto___variable_selection_strategy_01_4.html" title=" " alt="" coords="131,151,353,207"/>
+<area shape="rect" id="node5" href="$structis__proto__enum_3_01_1_1operations__research_1_1sat_1_1_sat_parameters___binary_minization_algorithm_01_4.html" title=" " alt="" coords="142,231,342,287"/>
+<area shape="rect" id="node6" href="$structis__proto__enum_3_01_1_1operations__research_1_1sat_1_1_sat_parameters___clause_ordering_01_4.html" title=" " alt="" coords="142,311,342,367"/>
+<area shape="rect" id="node7" href="$structis__proto__enum_3_01_1_1operations__research_1_1sat_1_1_sat_parameters___clause_protection_01_4.html" title=" " alt="" coords="142,391,342,447"/>
+<area shape="rect" id="node8" href="$structis__proto__enum_3_01_1_1operations__research_1_1sat_1_1_sat_parameters___conflict_minimization_algorithm_01_4.html" title=" " alt="" coords="135,471,349,527"/>
+<area shape="rect" id="node9" href="$structis__proto__enum_3_01_1_1operations__research_1_1sat_1_1_sat_parameters___f_p_rounding_method_01_4.html" title=" " alt="" coords="142,551,342,607"/>
+<area shape="rect" id="node10" href="$structis__proto__enum_3_01_1_1operations__research_1_1sat_1_1_sat_parameters___max_sat_assumption_order_01_4.html" title=" " alt="" coords="142,631,342,687"/>
+<area shape="rect" id="node11" href="$structis__proto__enum_3_01_1_1operations__research_1_1sat_1_1_sat_parameters___max_sat_stratification_algorithm_01_4.html" title=" " alt="" coords="135,711,349,767"/>
+<area shape="rect" id="node12" href="$structis__proto__enum_3_01_1_1operations__research_1_1sat_1_1_sat_parameters___polarity_01_4.html" title=" " alt="" coords="142,791,342,847"/>
+<area shape="rect" id="node13" href="$structis__proto__enum_3_01_1_1operations__research_1_1sat_1_1_sat_parameters___restart_algorithm_01_4.html" title=" " alt="" coords="142,871,342,927"/>
+<area shape="rect" id="node14" href="$structis__proto__enum_3_01_1_1operations__research_1_1sat_1_1_sat_parameters___search_branching_01_4.html" title=" " alt="" coords="142,951,342,1007"/>
+<area shape="rect" id="node15" href="$structis__proto__enum_3_01_1_1operations__research_1_1sat_1_1_sat_parameters___variable_order_01_4.html" title=" " alt="" coords="142,1031,342,1087"/>
+</map>

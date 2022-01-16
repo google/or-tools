@@ -1,8 +1,0 @@
-digraph "Graphical Class Hierarchy"
-{
- // LATEX_PDF_SIZE
-  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
-  node [fontname="Helvetica",fontsize="10",shape=record];
-  rankdir="LR";
-  Node0 [label="RoutingModel::CostClass\l::DimensionCost",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structoperations__research_1_1_routing_model_1_1_cost_class_1_1_dimension_cost.html",tooltip="SUBTLE: The vehicle's fixed cost is skipped on purpose here, because we can afford to do so:"];
-}

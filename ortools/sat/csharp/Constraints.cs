@@ -17,7 +17,14 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-public class Constraint
+/**
+ * <summary>
+ * Wrapper around a ConstraintProto.
+ * </summary>
+ *
+ * <remarks>Constraints created by the CpModel class are automatically added to the model. One needs this
+ * class to add an enforcement literal to a constraint. </remarks>
+ */public class Constraint
 {
     public Constraint(CpModelProto model)
     {
@@ -26,11 +33,13 @@ public class Constraint
         model.Constraints.Add(constraint_);
     }
 
+    /** <summary>Adds a literal to the constraint</summary> */
     public void OnlyEnforceIf(ILiteral lit)
     {
         constraint_.EnforcementLiteral.Add(lit.GetIndex());
     }
 
+    /** <summary>Adds a list of literals to the constraint</summary> */
     public void OnlyEnforceIf(ILiteral[] lits)
     {
         foreach (ILiteral lit in lits)
@@ -39,6 +48,7 @@ public class Constraint
         }
     }
 
+    /** <summary>The index of the constraint in the model</summary> */
     public int Index
     {
         get {
@@ -46,6 +56,7 @@ public class Constraint
         }
     }
 
+    /** <summary>The underlying constraint proto</summary> */
     public ConstraintProto Proto
     {
         get {
