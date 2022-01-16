@@ -21,10 +21,14 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using Google.Protobuf.Collections;
 
+/** <summary>Holds a Boolean variable or its negation.</summary> */
 public interface ILiteral
 {
+    /** <summary>Returns the Boolean negation of the literal.</summary> */
     ILiteral Not();
+    /** <summary>Returns the logical index of the literal. </summary> */
     int GetIndex();
+    /** <summary>Returns the Boolean negation of the literal as a linear expression.</summary> */
     LinearExpr NotAsExpr();
 }
 
@@ -80,59 +84,74 @@ public struct Term
     }
 }
 
-// Holds a linear expression.
+/**
+  * <summary>
+  * Holds a linear expression: <c>sum (ai * xi) + b</c>.
+  * </summary>
+  */
 public class LinearExpr
 {
+    /** <summary> Creates <c>Sum(exprs)</c>.</summary> */
     public static LinearExpr Sum(IEnumerable<LinearExpr> exprs)
     {
         return NewBuilder(0).AddSum(exprs);
     }
 
+    /** <summary> Creates <c>Sum(literals)</c>.</summary> */
     public static LinearExpr Sum(IEnumerable<ILiteral> literals)
     {
         return NewBuilder(0).AddSum(literals);
     }
 
+    /** <summary> Creates <c>Sum(vars)</c>.</summary> */
     public static LinearExpr Sum(IEnumerable<BoolVar> vars)
     {
         return NewBuilder(0).AddSum(vars);
     }
 
+    /** <summary> Creates <c>Sum(exprs[i] * coeffs[i])</c>.</summary> */
     public static LinearExpr WeightedSum(IEnumerable<LinearExpr> exprs, IEnumerable<int> coeffs)
     {
         return NewBuilder(0).AddWeightedSum(exprs, coeffs);
     }
 
+    /** <summary> Creates <c>Sum(exprs[i] * coeffs[i])</c>.</summary> */
     public static LinearExpr WeightedSum(IEnumerable<LinearExpr> exprs, IEnumerable<long> coeffs)
     {
         return NewBuilder(0).AddWeightedSum(exprs, coeffs);
     }
 
+    /** <summary> Creates <c>Sum(literals[i] * coeffs[i])</c>.</summary> */
     public static LinearExpr WeightedSum(IEnumerable<ILiteral> literals, IEnumerable<int> coeffs)
     {
         return NewBuilder(0).AddWeightedSum(literals, coeffs);
     }
 
+    /** <summary> Creates <c>Sum(literals[i] * coeffs[i])</c>.</summary> */
     public static LinearExpr WeightedSum(IEnumerable<ILiteral> literals, IEnumerable<long> coeffs)
     {
         return NewBuilder(0).AddWeightedSum(literals, coeffs);
     }
 
+    /** <summary> Creates <c>Sum(vars[i] * coeffs[i])</c>.</summary> */
     public static LinearExpr WeightedSum(IEnumerable<BoolVar> vars, IEnumerable<int> coeffs)
     {
         return NewBuilder(0).AddWeightedSum(vars, coeffs);
     }
 
+    /** <summary> Creates <c>Sum(vars[i] * coeffs[i])</c>.</summary> */
     public static LinearExpr WeightedSum(IEnumerable<BoolVar> vars, IEnumerable<long> coeffs)
     {
         return NewBuilder(0).AddWeightedSum(vars, coeffs);
     }
 
+    /** <summary> Creates <c>expr * coeff</c>.</summary> */
     public static LinearExpr Term(LinearExpr expr, long coeff)
     {
         return Prod(expr, coeff);
     }
 
+    /** <summary> Creates <c>literal * coeff</c>.</summary> */
     public static LinearExpr Term(ILiteral literal, long coeff)
     {
         if (literal is BoolVar boolVar)
@@ -145,11 +164,13 @@ public class LinearExpr
         }
     }
 
+    /** <summary> Creates <c>var * coeff</c>.</summary> */
     public static LinearExpr Term(BoolVar var, long coeff)
     {
         return Prod(var, coeff);
     }
 
+    /** <summary> Creates <c>expr * coeff + offset</c>.</summary> */
     public static LinearExpr Affine(LinearExpr expr, long coeff, long offset)
     {
         if (offset == 0)
@@ -159,21 +180,25 @@ public class LinearExpr
         return NewBuilder().AddTerm(expr, coeff).Add(offset);
     }
 
+    /** <summary> Creates <c>literal * coeff + offset</c>.</summary> */
     public static LinearExpr Affine(ILiteral literal, long coeff, long offset)
     {
         return NewBuilder().AddTerm(literal, coeff).Add(offset);
     }
 
+    /** <summary> Creates <c>var * coeff + offset</c>.</summary> */
     public static LinearExpr Affine(BoolVar var, long coeff, long offset)
     {
         return NewBuilder().AddTerm(var, coeff).Add(offset);
     }
 
+    /** <summary> Creates a constant expression.</summary> */
     public static LinearExpr Constant(long value)
     {
         return NewBuilder(0).Add(value);
     }
 
+    /** <summary> Creates a builder class for linear expression.</summary> */
     public static LinearExprBuilder NewBuilder(int sizeHint = 2)
     {
         return new LinearExprBuilder(sizeHint);
@@ -397,6 +422,7 @@ public class LinearExpr
     }
 }
 
+/** <summary> A builder class for linear expressions.</summary> */
 public sealed class LinearExprBuilder : LinearExpr
 {
     public LinearExprBuilder(int sizeHint = 2)
@@ -405,33 +431,39 @@ public sealed class LinearExprBuilder : LinearExpr
         offset_ = 0;
     }
 
+    /** <summary> Adds <c>expr</c> to the builder.</summary> */
     public LinearExprBuilder Add(LinearExpr expr)
     {
         return AddTerm(expr, 1);
     }
 
+    /** <summary> Adds <c>literal</c> to the builder.</summary> */
     public LinearExprBuilder Add(ILiteral literal)
     {
         return AddTerm(literal, 1);
     }
 
+    /** <summary> Adds <c>var</c> to the builder.</summary> */
     public LinearExprBuilder Add(BoolVar var)
     {
         return AddTerm(var, 1);
     }
 
+    /** <summary> Adds <c>constant</c> to the builder.</summary> */
     public LinearExprBuilder Add(long constant)
     {
         offset_ += constant;
         return this;
     }
 
+    /** <summary> Adds <c>expr * coefficient</c> to the builder.</summary> */
     public LinearExprBuilder AddTerm(LinearExpr expr, long coefficient)
     {
         terms_.Add(new Term(expr, coefficient));
         return this;
     }
 
+    /** <summary> Adds <c>literal * coefficient</c> to the builder.</summary> */
     public LinearExprBuilder AddTerm(ILiteral literal, long coefficient)
     {
         if (literal is BoolVar boolVar)
@@ -446,12 +478,14 @@ public sealed class LinearExprBuilder : LinearExpr
         return this;
     }
 
+    /** <summary> Adds <c>var * coefficient</c> to the builder.</summary> */
     public LinearExprBuilder AddTerm(BoolVar var, long coefficient)
     {
         terms_.Add(new Term(var, coefficient));
         return this;
     }
 
+    /** <summary> Adds <c>sum(exprs)</c> to the builder.</summary> */
     public LinearExprBuilder AddSum(IEnumerable<LinearExpr> exprs)
     {
         terms_.TryEnsureCapacity(exprs);
@@ -462,6 +496,7 @@ public sealed class LinearExprBuilder : LinearExpr
         return this;
     }
 
+    /** <summary> Adds <c>sum(literals)</c> to the builder.</summary> */
     public LinearExprBuilder AddSum(IEnumerable<ILiteral> literals)
     {
         terms_.TryEnsureCapacity(literals);
@@ -472,6 +507,7 @@ public sealed class LinearExprBuilder : LinearExpr
         return this;
     }
 
+    /** <summary> Adds <c>sum(vars)</c> to the builder.</summary> */
     public LinearExprBuilder AddSum(IEnumerable<BoolVar> vars)
     {
         terms_.TryEnsureCapacity(vars);
@@ -482,6 +518,7 @@ public sealed class LinearExprBuilder : LinearExpr
         return this;
     }
 
+    /** <summary> Adds <c>sum(exprs[i] * coeffs[i])</c> to the builder.</summary> */
     public LinearExprBuilder AddWeightedSum(IEnumerable<LinearExpr> exprs, IEnumerable<long> coefficients)
     {
         terms_.TryEnsureCapacity(exprs);
@@ -492,6 +529,7 @@ public sealed class LinearExprBuilder : LinearExpr
         return this;
     }
 
+    /** <summary> Adds <c>sum(exprs[i] * coeffs[i])</c> to the builder.</summary> */
     public LinearExprBuilder AddWeightedSum(IEnumerable<LinearExpr> exprs, IEnumerable<int> coefficients)
     {
         terms_.TryEnsureCapacity(exprs);
@@ -502,6 +540,7 @@ public sealed class LinearExprBuilder : LinearExpr
         return this;
     }
 
+    /** <summary> Adds <c>sum(literals[i] * coeffs[i])</c> to the builder.</summary> */
     public LinearExprBuilder AddWeightedSum(IEnumerable<ILiteral> literals, IEnumerable<int> coefficients)
     {
         terms_.TryEnsureCapacity(literals);
@@ -512,6 +551,7 @@ public sealed class LinearExprBuilder : LinearExpr
         return this;
     }
 
+    /** <summary> Adds <c>sum(literals[i] * coeffs[i])</c> to the builder.</summary> */
     public LinearExprBuilder AddWeightedSum(IEnumerable<ILiteral> literals, IEnumerable<long> coefficients)
     {
         terms_.TryEnsureCapacity(literals);
@@ -522,6 +562,7 @@ public sealed class LinearExprBuilder : LinearExpr
         return this;
     }
 
+    /** <summary> Adds <c>sum(vars[i] * coeffs[i])</c> to the builder.</summary> */
     public LinearExprBuilder AddWeightedSum(IEnumerable<BoolVar> vars, IEnumerable<long> coefficients)
     {
         terms_.TryEnsureCapacity(vars);
@@ -532,6 +573,7 @@ public sealed class LinearExprBuilder : LinearExpr
         return this;
     }
 
+    /** <summary> Adds <c>sum(vars[i] * coeffs[i])</c> to the builder.</summary> */
     public LinearExprBuilder AddWeightedSum(IEnumerable<BoolVar> vars, IEnumerable<int> coefficients)
     {
         terms_.TryEnsureCapacity(vars);
@@ -636,6 +678,14 @@ public sealed class LinearExprBuilder : LinearExpr
     private List<Term> terms_;
 }
 
+/**
+ * <summary>
+ * Holds a integer variable with a discrete domain.
+ * </summary>
+ * <remarks>
+ * This class must be constructed from the CpModel class.
+ * </remarks>
+ */
 public class IntVar : LinearExpr
 {
     public IntVar(CpModelProto model, Domain domain, string name)
@@ -664,11 +714,13 @@ public class IntVar : LinearExpr
         var_ = model.Variables[index];
     }
 
+    /** Returns the index of the variable in the underlying CpModelProto. */
     public int GetIndex()
     {
         return index_;
     }
 
+    /** Returns the index of the variable in the underlying CpModelProto. */
     public int Index
     {
         get {
@@ -676,6 +728,7 @@ public class IntVar : LinearExpr
         }
     }
 
+    /** The underlying IntegerVariableProto. */
     public IntegerVariableProto Proto
     {
         get {
@@ -686,6 +739,7 @@ public class IntVar : LinearExpr
         }
     }
 
+    /** Returns the domain of the variable. */
     public Domain Domain
     {
         get {
@@ -698,6 +752,7 @@ public class IntVar : LinearExpr
         return var_.Name ?? var_.ToString();
     }
 
+    /** Returns the name of the variable given upon creation. */
     public string Name()
     {
         return var_.Name;
@@ -707,6 +762,14 @@ public class IntVar : LinearExpr
     protected IntegerVariableProto var_;
 }
 
+/**
+ * <summary>
+ * Holds a Boolean variable.
+ * </summary>
+ * <remarks>
+ * This class must be constructed from the CpModel class.
+ * </remarks>
+ */
 public sealed class BoolVar : IntVar, ILiteral
 {
 
@@ -718,11 +781,13 @@ public sealed class BoolVar : IntVar, ILiteral
     {
     }
 
+    /** <summary> Returns the Boolean negation of that variable.</summary> */
     public ILiteral Not()
     {
         return negation_ ??= new NotBoolVar(this);
     }
 
+    /** <summary> Returns the Boolean negation of that variable as a linear expression.</summary> */
     public LinearExpr NotAsExpr()
     {
         return (LinearExpr)Not();
@@ -768,6 +833,14 @@ public sealed class NotBoolVar : LinearExpr, ILiteral
     private readonly BoolVar boolvar_;
 }
 
+/**
+ * <summary>
+ * Holds a linear constraint: <c> expression ∈ domain</c>
+ * </summary>
+ * <remarks>
+ * This class must be constructed from the CpModel class or from the comparison operators.
+ * </remarks>
+ */
 public sealed class BoundedLinearExpression
 {
     public enum Type

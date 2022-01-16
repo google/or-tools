@@ -17,8 +17,18 @@ using System.Collections.Generic;
 namespace Google.OrTools.Sat
 {
 
+/**
+ * <summary>
+ * Parent class to create a callback called at each solution.
+ * </summary>
+ */
 public class CpSolverSolutionCallback : SolutionCallback
 {
+    /** 
+     * <summary>
+     * Returns the value of a linear expression in the current solution. 
+     * </summary>
+     */
     public long Value(LinearExpr e)
     {
         List<Term> terms = new List<Term>();
@@ -65,6 +75,11 @@ public class CpSolverSolutionCallback : SolutionCallback
         return constant;
     }
 
+    /** 
+     * <summary>
+     * Returns the Boolean value of a literal in the current solution. 
+     * </summary>
+     */
     public Boolean BooleanValue(ILiteral literal)
     {
         if (literal is BoolVar || literal is NotBoolVar)
@@ -79,6 +94,11 @@ public class CpSolverSolutionCallback : SolutionCallback
     }
 }
 
+/** 
+ * <summary>
+ * A specialized solution printer.
+ * </summary>
+ */
 public class ObjectiveSolutionPrinter : CpSolverSolutionCallback
 {
     private DateTime _startTime;

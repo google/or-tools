@@ -135,6 +135,6 @@
 <area shape="rect" id="node118" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1TypeRequirementChecker.html" title=" " alt="" coords="447,2922,621,2948"/>
 <area shape="rect" id="node122" href="$classGoogle_1_1OrTools_1_1Graph_1_1MinCostFlow.html" title=" " alt="" coords="485,3074,583,3100"/>
 <area shape="rect" id="node133" href="$classGoogle_1_1OrTools_1_1Sat_1_1LogCallbackDelegate.html" title=" " alt="" coords="461,1452,607,1479"/>
-<area shape="rect" id="node135" href="$classGoogle_1_1OrTools_1_1Sat_1_1CpSolverSolutionCallback.html" title=" " alt="" coords="447,3023,621,3050"/>
-<area shape="rect" id="node136" href="$classGoogle_1_1OrTools_1_1Sat_1_1ObjectiveSolutionPrinter.html" title=" " alt="" coords="703,3023,865,3050"/>
+<area shape="rect" id="node135" href="$classGoogle_1_1OrTools_1_1Sat_1_1CpSolverSolutionCallback.html" title="Parent class to create a callback called at each solution." alt="" coords="447,3023,621,3050"/>
+<area shape="rect" id="node136" href="$classGoogle_1_1OrTools_1_1Sat_1_1ObjectiveSolutionPrinter.html" title="A specialized solution printer." alt="" coords="703,3023,865,3050"/>
 </map>

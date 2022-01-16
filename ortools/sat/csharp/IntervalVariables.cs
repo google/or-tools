@@ -56,7 +56,7 @@ public class IntervalVar
         model_.Constraints.Add(ct);
     }
 
-    /** <summary>The Indexraint in the model proto</summary> */
+    /** <summary>The Index of the interval in the model proto</summary> */
     public int GetIndex()
     {
         return index_;

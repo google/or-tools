@@ -19,7 +19,7 @@ namespace Google.OrTools.Sat
 {
 /**
  * <summary>
- * Wrapper around the SAT solver
+ * Wrapper around the SAT solver.
  * </summary>
  *
  * <remarks>This class proposes a <code>Solve()</code> method, as well as accessors to get the values of
@@ -28,7 +28,7 @@ namespace Google.OrTools.Sat
  */
 public class CpSolver
 {
-    /** <summary>Solves the given model, and returns the solve status</summary> */
+    /** <summary>Solves the given model, and returns the solve status.</summary> */
     public CpSolverStatus Solve(CpModel model, SolutionCallback cb = null)
     {
         // Setup search.
@@ -58,12 +58,14 @@ public class CpSolver
         return response_.Status;
     }
 
+    /** <summary> Deprecated, use Solve() instead. </summary> */
     [ObsoleteAttribute("This method is obsolete. Call Solve instead.", false)]
     public CpSolverStatus SolveWithSolutionCallback(CpModel model, SolutionCallback cb)
     {
         return Solve(model, cb);
     }
 
+    /** <summary> Deprecated, use Solve() instead. </summary> */
     [ObsoleteAttribute("This method is obsolete. Call Solve instead with the enumerate_all_solutions parameter.", false)]
     public CpSolverStatus SearchAllSolutions(CpModel model, SolutionCallback cb)
     {
@@ -74,8 +76,8 @@ public class CpSolver
         return response_.Status;
     }
 
+    /** <summary>Stops the search asynchronously.</summary> */
     [MethodImpl(MethodImplOptions.Synchronized)]
-    /** <summary>Stops the search asynchronously</summary> */
     public void StopSearch()
     {
         if (solve_wrapper_ is not null)
@@ -96,13 +98,13 @@ public class CpSolver
         solve_wrapper_ = null;
     }
 
-    /** <summary>Statistics on the solution found as a string </summary>*/
+    /** <summary>Statistics on the solution found as a string.</summary>*/
     public String ResponseStats()
     {
         return CpSatHelper.SolverResponseStats(response_);
     }
 
-    /** <summary>The best objective value found during search</summary>*/
+    /** <summary>The best objective value found during search.</summary>*/
     public double ObjectiveValue
     {
         get {
@@ -200,7 +202,7 @@ public class CpSolver
 
     /** 
      * <summary>
-     * Returns the Boolean value of a linear expression in the last solution found. 
+     * Returns the Boolean value of a literal in the last solution found. 
      * </summary>
      */
     public Boolean BooleanValue(ILiteral literal)
@@ -223,19 +225,19 @@ public class CpSolver
         }
     }
 
-    /** Returns the number of branches explored during search. */
+    /** <summary>Returns the number of branches explored during search. </summary>*/
     public long NumBranches()
     {
         return response_.NumBranches;
     }
 
-    /** Returns the number of conflicts created during search. */
+    /** <summary>Returns the number of conflicts created during search. </summary>*/
     public long NumConflicts()
     {
         return response_.NumConflicts;
     }
 
-    /** Returns the wall time of the search. */
+    /** <summary>Returns the wall time of the search. </summary>*/
     public double WallTime()
     {
         return response_.WallTime;
@@ -247,8 +249,10 @@ public class CpSolver
     }
 
     /**
+     * <summary>
      * Returns some information on how the solution was found, or the reason why the model or the
      * parameters are invalid.
+     * </summary>
      */
     public String SolutionInfo()
     {

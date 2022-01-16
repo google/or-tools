@@ -34,13 +34,13 @@ public class Constraint
         model.Constraints.Add(constraint_);
     }
 
-    /** <summary>Adds a literal to the constraint</summary> */
+    /** <summary>Adds a literal to the constraint.</summary> */
     public void OnlyEnforceIf(ILiteral lit)
     {
         constraint_.EnforcementLiteral.Add(lit.GetIndex());
     }
 
-    /** <summary>Adds a list of literals to the constraint</summary> */
+    /** <summary>Adds a list of literals to the constraint.</summary> */
     public void OnlyEnforceIf(ILiteral[] lits)
     {
         foreach (ILiteral lit in lits)
@@ -49,7 +49,7 @@ public class Constraint
         }
     }
 
-    /** <summary>The index of the constraint in the model</summary> */
+    /** <summary>The index of the constraint in the model.</summary> */
     public int Index
     {
         get {
@@ -57,7 +57,7 @@ public class Constraint
         }
     }
 
-    /** <summary>The underlying constraint proto</summary> */
+    /** <summary>The underlying constraint proto.</summary> */
     public ConstraintProto Proto
     {
         get {
@@ -312,7 +312,7 @@ public class ReservoirConstraint : Constraint
 
     /**
      * <summary>
-     * Adds a mandatory event
+     * Adds a mandatory event.
      * </summary>
      *
      * <remarks>
@@ -331,7 +331,7 @@ public class ReservoirConstraint : Constraint
 
     /**
      * <summary>
-     * Adds an optional event
+     * Adds an optional event.
      * </summary>
      *
      * <remarks>
