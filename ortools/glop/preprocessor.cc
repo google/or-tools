@@ -2862,10 +2862,17 @@ bool SingletonPreprocessor::Run(LinearProgram* lp) {
       // a cost of zero first.
       if (lp->objective_coefficients()[col] == 0.0) {
         DeleteZeroCostSingletonColumn(transpose, e, lp);
-      } else if (MakeConstraintAnEqualityIfPossible(transpose, e, lp)) {
-        DeleteSingletonColumnInEquality(transpose, e, lp);
       } else {
-        continue;
+        // We don't want to do a substitution if the entry is too small and
+        // should be probably set to zero.
+        if (std::abs(e.coeff) < parameters_.preprocessor_zero_tolerance()) {
+          continue;
+        }
+        if (MakeConstraintAnEqualityIfPossible(transpose, e, lp)) {
+          DeleteSingletonColumnInEquality(transpose, e, lp);
+        } else {
+          continue;
+        }
       }
       --row_degree[e.row];
       if (row_degree[e.row] == 1) {

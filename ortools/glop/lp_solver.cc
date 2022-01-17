@@ -143,22 +143,6 @@ ProblemStatus LPSolver::SolveWithTimeLimit(const LinearProgram& lp,
   num_revised_simplex_iterations_ = 0;
   DumpLinearProgramIfRequiredByFlags(lp, num_solves_);
 
-  // Check some preconditions.
-  if (!lp.IsCleanedUp()) {
-    LOG(DFATAL) << "The columns of the given linear program should be ordered "
-                << "by row and contain no zero coefficients. Call CleanUp() "
-                << "on it before calling Solve().";
-    ResizeSolution(lp.num_constraints(), lp.num_variables());
-    return ProblemStatus::INVALID_PROBLEM;
-  }
-  if (!lp.IsValid()) {
-    LOG(DFATAL) << "The given linear program is invalid. It contains NaNs, "
-                << "infinite coefficients or invalid bounds specification. "
-                << "You can construct it in debug mode to get the exact cause.";
-    ResizeSolution(lp.num_constraints(), lp.num_variables());
-    return ProblemStatus::INVALID_PROBLEM;
-  }
-
   // Display a warning if running in non-opt, unless we're inside a unit test.
   DLOG(WARNING)
       << "\n******************************************************************"
@@ -176,13 +160,32 @@ ProblemStatus LPSolver::SolveWithTimeLimit(const LinearProgram& lp,
     logger_.SetLogToStdOut(false);
   }
 
-  // Make an internal copy of the problem for the preprocessing.
+  // Log some initial info about the input model.
   if (logger_.LoggingIsEnabled()) {
     SOLVER_LOG(&logger_, "");
     SOLVER_LOG(&logger_, "Initial problem: ", lp.GetDimensionString());
     SOLVER_LOG(&logger_, "Objective stats: ", lp.GetObjectiveStatsString());
     SOLVER_LOG(&logger_, "Bounds stats: ", lp.GetBoundsStatsString());
   }
+
+  // Check some preconditions.
+  if (!lp.IsCleanedUp()) {
+    LOG(DFATAL) << "The columns of the given linear program should be ordered "
+                << "by row and contain no zero coefficients. Call CleanUp() "
+                << "on it before calling Solve().";
+    ResizeSolution(lp.num_constraints(), lp.num_variables());
+    return ProblemStatus::INVALID_PROBLEM;
+  }
+  if (!lp.IsValid()) {
+    SOLVER_LOG(&logger_,
+               "The given linear program is invalid. It contains NaNs, "
+               "infinite coefficients or invalid bounds specification. "
+               "You can construct it in debug mode to get the exact cause.");
+    ResizeSolution(lp.num_constraints(), lp.num_variables());
+    return ProblemStatus::INVALID_PROBLEM;
+  }
+
+  // Make an internal copy of the problem for the preprocessing.
   current_linear_program_.PopulateFromLinearProgram(lp);
 
   // Preprocess.
