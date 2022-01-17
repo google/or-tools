@@ -233,7 +233,6 @@ def main():
     dim_two = routing.GetDimensionOrDie('Two')
 
     # force depot Slack to be value since we don't have any predecessor...
-    # Slack(Depot) = value(Depot)
     for v in range(manager.GetNumberOfVehicles()):
         start = routing.Start(v)
         dim_one.SlackVar(start).SetValue(data['value'][0])

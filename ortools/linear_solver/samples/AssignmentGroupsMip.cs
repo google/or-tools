@@ -98,8 +98,7 @@ public class AssignmentGroupsMip
         // [END constraints]
 
         // [START assignments]
-        // Create variables for each worker, indicating whether they work on some
-        // task.
+        // Create variables for each worker, indicating whether they work on some task.
         Variable[] work = new Variable[numWorkers];
         foreach (int worker in allWorkers)
         {

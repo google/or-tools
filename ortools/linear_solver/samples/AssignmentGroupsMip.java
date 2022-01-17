@@ -120,8 +120,7 @@ public class AssignmentGroupsMip {
     // [END constraints]
 
     // [START assignments]
-    // Create variables for each worker, indicating whether they work on some
-    // task.
+    // Create variables for each worker, indicating whether they work on some task.
     MPVariable[] work = new MPVariable[numWorkers];
     for (int worker : allWorkers) {
       work[worker] = solver.makeBoolVar("work[" + worker + "]");
@@ -139,7 +138,7 @@ public class AssignmentGroupsMip {
     }
 
     // Group1
-    MPConstraint constraint_g1 = solver.makeConstraint(1, 1, "");
+    MPConstraint constraintG1 = solver.makeConstraint(1, 1, "");
     for (int i = 0; i < group1.length; ++i) {
       // a*b can be transformed into 0 <= a + b - 2*p <= 1 with p in [0,1]
       // p is True if a AND b, False otherwise
@@ -149,10 +148,10 @@ public class AssignmentGroupsMip {
       MPVariable p = solver.makeBoolVar("g1_p" + i);
       constraint.setCoefficient(p, -2);
 
-      constraint_g1.setCoefficient(p, 1);
+      constraintG1.setCoefficient(p, 1);
     }
     // Group2
-    MPConstraint constraint_g2 = solver.makeConstraint(1, 1, "");
+    MPConstraint constraintG2 = solver.makeConstraint(1, 1, "");
     for (int i = 0; i < group2.length; ++i) {
       // a*b can be transformed into 0 <= a + b - 2*p <= 1 with p in [0,1]
       // p is True if a AND b, False otherwise
@@ -162,10 +161,10 @@ public class AssignmentGroupsMip {
       MPVariable p = solver.makeBoolVar("g2_p" + i);
       constraint.setCoefficient(p, -2);
 
-      constraint_g2.setCoefficient(p, 1);
+      constraintG2.setCoefficient(p, 1);
     }
     // Group3
-    MPConstraint constraint_g3 = solver.makeConstraint(1, 1, "");
+    MPConstraint constraintG3 = solver.makeConstraint(1, 1, "");
     for (int i = 0; i < group3.length; ++i) {
       // a*b can be transformed into 0 <= a + b - 2*p <= 1 with p in [0,1]
       // p is True if a AND b, False otherwise
@@ -175,7 +174,7 @@ public class AssignmentGroupsMip {
       MPVariable p = solver.makeBoolVar("g3_p" + i);
       constraint.setCoefficient(p, -2);
 
-      constraint_g3.setCoefficient(p, 1);
+      constraintG3.setCoefficient(p, 1);
     }
     // [END assignments]
 

@@ -28,9 +28,9 @@
 #include <algorithm>
 #include <string>
 
-#include "absl/strings/match.h"
-#include "ortools/base/file.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/file.h"
+#include "absl/strings/match.h"
 
 // Implements the minimum interface for a range-based for loop iterator.
 class FileLineIterator {

@@ -360,6 +360,17 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "filelineiter",
+    hdrs = ["filelineiter.h"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:file",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
 #cc_library(
 #    name = "tsplib_parser",
 #    srcs = ["tsplib_parser.cc"],

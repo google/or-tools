@@ -20,6 +20,7 @@
 #include "absl/status/statusor.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_split.h"
+#include "ortools/base/protobuf_util.h"
 #include "ortools/base/status_builder.h"
 #include "ortools/lp_data/lp_types.h"
 
