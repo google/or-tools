@@ -10,4 +10,5 @@ BasedOnStyle:  Google
 ---
 Language:      CSharp
 BasedOnStyle:  Microsoft
+NamespaceIndentation: None
 ...
