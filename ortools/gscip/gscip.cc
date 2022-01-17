@@ -171,6 +171,29 @@ SCIP_PARAMSETTING ConvertMetaParamValue(
   }
 }
 
+absl::Status CheckSolutionsInOrder(const GScipResult& result,
+                                   const bool is_maximize) {
+  auto objective_as_good_as = [is_maximize](double left, double right) {
+    if (is_maximize) {
+      return left >= right;
+    }
+    return left <= right;
+  };
+  for (int i = 1; i < result.objective_values.size(); ++i) {
+    const double previous = result.objective_values[i - 1];
+    const double current = result.objective_values[i];
+    if (!objective_as_good_as(previous, current)) {
+      return util::InternalErrorBuilder()
+             << "Expected SCIP solutions to be in best objective order "
+                "first, but for "
+             << (is_maximize ? "maximization" : "minimization")
+             << " problem, the " << i - 1 << " objective is " << previous
+             << " and the " << i << " objective is " << current;
+    }
+  }
+  return absl::OkStatus();
+}
+
 }  // namespace
 
 const GScipVariableOptions& DefaultGScipVariableOptions() {
@@ -779,6 +802,10 @@ absl::StatusOr<GScipResult> GScip::Solve(
     RETURN_IF_SCIP_ERROR(SCIPwriteOrigProblem(
         scip_, params.scip_model_filename().c_str(), "cip", FALSE));
   }
+  if (params.has_objective_limit()) {
+    RETURN_IF_SCIP_ERROR(
+        SCIPsetObjlimit(scip_, ScipInfClamp(params.objective_limit())));
+  }
 
   // Install the message handler if necessary. We do this after setting the
   // parameters so that parameters that applies to the default message handler
@@ -855,6 +882,7 @@ absl::StatusOr<GScipResult> GScip::Solve(
     result.solutions.push_back(solution);
     result.objective_values.push_back(obj_value);
   }
+  RETURN_IF_ERROR(CheckSolutionsInOrder(result, ObjectiveIsMaximize()));
   // Can only check for primal ray if we made it past presolve.
   if (stage != SCIP_STAGE_PRESOLVING && SCIPhasPrimalRay(scip_)) {
     for (SCIP_VAR* v : variables_) {
@@ -888,6 +916,9 @@ absl::StatusOr<GScipResult> GScip::Solve(
     // resetting it, the last new_handler_disabler would disable the handler and
     // the remainder of the buffer content would be lost.
     new_handler.reset();
+  }
+  if (params.has_objective_limit()) {
+    RETURN_IF_SCIP_ERROR(SCIPsetObjlimit(scip_, SCIP_INVALID));
   }
 
   RETURN_IF_SCIP_ERROR(SCIPresetParams(scip_));
