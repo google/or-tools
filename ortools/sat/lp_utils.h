@@ -135,25 +135,6 @@ bool ConvertBinaryMPModelProtoToBooleanProblem(const MPModelProto& mp_model,
 void ConvertBooleanProblemToLinearProgram(const LinearBooleanProblem& problem,
                                           glop::LinearProgram* lp);
 
-// Changes the variable bounds of the lp to reflect the variables that have been
-// fixed by the SAT solver (i.e. assigned at decision level 0). Returns the
-// number of variables fixed this way.
-int FixVariablesFromSat(const SatSolver& solver, glop::LinearProgram* lp);
-
-// Solves the given lp problem and uses the lp solution to drive the SAT solver
-// polarity choices. The variable must have the same index in the solved lp
-// problem and in SAT for this to make sense.
-//
-// Returns false if a problem occurred while trying to solve the lp.
-bool SolveLpAndUseSolutionForSatAssignmentPreference(
-    const glop::LinearProgram& lp, SatSolver* sat_solver,
-    double max_time_in_seconds);
-
-// Solves the lp and add constraints to fix the integer variable of the lp in
-// the LinearBoolean problem.
-bool SolveLpAndUseIntegerVariableToStartLNS(const glop::LinearProgram& lp,
-                                            LinearBooleanProblem* problem);
-
 }  // namespace sat
 }  // namespace operations_research
 

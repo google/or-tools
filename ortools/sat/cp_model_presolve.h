@@ -306,6 +306,9 @@ CpSolverStatus PresolveCpModel(PresolveContext* context,
 // - We ignore names when comparing constraint.
 // - For linear constraints, we ignore the domain. This is because we can
 //   just merge them if the constraints are the same.
+// - We return the special kObjectiveConstraint (< 0) representative if a linear
+//   constraint is parallel to the objective and has no enforcement literals.
+//   The domain of such constraint can just be merged with the objective domain.
 //
 // Visible here for testing. This is meant to be called at the end of the
 // presolve where constraints have been canonicalized.

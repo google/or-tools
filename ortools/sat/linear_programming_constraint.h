@@ -429,6 +429,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   CoverCutHelper cover_cut_helper_;
   IntegerRoundingCutHelper integer_rounding_cut_helper_;
   LinearConstraint cut_;
+  LinearConstraint tmp_constraint_;
 
   ScatteredIntegerVector tmp_scattered_vector_;
 
@@ -437,6 +438,12 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   std::vector<IntegerValue> tmp_var_ubs_;
   std::vector<glop::RowIndex> tmp_slack_rows_;
   std::vector<IntegerValue> tmp_slack_bounds_;
+  std::vector<ImpliedBoundsProcessor::SlackInfo> tmp_ib_slack_infos_;
+  std::vector<std::pair<glop::ColIndex, IntegerValue>> tmp_terms_;
+
+  // Used by AddCGCuts().
+  std::vector<std::pair<glop::RowIndex, double>> tmp_lp_multipliers_;
+  std::vector<std::pair<glop::RowIndex, IntegerValue>> tmp_integer_multipliers_;
 
   // Used by ScaleLpMultiplier().
   mutable std::vector<std::pair<glop::RowIndex, double>> tmp_cp_multipliers_;

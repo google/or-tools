@@ -1826,7 +1826,8 @@ bool CpModelPresolver::PresolveLinearOfSizeOne(ConstraintProto* ct) {
   // replace x by abs_arg and hopefully remove the variable x later.
   int abs_arg;
   if (ct->linear().coeffs(0) == 1 &&
-      context_->GetAbsRelation(ct->linear().vars(0), &abs_arg)) {
+      context_->GetAbsRelation(ct->linear().vars(0), &abs_arg) &&
+      PositiveRef(ct->linear().vars(0)) != PositiveRef(abs_arg)) {
     // TODO(user): Deal with coeff = -1, here or during canonicalization.
     context_->UpdateRuleStats("linear1: remove abs from abs(x) in domain");
     const Domain implied_abs_target_domain =
@@ -1847,15 +1848,12 @@ bool CpModelPresolver::PresolveLinearOfSizeOne(ConstraintProto* ct) {
       return MarkConstraintAsFalse(ct);
     }
 
-    ConstraintProto* new_ct = context_->working_model->add_constraints();
-    new_ct->set_name(ct->name());
-    *new_ct->mutable_enforcement_literal() = ct->enforcement_literal();
-    auto* arg = new_ct->mutable_linear();
-    arg->add_vars(abs_arg);
-    arg->add_coeffs(1);
-    FillDomainInProto(new_abs_var_domain, new_ct->mutable_linear());
-    context_->UpdateNewConstraintsVariableUsage();
-    return RemoveConstraint(ct);
+    // Modify the constraint in-place.
+    ct->clear_linear();
+    ct->mutable_linear()->add_vars(PositiveRef(abs_arg));
+    ct->mutable_linear()->add_coeffs(1);
+    FillDomainInProto(new_abs_var_domain, ct->mutable_linear());
+    return true;
   }
 
   // Detect encoding.
@@ -7725,6 +7723,7 @@ CpSolverStatus CpModelPresolver::Presolve() {
   if (context_->ModelIsUnsat()) return InfeasibleStatus();
 
   // Remove duplicate constraints.
+  // Note that at this point the objective in the proto should be up to date.
   //
   // TODO(user): We might want to do that earlier so that our count of variable
   // usage is not biased by duplicate constraints.
@@ -7733,8 +7732,11 @@ CpSolverStatus CpModelPresolver::Presolve() {
   for (const auto [dup, rep] : duplicates) {
     // Note that it is important to look at the type of the representative in
     // case the constraint became empty.
+    DCHECK_LT(kObjectiveConstraint, 0);
     const int type =
-        context_->working_model->constraints(rep).constraint_case();
+        rep == kObjectiveConstraint
+            ? kObjectiveConstraint
+            : context_->working_model->constraints(rep).constraint_case();
 
     // TODO(user): we could delete duplicate identical interval, but we need
     // to make sure reference to them are updated.
@@ -7745,13 +7747,13 @@ CpSolverStatus CpModelPresolver::Presolve() {
     // For linear constraint, we merge their rhs since it was ignored in the
     // FindDuplicateConstraints() call.
     if (type == ConstraintProto::kLinear) {
-      const Domain d1 = ReadDomainFromProto(
+      const Domain rep_domain = ReadDomainFromProto(
           context_->working_model->constraints(rep).linear());
-      const Domain d2 = ReadDomainFromProto(
+      const Domain d = ReadDomainFromProto(
           context_->working_model->constraints(dup).linear());
-      if (d1 != d2) {
+      if (rep_domain != d) {
         context_->UpdateRuleStats("duplicate: merged rhs of linear constraint");
-        const Domain rhs = d1.IntersectionWith(d2);
+        const Domain rhs = rep_domain.IntersectionWith(d);
         if (rhs.IsEmpty()) {
           if (!MarkConstraintAsFalse(
                   context_->working_model->mutable_constraints(rep))) {
@@ -7767,6 +7769,27 @@ CpSolverStatus CpModelPresolver::Presolve() {
         }
         FillDomainInProto(rhs, context_->working_model->mutable_constraints(rep)
                                    ->mutable_linear());
+      }
+    }
+
+    if (type == kObjectiveConstraint) {
+      context_->UpdateRuleStats(
+          "duplicate: linear constraint parallel to objective");
+      const Domain objective_domain =
+          ReadDomainFromProto(context_->working_model->objective());
+      const Domain d = ReadDomainFromProto(
+          context_->working_model->constraints(dup).linear());
+      if (objective_domain != d) {
+        context_->UpdateRuleStats("duplicate: updated objective domain");
+        const Domain new_domain = objective_domain.IntersectionWith(d);
+        if (new_domain.IsEmpty()) {
+          (void)context_->NotifyThatModelIsUnsat(
+              "Constraint parallel to the objective makes the objective domain "
+              "empty.");
+          return InfeasibleStatus();
+        }
+        FillDomainInProto(new_domain,
+                          context_->working_model->mutable_objective());
       }
     }
 
@@ -8041,6 +8064,7 @@ void ApplyVariableMapping(const std::vector<int>& mapping,
 }
 
 namespace {
+
 ConstraintProto CopyConstraintForDuplicateDetection(const ConstraintProto& ct) {
   ConstraintProto copy = ct;
   copy.clear_name();
@@ -8049,6 +8073,16 @@ ConstraintProto CopyConstraintForDuplicateDetection(const ConstraintProto& ct) {
   }
   return copy;
 }
+
+// We ignore all the fields but the linear expression.
+ConstraintProto CopyObjectiveForDuplicateDetection(
+    const CpObjectiveProto& objective) {
+  ConstraintProto copy;
+  *copy.mutable_linear()->mutable_vars() = objective.vars();
+  *copy.mutable_linear()->mutable_coeffs() = objective.coeffs();
+  return copy;
+}
+
 }  // namespace
 
 std::vector<std::pair<int, int>> FindDuplicateConstraints(
@@ -8057,9 +8091,16 @@ std::vector<std::pair<int, int>> FindDuplicateConstraints(
 
   // We use a map hash: serialized_constraint_proto hash -> constraint index.
   ConstraintProto copy;
+  std::string s;
   absl::flat_hash_map<uint64_t, int> equiv_constraints;
 
-  std::string s;
+  // Create a special representative for the linear objective.
+  if (model_proto.has_objective()) {
+    copy = CopyObjectiveForDuplicateDetection(model_proto.objective());
+    s = copy.SerializeAsString();
+    equiv_constraints[absl::Hash<std::string>()(s)] = kObjectiveConstraint;
+  }
+
   const int num_constraints = model_proto.constraints().size();
   for (int c = 0; c < num_constraints; ++c) {
     if (model_proto.constraints(c).constraint_case() ==
@@ -8078,8 +8119,10 @@ std::vector<std::pair<int, int>> FindDuplicateConstraints(
     if (!inserted) {
       // Already present!
       const int other_c_with_same_hash = it->second;
-      copy = CopyConstraintForDuplicateDetection(
-          model_proto.constraints(other_c_with_same_hash));
+      copy = other_c_with_same_hash == kObjectiveConstraint
+                 ? CopyObjectiveForDuplicateDetection(model_proto.objective())
+                 : CopyConstraintForDuplicateDetection(
+                       model_proto.constraints(other_c_with_same_hash));
       if (s == copy.SerializeAsString()) {
         result.push_back({c, other_c_with_same_hash});
       }
