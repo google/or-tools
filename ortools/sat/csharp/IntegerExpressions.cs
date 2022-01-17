@@ -52,7 +52,7 @@ internal static class HelperExtensions
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void TrySetCapacity<TField, TValues>(this RepeatedField<TField> field, IEnumerable<TValues> values)
+    internal static void TrySetCapacity<TField, TValues>(this RepeatedField<TField> field, IEnumerable<TValues> values)
     {
         if (values is ICollection<TValues> collection)
         {
@@ -61,7 +61,7 @@ internal static class HelperExtensions
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void TryEnsureCapacity<TValue, TValues>(this List<TValue> list, IEnumerable<TValues> values)
+    internal static void TryEnsureCapacity<TValue, TValues>(this List<TValue> list, IEnumerable<TValues> values)
     {
         // Check for ICollection as the generic version is not covariant and TValues could be LinearExpr, IntVar, ...
         if (values is ICollection collection)
@@ -72,7 +72,7 @@ internal static class HelperExtensions
 
 #if NETFRAMEWORK
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool TryDequeue<T>(this Queue<T> queue, out T value)
+    internal static bool TryDequeue<T>(this Queue<T> queue, out T value)
     {
         if (queue.Count > 0)
         {
@@ -344,7 +344,7 @@ public class LinearExpr
         return new BoundedLinearExpression(Int64.MinValue, a - b, -1);
     }
 
-    public static LinearExpr Prod(LinearExpr e, long v)
+    internal static LinearExpr Prod(LinearExpr e, long v)
     {
         if (v == 0)
         {
@@ -360,7 +360,7 @@ public class LinearExpr
         }
     }
 
-    public static long GetVarValueMap(LinearExpr e, long initial_coeff, Dictionary<IntVar, long> dict,
+    internal static long GetVarValueMap(LinearExpr e, long initial_coeff, Dictionary<IntVar, long> dict,
                                       Queue<Term> terms)
     {
         long constant = 0;
@@ -411,7 +411,7 @@ public class LinearExpr
         return constant;
     }
 
-    public static LinearExpr RebuildLinearExprFromLinearExpressionProto(LinearExpressionProto proto, CpModelProto model)
+    internal static LinearExpr RebuildLinearExprFromLinearExpressionProto(LinearExpressionProto proto, CpModelProto model)
     {
         int numElements = proto.Vars.Count;
         long offset = proto.Offset;

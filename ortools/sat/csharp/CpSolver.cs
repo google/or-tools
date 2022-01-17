@@ -22,7 +22,7 @@ namespace Google.OrTools.Sat
  * Wrapper around the SAT solver.
  * </summary>
  *
- * <remarks>This class proposes a <code>Solve()</code> method, as well as accessors to get the values of
+ * <remarks>This class proposes a <c>Solve()</c> method, as well as accessors to get the values of
  * variables in the best solution, as well as general statistics of the search.
  * </remarks>
  */
