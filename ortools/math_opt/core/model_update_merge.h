@@ -18,6 +18,7 @@
 #include <cstdint>
 
 #include "ortools/base/logging.h"
+#include "ortools/base/protobuf_util.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/model_update.pb.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
