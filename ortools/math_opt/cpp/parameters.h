@@ -22,7 +22,7 @@
 #include "absl/types/span.h"
 #include "ortools/base/linked_hash_map.h"
 #include "ortools/glop/parameters.pb.h"  // IWYU pragma: export
-#include "ortools/gscip/gscip.pb.h"  // IWYU pragma: export
+#include "ortools/gscip/gscip.pb.h"   // IWYU pragma: export
 #include "ortools/math_opt/cpp/enums.h"  // IWYU pragma: export
 #include "ortools/math_opt/parameters.pb.h"
 #include "ortools/math_opt/solvers/gurobi.pb.h"  // IWYU pragma: export
@@ -214,8 +214,8 @@ struct SolveParameters {
   // The solver stops early if it can prove there are no primal solutions at
   // least as good as cutoff.
   //
-  // On an early stop, the solver returns termination reason kLimitReached and
-  // with limit kCutoff and is not required to give any extra solution
+  // On an early stop, the solver returns termination reason kNoSolutionFound
+  // and with limit kCutoff and is not required to give any extra solution
   // information. Has no effect on the return value if there is no early stop.
   //
   // It is recommended that you use a tolerance if you want solutions with
@@ -225,17 +225,19 @@ struct SolveParameters {
   std::optional<double> cutoff_limit;
 
   // The solver stops early as soon as it finds a solution at least this good,
-  // with termination reason kLimitReached and limit kObjective.
+  // with termination reason kFeasible or kNoSolutionFound and limit kObjective.
+  // TODO(b/214567536): maybe it should only be kFeasible.
   std::optional<double> objective_limit;
 
   // The solver stops early as soon as it proves the best bound is at least this
-  // good, with termination reason kLimitReached and limit kObjective.
+  // good, with termination reason kFeasible or kNoSolutionFound and limit
+  // kObjective.
   //
   // See the user guide for a comparison with cutoff_limit.
   std::optional<double> best_bound_limit;
 
   // The solver stops early after finding this many feasible solutions, with
-  // termination reason kLimitReached and limit kSolution. Must be greater than
+  // termination reason kFeasible and limit kSolution. Must be greater than
   // zero if set. It is often used get the solver to stop on the first feasible
   // solution found. Note that there is no guarantee on the objective value for
   // any of the returned solutions.

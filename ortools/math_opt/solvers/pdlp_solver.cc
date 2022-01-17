@@ -138,11 +138,11 @@ absl::StatusOr<TerminationProto> ConvertReason(
       return TerminateForReason(TERMINATION_REASON_INFEASIBLE_OR_UNBOUNDED,
                                 pdlp_detail);
     case pdlp::TERMINATION_REASON_TIME_LIMIT:
-      return TerminateForLimit(LIMIT_TIME, pdlp_detail);
+      return NoSolutionFoundTermination(LIMIT_TIME, pdlp_detail);
     case pdlp::TERMINATION_REASON_ITERATION_LIMIT:
-      return TerminateForLimit(LIMIT_ITERATION, pdlp_detail);
+      return NoSolutionFoundTermination(LIMIT_ITERATION, pdlp_detail);
     case pdlp::TERMINATION_REASON_KKT_MATRIX_PASS_LIMIT:
-      return TerminateForLimit(LIMIT_OTHER, pdlp_detail);
+      return NoSolutionFoundTermination(LIMIT_OTHER, pdlp_detail);
     case pdlp::TERMINATION_REASON_NUMERICAL_ERROR:
       return TerminateForReason(TERMINATION_REASON_NUMERICAL_ERROR,
                                 pdlp_detail);

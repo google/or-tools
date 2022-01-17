@@ -91,8 +91,16 @@ class SparseVectorFilterPredicate {
 absl::flat_hash_set<CallbackEventProto> EventSet(
     const CallbackRegistrationProto& callback_registration);
 
-TerminationProto TerminateForLimit(LimitProto limit,
+// Sets the reason to TERMINATION_REASON_FEASIBLE if feasible = true and
+// TERMINATION_REASON_NO_SOLUTION_FOUND otherwise.
+TerminationProto TerminateForLimit(const LimitProto limit, bool feasible,
                                    absl::string_view detail = {});
+
+TerminationProto FeasibleTermination(const LimitProto limit,
+                                     absl::string_view detail = {});
+
+TerminationProto NoSolutionFoundTermination(const LimitProto limit,
+                                            absl::string_view detail = {});
 
 TerminationProto TerminateForReason(TerminationReasonProto reason,
                                     absl::string_view detail = {});

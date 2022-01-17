@@ -145,9 +145,15 @@ enum TerminationReasonProto {
   // they are responsible for dealing with the numerical imprecision.
   TERMINATION_REASON_IMPRECISE = 5;
 
-  // The optimizer reached some kind of limit. Partial solution information
-  // may be available. See SolveResultProto.limit_detail for more detail.
-  TERMINATION_REASON_LIMIT_REACHED = 6;
+  // The optimizer reached some kind of limit and a primal feasible solution
+  // is returned. See SolveResultProto.limit_detail for detailed description of
+  // the kind of limit that was reached.
+  TERMINATION_REASON_FEASIBLE = 9;
+
+  // The optimizer reached some kind of limit and it did not find a primal
+  // feasible solution. See SolveResultProto.limit_detail for detailed
+  // description of the kind of limit that was reached.
+  TERMINATION_REASON_NO_SOLUTION_FOUND = 6;
 
   // The algorithm stopped because it encountered unrecoverable numerical
   // error. No solution information is available.
@@ -158,8 +164,8 @@ enum TerminationReasonProto {
   TERMINATION_REASON_OTHER_ERROR = 8;
 }
 
-// When a Solve() stops early with TerminationReasonProto LIMIT_REACHED, the
-// specific limit that was hit.
+// When a Solve() stops early with TerminationReasonProto FEASIBLE or
+// NO_SOLUTION_FOUND, the specific limit that was hit.
 enum LimitProto {
   // Used as a null value when we terminated not from a limit (e.g.
   // TERMINATION_REASON_OPTIMAL).
@@ -223,9 +229,10 @@ enum LimitProto {
 message TerminationProto {
   TerminationReasonProto reason = 1;
 
-  // Is LIMIT_UNSPECIFIED unless reason is TERMINATION_REASON_LIMIT_REACHED.
-  // Not all solvers can always determine the limit which caused termination,
-  // LIMIT_UNDETERMINED is used when the cause cannot be determined.
+  // Is LIMIT_UNSPECIFIED unless reason is TERMINATION_REASON_FEASIBLE or
+  // TERMINATION_REASON_NO_SOLUTION_FOUND. Not all solvers can always determine
+  // the limit which caused termination, LIMIT_UNDETERMINED is used when the
+  // cause cannot be determined.
   LimitProto limit = 2;
 
   // Additional typically solver specific information about termination.

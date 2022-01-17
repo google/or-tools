@@ -14,8 +14,6 @@
 #ifndef OR_TOOLS_MATH_OPT_CPP_SOLUTION_H_
 #define OR_TOOLS_MATH_OPT_CPP_SOLUTION_H_
 
-// IWYU pragma: private, include "ortools/math_opt/cpp/math_opt.h"
-
 #include <optional>
 
 #include "absl/types/optional.h"

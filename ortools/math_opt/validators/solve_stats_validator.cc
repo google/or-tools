@@ -77,6 +77,32 @@ absl::Status CheckPrimalStatusIs(const ProblemStatusProto& status,
 }
 
 // Assumes ValidateProblemStatus(status) is ok.
+absl::Status CheckPrimalStatusIsNot(
+    const ProblemStatusProto& status,
+    const FeasibilityStatusProto forbidden_status) {
+  const FeasibilityStatusProto actual_status = status.primal_status();
+  if (actual_status != forbidden_status) {
+    return absl::OkStatus();
+  }
+  return absl::InvalidArgumentError(
+      absl::StrCat("expected problem_status.primal_status != ",
+                   ProtoEnumToString(forbidden_status)));
+}
+
+// Assumes ValidateProblemStatus(status) is ok.
+absl::Status CheckDualStatusIsNot(
+    const ProblemStatusProto& status,
+    const FeasibilityStatusProto forbidden_status) {
+  const FeasibilityStatusProto actual_status = status.dual_status();
+  if (actual_status != forbidden_status) {
+    return absl::OkStatus();
+  }
+  return absl::InvalidArgumentError(
+      absl::StrCat("expected problem_status.dual_status != ",
+                   ProtoEnumToString(forbidden_status)));
+}
+
+// Assumes ValidateProblemStatus(status) is ok.
 absl::Status CheckDualStatusIs(const ProblemStatusProto& status,
                                const FeasibilityStatusProto required_status,
                                const bool primal_or_dual_infeasible_also_ok) {

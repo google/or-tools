@@ -47,11 +47,17 @@ absl::Status ValidateTermination(const TerminationProto& termination) {
   if (termination.reason() == TERMINATION_REASON_UNSPECIFIED) {
     return absl::InvalidArgumentError("termination reason must be specified");
   }
-  if (termination.reason() == TERMINATION_REASON_LIMIT_REACHED) {
+  if (termination.reason() == TERMINATION_REASON_FEASIBLE ||
+      termination.reason() == TERMINATION_REASON_NO_SOLUTION_FOUND) {
     if (termination.limit() == LIMIT_UNSPECIFIED) {
       return absl::InvalidArgumentError(
-          "for reason TERMINATION_REASON_LIMIT_REACHED, limit must be "
-          "specified");
+          absl::StrCat("for reason ", ProtoEnumToString(termination.reason()),
+                       ", limit must be specified"));
+    }
+    if (termination.limit() == LIMIT_CUTOFF &&
+        termination.reason() == TERMINATION_REASON_FEASIBLE) {
+      return absl::InvalidArgumentError(
+          "For LIMIT_CUTOFF expected no solutions");
     }
   } else {
     if (termination.limit() != LIMIT_UNSPECIFIED) {
@@ -233,17 +239,27 @@ absl::Status ValidateTerminationConsistency(const SolveResultProto& result) {
     case TERMINATION_REASON_IMPRECISE:
       // TODO(b/211679884): update when imprecise solutions are added.
       return absl::OkStatus();
-    case TERMINATION_REASON_LIMIT_REACHED:
-      // TODO(b/211677729): update when TERMINATION_REASON_FEASIBLE is added.
-      // No primal or dual requirements so we check consistency.
-      if (result.termination().limit() == LIMIT_CUTOFF) {
-        if (result.solutions_size() > 0) {
-          return absl::InvalidArgumentError(
-              "For LIMIT_CUTOFF expected no solutions");
-        }
-      }
-      RETURN_IF_ERROR(CheckPrimalSolutionAndStatusConsistency(result));
+    case TERMINATION_REASON_FEASIBLE:
+      RETURN_IF_ERROR(CheckPrimalStatusIs(status, FEASIBILITY_STATUS_FEASIBLE));
+      RETURN_IF_ERROR(CheckHasPrimalSolution(result));
+      RETURN_IF_ERROR(
+          CheckDualStatusIsNot(status, FEASIBILITY_STATUS_INFEASIBLE));
+      // Primal requirement implies primal solution-status consistency so we
+      // only check dual consistency.
       RETURN_IF_ERROR(CheckDualSolutionAndStatusConsistency(result));
+      // Note if dual status was FEASIBILITY_STATUS_INFEASIBLE, then we would
+      // have TERMINATION_REASON_UNBOUNDED (For MIP this follows tha assumption
+      // that every floating point ray can be scaled to be integer).
+      return absl::OkStatus();
+    case TERMINATION_REASON_NO_SOLUTION_FOUND:
+      RETURN_IF_ERROR(RequireNoPrimalFeasibleSolution(result));
+      RETURN_IF_ERROR(
+          CheckPrimalStatusIsNot(status, FEASIBILITY_STATUS_INFEASIBLE));
+      // Primal requirement implies primal solution-status consistency so we
+      // only check dual consistency.
+      RETURN_IF_ERROR(CheckDualSolutionAndStatusConsistency(result));
+      // Note if primal status was FEASIBILITY_STATUS_INFEASIBLE, then we would
+      // have TERMINATION_REASON_INFEASIBLE.
       return absl::OkStatus();
     case TERMINATION_REASON_NUMERICAL_ERROR:
     case TERMINATION_REASON_OTHER_ERROR: {

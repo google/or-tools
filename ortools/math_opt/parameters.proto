@@ -51,7 +51,7 @@ enum SolverTypeProto {
   // It supports solving IPs and can scale MIPs to solve them as IPs.
   SOLVER_TYPE_CP_SAT = 4;
 
-  SOLVER_TYPE_RESERVED_FIVE = 5;
+  reserved 5;
 
   // GNU Linear Programming Kit (GLPK).
   //
@@ -69,7 +69,7 @@ enum SolverTypeProto {
   // for details.
   SOLVER_TYPE_GLPK = 6;
 
-  SOLVER_TYPE_RESERVED_SEVEN = 7;
+  reserved 7;
 }
 
 // Selects an algorithm for solving linear programs.
@@ -172,9 +172,10 @@ message SolveParametersProto {
   // The solver stops early if it can prove there are no primal solutions at
   // least as good as cutoff.
   //
-  // On an early stop, the solver returns termination reason LIMIT_REACHED and
-  // with limit CUTOFF and is not required to give any extra solution
-  // information. Has no effect on the return value if there is no early stop.
+  // On an early stop, the solver returns termination reason
+  // LIMIT_NO_SOLUTION_FOUND and with limit CUTOFF and is not required to give
+  // any extra solution information. Has no effect on the return value if there
+  // is no early stop.
   //
   // It is recommended that you use a tolerance if you want solutions with
   // objective exactly equal to cutoff to be returned.
@@ -183,17 +184,20 @@ message SolveParametersProto {
   optional double cutoff_limit = 20;
 
   // The solver stops early as soon as it finds a solution at least this good,
-  // with termination reason LIMIT_REACHED and limit LIMIT_OBJECTIVE.
+  // with termination reason LIMIT_FEASIBLE or LIMIT_NO_SOLUTION_FOUND and
+  // limit LIMIT_OBJECTIVE.
+  // TODO(b/214567536): maybe it should only be LIMIT_FEASIBLE.
   optional double objective_limit = 21;
 
   // The solver stops early as soon as it proves the best bound is at least this
-  // good, with termination reason LIMIT_REACHED and limit LIMIT_OBJECTIVE.
+  // good, with termination reason LIMIT_FEASIBLE or LIMIT_NO_SOLUTION_FOUND and
+  // limit LIMIT_OBJECTIVE.
   //
   // See the user guide for more details and a comparison with cutoff_limit.
   optional double best_bound_limit = 22;
 
   // The solver stops early after finding this many feasible solutions, with
-  // termination reason LIMIT_REACHED and limit LIMIT_SOLUTION. Must be greater
+  // termination reason LIMIT_FEASIBLE and limit LIMIT_SOLUTION. Must be greater
   // than zero if set. It is often used get the solver to stop on the first
   // feasible solution found. Note that there is no guarantee on the objective
   // value for any of the returned solutions.

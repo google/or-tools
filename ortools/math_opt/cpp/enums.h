@@ -142,8 +142,8 @@ struct Enum {
   // input value is not a valid value of the enum.
   //
   // The returned string should not include the enum name and should be in
-  // snake_case (e.g. is the enum is kLimitReached, this should return
-  // "limit_reached").
+  // snake_case (e.g. is the enum is kNoSolutionFound, this should return
+  // "no_solution_found").
   //
   // Please prefer using the global functions EnumToString() (or
   // EnumToOptString() if support for invalid values is needed) instead to

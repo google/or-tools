@@ -172,9 +172,15 @@ enum class TerminationReason {
   // they are responsible for dealing with the numerical imprecision.
   kImprecise = TERMINATION_REASON_IMPRECISE,
 
-  // The optimizer reached some kind of limit. Partial solution information
-  // may be available. See Termination::limit for more detail.
-  kLimitReached = TERMINATION_REASON_LIMIT_REACHED,
+  // The optimizer reached some kind of limit and a primal feasible solution
+  // is returned. See SolveResultProto.limit_detail for detailed description of
+  // the kind of limit that was reached.
+  kFeasible = TERMINATION_REASON_FEASIBLE,
+
+  // The optimizer reached some kind of limit and it did not find a primal
+  // feasible solution. See SolveResultProto.limit_detail for detailed
+  // description of the kind of limit that was reached.
+  kNoSolutionFound = TERMINATION_REASON_NO_SOLUTION_FOUND,
 
   // The algorithm stopped because it encountered unrecoverable numerical
   // error. No solution information is available.
@@ -187,8 +193,8 @@ enum class TerminationReason {
 
 MATH_OPT_DEFINE_ENUM(TerminationReason, TERMINATION_REASON_UNSPECIFIED);
 
-// When a Solve() stops early with TerminationReason kLimitReached, the
-// specific limit that was hit.
+// When a Solve() stops early with TerminationReason kFeasible or
+// kNoSolutionFound, the specific limit that was hit.
 enum class Limit {
   // Used if the underlying solver cannot determine which limit was reached, or
   // as a null value when we terminated not from a limit (e.g. kOptimal).
@@ -246,16 +252,13 @@ MATH_OPT_DEFINE_ENUM(Limit, LIMIT_UNSPECIFIED);
 
 // All information regarding why a call to Solve() terminated.
 struct Termination {
-  // When the reason is kLimitReached, please prefer using the other
-  // constructor that enables setting the limit.
+  // When the reason is kFeasible or kNoSolutionFound, please use the static
+  // functions Feasible and NoSolutionFound.
   explicit Termination(TerminationReason reason, std::string detail = {});
-
-  // Sets the reason to kLimitReached.
-  explicit Termination(Limit limit, std::string detail = {});
 
   TerminationReason reason;
 
-  // Is set iff reason is kLimitReached.
+  // Is set iff reason is kFeasible or kNoSolutionFound.
   std::optional<Limit> limit;
 
   // Additional typically solver specific information about termination.
@@ -263,10 +266,22 @@ struct Termination {
   // Limit::kUndetermined is used when the cause cannot be determined.
   std::string detail;
 
+  // Returns true if a limit was reached (i.e. if reason is kFeasible or
+  // kNoSolutionFound, and limit is not empty).
+  bool limit_reached() const;
+
   // Will CHECK fail on invalid input, if reason is unspecified, if limit is
-  // set when reason is not LIMIT_REACHED, or if limit is unspecified when
-  // reason is LIMIT_REACHED (see solution_validator.h).
+  // set when reason is not TERMINATION_REASON_FEASIBLE or
+  // TERMINATION_REASON_NO_SOLUTION_FOUND, or if limit is unspecified when
+  // reason is TERMINATION_REASON_FEASIBLE or
+  // TERMINATION_REASON_NO_SOLUTION_FOUND (see solution_validator.h).
   static Termination FromProto(const TerminationProto& termination_proto);
+
+  // Sets the reason to kFeasible
+  static Termination Feasible(Limit limit, std::string detail = {});
+
+  // Sets the reason to kNoSolutionFound
+  static Termination NoSolutionFound(Limit limit, std::string detail = {});
 
   TerminationProto ToProto() const;
   std::string ToString() const;
@@ -330,9 +345,15 @@ struct SolveResult {
   // if there are no primal feasible solutions.
   double objective_value() const;
 
+  // A bound on the best possible objective value.
+  double best_objective_bound() const;
+
   // The variable values from the best primal feasible solution. Will CHECK fail
   // if there are no primal feasible solutions.
   const VariableMap<double>& variable_values() const;
+
+  // Returns true only if the problem has been shown to be feasible and bounded.
+  bool bounded() const;
 
   // Indicates if at least one primal ray is available.
   //

@@ -576,36 +576,44 @@ absl::StatusOr<TerminationProto> ConvertTerminationReason(
   switch (gscip_status) {
     case GScipOutput::USER_INTERRUPT:
       return TerminateForLimit(
-          LIMIT_INTERRUPTED,
+          LIMIT_INTERRUPTED, /*feasible=*/has_feasible_solution,
           JoinDetails(gscip_status_detail,
                       "underlying gSCIP status: USER_INTERRUPT"));
     case GScipOutput::NODE_LIMIT:
       return TerminateForLimit(
-          LIMIT_NODE, JoinDetails(gscip_status_detail,
-                                  "underlying gSCIP status: NODE_LIMIT"));
+          LIMIT_NODE, /*feasible=*/has_feasible_solution,
+          JoinDetails(gscip_status_detail,
+                      "underlying gSCIP status: NODE_LIMIT"));
     case GScipOutput::TOTAL_NODE_LIMIT:
       return TerminateForLimit(
-          LIMIT_NODE, JoinDetails(gscip_status_detail,
-                                  "underlying gSCIP status: TOTAL_NODE_LIMIT"));
+          LIMIT_NODE, /*feasible=*/has_feasible_solution,
+          JoinDetails(gscip_status_detail,
+                      "underlying gSCIP status: TOTAL_NODE_LIMIT"));
     case GScipOutput::STALL_NODE_LIMIT:
-      return TerminateForLimit(LIMIT_SLOW_PROGRESS, gscip_status_detail);
+      return TerminateForLimit(LIMIT_SLOW_PROGRESS,
+                               /*feasible=*/has_feasible_solution,
+                               gscip_status_detail);
     case GScipOutput::TIME_LIMIT:
-      return TerminateForLimit(LIMIT_TIME, gscip_status_detail);
+      return TerminateForLimit(LIMIT_TIME, /*feasible=*/has_feasible_solution,
+                               gscip_status_detail);
     case GScipOutput::MEM_LIMIT:
-      return TerminateForLimit(LIMIT_MEMORY, gscip_status_detail);
+      return TerminateForLimit(LIMIT_MEMORY, /*feasible=*/has_feasible_solution,
+                               gscip_status_detail);
     case GScipOutput::SOL_LIMIT:
       return TerminateForLimit(
-          LIMIT_SOLUTION, JoinDetails(gscip_status_detail,
-                                      "underlying gSCIP status: SOL_LIMIT"));
+          LIMIT_SOLUTION, /*feasible=*/has_feasible_solution,
+          JoinDetails(gscip_status_detail,
+                      "underlying gSCIP status: SOL_LIMIT"));
     case GScipOutput::BEST_SOL_LIMIT:
       return TerminateForLimit(
-          LIMIT_SOLUTION,
+          LIMIT_SOLUTION, /*feasible=*/has_feasible_solution,
           JoinDetails(gscip_status_detail,
                       "underlying gSCIP status: BEST_SOL_LIMIT"));
     case GScipOutput::RESTART_LIMIT:
       return TerminateForLimit(
-          LIMIT_OTHER, JoinDetails(gscip_status_detail,
-                                   "underlying gSCIP status: RESTART_LIMIT"));
+          LIMIT_OTHER, /*feasible=*/has_feasible_solution,
+          JoinDetails(gscip_status_detail,
+                      "underlying gSCIP status: RESTART_LIMIT"));
     case GScipOutput::OPTIMAL:
       return TerminateForReason(
           TERMINATION_REASON_OPTIMAL,
@@ -617,7 +625,8 @@ absl::StatusOr<TerminationProto> ConvertTerminationReason(
                       "underlying gSCIP status: GAP_LIMIT"));
     case GScipOutput::INFEASIBLE:
       if (had_cutoff) {
-        return TerminateForLimit(LIMIT_CUTOFF, gscip_status_detail);
+        return TerminateForLimit(LIMIT_CUTOFF,
+                                 /*feasible=*/false, gscip_status_detail);
       } else {
         return TerminateForReason(TERMINATION_REASON_INFEASIBLE,
                                   gscip_status_detail);
@@ -647,8 +656,9 @@ absl::StatusOr<TerminationProto> ConvertTerminationReason(
 
     case GScipOutput::TERMINATE:
       return TerminateForLimit(
-          LIMIT_INTERRUPTED, JoinDetails(gscip_status_detail,
-                                         "underlying gSCIP status: TERMINATE"));
+          LIMIT_INTERRUPTED, /*feasible=*/has_feasible_solution,
+          JoinDetails(gscip_status_detail,
+                      "underlying gSCIP status: TERMINATE"));
     case GScipOutput::INVALID_SOLVER_PARAMETERS:
       return absl::InvalidArgumentError(gscip_status_detail);
     case GScipOutput::UNKNOWN:

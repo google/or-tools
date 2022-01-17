@@ -86,8 +86,10 @@ std::optional<absl::string_view> Enum<TerminationReason>::ToOptString(
       return "infeasible_or_unbounded";
     case TerminationReason::kImprecise:
       return "imprecise";
-    case TerminationReason::kLimitReached:
-      return "limit_reached";
+    case TerminationReason::kFeasible:
+      return "feasible";
+    case TerminationReason::kNoSolutionFound:
+      return "no_solution_found";
     case TerminationReason::kNumericalError:
       return "numerical_error";
     case TerminationReason::kOtherError:
@@ -103,7 +105,8 @@ absl::Span<const TerminationReason> Enum<TerminationReason>::AllValues() {
       TerminationReason::kUnbounded,
       TerminationReason::kInfeasibleOrUnbounded,
       TerminationReason::kImprecise,
-      TerminationReason::kLimitReached,
+      TerminationReason::kFeasible,
+      TerminationReason::kNoSolutionFound,
       TerminationReason::kNumericalError,
       TerminationReason::kOtherError,
   };
@@ -152,10 +155,18 @@ absl::Span<const Limit> Enum<Limit>::AllValues() {
 Termination::Termination(const TerminationReason reason, std::string detail)
     : reason(reason), detail(std::move(detail)) {}
 
-Termination::Termination(const Limit limit, std::string detail)
-    : reason(TerminationReason::kLimitReached),
-      limit(limit),
-      detail(std::move(detail)) {}
+Termination Termination::Feasible(const Limit limit, const std::string detail) {
+  Termination termination(TerminationReason::kFeasible, detail);
+  termination.limit = limit;
+  return termination;
+}
+
+Termination Termination::NoSolutionFound(const Limit limit,
+                                         const std::string detail) {
+  Termination termination(TerminationReason::kNoSolutionFound, detail);
+  termination.limit = limit;
+  return termination;
+}
 
 TerminationProto Termination::ToProto() const {
   TerminationProto proto;
@@ -167,12 +178,19 @@ TerminationProto Termination::ToProto() const {
   return proto;
 }
 
+bool Termination::limit_reached() const {
+  return reason == TerminationReason::kFeasible ||
+         reason == TerminationReason::kNoSolutionFound;
+}
+
 Termination Termination::FromProto(const TerminationProto& termination_proto) {
   const bool limit_reached =
-      termination_proto.reason() == TERMINATION_REASON_LIMIT_REACHED;
+      termination_proto.reason() == TERMINATION_REASON_FEASIBLE ||
+      termination_proto.reason() == TERMINATION_REASON_NO_SOLUTION_FOUND;
   const bool has_limit = termination_proto.limit() != LIMIT_UNSPECIFIED;
   CHECK_EQ(limit_reached, has_limit)
-      << "Termination reason should be LIMIT_REACHED if and only if limit is "
+      << "Termination reason should be TERMINATION_REASON_FEASIBLE or "
+         "TERMINATION_REASON_NO_SOLUTION_FOUND if and only if limit is "
          "specified, but found reason="
       << ProtoEnumToString(termination_proto.reason())
       << " and limit=" << ProtoEnumToString(termination_proto.limit());
@@ -181,7 +199,10 @@ Termination Termination::FromProto(const TerminationProto& termination_proto) {
     const std::optional<Limit> opt_limit =
         EnumFromProto(termination_proto.limit());
     CHECK(opt_limit.has_value());
-    return Termination(*opt_limit, termination_proto.detail());
+    if (termination_proto.reason() == TERMINATION_REASON_FEASIBLE) {
+      return Feasible(*opt_limit, termination_proto.detail());
+    }
+    return NoSolutionFound(*opt_limit, termination_proto.detail());
   }
 
   const std::optional<TerminationReason> opt_reason =
@@ -320,9 +341,19 @@ bool SolveResult::has_primal_feasible_solution() const {
           SolutionStatus::kFeasible);
 }
 
+double SolveResult::best_objective_bound() const {
+  return solve_stats.best_dual_bound;
+}
+
 double SolveResult::objective_value() const {
   CHECK(has_primal_feasible_solution());
   return solutions[0].primal_solution->objective_value;
+}
+
+bool SolveResult::bounded() const {
+  return solve_stats.problem_status.primal_status ==
+             FeasibilityStatus::kFeasible &&
+         solve_stats.problem_status.dual_status == FeasibilityStatus::kFeasible;
 }
 
 const VariableMap<double>& SolveResult::variable_values() const {

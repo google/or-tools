@@ -258,7 +258,7 @@ GetTerminationAndStats(const bool is_interrupted, const bool maximize,
       }
       break;
     case MPSOLVER_FEASIBLE:
-      termination = TerminateForLimit(
+      termination = FeasibleTermination(
           is_interrupted ? LIMIT_INTERRUPTED : LIMIT_UNDETERMINED,
           response.status_str());
       solve_stats.mutable_problem_status()->set_primal_status(
@@ -271,7 +271,7 @@ GetTerminationAndStats(const bool is_interrupted, const bool maximize,
       }
       break;
     case MPSOLVER_NOT_SOLVED:
-      termination = TerminateForLimit(
+      termination = NoSolutionFoundTermination(
           is_interrupted ? LIMIT_INTERRUPTED : LIMIT_UNDETERMINED,
           response.status_str());
       break;

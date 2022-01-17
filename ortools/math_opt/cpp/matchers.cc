@@ -497,24 +497,47 @@ Matcher<SolveResult> TerminatesWith(const TerminationReason expected,
   return ::testing::AllOfArray(matchers);
 }
 
-testing::Matcher<SolveResult> TerminatesWithLimit(Limit expected,
-                                                  bool allow_limit_undetermined,
-                                                  bool check_warnings) {
-  std::vector<Matcher<SolveResult>> matchers;
-  matchers.push_back(Field(
-      "termination", &SolveResult::termination,
-      Field("reason", &Termination::reason, TerminationReason::kLimitReached)));
+namespace {
+testing::Matcher<SolveResult> LimitIs(const Limit expected,
+                                      const bool allow_limit_undetermined) {
   if (allow_limit_undetermined) {
-    matchers.push_back(Field("termination", &SolveResult::termination,
-                             Field("limit", &Termination::limit,
-                                   AnyOf(Limit::kUndetermined, expected))));
-  } else {
-    matchers.push_back(Field("termination", &SolveResult::termination,
-                             Field("limit", &Termination::limit, expected)));
+    return Field("termination", &SolveResult::termination,
+                 Field("limit", &Termination::limit,
+                       AnyOf(Limit::kUndetermined, expected)));
   }
-  if (check_warnings) {
-    matchers.push_back(Field("warnings", &SolveResult::warnings, IsEmpty()));
-  }
+  return Field("termination", &SolveResult::termination,
+               Field("limit", &Termination::limit, expected));
+}
+}  // namespace
+
+testing::Matcher<SolveResult> TerminatesWithLimit(
+    const Limit expected, const bool allow_limit_undetermined,
+    const bool check_warnings) {
+  std::vector<Matcher<SolveResult>> matchers;
+  matchers.push_back(LimitIs(expected, allow_limit_undetermined));
+  matchers.push_back(TerminatesWithOneOf(
+      {TerminationReason::kFeasible, TerminationReason::kNoSolutionFound},
+      /*check_warnings=*/check_warnings));
+  return ::testing::AllOfArray(matchers);
+}
+
+testing::Matcher<SolveResult> TerminatesWithReasonFeasible(
+    const Limit expected, const bool allow_limit_undetermined,
+    const bool check_warnings) {
+  std::vector<Matcher<SolveResult>> matchers;
+  matchers.push_back(LimitIs(expected, allow_limit_undetermined));
+  matchers.push_back(TerminatesWith(TerminationReason::kFeasible,
+                                    /*check_warnings=*/check_warnings));
+  return ::testing::AllOfArray(matchers);
+}
+
+testing::Matcher<SolveResult> TerminatesWithReasonNoSolutionFound(
+    const Limit expected, const bool allow_limit_undetermined,
+    const bool check_warnings) {
+  std::vector<Matcher<SolveResult>> matchers;
+  matchers.push_back(LimitIs(expected, allow_limit_undetermined));
+  matchers.push_back(TerminatesWith(TerminationReason::kNoSolutionFound,
+                                    /*check_warnings=*/check_warnings));
   return ::testing::AllOfArray(matchers);
 }
 

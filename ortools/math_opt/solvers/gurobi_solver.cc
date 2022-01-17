@@ -439,23 +439,40 @@ absl::StatusOr<TerminationProto> GurobiSolver::ConvertTerminationReason(
       return TerminateForReason(TERMINATION_REASON_INFEASIBLE_OR_UNBOUNDED,
                                 "Gurobi status GRB_INF_OR_UNBD");
     case GRB_CUTOFF:
-      return TerminateForLimit(LIMIT_CUTOFF, "Gurobi status GRB_CUTOFF");
+      return TerminateForLimit(LIMIT_CUTOFF,
+                               /*feasible=*/false, "Gurobi status GRB_CUTOFF");
     case GRB_ITERATION_LIMIT:
-      return TerminateForLimit(LIMIT_ITERATION);
+      return TerminateForLimit(
+          LIMIT_ITERATION,
+          /*feasible=*/solution_claims.primal_feasible_solution_exists);
     case GRB_NODE_LIMIT:
-      return TerminateForLimit(LIMIT_NODE);
+      return TerminateForLimit(
+          LIMIT_NODE,
+          /*feasible=*/solution_claims.primal_feasible_solution_exists);
     case GRB_TIME_LIMIT:
-      return TerminateForLimit(LIMIT_TIME);
+      return TerminateForLimit(
+          LIMIT_TIME,
+          /*feasible=*/solution_claims.primal_feasible_solution_exists);
     case GRB_SOLUTION_LIMIT:
-      return TerminateForLimit(LIMIT_SOLUTION);
+      return TerminateForLimit(
+          LIMIT_SOLUTION,
+          /*feasible=*/solution_claims.primal_feasible_solution_exists);
     case GRB_INTERRUPTED:
-      return TerminateForLimit(LIMIT_INTERRUPTED);
+      return TerminateForLimit(
+          LIMIT_INTERRUPTED,
+          /*feasible=*/solution_claims.primal_feasible_solution_exists);
     case GRB_NUMERIC:
       return TerminateForReason(TERMINATION_REASON_NUMERICAL_ERROR);
     case GRB_SUBOPTIMAL:
       return TerminateForReason(TERMINATION_REASON_IMPRECISE);
     case GRB_USER_OBJ_LIMIT:
-      return TerminateForLimit(LIMIT_OBJECTIVE);
+      // TODO(b/214567536): maybe we should override
+      // solution_claims.primal_feasible_solution_exists to true or false
+      // depending on whether objective_limit and best_bound_limit triggered
+      // this. Not sure if it's possible to detect this though.
+      return TerminateForLimit(
+          LIMIT_OBJECTIVE,
+          /*feasible=*/solution_claims.primal_feasible_solution_exists);
     case GRB_LOADED:
       return absl::InternalError(
           "Error creating termination reason, unexpected gurobi status code "

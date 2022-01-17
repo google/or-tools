@@ -98,15 +98,26 @@ absl::StatusOr<TerminationProto> BuildTermination(
     case glop::ProblemStatus::INFEASIBLE_OR_UNBOUNDED:
       return TerminateForReason(TERMINATION_REASON_INFEASIBLE_OR_UNBOUNDED);
     case glop::ProblemStatus::INIT:
-    case glop::ProblemStatus::PRIMAL_FEASIBLE:
     case glop::ProblemStatus::DUAL_FEASIBLE:
       // Glop may flip the `interrupt_solve` atomic when it is terminated for a
       // reason other than interruption so we should ignore its value. Instead
       // we use the interrupter.
-      return TerminateForLimit(interrupter != nullptr &&
-                                       interrupter->IsInterrupted()
-                                   ? LIMIT_INTERRUPTED
-                                   : LIMIT_UNDETERMINED);
+      // A primal feasible solution is only returned for PRIMAL_FEASIBLE (see
+      // comments in FillSolution).
+      return NoSolutionFoundTermination(interrupter != nullptr &&
+                                                interrupter->IsInterrupted()
+                                            ? LIMIT_INTERRUPTED
+                                            : LIMIT_UNDETERMINED);
+    case glop::ProblemStatus::PRIMAL_FEASIBLE:
+      // Glop may flip the `interrupt_solve` atomic when it is terminated for a
+      // reason other than interruption so we should ignore its value. Instead
+      // we use the interrupter.
+      // A primal feasible solution is only returned for PRIMAL_FEASIBLE (see
+      // comments in FillSolution).
+      return FeasibleTermination(interrupter != nullptr &&
+                                         interrupter->IsInterrupted()
+                                     ? LIMIT_INTERRUPTED
+                                     : LIMIT_UNDETERMINED);
     case glop::ProblemStatus::IMPRECISE:
       return TerminateForReason(TERMINATION_REASON_IMPRECISE);
     case glop::ProblemStatus::ABNORMAL:

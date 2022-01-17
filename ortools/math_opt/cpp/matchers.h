@@ -212,10 +212,26 @@ testing::Matcher<SolveResult> TerminatesWithOneOf(
     const std::vector<TerminationReason>& allowed, bool check_warnings = true);
 
 // Checks the following:
-//  * The result has termination reason kLimitReached.
+//  * The result has termination reason kFeasible or kNoSolutionFound.
 //  * The limit is expected, or is kUndetermined if allow_limit_undetermined.
 //  * If check_warnings, the result has no warnings.
 testing::Matcher<SolveResult> TerminatesWithLimit(
+    Limit expected, bool allow_limit_undetermined = false,
+    bool check_warnings = true);
+
+// Checks the following:
+//  * The result has termination reason kFeasible.
+//  * The limit is expected, or is kUndetermined if allow_limit_undetermined.
+//  * If check_warnings, the result has no warnings.
+testing::Matcher<SolveResult> TerminatesWithReasonFeasible(
+    Limit expected, bool allow_limit_undetermined = false,
+    bool check_warnings = true);
+
+// Checks the following:
+//  * The result has termination reason kNoSolutionFound.
+//  * The limit is expected, or is kUndetermined if allow_limit_undetermined.
+//  * If check_warnings, the result has no warnings.
+testing::Matcher<SolveResult> TerminatesWithReasonNoSolutionFound(
     Limit expected, bool allow_limit_undetermined = false,
     bool check_warnings = true);
 
@@ -373,6 +389,7 @@ void PrintTo(const DualSolution& dual_solution, std::ostream* os);
 void PrintTo(const PrimalRay& primal_ray, std::ostream* os);
 void PrintTo(const DualRay& dual_ray, std::ostream* os);
 void PrintTo(const Basis& basis, std::ostream* os);
+void PrintTo(const Solution& solution, std::ostream* os);
 void PrintTo(const SolveResult& result, std::ostream* os);
 
 // We do not want to rely on ::testing::internal::ContainerPrinter because we
