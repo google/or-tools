@@ -14,6 +14,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace Google.OrTools.Sat
 {
@@ -28,6 +29,20 @@ namespace Google.OrTools.Sat
  */
 public class CpSolver
 {
+    private static Queue<Term> _cachedQueue;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static Queue<Term> RentQueue()
+    {
+        return Interlocked.Exchange(ref _cachedQueue, null) ?? new Queue<Term>(2);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static void ReturnQueue(Queue<Term> queue)
+    {
+        Interlocked.Exchange(ref _cachedQueue, queue);
+    }
+
     /** <summary>Solves the given model, and returns the solve status.</summary> */
     public CpSolverStatus Solve(CpModel model, SolutionCallback cb = null)
     {
@@ -150,54 +165,70 @@ public class CpSolver
 
     /**
      * <summary>
+     * Returns the value of an integer variable in the last solution found.
+     * </summary>
+     */
+    public long Value(IntVar intVar)
+    {
+        int index = intVar.GetIndex();
+        long value = index >= 0 ? response_.Solution[index] : -response_.Solution[-index - 1];
+        return value;
+    }
+
+    /**
+     * <summary>
      * Returns the value of a linear expression in the last solution found.
      * </summary>
      */
     public long Value(LinearExpr e)
     {
-        List<Term> terms = new List<Term>();
-        terms.Add(new Term(e, 1));
         long constant = 0;
+        long coefficient = 1;
+        LinearExpr expr = e;
+        Queue<Term> terms = RentQueue();
 
-        while (terms.Count > 0)
+        do
         {
-            Term term = terms[0];
-            terms.RemoveAt(0);
-            if (term.coefficient == 0)
+            switch (expr)
             {
-                continue;
-            }
-
-            if (term.expr is LinearExprBuilder a)
-            {
-                constant += term.coefficient * a.Offset;
-                foreach (Term sub in a.Terms)
-                {
-                    if (term.coefficient == 1)
+                case LinearExprBuilder a:
+                    constant += coefficient * a.Offset;
+                    if (coefficient == 1)
                     {
-                        terms.Add(sub);
+                        foreach (Term sub in a.Terms)
+                        {
+                            terms.Enqueue(sub);
+                        }
                     }
                     else
                     {
-                        terms.Add(new Term(sub.expr, sub.coefficient * term.coefficient));
+                        foreach (Term sub in a.Terms)
+                        {
+                            terms.Enqueue(new Term(sub.expr, sub.coefficient * coefficient));
+                        }
                     }
-                }
+                    break;
+                case IntVar intVar:
+                    int index = intVar.GetIndex();
+                    long value = index >= 0 ? response_.Solution[index] : -response_.Solution[-index - 1];
+                    constant += coefficient * value;
+                    break;
+                case NotBoolVar:
+                    throw new ArgumentException("Cannot evaluate a literal in an integer expression.");
+                default:
+                    throw new ArgumentException("Cannot evaluate '" + expr + "' in an integer expression");
             }
-            else if (term.expr is IntVar intVar)
+
+            if (!terms.TryDequeue(out var term))
             {
-                int index = intVar.GetIndex();
-                long value = index >= 0 ? response_.Solution[index] : -response_.Solution[-index - 1];
-                constant += term.coefficient * value;
+                break;
             }
-            else if (term.expr is NotBoolVar)
-            {
-                throw new ArgumentException("Cannot evaluate a literal in an integer expression.");
-            }
-            else
-            {
-                throw new ArgumentException("Cannot evaluate '" + term.expr.ToString() + "' in an integer expression");
-            }
+            expr = term.expr;
+            coefficient = term.coefficient;
         }
+        while (true);
+
+        ReturnQueue(terms);
         return constant;
     }
 

@@ -69,6 +69,21 @@ internal static class HelperExtensions
             list.Capacity = Math.Max(list.Count + collection.Count, list.Capacity);
         }
     }
+
+#if NETFRAMEWORK
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool TryDequeue<T>(this Queue<T> queue, out T value)
+    {
+        if (queue.Count > 0)
+        {
+            value = queue.Dequeue();
+            return true;
+        }
+
+        value = default;
+        return false;
+    }
+#endif
 }
 
 // Holds a term (expression * coefficient)
