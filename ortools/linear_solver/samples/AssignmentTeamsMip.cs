@@ -26,12 +26,8 @@ public class AssignmentTeamsMip
         // Data.
         // [START data]
         int[,] costs = {
-          {90, 76, 75, 70},
-          {35, 85, 55, 65},
-          {125, 95, 90, 105},
-          {45, 110, 95, 115},
-          {60, 105, 80, 75},
-          {45, 65, 110, 95},
+            { 90, 76, 75, 70 },   { 35, 85, 55, 65 },  { 125, 95, 90, 105 },
+            { 45, 110, 95, 115 }, { 60, 105, 80, 75 }, { 45, 65, 110, 95 },
         };
         int numWorkers = costs.GetLength(0);
         int numTasks = costs.GetLength(1);

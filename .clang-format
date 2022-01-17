@@ -1,0 +1,13 @@
+---
+Language:        Cpp
+BasedOnStyle:  Google
+# Force pointer to align on the type for C++
+DerivePointerAlignment: false
+PointerAlignment: Left
+---
+Language:        Java
+BasedOnStyle:  Google
+---
+Language:      CSharp
+BasedOnStyle:  Microsoft
+...
