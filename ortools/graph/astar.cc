@@ -57,7 +57,8 @@ class AStarSP {
  public:
   static const int64_t kInfinity = kint64max / 2;
 
-  AStarSP(int node_count, int start_node, std::function<int64_t(int, int)> graph,
+  AStarSP(int node_count, int start_node,
+          std::function<int64_t(int, int)> graph,
           std::function<int64_t(int)> heuristic, int64_t disconnected_distance)
       : node_count_(node_count),
         start_node_(start_node),
