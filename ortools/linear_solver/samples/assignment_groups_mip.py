@@ -86,11 +86,13 @@ def main():
     # [START constraints]
     # The total size of the tasks each worker takes on is at most total_size_max.
     for worker in range(num_workers):
-        solver.Add(solver.Sum([x[worker, task] for task in range(num_tasks)]) <= 1)
+        solver.Add(
+            solver.Sum([x[worker, task] for task in range(num_tasks)]) <= 1)
 
     # Each task is assigned to exactly one worker.
     for task in range(num_tasks):
-        solver.Add(solver.Sum([x[worker, task] for worker in range(num_workers)]) == 1)
+        solver.Add(
+            solver.Sum([x[worker, task] for worker in range(num_workers)]) == 1)
     # [END constraints]
 
     # [START assignments]
@@ -100,8 +102,8 @@ def main():
         work[worker] = solver.BoolVar(f'work[{worker}]')
 
     for worker in range(num_workers):
-        solver.Add(work[worker] == solver.Sum([x[worker, task] for task in
-            range(num_tasks)]))
+        solver.Add(work[worker] == solver.Sum(
+            [x[worker, task] for task in range(num_tasks)]))
 
     # Group1
     constraint_g1 = solver.Constraint(1, 1)
@@ -165,7 +167,7 @@ def main():
             for task in range(num_tasks):
                 if x[worker, task].solution_value() > 0.5:
                     print(f'Worker {worker} assigned to task {task}.' +
-                            f' Cost: {costs[worker][task]}')
+                          f' Cost: {costs[worker][task]}')
     else:
         print('No solution found.')
     # [END print_solution]
