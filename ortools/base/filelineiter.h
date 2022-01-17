@@ -25,6 +25,9 @@
 #ifndef OR_TOOLS_UTIL_FILELINEITER_H_
 #define OR_TOOLS_UTIL_FILELINEITER_H_
 
+#include <algorithm>
+#include <string>
+
 #include "absl/strings/match.h"
 #include "ortools/base/file.h"
 #include "ortools/base/logging.h"
