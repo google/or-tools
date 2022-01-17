@@ -442,8 +442,7 @@ class SVGPrinter(object):  # pylint: disable=too-many-instance-attributes
         print(r'<!-- Print depot -->')
         color = self._color_palette.value_from_name('black')
         loc = self._data.locations[self._data.depot]
-        self._svg.draw_circle(loc, self._radius, self._stroke_width, color,
-                              'white')
+        self._svg.draw_circle(loc, self._radius, self._stroke_width, color, 'white')
         self._svg.draw_text(self._data.depot, loc, self._radius, 'none', color)
 
     def draw_depots(self):
@@ -461,8 +460,7 @@ class SVGPrinter(object):  # pylint: disable=too-many-instance-attributes
         # print end
         color = self._color_palette.value_from_name('black')
         loc = self._data.locations[0]
-        self._svg.draw_circle(loc, self._radius, self._stroke_width, color,
-                              'white')
+        self._svg.draw_circle(loc, self._radius, self._stroke_width, color, 'white')
         self._svg.draw_text(0, loc, self._radius, 'none', color)
 
     def draw_locations(self):
