@@ -26,6 +26,7 @@ public class CpModel
     {
         model_ = new CpModelProto();
         constant_map_ = new Dictionary<long, int>();
+        terms_ = new Queue<Term>();
     }
 
     // Getters.
@@ -122,7 +123,7 @@ public class CpModel
     {
         linear = new LinearConstraintProto();
         Dictionary<IntVar, long> dict = new Dictionary<IntVar, long>();
-        long constant = LinearExpr.GetVarValueMap(expr, 1L, dict);
+        long constant = LinearExpr.GetVarValueMap(expr, 1L, dict, terms_);
         var count = dict.Count;
         linear.Vars.Capacity = count;
         linear.Coeffs.Capacity = count;
@@ -1099,7 +1100,7 @@ public class CpModel
         else
         {
             Dictionary<IntVar, long> dict = new Dictionary<IntVar, long>();
-            long constant = LinearExpr.GetVarValueMap(obj, 1L, dict);
+            long constant = LinearExpr.GetVarValueMap(obj, 1L, dict, terms_);
             if (minimize)
             {
                 objective.ScalingFactor = 1L;
@@ -1191,7 +1192,7 @@ public class CpModel
     public LinearExpressionProto GetLinearExpressionProto(LinearExpr expr, bool negate = false)
     {
         Dictionary<IntVar, long> dict = new Dictionary<IntVar, long>();
-        long constant = LinearExpr.GetVarValueMap(expr, 1L, dict);
+        long constant = LinearExpr.GetVarValueMap(expr, 1L, dict, terms_);
         long mult = negate ? -1 : 1;
 
         LinearExpressionProto linear = new LinearExpressionProto();
@@ -1210,6 +1211,7 @@ public class CpModel
     private CpModelProto model_;
     private Dictionary<long, int> constant_map_;
     private BoolVar true_literal_;
+    private Queue<Term> terms_;
 }
 
 } // namespace Google.OrTools.Sat

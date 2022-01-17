@@ -360,53 +360,54 @@ public class LinearExpr
         }
     }
 
-    public static long GetVarValueMap(LinearExpr e, long initial_coeff, Dictionary<IntVar, long> dict)
+    public static long GetVarValueMap(LinearExpr e, long initial_coeff, Dictionary<IntVar, long> dict,
+                                      Queue<Term> terms)
     {
-        List<Term> terms = new List<Term>();
-        if (e is not null)
-        {
-            terms.Add(new Term(e, initial_coeff));
-        }
         long constant = 0;
+        long coefficient = initial_coeff;
+        LinearExpr expr = e;
+        terms.Clear();
 
-        while (terms.Count > 0)
+        do
         {
-            Term term = terms[0];
-            terms.RemoveAt(0);
-            if (term.coefficient == 0 || term.expr is null)
+            switch (expr)
             {
-                continue;
-            }
-
-            if (term.expr is LinearExprBuilder b)
-            {
-                constant += term.coefficient * b.Offset;
-                foreach (Term sub in b.Terms)
+            case LinearExprBuilder builder:
+                constant += coefficient * builder.Offset;
+                if (coefficient == 1)
                 {
-                    if (sub.expr is IntVar i) // Quick unroll.
+                    foreach (Term sub in builder.Terms)
                     {
-                        dict.AddOrIncrement(i, term.coefficient * sub.coefficient);
-                    }
-                    else
-                    {
-                        terms.Add(new Term(sub.expr, sub.coefficient * term.coefficient));
+                        terms.Enqueue(sub);
                     }
                 }
+                else
+                {
+                    foreach (Term sub in builder.Terms)
+                    {
+                        terms.Enqueue(new Term(sub.expr, sub.coefficient * coefficient));
+                    }
+                }
+                break;
+            case IntVar intVar:
+                dict.AddOrIncrement(intVar, coefficient);
+                break;
+            case NotBoolVar notBoolVar:
+                dict.AddOrIncrement((IntVar)notBoolVar.Not(), -coefficient);
+                constant += coefficient;
+                break;
+            default:
+                throw new ArgumentException("Cannot evaluate '" + expr + "' in an integer expression");
             }
-            else if (term.expr is IntVar i)
+
+            if (!terms.TryDequeue(out var term))
             {
-                dict.AddOrIncrement(i, term.coefficient);
+                break;
             }
-            else if (term.expr is NotBoolVar notBoolVar)
-            {
-                dict.AddOrIncrement((IntVar)notBoolVar.Not(), -term.coefficient);
-                constant += term.coefficient;
-            }
-            else
-            {
-                throw new ArgumentException("Cannot interpret '" + term.expr.ToString() + "' in an integer expression");
-            }
-        }
+            expr = term.expr;
+            coefficient = term.coefficient;
+        } while (true);
+
         return constant;
     }
 
