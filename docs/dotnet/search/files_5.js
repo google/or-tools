@@ -1,22 +1,4 @@
 var searchData=
 [
-  ['improvementsearchlimit_2ecs',['ImprovementSearchLimit.cs',['../ImprovementSearchLimit_8cs.html',1,'']]],
-  ['intarrayhelper_2ecs',['IntArrayHelper.cs',['../IntArrayHelper_8cs.html',1,'']]],
-  ['intboolpair_2ecs',['IntBoolPair.cs',['../IntBoolPair_8cs.html',1,'']]],
-  ['integerexpressions_2ecs',['IntegerExpressions.cs',['../IntegerExpressions_8cs.html',1,'']]],
-  ['intervalvar_2ecs',['IntervalVar.cs',['../IntervalVar_8cs.html',1,'']]],
-  ['intervalvararrayhelper_2ecs',['IntervalVarArrayHelper.cs',['../IntervalVarArrayHelper_8cs.html',1,'']]],
-  ['intervalvarelement_2ecs',['IntervalVarElement.cs',['../IntervalVarElement_8cs.html',1,'']]],
-  ['intervalvariables_2ecs',['IntervalVariables.cs',['../IntervalVariables_8cs.html',1,'']]],
-  ['intervalvarvector_2ecs',['IntervalVarVector.cs',['../IntervalVarVector_8cs.html',1,'']]],
-  ['intexpr_2ecs',['IntExpr.cs',['../IntExpr_8cs.html',1,'']]],
-  ['inttupleset_2ecs',['IntTupleSet.cs',['../IntTupleSet_8cs.html',1,'']]],
-  ['intvar_2ecs',['IntVar.cs',['../IntVar_8cs.html',1,'']]],
-  ['intvararrayhelper_2ecs',['IntVarArrayHelper.cs',['../IntVarArrayHelper_8cs.html',1,'']]],
-  ['intvarelement_2ecs',['IntVarElement.cs',['../IntVarElement_8cs.html',1,'']]],
-  ['intvariterator_2ecs',['IntVarIterator.cs',['../IntVarIterator_8cs.html',1,'']]],
-  ['intvarlocalsearchfilter_2ecs',['IntVarLocalSearchFilter.cs',['../IntVarLocalSearchFilter_8cs.html',1,'']]],
-  ['intvarlocalsearchoperator_2ecs',['IntVarLocalSearchOperator.cs',['../IntVarLocalSearchOperator_8cs.html',1,'']]],
-  ['intvarlocalsearchoperatortemplate_2ecs',['IntVarLocalSearchOperatorTemplate.cs',['../IntVarLocalSearchOperatorTemplate_8cs.html',1,'']]],
-  ['intvarvector_2ecs',['IntVarVector.cs',['../IntVarVector_8cs.html',1,'']]]
+  ['globalvehiclebreaksconstraint_2ecs_0',['GlobalVehicleBreaksConstraint.cs',['../GlobalVehicleBreaksConstraint_8cs.html',1,'']]]
 ];

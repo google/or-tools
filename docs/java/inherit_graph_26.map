@@ -1,3 +1,12 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$enumcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver_1_1SolverType.html" title="Enum controlling which underlying algorithm is used." alt="" coords="5,5,191,32"/>
+<area shape="rect" id="node1" href="$interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearArgument.html" title="A object that can build a LinearExpr object." alt="" coords="5,132,119,159"/>
+<area shape="rect" id="node2" href="$classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html" title="An integer variable." alt="" coords="201,107,257,133"/>
+<area shape="rect" id="node4" href="$interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html" title="A linear expression (sum (ai * xi) + b)." alt="" coords="187,56,271,83"/>
+<area shape="rect" id="node8" href="$classcom_1_1google_1_1ortools_1_1sat_1_1LinearExprBuilder.html" title="Builder class for the LinearExpr container." alt="" coords="167,157,291,184"/>
+<area shape="rect" id="node9" href="$interfacecom_1_1google_1_1ortools_1_1sat_1_1Literal.html" title="Interface to describe a boolean variable or its negation." alt="" coords="200,208,257,235"/>
+<area shape="rect" id="node3" href="$classcom_1_1google_1_1ortools_1_1sat_1_1BoolVar.html" title="An Boolean variable." alt="" coords="389,157,456,184"/>
+<area shape="rect" id="node5" href="$classcom_1_1google_1_1ortools_1_1sat_1_1AffineExpression.html" title="A specialized linear expression: a * x + b." alt="" coords="362,107,483,133"/>
+<area shape="rect" id="node6" href="$classcom_1_1google_1_1ortools_1_1sat_1_1ConstantExpression.html" title="A specialized constant linear expression." alt="" coords="353,5,493,32"/>
+<area shape="rect" id="node7" href="$classcom_1_1google_1_1ortools_1_1sat_1_1WeightedSumExpression.html" title="A specialized linear expression: sum(ai * xi) + b." alt="" coords="339,56,507,83"/>
+<area shape="rect" id="node10" href="$classcom_1_1google_1_1ortools_1_1sat_1_1NotBoolVar.html" title="The negation of a boolean variable." alt="" coords="379,208,467,235"/>
 </map>

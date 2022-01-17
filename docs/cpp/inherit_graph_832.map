@@ -1,4 +1,8 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classoperations__research_1_1glop_1_1_sparse_vector_entry.html" title=" " alt="" coords="5,5,145,47"/>
-<area shape="rect" id="node2" href="$classoperations__research_1_1glop_1_1_sparse_column_entry.html" title=" " alt="" coords="193,13,332,39"/>
+<area shape="rect" id="node1" href="$classoperations__research_1_1math__opt_1_1_solver_interface.html" title=" " alt="" coords="5,107,116,133"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1math__opt_1_1_cp_sat_solver.html" title=" " alt="" coords="165,5,261,32"/>
+<area shape="rect" id="node3" href="$classoperations__research_1_1math__opt_1_1_g_scip_solver.html" title=" " alt="" coords="165,56,260,83"/>
+<area shape="rect" id="node4" href="$classoperations__research_1_1math__opt_1_1_glop_solver.html" title=" " alt="" coords="169,107,256,133"/>
+<area shape="rect" id="node5" href="$classoperations__research_1_1math__opt_1_1_gurobi_solver.html" title=" " alt="" coords="164,157,261,184"/>
+<area shape="rect" id="node6" href="$classoperations__research_1_1math__opt_1_1_pdlp_solver.html" title=" " alt="" coords="170,208,255,235"/>
 </map>

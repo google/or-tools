@@ -1,3 +1,11 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$structoperations__research_1_1bop_1_1_bop_optimizer_method_default_type_internal.html" title=" " alt="" coords="5,5,192,47"/>
+<area shape="rect" id="node1" href="$classoperations__research_1_1bop_1_1_bop_optimizer_base.html" title=" " alt="" coords="5,183,136,209"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1bop_1_1_bop_adaptive_l_n_s_optimizer.html" title=" " alt="" coords="207,5,385,32"/>
+<area shape="rect" id="node3" href="$classoperations__research_1_1bop_1_1_bop_complete_l_n_s_optimizer.html" title=" " alt="" coords="205,56,387,83"/>
+<area shape="rect" id="node4" href="$classoperations__research_1_1bop_1_1_bop_random_first_solution_generator.html" title=" " alt="" coords="184,107,408,133"/>
+<area shape="rect" id="node5" href="$classoperations__research_1_1bop_1_1_guided_sat_first_solution_generator.html" title=" " alt="" coords="189,157,403,184"/>
+<area shape="rect" id="node6" href="$classoperations__research_1_1bop_1_1_linear_relaxation.html" title=" " alt="" coords="237,208,355,235"/>
+<area shape="rect" id="node7" href="$classoperations__research_1_1bop_1_1_local_search_optimizer.html" title=" " alt="" coords="221,259,371,285"/>
+<area shape="rect" id="node8" href="$classoperations__research_1_1bop_1_1_portfolio_optimizer.html" title=" " alt="" coords="233,309,359,336"/>
+<area shape="rect" id="node9" href="$classoperations__research_1_1bop_1_1_sat_core_based_optimizer.html" title=" " alt="" coords="215,360,377,387"/>
 </map>

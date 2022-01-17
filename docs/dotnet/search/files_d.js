@@ -1,22 +1,13 @@
 var searchData=
 [
-  ['satparameters_2epb_2ecs',['SatParameters.pb.cs',['../SatParameters_8pb_8cs.html',1,'']]],
-  ['searchhelpers_2ecs',['SearchHelpers.cs',['../SearchHelpers_8cs.html',1,'']]],
-  ['searchlimit_2ecs',['SearchLimit.cs',['../SearchLimit_8cs.html',1,'']]],
-  ['searchlimit_2epb_2ecs',['SearchLimit.pb.cs',['../SearchLimit_8pb_8cs.html',1,'']]],
-  ['searchlog_2ecs',['SearchLog.cs',['../SearchLog_8cs.html',1,'']]],
-  ['searchmonitor_2ecs',['SearchMonitor.cs',['../SearchMonitor_8cs.html',1,'']]],
-  ['searchmonitorvector_2ecs',['SearchMonitorVector.cs',['../SearchMonitorVector_8cs.html',1,'']]],
-  ['sequencevar_2ecs',['SequenceVar.cs',['../SequenceVar_8cs.html',1,'']]],
-  ['sequencevarelement_2ecs',['SequenceVarElement.cs',['../SequenceVarElement_8cs.html',1,'']]],
-  ['sequencevarlocalsearchoperator_2ecs',['SequenceVarLocalSearchOperator.cs',['../SequenceVarLocalSearchOperator_8cs.html',1,'']]],
-  ['sequencevarlocalsearchoperatortemplate_2ecs',['SequenceVarLocalSearchOperatorTemplate.cs',['../SequenceVarLocalSearchOperatorTemplate_8cs.html',1,'']]],
-  ['sequencevarvector_2ecs',['SequenceVarVector.cs',['../SequenceVarVector_8cs.html',1,'']]],
-  ['solutioncallback_2ecs',['SolutionCallback.cs',['../SolutionCallback_8cs.html',1,'']]],
-  ['solutioncollector_2ecs',['SolutionCollector.cs',['../SolutionCollector_8cs.html',1,'']]],
-  ['solutionpool_2ecs',['SolutionPool.cs',['../SolutionPool_8cs.html',1,'']]],
-  ['solverparameters_2epb_2ecs',['SolverParameters.pb.cs',['../SolverParameters_8pb_8cs.html',1,'']]],
-  ['solvewrapper_2ecs',['SolveWrapper.cs',['../SolveWrapper_8cs.html',1,'']]],
-  ['symmetrybreaker_2ecs',['SymmetryBreaker.cs',['../SymmetryBreaker_8cs.html',1,'']]],
-  ['symmetrybreakervector_2ecs',['SymmetryBreakerVector.cs',['../SymmetryBreakerVector_8cs.html',1,'']]]
+  ['regularlimit_2ecs_0',['RegularLimit.cs',['../RegularLimit_8cs.html',1,'']]],
+  ['revbool_2ecs_1',['RevBool.cs',['../RevBool_8cs.html',1,'']]],
+  ['revinteger_2ecs_2',['RevInteger.cs',['../RevInteger_8cs.html',1,'']]],
+  ['revpartialsequence_2ecs_3',['RevPartialSequence.cs',['../RevPartialSequence_8cs.html',1,'']]],
+  ['routingdimension_2ecs_4',['RoutingDimension.cs',['../RoutingDimension_8cs.html',1,'']]],
+  ['routingenums_2epb_2ecs_5',['RoutingEnums.pb.cs',['../RoutingEnums_8pb_8cs.html',1,'']]],
+  ['routingindexmanager_2ecs_6',['RoutingIndexManager.cs',['../RoutingIndexManager_8cs.html',1,'']]],
+  ['routingmodel_2ecs_7',['RoutingModel.cs',['../RoutingModel_8cs.html',1,'']]],
+  ['routingmodelvisitor_2ecs_8',['RoutingModelVisitor.cs',['../RoutingModelVisitor_8cs.html',1,'']]],
+  ['routingparameters_2epb_2ecs_9',['RoutingParameters.pb.cs',['../RoutingParameters_8pb_8cs.html',1,'']]]
 ];

@@ -1,21 +1,4 @@
 var searchData=
 [
-  ['constraint_2ecs',['Constraint.cs',['../linear__solver_2Constraint_8cs.html',1,'']]],
-  ['int64vector_2ecs',['Int64Vector.cs',['../linear__solver_2Int64Vector_8cs.html',1,'']]],
-  ['int64vectorvector_2ecs',['Int64VectorVector.cs',['../linear__solver_2Int64VectorVector_8cs.html',1,'']]],
-  ['intvector_2ecs',['IntVector.cs',['../linear__solver_2IntVector_8cs.html',1,'']]],
-  ['intvectorvector_2ecs',['IntVectorVector.cs',['../linear__solver_2IntVectorVector_8cs.html',1,'']]],
-  ['linearconstraint_2ecs',['LinearConstraint.cs',['../LinearConstraint_8cs.html',1,'']]],
-  ['linearexpr_2ecs',['LinearExpr.cs',['../LinearExpr_8cs.html',1,'']]],
-  ['linearsumassignment_2ecs',['LinearSumAssignment.cs',['../LinearSumAssignment_8cs.html',1,'']]],
-  ['localsearchfilter_2ecs',['LocalSearchFilter.cs',['../LocalSearchFilter_8cs.html',1,'']]],
-  ['localsearchfiltermanager_2ecs',['LocalSearchFilterManager.cs',['../LocalSearchFilterManager_8cs.html',1,'']]],
-  ['localsearchfiltervector_2ecs',['LocalSearchFilterVector.cs',['../LocalSearchFilterVector_8cs.html',1,'']]],
-  ['localsearchmonitor_2ecs',['LocalSearchMonitor.cs',['../LocalSearchMonitor_8cs.html',1,'']]],
-  ['localsearchoperator_2ecs',['LocalSearchOperator.cs',['../LocalSearchOperator_8cs.html',1,'']]],
-  ['localsearchoperatorvector_2ecs',['LocalSearchOperatorVector.cs',['../LocalSearchOperatorVector_8cs.html',1,'']]],
-  ['localsearchphaseparameters_2ecs',['LocalSearchPhaseParameters.cs',['../LocalSearchPhaseParameters_8cs.html',1,'']]],
-  ['logcallback_2ecs',['LogCallback.cs',['../LogCallback_8cs.html',1,'']]],
-  ['solver_2ecs',['Solver.cs',['../linear__solver_2Solver_8cs.html',1,'']]],
-  ['solverhelper_2ecs',['SolverHelper.cs',['../linear__solver_2csharp_2SolverHelper_8cs.html',1,'']]]
+  ['knapsacksolver_2ecs_0',['KnapsackSolver.cs',['../KnapsackSolver_8cs.html',1,'']]]
 ];

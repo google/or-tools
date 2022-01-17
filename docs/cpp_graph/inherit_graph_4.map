@@ -1,6 +1,7 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classutil_1_1_base_graph.html" title=" " alt="" coords="5,71,200,112"/>
-<area shape="rect" id="node2" href="$classutil_1_1_reverse_arc_list_graph.html" title=" " alt="" coords="248,5,472,47"/>
-<area shape="rect" id="node3" href="$classutil_1_1_reverse_arc_mixed_graph.html" title=" " alt="" coords="248,71,472,112"/>
-<area shape="rect" id="node4" href="$classutil_1_1_reverse_arc_static_graph.html" title=" " alt="" coords="248,136,472,177"/>
+<area shape="rect" id="node1" href="$classutil_1_1_base_graph.html" title=" " alt="" coords="5,104,148,145"/>
+<area shape="rect" id="node2" href="$classutil_1_1_complete_bipartite_graph.html" title=" " alt="" coords="196,5,420,47"/>
+<area shape="rect" id="node3" href="$classutil_1_1_complete_graph.html" title=" " alt="" coords="214,71,402,112"/>
+<area shape="rect" id="node4" href="$classutil_1_1_list_graph.html" title=" " alt="" coords="215,136,401,177"/>
+<area shape="rect" id="node5" href="$classutil_1_1_static_graph.html" title=" " alt="" coords="209,201,407,243"/>
 </map>
