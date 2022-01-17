@@ -31,48 +31,69 @@ public class CpSolverSolutionCallback : SolutionCallback
      */
     public long Value(LinearExpr e)
     {
-        List<Term> terms = new List<Term>();
-        terms.Add(new Term(e, 1));
         long constant = 0;
-
-        while (terms.Count > 0)
+        long coefficient = 1;
+        LinearExpr expr = e;
+        if (terms_ is null)
         {
-            Term term = terms[0];
-            terms.RemoveAt(0);
-            if (term.coefficient == 0)
-                continue;
+            terms_ = new Queue<Term>();
+        }
+        else
+        {
+            terms_.Clear();
+        }
 
-            if (term.expr is LinearExprBuilder a)
+        do
+        {
+            switch (expr)
             {
-                constant += term.coefficient * a.Offset;
-                foreach (Term sub in a.Terms)
+            case LinearExprBuilder a:
+                constant += coefficient * a.Offset;
+                if (coefficient == 1)
                 {
-                    if (term.coefficient == 1)
+                    foreach (Term sub in a.Terms)
                     {
-                        terms.Add(sub);
-                    }
-                    else
-                    {
-                        terms.Add(new Term(sub.expr, sub.coefficient * term.coefficient));
+                        terms_.Enqueue(sub);
                     }
                 }
-            }
-            else if (term.expr is IntVar intVar)
-            {
+                else
+                {
+                    foreach (Term sub in a.Terms)
+                    {
+                        terms_.Enqueue(new Term(sub.expr, sub.coefficient * coefficient));
+                    }
+                }
+                break;
+            case IntVar intVar:
                 int index = intVar.GetIndex();
                 long value = SolutionIntegerValue(index);
-                constant += term.coefficient * value;
-            }
-            else if (term.expr is NotBoolVar)
-            {
+                constant += coefficient * value;
+                break;
+            case NotBoolVar:
                 throw new ArgumentException("Cannot evaluate a literal in an integer expression.");
+            default:
+                throw new ArgumentException("Cannot evaluate '" + expr + "' in an integer expression");
             }
-            else
+
+            if (!terms_.TryDequeue(out var term))
             {
-                throw new ArgumentException("Cannot evaluate '" + term.expr.ToString() + "' in an integer expression");
+                break;
             }
-        }
+            expr = term.expr;
+            coefficient = term.coefficient;
+        } while (true);
+
         return constant;
+    }
+
+    /**
+     * <summary>
+     * Returns the value of an integer variable in the current solution.
+     * </summary>
+     */
+    public long Value(IntVar intVar)
+    {
+        return SolutionIntegerValue(intVar.GetIndex());
     }
 
     /**
@@ -92,6 +113,8 @@ public class CpSolverSolutionCallback : SolutionCallback
             throw new ArgumentException("Cannot evaluate '" + literal.ToString() + "' as a boolean literal");
         }
     }
+
+    private Queue<Term> terms_;
 }
 
 /**
