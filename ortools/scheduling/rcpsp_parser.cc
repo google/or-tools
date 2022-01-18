@@ -18,8 +18,8 @@
 #include "absl/strings/match.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
-#include "ortools/base/filelineiter.h"
 #include "ortools/scheduling/rcpsp.pb.h"
+#include "ortools/util/filelineiter.h"
 
 namespace operations_research {
 namespace scheduling {

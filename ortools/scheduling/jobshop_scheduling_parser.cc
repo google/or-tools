@@ -21,10 +21,10 @@
 #include "absl/strings/str_split.h"
 #include "google/protobuf/wrappers.pb.h"
 #include "ortools/base/commandlineflags.h"
-#include "ortools/base/filelineiter.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/scheduling/jobshop_scheduling.pb.h"
+#include "ortools/util/filelineiter.h"
 
 ABSL_FLAG(int64_t, jssp_scaling_up_factor, 100000L,
           "Scaling factor for floating point penalties.");

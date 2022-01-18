@@ -56,7 +56,7 @@ cc_library(
     deps = [
         ":vector_bin_packing_cc_proto",
         "//ortools/base",
-        "//ortools/base:filelineiter",
+        "//ortools/util:filelineiter",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -83,7 +83,7 @@ cc_library(
     deps = [
         ":multiple_dimensions_bin_packing_cc_proto",
         "//ortools/base",
-        "//ortools/base:filelineiter",
+        "//ortools/util:filelineiter",
         "@com_google_absl//absl/strings",
     ],
 )

@@ -29,7 +29,7 @@
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
-#include "ortools/base/filelineiter.h"
+#include "ortools/util/filelineiter.h"
 #include "ortools/graph/graph.h"
 
 namespace util {

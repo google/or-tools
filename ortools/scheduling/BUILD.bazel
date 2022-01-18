@@ -22,7 +22,7 @@ cc_library(
     deps = [
         ":jobshop_scheduling_cc_proto",
         "//ortools/base",
-        "//ortools/base:filelineiter",
+        "//ortools/util:filelineiter",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
     ],
@@ -47,7 +47,7 @@ cc_library(
         ":rcpsp_cc_proto",
         "//ortools/base",
         "//ortools/base:file",
-        "//ortools/base:filelineiter",
+        "//ortools/util:filelineiter",
         "@com_google_absl//absl/strings",
     ],
 )
