@@ -509,7 +509,10 @@ class LinearProgram {
   // - returns false if some coefficient other than the bounds are +/- infinity.
   // Note that these conditions are also guarded by DCHECK on each of the
   // SetXXX() function above.
-  bool IsValid() const;
+  //
+  // This also returns false if any finite value has a magnitude larger than
+  // the given threshold.
+  bool IsValid(Fractional max_valid_magnitude = kInfinity) const;
 
   // Updates the bounds of the variables to the intersection of their original
   // bounds and the bounds specified by variable_lower_bounds and
