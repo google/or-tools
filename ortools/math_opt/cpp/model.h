@@ -52,7 +52,7 @@ namespace math_opt {
 //   using ::operations_research::math_opt::SolveParameters;
 //   using ::operations_research::math_opt::SolveResultProto;
 //   using ::operations_research::math_opt::Variable;
-//   using ::operations_research::math_opt::SOLVER_TYPE_GSCIP;
+//   using ::operations_research::math_opt::SolverType;
 //
 // Version 1:
 //
@@ -67,7 +67,7 @@ namespace math_opt {
 //   model.set_objective_coefficient(y, 1.0);
 //   model.set_maximize();
 //   const SolveResult result = Solve(
-//     model, SOLVER_TYPE_GSCIP, SolveParametersProto()).value();
+//     model, SolverType::kGscip, SolveParametersProto()).value();
 //   for (const auto& warning : result.warnings) {
 //     std::cerr << "Solver warning: " << warning << std::endl;
 //   }
@@ -93,7 +93,7 @@ namespace math_opt {
 //   objective_expression += y;
 //   model.Maximize(objective_expression);
 //   const SolveResult result = Solve(
-//     model, SOLVER_TYPE_GSCIP, SolveParametersProto()).value();
+//     model, SolverType::kGscip, SolveParametersProto()).value();
 //   for (const auto& warning : result.warnings) {
 //     std::cerr << "Solver warning: " << warning << std::endl;
 //   }

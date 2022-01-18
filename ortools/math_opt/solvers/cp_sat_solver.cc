@@ -63,6 +63,35 @@ namespace {
 
 constexpr double kInf = std::numeric_limits<double>::infinity();
 
+// Returns true on success.
+bool ApplyCutoff(const double cutoff, MPModelProto* model) {
+  // TODO(b/204083726): we need to be careful here if we support quadratic
+  // objectives
+  if (model->has_quadratic_objective()) {
+    return false;
+  }
+  // CP-SAT detects a constraint parallel to the objective and uses it as
+  // an objective bound, which is the closest we can get to cutoff.
+  // See FindDuplicateConstraints() in CP-SAT codebase.
+  MPConstraintProto* const cutoff_constraint = model->add_constraint();
+  for (int i = 0; i < model->variable_size(); ++i) {
+    const double obj_coef = model->variable(i).objective_coefficient();
+    if (obj_coef != 0) {
+      cutoff_constraint->add_var_index(i);
+      cutoff_constraint->add_coefficient(obj_coef);
+    }
+  }
+  const double cutoff_minus_offset = cutoff - model->objective_offset();
+  if (model->maximize()) {
+    // Add the constraint obj >= cutoff
+    cutoff_constraint->set_lower_bound(cutoff_minus_offset);
+  } else {
+    // Add the constraint obj <= cutoff
+    cutoff_constraint->set_upper_bound(cutoff_minus_offset);
+  }
+  return true;
+}
+
 // Returns a list of warnings from parameter settings that were
 // invalid/unsupported (specific to CP-SAT), one element per bad parameter.
 std::vector<std::string> SetSolveParameters(
@@ -100,10 +129,7 @@ std::vector<std::string> SetSolveParameters(
   if (parameters.has_absolute_gap_limit()) {
     sat_parameters.set_absolute_gap_limit(parameters.absolute_gap_limit());
   }
-  if (parameters.has_cutoff_limit()) {
-    warnings.push_back(
-        "The cutoff_limit parameter is not supported for CP-SAT.");
-  }
+  // cutoff_limit is handled outside this function as it modifies the model.
   if (parameters.has_best_bound_limit()) {
     warnings.push_back(
         "The best_bound_limit parameter is not supported for CP-SAT.");
@@ -203,6 +229,7 @@ std::vector<std::string> SetSolveParameters(
 
 absl::StatusOr<std::pair<SolveStatsProto, TerminationProto>>
 GetTerminationAndStats(const bool is_interrupted, const bool maximize,
+                       const bool used_cutoff,
                        const MPSolutionResponse& response) {
   SolveStatsProto solve_stats;
   TerminationProto termination;
@@ -228,10 +255,15 @@ GetTerminationAndStats(const bool is_interrupted, const bool maximize,
       solve_stats.set_best_dual_bound(response.best_objective_bound());
       break;
     case MPSOLVER_INFEASIBLE:
+      if (used_cutoff) {
+        termination =
+            NoSolutionFoundTermination(LIMIT_CUTOFF, response.status_str());
+      } else {
       termination = TerminateForReason(TERMINATION_REASON_INFEASIBLE,
                                        response.status_str());
       solve_stats.mutable_problem_status()->set_primal_status(
           FEASIBILITY_STATUS_INFEASIBLE);
+      }
       break;
     case MPSOLVER_UNKNOWN_STATUS:
       // For a basic unbounded problem, CP-SAT internally returns
@@ -299,7 +331,6 @@ absl::StatusOr<std::unique_ptr<SolverInterface>> CpSatSolver::New(
         "MathOpt does not currently support CP-SAT models with quadratic "
         "objectives");
   }
-  // We must use WrapUnique here since the constructor is private.
   return absl::WrapUnique(
       new CpSatSolver(std::move(cp_sat_model), std::move(variable_ids)));
 }
@@ -328,11 +359,21 @@ absl::StatusOr<SolveResultProto> CpSatSolver::Solve(
   // Here we must make a copy since Solve() can be called multiple times with
   // different parameters. Hence we can't move `cp_sat_model`.
   *req.mutable_model() = cp_sat_model_;
+
   req.set_solver_type(MPModelRequest::SAT_INTEGER_PROGRAMMING);
+  bool used_cutoff = false;
   {
     std::vector<std::string> param_warnings =
         SetSolveParameters(parameters,
                            /*has_message_callback=*/message_cb != nullptr, req);
+    if (parameters.has_cutoff_limit()) {
+      used_cutoff = ApplyCutoff(parameters.cutoff_limit(), req.mutable_model());
+      if (!used_cutoff) {
+        param_warnings.push_back(
+            "The cutoff_limit parameter not supported for quadratic objectives "
+            "with CP-SAT.");
+      }
+    }
     if (!param_warnings.empty()) {
       if (parameters.strictness().bad_parameter()) {
         return absl::InvalidArgumentError(absl::StrJoin(param_warnings, "; "));
@@ -402,14 +443,15 @@ absl::StatusOr<SolveResultProto> CpSatSolver::Solve(
       // supported by CP-SAT and we have validated they are empty.
     };
   }
-
   ASSIGN_OR_RETURN(const MPSolutionResponse response,
                    SatSolveProto(std::move(req), &interrupt_solve,
                                  logging_callback, solution_callback));
   RETURN_IF_ERROR(callback_error) << "error in callback";
-  ASSIGN_OR_RETURN((auto [solve_stats, termination]),
+  ASSIGN_OR_RETURN(
+      (auto [solve_stats, termination]),
                    GetTerminationAndStats(local_interrupter.IsInterrupted(),
-                                          cp_sat_model_.maximize(), response));
+                             /*maximize=*/cp_sat_model_.maximize(),
+                             /*used_cutoff=*/used_cutoff, response));
   *result.mutable_solve_stats() = std::move(solve_stats);
   *result.mutable_termination() = std::move(termination);
   if (response.status() == MPSOLVER_OPTIMAL ||
