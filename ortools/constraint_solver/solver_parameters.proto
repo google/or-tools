@@ -29,7 +29,7 @@ message ConstraintSolverParameters {
   enum TrailCompression {
     NO_COMPRESSION = 0;
         COMPRESS_WITH_ZLIB = 1;
-  };
+  }
 
   // This parameter indicates if the solver should compress the trail
   // during the search. No compression means that the solver will be faster,
