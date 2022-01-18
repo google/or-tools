@@ -22,7 +22,7 @@ syntax = "proto2";
 
 package operations_research.glop;
 
-// next id = 68
+// next id = 69
 message GlopParameters {
 
   // Supported algorithms for scaling:
@@ -471,5 +471,13 @@ message GlopParameters {
 
   // If presolve runs, include the pass that detects implied free variables.
   optional bool use_implied_free_preprocessor = 67 [default = true];
+
+  // Any finite values in the input LP must be below this threshold, otherwise
+  // the model will be reported invalid. This is needed to avoid floating point
+  // overflow when evaluating bounds * coeff for instance. In practice, users
+  // shouldn't use super large values in an LP. With the default threshold, even
+  // evaluating large constraint with variables at their bound shouldn't cause
+  // any overflow.
+  optional double max_valid_magnitude = 199 [default = 1e30];
 
 }

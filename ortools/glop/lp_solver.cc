@@ -176,11 +176,14 @@ ProblemStatus LPSolver::SolveWithTimeLimit(const LinearProgram& lp,
     ResizeSolution(lp.num_constraints(), lp.num_variables());
     return ProblemStatus::INVALID_PROBLEM;
   }
-  if (!lp.IsValid()) {
+
+  // TODO(user): Unfortunately we are not really helpful with the error message
+  // here. We could do a better job. However most client should talk to glop via
+  // an input protocol buffer which should have better validation messages.
+  if (!lp.IsValid(parameters_.max_valid_magnitude())) {
     SOLVER_LOG(&logger_,
                "The given linear program is invalid. It contains NaNs, "
-               "infinite coefficients or invalid bounds specification. "
-               "You can construct it in debug mode to get the exact cause.");
+               "coefficients too large or invalid bounds specification.");
     ResizeSolution(lp.num_constraints(), lp.num_variables());
     return ProblemStatus::INVALID_PROBLEM;
   }
