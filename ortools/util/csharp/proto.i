@@ -50,7 +50,7 @@
 %typemap(ctype)  PROTO_TYPE* INPUT, PROTO_TYPE& INPUT "int " #param_name "_size, uint8_t*"
 %typemap(imtype) PROTO_TYPE* INPUT, PROTO_TYPE& INPUT "int " #param_name "_size, byte[]"
 %typemap(cstype) PROTO_TYPE* INPUT, PROTO_TYPE& INPUT "CSharpProtoType"
-%typemap(csin)   PROTO_TYPE* INPUT, PROTO_TYPE& INPUT "$csinput.CalculateSize(), ProtoHelper.ProtoToByteArray($csinput)"
+%typemap(csin)   PROTO_TYPE* INPUT, PROTO_TYPE& INPUT "ProtoHelper.ProtoToByteArray($csinput, out var buffer), buffer"
 %typemap(in)     PROTO_TYPE* INPUT, PROTO_TYPE& INPUT {
   $1 = new CppProtoType;
   bool parsed_ok = $1->ParseFromArray($input, param_name ## _size);
@@ -74,24 +74,21 @@
 %typemap(imtype) CppProtoType "System.IntPtr"
 %typemap(cstype) CppProtoType "CSharpProtoType"
 %typemap(csout)  CppProtoType {
-  byte[] tmp = new byte[4];
-  System.IntPtr data = $imcall;
-  System.Runtime.InteropServices.Marshal.Copy(data, tmp, 0, 4);
-  int size = System.BitConverter.ToInt32(tmp, 0);
-  byte[] buf = new byte[size + 4];
-  System.Runtime.InteropServices.Marshal.Copy(data, buf, 0, size + 4);
-  // TODO(user): delete the C++ buffer.
-  try {
-    Google.Protobuf.CodedInputStream input =
-        new Google.Protobuf.CodedInputStream(buf, 4, size);
-    CSharpProtoType proto = new CSharpProtoType();
-    proto.MergeFrom(input);
-    return proto;
-  } catch (Google.Protobuf.InvalidProtocolBufferException /*e*/) {
-    throw new System.Exception(
-        "Unable to parse CSharpProtoType protocol message.");
+    System.IntPtr data = $imcall;
+    int size = System.Runtime.InteropServices.Marshal.ReadInt32(data);
+    data += sizeof(int);
+    byte[] buf = System.Buffers.ArrayPool<byte>.Shared.Rent(size);
+    System.Runtime.InteropServices.Marshal.Copy(data, buf, 0, size);
+    // TODO(user): delete the C++ buffer.
+    try {
+      return CSharpProtoType.Parser.ParseFrom(System.MemoryExtensions.AsSpan(buf, 0, size));
+    } catch (Google.Protobuf.InvalidProtocolBufferException /*e*/) {
+      throw new System.Exception("Unable to parse CSharpProtoType protocol message.");
+    }
+    finally {
+      System.Buffers.ArrayPool<byte>.Shared.Return(buf);
+    }
   }
-}
 %typemap(out) CppProtoType {
   const long size = $1.ByteSizeLong();
   $result = new uint8_t[size + 4];
