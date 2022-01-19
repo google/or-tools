@@ -12,7 +12,6 @@ BASE_DEPS = \
  $(SRC_DIR)/ortools/base/dynamic_library.h \
  $(SRC_DIR)/ortools/base/encodingutils.h \
  $(SRC_DIR)/ortools/base/file.h \
- $(SRC_DIR)/ortools/base/filelineiter.h \
  $(SRC_DIR)/ortools/base/gzipstring.h \
  $(SRC_DIR)/ortools/base/hash.h \
  $(SRC_DIR)/ortools/base/integral_types.h \
@@ -36,6 +35,7 @@ BASE_DEPS = \
  $(SRC_DIR)/ortools/base/recordio.h \
  $(SRC_DIR)/ortools/base/small_map.h \
  $(SRC_DIR)/ortools/base/small_ordered_set.h \
+ $(SRC_DIR)/ortools/base/source_location.h \
  $(SRC_DIR)/ortools/base/status_builder.h \
  $(SRC_DIR)/ortools/base/status_macros.h \
  $(SRC_DIR)/ortools/base/stl_logging.h \
@@ -175,6 +175,7 @@ UTIL_DEPS = \
  $(SRC_DIR)/ortools/util/affine_relation.h \
  $(SRC_DIR)/ortools/util/bitset.h \
  $(SRC_DIR)/ortools/util/cached_log.h \
+ $(SRC_DIR)/ortools/util/filelineiter.h \
  $(SRC_DIR)/ortools/util/file_util.h \
  $(SRC_DIR)/ortools/util/fp_utils.h \
  $(SRC_DIR)/ortools/util/functions_swig_helpers.h \
@@ -372,15 +373,15 @@ objs/scheduling/jobshop_scheduling_parser.$O: \
  ortools/scheduling/jobshop_scheduling_parser.h \
  ortools/base/integral_types.h \
  ortools/gen/ortools/scheduling/jobshop_scheduling.pb.h \
- ortools/base/commandlineflags.h ortools/base/filelineiter.h \
- ortools/base/file.h ortools/base/logging.h ortools/base/log_severity.h \
- ortools/base/logging_export.h ortools/base/macros.h \
- ortools/base/vlog_is_on.h | $(OBJ_DIR)/scheduling
+ ortools/base/commandlineflags.h ortools/base/logging.h \
+ ortools/base/log_severity.h ortools/base/logging_export.h \
+ ortools/base/macros.h ortools/base/vlog_is_on.h \
+ ortools/util/filelineiter.h ortools/base/file.h | $(OBJ_DIR)/scheduling
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sscheduling$Sjobshop_scheduling_parser.cc $(OBJ_OUT)$(OBJ_DIR)$Sscheduling$Sjobshop_scheduling_parser.$O
 
 objs/scheduling/rcpsp_parser.$O: ortools/scheduling/rcpsp_parser.cc \
  ortools/scheduling/rcpsp_parser.h ortools/base/integral_types.h \
- ortools/gen/ortools/scheduling/rcpsp.pb.h ortools/base/filelineiter.h \
+ ortools/gen/ortools/scheduling/rcpsp.pb.h ortools/util/filelineiter.h \
  ortools/base/file.h ortools/base/logging.h \
  ortools/base/commandlineflags.h ortools/base/log_severity.h \
  ortools/base/logging_export.h ortools/base/macros.h \
@@ -600,13 +601,12 @@ objs/lp_data/model_reader.$O: ortools/lp_data/model_reader.cc \
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Slp_data$Smodel_reader.cc $(OBJ_OUT)$(OBJ_DIR)$Slp_data$Smodel_reader.$O
 
 objs/lp_data/mps_reader.$O: ortools/lp_data/mps_reader.cc \
- ortools/lp_data/mps_reader.h ortools/base/filelineiter.h \
- ortools/base/file.h ortools/base/integral_types.h ortools/base/logging.h \
- ortools/base/commandlineflags.h ortools/base/log_severity.h \
- ortools/base/logging_export.h ortools/base/macros.h \
- ortools/base/vlog_is_on.h ortools/base/hash.h ortools/base/basictypes.h \
- ortools/base/int_type.h ortools/base/map_util.h \
- ortools/base/protobuf_util.h ortools/base/status_macros.h \
+ ortools/lp_data/mps_reader.h ortools/base/hash.h \
+ ortools/base/basictypes.h ortools/base/integral_types.h \
+ ortools/base/logging.h ortools/base/commandlineflags.h \
+ ortools/base/log_severity.h ortools/base/logging_export.h \
+ ortools/base/macros.h ortools/base/vlog_is_on.h ortools/base/int_type.h \
+ ortools/base/map_util.h ortools/base/status_macros.h \
  ortools/base/status_builder.h \
  ortools/gen/ortools/linear_solver/linear_solver.pb.h \
  ortools/gen/ortools/util/optional_boolean.pb.h ortools/lp_data/lp_data.h \
@@ -615,7 +615,9 @@ objs/lp_data/mps_reader.$O: ortools/lp_data/mps_reader.cc \
  ortools/lp_data/sparse.h ortools/lp_data/permutation.h \
  ortools/util/return_macros.h ortools/lp_data/scattered_vector.h \
  ortools/lp_data/sparse_column.h ortools/lp_data/sparse_vector.h \
- ortools/graph/iterators.h ortools/util/fp_utils.h | $(OBJ_DIR)/lp_data
+ ortools/graph/iterators.h ortools/util/fp_utils.h \
+ ortools/util/filelineiter.h ortools/base/file.h \
+ ortools/base/protobuf_util.h | $(OBJ_DIR)/lp_data
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Slp_data$Smps_reader.cc $(OBJ_OUT)$(OBJ_DIR)$Slp_data$Smps_reader.$O
 
 objs/lp_data/proto_utils.$O: ortools/lp_data/proto_utils.cc \
@@ -1458,7 +1460,7 @@ objs/sat/boolean_problem.$O: ortools/sat/boolean_problem.cc \
  ortools/util/running_stat.h ortools/sat/restart.h \
  ortools/sat/sat_decision.h ortools/util/integer_pq.h \
  ortools/sat/simplification.h ortools/base/adjustable_priority_queue.h \
- ortools/util/logging.h ortools/graph/io.h ortools/base/filelineiter.h \
+ ortools/util/logging.h ortools/graph/io.h ortools/util/filelineiter.h \
  ortools/graph/graph.h ortools/graph/iterators.h \
  ortools/algorithms/find_graph_symmetries.h \
  ortools/algorithms/dynamic_partition.h \
@@ -3079,7 +3081,8 @@ objs/sat/util.$O: ortools/sat/util.cc ortools/sat/util.h \
  ortools/base/strong_vector.h ortools/util/bitset.h \
  ortools/gen/ortools/sat/sat_parameters.pb.h ortools/util/random_engine.h \
  ortools/util/time_limit.h ortools/base/timer.h ortools/base/basictypes.h \
- ortools/util/running_stat.h ortools/base/stl_util.h | $(OBJ_DIR)/sat
+ ortools/util/running_stat.h ortools/base/stl_util.h \
+ ortools/util/saturated_arithmetic.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Sutil.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sutil.$O
 
 objs/sat/var_domination.$O: ortools/sat/var_domination.cc \
@@ -3229,10 +3232,10 @@ objs/packing/binpacking_2d_parser.$O: \
  ortools/packing/binpacking_2d_parser.cc \
  ortools/packing/binpacking_2d_parser.h ortools/base/integral_types.h \
  ortools/gen/ortools/packing/multiple_dimensions_bin_packing.pb.h \
- ortools/base/filelineiter.h ortools/base/file.h ortools/base/logging.h \
- ortools/base/commandlineflags.h ortools/base/log_severity.h \
- ortools/base/logging_export.h ortools/base/macros.h \
- ortools/base/vlog_is_on.h | $(OBJ_DIR)/packing
+ ortools/base/logging.h ortools/base/commandlineflags.h \
+ ortools/base/log_severity.h ortools/base/logging_export.h \
+ ortools/base/macros.h ortools/base/vlog_is_on.h \
+ ortools/util/filelineiter.h ortools/base/file.h | $(OBJ_DIR)/packing
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Spacking$Sbinpacking_2d_parser.cc $(OBJ_OUT)$(OBJ_DIR)$Spacking$Sbinpacking_2d_parser.$O
 
 objs/packing/vector_bin_packing_parser.$O: \
@@ -3240,7 +3243,7 @@ objs/packing/vector_bin_packing_parser.$O: \
  ortools/packing/vector_bin_packing_parser.h \
  ortools/base/integral_types.h \
  ortools/gen/ortools/packing/vector_bin_packing.pb.h \
- ortools/base/filelineiter.h ortools/base/file.h ortools/base/logging.h \
+ ortools/util/filelineiter.h ortools/base/file.h ortools/base/logging.h \
  ortools/base/commandlineflags.h ortools/base/log_severity.h \
  ortools/base/logging_export.h ortools/base/macros.h \
  ortools/base/vlog_is_on.h | $(OBJ_DIR)/packing
