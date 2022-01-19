@@ -43,6 +43,7 @@ bool GurobiIsCorrectlyInstalled() {
 // See the comment at the top of the script.
 
 // This is the 'define' section.
+
 std::function<int(GRBenv**, const char*, const char*, const char*, int,
                   const char*)>
     GRBisqp = nullptr;
