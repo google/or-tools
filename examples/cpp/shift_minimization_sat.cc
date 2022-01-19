@@ -38,10 +38,10 @@
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
 #include "ortools/base/commandlineflags.h"
-#include "ortools/base/filelineiter.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/model.h"
+#include "ortools/util/filelineiter.h"
 
 ABSL_FLAG(std::string, input, "", "Input file.");
 ABSL_FLAG(std::string, params, "", "Sat parameters in text proto format.");

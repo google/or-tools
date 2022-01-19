@@ -26,10 +26,10 @@
 #include <string>
 
 #include "ortools/base/commandlineflags.h"
-#include "ortools/base/filelineiter.h"
 #include "ortools/base/logging.h"
 #include "ortools/graph/ebert_graph.h"
 #include "ortools/graph/linear_assignment.h"
+#include "ortools/util/filelineiter.h"
 
 ABSL_FLAG(bool, assignment_maximize_cost, false,
           "Negate costs so a max-cost assignment is found.");

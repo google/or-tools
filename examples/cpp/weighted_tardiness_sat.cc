@@ -27,11 +27,11 @@
 #include "absl/strings/str_split.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/commandlineflags.h"
-#include "ortools/base/filelineiter.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/model.h"
+#include "ortools/util/filelineiter.h"
 
 ABSL_FLAG(std::string, input, "examples/data/weighted_tardiness/wt40.txt",
           "wt data file name.");
