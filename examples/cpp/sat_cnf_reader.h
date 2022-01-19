@@ -26,12 +26,12 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/commandlineflags.h"
-#include "ortools/base/filelineiter.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 #include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/util/filelineiter.h"
 
 ABSL_FLAG(bool, wcnf_use_strong_slack, true,
           "If true, when we add a slack variable to reify a soft clause, we "

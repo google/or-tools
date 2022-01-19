@@ -22,10 +22,10 @@
 
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
-#include "ortools/base/filelineiter.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 #include "ortools/sat/boolean_problem.pb.h"
+#include "ortools/util/filelineiter.h"
 
 namespace operations_research {
 namespace sat {

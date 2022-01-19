@@ -129,9 +129,9 @@ cc_library(
     hdrs = ["parse_dimacs_assignment.h"],
     deps = [
         "//ortools/base",
-        "//ortools/base:filelineiter",
         "//ortools/graph:ebert_graph",
         "//ortools/graph:linear_assignment",
+        "//ortools/util:filelineiter",
     ],
 )
 
@@ -429,7 +429,6 @@ cc_binary(
         "//ortools/algorithms:sparse_permutation",
         "//ortools/base",
         "//ortools/base:file",
-        "//ortools/base:filelineiter",
         "//ortools/base:threadpool",
         "//ortools/lp_data:mps_reader",
         "//ortools/lp_data:proto_utils",
@@ -443,6 +442,7 @@ cc_binary(
         "//ortools/sat:sat_solver",
         "//ortools/sat:simplification",
         "//ortools/sat:symmetry",
+        "//ortools/util:filelineiter",
         "//ortools/util:sigint",
         "//ortools/util:time_limit",
         "@com_google_absl//absl/status",
@@ -459,9 +459,9 @@ cc_binary(
     deps = [
         "//ortools/base",
         "//ortools/base:file",
-        "//ortools/base:filelineiter",
         "//ortools/sat:cp_model",
         "//ortools/sat:model",
+        "//ortools/util:filelineiter",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -553,7 +553,6 @@ cc_binary(
     deps = [
         "//ortools/base",
         "//ortools/base:file",
-        "//ortools/base:filelineiter",
         "//ortools/sat:cp_model",
         "//ortools/sat:cp_model_solver",
         "//ortools/sat:disjunctive",
@@ -564,6 +563,7 @@ cc_binary(
         "//ortools/sat:optimization",
         "//ortools/sat:precedences",
         "//ortools/sat:sat_solver",
+        "//ortools/util:filelineiter",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
     ],
