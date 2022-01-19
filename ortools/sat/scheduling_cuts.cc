@@ -19,7 +19,9 @@
 #include <functional>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -106,16 +108,17 @@ struct EnergyEvent {
 
   // Energy will be present only if the x_size * y_size could be linearized.
   std::optional<LinearExpression> energy;
-  double energy_lp = 0.0;
   LiteralIndex presence_literal_index = kNoLiteralIndex;
 
-  // This just cache MinOf(x_size) and MinOf(y_size) for speed:
+  // Caches for MinOf(x_size), MinOf(y_size), and the LP values of the energy
+  // and the presence literal.
   IntegerValue x_size_min;
   IntegerValue y_size_min;
   double literal_lp = 1.0;
+  double energy_lp = 0.0;
 
   // Used to minimize the increase on the y axis for rectangles.
-  IntegerValue y_spread = IntegerValue(0);
+  double y_spread = 0.0;
 
   // The actual value of the presence literal of the interval(s) is checked
   // when the event is created. A value of kNoLiteralIndex indicates that either
@@ -125,7 +128,7 @@ struct EnergyEvent {
 
   // Computes the mandatory minimal overlap of the interval with the time window
   // [start, end].
-  IntegerValue MinOverlap(IntegerValue start, IntegerValue end) const {
+  IntegerValue GetMinOverlap(IntegerValue start, IntegerValue end) const {
     return std::max(std::min({x_end_min - start, end - x_start_max, x_size_min,
                               end - start}),
                     IntegerValue(0));
@@ -152,7 +155,7 @@ void GenerateEnergeticCuts(
     const std::string& cut_name,
     const absl::StrongVector<IntegerVariable, double>& lp_values,
     std::vector<EnergyEvent> events, const AffineExpression capacity,
-    bool no_overlap_2d, Model* model, LinearConstraintManager* manager) {
+    bool events_are_2d, Model* model, LinearConstraintManager* manager) {
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
   TopNCuts top_n_cuts(15);
 
@@ -169,36 +172,43 @@ void GenerateEnergeticCuts(
   for (const auto& e : events) {
     sum_of_all_energies += e.energy_lp;
   }
+  CapacityProfile capacity_profile;
 
   IntegerValue processed_start = kMinIntegerValue;
   for (int i1 = 0; i1 + 1 < events.size(); ++i1) {
     // We want maximal cuts. For any x_start_min value, we only need to create
     // cuts starting from the first interval having this x_start_min value.
-    if (events[i1].x_start_min == processed_start) {
-      continue;
-    } else if (!no_overlap_2d) {
-      // Enabling this optimization reduces dramatically the number of generated
-      // cuts in the no_overlap_2d case.
-      // TODO(user): Improve splitting part for the no_overlap_2d part.
-      processed_start = events[i1].x_start_min;
+    //
+    // Enabling this optimization reduces dramatically the number of generated
+    // cuts in the rectangle_case case. So we only use it in the !events_are_2d
+    // case.
+    if (!events_are_2d) {
+      if (events[i1].x_start_min == processed_start) {
+        continue;
+      } else {
+        processed_start = events[i1].x_start_min;
+      }
     }
 
     // For each start time, we will keep the most violated cut generated while
     // scanning the residual intervals.
     int max_violation_end_index = -1;
-    double max_relative_violation = 1.01;
+    double max_relative_violation = 1.0 + kMinCutViolation;
     IntegerValue max_violation_window_start(0);
     IntegerValue max_violation_window_end(0);
     IntegerValue max_violation_y_min(0);
     IntegerValue max_violation_y_max(0);
+    IntegerValue max_violation_precise_area(0);
+    bool max_violation_use_precise_area = false;
     std::vector<EnergyEvent> max_violation_lifted_events;
 
-    // Accumulate intervals and check for potential cuts.
+    // Accumulate intervals, areas, energies and check for potential cuts.
     double energy_lp = 0.0;
     IntegerValue window_min = kMaxIntegerValue;
     IntegerValue window_max = kMinIntegerValue;
     IntegerValue y_min = kMaxIntegerValue;
     IntegerValue y_max = kMinIntegerValue;
+    capacity_profile.Clear();
 
     // We sort all tasks (x_start_min(task) >= x_start_min(start_index) by
     // increasing end max.
@@ -217,10 +227,14 @@ void GenerateEnergeticCuts(
       window_max = std::max(window_max, e.x_end_max);
       y_min = std::min(y_min, e.y_min);
       y_max = std::max(y_max, e.y_max);
+      if (events_are_2d) {
+        capacity_profile.AddRectangle(e.x_start_min, e.x_end_max, e.y_min,
+                                      e.y_max);
+      }
 
       // Dominance rule. If the next interval also fits in
       // [window_min, window_max], the cut will be stronger with the
-      // next interval.
+      // next interval/rectangle.
       if (i2 + 1 < residual_events.size() &&
           residual_events[i2 + 1].x_start_min >= window_min &&
           residual_events[i2 + 1].x_end_max <= window_max &&
@@ -231,9 +245,28 @@ void GenerateEnergeticCuts(
 
       // Checks the current area vs the sum of all energies.
       DCHECK(capacity_lp == 0.0 || y_max == y_min);
-      const double window_lp = ToDouble(window_max - window_min);
-      const double area = window_lp * (capacity_lp + ToDouble(y_max - y_min));
-      if (area >= sum_of_all_energies) {
+      // we have two cases:
+      //   - events_are_2d = false: the area is (window_max - window_min) *
+      //   capacity.
+      //     Its LP value is (window_max - window_min) * capacity_lp.
+      //   - events_are_2d = true: The area is
+      //   capacity_profile.GetBoundingArea().
+      //     We can compare it to the bounding box area:
+      //         (window_max - window_min) * (y_max - y_min).
+      bool use_precise_area = false;
+      IntegerValue precise_area(0);
+      double area_lp = 0.0;
+      if (events_are_2d) {
+        const IntegerValue bbox_area =
+            (window_max - window_min) * (y_max - y_min);
+        precise_area = capacity_profile.GetBoundingArea();
+        use_precise_area = precise_area < bbox_area;
+        area_lp = ToDouble(precise_area);
+      } else {
+        area_lp = capacity_lp * ToDouble(window_max - window_min);
+      }
+
+      if (area_lp >= sum_of_all_energies) {
         break;
       }
 
@@ -242,46 +275,51 @@ void GenerateEnergeticCuts(
       //
       // TODO(user): We could precompute possible intervals and store them
       // by x_start_max, x_end_min to reduce the complexity.
+      //
+      // Note: this is not useful in the no_overlap_2d case. Maybe because of
+      // geometric nature of the overlap w.r.t. strict rectangles. i.e. a
+      // rectangle  that can be lifted will most likely increase the y_range.
       std::vector<EnergyEvent> lifted_events;
       double lifted_contrib_lp = 0.0;
-
-      const auto check_lifted_cuts = [&lifted_events, window_min, window_max,
-                                      y_min, y_max, &lifted_contrib_lp,
-                                      &lp_values](const EnergyEvent& e) {
-        // It should not happen because of the 2 dominance rules above.
-        if (e.x_start_min >= window_min && e.x_end_max <= window_max) {
-          return;
-        }
-
-        // Do not add if it extends the y range.
-        if (e.y_min < y_min || e.y_max > y_max) return;
-
-        // Exit if the interval can be pushed left or right of the window.
-        if (e.x_end_min <= window_min || e.x_start_max >= window_max) return;
-
-        DCHECK_GT(window_max, window_min);
-        DCHECK_GT(e.x_size_min, 0);
-
-        const IntegerValue min_overlap = e.MinOverlap(window_min, window_max);
-
-        if (min_overlap <= 0) return;
-
-        lifted_events.push_back(e);
-        double contrib_lp = 0.0;
-        if (e.IsPresent()) {
-          contrib_lp = e.y_size.LpValue(lp_values) * ToDouble(min_overlap);
-        } else {
-          contrib_lp = e.literal_lp * ToDouble(min_overlap * e.y_size_min);
-        }
-        // We know the energy is >= 0.0. Some epsilon in the simplex can make
-        // contrib_lp a small negative number. We can correct this.
-        lifted_contrib_lp += std::max(contrib_lp, 0.0);
-      };
 
       // Because of the 2D conflicts, lifted events are unlikely in the
       // no_overlap_2d case. Let's disable this expensive loop for the time
       // being.
-      if (!no_overlap_2d) {
+      if (!events_are_2d) {
+        const auto check_lifted_cuts = [&lifted_events, window_min, window_max,
+                                        y_min, y_max, &lifted_contrib_lp,
+                                        &lp_values](const EnergyEvent& e) {
+          // It should not happen because of the 2 dominance rules above.
+          if (e.x_start_min >= window_min && e.x_end_max <= window_max) {
+            return;
+          }
+
+          // Do not add if it extends the y range.
+          if (e.y_min < y_min || e.y_max > y_max) return;
+
+          // Exit if the interval can be pushed left or right of the window.
+          if (e.x_end_min <= window_min || e.x_start_max >= window_max) return;
+
+          DCHECK_GT(window_max, window_min);
+          DCHECK_GT(e.x_size_min, 0);
+
+          const IntegerValue min_overlap =
+              e.GetMinOverlap(window_min, window_max);
+
+          if (min_overlap <= 0) return;
+
+          lifted_events.push_back(e);
+          double contrib_lp = 0.0;
+          if (e.IsPresent()) {
+            contrib_lp = e.y_size.LpValue(lp_values) * ToDouble(min_overlap);
+          } else {
+            contrib_lp = e.literal_lp * ToDouble(min_overlap * e.y_size_min);
+          }
+          // We know the energy is >= 0.0. Some epsilon in the simplex can make
+          // contrib_lp a small negative number. We can correct this.
+          lifted_contrib_lp += std::max(contrib_lp, 0.0);
+        };
+
         for (int i3 = 0; i3 < i1; ++i3) {
           check_lifted_cuts(events[i3]);
         }
@@ -291,15 +329,18 @@ void GenerateEnergeticCuts(
       }
 
       // Compute the violation of the potential cut.
-      const double relative_violation = (energy_lp + lifted_contrib_lp) / area;
+      const double relative_violation =
+          (energy_lp + lifted_contrib_lp) / area_lp;
       if (relative_violation > max_relative_violation) {
         max_violation_end_index = i2;
         max_relative_violation = relative_violation;
         max_violation_window_start = window_min;
         max_violation_window_end = window_max;
+        std::swap(max_violation_lifted_events, lifted_events);
         max_violation_y_min = y_min;
         max_violation_y_max = y_max;
-        max_violation_lifted_events = lifted_events;
+        max_violation_precise_area = precise_area;
+        max_violation_use_precise_area = use_precise_area;
       }
     }
 
@@ -313,14 +354,17 @@ void GenerateEnergeticCuts(
     bool use_energy = false;
 
     DCHECK(capacity_lp == 0.0 || max_violation_y_max == max_violation_y_min);
+    // Build the cut.
     LinearConstraintBuilder cut(
         model, kMinIntegerValue,
-        (max_violation_window_end - max_violation_window_start) *
-            (max_violation_y_max - max_violation_y_min));
+        events_are_2d ? max_violation_precise_area : IntegerValue(0));
 
-    // Build the cut.
-    cut.AddTerm(capacity,
-                max_violation_window_start - max_violation_window_end);
+    // Adds the capacity in the disjunctive/cumulative case.
+    if (!events_are_2d) {
+      cut.AddTerm(capacity,
+                  max_violation_window_start - max_violation_window_end);
+    }
+
     for (int i2 = 0; i2 <= max_violation_end_index; ++i2) {
       const EnergyEvent& e = residual_events[i2];
       if (e.IsPresent()) {
@@ -350,7 +394,8 @@ void GenerateEnergeticCuts(
     }
 
     for (const EnergyEvent& e : max_violation_lifted_events) {
-      const IntegerValue min_overlap = e.MinOverlap(window_min, window_max);
+      const IntegerValue min_overlap =
+          e.GetMinOverlap(max_violation_window_start, max_violation_window_end);
       DCHECK_GT(min_overlap, 0);
       use_lifted_events = true;
 
@@ -372,6 +417,7 @@ void GenerateEnergeticCuts(
       if (has_quadratic_cuts) full_name.append("_quad");
       if (use_lifted_events) full_name.append("_lifted");
       if (use_energy) full_name.append("_energy");
+      if (max_violation_use_precise_area) full_name.append("_precise");
       top_n_cuts.AddCut(cut.Build(), full_name, lp_values);
     }
   }
@@ -389,6 +435,28 @@ void AppendVariablesToCumulativeCut(
   }
   if (!integer_trail->IsFixed(capacity)) {
     result->vars.push_back(capacity.var);
+  }
+}
+
+double ComputeEnergyLp(
+    const EnergyEvent& e,
+    const absl::StrongVector<IntegerVariable, double>& lp_values,
+    IntegerTrail* integer_trail) {
+  if (e.presence_literal_index == kNoLiteralIndex) {
+    if (e.energy) {
+      return e.energy.value().LpValue(lp_values);
+    } else {  // demand and size are not fixed.
+      // X * Y >= X * y_min + x_min * Y - x_min * y_min.
+      return ToDouble(e.y_size_min) * e.x_size.LpValue(lp_values) +
+             ToDouble(e.x_size_min) * e.y_size.LpValue(lp_values) -
+             ToDouble(e.x_size_min * e.y_size_min);
+    }
+  } else {
+    const IntegerValue min_energy =
+        std::max(e.x_size_min * e.y_size_min,
+                 e.energy ? e.energy.value().LevelZeroMin(integer_trail)
+                          : IntegerValue(0));
+    return e.literal_lp * ToDouble(min_energy);
   }
 }
 
@@ -438,39 +506,19 @@ CutGenerator CreateCumulativeEnergyCutGenerator(
           if (ProductIsLinearized(energies[i])) {
             e.energy = energies[i];
           }
-          if (!helper->IsPresent(i)) {
-            e.presence_literal_index = helper->PresenceLiteral(i).Index();
-          }
           e.x_size_min = helper->SizeMin(i);
           e.y_size_min = integer_trail->LevelZeroLowerBound(demands[i]);
-          // Cache the energy contribution for the lp relaxation.
-          double energy_lp = 0.0;
-          if (helper->IsPresent(i)) {
-            if (e.energy) {
-              energy_lp = e.energy.value().LpValue(lp_values);
-            } else {  // demand and size are not fixed.
-              // X * Y >= X * y_min + x_min * Y - x_min * y_min.
-              energy_lp = ToDouble(e.y_size_min) * e.x_size.LpValue(lp_values);
-              energy_lp += ToDouble(e.x_size_min) * e.y_size.LpValue(lp_values);
-              energy_lp -= ToDouble(e.x_size_min * e.y_size_min);
-            }
-          } else {
+          if (!helper->IsPresent(i)) {
             e.presence_literal_index = helper->PresenceLiteral(i).Index();
             e.literal_lp = GetLiteralLpValue(Literal(e.presence_literal_index),
                                              lp_values, encoder);
-            const IntegerValue min_energy =
-                std::max(e.x_size_min * e.y_size_min,
-                         e.energy ? e.energy.value().LevelZeroMin(integer_trail)
-                                  : IntegerValue(0));
-            energy_lp = e.literal_lp * ToDouble(min_energy);
           }
-          // we know the energy is >= 0. So we can avoid small negative numbers.
-          e.energy_lp = std::max(energy_lp, 0.0);
+          e.energy_lp = ComputeEnergyLp(e, lp_values, integer_trail);
           events.push_back(e);
         }
 
         GenerateEnergeticCuts("CumulativeEnergy", lp_values, events, capacity,
-                              false, model, manager);
+                              /*events_are_2d=*/false, model, manager);
         return true;
       };
 
@@ -522,22 +570,20 @@ CutGenerator CreateNoOverlapEnergyCutGenerator(
           e.energy = sizes[i];
           e.x_size_min = helper->SizeMin(i);
           e.y_size_min = IntegerValue(1);
-          double energy_lp = 0.0;
           if (helper->IsPresent(i)) {
-            energy_lp = e.energy->LpValue(lp_values);
+            e.energy_lp = e.energy->LpValue(lp_values);
           } else {
             e.presence_literal_index = helper->PresenceLiteral(i).Index();
             e.literal_lp = GetLiteralLpValue(Literal(e.presence_literal_index),
                                              lp_values, encoder);
-            energy_lp = e.literal_lp * ToDouble(e.x_size_min);
+            e.energy_lp = e.literal_lp * ToDouble(e.x_size_min);
           }
-          // we know the energy is >= 0. So we can avoid small negative numbers.
-          e.energy_lp = std::max(energy_lp, 0.0);
           events.push_back(e);
         }
 
         GenerateEnergeticCuts("NoOverlapEnergy", lp_values, events,
-                              IntegerValue(1), false, model, manager);
+                              IntegerValue(1), /*events_are_2d=*/false, model,
+                              manager);
         return true;
       };
   return result;
@@ -556,13 +602,6 @@ void GenerateNoOverlap2dEnergyCut(
       continue;
     }
 
-    const LiteralIndex literal_index =
-        x_helper->IsPresent(rect)
-            ? (y_helper->IsPresent(rect)
-                   ? kNoLiteralIndex
-                   : y_helper->PresenceLiteral(rect).Index())
-            : x_helper->PresenceLiteral(rect).Index();
-
     EnergyEvent e;
     e.x_start_min = x_helper->StartMin(rect);
     e.x_start_max = x_helper->StartMax(rect);
@@ -575,31 +614,19 @@ void GenerateNoOverlap2dEnergyCut(
     if (ProductIsLinearized(energies[rect])) {
       e.energy = energies[rect];
     }
-    e.presence_literal_index = literal_index;
-    e.x_size_min = x_helper->SizeMin(rect);
-    e.y_size_min = y_helper->SizeMin(rect);
-    // Cache the energy contribution for the lp relaxation.
-    double energy_lp = 0.0;
-    if (e.presence_literal_index == kNoLiteralIndex) {
-      if (e.energy) {
-        energy_lp = e.energy.value().LpValue(lp_values);
-      } else {  // demand and size are not fixed.
-        // X * Y >= X * y_min + x_min * Y - x_min * y_min.
-        energy_lp = ToDouble(e.y_size_min) * e.x_size.LpValue(lp_values);
-        energy_lp += ToDouble(e.x_size_min) * e.y_size.LpValue(lp_values);
-        energy_lp -= ToDouble(e.x_size_min * e.y_size_min);
-      }
-    } else {
+    e.presence_literal_index =
+        x_helper->IsPresent(rect)
+            ? (y_helper->IsPresent(rect)
+                   ? kNoLiteralIndex
+                   : y_helper->PresenceLiteral(rect).Index())
+            : x_helper->PresenceLiteral(rect).Index();
+    if (e.presence_literal_index != kNoLiteralIndex) {
       e.literal_lp = GetLiteralLpValue(Literal(e.presence_literal_index),
                                        lp_values, encoder);
-      const IntegerValue min_energy =
-          std::max(e.x_size_min * e.y_size_min,
-                   e.energy ? e.energy.value().LevelZeroMin(integer_trail)
-                            : IntegerValue(0));
-      energy_lp = e.literal_lp * ToDouble(min_energy);
     }
-    // we know the energy is >= 0. So we can avoid small negative numbers.
-    e.energy_lp = std::max(energy_lp, 0.0);
+    e.x_size_min = x_helper->SizeMin(rect);
+    e.y_size_min = y_helper->SizeMin(rect);
+    e.energy_lp = ComputeEnergyLp(e, lp_values, integer_trail);
     events.push_back(e);
   }
 
@@ -610,14 +637,13 @@ void GenerateNoOverlap2dEnergyCut(
   for (const auto& e : events) {
     average_d += ToDouble(e.y_min + e.y_max);
   }
-  const int64_t average =
-      static_cast<int64_t>(std::round(average_d / 2 / events.size()));
+  const double average = average_d / 2.0 / static_cast<double>(events.size());
   for (auto& e : events) {
-    e.y_spread = IntegerValue(std::abs(e.y_max.value() - average) +
-                              std::abs(average - e.y_min.value()));
+    e.y_spread = std::abs(ToDouble(e.y_max) - average) +
+                 std::abs(average - ToDouble(e.y_min));
   }
-  GenerateEnergeticCuts(cut_name, lp_values, events, IntegerValue(0), true,
-                        model, manager);
+  GenerateEnergeticCuts(cut_name, lp_values, events, IntegerValue(0),
+                        /*events_are_2d=*/true, model, manager);
 }
 
 CutGenerator CreateNoOverlap2dEnergyCutGenerator(

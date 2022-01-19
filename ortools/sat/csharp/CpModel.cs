@@ -1172,7 +1172,7 @@ public class CpModel
         return index;
     }
 
-    public LinearExpr GetLinearExpr<X>(X x)
+    internal LinearExpr GetLinearExpr<X>(X x)
     {
         if (typeof(X) == typeof(IntVar))
         {
@@ -1189,7 +1189,7 @@ public class CpModel
         throw new ArgumentException("Cannot convert argument to LinearExpr");
     }
 
-    public LinearExpressionProto GetLinearExpressionProto(LinearExpr expr, bool negate = false)
+    internal LinearExpressionProto GetLinearExpressionProto(LinearExpr expr, bool negate = false)
     {
         Dictionary<IntVar, long> dict = new Dictionary<IntVar, long>();
         long constant = LinearExpr.GetVarValueMap(expr, 1L, dict, terms_);

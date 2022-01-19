@@ -94,6 +94,16 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
                                        CpModelProto* cp_model,
                                        SolverLogger* logger);
 
+// Converts a CP-SAT model to a MPModelProto one.
+// This only works for pure linear model (otherwise it returns false). This is
+// mainly useful for debugging or using CP-SAT presolve and then trying other
+// MIP solvers.
+//
+// TODO(user): This first version do not even handle basic Boolean constraint.
+// Support more constraints as needed.
+bool ConvertCpModelProtoToMPModelProto(const CpModelProto& input,
+                                       MPModelProto* output);
+
 // Scales a double objective to its integer version and fills it in the proto.
 // The variable listed in the objective must be already defined in the cp_model
 // proto as this uses the variables bounds to compute a proper scaling.

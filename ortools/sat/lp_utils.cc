@@ -952,6 +952,84 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
   return true;
 }
 
+bool ConvertCpModelProtoToMPModelProto(const CpModelProto& input,
+                                       MPModelProto* output) {
+  CHECK(output != nullptr);
+  output->Clear();
+
+  // Copy variables.
+  const int num_vars = input.variables().size();
+  for (int v = 0; v < num_vars; ++v) {
+    if (input.variables(v).domain().size() != 2) {
+      VLOG(1) << "Cannot convert " << input.variables(v).ShortDebugString();
+      return false;
+    }
+
+    MPVariableProto* var = output->add_variable();
+    var->set_is_integer(true);
+    var->set_lower_bound(input.variables(v).domain(0));
+    var->set_upper_bound(input.variables(v).domain(1));
+  }
+
+  // Copy integer or float objective.
+  if (input.has_objective()) {
+    double factor = input.objective().scaling_factor();
+    if (factor == 0.0) factor = 1.0;
+    const int num_terms = input.objective().vars().size();
+    for (int i = 0; i < num_terms; ++i) {
+      const int var = input.objective().vars(i);
+      if (var < 0) return false;
+      output->mutable_variable(var)->set_objective_coefficient(
+          factor * input.objective().coeffs(i));
+    }
+    output->set_objective_offset(factor * input.objective().offset());
+  } else if (input.has_floating_point_objective()) {
+    const int num_terms = input.floating_point_objective().vars().size();
+    for (int i = 0; i < num_terms; ++i) {
+      const int var = input.floating_point_objective().vars(i);
+      if (var < 0) return false;
+      output->mutable_variable(var)->set_objective_coefficient(
+          input.floating_point_objective().coeffs(i));
+    }
+    output->set_objective_offset(input.floating_point_objective().offset());
+  }
+  if (output->objective_offset() == 0.0) {
+    output->clear_objective_offset();
+  }
+
+  // Copy constraint.
+  const int num_constraints = input.constraints().size();
+  for (int c = 0; c < num_constraints; ++c) {
+    const ConstraintProto& ct = input.constraints(c);
+    switch (ct.constraint_case()) {
+      case ConstraintProto::kLinear: {
+        if (ct.linear().domain().size() != 2) {
+          VLOG(1) << "Cannot convert constraint: " << ct.DebugString();
+          return false;
+        }
+
+        MPConstraintProto* out_ct = output->add_constraint();
+        out_ct->set_lower_bound(ct.linear().domain(0));
+        out_ct->set_upper_bound(ct.linear().domain(1));
+
+        const int num_terms = ct.linear().vars().size();
+        for (int i = 0; i < num_terms; ++i) {
+          const int var = ct.linear().vars(i);
+          if (var < 0) return false;
+          out_ct->add_var_index(var);
+          out_ct->add_coefficient(ct.linear().coeffs(i));
+        }
+        break;
+      }
+      default:
+        VLOG(1) << "Cannot convert constraint: " << ct.DebugString();
+        return false;
+    }
+  }
+
+  return true;
+}
+
 bool ScaleAndSetObjective(const SatParameters& params,
                           const std::vector<std::pair<int, double>>& objective,
                           double objective_offset, bool maximize,

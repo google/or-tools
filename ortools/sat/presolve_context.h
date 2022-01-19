@@ -432,8 +432,12 @@ class PresolveContext {
   // The vector list is sorted and contains unique elements.
   //
   // Important: To properly handle the objective, var_to_constraints[objective]
-  // contains -1 so that if the objective appear in only one constraint, the
-  // constraint cannot be simplified.
+  // contains kObjectiveConstraint (i.e. -1) so that if the objective appear in
+  // only one constraint, the constraint cannot be simplified.
+  const std::vector<std::vector<int>>& ConstraintToVarsGraph() const {
+    DCHECK(ConstraintVariableGraphIsUpToDate());
+    return constraint_to_vars_;
+  }
   const std::vector<int>& ConstraintToVars(int c) const {
     DCHECK(ConstraintVariableGraphIsUpToDate());
     return constraint_to_vars_[c];

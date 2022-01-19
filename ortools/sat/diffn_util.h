@@ -156,6 +156,99 @@ void GetOverlappingIntervalComponents(
 std::vector<int> GetIntervalArticulationPoints(
     std::vector<IndexedInterval>* intervals);
 
+// This class is used by the no_overlap_2d constraint to maintain the envelope
+// of a set of rectangles. This envelope is not the convex hull, but the exact
+// polyline (aligned with the x and y axis) that contains all the rectangles
+// passed with the AddRectangle() call.
+class CapacityProfile {
+ public:
+  // Simple start of a rectangle. This is used to represent the residual
+  // capacity profile.
+  struct Rectangle {
+    Rectangle(IntegerValue start, IntegerValue height)
+        : start(start), height(height) {}
+
+    bool operator<(const Rectangle& other) const { return start < other.start; }
+    bool operator==(const Rectangle& other) const {
+      return start == other.start && height == other.height;
+    }
+
+    IntegerValue start = IntegerValue(0);
+    IntegerValue height = IntegerValue(0);
+  };
+
+  void Clear();
+
+  // Adds a rectangle to the current shape.
+  void AddRectangle(IntegerValue x_min, IntegerValue x_max, IntegerValue y_min,
+                    IntegerValue y_max);
+
+  // Adds a mandatory profile consumption. All mandatory usages will be
+  // subtracted from the y_max-y_min profile to build the residual capacity.
+  void AddMandatoryConsumption(IntegerValue x_min, IntegerValue x_max,
+                               IntegerValue y_height);
+
+  // Returns the profile of the function:
+  // capacity(x) = max(y_max of rectangles overlapping x) - min(y_min of
+  //     rectangle overlapping x) - sum(y_height of mandatory rectangles
+  //     overlapping x) where a rectangle overlaps x if x_min <= x < x_max.
+  //
+  // Note the profile can contain negative heights in case the mandatory part
+  // exceeds the range on the y axis.
+  //
+  // Note that it adds a sentinel (kMinIntegerValue, 0) at the start. It is
+  // useful when we reverse the direction on the x axis.
+  void BuildResidualCapacityProfile(std::vector<Rectangle>* result);
+
+  // Returns the exact area of the bounding polyline of all rectangles added.
+  //
+  // Note that this will redo the computation each time.
+  IntegerValue GetBoundingArea();
+
+ private:
+  // Type for the capacity events.
+  enum EventType { START_RECTANGLE, END_RECTANGLE, CHANGE_MANDATORY_PROFILE };
+
+  // Individual events.
+  struct Event {
+    IntegerValue time;
+    IntegerValue y_min;
+    IntegerValue y_max;
+    EventType type;
+    int index;
+
+    const bool operator<(const Event& other) const { return time < other.time; }
+  };
+
+  // Element of the integer_pq heap.
+  struct QueueElement {
+    int Index() const { return index; }
+    const bool operator<(const QueueElement& o) const {
+      return value < o.value;
+    }
+
+    int index;
+    IntegerValue value;
+  };
+
+  static Event StartRectangleEvent(int index, IntegerValue x_min,
+                                   IntegerValue y_min, IntegerValue y_max) {
+    return {x_min, y_min, y_max, START_RECTANGLE, index};
+  }
+
+  static Event EndRectangleEvent(int index, IntegerValue x_max) {
+    return {x_max, kMinIntegerValue, kMinIntegerValue, END_RECTANGLE, index};
+  }
+
+  static Event ChangeMandatoryProfileEvent(IntegerValue x, IntegerValue delta) {
+    return {x, /*y_min=*/delta, /*y_max=*/kMinIntegerValue,
+            CHANGE_MANDATORY_PROFILE, /*index=*/-1};
+  }
+
+  std::vector<Event> events_;
+  int num_rectangles_added_ = 0;
+};
+
 }  // namespace sat
 }  // namespace operations_research
 

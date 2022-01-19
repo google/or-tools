@@ -1076,13 +1076,13 @@ bool PresolveContext::GetAbsRelation(int target_ref, int* ref) {
   //
   // TODO(user): Incorporate this as part of SavedVariable/SavedLiteral so we
   // make sure we never forget about this.
-  const int candidate = it->second.Get(this);
+  const int candidate = PositiveRef(it->second.Get(this));
   if (removed_variables_.contains(candidate)) {
     abs_relations_.erase(it);
     return false;
   }
+  CHECK(!VariableWasRemoved(candidate));
   *ref = candidate;
-  CHECK(!VariableWasRemoved(*ref));
   return true;
 }
 

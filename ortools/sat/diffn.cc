@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <limits>
+#include <vector>
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/strings/str_join.h"
@@ -25,6 +26,7 @@
 #include "ortools/sat/cumulative.h"
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/disjunctive.h"
+#include "ortools/sat/integer.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/theta_tree.h"
@@ -222,8 +224,12 @@ bool NonOverlappingRectanglesEnergyPropagator::FailWhenEnergyIsTooLarge(
     IntegerValue total_sum_of_areas) {
   SortBoxesIntoNeighbors(box, local_boxes, total_sum_of_areas);
 
-  Rectangle area = cached_rectangles_[box];
+  CapacityProfile bounding_area;
   IntegerValue sum_of_areas = cached_energies_[box];
+  Rectangle area = cached_rectangles_[box];
+  bounding_area.AddRectangle(
+      cached_rectangles_[box].x_min, cached_rectangles_[box].x_max,
+      cached_rectangles_[box].y_min, cached_rectangles_[box].y_max);
 
   const auto add_box_energy_in_rectangle_reason = [&](int b) {
     x_.AddEnergyMinInIntervalReason(b, area.x_min, area.x_max);
@@ -232,30 +238,56 @@ bool NonOverlappingRectanglesEnergyPropagator::FailWhenEnergyIsTooLarge(
     y_.AddPresenceReason(b);
   };
 
+  const auto add_precise_box_energy_reason = [&](int b) {
+    x_.AddStartMinReason(b, x_.StartMin(b));
+    x_.AddEndMaxReason(b, x_.EndMax(b));
+    x_.AddSizeMinReason(b, x_.SizeMin(b));
+    y_.AddStartMinReason(b, y_.StartMin(b));
+    y_.AddEndMaxReason(b, y_.EndMax(b));
+    y_.AddSizeMinReason(b, y_.SizeMin(b));
+    x_.AddPresenceReason(b);
+    y_.AddPresenceReason(b);
+  };
+
   for (int i = 0; i < neighbors_.size(); ++i) {
     const int other_box = neighbors_[i].box;
+    const Rectangle& other = cached_rectangles_[other_box];
     CHECK_GT(cached_energies_[other_box], 0);
 
     // Update Bounding box.
-    area.TakeUnionWith(cached_rectangles_[other_box]);
+    area.TakeUnionWith(other);
     if (area.x_max - area.x_min > threshold_x_) break;
     if (area.y_max - area.y_min > threshold_y_) break;
 
+    // Update precise bounding area.
+    bounding_area.AddRectangle(other.x_min, other.x_max, other.y_min,
+                               other.y_max);
+
     // Update sum of areas.
     sum_of_areas += cached_energies_[other_box];
-    const IntegerValue bounding_area =
+    const IntegerValue bounding_rectangle_area =
         (area.x_max - area.x_min) * (area.y_max - area.y_min);
-    if (bounding_area >= total_sum_of_areas) {
+    const IntegerValue precise_area = bounding_area.GetBoundingArea();
+
+    if (precise_area >= total_sum_of_areas) {
       // Nothing will be deduced. Exiting.
       return true;
     }
 
-    if (sum_of_areas > bounding_area) {
+    if (sum_of_areas > precise_area) {
       x_.ClearReason();
       y_.ClearReason();
-      add_box_energy_in_rectangle_reason(box);
-      for (int j = 0; j <= i; ++j) {
-        add_box_energy_in_rectangle_reason(neighbors_[j].box);
+      if (sum_of_areas > bounding_rectangle_area) {
+        // Use the more general relaxation.
+        add_box_energy_in_rectangle_reason(box);
+        for (int j = 0; j <= i; ++j) {
+          add_box_energy_in_rectangle_reason(neighbors_[j].box);
+        }
+      } else {
+        add_precise_box_energy_reason(box);
+        for (int j = 0; j <= i; ++j) {
+          add_precise_box_energy_reason(neighbors_[j].box);
+        }
       }
       x_.ImportOtherReasons(y_);
       return x_.ReportConflict();
