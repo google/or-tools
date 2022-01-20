@@ -45,9 +45,7 @@ void MagicSquare(int size) {
   }
 
   // All cells take different values.
-  for (int i = 0; i < size; ++i) {
-    builder.AddAllDifferent(all_variables);
-  }
+  builder.AddAllDifferent(all_variables);
 
   // The sum on each row, columns and two main diagonals.
   const int magic_value = size * (size * size + 1) / 2;
