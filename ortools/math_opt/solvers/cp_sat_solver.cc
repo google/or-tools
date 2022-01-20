@@ -23,8 +23,6 @@
 #include <utility>
 #include <vector>
 
-#include "ortools/base/integral_types.h"
-#include "ortools/base/logging.h"
 #include "absl/memory/memory.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
@@ -34,6 +32,10 @@
 #include "absl/strings/str_split.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
+#include "ortools/base/integral_types.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/protoutil.h"
+#include "ortools/base/status_macros.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/sat_proto_solver.h"
 #include "ortools/math_opt/callback.pb.h"
@@ -52,9 +54,6 @@
 #include "ortools/math_opt/validators/callback_validator.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/sat_parameters.pb.h"
-#include "absl/status/status.h"
-#include "ortools/base/status_macros.h"
-#include "ortools/base/protoutil.h"
 
 namespace operations_research {
 namespace math_opt {
@@ -259,10 +258,10 @@ GetTerminationAndStats(const bool is_interrupted, const bool maximize,
         termination =
             NoSolutionFoundTermination(LIMIT_CUTOFF, response.status_str());
       } else {
-      termination = TerminateForReason(TERMINATION_REASON_INFEASIBLE,
-                                       response.status_str());
-      solve_stats.mutable_problem_status()->set_primal_status(
-          FEASIBILITY_STATUS_INFEASIBLE);
+        termination = TerminateForReason(TERMINATION_REASON_INFEASIBLE,
+                                         response.status_str());
+        solve_stats.mutable_problem_status()->set_primal_status(
+            FEASIBILITY_STATUS_INFEASIBLE);
       }
       break;
     case MPSOLVER_UNKNOWN_STATUS:
@@ -449,7 +448,7 @@ absl::StatusOr<SolveResultProto> CpSatSolver::Solve(
   RETURN_IF_ERROR(callback_error) << "error in callback";
   ASSIGN_OR_RETURN(
       (auto [solve_stats, termination]),
-                   GetTerminationAndStats(local_interrupter.IsInterrupted(),
+      GetTerminationAndStats(local_interrupter.IsInterrupted(),
                              /*maximize=*/cp_sat_model_.maximize(),
                              /*used_cutoff=*/used_cutoff, response));
   *result.mutable_solve_stats() = std::move(solve_stats);

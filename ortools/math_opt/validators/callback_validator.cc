@@ -18,12 +18,13 @@
 #include <string>
 #include <vector>
 
-#include "ortools/base/logging.h"
-#include "google/protobuf/duration.pb.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
+#include "google/protobuf/duration.pb.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
 #include "ortools/math_opt/core/model_summary.h"
@@ -36,8 +37,6 @@
 #include "ortools/math_opt/validators/solution_validator.h"
 #include "ortools/math_opt/validators/sparse_vector_validator.h"
 #include "ortools/port/proto_utils.h"
-#include "absl/status/status.h"
-#include "ortools/base/status_macros.h"
 
 namespace operations_research {
 namespace math_opt {

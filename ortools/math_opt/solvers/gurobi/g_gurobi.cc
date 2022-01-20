@@ -17,10 +17,10 @@
 #include <string_view>
 #include <utility>
 
-#include "ortools/base/cleanup.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_format.h"
+#include "ortools/base/cleanup.h"
 #include "ortools/base/source_location.h"
 #include "ortools/base/status_builder.h"
 #include "ortools/base/status_macros.h"

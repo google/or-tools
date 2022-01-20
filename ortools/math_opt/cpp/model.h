@@ -18,16 +18,16 @@
 #include <string>
 #include <vector>
 
-#include "ortools/base/logging.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
+#include "ortools/base/logging.h"
 #include "ortools/math_opt/core/model_storage.h"
 #include "ortools/math_opt/cpp/key_types.h"
 #include "ortools/math_opt/cpp/linear_constraint.h"  // IWYU pragma: export
-#include "ortools/math_opt/cpp/update_tracker.h"  // IWYU pragma: export
+#include "ortools/math_opt/cpp/update_tracker.h"     // IWYU pragma: export
 #include "ortools/math_opt/cpp/variable_and_expressions.h"  // IWYU pragma: export
-#include "ortools/math_opt/model.pb.h"  // IWYU pragma: export
+#include "ortools/math_opt/model.pb.h"         // IWYU pragma: export
 #include "ortools/math_opt/model_update.pb.h"  // IWYU pragma: export
 
 namespace operations_research {

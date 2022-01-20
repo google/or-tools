@@ -16,13 +16,13 @@
 #include <optional>
 #include <string>
 
+#include "absl/status/status.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
+#include "ortools/base/protoutil.h"
+#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/solvers/gurobi.pb.h"
 #include "ortools/port/proto_utils.h"
-#include "absl/status/status.h"
-#include "ortools/base/status_macros.h"
-#include "ortools/base/protoutil.h"
 
 namespace operations_research {
 namespace math_opt {
@@ -47,8 +47,7 @@ std::optional<absl::string_view> Enum<SolverType>::ToOptString(
 absl::Span<const SolverType> Enum<SolverType>::AllValues() {
   static constexpr SolverType kSolverTypeValues[] = {
       SolverType::kGscip, SolverType::kGurobi, SolverType::kGlop,
-      SolverType::kCpSat,
-      SolverType::kGlpk,
+      SolverType::kCpSat, SolverType::kGlpk,
   };
   return absl::MakeConstSpan(kSolverTypeValues);
 }

@@ -23,6 +23,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "ortools/base/status_macros.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_validator.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
@@ -30,7 +31,6 @@
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 #include "ortools/math_opt/validators/model_validator.h"
-#include "ortools/base/status_macros.h"
 
 namespace operations_research {
 namespace math_opt {

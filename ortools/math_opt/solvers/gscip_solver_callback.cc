@@ -17,19 +17,19 @@
 #include <optional>
 #include <utility>
 
-#include "ortools/base/logging.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/memory/memory.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/time/time.h"
-#include "scip/scip.h"
-#include "scip/type_scip.h"
+#include "ortools/base/logging.h"
 #include "ortools/linear_solver/scip_helper_macros.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
 #include "ortools/math_opt/core/solver_interface.h"
+#include "scip/scip.h"
+#include "scip/type_scip.h"
 
 namespace operations_research {
 namespace math_opt {

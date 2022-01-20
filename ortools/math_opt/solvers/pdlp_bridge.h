@@ -17,12 +17,12 @@
 #include <cstdint>
 #include <vector>
 
+#include "Eigen/Core"
 #include "absl/container/flat_hash_map.h"
 #include "absl/status/statusor.h"
-#include "Eigen/Core"
-#include "ortools/pdlp/quadratic_program.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
+#include "ortools/pdlp/quadratic_program.h"
 
 namespace operations_research {
 namespace math_opt {

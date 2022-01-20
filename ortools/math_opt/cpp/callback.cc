@@ -18,13 +18,15 @@
 #include <utility>
 #include <vector>
 
-#include "ortools/base/logging.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/base/int_type.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/protoutil.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/model_storage.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
@@ -33,8 +35,6 @@
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
 #include "ortools/math_opt/solution.pb.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
-#include "absl/status/status.h"
-#include "ortools/base/protoutil.h"
 
 namespace operations_research {
 namespace math_opt {

@@ -17,9 +17,9 @@
 #include <algorithm>
 #include <cstdint>
 
+#include "absl/container/flat_hash_set.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "absl/container/flat_hash_set.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_update.pb.h"

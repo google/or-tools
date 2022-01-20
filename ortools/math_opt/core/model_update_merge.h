@@ -57,9 +57,10 @@ void RemoveDeletedIds(google::protobuf::RepeatedField<int64_t>& ids,
 // have been deleted and should be removed from the merge.
 //
 // The elements should be unique in each sorted list.
-void MergeIntoSortedIds(const google::protobuf::RepeatedField<int64_t>& from_new,
-                        google::protobuf::RepeatedField<int64_t>& into_old,
-                        const google::protobuf::RepeatedField<int64_t>& deleted);
+void MergeIntoSortedIds(
+    const google::protobuf::RepeatedField<int64_t>& from_new,
+    google::protobuf::RepeatedField<int64_t>& into_old,
+    const google::protobuf::RepeatedField<int64_t>& deleted);
 
 // Merges the `from_new` sparse vector into the `into_old` one. When the two
 // vectors have overlaps, the value in `from_new` is used to overwrite the one
@@ -71,8 +72,9 @@ void MergeIntoSortedIds(const google::protobuf::RepeatedField<int64_t>& from_new
 // The SparseVector type is either SparseDoubleVectorProto or
 // SparseBoolVectorProto.
 template <typename SparseVector>
-void MergeIntoSparseVector(const SparseVector& from_new, SparseVector& into_old,
-                           const google::protobuf::RepeatedField<int64_t>& deleted);
+void MergeIntoSparseVector(
+    const SparseVector& from_new, SparseVector& into_old,
+    const google::protobuf::RepeatedField<int64_t>& deleted);
 
 // Merges the `from_new` sparse matrix into the `into_old` one. When the two
 // matrices have overlaps, the value in `from_new` is used to overwrite the one
@@ -100,10 +102,10 @@ void MergeIntoSparseDoubleMatrix(
 // usually a google::protobuf::RepeatedField but it can be also a
 // RepeatedPtrField<std::string> to deal with the `names` property.
 template <typename RepeatedField, typename SparseVector>
-void UpdateNewElementProperty(const google::protobuf::RepeatedField<int64_t>& ids,
-                              RepeatedField& values,
-                              const google::protobuf::RepeatedField<int64_t>& deleted,
-                              const SparseVector& updates);
+void UpdateNewElementProperty(
+    const google::protobuf::RepeatedField<int64_t>& ids, RepeatedField& values,
+    const google::protobuf::RepeatedField<int64_t>& deleted,
+    const SparseVector& updates);
 
 }  // namespace internal
 
@@ -114,8 +116,9 @@ void UpdateNewElementProperty(const google::protobuf::RepeatedField<int64_t>& id
 namespace internal {
 
 template <typename SparseVector>
-void MergeIntoSparseVector(const SparseVector& from_new, SparseVector& into_old,
-                           const google::protobuf::RepeatedField<int64_t>& deleted) {
+void MergeIntoSparseVector(
+    const SparseVector& from_new, SparseVector& into_old,
+    const google::protobuf::RepeatedField<int64_t>& deleted) {
   CHECK_EQ(from_new.ids_size(), from_new.values_size());
   CHECK_EQ(into_old.ids_size(), into_old.values_size());
 
@@ -168,10 +171,10 @@ void MergeIntoSparseVector(const SparseVector& from_new, SparseVector& into_old,
 }
 
 template <typename RepeatedField, typename SparseVector>
-void UpdateNewElementProperty(const google::protobuf::RepeatedField<int64_t>& ids,
-                              RepeatedField& values,
-                              const google::protobuf::RepeatedField<int64_t>& deleted,
-                              const SparseVector& updates) {
+void UpdateNewElementProperty(
+    const google::protobuf::RepeatedField<int64_t>& ids, RepeatedField& values,
+    const google::protobuf::RepeatedField<int64_t>& deleted,
+    const SparseVector& updates) {
   int next_insertion_point = 0;
   int deleted_i = 0;
   int updates_i = 0;

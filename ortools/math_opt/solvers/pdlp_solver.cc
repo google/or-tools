@@ -23,19 +23,16 @@
 #include <utility>
 #include <vector>
 
-#include "ortools/base/logging.h"
-#include "google/protobuf/duration.pb.h"
 #include "absl/memory/memory.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/time/time.h"
-#include "ortools/pdlp/iteration_stats.h"
-#include "ortools/pdlp/primal_dual_hybrid_gradient.h"
-#include "ortools/pdlp/quadratic_program.h"
-#include "ortools/pdlp/solve_log.pb.h"
-#include "ortools/pdlp/solvers.pb.h"
+#include "google/protobuf/duration.pb.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/protoutil.h"
+#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
 #include "ortools/math_opt/core/solve_interrupter.h"
@@ -49,9 +46,12 @@
 #include "ortools/math_opt/solvers/pdlp_bridge.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 #include "ortools/math_opt/validators/callback_validator.h"
+#include "ortools/pdlp/iteration_stats.h"
+#include "ortools/pdlp/primal_dual_hybrid_gradient.h"
+#include "ortools/pdlp/quadratic_program.h"
+#include "ortools/pdlp/solve_log.pb.h"
+#include "ortools/pdlp/solvers.pb.h"
 #include "ortools/port/proto_utils.h"
-#include "ortools/base/status_macros.h"
-#include "ortools/base/protoutil.h"
 
 namespace operations_research {
 namespace math_opt {

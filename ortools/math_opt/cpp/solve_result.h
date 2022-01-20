@@ -18,17 +18,17 @@
 #include <string>
 #include <vector>
 
-#include "ortools/base/logging.h"
 #include "absl/status/statusor.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/protoutil.h"
 #include "ortools/math_opt/core/model_storage.h"
 #include "ortools/math_opt/cpp/enums.h"  // IWYU pragma: export
 #include "ortools/math_opt/cpp/linear_constraint.h"
 #include "ortools/math_opt/cpp/solution.h"  // IWYU pragma: export
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
 #include "ortools/math_opt/result.pb.h"  // IWYU pragma: export
-#include "ortools/base/protoutil.h"
 
 namespace operations_research {
 namespace math_opt {

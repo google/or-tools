@@ -21,14 +21,13 @@
 #include "absl/status/status.h"
 #include "absl/time/time.h"
 #include "ortools/base/linked_hash_map.h"
+#include "ortools/gurobi/environment.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/solve_interrupter.h"
 #include "ortools/math_opt/core/solver_interface.h"
 #include "ortools/math_opt/solvers/gurobi/g_gurobi.h"
 #include "ortools/math_opt/solvers/message_callback_data.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
-
-#include "ortools/gurobi/environment.h"
 
 namespace operations_research {
 namespace math_opt {

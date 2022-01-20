@@ -20,10 +20,10 @@
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
-#include "ortools/math_opt/sparse_containers.pb.h"
-#include "ortools/math_opt/validators/ids_validator.h"
 #include "ortools/base/status_builder.h"
 #include "ortools/base/status_macros.h"
+#include "ortools/math_opt/sparse_containers.pb.h"
+#include "ortools/math_opt/validators/ids_validator.h"
 
 namespace operations_research::math_opt {
 

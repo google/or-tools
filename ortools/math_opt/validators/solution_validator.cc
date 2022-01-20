@@ -19,6 +19,7 @@
 
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
+#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
 #include "ortools/math_opt/core/model_summary.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
@@ -28,7 +29,6 @@
 #include "ortools/math_opt/validators/ids_validator.h"
 #include "ortools/math_opt/validators/scalar_validator.h"
 #include "ortools/math_opt/validators/sparse_vector_validator.h"
-#include "ortools/base/status_macros.h"
 
 namespace operations_research {
 namespace math_opt {

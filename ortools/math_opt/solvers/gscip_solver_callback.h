@@ -21,9 +21,9 @@
 #include "absl/status/status.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/time/time.h"
-#include "scip/type_scip.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/solver_interface.h"
+#include "scip/type_scip.h"
 
 namespace operations_research {
 namespace math_opt {

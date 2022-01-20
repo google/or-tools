@@ -23,9 +23,6 @@
 #include <utility>
 #include <vector>
 
-#include "ortools/base/integral_types.h"
-#include "ortools/base/logging.h"
-#include "ortools/base/cleanup.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/memory/memory.h"
@@ -37,11 +34,12 @@
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
-#include "scip/scip.h"
-#include "scip/type_cons.h"
-#include "scip/type_event.h"
-#include "scip/type_var.h"
+#include "ortools/base/cleanup.h"
+#include "ortools/base/integral_types.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
+#include "ortools/base/protoutil.h"
+#include "ortools/base/status_macros.h"
 #include "ortools/gscip/gscip.h"
 #include "ortools/gscip/gscip.pb.h"
 #include "ortools/gscip/gscip_event_handler.h"
@@ -62,9 +60,10 @@
 #include "ortools/math_opt/sparse_containers.pb.h"
 #include "ortools/math_opt/validators/callback_validator.h"
 #include "ortools/port/proto_utils.h"
-#include "absl/status/status.h"
-#include "ortools/base/status_macros.h"
-#include "ortools/base/protoutil.h"
+#include "scip/scip.h"
+#include "scip/type_cons.h"
+#include "scip/type_event.h"
+#include "scip/type_var.h"
 
 namespace operations_research {
 namespace math_opt {

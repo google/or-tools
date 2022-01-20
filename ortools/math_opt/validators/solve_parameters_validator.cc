@@ -15,9 +15,9 @@
 
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
-#include "ortools/math_opt/parameters.pb.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/base/protoutil.h"
+#include "ortools/base/status_macros.h"
+#include "ortools/math_opt/parameters.pb.h"
 
 namespace operations_research {
 namespace math_opt {

@@ -19,10 +19,10 @@
 #include <optional>
 #include <utility>
 
-#include "ortools/base/logging.h"
 #include "absl/synchronization/mutex.h"
-#include "ortools/base/linked_hash_map.h"
 #include "ortools/base/int_type.h"
+#include "ortools/base/linked_hash_map.h"
+#include "ortools/base/logging.h"
 
 namespace operations_research {
 namespace math_opt {

@@ -16,11 +16,11 @@
 #include <optional>
 #include <utility>
 
-#include "ortools/base/logging.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/int_type.h"
+#include "ortools/base/logging.h"
 #include "ortools/math_opt/core/model_storage.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/solution.pb.h"

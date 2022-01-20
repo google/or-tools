@@ -18,8 +18,8 @@
 #include <iterator>
 #include <utility>
 
-#include "ortools/base/logging.h"
 #include "absl/container/flat_hash_set.h"
+#include "ortools/base/logging.h"
 #include "ortools/math_opt/core/arrow_operator_proxy.h"
 #include "ortools/math_opt/core/model_storage.h"
 #include "ortools/math_opt/cpp/key_types.h"

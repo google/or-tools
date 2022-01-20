@@ -38,8 +38,8 @@
 #include "ortools/math_opt/cpp/callback.h"  // IWYU pragma: export
 #include "ortools/math_opt/cpp/model.h"
 #include "ortools/math_opt/cpp/model_solve_parameters.h"  // IWYU pragma: export
-#include "ortools/math_opt/cpp/parameters.h"  // IWYU pragma: export
-#include "ortools/math_opt/cpp/solve_result.h"  // IWYU pragma: export
+#include "ortools/math_opt/cpp/parameters.h"              // IWYU pragma: export
+#include "ortools/math_opt/cpp/solve_result.h"            // IWYU pragma: export
 #include "ortools/math_opt/cpp/streamable_solver_init_arguments.h"  // IWYU pragma: export
 #include "ortools/math_opt/parameters.pb.h"  // IWYU pragma: export
 
@@ -67,7 +67,6 @@ using MessageCallback = std::function<void(const std::vector<std::string>&)>;
 //   args.message_callback = PrinterMessageCallback(std::cerr, "solver logs> ");
 MessageCallback PrinterMessageCallback(std::ostream& output_stream = std::cout,
                                        absl::string_view prefix = "");
-
 
 // Arguments passed to Solve() and IncrementalSolver::New() to control the
 // instantiation of the solver.

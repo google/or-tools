@@ -18,14 +18,14 @@
 #include <utility>
 #include <vector>
 
-#include "ortools/base/logging.h"
 #include "absl/container/flat_hash_map.h"
+#include "absl/status/status.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
+#include "ortools/base/logging.h"
 #include "ortools/math_opt/core/model_storage.h"
 #include "ortools/math_opt/solution.pb.h"
 #include "ortools/port/proto_utils.h"
-#include "absl/status/status.h"
 
 namespace operations_research {
 namespace math_opt {

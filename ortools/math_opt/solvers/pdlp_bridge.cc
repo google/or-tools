@@ -18,17 +18,17 @@
 #include <string>
 #include <vector>
 
+#include "Eigen/Core"
+#include "Eigen/SparseCore"
 #include "absl/container/flat_hash_map.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
-#include "Eigen/Core"
-#include "Eigen/SparseCore"
-#include "ortools/pdlp/quadratic_program.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
+#include "ortools/pdlp/quadratic_program.h"
 
 namespace operations_research {
 namespace math_opt {

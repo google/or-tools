@@ -23,8 +23,6 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/types/span.h"
-#include "scip/type_cons.h"
-#include "scip/type_var.h"
 #include "ortools/gscip/gscip.h"
 #include "ortools/gscip/gscip.pb.h"
 #include "ortools/gscip/gscip_event_handler.h"
@@ -37,6 +35,8 @@
 #include "ortools/math_opt/parameters.pb.h"
 #include "ortools/math_opt/result.pb.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
+#include "scip/type_cons.h"
+#include "scip/type_var.h"
 
 namespace operations_research {
 namespace math_opt {

@@ -21,7 +21,6 @@
 #include <utility>
 #include <vector>
 
-#include "ortools/base/logging.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/memory/memory.h"
@@ -30,8 +29,10 @@
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
-#include "ortools/base/map_util.h"
 #include "ortools/base/int_type.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/map_util.h"
+#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/core/model_update_merge.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/model.pb.h"
@@ -39,7 +40,6 @@
 #include "ortools/math_opt/solution.pb.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 #include "ortools/math_opt/validators/model_validator.h"
-#include "ortools/base/status_macros.h"
 
 namespace operations_research {
 namespace math_opt {

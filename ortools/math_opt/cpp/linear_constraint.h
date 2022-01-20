@@ -19,8 +19,8 @@
 
 #include <string>
 
-#include "ortools/base/logging.h"
 #include "ortools/base/int_type.h"
+#include "ortools/base/logging.h"
 #include "ortools/math_opt/core/model_storage.h"
 #include "ortools/math_opt/cpp/id_map.h"  // IWYU pragma: export
 #include "ortools/math_opt/cpp/key_types.h"

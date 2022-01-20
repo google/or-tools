@@ -16,17 +16,17 @@
 #include <cstdint>
 #include <string>
 
-#include "ortools/base/integral_types.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
+#include "ortools/base/integral_types.h"
 #include "ortools/base/map_util.h"
+#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/core/model_summary.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/validators/sparse_vector_validator.h"
-#include "ortools/base/status_macros.h"
 
 namespace operations_research {
 namespace math_opt {

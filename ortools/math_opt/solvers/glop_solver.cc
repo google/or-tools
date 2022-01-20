@@ -23,9 +23,6 @@
 #include <utility>
 #include <vector>
 
-#include "ortools/base/integral_types.h"
-#include "ortools/base/logging.h"
-#include "ortools/base/cleanup.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/memory/memory.h"
 #include "absl/status/status.h"
@@ -37,8 +34,13 @@
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
+#include "ortools/base/cleanup.h"
 #include "ortools/base/int_type.h"
+#include "ortools/base/integral_types.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
+#include "ortools/base/protoutil.h"
+#include "ortools/base/status_macros.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/glop/lp_solver.h"
 #include "ortools/glop/parameters.pb.h"
@@ -59,9 +61,6 @@
 #include "ortools/math_opt/validators/callback_validator.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/util/time_limit.h"
-#include "absl/status/status.h"
-#include "ortools/base/status_macros.h"
-#include "ortools/base/protoutil.h"
 
 namespace operations_research {
 namespace math_opt {
@@ -152,8 +151,8 @@ void UpdateIdIndexMap(glop::StrictITIVector<IndexType, bool> indices_to_delete,
 
                       IndexType num_indices,
                       absl::flat_hash_map<int64_t, IndexType>& id_index_map) {
-  absl::StrongVector<IndexType, IndexType> new_indices(
-      num_indices.value(), IndexType(0));
+  absl::StrongVector<IndexType, IndexType> new_indices(num_indices.value(),
+                                                       IndexType(0));
   IndexType new_index(0);
   for (IndexType index(0); index < num_indices; ++index) {
     if (indices_to_delete[index]) {

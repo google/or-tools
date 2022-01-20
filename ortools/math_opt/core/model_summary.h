@@ -20,10 +20,10 @@
 #include <string>
 #include <utility>
 
-#include "ortools/base/logging.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/linked_hash_map.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 
 namespace operations_research {

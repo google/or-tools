@@ -79,9 +79,9 @@
 #include <optional>
 #include <type_traits>
 
-#include "ortools/base/logging.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
+#include "ortools/base/logging.h"
 
 namespace operations_research::math_opt {
 

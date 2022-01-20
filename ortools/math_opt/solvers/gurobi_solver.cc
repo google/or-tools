@@ -28,8 +28,6 @@
 #include <utility>
 #include <vector>
 
-#include "ortools/base/logging.h"
-#include "ortools/base/cleanup.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/memory/memory.h"
 #include "absl/status/status.h"
@@ -40,8 +38,12 @@
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
+#include "ortools/base/cleanup.h"
 #include "ortools/base/linked_hash_map.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
+#include "ortools/base/protoutil.h"
+#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
 #include "ortools/math_opt/core/non_streamable_solver_init_arguments.h"
@@ -60,9 +62,6 @@
 #include "ortools/math_opt/sparse_containers.pb.h"
 #include "ortools/math_opt/validators/callback_validator.h"
 #include "ortools/port/proto_utils.h"
-#include "absl/status/status.h"
-#include "ortools/base/status_macros.h"
-#include "ortools/base/protoutil.h"
 
 namespace operations_research {
 namespace math_opt {
@@ -1807,7 +1806,7 @@ absl::Status GurobiSolver::Update(const ModelUpdateProto& model_update) {
 
 absl::StatusOr<std::unique_ptr<GurobiSolver>> GurobiSolver::New(
     const ModelProto& input_model, const SolverInterface::InitArgs& init_args) {
-  if(!GurobiIsCorrectlyInstalled()) {
+  if (!GurobiIsCorrectlyInstalled()) {
     return absl::InvalidArgumentError("Gurobi is not correctly installed.");
   }
   ASSIGN_OR_RETURN(std::unique_ptr<Gurobi> gurobi,

@@ -22,11 +22,11 @@
 #include "absl/types/span.h"
 #include "ortools/base/linked_hash_map.h"
 #include "ortools/glop/parameters.pb.h"  // IWYU pragma: export
-#include "ortools/gscip/gscip.pb.h"   // IWYU pragma: export
+#include "ortools/gscip/gscip.pb.h"      // IWYU pragma: export
 #include "ortools/math_opt/cpp/enums.h"  // IWYU pragma: export
 #include "ortools/math_opt/parameters.pb.h"
 #include "ortools/math_opt/solvers/gurobi.pb.h"  // IWYU pragma: export
-#include "ortools/sat/sat_parameters.pb.h"  // IWYU pragma: export
+#include "ortools/sat/sat_parameters.pb.h"       // IWYU pragma: export
 
 namespace operations_research {
 namespace math_opt {
@@ -53,7 +53,6 @@ enum class SolverType {
   //
   // It supports solving IPs and can scale MIPs to solve them as IPs.
   kCpSat = SOLVER_TYPE_CP_SAT,
-
 
   // GNU Linear Programming Kit (GLPK).
   //
@@ -298,7 +297,6 @@ struct SolveParameters {
   GurobiParameters gurobi;
   glop::GlopParameters glop;
   sat::SatParameters cp_sat;
-
 
   // TODO(b/196132970): this needs to move into SolverInitializerProto.
   Strictness strictness;

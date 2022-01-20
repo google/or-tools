@@ -20,8 +20,6 @@
 #include <string>
 #include <utility>
 
-#include "ortools/base/integral_types.h"
-#include "ortools/base/logging.h"
 #include "absl/base/thread_annotations.h"
 #include "absl/memory/memory.h"
 #include "absl/status/status.h"
@@ -29,6 +27,9 @@
 #include "absl/strings/str_cat.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
+#include "ortools/base/integral_types.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/model_summary.h"
 #include "ortools/math_opt/core/non_streamable_solver_init_arguments.h"
@@ -44,7 +45,6 @@
 #include "ortools/math_opt/validators/result_validator.h"
 #include "ortools/math_opt/validators/solve_parameters_validator.h"
 #include "ortools/port/proto_utils.h"
-#include "ortools/base/status_macros.h"
 
 namespace operations_research {
 namespace math_opt {

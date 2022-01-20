@@ -21,7 +21,6 @@
 #include <utility>
 #include <vector>
 
-#include "ortools/base/logging.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
@@ -30,6 +29,10 @@
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/base/linked_hash_map.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/protoutil.h"
+#include "ortools/base/status_macros.h"
+#include "ortools/gurobi/environment.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
 #include "ortools/math_opt/core/solve_interrupter.h"
@@ -38,10 +41,6 @@
 #include "ortools/math_opt/solution.pb.h"
 #include "ortools/math_opt/solvers/message_callback_data.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
-#include "ortools/base/status_macros.h"
-#include "ortools/base/protoutil.h"
-
-#include "ortools/gurobi/environment.h"
 
 namespace operations_research {
 namespace math_opt {

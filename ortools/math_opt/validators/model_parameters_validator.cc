@@ -13,8 +13,9 @@
 
 #include "ortools/math_opt/validators/model_parameters_validator.h"
 
-#include "ortools/base/integral_types.h"
 #include "absl/status/status.h"
+#include "ortools/base/integral_types.h"
+#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/core/model_summary.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/model_parameters.pb.h"
@@ -22,7 +23,6 @@
 #include "ortools/math_opt/validators/ids_validator.h"
 #include "ortools/math_opt/validators/solution_validator.h"
 #include "ortools/math_opt/validators/sparse_vector_validator.h"
-#include "ortools/base/status_macros.h"
 
 namespace operations_research {
 namespace math_opt {

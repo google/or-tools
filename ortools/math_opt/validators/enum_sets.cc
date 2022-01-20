@@ -17,8 +17,8 @@
 #include <tuple>
 #include <vector>
 
-#include "gtest/gtest.h"
 #include "absl/strings/str_cat.h"
+#include "gtest/gtest.h"
 #include "ortools/math_opt/result.pb.h"
 #include "ortools/math_opt/solution.pb.h"
 #include "ortools/port/proto_utils.h"

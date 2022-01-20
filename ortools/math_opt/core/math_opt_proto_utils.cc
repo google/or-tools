@@ -18,9 +18,9 @@
 #include <algorithm>
 #include <functional>
 
+#include "absl/container/flat_hash_set.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "absl/container/flat_hash_set.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/result.pb.h"

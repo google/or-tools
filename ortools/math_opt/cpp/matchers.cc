@@ -22,11 +22,11 @@
 #include <utility>
 #include <vector>
 
-#include "ortools/base/logging.h"
-#include "gmock/gmock.h"
-#include "gtest/gtest.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
+#include "gmock/gmock.h"
+#include "gtest/gtest.h"
+#include "ortools/base/logging.h"
 #include "ortools/port/proto_utils.h"
 
 namespace operations_research {

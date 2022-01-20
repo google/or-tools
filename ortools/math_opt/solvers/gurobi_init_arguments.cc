@@ -14,6 +14,7 @@
 #include "ortools/math_opt/solvers/gurobi_init_arguments.h"
 
 #include <optional>
+
 #include "absl/status/statusor.h"
 #include "ortools/math_opt/solvers/gurobi.pb.h"
 

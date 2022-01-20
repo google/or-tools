@@ -20,20 +20,20 @@
 #include <utility>
 #include <vector>
 
-#include "ortools/base/logging.h"
 #include "absl/base/thread_annotations.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/memory/memory.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/source_location.h"
+#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/model_storage.h"
 #include "ortools/math_opt/core/solver.h"
 #include "ortools/math_opt/cpp/key_types.h"
 #include "ortools/math_opt/cpp/model.h"
-#include "ortools/base/status_macros.h"
 
 namespace operations_research {
 namespace math_opt {
@@ -227,7 +227,6 @@ MessageCallback PrinterMessageCallback(std::ostream& output_stream,
   return
       [=](const std::vector<std::string>& messages) { impl->Call(messages); };
 }
-
 
 }  // namespace math_opt
 }  // namespace operations_research

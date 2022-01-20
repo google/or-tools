@@ -19,9 +19,9 @@
 #include <string>
 #include <utility>
 
+#include "absl/container/flat_hash_set.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "absl/container/flat_hash_set.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_update.pb.h"
@@ -55,8 +55,8 @@ void MergeIntoUpdate(const ModelUpdateProto& from_new,
   //
   // Thus we create here the list of indices to ignore when filtering updates
   // for both variables and linear constraints.
-  google::protobuf::RepeatedField<int64_t> from_deleted_and_into_new_variable_ids =
-      from_new.deleted_variable_ids();
+  google::protobuf::RepeatedField<int64_t>
+      from_deleted_and_into_new_variable_ids = from_new.deleted_variable_ids();
   from_deleted_and_into_new_variable_ids.MergeFrom(
       into_old.new_variables().ids());
 
@@ -213,9 +213,10 @@ void RemoveDeletedIds(google::protobuf::RepeatedField<int64_t>& ids,
   ids.Truncate(next_insertion_point);
 }
 
-void MergeIntoSortedIds(const google::protobuf::RepeatedField<int64_t>& from_new,
-                        google::protobuf::RepeatedField<int64_t>& into_old,
-                        const google::protobuf::RepeatedField<int64_t>& deleted) {
+void MergeIntoSortedIds(
+    const google::protobuf::RepeatedField<int64_t>& from_new,
+    google::protobuf::RepeatedField<int64_t>& into_old,
+    const google::protobuf::RepeatedField<int64_t>& deleted) {
   google::protobuf::RepeatedField<int64_t> result;
 
   int from_new_i = 0;
