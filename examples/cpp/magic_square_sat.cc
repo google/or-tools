@@ -48,16 +48,16 @@ void MagicSquare(int size) {
       if (i == j) {
         diag1.push_back(var);
       }
-      if (i + j == size) {
+      if (i + j == size - 1) {
         diag2.push_back(var);
       }
     }
   }
 
   // All Diff.
-  for (int i = 0; i < size; ++i) {
+  // for (int i = 0; i < size; ++i) {
     builder.AddAllDifferent(all_variables);
-  }
+  // }
 
   const int sum = size * (size * size + 1) / 2;
   // Sum on rows.
