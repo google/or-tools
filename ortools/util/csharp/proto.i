@@ -76,10 +76,10 @@
 %typemap(csout)  CppProtoType {
     System.IntPtr data = $imcall;
     int size = System.Runtime.InteropServices.Marshal.ReadInt32(data);
-    data += sizeof(int);
+    System.IntPtr bufferStart = data + sizeof(int);
     byte[] buf = System.Buffers.ArrayPool<byte>.Shared.Rent(size);
-    System.Runtime.InteropServices.Marshal.Copy(data, buf, 0, size);
-    // TODO(user): delete the C++ buffer.
+    System.Runtime.InteropServices.Marshal.Copy(bufferStart, buf, 0, size);
+    Google.OrTools.Init.CppBridge.DeleteByteArray(data);
     try {
       return CSharpProtoType.Parser.ParseFrom(System.MemoryExtensions.AsSpan(buf, 0, size));
     } catch (Google.Protobuf.InvalidProtocolBufferException /*e*/) {
@@ -98,4 +98,5 @@
   $result[2] = (size >> 16) & 0xFF;
   $result[3] = (size >> 24) & 0xFF;
 }
+
 %enddef // end PROTO2_RETURN

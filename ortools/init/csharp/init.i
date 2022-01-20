@@ -13,11 +13,18 @@
 
 %include "ortools/base/base.i"
 
+%include "stdint.i"
 %include "std_string.i"
 
 %{
 #include "ortools/init/init.h"
 %}
+
+%typemap(ctype)  uint8_t* "uint8_t*"
+%typemap(imtype) uint8_t* "System.IntPtr"
+%typemap(cstype) uint8_t* "System.IntPtr"
+%typemap(csin)   uint8_t* "$csinput"
+%typemap(in)     uint8_t* %{ $1 = $input; %}
 
 %ignoreall
 
@@ -38,6 +45,7 @@
 %unignore operations_research::CppBridge::ShutdownLogging;
 %unignore operations_research::CppBridge::SetFlags;
 %unignore operations_research::CppBridge::LoadGurobiSharedLibrary;
+%unignore operations_research::CppBridge::DeleteByteArray;
 
 %unignore operations_research::OrToolsVersion;
 %unignore operations_research::OrToolsVersion::MajorNumber;
