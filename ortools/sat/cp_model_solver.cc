@@ -3385,15 +3385,29 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   if (absl::GetFlag(FLAGS_cp_model_dump_models)) {
     const std::string presolved_file = absl::StrCat(
         absl::GetFlag(FLAGS_cp_model_dump_prefix), "presolved_model.pb.txt");
-    LOG(INFO) << "Dumping presolved cp model proto to '" << presolved_file
+    LOG(INFO) << "Dumping presolved CpModelProto to '" << presolved_file
               << "'.";
     CHECK_OK(file::SetTextProto(presolved_file, new_cp_model_proto,
                                 file::Defaults()));
 
     const std::string mapping_file = absl::StrCat(
         absl::GetFlag(FLAGS_cp_model_dump_prefix), "mapping_model.pb.txt");
-    LOG(INFO) << "Dumping mapping cp model proto to '" << mapping_file << "'.";
+    LOG(INFO) << "Dumping mapping CpModelProto to '" << mapping_file << "'.";
     CHECK_OK(file::SetTextProto(mapping_file, mapping_proto, file::Defaults()));
+
+    // If the model is convertible to a MIP, we dump it too.
+    //
+    // TODO(user): We could try to dump our linear relaxation too.
+    MPModelProto mip_model;
+    if (ConvertCpModelProtoToMPModelProto(new_cp_model_proto, &mip_model)) {
+      const std::string file =
+          absl::StrCat(absl::GetFlag(FLAGS_cp_model_dump_prefix),
+                       "presolved.mp_model.pb.txt");
+      LOG(INFO) << "Presolved problem is pure linear IP. Dumping presolved "
+                   "MPModelProto to '"
+                << file << "'.";
+      CHECK_OK(file::SetTextProto(file, mip_model, file::Defaults()));
+    }
   }
 #endif  // __PORTABLE_PLATFORM__
 
