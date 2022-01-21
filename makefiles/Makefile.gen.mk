@@ -606,8 +606,8 @@ objs/lp_data/mps_reader.$O: ortools/lp_data/mps_reader.cc \
  ortools/base/logging.h ortools/base/commandlineflags.h \
  ortools/base/log_severity.h ortools/base/logging_export.h \
  ortools/base/macros.h ortools/base/vlog_is_on.h ortools/base/int_type.h \
- ortools/base/map_util.h ortools/base/status_macros.h \
- ortools/base/status_builder.h \
+ ortools/base/map_util.h ortools/base/protobuf_util.h \
+ ortools/base/status_macros.h ortools/base/status_builder.h \
  ortools/gen/ortools/linear_solver/linear_solver.pb.h \
  ortools/gen/ortools/util/optional_boolean.pb.h ortools/lp_data/lp_data.h \
  ortools/gen/ortools/glop/parameters.pb.h ortools/lp_data/lp_types.h \
@@ -616,8 +616,7 @@ objs/lp_data/mps_reader.$O: ortools/lp_data/mps_reader.cc \
  ortools/util/return_macros.h ortools/lp_data/scattered_vector.h \
  ortools/lp_data/sparse_column.h ortools/lp_data/sparse_vector.h \
  ortools/graph/iterators.h ortools/util/fp_utils.h \
- ortools/util/filelineiter.h ortools/base/file.h \
- ortools/base/protobuf_util.h | $(OBJ_DIR)/lp_data
+ ortools/util/filelineiter.h ortools/base/file.h | $(OBJ_DIR)/lp_data
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Slp_data$Smps_reader.cc $(OBJ_OUT)$(OBJ_DIR)$Slp_data$Smps_reader.$O
 
 objs/lp_data/proto_utils.$O: ortools/lp_data/proto_utils.cc \
@@ -1303,6 +1302,7 @@ SAT_DEPS = \
  $(SRC_DIR)/ortools/sat/encoding.h \
  $(SRC_DIR)/ortools/sat/feasibility_pump.h \
  $(SRC_DIR)/ortools/sat/implied_bounds.h \
+ $(SRC_DIR)/ortools/sat/inclusion.h \
  $(SRC_DIR)/ortools/sat/integer_expr.h \
  $(SRC_DIR)/ortools/sat/integer.h \
  $(SRC_DIR)/ortools/sat/integer_search.h \
@@ -1460,8 +1460,8 @@ objs/sat/boolean_problem.$O: ortools/sat/boolean_problem.cc \
  ortools/util/running_stat.h ortools/sat/restart.h \
  ortools/sat/sat_decision.h ortools/util/integer_pq.h \
  ortools/sat/simplification.h ortools/base/adjustable_priority_queue.h \
- ortools/util/logging.h ortools/graph/io.h ortools/util/filelineiter.h \
- ortools/graph/graph.h ortools/graph/iterators.h \
+ ortools/util/logging.h ortools/graph/io.h ortools/graph/graph.h \
+ ortools/graph/iterators.h ortools/util/filelineiter.h \
  ortools/algorithms/find_graph_symmetries.h \
  ortools/algorithms/dynamic_partition.h \
  ortools/algorithms/dynamic_permutation.h ortools/graph/util.h \
@@ -1735,9 +1735,9 @@ objs/sat/cp_model_presolve.$O: ortools/sat/cp_model_presolve.cc \
  ortools/sat/cp_model_objective.h ortools/sat/cp_model_symmetries.h \
  ortools/algorithms/sparse_permutation.h ortools/sat/diffn_util.h \
  ortools/graph/connected_components.h ortools/base/ptr_util.h \
- ortools/sat/probing.h ortools/sat/simplification.h \
- ortools/base/adjustable_priority_queue.h ortools/sat/var_domination.h \
- ortools/algorithms/dynamic_partition.h | $(OBJ_DIR)/sat
+ ortools/sat/inclusion.h ortools/sat/probing.h \
+ ortools/sat/simplification.h ortools/base/adjustable_priority_queue.h \
+ ortools/sat/var_domination.h ortools/algorithms/dynamic_partition.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Scp_model_presolve.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scp_model_presolve.$O
 
 objs/sat/cp_model_search.$O: ortools/sat/cp_model_search.cc \
@@ -2001,7 +2001,8 @@ objs/sat/diffn.$O: ortools/sat/diffn.cc ortools/sat/diffn.h \
  ortools/sat/linear_constraint.h ortools/sat/precedences.h \
  ortools/sat/disjunctive.h ortools/sat/theta_tree.h \
  ortools/base/iterator_adaptors.h ortools/base/stl_util.h \
- ortools/sat/cumulative.h ortools/util/sort.h | $(OBJ_DIR)/sat
+ ortools/sat/cumulative_energy.h ortools/sat/timetable.h \
+ ortools/util/sort.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Sdiffn.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sdiffn.$O
 
 objs/sat/diffn_util.$O: ortools/sat/diffn_util.cc ortools/sat/diffn_util.h \
