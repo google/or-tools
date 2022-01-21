@@ -13,8 +13,12 @@
 # limitations under the License.
 """Linear programming examples that show how to use the APIs."""
 
-from ortools.linear_solver import pywraplp
+import os
+if hasattr(os, 'add_dll_directory'):
+    os.add_dll_directory(os.getenv('SIRIUS_BIN_DIR', ''))
+    os.add_dll_directory(os.getenv('XPRESS_BIN_DIR', ''))
 
+from ortools.linear_solver import pywraplp
 
 def Announce(solver, api_type):
     print('---- Linear programming example with ' + solver + ' (' + api_type +
@@ -128,10 +132,14 @@ def main():
     RunLinearExampleNaturalLanguageAPI('GLOP')
     RunLinearExampleNaturalLanguageAPI('GLPK_LP')
     RunLinearExampleNaturalLanguageAPI('CLP')
+    # RunLinearExampleNaturalLanguageAPI('sirius_lp') # SetObjectiveOffset not implemented for sirius_interface
+    RunLinearExampleNaturalLanguageAPI('xpress_lp')
 
     RunLinearExampleCppStyleAPI('GLOP')
     RunLinearExampleCppStyleAPI('GLPK_LP')
     RunLinearExampleCppStyleAPI('CLP')
+    RunLinearExampleCppStyleAPI('sirius_lp')
+    RunLinearExampleCppStyleAPI('xpress_lp')
 
 
 if __name__ == '__main__':
