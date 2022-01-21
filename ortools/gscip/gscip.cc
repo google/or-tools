@@ -738,6 +738,13 @@ absl::Status GScip::SetLinearConstraintCoef(SCIP_CONS* constraint,
   return absl::OkStatus();
 }
 
+absl::Status GScip::AddLinearConstraintCoef(SCIP_CONS* const constraint,
+                                            SCIP_VAR* const var,
+                                            const double value) {
+  RETURN_IF_SCIP_ERROR(SCIPaddCoefLinear(scip_, constraint, var, value));
+  return absl::OkStatus();
+}
+
 absl::StatusOr<GScipHintResult> GScip::SuggestHint(
     const GScipSolution& partial_solution) {
   SCIP_SOL* solution;

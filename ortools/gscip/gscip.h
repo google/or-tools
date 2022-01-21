@@ -233,6 +233,8 @@ class GScip {
   absl::Status SetLinearConstraintUb(SCIP_CONS* constraint, double ub);
   absl::Status SetLinearConstraintCoef(SCIP_CONS* constraint, SCIP_VAR* var,
                                        double value);
+  absl::Status AddLinearConstraintCoef(SCIP_CONS* constraint, SCIP_VAR* var,
+                                       double value);
 
   // Works on all constraint types. Unlike DeleteVariable, no special action is
   // required before deleting a constraint.
