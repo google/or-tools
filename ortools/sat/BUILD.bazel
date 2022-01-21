@@ -357,6 +357,7 @@ cc_library(
         ":cp_model_symmetries",
         ":cp_model_utils",
         ":diffn_util",
+        ":inclusion",
         ":presolve_context",
         ":presolve_util",
         ":probing",
@@ -787,6 +788,14 @@ cc_library(
         "//ortools/base:strong_vector",
         "//ortools/util:bitset",
         "@com_google_absl//absl/container:inlined_vector",
+    ],
+)
+
+cc_library(
+    name = "inclusion",
+    hdrs = ["inclusion.h"],
+    deps = [
+        "//ortools/base",
     ],
 )
 

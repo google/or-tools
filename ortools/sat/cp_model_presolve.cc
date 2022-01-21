@@ -50,6 +50,7 @@
 #include "ortools/sat/cp_model_symmetries.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/diffn_util.h"
+#include "ortools/sat/inclusion.h"
 #include "ortools/sat/presolve_util.h"
 #include "ortools/sat/probing.h"
 #include "ortools/sat/sat_base.h"
@@ -1827,7 +1828,8 @@ bool CpModelPresolver::PresolveLinearOfSizeOne(ConstraintProto* ct) {
   int abs_arg;
   if (ct->linear().coeffs(0) == 1 &&
       context_->GetAbsRelation(ct->linear().vars(0), &abs_arg) &&
-      PositiveRef(ct->linear().vars(0)) != PositiveRef(abs_arg)) {
+      PositiveRef(ct->linear().vars(0)) != abs_arg) {
+    DCHECK(RefIsPositive(abs_arg));
     // TODO(user): Deal with coeff = -1, here or during canonicalization.
     context_->UpdateRuleStats("linear1: remove abs from abs(x) in domain");
     const Domain implied_abs_target_domain =
@@ -1850,7 +1852,7 @@ bool CpModelPresolver::PresolveLinearOfSizeOne(ConstraintProto* ct) {
 
     // Modify the constraint in-place.
     ct->clear_linear();
-    ct->mutable_linear()->add_vars(PositiveRef(abs_arg));
+    ct->mutable_linear()->add_vars(abs_arg);
     ct->mutable_linear()->add_coeffs(1);
     FillDomainInProto(new_abs_var_domain, ct->mutable_linear());
     return true;
@@ -5944,6 +5946,12 @@ bool CpModelPresolver::ProcessSetPPCSubset(
 // at_most_one, but maybe also duplicating them into bool_or would allow this
 // function to do more presolving.
 bool CpModelPresolver::ProcessSetPPC() {
+  if (context_->time_limit()->LimitReached()) return true;
+  if (context_->ModelIsUnsat()) return false;
+
+  WallTimer wall_timer;
+  wall_timer.Start();
+
   const int num_constraints = context_->working_model->constraints_size();
 
   // Signatures of all the constraints. In the signature the bit i is 1 if it
@@ -6030,7 +6038,6 @@ bool CpModelPresolver::ProcessSetPPC() {
     original_constraint_index.push_back(c);
     num_setppc_constraints++;
   }
-  VLOG(1) << "#setppc constraints: " << num_setppc_constraints;
 
   // Set of constraint pairs which are already compared.
   absl::flat_hash_set<std::pair<int, int>> compared_constraints;
@@ -6089,6 +6096,9 @@ bool CpModelPresolver::ProcessSetPPC() {
     }
   }
 
+  SOLVER_LOG(logger_, "[ProcessSetPPC]",
+             " #relevant_constraints=", num_setppc_constraints,
+             " time=", wall_timer.Get(), "s");
   return true;
 }
 
@@ -6113,6 +6123,8 @@ bool CpModelPresolver::ProcessEncodingFromLinear(
       var_to_ref[PositiveRef(ref)] = ref;
     }
   } else {
+    CHECK_EQ(at_most_or_exactly_one.constraint_case(),
+             ConstraintProto::kExactlyOne);
     in_exactly_one = true;
     for (const int ref : at_most_or_exactly_one.exactly_one().literals()) {
       CHECK(!var_to_ref.contains(PositiveRef(ref)));
@@ -6133,7 +6145,7 @@ bool CpModelPresolver::ProcessEncodingFromLinear(
     const auto it = var_to_ref.find(PositiveRef(ref));
 
     if (it == var_to_ref.end()) {
-      CHECK_EQ(target_ref, std::numeric_limits<int>::min()) << "Uniqueness ";
+      CHECK_EQ(target_ref, std::numeric_limits<int>::min()) << "Uniqueness";
       CHECK_EQ(std::abs(coeff), 1);
       target_ref = coeff == 1 ? ref : NegatedRef(ref);
       continue;
@@ -6247,56 +6259,299 @@ bool CpModelPresolver::ProcessEncodingFromLinear(
   return true;
 }
 
-namespace {
-
-// We want something that is order invariant and is compatible with inclusion.
-uint64_t ComputeSignature(const std::vector<int>& integers) {
-  uint64_t signature = 0;
-  for (const int i : integers) signature |= (int64_t{1} << (i & 63));
-  return signature;
-}
-
-}  // namespace
-
-void CpModelPresolver::ExtractEncodingFromLinear() {
+void CpModelPresolver::DetectDuplicateConstraints() {
   if (context_->time_limit()->LimitReached()) return;
   if (context_->ModelIsUnsat()) return;
 
   WallTimer wall_timer;
   wall_timer.Start();
 
-  struct Superset {
-    int c;  // Index of the constraint.
-    std::vector<int> vars;
-    bool is_exactly_one;
-  };
-  std::vector<Superset> potential_supersets;
+  // We need the objective written for this.
+  if (context_->working_model->has_objective()) {
+    if (!context_->CanonicalizeObjective()) return;
+    context_->WriteObjectiveToProto();
+  }
 
-  struct Subset {
-    int c;  // Index of the linear constraint.
-    std::vector<int> vars;
-  };
-  std::vector<Subset> potential_subsets;
+  // Remove duplicate constraints.
+  // Note that at this point the objective in the proto should be up to date.
+  //
+  // TODO(user): We might want to do that earlier so that our count of variable
+  // usage is not biased by duplicate constraints.
+  const std::vector<std::pair<int, int>> duplicates =
+      FindDuplicateConstraints(*context_->working_model);
+  for (const auto [dup, rep] : duplicates) {
+    // Note that it is important to look at the type of the representative in
+    // case the constraint became empty.
+    DCHECK_LT(kObjectiveConstraint, 0);
+    const int type =
+        rep == kObjectiveConstraint
+            ? kObjectiveConstraint
+            : context_->working_model->constraints(rep).constraint_case();
+
+    // For linear constraint, we merge their rhs since it was ignored in the
+    // FindDuplicateConstraints() call.
+    if (type == ConstraintProto::kLinear) {
+      const Domain rep_domain = ReadDomainFromProto(
+          context_->working_model->constraints(rep).linear());
+      const Domain d = ReadDomainFromProto(
+          context_->working_model->constraints(dup).linear());
+      if (rep_domain != d) {
+        // Tricky: we modify the domain so we need to clear this information.
+        //
+        // TODO(user): Revisit this algorithm and integrate it with the dual
+        // reduction. We can either have incrementaly maintained info, or just
+        // do it with one pass of DualBoundStrengthening.
+        for (const int var : context_->ConstraintToVars(rep)) {
+          context_->var_to_lb_only_constraints[var].erase(rep);
+          context_->var_to_ub_only_constraints[var].erase(rep);
+        }
+
+        context_->UpdateRuleStats("duplicate: merged rhs of linear constraint");
+        const Domain rhs = rep_domain.IntersectionWith(d);
+        if (rhs.IsEmpty()) {
+          if (!MarkConstraintAsFalse(
+                  context_->working_model->mutable_constraints(rep))) {
+            SOLVER_LOG(logger_, "Unsat after merging two linear constraints");
+            break;
+          }
+
+          // The representative constraint is no longer a linear constraint,
+          // so we will not enter this type case again and will just remove
+          // all subsequent duplicate linear constraints.
+          context_->UpdateConstraintVariableUsage(rep);
+          continue;
+        }
+        FillDomainInProto(rhs, context_->working_model->mutable_constraints(rep)
+                                   ->mutable_linear());
+      }
+    }
+
+    if (type == kObjectiveConstraint) {
+      context_->UpdateRuleStats(
+          "duplicate: linear constraint parallel to objective");
+      const Domain objective_domain =
+          ReadDomainFromProto(context_->working_model->objective());
+      const Domain d = ReadDomainFromProto(
+          context_->working_model->constraints(dup).linear());
+      if (objective_domain != d) {
+        context_->UpdateRuleStats("duplicate: updated objective domain");
+        const Domain new_domain = objective_domain.IntersectionWith(d);
+        if (new_domain.IsEmpty()) {
+          return (void)context_->NotifyThatModelIsUnsat(
+              "Constraint parallel to the objective makes the objective domain "
+              "empty.");
+        }
+        FillDomainInProto(new_domain,
+                          context_->working_model->mutable_objective());
+
+        // TODO(user): this write/read is a bit unclean, but needed.
+        context_->ReadObjectiveFromProto();
+      }
+    }
+
+    for (const int var : context_->ConstraintToVars(dup)) {
+      context_->var_to_lb_only_constraints[var].erase(dup);
+      context_->var_to_ub_only_constraints[var].erase(dup);
+    }
+    context_->working_model->mutable_constraints(dup)->Clear();
+    context_->UpdateConstraintVariableUsage(dup);
+    context_->UpdateRuleStats("duplicate: removed constraint");
+  }
+
+  SOLVER_LOG(logger_, "[DetectDuplicateConstraints]",
+             " #duplicates=", duplicates.size(), " time=", wall_timer.Get(),
+             "s");
+}
+
+void CpModelPresolver::DetectDominatedLinearConstraints() {
+  if (context_->time_limit()->LimitReached()) return;
+  if (context_->ModelIsUnsat()) return;
+  if (context_->params().presolve_inclusion_work_limit() == 0) return;
+
+  WallTimer wall_timer;
+  wall_timer.Start();
+
+  // We will reuse the constraint <-> variable graph as a storage for the
+  // inclusion detection.
+  InclusionDetector detector(context_->ConstraintToVarsGraph());
+  detector.SetWorkLimit(context_->params().presolve_inclusion_work_limit());
+
+  // Because we use the constraint <-> variable graph, we cannot modify it
+  // during DetectInclusions(). So we delay the update of the graph.
+  std::vector<int> constraint_indices_to_clean;
+
+  // Cache the linear expression domain.
+  // TODO(user): maybe we should store this instead of recomputing it.
+  absl::flat_hash_map<int, Domain> cached_expr_domain;
+
+  const int num_constraints = context_->working_model->constraints().size();
+  for (int c = 0; c < num_constraints; ++c) {
+    const ConstraintProto& ct = context_->working_model->constraints(c);
+    if (!ct.enforcement_literal().empty()) continue;
+    if (ct.constraint_case() != ConstraintProto::kLinear) continue;
+
+    Domain implied(0);
+    const LinearConstraintProto& lin = ct.linear();
+    bool abort = false;
+    for (int i = 0; i < lin.vars().size(); ++i) {
+      const int var = lin.vars(i);
+      if (!RefIsPositive(var)) {
+        // This shouldn't happen except in potential corner cases were the
+        // constraints were not canonicalized before this point. We just skip
+        // such constraint.
+        abort = true;
+        break;
+      }
+      implied = implied
+                    .AdditionWith(
+                        context_->DomainOf(var).MultiplicationBy(lin.coeffs(i)))
+                    .RelaxIfTooComplex();
+    }
+    if (abort) continue;
+
+    DCHECK_LT(c, context_->ConstraintToVarsGraph().size());
+    detector.AddPotentialSet(c);
+    cached_expr_domain[c] = std::move(implied);
+  }
+
+  int64_t num_inclusions = 0;
+  absl::flat_hash_map<int, int64_t> coeff_map;
+  detector.DetectInclusions([&](int subset_c, int superset_c) {
+    ++num_inclusions;
+
+    // Store the coeff of the subset linear constraint in a map.
+    const LinearConstraintProto& subset_lin =
+        context_->working_model->constraints(subset_c).linear();
+    coeff_map.clear();
+    detector.IncreaseWorkDone(subset_lin.vars().size());
+    for (int i = 0; i < subset_lin.vars().size(); ++i) {
+      coeff_map[subset_lin.vars(i)] = subset_lin.coeffs(i);
+    }
+
+    // Lets compute the implied domain of the linear expression
+    // "superset - subset". Note that we actually do not need exact inclusion
+    // for this algorithm to work, but it is an heuristic to not try it with
+    // all pair of constraints.
+    const LinearConstraintProto& superset_lin =
+        context_->working_model->constraints(superset_c).linear();
+    Domain diff_domain(0);
+    detector.IncreaseWorkDone(superset_lin.vars().size());
+    for (int i = 0; i < superset_lin.vars().size(); ++i) {
+      const int var = superset_lin.vars(i);
+      int64_t coeff = superset_lin.coeffs(i);
+      const auto it = coeff_map.find(var);
+      if (it != coeff_map.end()) {
+        coeff -= it->second;
+      }
+      if (coeff == 0) continue;
+
+      diff_domain =
+          diff_domain
+              .AdditionWith(context_->DomainOf(var).MultiplicationBy(coeff))
+              .RelaxIfTooComplex();
+    }
+
+    const Domain subset_ct_domain = ReadDomainFromProto(subset_lin);
+    const Domain superset_ct_domain = ReadDomainFromProto(superset_lin);
+
+    // TODO(user): when we have equality constraint, we might try substitution.
+    if (subset_ct_domain.IsFixed()) {
+      // This should be easy since we can just simplify the superset.
+      // Especially if we have a true inclusion.
+      context_->UpdateRuleStats("TODO linear inclusion: subset is equality");
+    }
+    if (superset_ct_domain.IsFixed()) {
+      // This one could make sense if subset is large.
+      context_->UpdateRuleStats("TODO linear inclusion: superset is equality");
+    }
+
+    // Case 1: superset is redundant.
+    // We process this one first as it let us remove the longest constraint.
+    const Domain implied_superset_domain =
+        subset_ct_domain.AdditionWith(diff_domain)
+            .IntersectionWith(cached_expr_domain[superset_c]);
+    if (implied_superset_domain.IsIncludedIn(superset_ct_domain)) {
+      context_->UpdateRuleStats(
+          "linear inclusion: redundant containing constraint");
+      for (const int var : context_->ConstraintToVars(superset_c)) {
+        context_->var_to_lb_only_constraints[var].erase(superset_c);
+        context_->var_to_ub_only_constraints[var].erase(superset_c);
+      }
+      context_->working_model->mutable_constraints(superset_c)->Clear();
+      constraint_indices_to_clean.push_back(superset_c);
+      detector.StopProcessingCurrentSuperset();
+      return;
+    }
+
+    // Case 2: subset is redundant.
+    const Domain implied_subset_domain =
+        superset_ct_domain.AdditionWith(diff_domain.Negation())
+            .IntersectionWith(cached_expr_domain[subset_c]);
+    if (implied_subset_domain.IsIncludedIn(subset_ct_domain)) {
+      context_->UpdateRuleStats(
+          "linear inclusion: redundant included constraint");
+      for (const int var : context_->ConstraintToVars(subset_c)) {
+        context_->var_to_lb_only_constraints[var].erase(subset_c);
+        context_->var_to_ub_only_constraints[var].erase(subset_c);
+      }
+      context_->working_model->mutable_constraints(subset_c)->Clear();
+      constraint_indices_to_clean.push_back(subset_c);
+      detector.StopProcessingCurrentSubset();
+      return;
+    }
+  });
+
+  for (const int c : constraint_indices_to_clean) {
+    context_->UpdateConstraintVariableUsage(c);
+  }
+
+  SOLVER_LOG(logger_, "[DetectDominatedLinearConstraints]",
+             " #relevant_constraints=", detector.num_potential_supersets(),
+             " #work_done=", detector.work_done(),
+             " #num_inclusions=", num_inclusions,
+             " #num_redundant=", constraint_indices_to_clean.size(),
+             " time=", wall_timer.Get(), "s");
+}
+
+void CpModelPresolver::ExtractEncodingFromLinear() {
+  if (context_->time_limit()->LimitReached()) return;
+  if (context_->ModelIsUnsat()) return;
+  if (context_->params().presolve_inclusion_work_limit() == 0) return;
+
+  WallTimer wall_timer;
+  wall_timer.Start();
+
+  // TODO(user): compute on the fly instead of temporary storing variables?
+  std::vector<int> relevant_constraints;
+  CompactVectorVector<int> storage;
+  InclusionDetector detector(storage);
+  detector.SetWorkLimit(context_->params().presolve_inclusion_work_limit());
 
   // Loop over the constraints and fill the structures above.
+  //
+  // TODO(user): Ideally we want to process exactly_one first in case a
+  // linear constraint is both included in an at_most_one and an exactly_one.
+  std::vector<int> vars;
   const int num_constraints = context_->working_model->constraints().size();
   for (int c = 0; c < num_constraints; ++c) {
     const ConstraintProto& ct = context_->working_model->constraints(c);
     switch (ct.constraint_case()) {
       case ConstraintProto::kAtMostOne: {
-        std::vector<int> vars;
+        vars.clear();
         for (const int ref : ct.at_most_one().literals()) {
           vars.push_back(PositiveRef(ref));
         }
-        potential_supersets.push_back({c, std::move(vars), false});
+        relevant_constraints.push_back(c);
+        detector.AddPotentialSuperset(storage.Add(vars));
         break;
       }
       case ConstraintProto::kExactlyOne: {
-        std::vector<int> vars;
+        vars.clear();
         for (const int ref : ct.exactly_one().literals()) {
           vars.push_back(PositiveRef(ref));
         }
-        potential_supersets.push_back({c, std::move(vars), true});
+        relevant_constraints.push_back(c);
+        detector.AddPotentialSuperset(storage.Add(vars));
         break;
       }
       case ConstraintProto::kLinear: {
@@ -6307,9 +6562,9 @@ void CpModelPresolver::ExtractEncodingFromLinear() {
 
         // We also want a single non-Boolean.
         // Note that this assume the constraint is canonicalized.
-        std::vector<int> vars;
         bool is_candidate = true;
         int num_integers = 0;
+        vars.clear();
         const int num_terms = ct.linear().vars().size();
         for (int i = 0; i < num_terms; ++i) {
           const int ref = ct.linear().vars(i);
@@ -6331,7 +6586,8 @@ void CpModelPresolver::ExtractEncodingFromLinear() {
         // We ignore cases with just one Boolean as this should be already dealt
         // with elsewhere.
         if (is_candidate && num_integers == 1 && vars.size() > 1) {
-          potential_subsets.push_back({c, std::move(vars)});
+          relevant_constraints.push_back(c);
+          detector.AddPotentialSubset(storage.Add(vars));
         }
         break;
       }
@@ -6340,23 +6596,6 @@ void CpModelPresolver::ExtractEncodingFromLinear() {
     }
   }
 
-  if (potential_supersets.empty()) return;
-  if (potential_subsets.empty()) return;
-
-  // Sort by size. We also want to process exactly_ones first in case a linear
-  // constraint is also included in an at_most_one of the same size.
-  std::sort(potential_supersets.begin(), potential_supersets.end(),
-            [](const Superset& a, const Superset& b) {
-              const int size_a = a.vars.size();
-              const int size_b = b.vars.size();
-              return std::tie(size_a, a.is_exactly_one) <
-                     std::tie(size_b, b.is_exactly_one);
-            });
-  std::sort(potential_subsets.begin(), potential_subsets.end(),
-            [](const Subset& a, const Subset& b) {
-              return a.vars.size() < b.vars.size();
-            });
-
   // Stats.
   int64_t num_exactly_one_encodings = 0;
   int64_t num_at_most_one_encodings = 0;
@@ -6364,101 +6603,30 @@ void CpModelPresolver::ExtractEncodingFromLinear() {
   int64_t num_unique_terms = 0;
   int64_t num_multiple_terms = 0;
 
-  // Structure for efficient inclusion detection.
-  //
-  // TODO(user): Factor this and ComputeSignature() out and merge the 3 places
-  // where we do something similar.
-  int subset_index = 0;
-  std::vector<uint64_t> signatures;
-  std::vector<std::vector<int>> one_watcher;
-  std::vector<bool> is_in_superset;
-  for (const Superset& superset : potential_supersets) {
-    // Include all the potential subset.
-    const int superset_size = superset.vars.size();
-    for (; subset_index < potential_subsets.size(); ++subset_index) {
-      const std::vector<int>& vars = potential_subsets[subset_index].vars;
-      if (vars.size() > superset_size) break;
+  detector.DetectInclusions([&](int subset, int superset) {
+    const int subset_c = relevant_constraints[subset];
+    const int superset_c = relevant_constraints[superset];
+    const ConstraintProto& superset_ct =
+        context_->working_model->constraints(superset_c);
+    if (superset_ct.constraint_case() == ConstraintProto::kAtMostOne) {
+      ++num_at_most_one_encodings;
+    } else {
+      ++num_exactly_one_encodings;
+    }
+    num_literals += storage[subset].size();
+    context_->UpdateRuleStats("encoding: extracted from linear");
 
-      // Choose to watch the one with smallest list.
-      int best_choice = -1;
-      for (const int var : vars) {
-        if (one_watcher.size() <= var) one_watcher.resize(var + 1);
-        if (best_choice == -1 ||
-            one_watcher[var].size() < one_watcher[best_choice].size()) {
-          best_choice = var;
-        }
-      }
-      one_watcher[best_choice].push_back(subset_index);
-      CHECK_EQ(signatures.size(), subset_index);
-      signatures.push_back(ComputeSignature(vars));
+    if (!ProcessEncodingFromLinear(subset_c, superset_ct, &num_unique_terms,
+                                   &num_multiple_terms)) {
+      detector.Stop();  // UNSAT.
     }
 
-    // Find any subset included in current superset.
-    DCHECK(absl::c_all_of(is_in_superset, [](bool b) { return !b; }));
-    for (const int var : superset.vars) {
-      if (var >= is_in_superset.size()) {
-        is_in_superset.resize(var + 1, false);
-      }
-      is_in_superset[var] = true;
-    }
-    {
-      const int max_size = std::max(one_watcher.size(), is_in_superset.size());
-      one_watcher.resize(max_size);
-      is_in_superset.resize(max_size, false);
-    }
-
-    const uint64_t superset_signature = ComputeSignature(superset.vars);
-    for (const int superset_var : superset.vars) {
-      for (int i = 0; i < one_watcher[superset_var].size(); ++i) {
-        const int subset_index = one_watcher[superset_var][i];
-        const Subset& subset = potential_subsets[subset_index];
-        CHECK_LE(subset.vars.size(), superset_size);
-
-        // Quick check with signature.
-        if ((signatures[subset_index] & ~superset_signature) != 0) continue;
-
-        // Long check with bitset.
-        bool is_included = true;
-        for (const int subset_var : subset.vars) {
-          if (!is_in_superset[subset_var]) {
-            is_included = false;
-            break;
-          }
-        }
-        if (!is_included) continue;
-
-        if (!superset.is_exactly_one) {
-          ++num_at_most_one_encodings;
-        } else {
-          ++num_exactly_one_encodings;
-        }
-        num_literals += subset.vars.size();
-        context_->UpdateRuleStats("encoding: extracted from linear");
-
-        if (!ProcessEncodingFromLinear(
-                subset.c, context_->working_model->constraints(superset.c),
-                &num_unique_terms, &num_multiple_terms)) {
-          // UNSAT, we return right away, no cleanup needed.
-          return;
-        }
-
-        // Remove from the watcher list.
-        std::swap(one_watcher[superset_var][i],
-                  one_watcher[superset_var].back());
-        one_watcher[superset_var].pop_back();
-        --i;
-      }
-    }
-
-    // Cleanup.
-    for (const int var : superset.vars) {
-      is_in_superset[var] = false;
-    }
-  }
+    detector.StopProcessingCurrentSubset();
+  });
 
   SOLVER_LOG(logger_, "[ExtractEncodingFromLinear]",
-             " #potential_supersets=", potential_supersets.size(),
-             " #potential_subsets=", potential_subsets.size(),
+             " #potential_supersets=", detector.num_potential_supersets(),
+             " #potential_subsets=", detector.num_potential_subsets(),
              " #at_most_one_encodings=", num_at_most_one_encodings,
              " #exactly_one_encodings=", num_exactly_one_encodings,
              " #unique_terms=", num_unique_terms,
@@ -7676,7 +7844,18 @@ CpSolverStatus CpModelPresolver::Presolve() {
       context_->UpdateNewConstraintsVariableUsage();
     }
 
+    // This is slow, so we just do it the first time.
+    // TODO(user): revisit this.
     if (iter == 0) TransformIntoMaxCliques();
+
+    // Deal with pair of constraints.
+    //
+    // TODO(user): revisit when different transformation appear.
+    // TODO(user): merge these code instead of doing 3 passes?
+    DetectDuplicateConstraints();
+    DetectDominatedLinearConstraints();
+    ProcessSetPPC();
+    if (context_->ModelIsUnsat()) return InfeasibleStatus();
 
     // TODO(user): Decide where is the best place for this. Fow now we do it
     // after max clique to get all the bool_and converted to at most ones.
@@ -7686,15 +7865,13 @@ CpSolverStatus CpModelPresolver::Presolve() {
       DetectAndExploitSymmetriesInPresolve(context_);
     }
 
-    // Process set packing, partitioning and covering constraint.
-    if (!context_->time_limit()->LimitReached()) {
-      ProcessSetPPC();
-      ExtractBoolAnd();
+    // The TransformIntoMaxCliques() call above transform all bool and into
+    // at most one of size 2. This does the reverse and merge them.
+    ExtractBoolAnd();
 
-      // Call the main presolve to remove the fixed variables and do more
-      // deductions.
-      PresolveToFixPoint();
-    }
+    // Call the main presolve to remove the fixed variables and do more
+    // deductions.
+    PresolveToFixPoint();
 
     // Exit the loop if the reduction is not so large.
     // Hack: to facilitate experiments, if the requested number of iterations
@@ -7720,84 +7897,6 @@ CpSolverStatus CpModelPresolver::Presolve() {
 
   // Adds all needed affine relation to context_->working_model.
   EncodeAllAffineRelations();
-  if (context_->ModelIsUnsat()) return InfeasibleStatus();
-
-  // Remove duplicate constraints.
-  // Note that at this point the objective in the proto should be up to date.
-  //
-  // TODO(user): We might want to do that earlier so that our count of variable
-  // usage is not biased by duplicate constraints.
-  const std::vector<std::pair<int, int>> duplicates =
-      FindDuplicateConstraints(*context_->working_model);
-  for (const auto [dup, rep] : duplicates) {
-    // Note that it is important to look at the type of the representative in
-    // case the constraint became empty.
-    DCHECK_LT(kObjectiveConstraint, 0);
-    const int type =
-        rep == kObjectiveConstraint
-            ? kObjectiveConstraint
-            : context_->working_model->constraints(rep).constraint_case();
-
-    // TODO(user): we could delete duplicate identical interval, but we need
-    // to make sure reference to them are updated.
-    if (type == ConstraintProto::ConstraintCase::kInterval) {
-      continue;
-    }
-
-    // For linear constraint, we merge their rhs since it was ignored in the
-    // FindDuplicateConstraints() call.
-    if (type == ConstraintProto::kLinear) {
-      const Domain rep_domain = ReadDomainFromProto(
-          context_->working_model->constraints(rep).linear());
-      const Domain d = ReadDomainFromProto(
-          context_->working_model->constraints(dup).linear());
-      if (rep_domain != d) {
-        context_->UpdateRuleStats("duplicate: merged rhs of linear constraint");
-        const Domain rhs = rep_domain.IntersectionWith(d);
-        if (rhs.IsEmpty()) {
-          if (!MarkConstraintAsFalse(
-                  context_->working_model->mutable_constraints(rep))) {
-            SOLVER_LOG(logger_, "Unsat after merging two linear constraints");
-            break;
-          }
-
-          // The representative constraint is no longer a linear constraint,
-          // so we will not enter this type case again and will just remove
-          // all subsequent duplicate linear constraints.
-          context_->UpdateConstraintVariableUsage(rep);
-          continue;
-        }
-        FillDomainInProto(rhs, context_->working_model->mutable_constraints(rep)
-                                   ->mutable_linear());
-      }
-    }
-
-    if (type == kObjectiveConstraint) {
-      context_->UpdateRuleStats(
-          "duplicate: linear constraint parallel to objective");
-      const Domain objective_domain =
-          ReadDomainFromProto(context_->working_model->objective());
-      const Domain d = ReadDomainFromProto(
-          context_->working_model->constraints(dup).linear());
-      if (objective_domain != d) {
-        context_->UpdateRuleStats("duplicate: updated objective domain");
-        const Domain new_domain = objective_domain.IntersectionWith(d);
-        if (new_domain.IsEmpty()) {
-          (void)context_->NotifyThatModelIsUnsat(
-              "Constraint parallel to the objective makes the objective domain "
-              "empty.");
-          return InfeasibleStatus();
-        }
-        FillDomainInProto(new_domain,
-                          context_->working_model->mutable_objective());
-      }
-    }
-
-    context_->working_model->mutable_constraints(dup)->Clear();
-    context_->UpdateConstraintVariableUsage(dup);
-    context_->UpdateRuleStats("duplicate: removed constraint");
-  }
-
   if (context_->ModelIsUnsat()) return InfeasibleStatus();
 
   // The strategy variable indices will be remapped in ApplyVariableMapping()
@@ -8103,10 +8202,12 @@ std::vector<std::pair<int, int>> FindDuplicateConstraints(
 
   const int num_constraints = model_proto.constraints().size();
   for (int c = 0; c < num_constraints; ++c) {
-    if (model_proto.constraints(c).constraint_case() ==
-        ConstraintProto::CONSTRAINT_NOT_SET) {
-      continue;
-    }
+    const auto type = model_proto.constraints(c).constraint_case();
+    if (type == ConstraintProto::CONSTRAINT_NOT_SET) continue;
+
+    // TODO(user): we could delete duplicate identical interval, but we need
+    // to make sure reference to them are updated.
+    if (type == ConstraintProto::ConstraintCase::kInterval) continue;
 
     // We ignore names when comparing constraints.
     //
