@@ -74,21 +74,24 @@
 %typemap(imtype) CppProtoType "System.IntPtr"
 %typemap(cstype) CppProtoType "CSharpProtoType"
 %typemap(csout)  CppProtoType {
-    System.IntPtr data = $imcall;
-    int size = System.Runtime.InteropServices.Marshal.ReadInt32(data);
-    System.IntPtr bufferStart = data + sizeof(int);
-    byte[] buf = System.Buffers.ArrayPool<byte>.Shared.Rent(size);
-    System.Runtime.InteropServices.Marshal.Copy(bufferStart, buf, 0, size);
-    Google.OrTools.Init.CppBridge.DeleteByteArray(data);
-    try {
-      return CSharpProtoType.Parser.ParseFrom(System.MemoryExtensions.AsSpan(buf, 0, size));
-    } catch (Google.Protobuf.InvalidProtocolBufferException /*e*/) {
-      throw new System.Exception("Unable to parse CSharpProtoType protocol message.");
-    }
-    finally {
-      System.Buffers.ArrayPool<byte>.Shared.Return(buf);
-    }
+  System.IntPtr data = $imcall;
+  int size = System.Runtime.InteropServices.Marshal.ReadInt32(data);
+  System.IntPtr bufferStart = data + sizeof(int);
+  byte[] buf = System.Buffers.ArrayPool<byte>.Shared.Rent(size);
+  System.Runtime.InteropServices.Marshal.Copy(bufferStart, buf, 0, size);
+  Google.OrTools.Init.CppBridge.DeleteByteArray(data);
+  try
+  {
+    return CSharpProtoType.Parser.ParseFrom(System.MemoryExtensions.AsSpan(buf, 0, size));
+  } catch (Google.Protobuf.InvalidProtocolBufferException /*e*/)
+  {
+    throw new System.Exception("Unable to parse CSharpProtoType protocol message.");
   }
+  finally
+  {
+    System.Buffers.ArrayPool<byte>.Shared.Return(buf);
+  }
+}
 %typemap(out) CppProtoType {
   const long size = $1.ByteSizeLong();
   $result = new uint8_t[size + 4];
@@ -100,3 +103,4 @@
 }
 
 %enddef // end PROTO2_RETURN
+

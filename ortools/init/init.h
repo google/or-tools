@@ -128,10 +128,7 @@ class CppBridge {
   /**
    * Delete a temporary C++ byte array.
    */
-  static void DeleteByteArray(uint8_t* buffer) {
-    delete [] buffer;
-  }
-
+  static void DeleteByteArray(uint8_t* buffer) { delete[] buffer; }
 };
 
 class OrToolsVersion {
