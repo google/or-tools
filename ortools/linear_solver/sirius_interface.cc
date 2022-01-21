@@ -378,7 +378,7 @@ namespace operations_research {
 		}
 		else if (lb > (-SRS_infinite) && ub < SRS_infinite) {
 			// Both bounds are finite -> this is a ranged constraint
-			LOG(DFATAL) << "Sirius does not handle ranged constraint.";
+			throw std::logic_error("Sirius does not handle ranged constraint.");
 			if (ub < lb) {
 				CHECK_STATUS(-1);
 			}

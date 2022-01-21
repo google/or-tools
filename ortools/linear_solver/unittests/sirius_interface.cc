@@ -303,6 +303,13 @@ namespace operations_research {
     _unittest_verify_constraint(&getter, c, SRS_LESSER_THAN, lb, ub);
   }
 
+  TEST(SiriusInterface, ConstraintR) {
+    UNITTEST_INIT_MIP();
+    double lb = -2, ub = -1;
+    solver.MakeRowConstraint(lb, ub);
+    EXPECT_THROW(solver.Solve(), std::logic_error);
+  }
+
   TEST(SiriusInterface, ConstraintG) {
     UNITTEST_INIT_MIP();
     double lb = 8.1, ub = solver.infinity();
