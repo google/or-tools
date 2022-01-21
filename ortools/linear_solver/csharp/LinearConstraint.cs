@@ -138,7 +138,7 @@ public class VarEquality : LinearConstraint
     private bool equality_;
 }
 
-// TODO(user): Try to move this code back to the .swig with @define macros.
+// TODO(user): Try to move this code back to the .i with @define macros.
 public partial class MPConstraintVector : IDisposable,
                                           System.Collections.IEnumerable
 #if !SWIG_DOTNET_1

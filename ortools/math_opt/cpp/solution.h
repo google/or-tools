@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_MATH_OPT_CPP_SOLUTION_H_
 #define OR_TOOLS_MATH_OPT_CPP_SOLUTION_H_
 
+#include <cstdint>
 #include <optional>
 
 #include "absl/types/optional.h"

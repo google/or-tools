@@ -1009,7 +1009,6 @@ class IntVarLocalSearchHandler {
                                  IntVarLocalSearchHandler>::OnStart;
 // clang-format on
 #endif  // SWIGPYTHON
-
 // clang-format off
 %rename(IntVarLocalSearchOperatorTemplate)
         VarLocalSearchOperator<IntVar, int64_t, IntVarLocalSearchHandler>;

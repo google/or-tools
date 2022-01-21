@@ -405,7 +405,7 @@ namespace operations_research {
 // Methods:
 %rename (Add) Solver::AddConstraint;
 // Rename NewSearch and EndSearch to add pinning. See the overrides of
-// NewSearch in ../../open_source/csharp/constraint_solver/SolverHelper.cs
+// NewSearch in ../../csharp/constraint_solver/SolverHelper.cs
 %rename (NewSearchAux) Solver::NewSearch;
 %rename (EndSearchAux) Solver::EndSearch;
 
@@ -966,7 +966,7 @@ PROTO2_RETURN(operations_research::CpModel,
 
 namespace operations_research {
 // Globals
-// IMPORTANT(corentinl): Global will be placed in operations_research_constraint_solver.cs
+// IMPORTANT(user): Global will be placed in operations_research_constraint_solver.cs
 // Ignored:
 %ignore FillValues;
 }  // namespace operations_research

@@ -156,6 +156,7 @@ cc_library(
     ],
     hdrs = [
         "file.h",
+        "helpers.h",
     ],
     deps = [
         ":base",

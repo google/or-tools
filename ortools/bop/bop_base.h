@@ -280,7 +280,6 @@ struct LearnedInfo {
   // New binary clauses.
   std::vector<sat::BinaryClause> binary_clauses;
 };
-
 }  // namespace bop
 }  // namespace operations_research
 #endif  // OR_TOOLS_BOP_BOP_BASE_H_

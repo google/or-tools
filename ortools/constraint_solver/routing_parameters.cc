@@ -14,6 +14,7 @@
 #include "ortools/constraint_solver/routing_parameters.h"
 
 #include <cstdint>
+#include <string>
 
 #include "absl/strings/str_cat.h"
 #include "absl/time/time.h"

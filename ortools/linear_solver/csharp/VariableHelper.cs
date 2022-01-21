@@ -190,7 +190,7 @@ public partial class Variable
     }
 }
 
-// TODO(user): Try to move this code back to the .swig with @define macros.
+// TODO(user): Try to move this code back to the .i with @define macros.
 public partial class MPVariableVector : IDisposable,
                                         System.Collections.IEnumerable
 #if !SWIG_DOTNET_1
