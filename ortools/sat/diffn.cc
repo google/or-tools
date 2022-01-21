@@ -23,13 +23,14 @@
 #include "ortools/base/iterator_adaptors.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
-#include "ortools/sat/cumulative.h"
+#include "ortools/sat/cumulative_energy.h"
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/disjunctive.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/theta_tree.h"
+#include "ortools/sat/timetable.h"
 #include "ortools/util/sort.h"
 
 namespace operations_research {
@@ -107,7 +108,23 @@ void AddCumulativeRelaxation(const std::vector<IntervalVariable>& x_intervals,
       WeightedSumGreaterOrEqual({capacity.var, min_start_var, max_end_var},
                                 coeffs, capacity.constant.value()));
 
-  model->Add(Cumulative(x_intervals, sizes, capacity, x));
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  auto* watcher = model->GetOrCreate<GenericLiteralWatcher>();
+
+  // Propagator responsible for applying Timetabling filtering rule. It
+  // increases the minimum of the start variables, decrease the maximum of the
+  // end variables, and increase the minimum of the capacity variable.
+  TimeTablingPerTask* time_tabling =
+      new TimeTablingPerTask(sizes, capacity, integer_trail, x);
+  time_tabling->RegisterWith(watcher);
+  model->TakeOwnership(time_tabling);
+
+  // Propagator responsible for applying the Overload Checking filtering rule.
+  // It increases the minimum of the capacity variable.
+  if (model->GetOrCreate<SatParameters>()
+          ->use_overload_checker_in_cumulative_constraint()) {
+    AddCumulativeOverloadChecker(sizes, capacity, x, model);
+  }
 }
 
 #define RETURN_IF_FALSE(f) \
@@ -414,9 +431,16 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
     const int box = temp[i].task_index;
     if (!strict_ && (x.SizeMin(box) == 0 || y->SizeMin(box) == 0)) continue;
 
-    // Ignore a box if its x interval and its y interval are not present at
-    // the same time.
-    if (!x.IsPresent(box) || !y->IsPresent(box)) continue;
+    // Ignore absent boxes.
+    if (x.IsAbsent(box) || y->IsAbsent(box)) continue;
+
+    // Ignore boxes where the relevant presence literal is only on the y
+    // dimension, or if both intervals are optionals with different literals.
+    if (x.IsPresent(box) && !y->IsPresent(box)) continue;
+    if (!x.IsPresent(box) && !y->IsPresent(box) &&
+        x.PresenceLiteral(box) != y->PresenceLiteral(box)) {
+      continue;
+    }
 
     const IntegerValue start_max = temp[i].time;
     const IntegerValue end_min = y->EndMin(box);
@@ -557,6 +581,8 @@ bool NonOverlappingRectanglesDisjunctivePropagator::Propagate() {
 // Specialized propagation on only two boxes that must intersect with the
 // given y_line_for_reason.
 bool NonOverlappingRectanglesDisjunctivePropagator::PropagateTwoBoxes() {
+  if (!x_.IsPresent(0) || !x_.IsPresent(1)) return true;
+
   // For each direction and each order, we test if the boxes can be disjoint.
   const int state =
       (x_.EndMin(0) <= x_.StartMax(1)) + 2 * (x_.EndMin(1) <= x_.StartMax(0));
