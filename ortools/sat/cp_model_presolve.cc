@@ -3648,27 +3648,6 @@ bool CpModelPresolver::PresolveAllDiff(ConstraintProto* ct) {
 
 namespace {
 
-// Returns the sorted list of literals for given bool_or or at_most_one
-// constraint.
-std::vector<int> GetLiteralsFromSetPPCConstraint(const ConstraintProto& ct) {
-  std::vector<int> sorted_literals;
-  if (ct.constraint_case() == ConstraintProto::kAtMostOne) {
-    for (const int literal : ct.at_most_one().literals()) {
-      sorted_literals.push_back(literal);
-    }
-  } else if (ct.constraint_case() == ConstraintProto::kBoolOr) {
-    for (const int literal : ct.bool_or().literals()) {
-      sorted_literals.push_back(literal);
-    }
-  } else if (ct.constraint_case() == ConstraintProto::kExactlyOne) {
-    for (const int literal : ct.exactly_one().literals()) {
-      sorted_literals.push_back(literal);
-    }
-  }
-  std::sort(sorted_literals.begin(), sorted_literals.end());
-  return sorted_literals;
-}
-
 // Add the constraint (lhs => rhs) to the given proto. The hash map lhs ->
 // bool_and constraint index is used to merge implications with the same lhs.
 void AddImplication(int lhs, int rhs, CpModelProto* proto,
@@ -5819,179 +5798,174 @@ bool CpModelPresolver::PresolveOneConstraint(int c) {
   }
 }
 
-// This is called with constraint c1 whose literals are included in the literals
-// of c2.
-//
 // Returns false iff the model is UNSAT.
-bool CpModelPresolver::ProcessSetPPCSubset(
-    int c1, int c2, const std::vector<int>& c2_minus_c1,
-    const std::vector<int>& original_constraint_index,
-    std::vector<bool>* marked_for_removal) {
-  if (context_->ModelIsUnsat()) return false;
+bool CpModelPresolver::ProcessSetPPCSubset(int subset_c, int superset_c,
+                                           absl::flat_hash_set<int>* tmp_set,
+                                           bool* remove_subset,
+                                           bool* remove_superset) {
+  ConstraintProto* subset_ct =
+      context_->working_model->mutable_constraints(subset_c);
+  ConstraintProto* superset_ct =
+      context_->working_model->mutable_constraints(superset_c);
 
-  CHECK(!(*marked_for_removal)[c1]);
-  CHECK(!(*marked_for_removal)[c2]);
-
-  ConstraintProto* ct1 = context_->working_model->mutable_constraints(
-      original_constraint_index[c1]);
-  ConstraintProto* ct2 = context_->working_model->mutable_constraints(
-      original_constraint_index[c2]);
-
-  if ((ct1->constraint_case() == ConstraintProto::kBoolOr ||
-       ct1->constraint_case() == ConstraintProto::kExactlyOne) &&
-      (ct2->constraint_case() == ConstraintProto::kAtMostOne ||
-       ct2->constraint_case() == ConstraintProto::kExactlyOne)) {
+  if ((subset_ct->constraint_case() == ConstraintProto::kBoolOr ||
+       subset_ct->constraint_case() == ConstraintProto::kExactlyOne) &&
+      (superset_ct->constraint_case() == ConstraintProto::kAtMostOne ||
+       superset_ct->constraint_case() == ConstraintProto::kExactlyOne)) {
     context_->UpdateRuleStats("setppc: bool_or in at_most_one.");
 
-    // Fix extras in c2 to 0, note that these will be removed from the
+    tmp_set->clear();
+    if (subset_ct->constraint_case() == ConstraintProto::kBoolOr) {
+      tmp_set->insert(subset_ct->bool_or().literals().begin(),
+                      subset_ct->bool_or().literals().end());
+    } else {
+      tmp_set->insert(subset_ct->exactly_one().literals().begin(),
+                      subset_ct->exactly_one().literals().end());
+    }
+
+    // Fix extras in superset_c to 0, note that these will be removed from the
     // constraint later.
-    for (const int literal : c2_minus_c1) {
+    for (const int literal :
+         superset_ct->constraint_case() == ConstraintProto::kAtMostOne
+             ? superset_ct->at_most_one().literals()
+             : superset_ct->exactly_one().literals()) {
+      if (tmp_set->contains(literal)) continue;
       if (!context_->SetLiteralToFalse(literal)) return false;
       context_->UpdateRuleStats("setppc: fixed variables");
     }
 
-    // Change c2 to exactly_one if not already.
-    if (ct2->constraint_case() != ConstraintProto::kExactlyOne) {
-      ConstraintProto copy = *ct2;
-      (*ct2->mutable_exactly_one()->mutable_literals()) =
+    // Change superset_c to exactly_one if not already.
+    if (superset_ct->constraint_case() != ConstraintProto::kExactlyOne) {
+      ConstraintProto copy = *superset_ct;
+      (*superset_ct->mutable_exactly_one()->mutable_literals()) =
           copy.at_most_one().literals();
     }
 
-    // Remove c1.
-    (*marked_for_removal)[c1] = true;
-    ct1->Clear();
-    context_->UpdateConstraintVariableUsage(original_constraint_index[c1]);
+    *remove_subset = true;
     return true;
   }
 
-  if ((ct1->constraint_case() == ConstraintProto::kBoolOr ||
-       ct1->constraint_case() == ConstraintProto::kExactlyOne) &&
-      ct2->constraint_case() == ConstraintProto::kBoolOr) {
+  if ((subset_ct->constraint_case() == ConstraintProto::kBoolOr ||
+       subset_ct->constraint_case() == ConstraintProto::kExactlyOne) &&
+      superset_ct->constraint_case() == ConstraintProto::kBoolOr) {
     context_->UpdateRuleStats("setppc: removed dominated constraints");
-
-    (*marked_for_removal)[c2] = true;
-    ct2->Clear();
-    context_->UpdateConstraintVariableUsage(original_constraint_index[c2]);
+    *remove_superset = true;
     return true;
   }
 
-  if (ct1->constraint_case() == ConstraintProto::kAtMostOne &&
-      (ct2->constraint_case() == ConstraintProto::kAtMostOne ||
-       ct2->constraint_case() == ConstraintProto::kExactlyOne)) {
+  if (subset_ct->constraint_case() == ConstraintProto::kAtMostOne &&
+      (superset_ct->constraint_case() == ConstraintProto::kAtMostOne ||
+       superset_ct->constraint_case() == ConstraintProto::kExactlyOne)) {
     context_->UpdateRuleStats("setppc: removed dominated constraints");
-    (*marked_for_removal)[c1] = true;
-    ct1->Clear();
-    context_->UpdateConstraintVariableUsage(original_constraint_index[c1]);
+    *remove_subset = true;
     return true;
   }
 
-  if (ct1->constraint_case() == ConstraintProto::kExactlyOne &&
-      ct2->constraint_case() == ConstraintProto::kLinear) {
+  if (subset_ct->constraint_case() == ConstraintProto::kExactlyOne &&
+      superset_ct->constraint_case() == ConstraintProto::kLinear) {
     // If we have an exactly one in a linear, we can shift the coefficients of
     // all these variables by any constant value. For now, since we only deal
     // with positive coefficient, we shift by the min.
     //
     // TODO(user): It might be more interesting to maximize the number of terms
     // that are shifted to zero to reduce the constraint size.
-    absl::flat_hash_set<int> literals(ct1->exactly_one().literals().begin(),
-                                      ct1->exactly_one().literals().end());
+    tmp_set->clear();
+    tmp_set->insert(subset_ct->exactly_one().literals().begin(),
+                    subset_ct->exactly_one().literals().end());
     int64_t min_coeff = std::numeric_limits<int64_t>::max();
     int num_matches = 0;
-    for (int i = 0; i < ct2->linear().vars().size(); ++i) {
-      const int var = ct2->linear().vars(i);
-      if (literals.contains(var)) {
+    for (int i = 0; i < superset_ct->linear().vars().size(); ++i) {
+      const int var = superset_ct->linear().vars(i);
+      if (tmp_set->contains(var)) {
         ++num_matches;
-        min_coeff = std::min(min_coeff, std::abs(ct2->linear().coeffs(i)));
+        min_coeff =
+            std::min(min_coeff, std::abs(superset_ct->linear().coeffs(i)));
       }
     }
 
     // If a linear constraint contains more than one at most one, after
     // processing one, we might no longer have an inclusion.
-    if (num_matches != literals.size()) return true;
+    if (num_matches != tmp_set->size()) return true;
 
     // TODO(user): It would be cool to propagate other variable domains with
     // the knowledge that the partial sum in is [min_coeff, max_coeff]. I am
     // a bit relunctant to duplicate the code for that here.
     int new_size = 0;
-    for (int i = 0; i < ct2->linear().vars().size(); ++i) {
-      const int var = ct2->linear().vars(i);
-      int64_t coeff = ct2->linear().coeffs(i);
-      if (literals.contains(var)) {
+    for (int i = 0; i < superset_ct->linear().vars().size(); ++i) {
+      const int var = superset_ct->linear().vars(i);
+      int64_t coeff = superset_ct->linear().coeffs(i);
+      if (tmp_set->contains(var)) {
         CHECK_GE(coeff, 0);
         if (coeff == min_coeff) continue;  // delete term.
         coeff -= min_coeff;
       }
-      ct2->mutable_linear()->set_vars(new_size, var);
-      ct2->mutable_linear()->set_coeffs(new_size, coeff);
+      superset_ct->mutable_linear()->set_vars(new_size, var);
+      superset_ct->mutable_linear()->set_coeffs(new_size, coeff);
       ++new_size;
     }
 
-    ct2->mutable_linear()->mutable_vars()->Truncate(new_size);
-    ct2->mutable_linear()->mutable_coeffs()->Truncate(new_size);
-    FillDomainInProto(
-        ReadDomainFromProto(ct2->linear()).AdditionWith(Domain(-min_coeff)),
-        ct2->mutable_linear());
-    context_->UpdateConstraintVariableUsage(original_constraint_index[c2]);
+    superset_ct->mutable_linear()->mutable_vars()->Truncate(new_size);
+    superset_ct->mutable_linear()->mutable_coeffs()->Truncate(new_size);
+    FillDomainInProto(ReadDomainFromProto(superset_ct->linear())
+                          .AdditionWith(Domain(-min_coeff)),
+                      superset_ct->mutable_linear());
+    context_->UpdateConstraintVariableUsage(superset_c);
     context_->UpdateRuleStats("setppc: reduced linear coefficients.");
+    return true;
   }
 
-  // We can't deduce anything in the last remaining case:
-  // ct1->constraint_case() == ConstraintProto::kAtMostOne &&
-  // ct2->constraint_case() == ConstraintProto::kBoolOr
-
+  // We can't deduce anything in the last remaining cases, like an at most one
+  // in an at least one.
   return true;
 }
 
 // TODO(user): TransformIntoMaxCliques() convert the bool_and to
 // at_most_one, but maybe also duplicating them into bool_or would allow this
 // function to do more presolving.
-bool CpModelPresolver::ProcessSetPPC() {
-  if (context_->time_limit()->LimitReached()) return true;
-  if (context_->ModelIsUnsat()) return false;
+void CpModelPresolver::ProcessSetPPC() {
+  if (context_->time_limit()->LimitReached()) return;
+  if (context_->ModelIsUnsat()) return;
+  if (context_->params().presolve_inclusion_work_limit() == 0) return;
 
   WallTimer wall_timer;
   wall_timer.Start();
 
-  const int num_constraints = context_->working_model->constraints_size();
+  // TODO(user): compute on the fly instead of temporary storing variables?
+  std::vector<int> relevant_constraints;
+  CompactVectorVector<int> storage;
+  InclusionDetector detector(storage);
+  detector.SetWorkLimit(context_->params().presolve_inclusion_work_limit());
 
-  // Signatures of all the constraints. In the signature the bit i is 1 if it
-  // contains a literal l such that l%64 = i.
-  std::vector<uint64_t> signatures;
-
-  // Graph of constraints to literals. constraint_literals[c] contains all the
-  // literals in constraint indexed by 'c' in sorted order.
-  std::vector<std::vector<int>> constraint_literals;
-
-  // Graph of literals to constraints. literals_to_constraints[l] contains the
-  // vector of constraint indices in which literal 'l' or 'neg(l)' appears.
-  std::vector<std::vector<int>> literals_to_constraints;
-
-  // vector of booleans indicating if the constraint was already removed.
-  std::vector<bool> removed;
-
-  // The containers above use the local indices for setppc constraints. We store
-  // the original constraint indices corresponding to those local indices here.
-  std::vector<int> original_constraint_index;
-
-  // Fill the initial constraint <-> literal graph, compute signatures and
-  // initialize other containers defined above.
-  int num_setppc_constraints = 0;
+  // We use an encoding of literal that allows to index arrays.
   std::vector<int> temp_literals;
-  if (context_->ModelIsUnsat()) return false;
+  const int num_constraints = context_->working_model->constraints_size();
   for (int c = 0; c < num_constraints; ++c) {
     ConstraintProto* ct = context_->working_model->mutable_constraints(c);
-    if (ct->constraint_case() == ConstraintProto::kBoolOr ||
-        ct->constraint_case() == ConstraintProto::kAtMostOne ||
-        ct->constraint_case() == ConstraintProto::kExactlyOne) {
+    const auto type = ct->constraint_case();
+    if (type == ConstraintProto::kBoolOr ||
+        type == ConstraintProto::kAtMostOne ||
+        type == ConstraintProto::kExactlyOne) {
       // Because TransformIntoMaxCliques() can detect literal equivalence
       // relation, we make sure the constraints are presolved before being
       // inspected.
       if (PresolveOneConstraint(c)) {
         context_->UpdateConstraintVariableUsage(c);
       }
-      if (context_->ModelIsUnsat()) return false;
-      constraint_literals.push_back(GetLiteralsFromSetPPCConstraint(*ct));
-    } else if (ct->constraint_case() == ConstraintProto::kLinear) {
+      if (context_->ModelIsUnsat()) return;
+
+      temp_literals.clear();
+      for (const int ref :
+           type == ConstraintProto::kAtMostOne ? ct->at_most_one().literals()
+           : type == ConstraintProto::kBoolOr  ? ct->bool_or().literals()
+                                               : ct->exactly_one().literals()) {
+        temp_literals.push_back(
+            Literal(BooleanVariable(PositiveRef(ref)), RefIsPositive(ref))
+                .Index()
+                .value());
+      }
+      relevant_constraints.push_back(c);
+      detector.AddPotentialSet(storage.Add(temp_literals));
+    } else if (type == ConstraintProto::kLinear) {
       // We also want to test inclusion with the pseudo-Boolean part of
       // linear constraints of size at least 3. Exactly one of size two are
       // equivalent literals, and we already deal with this case.
@@ -6014,92 +5988,48 @@ bool CpModelPresolver::ProcessSetPPC() {
         if (!context_->CanBeUsedAsLiteral(var)) continue;
         if (!RefIsPositive(var)) continue;
         if (coeff < 0) continue;
-        temp_literals.push_back(var);
+        temp_literals.push_back(
+            Literal(BooleanVariable(var), true).Index().value());
       }
       if (temp_literals.size() <= 2) continue;
-      constraint_literals.push_back(temp_literals);
-    } else {
-      continue;
-    }
 
-    uint64_t signature = 0;
-    for (const int literal : constraint_literals.back()) {
-      const int positive_literal = PositiveRef(literal);
-      signature |= (int64_t{1} << (positive_literal % 64));
-      DCHECK_GE(positive_literal, 0);
-      if (positive_literal >= literals_to_constraints.size()) {
-        literals_to_constraints.resize(positive_literal + 1);
-      }
-      literals_to_constraints[positive_literal].push_back(
-          num_setppc_constraints);
-    }
-    signatures.push_back(signature);
-    removed.push_back(false);
-    original_constraint_index.push_back(c);
-    num_setppc_constraints++;
-  }
-
-  // Set of constraint pairs which are already compared.
-  absl::flat_hash_set<std::pair<int, int>> compared_constraints;
-  for (const std::vector<int>& literal_to_constraints :
-       literals_to_constraints) {
-    for (int index1 = 0; index1 < literal_to_constraints.size(); ++index1) {
-      if (context_->time_limit()->LimitReached()) return true;
-
-      const int c1 = literal_to_constraints[index1];
-      if (removed[c1]) continue;
-      const std::vector<int>& c1_literals = constraint_literals[c1];
-
-      for (int index2 = index1 + 1; index2 < literal_to_constraints.size();
-           ++index2) {
-        const int c2 = literal_to_constraints[index2];
-        if (removed[c2]) continue;
-        if (removed[c1]) break;
-
-        // TODO(user): This should not happen. Investigate.
-        if (c1 == c2) continue;
-
-        CHECK_LT(c1, c2);
-        const auto [_, inserted] = compared_constraints.insert({c1, c2});
-        if (!inserted) continue;
-
-        // Hard limit on number of comparisons to avoid spending too much time
-        // here.
-        if (compared_constraints.size() >= 50000) return true;
-
-        const bool smaller = (signatures[c1] & ~signatures[c2]) == 0;
-        const bool larger = (signatures[c2] & ~signatures[c1]) == 0;
-        if (!(smaller || larger)) continue;
-
-        // Check if literals in c1 is subset of literals in c2 or vice versa.
-        const std::vector<int>& c2_literals = constraint_literals[c2];
-
-        // TODO(user): Try avoiding computation of set differences if
-        // possible.
-        std::vector<int> c1_minus_c2;
-        gtl::STLSetDifference(c1_literals, c2_literals, &c1_minus_c2);
-        std::vector<int> c2_minus_c1;
-        gtl::STLSetDifference(c2_literals, c1_literals, &c2_minus_c1);
-
-        if (c1_minus_c2.empty()) {  // c1 included in c2.
-          if (!ProcessSetPPCSubset(c1, c2, c2_minus_c1,
-                                   original_constraint_index, &removed)) {
-            return false;
-          }
-        } else if (c2_minus_c1.empty()) {  // c2 included in c1.
-          if (!ProcessSetPPCSubset(c2, c1, c1_minus_c2,
-                                   original_constraint_index, &removed)) {
-            return false;
-          }
-        }
-      }
+      // Note that we only care about the linear being the superset.
+      relevant_constraints.push_back(c);
+      detector.AddPotentialSuperset(storage.Add(temp_literals));
     }
   }
+
+  int64_t num_inclusions = 0;
+  absl::flat_hash_set<int> tmp_set;
+  detector.DetectInclusions([&](int subset, int superset) {
+    ++num_inclusions;
+    bool remove_subset = false;
+    bool remove_superset = false;
+    const int subset_c = relevant_constraints[subset];
+    const int superset_c = relevant_constraints[superset];
+    detector.IncreaseWorkDone(storage[subset].size());
+    detector.IncreaseWorkDone(storage[superset].size());
+    if (!ProcessSetPPCSubset(subset_c, superset_c, &tmp_set, &remove_subset,
+                             &remove_superset)) {
+      detector.Stop();
+      return;
+    }
+    if (remove_subset) {
+      context_->working_model->mutable_constraints(subset_c)->Clear();
+      context_->UpdateConstraintVariableUsage(subset_c);
+      detector.StopProcessingCurrentSubset();
+    }
+    if (remove_superset) {
+      context_->working_model->mutable_constraints(superset_c)->Clear();
+      context_->UpdateConstraintVariableUsage(superset_c);
+      detector.StopProcessingCurrentSuperset();
+    }
+  });
 
   SOLVER_LOG(logger_, "[ProcessSetPPC]",
-             " #relevant_constraints=", num_setppc_constraints,
-             " time=", wall_timer.Get(), "s");
-  return true;
+             " #relevant_constraints=", relevant_constraints.size(),
+             " #num_inclusions=", num_inclusions,
+             " work=", detector.work_done(), " time=", wall_timer.Get(), "s");
 }
 
 // Note that because we remove the linear constraint, this will not be called

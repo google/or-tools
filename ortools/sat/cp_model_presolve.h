@@ -174,15 +174,16 @@ class CpModelPresolver {
 
   // SetPPC is short for set packing, partitioning and covering constraints.
   // These are sum of booleans <=, = and >= 1 respectively.
-  bool ProcessSetPPC();
+  // We detect inclusion of these constraint which allows a few simplifications.
+  void ProcessSetPPC();
 
   // Removes dominated constraints or fixes some variables for given pair of
-  // setppc constraints. This assumes that literals in constraint c1 is subset
-  // of literals in constraint c2.
-  bool ProcessSetPPCSubset(int c1, int c2, const std::vector<int>& c2_minus_c1,
-                           const std::vector<int>& original_constraint_index,
-                           std::vector<bool>* marked_for_removal);
+  // setppc constraints included in each other.
+  bool ProcessSetPPCSubset(int subset_c, int superset_c,
+                           absl::flat_hash_set<int>* tmp_set,
+                           bool* remove_subset, bool* remove_superset);
 
+  // Run SAT specific presolve code.
   void PresolvePureSatPart();
 
   // Extracts AtMostOne constraint from Linear constraint.
