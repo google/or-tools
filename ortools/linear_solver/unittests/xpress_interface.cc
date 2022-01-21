@@ -528,12 +528,12 @@ namespace operations_research {
   TEST(XpressInterface, Write) {
     UNITTEST_INIT_MIP();
     MPVariable* x1 = solver.MakeIntVar(-1.2, 9.3, "x1");
-    MPVariable* x2 = solver.MakeNumVar(-1, 5, "x2");
+    MPVariable* x2 = solver.MakeNumVar(-1, 5.147593849384714, "x2");
     MPConstraint* c1 = solver.MakeRowConstraint(-solver.infinity(), 1);
     c1->SetCoefficient(x1, 3);
     c1->SetCoefficient(x2, 1.5);
     MPConstraint* c2 = solver.MakeRowConstraint(3, 5);
-    c2->SetCoefficient(x2, -1.1);
+    c2->SetCoefficient(x2, -1.1122334455667788);
     MPObjective* obj = solver.MutableObjective();
     obj->SetMaximization();
     obj->SetCoefficient(x1, 1);
@@ -559,7 +559,7 @@ COLUMNS
     C1        R1        3
     C2        __OBJ___  2
     C2        R1        1.5
-    C2        R2        -1.1
+    C2        R2        -1.1122334455667788
 RHS
     RHS00001  R1        1
     RHS00001  R2        5
@@ -568,7 +568,7 @@ RANGES
 BOUNDS
  UI BND00001  C1        9
  LO BND00001  C1        -1
- UP BND00001  C2        5
+ UP BND00001  C2        5.147593849384714
  LO BND00001  C2        -1
 ENDATA
 )");
