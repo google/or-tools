@@ -361,7 +361,7 @@ public class LinearExpr
     }
 
     internal static long GetVarValueMap(LinearExpr e, long initial_coeff, Dictionary<IntVar, long> dict,
-                                      Queue<Term> terms)
+                                        Queue<Term> terms)
     {
         long constant = 0;
         long coefficient = initial_coeff;
@@ -411,7 +411,8 @@ public class LinearExpr
         return constant;
     }
 
-    internal static LinearExpr RebuildLinearExprFromLinearExpressionProto(LinearExpressionProto proto, CpModelProto model)
+    internal static LinearExpr RebuildLinearExprFromLinearExpressionProto(LinearExpressionProto proto,
+                                                                          CpModelProto model)
     {
         int numElements = proto.Vars.Count;
         long offset = proto.Offset;
