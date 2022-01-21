@@ -80,9 +80,10 @@ void AddIsEqualToMaxOf(IntegerVariable max_var,
 
 }  // namespace
 
-void AddCumulativeRelaxation(const std::vector<IntervalVariable>& x_intervals,
-                             SchedulingConstraintHelper* x,
-                             SchedulingConstraintHelper* y, Model* model) {
+void AddDiffnCumulativeRelationOnX(
+    const std::vector<IntervalVariable>& x_intervals,
+    SchedulingConstraintHelper* x, SchedulingConstraintHelper* y,
+    Model* model) {
   int64_t min_starts = std::numeric_limits<int64_t>::max();
   int64_t max_ends = std::numeric_limits<int64_t>::min();
   std::vector<AffineExpression> sizes;
@@ -255,6 +256,7 @@ bool NonOverlappingRectanglesEnergyPropagator::FailWhenEnergyIsTooLarge(
     y_.AddPresenceReason(b);
   };
 
+  // TODO(user): using the bounding area profile we can relax this reason.
   const auto add_precise_box_energy_reason = [&](int b) {
     x_.AddStartMinReason(b, x_.StartMin(b));
     x_.AddEndMaxReason(b, x_.EndMax(b));
@@ -277,6 +279,7 @@ bool NonOverlappingRectanglesEnergyPropagator::FailWhenEnergyIsTooLarge(
     if (area.y_max - area.y_min > threshold_y_) break;
 
     // Update precise bounding area.
+    // TODO(user): speed up (cache, maintain profile, ...)
     bounding_area.AddRectangle(other.x_min, other.x_max, other.y_min,
                                other.y_max);
 

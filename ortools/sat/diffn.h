@@ -134,9 +134,9 @@ class NonOverlappingRectanglesDisjunctivePropagator
 
 // Add a cumulative relaxation. That is, on one dimension, it does not enforce
 // the rectangle aspect, allowing vertical slices to move freely.
-void AddCumulativeRelaxation(const std::vector<IntervalVariable>& x_intervals,
-                             SchedulingConstraintHelper* x,
-                             SchedulingConstraintHelper* y, Model* model);
+void AddDiffnCumulativeRelationOnX(
+    const std::vector<IntervalVariable>& x_intervals,
+    SchedulingConstraintHelper* x, SchedulingConstraintHelper* y, Model* model);
 
 // Enforces that the boxes with corners in (x, y), (x + dx, y), (x, y + dy)
 // and (x + dx, y + dy) do not overlap.
@@ -189,10 +189,10 @@ inline std::function<void(Model*)> NonOverlappingRectangles(
         }
       }
       if (!some_boxes_are_only_optional_on_y) {
-        AddCumulativeRelaxation(x, x_helper, y_helper, model);
+        AddDiffnCumulativeRelationOnX(x, x_helper, y_helper, model);
       }
       if (!some_boxes_are_only_optional_on_x) {
-        AddCumulativeRelaxation(y, y_helper, x_helper, model);
+        AddDiffnCumulativeRelationOnX(y, y_helper, x_helper, model);
       }
     }
   };
