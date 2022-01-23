@@ -81,7 +81,7 @@
     unsafe
     {
       var data = new System.ReadOnlySpan<byte>((dataPointer + sizeof(int)).ToPointer(), size);
-      return Google.OrTools.Sat.CpSolverResponse.Parser.ParseFrom(data);
+      return CSharpProtoType.Parser.ParseFrom(data);
     }
   } catch (Google.Protobuf.InvalidProtocolBufferException /*e*/)
   {
