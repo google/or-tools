@@ -4,6 +4,7 @@
     <LangVersion>9.0</LangVersion>
     <TargetFrameworks>netcoreapp3.1;net6.0</TargetFrameworks>
     <RuntimeIdentifiers>win-x64;osx-x64;linux-x64</RuntimeIdentifiers>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AssemblyName>@DOTNET_PROJECT@</AssemblyName>
     <Version>@PROJECT_VERSION@</Version>
 
