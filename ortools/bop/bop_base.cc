@@ -254,5 +254,6 @@ const std::vector<sat::BinaryClause>& ProblemState::NewlyAddedBinaryClauses()
 void ProblemState::SynchronizationDone() {
   binary_clause_manager_.ClearNewlyAdded();
 }
+
 }  // namespace bop
 }  // namespace operations_research
