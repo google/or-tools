@@ -28,6 +28,13 @@
 //
 // TODO(user): test all the APIs that are currently marked as 'untested'.
 
+%pythonbegin %{
+import os as _os
+if hasattr(_os, 'add_dll_directory'):
+    _os.add_dll_directory(_os.getenv('SIRIUS_BIN_DIR', ''))
+    _os.add_dll_directory(_os.getenv('XPRESS_BIN_DIR', ''))
+%}
+
 %include "ortools/base/base.i"
 
 %include "std_string.i"

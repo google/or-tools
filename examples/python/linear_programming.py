@@ -13,11 +13,6 @@
 # limitations under the License.
 """Linear programming examples that show how to use the APIs."""
 
-import os
-if hasattr(os, 'add_dll_directory'):
-    os.add_dll_directory(os.getenv('SIRIUS_BIN_DIR', ''))
-    os.add_dll_directory(os.getenv('XPRESS_BIN_DIR', ''))
-
 from ortools.linear_solver import pywraplp
 
 def Announce(solver, api_type):
