@@ -7205,6 +7205,21 @@ void CpModelPresolver::PresolveToFixPoint() {
 
 ModelCopy::ModelCopy(PresolveContext* context) : context_(context) {}
 
+void ModelCopy::ImportVariablesAndMaybeIgnoreNames(
+    const CpModelProto& in_model) {
+  if (context_->params().ignore_names()) {
+    context_->working_model->clear_variables();
+    context_->working_model->mutable_variables()->Reserve(
+        in_model.variables_size());
+    for (const IntegerVariableProto& var_proto : in_model.variables()) {
+      *context_->working_model->add_variables()->mutable_domain() =
+          var_proto.domain();
+    }
+  } else {
+    *context_->working_model->mutable_variables() = in_model.variables();
+  }
+}
+
 // TODO(user): Merge with the phase 1 of the presolve code.
 //
 // TODO(user): It seems easy to forget to update this if any new constraint
@@ -7216,6 +7231,7 @@ bool ModelCopy::ImportAndSimplifyConstraints(
   const absl::flat_hash_set<int> ignored_constraints_set(
       ignored_constraints.begin(), ignored_constraints.end());
   context_->InitializeNewDomains();
+  const bool ignore_names = context_->params().ignore_names();
 
   // If first_copy is true, we reorder the scheduling constraint to be sure they
   // refer to interval before them.
@@ -7228,6 +7244,9 @@ bool ModelCopy::ImportAndSimplifyConstraints(
     const ConstraintProto& ct = in_model.constraints(c);
     if (OneEnforcementLiteralIsFalse(ct)) continue;
 
+    // TODO(user): if ignore_names is false, we should make sure the
+    // name are properly copied by all these functions. Or we should never copy
+    // name and have a separate if (!ignore_name) copy the name...
     switch (ct.constraint_case()) {
       case ConstraintProto::CONSTRAINT_NOT_SET:
         break;
@@ -7247,7 +7266,7 @@ bool ModelCopy::ImportAndSimplifyConstraints(
         if (!CopyExactlyOne(ct)) return CreateUnsatModel();
         break;
       case ConstraintProto::kInterval:
-        if (!CopyInterval(ct, c)) return CreateUnsatModel();
+        if (!CopyInterval(ct, c, ignore_names)) return CreateUnsatModel();
         break;
       case ConstraintProto::kNoOverlap:
         if (first_copy) {
@@ -7270,8 +7289,14 @@ bool ModelCopy::ImportAndSimplifyConstraints(
           CopyAndMapCumulative(ct);
         }
         break;
-      default:
-        *context_->working_model->add_constraints() = ct;
+      default: {
+        ConstraintProto* new_ct = context_->working_model->add_constraints();
+        *new_ct = ct;
+        if (ignore_names) {
+          // TODO(user, fdid): find a better way than copy then clear_name()?
+          new_ct->clear_name();
+        }
+      }
     }
   }
 
@@ -7482,12 +7507,22 @@ bool ModelCopy::CopyExactlyOne(const ConstraintProto& ct) {
   return true;
 }
 
-bool ModelCopy::CopyInterval(const ConstraintProto& ct, int c) {
+bool ModelCopy::CopyInterval(const ConstraintProto& ct, int c,
+                             bool ignore_names) {
   CHECK_EQ(starting_constraint_index_, 0)
       << "Adding new interval constraints to partially filled model is not "
          "supported.";
   interval_mapping_[c] = context_->working_model->constraints_size();
-  *context_->working_model->add_constraints() = ct;
+  ConstraintProto* new_ct = context_->working_model->add_constraints();
+  if (ignore_names) {
+    *new_ct->mutable_enforcement_literal() = ct.enforcement_literal();
+    *new_ct->mutable_interval()->mutable_start() = ct.interval().start();
+    *new_ct->mutable_interval()->mutable_size() = ct.interval().size();
+    *new_ct->mutable_interval()->mutable_end() = ct.interval().end();
+  } else {
+    *new_ct = ct;
+  }
+
   return true;
 }
 
@@ -7546,9 +7581,10 @@ bool ModelCopy::CreateUnsatModel() {
   return false;
 }
 
-bool ImportConstraintsWithBasicPresolveIntoContext(const CpModelProto& in_model,
-                                                   PresolveContext* context) {
+bool ImportModelWithBasicPresolveIntoContext(const CpModelProto& in_model,
+                                             PresolveContext* context) {
   ModelCopy copier(context);
+  copier.ImportVariablesAndMaybeIgnoreNames(in_model);
   if (copier.ImportAndSimplifyConstraints(in_model, {}, /*first_copy=*/true)) {
     CopyEverythingExceptVariablesAndConstraintsFieldsIntoContext(in_model,
                                                                  context);

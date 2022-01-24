@@ -3103,15 +3103,11 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   auto context = absl::make_unique<PresolveContext>(model, &new_cp_model_proto,
                                                     &mapping_proto);
 
-  *context->working_model->mutable_variables() = model_proto.variables();
-  if (!ImportConstraintsWithBasicPresolveIntoContext(model_proto,
-                                                     context.get())) {
+  if (!ImportModelWithBasicPresolveIntoContext(model_proto, context.get())) {
     VLOG(1) << "Model found infeasible during copy";
     // TODO(user): At this point, the model is trivial, but we could exit
     // early.
   }
-  CopyEverythingExceptVariablesAndConstraintsFieldsIntoContext(model_proto,
-                                                               context.get());
 
   // Checks for hints early in case they are forced to be hard constraints.
   if (params.fix_variables_to_their_hinted_value() &&

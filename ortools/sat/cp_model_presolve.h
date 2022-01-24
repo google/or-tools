@@ -254,6 +254,11 @@ class ModelCopy {
                                     const std::vector<int>& ignored_constraints,
                                     bool first_copy = false);
 
+  // Copy variables from the in_model to the working model.
+  // It reads the 'ignore_names' parameters from the context, and keeps or
+  // deletes names accordingly.
+  void ImportVariablesAndMaybeIgnoreNames(const CpModelProto& in_model);
+
  private:
   // Overwrites the out_model to be unsat. Returns false.
   bool CreateUnsatModel();
@@ -268,7 +273,7 @@ class ModelCopy {
   bool CopyLinear(const ConstraintProto& ct);
   bool CopyAtMostOne(const ConstraintProto& ct);
   bool CopyExactlyOne(const ConstraintProto& ct);
-  bool CopyInterval(const ConstraintProto& ct, int c);
+  bool CopyInterval(const ConstraintProto& ct, int c, bool ignore_names);
 
   // These function remove unperformed intervals. Note that they requires
   // interval to appear before (validated) as they test unperformed by testing
@@ -289,15 +294,16 @@ class ModelCopy {
   std::vector<int> temp_literals_;
 };
 
-// Import the constraints from the in_model to the presolve context.
+// Copy in_model to the model in the presolve context.
 // It performs on the fly simplification, and returns false if the
-// model is proved infeasible.
+// model is proved infeasible. If reads the parameters 'ignore_names' and keeps
+// or deletes variables and constraints names accordingly.
 //
 // This should only be called on the first copy of the user given model.
 // Note that this reorder all constraints that use intervals last. We loose the
 // user-defined order, but hopefully that should not matter too much.
-bool ImportConstraintsWithBasicPresolveIntoContext(const CpModelProto& in_model,
-                                                   PresolveContext* context);
+bool ImportModelWithBasicPresolveIntoContext(const CpModelProto& in_model,
+                                             PresolveContext* context);
 
 // Copies the non constraint, non variables part of the model.
 void CopyEverythingExceptVariablesAndConstraintsFieldsIntoContext(
