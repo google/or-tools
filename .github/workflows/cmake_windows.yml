@@ -66,7 +66,7 @@ jobs:
         run: cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release -G "Visual Studio 16 2019" -DBUILD_DEPS=ON -DUSE_SIRIUS=ON -Dsirius_solver_DIR="${{ github.workspace }}/sirius-solver/SiriusInstall/cmake" -DUSE_XPRESS=ON -DXPRESS_ROOT="${{ github.workspace }}/xpressmp813" -DBUILD_PYTHON=ON -DBUILD_JAVA=ON -DBUILD_DOTNET=ON
       - name: Build tests
         working-directory: ./or-tools
-        run: cmake --build build --config Release --target linear_programming sirius_interface xpress_interface python_package java_package java_java_LinearProgramming dotnet_package dotnet_dotnet_cslinearprogramming -v -- /maxcpucount
+        run: cmake --build build --config Release --target ALL_BUILD -v -- /maxcpucount
       - name: Upload libortools
         uses: actions/upload-artifact@v2
         with:
@@ -90,50 +90,49 @@ jobs:
             ./or-tools/build/dotnet/packages/Google.OrTools.[0-9]*.[0-9]*.[0-9]*.nupkg
             ./or-tools/build/dotnet/packages/Google.OrTools.runtime.*.[0-9]*.[0-9]*.[0-9]*.nupkg
       - name: Run sirius_interface unittests
-        id: sirius_interface_unittests
-        continue-on-error: true
         working-directory: ./or-tools/build
+        env:
+          XPRESS: "${{ github.workspace }}/xpressmp813/bin/"
         run: ctest -V -C Release -R 'cxx_unittests_sirius_interface'
       - name: Run xpress_interface unittests
-        id: xpress_interface_unittests
-        continue-on-error: true
         working-directory: ./or-tools/build
-        run: ctest -V -C Release -R 'cxx_unittests_xpress_interface'
-      - name: Run cpp tests
-        id: cpp_tests
-        continue-on-error: true
-        working-directory: ./or-tools/build
-        run: ctest -V -C Release -R cxx_cpp_linear_programming
-      - name: Run python tests
-        id: python_tests
-        continue-on-error: true
-        working-directory: ./or-tools/build
-        run: ctest -V -C Release -R python_python_linear_programming_sirius_xpress
         env:
+          XPRESS: "${{ github.workspace }}/xpressmp813/bin/"
+        run: ctest -V -C Release -R 'cxx_unittests_xpress_interface'
+      - name: Run specific cpp tests
+        working-directory: ./or-tools/build
+        env:
+          XPRESS: "${{ github.workspace }}/xpressmp813/bin/"
+        run: ctest -V -C Release -R cxx_cpp_linear_programming
+      - name: Run specific python tests
+        working-directory: ./or-tools/build
+        run: ctest -V -C Release -R python_python_linear_programming
+        env:
+          XPRESS: "${{ github.workspace }}/xpressmp813/bin/"
           SIRIUS_BIN_DIR: "${{ github.workspace }}/sirius-solver/SiriusInstall/bin"
           XPRESS_BIN_DIR: "${{ github.workspace }}/xpressmp813/bin"
-      - name: Run java tests
-        id: java_tests
-        continue-on-error: true
+      - name: Run specific java tests
         working-directory: ./or-tools/build
+        env:
+          XPRESS: "${{ github.workspace }}/xpressmp813/bin/"
         run: ctest -V -C Release -R java_java_LinearProgramming
-      - name: Run dotnet tests
-        id: dotnet_tests
-        continue-on-error: true
+      - name: Run specific dotnet tests
         working-directory: ./or-tools/build
+        env:
+          XPRESS: "${{ github.workspace }}/xpressmp813/bin/"
         run: ctest -V -C Release -R dotnet_dotnet_cslinearprogramming
-      - name: Check test results
-        shell: bash
-        run: |
-          echo "sirius_interface_unittests: ${{ steps.sirius_interface_unittests.outcome }}"
-          echo "xpress_interface_unittests: ${{ steps.xpress_interface_unittests.outcome }}"
-          echo "cpp_tests: ${{ steps.cpp_tests.outcome }}"
-          echo "python_tests: ${{ steps.python_tests.outcome }}"
-          echo "java_tests: ${{ steps.java_tests.outcome }}"
-          echo "dotnet_tests: ${{ steps.dotnet_tests.outcome }}"
-          [[ "${{ steps.sirius_interface_unittests.outcome }}" == "success" &&
-             "${{ steps.xpress_interface_unittests.outcome }}" == "success" &&
-             "${{ steps.cpp_tests.outcome }}"                  == "success" &&
-             "${{ steps.python_tests.outcome }}"               == "success" &&
-             "${{ steps.java_tests.outcome }}"                 == "success" &&
-             "${{ steps.dotnet_tests.outcome }}"               == "success" ]]
+      - name: Run other cpp tests
+        working-directory: ./or-tools/build
+        env:
+          XPRESS: "${{ github.workspace }}/xpressmp813/bin/"
+        run: ctest -V -C Release -R cxx_cpp -E cxx_cpp_linear_programming
+      - name: Run other java tests
+        working-directory: ./or-tools/build
+        env:
+          XPRESS: "${{ github.workspace }}/xpressmp813/bin/"
+        run: ctest -V -C Release -R java_java -E java_java_LinearProgramming
+      - name: Run other dotnet tests
+        working-directory: ./or-tools/build
+        env:
+          XPRESS: "${{ github.workspace }}/xpressmp813/bin/"
+        run: ctest -V -C Release -R dotnet_dotnet -E dotnet_dotnet_cslinearprogramming
