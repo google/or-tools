@@ -26,7 +26,8 @@ public class CpModel
     {
         model_ = new CpModelProto();
         constant_map_ = new Dictionary<long, int>();
-        terms_ = new Queue<Term>();
+        var_value_map_ = new Dictionary<int, long>(10);
+        terms_ = new Queue<Term>(10);
     }
 
     // Getters.
@@ -121,17 +122,15 @@ public class CpModel
 
     private long FillLinearConstraint(LinearExpr expr, out LinearConstraintProto linear)
     {
-        linear = new LinearConstraintProto();
-        Dictionary<IntVar, long> dict = new Dictionary<IntVar, long>();
-        long constant = LinearExpr.GetVarValueMap(expr, 1L, dict, terms_);
+        var dict = var_value_map_;
+        dict.Clear();
+        long constant = LinearExpr.GetVarValueMap(expr, dict, terms_);
         var count = dict.Count;
+        linear = new LinearConstraintProto();
         linear.Vars.Capacity = count;
+        linear.Vars.AddRange(dict.Keys);
         linear.Coeffs.Capacity = count;
-        foreach (KeyValuePair<IntVar, long> term in dict)
-        {
-            linear.Vars.Add(term.Key.Index);
-            linear.Coeffs.Add(term.Value);
-        }
+        linear.Coeffs.AddRange(dict.Values);
         return constant;
     }
     /**
@@ -1099,26 +1098,27 @@ public class CpModel
         }
         else
         {
-            Dictionary<IntVar, long> dict = new Dictionary<IntVar, long>();
-            long constant = LinearExpr.GetVarValueMap(obj, 1L, dict, terms_);
+            var dict = var_value_map_;
+            dict.Clear();
+            long constant = LinearExpr.GetVarValueMap(obj, dict, terms_);
+            var dictCount = dict.Count;
+            objective.Vars.Capacity = dictCount;
+            objective.Vars.AddRange(dict.Keys);
+            objective.Coeffs.Capacity = dictCount;
             if (minimize)
             {
+                objective.Coeffs.AddRange(dict.Values);
                 objective.ScalingFactor = 1L;
                 objective.Offset = constant;
             }
             else
             {
+                foreach (var coeff in dict.Values)
+                {
+                    objective.Coeffs.Add(-coeff);
+                }
                 objective.ScalingFactor = -1L;
                 objective.Offset = -constant;
-            }
-
-            var dictCount = dict.Count;
-            objective.Vars.Capacity = dictCount;
-            objective.Coeffs.Capacity = dictCount;
-            foreach (KeyValuePair<IntVar, long> it in dict)
-            {
-                objective.Vars.Add(it.Key.Index);
-                objective.Coeffs.Add(minimize ? it.Value : -it.Value);
             }
         }
         model_.Objective = objective;
@@ -1191,25 +1191,35 @@ public class CpModel
 
     internal LinearExpressionProto GetLinearExpressionProto(LinearExpr expr, bool negate = false)
     {
-        Dictionary<IntVar, long> dict = new Dictionary<IntVar, long>();
-        long constant = LinearExpr.GetVarValueMap(expr, 1L, dict, terms_);
-        long mult = negate ? -1 : 1;
+        var dict = var_value_map_;
+        dict.Clear();
+        long constant = LinearExpr.GetVarValueMap(expr, dict, terms_);
 
         LinearExpressionProto linear = new LinearExpressionProto();
         var dictCount = dict.Count;
         linear.Vars.Capacity = dictCount;
+        linear.Vars.AddRange(dict.Keys);
         linear.Coeffs.Capacity = dictCount;
-        foreach (KeyValuePair<IntVar, long> term in dict)
+        if (negate)
         {
-            linear.Vars.Add(term.Key.Index);
-            linear.Coeffs.Add(term.Value * mult);
+            foreach (var coeff in dict.Values)
+            {
+                linear.Coeffs.Add(-coeff);
+            }
+            linear.Offset = -constant;
         }
-        linear.Offset = constant * mult;
+        else
+        {
+            linear.Coeffs.AddRange(dict.Values);
+            linear.Offset = constant;
+        }
+
         return linear;
     }
 
     private CpModelProto model_;
     private Dictionary<long, int> constant_map_;
+    private Dictionary<int, long> var_value_map_;
     private BoolVar true_literal_;
     private Queue<Term> terms_;
 }
