@@ -1194,25 +1194,24 @@ public class CpModel
         var dict = var_value_map_;
         dict.Clear();
         long constant = LinearExpr.GetVarValueMap(expr, dict, terms_);
-        long mult = negate ? -1 : 1;
 
         LinearExpressionProto linear = new LinearExpressionProto();
         var dictCount = dict.Count;
         linear.Vars.Capacity = dictCount;
         linear.Vars.AddRange(dict.Keys);
         linear.Coeffs.Capacity = dictCount;
-        if (!negate)
-        {
-            linear.Coeffs.AddRange(dict.Values);
-            linear.Offset = constant;
-        }
-        else
+        if (negate)
         {
             foreach (var coeff in dict.Values)
             {
                 linear.Coeffs.Add(-coeff);
             }
             linear.Offset = -constant;
+        }
+        else
+        {
+            linear.Coeffs.AddRange(dict.Values);
+            linear.Offset = constant;
         }
 
         return linear;
