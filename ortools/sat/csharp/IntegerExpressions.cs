@@ -35,7 +35,7 @@ public interface ILiteral
 internal static class HelperExtensions
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void AddOrIncrement(this Dictionary<IntVar, long> dict, IntVar key, long increment)
+    public static void AddOrIncrement(this Dictionary<int, long> dict, int key, long increment)
     {
 #if NET6_0_OR_GREATER
         System.Runtime.InteropServices.CollectionsMarshal.GetValueRefOrAddDefault(dict, key, out _) += increment;
@@ -360,11 +360,10 @@ public class LinearExpr
         }
     }
 
-    internal static long GetVarValueMap(LinearExpr e, long initial_coeff, Dictionary<IntVar, long> dict,
-                                        Queue<Term> terms)
+    internal static long GetVarValueMap(LinearExpr e, Dictionary<int, long> dict, Queue<Term> terms)
     {
         long constant = 0;
-        long coefficient = initial_coeff;
+        long coefficient = 1;
         LinearExpr expr = e;
         terms.Clear();
 
@@ -390,10 +389,10 @@ public class LinearExpr
                 }
                 break;
             case IntVar intVar:
-                dict.AddOrIncrement(intVar, coefficient);
+                dict.AddOrIncrement(intVar.GetIndex(), coefficient);
                 break;
             case NotBoolVar notBoolVar:
-                dict.AddOrIncrement((IntVar)notBoolVar.Not(), -coefficient);
+                dict.AddOrIncrement(notBoolVar.Not().GetIndex(), -coefficient);
                 constant += coefficient;
                 break;
             default:
