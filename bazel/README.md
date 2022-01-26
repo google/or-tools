@@ -20,6 +20,7 @@ Dockers [Alpine, Archlinux, Centos, Debian, Fedora, OpenSuse, Ubuntu]: [![Status
 ## Introduction
 
 <nav for="bazel"> |
+<a href="#requirement">Requirement</a> |
 <a href="#dependencies">Dependencies</a> |
 <a href="#compilation">Compilation</a> |
 <a href="#testing">Testing</a> |
@@ -33,6 +34,11 @@ you can download it for free from <https://bazel.build/>.
 
 **warning: Currently OR-Tools Bazel doesn't support Python, Java nor .Net,
 please use the Makefile or CMake based build instead.**
+
+## Requirement
+You'll need:
+
+* `Bazel >= 4.0`.
 
 ## Dependencies
 
