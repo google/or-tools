@@ -21,6 +21,7 @@
 #include "ortools/sat/cp_model_mapping.h"
 #endif  // __PORTABLE_PLATFORM__
 
+#include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/random/random.h"
 #include "ortools/base/integral_types.h"
@@ -750,11 +751,8 @@ void SharedBoundsManager::ReportPotentialNewBounds(
     changed_variables_since_last_synchronize_.Set(var);
     num_improvements++;
   }
-  // TODO(user): Display number of bound improvements cumulatively per
-  // workers at the end of the search.
   if (num_improvements > 0) {
-    VLOG(2) << worker_name << " exports " << num_improvements
-            << " modifications";
+    bounds_exported_[worker_name] += num_improvements;
   }
 }
 
@@ -838,6 +836,73 @@ void SharedBoundsManager::GetChangedBounds(
     new_upper_bounds->push_back(synchronized_upper_bounds_[var]);
   }
   id_to_changed_variables_[id].ClearAll();
+}
+
+void SharedBoundsManager::LogStatistics(SolverLogger* logger) {
+  absl::MutexLock mutex_lock(&mutex_);
+  if (!bounds_exported_.empty()) {
+    SOLVER_LOG(logger, "Improving variable bounds shared per subsolver:");
+    for (const auto& entry : bounds_exported_) {
+      SOLVER_LOG(logger, "  '", entry.first, "': ", entry.second);
+    }
+  }
+}
+
+int SharedClausesManager::RegisterNewId() {
+  absl::MutexLock mutex_lock(&mutex_);
+  const int id = id_to_last_processed_binary_clause_.size();
+  id_to_last_processed_binary_clause_.resize(id + 1, 0);
+  id_to_clauses_exported_.resize(id + 1, 0);
+  return id;
+}
+
+void SharedClausesManager::SetWorkerNameForId(int id,
+                                              const std::string& worker_name) {
+  absl::MutexLock mutex_lock(&mutex_);
+  id_to_worker_name_[id] = worker_name;
+}
+
+void SharedClausesManager::AddBinaryClause(int id, int lit1, int lit2) {
+  absl::MutexLock mutex_lock(&mutex_);
+  if (lit2 < lit1) std::swap(lit1, lit2);
+
+  const auto p = std::make_pair(lit1, lit2);
+  const auto [unused_it, inserted] = added_binary_clauses_set_.insert(p);
+  if (inserted) {
+    added_binary_clauses_.push_back(p);
+    id_to_clauses_exported_[id]++;
+    // Small optim. If the worker is already up to date with clauses to import,
+    // we can mark this new clause as already seen.
+    if (id_to_last_processed_binary_clause_[id] ==
+        added_binary_clauses_.size() - 1) {
+      id_to_last_processed_binary_clause_[id]++;
+    }
+  }
+}
+
+void SharedClausesManager::GetUnseenBinaryClauses(
+    int id, std::vector<std::pair<int, int>>* new_clauses) {
+  new_clauses->clear();
+  absl::MutexLock mutex_lock(&mutex_);
+  const int last_binary_clause_seen = id_to_last_processed_binary_clause_[id];
+  new_clauses->assign(added_binary_clauses_.begin() + last_binary_clause_seen,
+                      added_binary_clauses_.end());
+  id_to_last_processed_binary_clause_[id] = added_binary_clauses_.size();
+}
+
+void SharedClausesManager::LogStatistics(SolverLogger* logger) {
+  absl::MutexLock mutex_lock(&mutex_);
+  absl::btree_map<std::string, int64_t> name_to_clauses;
+  for (int id = 0; id < id_to_clauses_exported_.size(); ++id) {
+    if (id_to_clauses_exported_[id] == 0) continue;
+    name_to_clauses[id_to_worker_name_[id]] = id_to_clauses_exported_[id];
+  }
+  if (!name_to_clauses.empty()) {
+    SOLVER_LOG(logger, "Clauses shared per subsolver:");
+    for (const auto& entry : name_to_clauses) {
+      SOLVER_LOG(logger, "  '", entry.first, "': ", entry.second);
+    }
+  }
 }
 
 }  // namespace sat

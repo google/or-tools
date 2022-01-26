@@ -274,7 +274,7 @@ class SatSolver {
   void Backtrack(int target_level);
 
   // Advanced usage. This is meant to restore the solver to a "proper" state
-  // after a solve was interupted due to a limit reached.
+  // after a solve was interrupted due to a limit reached.
   //
   // Without assumption (i.e. if AssumptionLevel() is 0), this will revert all
   // decisions and make sure that all the fixed literals are propagated. In
@@ -286,7 +286,7 @@ class SatSolver {
   // case it will return false.
   bool RestoreSolverToAssumptionLevel();
 
-  // Advanced usage. Finish the progation if it was interupted. Note that this
+  // Advanced usage. Finish the progation if it was interrupted. Note that this
   // might run into conflict and will propagate again until a fixed point is
   // reached or the model was proven UNSAT. Returns IsModelUnsat().
   bool FinishPropagation();
@@ -381,7 +381,7 @@ class SatSolver {
   // The idea is that if we know that a given assignment is satisfiable, then
   // all the learned clauses or PB constraints must be satisfiable by it. In
   // debug mode, and after this is called, all the learned clauses are tested to
-  // satisfy this saved assignement.
+  // satisfy this saved assignment.
   void SaveDebugAssignment();
 
   // Returns true iff the loaded problem only contains clauses.
@@ -418,6 +418,12 @@ class SatSolver {
   // use propagation to try to minimize some clauses from the database.
   void MinimizeSomeClauses(int decisions_budget);
 
+  // Sets the export function to the shared clauses manager.
+  void SetShareBinaryClauseCallback(const std::function<void(Literal, Literal)>&
+                                        shared_binary_clauses_callback) {
+    shared_binary_clauses_callback_ = shared_binary_clauses_callback;
+  }
+
   // Advance the given time limit with all the deterministic time that was
   // elapsed since last call.
   void AdvanceDeterministicTime(TimeLimit* limit) {
@@ -452,7 +458,7 @@ class SatSolver {
   // See SaveDebugAssignment(). Note that these functions only consider the
   // variables at the time the debug_assignment_ was saved. If new variables
   // were added since that time, they will be considered unassigned.
-  bool ClauseIsValidUnderDebugAssignement(
+  bool ClauseIsValidUnderDebugAssignment(
       const std::vector<Literal>& clause) const;
   bool PBConstraintIsValidUnderDebugAssignment(
       const std::vector<LiteralWithCoeff>& cst, const Coefficient rhs) const;
@@ -832,6 +838,10 @@ class SatSolver {
   DratProofHandler* drat_proof_handler_;
 
   mutable StatsGroup stats_;
+
+  std::function<void(Literal, Literal)> shared_binary_clauses_callback_ =
+      nullptr;
+
   DISALLOW_COPY_AND_ASSIGN(SatSolver);
 };
 

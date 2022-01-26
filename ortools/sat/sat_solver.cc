@@ -375,6 +375,9 @@ int SatSolver::AddLearnedClauseAndEnqueueUnitPropagation(
     if (track_binary_clauses_) {
       CHECK(binary_clauses_.Add(BinaryClause(literals[0], literals[1])));
     }
+    if (shared_binary_clauses_callback_ != nullptr) {
+      shared_binary_clauses_callback_(literals[0], literals[1]);
+    }
     CHECK(binary_implication_graph_->AddBinaryClauseDuringSearch(literals[0],
                                                                  literals[1]));
     // In case this is the first binary clauses.
@@ -457,7 +460,7 @@ void SatSolver::AddBinaryClauseInternal(Literal a, Literal b) {
   }
 }
 
-bool SatSolver::ClauseIsValidUnderDebugAssignement(
+bool SatSolver::ClauseIsValidUnderDebugAssignment(
     const std::vector<Literal>& clause) const {
   for (Literal l : clause) {
     if (l.Variable() >= debug_assignment_.NumberOfVariables() ||
@@ -583,7 +586,7 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
   // An empty conflict means that the problem is UNSAT.
   if (learned_conflict_.empty()) return SetModelUnsat();
   DCHECK(IsConflictValid(learned_conflict_));
-  DCHECK(ClauseIsValidUnderDebugAssignement(learned_conflict_));
+  DCHECK(ClauseIsValidUnderDebugAssignment(learned_conflict_));
 
   // Update the activity of all the variables in the first UIP clause.
   // Also update the activity of the last level variables expanded (and
@@ -726,7 +729,7 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
   // this way. Second, more variables may be marked (in is_marked_) and
   // MinimizeConflict() can take advantage of that. Because of this, the
   // LBD of the learned conflict can change.
-  DCHECK(ClauseIsValidUnderDebugAssignement(learned_conflict_));
+  DCHECK(ClauseIsValidUnderDebugAssignment(learned_conflict_));
   if (!binary_implication_graph_->IsEmpty()) {
     if (parameters_->binary_minimization_algorithm() ==
         SatParameters::BINARY_MINIMIZATION_FIRST) {
@@ -782,7 +785,7 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
   // Backtrack and add the reason to the set of learned clause.
   counters_.num_literals_learned += learned_conflict_.size();
   Backtrack(ComputeBacktrackLevel(learned_conflict_));
-  DCHECK(ClauseIsValidUnderDebugAssignement(learned_conflict_));
+  DCHECK(ClauseIsValidUnderDebugAssignment(learned_conflict_));
 
   // Note that we need to output the learned clause before cleaning the clause
   // database. This is because we already backtracked and some of the clauses

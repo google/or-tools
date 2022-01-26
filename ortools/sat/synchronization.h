@@ -447,6 +447,8 @@ class SharedBoundsManager {
   // state.
   void Synchronize();
 
+  void LogStatistics(SolverLogger* logger);
+
  private:
   const int num_variables_;
   const CpModelProto& model_proto_;
@@ -464,6 +466,44 @@ class SharedBoundsManager {
   std::vector<int64_t> synchronized_upper_bounds_ ABSL_GUARDED_BY(mutex_);
   std::deque<SparseBitset<int64_t>> id_to_changed_variables_
       ABSL_GUARDED_BY(mutex_);
+  std::map<std::string, int> bounds_exported_ ABSL_GUARDED_BY(mutex_);
+};
+
+// This class holds all the binary clauses that were found and shared by the
+// workers.
+//
+// It is thread-safe.
+//
+// Note that this uses literal as encoded in a cp_model.proto. The literals can
+// thus be negative numbers.
+class SharedClausesManager {
+ public:
+  void AddBinaryClause(int id, int lit1, int lit2);
+
+  // Fills flat_clauses with
+  //   (lit1 of clause1, lit2 of clause1, lit1 of clause 2, lit2 of clause2 ...)
+  void GetUnseenBinaryClauses(int id,
+                              std::vector<std::pair<int, int>>* new_clauses);
+
+  int RegisterNewId();
+  void SetWorkerNameForId(int id, const std::string& worker_name);
+
+  // Search statistics.
+  void LogStatistics(SolverLogger* logger);
+
+ private:
+  absl::Mutex mutex_;
+  // Cache to avoid adding the same clause twice.
+  absl::flat_hash_set<std::pair<int, int>> added_binary_clauses_set_
+      ABSL_GUARDED_BY(mutex_);
+  std::vector<std::pair<int, int>> added_binary_clauses_
+      ABSL_GUARDED_BY(mutex_);
+  std::vector<int64_t> id_to_last_processed_binary_clause_
+      ABSL_GUARDED_BY(mutex_);
+  std::vector<int64_t> id_to_clauses_exported_;
+
+  // Used for reporting statistics.
+  absl::flat_hash_map<int, std::string> id_to_worker_name_;
 };
 
 template <typename ValueType>

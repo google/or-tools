@@ -6325,17 +6325,17 @@ void CpModelPresolver::DetectDominatedLinearConstraints() {
     bool abort = false;
     for (int i = 0; i < lin.vars().size(); ++i) {
       const int var = lin.vars(i);
-      if (!RefIsPositive(var)) {
+      const int64_t coeff = lin.coeffs(i);
+      if (!RefIsPositive(var) || coeff == 0) {
         // This shouldn't happen except in potential corner cases were the
         // constraints were not canonicalized before this point. We just skip
         // such constraint.
         abort = true;
         break;
       }
-      implied = implied
-                    .AdditionWith(
-                        context_->DomainOf(var).MultiplicationBy(lin.coeffs(i)))
-                    .RelaxIfTooComplex();
+      implied =
+          implied.AdditionWith(context_->DomainOf(var).MultiplicationBy(coeff))
+              .RelaxIfTooComplex();
     }
     if (abort) continue;
 
@@ -6358,6 +6358,12 @@ void CpModelPresolver::DetectDominatedLinearConstraints() {
       coeff_map[subset_lin.vars(i)] = subset_lin.coeffs(i);
     }
 
+    // We have a perfect match if 'factor_a * subset == factor_b * superset' on
+    // the common positions. Note that assuming subset has been gcd reduced,
+    // there is not point considering factor_b != 1.
+    bool perfect_match = true;
+    int64_t factor = 0;
+
     // Lets compute the implied domain of the linear expression
     // "superset - subset". Note that we actually do not need exact inclusion
     // for this algorithm to work, but it is an heuristic to not try it with
@@ -6371,7 +6377,23 @@ void CpModelPresolver::DetectDominatedLinearConstraints() {
       int64_t coeff = superset_lin.coeffs(i);
       const auto it = coeff_map.find(var);
       if (it != coeff_map.end()) {
-        coeff -= it->second;
+        const int64_t subset_coeff = it->second;
+        if (perfect_match) {
+          if (coeff % subset_coeff == 0) {
+            const int64_t div = coeff / subset_coeff;
+            if (factor == 0) {
+              // Note that factor can be negative.
+              factor = div;
+            } else if (factor != div) {
+              perfect_match = false;
+            }
+          } else {
+            perfect_match = false;
+          }
+        }
+
+        // TODO(user): compute the factor first in case it is != 1 ?
+        coeff -= subset_coeff;
       }
       if (coeff == 0) continue;
 
@@ -6383,17 +6405,6 @@ void CpModelPresolver::DetectDominatedLinearConstraints() {
 
     const Domain subset_ct_domain = ReadDomainFromProto(subset_lin);
     const Domain superset_ct_domain = ReadDomainFromProto(superset_lin);
-
-    // TODO(user): when we have equality constraint, we might try substitution.
-    if (subset_ct_domain.IsFixed()) {
-      // This should be easy since we can just simplify the superset.
-      // Especially if we have a true inclusion.
-      context_->UpdateRuleStats("TODO linear inclusion: subset is equality");
-    }
-    if (superset_ct_domain.IsFixed()) {
-      // This one could make sense if subset is large.
-      context_->UpdateRuleStats("TODO linear inclusion: superset is equality");
-    }
 
     // Case 1: superset is redundant.
     // We process this one first as it let us remove the longest constraint.
@@ -6428,6 +6439,51 @@ void CpModelPresolver::DetectDominatedLinearConstraints() {
       constraint_indices_to_clean.push_back(subset_c);
       detector.StopProcessingCurrentSubset();
       return;
+    }
+
+    // When we have equality constraint, we might try substitution. For now we
+    // only try that when we have a perfect inclusion with the same coefficients
+    // after multiplication by factor.
+    if (perfect_match) {
+      CHECK_NE(factor, 0);
+      if (subset_ct_domain.IsFixed()) {
+        // Rewrite the constraint by removing subset from it and updating
+        // the domain to domain - factor * subset_domain.
+        //
+        // This seems always beneficial, although we might miss some
+        // oportunities for constraint included in the superset if we do that
+        // too early.
+        context_->UpdateRuleStats("linear inclusion: subset is equality");
+        int new_size = 0;
+        auto* mutable_linear =
+            context_->working_model->mutable_constraints(superset_c)
+                ->mutable_linear();
+        for (int i = 0; i < mutable_linear->vars().size(); ++i) {
+          const int var = mutable_linear->vars(i);
+          const int64_t coeff = mutable_linear->coeffs(i);
+          const auto it = coeff_map.find(var);
+          if (it != coeff_map.end()) {
+            CHECK_EQ(factor * it->second, coeff);
+            continue;
+          }
+          mutable_linear->set_vars(new_size, var);
+          mutable_linear->set_coeffs(new_size, coeff);
+          ++new_size;
+        }
+        mutable_linear->mutable_vars()->Truncate(new_size);
+        mutable_linear->mutable_coeffs()->Truncate(new_size);
+        FillDomainInProto(superset_ct_domain.AdditionWith(
+                              subset_ct_domain.MultiplicationBy(-factor)),
+                          mutable_linear);
+        constraint_indices_to_clean.push_back(superset_c);
+        detector.StopProcessingCurrentSuperset();
+        return;
+      }
+      if (superset_ct_domain.IsFixed()) {
+        // This one could make sense if subset is large vs superset.
+        context_->UpdateRuleStats(
+            "TODO linear inclusion: superset is equality");
+      }
     }
   });
 

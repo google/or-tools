@@ -1008,6 +1008,57 @@ void RegisterObjectiveBoundsImport(
       import_objective_bounds);
 }
 
+// Registers a callback that will export non-problem clauses added during
+// search.
+void RegisterClausesExport(int id, SharedClausesManager* shared_clauses_manager,
+                           Model* model) {
+  auto* mapping = model->GetOrCreate<CpModelMapping>();
+  auto* sat_solver = model->GetOrCreate<SatSolver>();
+  const auto& share_binary_clause = [mapping, id, shared_clauses_manager](
+                                        Literal l1, Literal l2) {
+    const int var1 =
+        mapping->GetProtoVariableFromBooleanVariable(l1.Variable());
+    if (var1 == -1) return;
+    const int var2 =
+        mapping->GetProtoVariableFromBooleanVariable(l2.Variable());
+    if (var2 == -1) return;
+    const int lit1 = l1.IsPositive() ? var1 : NegatedRef(var1);
+    const int lit2 = l2.IsPositive() ? var2 : NegatedRef(var2);
+    shared_clauses_manager->AddBinaryClause(id, lit1, lit2);
+  };
+  sat_solver->SetShareBinaryClauseCallback(share_binary_clause);
+}
+
+// Registers a callback to import new clauses stored in the
+// shared_clausess_manager. These clauses are imported at level 0 of the search
+// in the linear scan minimize function.
+// it returns the id of the worker in the shared clause manager.
+//
+// TODO(user): Can we import them in the core worker ?
+int RegisterClausesLevelZeroImport(int id,
+                                   SharedClausesManager* shared_clauses_manager,
+                                   Model* model) {
+  CHECK(shared_clauses_manager != nullptr);
+  CpModelMapping* const mapping = model->GetOrCreate<CpModelMapping>();
+  SatSolver* sat_solver = model->GetOrCreate<SatSolver>();
+  const auto& import_level_zero_clauses = [shared_clauses_manager, id, mapping,
+                                           sat_solver]() {
+    std::vector<std::pair<int, int>> new_binary_clauses;
+    shared_clauses_manager->GetUnseenBinaryClauses(id, &new_binary_clauses);
+    for (const auto [ref1, ref2] : new_binary_clauses) {
+      const Literal l1 = mapping->Literal(ref1);
+      const Literal l2 = mapping->Literal(ref2);
+      if (!sat_solver->AddBinaryClause(l1, l2)) {
+        return false;
+      }
+    }
+    return true;
+  };
+  model->GetOrCreate<LevelZeroCallbackHelper>()->callbacks.push_back(
+      import_level_zero_clauses);
+  return id;
+}
+
 void LoadBaseModel(const CpModelProto& model_proto, Model* model) {
   auto* shared_response_manager = model->GetOrCreate<SharedResponseManager>();
   CHECK(shared_response_manager != nullptr);
@@ -1954,6 +2005,7 @@ struct SharedClasses {
   SharedRelaxationSolutionRepository* relaxation_solutions;
   SharedLPSolutionRepository* lp_solutions;
   SharedIncompleteSolutionManager* incomplete_solutions;
+  SharedClausesManager* clauses;
   Model* global_model;
 
   bool SearchIsDone() {
@@ -1995,6 +2047,10 @@ class FullProblemSolver : public SubSolver {
       local_model_->Register<SharedIncompleteSolutionManager>(
           shared->incomplete_solutions);
     }
+
+    if (shared->clauses != nullptr) {
+      local_model_->Register<SharedClausesManager>(shared->clauses);
+    }
   }
 
   bool TaskIsAvailable() override {
@@ -2022,6 +2078,15 @@ class FullProblemSolver : public SubSolver {
               *shared_->model_proto, shared_->bounds, local_model_.get());
           RegisterVariableBoundsLevelZeroImport(
               *shared_->model_proto, shared_->bounds, local_model_.get());
+        }
+
+        if (shared_->clauses != nullptr) {
+          const int id = shared_->clauses->RegisterNewId();
+          shared_->clauses->SetWorkerNameForId(id, local_model_->Name());
+
+          RegisterClausesLevelZeroImport(id, shared_->clauses,
+                                         local_model_.get());
+          RegisterClausesExport(id, shared_->clauses, local_model_.get());
         }
 
         if (local_model_->GetOrCreate<SatParameters>()->repair_hint()) {
@@ -2523,7 +2588,7 @@ class LnsSolver : public SubSolver {
         // TODO(user): This do not seem to work if they are symmetries loaded
         // into SAT. For now we just disable this if there is any symmetry.
         // See for instance spot5_1401.fzn. Be smarter about that:
-        // - If there are connected compo in the inital model, we should only
+        // - If there are connected compo in the initial model, we should only
         //   compute generator that do not cross component? or are component
         //   interchange useful? probably not.
         // - It should be fine if all our generator are fully or not at
@@ -2658,6 +2723,11 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
         shared_incomplete_solutions.get());
   }
 
+  std::unique_ptr<SharedClausesManager> shared_clauses;
+  if (parameters.share_binary_clauses()) {
+    shared_clauses = absl::make_unique<SharedClausesManager>();
+  }
+
   SharedClasses shared;
   shared.model_proto = &model_proto;
   shared.wall_timer = global_model->GetOrCreate<WallTimer>();
@@ -2667,6 +2737,7 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
   shared.relaxation_solutions = shared_relaxation_solutions.get();
   shared.lp_solutions = shared_lp_solutions.get();
   shared.incomplete_solutions = shared_incomplete_solutions.get();
+  shared.clauses = shared_clauses.get();
   shared.global_model = global_model;
 
   // The list of all the SubSolver that will be used in this parallel search.
@@ -2863,13 +2934,30 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
     NonDeterministicLoop(subsolvers, num_search_workers);
   }
 
-  if (parameters.log_subsolver_statistics()) {
+  // Log statistics.
+  if (logger->LoggingIsEnabled()) {
+    if (parameters.log_subsolver_statistics()) {
+      SOLVER_LOG(logger, "");
+      SOLVER_LOG(logger, "Sub-solver search statistics:");
+      for (const auto& subsolver : subsolvers) {
+        const std::string stats = subsolver->StatisticsString();
+        if (stats.empty()) continue;
+        SOLVER_LOG(logger,
+                   absl::StrCat("  '", subsolver->name(), "':\n", stats));
+      }
+    }
+
     SOLVER_LOG(logger, "");
-    SOLVER_LOG(logger, "Sub-solver search statistics:");
-    for (const auto& subsolver : subsolvers) {
-      const std::string stats = subsolver->StatisticsString();
-      if (stats.empty()) continue;
-      SOLVER_LOG(logger, absl::StrCat("  '", subsolver->name(), "':\n", stats));
+    shared.response->DisplayImprovementStatistics();
+
+    if (shared.bounds) {
+      SOLVER_LOG(logger, "");
+      shared.bounds->LogStatistics(logger);
+    }
+
+    if (shared.clauses) {
+      SOLVER_LOG(logger, "");
+      shared.clauses->LogStatistics(logger);
     }
   }
 }
@@ -3454,10 +3542,9 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       QuickSolveWithHint(new_cp_model_proto, model);
     }
     SolveLoadedCpModel(new_cp_model_proto, model);
-  }
 
-  if (logger->LoggingIsEnabled()) {
-    if (params.num_search_workers() <= 1) {
+    // Sequential logging of LP statistics.
+    if (logger->LoggingIsEnabled()) {
       const auto& lps =
           *model->GetOrCreate<LinearProgrammingConstraintCollection>();
       if (!lps.empty()) {
@@ -3466,11 +3553,6 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
           SOLVER_LOG(logger, lp->Statistics());
         }
       }
-    }
-
-    if (params.num_search_workers() > 1) {
-      SOLVER_LOG(logger, "");
-      shared_response_manager->DisplayImprovementStatistics();
     }
   }
 
