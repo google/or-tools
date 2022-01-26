@@ -941,23 +941,6 @@ cc_library(
     ],
 )
 
-#cc_library(
-#    name = "cumulative_energy",
-#    srcs = ["cumulative_energy.cc"],
-#    hdrs = ["cumulative_energy.h"],
-#    deps = [
-#        ":integer",
-#        ":intervals",
-#        ":model",
-#        ":sat_base",
-#        ":sat_solver",
-#        ":theta_tree",
-#        "//ortools/base",
-#        "//ortools/base:int_type",
-#        "//ortools/base:iterator_adaptors",
-#    ],
-#)
-
 cc_library(
     name = "boolean_problem",
     srcs = ["boolean_problem.cc"],
