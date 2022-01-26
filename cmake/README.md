@@ -40,7 +40,8 @@ Dockers [Alpine, Archlinux, Centos, Debian, Fedora, OpenSuse, Ubuntu]x[C++, Pyth
 
 ## Introduction
 <nav for="cmake"> |
-<a href="#deps">Dependencies</a> |
+<a href="#requirement">Requirement</a> |
+<a href="#dependencies">Dependencies</a> |
 <a href="#options">Options</a> |
 <a href="docs/cpp.md">C++</a> |
 <a href="docs/swig.md">Swig</a> |
@@ -61,7 +62,10 @@ the compiler environment of your choice.<br>You can either build OR-Tools with
 CMake as a standalone project or it can be incorporated into an existing CMake
  project.
 
-<a name="deps"></a>
+## Requirement
+You'll need:
+
+* `CMake >= 3.15` (`3.18` for python support).
 
 ## Dependencies
 

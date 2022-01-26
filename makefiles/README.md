@@ -40,14 +40,20 @@ Python, Java, .Net]: [![Status][docker_svg]][docker_link]
 
 ## Introduction
 <nav for="make"> |
-<a href="#deps">Dependencies</a> |
+<a href="#requirement">Requirement</a> |
+<a href="#dependencies">Dependencies</a> |
 <a href="docs/ci.md">CI</a> |
 </nav>
 
 OR-Tools comes with a GNU Make based build ([Makefile](../Makefile)) that can be
 used on a wide range of platforms.
 
-## [Dependencies](#deps)
+## Requirement
+You'll need:
+
+* `GNU Make >= 4.3`.
+
+## Dependencies
 
 OR-Tools depends on severals mandatory libraries. You can compile them all using
 the target `third_party` or you can compile few of them and give the
