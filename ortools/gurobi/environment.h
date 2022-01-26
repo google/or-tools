@@ -637,8 +637,6 @@ extern std::function<int(const char *filename)> GRBreplay;
 extern std::function<int(GRBmodel *model, int sense, double constant,int lnz, int *lind, double *lval,int qnz, int *qrow, int *qcol, double *qval)> GRBsetobjective;
 extern std::function<int(GRBmodel *model, int index, int priority, double weight,double abstol, double reltol, const char *name,double constant, int lnz, int *lind, double *lval)> GRBsetobjectiven;
 extern std::function<void(GRBenv *env, const char *message)> GRBmsg;
-extern std::function<int(GRBenv *env, FILE **logfileP)> GRBgetlogfile;
-extern std::function<int(GRBenv *env, FILE *logfile)> GRBsetlogfile;
 extern std::function<int(GRBenv *env, const char *paramname, int *valueP)> GRBgetintparam;
 extern std::function<int(GRBenv *env, const char *paramname, double *valueP)> GRBgetdblparam;
 extern std::function<int(GRBenv *env, const char *paramname, char *valueP)> GRBgetstrparam;
