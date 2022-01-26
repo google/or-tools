@@ -97,16 +97,15 @@ class SatSolver {
   bool AddUnitClause(Literal true_literal);
 
   // Same as AddProblemClause() below, but for small clauses.
-  //
-  // TODO(user): Remove this and AddUnitClause() when initializer lists can be
-  // used in the open-source code like in AddClause({a, b}).
   bool AddBinaryClause(Literal a, Literal b);
   bool AddTernaryClause(Literal a, Literal b, Literal c);
 
   // Adds a clause to the problem. Returns false if the problem is detected to
   // be UNSAT.
   //
-  // TODO(user): Rename this to AddClause().
+  // TODO(user): Rename this to AddClause(), also get rid of the specialized
+  // AddUnitClause(), AddBinaryClause() and AddTernaryClause() since they
+  // just end up calling this?
   bool AddProblemClause(absl::Span<const Literal> literals);
 
   // Adds a pseudo-Boolean constraint to the problem. Returns false if the
@@ -542,6 +541,10 @@ class SatSolver {
   bool AddLinearConstraintInternal(const std::vector<LiteralWithCoeff>& cst,
                                    Coefficient rhs, Coefficient max_value);
 
+  // Makes sure a pseudo boolean constraint is in canonical form.
+  void CanonicalizeLinear(std::vector<LiteralWithCoeff>* cst,
+                          Coefficient* bound_shift, Coefficient* max_value);
+
   // Adds a learned clause to the problem. This should be called after
   // Backtrack(). The backtrack is such that after it is applied, all the
   // literals of the learned close except one will be false. Thus the last one
@@ -692,6 +695,8 @@ class SatSolver {
 
   // Internal propagators. We keep them here because we need more than the
   // SatPropagator interface for them.
+  bool propagate_binary_ = false;
+  bool propagate_pb_ = false;
   BinaryImplicationGraph* binary_implication_graph_;
   LiteralWatchers* clauses_propagator_;
   PbConstraints* pb_constraints_;
@@ -794,7 +799,7 @@ class SatSolver {
   std::vector<BooleanVariable> dfs_stack_;
   std::vector<BooleanVariable> variable_to_process_;
 
-  // Temporary member used by AddLinearConstraintInternal().
+  // Temporary member used when adding clauses.
   std::vector<Literal> literals_scratchpad_;
 
   // A boolean vector used to temporarily mark decision levels.
@@ -817,9 +822,6 @@ class SatSolver {
   // "cache" to avoid inspecting many times the same reason during conflict
   // analysis.
   VariableWithSameReasonIdentifier same_reason_identifier_;
-
-  // Temporary vector used by AddProblemClause().
-  std::vector<LiteralWithCoeff> tmp_pb_constraint_;
 
   // Boolean used to include/exclude constraints from the core computation.
   bool is_relevant_for_core_computation_;

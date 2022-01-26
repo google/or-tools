@@ -19,6 +19,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
+#include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/implied_bounds.h"
@@ -1094,14 +1095,29 @@ SatSolver::Status ContinuousProbing(
   const SatParameters& sat_parameters = *(model->GetOrCreate<SatParameters>());
   auto* level_zero_callbacks = model->GetOrCreate<LevelZeroCallbackHelper>();
   Prober* prober = model->GetOrCreate<Prober>();
+  auto* shared_response_manager = model->Mutable<SharedResponseManager>();
+  auto* shared_bounds_manager = model->Mutable<SharedBoundsManager>();
 
   std::vector<BooleanVariable> active_vars;
   std::vector<BooleanVariable> integer_bounds;
   absl::flat_hash_set<BooleanVariable> integer_bounds_set;
 
-  int loop = 0;
+  int iteration = 1;
+  absl::Time last_check = absl::Now();
+
   while (!time_limit->LimitReached()) {
-    VLOG(2) << "Probing loop " << loop++;
+    if (shared_response_manager != nullptr &&
+        shared_bounds_manager != nullptr &&
+        absl::Now() - last_check >= absl::Seconds(10)) {
+      shared_response_manager->LogMessage(
+          "Probe",
+          absl::StrCat("#iterations:", iteration,
+                       " #literals_fixed:", prober->num_new_literals_fixed(),
+                       " #new_integer_bounds:",
+                       shared_bounds_manager->NumBoundsExported("probing")));
+      last_check = absl::Now();
+    }
+    iteration++;
 
     // Sync the bounds first.
     auto SyncBounds = [solver, &level_zero_callbacks]() {

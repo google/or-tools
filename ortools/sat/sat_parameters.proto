@@ -129,7 +129,6 @@ message SatParameters {
       [default = RECURSIVE];
 
   // Whether to expoit the binary clause to minimize learned clauses further.
-  // This will have an effect only if treat_binary_clauses_separately is true.
   enum BinaryMinizationAlgorithm {
     NO_BINARY_MINIMIZATION = 0;
     BINARY_MINIMIZATION_FIRST = 1;
@@ -359,11 +358,6 @@ message SatParameters {
   // ==========================================================================
   // Other parameters
   // ==========================================================================
-
-  // If true, the binary clauses are treated separately from the others. This
-  // should be faster and uses less memory. However it changes the propagation
-  // order.
-  optional bool treat_binary_clauses_separately = 33 [default = true];
 
   // At the beginning of each solve, the random number generator used in some
   // part of the solver is reinitialized to this seed. If you change the random

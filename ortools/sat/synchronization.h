@@ -327,7 +327,7 @@ class SharedResponseManager {
   // Display improvement stats.
   void DisplayImprovementStatistics();
 
-  void LogMessage(std::string message);
+  void LogMessage(const std::string& prefix, const std::string& message);
 
   // This is here for the few codepath that needs to modify the returned
   // response directly. Note that this do not work in parallel.
@@ -448,6 +448,7 @@ class SharedBoundsManager {
   void Synchronize();
 
   void LogStatistics(SolverLogger* logger);
+  int NumBoundsExported(const std::string& worker_name);
 
  private:
   const int num_variables_;

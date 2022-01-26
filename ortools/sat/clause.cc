@@ -508,7 +508,11 @@ void BinaryImplicationGraph::AddBinaryClause(Literal a, Literal b) {
 
 bool BinaryImplicationGraph::AddBinaryClauseDuringSearch(Literal a, Literal b) {
   SCOPED_TIME_STAT(&stats_);
-  if (num_implications_ == 0) propagation_trail_index_ = trail_->Index();
+
+  // Tricky: If this is the first clause, the propagator will be added and
+  // assumed to be in a "propagated" state. This makes sure this is the case.
+  if (IsEmpty()) propagation_trail_index_ = trail_->Index();
+
   AddBinaryClause(a, b);
 
   const auto& assignment = trail_->Assignment();

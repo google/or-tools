@@ -13,6 +13,7 @@
 
 #include "ortools/sat/probing.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <set>
 
@@ -179,11 +180,6 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
 }
 
 bool Prober::ProbeOneVariable(BooleanVariable b) {
-  // Reset statistics.
-  num_new_binary_ = 0;
-  num_new_holes_ = 0;
-  num_new_integer_bounds_ = 0;
-
   // Resize the propagated sparse bitset.
   const int num_variables = sat_solver_->NumVariables();
   propagated_.ClearAndResize(LiteralIndex(2 * num_variables));
@@ -192,7 +188,13 @@ bool Prober::ProbeOneVariable(BooleanVariable b) {
   sat_solver_->SetAssumptionLevel(0);
   if (!sat_solver_->RestoreSolverToAssumptionLevel()) return false;
 
-  return ProbeOneVariableInternal(b);
+  const int initial_num_fixed = sat_solver_->LiteralTrail().Index();
+  if (!ProbeOneVariableInternal(b)) return false;
+
+  // Statistics
+  const int num_fixed = sat_solver_->LiteralTrail().Index();
+  num_new_literals_fixed_ += num_fixed - initial_num_fixed;
+  return true;
 }
 
 bool Prober::ProbeBooleanVariables(
@@ -205,6 +207,7 @@ bool Prober::ProbeBooleanVariables(
   num_new_binary_ = 0;
   num_new_holes_ = 0;
   num_new_integer_bounds_ = 0;
+  num_new_literals_fixed_ = 0;
 
   // Resize the propagated sparse bitset.
   const int num_variables = sat_solver_->NumVariables();
@@ -243,19 +246,22 @@ bool Prober::ProbeBooleanVariables(
     }
   }
 
+  // Update stats.
+  const int num_fixed = sat_solver_->LiteralTrail().Index();
+  num_new_literals_fixed_ = num_fixed - initial_num_fixed;
+
   // Display stats.
   if (logger_->LoggingIsEnabled()) {
     const double time_diff =
         time_limit_->GetElapsedDeterministicTime() - initial_deterministic_time;
-    const int num_fixed = sat_solver_->LiteralTrail().Index();
-    const int num_newly_fixed = num_fixed - initial_num_fixed;
     SOLVER_LOG(logger_, "[Probing] deterministic_time: ", time_diff,
                " (limit: ", deterministic_time_limit,
                ") wall_time: ", wall_timer.Get(), " (",
                (limit_reached ? "Aborted " : ""), num_probed, "/",
                bool_vars.size(), ")");
-    if (num_newly_fixed > 0) {
-      SOLVER_LOG(logger_, "[Probing]  - new fixed Boolean: ", num_newly_fixed,
+    if (num_new_literals_fixed_ > 0) {
+      SOLVER_LOG(logger_,
+                 "[Probing]  - new fixed Boolean: ", num_new_literals_fixed_,
                  " (", num_fixed, "/", sat_solver_->NumVariables(), ")");
     }
     if (num_new_holes_ > 0) {

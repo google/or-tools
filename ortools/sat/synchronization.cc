@@ -133,10 +133,11 @@ std::string SatProgressMessage(const std::string& event_or_solution_count,
 
 }  // namespace
 
-void SharedResponseManager::LogMessage(std::string message) {
+void SharedResponseManager::LogMessage(const std::string& prefix,
+                                       const std::string& message) {
   absl::MutexLock mutex_lock(&mutex_);
-  SOLVER_LOG(logger_,
-             absl::StrFormat("#Model %6.2fs %s", wall_timer_.Get(), message));
+  SOLVER_LOG(logger_, absl::StrFormat("#%-5s %6.2fs %s", prefix,
+                                      wall_timer_.Get(), message));
 }
 
 void SharedResponseManager::InitializeObjective(const CpModelProto& cp_model) {
@@ -846,6 +847,13 @@ void SharedBoundsManager::LogStatistics(SolverLogger* logger) {
       SOLVER_LOG(logger, "  '", entry.first, "': ", entry.second);
     }
   }
+}
+
+int SharedBoundsManager::NumBoundsExported(const std::string& worker_name) {
+  absl::MutexLock mutex_lock(&mutex_);
+  const auto it = bounds_exported_.find(worker_name);
+  if (it == bounds_exported_.end()) return 0;
+  return it->second;
 }
 
 int SharedClausesManager::RegisterNewId() {

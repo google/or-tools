@@ -312,6 +312,7 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
     }
   }
   shared_response_->LogMessage(
+      "Model",
       absl::StrCat("var:", active_variables_.size(), "/", num_variables,
                    " constraints:", simplied_model_proto_.constraints().size(),
                    "/", model_proto_.constraints().size(), compo_message));

@@ -2048,6 +2048,10 @@ class FullProblemSolver : public SubSolver {
           shared->incomplete_solutions);
     }
 
+    if (shared->bounds != nullptr) {
+      local_model_->Register<SharedBoundsManager>(shared->bounds);
+    }
+
     if (shared->clauses != nullptr) {
       local_model_->Register<SharedClausesManager>(shared->clauses);
     }

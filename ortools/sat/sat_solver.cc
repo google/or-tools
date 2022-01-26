@@ -138,15 +138,10 @@ bool SatSolver::AddClauseDuringSearch(absl::Span<const Literal> literals) {
   if (literals.empty()) return SetModelUnsat();
   if (literals.size() == 1) return AddUnitClause(literals[0]);
   if (literals.size() == 2) {
-    const bool init = binary_implication_graph_->num_implications() == 0;
     if (!binary_implication_graph_->AddBinaryClauseDuringSearch(literals[0],
                                                                 literals[1])) {
       CHECK_EQ(CurrentDecisionLevel(), 0);
       return SetModelUnsat();
-    }
-    if (init) {
-      // This is needed because we just added the first binary clause.
-      InitializePropagators();
     }
   } else {
     if (!clauses_propagator_->AddClause(literals)) {
@@ -163,82 +158,68 @@ bool SatSolver::AddClauseDuringSearch(absl::Span<const Literal> literals) {
 }
 
 bool SatSolver::AddUnitClause(Literal true_literal) {
-  SCOPED_TIME_STAT(&stats_);
-  CHECK_EQ(CurrentDecisionLevel(), 0);
-  if (model_is_unsat_) return false;
-  if (trail_->Assignment().LiteralIsFalse(true_literal)) return SetModelUnsat();
-  if (trail_->Assignment().LiteralIsTrue(true_literal)) return true;
-  if (drat_proof_handler_ != nullptr) {
-    // Note that we will output problem unit clauses twice, but that is a small
-    // price to pay for having a single variable fixing API.
-    drat_proof_handler_->AddClause({true_literal});
-  }
-  trail_->EnqueueWithUnitReason(true_literal);
-  if (!Propagate()) return SetModelUnsat();
-  return true;
+  return AddProblemClause({true_literal});
 }
 
 bool SatSolver::AddBinaryClause(Literal a, Literal b) {
-  SCOPED_TIME_STAT(&stats_);
-  tmp_pb_constraint_.clear();
-  tmp_pb_constraint_.push_back(LiteralWithCoeff(a, 1));
-  tmp_pb_constraint_.push_back(LiteralWithCoeff(b, 1));
-  return AddLinearConstraint(
-      /*use_lower_bound=*/true, /*lower_bound=*/Coefficient(1),
-      /*use_upper_bound=*/false, /*upper_bound=*/Coefficient(0),
-      &tmp_pb_constraint_);
+  return AddProblemClause({a, b});
 }
 
 bool SatSolver::AddTernaryClause(Literal a, Literal b, Literal c) {
-  SCOPED_TIME_STAT(&stats_);
-  tmp_pb_constraint_.clear();
-  tmp_pb_constraint_.push_back(LiteralWithCoeff(a, 1));
-  tmp_pb_constraint_.push_back(LiteralWithCoeff(b, 1));
-  tmp_pb_constraint_.push_back(LiteralWithCoeff(c, 1));
-  return AddLinearConstraint(
-      /*use_lower_bound=*/true, /*lower_bound=*/Coefficient(1),
-      /*use_upper_bound=*/false, /*upper_bound=*/Coefficient(0),
-      &tmp_pb_constraint_);
+  return AddProblemClause({a, b, c});
 }
 
 bool SatSolver::AddProblemClause(absl::Span<const Literal> literals) {
   SCOPED_TIME_STAT(&stats_);
+  CHECK_EQ(CurrentDecisionLevel(), 0);
+  if (model_is_unsat_) return false;
 
-  // TODO(user): To avoid duplication, we currently just call
-  // AddLinearConstraint(). Make a faster specific version if that becomes a
-  // performance issue.
-  tmp_pb_constraint_.clear();
-  for (Literal lit : literals) {
-    tmp_pb_constraint_.push_back(LiteralWithCoeff(lit, 1));
+  // Filter already assigned literals.
+  literals_scratchpad_.clear();
+  for (const Literal l : literals) {
+    if (trail_->Assignment().LiteralIsTrue(l)) return true;
+    if (trail_->Assignment().LiteralIsFalse(l)) continue;
+    literals_scratchpad_.push_back(l);
   }
-  return AddLinearConstraint(
-      /*use_lower_bound=*/true, /*lower_bound=*/Coefficient(1),
-      /*use_upper_bound=*/false, /*upper_bound=*/Coefficient(0),
-      &tmp_pb_constraint_);
+
+  AddProblemClauseInternal(literals_scratchpad_);
+
+  // Tricky: The PropagationIsDone() condition shouldn't change anything for a
+  // pure SAT problem, however in the CP-SAT context, calling Propagate() can
+  // tigger computation (like the LP) even if no domain changed since the last
+  // call. We do not want to do that.
+  if (!PropagationIsDone() && !Propagate()) {
+    return SetModelUnsat();
+  }
+  return true;
 }
 
 bool SatSolver::AddProblemClauseInternal(absl::Span<const Literal> literals) {
   SCOPED_TIME_STAT(&stats_);
-  CHECK_EQ(CurrentDecisionLevel(), 0);
-
-  // Deals with clause of size 0 (always false) and 1 (set a literal) right away
-  // so we guarantee that a SatClause is always of size greater than one. This
-  // simplifies the code.
-  CHECK_GT(literals.size(), 0);
-  if (literals.size() == 1) {
-    if (trail_->Assignment().LiteralIsFalse(literals[0])) return false;
-    if (trail_->Assignment().LiteralIsTrue(literals[0])) return true;
-    trail_->EnqueueWithUnitReason(literals[0]);  // Not assigned.
-    return true;
+  if (DEBUG_MODE) {
+    CHECK_EQ(CurrentDecisionLevel(), 0);
+    for (const Literal l : literals) {
+      CHECK(!trail_->Assignment().LiteralIsAssigned(l));
+    }
   }
 
-  if (parameters_->treat_binary_clauses_separately() && literals.size() == 2) {
+  if (literals.empty()) return SetModelUnsat();
+
+  if (literals.size() == 1) {
+    if (drat_proof_handler_ != nullptr) {
+      // Note that we will output problem unit clauses twice, but that is a
+      // small price to pay for having a single variable fixing API.
+      drat_proof_handler_->AddClause({literals[0]});
+    }
+    trail_->EnqueueWithUnitReason(literals[0]);
+  } else if (literals.size() == 2) {
     AddBinaryClauseInternal(literals[0], literals[1]);
   } else {
     if (!clauses_propagator_->AddClause(literals, trail_)) {
       return SetModelUnsat();
     }
   }
+
   return true;
 }
 
@@ -271,8 +252,7 @@ bool SatSolver::AddLinearConstraintInternal(
 
   // Detect at most one constraints. Note that this use the fact that the
   // coefficient are sorted.
-  if (parameters_->treat_binary_clauses_separately() &&
-      !parameters_->use_pb_resolution() && max_coeff <= rhs &&
+  if (!parameters_->use_pb_resolution() && max_coeff <= rhs &&
       2 * min_coeff > rhs) {
     literals_scratchpad_.clear();
     for (const LiteralWithCoeff& term : cst) {
@@ -281,10 +261,6 @@ bool SatSolver::AddLinearConstraintInternal(
     if (!binary_implication_graph_->AddAtMostOne(literals_scratchpad_)) {
       return SetModelUnsat();
     }
-
-    // In case this is the first constraint in the binary_implication_graph_.
-    // TODO(user): refactor so this is not needed!
-    InitializePropagators();
     return true;
   }
 
@@ -292,20 +268,12 @@ bool SatSolver::AddLinearConstraintInternal(
 
   // TODO(user): If this constraint forces all its literal to false (when rhs is
   // zero for instance), we still add it. Optimize this?
-  const bool result = pb_constraints_->AddConstraint(cst, rhs, trail_);
-  InitializePropagators();
-  return result;
+  return pb_constraints_->AddConstraint(cst, rhs, trail_);
 }
 
-bool SatSolver::AddLinearConstraint(bool use_lower_bound,
-                                    Coefficient lower_bound,
-                                    bool use_upper_bound,
-                                    Coefficient upper_bound,
-                                    std::vector<LiteralWithCoeff>* cst) {
-  SCOPED_TIME_STAT(&stats_);
-  CHECK_EQ(CurrentDecisionLevel(), 0);
-  if (model_is_unsat_) return false;
-
+void SatSolver::CanonicalizeLinear(std::vector<LiteralWithCoeff>* cst,
+                                   Coefficient* bound_shift,
+                                   Coefficient* max_value) {
   // This block removes assigned literals from the constraint.
   Coefficient fixed_variable_shift(0);
   {
@@ -322,22 +290,43 @@ bool SatSolver::AddLinearConstraint(bool use_lower_bound,
     cst->resize(index);
   }
 
-  // Canonicalize the constraint.
+  // Now we canonicalize.
   // TODO(user): fix variables that must be true/false and remove them.
-  Coefficient bound_shift;
-  Coefficient max_value;
-  CHECK(ComputeBooleanLinearExpressionCanonicalForm(cst, &bound_shift,
-                                                    &max_value));
-  CHECK(SafeAddInto(fixed_variable_shift, &bound_shift));
+  Coefficient bound_delta(0);
+  CHECK(ComputeBooleanLinearExpressionCanonicalForm(cst, &bound_delta,
+                                                    max_value));
+
+  CHECK(SafeAddInto(bound_delta, bound_shift));
+  CHECK(SafeAddInto(fixed_variable_shift, bound_shift));
+}
+
+bool SatSolver::AddLinearConstraint(bool use_lower_bound,
+                                    Coefficient lower_bound,
+                                    bool use_upper_bound,
+                                    Coefficient upper_bound,
+                                    std::vector<LiteralWithCoeff>* cst) {
+  SCOPED_TIME_STAT(&stats_);
+  CHECK_EQ(CurrentDecisionLevel(), 0);
+  if (model_is_unsat_) return false;
+
+  Coefficient bound_shift(0);
 
   if (use_upper_bound) {
+    Coefficient max_value(0);
+    CanonicalizeLinear(cst, &bound_shift, &max_value);
     const Coefficient rhs =
         ComputeCanonicalRhs(upper_bound, bound_shift, max_value);
     if (!AddLinearConstraintInternal(*cst, rhs, max_value)) {
       return SetModelUnsat();
     }
   }
+
   if (use_lower_bound) {
+    // We need to "re-canonicalize" in case some literal were fixed while we
+    // processed one direction.
+    Coefficient max_value(0);
+    CanonicalizeLinear(cst, &bound_shift, &max_value);
+
     // We transform the constraint into an upper-bounded one.
     for (int i = 0; i < cst->size(); ++i) {
       (*cst)[i].literal = (*cst)[i].literal.Negated();
@@ -371,7 +360,7 @@ int SatSolver::AddLearnedClauseAndEnqueueUnitPropagation(
     return /*lbd=*/1;
   }
 
-  if (literals.size() == 2 && parameters_->treat_binary_clauses_separately()) {
+  if (literals.size() == 2) {
     if (track_binary_clauses_) {
       CHECK(binary_clauses_.Add(BinaryClause(literals[0], literals[1])));
     }
@@ -380,8 +369,6 @@ int SatSolver::AddLearnedClauseAndEnqueueUnitPropagation(
     }
     CHECK(binary_implication_graph_->AddBinaryClauseDuringSearch(literals[0],
                                                                  literals[1]));
-    // In case this is the first binary clauses.
-    InitializePropagators();
     return /*lbd=*/2;
   }
 
@@ -454,9 +441,6 @@ void SatSolver::SaveDebugAssignment() {
 void SatSolver::AddBinaryClauseInternal(Literal a, Literal b) {
   if (!track_binary_clauses_ || binary_clauses_.Add(BinaryClause(a, b))) {
     binary_implication_graph_->AddBinaryClause(a, b);
-
-    // In case this is the first binary clauses.
-    InitializePropagators();
   }
 }
 
@@ -683,8 +667,6 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
 
     if (!conflict_is_a_clause) {
       // Use the PB conflict.
-      // Note that we don't need to call InitializePropagators() since when we
-      // are here, we are sure we have at least one pb constraint.
       DCHECK_GT(pb_constraints_->NumberOfConstraints(), 0);
       CHECK_LT(pb_backjump_level, CurrentDecisionLevel());
       Backtrack(pb_backjump_level);
@@ -922,7 +904,7 @@ void SatSolver::Backtrack(int target_level) {
 bool SatSolver::AddBinaryClauses(const std::vector<BinaryClause>& clauses) {
   SCOPED_TIME_STAT(&stats_);
   CHECK_EQ(CurrentDecisionLevel(), 0);
-  for (BinaryClause c : clauses) {
+  for (const BinaryClause c : clauses) {
     if (trail_->Assignment().LiteralIsFalse(c.a) &&
         trail_->Assignment().LiteralIsFalse(c.b)) {
       return SetModelUnsat();
@@ -1095,7 +1077,7 @@ void SatSolver::TryToMinimizeClause(SatClause* clause) {
     return;
   }
 
-  if (parameters_->treat_binary_clauses_separately() && candidate.size() == 2) {
+  if (candidate.size() == 2) {
     counters_.minimization_num_removed_literals += clause->size() - 2;
 
     // The order is important for the drat proof.
@@ -1595,7 +1577,7 @@ void SatSolver::ProcessNewlyFixedVariables() {
       drat_proof_handler_->DeleteClause({clause->begin(), old_size});
     }
 
-    if (new_size == 2 && parameters_->treat_binary_clauses_separately()) {
+    if (new_size == 2) {
       // This clause is now a binary clause, treat it separately. Note that
       // it is safe to do that because this clause can't be used as a reason
       // since we are at level zero and the clause is not satisfied.
@@ -1625,6 +1607,14 @@ void SatSolver::ProcessNewlyFixedVariables() {
 // part or the full integer part...
 bool SatSolver::Propagate() {
   SCOPED_TIME_STAT(&stats_);
+
+  // If new binary or pb constraint were added for the first time, we need
+  // to "re-initialize" the list of propagators.
+  if ((!propagate_binary_ && !binary_implication_graph_->IsEmpty()) ||
+      (!propagate_pb_ && pb_constraints_->NumberOfConstraints() > 0)) {
+    InitializePropagators();
+  }
+
   while (true) {
     // The idea here is to abort the inspection as soon as at least one
     // propagation occurs so we can loop over and test again the highest
@@ -1649,18 +1639,19 @@ void SatSolver::InitializePropagators() {
 
   // To make Propagate() as fast as possible, we only add the
   // binary_implication_graph_/pb_constraints_ propagators if there is anything
-  // to propagate. Because of this, it is important to call
-  // InitializePropagators() after the first constraint of this kind is added.
+  // to propagate.
   //
   // TODO(user): uses the Model classes here to only call
   // model.GetOrCreate<BinaryImplicationGraph>() when the first binary
   // constraint is needed, and have a mecanism to always make this propagator
   // first. Same for the linear constraints.
   if (!binary_implication_graph_->IsEmpty()) {
+    propagate_binary_ = true;
     propagators_.push_back(binary_implication_graph_);
   }
   propagators_.push_back(clauses_propagator_);
   if (pb_constraints_->NumberOfConstraints() > 0) {
+    propagate_pb_ = true;
     propagators_.push_back(pb_constraints_);
   }
   for (int i = 0; i < external_propagators_.size(); ++i) {
@@ -1762,6 +1753,12 @@ void SatSolver::EnqueueNewDecision(Literal literal) {
 void SatSolver::Untrail(int target_trail_index) {
   SCOPED_TIME_STAT(&stats_);
   DCHECK_LT(target_trail_index, trail_->Index());
+
+  if ((!propagate_binary_ && !binary_implication_graph_->IsEmpty()) ||
+      (!propagate_pb_ && pb_constraints_->NumberOfConstraints() > 0)) {
+    InitializePropagators();
+  }
+
   for (SatPropagator* propagator : propagators_) {
     propagator->Untrail(*trail_, target_trail_index);
   }

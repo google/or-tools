@@ -72,6 +72,11 @@ class Prober {
 
   bool ProbeOneVariable(BooleanVariable b);
 
+  // Statistics.
+  // They are reset each time ProbleBooleanVariables() is called.
+  // Note however that we do not reset them on a call to ProbeOneVariable().
+  int num_new_literals_fixed() const { return num_new_literals_fixed_; }
+
  private:
   bool ProbeOneVariableInternal(BooleanVariable b);
 
@@ -98,6 +103,7 @@ class Prober {
   int num_new_holes_ = 0;
   int num_new_binary_ = 0;
   int num_new_integer_bounds_ = 0;
+  int num_new_literals_fixed_ = 0;
 
   // Logger.
   SolverLogger* logger_;

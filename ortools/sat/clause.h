@@ -51,10 +51,10 @@ namespace sat {
 // indirection.
 class SatClause {
  public:
-  // Creates a sat clause. There must be at least 2 literals. Smaller clause are
-  // treated separatly and never constructed. In practice, we do use
-  // BinaryImplicationGraph for the clause of size 2, so this is mainly used for
-  // size at least 3.
+  // Creates a sat clause. There must be at least 2 literals.
+  // Clause with one literal fix variable directly and are never constructed.
+  // Note that in practice, we use BinaryImplicationGraph for the clause of size
+  // 2, so this is used for size at least 3.
   static SatClause* Create(absl::Span<const Literal> literals);
 
   // Non-sized delete because this is a tail-padded class.
@@ -357,9 +357,7 @@ class LiteralWatchers : public SatPropagator {
   // pointers. We currently do not use std::unique_ptr<SatClause> because it
   // can't be used with some STL algorithms like std::partition.
   //
-  // Note that the unit clauses are not kept here and if the parameter
-  // treat_binary_clauses_separately is true, the binary clause are not kept
-  // here either.
+  // Note that the unit clauses and binary clause are not kept here.
   std::vector<SatClause*> clauses_;
 
   int to_minimize_index_ = 0;

@@ -30,6 +30,7 @@
 #include "ortools/sat/pseudo_costs.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/synchronization.h"
 
 namespace operations_research {
 namespace sat {
