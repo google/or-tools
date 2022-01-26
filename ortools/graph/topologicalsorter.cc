@@ -109,7 +109,7 @@ bool DenseIntTopologicalSorterTpl<stable_sort>::GetNext(
             << " available.  This graph is cyclic! Use ExtractCycle() for"
             << " more information.";
     *cyclic = true;
-    if (output_cycle_nodes != NULL) {
+    if (output_cycle_nodes != nullptr) {
       ExtractCycle(output_cycle_nodes);
     }
     return false;

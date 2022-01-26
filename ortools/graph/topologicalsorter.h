@@ -175,7 +175,7 @@ class DenseIntTopologicalSorterTpl {
   // and "output_cycle_nodes" isn't NULL, it will require an additional
   // O(number of edges + number of nodes in the graph) time.
   bool GetNext(int* next_node_index, bool* cyclic,
-               std::vector<int>* output_cycle_nodes = NULL);
+               std::vector<int>* output_cycle_nodes = nullptr);
 
   int GetCurrentFringeSize() {
     StartTraversal();
