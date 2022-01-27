@@ -34,9 +34,11 @@ cc_library(
     hdrs = [
         "basictypes.h",
         "commandlineflags.h",
+        "init_google.h",
         "integral_types.h",
         "log_severity.h",
         "logging.h",
+        "logging_flags.h",
         "logging_export.h",
         "logging_utilities.h",
         "macros.h",
