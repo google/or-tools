@@ -235,56 +235,53 @@ using Google.OrTools.ConstraintSolver;
 /// <summary>
 ///   This is a sample using the routing library .Net wrapper.
 /// </summary>
-public class SimpleRoutingProgram
-{
-    public static void Main(String[] args)
-    {
-        // Instantiate the data problem.
-        const int numLocation = 5;
-        const int numVehicles = 1;
-        const int depot = 0;
+public class SimpleRoutingProgram {
+  public static void Main(String[] args) {
+    // Instantiate the data problem.
+    const int numLocation = 5;
+    const int numVehicles = 1;
+    const int depot = 0;
 
-        // Create Routing Index Manager
-        RoutingIndexManager manager = new RoutingIndexManager(numLocation, numVehicles, depot);
+    // Create Routing Index Manager
+    RoutingIndexManager manager = new RoutingIndexManager(numLocation, numVehicles, depot);
 
-        // Create Routing Model.
-        RoutingModel routing = new RoutingModel(manager);
+    // Create Routing Model.
+    RoutingModel routing = new RoutingModel(manager);
 
-        // Create and register a transit callback.
-        int transitCallbackIndex = routing.RegisterTransitCallback((long fromIndex, long toIndex) => {
-            // Convert from routing variable Index to distance matrix NodeIndex.
-            var fromNode = manager.IndexToNode(fromIndex);
-            var toNode = manager.IndexToNode(toIndex);
-            return Math.Abs(toNode - fromNode);
-        });
+    // Create and register a transit callback.
+    int transitCallbackIndex = routing.RegisterTransitCallback((long fromIndex, long toIndex) => {
+      // Convert from routing variable Index to distance matrix NodeIndex.
+      var fromNode = manager.IndexToNode(fromIndex);
+      var toNode = manager.IndexToNode(toIndex);
+      return Math.Abs(toNode - fromNode);
+    });
 
-        // Define cost of each arc.
-        routing.SetArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
+    // Define cost of each arc.
+    routing.SetArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
 
-        // Setting first solution heuristic.
-        RoutingSearchParameters searchParameters =
-            operations_research_constraint_solver.DefaultRoutingSearchParameters();
-        searchParameters.FirstSolutionStrategy = FirstSolutionStrategy.Types.Value.PathCheapestArc;
+    // Setting first solution heuristic.
+    RoutingSearchParameters searchParameters =
+        operations_research_constraint_solver.DefaultRoutingSearchParameters();
+    searchParameters.FirstSolutionStrategy = FirstSolutionStrategy.Types.Value.PathCheapestArc;
 
-        // Solve the problem.
-        Assignment solution = routing.SolveWithParameters(searchParameters);
+    // Solve the problem.
+    Assignment solution = routing.SolveWithParameters(searchParameters);
 
-        // Print solution on console.
-        Console.WriteLine("Objective: {0}", solution.ObjectiveValue());
-        // Inspect solution.
-        long index = routing.Start(0);
-        Console.WriteLine("Route for Vehicle 0:");
-        long route_distance = 0;
-        while (routing.IsEnd(index) == false)
-        {
-            Console.Write("{0} -> ", manager.IndexToNode((int)index));
-            long previousIndex = index;
-            index = solution.Value(routing.NextVar(index));
-            route_distance += routing.GetArcCostForVehicle(previousIndex, index, 0);
-        }
-        Console.WriteLine("{0}", manager.IndexToNode(index));
-        Console.WriteLine("Distance of the route: {0}m", route_distance);
+    // Print solution on console.
+    Console.WriteLine("Objective: {0}", solution.ObjectiveValue());
+    // Inspect solution.
+    long index = routing.Start(0);
+    Console.WriteLine("Route for Vehicle 0:");
+    long route_distance = 0;
+    while (routing.IsEnd(index) == false) {
+      Console.Write("{0} -> ", manager.IndexToNode((int)index));
+      long previousIndex = index;
+      index = solution.Value(routing.NextVar(index));
+      route_distance += routing.GetArcCostForVehicle(previousIndex, index, 0);
     }
+    Console.WriteLine("{0}", manager.IndexToNode(index));
+    Console.WriteLine("Distance of the route: {0}m", route_distance);
+  }
 }
 ```
 
