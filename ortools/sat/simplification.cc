@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,6 +14,7 @@
 #include "ortools/sat/simplification.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <limits>
 #include <set>
 #include <utility>
@@ -22,8 +23,8 @@
 #include "ortools/algorithms/dynamic_partition.h"
 #include "ortools/base/adjustable_priority_queue-inl.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/random.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/base/timer.h"
 #include "ortools/graph/strongly_connected_components.h"
 #include "ortools/sat/probing.h"
@@ -224,7 +225,7 @@ void SatPresolver::AddClauseInternal(std::vector<Literal>* clause) {
   if (drat_proof_handler_ != nullptr) drat_proof_handler_->AddClause(*clause);
 
   DCHECK(std::is_sorted(clause->begin(), clause->end()));
-  DCHECK_GT(clause->size(), 0) << "TODO(fdid): Unsat during presolve?";
+  DCHECK_GT(clause->size(), 0) << "TODO(user): Unsat during presolve?";
   const ClauseIndex ci(clauses_.size());
   clauses_.push_back(std::vector<Literal>());
   clauses_.back().swap(*clause);
@@ -322,27 +323,27 @@ bool SatPresolver::Presolve() {
   return Presolve(can_be_removed);
 }
 
-bool SatPresolver::Presolve(const std::vector<bool>& can_be_removed,
-                            bool log_info) {
-  log_info |= VLOG_IS_ON(1);
-
+bool SatPresolver::Presolve(const std::vector<bool>& can_be_removed) {
   WallTimer timer;
   timer.Start();
-  if (log_info) {
-    int64 num_removable = 0;
+
+  if (logger_->LoggingIsEnabled()) {
+    int64_t num_removable = 0;
     for (const bool b : can_be_removed) {
       if (b) ++num_removable;
     }
-    LOG(INFO) << "num removable Booleans: " << num_removable << " / "
-              << can_be_removed.size();
-    LOG(INFO) << "num trivial clauses: " << num_trivial_clauses_;
+    SOLVER_LOG(logger_,
+               "[SAT presolve] num removable Booleans: ", num_removable, " / ",
+               can_be_removed.size());
+    SOLVER_LOG(logger_,
+               "[SAT presolve] num trivial clauses: ", num_trivial_clauses_);
     DisplayStats(0);
   }
 
   // TODO(user): When a clause is strengthened, add it to a queue so it can
   // be processed again?
   if (!ProcessAllClauses()) return false;
-  if (log_info) DisplayStats(timer.Get());
+  if (logger_->LoggingIsEnabled()) DisplayStats(timer.Get());
 
   if (time_limit_ != nullptr && time_limit_->LimitReached()) return true;
   if (num_inspected_signatures_ + num_inspected_literals_ > 1e9) return true;
@@ -358,12 +359,12 @@ bool SatPresolver::Presolve(const std::vector<bool>& can_be_removed,
     if (time_limit_ != nullptr && time_limit_->LimitReached()) return true;
     if (num_inspected_signatures_ + num_inspected_literals_ > 1e9) return true;
   }
-  if (log_info) DisplayStats(timer.Get());
+  if (logger_->LoggingIsEnabled()) DisplayStats(timer.Get());
 
   // We apply BVA after a pass of the other algorithms.
   if (parameters_.presolve_use_bva()) {
     PresolveWithBva();
-    if (log_info) DisplayStats(timer.Get());
+    if (logger_->LoggingIsEnabled()) DisplayStats(timer.Get());
   }
 
   return true;
@@ -379,7 +380,7 @@ void SatPresolver::PresolveWithBva() {
   }
 }
 
-// We use the same notation as in the article mentionned in the .h
+// We use the same notation as in the article mentioned in the .h
 void SatPresolver::SimpleBva(LiteralIndex l) {
   literal_to_p_size_.resize(literal_to_clauses_.size(), 0);
   DCHECK(std::all_of(literal_to_p_size_.begin(), literal_to_p_size_.end(),
@@ -535,10 +536,10 @@ void SatPresolver::SimpleBva(LiteralIndex l) {
   AddToBvaPriorityQueue(l);
 }
 
-uint64 SatPresolver::ComputeSignatureOfClauseVariables(ClauseIndex ci) {
-  uint64 signature = 0;
+uint64_t SatPresolver::ComputeSignatureOfClauseVariables(ClauseIndex ci) {
+  uint64_t signature = 0;
   for (const Literal l : clauses_[ci]) {
-    signature |= (uint64{1} << (l.Variable().value() % 64));
+    signature |= (uint64_t{1} << (l.Variable().value() % 64));
   }
   DCHECK_EQ(signature == 0, clauses_[ci].empty());
   return signature;
@@ -550,7 +551,7 @@ uint64 SatPresolver::ComputeSignatureOfClauseVariables(ClauseIndex ci) {
 bool SatPresolver::ProcessClauseToSimplifyOthersUsingLiteral(
     ClauseIndex clause_index, Literal lit) {
   const std::vector<Literal>& clause = clauses_[clause_index];
-  const uint64 clause_signature = signatures_[clause_index];
+  const uint64_t clause_signature = signatures_[clause_index];
   LiteralIndex opposite_literal;
 
   // Try to simplify the clauses containing 'lit'. We take advantage of this
@@ -559,7 +560,7 @@ bool SatPresolver::ProcessClauseToSimplifyOthersUsingLiteral(
   bool need_cleaning = false;
   num_inspected_signatures_ += literal_to_clauses_[lit.Index()].size();
   for (const ClauseIndex ci : literal_to_clauses_[lit.Index()]) {
-    const uint64 ci_signature = signatures_[ci];
+    const uint64_t ci_signature = signatures_[ci];
 
     // This allows to check for empty clause without fetching the memory at
     // clause_[ci]. It can have a huge time impact on large problems.
@@ -647,9 +648,9 @@ bool SatPresolver::ProcessClauseToSimplifyOthers(ClauseIndex clause_index) {
     int new_index = 0;
     bool something_removed = false;
     auto& occurrence_list_ref = literal_to_clauses_[lit.NegatedIndex()];
-    const uint64 clause_signature = signatures_[clause_index];
+    const uint64_t clause_signature = signatures_[clause_index];
     for (const ClauseIndex ci : occurrence_list_ref) {
-      const uint64 ci_signature = signatures_[ci];
+      const uint64_t ci_signature = signatures_[ci];
       DCHECK_EQ(ci_signature, ComputeSignatureOfClauseVariables(ci));
       if (ci_signature == 0) continue;
 
@@ -701,7 +702,7 @@ bool SatPresolver::CrossProduct(Literal x) {
   const int s1 = literal_to_clause_sizes_[x.Index()];
   const int s2 = literal_to_clause_sizes_[x.NegatedIndex()];
 
-  // Note that if s1 or s2 is equal to 0, this function will implicitely just
+  // Note that if s1 or s2 is equal to 0, this function will implicitly just
   // fix the variable x.
   if (s1 == 0 && s2 == 0) return false;
 
@@ -920,16 +921,16 @@ void SatPresolver::DisplayStats(double elapsed_seconds) {
       num_simple_definition++;
     }
   }
-  LOG(INFO) << " [" << elapsed_seconds << "s]"
-            << " clauses:" << num_clauses << " literals:" << num_literals
-            << " vars:" << num_vars << " one_side_vars:" << num_one_side
-            << " simple_definition:" << num_simple_definition
-            << " singleton_clauses:" << num_singleton_clauses;
+  SOLVER_LOG(logger_, "[SAT presolve] [", elapsed_seconds, "s]",
+             " clauses:", num_clauses, " literals:", num_literals,
+             " vars:", num_vars, " one_side_vars:", num_one_side,
+             " simple_definition:", num_simple_definition,
+             " singleton_clauses:", num_singleton_clauses);
 }
 
 bool SimplifyClause(const std::vector<Literal>& a, std::vector<Literal>* b,
                     LiteralIndex* opposite_literal,
-                    int64* num_inspected_literals) {
+                    int64_t* num_inspected_literals) {
   if (b->size() < a.size()) return false;
   DCHECK(std::is_sorted(a.begin(), a.end()));
   DCHECK(std::is_sorted(b->begin(), b->end()));
@@ -1089,7 +1090,7 @@ class PropagationGraph {
   // Returns the set of node adjacent to the given one.
   // Interface needed by FindStronglyConnectedComponents(), note that it needs
   // to be const.
-  const std::vector<int32>& operator[](int32 index) const {
+  const std::vector<int32_t>& operator[](int32_t index) const {
     scratchpad_.clear();
     solver_->Backtrack(0);
 
@@ -1118,7 +1119,7 @@ class PropagationGraph {
   }
 
  private:
-  mutable std::vector<int32> scratchpad_;
+  mutable std::vector<int32_t> scratchpad_;
   SatSolver* const solver_;
   const double deterministic_time_limit;
 
@@ -1138,8 +1139,8 @@ void ProbeAndFindEquivalentLiteral(
 
   PropagationGraph graph(
       solver->parameters().presolve_probing_deterministic_time_limit(), solver);
-  const int32 size = solver->NumVariables() * 2;
-  std::vector<std::vector<int32>> scc;
+  const int32_t size = solver->NumVariables() * 2;
+  std::vector<std::vector<int32_t>> scc;
   FindStronglyConnectedComponents(size, graph, &scc);
 
   // We have no guarantee that the cycle of x and not(x) touch the same
@@ -1152,7 +1153,7 @@ void ProbeAndFindEquivalentLiteral(
   //
   // Because of this, we "merge" the cycles.
   MergingPartition partition(size);
-  for (const std::vector<int32>& component : scc) {
+  for (const std::vector<int32_t>& component : scc) {
     if (component.size() > 1) {
       if (mapping->empty()) mapping->resize(size, LiteralIndex(-1));
       const Literal representative((LiteralIndex(component[0])));
@@ -1246,7 +1247,8 @@ void ProbeAndFindEquivalentLiteral(
 SatSolver::Status SolveWithPresolve(std::unique_ptr<SatSolver>* solver,
                                     TimeLimit* time_limit,
                                     std::vector<bool>* solution,
-                                    DratProofHandler* drat_proof_handler) {
+                                    DratProofHandler* drat_proof_handler,
+                                    SolverLogger* logger) {
   // We save the initial parameters.
   const SatParameters parameters = (*solver)->parameters();
   SatPostsolver postsolver((*solver)->NumVariables());
@@ -1260,7 +1262,7 @@ SatSolver::Status SolveWithPresolve(std::unique_ptr<SatSolver>* solver,
   {
     Model* model = (*solver)->model();
     const double dtime = std::min(1.0, time_limit->GetDeterministicTimeLeft());
-    if (!LookForTrivialSatSolution(dtime, model, log_info)) {
+    if (!LookForTrivialSatSolution(dtime, model)) {
       VLOG(1) << "UNSAT during probing.";
       return SatSolver::INFEASIBLE;
     }
@@ -1331,7 +1333,7 @@ SatSolver::Status SolveWithPresolve(std::unique_ptr<SatSolver>* solver,
     }
 
     // TODO(user): Pass the time_limit to the presolver.
-    SatPresolver presolver(&postsolver);
+    SatPresolver presolver(&postsolver, logger);
     presolver.SetParameters(parameters);
     presolver.SetDratProofHandler(drat_proof_handler);
     presolver.SetEquivalentLiteralMapping(equiv_map);
@@ -1347,10 +1349,10 @@ SatSolver::Status SolveWithPresolve(std::unique_ptr<SatSolver>* solver,
 
     (*solver).reset(nullptr);
     std::vector<bool> can_be_removed(presolver.NumVariables(), true);
-    if (!presolver.Presolve(can_be_removed, log_info)) {
+    if (!presolver.Presolve(can_be_removed)) {
       VLOG(1) << "UNSAT during presolve.";
 
-      // This is just here to reset the SatSolver::Solve() satistics.
+      // This is just here to reset the SatSolver::Solve() statistics.
       (*solver) = absl::make_unique<SatSolver>();
       return SatSolver::INFEASIBLE;
     }

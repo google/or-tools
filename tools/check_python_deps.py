@@ -124,7 +124,7 @@ if __name__ == "__main__":
                       google.protobuf.__version__))
 
   # Check if python can load the libraries' modules
-  # this is useful when the library architecture is not compatbile with the
+  # this is useful when the library architecture is not compatible with the
   # python executable, or when the library's dependencies are not available or
   # not compatible.
   from ortools.constraint_solver import _pywrapcp  # pylint: disable=g-import-not-at-top,unused-import

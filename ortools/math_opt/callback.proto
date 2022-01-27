@@ -1,0 +1,190 @@
+// Copyright 2010-2021 Google LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Solver-Callback handling protos:
+// Callback functions allow for a fine-grain control, and ongoing interaction
+// with the solver during the solve process. The overall architecture is that
+// upon solve invocation the user will select what type of interactions to have
+// with the solver, and whenever the solver offers an interaction enabled by the
+// user, return the statistics collected up to that point, and any additional
+// information required by the user. Once done, the callback function must
+// return a message to the solver to continue with the solve process.
+syntax = "proto3";
+
+package operations_research.math_opt;
+
+import "google/protobuf/duration.proto";
+import "ortools/math_opt/solution.proto";
+import "ortools/math_opt/sparse_containers.proto";
+
+// This is the list of supported events.
+enum CallbackEventProto {
+  CALLBACK_EVENT_UNSPECIFIED = 0;
+  // Quick ping from the solver saying “I am still working, and not stuck”.
+  CALLBACK_EVENT_POLLING = 1;
+  // The solver is currently running presolve.
+  CALLBACK_EVENT_PRESOLVE = 2;
+  // The solver is currently running the simplex method.
+  CALLBACK_EVENT_SIMPLEX = 3;
+  // The solver is in the MIP loop (called periodically before starting a new
+  // node). Useful for early termination. Note that this event does not provide
+  // information on LP relaxations nor about new incumbent solutions.
+  CALLBACK_EVENT_MIP = 4;
+  // Called every time a new MIP incumbent is found.
+  CALLBACK_EVENT_MIP_SOLUTION = 5;
+  // Called inside a MIP node. Note that there is no guarantee that the
+  // callback function will be called on every node. That behavior is
+  // solver-dependent.
+  CALLBACK_EVENT_MIP_NODE = 6;
+  // Called in each iterate of an interior point/barrier method.
+  CALLBACK_EVENT_BARRIER = 7;
+  // Called when the solver wants to log a message.
+  CALLBACK_EVENT_MESSAGE = 8;
+}
+
+// The callback function input data.
+// Note that depending on the event, some information might be unavailable.
+message CallbackDataProto {
+  CallbackEventProto event = 1;
+  // if event == CALLBACK_EVENT_MIP_NODE, the primal_solution contains the
+  //    primal solution to the current LP-node relaxation. In some cases, no
+  //    solution will be available (e.g. because LP was infeasible or the solve
+  //    was imprecise).
+  // if event == CALLBACK_EVENT_MIP_SOLUTION, the primal_solution contains the
+  //    newly found primal (integer) feasible solution.
+  // Otherwise, the primal_solution is not available.
+  //
+  // Note that, because of variable filters, it is possible that when a solution
+  // is found, it is empty. The message will be set but left empty in this case,
+  // while it will be unset when no solution is available.
+  //
+  // TODO(b/186740537): change the type to SparseDoubleVectorProto.
+  PrimalSolutionProto primal_solution = 2;
+
+  // If event == CALLBACK_EVENT_MESSAGE, return the messages from the solver.
+  // Each message represents a single output line from the solver, and each
+  // message does not contain any '\n' character in it.
+  repeated string messages = 3;
+
+  // Running time since the `Solve` call.
+  google.protobuf.Duration runtime = 4;
+
+  // Presolve stats. Only available during CALLBACK_EVENT_PRESOLVE.
+  message PresolveStats {
+    optional int64 removed_variables = 1;
+    optional int64 removed_constraints = 2;
+    optional int64 bound_changes = 3;
+    optional int64 coefficient_changes = 4;
+  }
+  PresolveStats presolve_stats = 5;
+
+  // Simplex stats. Only available during CALLBACK_EVENT_SIMPLEX.
+  message SimplexStats {
+    optional int64 iteration_count = 1;
+    optional double objective_value = 2;
+    optional double primal_infeasibility = 3;
+    optional double dual_infeasibility = 4;
+    optional bool is_pertubated = 5;
+  }
+  SimplexStats simplex_stats = 6;
+
+  // Barrier stats. Only available during CALLBACK_EVENT_BARRIER.
+  message BarrierStats {
+    optional int32 iteration_count = 1;
+    optional double primal_objective = 2;
+    optional double dual_objective = 3;
+    optional double complementarity = 4;
+    optional double primal_infeasibility = 5;
+    optional double dual_infeasibility = 6;
+  }
+  BarrierStats barrier_stats = 7;
+
+  // MIP B&B stats. Only available during CALLBACK_EVENT_MIPxxxx events.
+  message MipStats {
+    optional double primal_bound = 1;
+    optional double dual_bound = 2;
+    optional int64 explored_nodes = 3;
+    optional int64 open_nodes = 4;
+    optional int64 simplex_iterations = 5;
+    optional int32 number_of_solutions_found = 6;
+    optional int32 cutting_planes_in_lp = 7;
+  }
+  MipStats mip_stats = 8;
+}
+
+// Return value of a callback function.
+message CallbackResultProto {
+  message GeneratedLinearConstraint {
+    // This message encode linear constraints of the form
+    // lower_bound <= linear_expression <= upper_bound
+    SparseDoubleVectorProto linear_expression = 1;
+    double lower_bound = 2;
+    double upper_bound = 3;
+
+    // Two types of generated linear constraints are supported based on is_lazy:
+    //   * The "lazy constraint" can remove integer points from the feasible
+    //     region and can be added at event CALLBACK_EVENT_MIP_NODE or
+    //     CALLBACK_EVENT_MIP_SOLUTION
+    //   * The "user cut" (on is_lazy=false) strengthens the LP without removing
+    //     integer points. It can only be added at CALLBACK_EVENT_MIP_NODE.
+    bool is_lazy = 4;
+  }
+
+  // Ends the solve early.
+  bool terminate = 1;
+  // TODO(b/172214608): SCIP allows to reject a feasible solution without
+  // providing a cut. This is something we might support at a later stage.
+
+  // Dynamically generated linear constraints to add to the MIP. See
+  // GeneratedLinearConstraint::is_lazy for details.
+  repeated GeneratedLinearConstraint cuts = 4;
+
+  // Note that some solvers (e.g. Gurobi) support partially-defined solutions.
+  // The most common use case is to specify a value for each variable in the
+  // model. If a variable is not present in the primal solution, its value is
+  // taken to be undefined, and is up to the underlying solver to deal with it.
+  // For example, Gurobi will try to solve a Sub-MIP to get a fully feasible
+  // solution if necessary.
+  //
+  // TODO(b/183631989) rename to suggested_solutions.
+  // TODO(b/186740537): change the type to SparseDoubleVectorProto.
+  repeated PrimalSolutionProto suggested_solution = 5;
+}
+
+message CallbackRegistrationProto {
+  // What events you want to get a callback at.
+  // By default, there are no callbacks on any event.
+  repeated CallbackEventProto request_registration = 1;
+
+  // If CALLBACK_EVENT_MIP_SOLUTION is in `request_registration`, then
+  // the returned primal_solution information will be filtered according to
+  // this rule.
+  SparseVectorFilterProto mip_solution_filter = 2;
+
+  // If CALLBCK_EVENT_MIP_NODE is in `request_registration`, then the
+  // returned primal_solution information will be filtered according to this
+  // rule.
+  SparseVectorFilterProto mip_node_filter = 3;
+
+  //////////////////////////////////////////////////////////////////////////////
+  // What might you do in your callback (typically some solver features need
+  // to be disabled before the solve starts to support these features).
+  //////////////////////////////////////////////////////////////////////////////
+
+  // Dynamically add linear constraints that strength the formulation but do not
+  // exclude integer points during CALLBACK_EVENT_MIP_NODE events.
+  bool add_cuts = 4;
+  // Dynamically add linear constraints that exclude integer points during
+  // CALLBACK_EVENT_MIP_NODE and/or CALLBACK_EVENT_MIP_SOLUTION events.
+  bool add_lazy_constraints = 5;
+}

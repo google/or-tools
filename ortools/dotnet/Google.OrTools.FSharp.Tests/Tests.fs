@@ -21,7 +21,7 @@ module Tests =
 
   [<Fact>]
   let ``Linear Solver with GLOP Solver`` () =
-      let svr = Solver.CreateSolver("LinearProgramming", LinearProgramming.GLOP.ToString())
+      let svr = Solver.CreateSolver("GLOP")
 
       // x1, x2 are continuous non-negative variables.
       let x1 = svr.MakeNumVar(Double.NegativeInfinity, Double.PositiveInfinity, "x1")

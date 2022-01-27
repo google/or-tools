@@ -69,7 +69,7 @@ void SolveJobShopExample() {
     }
   }
 
-  // Add conjunctive contraints.
+  // Add conjunctive constraints.
   for (int i = 0; i < jobs.size(); ++i) {
     for (int j = 0; j < jobs[i].size() - 1; ++j) {
       solver.AddConstraint(solver.MakeIntervalVarRelation(
@@ -164,10 +164,15 @@ void SolveJobShopExample() {
       machine_intervals << "Machine " << machine << ": ";
       for (const auto s : collector->ForwardSequence(0, seq)) {
         IntervalVar* t = seq->Interval(s);
-        machine_intervals << "[" << std::setw(2)
-                          << collector->Value(0, t->StartExpr()->Var()) << ", "
-                          << std::setw(2)
-                          << collector->Value(0, t->EndExpr()->Var()) << "] ";
+        machine_intervals << "[(" << std::setw(2)
+                          << collector->solution(0)->Min(t->StartExpr()->Var())
+                          << ", "
+                          << collector->solution(0)->Max(t->StartExpr()->Var())
+                          << "),(" << std::setw(2)
+                          << collector->solution(0)->Min(t->EndExpr()->Var())
+                          << ", "
+                          << collector->solution(0)->Max(t->EndExpr()->Var())
+                          << ")]";
       }
       machine_intervals_list.push_back(machine_intervals.str());
     }

@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,6 +15,8 @@
 
 #include <math.h>
 
+#include <cstdint>
+#include <limits>
 #include <vector>
 
 #include "ortools/bop/bop_solver.h"
@@ -135,9 +137,10 @@ void BuildBooleanProblemWithIntegralConstraints(
   }
   double scaling_factor = 0.0;
   double relative_error = 0.0;
-  GetBestScalingOfDoublesToInt64(coefficients, kint64max, &scaling_factor,
-                                 &relative_error);
-  const int64 gcd = ComputeGcdOfRoundedDoubles(coefficients, scaling_factor);
+  GetBestScalingOfDoublesToInt64(coefficients,
+                                 std::numeric_limits<int64_t>::max(),
+                                 &scaling_factor, &relative_error);
+  const int64_t gcd = ComputeGcdOfRoundedDoubles(coefficients, scaling_factor);
   LinearObjective* const objective = boolean_problem->mutable_objective();
   objective->set_offset(linear_problem.objective_offset() * scaling_factor /
                         gcd);
@@ -147,7 +150,8 @@ void BuildBooleanProblemWithIntegralConstraints(
   objective->set_scaling_factor(1.0 / scaling_factor * gcd);
   for (ColIndex col(0); col < linear_problem.num_variables(); ++col) {
     const Fractional coeff = linear_problem.objective_coefficients()[col];
-    const int64 value = static_cast<int64>(round(coeff * scaling_factor)) / gcd;
+    const int64_t value =
+        static_cast<int64_t>(round(coeff * scaling_factor)) / gcd;
     if (value != 0) {
       objective->add_literals(col.value() + 1);
       objective->add_coefficients(value);
@@ -191,24 +195,24 @@ class IntegralVariable {
                       Fractional upper_bound);
 
   void Clear();
-  void set_offset(int64 offset) { offset_ = offset; }
-  void set_weight(VariableIndex var, int64 weight);
+  void set_offset(int64_t offset) { offset_ = offset; }
+  void set_weight(VariableIndex var, int64_t weight);
 
   int GetNumberOfBooleanVariables() const { return bits_.size(); }
 
   const std::vector<VariableIndex>& bits() const { return bits_; }
-  const std::vector<int64>& weights() const { return weights_; }
-  int64 offset() const { return offset_; }
+  const std::vector<int64_t>& weights() const { return weights_; }
+  int64_t offset() const { return offset_; }
 
   // Returns the value of the integral variable based on the Boolean conversion
   // and the Boolean solution to the problem.
-  int64 GetSolutionValue(const BopSolution& solution) const;
+  int64_t GetSolutionValue(const BopSolution& solution) const;
 
   // Returns the values of the Boolean variables based on the Boolean conversion
   // and the integral value of this variable. This only works for variables that
   // were constructed using BuildFromRange() (for which can_be_reversed_ is
   // true).
-  std::vector<bool> GetBooleanSolutionValues(int64 integral_value) const;
+  std::vector<bool> GetBooleanSolutionValues(int64_t integral_value) const;
 
   std::string DebugString() const;
 
@@ -217,8 +221,8 @@ class IntegralVariable {
   //   sum_i(weights[i] * Value(bits[i])) + offset.
   // Note that weights can be negative to represent negative values.
   std::vector<VariableIndex> bits_;
-  std::vector<int64> weights_;
-  int64 offset_;
+  std::vector<int64_t> weights_;
+  int64_t offset_;
   // True if the values of the boolean variables representing this integral
   // variable can be deduced from the integral variable's value. Namely, this is
   // true for variables built using BuildFromRange() but usually false for
@@ -239,10 +243,10 @@ void IntegralVariable::BuildFromRange(int start_var_index,
   CHECK_NE(-kInfinity, lower_bound);
   CHECK_NE(kInfinity, upper_bound);
 
-  const int64 integral_lower_bound = static_cast<int64>(ceil(lower_bound));
-  const int64 integral_upper_bound = static_cast<int64>(floor(upper_bound));
+  const int64_t integral_lower_bound = static_cast<int64_t>(ceil(lower_bound));
+  const int64_t integral_upper_bound = static_cast<int64_t>(floor(upper_bound));
   offset_ = integral_lower_bound;
-  const int64 delta = integral_upper_bound - integral_lower_bound;
+  const int64_t delta = integral_upper_bound - integral_lower_bound;
   const int num_used_bits = MostSignificantBitPosition64(delta) + 1;
   for (int i = 0; i < num_used_bits; ++i) {
     bits_.push_back(VariableIndex(start_var_index + i));
@@ -257,14 +261,14 @@ void IntegralVariable::Clear() {
   can_be_reversed_ = true;
 }
 
-void IntegralVariable::set_weight(VariableIndex var, int64 weight) {
+void IntegralVariable::set_weight(VariableIndex var, int64_t weight) {
   bits_.push_back(var);
   weights_.push_back(weight);
   can_be_reversed_ = false;
 }
 
-int64 IntegralVariable::GetSolutionValue(const BopSolution& solution) const {
-  int64 value = offset_;
+int64_t IntegralVariable::GetSolutionValue(const BopSolution& solution) const {
+  int64_t value = offset_;
   for (int i = 0; i < bits_.size(); ++i) {
     value += weights_[i] * solution.Value(bits_[i]);
   }
@@ -272,11 +276,11 @@ int64 IntegralVariable::GetSolutionValue(const BopSolution& solution) const {
 }
 
 std::vector<bool> IntegralVariable::GetBooleanSolutionValues(
-    int64 integral_value) const {
+    int64_t integral_value) const {
   if (can_be_reversed_) {
     DCHECK(std::is_sorted(weights_.begin(), weights_.end()));
     std::vector<bool> boolean_values(weights_.size(), false);
-    int64 remaining_value = integral_value - offset_;
+    int64_t remaining_value = integral_value - offset_;
     for (int i = weights_.size() - 1; i >= 0; --i) {
       if (remaining_value >= weights_[i]) {
         boolean_values[i] = true;
@@ -332,8 +336,8 @@ class IntegralProblemConverter {
 
   // Returns the value of a variable of the original problem based on the
   // Boolean conversion and the Boolean solution to the problem.
-  int64 GetSolutionValue(ColIndex global_col,
-                         const BopSolution& solution) const;
+  int64_t GetSolutionValue(ColIndex global_col,
+                           const BopSolution& solution) const;
 
  private:
   // Returns true when the linear_problem_ can be converted into a Boolean
@@ -392,10 +396,10 @@ class IntegralProblemConverter {
   // t is a constraint or the objective.
   // Returns the bound error due to the scaling.
   // The weight is scaled using:
-  //   static_cast<int64>(round(weight * scaling_factor)) / gcd;
+  //   static_cast<int64_t>(round(weight * scaling_factor)) / gcd;
   template <class T>
   double ScaleAndSparsifyWeights(
-      double scaling_factor, int64 gcd,
+      double scaling_factor, int64_t gcd,
       const absl::StrongVector<VariableIndex, Fractional>& dense_weights, T* t);
 
   // Returns true when at least one element is non-zero.
@@ -491,7 +495,7 @@ bool IntegralProblemConverter::ConvertToBooleanProblem(
   return true;
 }
 
-int64 IntegralProblemConverter::GetSolutionValue(
+int64_t IntegralProblemConverter::GetSolutionValue(
     ColIndex global_col, const BopSolution& solution) const {
   if (problem_is_boolean_and_has_only_integral_constraints_) {
     return solution.Value(VariableIndex(global_col.value()));
@@ -606,9 +610,11 @@ void IntegralProblemConverter::ConvertAllConstraints(
         coefficients.push_back(dense_weights[var]);
       }
     }
-    GetBestScalingOfDoublesToInt64(coefficients, kint64max, &scaling_factor,
-                                   &relative_error);
-    const int64 gcd = ComputeGcdOfRoundedDoubles(coefficients, scaling_factor);
+    GetBestScalingOfDoublesToInt64(coefficients,
+                                   std::numeric_limits<int64_t>::max(),
+                                   &scaling_factor, &relative_error);
+    const int64_t gcd =
+        ComputeGcdOfRoundedDoubles(coefficients, scaling_factor);
     max_relative_error = std::max(relative_error, max_relative_error);
     max_scaling_factor = std::max(scaling_factor / gcd, max_scaling_factor);
 
@@ -624,14 +630,16 @@ void IntegralProblemConverter::ConvertAllConstraints(
       const Fractional offset_lower_bound = lower_bound - offset;
       const double offset_scaled_lower_bound =
           round(offset_lower_bound * scaling_factor - bound_error);
-      if (offset_scaled_lower_bound >= static_cast<double>(kint64max)) {
+      if (offset_scaled_lower_bound >=
+          static_cast<double>(std::numeric_limits<int64_t>::max())) {
         LOG(WARNING) << "A constraint is trivially unsatisfiable.";
         return;
       }
-      if (offset_scaled_lower_bound > -static_cast<double>(kint64max)) {
+      if (offset_scaled_lower_bound >
+          -static_cast<double>(std::numeric_limits<int64_t>::max())) {
         // Otherwise, the constraint is not needed.
         constraint->set_lower_bound(
-            static_cast<int64>(offset_scaled_lower_bound) / gcd);
+            static_cast<int64_t>(offset_scaled_lower_bound) / gcd);
       }
     }
     const Fractional upper_bound =
@@ -640,14 +648,16 @@ void IntegralProblemConverter::ConvertAllConstraints(
       const Fractional offset_upper_bound = upper_bound - offset;
       const double offset_scaled_upper_bound =
           round(offset_upper_bound * scaling_factor + bound_error);
-      if (offset_scaled_upper_bound <= -static_cast<double>(kint64max)) {
+      if (offset_scaled_upper_bound <=
+          -static_cast<double>(std::numeric_limits<int64_t>::max())) {
         LOG(WARNING) << "A constraint is trivially unsatisfiable.";
         return;
       }
-      if (offset_scaled_upper_bound < static_cast<double>(kint64max)) {
+      if (offset_scaled_upper_bound <
+          static_cast<double>(std::numeric_limits<int64_t>::max())) {
         // Otherwise, the constraint is not needed.
         constraint->set_upper_bound(
-            static_cast<int64>(offset_scaled_upper_bound) / gcd);
+            static_cast<int64_t>(offset_scaled_upper_bound) / gcd);
       }
     }
   }
@@ -676,9 +686,10 @@ void IntegralProblemConverter::ConvertObjective(
   double scaling_factor = 0.0;
   double max_relative_error = 0.0;
   double relative_error = 0.0;
-  GetBestScalingOfDoublesToInt64(coefficients, kint64max, &scaling_factor,
-                                 &relative_error);
-  const int64 gcd = ComputeGcdOfRoundedDoubles(coefficients, scaling_factor);
+  GetBestScalingOfDoublesToInt64(coefficients,
+                                 std::numeric_limits<int64_t>::max(),
+                                 &scaling_factor, &relative_error);
+  const int64_t gcd = ComputeGcdOfRoundedDoubles(coefficients, scaling_factor);
   max_relative_error = std::max(relative_error, max_relative_error);
   VLOG(1) << "objective relative error: " << relative_error;
   VLOG(1) << "objective scaling factor: " << scaling_factor / gcd;
@@ -726,11 +737,11 @@ void IntegralProblemConverter::AddVariableConstraints(
           constraint->add_coefficients(integral_var.weights()[i]);
         }
         if (lower_bound != -kInfinity) {
-          constraint->set_lower_bound(static_cast<int64>(ceil(lower_bound)) -
+          constraint->set_lower_bound(static_cast<int64_t>(ceil(lower_bound)) -
                                       integral_var.offset());
         }
         if (upper_bound != kInfinity) {
-          constraint->set_upper_bound(static_cast<int64>(floor(upper_bound)) -
+          constraint->set_upper_bound(static_cast<int64_t>(floor(upper_bound)) -
                                       integral_var.offset());
         }
       }
@@ -795,7 +806,7 @@ bool IntegralProblemConverter::CreateVariableUsingConstraint(
   absl::StrongVector<VariableIndex, Fractional> dense_weights(
       num_boolean_variables_, 0.0);
   Fractional scale = 1.0;
-  int64 variable_offset = 0;
+  int64_t variable_offset = 0;
   for (const SparseColumn::Entry constraint_entry :
        transpose.column(RowToColIndex(constraint))) {
     const ColIndex col = RowToColIndex(constraint_entry.row());
@@ -826,7 +837,7 @@ bool IntegralProblemConverter::CreateVariableUsingConstraint(
   if (!IsIntegerWithinTolerance(offset)) {
     return false;
   }
-  integral_var->set_offset(static_cast<int64>(offset));
+  integral_var->set_offset(static_cast<int64_t>(offset));
 
   for (VariableIndex var(0); var < dense_weights.size(); ++var) {
     if (dense_weights[var] != 0.0) {
@@ -834,7 +845,7 @@ bool IntegralProblemConverter::CreateVariableUsingConstraint(
       if (!IsIntegerWithinTolerance(weight)) {
         return false;
       }
-      integral_var->set_weight(var, static_cast<int64>(weight));
+      integral_var->set_weight(var, static_cast<int64_t>(weight));
     }
   }
 
@@ -869,7 +880,7 @@ Fractional IntegralProblemConverter::AddWeightedIntegralVariable(
 
 template <class T>
 double IntegralProblemConverter::ScaleAndSparsifyWeights(
-    double scaling_factor, int64 gcd,
+    double scaling_factor, int64_t gcd,
     const absl::StrongVector<VariableIndex, Fractional>& dense_weights, T* t) {
   CHECK(nullptr != t);
 
@@ -879,7 +890,7 @@ double IntegralProblemConverter::ScaleAndSparsifyWeights(
       const double scaled_weight = dense_weights[var] * scaling_factor;
       bound_error += fabs(round(scaled_weight) - scaled_weight);
       t->add_literals(var.value() + 1);
-      t->add_coefficients(static_cast<int64>(round(scaled_weight)) / gcd);
+      t->add_coefficients(static_cast<int64_t>(round(scaled_weight)) / gcd);
     }
   }
 
@@ -979,7 +990,7 @@ BopSolveStatus InternalSolve(const LinearProgram& linear_problem,
 
     *objective_value = linear_problem.objective_offset();
     for (ColIndex col(0); col < linear_problem.num_variables(); ++col) {
-      const int64 value = converter.GetSolutionValue(col, solution);
+      const int64_t value = converter.GetSolutionValue(col, solution);
       (*variable_values)[col] = value;
       *objective_value += value * linear_problem.objective_coefficients()[col];
     }

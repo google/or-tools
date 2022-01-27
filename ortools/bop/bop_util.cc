@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,6 +13,7 @@
 
 #include "ortools/bop/bop_util.h"
 
+#include <limits>
 #include <vector>
 
 #include "ortools/base/basictypes.h"
@@ -64,12 +65,12 @@ bool InternalLoadStateProblemToSatSolver(const ProblemState& problem_state,
   // bound constraint leads to an UNSAT problem, it means the current solution
   // is proved optimal (if the solution is feasible, else the problem is proved
   // infeasible).
-  if (!AddObjectiveConstraint(problem_state.original_problem(),
-                              problem_state.lower_bound() != kint64min,
-                              sat::Coefficient(problem_state.lower_bound()),
-                              problem_state.upper_bound() != kint64max,
-                              sat::Coefficient(problem_state.upper_bound() - 1),
-                              sat_solver)) {
+  if (!AddObjectiveConstraint(
+          problem_state.original_problem(),
+          problem_state.lower_bound() != std::numeric_limits<int64_t>::min(),
+          sat::Coefficient(problem_state.lower_bound()),
+          problem_state.upper_bound() != std::numeric_limits<int64_t>::max(),
+          sat::Coefficient(problem_state.upper_bound() - 1), sat_solver)) {
     return false;
   }
 

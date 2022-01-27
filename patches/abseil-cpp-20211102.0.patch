@@ -1,0 +1,13 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 750a475..16ceca8 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -175,8 +175,6 @@ endif()
+ add_subdirectory(absl)
+ 
+ if(ABSL_ENABLE_INSTALL)
+-  
+-
+   # install as a subdirectory only
+   install(EXPORT ${PROJECT_NAME}Targets
+     NAMESPACE absl::

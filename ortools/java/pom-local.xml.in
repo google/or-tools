@@ -48,6 +48,17 @@
   <url>http://github.com/google/or-tools/issues</url>
 </issueManagement>
 
+<distributionManagement>
+  <snapshotRepository>
+    <id>ossrh</id>
+    <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+  </snapshotRepository>
+  <repository>
+    <id>ossrh</id>
+    <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+  </repository>
+</distributionManagement>
+
 <properties>
   <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   <maven.compiler.source>1.8</maven.compiler.source>
@@ -65,12 +76,12 @@
   <dependency>
     <groupId>net.java.dev.jna</groupId>
     <artifactId>jna-platform</artifactId>
-    <version>5.5.0</version>
+    <version>5.8.0</version>
   </dependency>
   <dependency>
     <groupId>com.google.protobuf</groupId>
     <artifactId>protobuf-java</artifactId>
-    <version>3.14.0</version>
+    <version>3.19.1</version>
   </dependency>
 </dependencies>
 
@@ -108,6 +119,60 @@
         </execution>
       </executions>
     </plugin>
+    <plugin>
+      <groupId>org.apache.maven.plugins</groupId>
+      <artifactId>maven-gpg-plugin</artifactId>
+      <version>1.6</version>
+      <executions>
+        <execution>
+          <id>sign-artifacts</id>
+          <phase>verify</phase>
+          <goals>
+            <goal>sign</goal>
+          </goals>
+          <configuration>
+            <gpgArguments>
+              @GPG_ARGS@
+            </gpgArguments>
+          </configuration>
+        </execution>
+      </executions>
+    </plugin>
   </plugins>
 </build>
+
+<profiles>
+  <profile>
+    <id>build-fat-jar</id>
+    <activation>
+      <property>
+        <name>fatjar</name>
+        <value>true</value>
+      </property>
+    </activation>
+    <build>
+      <plugins>
+        <plugin>
+          <artifactId>maven-assembly-plugin</artifactId>
+          <configuration>
+            <descriptorRefs>
+              <descriptorRef>jar-with-dependencies</descriptorRef>
+            </descriptorRefs>
+            <appendAssemblyId>false</appendAssemblyId>
+          </configuration>
+          <executions>
+            <execution>
+              <id>make-assembly</id> <!-- this is used for inheritance merges -->
+              <phase>package</phase> <!-- bind to the packaging phase -->
+              <goals>
+                <goal>single</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </build>
+  </profile>
+</profiles>
+
 </project>

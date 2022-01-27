@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -20,7 +20,7 @@
 // * Consecutive '\n' result in empty lines being produced.
 // * If not empty, the string after the last '\n' is produced as the last line.
 // * Options are available to keep the trailing '\n' for each line, to remove
-//   carriage-return chararters ('\r'), and to remove blank lines.
+//   carriage-return characters ('\r'), and to remove blank lines.
 //
 #ifndef OR_TOOLS_UTIL_FILELINEITER_H_
 #define OR_TOOLS_UTIL_FILELINEITER_H_
@@ -106,7 +106,7 @@ class FileLineIterator {
   static constexpr int kBufferSize = 5 * 1024;
   char buffer_[kBufferSize];
   int next_position_after_eol_;
-  int64 buffer_size_;
+  int64_t buffer_size_;
   File* file_;
   std::string line_;
   const int options_;
@@ -115,7 +115,10 @@ class FileLineIterator {
 class FileLines {
  public:
   FileLines(const std::string& filename, int options) : options_(options) {
-    if (!file::Open(filename, "r", &file_, file::Defaults()).ok()) return;
+    if (!file::Open(filename, "r", &file_, file::Defaults()).ok()) {
+      LOG(WARNING) << "Could not open: " << filename;
+      return;
+    }
   }
 
   explicit FileLines(const std::string& filename)

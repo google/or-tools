@@ -3,6 +3,7 @@
 
 # Integer arithmetic recipes for the CP-SAT solver.
 
+https://developers.google.com/optimization/
 
 <!--ts-->
    * [Integer arithmetic recipes for the CP-SAT solver.](#integer-arithmetic-recipes-for-the-cp-sat-solver)
@@ -33,7 +34,6 @@
          * [Java code](#java-code-2)
          * [C# code](#c-code-5)
 
-<!-- Added by: lperron, at: Tue Nov  3 17:33:08 CET 2020 -->
 
 <!--te-->
 
@@ -191,8 +191,8 @@ void RabbitsAndPheasantsSat() {
   const IntVar pheasants =
       cp_model.NewIntVar(all_animals).WithName("pheasants");
 
-  cp_model.AddEquality(LinearExpr::Sum({rabbits, pheasants}), 20);
-  cp_model.AddEquality(LinearExpr::ScalProd({rabbits, pheasants}, {4, 2}), 56);
+  cp_model.AddEquality(rabbits + pheasants, 20);
+  cp_model.AddEquality(4 * rabbits + 2 * pheasants, 56);
 
   const CpSolverResponse response = Solve(cp_model.Build());
 
@@ -392,10 +392,12 @@ def earliness_tardiness_cost_sample_sat():
 
   # Force the solver to follow the decision strategy exactly.
   solver.parameters.search_branching = cp_model.FIXED_SEARCH
+  # Enumerate all solutions.
+  solver.parameters.enumerate_all_solutions = True
 
   # Search and print out all solutions.
   solution_printer = VarArraySolutionPrinter([x, expr])
-  solver.SearchForAllSolutions(model, solution_printer)
+  solver.Solve(model, solution_printer)
 
 
 earliness_tardiness_cost_sample_sat()
@@ -404,6 +406,8 @@ earliness_tardiness_cost_sample_sat()
 ### C++ code
 
 ```cpp
+#include <cstdint>
+
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -412,10 +416,10 @@ namespace operations_research {
 namespace sat {
 
 void EarlinessTardinessCostSampleSat() {
-  const int64 kEarlinessDate = 5;
-  const int64 kEarlinessCost = 8;
-  const int64 kLatenessDate = 15;
-  const int64 kLatenessCost = 12;
+  const int64_t kEarlinessDate = 5;
+  const int64_t kEarlinessCost = 8;
+  const int64_t kLatenessDate = 15;
+  const int64_t kLatenessCost = 12;
 
   // Create the CP-SAT model.
   CpModelBuilder cp_model;
@@ -429,24 +433,12 @@ void EarlinessTardinessCostSampleSat() {
   //   \______/
   //   ed    ld
   //
-  const int64 kLargeConstant = 1000;
+  const int64_t kLargeConstant = 1000;
   const IntVar expr = cp_model.NewIntVar({0, kLargeConstant});
 
-  // First segment.
-  const IntVar s1 = cp_model.NewIntVar({-kLargeConstant, kLargeConstant});
-  cp_model.AddEquality(s1, LinearExpr::ScalProd({x}, {-kEarlinessCost})
-                               .AddConstant(kEarlinessCost * kEarlinessDate));
-
-  // Second segment.
-  const IntVar s2 = cp_model.NewConstant(0);
-
-  // Third segment.
-  const IntVar s3 = cp_model.NewIntVar({-kLargeConstant, kLargeConstant});
-  cp_model.AddEquality(s3, LinearExpr::ScalProd({x}, {kLatenessCost})
-                               .AddConstant(-kLatenessCost * kLatenessDate));
-
-  // Link together expr and x through s1, s2, and s3.
-  cp_model.AddMaxEquality(expr, {s1, s2, s3});
+  // Link together expr and x through the 3 segments.
+  cp_model.AddMaxEquality(expr, {(kEarlinessDate - x) * kEarlinessCost, 0,
+                                 (x - kLatenessDate) * kLatenessCost});
 
   // Search for x values in increasing order.
   cp_model.AddDecisionStrategy({x}, DecisionStrategyProto::CHOOSE_FIRST,
@@ -542,9 +534,11 @@ public class EarlinessTardinessCostSampleSat {
 
     // Force the solver to follow the decision strategy exactly.
     solver.getParameters().setSearchBranching(SatParameters.SearchBranching.FIXED_SEARCH);
+    // Tell the solver to enumerate all solutions.
+    solver.getParameters().setEnumerateAllSolutions(true);
 
     // Solve the problem with the printer callback.
-    solver.searchAllSolutions(
+    solver.solve(
         model,
         new CpSolverSolutionCallback() {
           public CpSolverSolutionCallback init(IntVar[] variables) {
@@ -641,10 +635,11 @@ public class EarlinessTardinessCostSampleSat
         CpSolver solver = new CpSolver();
 
         // Force solver to follow the decision strategy exactly.
-        solver.StringParameters = "search_branching:FIXED_SEARCH";
+        // Tell the solver to search for all solutions.
+        solver.StringParameters = "search_branching:FIXED_SEARCH, enumerate_all_solutions:true";
 
         VarArraySolutionPrinter cb = new VarArraySolutionPrinter(new IntVar[] { x, expr });
-        solver.SearchAllSolutions(model, cb);
+        solver.Solve(model, cb);
     }
 }
 ```
@@ -753,10 +748,12 @@ def step_function_sample_sat():
 
   # Force the solver to follow the decision strategy exactly.
   solver.parameters.search_branching = cp_model.FIXED_SEARCH
+  # Enumerate all solutions.
+  solver.parameters.enumerate_all_solutions = True
 
   # Search and print out all solutions.
   solution_printer = VarArraySolutionPrinter([x, expr])
-  solver.SearchForAllSolutions(model, solution_printer)
+  solver.Solve(model, solution_printer)
 
 
 step_function_sample_sat()
@@ -908,9 +905,11 @@ public class StepFunctionSampleSat {
 
     // Force the solver to follow the decision strategy exactly.
     solver.getParameters().setSearchBranching(SatParameters.SearchBranching.FIXED_SEARCH);
+    // Tell the solver to enumerate all solutions.
+    solver.getParameters().setEnumerateAllSolutions(true);
 
     // Solve the problem with the printer callback.
-    solver.searchAllSolutions(
+    solver.solve(
         model,
         new CpSolverSolutionCallback() {
           public CpSolverSolutionCallback init(IntVar[] variables) {
@@ -1011,10 +1010,11 @@ public class StepFunctionSampleSat
         CpSolver solver = new CpSolver();
 
         // Force solver to follow the decision strategy exactly.
-        solver.StringParameters = "search_branching:FIXED_SEARCH";
+        // Tells the solver to enumerate all solutions.
+        solver.StringParameters = "search_branching:FIXED_SEARCH, enumerate_all_solutions:true";
 
         VarArraySolutionPrinter cb = new VarArraySolutionPrinter(new IntVar[] { x, expr });
-        solver.SearchAllSolutions(model, cb);
+        solver.Solve(model, cb);
     }
 }
 ```

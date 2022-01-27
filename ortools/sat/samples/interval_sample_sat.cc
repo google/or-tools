@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,18 +19,37 @@ namespace sat {
 void IntervalSampleSat() {
   CpModelBuilder cp_model;
   const int kHorizon = 100;
-
   const Domain horizon(0, kHorizon);
-  const IntVar start_var = cp_model.NewIntVar(horizon).WithName("start");
-  const IntVar duration_var = cp_model.NewConstant(10);
-  const IntVar end_var = cp_model.NewIntVar(horizon).WithName("end");
+
+  // An interval can be created from three affine expressions.
+  const IntVar x = cp_model.NewIntVar(horizon).WithName("x");
+  const IntVar y = cp_model.NewIntVar({2, 4}).WithName("y");
+  const IntVar z = cp_model.NewIntVar(horizon).WithName("z");
 
   const IntervalVar interval_var =
-      cp_model.NewIntervalVar(start_var, duration_var, end_var)
-          .WithName("interval");
-  LOG(INFO) << "start_var = " << start_var
-            << ", duration_var = " << duration_var << ", end_var = " << end_var
+      cp_model.NewIntervalVar(x, y, z + 2).WithName("interval");
+  LOG(INFO) << "start = " << interval_var.StartExpr()
+            << ", size = " << interval_var.SizeExpr()
+            << ", end = " << interval_var.EndExpr()
             << ", interval_var = " << interval_var;
+
+  // If the size is fixed, a simpler version uses the start expression and the
+  // size.
+  const IntervalVar fixed_size_interval_var =
+      cp_model.NewFixedSizeIntervalVar(x, 10).WithName(
+          "fixed_size_interval_var");
+  LOG(INFO) << "start = " << fixed_size_interval_var.StartExpr()
+            << ", size = " << fixed_size_interval_var.SizeExpr()
+            << ", end = " << fixed_size_interval_var.EndExpr()
+            << ", fixed_size_interval_var = " << fixed_size_interval_var;
+
+  // A fixed interval can be created using the same API.
+  const IntervalVar fixed_interval =
+      cp_model.NewFixedSizeIntervalVar(5, 10).WithName("fixed_interval");
+  LOG(INFO) << "start = " << fixed_interval.StartExpr()
+            << ", size = " << fixed_interval.SizeExpr()
+            << ", end = " << fixed_interval.EndExpr()
+            << ", fixed_interval = " << fixed_interval;
 }
 
 }  // namespace sat

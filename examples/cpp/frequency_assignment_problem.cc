@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -47,10 +47,13 @@
 //
 
 #include <algorithm>
+#include <cstdint>
 #include <map>
 #include <utility>
 #include <vector>
 
+#include "absl/flags/parse.h"
+#include "absl/flags/usage.h"
 #include "examples/cpp/fap_model_printer.h"
 #include "examples/cpp/fap_parser.h"
 #include "examples/cpp/fap_utilities.h"
@@ -330,12 +333,13 @@ bool ConstraintImpactComparator(FapConstraint constraint1,
   return (constraint1.impact > constraint2.impact);
 }
 
-int64 ValueEvaluator(
-    absl::flat_hash_map<int64, std::pair<int64, int64> >* value_evaluator_map,
-    int64 variable_index, int64 value) {
+int64_t ValueEvaluator(
+    absl::flat_hash_map<int64_t, std::pair<int64_t, int64_t>>*
+        value_evaluator_map,
+    int64_t variable_index, int64_t value) {
   CHECK(value_evaluator_map != nullptr);
   // Evaluate the choice. Smaller ranking denotes a better choice.
-  int64 ranking = -1;
+  int64_t ranking = -1;
   for (const auto& it : *value_evaluator_map) {
     if ((it.first != variable_index) && (it.second.first == value)) {
       ranking = -2;
@@ -344,12 +348,12 @@ int64 ValueEvaluator(
   }
 
   // Update the history of assigned values and their rankings of each variable.
-  absl::flat_hash_map<int64, std::pair<int64, int64> >::iterator it;
-  int64 new_value = value;
-  int64 new_ranking = ranking;
+  absl::flat_hash_map<int64_t, std::pair<int64_t, int64_t>>::iterator it;
+  int64_t new_value = value;
+  int64_t new_ranking = ranking;
   if ((it = value_evaluator_map->find(variable_index)) !=
       value_evaluator_map->end()) {
-    std::pair<int64, int64> existing_value_ranking = it->second;
+    std::pair<int64_t, int64_t> existing_value_ranking = it->second;
     // Replace only if the current choice for this variable has smaller
     // ranking or same ranking but smaller value of the existing choice.
     if (!(existing_value_ranking.second > ranking ||
@@ -359,7 +363,7 @@ int64 ValueEvaluator(
       new_ranking = existing_value_ranking.second;
     }
   }
-  std::pair<int64, int64> new_value_ranking =
+  std::pair<int64_t, int64_t> new_value_ranking =
       std::make_pair(new_value, new_ranking);
   gtl::InsertOrUpdate(value_evaluator_map, variable_index, new_value_ranking);
 
@@ -368,12 +372,12 @@ int64 ValueEvaluator(
 
 // The variables which participate in more constraints and have the
 // smaller domain should be in higher priority for assignment.
-int64 VariableEvaluator(const std::vector<int>& key_from_index,
-                        const std::map<int, FapVariable>& data_variables,
-                        int64 variable_index) {
+int64_t VariableEvaluator(const std::vector<int>& key_from_index,
+                          const std::map<int, FapVariable>& data_variables,
+                          int64_t variable_index) {
   FapVariable variable =
       gtl::FindOrDie(data_variables, key_from_index[variable_index]);
-  int64 result = -(variable.degree * 100 / variable.domain_size);
+  int64_t result = -(variable.degree * 100 / variable.domain_size);
   return result;
 }
 
@@ -489,8 +493,8 @@ void CreateAdditionalMonitors(OptimizeVar* const objective, Solver* solver,
   if (absl::GetFlag(FLAGS_time_limit_in_ms) != 0) {
     LOG(INFO) << "Adding time limit of "
               << absl::GetFlag(FLAGS_time_limit_in_ms) << " ms.";
-    SearchLimit* const limit = solver->MakeLimit(
-        absl::GetFlag(FLAGS_time_limit_in_ms), kint64max, kint64max, kint64max);
+    SearchLimit* const limit = solver->MakeTimeLimit(
+        absl::Milliseconds(absl::GetFlag(FLAGS_time_limit_in_ms)));
     monitors->push_back(limit);
   }
 
@@ -581,11 +585,11 @@ void HardFapSolver(const std::map<int, FapVariable>& data_variables,
   ChooseVariableStrategy(&variable_strategy);
   // Choose the value selection strategy.
   DecisionBuilder* db;
-  absl::flat_hash_map<int64, std::pair<int64, int64> > history;
+  absl::flat_hash_map<int64_t, std::pair<int64_t, int64_t>> history;
   if (absl::GetFlag(FLAGS_value_evaluator) == "value_evaluator") {
     LOG(INFO) << "Using ValueEvaluator for value selection strategy.";
-    Solver::IndexEvaluator2 index_evaluator2 = [&history](int64 var,
-                                                          int64 value) {
+    Solver::IndexEvaluator2 index_evaluator2 = [&history](int64_t var,
+                                                          int64_t value) {
       return ValueEvaluator(&history, var, value);
     };
     LOG(INFO) << "Using ValueEvaluator for value selection strategy.";
@@ -609,9 +613,9 @@ void HardFapSolver(const std::map<int, FapVariable>& data_variables,
 
   // Solve.
   LOG(INFO) << "Solving...";
-  const int64 time1 = solver.wall_time();
+  const int64_t time1 = solver.wall_time();
   solver.Solve(final_db, monitors);
-  const int64 time2 = solver.wall_time();
+  const int64_t time2 = solver.wall_time();
 
   // Display Time.
   if (absl::GetFlag(FLAGS_display_time)) {
@@ -783,7 +787,7 @@ int SoftFapSolver(const std::map<int, FapVariable>& data_variables,
     LOG(INFO) << "Using VariableEvaluator for variable selection strategy and "
                  "Solver::ASSIGN_MIN_VALUE for value selection strategy.";
     Solver::IndexEvaluator1 var_evaluator = [&key_from_index,
-                                             &data_variables](int64 index) {
+                                             &data_variables](int64_t index) {
       return VariableEvaluator(key_from_index, data_variables, index);
     };
     db = solver.MakePhase(variables, var_evaluator, Solver::ASSIGN_MIN_VALUE);
@@ -807,9 +811,9 @@ int SoftFapSolver(const std::map<int, FapVariable>& data_variables,
 
   // Solve.
   LOG(INFO) << "Solving...";
-  const int64 time1 = solver.wall_time();
+  const int64_t time1 = solver.wall_time();
   solver.Solve(final_db, monitors);
-  const int64 time2 = solver.wall_time();
+  const int64_t time2 = solver.wall_time();
 
   int violation_sum =
       collector->Value(collector->solution_count() - 1, objective_var);
@@ -856,6 +860,7 @@ void SolveProblem(const std::map<int, FapVariable>& variables,
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
+  google::InitGoogleLogging(argv[0]);
   absl::ParseCommandLine(argc, argv);
 
   CHECK(!absl::GetFlag(FLAGS_directory).empty())

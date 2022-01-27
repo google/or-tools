@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,9 +16,16 @@ package com.google.ortools.sat;
 /** A linear expression interface that can be parsed. */
 public final class SumOfVariables implements LinearExpr {
   private final IntVar[] variables;
+  private final long offset;
 
   public SumOfVariables(IntVar[] variables) {
     this.variables = variables;
+    this.offset = 0;
+  }
+
+  public SumOfVariables(IntVar[] variables, long offset) {
+    this.variables = variables;
+    this.offset = offset;
   }
 
   @Override
@@ -28,13 +35,19 @@ public final class SumOfVariables implements LinearExpr {
 
   @Override
   public IntVar getVariable(int index) {
-    assert (index >= 0);
-    assert (index < variables.length);
+    if (index < 0 || index >= variables.length) {
+      throw new IllegalArgumentException("wrong index in LinearExpr.getVariable(): " + index);
+    }
     return variables[index];
   }
 
   @Override
   public long getCoefficient(int index) {
     return 1;
+  }
+
+  @Override
+  public long getOffset() {
+    return offset;
   }
 }

@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -11,10 +11,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+%typemap(csimports) SWIGTYPE %{
+using System;
+using System.Runtime.InteropServices;
+using System.Collections;
+using System.Collections.Generic;
+%}
+
 // TODO(user): Refactor this file to adhere to the SWIG style guide.
+%include "std_pair.i"
+%template(IntBoolPair) std::pair<int, bool>;
+
 %include "ortools/constraint_solver/csharp/constraint_solver.i"
 %include "ortools/constraint_solver/csharp/routing_types.i"
 %include "ortools/constraint_solver/csharp/routing_index_manager.i"
+%include "ortools/util/csharp/sorted_interval_list.i"
 
 // We need to forward-declare the proto here, so that PROTO_INPUT involving it
 // works correctly. The order matters very much: this declaration needs to be
@@ -53,6 +64,11 @@ namespace operations_research {
 
 // RoutingModel
 %unignore RoutingModel;
+%typemap(csimports) RoutingModel
+%{
+using System;
+using System.Collections.Generic;
+%}
 %typemap(cscode) RoutingModel %{
   // Keep reference to delegate to avoid GC to collect them early.
   private List<LongToLong> unaryTransitCallbacks;
@@ -81,11 +97,13 @@ namespace operations_research {
 %}
 // Ignored:
 %ignore RoutingModel::AddDimensionDependentDimensionWithVehicleCapacity;
-%ignore RoutingModel::AddMatrixDimension(
-    std::vector<std::vector<int64> > values,
-    int64 capacity,
-    bool fix_start_cumul_to_zero,
-    const std::string& name);
+
+%unignore RoutingModel::RegisterUnaryTransitVector;
+%unignore RoutingModel::RegisterTransitMatrix;
+
+%unignore RoutingModel::AddVectorDimension;
+%unignore RoutingModel::AddMatrixDimension;
+
 %ignore RoutingModel::AddSameVehicleRequiredTypeAlternatives;
 %ignore RoutingModel::GetAllDimensionNames;
 %ignore RoutingModel::GetAutomaticFirstSolutionStrategy;
@@ -120,6 +138,11 @@ namespace operations_research {
 
 // RoutingDimension
 %unignore RoutingDimension;
+%typemap(csimports) RoutingDimension
+%{
+using System;
+using System.Collections.Generic;
+%}
 %typemap(cscode) RoutingDimension %{
   // Keep reference to delegate to avoid GC to collect them early.
   private List<IntIntToLong> limitCallbacks;

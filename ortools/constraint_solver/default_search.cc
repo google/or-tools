@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -12,6 +12,7 @@
 // limitations under the License.
 
 #include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <limits>
 #include <memory>
@@ -76,7 +77,7 @@ class DomainWatcher {
     return result;
   }
 
-  double Log2(int64 size) const { return cached_log_.Log2(size); }
+  double Log2(int64_t size) const { return cached_log_.Log2(size); }
 
  private:
   std::vector<IntVar*> vars_;
@@ -94,20 +95,20 @@ class FindVar : public DecisionVisitor {
 
   ~FindVar() override {}
 
-  void VisitSetVariableValue(IntVar* const var, int64 value) override {
+  void VisitSetVariableValue(IntVar* const var, int64_t value) override {
     var_ = var;
     value_ = value;
     operation_ = ASSIGN;
   }
 
-  void VisitSplitVariableDomain(IntVar* const var, int64 value,
+  void VisitSplitVariableDomain(IntVar* const var, int64_t value,
                                 bool start_with_lower_half) override {
     var_ = var;
     value_ = value;
     operation_ = start_with_lower_half ? SPLIT_LOW : SPLIT_HIGH;
   }
 
-  void VisitScheduleOrPostpone(IntervalVar* const var, int64 est) override {
+  void VisitScheduleOrPostpone(IntervalVar* const var, int64_t est) override {
     operation_ = NONE;
   }
 
@@ -128,7 +129,7 @@ class FindVar : public DecisionVisitor {
   }
 
   // Returns the value of the current variable.
-  int64 value() const {
+  int64_t value() const {
     CHECK_NE(operation_, NONE);
     return value_;
   }
@@ -141,7 +142,7 @@ class FindVar : public DecisionVisitor {
 
  private:
   IntVar* var_;
-  int64 value_;
+  int64_t value_;
   Operation operation_;
 };
 
@@ -183,7 +184,7 @@ class InitVarImpacts : public DecisionBuilder {
     CHECK(iterator_ != nullptr);
     if (new_start_) {
       active_values_.clear();
-      for (const int64 value : InitAndGetValues(iterator_)) {
+      for (const int64_t value : InitAndGetValues(iterator_)) {
         active_values_.push_back(value);
       }
       new_start_ = false;
@@ -197,7 +198,7 @@ class InitVarImpacts : public DecisionBuilder {
     return &updater_;
   }
 
-  void set_update_impact_callback(std::function<void(int, int64)> callback) {
+  void set_update_impact_callback(std::function<void(int, int64_t)> callback) {
     update_impact_callback_ = std::move(callback);
   }
 
@@ -222,7 +223,7 @@ class InitVarImpacts : public DecisionBuilder {
     void Refute(Solver* const solver) override {}
     // Public data for easy access.
     IntVar* var_;
-    int64 value_;
+    int64_t value_;
 
    private:
     const std::function<void()>& update_impact_closure_;
@@ -230,11 +231,11 @@ class InitVarImpacts : public DecisionBuilder {
   };
 
   IntVar* var_;
-  std::function<void(int, int64)> update_impact_callback_;
+  std::function<void(int, int64_t)> update_impact_callback_;
   bool new_start_;
   IntVarIterator* iterator_;
   int var_index_;
-  std::vector<int64> active_values_;
+  std::vector<int64_t> active_values_;
   int value_index_;
   std::function<void()> update_impact_closure_;
   AssignCallFail updater_;
@@ -268,8 +269,8 @@ class InitVarImpactsWithSplits : public DecisionBuilder {
 
     // Public for easy access.
     IntVar* var_;
-    int64 value_min_;
-    int64 value_max_;
+    int64_t value_min_;
+    int64_t value_max_;
 
    private:
     const std::function<void()>& update_impact_closure_;
@@ -295,7 +296,7 @@ class InitVarImpactsWithSplits : public DecisionBuilder {
   ~InitVarImpactsWithSplits() override {}
 
   void UpdateImpacts() {
-    for (const int64 value : InitAndGetValues(iterator_)) {
+    for (const int64_t value : InitAndGetValues(iterator_)) {
       update_impact_callback_(var_index_, value);
     }
   }
@@ -308,8 +309,8 @@ class InitVarImpactsWithSplits : public DecisionBuilder {
     split_index_ = 0;
   }
 
-  int64 IntervalStart(int index) const {
-    const int64 length = max_value_ - min_value_ + 1;
+  int64_t IntervalStart(int index) const {
+    const int64_t length = max_value_ - min_value_ + 1;
     return (min_value_ + length * index / split_size_);
   }
 
@@ -333,18 +334,18 @@ class InitVarImpactsWithSplits : public DecisionBuilder {
     return &updater_;
   }
 
-  void set_update_impact_callback(std::function<void(int, int64)> callback) {
+  void set_update_impact_callback(std::function<void(int, int64_t)> callback) {
     update_impact_callback_ = std::move(callback);
   }
 
  private:
   IntVar* var_;
-  std::function<void(int, int64)> update_impact_callback_;
+  std::function<void(int, int64_t)> update_impact_callback_;
   bool new_start_;
   IntVarIterator* iterator_;
   int var_index_;
-  int64 min_value_;
-  int64 max_value_;
+  int64_t min_value_;
+  int64_t max_value_;
   const int split_size_;
   int split_index_;
   std::function<void()> update_impact_closure_;
@@ -391,7 +392,7 @@ class ImpactRecorder : public SearchMonitor {
     }
     d->Accept(&find_var_);
     if (find_var_.operation() == FindVar::ASSIGN &&
-        gtl::ContainsKey(var_map_, find_var_.var())) {
+        var_map_.contains(find_var_.var())) {
       current_var_ = var_map_[find_var_.var()];
       current_value_ = find_var_.value();
       current_log_space_ = domain_watcher_->LogSearchSpaceSize();
@@ -441,8 +442,8 @@ class ImpactRecorder : public SearchMonitor {
     }
   }
 
-  void UpdateImpact(int var_index, int64 value, double impact) {
-    const int64 value_index = value - original_min_[var_index];
+  void UpdateImpact(int var_index, int64_t value, double impact) {
+    const int64_t value_index = value - original_min_[var_index];
     const double current_impact = impacts_[var_index][value_index];
     const double new_impact =
         (current_impact * (absl::GetFlag(FLAGS_cp_impact_divider) - 1) +
@@ -451,25 +452,25 @@ class ImpactRecorder : public SearchMonitor {
     impacts_[var_index][value_index] = new_impact;
   }
 
-  void InitImpact(int var_index, int64 value) {
+  void InitImpact(int var_index, int64_t value) {
     const double log_space = domain_watcher_->LogSearchSpaceSize();
     const double impact = kPerfectImpact - log_space / current_log_space_;
-    const int64 value_index = value - original_min_[var_index];
+    const int64_t value_index = value - original_min_[var_index];
     DCHECK_LT(var_index, size_);
     DCHECK_LT(value_index, impacts_[var_index].size());
     impacts_[var_index][value_index] = impact;
     init_count_++;
   }
 
-  void FirstRun(int64 splits) {
+  void FirstRun(int64_t splits) {
     Solver* const s = solver();
     current_log_space_ = domain_watcher_->LogSearchSpaceSize();
     if (display_level_ != DefaultPhaseParameters::NONE) {
       LOG(INFO) << "  - initial log2(SearchSpace) = " << current_log_space_;
     }
-    const int64 init_time = s->wall_time();
+    const int64_t init_time = s->wall_time();
     ResetAllImpacts();
-    int64 removed_counter = 0;
+    int64_t removed_counter = 0;
     FirstRunVariableContainers* container =
         s->RevAlloc(new FirstRunVariableContainers(this, splits));
     // Loop on the variables, scan domains and initialize impacts.
@@ -505,8 +506,8 @@ class ImpactRecorder : public SearchMonitor {
       // removed values in an intermediate vector.
       if (init_count_ != var->Size() && no_split) {
         container->ClearRemovedValues();
-        for (const int64 value : InitAndGetValues(iterator)) {
-          const int64 value_index = value - original_min_[var_index];
+        for (const int64_t value : InitAndGetValues(iterator)) {
+          const int64_t value_index = value - original_min_[var_index];
           if (impacts_[var_index][value_index] == kInitFailureImpact) {
             container->PushBackRemovedValue(value);
           }
@@ -535,7 +536,7 @@ class ImpactRecorder : public SearchMonitor {
   // This method scans the domain of one variable and returns the sum
   // of the impacts of all values in its domain, along with the value
   // with minimal impact.
-  void ScanVarImpacts(int var_index, int64* const best_impact_value,
+  void ScanVarImpacts(int var_index, int64_t* const best_impact_value,
                       double* const var_impacts,
                       DefaultPhaseParameters::VariableSelection var_select,
                       DefaultPhaseParameters::ValueSelection value_select) {
@@ -544,10 +545,10 @@ class ImpactRecorder : public SearchMonitor {
     double max_impact = -std::numeric_limits<double>::max();
     double min_impact = std::numeric_limits<double>::max();
     double sum_var_impact = 0.0;
-    int64 min_impact_value = -1;
-    int64 max_impact_value = -1;
-    for (const int64 value : InitAndGetValues(domain_iterators_[var_index])) {
-      const int64 value_index = value - original_min_[var_index];
+    int64_t min_impact_value = -1;
+    int64_t max_impact_value = -1;
+    for (const int64_t value : InitAndGetValues(domain_iterators_[var_index])) {
+      const int64_t value_index = value - original_min_[var_index];
       DCHECK_LT(var_index, size_);
       DCHECK_LT(value_index, impacts_[var_index].size());
       const double current_impact = impacts_[var_index][value_index];
@@ -596,22 +597,26 @@ class ImpactRecorder : public SearchMonitor {
   // allocable.
   class FirstRunVariableContainers : public BaseObject {
    public:
-    FirstRunVariableContainers(ImpactRecorder* impact_recorder, int64 splits)
+    FirstRunVariableContainers(ImpactRecorder* impact_recorder, int64_t splits)
         : update_impact_callback_(
-              [impact_recorder](int var_index, int64 value) {
+              [impact_recorder](int var_index, int64_t value) {
                 impact_recorder->InitImpact(var_index, value);
               }),
           removed_values_(),
           without_splits_(),
           with_splits_(splits) {}
-    std::function<void(int, int64)> update_impact_callback() const {
+    std::function<void(int, int64_t)> update_impact_callback() const {
       return update_impact_callback_;
     }
-    void PushBackRemovedValue(int64 value) { removed_values_.push_back(value); }
+    void PushBackRemovedValue(int64_t value) {
+      removed_values_.push_back(value);
+    }
     bool HasRemovedValues() const { return !removed_values_.empty(); }
     void ClearRemovedValues() { removed_values_.clear(); }
     size_t NumRemovedValues() const { return removed_values_.size(); }
-    const std::vector<int64>& removed_values() const { return removed_values_; }
+    const std::vector<int64_t>& removed_values() const {
+      return removed_values_;
+    }
     InitVarImpacts* without_split() { return &without_splits_; }
     InitVarImpactsWithSplits* with_splits() { return &with_splits_; }
 
@@ -620,8 +625,8 @@ class ImpactRecorder : public SearchMonitor {
     }
 
    private:
-    const std::function<void(int, int64)> update_impact_callback_;
-    std::vector<int64> removed_values_;
+    const std::function<void(int, int64_t)> update_impact_callback_;
+    std::vector<int64_t> removed_values_;
     InitVarImpacts without_splits_;
     InitVarImpactsWithSplits with_splits_;
   };
@@ -633,12 +638,12 @@ class ImpactRecorder : public SearchMonitor {
   // impacts_[i][j] stores the average search space reduction when assigning
   // original_min_[i] + j to variable i.
   std::vector<std::vector<double> > impacts_;
-  std::vector<int64> original_min_;
+  std::vector<int64_t> original_min_;
   std::unique_ptr<IntVarIterator*[]> domain_iterators_;
-  int64 init_count_;
+  int64_t init_count_;
   const DefaultPhaseParameters::DisplayLevel display_level_;
   int current_var_;
-  int64 current_value_;
+  int64_t current_value_;
   FindVar find_var_;
   absl::flat_hash_map<const IntVar*, int> var_map_;
   bool init_done_;
@@ -657,7 +662,7 @@ class ChoiceInfo {
  public:
   ChoiceInfo() : value_(0), var_(nullptr), left_(false) {}
 
-  ChoiceInfo(IntVar* const var, int64 value, bool left)
+  ChoiceInfo(IntVar* const var, int64_t value, bool left)
       : value_(value), var_(var), left_(left) {}
 
   std::string DebugString() const {
@@ -669,12 +674,12 @@ class ChoiceInfo {
 
   bool left() const { return left_; }
 
-  int64 value() const { return value_; }
+  int64_t value() const { return value_; }
 
   void set_left(bool left) { left_ = left; }
 
  private:
-  int64 value_;
+  int64_t value_;
   IntVar* var_;
   bool left_;
 };
@@ -1059,11 +1064,11 @@ class DefaultIntegerSearch : public DecisionBuilder {
   // minimal impact.
   Decision* ImpactNext(Solver* const solver) {
     IntVar* var = nullptr;
-    int64 value = 0;
+    int64_t value = 0;
     double best_var_impact = -std::numeric_limits<double>::max();
     for (int i = 0; i < vars_.size(); ++i) {
       if (!vars_[i]->Bound()) {
-        int64 current_value = 0;
+        int64_t current_value = 0;
         double current_var_impact = 0.0;
         impact_recorder_.ScanVarImpacts(i, &current_value, &current_var_impact,
                                         parameters_.var_selection_schema,
@@ -1091,7 +1096,7 @@ class DefaultIntegerSearch : public DecisionBuilder {
   RunHeuristicsAsDives heuristics_;
   FindVar find_var_;
   IntVar* last_int_var_;
-  int64 last_int_value_;
+  int64_t last_int_value_;
   FindVar::Operation last_operation_;
   int last_conflict_count_;
   bool init_done_;

@@ -25,7 +25,11 @@
 var NAVTREE =
 [
   [ "Algorithms", "index.html", [
-    [ "Namespaces", "namespaces.html", null ],
+    [ "Namespaces", "namespaces.html", [
+      [ "KnapsackItemPtr", "namespaceoperations__research.html#ada7d9b46f657c6053a197273a85043a7", null ],
+      [ "MaximizeLinearAssignment", "namespaceoperations__research.html#ada8ccc36ef736b10ce389fbd347c4282", null ],
+      [ "MinimizeLinearAssignment", "namespaceoperations__research.html#a9c61bb2d6de0894f19675e2110458877", null ]
+    ] ],
     [ "Classes", "annotated.html", null ],
     [ "Files", "files.html", null ]
   ] ]

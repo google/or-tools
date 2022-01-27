@@ -3,7 +3,7 @@
 This is the documentation page for the Java wrapper of OR-Tools.
 
 This project aim to explain how you build a Java 1.8 native (for win32-x86-64,
-linux-x86-64 and darwin) maven package using [`mvn`](http://maven.apache.org/)
+linux-x86-64 and darwin-x86-64) maven multiple package using [`mvn`](http://maven.apache.org/)
 and few [POM.xml](http://maven.apache.org/pom.html).
 
 ## Table of Content
@@ -51,9 +51,9 @@ runtime on which platform the code is currently running.
 ### Local Package
 
 The pipeline for `linux-x86-64` should be as follow: \
-note: The pipeline will be similar for `darwin` and `win32-x86-64` architecture,
-don't hesitate to look at the CI log! ![Local Pipeline](doc/local_pipeline.svg)
-![Legend](doc/legend.svg)
+note: The pipeline will be similar for `darwin-x86-64` and `win32-x86-64`
+architecture, don't hesitate to look at the CI log!
+![Local Pipeline](doc/local_pipeline.svg) ![Legend](doc/legend.svg)
 
 #### Building local native Package
 
@@ -82,18 +82,20 @@ If everything good the package (located in
    \-libjniortools.so
 ...
 ```
-note: `<platform>` could be `linux-x86-64`, `darwin` or `win32-x86-64`.
+note: `<platform>` could be `linux-x86-64`, `darwin-x86-64` or `win32-x86-64`.
 
 tips: since maven package are just zip archive you can use `unzip -l <package>.jar`
 to study their layout.
 
 #### Building local Package
 
+##### Standard Maven Package
+
 So now, let's create the local `com.google.ortools:ortools-java.jar` maven
 package which will depend on our previous native package.
 
 Here some dev-note concerning this `POM.xml`.
-- Add runtime dependency on each native package(s) available:
+* Add runtime dependency on each native package(s) available:
   ```xml
   <dependency>
     <groupId>com.google.ortools</groupId>
@@ -118,10 +120,69 @@ mvn package
 mvn install
 ```
 
-If everything good the package (located in
-`<buildir>/java/ortools-java/target/`) should have this layout:
+If Maven executes these commands successfully, the package (located in
+`<buildir>/temp_java/ortools-java/target/`) should have this layout:
 ```
-{...}/target/ortools-java-8.0.jar:
+{...}/target/ortools-java-{build version}.jar:
+\- com/
+   \- google/
+      \- ortools/
+         \- Loader$PathConsumer.class
+         \- Loader$1.class
+         \- Loader.class
+         \- constraintsolver/
+            \- RoutingModel.class
+            \- RoutingIndexManager.class
+            \- ...
+         \- ...
+...
+```
+
+##### Dependency-inclusive Maven Package (fat .jar)
+
+We can also create a Maven package that includes all of its own dependencies, also known as a 'fat .jar'. This is useful
+for situations in which it is more convenient, or even necessary, to use a single .jar as a dependency for a Java
+OR-Tools project.
+
+One example is when OR-Tools is compiled with third-party solver support (such as CPLEX or XPress), and one needs to 
+build and execute in an environment that does not have access to one's local Maven repository (for example, a 
+remotely-built Docker container).
+
+Building a fat .jar with all dependencies included (including the native package) allows one to have a single 
+dependency, namely `com.google.ortools:ortools-java.jar`, which can be marked as `<scope>provided</scope>` in one's
+project `pom.xml`:
+```xml
+<dependency>
+    <groupId>com.google.ortools</groupId>
+    <artifactId>ortools-java</artifactId>
+    <version>{insert build version here}</version>
+    <scope>provided</scope>
+</dependency>
+```
+One would then make this fat .jar available in the execution environment's Java classpath, for example:
+```bash
+java -cp "/path/to/dependency.jar" -jar "/path/to/your/executable/.jar"
+```
+There are several ways to make the fat .jar dependency available to your Java program - please consult
+[JDK documentation](https://devdocs.io/openjdk/) (this links to OpenJDK 15 documentation), as well as documentation for
+any packaging and/or execution frameworks/tools you may be using.
+
+To package a fat .jar with Maven, run
+```bash
+mvn package -Dfatjar=true
+```
+To then (optionally) install it to your local Maven repository, run
+```bash
+mvn install
+```
+Note that this will replace any previously downloaded or built 'non-fat-.jar' ortools-java packages in your local
+Maven repository
+
+[comment]: <> (FIXME show depedencies within .jar structure)
+If Maven executes these commands successfully, the package (located in
+`<buildir>/temp_java/ortools-java/target/`) should have this layout:
+```
+{...}/target/ortools-java-{build version}.jar:
 \- com/
    \- google/
       \- ortools/
@@ -166,8 +227,10 @@ Few links on the subject...
 
 * [POM.xml reference](http://maven.apache.org/pom.html)
 * [Maven Central POM requirement](https://central.sonatype.org/pages/requirements.html)
-* [Javadoc Plugin](https://maven.apache.org/plugins/maven-javadoc-plugin/)
-* [Java Source Plugin](https://maven.apache.org/plugins/maven-source-plugin/)
+* [Maven Javadoc Plugin](https://maven.apache.org/plugins/maven-javadoc-plugin/)
+* [Maven Source Plugin](https://maven.apache.org/plugins/maven-source-plugin/)
+* [Maven GPG Plugin](https://maven.apache.org/plugins/maven-gpg-plugin/)
+* [Maven Assembly Plugin](https://maven.apache.org/plugins/maven-assembly-plugin/)
 * [Java Native Access Project](https://github.com/java-native-access/jna)
 
 ## Misc

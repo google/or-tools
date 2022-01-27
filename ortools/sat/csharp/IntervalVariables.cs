@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,71 +13,87 @@
 
 namespace Google.OrTools.Sat
 {
-    using System;
-    using System.Collections.Generic;
+using System;
+using System.Collections.Generic;
 
-    public class IntervalVar
+public class IntervalVar
+{
+    public IntervalVar(CpModelProto model, LinearExpressionProto start, LinearExpressionProto size,
+                       LinearExpressionProto end, int is_present_index, string name)
     {
-        public IntervalVar(CpModelProto model, int start_index, int size_index, int end_index, int is_present_index,
-                           string name)
-        {
-            model_ = model;
-            index_ = model.Constraints.Count;
-            interval_ = new IntervalConstraintProto();
-            interval_.Start = start_index;
-            interval_.Size = size_index;
-            interval_.End = end_index;
+        model_ = model;
+        index_ = model.Constraints.Count;
+        interval_ = new IntervalConstraintProto();
+        interval_.Start = start;
+        interval_.Size = size;
+        interval_.End = end;
 
-            ConstraintProto ct = new ConstraintProto();
-            ct.Interval = interval_;
-            ct.Name = name;
-            ct.EnforcementLiteral.Add(is_present_index);
-            model.Constraints.Add(ct);
-        }
-
-        public IntervalVar(CpModelProto model, int start_index, int size_index, int end_index, string name)
-        {
-            model_ = model;
-            index_ = model.Constraints.Count;
-            interval_ = new IntervalConstraintProto();
-            interval_.Start = start_index;
-            interval_.Size = size_index;
-            interval_.End = end_index;
-
-            ConstraintProto ct = new ConstraintProto();
-            ct.Interval = interval_;
-            ct.Name = name;
-            model_.Constraints.Add(ct);
-        }
-
-        public int GetIndex()
-        {
-            return index_;
-        }
-
-        public IntervalConstraintProto Proto
-        {
-            get {
-                return interval_;
-            }
-            set {
-                interval_ = value;
-            }
-        }
-
-        public override string ToString()
-        {
-            return model_.Constraints[index_].ToString();
-        }
-
-        public string Name()
-        {
-            return model_.Constraints[index_].Name;
-        }
-
-        private CpModelProto model_;
-        private int index_;
-        private IntervalConstraintProto interval_;
+        ConstraintProto ct = new ConstraintProto();
+        ct.Interval = interval_;
+        ct.Name = name;
+        ct.EnforcementLiteral.Add(is_present_index);
+        model.Constraints.Add(ct);
     }
+
+    public IntervalVar(CpModelProto model, LinearExpressionProto start, LinearExpressionProto size,
+                       LinearExpressionProto end, string name)
+    {
+        model_ = model;
+        index_ = model.Constraints.Count;
+        interval_ = new IntervalConstraintProto();
+        interval_.Start = start;
+        interval_.Size = size;
+        interval_.End = end;
+
+        ConstraintProto ct = new ConstraintProto();
+        ct.Interval = interval_;
+        ct.Name = name;
+        model_.Constraints.Add(ct);
+    }
+
+    public int GetIndex()
+    {
+        return index_;
+    }
+
+    public LinearExpr StartExpr()
+    {
+        return LinearExpr.RebuildLinearExprFromLinearExpressionProto(interval_.Start, model_);
+    }
+
+    public LinearExpr SizeExpr()
+    {
+        return LinearExpr.RebuildLinearExprFromLinearExpressionProto(interval_.Size, model_);
+    }
+
+    public LinearExpr EndExpr()
+    {
+        return LinearExpr.RebuildLinearExprFromLinearExpressionProto(interval_.End, model_);
+    }
+
+    public IntervalConstraintProto Proto
+    {
+        get {
+            return interval_;
+        }
+        set {
+            interval_ = value;
+        }
+    }
+
+    public override string ToString()
+    {
+        return model_.Constraints[index_].ToString();
+    }
+
+    public string Name()
+    {
+        return model_.Constraints[index_].Name;
+    }
+
+    private CpModelProto model_;
+    private int index_;
+    private IntervalConstraintProto interval_;
+}
 
 } // namespace Google.OrTools.Sat

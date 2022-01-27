@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -21,6 +21,7 @@ option csharp_namespace = "Google.OrTools.Sat";
 option java_package = "com.google.ortools.sat";
 option java_multiple_files = true;
 option java_outer_classname = "CpModelProtobuf";
+
 
 // An integer variable.
 //
@@ -70,12 +71,9 @@ message BoolArgumentProto {
   repeated int32 literals = 1;
 }
 
-// Argument of the constraints of the form target_var = OP(vars).
-message IntegerArgumentProto {
-  int32 target = 1;
-  repeated int32 vars = 2;
-}
-
+// Some constraints supports linear expression instead of just using a reference
+// to a variable. This is especially useful during presolve to reduce the model
+// size.
 message LinearExpressionProto {
   repeated int32 vars = 1;
   repeated int64 coeffs = 2;
@@ -87,9 +85,9 @@ message LinearArgumentProto {
   repeated LinearExpressionProto exprs = 2;
 }
 
-// All variables must take different values.
+// All affine expressions must take different values.
 message AllDifferentConstraintProto {
-  repeated int32 vars = 1;
+  repeated LinearExpressionProto exprs = 1;
 }
 
 // The linear sum vars[i] * coeffs[i] must fall in the given domain. The domain
@@ -112,12 +110,21 @@ message ElementConstraintProto {
   repeated int32 vars = 3;
 }
 
-// This "special" constraint not only enforces (start + size == end) but can
-// also be referred by other constraints using this "interval" concept.
+// This "special" constraint not only enforces (start + size == end) and (size
+// >= 0) but can also be referred by other constraints using this "interval"
+// concept.
 message IntervalConstraintProto {
-  int32 start = 1;
-  int32 end = 2;
-  int32 size = 3;
+  // IMPORTANT: For now, this constraint do not enforce any relations on the
+  // view, and a linear constraint must be added together with this to enforce
+  // enforcement => start + size == end. An enforcement => size >=0 might also
+  // be needed.
+  //
+  // IMPORTANT: For now, we just support affine relation. We could easily
+  // create an intermediate variable to support full linear expression, but this
+  // isn't done currently.
+  LinearExpressionProto start = 4;
+  LinearExpressionProto end = 5;
+  LinearExpressionProto size = 6;
 }
 
 // All the intervals (index of IntervalConstraintProto) must be disjoint. More
@@ -130,10 +137,13 @@ message NoOverlapConstraintProto {
 }
 
 // The boxes defined by [start_x, end_x) * [start_y, end_y) cannot overlap.
+// Furthermore, one box is optional if at least one of the x or y interval is
+// optional.
 message NoOverlap2DConstraintProto {
   repeated int32 x_intervals = 1;
   repeated int32 y_intervals = 2;  // Same size as x_intervals.
   bool boxes_with_null_area_can_overlap = 3;
+  // TODO(user): Add optional areas as repeated LinearExpressionProto.
 }
 
 // The sum of the demands of the intervals at each interval point cannot exceed
@@ -141,31 +151,32 @@ message NoOverlap2DConstraintProto {
 // such intervals like [2,3) and [3,4) do not overlap for the point of view of
 // this constraint. Moreover, intervals of size zero are ignored.
 message CumulativeConstraintProto {
-  int32 capacity = 1;
+  LinearExpressionProto capacity = 1;
   repeated int32 intervals = 2;
-  repeated int32 demands = 3;  // Same size as intervals.
+  repeated LinearExpressionProto demands = 3;  // Same size as intervals.
 }
 
 // Maintain a reservoir level within bounds. The water level starts at 0, and at
-// any time >= 0, it must be within min_level, and max_level. Furthermore, this
-// constraints expect all times variables to be >= 0.
-// If the variable actives[i] is true, and if the variable times[i] is assigned
-// a value t, then the current level changes by demands[i] (which is constant)
-// at the time t.
+// any time, it must be within [min_level, max_level].
 //
-// Note that level min can be > 0, or level max can be < 0. It just forces
-// some demands to be executed at time 0 to make sure that we are within those
-// bounds with the executed demands. Therefore, at any time t >= 0:
-//      sum(demands[i] * actives[i] if times[i] <= t) in [min_level, max_level]
+// If the variable actives[i] is true, and if the variable times[i] is assigned
+// a value t, then the current level changes by level_changes[i] (which is
+// constant) at the time t. Therefore, at any time t:
+//
+// sum(level_changes[i] * actives[i] if times[i] <= t) in [min_level, max_level]
+//
+// Note that min level must be <= 0, and the max level must be >= 0. Please use
+// fixed level_changes to simulate initial state.
+//
 // The array of boolean variables 'actives', if defined, indicates which actions
 // are actually performed. If this array is not defined, then it is assumed that
 // all actions will be performed.
 message ReservoirConstraintProto {
   int64 min_level = 1;
   int64 max_level = 2;
-  repeated int32 times = 3;    // variables.
-  repeated int64 demands = 4;  // constants, can be negative.
-  repeated int32 actives = 5;  // literals.
+  repeated LinearExpressionProto time_exprs = 3;  // affine expressions.
+  repeated int64 level_changes = 4;               // constants, can be negative.
+  repeated int32 active_literals = 5;
 }
 
 // The circuit constraint is defined on a graph where the arc presence are
@@ -194,6 +205,11 @@ message CircuitConstraintProto {
 // - Self-arcs are allowed except for node 0.
 // - There is no cycle in this graph, except through node 0.
 //
+// Note: Currently this constraint expect all the nodes in [0, num_nodes) to
+// have at least one incident arc. The model will be considered invalid if it
+// is not the case. You can add self-arc fixed to one to ignore some nodes if
+// needed.
+//
 // TODO(user): It is probably possible to generalize this constraint to a
 // no-cycle in a general graph, or a no-cycle with sum incoming <= 1 and sum
 // outgoing <= 1 (more efficient implementation). On the other hand, having this
@@ -203,9 +219,15 @@ message RoutesConstraintProto {
   repeated int32 heads = 2;
   repeated int32 literals = 3;
 
-  // Experimental. The demands for each node, and the maximum capacity for each
+  // EXPERIMENTAL. The demands for each node, and the maximum capacity for each
   // route. Note that this is currently only used for the LP relaxation and one
   // need to add the corresponding constraint to enforce this outside of the LP.
+  //
+  // TODO(user): Ideally, we should be able to extract any dimension like these
+  // (i.e. capacity, route_length, etc..) automatically from the encoding. The
+  // classical way to encode that is to have "current_capacity" variables along
+  // the route and linear equations of the form:
+  //   arc_literal => (current_capacity_tail + demand <= current_capacity_head)
   repeated int32 demands = 4;
   int64 capacity = 5;
 }
@@ -250,7 +272,12 @@ message AutomatonConstraintProto {
   repeated int32 vars = 7;
 }
 
-// Next id: 29
+// A list of variables, without any semantics.
+message ListOfVariablesProto {
+  repeated int32 vars = 1;
+}
+
+// Next id: 31
 message ConstraintProto {
   // For debug/logging only. Can be empty.
   string name = 1;
@@ -279,47 +306,65 @@ message ConstraintProto {
     // The bool_and constraint forces all of the literals to be true.
     //
     // This is a "redundant" constraint in the sense that this can easily be
-    // encoded with many bool_or. It is just more space efficient and handled
-    // slightly differently internally.
+    // encoded with many bool_or or at_most_one. It is just more space efficient
+    // and handled slightly differently internally.
     BoolArgumentProto bool_and = 4;
 
     // The at_most_one constraint enforces that no more than one literal is
-    // true at the same time. Note that an at most one constraint of length n
-    // could be encoded with n bool_and constraint with n-1 term on the right
-    // hand side. So in a sense, this constraint contribute directly to the
-    // "implication-graph" or the 2-SAT part of the model.
+    // true at the same time.
+    //
+    // Note that an at most one constraint of length n could be encoded with n
+    // bool_and constraint with n-1 term on the right hand side. So in a sense,
+    // this constraint contribute directly to the "implication-graph" or the
+    // 2-SAT part of the model.
+    //
+    // This constraint does not support enforcement_literal. Just use a linear
+    // constraint if you need to enforce it. You also do not need to use it
+    // directly, we will extract it from the model in most situations.
     BoolArgumentProto at_most_one = 26;
+
+    // The exactly_one constraint force exactly one literal to true and no more.
+    //
+    // Anytime a bool_or (it could have been called at_least_one) is included
+    // into an at_most_one, then the bool_or is actually an exactly one
+    // constraint, and the extra literal in the at_most_one can be set to false.
+    // So in this sense, this constraint is not really needed. it is just here
+    // for a better description of the problem structure and to facilitate some
+    // algorithm.
+    //
+    // This constraint does not support enforcement_literal. Just use a linear
+    // constraint if you need to enforce it. You also do not need to use it
+    // directly, we will extract it from the model in most situations.
+    BoolArgumentProto exactly_one = 29;
 
     // The bool_xor constraint forces an odd number of the literals to be true.
     BoolArgumentProto bool_xor = 5;
 
-    // The int_div constraint forces the target to equal vars[0] / vars[1].
-    IntegerArgumentProto int_div = 7;
+    // The int_div constraint forces the target to equal exprs[0] / exprs[1].
+    // In particular, exprs[1] can never take the value 0. Also, as for now, we
+    // do not support exprs[1] spanning across 0.
+    LinearArgumentProto int_div = 7;
 
-    // The int_mod constraint forces the target to equal vars[0] % vars[1].
-    IntegerArgumentProto int_mod = 8;
+    // The int_mod constraint forces the target to equal exprs[0] % exprs[1].
+    // The domain of exprs[1] must be strictly positive. The sign of the target
+    // is the same as the sign of exprs[0].
+    LinearArgumentProto int_mod = 8;
 
-    // The int_max constraint forces the target to equal the maximum of all
-    // variables.
-    // TODO(user): Remove int_max in favor of lin_max.
-    IntegerArgumentProto int_max = 9;
+    // The int_prod constraint forces the target to equal the product of all
+    // variables. By convention, because we can just remove term equal to one,
+    // the empty product forces the target to be one.
+    //
+    // Note that the solver checks for potential integer overflow. So it is
+    // recommended to limit the domain of the variables such that the product
+    // fits in [INT_MIN + 1..INT_MAX - 1].
+    //
+    // TODO(user): Support more than two terms in the product.
+    LinearArgumentProto int_prod = 11;
 
     // The lin_max constraint forces the target to equal the maximum of all
     // linear expressions.
+    // Note that this can model a minimum simply by negating all expressions.
     LinearArgumentProto lin_max = 27;
-
-    // The int_min constraint forces the target to equal the minimum of all
-    // variables.
-    // TODO(user): Remove int_min in favor of lin_min.
-    IntegerArgumentProto int_min = 10;
-
-    // The lin_min constraint forces the target to equal the minimum of all
-    // linear expressions.
-    LinearArgumentProto lin_min = 28;
-
-    // The int_prod constraint forces the target to equal the product of all
-    // variables.
-    IntegerArgumentProto int_prod = 11;
 
     // The linear constraint enforces a linear inequality among the variables,
     // such as 0 <= x + 2y <= 10.
@@ -381,16 +426,18 @@ message ConstraintProto {
     // of the demands of the intervals containing that point does not exceed
     // the capacity.
     CumulativeConstraintProto cumulative = 22;
+
+    // This constraint is not meant to be used and will be rejected by the
+    // solver. It is meant to mark variable when testing the presolve code.
+    ListOfVariablesProto dummy_constraint = 30;
   }
 }
 
 // Optimization objective.
-//
-// This is in a message because decision problems don't have any objective.
 message CpObjectiveProto {
   // The linear terms of the objective to minimize.
   // For a maximization problem, one can negate all coefficients in the
-  // objective and set a scaling_factor to -1.
+  // objective and set scaling_factor to -1.
   repeated int32 vars = 1;
   repeated int64 coeffs = 4;
 
@@ -408,6 +455,35 @@ message CpObjectiveProto {
   // Note that this does not depend on the offset or scaling factor, it is a
   // domain on the sum of the objective terms only.
   repeated int64 domain = 5;
+
+  // Internal field. Do not set. When we scale a FloatObjectiveProto to a
+  // integer version, we set this to true if the scaling was exact (i.e. all
+  // original coeff were integer for instance).
+  //
+  // TODO(user): Put the error bounds we computed instead?
+  bool scaling_was_exact = 6;
+
+  // Internal field. This is only useful for inner_objective_lower_bound, It
+  // should never be set in most cases, so we have the simple:
+  //   sum(coefficients[i] * objective_vars[i]) >= inner_objective_lower_bound.
+  //
+  // This is similar to offset/scaling_factor but allows to stay in the integer
+  // domain. Note that the formula is not the same than for the floating point
+  // objective. If this is set, we have
+  //    linear_expression * scaling + offset >= inner_objective_lower_bound
+  int64 integer_offset = 7;
+  int64 integer_scaling_factor = 8;
+}
+
+// A linear floating point objective: sum coeffs[i] * vars[i] + offset.
+// Note that the variable can only still take integer value.
+message FloatObjectiveProto {
+  repeated int32 vars = 1;
+  repeated double coeffs = 2;
+  double offset = 3;
+
+  // The optimization direction. The default is to minimize
+  bool maximize = 4;
 }
 
 // Define the strategy to follow when the solver needs to take a new decision.
@@ -446,10 +522,10 @@ message DecisionStrategyProto {
 
   // Advanced usage. Some of the variable listed above may have been transformed
   // by the presolve so this is needed to properly follow the given selection
-  // strategy. Instead of using a value X from one of the variable listed here,
-  // we will use positive_coeff * X + offset instead.
+  // strategy. Instead of using a value X for variables[index], we will use
+  // positive_coeff * X + offset instead.
   message AffineTransformation {
-    int32 var = 1;
+    int32 index = 1;
     int64 offset = 2;
     int64 positive_coeff = 3;
   }
@@ -464,6 +540,53 @@ message PartialVariableAssignment {
   repeated int64 values = 2;
 }
 
+// A permutation of integers encoded as a list of cycles, hence the "sparse"
+// format. The image of an element cycle[i] is cycle[(i + 1) % cycle_length].
+message SparsePermutationProto {
+  // Each cycle is listed one after the other in the support field.
+  // The size of each cycle is given (in order) in the cycle_sizes field.
+  repeated int32 support = 1;
+  repeated int32 cycle_sizes = 2;
+}
+
+// A dense matrix of numbers encoded in a flat way, row by row.
+// That is matrix[i][j] = entries[i * num_cols + j];
+message DenseMatrixProto {
+  int32 num_rows = 1;
+  int32 num_cols = 2;
+  repeated int32 entries = 3;
+}
+
+// EXPERIMENTAL. For now, this is meant to be used by the solver and not filled
+// by clients.
+//
+// Hold symmetry information about the set of feasible solutions. If we permute
+// the variable values of any feasible solution using one of the permutation
+// described here, we should always get another feasible solution.
+//
+// We usually also enforce that the objective of the new solution is the same.
+//
+// The group of permutations encoded here is usually computed from the encoding
+// of the model, so it is not meant to be a complete representation of the
+// feasible solution symmetries, just a valid subgroup.
+message SymmetryProto {
+  // A list of variable indices permutations that leave the feasible space of
+  // solution invariant. Usually, we only encode a set of generators of the
+  // group.
+  repeated SparsePermutationProto permutations = 1;
+
+  // An orbitope is a special symmetry structure of the solution space. If the
+  // variable indices are arranged in a matrix (with no duplicates), then any
+  // permutation of the columns will be a valid permutation of the feasible
+  // space.
+  //
+  // This arise quite often. The typical example is a graph coloring problem
+  // where for each node i, you have j booleans to indicate its color. If the
+  // variables color_of_i_is_j are arranged in a matrix[i][j], then any columns
+  // permutations leave the problem invariant.
+  repeated DenseMatrixProto orbitopes = 2;
+}
+
 // A constraint programming problem.
 message CpModelProto {
   // For debug/logging only. Can be empty.
@@ -476,6 +599,21 @@ message CpModelProto {
   // The objective to minimize. Can be empty for pure decision problems.
   CpObjectiveProto objective = 4;
 
+  // Advanced usage.
+  // It is invalid to have both an objective and a floating point objective.
+  //
+  // The objective of the model, in floating point format. The solver will
+  // automatically scale this to integer during expansion and thus convert it to
+  // a normal CpObjectiveProto. See the mip* parameters to control how this is
+  // scaled. In most situation the precision will be good enough, but you can
+  // see the logs to see what are the precision guaranteed when this is
+  // converted to a fixed point representation.
+  //
+  // Note that even if the precision is bad, the returned objective_value and
+  // best_objective_bound will be computed correctly. So at the end of the solve
+  // you can check the gap if you only want precise optimal.
+  FloatObjectiveProto floating_point_objective = 9;
+
   // Defines the strategy that the solver should follow when the
   // search_branching parameter is set to FIXED_SEARCH. Note that this strategy
   // is also used as a heuristic when we are not in fixed search.
@@ -483,9 +621,8 @@ message CpModelProto {
   // Advanced Usage: if not all variables appears and the parameter
   // "instantiate_all_variables" is set to false, then the solver will not try
   // to instantiate the variables that do not appear. Thus, at the end of the
-  // search, not all variables may be fixed and this is why we have the
-  // solution_lower_bounds and solution_upper_bounds fields in the
-  // CpSolverResponse.
+  // search, not all variables may be fixed. Currently, we will set them to
+  // their lower bound in the solution.
   repeated DecisionStrategyProto search_strategy = 5;
 
   // Solution hint.
@@ -508,13 +645,20 @@ message CpModelProto {
   // infeasibility.
   //
   // Think (IIS), except when you are only concerned by the provided
-  // assumptions. This is powerful as it allows to group a set of logicially
+  // assumptions. This is powerful as it allows to group a set of logically
   // related constraint under only one enforcement literal which can potentially
   // give you a good and interpretable explanation for infeasiblity.
   //
   // Such infeasibility explanation will be available in the
   // sufficient_assumptions_for_infeasibility response field.
   repeated int32 assumptions = 7;
+
+  // For now, this is not meant to be filled by a client writing a model, but
+  // by our preprocessing step.
+  //
+  // Information about the symmetries of the feasible solution space.
+  // These usually leaves the objective invariant.
+  SymmetryProto symmetry = 8;
 }
 
 // The status returned by a solver trying to solve a CpModelProto.
@@ -527,7 +671,7 @@ enum CpSolverStatus {
   // detailed error by calling ValidateCpModel(model_proto).
   MODEL_INVALID = 1;
 
-  // A feasible solution as been found. But the search was stopped before we
+  // A feasible solution has been found. But the search was stopped before we
   // could prove optimality or before we enumerated all solutions of a
   // feasibility problem (if asked).
   FEASIBLE = 2;
@@ -546,11 +690,17 @@ enum CpSolverStatus {
   OPTIMAL = 4;
 }
 
+// Just a message used to store dense solution.
+// This is used by the additional_solutions field.
+message CpSolverSolution {
+  repeated int64 values = 1;
+}
+
 // The response returned by a solver trying to solve a CpModelProto.
 //
 // TODO(user): support returning multiple solutions. Look at the Stubby
 // streaming API as we probably wants to get them as they are found.
-// Next id: 26
+// Next id: 30
 message CpSolverResponse {
   // The status of the solve.
   CpSolverStatus status = 1;
@@ -572,15 +722,13 @@ message CpSolverResponse {
   // maximization problem.
   double best_objective_bound = 4;
 
-  // Advanced usage.
+  // If the parameter fill_additional_solutions_in_response is set, then we
+  // copy all the solutions from our internal solution pool here.
   //
-  // If the problem has some variables that are not fixed at the end of the
-  // search (because of a particular search strategy in the CpModelProto) then
-  // this will be used instead of filling the solution above. The two fields
-  // will then contains the lower and upper bounds of each variable as they were
-  // when the best "solution" was found.
-  repeated int64 solution_lower_bounds = 18;
-  repeated int64 solution_upper_bounds = 19;
+  // Note that the one returned in the solution field will likely appear here
+  // too. Do not rely on the solutions order as it depends on our internal
+  // representation (after postsolve).
+  repeated CpSolverSolution additional_solutions = 27;
 
   // Advanced usage.
   //
@@ -610,17 +758,28 @@ message CpSolverResponse {
   // changing your model to minimize the number of assumptions at false, but
   // this is likely an harder problem to solve.
   //
+  // Important: Currently, this is minimized only in single-thread and if the
+  // problem is not an optimization problem, otherwise, it will always include
+  // all the assumptions.
+  //
   // TODO(user): Allows for returning multiple core at once.
   repeated int32 sufficient_assumptions_for_infeasibility = 23;
 
-  // This will be true iff the solver was asked to find all solutions to a
-  // satisfiability problem (or all optimal solutions to an optimization
-  // problem), and it was successful in doing so.
+  // Contains the integer objective optimized internally. This is only filled if
+  // the problem had a floating point objective, and on the final response, not
+  // the ones given to callbacks.
+  CpObjectiveProto integer_objective = 28;
+
+  // Advanced usage.
   //
-  // TODO(user): Remove as we also use the OPTIMAL vs FEASIBLE status for that.
-  bool all_solutions_were_found = 5;
+  // A lower bound on the inner integer expression of the objective. This is
+  // either a bound on the expression in the returned integer_objective or on
+  // the integer expression of the original objective if the problem already has
+  // an integer objective.
+  int64 inner_objective_lower_bound = 29;
 
   // Some statistics about the solve.
+  // TODO(user): These are broken in multi-thread.
   int64 num_booleans = 10;
   int64 num_conflicts = 11;
   int64 num_branches = 12;
@@ -629,11 +788,19 @@ message CpSolverResponse {
   int64 num_restarts = 24;
   int64 num_lp_iterations = 25;
 
+  // The time counted from the beginning of the Solve() call.
   double wall_time = 15;
   double user_time = 16;
   double deterministic_time = 17;
-  double primal_integral = 22;
 
-  // Additional information about how the solution was found.
+  // The integral of log(1 + absolute_objective_gap) over time.
+  double gap_integral = 22;
+
+  // Additional information about how the solution was found. It also stores
+  // model or parameters errors that caused the model to be invalid.
   string solution_info = 20;
+
+  // The solve log will be filled if the parameter log_to_response is set to
+  // true.
+  string solve_log = 26;
 }

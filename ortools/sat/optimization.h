@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,7 +18,7 @@
 #include <vector>
 
 #include "ortools/sat/boolean_problem.pb.h"
-#include "ortools/sat/cp_model_loader.h"
+#include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/model.h"
@@ -35,7 +35,10 @@ namespace sat {
 // removed.
 //
 // Note that this function doest NOT preserve the order of Literal in the core.
-void MinimizeCoreWithPropagation(SatSolver* solver, std::vector<Literal>* core);
+//
+// TODO(user): Avoid spending too much time trying to minimize a core.
+void MinimizeCoreWithPropagation(TimeLimit* limit, SatSolver* solver,
+                                 std::vector<Literal>* core);
 
 // Because the Solve*() functions below are also used in scripts that requires a
 // special output format, we use this to tell them whether or not to use the
@@ -82,10 +85,9 @@ SatSolver::Status SolveWithWPM1(LogBehavior log,
 // random parameters. Keep the best solution (regarding the objective) and
 // returns it in solution. The problem is assumed to be already loaded into the
 // given solver.
-SatSolver::Status SolveWithRandomParameters(LogBehavior log,
-                                            const LinearBooleanProblem& problem,
-                                            int num_times, SatSolver* solver,
-                                            std::vector<bool>* solution);
+SatSolver::Status SolveWithRandomParameters(
+    LogBehavior log, const LinearBooleanProblem& problem, int num_times,
+    absl::BitGenRef random, SatSolver* solver, std::vector<bool>* solution);
 
 // Starts by solving the decision version of the given LinearBooleanProblem and
 // then simply add a constraint to find a lower objective that the current best

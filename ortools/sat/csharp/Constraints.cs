@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,50 +13,50 @@
 
 namespace Google.OrTools.Sat
 {
-    using System;
-    using System.Collections.Generic;
+using System;
+using System.Collections.Generic;
 
-    public class Constraint
+public class Constraint
+{
+    public Constraint(CpModelProto model)
     {
-        public Constraint(CpModelProto model)
-        {
-            index_ = model.Constraints.Count;
-            constraint_ = new ConstraintProto();
-            model.Constraints.Add(constraint_);
-        }
+        index_ = model.Constraints.Count;
+        constraint_ = new ConstraintProto();
+        model.Constraints.Add(constraint_);
+    }
 
-        public void OnlyEnforceIf(ILiteral lit)
+    public void OnlyEnforceIf(ILiteral lit)
+    {
+        constraint_.EnforcementLiteral.Add(lit.GetIndex());
+    }
+
+    public void OnlyEnforceIf(ILiteral[] lits)
+    {
+        foreach (ILiteral lit in lits)
         {
             constraint_.EnforcementLiteral.Add(lit.GetIndex());
         }
-
-        public void OnlyEnforceIf(ILiteral[] lits)
-        {
-            foreach (ILiteral lit in lits)
-            {
-                constraint_.EnforcementLiteral.Add(lit.GetIndex());
-            }
-        }
-
-        public int Index
-        {
-            get {
-                return index_;
-            }
-        }
-
-        public ConstraintProto Proto
-        {
-            get {
-                return constraint_;
-            }
-            set {
-                constraint_ = value;
-            }
-        }
-
-        private int index_;
-        private ConstraintProto constraint_;
     }
+
+    public int Index
+    {
+        get {
+            return index_;
+        }
+    }
+
+    public ConstraintProto Proto
+    {
+        get {
+            return constraint_;
+        }
+        set {
+            constraint_ = value;
+        }
+    }
+
+    private int index_;
+    private ConstraintProto constraint_;
+}
 
 } // namespace Google.OrTools.Sat

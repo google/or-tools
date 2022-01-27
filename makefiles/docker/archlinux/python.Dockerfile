@@ -1,5 +1,5 @@
 FROM ortools/make:archlinux_swig AS env
-RUN pacman -Syu --noconfirm python python-pip python-wheel
+RUN pacman -Syu --noconfirm python python-pip python-wheel python-numpy python-pandas
 RUN python -m pip install absl-py mypy-protobuf
 
 FROM env AS devel

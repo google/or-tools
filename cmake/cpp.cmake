@@ -23,6 +23,9 @@ if(USE_SCIP)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_SCIP")
   set(GSCIP_DIR gscip)
 endif()
+if(USE_GLPK)
+  list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_GLPK")
+endif()
 if(USE_COINOR)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS
     "USE_CBC" # enable COIN-OR CBC support
@@ -124,8 +127,10 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   ZLIB::ZLIB
   ${ABSL_DEPS}
   protobuf::libprotobuf
+  ${RE2_DEPS}
   ${COINOR_DEPS}
   $<$<BOOL:${USE_SCIP}>:libscip>
+  $<$<BOOL:${USE_GLPK}>:GLPK::GLPK>
   $<$<BOOL:${USE_CPLEX}>:CPLEX::CPLEX>
   $<$<BOOL:${USE_XPRESS}>:XPRESS::XPRESS>
   $<$<BOOL:${USE_SIRIUS}>:sirius_solver>
@@ -135,7 +140,7 @@ if(WIN32)
 endif()
 
 # ALIAS
-add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
+add_library(${PROJECT_NAMESPACE}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
 # Generate Protobuf cpp sources
 set(PROTO_HDRS)
@@ -143,13 +148,14 @@ set(PROTO_SRCS)
 file(GLOB_RECURSE proto_files RELATIVE ${PROJECT_SOURCE_DIR}
   "ortools/bop/*.proto"
   "ortools/constraint_solver/*.proto"
-  "ortools/data/*.proto"
   "ortools/glop/*.proto"
   "ortools/graph/*.proto"
   "ortools/linear_solver/*.proto"
-  "ortools/sat/*.proto"
-  "ortools/util/*.proto"
   "ortools/linear_solver/*.proto"
+  "ortools/packing/*.proto"
+  "ortools/sat/*.proto"
+  "ortools/scheduling/*.proto"
+  "ortools/util/*.proto"
   )
 if(USE_SCIP)
   file(GLOB_RECURSE gscip_proto_files RELATIVE ${PROJECT_SOURCE_DIR} "ortools/gscip/*.proto")
@@ -175,12 +181,12 @@ foreach(PROTO_FILE IN LISTS proto_files)
   #message(STATUS "protoc src: ${PROTO_SRC}")
   add_custom_command(
     OUTPUT ${PROTO_SRC} ${PROTO_HDR}
-    COMMAND protobuf::protoc
+    COMMAND ${PROTOC_PRG}
     "--proto_path=${PROJECT_SOURCE_DIR}"
     ${PROTO_DIRS}
     "--cpp_out=${PROJECT_BINARY_DIR}"
     ${PROTO_FILE}
-    DEPENDS ${PROTO_FILE} protobuf::protoc
+    DEPENDS ${PROTO_FILE} ${PROTOC_PRG}
     COMMENT "Generate C++ protocol buffer for ${PROTO_FILE}"
     VERBATIM)
   list(APPEND PROTO_HDRS ${PROTO_HDR})
@@ -202,25 +208,28 @@ target_compile_definitions(${PROJECT_NAME}_proto PUBLIC ${OR_TOOLS_COMPILE_DEFIN
 target_compile_options(${PROJECT_NAME}_proto PUBLIC ${OR_TOOLS_COMPILE_OPTIONS})
 #target_link_libraries(${PROJECT_NAME}_proto PRIVATE protobuf::libprotobuf)
 add_dependencies(${PROJECT_NAME}_proto protobuf::libprotobuf)
-add_library(${PROJECT_NAME}::proto ALIAS ${PROJECT_NAME}_proto)
-# Add ortools::proto to libortools
-#target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_NAME}::proto)
-target_sources(${PROJECT_NAME} PRIVATE $<TARGET_OBJECTS:${PROJECT_NAME}::proto>)
-add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}::proto)
+add_library(${PROJECT_NAMESPACE}::proto ALIAS ${PROJECT_NAME}_proto)
+# Add ${PROJECT_NAMESPACE}::proto to libortools
+#target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_NAMESPACE}::proto)
+target_sources(${PROJECT_NAME} PRIVATE $<TARGET_OBJECTS:${PROJECT_NAMESPACE}::proto>)
+add_dependencies(${PROJECT_NAME} ${PROJECT_NAMESPACE}::proto)
 
 foreach(SUBPROJECT IN ITEMS
  algorithms
  base
  bop
  constraint_solver
- data
  ${GSCIP_DIR}
  glop
  graph
+ gurobi
+ init
  linear_solver
  lp_data
+ packing
  port
  sat
+ scheduling
  util)
   add_subdirectory(ortools/${SUBPROJECT})
   #target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_NAME}_${SUBPROJECT})
@@ -244,7 +253,7 @@ install(TARGETS ${PROJECT_NAME}
   )
 
 install(EXPORT ${PROJECT_NAME}Targets
-  NAMESPACE ${PROJECT_NAME}::
+  NAMESPACE ${PROJECT_NAMESPACE}::
   DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME})
 install(DIRECTORY ortools
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
@@ -275,7 +284,6 @@ install(
   DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}"
   COMPONENT Devel)
 
-
 # add_cxx_sample()
 # CMake function to generate and build C++ sample.
 # Parameters:
@@ -283,7 +291,7 @@ install(
 # e.g.:
 # add_cxx_sample(foo.cc)
 function(add_cxx_sample FILE_NAME)
-  message(STATUS "Building ${FILE_NAME}: ...")
+  message(STATUS "Configuring sample ${FILE_NAME}: ...")
   get_filename_component(SAMPLE_NAME ${FILE_NAME} NAME_WE)
   get_filename_component(SAMPLE_DIR ${FILE_NAME} DIRECTORY)
   get_filename_component(COMPONENT_DIR ${SAMPLE_DIR} DIRECTORY)
@@ -299,7 +307,7 @@ function(add_cxx_sample FILE_NAME)
   add_executable(${SAMPLE_NAME} ${FILE_NAME})
   target_include_directories(${SAMPLE_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
   target_compile_features(${SAMPLE_NAME} PRIVATE cxx_std_17)
-  target_link_libraries(${SAMPLE_NAME} PRIVATE ortools::ortools)
+  target_link_libraries(${SAMPLE_NAME} PRIVATE ${PROJECT_NAMESPACE}::ortools)
 
   include(GNUInstallDirs)
   install(TARGETS ${SAMPLE_NAME})
@@ -307,6 +315,68 @@ function(add_cxx_sample FILE_NAME)
   if(BUILD_TESTING)
     add_test(NAME cxx_${COMPONENT_NAME}_${SAMPLE_NAME} COMMAND ${SAMPLE_NAME})
   endif()
+  message(STATUS "Configuring sample ${FILE_NAME}: ...DONE")
+endfunction()
 
-  message(STATUS "Building ${FILE_NAME}: ...DONE")
+# add_cxx_example()
+# CMake function to generate and build C++ example.
+# Parameters:
+#  the C++ filename
+# e.g.:
+# add_cxx_example(foo.cc)
+function(add_cxx_example FILE_NAME)
+  message(STATUS "Configuring example ${FILE_NAME}: ...")
+  get_filename_component(EXAMPLE_NAME ${FILE_NAME} NAME_WE)
+  get_filename_component(COMPONENT_DIR ${FILE_NAME} DIRECTORY)
+  get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+
+  if(APPLE)
+    set(CMAKE_INSTALL_RPATH
+      "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
+  elseif(UNIX)
+    set(CMAKE_INSTALL_RPATH "$ORIGIN/../${CMAKE_INSTALL_LIBDIR}:$ORIGIN")
+  endif()
+
+  add_executable(${EXAMPLE_NAME} ${FILE_NAME})
+  target_include_directories(${EXAMPLE_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+  target_compile_features(${EXAMPLE_NAME} PRIVATE cxx_std_17)
+  target_link_libraries(${EXAMPLE_NAME} PRIVATE ${PROJECT_NAMESPACE}::ortools)
+
+  include(GNUInstallDirs)
+  install(TARGETS ${EXAMPLE_NAME})
+
+  if(BUILD_TESTING)
+    add_test(NAME cxx_${COMPONENT_NAME}_${EXAMPLE_NAME} COMMAND ${EXAMPLE_NAME})
+  endif()
+  message(STATUS "Configuring example ${FILE_NAME}: ...DONE")
+endfunction()
+
+# add_cxx_test()
+# CMake function to generate and build C++ test.
+# Parameters:
+#  the C++ filename
+# e.g.:
+# add_cxx_test(foo.cc)
+function(add_cxx_test FILE_NAME)
+  message(STATUS "Configuring test ${FILE_NAME}: ...")
+  get_filename_component(TEST_NAME ${FILE_NAME} NAME_WE)
+  get_filename_component(COMPONENT_DIR ${FILE_NAME} DIRECTORY)
+  get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+
+  if(APPLE)
+    set(CMAKE_INSTALL_RPATH
+      "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
+  elseif(UNIX)
+    set(CMAKE_INSTALL_RPATH "$ORIGIN/../${CMAKE_INSTALL_LIBDIR}:$ORIGIN")
+  endif()
+
+  add_executable(${TEST_NAME} ${FILE_NAME})
+  target_include_directories(${TEST_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+  target_compile_features(${TEST_NAME} PRIVATE cxx_std_17)
+  target_link_libraries(${TEST_NAME} PRIVATE ${PROJECT_NAMESPACE}::ortools)
+
+  if(BUILD_TESTING)
+    add_test(NAME cxx_${COMPONENT_NAME}_${TEST_NAME} COMMAND ${TEST_NAME})
+  endif()
+  message(STATUS "Configuring test ${FILE_NAME}: ...DONE")
 endfunction()

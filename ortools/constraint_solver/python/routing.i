@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,9 +16,12 @@
 
 %include "ortools/base/base.i"
 
+%include "ortools/util/python/pair.i"
+
 %include "ortools/constraint_solver/python/constraint_solver.i"
 %include "ortools/constraint_solver/python/routing_types.i"
 %include "ortools/constraint_solver/python/routing_index_manager.i"
+%include "ortools/util/python/sorted_interval_list.i"
 
 // We need to forward-declare the proto here, so that PROTO_INPUT involving it
 // works correctly. The order matters very much: this declaration needs to be
@@ -50,22 +53,6 @@ DEFINE_INDEX_TYPE_TYPEDEF(
     operations_research::RoutingVehicleClassIndex,
     operations_research::RoutingModel::VehicleClassIndex);
 
-
-%ignore operations_research::RoutingModel::AddMatrixDimension(
-    std::vector<std::vector<int64> > values,
-    int64 capacity,
-    const std::string& name);
-
-%extend operations_research::RoutingModel {
-  void AddMatrixDimension(
-    const std::vector<std::vector<int64> >& values,
-    int64 capacity,
-    bool fix_start_cumul_to_zero,
-    const std::string& name) {
-    $self->AddMatrixDimension(values, capacity, fix_start_cumul_to_zero, name);
-  }
-
-}
 
 %ignore operations_research::RoutingModel::RegisterStateDependentTransitCallback;
 %ignore operations_research::RoutingModel::StateDependentTransitCallback;

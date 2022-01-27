@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -53,6 +53,7 @@ using System.Collections;
 %unignore operations_research::Domain::Min;
 %unignore operations_research::Domain::Negation;
 %unignore operations_research::Domain::Size;
+%csmethodmodifiers operations_research::Domain::ToString "public override";
 %unignore operations_research::Domain::ToString;
 %unignore operations_research::Domain::UnionWith;
 

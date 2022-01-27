@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,13 +18,15 @@ using Google.OrTools.Sat;
 
 public class NurseSolutionObserver : CpSolverSolutionCallback
 {
-    public NurseSolutionObserver(IntVar[,,] shifts, int num_nurses, int num_days, int num_shifts, HashSet<int> to_print)
+    public NurseSolutionObserver(IntVar[,,] shifts, int num_nurses, int num_days, int num_shifts, HashSet<int> to_print,
+                                 int last_solution_explored)
     {
         shifts_ = shifts;
         num_nurses_ = num_nurses;
         num_days_ = num_days;
         num_shifts_ = num_shifts;
         to_print_ = to_print;
+        last_solution_explored_ = last_solution_explored;
     }
 
     public override void OnSolutionCallback()
@@ -48,6 +50,10 @@ public class NurseSolutionObserver : CpSolverSolutionCallback
                 }
             }
         }
+        if (solution_count_ >= last_solution_explored_)
+        {
+            StopSearch();
+        }
     }
 
     public int SolutionCount()
@@ -61,6 +67,7 @@ public class NurseSolutionObserver : CpSolverSolutionCallback
     private int num_days_;
     private int num_shifts_;
     private HashSet<int> to_print_;
+    private int last_solution_explored_;
 }
 
 public class NursesSat
@@ -190,12 +197,12 @@ public class NursesSat
         CpSolver solver = new CpSolver();
         // Display a few solutions picked at random.
         HashSet<int> to_print = new HashSet<int>();
-        to_print.Add(859);
-        to_print.Add(2034);
-        to_print.Add(5091);
-        to_print.Add(7003);
-        NurseSolutionObserver cb = new NurseSolutionObserver(shift, num_nurses, num_days, num_shifts, to_print);
-        CpSolverStatus status = solver.SearchAllSolutions(model, cb);
+        to_print.Add(200);
+        to_print.Add(410);
+        to_print.Add(650);
+        NurseSolutionObserver cb = new NurseSolutionObserver(shift, num_nurses, num_days, num_shifts, to_print, 650);
+        solver.StringParameters = "linearization_level:2 enumerate_all_solutions:true";
+        CpSolverStatus status = solver.Solve(model, cb);
 
         // Statistics.
         Console.WriteLine("Statistics");

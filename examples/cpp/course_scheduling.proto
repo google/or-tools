@@ -1,0 +1,188 @@
+// Copyright 2010-2021 Google LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package operations_research;
+
+// Information required to create a schedule for a school system.
+message CourseSchedulingModel {
+  // Schedule name, used only for logging purposes.
+  string display_name = 1;
+
+  // The number of days in a schedule rotation. If the school system uses a
+  // block schedule, this value should be 1.
+  int32 days_count = 2;
+
+  // The number of time slots each day in a schedule rotation. If the school
+  // system uses a block schedule, this value is the number of blocks.
+  int32 daily_time_slot_count = 3;
+
+  // List of courses that need to be scheduled.
+  repeated Course courses = 4;
+
+  // List of teachers.
+  repeated Teacher teachers = 5;
+
+  // List of students that need to be assigned to these courses.
+  repeated Student students = 6;
+
+  // List of rooms that the courses can be assigned to.
+  repeated Room rooms = 7;
+}
+
+// Holds the solution to the course scheduling problem.
+message CourseSchedulingResult {
+  // Human readable message about the solver or given model.
+  string message = 1;
+
+  // Status of the solver.
+  CourseSchedulingResultStatus solver_status = 2;
+
+  // List of the time slot and room assignments for each section of a course.
+  repeated ClassAssignment class_assignments = 3;
+
+  // List of course and section assignments for each student.
+  repeated StudentAssignment student_assignments = 4;
+}
+
+message ClassAssignment {
+  // Index of the course in the CourseSchedulingModel.
+  int32 course_index = 1;
+
+  // Specific section of the course in the CourseSchedulingModel.
+  int32 section_number = 2;
+
+  // Time slots that this class has been assigned to in the
+  // CourseSchedulingModel.
+  repeated int32 time_slots = 3;
+
+  // Indices of the rooms that the class is assigned to in the
+  // CourseSchedulingModel. If this is not empty, then the number of indices
+  // must match the number of time slots.
+  repeated int32 room_indices = 4;
+}
+
+message StudentAssignment {
+  // Index of the student in the CourseSchedulingModel.
+  int32 student_index = 1;
+
+  // Course indices in the CourseSchedulingModel that this student has been
+  // assigned to. The number of indices must match the number of section
+  // indices.
+  repeated int32 course_indices = 2;
+
+  // Section indices for each Course in the CourseSchedulingModel this this
+  // student has been assigned to. The number of indices must match the number
+  // of course indices.
+  repeated int32 section_indices = 3;
+}
+
+message Course {
+  // Course name, used only for logging purposes.
+  string display_name = 1;
+
+  // The number of times each section of this course needs to meet during a
+  // schedule rotation. Each section of the course meets no more than once a
+  // day. If the school system uses a block schedule, then this value should
+  // be 1.
+  int32 meetings_count = 2;
+
+  // The maximum number of students for this course. This value can be equal to
+  // +Infinity to encode a course has no maximum capacity.
+  int32 max_capacity = 3;
+
+  // The minimum number of students for this course.
+  int32 min_capacity = 4;
+
+  // The number of consecutive time slots that each section of this course needs
+  // to be scheduled for. This value can only be 1 or 2. If the value is 2, then
+  // 2 consecutive time slots in a day counts as 1 meeting time for the section.
+  int32 consecutive_slots_count = 5;
+
+  // List of indices for the teachers of this course. We are assuming that each
+  // teacher teaches separately. Must have the same number of elements as the
+  // number of sections list.
+  repeated int32 teacher_indices = 6;
+
+  // The number of sections each teacher teaches of this course. Must have the
+  // same number of elements as the teacher index list.
+  repeated int32 teacher_section_counts = 7;
+
+  // List of the possible rooms that this course can be assigned to. This can
+  // be empty.
+  repeated int32 room_indices = 8;
+}
+
+message Teacher {
+  // Teacher name, used only for logging purposes.
+  string display_name = 1;
+
+  // List of time slots that the teacher cannot be scheduled for. These time
+  // slot values index to the accumulative number of time slots starting at 0.
+  // For example, if a schedule rotation has 5 days and 8 time slots per day,
+  // and a teacher cannot be scheduled for the last time slot of the fourth
+  // day, the number here would be 31.
+  repeated int32 restricted_time_slots = 2;
+}
+
+message Student {
+  // Student name, used only for logging purposes.
+  string display_name = 1;
+
+  // List of course indices that the student needs to be enrolled in.
+  repeated int32 course_indices = 2;
+}
+
+message Room {
+  // Room name, used only for logging purposes.
+  string display_name = 1;
+
+  // Maximum number of students that can fit into this room.
+  int32 capacity = 2;
+}
+
+// Status returned by the solver.
+enum CourseSchedulingResultStatus {
+  COURSE_SCHEDULING_RESULT_STATUS_UNSPECIFIED = 0;
+
+  // The solver had enough time to find some solution that satisfies all
+  // constraints, but it did not prove optimality (which means it may or may
+  // not have reached the optimal).
+  //
+  // This can happen for large LP models (linear programming), and is a frequent
+  // response for time-limited MIPs (mixed integer programming). This is also
+  // what the CP (constraint programming) solver will return if there is no
+  // objective specified.
+  SOLVER_FEASIBLE = 1;
+
+  // The solver found the proven optimal solution.
+  SOLVER_OPTIMAL = 2;
+
+  // The model does not have any solution, according to the solver (which
+  // "proved" it, with the caveat that numerical proofs aren't actual proofs),
+  // or based on trivial considerations (eg. a variable whose lower bound is
+  // strictly greater than its upper bound).
+  SOLVER_INFEASIBLE = 3;
+
+  // Model errors. These are always deterministic and repeatable.
+  // They should be accompanied with a string description of the error.
+  SOLVER_MODEL_INVALID = 4;
+
+  // The model has not been solved in the given time or the solver was not able
+  // to solve the model given.
+  SOLVER_NOT_SOLVED = 5;
+
+  // An error (either numerical or from a bug in the code) occurred.
+  ABNORMAL = 6;
+}

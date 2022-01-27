@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from ortools.constraint_solver import pywrapcp
 
 # Control-C test. Hit Control-C during execution of this program.

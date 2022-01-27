@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,17 +14,16 @@
 #include "ortools/sat/integer_search.h"
 
 #include <cmath>
+#include <cstdint>
 #include <functional>
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
 #include "absl/types/span.h"
-#include "ortools/sat/cp_model_loader.h"
+#include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
-#include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/probing.h"
-#include "ortools/sat/pseudo_costs.h"
 #include "ortools/sat/rins.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_decision.h"
@@ -117,7 +116,7 @@ IntegerLiteral SplitAroundLpValue(IntegerVariable var, Model* model) {
   //
   // TODO(user): Why is the reduced cost doing things differently?
   const IntegerValue value = IntegerValue(
-      static_cast<int64>(std::round(lp->GetSolutionValue(positive_var))));
+      static_cast<int64_t>(std::round(lp->GetSolutionValue(positive_var))));
 
   // Because our lp solution might be from higher up in the tree, it
   // is possible that value is now outside the domain of positive_var.
@@ -126,7 +125,7 @@ IntegerLiteral SplitAroundLpValue(IntegerVariable var, Model* model) {
 }
 
 IntegerLiteral SplitUsingBestSolutionValueInRepository(
-    IntegerVariable var, const SharedSolutionRepository<int64>& solution_repo,
+    IntegerVariable var, const SharedSolutionRepository<int64_t>& solution_repo,
     Model* model) {
   if (solution_repo.NumSolutions() == 0) {
     return IntegerLiteral();
@@ -279,7 +278,7 @@ std::function<BooleanOrIntegerLiteral()> IntegerValueSelectionHeuristic(
   if (parameters.exploit_best_solution()) {
     auto* response_manager = model->Get<SharedResponseManager>();
     if (response_manager != nullptr) {
-      VLOG(2) << "Using best solution value selection heuristic.";
+      VLOG(3) << "Using best solution value selection heuristic.";
       value_selection_heuristics.push_back(
           [model, response_manager](IntegerVariable var) {
             return SplitUsingBestSolutionValueInRepository(
@@ -295,7 +294,7 @@ std::function<BooleanOrIntegerLiteral()> IntegerValueSelectionHeuristic(
     if (relaxation_solutions != nullptr) {
       value_selection_heuristics.push_back(
           [model, relaxation_solutions](IntegerVariable var) {
-            VLOG(2) << "Using relaxation solution value selection heuristic.";
+            VLOG(3) << "Using relaxation solution value selection heuristic.";
             return SplitUsingBestSolutionValueInRepository(
                 var, *relaxation_solutions, model);
           });
@@ -347,6 +346,120 @@ std::function<BooleanOrIntegerLiteral()> PseudoCost(Model* model) {
   };
 }
 
+// A simple heuristic for scheduling models.
+std::function<BooleanOrIntegerLiteral()> SchedulingSearchHeuristic(
+    Model* model) {
+  auto* repo = model->GetOrCreate<IntervalsRepository>();
+  auto* heuristic = model->GetOrCreate<SearchHeuristics>();
+  auto* trail = model->GetOrCreate<Trail>();
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  return [repo, heuristic, trail, integer_trail]() {
+    struct ToSchedule {
+      // Variable to fix.
+      LiteralIndex presence = kNoLiteralIndex;
+      AffineExpression start;
+      AffineExpression end;
+
+      // Information to select best.
+      IntegerValue size_min = kMaxIntegerValue;
+      IntegerValue time = kMaxIntegerValue;
+    };
+    ToSchedule best;
+
+    // TODO(user): we should also precompute fixed precedences and only fix
+    // interval that have all their predecessors fixed.
+    const int num_intervals = repo->NumIntervals();
+    for (IntervalVariable i(0); i < num_intervals; ++i) {
+      if (repo->IsAbsent(i)) continue;
+      if (!repo->IsPresent(i) || !integer_trail->IsFixed(repo->Start(i)) ||
+          !integer_trail->IsFixed(repo->End(i))) {
+        IntegerValue time = integer_trail->LowerBound(repo->Start(i));
+        if (repo->IsOptional(i)) {
+          // For task whose presence is still unknown, our propagators should
+          // have propagated the minimium time as if it was present. So this
+          // should reflect the earliest time at which this interval can be
+          // scheduled.
+          time = std::max(time, integer_trail->ConditionalLowerBound(
+                                    repo->PresenceLiteral(i), repo->Start(i)));
+        }
+
+        // For variable size, we compute the min size once the start is fixed
+        // to time. This is needed to never pick the "artificial" makespan
+        // interval at the end in priority compared to intervals that still
+        // need to be scheduled.
+        const IntegerValue size_min =
+            std::max(integer_trail->LowerBound(repo->Size(i)),
+                     integer_trail->LowerBound(repo->End(i)) - time);
+        if (time < best.time ||
+            (time == best.time && size_min < best.size_min)) {
+          best.presence = repo->IsOptional(i) ? repo->PresenceLiteral(i).Index()
+                                              : kNoLiteralIndex;
+          best.start = repo->Start(i);
+          best.end = repo->End(i);
+          best.time = time;
+          best.size_min = size_min;
+        }
+      }
+    }
+    if (best.time == kMaxIntegerValue) return BooleanOrIntegerLiteral();
+
+    // Use the next_decision_override to fix in turn all the variables from
+    // the selected interval.
+    int num_times = 0;
+    heuristic->next_decision_override = [trail, integer_trail, best,
+                                         num_times]() mutable {
+      if (++num_times > 5) {
+        // We have been trying to fix this interval for a while. Do we miss
+        // some propagation? In any case, try to see if the heuristic above
+        // would select something else.
+        VLOG(3) << "Skipping ... ";
+        return BooleanOrIntegerLiteral();
+      }
+
+      // First make sure the interval is present.
+      if (best.presence != kNoLiteralIndex) {
+        if (!trail->Assignment().LiteralIsAssigned(Literal(best.presence))) {
+          VLOG(3) << "assign " << best.presence;
+          return BooleanOrIntegerLiteral(best.presence);
+        }
+        if (trail->Assignment().LiteralIsFalse(Literal(best.presence))) {
+          VLOG(2) << "unperformed.";
+          return BooleanOrIntegerLiteral();
+        }
+      }
+
+      // We assume that start_min is propagated by now.
+      if (!integer_trail->IsFixed(best.start)) {
+        const IntegerValue start_min = integer_trail->LowerBound(best.start);
+        VLOG(3) << "start == " << start_min;
+        return BooleanOrIntegerLiteral(best.start.LowerOrEqual(start_min));
+      }
+
+      // We assume that end_min is propagated by now.
+      if (!integer_trail->IsFixed(best.end)) {
+        const IntegerValue end_min = integer_trail->LowerBound(best.end);
+        VLOG(3) << "end == " << end_min;
+        return BooleanOrIntegerLiteral(best.end.LowerOrEqual(end_min));
+      }
+
+      // Everything is fixed, dettach the override.
+      const IntegerValue start = integer_trail->LowerBound(best.start);
+      VLOG(2) << "Fixed @[" << start << ","
+              << integer_trail->LowerBound(best.end) << "]"
+              << (best.presence != kNoLiteralIndex
+                      ? absl::StrCat(" presence=",
+                                     Literal(best.presence).DebugString())
+                      : "")
+              << (best.time < start
+                      ? absl::StrCat(" start_at_selection=", best.time.value())
+                      : "");
+      return BooleanOrIntegerLiteral();
+    };
+
+    return heuristic->next_decision_override();
+  };
+}
+
 std::function<BooleanOrIntegerLiteral()> RandomizeOnRestartHeuristic(
     Model* model) {
   SatSolver* sat_solver = model->GetOrCreate<SatSolver>();
@@ -359,7 +472,7 @@ std::function<BooleanOrIntegerLiteral()> RandomizeOnRestartHeuristic(
       sat_policy, SequentialSearch({PseudoCost(model), sat_policy})};
   // The higher weight for the sat policy is because this policy actually
   // contains a lot of variation as we randomize the sat parameters.
-  // TODO(user,user): Do more experiments to find better distribution.
+  // TODO(user): Do more experiments to find better distribution.
   std::discrete_distribution<int> var_dist{3 /*sat_policy*/, 1 /*Pseudo cost*/};
 
   // Value selection.
@@ -422,7 +535,7 @@ std::function<BooleanOrIntegerLiteral()> RandomizeOnRestartHeuristic(
   return [=]() mutable {
     if (sat_solver->CurrentDecisionLevel() == 0) {
       auto* random = model->GetOrCreate<ModelRandomGenerator>();
-      RandomizeDecisionHeuristic(random, model->GetOrCreate<SatParameters>());
+      RandomizeDecisionHeuristic(*random, model->GetOrCreate<SatParameters>());
       decision_policy->ResetDecisionHeuristic();
 
       // Select the variable selection heuristic.
@@ -649,6 +762,141 @@ std::vector<std::function<BooleanOrIntegerLiteral()>> CompleteHeuristics(
   return complete_heuristics;
 }
 
+IntegerSearchHelper::IntegerSearchHelper(Model* model)
+    : model_(model),
+      sat_solver_(model->GetOrCreate<SatSolver>()),
+      integer_trail_(model->GetOrCreate<IntegerTrail>()),
+      encoder_(model->GetOrCreate<IntegerEncoder>()),
+      implied_bounds_(model->GetOrCreate<ImpliedBounds>()),
+      time_limit_(model->GetOrCreate<TimeLimit>()),
+      pseudo_costs_(model->GetOrCreate<PseudoCosts>()) {
+  // This is needed for recording the pseudo-costs.
+  const ObjectiveDefinition* objective = model->Get<ObjectiveDefinition>();
+  if (objective != nullptr) objective_var_ = objective->objective_var;
+}
+
+bool IntegerSearchHelper::BeforeTakingDecision() {
+  // If we pushed root level deductions, we restart to incorporate them.
+  // Note that in the present of assumptions, it is important to return to
+  // the level zero first ! otherwise, the new deductions will not be
+  // incorporated and the solver will loop forever.
+  if (integer_trail_->HasPendingRootLevelDeduction()) {
+    sat_solver_->Backtrack(0);
+    if (!sat_solver_->RestoreSolverToAssumptionLevel()) {
+      return false;
+    }
+  }
+
+  if (sat_solver_->CurrentDecisionLevel() == 0) {
+    if (!implied_bounds_->EnqueueNewDeductions()) {
+      sat_solver_->NotifyThatModelIsUnsat();
+      return false;
+    }
+
+    auto* level_zero_callbacks = model_->GetOrCreate<LevelZeroCallbackHelper>();
+    for (const auto& cb : level_zero_callbacks->callbacks) {
+      if (!cb()) {
+        sat_solver_->NotifyThatModelIsUnsat();
+        return false;
+      }
+    }
+
+    if (model_->GetOrCreate<SatParameters>()->use_sat_inprocessing() &&
+        !model_->GetOrCreate<Inprocessing>()->InprocessingRound()) {
+      sat_solver_->NotifyThatModelIsUnsat();
+      return false;
+    }
+  }
+  return true;
+}
+
+LiteralIndex IntegerSearchHelper::GetDecision(
+    const std::function<BooleanOrIntegerLiteral()>& f) {
+  LiteralIndex decision = kNoLiteralIndex;
+  while (!time_limit_->LimitReached()) {
+    BooleanOrIntegerLiteral new_decision;
+    if (integer_trail_->InPropagationLoop()) {
+      const IntegerVariable var =
+          integer_trail_->NextVariableToBranchOnInPropagationLoop();
+      if (var != kNoIntegerVariable) {
+        new_decision.integer_literal =
+            GreaterOrEqualToMiddleValue(var, integer_trail_);
+      }
+    }
+    if (!new_decision.HasValue()) {
+      new_decision = f();
+    }
+    if (!new_decision.HasValue() &&
+        integer_trail_->CurrentBranchHadAnIncompletePropagation()) {
+      const IntegerVariable var = integer_trail_->FirstUnassignedVariable();
+      if (var != kNoIntegerVariable) {
+        new_decision.integer_literal = AtMinValue(var, integer_trail_);
+      }
+    }
+    if (!new_decision.HasValue()) break;
+
+    // Convert integer decision to literal one if needed.
+    //
+    // TODO(user): Ideally it would be cool to delay the creation even more
+    // until we have a conflict with these decisions, but it is currrently
+    // hard to do so.
+    if (new_decision.boolean_literal_index != kNoLiteralIndex) {
+      decision = new_decision.boolean_literal_index;
+    } else {
+      decision =
+          encoder_->GetOrCreateAssociatedLiteral(new_decision.integer_literal)
+              .Index();
+    }
+    if (sat_solver_->Assignment().LiteralIsAssigned(Literal(decision))) {
+      // TODO(user): It would be nicer if this can never happen. For now, it
+      // does because of the Propagate() not reaching the fixed point as
+      // mentionned in a TODO above. As a work-around, we display a message
+      // but do not crash and recall the decision heuristic.
+      VLOG(1) << "Trying to take a decision that is already assigned!"
+              << " Fix this. Continuing for now...";
+      continue;
+    }
+    break;
+  }
+  return decision;
+}
+
+bool IntegerSearchHelper::TakeDecision(Literal decision) {
+  // Record the changelist and objective bounds for updating pseudo costs.
+  const std::vector<PseudoCosts::VariableBoundChange> bound_changes =
+      GetBoundChanges(decision.Index(), model_);
+  IntegerValue old_obj_lb = kMinIntegerValue;
+  IntegerValue old_obj_ub = kMaxIntegerValue;
+  if (objective_var_ != kNoIntegerVariable) {
+    old_obj_lb = integer_trail_->LowerBound(objective_var_);
+    old_obj_ub = integer_trail_->UpperBound(objective_var_);
+  }
+  const int old_level = sat_solver_->CurrentDecisionLevel();
+
+  // TODO(user): on some problems, this function can be quite long. Expand
+  // so that we can check the time limit at each step?
+  sat_solver_->EnqueueDecisionAndBackjumpOnConflict(decision);
+
+  // Update the implied bounds each time we enqueue a literal at level zero.
+  // This is "almost free", so we might as well do it.
+  if (old_level == 0 && sat_solver_->CurrentDecisionLevel() == 1) {
+    implied_bounds_->ProcessIntegerTrail(decision);
+  }
+
+  // Update the pseudo costs.
+  if (sat_solver_->CurrentDecisionLevel() > old_level &&
+      objective_var_ != kNoIntegerVariable) {
+    const IntegerValue new_obj_lb = integer_trail_->LowerBound(objective_var_);
+    const IntegerValue new_obj_ub = integer_trail_->UpperBound(objective_var_);
+    const IntegerValue objective_bound_change =
+        (new_obj_lb - old_obj_lb) + (old_obj_ub - new_obj_ub);
+    pseudo_costs_->UpdateCost(bound_changes, objective_bound_change);
+  }
+
+  sat_solver_->AdvanceDeterministicTime(time_limit_);
+  return sat_solver_->ReapplyAssumptionsIfNeeded();
+}
+
 SatSolver::Status SolveIntegerProblem(Model* model) {
   TimeLimit* time_limit = model->GetOrCreate<TimeLimit>();
   if (time_limit->LimitReached()) return SatSolver::LIMIT_REACHED;
@@ -657,6 +905,8 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
   const int num_policies = heuristics.decision_policies.size();
   CHECK_NE(num_policies, 0);
   CHECK_EQ(num_policies, heuristics.restart_policies.size());
+
+  auto* helper = model->GetOrCreate<IntegerSearchHelper>();
 
   // This is needed for recording the pseudo-costs.
   IntegerVariable objective_var = kNoIntegerVariable;
@@ -678,23 +928,15 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
   // how to fix.
   if (!sat_solver->FinishPropagation()) return sat_solver->UnsatStatus();
 
-  // Create and initialize pseudo costs.
-  // TODO(user): If this ever shows up in a cpu profile, find a way to not
-  // execute the code when pseudo costs are not needed.
-  PseudoCosts* pseudo_costs = model->GetOrCreate<PseudoCosts>();
-
-  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
-  auto* encoder = model->GetOrCreate<IntegerEncoder>();
-  auto* implied_bounds = model->GetOrCreate<ImpliedBounds>();
   auto* prober = model->GetOrCreate<Prober>();
 
   const SatParameters& sat_parameters = *(model->GetOrCreate<SatParameters>());
 
   // Main search loop.
-  const int64 old_num_conflicts = sat_solver->num_failures();
-  const int64 conflict_limit = sat_parameters.max_number_of_conflicts();
-  int64 num_decisions_since_last_lp_record_ = 0;
-  int64 num_decisions_without_probing = 0;
+  const int64_t old_num_conflicts = sat_solver->num_failures();
+  const int64_t conflict_limit = sat_parameters.max_number_of_conflicts();
+  int64_t num_decisions_since_last_lp_record_ = 0;
+  int64_t num_decisions_without_probing = 0;
   while (!time_limit->LimitReached() &&
          (sat_solver->num_failures() - old_num_conflicts < conflict_limit)) {
     // If needed, restart and switch decision_policy.
@@ -705,90 +947,33 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
       heuristics.policy_index = (heuristics.policy_index + 1) % num_policies;
     }
 
-    // If we pushed root level deductions, we restart to incorporate them.
-    // Note that in the present of assumptions, it is important to return to
-    // the level zero first ! otherwise, the new deductions will not be
-    // incorporated and the solver will loop forever.
-    if (integer_trail->HasPendingRootLevelDeduction()) {
-      sat_solver->Backtrack(0);
-      if (!sat_solver->RestoreSolverToAssumptionLevel()) {
-        return sat_solver->UnsatStatus();
-      }
-    }
-
-    if (sat_solver->CurrentDecisionLevel() == 0) {
-      if (!implied_bounds->EnqueueNewDeductions()) {
-        return SatSolver::INFEASIBLE;
-      }
-
-      auto* level_zero_callbacks =
-          model->GetOrCreate<LevelZeroCallbackHelper>();
-      for (const auto& cb : level_zero_callbacks->callbacks) {
-        if (!cb()) {
-          return SatSolver::INFEASIBLE;
-        }
-      }
-
-      if (sat_parameters.use_sat_inprocessing() &&
-          !model->GetOrCreate<Inprocessing>()->InprocessingRound()) {
-        return SatSolver::INFEASIBLE;
-      }
-    }
+    if (!helper->BeforeTakingDecision()) return sat_solver->UnsatStatus();
 
     LiteralIndex decision = kNoLiteralIndex;
     while (true) {
-      BooleanOrIntegerLiteral new_decision;
-      if (integer_trail->InPropagationLoop()) {
-        const IntegerVariable var =
-            integer_trail->NextVariableToBranchOnInPropagationLoop();
-        if (var != kNoIntegerVariable) {
-          new_decision.integer_literal =
-              GreaterOrEqualToMiddleValue(var, integer_trail);
+      if (heuristics.next_decision_override != nullptr) {
+        // Note that to properly count the num_times, we do not want to move
+        // this function, but actually call that copy.
+        decision = helper->GetDecision(heuristics.next_decision_override);
+        if (decision == kNoLiteralIndex) {
+          heuristics.next_decision_override = nullptr;
         }
       }
-      if (!new_decision.HasValue()) {
-        new_decision = heuristics.decision_policies[heuristics.policy_index]();
+      if (decision == kNoLiteralIndex) {
+        decision = helper->GetDecision(
+            heuristics.decision_policies[heuristics.policy_index]);
       }
-      if (!new_decision.HasValue() &&
-          integer_trail->CurrentBranchHadAnIncompletePropagation()) {
-        const IntegerVariable var = integer_trail->FirstUnassignedVariable();
-        if (var != kNoIntegerVariable) {
-          new_decision.integer_literal = AtMinValue(var, integer_trail);
-        }
-      }
-      if (!new_decision.HasValue()) break;
 
-      // Convert integer decision to literal one if needed.
+      // Probing?
       //
-      // TODO(user): Ideally it would be cool to delay the creation even more
-      // until we have a conflict with these decisions, but it is currrently
-      // hard to do so.
-      if (new_decision.boolean_literal_index != kNoLiteralIndex) {
-        decision = new_decision.boolean_literal_index;
-      } else {
-        decision =
-            encoder->GetOrCreateAssociatedLiteral(new_decision.integer_literal)
-                .Index();
-      }
-
-      if (sat_solver->Assignment().LiteralIsAssigned(Literal(decision))) {
-        // TODO(user): It would be nicer if this can never happen. For now, it
-        // does because of the Propagate() not reaching the fixed point as
-        // mentionned in a TODO above. As a work-around, we display a message
-        // but do not crash and recall the decision heuristic.
-        VLOG(1) << "Trying to take a decision that is already assigned!"
-                << " Fix this. Continuing for now...";
-        continue;
-      }
-
-      // Probing.
-      if (sat_solver->CurrentDecisionLevel() == 0 &&
+      // TODO(user): Be smarter about what variables we probe, we can
+      // also do more than one.
+      if (decision != kNoLiteralIndex &&
+          sat_solver->CurrentDecisionLevel() == 0 &&
           sat_parameters.probing_period_at_root() > 0 &&
           ++num_decisions_without_probing >=
               sat_parameters.probing_period_at_root()) {
         num_decisions_without_probing = 0;
-        // TODO(user,user): Be smarter about what variables we probe, we can
-        // also do more than one.
         if (!prober->ProbeOneVariable(Literal(decision).Variable())) {
           return SatSolver::INFEASIBLE;
         }
@@ -830,39 +1015,7 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
       return SatSolver::FEASIBLE;
     }
 
-    // Record the changelist and objective bounds for updating pseudo costs.
-    const std::vector<PseudoCosts::VariableBoundChange> bound_changes =
-        GetBoundChanges(decision, model);
-    IntegerValue old_obj_lb = kMinIntegerValue;
-    IntegerValue old_obj_ub = kMaxIntegerValue;
-    if (objective_var != kNoIntegerVariable) {
-      old_obj_lb = integer_trail->LowerBound(objective_var);
-      old_obj_ub = integer_trail->UpperBound(objective_var);
-    }
-    const int old_level = sat_solver->CurrentDecisionLevel();
-
-    // TODO(user): on some problems, this function can be quite long. Expand
-    // so that we can check the time limit at each step?
-    sat_solver->EnqueueDecisionAndBackjumpOnConflict(Literal(decision));
-
-    // Update the implied bounds each time we enqueue a literal at level zero.
-    // This is "almost free", so we might as well do it.
-    if (old_level == 0 && sat_solver->CurrentDecisionLevel() == 1) {
-      implied_bounds->ProcessIntegerTrail(Literal(decision));
-    }
-
-    // Update the pseudo costs.
-    if (sat_solver->CurrentDecisionLevel() > old_level &&
-        objective_var != kNoIntegerVariable) {
-      const IntegerValue new_obj_lb = integer_trail->LowerBound(objective_var);
-      const IntegerValue new_obj_ub = integer_trail->UpperBound(objective_var);
-      const IntegerValue objective_bound_change =
-          (new_obj_lb - old_obj_lb) + (old_obj_ub - new_obj_ub);
-      pseudo_costs->UpdateCost(bound_changes, objective_bound_change);
-    }
-
-    sat_solver->AdvanceDeterministicTime(time_limit);
-    if (!sat_solver->ReapplyAssumptionsIfNeeded()) {
+    if (!helper->TakeDecision(Literal(decision))) {
       return sat_solver->UnsatStatus();
     }
 
@@ -896,7 +1049,10 @@ SatSolver::Status ResetAndSolveIntegerProblem(
   if (!solver->ResetToLevelZero()) return solver->UnsatStatus();
   auto* level_zero_callbacks = model->GetOrCreate<LevelZeroCallbackHelper>();
   for (const auto& cb : level_zero_callbacks->callbacks) {
-    if (!cb()) return SatSolver::INFEASIBLE;
+    if (!cb()) {
+      solver->NotifyThatModelIsUnsat();
+      return solver->UnsatStatus();
+    }
   }
 
   // Add the assumptions if any and solve.
@@ -927,7 +1083,7 @@ SatSolver::Status ContinuousProbing(
     const std::vector<BooleanVariable>& bool_vars,
     const std::vector<IntegerVariable>& int_vars,
     const std::function<void()>& feasible_solution_observer, Model* model) {
-  VLOG(1) << "Start continuous probing with " << bool_vars.size()
+  VLOG(2) << "Start continuous probing with " << bool_vars.size()
           << " Boolean variables, and " << int_vars.size()
           << " integer variables";
 
@@ -945,13 +1101,16 @@ SatSolver::Status ContinuousProbing(
 
   int loop = 0;
   while (!time_limit->LimitReached()) {
-    VLOG(1) << "Probing loop " << loop++;
+    VLOG(2) << "Probing loop " << loop++;
 
     // Sync the bounds first.
     auto SyncBounds = [solver, &level_zero_callbacks]() {
       if (!solver->ResetToLevelZero()) return false;
       for (const auto& cb : level_zero_callbacks->callbacks) {
-        if (!cb()) return false;
+        if (!cb()) {
+          solver->NotifyThatModelIsUnsat();
+          return false;
+        }
       }
       return true;
     };
@@ -971,7 +1130,7 @@ SatSolver::Status ContinuousProbing(
     absl::flat_hash_set<BooleanVariable> probed;
 
     // Probe variable bounds.
-    // TODO(user,user): Probe optional variables.
+    // TODO(user): Probe optional variables.
     for (const IntegerVariable int_var : int_vars) {
       if (integer_trail->IsFixed(int_var) ||
           integer_trail->IsOptional(int_var)) {

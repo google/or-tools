@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -17,11 +17,75 @@ package com.google.ortools.sat;
 public final class ScalProd implements LinearExpr {
   private final IntVar[] variables;
   private final long[] coefficients;
+  private long offset;
 
   public ScalProd(IntVar[] variables, long[] coefficients) {
-    assert (variables.length == coefficients.length);
     this.variables = variables;
     this.coefficients = coefficients;
+    this.offset = 0;
+  }
+
+  public ScalProd(IntVar[] variables, long[] coefficients, long offset) {
+    this.variables = variables;
+    this.coefficients = coefficients;
+    this.offset = offset;
+  }
+
+  public ScalProd(Literal[] literals, long[] coefficients) {
+    int size = literals.length;
+    this.variables = new IntVar[size];
+    this.coefficients = new long[size];
+    this.offset = 0;
+
+    for (int i = 0; i < size; ++i) {
+      Literal lit = literals[i];
+      long coeff = coefficients[i];
+      if (lit.getIndex() >= 0) {
+        this.variables[i] = (IntVar) lit;
+        this.coefficients[i] = coeff;
+      } else {
+        this.variables[i] = (IntVar) lit.not();
+        this.coefficients[i] = -coeff;
+        this.offset -= coeff;
+      }
+    }
+  }
+
+  public ScalProd(IntVar var, long coefficient, long offset) {
+    this.variables = new IntVar[] {var};
+    this.coefficients = new long[] {coefficient};
+    this.offset = offset;
+  }
+
+  public ScalProd(Literal lit, long coefficient, long offset) {
+    if (lit.getIndex() >= 0) {
+      this.variables = new IntVar[] {(IntVar) lit};
+      this.coefficients = new long[] {coefficient};
+      this.offset = offset;
+    } else {
+      this.variables = new IntVar[] {(IntVar) lit.not()};
+      this.coefficients = new long[] {-coefficient};
+      this.offset = offset + coefficient;
+    }
+  }
+
+  public ScalProd(Literal[] literals) {
+    int size = literals.length;
+    this.variables = new IntVar[size];
+    this.coefficients = new long[size];
+    this.offset = 0;
+
+    for (int i = 0; i < size; ++i) {
+      Literal lit = literals[i];
+      if (lit.getIndex() >= 0) {
+        this.variables[i] = (IntVar) lit;
+        this.coefficients[i] = 1;
+      } else { // NotBooleanVar.
+        this.variables[i] = (IntVar) lit.not();
+        this.coefficients[i] = -1;
+        this.offset -= 1;
+      }
+    }
   }
 
   @Override
@@ -31,15 +95,22 @@ public final class ScalProd implements LinearExpr {
 
   @Override
   public IntVar getVariable(int index) {
-    assert (index >= 0);
-    assert (index < variables.length);
+    if (index < 0 || index >= variables.length) {
+      throw new IllegalArgumentException("wrong index in LinearExpr.getVariable(): " + index);
+    }
     return variables[index];
   }
 
   @Override
   public long getCoefficient(int index) {
-    assert (index >= 0);
-    assert (index < coefficients.length);
+    if (index < 0 || index >= variables.length) {
+      throw new IllegalArgumentException("wrong index in LinearExpr.getCoefficient(): " + index);
+    }
     return coefficients[index];
+  }
+
+  @Override
+  public long getOffset() {
+    return offset;
   }
 }

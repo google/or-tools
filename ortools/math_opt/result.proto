@@ -1,0 +1,161 @@
+// Copyright 2010-2021 Google LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// The result of solving a MathOpt model, both the Solution and metadata.
+syntax = "proto3";
+
+package operations_research.math_opt;
+
+import "google/protobuf/duration.proto";
+import "ortools/gscip/gscip.proto";
+import "ortools/math_opt/solution.proto";
+
+// best_dual_bound should always be better (e.g. smaller for minimization) than
+// best_primal_bound.
+//
+// We only report nontrivial (finite) values for best_dual_bound and
+// best_primal_bound if the underlying solver claims to have such a bound. Some
+// solvers (e.g. bisco, typically continuous solvers) do not claim a bound
+// even when returning optimal (these methods can terminate without a basis and
+// slightly infeasible primal and dual solutions). MIP solvers will typically
+// report a bound even if their LP solutions are imprecise.
+message SolveStatsProto {
+  // Elapsed wall clock time as measured by math_opt, roughly the time inside
+  // Solver::Solve(). Note: this does not include work done building the model.
+  google.protobuf.Duration solve_time = 1;
+
+  // When no bound is found by the solver, the trivial bound (+inf for
+  // minimization and -inf maximizaiton) is given.
+  //
+  // Note that we can have a primal bound even when we have no feasible
+  // solution, and that the primal bound can better than the best feasible
+  // solution.
+  double best_primal_bound = 2;
+
+  // The best proven bound on the object (e.g. through the LP relaxation). When
+  // no bound is found, the trivial bound (-inf minimization and +inf for
+  // maximization) is given.
+  //
+  // Always better than (e.g. for minimization, smaller than) best_primal_bound.
+  double best_dual_bound = 3;
+  int64 simplex_iterations = 4;
+  int64 barrier_iterations = 5;
+  int64 node_count = 6;
+}
+
+// The contract of when primal/dual solutions/rays is complex, see
+// termination_reasons.md for a complete description.
+//
+// Until an exact contract is finalized, it is safest to simply check if a
+// solution/ray is present rather than relying on the termination reason.
+message SolveResultProto {
+  enum TerminationReason {
+    TERMINATION_REASON_UNSPECIFIED = 0;
+
+    ////////////////////////////////////////////////////////////////////////////
+    // The optimizer successfully ran to completion.
+    ////////////////////////////////////////////////////////////////////////////
+
+    // A provably optimal solution (up to numerical tolerances) has been found.
+    OPTIMAL = 1;
+
+    // The primal problem has no feasible solutions.
+    INFEASIBLE = 2;
+
+    // The primal problem is feasible and arbitrarily good solutions can be
+    // found along a primal ray.
+    UNBOUNDED = 3;
+
+    // A dual problem has been shown to be infeasible. The primal problem is
+    // either infeasible or unbounded, but we do not know which.
+    DUAL_INFEASIBLE = 4;
+
+    // The problem was solved to one of the criteria above (optimal, infeasible,
+    // unbounded, or dual infeasible), but one or more tolerances was not met.
+    // Some primal/dual solutions/rays be present, but either they will be
+    // slightly infeasible, or (if the problem was nearly optimal) their may be
+    // a gap between the best solution objective and best objective bound.
+    //
+    // Users can still query primal/dual solutions/rays and solution stats, but
+    // they are responsible for dealing with the numerical imprecision.
+    IMPRECISE = 5;
+
+    ////////////////////////////////////////////////////////////////////////////
+    // The optimizer reached some kind of limit. Partial solution information
+    // may be available.
+    ////////////////////////////////////////////////////////////////////////////
+
+    // An iterative algorithm stopped after conducting the maximum number of
+    // iterations (e.g. simplex or barrier iterations).
+    ITERATION_LIMIT = 10;
+    // The algorithm stopped after a user-specified computation time.
+    TIME_LIMIT = 11;
+    // A branch-and-bound algorithm stopped because it explored a maximum number
+    // of nodes in the branch-and-bound tree.
+    NODE_LIMIT = 12;
+    // The algorithm stopped because it found the required number of solutions.
+    // This is often used in MIPs to get the solver to return the first feasible
+    // solution it encounters.
+    SOLUTION_LIMIT = 13;
+    // The algorithm stopped because it ran out of memory.
+    MEMORY_LIMIT = 14;
+    // The algorithm stopped because it found a solution better than a minimum
+    // limit set by the user.
+    OBJECTIVE_LIMIT = 15;
+    // The algorithm stopped because the norm of an iterate became too large.
+    NORM_LIMIT = 16;
+    // The algorithm stopped because of an interrupt signal or a user interrupt
+    // request.
+    INTERRUPTED = 17;
+    // The algorithm stopped because it was unable to continue making progress
+    // towards the solution.
+    SLOW_PROGRESS = 18;
+    // Either the algorithm stopped due to a limit not covered by one of the
+    // above or the solver does not provide enough information in its output to
+    // identify the limit.
+    OTHER_LIMIT = 19;
+
+    ////////////////////////////////////////////////////////////////////////////
+    // The optimizer had a problem while optimizing. No solution information is
+    // available.
+    ////////////////////////////////////////////////////////////////////////////
+
+    // The algorithm stopped because it encountered unrecoverable numerical
+    // error.
+    NUMERICAL_ERROR = 30;
+
+    // The algorithm stopped because of an error not covered by one of the
+    // statuses defined above.
+    OTHER_ERROR = 40;
+  }
+
+  repeated string warnings = 1;
+  TerminationReason termination_reason = 2;
+  string termination_detail = 3;
+  // Solutions should be ordered best objective value first.
+  repeated PrimalSolutionProto primal_solutions = 4;
+  // Solutions should be ordered best objective value first.
+  repeated DualSolutionProto dual_solutions = 5;
+  repeated PrimalRayProto primal_rays = 6;
+  repeated DualRayProto dual_rays = 7;
+  // basis[i] corresponds to the primal dual pair:
+  // {primal_solutions[i], dual_solutions[i]}. These fields must have at least
+  // as many elements as basis. Basis will only be populated for LPs, and may
+  // not be populated.
+  // TODO(b/183631989): rename to bases.
+  repeated BasisProto basis = 8;
+  SolveStatsProto solve_stats = 9;
+  oneof solver_specific_output {
+    GScipOutput gscip_output = 10;
+  }
+}

@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,6 +14,7 @@
 #include "ortools/algorithms/find_graph_symmetries.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <limits>
 #include <numeric>
 
@@ -105,7 +106,7 @@ GraphSymmetryFinder::GraphSymmetryFinder(const Graph& graph, bool is_undirected)
       tmp_degree_(NumNodes(), 0),
       tmp_nodes_with_degree_(NumNodes() + 1) {
   // Set up an "unlimited" time limit by default.
-  time_limit_ = TimeLimit::Infinite();
+  time_limit_ = &dummy_time_limit_;
   tmp_partition_.Reset(NumNodes());
   if (is_undirected) {
     DCHECK(GraphIsSymmetric(graph));
@@ -178,7 +179,9 @@ template <class T>
 inline void IncrementCounterForNonSingletons(const T& nodes,
                                              const DynamicPartition& partition,
                                              std::vector<int>* node_count,
-                                             std::vector<int>* nodes_seen) {
+                                             std::vector<int>* nodes_seen,
+                                             int64_t* num_operations) {
+  *num_operations += nodes.end() - nodes.begin();
   for (const int node : nodes) {
     if (partition.ElementsInSamePartAs(node).size() == 1) continue;
     const int count = ++(*node_count)[node];
@@ -191,6 +194,15 @@ void GraphSymmetryFinder::RecursivelyRefinePartitionByAdjacency(
     int first_unrefined_part_index, DynamicPartition* partition) {
   // Rename, for readability of the code below.
   std::vector<int>& tmp_nodes_with_nonzero_degree = tmp_stack_;
+
+  // This function is the main bottleneck of the whole algorithm. We count the
+  // number of blocks in the inner-most loops in num_operations. At the end we
+  // will multiply it by a factor to have some deterministic time that we will
+  // append to the deterministic time counter.
+  //
+  // TODO(user): We are really imprecise in our counting, but it is fine. We
+  // just need a way to enforce a deterministic limit on the computation effort.
+  int64_t num_operations = 0;
 
   // Assuming that the partition was refined based on the adjacency on
   // parts [0 .. first_unrefined_part_index) already, we simply need to
@@ -215,19 +227,20 @@ void GraphSymmetryFinder::RecursivelyRefinePartitionByAdjacency(
       // come from/to the current part.
       if (outgoing_adjacency) {
         for (const int node : partition->ElementsInPart(part_index)) {
-          IncrementCounterForNonSingletons(graph_[node], *partition,
-                                           &tmp_degree_,
-                                           &tmp_nodes_with_nonzero_degree);
+          IncrementCounterForNonSingletons(
+              graph_[node], *partition, &tmp_degree_,
+              &tmp_nodes_with_nonzero_degree, &num_operations);
         }
       } else {
         for (const int node : partition->ElementsInPart(part_index)) {
-          IncrementCounterForNonSingletons(TailsOfIncomingArcsTo(node),
-                                           *partition, &tmp_degree_,
-                                           &tmp_nodes_with_nonzero_degree);
+          IncrementCounterForNonSingletons(
+              TailsOfIncomingArcsTo(node), *partition, &tmp_degree_,
+              &tmp_nodes_with_nonzero_degree, &num_operations);
         }
       }
       // Group the nodes by (nonzero) degree. Remember the maximum degree.
       int max_degree = 0;
+      num_operations += 3 + tmp_nodes_with_nonzero_degree.size();
       for (const int node : tmp_nodes_with_nonzero_degree) {
         const int degree = tmp_degree_[node];
         tmp_degree_[node] = 0;  // To clean up after us.
@@ -238,11 +251,20 @@ void GraphSymmetryFinder::RecursivelyRefinePartitionByAdjacency(
       // For each degree, refine the partition by the set of nodes with that
       // degree.
       for (int degree = 1; degree <= max_degree; ++degree) {
+        // We use a manually tuned factor 3 because Refine() does quite a bit of
+        // operations for each node in its argument.
+        num_operations += 1 + 3 * tmp_nodes_with_degree_[degree].size();
         partition->Refine(tmp_nodes_with_degree_[degree]);
         tmp_nodes_with_degree_[degree].clear();  // To clean up after us.
       }
     }
   }
+
+  // The coefficient was manually tuned (only on a few instances) so that the
+  // time is roughly correlated with seconds on a fast desktop computer from
+  // 2020.
+  time_limit_->AdvanceDeterministicTime(1e-8 *
+                                        static_cast<double>(num_operations));
 }
 
 void GraphSymmetryFinder::DistinguishNodeInPartition(
@@ -353,11 +375,12 @@ void GetAllOtherRepresentativesInSamePartAs(
 }  // namespace
 
 absl::Status GraphSymmetryFinder::FindSymmetries(
-    double time_limit_seconds, std::vector<int>* node_equivalence_classes_io,
+    std::vector<int>* node_equivalence_classes_io,
     std::vector<std::unique_ptr<SparsePermutation>>* generators,
-    std::vector<int>* factorized_automorphism_group_size) {
+    std::vector<int>* factorized_automorphism_group_size,
+    TimeLimit* time_limit) {
   // Initialization.
-  time_limit_ = absl::make_unique<TimeLimit>(time_limit_seconds);
+  time_limit_ = time_limit == nullptr ? &dummy_time_limit_ : time_limit;
   IF_STATS_ENABLED(stats_.initialization_time.StartTimer());
   generators->clear();
   factorized_automorphism_group_size->clear();
@@ -744,8 +767,10 @@ GraphSymmetryFinder::FindOneSuitablePermutation(
         tmp_dynamic_permutation_.UndoLastMappings(&base_singletons);
       } else {
         ScopedTimeDistributionUpdater u(&stats_.map_reelection_time);
-        // TODO(user): try to get the non-singleton part from
-        // DynamicPermutation in O(1), if it matters to the overall speed.
+        // TODO(user, viger): try to get the non-singleton part from
+        // DynamicPermutation in O(1). On some graphs like the symmetry of the
+        // mip problem lectsched-4-obj.mps.gz, this take the majority of the
+        // time!
         int non_singleton_part = 0;
         {
           ScopedTimeDistributionUpdater u(&stats_.non_singleton_search_time);
@@ -754,6 +779,9 @@ GraphSymmetryFinder::FindOneSuitablePermutation(
             DCHECK_LT(non_singleton_part, base_partition->NumParts());
           }
         }
+        time_limit_->AdvanceDeterministicTime(
+            1e-9 * static_cast<double>(non_singleton_part));
+
         // The partitions are compatible, but we'll deepen the search on some
         // non-singleton part. We can pick any base and image node in this case.
         GetBestMapping(*base_partition, *image_partition, non_singleton_part,

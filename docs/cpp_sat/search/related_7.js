@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['operator_3c_3c_4383',['operator&lt;&lt;',['../classoperations__research_1_1sat_1_1_interval_var.html#ad73e372cd9d1def69624f85777393123',1,'operations_research::sat::IntervalVar']]]
+  ['nestedtimelimit_0',['NestedTimeLimit',['../classoperations__research_1_1_time_limit.html#a80c2662c13e3bbf165ffe1603fe87433',1,'operations_research::TimeLimit']]],
+  ['nooverlap2dconstraint_1',['NoOverlap2DConstraint',['../classoperations__research_1_1sat_1_1_interval_var.html#abdbbe5d06195ef1dc4c30ad25b9017ac',1,'operations_research::sat::IntervalVar']]]
 ];

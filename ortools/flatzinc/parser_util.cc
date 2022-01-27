@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -62,9 +62,9 @@ bool AllDomainsHaveOneValue(const std::vector<Domain>& domains) {
   return true;
 }
 
-int64 ConvertAsIntegerOrDie(double d) {
+int64_t ConvertAsIntegerOrDie(double d) {
   const double rounded = std::round(d);
-  const int64 i = static_cast<int64>(rounded);
+  const int64_t i = static_cast<int64_t>(rounded);
   CHECK_LE(std::abs(static_cast<double>(i) - rounded), 1e-9);
   return i;
 }

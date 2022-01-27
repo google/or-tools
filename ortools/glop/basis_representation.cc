@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -199,16 +199,24 @@ void BasisFactorization::Clear() {
   rank_one_factorization_.Clear();
   storage_.Reset(compact_matrix_.num_rows());
   right_storage_.Reset(compact_matrix_.num_rows());
-  left_pool_mapping_.assign(compact_matrix_.num_cols(), kInvalidCol);
-  right_pool_mapping_.assign(compact_matrix_.num_cols(), kInvalidCol);
+  left_pool_mapping_.clear();
+  right_pool_mapping_.clear();
 }
 
 Status BasisFactorization::Initialize() {
   SCOPED_TIME_STAT(&stats_);
   Clear();
   if (IsIdentityBasis()) return Status::OK();
-  CompactSparseMatrixView basis_matrix(&compact_matrix_, &basis_);
-  return lu_factorization_.ComputeFactorization(basis_matrix);
+  return ComputeFactorization();
+}
+
+RowToColMapping BasisFactorization::ComputeInitialBasis(
+    const std::vector<ColIndex>& candidates) {
+  const RowToColMapping basis =
+      lu_factorization_.ComputeInitialBasis(compact_matrix_, candidates);
+  deterministic_time_ +=
+      lu_factorization_.DeterministicTimeOfLastFactorization();
+  return basis;
 }
 
 bool BasisFactorization::IsRefactorized() const { return num_updates_ == 0; }
@@ -222,13 +230,16 @@ Status BasisFactorization::ForceRefactorization() {
   SCOPED_TIME_STAT(&stats_);
   stats_.refactorization_interval.Add(num_updates_);
   Clear();
+  return ComputeFactorization();
+}
+
+Status BasisFactorization::ComputeFactorization() {
   CompactSparseMatrixView basis_matrix(&compact_matrix_, &basis_);
   const Status status = lu_factorization_.ComputeFactorization(basis_matrix);
-
-  const double kLuComplexityFactor = 10;
-  deterministic_time_ +=
-      kLuComplexityFactor * DeterministicTimeForFpOperations(
-                                lu_factorization_.NumberOfEntries().value());
+  last_factorization_deterministic_time_ =
+      lu_factorization_.DeterministicTimeOfLastFactorization();
+  deterministic_time_ += last_factorization_deterministic_time_;
+  rank_one_factorization_.ResetDeterministicTime();
   return status;
 }
 
@@ -242,9 +253,13 @@ Status BasisFactorization::ForceRefactorization() {
 //    right_update_vector - U.column(leaving_column), left_update_vector)
 Status BasisFactorization::MiddleProductFormUpdate(
     ColIndex entering_col, RowIndex leaving_variable_row) {
-  const ColIndex right_index = right_pool_mapping_[entering_col];
+  const ColIndex right_index = entering_col < right_pool_mapping_.size()
+                                   ? right_pool_mapping_[entering_col]
+                                   : kInvalidCol;
   const ColIndex left_index =
-      left_pool_mapping_[RowToColIndex(leaving_variable_row)];
+      RowToColIndex(leaving_variable_row) < left_pool_mapping_.size()
+          ? left_pool_mapping_[RowToColIndex(leaving_variable_row)]
+          : kInvalidCol;
   if (right_index == kInvalidCol || left_index == kInvalidCol) {
     LOG(INFO) << "One update vector is missing!!!";
     return ForceRefactorization();
@@ -284,29 +299,44 @@ Status BasisFactorization::MiddleProductFormUpdate(
 Status BasisFactorization::Update(ColIndex entering_col,
                                   RowIndex leaving_variable_row,
                                   const ScatteredColumn& direction) {
-  if (num_updates_ < max_num_updates_) {
-    SCOPED_TIME_STAT(&stats_);
-
-    // Note(user): in some rare case (to investigate!) MiddleProductFormUpdate()
-    // will trigger a full refactorization. Because of this, it is important to
-    // increment num_updates_ first as this counter is used by IsRefactorized().
-    ++num_updates_;
-    if (use_middle_product_form_update_) {
-      GLOP_RETURN_IF_ERROR(
-          MiddleProductFormUpdate(entering_col, leaving_variable_row));
-    } else {
-      eta_factorization_.Update(entering_col, leaving_variable_row, direction);
+  // Note that in addition to the logic here, we also refactorize when we detect
+  // numerical imprecisions. There is various tests for that during an
+  // iteration.
+  if (num_updates_ >= max_num_updates_) {
+    if (!parameters_.dynamically_adjust_refactorization_period()) {
+      return ForceRefactorization();
     }
-    tau_computation_can_be_optimized_ = false;
-    return Status::OK();
+
+    // We try to equilibrate the factorization time with the EXTRA solve time
+    // incurred since the last factorization.
+    //
+    // Note(user): The deterministic time is not really super precise for now.
+    // We tend to undercount the factorization, but this tends to favorize more
+    // refactorization which is good for numerical stability.
+    if (last_factorization_deterministic_time_ <
+        rank_one_factorization_.DeterministicTimeSinceLastReset()) {
+      return ForceRefactorization();
+    }
   }
-  return ForceRefactorization();
+
+  // Note(user): in some rare case (to investigate!) MiddleProductFormUpdate()
+  // will trigger a full refactorization. Because of this, it is important to
+  // increment num_updates_ first as this counter is used by IsRefactorized().
+  SCOPED_TIME_STAT(&stats_);
+  ++num_updates_;
+  if (use_middle_product_form_update_) {
+    GLOP_RETURN_IF_ERROR(
+        MiddleProductFormUpdate(entering_col, leaving_variable_row));
+  } else {
+    eta_factorization_.Update(entering_col, leaving_variable_row, direction);
+  }
+  tau_computation_can_be_optimized_ = false;
+  return Status::OK();
 }
 
 void BasisFactorization::LeftSolve(ScatteredRow* y) const {
   SCOPED_TIME_STAT(&stats_);
   RETURN_IF_NULL(y);
-  BumpDeterministicTimeForSolve(compact_matrix_.num_rows().value());
   if (use_middle_product_form_update_) {
     lu_factorization_.LeftSolveUWithNonZeros(y);
     rank_one_factorization_.LeftSolveWithNonZeros(y);
@@ -317,12 +347,12 @@ void BasisFactorization::LeftSolve(ScatteredRow* y) const {
     eta_factorization_.LeftSolve(&y->values);
     lu_factorization_.LeftSolve(&y->values);
   }
+  BumpDeterministicTimeForSolve(y->NumNonZerosEstimate());
 }
 
 void BasisFactorization::RightSolve(ScatteredColumn* d) const {
   SCOPED_TIME_STAT(&stats_);
   RETURN_IF_NULL(d);
-  BumpDeterministicTimeForSolve(d->non_zeros.size());
   if (use_middle_product_form_update_) {
     lu_factorization_.RightSolveLWithNonZeros(d);
     rank_one_factorization_.RightSolveWithNonZeros(d);
@@ -333,12 +363,12 @@ void BasisFactorization::RightSolve(ScatteredColumn* d) const {
     lu_factorization_.RightSolve(&d->values);
     eta_factorization_.RightSolve(&d->values);
   }
+  BumpDeterministicTimeForSolve(d->NumNonZerosEstimate());
 }
 
 const DenseColumn& BasisFactorization::RightSolveForTau(
     const ScatteredColumn& a) const {
   SCOPED_TIME_STAT(&stats_);
-  BumpDeterministicTimeForSolve(compact_matrix_.num_rows().value());
   if (use_middle_product_form_update_) {
     if (tau_computation_can_be_optimized_) {
       // Once used, the intermediate result is overwritten, so
@@ -358,6 +388,7 @@ const DenseColumn& BasisFactorization::RightSolveForTau(
     eta_factorization_.RightSolve(&tau_.values);
   }
   tau_is_computed_ = true;
+  BumpDeterministicTimeForSolve(tau_.NumNonZerosEstimate());
   return tau_.values;
 }
 
@@ -365,7 +396,6 @@ void BasisFactorization::LeftSolveForUnitRow(ColIndex j,
                                              ScatteredRow* y) const {
   SCOPED_TIME_STAT(&stats_);
   RETURN_IF_NULL(y);
-  BumpDeterministicTimeForSolve(1);
   ClearAndResizeVectorWithNonZeros(RowToColIndex(compact_matrix_.num_rows()),
                                    y);
   if (!use_middle_product_form_update_) {
@@ -373,6 +403,7 @@ void BasisFactorization::LeftSolveForUnitRow(ColIndex j,
     y->non_zeros.push_back(j);
     eta_factorization_.SparseLeftSolve(&y->values, &y->non_zeros);
     lu_factorization_.LeftSolve(&y->values);
+    BumpDeterministicTimeForSolve(y->NumNonZerosEstimate());
     return;
   }
 
@@ -380,6 +411,9 @@ void BasisFactorization::LeftSolveForUnitRow(ColIndex j,
   // since we do a left solve for a unit row using an upper triangular matrix,
   // all positions in front of the unit will be zero (modulo the column
   // permutation).
+  if (j >= left_pool_mapping_.size()) {
+    left_pool_mapping_.resize(j + 1, kInvalidCol);
+  }
   if (left_pool_mapping_[j] == kInvalidCol) {
     const ColIndex start = lu_factorization_.LeftSolveUForUnitRow(j, y);
     if (y->non_zeros.empty()) {
@@ -410,6 +444,7 @@ void BasisFactorization::LeftSolveForUnitRow(ColIndex j,
   }
   tau_is_computed_ = false;
   y->SortNonZerosIfNeeded();
+  BumpDeterministicTimeForSolve(y->NumNonZerosEstimate());
 }
 
 void BasisFactorization::TemporaryLeftSolveForUnitRow(ColIndex j,
@@ -417,26 +452,25 @@ void BasisFactorization::TemporaryLeftSolveForUnitRow(ColIndex j,
   CHECK(IsRefactorized());
   SCOPED_TIME_STAT(&stats_);
   RETURN_IF_NULL(y);
-  BumpDeterministicTimeForSolve(1);
   ClearAndResizeVectorWithNonZeros(RowToColIndex(compact_matrix_.num_rows()),
                                    y);
   lu_factorization_.LeftSolveUForUnitRow(j, y);
   lu_factorization_.LeftSolveLWithNonZeros(y);
   y->SortNonZerosIfNeeded();
+  BumpDeterministicTimeForSolve(y->NumNonZerosEstimate());
 }
 
 void BasisFactorization::RightSolveForProblemColumn(ColIndex col,
                                                     ScatteredColumn* d) const {
   SCOPED_TIME_STAT(&stats_);
   RETURN_IF_NULL(d);
-  BumpDeterministicTimeForSolve(
-      compact_matrix_.column(col).num_entries().value());
   ClearAndResizeVectorWithNonZeros(compact_matrix_.num_rows(), d);
 
   if (!use_middle_product_form_update_) {
     compact_matrix_.ColumnCopyToClearedDenseColumn(col, &d->values);
     lu_factorization_.RightSolve(&d->values);
     eta_factorization_.RightSolve(&d->values);
+    BumpDeterministicTimeForSolve(d->NumNonZerosEstimate());
     return;
   }
 
@@ -445,9 +479,6 @@ void BasisFactorization::RightSolveForProblemColumn(ColIndex col,
   lu_factorization_.RightSolveLForColumnView(compact_matrix_.column(col), d);
   rank_one_factorization_.RightSolveWithNonZeros(d);
   if (col >= right_pool_mapping_.size()) {
-    // This is needed because when we do an incremental solve with only new
-    // columns, we still reuse the current factorization without calling
-    // Refactorize() which would have resized this vector.
     right_pool_mapping_.resize(col + 1, kInvalidCol);
   }
   if (d->non_zeros.empty()) {
@@ -461,6 +492,7 @@ void BasisFactorization::RightSolveForProblemColumn(ColIndex col,
   }
   lu_factorization_.RightSolveUWithNonZeros(d);
   d->SortNonZerosIfNeeded();
+  BumpDeterministicTimeForSolve(d->NumNonZerosEstimate());
 }
 
 Fractional BasisFactorization::RightSolveSquaredNorm(
@@ -580,8 +612,8 @@ void BasisFactorization::BumpDeterministicTimeForSolve(int num_entries) const {
       static_cast<double>(num_entries) /
       static_cast<double>(compact_matrix_.num_rows().value());
   deterministic_time_ +=
-      (1.0 + density) * DeterministicTimeForFpOperations(
-                            lu_factorization_.NumberOfEntries().value()) +
+      density * DeterministicTimeForFpOperations(
+                    lu_factorization_.NumberOfEntries().value()) +
       DeterministicTimeForFpOperations(
           rank_one_factorization_.num_entries().value());
 }

@@ -1,19 +1,20 @@
-def code_sample_cc(sample):
+"""Helper macro to compile and test code samples."""
+
+def code_sample_cc(name):
   native.cc_binary(
-      name = sample,
-      srcs = [sample + ".cc"],
+      name = name,
+      srcs = [name + ".cc"],
       deps = [
         "//ortools/algorithms:knapsack_solver_lib",
       ],
   )
 
   native.cc_test(
-      name = sample+"_test",
+      name = name+"_test",
       size = "small",
-      srcs = [sample + ".cc"],
+      srcs = [name + ".cc"],
       deps = [
-        ":"+sample,
+        ":"+name,
         "//ortools/algorithms:knapsack_solver_lib",
       ],
   )
-

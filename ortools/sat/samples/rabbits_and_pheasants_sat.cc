@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -24,8 +24,8 @@ void RabbitsAndPheasantsSat() {
   const IntVar pheasants =
       cp_model.NewIntVar(all_animals).WithName("pheasants");
 
-  cp_model.AddEquality(LinearExpr::Sum({rabbits, pheasants}), 20);
-  cp_model.AddEquality(LinearExpr::ScalProd({rabbits, pheasants}, {4, 2}), 56);
+  cp_model.AddEquality(rabbits + pheasants, 20);
+  cp_model.AddEquality(4 * rabbits + 2 * pheasants, 56);
 
   const CpSolverResponse response = Solve(cp_model.Build());
 

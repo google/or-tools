@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -12,9 +12,11 @@
 // limitations under the License.
 
 #include <atomic>
+#include <cstdint>
 #include <string>
 #include <vector>
 
+#include "absl/base/attributes.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
@@ -58,8 +60,8 @@ class GLOPInterface : public MPSolverInterface {
   void ClearObjective() override;
 
   // ------ Query statistics on the solution and the solve ------
-  int64 iterations() const override;
-  int64 nodes() const override;
+  int64_t iterations() const override;
+  int64_t nodes() const override;
   MPSolver::BasisStatus row_status(int constraint_index) const override;
   MPSolver::BasisStatus column_status(int variable_index) const override;
 
@@ -134,7 +136,7 @@ MPSolver::ResultStatus GLOPInterface::Solve(const MPSolverParameters& param) {
       solver_->solver_specific_parameter_string_);
   lp_solver_.SetParameters(parameters_);
   std::unique_ptr<TimeLimit> time_limit =
-      TimeLimit::FromParameters(parameters_);
+      TimeLimit::FromParameters(lp_solver_.GetParameters());
   time_limit->RegisterExternalBooleanAsLimit(&interrupt_solver_);
   const glop::ProblemStatus status =
       lp_solver_.SolveWithTimeLimit(linear_program_, time_limit.get());
@@ -235,11 +237,11 @@ void GLOPInterface::SetObjectiveOffset(double value) { NonIncrementalChange(); }
 
 void GLOPInterface::ClearObjective() { NonIncrementalChange(); }
 
-int64 GLOPInterface::iterations() const {
+int64_t GLOPInterface::iterations() const {
   return lp_solver_.GetNumberOfSimplexIterations();
 }
 
-int64 GLOPInterface::nodes() const {
+int64_t GLOPInterface::nodes() const {
   LOG(DFATAL) << "Number of nodes only available for discrete problems";
   return kUnknownNumberOfNodes;
 }
@@ -329,6 +331,7 @@ void GLOPInterface::SetStartingLpBasis(
 
 void GLOPInterface::SetParameters(const MPSolverParameters& param) {
   parameters_.Clear();
+  parameters_.set_log_search_progress(!quiet_);
   SetCommonParameters(param);
   SetScalingMode(param.GetIntegerParam(MPSolverParameters::SCALING));
 }

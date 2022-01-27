@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <string>
 #include <utility>
 
@@ -22,6 +23,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/lp_data/lp_print_utils.h"
 #include "ortools/lp_data/lp_utils.h"
 #include "ortools/lp_data/matrix_utils.h"
@@ -296,7 +298,7 @@ bool LinearProgram::IsVariableInteger(ColIndex col) const {
 }
 
 bool LinearProgram::IsVariableBinary(ColIndex col) const {
-  // TODO(user,user): bounds of binary variables (and of integer ones) should
+  // TODO(user): bounds of binary variables (and of integer ones) should
   // be integer. Add a preprocessor for that.
   return IsVariableInteger(col) && (variable_lower_bounds_[col] < kEpsilon) &&
          (variable_lower_bounds_[col] > Fractional(-1)) &&
@@ -421,26 +423,55 @@ Fractional LinearProgram::GetObjectiveCoefficientForMinimizationVersion(
 }
 
 std::string LinearProgram::GetDimensionString() const {
+  Fractional min_magnitude = 0.0;
+  Fractional max_magnitude = 0.0;
+  matrix_.ComputeMinAndMaxMagnitudes(&min_magnitude, &max_magnitude);
   return absl::StrFormat(
-      "%d rows, %d columns, %d entries", num_constraints().value(),
-      num_variables().value(),
-      // static_cast<int64> is needed because the Android port uses int32.
-      static_cast<int64>(num_entries().value()));
+      "%d rows, %d columns, %d entries with magnitude in [%e, %e]",
+      num_constraints().value(), num_variables().value(),
+      // static_cast<int64_t> is needed because the Android port uses int32_t.
+      static_cast<int64_t>(num_entries().value()), min_magnitude,
+      max_magnitude);
 }
 
+namespace {
+
+template <typename FractionalValues>
+void UpdateStats(const FractionalValues& values, int64_t* num_non_zeros,
+                 Fractional* min_value, Fractional* max_value) {
+  for (const Fractional v : values) {
+    if (v == 0 || v == kInfinity || v == -kInfinity) continue;
+    *min_value = std::min(*min_value, v);
+    *max_value = std::max(*max_value, v);
+    ++(*num_non_zeros);
+  }
+}
+
+}  // namespace
+
 std::string LinearProgram::GetObjectiveStatsString() const {
-  int64 num_non_zeros = 0;
+  int64_t num_non_zeros = 0;
   Fractional min_value = +kInfinity;
   Fractional max_value = -kInfinity;
-  for (ColIndex col(0); col < objective_coefficients_.size(); ++col) {
-    const Fractional value = objective_coefficients_[col];
-    if (value == 0) continue;
-    min_value = std::min(min_value, value);
-    max_value = std::max(max_value, value);
-    ++num_non_zeros;
-  }
+  UpdateStats(objective_coefficients_, &num_non_zeros, &min_value, &max_value);
   if (num_non_zeros == 0) {
     return "No objective term. This is a pure feasibility problem.";
+  } else {
+    return absl::StrFormat("%d non-zeros, range [%e, %e]", num_non_zeros,
+                           min_value, max_value);
+  }
+}
+
+std::string LinearProgram::GetBoundsStatsString() const {
+  int64_t num_non_zeros = 0;
+  Fractional min_value = +kInfinity;
+  Fractional max_value = -kInfinity;
+  UpdateStats(variable_lower_bounds_, &num_non_zeros, &min_value, &max_value);
+  UpdateStats(variable_upper_bounds_, &num_non_zeros, &min_value, &max_value);
+  UpdateStats(constraint_lower_bounds_, &num_non_zeros, &min_value, &max_value);
+  UpdateStats(constraint_upper_bounds_, &num_non_zeros, &min_value, &max_value);
+  if (num_non_zeros == 0) {
+    return "All variables/constraints bounds are zero or +/- infinity.";
   } else {
     return absl::StrFormat("%d non-zeros, range [%e, %e]", num_non_zeros,
                            min_value, max_value);
@@ -1412,8 +1443,8 @@ std::string LinearProgram::NonZeroStatFormatter(
 
   // To avoid division by 0 if there are no columns or no rows, we set
   // height and width to be at least one.
-  const int64 height = std::max(RowToIntIndex(num_constraints()), 1);
-  const int64 width = std::max(ColToIntIndex(num_variables()), 1);
+  const int64_t height = std::max(RowToIntIndex(num_constraints()), 1);
+  const int64_t width = std::max(ColToIntIndex(num_variables()), 1);
   const double fill_rate = 100.0 * static_cast<double>(num_entries.value()) /
                            static_cast<double>(height * width);
 
@@ -1479,7 +1510,10 @@ bool LinearProgram::BoundsOfIntegerConstraintsAreInteger(
         integer_constraint = false;
         break;
       }
-      if (!IsIntegerWithinTolerance(var.coefficient(), tolerance)) {
+
+      // To match what the IntegerBoundsPreprocessor is doing, we require all
+      // coefficient to be EXACTLY integer here.
+      if (std::round(var.coefficient()) != var.coefficient()) {
         integer_constraint = false;
         break;
       }

@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -37,14 +37,14 @@ syntax = "proto2";
 
 package operations_research;
 
-message Arc {
+message FlowArcProto {
   // A directed arc goes from a tail node to a head node.
   // Node ids must be non-negative (>= 0).
-  optional int64 tail_node_id = 1;
-  optional int64 head_node_id = 2;
+  optional int64 tail = 1;
+  optional int64 head = 2;
 
   // Capacity of the arc. Must be non-negative (>= 0). If the capacity is zero,
-  // it is equivalent to not including the arc in the FlowModel.
+  // it is equivalent to not including the arc in the FlowModelProto.
   optional int64 capacity = 3 [default = 1];
 
   // Cost of this arc per unit of flow.
@@ -52,10 +52,10 @@ message Arc {
   optional int64 unit_cost = 4 [default = 0];
 }
 
-message Node {
+message FlowNodeProto {
   // The ids must be non-negative (>= 0). They should be dense for good
   // performance. Note that it is not mandatory to include nodes with no supply
-  // in a FlowModel.
+  // in a FlowModelProto.
   optional int64 id = 1;
 
   // The supply can be positive or negative in which case it means demand.
@@ -63,10 +63,10 @@ message Node {
   optional int64 supply = 2 [default = 0];
 }
 
-// Holds a flow problem, see Node and Arc for more details.
-message FlowModel {
-  repeated Node node = 1;
-  repeated Arc arc = 2;
+// Holds a flow problem, see NodeProto and ArcProto for more details.
+message FlowModelProto {
+  repeated FlowNodeProto nodes = 1;
+  repeated FlowArcProto arcs = 2;
 
   // The type of problem to solve.
   enum ProblemType {
@@ -74,5 +74,5 @@ message FlowModel {
     MAX_FLOW = 1;
     MIN_COST_FLOW = 2;
   }
-  optional ProblemType problem_type = 3 [default = MIN_COST_FLOW];
+  optional ProblemType problem_type = 3;
 }

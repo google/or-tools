@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -17,11 +17,13 @@
 #define OR_TOOLS_SAT_SAT_BASE_H_
 
 #include <algorithm>
+#include <cstdint>
 #include <deque>
 #include <memory>
 #include <string>
 #include <vector>
 
+#include "absl/base/attributes.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
 #include "ortools/base/int_type.h"
@@ -196,16 +198,16 @@ struct AssignmentInfo {
   // TODO(user): We currently don't support more than 2^28 decision levels. That
   // should be enough for most practical problem, but we should fail properly if
   // this limit is reached.
-  uint32 level : 28;
+  uint32_t level : 28;
 
   // The type of assignment (see AssignmentType below).
   //
   // Note(user): We currently don't support more than 16 types of assignment.
   // This is checked in RegisterPropagator().
-  mutable uint32 type : 4;
+  mutable uint32_t type : 4;
 
   // The index of this assignment in the trail.
-  int32 trail_index;
+  int32_t trail_index;
 
   std::string DebugString() const {
     return absl::StrFormat("level:%d type:%d trail_index:%d", level, type,
@@ -374,7 +376,7 @@ class Trail {
 
   // Getters.
   int NumVariables() const { return trail_.size(); }
-  int64 NumberOfEnqueues() const { return num_untrailed_enqueues_ + Index(); }
+  int64_t NumberOfEnqueues() const { return num_untrailed_enqueues_ + Index(); }
   int Index() const { return current_info_.trail_index; }
   const Literal& operator[](int index) const { return trail_[index]; }
   const VariablesAssignment& Assignment() const { return assignment_; }
@@ -395,7 +397,7 @@ class Trail {
   }
 
  private:
-  int64 num_untrailed_enqueues_ = 0;
+  int64_t num_untrailed_enqueues_ = 0;
   AssignmentInfo current_info_;
   VariablesAssignment assignment_;
   std::vector<Literal> trail_;

@@ -1,13 +1,12 @@
 FROM ortools/cmake:debian_swig AS env
-# see: https://docs.microsoft.com/en-us/dotnet/core/install/linux-package-manager-debian10
+# see: https://docs.microsoft.com/en-us/dotnet/core/install/linux-debian
 RUN apt-get update -qq \
 && apt-get install -yq wget gpg apt-transport-https \
-&& wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.asc.gpg \
-&& mv microsoft.asc.gpg /etc/apt/trusted.gpg.d/ \
-&& wget -q https://packages.microsoft.com/config/debian/10/prod.list \
-&& mv prod.list /etc/apt/sources.list.d/microsoft-prod.list \
+&& wget -q "https://packages.microsoft.com/config/debian/11/packages-microsoft-prod.deb" -O packages-microsoft-prod.deb \
+&& dpkg -i packages-microsoft-prod.deb \
+&& rm packages-microsoft-prod.deb \
 && apt-get update -qq \
-&& apt-get install -yq dotnet-sdk-3.1 \
+&& apt-get install -yq dotnet-sdk-3.1 dotnet-sdk-6.0 \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 # Trigger first run experience by running arbitrary cmd
@@ -18,12 +17,13 @@ WORKDIR /home/project
 COPY . .
 
 FROM devel AS build
+RUN cmake -version
 RUN cmake -S. -Bbuild -DBUILD_DOTNET=ON -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
 RUN cmake --build build --target all -v
-RUN cmake --build build --target install
+RUN cmake --build build --target install -v
 
 FROM build AS test
-RUN CTEST_OUTPUT_ON_FAILURE=1 cmake --build build --target test
+RUN CTEST_OUTPUT_ON_FAILURE=1 cmake --build build --target test -v
 
 FROM env AS install_env
 WORKDIR /home/sample

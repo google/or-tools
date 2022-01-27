@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -24,14 +24,15 @@ namespace operations_research {
   names.push_back(#name);         \
   lp_preprocessors.push_back(absl::make_unique<name>(&glop_params));
 
-MPSolverResponseStatus ApplyMipPresolveSteps(
-    bool log_info, const glop::GlopParameters& glop_params, MPModelProto* model,
-    std::vector<std::unique_ptr<glop::Preprocessor>>* for_postsolve) {
+glop::ProblemStatus ApplyMipPresolveSteps(
+    const glop::GlopParameters& glop_params, MPModelProto* model,
+    std::vector<std::unique_ptr<glop::Preprocessor>>* for_postsolve,
+    SolverLogger* logger) {
   CHECK(model != nullptr);
 
   // TODO(user): General constraints are currently not supported.
   if (!model->general_constraint().empty()) {
-    return MPSolverResponseStatus::MPSOLVER_NOT_SOLVED;
+    return glop::ProblemStatus::INIT;
   }
 
   // We need to copy the hint because LinearProgramToMPModelProto() loose it.
@@ -50,7 +51,8 @@ MPSolverResponseStatus ApplyMipPresolveSteps(
   if (!hint_is_present) {
     const std::string header =
         "Running basic LP presolve, initial problem dimensions: ";
-    LOG_IF(INFO, log_info) << header << lp.GetDimensionString();
+    SOLVER_LOG(logger, "");
+    SOLVER_LOG(logger, header, lp.GetDimensionString());
     std::vector<std::string> names;
     std::vector<std::unique_ptr<glop::Preprocessor>> lp_preprocessors;
     ADD_LP_PREPROCESSOR(glop::FixedVariablePreprocessor);
@@ -69,15 +71,9 @@ MPSolverResponseStatus ApplyMipPresolveSteps(
       preprocessor->UseInMipContext();
       const bool need_postsolve = preprocessor->Run(&lp);
       names[i].resize(header.size(), ' ');  // padding.
-      LOG_IF(INFO, log_info) << names[i] << lp.GetDimensionString();
+      SOLVER_LOG(logger, names[i], lp.GetDimensionString());
       const glop::ProblemStatus status = preprocessor->status();
-      if (status != glop::ProblemStatus::INIT) {
-        if (status == glop::ProblemStatus::PRIMAL_INFEASIBLE ||
-            status == glop::ProblemStatus::INFEASIBLE_OR_UNBOUNDED) {
-          return MPSolverResponseStatus::MPSOLVER_INFEASIBLE;
-        }
-        return MPSolverResponseStatus::MPSOLVER_NOT_SOLVED;
-      }
+      if (status != glop::ProblemStatus::INIT) return status;
       if (need_postsolve) for_postsolve->push_back(std::move(preprocessor));
     }
   }
@@ -87,7 +83,11 @@ MPSolverResponseStatus ApplyMipPresolveSteps(
     auto shift_bounds =
         absl::make_unique<glop::ShiftVariableBoundsPreprocessor>(&glop_params);
     shift_bounds->UseInMipContext();
-    if (shift_bounds->Run(&lp)) {
+    const bool need_postsolve = shift_bounds->Run(&lp);
+    if (shift_bounds->status() != glop::ProblemStatus::INIT) {
+      return shift_bounds->status();
+    }
+    if (need_postsolve) {
       for_postsolve->push_back(std::move(shift_bounds));
     }
   }
@@ -100,7 +100,7 @@ MPSolverResponseStatus ApplyMipPresolveSteps(
     *model->mutable_solution_hint() = copy_of_hint;
   }
 
-  return MPSolverResponseStatus::MPSOLVER_NOT_SOLVED;
+  return glop::ProblemStatus::INIT;
 }
 
 #undef ADD_LP_PREPROCESSOR

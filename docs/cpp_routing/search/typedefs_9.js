@@ -1,7 +1,7 @@
 var searchData=
 [
-  ['routingindexpair_5468',['RoutingIndexPair',['../namespaceoperations__research.html#a1a7c1221ae29f298e0879e516d086f8b',1,'operations_research']]],
-  ['routingindexpairs_5469',['RoutingIndexPairs',['../namespaceoperations__research.html#aef7db0bee0a22d1791d040fd3853f3b7',1,'operations_research']]],
-  ['routingtransitcallback1_5470',['RoutingTransitCallback1',['../namespaceoperations__research.html#abec0698c301a7fe57265985e2d30e7c7',1,'operations_research']]],
-  ['routingtransitcallback2_5471',['RoutingTransitCallback2',['../namespaceoperations__research.html#ab35e9f27307e9c5273c9d77fcf30de0e',1,'operations_research']]]
+  ['routingindexpair_0',['RoutingIndexPair',['../namespaceoperations__research.html#a630fe793e232b361cd9fd99f18599df1',1,'operations_research']]],
+  ['routingindexpairs_1',['RoutingIndexPairs',['../namespaceoperations__research.html#aef7db0bee0a22d1791d040fd3853f3b7',1,'operations_research']]],
+  ['routingtransitcallback1_2',['RoutingTransitCallback1',['../namespaceoperations__research.html#aae02b84a58c3008fb747c0f6917bfe6c',1,'operations_research']]],
+  ['routingtransitcallback2_3',['RoutingTransitCallback2',['../namespaceoperations__research.html#a26868b9d744edcd8d59145e068678885',1,'operations_research']]]
 ];

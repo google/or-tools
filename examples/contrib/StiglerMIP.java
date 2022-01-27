@@ -200,9 +200,12 @@ public class StiglerMIP {
       }
     }
 
-    solver.solve();
+    final MPSolver.ResultStatus resultStatus = solver.solve();
 
     /** printing */
+    if (resultStatus != MPSolver.ResultStatus.OPTIMAL) {
+      System.err.println("The problem does not have an optimal solution!");
+    }
     DecimalFormat df = new DecimalFormat("#.##");
     df.setRoundingMode(RoundingMode.CEILING);
 

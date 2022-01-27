@@ -1,5 +1,4 @@
 var searchData=
 [
-  ['optimizationproblemtype_10113',['OptimizationProblemType',['../classGoogle_1_1OrTools_1_1LinearSolver_1_1Solver.html#a76c87990aabadd148304b95332a60ff8',1,'Google::OrTools::LinearSolver::Solver']]],
-  ['optionalboolean_10114',['OptionalBoolean',['../namespaceGoogle_1_1OrTools_1_1Util.html#ada8190e5877c8910575c2ab2b7178c88',1,'Google::OrTools::Util']]]
+  ['lpalgorithmvalues_0',['LpAlgorithmValues',['../classGoogle_1_1OrTools_1_1LinearSolver_1_1MPSolverParameters.html#a79b59c0c868544afdaa05d89c8f8541f',1,'Google::OrTools::LinearSolver::MPSolverParameters']]]
 ];

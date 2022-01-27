@@ -29,6 +29,7 @@ set(ABSL_DEPS
   absl::random_random
   absl::raw_hash_set
   absl::hash
+  absl::leak_check
   absl::memory
   absl::meta
   absl::stacktrace
@@ -47,9 +48,25 @@ if(NOT TARGET protobuf::libprotobuf)
   message(FATAL_ERROR "Target protobuf::libprotobuf not available.")
 endif()
 
+if(BUILD_LP_PARSER)
+  if(NOT BUILD_re2)
+    find_package(re2 REQUIRED)
+  endif()
+  if(NOT TARGET re2::re2)
+    message(FATAL_ERROR "Target re2::re2 not available.")
+  endif()
+  set(RE2_DEPS re2::re2)
+endif()
+
 if(USE_SCIP)
   if(NOT BUILD_SCIP)
     find_package(SCIP REQUIRED)
+  endif()
+endif()
+
+if(USE_GLPK)
+  if(NOT BUILD_GLPK)
+    find_package(GLPK REQUIRED)
   endif()
 endif()
 

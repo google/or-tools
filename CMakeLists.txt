@@ -1,46 +1,11 @@
 # This file is just an orchestration
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.15)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-
-# Apple: Don't modify install_name when touching RPATH.
-if(POLICY CMP0068)
-  cmake_policy(SET CMP0068 NEW)
-endif()
-
-# Define file(GENERATE) behavior for relative paths.
-if(POLICY CMP0070)
-  cmake_policy(SET CMP0070 NEW)
-endif()
-
-# target_sources: use absolute path for INTERFACE_SOURCES.
-if(POLICY CMP0076)
-  cmake_policy(SET CMP0076 NEW)
-endif()
-
-# option() honors normal variables.
-if(POLICY CMP0077)
-  cmake_policy(SET CMP0077 NEW)
-endif()
-
-# SWIG: use standard target name.
-if(POLICY CMP0078)
-  cmake_policy(SET CMP0078 NEW)
-endif()
-
-# SWIG: use SWIG_MODULE_NAME property.
-if(POLICY CMP0086)
-  cmake_policy(SET CMP0086 NEW)
-endif()
-
-# MSVC runtime library flags are selected by an abstraction.
-if(POLICY CMP0091)
-  cmake_policy(SET CMP0091 NEW)
-endif()
 
 include(utils)
 set_version(VERSION)
 
-project(ortools VERSION ${VERSION} LANGUAGES CXX)
+project(ortools VERSION ${VERSION} LANGUAGES CXX C)
 set(PROJECT_NAMESPACE ortools)
 message(STATUS "${PROJECT_NAME} version: ${PROJECT_VERSION}")
 #message(STATUS "major: ${PROJECT_VERSION_MAJOR}")
@@ -50,6 +15,9 @@ message(STATUS "${PROJECT_NAME} version: ${PROJECT_VERSION}")
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+
+# Set max os target version.
+set(CMAKE_OSX_DEPLOYMENT_TARGET 10.15)
 
 # Default Build Type to be Release
 if(NOT CMAKE_BUILD_TYPE)
@@ -88,6 +56,10 @@ else()
   endforeach()
 endif()
 
+if(BUILD_SHARED_LIBS AND MSVC)
+  set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+endif()
+
 # By default only build the C++ library.
 option(BUILD_CXX "Build C++ library" ON)
 message(STATUS "Build C++ library: ${BUILD_CXX}")
@@ -111,6 +83,9 @@ message(STATUS "Build Flatzinc: ${BUILD_FLATZINC}")
 
 CMAKE_DEPENDENT_OPTION(BUILD_GLOP "Build GLOP standalone" ON "NOT BUILD_CXX" OFF)
 message(STATUS "Build standalone Glop: ${BUILD_GLOP}")
+
+option(BUILD_LP_PARSER "Build lp_parser" OFF)
+message(STATUS "Build LP Parser: ${BUILD_LP_PARSER}")
 
 option(BUILD_SAMPLES "Build samples" ON)
 message(STATUS "Build samples: ${BUILD_SAMPLES}")
@@ -162,6 +137,12 @@ CMAKE_DEPENDENT_OPTION(BUILD_Protobuf "Build the Protobuf dependency Library" OF
   "NOT BUILD_DEPS" ON)
 message(STATUS "Build protobuf: ${BUILD_Protobuf}")
 
+if(BUILD_LP_PARSER)
+  CMAKE_DEPENDENT_OPTION(BUILD_re2 "Build the re2 dependency Library" OFF
+    "NOT BUILD_DEPS" ON)
+  message(STATUS "Build re2: ${BUILD_re2}")
+endif()
+
 # Optional third party solvers (enabled by default)
 CMAKE_DEPENDENT_OPTION(USE_SCIP "Use the Scip solver" ON "BUILD_CXX" OFF)
 message(STATUS "SCIP support: ${USE_SCIP}")
@@ -169,6 +150,16 @@ if(USE_SCIP)
   CMAKE_DEPENDENT_OPTION(BUILD_SCIP "Build the SCIP dependency Library" OFF
     "NOT BUILD_DEPS" ON)
   message(STATUS "Build SCIP: ${BUILD_SCIP}")
+endif()
+
+# Disable by default since it is GLPv3, user could enable it and release under GLPv3
+# see: https://www.apache.org/licenses/GPL-compatibility.html
+CMAKE_DEPENDENT_OPTION(USE_GLPK "Use the GLPK solver" OFF "BUILD_CXX" OFF)
+message(STATUS "GLPK support: ${USE_GLPK}")
+if(USE_GLPK)
+  CMAKE_DEPENDENT_OPTION(BUILD_GLPK "Build the GLPK dependency Library" OFF
+    "NOT BUILD_DEPS" ON)
+  message(STATUS "Build GLPK: ${BUILD_GLPK}")
 endif()
 
 CMAKE_DEPENDENT_OPTION(USE_COINOR "Use the COIN-OR solver" ON "BUILD_CXX" OFF)
@@ -205,10 +196,31 @@ message(STATUS "XPRESS support: ${USE_XPRESS}")
 option(USE_SIRIUS "Build and use SIRIUS interface" OFF)
 message(STATUS "SIRIUS support: ${USE_SIRIUS}")
 
+if(BUILD_JAVA)
+  option(BUILD_FAT_JAR "Create single .jar with all dependencies (including native binaries)" OFF)
+  message(STATUS "Java build single fat .jar: ${BUILD_FAT_JAR}")
+
+  option(SKIP_GPG "Disable GPG sign" ON)
+  message(STATUS "Java disable gpg:sign: ${SKIP_GPG}")
+
+  option(UNIVERSAL_JAVA_PACKAGE "Build a Java multi OS Package" OFF)
+  message(STATUS "Java multiple os package: ${UNIVERSAL_JAVA_PACKAGE}")
+
+  set(GPG_ARGS "<arg>--pinentry-mode</arg><arg>loopback</arg>" CACHE STRING "Extra options for GPG")
+  message(STATUS "Java GPG options: ${GPG_ARGS}")
+endif()
+
+if(BUILD_PYTHON)
+  option(FETCH_PYTHON_DEPS "Install python required modules if not available" ${BUILD_DEPS})
+  message(STATUS "Python fetch dependencies: ${FETCH_PYTHON_DEPS}")
+endif()
+
 # Build Needed dependencies
 add_subdirectory(cmake/dependencies dependencies)
 list(APPEND CMAKE_PREFIX_PATH ${CMAKE_CURRENT_BINARY_DIR}/dependencies/install)
 
+# Disable CTest targets
+set_property(GLOBAL PROPERTY CTEST_TARGETS_ADDED 1)
 include(CTest)
 
 # Basic type
@@ -234,6 +246,7 @@ check_type_size("int *" SIZEOF_INT_P LANGUAGE CXX)
 message(STATUS "Found int * size: ${SIZEOF_INT_P}")
 cmake_pop_check_state()
 
+include(host)
 include(deps)
 include(cpp)
 include(flatzinc)
@@ -256,3 +269,7 @@ endforeach()
 
 # Add tests in examples/tests
 add_subdirectory(examples/tests)
+
+
+option(BUILD_LINEAR_SOLVER_UNITTESTS "Build linear solver unittests" ON)
+add_subdirectory(ortools/linear_solver/unittests)

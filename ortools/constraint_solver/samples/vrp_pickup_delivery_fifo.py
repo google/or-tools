@@ -1,4 +1,5 @@
-# Copyright 2010-2018 Google LLC
+#!/usr/bin/env python3
+# Copyright 2010-2021 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -114,6 +115,7 @@ def create_data_model():
 # [START solution_printer]
 def print_solution(data, manager, routing, assignment):
     """Prints assignment on console."""
+    print(f'Objective: {assignment.ObjectiveValue()}')
     total_distance = 0
     for vehicle_id in range(data['num_vehicles']):
         index = routing.Start(vehicle_id)

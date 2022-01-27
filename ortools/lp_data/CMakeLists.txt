@@ -1,4 +1,9 @@
 file(GLOB _SRCS "*.h" "*.cc")
+if(NOT BUILD_LP_PARSER)
+  list(FILTER _SRCS EXCLUDE REGEX ".*/lp_parser.h")
+  list(FILTER _SRCS EXCLUDE REGEX ".*/lp_parser.cc")
+endif()
+
 set(NAME ${PROJECT_NAME}_lp_data)
 
 # Will be merge in libortools.so
@@ -18,5 +23,6 @@ target_link_libraries(${NAME} PRIVATE
   absl::strings
   absl::str_format
   protobuf::libprotobuf
+  ${RE2_DEPS}
   ${PROJECT_NAME}::proto)
 #add_library(${PROJECT_NAME}::lp_data ALIAS ${NAME})

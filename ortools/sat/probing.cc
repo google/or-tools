@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,9 +13,11 @@
 
 #include "ortools/sat/probing.h"
 
+#include <cstdint>
 #include <set>
 
 #include "ortools/base/iterator_adaptors.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/base/timer.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/implied_bounds.h"
@@ -23,6 +25,7 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/logging.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -35,10 +38,10 @@ Prober::Prober(Model* model)
       implied_bounds_(model->GetOrCreate<ImpliedBounds>()),
       sat_solver_(model->GetOrCreate<SatSolver>()),
       time_limit_(model->GetOrCreate<TimeLimit>()),
-      implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()) {}
+      implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
+      logger_(model->GetOrCreate<SolverLogger>()) {}
 
-bool Prober::ProbeBooleanVariables(const double deterministic_time_limit,
-                                   bool log_info) {
+bool Prober::ProbeBooleanVariables(const double deterministic_time_limit) {
   const int num_variables = sat_solver_->NumVariables();
   std::vector<BooleanVariable> bool_vars;
   for (BooleanVariable b(0); b < num_variables; ++b) {
@@ -48,7 +51,7 @@ bool Prober::ProbeBooleanVariables(const double deterministic_time_limit,
     }
     bool_vars.push_back(b);
   }
-  return ProbeBooleanVariables(deterministic_time_limit, bool_vars, log_info);
+  return ProbeBooleanVariables(deterministic_time_limit, bool_vars);
 }
 
 bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
@@ -80,7 +83,7 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
       }
 
       // Anything not propagated by the BinaryImplicationGraph is a "new"
-      // binary clause. This is becaue the BinaryImplicationGraph has the
+      // binary clause. This is because the BinaryImplicationGraph has the
       // highest priority of all propagators.
       if (trail_.AssignmentType(l.Variable()) !=
           implication_graph_->PropagatorId()) {
@@ -192,10 +195,9 @@ bool Prober::ProbeOneVariable(BooleanVariable b) {
   return ProbeOneVariableInternal(b);
 }
 
-bool Prober::ProbeBooleanVariables(const double deterministic_time_limit,
-                                   absl::Span<const BooleanVariable> bool_vars,
-                                   bool log_info) {
-  log_info |= VLOG_IS_ON(1);
+bool Prober::ProbeBooleanVariables(
+    const double deterministic_time_limit,
+    absl::Span<const BooleanVariable> bool_vars) {
   WallTimer wall_timer;
   wall_timer.Start();
 
@@ -242,33 +244,36 @@ bool Prober::ProbeBooleanVariables(const double deterministic_time_limit,
   }
 
   // Display stats.
-  if (log_info) {
+  if (logger_->LoggingIsEnabled()) {
     const double time_diff =
         time_limit_->GetElapsedDeterministicTime() - initial_deterministic_time;
     const int num_fixed = sat_solver_->LiteralTrail().Index();
     const int num_newly_fixed = num_fixed - initial_num_fixed;
-    LOG(INFO) << "Probing deterministic_time: " << time_diff
-              << " (limit: " << deterministic_time_limit
-              << ") wall_time: " << wall_timer.Get() << " ("
-              << (limit_reached ? "Aborted " : "") << num_probed << "/"
-              << bool_vars.size() << ")";
-    LOG_IF(INFO, num_newly_fixed > 0)
-        << "  - new fixed Boolean: " << num_newly_fixed << " (" << num_fixed
-        << "/" << sat_solver_->NumVariables() << ")";
-    LOG_IF(INFO, num_new_holes_ > 0)
-        << "  - new integer holes: " << num_new_holes_;
-    LOG_IF(INFO, num_new_integer_bounds_ > 0)
-        << "  - new integer bounds: " << num_new_integer_bounds_;
-    LOG_IF(INFO, num_new_binary_ > 0)
-        << "  - new binary clause: " << num_new_binary_;
+    SOLVER_LOG(logger_, "[Probing] deterministic_time: ", time_diff,
+               " (limit: ", deterministic_time_limit,
+               ") wall_time: ", wall_timer.Get(), " (",
+               (limit_reached ? "Aborted " : ""), num_probed, "/",
+               bool_vars.size(), ")");
+    if (num_newly_fixed > 0) {
+      SOLVER_LOG(logger_, "[Probing]  - new fixed Boolean: ", num_newly_fixed,
+                 " (", num_fixed, "/", sat_solver_->NumVariables(), ")");
+    }
+    if (num_new_holes_ > 0) {
+      SOLVER_LOG(logger_, "[Probing]  - new integer holes: ", num_new_holes_);
+    }
+    if (num_new_integer_bounds_ > 0) {
+      SOLVER_LOG(logger_,
+                 "[Probing]  - new integer bounds: ", num_new_integer_bounds_);
+    }
+    if (num_new_binary_ > 0) {
+      SOLVER_LOG(logger_, "[Probing]  - new binary clause: ", num_new_binary_);
+    }
   }
 
   return true;
 }
 
-bool LookForTrivialSatSolution(double deterministic_time_limit, Model* model,
-                               bool log_info) {
-  log_info |= VLOG_IS_ON(1);
+bool LookForTrivialSatSolution(double deterministic_time_limit, Model* model) {
   WallTimer wall_timer;
   wall_timer.Start();
 
@@ -279,6 +284,7 @@ bool LookForTrivialSatSolution(double deterministic_time_limit, Model* model,
 
   auto* time_limit = model->GetOrCreate<TimeLimit>();
   const int initial_num_fixed = sat_solver->LiteralTrail().Index();
+  auto* logger = model->GetOrCreate<SolverLogger>();
 
   // Note that this code do not care about the non-Boolean part and just try to
   // assign the existing Booleans.
@@ -307,20 +313,20 @@ bool LookForTrivialSatSolution(double deterministic_time_limit, Model* model,
     elapsed_dtime += time_limit->GetElapsedDeterministicTime();
 
     if (result == SatSolver::FEASIBLE) {
-      LOG_IF(INFO, log_info) << "Trivial exploration found feasible solution!";
+      SOLVER_LOG(logger, "Trivial exploration found feasible solution!");
       time_limit->AdvanceDeterministicTime(elapsed_dtime);
       return true;
     }
 
     if (!sat_solver->RestoreSolverToAssumptionLevel()) {
-      LOG_IF(INFO, log_info) << "UNSAT during trivial exploration heuristic.";
+      SOLVER_LOG(logger, "UNSAT during trivial exploration heuristic.");
       time_limit->AdvanceDeterministicTime(elapsed_dtime);
       return false;
     }
 
     // We randomize at the end so that the default params is executed
     // at least once.
-    RandomizeDecisionHeuristic(random, &new_params);
+    RandomizeDecisionHeuristic(*random, &new_params);
     new_params.set_random_seed(i);
     new_params.set_max_deterministic_time(deterministic_time_limit -
                                           elapsed_dtime);
@@ -332,16 +338,15 @@ bool LookForTrivialSatSolution(double deterministic_time_limit, Model* model,
   time_limit->AdvanceDeterministicTime(elapsed_dtime);
   if (!sat_solver->RestoreSolverToAssumptionLevel()) return false;
 
-  if (log_info) {
+  if (logger->LoggingIsEnabled()) {
     const int num_fixed = sat_solver->LiteralTrail().Index();
     const int num_newly_fixed = num_fixed - initial_num_fixed;
     const int num_variables = sat_solver->NumVariables();
-    LOG(INFO) << "Random exploration."
-              << " num_fixed: +" << num_newly_fixed << " (" << num_fixed << "/"
-              << num_variables << ")"
-              << " dtime: " << elapsed_dtime << "/" << deterministic_time_limit
-              << " wtime: " << wall_timer.Get()
-              << (limit_reached ? " (Aborted)" : "");
+    SOLVER_LOG(logger, "Random exploration.", " num_fixed: +", num_newly_fixed,
+               " (", num_fixed, "/", num_variables, ")",
+               " dtime: ", elapsed_dtime, "/", deterministic_time_limit,
+               " wtime: ", wall_timer.Get(),
+               (limit_reached ? " (Aborted)" : ""));
   }
   return sat_solver->FinishPropagation();
 }
@@ -372,11 +377,11 @@ bool FailedLiteralProbingRound(ProbingOptions options, Model* model) {
   const int num_variables = sat_solver->NumVariables();
   SparseBitset<LiteralIndex> processed(LiteralIndex(2 * num_variables));
 
-  int64 num_probed = 0;
-  int64 num_explicit_fix = 0;
-  int64 num_conflicts = 0;
-  int64 num_new_binary = 0;
-  int64 num_subsumed = 0;
+  int64_t num_probed = 0;
+  int64_t num_explicit_fix = 0;
+  int64_t num_conflicts = 0;
+  int64_t num_new_binary = 0;
+  int64_t num_subsumed = 0;
 
   const auto& trail = *(model->Get<Trail>());
   const auto& assignment = trail.Assignment();
@@ -685,12 +690,14 @@ bool FailedLiteralProbingRound(ProbingOptions options, Model* model) {
           // even better reasony. Maybe it is just better to change all the
           // reason above to a binary one so we don't have an issue here.
           if (trail.AssignmentType(w.blocking_literal.Variable()) != id) {
-            ++num_new_binary;
-            implication_graph->AddBinaryClause(last_decision.Negated(),
-                                               w.blocking_literal);
-
+            // If the variable was true at level zero, there is no point
+            // adding the clause.
             const auto& info = trail.Info(w.blocking_literal.Variable());
             if (info.level > 0) {
+              ++num_new_binary;
+              implication_graph->AddBinaryClause(last_decision.Negated(),
+                                                 w.blocking_literal);
+
               const Literal d = sat_solver->Decisions()[info.level - 1].literal;
               if (d != w.blocking_literal) {
                 implication_graph->ChangeReason(info.trail_index, d);

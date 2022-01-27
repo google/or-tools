@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,22 +18,26 @@
 // where each letter represents a unique digit.
 //
 // This problem has 72 different solutions in base 10.
-
+// [START import]
+#include <cstdint>
 #include <vector>
 
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
+// [END import]
 
 namespace operations_research {
 namespace sat {
 
 void CPIsFunSat() {
   // Instantiate the solver.
+  // [START model]
   CpModelBuilder cp_model;
+  // [END model]
 
   // [START variables]
-  const int64 kBase = 10;
+  const int64_t kBase = 10;
 
   // Define decision variables.
   Domain digit(0, kBase - 1);
@@ -57,13 +61,11 @@ void CPIsFunSat() {
 
   // CP + IS + FUN = TRUE
   cp_model.AddEquality(
-      LinearExpr::ScalProd({c, p, i, s, f, u, n},
-                           {kBase, 1, kBase, 1, kBase * kBase, kBase, 1}),
-      LinearExpr::ScalProd({t, r, u, e},
-                           {kBase * kBase * kBase, kBase * kBase, kBase, 1}));
+      c * kBase + p + i * kBase + s + f * kBase * kBase + u * kBase + n,
+      kBase * kBase * kBase * t + kBase * kBase * r + kBase * u + e);
   // [END constraints]
 
-  // [START solution_printing]
+  // [START solution_printer]
   Model model;
   int num_solutions = 0;
   model.Add(NewFeasibleSolutionObserver([&](const CpSolverResponse& response) {
@@ -80,7 +82,7 @@ void CPIsFunSat() {
               << "E=" << SolutionIntegerValue(response, e);
     num_solutions++;
   }));
-  // [END solution_printing]
+  // [END solution_printer]
 
   // [START solve]
   // Tell the solver to enumerate all solutions.
@@ -91,15 +93,19 @@ void CPIsFunSat() {
   const CpSolverResponse response = SolveCpModel(cp_model.Build(), &model);
   LOG(INFO) << "Number of solutions found: " << num_solutions;
   // [END solve]
+
+  // Statistics.
+  // [START statistics]
+  LOG(INFO) << "Statistics";
+  LOG(INFO) << CpSolverResponseStats(response);
+  // [END statistics]
 }
 
 }  // namespace sat
 }  // namespace operations_research
 
-// ----- MAIN -----
 int main(int argc, char** argv) {
   operations_research::sat::CPIsFunSat();
-
   return EXIT_SUCCESS;
 }
 // [END program]

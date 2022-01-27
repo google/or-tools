@@ -13,7 +13,6 @@
 
 #include "ortools/base/hash.h"
 #include "ortools/base/map_util.h"
-#include "ortools/base/random.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"

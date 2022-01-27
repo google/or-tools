@@ -1,20 +1,34 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <LangVersion>7.3</LangVersion>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <LangVersion>8.0</LangVersion>
+    <TargetFrameworks>netcoreapp3.1;net6.0</TargetFrameworks>
     <EnableDefaultItems>false</EnableDefaultItems>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <!-- see https://github.com/dotnet/docs/issues/12237 -->
     <RollForward>LatestMajor</RollForward>
-    <RestoreSources>@DOTNET_PACKAGES_DIR@;$(RestoreSources);https://api.nuget.org/v3/index.json</RestoreSources>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <AssemblyName>@DOTNET_PROJECT@.@TEST_NAME@</AssemblyName>
+    <Version>@PROJECT_VERSION@</Version>
+
+    <!-- Pack Option -->
     <IsPackable>false</IsPackable>
+
+    <!-- Signing -->
+    <SignAssembly>false</SignAssembly>
+    <PublicSign>false</PublicSign>
+    <DelaySign>false</DelaySign>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugType>full</DebugType>
     <Optimize>true</Optimize>
     <GenerateTailCalls>true</GenerateTailCalls>
+  </PropertyGroup>
+
+  <!-- Dependencies -->
+  <PropertyGroup>
+    <RestoreSources>@DOTNET_PACKAGES_DIR@;$(RestoreSources);https://api.nuget.org/v3/index.json</RestoreSources>
   </PropertyGroup>
 
   <ItemGroup>

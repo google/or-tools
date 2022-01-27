@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -12,7 +12,9 @@
 // limitations under the License.
 
 // [START program]
+// [START import]
 #include "ortools/sat/cp_model.h"
+// [END import]
 
 namespace operations_research {
 namespace sat {
@@ -36,15 +38,19 @@ void SimpleSatProgram() {
   // Solving part.
   // [START solve]
   const CpSolverResponse response = Solve(cp_model.Build());
-  LOG(INFO) << CpSolverResponseStats(response);
   // [END solve]
 
-  if (response.status() == CpSolverStatus::OPTIMAL) {
+  // [START print_solution]
+  if (response.status() == CpSolverStatus::OPTIMAL ||
+      response.status() == CpSolverStatus::FEASIBLE) {
     // Get the value of x in the solution.
     LOG(INFO) << "x = " << SolutionIntegerValue(response, x);
     LOG(INFO) << "y = " << SolutionIntegerValue(response, y);
     LOG(INFO) << "z = " << SolutionIntegerValue(response, z);
+  } else {
+    LOG(INFO) << "No solution found.";
   }
+  // [END print_solution]
 }
 
 }  // namespace sat
@@ -52,7 +58,6 @@ void SimpleSatProgram() {
 
 int main() {
   operations_research::sat::SimpleSatProgram();
-
   return EXIT_SUCCESS;
 }
 // [END program]

@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,9 +13,13 @@
 
 // TODO(user): Refactor this file to adhere to the SWIG style guide.
 
+%include "std_pair.i"
+%template(IntBoolPair) std::pair<int, bool>;
+
 %include "ortools/constraint_solver/java/constraint_solver.i"
 %include "ortools/constraint_solver/java/routing_types.i"
 %include "ortools/constraint_solver/java/routing_index_manager.i"
+%include "ortools/util/java/sorted_interval_list.i"
 
 // We need to forward-declare the proto here, so that PROTO_INPUT involving it
 // works correctly. The order matters very much: this declaration needs to be
@@ -62,12 +66,8 @@ import java.util.function.LongBinaryOperator;
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongUnaryOperator.html
 import java.util.function.LongUnaryOperator;
 %}
+
 %ignore RoutingModel::AddDimensionDependentDimensionWithVehicleCapacity;
-%ignore RoutingModel::AddMatrixDimension(
-    std::vector<std::vector<int64> > values,
-    int64 capacity,
-    bool fix_start_cumul_to_zero,
-    const std::string& name);
 %ignore RoutingModel::AddSameVehicleRequiredTypeAlternatives;
 %ignore RoutingModel::GetAllDimensionNames;
 %ignore RoutingModel::GetAutomaticFirstSolutionStrategy;
@@ -104,12 +104,16 @@ import java.util.function.LongUnaryOperator;
 %rename (activeVehicleVar) RoutingModel::ActiveVehicleVar;
 %rename (addAllActive) RoutingModel::AddAllActive;
 %rename (addAtSolutionCallback) RoutingModel::AddAtSolutionCallback;
+
 %rename (addConstantDimension) RoutingModel::AddConstantDimension;
 %rename (addConstantDimensionWithSlack) RoutingModel::AddConstantDimensionWithSlack;
+%rename (addVectorDimension) RoutingModel::AddVectorDimension;
+%rename (addMatrixDimension) RoutingModel::AddMatrixDimension;
 %rename (addDimension) RoutingModel::AddDimension;
 %rename (addDimensionWithVehicleCapacity) RoutingModel::AddDimensionWithVehicleCapacity;
 %rename (addDimensionWithVehicleTransitAndCapacity) RoutingModel::AddDimensionWithVehicleTransitAndCapacity;
 %rename (addDimensionWithVehicleTransits) RoutingModel::AddDimensionWithVehicleTransits;
+
 %rename (addDisjunction) RoutingModel::AddDisjunction;
 %rename (addHardTypeIncompatibility) RoutingModel::AddHardTypeIncompatibility;
 %rename (addIntervalToAssignment) RoutingModel::AddIntervalToAssignment;
@@ -126,7 +130,6 @@ import java.util.function.LongUnaryOperator;
 %rename (addVariableMaximizedByFinalizer) RoutingModel::AddVariableMaximizedByFinalizer;
 %rename (addVariableMinimizedByFinalizer) RoutingModel::AddVariableMinimizedByFinalizer;
 %rename (addVariableTargetToFinalizer) RoutingModel::AddVariableTargetToFinalizer;
-%rename (addVectorDimension) RoutingModel::AddVectorDimension;
 %rename (applyLocks) RoutingModel::ApplyLocks;
 %rename (applyLocksToAllVehicles) RoutingModel::ApplyLocksToAllVehicles;
 %rename (arcIsMoreConstrainedThanArc) RoutingModel::ArcIsMoreConstrainedThanArc;
@@ -191,9 +194,15 @@ import java.util.function.LongUnaryOperator;
 %rename (preAssignment) RoutingModel::PreAssignment;
 %rename (readAssignment) RoutingModel::ReadAssignment;
 %rename (readAssignmentFromRoutes) RoutingModel::ReadAssignmentFromRoutes;
-%rename (registerPositiveTransitCallback) RoutingModel::RegisterPositiveTransitCallback;
-%rename (registerTransitCallback) RoutingModel::RegisterTransitCallback;
+
+%rename (registerUnaryTransitVector) RoutingModel::RegisterUnaryTransitVector;
 %rename (registerUnaryTransitCallback) RoutingModel::RegisterUnaryTransitCallback;
+%rename (registerPositiveUnaryTransitCallback) RoutingModel::RegisterPositiveUnaryTransitCallback; // not tested
+
+%rename (registerTransitMatrix) RoutingModel::RegisterTransitMatrix;
+%rename (registerTransitCallback) RoutingModel::RegisterTransitCallback;
+%rename (registerPositiveTransitCallback) RoutingModel::RegisterPositiveTransitCallback; // not tested
+
 %rename (restoreAssignment) RoutingModel::RestoreAssignment;
 %rename (routesToAssignment) RoutingModel::RoutesToAssignment;
 %rename (setAllowedVehiclesForIndex) RoutingModel::SetAllowedVehiclesForIndex;
@@ -219,21 +228,13 @@ import java.util.function.LongUnaryOperator;
 %rename (vehicleVar) RoutingModel::VehicleVar;
 %rename (vehicleVars) RoutingModel::VehicleVars;
 %rename (writeAssignment) RoutingModel::WriteAssignment;
-// Extend:
-%extend RoutingModel {
-  void addMatrixDimension(const std::vector<std::vector<int64> >& values,
-                          int64 capacity, bool fix_start_cumul_to_zero,
-                          const std::string& name) {
-    $self->AddMatrixDimension(values, capacity, fix_start_cumul_to_zero, name);
-  }
-}
 
 // RoutingDimension
 %unignore RoutingDimension;
 // Map transit callback to Java @FunctionalInterface types.
 // This replaces the RoutingTransitCallback[1-2] in the Java proxy class
 %typemap(javaimports) RoutingDimension %{
-// Used to wrap std::function<int64(int64 from_index, int64 to_index)> group_delay
+// Used to wrap std::function<int64_t(int64_t from_index, int64_t to_index)> group_delay
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongBinaryOperator.html
 import java.util.function.LongBinaryOperator;
 %}

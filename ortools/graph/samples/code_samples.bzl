@@ -1,7 +1,9 @@
-def code_sample_cc(sample):
+"""Helper macro to compile and test code samples."""
+
+def code_sample_cc(name):
   native.cc_binary(
-      name = sample,
-      srcs = [sample + ".cc"],
+      name = name,
+      srcs = [name + ".cc"],
       deps = [
         "//ortools/base",
         "//ortools/graph:min_cost_flow",
@@ -13,11 +15,11 @@ def code_sample_cc(sample):
   )
 
   native.cc_test(
-      name = sample+"_test",
+      name = name+"_test",
       size = "small",
-      srcs = [sample + ".cc"],
+      srcs = [name + ".cc"],
       deps = [
-        ":"+sample,
+        ":"+name,
         "//ortools/base",
         "//ortools/graph:min_cost_flow",
         "//ortools/graph:max_flow",
@@ -26,4 +28,3 @@ def code_sample_cc(sample):
         "//ortools/graph:linear_assignment",
       ],
   )
-

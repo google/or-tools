@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
+    <TargetFrameworks>netcoreapp3.1;net6.0</TargetFrameworks>
     <AssemblyName>Google.OrTools.FSharp</AssemblyName>
     <Version>@PROJECT_VERSION@</Version>
 
@@ -14,18 +15,10 @@
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
 
     <!-- Signing -->
-    <AssemblyKeyFileAttribute>../../../bin/or-tools.snk</AssemblyKeyFileAttribute>
+    <AssemblyKeyFileAttribute>../or-tools.snk</AssemblyKeyFileAttribute>
     <SignAssembly>true</SignAssembly>
     <PublicSign>false</PublicSign>
     <DelaySign>false</DelaySign>
-  </PropertyGroup>
-
-  <!-- On windows we can build cross-platform netstandard and windows-only netframework.-->
-  <PropertyGroup Condition=" '$(OS)' != 'Windows_NT' And '$(OS)' != 'Windows' ">
-    <TargetFramework>netstandard2.0</TargetFramework>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(OS)' == 'Windows_NT' Or '$(OS)' == 'Windows' ">
-    <TargetFrameworks>netstandard2.0;net452</TargetFrameworks>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">

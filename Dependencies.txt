@@ -1,8 +1,8 @@
-Protobuf=3.14.0
-abseil-cpp=20200923.2
+Protobuf=3.19.1
+abseil-cpp=20211102.0
 Cbc=2.10.5
 Cgl=0.60.3
 Clp=1.17.4
 Osi=0.108.6
 CoinUtils=2.11.4
-Scip=7.0.1
+Scip=master

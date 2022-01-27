@@ -1,0 +1,124 @@
+cmake_minimum_required(VERSION 3.14)
+
+# fetch_git_dependency()
+#
+# CMake function to download, build and install (in staging area) a dependency at configure
+# time.
+#
+# Parameters:
+# NAME: name of the dependency
+# REPOSITORY: git url of the dependency
+# TAG: tag of the dependency
+# PATCH_COMMAND: apply patch
+# SOURCE_SUBDIR: Path to source CMakeLists.txt relative to root dir
+# CMAKE_ARGS: List of specific CMake args to add
+#
+# e.g.:
+# fetch_git_dependency(
+#   NAME
+#     abseil-cpp
+#   URL
+#     https://github.com/abseil/abseil-cpp.git
+#   TAG
+#     master
+#   PATCH_COMMAND
+#     "git apply ${CMAKE_SOURCE_DIR}/patches/abseil-cpp.patch"
+# )
+function(fetch_git_dependency)
+  set(options "")
+  set(oneValueArgs NAME REPOSITORY TAG PATCH_COMMAND SOURCE_SUBDIR)
+  set(multiValueArgs CMAKE_ARGS)
+  cmake_parse_arguments(GIT_DEP
+    "${options}"
+    "${oneValueArgs}"
+    "${multiValueArgs}"
+    ${ARGN}
+  )
+  message(STATUS "Building ${GIT_DEP_NAME}: ...")
+  string(TOLOWER ${GIT_DEP_NAME} NAME_LOWER)
+
+  if(GIT_DEP_PATCH_COMMAND)
+    set(PATCH_CMD "${GIT_DEP_PATCH_COMMAND}")
+  else()
+    set(PATCH_CMD "")
+  endif()
+  configure_file(
+    ${CMAKE_CURRENT_LIST_DIR}/CMakeLists.txt.in
+    ${CMAKE_BINARY_DIR}/_deps/${NAME_LOWER}-subbuild/CMakeLists.txt @ONLY)
+
+  execute_process(
+    COMMAND ${CMAKE_COMMAND} -S. -Bproject_build -G "${CMAKE_GENERATOR}"
+    RESULT_VARIABLE result
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/_deps/${NAME_LOWER}-subbuild)
+  if(result)
+    message(FATAL_ERROR "CMake step for ${GIT_DEP_NAME} failed: ${result}")
+  endif()
+
+  execute_process(
+    COMMAND ${CMAKE_COMMAND} --build project_build --config ${CMAKE_BUILD_TYPE}
+    RESULT_VARIABLE result
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/_deps/${NAME_LOWER}-subbuild)
+  if(result)
+    message(FATAL_ERROR "Build step for ${GIT_DEP_NAME} failed: ${result}")
+  endif()
+
+  if(GIT_DEP_SOURCE_SUBDIR)
+    add_subdirectory(
+      ${CMAKE_BINARY_DIR}/_deps/${NAME_LOWER}-src/${GIT_DEP_SOURCE_SUBDIR}
+      ${CMAKE_BINARY_DIR}/_deps/${NAME_LOWER}-build)
+  else()
+    add_subdirectory(
+      ${CMAKE_BINARY_DIR}/_deps/${NAME_LOWER}-src
+      ${CMAKE_BINARY_DIR}/_deps/${NAME_LOWER}-build)
+  endif()
+
+  message(STATUS "Building ${GIT_DEP_NAME}: ...DONE")
+endfunction()
+
+project(host-meta CXX)
+
+include(FetchContent)
+set(FETCHCONTENT_QUIET OFF)
+set(FETCHCONTENT_UPDATES_DISCONNECTED ON)
+set(BUILD_SHARED_LIBS OFF)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(BUILD_TESTING OFF)
+
+message(CHECK_START "Fetching ZLIB")
+list(APPEND CMAKE_MESSAGE_INDENT "  ")
+FetchContent_Declare(
+  zlib
+  GIT_REPOSITORY "https://github.com/madler/ZLIB.git"
+  GIT_TAG "v1.2.11"
+  PATCH_COMMAND git apply "${CMAKE_CURRENT_LIST_DIR}/../../../patches/ZLIB.patch")
+FetchContent_MakeAvailable(zlib)
+list(POP_BACK CMAKE_MESSAGE_INDENT)
+message(CHECK_PASS "fetched")
+
+message(CHECK_START "Fetching Protobuf")
+list(APPEND CMAKE_MESSAGE_INDENT "  ")
+set(protobuf_BUILD_TESTS OFF)
+set(protobuf_BUILD_EXPORT OFF)
+set(protobuf_MSVC_STATIC_RUNTIME OFF)
+
+# FetchContent_Declare(SOURCE_SUBDIR) was introduced in 3.18
+if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.18")
+  FetchContent_Declare(
+      protobuf
+      GIT_REPOSITORY "https://github.com/protocolbuffers/protobuf.git"
+      GIT_TAG "v3.19.1"
+      GIT_SUBMODULES ""
+      PATCH_COMMAND git apply "${CMAKE_CURRENT_LIST_DIR}/../../../patches/protobuf-v3.19.1.patch"
+      SOURCE_SUBDIR cmake)
+  FetchContent_MakeAvailable(protobuf)
+else()
+  fetch_git_dependency(
+      NAME Protobuf
+      REPOSITORY "https://github.com/protocolbuffers/protobuf.git"
+      TAG "v3.19.1"
+      PATCH_COMMAND "git apply \"${CMAKE_CURRENT_LIST_DIR}/../../../patches/protobuf-v3.19.1.patch\""
+      SOURCE_SUBDIR cmake)
+endif()
+list(POP_BACK CMAKE_MESSAGE_INDENT)
+message(CHECK_PASS "fetched")
+

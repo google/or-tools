@@ -1,5 +1,5 @@
 set_property(SOURCE linear_solver.i PROPERTY CPLUSPLUS ON)
-set_property(SOURCE linear_solver.i PROPERTY SWIG_MODULE_NAME main)
+set_property(SOURCE linear_solver.i PROPERTY SWIG_MODULE_NAME main_research_linear_solver)
 set_property(SOURCE linear_solver.i PROPERTY COMPILE_DEFINITIONS
   ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT)
 set_property(SOURCE linear_solver.i PROPERTY COMPILE_OPTIONS
@@ -7,8 +7,7 @@ set_property(SOURCE linear_solver.i PROPERTY COMPILE_OPTIONS
 swig_add_library(jnilinear_solver
   TYPE OBJECT
   LANGUAGE java
-  OUTPUT_DIR
-  ${PROJECT_BINARY_DIR}/java/${JAVA_PROJECT}/${JAVA_PACKAGE_PATH}/linearsolver
+  OUTPUT_DIR ${JAVA_PROJECT_DIR}/${JAVA_SRC_PATH}/linearsolver
   SOURCES linear_solver.i)
 
 target_include_directories(jnilinear_solver PRIVATE ${JNI_INCLUDE_DIRS})

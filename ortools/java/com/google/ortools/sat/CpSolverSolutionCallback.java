@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -37,10 +37,13 @@ package com.google.ortools.sat;
  * <p>{@code long objectiveValue()} to get the best objective value found so far.
  */
 public class CpSolverSolutionCallback extends SolutionCallback {
-  /** Returns the value of the variable in the current solution. */
-  public long value(IntVar var) {
-    int index = var.getIndex();
-    return solutionIntegerValue(index);
+  /** Returns the value of the linear expression in the current solution. */
+  public long value(LinearExpr expr) {
+    long result = expr.getOffset();
+    for (int i = 0; i < expr.numElements(); ++i) {
+      result += solutionIntegerValue(expr.getVariable(i).getIndex()) * expr.getCoefficient(i);
+    }
+    return result;
   }
 
   /** Returns the Boolean value of the literal in the current solution. */

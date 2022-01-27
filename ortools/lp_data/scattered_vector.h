@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -20,7 +20,6 @@
 #include "ortools/base/basictypes.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/strong_vector.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/util/bitset.h"
 
@@ -159,6 +158,12 @@ struct ScatteredVector {
 
   void ClearNonZerosIfTooDense() {
     ClearNonZerosIfTooDense(kDefaultRatioForUsingDenseIteration);
+  }
+
+  // Returns an over-estimate of the number of non-zeros. This is actually
+  // exact for sparse vector, or the full size otherwise.
+  size_t NumNonZerosEstimate() const {
+    return non_zeros.empty() ? values.size().value() : non_zeros.size();
   }
 };
 

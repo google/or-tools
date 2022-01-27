@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -22,7 +22,7 @@ syntax = "proto2";
 
 package operations_research.glop;
 
-// next id = 61
+// next id = 68
 message GlopParameters {
 
   // Supported algorithms for scaling:
@@ -46,7 +46,12 @@ message GlopParameters {
 
   // General strategy used during pricing.
   enum PricingRule {
-    // Strategy using only the reduced cost of a variable (modulo some params).
+    // Strategy using only the reduced cost of a variable.
+    //
+    // Note that compared to a textbook rule, we normalize the reduced cost of a
+    // variable using the norm of the associated column. This improves quite a
+    // bit the rule at almost no extra complexity. See the first paper from
+    // Ping-Qi Pan cited in primal_edge_norms.h.
     DANTZIG = 0;
 
     // Normalize the reduced costs by the norm of the edges. Since computing
@@ -94,17 +99,6 @@ message GlopParameters {
 
   // PricingRule to use during the optimization phase.
   optional PricingRule optimization_rule = 2 [default = STEEPEST_EDGE];
-
-  // Only works with the DANTZIG rule.
-  // Normalize the reduced cost of a variable using the norm of the associated
-  // column. This improves quite a bit the rule at almost no extra complexity.
-  // See the first paper from Ping-Qi Pan cited in primal_pricing.h
-  optional bool normalize_using_column_norm = 4 [default = true];
-
-  // Currently only works with the DANTZIG rule.
-  // This is a kind of partial pricing, it uses the strategy described in
-  // the second paper from Ping-Qi Pan cited in primal_pricing.h
-  optional bool use_nested_pricing = 5 [default = true];
 
   // We estimate the factorization accuracy of B during each pivot by using
   // the fact that we can compute the pivot coefficient in two ways:
@@ -228,6 +222,13 @@ message GlopParameters {
   // conditions in the algorithm may trigger a refactorization before this
   // period is reached. Set this to 0 if you want to refactorize at each step.
   optional int32 basis_refactorization_period = 19 [default = 64];
+
+  // If this is true, then basis_refactorization_period becomes a lower bound on
+  // the number of iterations between two refactorization (provided there is no
+  // numerical accuracy issues). Depending on the estimated time to refactorize
+  // vs the extra time spend in each solves because of the LU update, we try to
+  // balance the two times.
+  optional bool dynamically_adjust_refactorization_period = 63 [default = true];
 
   // Whether or not we solve the dual of the given problem.
   // With a value of auto, the algorithm decide which approach is probably the
@@ -357,9 +358,12 @@ message GlopParameters {
   // The solver will stop as soon as it has proven that the objective is smaller
   // than objective_lower_limit or greater than objective_upper_limit. Depending
   // on the simplex algorithm (primal or dual) and the optimization direction,
-  // note that only one bound will be used at the time. The parameter
-  // solution_objective_gap_tolerance is used as a relative tolerance to improve
-  // the 'proven' guarantee.
+  // note that only one bound will be used at the time.
+  //
+  // Important: The solver does not add any tolerances to these values, and as
+  // soon as the objective (as computed by the solver, so with some imprecision)
+  // crosses one of these bounds (strictly), the search will stop. It is up to
+  // the client to add any tolerance if needed.
   optional double objective_lower_limit = 40 [default = -inf];
   optional double objective_upper_limit = 41 [default = inf];
 
@@ -410,6 +414,16 @@ message GlopParameters {
   // simplex solver", Ph.D, dissertation, University of Edinburgh.
   optional bool perturb_costs_in_dual_simplex = 53 [default = false];
 
+  // We have two possible dual phase I algorithms. Both work on an LP that
+  // minimize the sum of dual infeasiblities. One use dedicated code (when this
+  // param is true), the other one use exactly the same code as the dual phase
+  // II but on an auxiliary problem where the variable bounds of the original
+  // problem are changed.
+  //
+  // TODO(user): For now we have both, but ideally the non-dedicated version
+  // will win since it is a lot less code to maintain.
+  optional bool use_dedicated_dual_feasibility_algorithm = 62 [default = true];
+
   // The magnitude of the cost perturbation is given by
   // RandomIn(1.0, 2.0) * (
   //     relative_cost_perturbation * cost
@@ -421,5 +435,41 @@ message GlopParameters {
   // heurisitic or a warm start) is above this threshold, we revert to an all
   // slack basis.
   optional double initial_condition_number_threshold = 59 [default = 1e50];
+
+  // If true, logs the progress of a solve to LOG(INFO). Note that the same
+  // messages can also be turned on by displaying logs at level 1 for the
+  // relevant files.
+  optional bool log_search_progress = 61 [default = false];
+
+  // If true, logs will be displayed to stdout instead of using Google log info.
+  optional bool log_to_stdout = 66 [default = true];
+
+  // If the starting basis contains FREE variable with bounds, we will move
+  // any such variable to their closer bounds if the distance is smaller than
+  // this parameter.
+  //
+  // The starting statuses can contains FREE variables with bounds, if a user
+  // set it like this externally. Also, any variable with an initial BASIC
+  // status that was not kept in the initial basis is marked as FREE before this
+  // step is applied.
+  //
+  // Note that by default a FREE variable is assumed to be zero unless a
+  // starting value was specified via SetStartingVariableValuesForNextSolve().
+  //
+  // Note that, at the end of the solve, some of these FREE variable with bounds
+  // and an interior point value might still be left in the final solution.
+  // Enable push_to_vertex to clean these up.
+  optional double crossover_bound_snapping_distance = 64 [default = inf];
+
+  // If the optimization phases finishes with super-basic variables (i.e.,
+  // variables that either 1) have bounds but are FREE in the basis, or 2) have
+  // no bounds and are FREE in the basis at a nonzero value), then run a "push"
+  // phase to push these variables to bounds, obtaining a vertex solution. Note
+  // this situation can happen only if a starting value was specified via
+  // SetStartingVariableValuesForNextSolve().
+  optional bool push_to_vertex = 65 [default = true];
+
+  // If presolve runs, include the pass that detects implied free variables.
+  optional bool use_implied_free_preprocessor = 67 [default = true];
 
 }

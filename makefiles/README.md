@@ -1,8 +1,42 @@
 # OR-Tools Makefile Build Instructions
-[![Status][docker_svg]][docker_link]
+| OS       | C++   | Python   | Java   | .NET   |
+|:-------- | :---: | :------: | :----: | :----: |
+| Linux    | [![Status][linux_cpp_svg]][linux_cpp_link] | [![Status][linux_python_svg]][linux_python_link] | [![Status][linux_java_svg]][linux_java_link] | [![Status][linux_dotnet_svg]][linux_dotnet_link] |
+| MacOS    | [![Status][macos_cpp_svg]][macos_cpp_link] | [![Status][macos_python_svg]][macos_python_link] | [![Status][macos_java_svg]][macos_java_link] | [![Status][macos_dotnet_svg]][macos_dotnet_link] |
+| Windows  | [![Status][windows_cpp_svg]][windows_cpp_link] | [![Status][windows_python_svg]][windows_python_link] | [![Status][windows_java_svg]][windows_java_link] | [![Status][windows_dotnet_svg]][windows_dotnet_link] |
 
-[docker_svg]: https://github.com/google/or-tools/workflows/Docker%20Make/badge.svg?branch=master
-[docker_link]: https://github.com/google/or-tools/actions?query=workflow%3A"Docker+Make"
+[linux_cpp_svg]: https://github.com/google/or-tools/actions/workflows/make_linux_cpp.yml/badge.svg?branch=master
+[linux_cpp_link]: https://github.com/google/or-tools/actions/workflows/make_linux_cpp.yml
+[linux_python_svg]: https://github.com/google/or-tools/actions/workflows/make_linux_python.yml/badge.svg?branch=master
+[linux_python_link]: https://github.com/google/or-tools/actions/workflows/make_linux_python.yml
+[linux_java_svg]: https://github.com/google/or-tools/actions/workflows/make_linux_java.yml/badge.svg?branch=master
+[linux_java_link]: https://github.com/google/or-tools/actions/workflows/make_linux_java.yml
+[linux_dotnet_svg]: https://github.com/google/or-tools/actions/workflows/make_linux_dotnet.yml/badge.svg?branch=master
+[linux_dotnet_link]: https://github.com/google/or-tools/actions/workflows/make_linux_dotnet.yml
+
+[macos_cpp_svg]: https://github.com/google/or-tools/actions/workflows/make_macos_cpp.yml/badge.svg?branch=master
+[macos_cpp_link]: https://github.com/google/or-tools/actions/workflows/make_macos_cpp.yml
+[macos_python_svg]: https://github.com/google/or-tools/actions/workflows/make_macos_python.yml/badge.svg?branch=master
+[macos_python_link]: https://github.com/google/or-tools/actions/workflows/make_macos_python.yml
+[macos_java_svg]: https://github.com/google/or-tools/actions/workflows/make_macos_java.yml/badge.svg?branch=master
+[macos_java_link]: https://github.com/google/or-tools/actions/workflows/make_macos_java.yml
+[macos_dotnet_svg]: https://github.com/google/or-tools/actions/workflows/make_macos_dotnet.yml/badge.svg?branch=master
+[macos_dotnet_link]: https://github.com/google/or-tools/actions/workflows/make_macos_dotnet.yml
+
+[windows_cpp_svg]: https://github.com/google/or-tools/actions/workflows/make_windows_cpp.yml/badge.svg?branch=master
+[windows_cpp_link]: https://github.com/google/or-tools/actions/workflows/make_windows_cpp.yml
+[windows_python_svg]: https://github.com/google/or-tools/actions/workflows/make_windows_python.yml/badge.svg?branch=master
+[windows_python_link]: https://github.com/google/or-tools/actions/workflows/make_windows_python.yml
+[windows_java_svg]: https://github.com/google/or-tools/actions/workflows/make_windows_java.yml/badge.svg?branch=master
+[windows_java_link]: https://github.com/google/or-tools/actions/workflows/make_windows_java.yml
+[windows_dotnet_svg]: https://github.com/google/or-tools/actions/workflows/make_windows_dotnet.yml/badge.svg?branch=master
+[windows_dotnet_link]: https://github.com/google/or-tools/actions/workflows/make_windows_dotnet.yml
+
+Dockers [Alpine, Archlinux, Centos, Debian, Fedora, OpenSuse, Ubuntu]x[C++,
+Python, Java, .Net]: [![Status][docker_svg]][docker_link]
+
+[docker_svg]: https://github.com/google/or-tools/actions/workflows/make_docker.yml/badge.svg?branch=master
+[docker_link]: https://github.com/google/or-tools/actions/workflows/make_docker.yml
 
 ## Introduction
 <nav for="make"> |

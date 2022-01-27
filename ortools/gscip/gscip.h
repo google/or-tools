@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -49,15 +49,20 @@
 #define OR_TOOLS_GSCIP_GSCIP_H_
 
 #include <cstdint>
+#include <functional>
 #include <limits>
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "ortools/gscip/gscip.pb.h"
+#include "ortools/gscip/gscip_message_handler.h"  // IWYU pragma: export
 #include "scip/scip.h"
 #include "scip/scip_prob.h"
 #include "scip/type_cons.h"
@@ -102,14 +107,16 @@ struct GScipLinearRange {
 // optimal solution to the problem.
 enum class GScipVarType { kContinuous, kInteger, kImpliedInteger };
 
+struct GScipIndicatorConstraint;
+struct GScipLogicalConstraintData;
 // Some advanced features, defined at the end of the header file.
 struct GScipQuadraticRange;
 struct GScipSOSData;
-struct GScipIndicatorConstraint;
-struct GScipLogicalConstraintData;
 struct GScipVariableOptions;
+
 const GScipVariableOptions& DefaultGScipVariableOptions();
 struct GScipConstraintOptions;
+
 const GScipConstraintOptions& DefaultGScipConstraintOptions();
 using GScipBranchingPriority = absl::flat_hash_map<SCIP_VAR*, int>;
 enum class GScipHintResult;
@@ -137,7 +144,8 @@ class GScip {
   // this will be reflected in the value of GScipResult::gscip_output::status.
   absl::StatusOr<GScipResult> Solve(
       const GScipParameters& params = GScipParameters(),
-      const std::string& legacy_params = "");
+      const std::string& legacy_params = "",
+      GScipMessageHandler message_handler = nullptr);
 
   // ///////////////////////////////////////////////////////////////////////////
   // Basic Model Construction

@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,6 +14,7 @@
 // [START program]
 // [START import]
 #include <cmath>
+#include <cstdint>
 
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/constraint_solver/routing_enums.pb.h"
@@ -44,7 +45,7 @@ void SimpleRoutingProgram() {
   // Define cost of each arc.
   // [START arc_cost]
   int distance_call_index = routing.RegisterTransitCallback(
-      [&manager](int64 from_index, int64 to_index) -> int64 {
+      [&manager](int64_t from_index, int64_t to_index) -> int64_t {
         // Convert from routing variable Index to user NodeIndex.
         auto from_node = manager.IndexToNode(from_index).value();
         auto to_node = manager.IndexToNode(to_index).value();
@@ -69,16 +70,16 @@ void SimpleRoutingProgram() {
   // [START print_solution]
   LOG(INFO) << "Objective: " << solution->ObjectiveValue();
   // Inspect solution.
-  int64 index = routing.Start(0);
+  int64_t index = routing.Start(0);
   LOG(INFO) << "Route for Vehicle 0:";
-  int64 route_distance{0};
+  int64_t route_distance{0};
   std::ostringstream route;
   while (routing.IsEnd(index) == false) {
     route << manager.IndexToNode(index).value() << " -> ";
-    int64 previous_index = index;
+    int64_t previous_index = index;
     index = solution->Value(routing.NextVar(index));
     route_distance +=
-        routing.GetArcCostForVehicle(previous_index, index, int64{0});
+        routing.GetArcCostForVehicle(previous_index, index, int64_t{0});
   }
   LOG(INFO) << route.str() << manager.IndexToNode(index).value();
   LOG(INFO) << "Distance of the route: " << route_distance << "m";

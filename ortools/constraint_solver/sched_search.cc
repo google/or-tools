@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -11,7 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <cstdint>
 #include <cstring>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -24,9 +26,9 @@
 
 namespace operations_research {
 namespace {
-int64 ValueToIndex(int64 value) { return value - 1; }
+int64_t ValueToIndex(int64_t value) { return value - 1; }
 
-int64 IndexToValue(int64 index) { return index + 1; }
+int64_t IndexToValue(int64_t index) { return index + 1; }
 }  // namespace
 
 // ----- SequenceVar -----
@@ -54,7 +56,7 @@ IntervalVar* SequenceVar::Interval(int index) const {
 IntVar* SequenceVar::Next(int index) const { return nexts_[index]; }
 
 std::string SequenceVar::DebugString() const {
-  int64 hmin, hmax, dmin, dmax;
+  int64_t hmin, hmax, dmin, dmax;
   HorizonRange(&hmin, &hmax);
   DurationRange(&dmin, &dmax);
   int unperformed = 0;
@@ -72,9 +74,10 @@ void SequenceVar::Accept(ModelVisitor* const visitor) const {
   visitor->VisitSequenceVariable(this);
 }
 
-void SequenceVar::DurationRange(int64* const dmin, int64* const dmax) const {
-  int64 dur_min = 0;
-  int64 dur_max = 0;
+void SequenceVar::DurationRange(int64_t* const dmin,
+                                int64_t* const dmax) const {
+  int64_t dur_min = 0;
+  int64_t dur_max = 0;
   for (int i = 0; i < intervals_.size(); ++i) {
     IntervalVar* const t = intervals_[i];
     if (t->MayBePerformed()) {
@@ -88,9 +91,9 @@ void SequenceVar::DurationRange(int64* const dmin, int64* const dmax) const {
   *dmax = dur_max;
 }
 
-void SequenceVar::HorizonRange(int64* const hmin, int64* const hmax) const {
-  int64 hor_min = kint64max;
-  int64 hor_max = kint64min;
+void SequenceVar::HorizonRange(int64_t* const hmin, int64_t* const hmax) const {
+  int64_t hor_min = std::numeric_limits<int64_t>::max();
+  int64_t hor_max = std::numeric_limits<int64_t>::min();
   for (int i = 0; i < intervals_.size(); ++i) {
     IntervalVar* const t = intervals_[i];
     if (t->MayBePerformed()) {
@@ -103,8 +106,8 @@ void SequenceVar::HorizonRange(int64* const hmin, int64* const hmax) const {
   *hmax = hor_max;
 }
 
-void SequenceVar::ActiveHorizonRange(int64* const hmin,
-                                     int64* const hmax) const {
+void SequenceVar::ActiveHorizonRange(int64_t* const hmin,
+                                     int64_t* const hmax) const {
   absl::flat_hash_set<int> decided;
   for (int i = 0; i < intervals_.size(); ++i) {
     if (intervals_[i]->CannotBePerformed()) {
@@ -128,10 +131,10 @@ void SequenceVar::ActiveHorizonRange(int64* const hmin,
       decided.insert(ValueToIndex(last));
     }
   }
-  int64 hor_min = kint64max;
-  int64 hor_max = kint64min;
+  int64_t hor_min = std::numeric_limits<int64_t>::max();
+  int64_t hor_max = std::numeric_limits<int64_t>::min();
   for (int i = 0; i < intervals_.size(); ++i) {
-    if (!gtl::ContainsKey(decided, i)) {
+    if (!decided.contains(i)) {
       IntervalVar* const t = intervals_[i];
       hor_min = std::min(hor_min, t->StartMin());
       hor_max = std::max(hor_max, t->EndMax());
@@ -207,9 +210,9 @@ void SequenceVar::ComputePossibleFirstsAndLasts(
 
   IntVar* const forward_var = nexts_[first];
   std::vector<int> candidates;
-  int64 smallest_start_max = kint64max;
+  int64_t smallest_start_max = std::numeric_limits<int64_t>::max();
   int ssm_support = -1;
-  for (int64 i = forward_var->Min(); i <= forward_var->Max(); ++i) {
+  for (int64_t i = forward_var->Min(); i <= forward_var->Max(); ++i) {
     // TODO(user): use domain iterator.
     if (i != 0 && i < IndexToValue(intervals_.size()) &&
         intervals_[ValueToIndex(i)]->MayBePerformed() &&
@@ -240,7 +243,7 @@ void SequenceVar::ComputePossibleFirstsAndLasts(
   }
 
   candidates.clear();
-  int64 biggest_end_min = kint64min;
+  int64_t biggest_end_min = std::numeric_limits<int64_t>::min();
   int bem_support = -1;
   for (const int candidate : to_check) {
     if (nexts_[IndexToValue(candidate)]->Contains(last)) {
@@ -386,7 +389,7 @@ namespace {
 //
 class ScheduleOrPostpone : public Decision {
  public:
-  ScheduleOrPostpone(IntervalVar* const var, int64 est, int64* const marker)
+  ScheduleOrPostpone(IntervalVar* const var, int64_t est, int64_t* const marker)
       : var_(var), est_(est), marker_(marker) {}
   ~ScheduleOrPostpone() override {}
 
@@ -414,20 +417,21 @@ class ScheduleOrPostpone : public Decision {
 
  private:
   IntervalVar* const var_;
-  NumericalRev<int64> est_;
-  int64* const marker_;
+  NumericalRev<int64_t> est_;
+  int64_t* const marker_;
 };
 
 class SetTimesForward : public DecisionBuilder {
  public:
   explicit SetTimesForward(const std::vector<IntervalVar*>& vars)
-      : vars_(vars), markers_(vars.size(), kint64min) {}
+      : vars_(vars),
+        markers_(vars.size(), std::numeric_limits<int64_t>::min()) {}
 
   ~SetTimesForward() override {}
 
   Decision* Next(Solver* const s) override {
-    int64 best_est = kint64max;
-    int64 best_lct = kint64max;
+    int64_t best_est = std::numeric_limits<int64_t>::max();
+    int64_t best_lct = std::numeric_limits<int64_t>::max();
     int support = -1;
     // We are looking for the interval that has the smallest start min
     // (tie break with smallest end max) and is not postponed. And
@@ -446,7 +450,7 @@ class SetTimesForward : public DecisionBuilder {
     // TODO(user) : remove this crude quadratic loop with
     // reversibles range reduction.
     if (support == -1) {  // All intervals are either fixed or postponed.
-      UnperformPostponedTaskBefore(kint64max);
+      UnperformPostponedTaskBefore(std::numeric_limits<int64_t>::max());
       return nullptr;
     }
     UnperformPostponedTaskBefore(best_est);
@@ -469,7 +473,7 @@ class SetTimesForward : public DecisionBuilder {
     return vars_[index]->StartMin() <= markers_[index];
   }
 
-  void UnperformPostponedTaskBefore(int64 date) {
+  void UnperformPostponedTaskBefore(int64_t date) {
     for (int i = 0; i < vars_.size(); ++i) {
       IntervalVar* const v = vars_[i];
       if (v->MayBePerformed() && v->StartMin() != v->StartMax() &&
@@ -488,7 +492,7 @@ class SetTimesForward : public DecisionBuilder {
   }
 
   const std::vector<IntervalVar*> vars_;
-  std::vector<int64> markers_;
+  std::vector<int64_t> markers_;
 };
 
 //
@@ -496,7 +500,7 @@ class SetTimesForward : public DecisionBuilder {
 //
 class ScheduleOrExpedite : public Decision {
  public:
-  ScheduleOrExpedite(IntervalVar* const var, int64 est, int64* const marker)
+  ScheduleOrExpedite(IntervalVar* const var, int64_t est, int64_t* const marker)
       : var_(var), est_(est), marker_(marker) {}
   ~ScheduleOrExpedite() override {}
 
@@ -524,20 +528,21 @@ class ScheduleOrExpedite : public Decision {
 
  private:
   IntervalVar* const var_;
-  NumericalRev<int64> est_;
-  int64* const marker_;
+  NumericalRev<int64_t> est_;
+  int64_t* const marker_;
 };
 
 class SetTimesBackward : public DecisionBuilder {
  public:
   explicit SetTimesBackward(const std::vector<IntervalVar*>& vars)
-      : vars_(vars), markers_(vars.size(), kint64max) {}
+      : vars_(vars),
+        markers_(vars.size(), std::numeric_limits<int64_t>::max()) {}
 
   ~SetTimesBackward() override {}
 
   Decision* Next(Solver* const s) override {
-    int64 best_end = kint64min;
-    int64 best_start = kint64min;
+    int64_t best_end = std::numeric_limits<int64_t>::min();
+    int64_t best_start = std::numeric_limits<int64_t>::min();
     int support = -1;
     int refuted = 0;
     for (int i = 0; i < vars_.size(); ++i) {
@@ -578,7 +583,7 @@ class SetTimesBackward : public DecisionBuilder {
 
  private:
   const std::vector<IntervalVar*> vars_;
-  std::vector<int64> markers_;
+  std::vector<int64_t> markers_;
 };
 
 // ----- Decisions and DecisionBuilders on sequences -----
@@ -678,7 +683,7 @@ class RankFirstIntervalVars : public DecisionBuilder {
                                  SequenceVar* const best_sequence,
                                  int* const best_interval_index) {
     int best_interval = -1;
-    int64 best_start_min = kint64max;
+    int64_t best_start_min = std::numeric_limits<int64_t>::max();
     for (int index = 0; index < best_possible_firsts_.size(); ++index) {
       const int candidate = best_possible_firsts_[index];
       IntervalVar* const interval = best_sequence->Interval(candidate);
@@ -722,8 +727,8 @@ class RankFirstIntervalVars : public DecisionBuilder {
   // Selects the sequence var to start ranking.
   bool FindSequenceVarOnSlack(Solver* const s,
                               SequenceVar** const best_sequence) {
-    int64 best_slack = kint64max;
-    int64 best_ahmin = kint64max;
+    int64_t best_slack = std::numeric_limits<int64_t>::max();
+    int64_t best_ahmin = std::numeric_limits<int64_t>::max();
     *best_sequence = nullptr;
     best_possible_firsts_.clear();
     for (int i = 0; i < sequences_.size(); ++i) {
@@ -751,12 +756,12 @@ class RankFirstIntervalVars : public DecisionBuilder {
         }
 
         // Evaluating the sequence.
-        int64 hmin, hmax, dmin, dmax;
+        int64_t hmin, hmax, dmin, dmax;
         candidate_sequence->HorizonRange(&hmin, &hmax);
         candidate_sequence->DurationRange(&dmin, &dmax);
-        int64 ahmin, ahmax;
+        int64_t ahmin, ahmax;
         candidate_sequence->ActiveHorizonRange(&ahmin, &ahmax);
-        const int64 current_slack = (hmax - hmin - dmax);
+        const int64_t current_slack = (hmax - hmin - dmax);
         if (current_slack < best_slack ||
             (current_slack == best_slack && ahmin < best_ahmin)) {
           best_slack = current_slack;
@@ -831,15 +836,15 @@ class RankFirstIntervalVars : public DecisionBuilder {
 };
 }  // namespace
 
-Decision* Solver::MakeScheduleOrPostpone(IntervalVar* const var, int64 est,
-                                         int64* const marker) {
+Decision* Solver::MakeScheduleOrPostpone(IntervalVar* const var, int64_t est,
+                                         int64_t* const marker) {
   CHECK(var != nullptr);
   CHECK(marker != nullptr);
   return RevAlloc(new ScheduleOrPostpone(var, est, marker));
 }
 
-Decision* Solver::MakeScheduleOrExpedite(IntervalVar* const var, int64 est,
-                                         int64* const marker) {
+Decision* Solver::MakeScheduleOrExpedite(IntervalVar* const var, int64_t est,
+                                         int64_t* const marker) {
   CHECK(var != nullptr);
   CHECK(marker != nullptr);
   return RevAlloc(new ScheduleOrExpedite(var, est, marker));

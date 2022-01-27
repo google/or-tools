@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -39,14 +39,14 @@
 // The C preprocessor macros below use some tricks that make them work only if
 // the actual C preprocessor expands them (not the SWIG preprocessor).
 %{
-// NAMES(int64, bool, int)  expands to:  , i0, i1, i2
+// NAMES(int64_t, bool, int)  expands to:  , i0, i1, i2
 #define NAMES_0
 #define NAMES_1 i0
 #define NAMES_2 i0, i1
 #define NAMES_3 i0, i1, i2
 #define NAMES(num) NAMES_ ## num
 
-// INSERT_NAMES(int64, bool, int)  expands to:  int64 i0, bool i1, int i2
+// INSERT_NAMES(int64_t, bool, int)  expands to:  int64_t i0, bool i1, int i2
 #define INSERT_NAMES_0()
 #define INSERT_NAMES_1(arg0) arg0 i0
 #define INSERT_NAMES_2(arg0, arg1) arg0 i0, arg1 i1
@@ -54,13 +54,13 @@
 #define INSERT_NAMES(num) INSERT_NAMES_ ## num
 
 // Abbreviation of the java type corresponding to the given CType.
-// Eg. JAVA_ABBREV(int64) expands to "J".
+// Eg. JAVA_ABBREV(int64_t) expands to "J".
 #define JAVA_ABBREV_int64 "J"
 #define JAVA_ABBREV_int "I"
 #define JAVA_ABBREV_bool "Z"
 #define JAVA_ABBREV(x) JAVA_ABBREV_ ## x
 
-// ABBREV(int64, bool, int64)  expands to:  JZJ
+// ABBREV(int64_t, bool, int64_t)  expands to:  JZJ
 #define ABBREV_0()
 #define ABBREV_1(arg1) JAVA_ABBREV(arg1)
 #define ABBREV_2(arg1, arg2) JAVA_ABBREV(arg1) JAVA_ABBREV(arg2)
@@ -74,8 +74,8 @@
                                    ReturnType, JavaReturnType, NumArgs,
                                    __Unused__, Args...)
 // The macro expansions can be hard to follow, so we show an example of the
-// expected macro expansion with: ReturnType=int64, Args=int64, bool.
-// EXPANSION EXAMPLE: "int64(int64, bool)".
+// expected macro expansion with: ReturnType=int64_t, Args=int64_t, bool.
+// EXPANSION EXAMPLE: "int64_t(int64_t, bool)".
 %typemap(in) std::function<PARENTHIZE(ReturnType, Args)> {
   jclass object_class = jenv->FindClass(ClassPath ClassName);
   if (nullptr == object_class) return $null;
@@ -85,7 +85,7 @@
   operations_research::swig_util::CppClass* const fun =
       reinterpret_cast<operations_research::swig_util::CppClass*>(
           jenv->CallStaticLongMethod(object_class, method_id, $input));
-  // EXPANSION EXAMPLE: "int64 i0, bool i1".
+  // EXPANSION EXAMPLE: "int64_t i0, bool i1".
   $1 = [fun](INSERT_NAMES(NumArgs)(Args))  {
     // EXPANSION EXAMPLE: "i0, i1".
     return fun->Run(NAMES(NumArgs));
@@ -178,7 +178,7 @@ WRAP_STD_FUNCTION_JAVA_AUX(Package, "CppClass", CppClass, ReturnType,
 
 // --------- LongToVoid ---------
 
-%typemap(in) std::function<void(int64)> {
+%typemap(in) std::function<void(int64_t)> {
   jclass object_class =
     jenv->FindClass(ClassPath "LongToVoid");
   if (nullptr == object_class) return $null;
@@ -189,16 +189,16 @@ WRAP_STD_FUNCTION_JAVA_AUX(Package, "CppClass", CppClass, ReturnType,
   operations_research::swig_util::LongToVoid* const fun =
       reinterpret_cast<operations_research::swig_util::LongToVoid*>(
           jenv->CallStaticLongMethod(object_class, method_id, $input));
-  $1 = [fun](int64 i) { fun->Run(i); };
+  $1 = [fun](int64_t i) { fun->Run(i); };
 }
 
 // These 3 typemaps tell SWIG what JNI and Java types to use
-%typemap(jni) std::function<void(int64)> "jobject"
-%typemap(jtype) std::function<void(int64)> "LongToVoid"
-%typemap(jstype) std::function<void(int64)> "LongToVoid"
+%typemap(jni) std::function<void(int64_t)> "jobject"
+%typemap(jtype) std::function<void(int64_t)> "LongToVoid"
+%typemap(jstype) std::function<void(int64_t)> "LongToVoid"
 
 // This typemap handles the conversion of the jstype to jtype typemap types
-%typemap(javain) std::function<void(int64)> "$javainput"
+%typemap(javain) std::function<void(int64_t)> "$javainput"
 %enddef  // WRAP_STD_FUNCTIONS_WITH_VOID_JAVA
 
 %define WRAP_STD_FUNCTION_JAVA_CLASS_TO_VOID(CppClass, ClassPath, Parameter)

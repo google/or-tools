@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -58,7 +58,7 @@ std::function<void(Model*)> Cumulative(
 
       std::vector<Literal> enforcement_literals;
       if (intervals->IsOptional(vars[i])) {
-        enforcement_literals.push_back(intervals->IsPresentLiteral(vars[i]));
+        enforcement_literals.push_back(intervals->PresenceLiteral(vars[i]));
       }
 
       // If the interval can be of size zero, it currently do not count towards
@@ -66,8 +66,7 @@ std::function<void(Model*)> Cumulative(
       // for this.
       if (intervals->MinSize(vars[i]) == 0) {
         enforcement_literals.push_back(encoder->GetOrCreateAssociatedLiteral(
-            IntegerLiteral::GreaterOrEqual(intervals->SizeVar(vars[i]),
-                                           IntegerValue(1))));
+            intervals->Size(vars[i]).GreaterOrEqual(IntegerValue(1))));
       }
 
       if (enforcement_literals.empty()) {
@@ -123,6 +122,65 @@ std::function<void(Model*)> Cumulative(
     if (helper == nullptr) {
       helper = new SchedulingConstraintHelper(vars, model);
       model->TakeOwnership(helper);
+    }
+
+    // For each variables that is after a subset of task ends (i.e. like a
+    // makespan objective), we detect it and add a special constraint to
+    // propagate it.
+    //
+    // TODO(user): Models that include the makespan as a special interval might
+    // be better, but then not everyone does that. In particular this code
+    // allows to have decent lower bound on the large cumulative minizinc
+    // instances.
+    //
+    // TODO(user): this require the precedence constraints to be already loaded,
+    // and there is no guarantee of that currently. Find a more robust way.
+    //
+    // TODO(user): There is a bit of code duplication with the disjunctive
+    // precedence propagator. Abstract more?
+    {
+      std::vector<IntegerVariable> index_to_end_vars;
+      std::vector<int> index_to_task;
+      std::vector<PrecedencesPropagator::IntegerPrecedences> before;
+      index_to_end_vars.clear();
+      for (int t = 0; t < helper->NumTasks(); ++t) {
+        const AffineExpression& end_exp = helper->Ends()[t];
+
+        // TODO(user): Handle generic affine relation?
+        if (end_exp.var == kNoIntegerVariable || end_exp.coeff != 1) continue;
+        index_to_end_vars.push_back(end_exp.var);
+        index_to_task.push_back(t);
+      }
+      model->GetOrCreate<PrecedencesPropagator>()->ComputePrecedences(
+          index_to_end_vars, &before);
+      const int size = before.size();
+      for (int i = 0; i < size;) {
+        const IntegerVariable var = before[i].var;
+        DCHECK_NE(var, kNoIntegerVariable);
+
+        IntegerValue min_offset = kMaxIntegerValue;
+        std::vector<int> subtasks;
+        for (; i < size && before[i].var == var; ++i) {
+          const int t = index_to_task[before[i].index];
+          subtasks.push_back(t);
+
+          // We have var >= end_exp.var + offset, so
+          // var >= (end_exp.var + end_exp.cte) + (offset - end_exp.cte)
+          // var >= task end + new_offset.
+          const AffineExpression& end_exp = helper->Ends()[t];
+          min_offset =
+              std::min(min_offset, before[i].offset - end_exp.constant);
+        }
+
+        if (subtasks.size() > 1) {
+          CumulativeIsAfterSubsetConstraint* constraint =
+              new CumulativeIsAfterSubsetConstraint(var, min_offset, capacity,
+                                                    demands, subtasks,
+                                                    integer_trail, helper);
+          constraint->RegisterWith(watcher);
+          model->TakeOwnership(constraint);
+        }
+      }
     }
 
     // Propagator responsible for applying Timetabling filtering rule. It
@@ -203,7 +261,7 @@ std::function<void(Model*)> CumulativeTimeDecomposition(
 
         // Task t consumes the resource at time if it is present.
         if (intervals->IsOptional(vars[t])) {
-          consume_condition.push_back(intervals->IsPresentLiteral(vars[t]));
+          consume_condition.push_back(intervals->PresenceLiteral(vars[t]));
         }
 
         // Task t overlaps time.
@@ -229,6 +287,45 @@ std::function<void(Model*)> CumulativeTimeDecomposition(
       // Abort if UNSAT.
       if (sat_solver->IsModelUnsat()) return;
     }
+  };
+}
+
+std::function<void(Model*)> CumulativeUsingReservoir(
+    const std::vector<IntervalVariable>& vars,
+    const std::vector<AffineExpression>& demands, AffineExpression capacity,
+    SchedulingConstraintHelper* helper) {
+  return [=](Model* model) {
+    if (vars.empty()) return;
+
+    auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+    auto* encoder = model->GetOrCreate<IntegerEncoder>();
+    auto* intervals = model->GetOrCreate<IntervalsRepository>();
+
+    CHECK(integer_trail->IsFixed(capacity));
+    const IntegerValue fixed_capacity(
+        integer_trail->UpperBound(capacity).value());
+
+    std::vector<AffineExpression> times;
+    std::vector<IntegerValue> deltas;
+    std::vector<Literal> presences;
+
+    const int num_tasks = vars.size();
+    for (int t = 0; t < num_tasks; ++t) {
+      CHECK(integer_trail->IsFixed(demands[t]));
+      times.push_back(intervals->StartVar(vars[t]));
+      deltas.push_back(integer_trail->LowerBound(demands[t]));
+      times.push_back(intervals->EndVar(vars[t]));
+      deltas.push_back(-integer_trail->LowerBound(demands[t]));
+      if (intervals->IsOptional(vars[t])) {
+        presences.push_back(intervals->PresenceLiteral(vars[t]));
+        presences.push_back(intervals->PresenceLiteral(vars[t]));
+      } else {
+        presences.push_back(encoder->GetTrueLiteral());
+        presences.push_back(encoder->GetTrueLiteral());
+      }
+    }
+    AddReservoirConstraint(times, deltas, presences, 0, fixed_capacity.value(),
+                           model);
   };
 }
 

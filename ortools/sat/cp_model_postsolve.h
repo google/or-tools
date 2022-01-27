@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_SAT_CP_MODEL_POSTSOLVE_H_
 #define OR_TOOLS_SAT_CP_MODEL_POSTSOLVE_H_
 
+#include <cstdint>
 #include <vector>
 
 #include "ortools/base/integral_types.h"
@@ -40,10 +41,10 @@ namespace sat {
 //
 // TODO(user): We could use the search strategy to fix free variables to some
 // chosen values? The feature might never be needed though.
-void PostsolveResponse(const int64 num_variables_in_original_model,
+void PostsolveResponse(const int64_t num_variables_in_original_model,
                        const CpModelProto& mapping_proto,
                        const std::vector<int>& postsolve_mapping,
-                       CpSolverResponse* response);
+                       std::vector<int64_t>* solution);
 
 }  // namespace sat
 }  // namespace operations_research

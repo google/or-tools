@@ -1,4 +1,5 @@
-# Copyright 2010-2018 Google LLC
+#!/usr/bin/env python3
+# Copyright 2010-2021 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -10,9 +11,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Solves a flexible jobshop problems with the CP-SAT solver."""
+"""Solves a flexible jobshop problems with the CP-SAT solver.
+
+A jobshop is a standard scheduling problem when you must sequence a
+series of task_types on a set of machines. Each job contains one task_type per
+machine. The order of execution and the length of each job on each
+machine is task_type dependent.
+
+The objective is to minimize the maximum completion time of all
+jobs. This is called the makespan.
+"""
+
+# overloaded sum() clashes with pytype.
+# pytype: disable=wrong-arg-types
 
 import collections
+
 from ortools.sat.python import cp_model
 
 
@@ -33,18 +47,18 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
 def flexible_jobshop():
     """Solve a small flexible jobshop problem."""
     # Data part.
-    jobs = [ # task = (processing_time, machine_id)
-        [ # Job 0
-            [(3, 0), (1, 1), (5, 2)], # alternative 0
-            [(2, 0), (4, 1), (6, 2)], # alternative 1
-            [(2, 0), (3, 1), (1, 2)], # alternative 2
+    jobs = [  # task = (processing_time, machine_id)
+        [  # Job 0
+            [(3, 0), (1, 1), (5, 2)],  # task 0 with 3 alternatives
+            [(2, 0), (4, 1), (6, 2)],  # task 1 with 3 alternatives
+            [(2, 0), (3, 1), (1, 2)],  # task 2 with 3 alternatives
         ],
-        [ # Job 1
+        [  # Job 1
             [(2, 0), (3, 1), (4, 2)],
             [(1, 0), (5, 1), (4, 2)],
             [(2, 0), (1, 1), (4, 2)],
         ],
-        [ # Job 2
+        [  # Job 2
             [(2, 0), (1, 1), (4, 2)],
             [(2, 0), (3, 1), (4, 2)],
             [(3, 0), (1, 1), (5, 2)],
@@ -108,7 +122,7 @@ def flexible_jobshop():
             starts[(job_id, task_id)] = start
 
             # Add precedence with previous task in the same job.
-            if previous_end:
+            if previous_end is not None:
                 model.Add(start >= previous_end)
             previous_end = end
 
@@ -159,7 +173,7 @@ def flexible_jobshop():
     # Solve model.
     solver = cp_model.CpSolver()
     solution_printer = SolutionPrinter()
-    status = solver.SolveWithSolutionCallback(model, solution_printer)
+    status = solver.Solve(model, solution_printer)
 
     # Print final solution.
     for job_id in all_jobs:

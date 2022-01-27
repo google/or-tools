@@ -1,0 +1,152 @@
+name: CMake linux
+
+on: workflow_dispatch
+
+jobs:
+  cmake:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup .NET Core 3.1
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 3.1.x
+      - name: Setup .NET 6.0
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 6.0.x
+      - name: Pip install reqs
+        run: python3 -m pip install --user mypy-protobuf absl-py setuptools wheel numpy pandas virtualenv
+      - name: Checkout Sirius repo
+        uses: actions/checkout@v2
+        with:
+          repository: rte-france/sirius-solver
+          path: ./sirius-solver
+          ref: antares_integration
+      - name: Configure Sirius
+        working-directory: ./sirius-solver
+        run: |
+          cmake -S src \
+                -B build \
+                -DCMAKE_BUILD_TYPE=Release \
+                -DCMAKE_INSTALL_PREFIX=SiriusInstall
+      - name: Build & Install Sirius
+        working-directory: ./sirius-solver
+        run: cmake --build build/ --config Release --target install -j14
+      - name: Upload sirius lib
+        uses: actions/upload-artifact@v2
+        with:
+          name: sirius_solver
+          path: ./sirius-solver/SiriusInstall/lib/libsirius_solver.so
+      - name: Checkout xpressmp813
+        uses: actions/checkout@v2
+        with:
+          repository: jdarlay/xpressmp813Lin
+          path: ./xpressmp813
+          ref: master
+          token: ${{ secrets.ACCESS_TOKEN }}
+      - name: Checkout or-tools
+        uses: actions/checkout@v2
+        with:
+          path: ./or-tools
+      - name: Configure or-tools
+        working-directory: ./or-tools
+        run: |
+          cmake -S. \
+                -Bbuild \
+                -DCMAKE_BUILD_TYPE=Release \
+                -DBUILD_DEPS=ON \
+                -DUSE_SIRIUS=ON \
+                -Dsirius_solver_DIR="${{ github.workspace }}/sirius-solver/SiriusInstall/cmake" \
+                -DUSE_XPRESS=ON \
+                -DXPRESS_ROOT="${{ github.workspace }}/xpressmp813" \
+                -DBUILD_PYTHON=ON \
+                -DBUILD_JAVA=ON \
+                -DBUILD_DOTNET=ON
+      - name: Build tests
+        working-directory: ./or-tools
+        run: |
+          cmake --build build \
+                --target all \
+                -j14
+      - name: Upload libortools
+        uses: actions/upload-artifact@v2
+        with:
+          name: libortools
+          path: ./or-tools/build/lib/libortools.so
+      - name: Upload ortools wheel
+        uses: actions/upload-artifact@v2
+        with:
+          name: ortools_wheel
+          path: './or-tools/build/python/dist/*.whl'
+      - name: Upload ortools jar
+        uses: actions/upload-artifact@v2
+        with:
+          name: ortools_jar
+          path: ./or-tools/build/java/ortools-*/target/*.jar
+      - name: Upload ortools dotnet
+        uses: actions/upload-artifact@v2
+        with:
+          name: ortools_dotnet
+          path: |
+            ./or-tools/build/dotnet/packages/Google.OrTools.[0-9]*.[0-9]*.[0-9]*.nupkg
+            ./or-tools/build/dotnet/packages/Google.OrTools.runtime.*.[0-9]*.[0-9]*.[0-9]*.nupkg
+      - name: Run sirius_interface unittests
+        working-directory: ./or-tools/build
+        run: ctest -V -R 'cxx_unittests_sirius_interface'
+        env:
+          XPRESS: "${{ github.workspace }}/xpressmp813/bin/"
+          LD_LIBRARY_PATH: "${{ github.workspace }}/sirius-solver/SiriusInstall/lib/:${{ github.workspace }}/xpressmp813/lib/"
+      - name: Run xpress_interface unittests
+        working-directory: ./or-tools/build
+        run: ctest -V -R 'cxx_unittests_xpress_interface'
+        env:
+          XPRESS: "${{ github.workspace }}/xpressmp813/bin/"
+          LD_LIBRARY_PATH: "${{ github.workspace }}/sirius-solver/SiriusInstall/lib/:${{ github.workspace }}/xpressmp813/lib/"
+      - name: Run specific cpp tests
+        working-directory: ./or-tools/build
+        run: ctest -V -R cxx_cpp_linear_programming
+        env:
+          XPRESS: "${{ github.workspace }}/xpressmp813/bin/"
+          LD_LIBRARY_PATH: "${{ github.workspace }}/sirius-solver/SiriusInstall/lib/:${{ github.workspace }}/xpressmp813/lib/"
+      - name: Run specific python tests
+        working-directory: ./or-tools/build
+        run: ctest -V -R python_python_linear_programming
+        env:
+          XPRESS: "${{ github.workspace }}/xpressmp813/bin/"
+          LD_LIBRARY_PATH: "${{ github.workspace }}/sirius-solver/SiriusInstall/lib/:${{ github.workspace }}/xpressmp813/lib/"
+      - name: Run specific java tests
+        working-directory: ./or-tools/build
+        run: ctest -V -R java_java_LinearProgramming
+        env:
+          XPRESS: "${{ github.workspace }}/xpressmp813/bin/"
+          LD_LIBRARY_PATH: "${{ github.workspace }}/sirius-solver/SiriusInstall/lib/:${{ github.workspace }}/xpressmp813/lib/"
+      - name: Run specific dotnet tests
+        working-directory: ./or-tools/build
+        run: ctest -V -R dotnet_dotnet_cslinearprogramming
+        env:
+          XPRESS: "${{ github.workspace }}/xpressmp813/bin/"
+          LD_LIBRARY_PATH: "${{ github.workspace }}/sirius-solver/SiriusInstall/lib/:${{ github.workspace }}/xpressmp813/lib/"
+      - name: Run other cpp tests
+        working-directory: ./or-tools/build
+        run: ctest --output-on-failure -R cxx_cpp -E cxx_cpp_linear_programming
+        env:
+          XPRESS: "${{ github.workspace }}/xpressmp813/bin/"
+          LD_LIBRARY_PATH: "${{ github.workspace }}/sirius-solver/SiriusInstall/lib/:${{ github.workspace }}/xpressmp813/lib/"
+      - name: Run other python tests
+        working-directory: ./or-tools/build
+        run: ctest --output-on-failure -R python_python -E python_python_linear_programming
+        env:
+          XPRESS: "${{ github.workspace }}/xpressmp813/bin/"
+          LD_LIBRARY_PATH: "${{ github.workspace }}/sirius-solver/SiriusInstall/lib/:${{ github.workspace }}/xpressmp813/lib/"
+      - name: Run other java tests
+        working-directory: ./or-tools/build
+        run: ctest --output-on-failure -R java_java -E java_java_LinearProgramming
+        env:
+          XPRESS: "${{ github.workspace }}/xpressmp813/bin/"
+          LD_LIBRARY_PATH: "${{ github.workspace }}/sirius-solver/SiriusInstall/lib/:${{ github.workspace }}/xpressmp813/lib/"
+      - name: Run other dotnet tests
+        working-directory: ./or-tools/build
+        run: ctest --output-on-failure -R dotnet_dotnet -E dotnet_dotnet_cslinearprogramming
+        env:
+          XPRESS: "${{ github.workspace }}/xpressmp813/bin/"
+          LD_LIBRARY_PATH: "${{ github.workspace }}/sirius-solver/SiriusInstall/lib/:${{ github.workspace }}/xpressmp813/lib/"

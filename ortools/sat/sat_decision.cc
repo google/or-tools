@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -12,6 +12,8 @@
 // limitations under the License.
 
 #include "ortools/sat/sat_decision.h"
+
+#include <cstdint>
 
 #include "ortools/sat/util.h"
 
@@ -205,14 +207,14 @@ void SatDecisionPolicy::InitializeVariableOrdering() {
   // First, extract the variables without activity, and add the other to the
   // priority queue.
   var_ordering_.Clear();
-  std::vector<BooleanVariable> variables;
+  tmp_variables_.clear();
   for (BooleanVariable var(0); var < num_variables; ++var) {
     if (!trail_.Assignment().VariableIsAssigned(var)) {
       if (activities_[var] > 0.0) {
         var_ordering_.Add(
             {var, static_cast<float>(tie_breakers_[var]), activities_[var]});
       } else {
-        variables.push_back(var);
+        tmp_variables_.push_back(var);
       }
     }
   }
@@ -227,15 +229,15 @@ void SatDecisionPolicy::InitializeVariableOrdering() {
     case SatParameters::IN_ORDER:
       break;
     case SatParameters::IN_REVERSE_ORDER:
-      std::reverse(variables.begin(), variables.end());
+      std::reverse(tmp_variables_.begin(), tmp_variables_.end());
       break;
     case SatParameters::IN_RANDOM_ORDER:
-      std::shuffle(variables.begin(), variables.end(), *random_);
+      std::shuffle(tmp_variables_.begin(), tmp_variables_.end(), *random_);
       break;
   }
 
   // Add the variables without activity to the queue (in the default order)
-  for (const BooleanVariable var : variables) {
+  for (const BooleanVariable var : tmp_variables_) {
     var_ordering_.Add({var, static_cast<float>(tie_breakers_[var]), 0.0});
   }
 
@@ -428,7 +430,7 @@ void SatDecisionPolicy::Untrail(int target_trail_index) {
 
       // TODO(user): This heuristic can make this code quite slow because
       // all the untrailed variable will cause a priority queue update.
-      const int64 num_bumps = num_bumps_[var];
+      const int64_t num_bumps = num_bumps_[var];
       double new_rate = 0.0;
       if (num_bumps > 0) {
         DCHECK_GT(num_conflicts, 0);

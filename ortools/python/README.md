@@ -31,9 +31,8 @@ To Create a native dependent package which will contains two parts:
 * A bunch of native libraries for the supported platform targeted.
 * The Python code depending on it.
 
-[`platform` names](https://github.com/java-native-access/jna/blob/cc1acdac02e4d0dda93ba01bbe3a3435b8933dab/test/com/sun/jna/PlatformTest.java#L31-L100)
-come from the JNA project (Java Native Access) which will be use to find at
-runtime on which platform the code is currently running.
+note: Since [Pypi.org](https://pypi.org/) support multiple packages, we will
+simply upload one package per supported platform.
 
 ### Local Package
 
@@ -59,7 +58,7 @@ python3 -m pip install --user --find-links=dist ortools
 If everything good the package (located in `<buildir>/python/dist`) should have
 this layout:
 ```
-{...}/dist/ortools-8.0.9999-cp38-cp38-<platform>.whl:
+{...}/dist/ortools-X.Y.9999-cp3Z-cp3Z-<platform>.whl:
 \- ortools
    \- __init__.py
    \- .libs
@@ -74,7 +73,7 @@ this layout:
       \- _pywrap....so
 ...
 ```
-note: `<platform>` could be `manylinux2010_x86_64`, `macosx_10_9_x86_64` or `win-amd64`.
+note: `<platform>` could be `manylinux2014_x86_64`, `macosx_10_9_x86_64` or `win-amd64`.
 
 tips: since wheel package are just zip archive you can use `unzip -l <package>.whl`
 to study their layout.
@@ -88,6 +87,7 @@ Few links on the subject...
 * [Packaging Python Project](https://packaging.python.org/tutorials/packaging-projects/)
 * [PEP 513 -- A Platform Tag for Portable Linux Built Distributions](https://www.python.org/dev/peps/pep-0513/)
 * [PEP 571 -- The manylinux2010 Platform Tag](https://www.python.org/dev/peps/pep-0571/)
+* [PEP 600  Future 'manylinux' Platform Tags](https://www.python.org/dev/peps/pep-0600/)
 
 ## Misc
 

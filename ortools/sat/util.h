@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,13 +14,16 @@
 #ifndef OR_TOOLS_SAT_UTIL_H_
 #define OR_TOOLS_SAT_UTIL_H_
 
+#include <cstdint>
 #include <deque>
 
+#include "absl/random/bit_gen_ref.h"
 #include "absl/random/random.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/random_engine.h"
+#include "ortools/util/time_limit.h"
 
 #if !defined(__PORTABLE_PLATFORM__)
 #include "google/protobuf/descriptor.h"
@@ -29,20 +32,95 @@
 namespace operations_research {
 namespace sat {
 
+// Returns a in [0, m) such that a * x = 1 modulo m.
+// If gcd(x, m) != 1, there is no inverse, and it returns 0.
+//
+// This DCHECK that x is in [0, m).
+// This is integer overflow safe.
+//
+// Note(user): I didn't find this in a easily usable standard library.
+int64_t ModularInverse(int64_t x, int64_t m);
+
+// Just returns x % m but with a result always in [0, m).
+int64_t PositiveMod(int64_t x, int64_t m);
+
+// If we know that X * coeff % mod = rhs % mod, this returns c such that
+// PositiveMod(X, mod) = c.
+//
+// This requires coeff != 0, mod !=0 and gcd(coeff, mod) == 1.
+// The result will be in [0, mod) but there is no other condition on the sign or
+// magnitude of a and b.
+//
+// This is overflow safe, and when rhs == 0 or abs(mod) == 1, it returns 0.
+int64_t ProductWithModularInverse(int64_t coeff, int64_t mod, int64_t rhs);
+
+// Returns true if the equation a * X + b * Y = cte has some integer solutions.
+// For now, we check that a and b are different from 0 and from int64_t min.
+//
+// There is actually always a solution if cte % gcd(|a|, |b|) == 0. And because
+// a, b and cte fit on an int64_t, if there is a solution, there is one with X
+// and Y fitting on an int64_t.
+//
+// We will divide everything by gcd(a, b) first, so it is why we take reference
+// and the equation can change.
+//
+// If there are solutions, we return one of them (x0, y0).
+// From any such solution, the set of all solutions is given for Z integer by:
+// X = x0 + b * Z;
+// Y = y0 - a * Z;
+//
+// Given a domain for X and Y, it is possible to compute the "exact" domain of Z
+// with our Domain functions. Note however that this will only compute solution
+// where both x-x0 and y-y0 do fit on an int64_t:
+// DomainOf(x).SubtractionWith(x0).InverseMultiplicationBy(b).IntersectionWith(
+//     DomainOf(y).SubtractionWith(y0).InverseMultiplicationBy(-a))
+bool SolveDiophantineEquationOfSizeTwo(int64_t& a, int64_t& b, int64_t& cte,
+                                       int64_t& x0, int64_t& y0);
+
 // The model "singleton" random engine used in the solver.
-struct ModelRandomGenerator : public random_engine_t {
+//
+// In test, we usually set use_absl_random() so that the sequence is changed at
+// each invocation. This way, clients do not relly on the wrong assumption that
+// a particular optimal solution will be returned if they are many equivalent
+// ones.
+class ModelRandomGenerator : public absl::BitGenRef {
+ public:
   // We seed the strategy at creation only. This should be enough for our use
   // case since the SatParameters is set first before the solver is created. We
   // also never really need to change the seed afterwards, it is just used to
   // diversify solves with identical parameters on different Model objects.
-  explicit ModelRandomGenerator(Model* model) : random_engine_t() {
-    seed(model->GetOrCreate<SatParameters>()->random_seed());
+  explicit ModelRandomGenerator(Model* model)
+      : absl::BitGenRef(deterministic_random_) {
+    const auto& params = *model->GetOrCreate<SatParameters>();
+    deterministic_random_.seed(params.random_seed());
+    if (params.use_absl_random()) {
+      absl_random_ = absl::BitGen(absl::SeedSeq({params.random_seed()}));
+      absl::BitGenRef::operator=(absl::BitGenRef(absl_random_));
+    }
   }
+
+  // This is just used to display ABSL_RANDOM_SALT_OVERRIDE in the log so that
+  // it is possible to reproduce a failure more easily while looking at a solver
+  // log.
+  //
+  // TODO(user): I didn't find a cleaner way to log this.
+  void LogSalt() const {}
+
+ private:
+  random_engine_t deterministic_random_;
+  absl::BitGen absl_random_;
+};
+
+// The model "singleton" shared time limit.
+class ModelSharedTimeLimit : public SharedTimeLimit {
+ public:
+  explicit ModelSharedTimeLimit(Model* model)
+      : SharedTimeLimit(model->GetOrCreate<TimeLimit>()) {}
 };
 
 // Randomizes the decision heuristic of the given SatParameters.
-template <typename URBG>
-void RandomizeDecisionHeuristic(URBG* random, SatParameters* parameters);
+void RandomizeDecisionHeuristic(absl::BitGenRef random,
+                                SatParameters* parameters);
 
 // Context: this function is not really generic, but required to be unit-tested.
 // It is used in a clause minimization algorithm when we try to detect if any of
@@ -72,33 +150,6 @@ int MoveOneUnprocessedLiteralLast(const std::set<LiteralIndex>& processed,
 // Implementation.
 // ============================================================================
 
-template <typename URBG>
-inline void RandomizeDecisionHeuristic(URBG* random,
-                                       SatParameters* parameters) {
-#if !defined(__PORTABLE_PLATFORM__)
-  // Random preferred variable order.
-  const google::protobuf::EnumDescriptor* order_d =
-      SatParameters::VariableOrder_descriptor();
-  parameters->set_preferred_variable_order(
-      static_cast<SatParameters::VariableOrder>(
-          order_d->value(absl::Uniform(*random, 0, order_d->value_count()))
-              ->number()));
-
-  // Random polarity initial value.
-  const google::protobuf::EnumDescriptor* polarity_d =
-      SatParameters::Polarity_descriptor();
-  parameters->set_initial_polarity(static_cast<SatParameters::Polarity>(
-      polarity_d->value(absl::Uniform(*random, 0, polarity_d->value_count()))
-          ->number()));
-#endif  // __PORTABLE_PLATFORM__
-  // Other random parameters.
-  parameters->set_use_phase_saving(absl::Bernoulli(*random, 0.5));
-  parameters->set_random_polarity_ratio(absl::Bernoulli(*random, 0.5) ? 0.01
-                                                                      : 0.0);
-  parameters->set_random_branches_ratio(absl::Bernoulli(*random, 0.5) ? 0.01
-                                                                      : 0.0);
-}
-
 // Manages incremental averages.
 class IncrementalAverage {
  public:
@@ -111,13 +162,13 @@ class IncrementalAverage {
   void Reset(double reset_value);
 
   double CurrentAverage() const { return average_; }
-  int64 NumRecords() const { return num_records_; }
+  int64_t NumRecords() const { return num_records_; }
 
   void AddData(double new_record);
 
  private:
   double average_ = 0.0;
-  int64 num_records_ = 0;
+  int64_t num_records_ = 0;
 };
 
 // Manages exponential moving averages defined as
@@ -136,13 +187,13 @@ class ExponentialMovingAverage {
   double CurrentAverage() const { return average_; }
 
   // Returns the total number of added records so far.
-  int64 NumRecords() const { return num_records_; }
+  int64_t NumRecords() const { return num_records_; }
 
   void AddData(double new_record);
 
  private:
   double average_ = 0.0;
-  int64 num_records_ = 0;
+  int64_t num_records_ = 0;
   const double decaying_factor_;
 };
 
@@ -161,7 +212,7 @@ class Percentile {
   void AddRecord(double record);
 
   // Returns number of stored records.
-  int64 NumRecords() const { return records_.size(); }
+  int64_t NumRecords() const { return records_.size(); }
 
   // Note that this is not fast and runs in O(n log n) for n records.
   double GetPercentile(double percent);
@@ -178,8 +229,8 @@ class Percentile {
 // regexps.
 //
 // This method is exposed for testing purposes.
-void CompressTuples(absl::Span<const int64> domain_sizes, int64 any_value,
-                    std::vector<std::vector<int64>>* tuples);
+void CompressTuples(absl::Span<const int64_t> domain_sizes, int64_t any_value,
+                    std::vector<std::vector<int64_t>>* tuples);
 
 }  // namespace sat
 }  // namespace operations_research

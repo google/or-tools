@@ -1,4 +1,4 @@
-// Copyright 2010-2019 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -129,7 +129,7 @@ public class BalanceGroupSat
 
         // Compute the maximum number of colors in a group.
         int maxColor = numItemsPerGroup / minItemsOfSameColorPerGroup;
-        // Redundant contraint: The problem does not solve in reasonable time
+        // Redundant constraint: The problem does not solve in reasonable time
         // without it.
         if (maxColor < numberColors)
         {
@@ -144,11 +144,10 @@ public class BalanceGroupSat
         model.Minimize(e);
 
         var solver = new CpSolver();
-        solver.StringParameters = "";
 
         var solutionPrinter = new SolutionPrinter(values, colors, allGroups, allItems, itemInGroup);
 
-        var status = solver.SolveWithSolutionCallback(model, solutionPrinter);
+        var status = solver.Solve(model, solutionPrinter);
     }
 
     public class SolutionPrinter : CpSolverSolutionCallback

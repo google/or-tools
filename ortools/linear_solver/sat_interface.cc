@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -12,9 +12,11 @@
 // limitations under the License.
 
 #include <atomic>
+#include <cstdint>
 #include <string>
 #include <vector>
 
+#include "absl/base/attributes.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "ortools/base/hash.h"
@@ -45,6 +47,8 @@ class SatInterface : public MPSolverInterface {
 
   // ----- Solve -----
   MPSolver::ResultStatus Solve(const MPSolverParameters& param) override;
+  absl::optional<MPSolutionResponse> DirectlySolveProto(
+      const MPModelRequest& request, std::atomic<bool>* interrupt) override;
   bool InterruptSolve() override;
 
   // ----- Model modifications and extraction -----
@@ -67,8 +71,8 @@ class SatInterface : public MPSolverInterface {
   bool AddIndicatorConstraint(MPConstraint* const ct) override { return true; }
 
   // ------ Query statistics on the solution and the solve ------
-  int64 iterations() const override;
-  int64 nodes() const override;
+  int64_t iterations() const override;
+  int64_t nodes() const override;
   MPSolver::BasisStatus row_status(int constraint_index) const override;
   MPSolver::BasisStatus column_status(int variable_index) const override;
 
@@ -100,7 +104,7 @@ class SatInterface : public MPSolverInterface {
 
   std::atomic<bool> interrupt_solve_;
   sat::SatParameters parameters_;
-  int num_threads_ = 8;
+  int num_threads_ = 0;
 };
 
 SatInterface::SatInterface(MPSolver* const solver)
@@ -147,38 +151,37 @@ MPSolver::ResultStatus SatInterface::Solve(const MPSolverParameters& param) {
 
   // The solution must be marked as synchronized even when no solution exists.
   sync_status_ = SOLUTION_SYNCHRONIZED;
-  switch (response.status()) {
-    case MPSOLVER_OPTIMAL:
-      result_status_ = MPSolver::OPTIMAL;
-      break;
-    case MPSOLVER_FEASIBLE:
-      result_status_ = MPSolver::FEASIBLE;
-      break;
-    case MPSOLVER_INFEASIBLE:
-      result_status_ = MPSolver::INFEASIBLE;
-      break;
-    case MPSOLVER_MODEL_INVALID:
-      result_status_ = MPSolver::MODEL_INVALID;
-      break;
-    default:
-      result_status_ = MPSolver::NOT_SOLVED;
-      break;
-  }
+  result_status_ = static_cast<MPSolver::ResultStatus>(response.status());
 
-  // TODO(user): Just use LoadSolutionFromProto(), but fix that function first
-  // to load everything and not just the solution.
   if (response.status() == MPSOLVER_FEASIBLE ||
       response.status() == MPSOLVER_OPTIMAL) {
-    objective_value_ = response.objective_value();
-    best_objective_bound_ = response.best_objective_bound();
-    const size_t num_vars = solver_->variables_.size();
-    for (int var_id = 0; var_id < num_vars; ++var_id) {
-      MPVariable* const var = solver_->variables_[var_id];
-      var->set_solution_value(response.variable_value(var_id));
+    const absl::Status result = solver_->LoadSolutionFromProto(response);
+    if (!result.ok()) {
+      LOG(ERROR) << "LoadSolutionFromProto failed: " << result;
     }
   }
 
   return result_status_;
+}
+
+absl::optional<MPSolutionResponse> SatInterface::DirectlySolveProto(
+    const MPModelRequest& request, std::atomic<bool>* interrupt) {
+  absl::StatusOr<MPSolutionResponse> status_or =
+      SatSolveProto(request, interrupt);
+  if (status_or.ok()) return std::move(status_or).value();
+  if (request.enable_internal_solver_output()) {
+    LOG(INFO) << "Failed SAT solve: " << status_or.status();
+  }
+  MPSolutionResponse response;
+  // As of 2021-08, the sole non-OK status returned by SatSolveProto is an
+  // INVALID_ARGUMENT error caused by invalid solver parameters.
+  // TODO(user): Move that conversion to SatSolveProto, which should always
+  // return a MPSolutionResponse, even for errors.
+  response.set_status(absl::IsInvalidArgument(status_or.status())
+                          ? MPSOLVER_MODEL_INVALID_SOLVER_PARAMETERS
+                          : MPSOLVER_ABNORMAL);
+  response.set_status_str(status_or.status().ToString());
+  return response;
 }
 
 bool SatInterface::InterruptSolve() {
@@ -231,11 +234,11 @@ void SatInterface::SetObjectiveOffset(double value) { NonIncrementalChange(); }
 
 void SatInterface::ClearObjective() { NonIncrementalChange(); }
 
-int64 SatInterface::iterations() const {
+int64_t SatInterface::iterations() const {
   return 0;  // FIXME
 }
 
-int64 SatInterface::nodes() const { return 0; }
+int64_t SatInterface::nodes() const { return 0; }
 
 MPSolver::BasisStatus SatInterface::row_status(int constraint_index) const {
   return MPSolver::BasisStatus::FREE;  // FIXME
@@ -262,10 +265,7 @@ void SatInterface::ExtractNewConstraints() { NonIncrementalChange(); }
 void SatInterface::ExtractObjective() { NonIncrementalChange(); }
 
 void SatInterface::SetParameters(const MPSolverParameters& param) {
-  // By default, we use 8 threads as it allows to try a good set of orthogonal
-  // parameters. This can be overridden by the user.
   parameters_.set_num_search_workers(num_threads_);
-  parameters_.set_log_search_progress(!quiet_);
   SetCommonParameters(param);
 }
 

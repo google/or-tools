@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -53,6 +53,12 @@ std::function<void(Model*)> Cumulative(
 // This constraint assumes that task demands and the resource capacity are fixed
 // to non-negative number.
 std::function<void(Model*)> CumulativeTimeDecomposition(
+    const std::vector<IntervalVariable>& vars,
+    const std::vector<AffineExpression>& demands, AffineExpression capacity,
+    SchedulingConstraintHelper* helper = nullptr);
+
+// Another testing code, same assumptions as the CumulativeTimeDecomposition().
+std::function<void(Model*)> CumulativeUsingReservoir(
     const std::vector<IntervalVariable>& vars,
     const std::vector<AffineExpression>& demands, AffineExpression capacity,
     SchedulingConstraintHelper* helper = nullptr);

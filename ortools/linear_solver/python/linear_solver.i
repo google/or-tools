@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -28,10 +28,16 @@
 //
 // TODO(user): test all the APIs that are currently marked as 'untested'.
 
+%pythonbegin %{
+import os as _os
+if hasattr(_os, 'add_dll_directory'):
+    _os.add_dll_directory(_os.getenv('SIRIUS_BIN_DIR', ''))
+    _os.add_dll_directory(_os.getenv('XPRESS_BIN_DIR', ''))
+%}
+
 %include "ortools/base/base.i"
 
 %include "std_string.i"
-%include "stdint.i"
 
 %include "ortools/util/python/proto.i"
 
@@ -64,22 +70,6 @@ from ortools.linear_solver.linear_solver_natural_api import SumArray
 from ortools.linear_solver.linear_solver_natural_api import SumCst
 from ortools.linear_solver.linear_solver_natural_api import LinearConstraint
 from ortools.linear_solver.linear_solver_natural_api import VariableExpr
-
-# Remove the documentation of some functions.
-# See https://pdoc3.github.io/pdoc/doc/pdoc/#overriding-docstrings-with-
-__pdoc__ = {}
-__pdoc__['Solver_infinity'] = False
-__pdoc__['Solver_Infinity'] = False
-__pdoc__['Solver_SolveWithProto'] = False
-__pdoc__['Solver_SupportsProblemType'] = False
-__pdoc__['setup_variable_operator'] = False
-__pdoc__['Constraint.thisown'] = False
-__pdoc__['Constraint.thisown'] = False
-__pdoc__['MPSolverParameters.thisown'] = False
-__pdoc__['ModelExportOptions.thisown'] = False
-__pdoc__['Objective.thisown'] = False
-__pdoc__['Solver.thisown'] = False
-__pdoc__['Variable.thisown'] = False
 %}  // %pythoncode
 
 %extend operations_research::MPVariable {
@@ -105,11 +95,21 @@ __pdoc__['Variable.thisown'] = False
     return error_message;
   }
 
+  // Ditto for LoadModelFromProtoWithUniqueNamesOrDie()
+  std::string LoadModelFromProtoWithUniqueNamesOrDie(const operations_research::MPModelProto& input_model) {
+    std::string error_message;
+    $self->LoadModelFromProtoWithUniqueNamesOrDie(input_model, &error_message);
+    return error_message;
+  }
+
   // Change the API of LoadSolutionFromProto() to simply return a boolean.
   bool LoadSolutionFromProto(
       const operations_research::MPSolutionResponse& response,
-      double tolerance = operations_research::MPSolverParameters::kDefaultPrimalTolerance) {
-    return $self->LoadSolutionFromProto(response, tolerance).ok();
+      double tolerance = std::numeric_limits<double>::infinity()) {
+    const absl::Status status =
+        $self->LoadSolutionFromProto(response, tolerance);
+    LOG_IF(ERROR, !status.ok()) << "LoadSolutionFromProto() failed: " << status;
+    return status.ok();
   }
 
   std::string ExportModelAsLpFormat(bool obfuscated) {
@@ -211,9 +211,9 @@ __pdoc__['Variable.thisown'] = False
 
 
   static double Infinity() { return operations_research::MPSolver::infinity(); }
-  void SetTimeLimit(int64 x) { $self->set_time_limit(x); }
-  int64 WallTime() const { return $self->wall_time(); }
-  int64 Iterations() const { return $self->iterations(); }
+  void SetTimeLimit(int64_t x) { $self->set_time_limit(x); }
+  int64_t WallTime() const { return $self->wall_time(); }
+  int64_t Iterations() const { return $self->iterations(); }
 }  // extend operations_research::MPSolver
 
 %extend operations_research::MPVariable {
@@ -278,7 +278,6 @@ PY_CONVERT(MPVariable);
 // These aren't unit tested, as they only run on machines with a Gurobi license.
 %unignore operations_research::MPSolver::GUROBI_LINEAR_PROGRAMMING;
 %unignore operations_research::MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING;
-%unignore operations_research::MPSolver::SetGurobiLibraryPath;
 %unignore operations_research::MPSolver::CPLEX_LINEAR_PROGRAMMING;
 %unignore operations_research::MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING;
 %unignore operations_research::MPSolver::XPRESS_LINEAR_PROGRAMMING;
@@ -312,6 +311,7 @@ PY_CONVERT(MPVariable);
 %newobject operations_research::MPSolver::CreateSolver;
 %unignore operations_research::MPSolver::CreateSolver;
 %unignore operations_research::MPSolver::ParseAndCheckSupportForProblemType;
+
 %unignore operations_research::MPSolver::Solve;
 %unignore operations_research::MPSolver::VerifySolution;
 %unignore operations_research::MPSolver::infinity;
@@ -329,7 +329,9 @@ PY_CONVERT(MPVariable);
 %unignore operations_research::MPSolver::SupportsProblemType;  // No unit test
 %unignore operations_research::MPSolver::wall_time;  // No unit test
 %unignore operations_research::MPSolver::Clear;  // No unit test
+%unignore operations_research::MPSolver::constraint;
 %unignore operations_research::MPSolver::constraints;
+%unignore operations_research::MPSolver::variable;
 %unignore operations_research::MPSolver::variables;
 %unignore operations_research::MPSolver::NumConstraints;
 %unignore operations_research::MPSolver::NumVariables;

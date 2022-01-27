@@ -1,4 +1,5 @@
-# Copyright 2010-2018 Google LLC
+#!/usr/bin/env python3
+# Copyright 2010-2021 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -13,7 +14,6 @@
 """Linear programming examples that show how to use the APIs."""
 
 from ortools.linear_solver import pywraplp
-
 
 def Announce(solver, api_type):
     print('---- Linear programming example with ' + solver + ' (' + api_type +
@@ -127,10 +127,14 @@ def main():
     RunLinearExampleNaturalLanguageAPI('GLOP')
     RunLinearExampleNaturalLanguageAPI('GLPK_LP')
     RunLinearExampleNaturalLanguageAPI('CLP')
+    # RunLinearExampleNaturalLanguageAPI('sirius_lp') # SetObjectiveOffset not implemented for sirius_interface
+    RunLinearExampleNaturalLanguageAPI('xpress_lp')
 
     RunLinearExampleCppStyleAPI('GLOP')
     RunLinearExampleCppStyleAPI('GLPK_LP')
     RunLinearExampleCppStyleAPI('CLP')
+    RunLinearExampleCppStyleAPI('sirius_lp')
+    RunLinearExampleCppStyleAPI('xpress_lp')
 
 
 if __name__ == '__main__':

@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -20,17 +20,6 @@
 
 %{
 #include "ortools/util/sorted_interval_list.h"
-%}
-
-%pythonbegin %{
-# Remove the documentation of some functions.
-# See https://pdoc3.github.io/pdoc/doc/pdoc/#overriding-docstrings-with-
-__pdoc__ = {}
-__pdoc__['Domain_AllValues'] = False
-__pdoc__['Domain_FromFlatIntervals'] = False
-__pdoc__['Domain_FromIntervals'] = False
-__pdoc__['Domain_FromValues'] = False
-__pdoc__['Domain.thisown'] = False
 %}
 
 %ignoreall

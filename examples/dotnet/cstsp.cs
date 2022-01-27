@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -51,7 +51,7 @@ class Tsp
 
         // Setting the cost function.
         // Put a permanent callback to the distance accessor here. The callback
-        // has the following signature: ResultCallback2<int64, int64, int64>.
+        // has the following signature: ResultCallback2<int64_t, int64_t, int64_t>.
         // The two arguments are the from and to node inidices.
         RandomManhattan distances = new RandomManhattan(manager, size, seed);
         routing.SetArcCostEvaluatorOfAllVehicles(routing.RegisterTransitCallback(distances.Call));

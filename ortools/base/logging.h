@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,6 +19,7 @@
 #include <time.h>
 
 #include <cassert>
+#include <cstddef>
 #include <iosfwd>
 #include <ostream>
 #include <sstream>
@@ -36,8 +37,11 @@
 #include "ortools/base/vlog_is_on.h"
 
 #define QCHECK CHECK
+#define QCHECK_EQ CHECK_EQ
+#define QCHECK_GE CHECK_GE
 #define ABSL_DIE_IF_NULL CHECK_NOTNULL
 #define CHECK_OK(x) CHECK((x).ok())
+#define QCHECK_OK CHECK_OK
 
 // used by or-tools non C++ ports to bridge with the C++ layer.
 void FixFlagsAndEnvironmentForSwig();
@@ -185,19 +189,12 @@ void FixFlagsAndEnvironmentForSwig();
 //     // that can't be accomplished with just VLOG(2) << ...;
 //   }
 //
-// There are also VLOG_IF, VLOG_EVERY_N and VLOG_IF_EVERY_N "verbose level"
+// There is also a VLOG_EVERY_N "verbose level"
 // condition macros for sample cases, when some extra computation and
 // preparation for logs is not needed.
-//   VLOG_IF(1, (size > 1024))
-//      << "I'm printed when size is more than 1024 and when you run the "
-//         "program with --v=1 or more";
 //   VLOG_EVERY_N(1, 10)
 //      << "I'm printed every 10th occurrence, and when you run the program "
 //         "with --v=1 or more. Present occurrence is " << google::COUNTER;
-//   VLOG_IF_EVERY_N(1, (size > 1024), 10)
-//      << "I'm printed on every 10th occurrence of case when size is more "
-//         " than 1024, when you run the program with --v=1 or more. ";
-//         "Present occurrence is " << google::COUNTER;
 //
 // The supported severity levels for macros that allow you to specify one
 // are (in increasing order of severity) INFO, WARNING, ERROR, and FATAL.
@@ -518,12 +515,12 @@ inline const T& GetReferenceableValue(const T& t) {
 inline char GetReferenceableValue(char t) { return t; }
 inline unsigned char GetReferenceableValue(unsigned char t) { return t; }
 inline signed char GetReferenceableValue(signed char t) { return t; }
-inline int16 GetReferenceableValue(int16 t) { return t; }
-inline uint16 GetReferenceableValue(uint16 t) { return t; }
+inline int16_t GetReferenceableValue(int16_t t) { return t; }
+inline uint16_t GetReferenceableValue(uint16_t t) { return t; }
 inline int GetReferenceableValue(int t) { return t; }
 inline unsigned int GetReferenceableValue(unsigned int t) { return t; }
-inline int64 GetReferenceableValue(int64 t) { return t; }
-inline uint64 GetReferenceableValue(uint64 t) { return t; }
+inline int64_t GetReferenceableValue(int64_t t) { return t; }
+inline uint64_t GetReferenceableValue(uint64_t t) { return t; }
 
 // This is a dummy class to define the following operator.
 struct DummyClassToDefineOperator {};
@@ -562,6 +559,11 @@ GOOGLE_GLOG_DLL_DECL void MakeCheckOpValueString(std::ostream* os,
 template <typename T1, typename T2>
 std::string* MakeCheckOpString(const T1& v1, const T2& v2,
                                const char* exprtext) ATTRIBUTE_NOINLINE;
+
+// Provide printable value for nullptr_t
+template <>
+GOOGLE_GLOG_DLL_DECL void MakeCheckOpValueString(std::ostream* os,
+                                                 const std::nullptr_t& v);
 
 namespace base {
 namespace internal {
@@ -977,14 +979,8 @@ const LogSeverity GLOG_0 = GLOG_ERROR;
 
 #define VLOG(verboselevel) LOG_IF(INFO, VLOG_IS_ON(verboselevel))
 
-#define VLOG_IF(verboselevel, condition) \
-  LOG_IF(INFO, (condition) && VLOG_IS_ON(verboselevel))
-
 #define VLOG_EVERY_N(verboselevel, n) \
   LOG_IF_EVERY_N(INFO, VLOG_IS_ON(verboselevel), n)
-
-#define VLOG_IF_EVERY_N(verboselevel, condition, n) \
-  LOG_IF_EVERY_N(INFO, (condition) && VLOG_IS_ON(verboselevel), n)
 
 namespace base_logging {
 
@@ -1127,7 +1123,7 @@ class GOOGLE_GLOG_DLL_DECL LogMessage {
   int preserved_errno() const;
 
   // Must be called without the log_mutex held.  (L < log_mutex)
-  static int64 num_messages(int severity);
+  static int64_t num_messages(int severity);
 
   struct LogMessageData;
 
@@ -1148,7 +1144,7 @@ class GOOGLE_GLOG_DLL_DECL LogMessage {
   void RecordCrashReason(logging_internal::CrashReason* reason);
 
   // Counts of messages sent at each priority:
-  static int64 num_messages_[NUM_SEVERITIES];  // under log_mutex
+  static int64_t num_messages_[NUM_SEVERITIES];  // under log_mutex
 
   // We keep the data in a separate struct so that each instance of
   // LogMessage uses less stack space.
@@ -1401,7 +1397,7 @@ class GOOGLE_GLOG_DLL_DECL Logger {
   // Get the current LOG file size.
   // The returned value is approximate since some
   // logged data may not have been flushed to disk yet.
-  virtual uint32 LogSize() = 0;
+  virtual uint32_t LogSize() = 0;
 };
 
 // Get the logger for the specified severity level.  The logger

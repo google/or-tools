@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,6 +14,7 @@
 #include "ortools/graph/max_flow.h"
 
 #include <algorithm>
+#include <string>
 
 #include "absl/memory/memory.h"
 #include "absl/strings/str_format.h"
@@ -116,9 +117,23 @@ void SimpleMaxFlow::GetSinkSideMinCut(std::vector<NodeIndex>* result) {
   underlying_max_flow_->GetSinkSideMinCut(result);
 }
 
-FlowModel SimpleMaxFlow::CreateFlowModelOfLastSolve() {
-  if (underlying_max_flow_ == nullptr) return FlowModel();
-  return underlying_max_flow_->CreateFlowModel();
+FlowModelProto SimpleMaxFlow::CreateFlowModelProto(NodeIndex source,
+                                                   NodeIndex sink) const {
+  FlowModelProto model;
+  model.set_problem_type(FlowModelProto::MAX_FLOW);
+  for (int n = 0; n < num_nodes_; ++n) {
+    FlowNodeProto* node = model.add_nodes();
+    node->set_id(n);
+    if (n == source) node->set_supply(1);
+    if (n == sink) node->set_supply(-1);
+  }
+  for (int a = 0; a < arc_tail_.size(); ++a) {
+    FlowArcProto* arc = model.add_arcs();
+    arc->set_tail(Tail(a));
+    arc->set_head(Head(a));
+    arc->set_capacity(Capacity(a));
+  }
+  return model;
 }
 
 template <typename Graph>
@@ -963,28 +978,44 @@ void GenericMaxFlow<Graph>::ComputeReachableNodes(
 }
 
 template <typename Graph>
-FlowModel GenericMaxFlow<Graph>::CreateFlowModel() {
-  FlowModel model;
-  model.set_problem_type(FlowModel::MAX_FLOW);
+FlowModelProto GenericMaxFlow<Graph>::CreateFlowModel() {
+  FlowModelProto model;
+  model.set_problem_type(FlowModelProto::MAX_FLOW);
   for (int n = 0; n < graph_->num_nodes(); ++n) {
-    Node* node = model.add_node();
+    FlowNodeProto* node = model.add_nodes();
     node->set_id(n);
     if (n == source_) node->set_supply(1);
     if (n == sink_) node->set_supply(-1);
   }
   for (int a = 0; a < graph_->num_arcs(); ++a) {
-    Arc* arc = model.add_arc();
-    arc->set_tail_node_id(graph_->Tail(a));
-    arc->set_head_node_id(graph_->Head(a));
+    FlowArcProto* arc = model.add_arcs();
+    arc->set_tail(graph_->Tail(a));
+    arc->set_head(graph_->Head(a));
     arc->set_capacity(Capacity(a));
   }
   return model;
 }
 
-// Explicit instanciations that can be used by a client.
+// Explicit instantiations that can be used by a client.
 //
 // TODO(user): moves this code out of a .cc file and include it at the end of
 // the header so it can work with any graph implementation ?
+template <>
+const FlowQuantity GenericMaxFlow<StarGraph>::kMaxFlowQuantity =
+    std::numeric_limits<FlowQuantity>::max();
+template <>
+const FlowQuantity
+    GenericMaxFlow<::util::ReverseArcListGraph<>>::kMaxFlowQuantity =
+        std::numeric_limits<FlowQuantity>::max();
+template <>
+const FlowQuantity
+    GenericMaxFlow<::util::ReverseArcStaticGraph<>>::kMaxFlowQuantity =
+        std::numeric_limits<FlowQuantity>::max();
+template <>
+const FlowQuantity
+    GenericMaxFlow<::util::ReverseArcMixedGraph<>>::kMaxFlowQuantity =
+        std::numeric_limits<FlowQuantity>::max();
+
 template class GenericMaxFlow<StarGraph>;
 template class GenericMaxFlow<::util::ReverseArcListGraph<>>;
 template class GenericMaxFlow<::util::ReverseArcStaticGraph<>>;

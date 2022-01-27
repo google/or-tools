@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -74,23 +74,20 @@ CpSolverResponse SolveWithParameters(const CpModelProto& model_proto,
  * The given function will be called on each improving feasible solution found
  * during the search. For a non-optimization problem, if the option to find all
  * solution was set, then this will be called on each new solution.
+ *
+ * WARNING: Except when enumerate_all_solution() is true, one shouldn't rely on
+ * this to get a set of "diverse" solutions since any future change to the
+ * solver might completely kill any diversity in the set of solutions observed.
+ *
+ * Valid usage of this includes implementing features like:
+ *  - Enumerating all solution via enumerate_all_solution(). If only n solutions
+ *    are needed, this can also be used to abort when this number is reached.
+ *  - Aborting early if a good enough solution is found.
+ *  - Displaying log progress.
+ *  - etc...
  */
 std::function<void(Model*)> NewFeasibleSolutionObserver(
     const std::function<void(const CpSolverResponse& response)>& observer);
-
-/**
- * If set, the underlying solver will call this function regularly in a
- * deterministic way. It will then wait until this function returns with the
- * current best information about the current problem.
- *
- * This is meant to be used in a multi-threaded environment with many parallel
- * solving process. If the returned current "best" response only uses
- * information derived at a lower deterministic time (possibly with offset)
- * than the deterministic time of the current thread, the whole process can
- * be made deterministic.
- */
-void SetSynchronizationFunction(std::function<CpSolverResponse()> f,
-                                Model* model);
 
 /**
  * Creates parameters for the solver, which you can add to the model with

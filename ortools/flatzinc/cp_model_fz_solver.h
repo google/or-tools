@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -22,7 +22,7 @@ namespace fz {
 struct FlatzincSatParameters {
   bool display_all_solutions = false;
   bool use_free_search = false;
-  bool verbose_logging = false;
+  bool log_search_progress = false;
   bool display_statistics = false;
   int max_number_of_solutions = 1;
   int random_seed = 0;
@@ -36,7 +36,9 @@ namespace sat {
 
 void SolveFzWithCpModelProto(const fz::Model& model,
                              const fz::FlatzincSatParameters& p,
-                             const std::string& sat_params);
+                             const std::string& sat_params,
+                             SolverLogger* logger,
+                             SolverLogger* solution_logger);
 
 }  // namespace sat
 }  // namespace operations_research

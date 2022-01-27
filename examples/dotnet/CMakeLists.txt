@@ -1,5 +1,5 @@
 if(NOT BUILD_DOTNET_EXAMPLES)
-	return()
+  return()
 endif()
 
 file(GLOB DOTNET_SRCS "*.cs")

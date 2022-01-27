@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -26,8 +26,8 @@ import com.google.protobuf.Duration;
 import java.util.logging.Logger;
 // [END import]
 
-/** Minimal VRP.*/
-public class VrpCapacity {
+/** Minimal VRP. */
+public final class VrpCapacity {
   private static final Logger logger = Logger.getLogger(VrpCapacity.class.getName());
 
   // [START data_model]
@@ -64,6 +64,8 @@ public class VrpCapacity {
   /// @brief Print the solution.
   static void printSolution(
       DataModel data, RoutingModel routing, RoutingIndexManager manager, Assignment solution) {
+    // Solution cost.
+    logger.info("Objective: " + solution.objectiveValue());
     // Inspect solution.
     long totalDistance = 0;
     long totalLoad = 0;
@@ -160,5 +162,7 @@ public class VrpCapacity {
     printSolution(data, routing, manager, solution);
     // [END print_solution]
   }
+
+  private VrpCapacity() {}
 }
 // [END program]

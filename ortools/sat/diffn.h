@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,12 +14,14 @@
 #ifndef OR_TOOLS_SAT_DIFFN_H_
 #define OR_TOOLS_SAT_DIFFN_H_
 
+#include <functional>
 #include <vector>
 
 #include "ortools/base/int_type.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
+#include "ortools/sat/diffn_util.h"
 #include "ortools/sat/disjunctive.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/intervals.h"
@@ -36,8 +38,9 @@ class NonOverlappingRectanglesEnergyPropagator : public PropagatorInterface {
   // boxes. If strict is true, these boxes must not 'cross' another box, and are
   // pushed by the other boxes.
   NonOverlappingRectanglesEnergyPropagator(SchedulingConstraintHelper* x,
-                                           SchedulingConstraintHelper* y)
-      : x_(*x), y_(*y) {}
+                                           SchedulingConstraintHelper* y,
+                                           Model* model)
+      : x_(*x), y_(*y), random_(model->GetOrCreate<ModelRandomGenerator>()) {}
   ~NonOverlappingRectanglesEnergyPropagator() override;
 
   bool Propagate() final;
@@ -51,27 +54,16 @@ class NonOverlappingRectanglesEnergyPropagator : public PropagatorInterface {
 
   SchedulingConstraintHelper& x_;
   SchedulingConstraintHelper& y_;
+  ModelRandomGenerator* random_;
 
-  std::vector<absl::Span<int>> x_split_;
-  std::vector<absl::Span<int>> y_split_;
+  // When the size of the bounding box is greater than any of the corresponding
+  // rectangles, then there is no point checking for overload.
+  IntegerValue threshold_x_;
+  IntegerValue threshold_y_;
 
   std::vector<int> active_boxes_;
-  std::vector<IntegerValue> cached_areas_;
-
-  struct Dimension {
-    IntegerValue x_min;
-    IntegerValue x_max;
-    IntegerValue y_min;
-    IntegerValue y_max;
-
-    void TakeUnionWith(const Dimension& other) {
-      x_min = std::min(x_min, other.x_min);
-      y_min = std::min(y_min, other.y_min);
-      x_max = std::max(x_max, other.x_max);
-      y_max = std::max(y_max, other.y_max);
-    }
-  };
-  std::vector<Dimension> cached_dimensions_;
+  std::vector<IntegerValue> cached_energies_;
+  std::vector<Rectangle> cached_rectangles_;
 
   struct Neighbor {
     int box;
@@ -108,20 +100,18 @@ class NonOverlappingRectanglesDisjunctivePropagator
  private:
   bool PropagateTwoBoxes();
   bool FindBoxesThatMustOverlapAHorizontalLineAndPropagate(
-      const SchedulingConstraintHelper& x, const SchedulingConstraintHelper& y,
+      const SchedulingConstraintHelper& x, SchedulingConstraintHelper* y,
       std::function<bool()> inner_propagate);
 
   SchedulingConstraintHelper& global_x_;
   SchedulingConstraintHelper& global_y_;
   SchedulingConstraintHelper x_;
-  SchedulingConstraintHelper y_;
   const bool strict_;
 
   GenericLiteralWatcher* watcher_;
   int fast_id_;  // Propagator id of the "fast" version.
 
-  std::vector<int> active_boxes_;
-  std::vector<IntegerValue> events_time_;
+  std::vector<IndexedInterval> indexed_intervals_;
   std::vector<std::vector<int>> events_overlapping_boxes_;
 
   absl::flat_hash_set<absl::Span<int>> reduced_overlapping_boxes_;
@@ -154,7 +144,8 @@ void AddCumulativeRelaxation(const std::vector<IntervalVariable>& x_intervals,
 // intersect another box.
 inline std::function<void(Model*)> NonOverlappingRectangles(
     const std::vector<IntervalVariable>& x,
-    const std::vector<IntervalVariable>& y, bool is_strict) {
+    const std::vector<IntervalVariable>& y, bool is_strict,
+    bool add_cumulative_relaxation = true) {
   return [=](Model* model) {
     SchedulingConstraintHelper* x_helper =
         new SchedulingConstraintHelper(x, model);
@@ -164,7 +155,7 @@ inline std::function<void(Model*)> NonOverlappingRectangles(
     model->TakeOwnership(y_helper);
 
     NonOverlappingRectanglesEnergyPropagator* energy_constraint =
-        new NonOverlappingRectanglesEnergyPropagator(x_helper, y_helper);
+        new NonOverlappingRectanglesEnergyPropagator(x_helper, y_helper, model);
     GenericLiteralWatcher* const watcher =
         model->GetOrCreate<GenericLiteralWatcher>();
     watcher->SetPropagatorPriority(energy_constraint->RegisterWith(watcher), 3);
@@ -176,8 +167,34 @@ inline std::function<void(Model*)> NonOverlappingRectangles(
     constraint->Register(/*fast_priority=*/3, /*slow_priority=*/4);
     model->TakeOwnership(constraint);
 
-    AddCumulativeRelaxation(x, x_helper, y_helper, model);
-    AddCumulativeRelaxation(y, y_helper, x_helper, model);
+    if (add_cumulative_relaxation) {
+      // We must first check if the cumulative relaxation is possible.
+      bool some_boxes_are_only_optional_on_x = false;
+      bool some_boxes_are_only_optional_on_y = false;
+      for (int i = 0; i < x.size(); ++i) {
+        if (x_helper->IsOptional(i) && y_helper->IsOptional(i) &&
+            x_helper->PresenceLiteral(i) != y_helper->PresenceLiteral(i)) {
+          // Abort as the task would be conditioned by two literals.
+          return;
+        }
+        if (x_helper->IsOptional(i) && !y_helper->IsOptional(i)) {
+          // We cannot use x_size as the demand of the cumulative based on
+          // the y_intervals.
+          some_boxes_are_only_optional_on_x = true;
+        }
+        if (y_helper->IsOptional(i) && !x_helper->IsOptional(i)) {
+          // We cannot use y_size as the demand of the cumulative based on
+          // the y_intervals.
+          some_boxes_are_only_optional_on_y = true;
+        }
+      }
+      if (!some_boxes_are_only_optional_on_y) {
+        AddCumulativeRelaxation(x, x_helper, y_helper, model);
+      }
+      if (!some_boxes_are_only_optional_on_x) {
+        AddCumulativeRelaxation(y, y_helper, x_helper, model);
+      }
+    }
   };
 }
 

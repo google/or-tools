@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -92,8 +92,9 @@ class GraphSymmetryFinder {
   // large as N!).
   //
   // DEADLINE AND PARTIAL COMPLETION:
-  // If the deadline passed as argument is reached, this method will return
-  // quickly (within a few milliseconds). The outputs may be partially filled:
+  // If the deadline passed as argument (via TimeLimit) is reached, this method
+  // will return quickly (within a few milliseconds of the limit). The outputs
+  // may be partially filled:
   // - Each element of "generators", if non-empty, will be a valid permutation.
   // - "node_equivalence_classes_io" will contain the equivalence classes
   //   corresponding to the orbits under all the generators in "generators".
@@ -101,9 +102,10 @@ class GraphSymmetryFinder {
   //   partially valid: its last element may be undervalued. But all prior
   //   elements are valid factors of the automorphism group size.
   absl::Status FindSymmetries(
-      double time_limit_seconds, std::vector<int>* node_equivalence_classes_io,
+      std::vector<int>* node_equivalence_classes_io,
       std::vector<std::unique_ptr<SparsePermutation> >* generators,
-      std::vector<int>* factorized_automorphism_group_size);
+      std::vector<int>* factorized_automorphism_group_size,
+      TimeLimit* time_limit = nullptr);
 
   // Fully refine the partition of nodes, using the graph as symmetry breaker.
   // This means applying the following steps on each part P of the partition:
@@ -148,8 +150,11 @@ class GraphSymmetryFinder {
   util::BeginEndWrapper<std::vector<int>::const_iterator> TailsOfIncomingArcsTo(
       int node) const;
 
-  // Deadline management. Populated upon FindSymmetries().
-  mutable std::unique_ptr<TimeLimit> time_limit_;
+  // Deadline management. Populated upon FindSymmetries(). If the passed
+  // time limit is nullptr, time_limit_ will point to dummy_time_limit_ which
+  // is an object with infinite limits by default.
+  TimeLimit dummy_time_limit_;
+  TimeLimit* time_limit_;
 
   // Internal search code used in FindSymmetries(), split out for readability:
   // find one permutation (if it exists) that maps root_node to root_image_node

@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <utility>
@@ -113,7 +114,7 @@ Pack::Pack(Solver* const s, const std::vector<IntVar*>& vars,
       forced_(bins_ + 1),
       removed_(bins_ + 1),
       holes_(vars_.size()),
-      stamp_(GG_ULONGLONG(0)),
+      stamp_(uint64_t{0}),
       demon_(nullptr),
       in_process_(false) {
   for (int i = 0; i < vars_.size(); ++i) {
@@ -196,7 +197,7 @@ void Pack::InitialPropagate() {
     IntVar* const var = vars_[var_index];
     var->SetRange(0, bins_);  // bins_ -> item is not assigned to a bin.
     if (var->Bound()) {
-      const int64 value = var->Min();
+      const int64_t value = var->Min();
       if (value < bins_) {
         forced_[value].push_back(var_index);
         data->PushAssigned(var_index);
@@ -212,7 +213,7 @@ void Pack::InitialPropagate() {
         data->PushAssigned(var_index);
       }
       std::unique_ptr<IntVarIterator> it(var->MakeDomainIterator(false));
-      for (const int64 value : InitAndGetValues(it.get())) {
+      for (const int64_t value : InitAndGetValues(it.get())) {
         if (value >= 0 && value <= bins_) {
           unprocessed_->SetToOne(s, value, var_index);
           if (value != bins_) {
@@ -334,36 +335,36 @@ void Pack::OneDomain(int var_index) {
   // TODO(user): We know var ranges from 0 to bins_. There are lots
   // of simplifications possible.
   Solver* const s = solver();
-  const uint64 current_stamp = s->fail_stamp();
+  const uint64_t current_stamp = s->fail_stamp();
   if (stamp_ < current_stamp) {
     stamp_ = current_stamp;
     ClearAll();
   }
   IntVar* const var = vars_[var_index];
   bool bound = var->Bound();
-  const int64 oldmin = var->OldMin();
-  const int64 oldmax = var->OldMax();
-  const int64 vmin = var->Min();
-  const int64 vmax = var->Max();
-  for (int64 value = std::max(oldmin, int64{0});
-       value < std::min(vmin, bins_ + int64{1}); ++value) {
+  const int64_t oldmin = var->OldMin();
+  const int64_t oldmax = var->OldMax();
+  const int64_t vmin = var->Min();
+  const int64_t vmax = var->Max();
+  for (int64_t value = std::max(oldmin, int64_t{0});
+       value < std::min(vmin, bins_ + int64_t{1}); ++value) {
     if (unprocessed_->IsSet(value, var_index)) {
       unprocessed_->SetToZero(s, value, var_index);
       removed_[value].push_back(var_index);
     }
   }
   if (!bound) {
-    for (const int64 value : InitAndGetValues(holes_[var_index])) {
-      if (value >= std::max(int64{0}, vmin) &&
-          value <= std::min(static_cast<int64>(bins_), vmax)) {
+    for (const int64_t value : InitAndGetValues(holes_[var_index])) {
+      if (value >= std::max(int64_t{0}, vmin) &&
+          value <= std::min(static_cast<int64_t>(bins_), vmax)) {
         DCHECK(unprocessed_->IsSet(value, var_index));
         unprocessed_->SetToZero(s, value, var_index);
         removed_[value].push_back(var_index);
       }
     }
   }
-  for (int64 value = std::max(vmax + 1, int64{0});
-       value <= std::min(oldmax, static_cast<int64>(bins_)); ++value) {
+  for (int64_t value = std::max(vmax + 1, int64_t{0});
+       value <= std::min(oldmax, static_cast<int64_t>(bins_)); ++value) {
     if (unprocessed_->IsSet(value, var_index)) {
       unprocessed_->SetToZero(s, value, var_index);
       removed_[value].push_back(var_index);
@@ -506,8 +507,8 @@ void Pack::UnassignAllRemainingItems() {
 namespace {
 struct WeightContainer {
   int index;
-  int64 weight;
-  WeightContainer(int i, int64 w) : index(i), weight(w) {}
+  int64_t weight;
+  WeightContainer(int i, int64_t w) : index(i), weight(w) {}
   bool operator<(const WeightContainer& c) const { return (weight < c.weight); }
 };
 
@@ -521,7 +522,7 @@ void SortWeightVector(std::vector<int>* const indices,
 }
 
 void SortIndexByWeight(std::vector<int>* const indices,
-                       const std::vector<int64>& weights) {
+                       const std::vector<int64_t>& weights) {
   std::vector<WeightContainer> to_sort;
   for (int index = 0; index < indices->size(); ++index) {
     if (weights[index] != 0) {
@@ -558,8 +559,8 @@ void SortIndexByWeight(std::vector<int>* const indices,
 class DimensionLessThanConstant : public Dimension {
  public:
   DimensionLessThanConstant(Solver* const s, Pack* const p,
-                            const std::vector<int64>& weights,
-                            const std::vector<int64>& upper_bounds)
+                            const std::vector<int64_t>& weights,
+                            const std::vector<int64_t>& upper_bounds)
       : Dimension(s, p),
         vars_count_(weights.size()),
         weights_(weights),
@@ -579,7 +580,7 @@ class DimensionLessThanConstant : public Dimension {
   void Post() override {}
 
   void PushFromTop(int bin_index) {
-    const int64 slack =
+    const int64_t slack =
         upper_bounds_[bin_index] - sum_of_bound_variables_vector_[bin_index];
     if (slack < 0) {
       solver()->Fail();
@@ -601,7 +602,7 @@ class DimensionLessThanConstant : public Dimension {
   void InitialPropagate(int bin_index, const std::vector<int>& forced,
                         const std::vector<int>& undecided) override {
     Solver* const s = solver();
-    int64 sum = 0LL;
+    int64_t sum = 0LL;
     for (const int value : forced) {
       sum += weights_[value];
     }
@@ -616,7 +617,7 @@ class DimensionLessThanConstant : public Dimension {
                  const std::vector<int>& removed) override {
     if (!forced.empty()) {
       Solver* const s = solver();
-      int64 sum = sum_of_bound_variables_vector_[bin_index];
+      int64_t sum = sum_of_bound_variables_vector_[bin_index];
       for (const int value : forced) {
         sum += weights_[value];
       }
@@ -643,11 +644,11 @@ class DimensionLessThanConstant : public Dimension {
 
  private:
   const int vars_count_;
-  const std::vector<int64> weights_;
+  const std::vector<int64_t> weights_;
   const int bins_count_;
-  const std::vector<int64> upper_bounds_;
+  const std::vector<int64_t> upper_bounds_;
   RevArray<int> first_unbound_backward_vector_;
-  RevArray<int64> sum_of_bound_variables_vector_;
+  RevArray<int64_t> sum_of_bound_variables_vector_;
   std::vector<int> ranked_;
 };
 
@@ -656,7 +657,7 @@ class DimensionSumCallbackLessThanConstant : public Dimension {
   DimensionSumCallbackLessThanConstant(Solver* const s, Pack* const p,
                                        const Solver::IndexEvaluator1& weights,
                                        int vars_count,
-                                       const std::vector<int64>& upper_bounds)
+                                       const std::vector<int64_t>& upper_bounds)
       : Dimension(s, p),
         vars_count_(vars_count),
         weights_(weights),
@@ -678,7 +679,7 @@ class DimensionSumCallbackLessThanConstant : public Dimension {
   void Post() override {}
 
   void PushFromTop(int bin_index) {
-    const int64 slack =
+    const int64_t slack =
         upper_bounds_[bin_index] - sum_of_bound_variables_vector_[bin_index];
     if (slack < 0) {
       solver()->Fail();
@@ -700,7 +701,7 @@ class DimensionSumCallbackLessThanConstant : public Dimension {
   void InitialPropagate(int bin_index, const std::vector<int>& forced,
                         const std::vector<int>& undecided) override {
     Solver* const s = solver();
-    int64 sum = 0LL;
+    int64_t sum = 0LL;
     for (const int value : forced) {
       sum += weights_(value);
     }
@@ -715,7 +716,7 @@ class DimensionSumCallbackLessThanConstant : public Dimension {
                  const std::vector<int>& removed) override {
     if (!forced.empty()) {
       Solver* const s = solver();
-      int64 sum = sum_of_bound_variables_vector_[bin_index];
+      int64_t sum = sum_of_bound_variables_vector_[bin_index];
       for (const int value : forced) {
         sum += weights_(value);
       }
@@ -745,9 +746,9 @@ class DimensionSumCallbackLessThanConstant : public Dimension {
   const int vars_count_;
   Solver::IndexEvaluator1 weights_;
   const int bins_count_;
-  const std::vector<int64> upper_bounds_;
+  const std::vector<int64_t> upper_bounds_;
   RevArray<int> first_unbound_backward_vector_;
-  RevArray<int64> sum_of_bound_variables_vector_;
+  RevArray<int64_t> sum_of_bound_variables_vector_;
   std::vector<int> ranked_;
 };
 
@@ -756,7 +757,7 @@ class DimensionLessThanConstantCallback2 : public Dimension {
   DimensionLessThanConstantCallback2(Solver* const s, Pack* const p,
                                      const Solver::IndexEvaluator2& weights,
                                      int vars_count,
-                                     const std::vector<int64>& upper_bounds)
+                                     const std::vector<int64_t>& upper_bounds)
       : Dimension(s, p),
         vars_count_(vars_count),
         weights_(weights),
@@ -781,7 +782,7 @@ class DimensionLessThanConstantCallback2 : public Dimension {
   void Post() override {}
 
   void PushFromTop(int bin_index) {
-    const int64 slack =
+    const int64_t slack =
         upper_bounds_[bin_index] - sum_of_bound_variables_vector_[bin_index];
     if (slack < 0) {
       solver()->Fail();
@@ -803,7 +804,7 @@ class DimensionLessThanConstantCallback2 : public Dimension {
   void InitialPropagate(int bin_index, const std::vector<int>& forced,
                         const std::vector<int>& undecided) override {
     Solver* const s = solver();
-    int64 sum = 0LL;
+    int64_t sum = 0LL;
     for (const int value : forced) {
       sum += weights_(value, bin_index);
     }
@@ -819,7 +820,7 @@ class DimensionLessThanConstantCallback2 : public Dimension {
                  const std::vector<int>& removed) override {
     if (!forced.empty()) {
       Solver* const s = solver();
-      int64 sum = sum_of_bound_variables_vector_[bin_index];
+      int64_t sum = sum_of_bound_variables_vector_[bin_index];
       for (const int value : forced) {
         sum += weights_(value, bin_index);
       }
@@ -849,9 +850,9 @@ class DimensionLessThanConstantCallback2 : public Dimension {
   const int vars_count_;
   Solver::IndexEvaluator2 weights_;
   const int bins_count_;
-  const std::vector<int64> upper_bounds_;
+  const std::vector<int64_t> upper_bounds_;
   RevArray<int> first_unbound_backward_vector_;
-  RevArray<int64> sum_of_bound_variables_vector_;
+  RevArray<int64_t> sum_of_bound_variables_vector_;
   std::vector<std::vector<int>> ranked_;
 };
 
@@ -871,7 +872,7 @@ class DimensionWeightedSumEqVar : public Dimension {
   };
 
   DimensionWeightedSumEqVar(Solver* const s, Pack* const p,
-                            const std::vector<int64>& weights,
+                            const std::vector<int64_t>& weights,
                             const std::vector<IntVar*>& loads)
       : Dimension(s, p),
         vars_count_(weights.size()),
@@ -905,17 +906,17 @@ class DimensionWeightedSumEqVar : public Dimension {
 
   void PushFromTop(int bin_index) {
     IntVar* const load = loads_[bin_index];
-    const int64 sum_min = sum_of_bound_variables_vector_[bin_index];
-    const int64 sum_max = sum_of_all_variables_vector_[bin_index];
+    const int64_t sum_min = sum_of_bound_variables_vector_[bin_index];
+    const int64_t sum_max = sum_of_all_variables_vector_[bin_index];
     load->SetRange(sum_min, sum_max);
-    const int64 slack_up = load->Max() - sum_min;
-    const int64 slack_down = sum_max - load->Min();
+    const int64_t slack_up = load->Max() - sum_min;
+    const int64_t slack_down = sum_max - load->Min();
     DCHECK_GE(slack_down, 0);
     DCHECK_GE(slack_up, 0);
     int last_unbound = first_unbound_backward_vector_[bin_index];
     for (; last_unbound >= 0; --last_unbound) {
       const int var_index = ranked_[last_unbound];
-      const int64 weight = weights_[var_index];
+      const int64_t weight = weights_[var_index];
       if (IsUndecided(var_index, bin_index)) {
         if (weight > slack_up) {
           SetImpossible(var_index, bin_index);
@@ -932,7 +933,7 @@ class DimensionWeightedSumEqVar : public Dimension {
   void InitialPropagate(int bin_index, const std::vector<int>& forced,
                         const std::vector<int>& undecided) override {
     Solver* const s = solver();
-    int64 sum = 0LL;
+    int64_t sum = 0LL;
     for (const int value : forced) {
       sum += weights_[value];
     }
@@ -950,12 +951,12 @@ class DimensionWeightedSumEqVar : public Dimension {
   void Propagate(int bin_index, const std::vector<int>& forced,
                  const std::vector<int>& removed) override {
     Solver* const s = solver();
-    int64 down = sum_of_bound_variables_vector_[bin_index];
+    int64_t down = sum_of_bound_variables_vector_[bin_index];
     for (const int value : forced) {
       down += weights_[value];
     }
     sum_of_bound_variables_vector_.SetValue(s, bin_index, down);
-    int64 up = sum_of_all_variables_vector_[bin_index];
+    int64_t up = sum_of_all_variables_vector_[bin_index];
     for (const int value : removed) {
       up -= weights_[value];
     }
@@ -981,12 +982,12 @@ class DimensionWeightedSumEqVar : public Dimension {
 
  private:
   const int vars_count_;
-  const std::vector<int64> weights_;
+  const std::vector<int64_t> weights_;
   const int bins_count_;
   const std::vector<IntVar*> loads_;
   RevArray<int> first_unbound_backward_vector_;
-  RevArray<int64> sum_of_bound_variables_vector_;
-  RevArray<int64> sum_of_all_variables_vector_;
+  RevArray<int64_t> sum_of_bound_variables_vector_;
+  RevArray<int64_t> sum_of_all_variables_vector_;
   std::vector<int> ranked_;
 };
 
@@ -1045,17 +1046,17 @@ class DimensionWeightedCallback2SumEqVar : public Dimension {
 
   void PushFromTop(int bin_index) {
     IntVar* const load = loads_[bin_index];
-    const int64 sum_min = sum_of_bound_variables_vector_[bin_index];
-    const int64 sum_max = sum_of_all_variables_vector_[bin_index];
+    const int64_t sum_min = sum_of_bound_variables_vector_[bin_index];
+    const int64_t sum_max = sum_of_all_variables_vector_[bin_index];
     load->SetRange(sum_min, sum_max);
-    const int64 slack_up = load->Max() - sum_min;
-    const int64 slack_down = sum_max - load->Min();
+    const int64_t slack_up = load->Max() - sum_min;
+    const int64_t slack_down = sum_max - load->Min();
     DCHECK_GE(slack_down, 0);
     DCHECK_GE(slack_up, 0);
     int last_unbound = first_unbound_backward_vector_[bin_index];
     for (; last_unbound >= 0; --last_unbound) {
       const int var_index = ranked_[bin_index][last_unbound];
-      const int64 weight = weights_(var_index, bin_index);
+      const int64_t weight = weights_(var_index, bin_index);
       if (IsUndecided(var_index, bin_index)) {
         if (weight > slack_up) {
           SetImpossible(var_index, bin_index);
@@ -1072,7 +1073,7 @@ class DimensionWeightedCallback2SumEqVar : public Dimension {
   void InitialPropagate(int bin_index, const std::vector<int>& forced,
                         const std::vector<int>& undecided) override {
     Solver* const s = solver();
-    int64 sum = 0LL;
+    int64_t sum = 0LL;
     for (const int value : forced) {
       sum += weights_(value, bin_index);
     }
@@ -1091,12 +1092,12 @@ class DimensionWeightedCallback2SumEqVar : public Dimension {
   void Propagate(int bin_index, const std::vector<int>& forced,
                  const std::vector<int>& removed) override {
     Solver* const s = solver();
-    int64 down = sum_of_bound_variables_vector_[bin_index];
+    int64_t down = sum_of_bound_variables_vector_[bin_index];
     for (const int value : forced) {
       down += weights_(value, bin_index);
     }
     sum_of_bound_variables_vector_.SetValue(s, bin_index, down);
-    int64 up = sum_of_all_variables_vector_[bin_index];
+    int64_t up = sum_of_all_variables_vector_[bin_index];
     for (const int value : removed) {
       up -= weights_(value, bin_index);
     }
@@ -1127,8 +1128,8 @@ class DimensionWeightedCallback2SumEqVar : public Dimension {
   const int bins_count_;
   const std::vector<IntVar*> loads_;
   RevArray<int> first_unbound_backward_vector_;
-  RevArray<int64> sum_of_bound_variables_vector_;
-  RevArray<int64> sum_of_all_variables_vector_;
+  RevArray<int64_t> sum_of_bound_variables_vector_;
+  RevArray<int64_t> sum_of_all_variables_vector_;
   std::vector<std::vector<int>> ranked_;
 };
 
@@ -1146,7 +1147,7 @@ class AssignedWeightedSumDimension : public Dimension {
   };
 
   AssignedWeightedSumDimension(Solver* const s, Pack* const p,
-                               const std::vector<int64>& weights,
+                               const std::vector<int64_t>& weights,
                                int bins_count, IntVar* const cost_var)
       : Dimension(s, p),
         vars_count_(weights.size()),
@@ -1178,13 +1179,13 @@ class AssignedWeightedSumDimension : public Dimension {
   void PropagateAll() {
     cost_var_->SetRange(sum_of_assigned_items_.Value(),
                         sum_all_weights_ - sum_of_unassigned_items_.Value());
-    const int64 slack_up = cost_var_->Max() - sum_of_assigned_items_.Value();
-    const int64 slack_down = sum_all_weights_ - cost_var_->Min();
+    const int64_t slack_up = cost_var_->Max() - sum_of_assigned_items_.Value();
+    const int64_t slack_down = sum_all_weights_ - cost_var_->Min();
     int last_unbound = first_unbound_backward_.Value();
     for (; last_unbound >= 0; --last_unbound) {
       const int var_index = ranked_[last_unbound];
       if (!IsAssignedStatusKnown(var_index)) {
-        const int64 coefficient = weights_[var_index];
+        const int64_t coefficient = weights_[var_index];
         if (coefficient > slack_up) {
           SetUnassigned(var_index);
         } else if (coefficient > slack_down) {
@@ -1216,13 +1217,13 @@ class AssignedWeightedSumDimension : public Dimension {
 
   void PropagateUnassigned(const std::vector<int>& assigned,
                            const std::vector<int>& unassigned) override {
-    int64 sum_assigned = sum_of_assigned_items_.Value();
+    int64_t sum_assigned = sum_of_assigned_items_.Value();
     for (int index = 0; index < assigned.size(); ++index) {
       const int var_index = assigned[index];
       sum_assigned += weights_[var_index];
     }
 
-    int64 sum_unassigned = sum_of_unassigned_items_.Value();
+    int64_t sum_unassigned = sum_of_unassigned_items_.Value();
     for (int index = 0; index < unassigned.size(); ++index) {
       const int var_index = unassigned[index];
       sum_unassigned += weights_[var_index];
@@ -1249,14 +1250,14 @@ class AssignedWeightedSumDimension : public Dimension {
 
  private:
   const int vars_count_;
-  const std::vector<int64> weights_;
+  const std::vector<int64_t> weights_;
   const int bins_count_;
   IntVar* const cost_var_;
   Rev<int> first_unbound_backward_;
-  Rev<int64> sum_of_assigned_items_;
-  Rev<int64> sum_of_unassigned_items_;
+  Rev<int64_t> sum_of_assigned_items_;
+  Rev<int64_t> sum_of_unassigned_items_;
   std::vector<int> ranked_;
-  int64 sum_all_weights_;
+  int64_t sum_all_weights_;
 };
 
 // ----- Count unassigned jobs dimension -----
@@ -1471,7 +1472,7 @@ class CountUsedBinDimension : public Dimension {
 class VariableUsageDimension : public Dimension {
  public:
   VariableUsageDimension(Solver* const solver, Pack* const pack,
-                         const std::vector<int64>& capacities,
+                         const std::vector<int64_t>& capacities,
                          const std::vector<IntVar*>& weights)
       : Dimension(solver, pack), capacities_(capacities), weights_(weights) {}
 
@@ -1518,7 +1519,7 @@ class VariableUsageDimension : public Dimension {
   }
 
  private:
-  const std::vector<int64> capacities_;
+  const std::vector<int64_t> capacities_;
   const std::vector<IntVar*> weights_;
 };
 }  // namespace
@@ -1526,7 +1527,7 @@ class VariableUsageDimension : public Dimension {
 // ---------- API ----------
 
 void Pack::AddWeightedSumLessOrEqualConstantDimension(
-    const std::vector<int64>& weights, const std::vector<int64>& bounds) {
+    const std::vector<int64_t>& weights, const std::vector<int64_t>& bounds) {
   CHECK_EQ(weights.size(), vars_.size());
   CHECK_EQ(bounds.size(), bins_);
   Solver* const s = solver();
@@ -1536,7 +1537,7 @@ void Pack::AddWeightedSumLessOrEqualConstantDimension(
 }
 
 void Pack::AddWeightedSumLessOrEqualConstantDimension(
-    Solver::IndexEvaluator1 weights, const std::vector<int64>& bounds) {
+    Solver::IndexEvaluator1 weights, const std::vector<int64_t>& bounds) {
   CHECK(weights != nullptr);
   CHECK_EQ(bounds.size(), bins_);
   Solver* const s = solver();
@@ -1546,7 +1547,7 @@ void Pack::AddWeightedSumLessOrEqualConstantDimension(
 }
 
 void Pack::AddWeightedSumLessOrEqualConstantDimension(
-    Solver::IndexEvaluator2 weights, const std::vector<int64>& bounds) {
+    Solver::IndexEvaluator2 weights, const std::vector<int64_t>& bounds) {
   CHECK(weights != nullptr);
   CHECK_EQ(bounds.size(), bins_);
   Solver* const s = solver();
@@ -1555,7 +1556,7 @@ void Pack::AddWeightedSumLessOrEqualConstantDimension(
   dims_.push_back(dim);
 }
 
-void Pack::AddWeightedSumEqualVarDimension(const std::vector<int64>& weights,
+void Pack::AddWeightedSumEqualVarDimension(const std::vector<int64_t>& weights,
                                            const std::vector<IntVar*>& loads) {
   CHECK_EQ(weights.size(), vars_.size());
   CHECK_EQ(loads.size(), bins_);
@@ -1575,8 +1576,8 @@ void Pack::AddWeightedSumEqualVarDimension(Solver::IndexEvaluator2 weights,
   dims_.push_back(dim);
 }
 
-void Pack::AddWeightedSumOfAssignedDimension(const std::vector<int64>& weights,
-                                             IntVar* const cost_var) {
+void Pack::AddWeightedSumOfAssignedDimension(
+    const std::vector<int64_t>& weights, IntVar* const cost_var) {
   CHECK_EQ(weights.size(), vars_.size());
   Solver* const s = solver();
   Dimension* const dim = s->RevAlloc(
@@ -1585,7 +1586,7 @@ void Pack::AddWeightedSumOfAssignedDimension(const std::vector<int64>& weights,
 }
 
 void Pack::AddSumVariableWeightsLessOrEqualConstantDimension(
-    const std::vector<IntVar*>& usage, const std::vector<int64>& capacity) {
+    const std::vector<IntVar*>& usage, const std::vector<int64_t>& capacity) {
   CHECK_EQ(usage.size(), vars_.size());
   CHECK_EQ(capacity.size(), bins_);
   Solver* const s = solver();

@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,6 +14,7 @@
 #include "ortools/sat/drat_checker.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <fstream>
 
 #include "absl/strings/numbers.h"
@@ -151,7 +152,7 @@ DratChecker::Status DratChecker::Check(double max_time_in_seconds) {
   // to check it. In turn, only these marked clauses need to be checked (and so
   // on recursively). By contrast, a forward iteration needs to check all the
   // clauses.
-  const int64 start_time_nanos = absl::GetCurrentTimeNanos();
+  const int64_t start_time_nanos = absl::GetCurrentTimeNanos();
   TimeLimit time_limit(max_time_in_seconds);
   Init();
   for (ClauseIndex i(clauses_.size() - 1); i >= first_infered_clause_index_;
@@ -435,7 +436,7 @@ void DratChecker::MarkAsNeededForProof(Clause* clause) {
   }
 }
 
-void DratChecker::LogStatistics(int64 duration_nanos) const {
+void DratChecker::LogStatistics(int64_t duration_nanos) const {
   int problem_clauses_needed_for_proof = 0;
   int infered_clauses_needed_for_proof = 0;
   for (ClauseIndex i(0); i < clauses_.size(); ++i) {

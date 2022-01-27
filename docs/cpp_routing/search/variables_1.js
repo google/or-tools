@@ -1,11 +1,8 @@
 var searchData=
 [
-  ['activated_5f_5092',['activated_',['../classoperations__research_1_1_var_local_search_operator.html#a7135085df615773e63a206e65ea21d53',1,'operations_research::VarLocalSearchOperator']]],
-  ['add_5freverse_5farcs_5093',['add_reverse_arcs',['../structoperations__research_1_1_savings_filtered_heuristic_1_1_savings_parameters.html#a8857f65b46da9e2012c7bd939a978442',1,'operations_research::SavingsFilteredHeuristic::SavingsParameters']]],
-  ['add_5funperformed_5fentries_5094',['add_unperformed_entries',['../structoperations__research_1_1_global_cheapest_insertion_filtered_heuristic_1_1_global_cheapest_insertion_parameters.html#ad962358b9cb4da242cdc3c98ee2ce6ce',1,'operations_research::GlobalCheapestInsertionFilteredHeuristic::GlobalCheapestInsertionParameters']]],
-  ['all_5funperformed_5095',['ALL_UNPERFORMED',['../classoperations__research_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#ac9dfd2da68f9ca539dbc9258e86bbc6d',1,'operations_research::PROTOBUF_FINAL']]],
-  ['arc_5fcoefficient_5096',['arc_coefficient',['../structoperations__research_1_1_savings_filtered_heuristic_1_1_savings_parameters.html#a222a2814083966736ad9aefde1dde290',1,'operations_research::SavingsFilteredHeuristic::SavingsParameters']]],
-  ['assignment_5f_5097',['assignment_',['../classoperations__research_1_1_int_var_filtered_heuristic.html#a6743122cc2fc4818b402ba3d484c6ea4',1,'operations_research::IntVarFilteredHeuristic']]],
-  ['assignment_5findices_5f_5098',['assignment_indices_',['../classoperations__research_1_1_var_local_search_operator.html#a7b62af3db29eeb312e3cb06f7bb331ce',1,'operations_research::VarLocalSearchOperator']]],
-  ['automatic_5099',['AUTOMATIC',['../classoperations__research_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#a8b17cdb0e525e897ebc60a0452e8e792',1,'operations_research::PROTOBUF_FINAL']]]
+  ['accept_5fpath_5fend_5fbase_0',['accept_path_end_base',['../structoperations__research_1_1_path_operator_1_1_iteration_parameters.html#a06ba9faa1da8bc11b9bad1b28184d66a',1,'operations_research::PathOperator::IterationParameters']]],
+  ['activated_5f_1',['activated_',['../classoperations__research_1_1_var_local_search_operator.html#a7135085df615773e63a206e65ea21d53',1,'operations_research::VarLocalSearchOperator']]],
+  ['all_5funperformed_2',['ALL_UNPERFORMED',['../classoperations__research_1_1_first_solution_strategy.html#ac9dfd2da68f9ca539dbc9258e86bbc6d',1,'operations_research::FirstSolutionStrategy']]],
+  ['assignment_5findices_5f_3',['assignment_indices_',['../classoperations__research_1_1_var_local_search_operator.html#a7b62af3db29eeb312e3cb06f7bb331ce',1,'operations_research::VarLocalSearchOperator']]],
+  ['automatic_4',['AUTOMATIC',['../classoperations__research_1_1_first_solution_strategy.html#aad8700938c3ef23cf85a8c2ffb52076b',1,'operations_research::FirstSolutionStrategy::AUTOMATIC()'],['../classoperations__research_1_1_local_search_metaheuristic.html#aad8700938c3ef23cf85a8c2ffb52076b',1,'operations_research::LocalSearchMetaheuristic::AUTOMATIC()']]]
 ];

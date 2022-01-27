@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['weight_280',['weight',['../structoperations__research_1_1_knapsack_item.html#a965717cd1b82709b7fc2d04aa3f8796d',1,'operations_research::KnapsackItem']]]
+  ['weight_0',['weight',['../structoperations__research_1_1_knapsack_item.html#a523234416a08d890505d4b34fb0513ee',1,'operations_research::KnapsackItem']]]
 ];

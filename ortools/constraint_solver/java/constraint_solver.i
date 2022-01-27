@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -51,14 +51,23 @@ struct FailureProtect {
 
 /* Global JNI reference deleter */
 class GlobalRefGuard {
-  JNIEnv *jenv_;
+  JavaVM *jvm_;
   jobject jref_;
   // non-copyable
   GlobalRefGuard(const GlobalRefGuard &) = delete;
   GlobalRefGuard &operator=(const GlobalRefGuard &) = delete;
   public:
-  GlobalRefGuard(JNIEnv *jenv, jobject jref): jenv_(jenv), jref_(jref) {}
-  ~GlobalRefGuard() { jenv_->DeleteGlobalRef(jref_); }
+  GlobalRefGuard(JavaVM *jvm, jobject jref): jvm_(jvm), jref_(jref) {}
+  ~GlobalRefGuard() {
+    JNIEnv *jenv = NULL;
+    JavaVMAttachArgs args;
+    args.version = JNI_VERSION_1_2;
+    args.name = NULL;
+    args.group = NULL;
+    jvm_->AttachCurrentThread((void**)&jenv, &args);
+    jenv->DeleteGlobalRef(jref_);
+    jvm_->DetachCurrentThread();
+  }
 };
 %}
 
@@ -87,24 +96,24 @@ class GlobalRefGuard {
 %enddef
 
 namespace operations_research {
-PROTECT_FROM_FAILURE(IntExpr::SetValue(int64 v), arg1->solver());
-PROTECT_FROM_FAILURE(IntExpr::SetMin(int64 v), arg1->solver());
-PROTECT_FROM_FAILURE(IntExpr::SetMax(int64 v), arg1->solver());
-PROTECT_FROM_FAILURE(IntExpr::SetRange(int64 l, int64 u), arg1->solver());
-PROTECT_FROM_FAILURE(IntVar::RemoveValue(int64 v), arg1->solver());
-PROTECT_FROM_FAILURE(IntVar::RemoveValues(const std::vector<int64>& values),
+PROTECT_FROM_FAILURE(IntExpr::SetValue(int64_t v), arg1->solver());
+PROTECT_FROM_FAILURE(IntExpr::SetMin(int64_t v), arg1->solver());
+PROTECT_FROM_FAILURE(IntExpr::SetMax(int64_t v), arg1->solver());
+PROTECT_FROM_FAILURE(IntExpr::SetRange(int64_t l, int64_t u), arg1->solver());
+PROTECT_FROM_FAILURE(IntVar::RemoveValue(int64_t v), arg1->solver());
+PROTECT_FROM_FAILURE(IntVar::RemoveValues(const std::vector<int64_t>& values),
                      arg1->solver());
-PROTECT_FROM_FAILURE(IntervalVar::SetStartMin(int64 m), arg1->solver());
-PROTECT_FROM_FAILURE(IntervalVar::SetStartMax(int64 m), arg1->solver());
-PROTECT_FROM_FAILURE(IntervalVar::SetStartRange(int64 mi, int64 ma),
+PROTECT_FROM_FAILURE(IntervalVar::SetStartMin(int64_t m), arg1->solver());
+PROTECT_FROM_FAILURE(IntervalVar::SetStartMax(int64_t m), arg1->solver());
+PROTECT_FROM_FAILURE(IntervalVar::SetStartRange(int64_t mi, int64_t ma),
                      arg1->solver());
-PROTECT_FROM_FAILURE(IntervalVar::SetDurationMin(int64 m), arg1->solver());
-PROTECT_FROM_FAILURE(IntervalVar::SetDurationMax(int64 m), arg1->solver());
-PROTECT_FROM_FAILURE(IntervalVar::SetDurationRange(int64 mi, int64 ma),
+PROTECT_FROM_FAILURE(IntervalVar::SetDurationMin(int64_t m), arg1->solver());
+PROTECT_FROM_FAILURE(IntervalVar::SetDurationMax(int64_t m), arg1->solver());
+PROTECT_FROM_FAILURE(IntervalVar::SetDurationRange(int64_t mi, int64_t ma),
                      arg1->solver());
-PROTECT_FROM_FAILURE(IntervalVar::SetEndMin(int64 m), arg1->solver());
-PROTECT_FROM_FAILURE(IntervalVar::SetEndMax(int64 m), arg1->solver());
-PROTECT_FROM_FAILURE(IntervalVar::SetEndRange(int64 mi, int64 ma),
+PROTECT_FROM_FAILURE(IntervalVar::SetEndMin(int64_t m), arg1->solver());
+PROTECT_FROM_FAILURE(IntervalVar::SetEndMax(int64_t m), arg1->solver());
+PROTECT_FROM_FAILURE(IntervalVar::SetEndRange(int64_t mi, int64_t ma),
                      arg1->solver());
 PROTECT_FROM_FAILURE(IntervalVar::SetPerformed(bool val), arg1->solver());
 PROTECT_FROM_FAILURE(Solver::AddConstraint(Constraint* const c), arg1);
@@ -126,10 +135,10 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
 %}
 
 // Use to correctly wrap Solver::MakeScheduleOrPostpone.
-%apply int64 * INOUT { int64 *const marker };
+%apply int64_t * INOUT { int64_t *const marker };
 // Use to correctly wrap arguments otherwise SWIG will wrap them as
 // SWIGTYPE_p_long_long opaque pointer.
-%apply int64 * OUTPUT { int64 *l, int64 *u, int64 *value };
+%apply int64_t * OUTPUT { int64_t *l, int64_t *u, int64_t *value };
 
 // Types in Proxy class (e.g. Solver.java) e.g.:
 // Solver::f(jstype $javainput, ...) {Solver_f_SWIG(javain, ...);}
@@ -149,7 +158,12 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
     jobject $input_object = jenv->NewGlobalRef($input);
 
     // Global JNI reference deleter
-    auto $input_guard = std::make_shared<GlobalRefGuard>(jenv, $input_object);
+    std::shared_ptr<GlobalRefGuard> $input_guard;
+    {
+      JavaVM* jvm;
+      jenv->GetJavaVM(&jvm);
+      $input_guard = std::make_shared<GlobalRefGuard>(jvm, $input_object);
+    }
     $1 = [jenv, $input_object, $input_method_id, $input_guard](LAMBDA_PARAM) -> LAMBDA_RETURN {
       return jenv->JNI_METHOD($input_object, $input_method_id, LAMBDA_CALL);
     };
@@ -176,7 +190,12 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
     jobject $input_object = jenv->NewGlobalRef($input);
 
     // Global JNI reference deleter
-    auto $input_guard = std::make_shared<GlobalRefGuard>(jenv, $input_object);
+    std::shared_ptr<GlobalRefGuard> $input_guard;
+    {
+      JavaVM* jvm;
+      jenv->GetJavaVM(&jvm);
+      $input_guard = std::make_shared<GlobalRefGuard>(jvm, $input_object);
+    }
     $1 = [jenv, $input_object, $input_method_id, $input_guard]() -> LAMBDA_RETURN {
       return jenv->JNI_METHOD($input_object, $input_method_id);
     };
@@ -202,7 +221,12 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
     jobject $input_object = jenv->NewGlobalRef($input);
 
     // Global JNI reference deleter
-    auto $input_guard = std::make_shared<GlobalRefGuard>(jenv, $input_object);
+    std::shared_ptr<GlobalRefGuard> $input_guard;
+    {
+      JavaVM* jvm;
+      jenv->GetJavaVM(&jvm);
+      $input_guard = std::make_shared<GlobalRefGuard>(jvm, $input_object);
+    }
     $1 = [jenv, $input_object, $input_method_id, $input_guard]() -> std::string {
       jstring js = (jstring) jenv->CallObjectMethod($input_object, $input_method_id);
       // convert the Java String to const char* C string.
@@ -235,7 +259,12 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
     jobject $input_object = jenv->NewGlobalRef($input);
 
     // Global JNI reference deleter
-    auto $input_guard = std::make_shared<GlobalRefGuard>(jenv, $input_object);
+    std::shared_ptr<GlobalRefGuard> $input_guard;
+    {
+      JavaVM* jvm;
+      jenv->GetJavaVM(&jvm);
+      $input_guard = std::make_shared<GlobalRefGuard>(jvm, $input_object);
+    }
     $1 = [jenv, $input_object, $input_method_id,
     $input_guard](operations_research::Solver* solver) -> void {
       jclass solver_class = jenv->FindClass(
@@ -282,54 +311,54 @@ DEFINE_VOID_TO_R_CALLBACK(
   void, CallVoidMethod)
 
 DEFINE_ARGS_TO_R_CALLBACK(
-  std::function<int(int64)>,
+  std::function<int(int64_t)>,
   LongToIntFunction, "applyAsInt", "(J)I",
   int, CallIntMethod,
   VAR_ARGS(long t),
   VAR_ARGS((jlong)t))
 
 DEFINE_ARGS_TO_R_CALLBACK(
-  std::function<int64(int64)>,
+  std::function<int64_t(int64_t)>,
   LongUnaryOperator, "applyAsLong", "(J)J",
   long, CallLongMethod, VAR_ARGS(long t), VAR_ARGS((jlong)t))
 
 DEFINE_ARGS_TO_R_CALLBACK(
-  std::function<int64(int64, int64)>,
+  std::function<int64_t(int64_t, int64_t)>,
   LongBinaryOperator, "applyAsLong", "(JJ)J",
   long, CallLongMethod,
   VAR_ARGS(long t, long u),
   VAR_ARGS((jlong)t, (jlong)u))
 
 DEFINE_ARGS_TO_R_CALLBACK(
-  std::function<int64(int64, int64, int64)>,
+  std::function<int64_t(int64_t, int64_t, int64_t)>,
   LongTernaryOperator, "applyAsLong", "(JJJ)J",
   long, CallLongMethod,
   VAR_ARGS(long t, long u, long v),
   VAR_ARGS((jlong)t, (jlong)u, (jlong)v))
 
 DEFINE_ARGS_TO_R_CALLBACK(
-  std::function<int64(int, int)>,
+  std::function<int64_t(int, int)>,
   IntIntToLongFunction, "applyAsLong", "(II)J",
   long, CallLongMethod,
   VAR_ARGS(int t, int u),
   VAR_ARGS((jint)t, (jint)u))
 
 DEFINE_ARGS_TO_R_CALLBACK(
-  std::function<bool(int64)>,
+  std::function<bool(int64_t)>,
   LongPredicate, "test", "(J)Z",
   bool, CallBooleanMethod,
   VAR_ARGS(long t),
   VAR_ARGS((jlong)t))
 
 DEFINE_ARGS_TO_R_CALLBACK(
-  std::function<bool(int64, int64, int64)>,
+  std::function<bool(int64_t, int64_t, int64_t)>,
   LongTernaryPredicate, "test", "(JJJ)Z",
   bool, CallBooleanMethod,
   VAR_ARGS(long t, long u, long v),
   VAR_ARGS((jlong)t, (jlong)u, (jlong)v))
 
 DEFINE_ARGS_TO_R_CALLBACK(
-  std::function<void(int64)>,
+  std::function<void(int64_t)>,
   LongConsumer, "accept", "(J)V",
   void, CallVoidMethod,
   VAR_ARGS(long t),
@@ -344,7 +373,7 @@ DEFINE_ARGS_TO_R_CALLBACK(
 // Renaming
 namespace operations_research {
 
-// This method causes issues with our std::vector<int64> wrapping. It's not really
+// This method causes issues with our std::vector<int64_t> wrapping. It's not really
 // part of the public API anyway.
 %ignore ToInt64Vector;
 
@@ -657,24 +686,24 @@ import java.util.function.Supplier;
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/BooleanSupplier.html
 import java.util.function.BooleanSupplier;
 
-// Used to wrap IndexEvaluator1 (std::function<int64(int64)>)
+// Used to wrap IndexEvaluator1 (std::function<int64_t(int64_t)>)
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongUnaryOperator.html
 import java.util.function.LongUnaryOperator;
-// Used to wrap IndexEvaluator2 (std::function<int64(int64, int64)>)
+// Used to wrap IndexEvaluator2 (std::function<int64_t(int64_t, int64_t)>)
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongBinaryOperator.html
 import java.util.function.LongBinaryOperator;
-// Used to wrap IndexEvaluator3 (std::function<int64(int64, int64, int64)>)
+// Used to wrap IndexEvaluator3 (std::function<int64_t(int64_t, int64_t, int64_t)>)
 // note: Java does not provide TernaryOperator so we provide it.
 import com.google.ortools.constraintsolver.LongTernaryOperator;
-// Used to wrap std::function<int64(int, int)>
+// Used to wrap std::function<int64_t(int, int)>
 // note: Java does not provide it, so we provide it.
 import com.google.ortools.constraintsolver.IntIntToLongFunction;
 
-// Used to wrap IndexFilter1 (std::function<bool(int64)>)
+// Used to wrap IndexFilter1 (std::function<bool(int64_t)>)
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongPredicate.html
 import java.util.function.LongPredicate;
 
-// Used to wrap std::function<bool(int64, int64, int64)>
+// Used to wrap std::function<bool(int64_t, int64_t, int64_t)>
 // note: Java does not provide TernaryPredicate so we provide it
 import com.google.ortools.constraintsolver.LongTernaryPredicate;
 
@@ -682,14 +711,18 @@ import com.google.ortools.constraintsolver.LongTernaryPredicate;
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/Consumer.html
 import java.util.function.Consumer;
 
-// Used to wrap ObjectiveWatcher (std::function<void(int64)>)
+// Used to wrap ObjectiveWatcher (std::function<void(int64_t)>)
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongConsumer.html
 import java.util.function.LongConsumer;
 
 // Used to wrap Closure (std::function<void()>)
 // see https://docs.oracle.com/javase/8/docs/api/java/lang/Runnable.html
 import java.lang.Runnable;
+
+// Used to keep alive java references to objects passed to the C++ layer.
+import java.util.HashSet;
 %}
+
 // note: SWIG does not support multiple %typemap(javacode) Type, so we have to
 // define all Solver tweak here (ed and not in the macro DEFINE_CALLBACK_*)
 %typemap(javacode) Solver %{
@@ -772,7 +805,66 @@ import java.lang.Runnable;
     }
     return array;
   }
+
+  // Ensure that the GC doesn't collect any DecisionBuilder set from Java
+  // as the underlying C++ class stores a shallow copy
+  private HashSet<DecisionBuilder> keepAliveDecisionBuilders;
+  public void keepAliveDecisionBuilder(DecisionBuilder db) {
+    if (keepAliveDecisionBuilders == null) {
+      keepAliveDecisionBuilders = new HashSet<DecisionBuilder>();
+    }
+    keepAliveDecisionBuilders.add(db);
+  }
+  public void keepAliveDecisionBuilder(DecisionBuilder[] dbs) {
+    for (DecisionBuilder db : dbs) {
+      keepAliveDecisionBuilder(db);
+    }
+  }
 %}
+
+// Do not keep a reference of the decision builder in the java instance as it
+// is not stored inside the c++ layer.
+%typemap (javacode) SearchMonitor %{
+  public void keepAliveDecisionBuilder(DecisionBuilder db) {}
+%}
+
+%typemap(javaimports) DefaultPhaseParameters %{
+// Used to keep alive java references to objects passed to the C++ layer.
+import java.util.HashSet;
+%}
+
+%typemap(javacode) DefaultPhaseParameters %{
+  // Ensure that the GC doesn't collect any DecisionBuilder set from Java
+  // as the underlying C++ class stores a shallow copy
+  private HashSet<DecisionBuilder> keepAliveDecisionBuilders;
+  public void keepAliveDecisionBuilder(DecisionBuilder db) {
+    if (keepAliveDecisionBuilders == null) {
+      keepAliveDecisionBuilders = new HashSet<DecisionBuilder>();
+    }
+    keepAliveDecisionBuilders.add(db);
+  }
+%}
+
+// Do not keep a reference of the decision builder in the java instance as it
+// is not stored inside the c++ layer.
+%typemap (javacode) SearchLimit  %{
+  public void keepAliveDecisionBuilder(DecisionBuilder db) {}
+%}
+
+// Do not keep a reference of the decision builder in the java instance as it
+// is not stored inside the c++ layer.
+%typemap (javacode) OptimizeVar %{
+  public void keepAliveDecisionBuilder(DecisionBuilder db) {}
+%}
+
+%typemap(javain,
+         post="      keepAliveDecisionBuilder($javainput);"
+         ) DecisionBuilder* "DecisionBuilder.getCPtr($javainput)"
+
+%typemap(javain,
+         post="      keepAliveDecisionBuilder($javainput);"
+         ) const std::vector<DecisionBuilder*>& dbs "$javainput"
+
 %ignore Solver::SearchLogParameters;
 %ignore Solver::ActiveSearch;
 %ignore Solver::SetSearchContext;
@@ -1409,6 +1501,10 @@ import java.util.function.LongToIntFunction;
 %rename (restartAtPathStartOnSynchronize) PathOperator::RestartAtPathStartOnSynchronize;
 %rename (setNextBaseToIncrement) PathOperator::SetNextBaseToIncrement;
 
+// PathOperator::IterationParameters
+%ignore PathOperator::IterationParameters;
+//%ignore PathOperator::IterationParameters::start_empty_path_class;
+
 // PathWithPreviousNodesOperator
 %unignore PathWithPreviousNodesOperator;
 %rename (isPathStart) PathWithPreviousNodesOperator::IsPathStart;
@@ -1451,7 +1547,7 @@ import java.util.function.LongConsumer;
 %rename (var) IntVarLocalSearchFilter::Var;  // Inherited.
 %extend IntVarLocalSearchFilter {
   int index(IntVar* const var) {
-    int64 index = -1;
+    int64_t index = -1;
     $self->FindIndex(var, &index);
     return index;
   }
@@ -1491,6 +1587,7 @@ CONVERT_VECTOR(operations_research::SymmetryBreaker, SymmetryBreaker);
 %rename (value) *::Value;
 %rename (accept) *::Accept;
 %rename (toString) *::DebugString;
+%rename("%(lowercamelcase)s", %$isvariable) "";
 
 // Add needed import to mainJNI.java
 %pragma(java) jniclassimports=%{
@@ -1502,31 +1599,31 @@ import java.util.function.Supplier;
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/BooleanSupplier.html
 import java.util.function.BooleanSupplier;
 
-// Used to wrap std::function<int(int64)>
+// Used to wrap std::function<int(int64_t)>
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongToIntFunction.html
 import java.util.function.LongToIntFunction;
 
-// Used to wrap std::function<int64(int64)>
+// Used to wrap std::function<int64_t(int64_t)>
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongUnaryOperator.html
 import java.util.function.LongUnaryOperator;
 
-// Used to wrap std::function<int64(int64, int64)>
+// Used to wrap std::function<int64_t(int64_t, int64_t)>
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongBinaryOperator.html
 import java.util.function.LongBinaryOperator;
 
-// Used to wrap std::function<int64(int64, int64, int64)>
+// Used to wrap std::function<int64_t(int64_t, int64_t, int64_t)>
 // note: Java does not provide TernaryOperator so we provide it
 import com.google.ortools.constraintsolver.LongTernaryOperator;
 
-// Used to wrap std::function<int64(int, int)>
+// Used to wrap std::function<int64_t(int, int)>
 // note: Java does not provide it, so we provide it.
 import com.google.ortools.constraintsolver.IntIntToLongFunction;
 
-// Used to wrap std::function<bool(int64)>
+// Used to wrap std::function<bool(int64_t)>
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongPredicate.html
 import java.util.function.LongPredicate;
 
-// Used to wrap std::function<bool(int64, int64, int64)>
+// Used to wrap std::function<bool(int64_t, int64_t, int64_t)>
 // note: Java does not provide TernaryPredicate so we provide it
 import com.google.ortools.constraintsolver.LongTernaryPredicate;
 
@@ -1534,7 +1631,7 @@ import com.google.ortools.constraintsolver.LongTernaryPredicate;
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/Consumer.html
 import java.util.function.Consumer;
 
-// Used to wrap std::function<void(int64)>
+// Used to wrap std::function<void(int64_t)>
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongConsumer.html
 import java.util.function.LongConsumer;
 
@@ -1583,7 +1680,7 @@ namespace operations_research {
 // Define templates instantiation after wrapping.
 namespace operations_research {
 %template(RevInteger) Rev<int>;
-%template(RevLong) Rev<int64>;
+%template(RevLong) Rev<int64_t>;
 %template(RevBool) Rev<bool>;
 %template(AssignmentIntContainer) AssignmentContainer<IntVar, IntVarElement>;
 %template(AssignmentIntervalContainer) AssignmentContainer<IntervalVar, IntervalVarElement>;

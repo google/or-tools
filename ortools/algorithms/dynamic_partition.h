@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// TODO(user,user): refine this toplevel comment when this file settles.
+// TODO(user): refine this toplevel comment when this file settles.
 //
 // Two dynamic partition classes: one that incrementally splits a partition
 // into more and more parts; one that incrementally merges a partition into less
@@ -30,6 +30,7 @@
 #ifndef OR_TOOLS_ALGORITHMS_DYNAMIC_PARTITION_H_
 #define OR_TOOLS_ALGORITHMS_DYNAMIC_PARTITION_H_
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -82,7 +83,7 @@ class DynamicPartition {
   // same fingerprint are most likely identical.
   // Also, two parts that have the exact same set of elements will *always*
   // have the same fingerprint.
-  uint64 FprintOfPart(int part) const;
+  uint64_t FprintOfPart(int part) const;
 
   // Refines the partition such that elements that are in distinguished_subset
   // never share the same part as elements that aren't in that subset.
@@ -162,10 +163,10 @@ class DynamicPartition {
 
     // The part's fingerprint is the XOR of all fingerprints of its elements.
     // See FprintOfInt32() in the .cc.
-    uint64 fprint;
+    uint64_t fprint;
 
     Part() : start_index(0), end_index(0), parent_part(0), fprint(0) {}
-    Part(int start_index, int end_index, int parent_part, uint64 fprint)
+    Part(int start_index, int end_index, int parent_part, uint64_t fprint)
         : start_index(start_index),
           end_index(end_index),
           parent_part(parent_part),
@@ -305,7 +306,7 @@ inline DynamicPartition::IterablePart DynamicPartition::ElementsInSamePartAs(
   return ElementsInPart(PartOf(i));
 }
 
-inline uint64 DynamicPartition::FprintOfPart(int part) const {
+inline uint64_t DynamicPartition::FprintOfPart(int part) const {
   DCHECK_GE(part, 0);
   DCHECK_LT(part, part_.size());
   return part_[part].fprint;

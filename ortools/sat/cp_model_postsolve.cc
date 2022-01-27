@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -12,6 +12,9 @@
 // limitations under the License.
 
 #include "ortools/sat/cp_model_postsolve.h"
+
+#include <cstdint>
+#include <limits>
 
 #include "ortools/sat/cp_model_utils.h"
 
@@ -47,18 +50,68 @@ void PostsolveClause(const ConstraintProto& ct, std::vector<Domain>* domains) {
   (*domains)[PositiveRef(first_ref)] = Domain(RefIsPositive(first_ref) ? 1 : 0);
 }
 
+void PostsolveExactlyOne(const ConstraintProto& ct,
+                         std::vector<Domain>* domains) {
+  bool satisfied = false;
+  std::vector<int> free_variables;
+  for (const int ref : ct.exactly_one().literals()) {
+    const int var = PositiveRef(ref);
+    if ((*domains)[var].IsFixed()) {
+      if ((*domains)[var].FixedValue() == (RefIsPositive(ref) ? 1 : 0)) {
+        CHECK(!satisfied) << "Two variables at one in exactly one.";
+        satisfied = true;
+      }
+    } else {
+      free_variables.push_back(ref);
+    }
+  }
+  if (!satisfied) {
+    // Fix one at true.
+    CHECK(!free_variables.empty()) << "All zero in exactly one";
+    const int ref = free_variables.back();
+    (*domains)[PositiveRef(ref)] = Domain(RefIsPositive(ref) ? 1 : 0);
+    free_variables.pop_back();
+  }
+
+  // Fix any free variable left at false.
+  for (const int ref : free_variables) {
+    (*domains)[PositiveRef(ref)] = Domain(RefIsPositive(ref) ? 0 : 1);
+  }
+}
+
+// For now we set the first unset enforcement literal to false.
+// There must be one.
+void SetEnforcementLiteralToFalse(const ConstraintProto& ct,
+                                  std::vector<Domain>* domains) {
+  CHECK(!ct.enforcement_literal().empty());
+  bool has_free_enforcement_literal = false;
+  for (const int enf : ct.enforcement_literal()) {
+    if ((*domains)[PositiveRef(enf)].IsFixed()) continue;
+    has_free_enforcement_literal = true;
+    if (RefIsPositive(enf)) {
+      (*domains)[enf] = Domain(0);
+    } else {
+      (*domains)[PositiveRef(enf)] = Domain(1);
+    }
+    break;
+  }
+  if (!has_free_enforcement_literal) {
+    LOG(FATAL)
+        << "Unsatisfied linear constraint with no free enforcement literal: "
+        << ct.ShortDebugString();
+  }
+}
+
 // Here we simply assign all non-fixed variable to a feasible value. Which
 // should always exists by construction.
-void PostsolveLinear(const ConstraintProto& ct,
-                     const std::vector<bool>& prefer_lower_value,
-                     std::vector<Domain>* domains) {
-  int64 fixed_activity = 0;
+void PostsolveLinear(const ConstraintProto& ct, std::vector<Domain>* domains) {
+  int64_t fixed_activity = 0;
   const int size = ct.linear().vars().size();
   std::vector<int> free_vars;
-  std::vector<int64> free_coeffs;
+  std::vector<int64_t> free_coeffs;
   for (int i = 0; i < size; ++i) {
     const int var = ct.linear().vars(i);
-    const int64 coeff = ct.linear().coeffs(i);
+    const int64_t coeff = ct.linear().coeffs(i);
     CHECK_LT(var, domains->size());
     if (coeff == 0) continue;
     if ((*domains)[var].IsFixed()) {
@@ -68,75 +121,99 @@ void PostsolveLinear(const ConstraintProto& ct,
       free_coeffs.push_back(coeff);
     }
   }
-  if (free_vars.empty()) return;
-
-  Domain rhs =
-      ReadDomainFromProto(ct.linear()).AdditionWith(Domain(-fixed_activity));
+  if (free_vars.empty()) {
+    const Domain rhs = ReadDomainFromProto(ct.linear());
+    if (!rhs.Contains(fixed_activity)) {
+      SetEnforcementLiteralToFalse(ct, domains);
+    }
+    return;
+  }
 
   // Fast track for the most common case.
+  const Domain initial_rhs = ReadDomainFromProto(ct.linear());
   if (free_vars.size() == 1) {
     const int var = free_vars[0];
-    const Domain domain = rhs.InverseMultiplicationBy(free_coeffs[0])
+    const Domain domain = initial_rhs.AdditionWith(Domain(-fixed_activity))
+                              .InverseMultiplicationBy(free_coeffs[0])
                               .IntersectionWith((*domains)[var]);
-    const int64 value = prefer_lower_value[var] ? domain.Min() : domain.Max();
-    (*domains)[var] = Domain(value);
+    if (domain.IsEmpty()) {
+      SetEnforcementLiteralToFalse(ct, domains);
+      return;
+    }
+    (*domains)[var] = Domain(domain.SmallestValue());
     return;
   }
 
   // The postsolve code is a bit involved if there is more than one free
   // variable, we have to postsolve them one by one.
-  std::vector<Domain> to_add;
-  to_add.push_back(Domain(0));
+  //
+  // Here we recompute the same domains as during the presolve. Everything is
+  // like if we where substiting the variable one by one:
+  //    terms[i] + fixed_activity \in rhs_domains[i]
+  // In the reverse order.
+  std::vector<Domain> rhs_domains;
+  rhs_domains.push_back(initial_rhs);
   for (int i = 0; i + 1 < free_vars.size(); ++i) {
-    bool exact = false;
-    Domain term =
-        (*domains)[free_vars[i]].MultiplicationBy(-free_coeffs[i], &exact);
-    CHECK(exact);
-    to_add.push_back(term.AdditionWith(to_add.back()));
+    // Note that these should be exactly the same computation as the one done
+    // during presolve and should be exact. However, we have some tests that do
+    // not comply, so we don't check exactness here. Also, as long as we don't
+    // get empty domain below, and the complexity of the domain do not explode
+    // here, we should be fine.
+    Domain term = (*domains)[free_vars[i]].MultiplicationBy(-free_coeffs[i]);
+    rhs_domains.push_back(term.AdditionWith(rhs_domains.back()));
   }
   for (int i = free_vars.size() - 1; i >= 0; --i) {
-    // Choose a value for free_vars[i] that fall into rhs + to_add[i].
-    // This will crash if the intersection is empty, but it shouldn't be.
+    // Choose a value for free_vars[i] that fall into rhs_domains[i] -
+    // fixed_activity. This will crash if the intersection is empty, but it
+    // shouldn't be.
     const int var = free_vars[i];
-    const int64 coeff = free_coeffs[i];
-    const Domain domain = rhs.AdditionWith(to_add[i])
+    const int64_t coeff = free_coeffs[i];
+    const Domain domain = rhs_domains[i]
+                              .AdditionWith(Domain(-fixed_activity))
                               .InverseMultiplicationBy(coeff)
                               .IntersectionWith((*domains)[var]);
-    CHECK(!domain.IsEmpty()) << ct.ShortDebugString();
-    const int64 value = prefer_lower_value[var] ? domain.Min() : domain.Max();
-    (*domains)[var] = Domain(value);
-    rhs = rhs.AdditionWith(Domain(-coeff * value));
 
-    // Only needed in debug.
+    // TODO(user): I am not 100% that the algo here might cover all the presolve
+    // case, so if this fail, it might indicate an issue here and not in the
+    // presolve/solver code.
+    CHECK(!domain.IsEmpty()) << ct.ShortDebugString();
+    const int64_t value = domain.SmallestValue();
+    (*domains)[var] = Domain(value);
+
     fixed_activity += coeff * value;
   }
-  DCHECK(ReadDomainFromProto(ct.linear()).Contains(fixed_activity));
+  DCHECK(initial_rhs.Contains(fixed_activity));
 }
 
-// We assign any non fixed lhs variables to their minimum value. Then we assign
-// the target to the max. This should always be feasible.
-void PostsolveIntMax(const ConstraintProto& ct, std::vector<Domain>* domains) {
-  int64 m = kint64min;
-  for (const int ref : ct.int_max().vars()) {
-    const int var = PositiveRef(ref);
-    if (!(*domains)[var].IsFixed()) {
-      // Assign to minimum value.
-      const int64 value =
-          RefIsPositive(ref) ? (*domains)[var].Min() : (*domains)[var].Max();
-      (*domains)[var] = Domain(value);
-    }
+namespace {
 
-    const int64 value = (*domains)[var].FixedValue();
-    m = std::max(m, RefIsPositive(ref) ? value : -value);
+int64_t EvaluateLinearExpression(const LinearExpressionProto& expr,
+                                 const std::vector<Domain>& domains) {
+  int64_t value = expr.offset();
+  for (int i = 0; i < expr.vars_size(); ++i) {
+    const int ref = expr.vars(i);
+    const int64_t increment =
+        domains[PositiveRef(expr.vars(i))].FixedValue() * expr.coeffs(i);
+    value += RefIsPositive(ref) ? increment : -increment;
   }
-  const int target_ref = ct.int_max().target();
+  return value;
+}
+
+}  // namespace
+
+// Compute the max of each expression, and assign it to the target expr (which
+// must be of the form +ref or -ref);
+// We only support post-solving the case were the target is unassigned,
+// but everything else is fixed.
+void PostsolveLinMax(const ConstraintProto& ct, std::vector<Domain>* domains) {
+  int64_t max_value = std::numeric_limits<int64_t>::min();
+  for (const LinearExpressionProto& expr : ct.lin_max().exprs()) {
+    max_value = std::max(max_value, EvaluateLinearExpression(expr, *domains));
+  }
+  const int target_ref = GetSingleRefFromExpression(ct.lin_max().target());
   const int target_var = PositiveRef(target_ref);
-  if (RefIsPositive(target_ref)) {
-    (*domains)[target_var] = (*domains)[target_var].IntersectionWith(Domain(m));
-  } else {
-    (*domains)[target_var] =
-        (*domains)[target_var].IntersectionWith(Domain(-m));
-  }
+  (*domains)[target_var] = (*domains)[target_var].IntersectionWith(
+      Domain(RefIsPositive(target_ref) ? max_value : -max_value));
   CHECK(!(*domains)[target_var].IsEmpty());
 }
 
@@ -151,40 +228,60 @@ void PostsolveElement(const ConstraintProto& ct, std::vector<Domain>* domains) {
   // whatever the value of the index and selected variable, we can choose a
   // valid target, so we just fix the index to its min value in this case.
   if (!(*domains)[target_var].IsFixed() && !(*domains)[index_var].IsFixed()) {
-    const int64 index_value = (*domains)[index_var].Min();
-    (*domains)[index_var] = Domain(index_value);
+    const int64_t index_var_value = (*domains)[index_var].Min();
+    (*domains)[index_var] = Domain(index_var_value);
 
     // If the selected variable is not fixed, we also need to fix it.
     const int selected_ref = ct.element().vars(
-        RefIsPositive(index_ref) ? index_value : -index_value);
+        RefIsPositive(index_ref) ? index_var_value : -index_var_value);
     const int selected_var = PositiveRef(selected_ref);
     if (!(*domains)[selected_var].IsFixed()) {
       (*domains)[selected_var] = Domain((*domains)[selected_var].Min());
     }
   }
 
-  // Deal with fixed index (and constant vars).
+  // Deal with fixed index.
   if ((*domains)[index_var].IsFixed()) {
-    const int64 index_value = (*domains)[index_var].FixedValue();
+    const int64_t index_var_value = (*domains)[index_var].FixedValue();
     const int selected_ref = ct.element().vars(
-        RefIsPositive(index_ref) ? index_value : -index_value);
+        RefIsPositive(index_ref) ? index_var_value : -index_var_value);
     const int selected_var = PositiveRef(selected_ref);
-    const int64 selected_value = (*domains)[selected_var].FixedValue();
-    (*domains)[target_var] = (*domains)[target_var].IntersectionWith(
-        Domain(RefIsPositive(target_ref) == RefIsPositive(selected_ref)
-                   ? selected_value
-                   : -selected_value));
-    DCHECK(!(*domains)[target_var].IsEmpty());
+    if ((*domains)[selected_var].IsFixed()) {
+      const int64_t selected_value = (*domains)[selected_var].FixedValue();
+      (*domains)[target_var] = (*domains)[target_var].IntersectionWith(
+          Domain(RefIsPositive(target_ref) == RefIsPositive(selected_ref)
+                     ? selected_value
+                     : -selected_value));
+      DCHECK(!(*domains)[target_var].IsEmpty());
+    } else {
+      const bool same_sign =
+          (selected_var == selected_ref) == (target_var == target_ref);
+      const Domain target_domain = (*domains)[target_var];
+      const Domain selected_domain = same_sign
+                                         ? (*domains)[selected_var]
+                                         : (*domains)[selected_var].Negation();
+      const Domain final = target_domain.IntersectionWith(selected_domain);
+      const int64_t value = final.SmallestValue();
+      (*domains)[target_var] =
+          (*domains)[target_var].IntersectionWith(Domain(value));
+      (*domains)[selected_var] = (*domains)[selected_var].IntersectionWith(
+          Domain(same_sign ? value : -value));
+      DCHECK(!(*domains)[target_var].IsEmpty());
+      DCHECK(!(*domains)[selected_var].IsEmpty());
+    }
     return;
   }
 
   // Deal with fixed target (and constant vars).
-  const int64 target_value = (*domains)[target_var].FixedValue();
+  const int64_t target_value = (*domains)[target_var].FixedValue();
   int selected_index_value = -1;
-  for (int i = 0; i < ct.element().vars().size(); ++i) {
+  for (const int64_t v : (*domains)[index_var].Values()) {
+    const int64_t i = index_var == index_ref ? v : -v;
+    if (i < 0 || i >= ct.element().vars_size()) continue;
+
     const int ref = ct.element().vars(i);
     const int var = PositiveRef(ref);
-    const int64 value = (*domains)[var].FixedValue();
+    const int64_t value = (*domains)[var].FixedValue();
     if (RefIsPositive(target_ref) == RefIsPositive(ref)) {
       if (value == target_value) {
         selected_index_value = i;
@@ -200,27 +297,22 @@ void PostsolveElement(const ConstraintProto& ct, std::vector<Domain>* domains) {
 
   CHECK_NE(selected_index_value, -1);
   (*domains)[index_var] = (*domains)[index_var].IntersectionWith(Domain(
-      RefIsPositive(index_var) ? selected_index_value : -selected_index_value));
+      RefIsPositive(index_ref) ? selected_index_value : -selected_index_value));
   DCHECK(!(*domains)[index_var].IsEmpty());
 }
 
-void PostsolveResponse(const int64 num_variables_in_original_model,
+void PostsolveResponse(const int64_t num_variables_in_original_model,
                        const CpModelProto& mapping_proto,
                        const std::vector<int>& postsolve_mapping,
-                       CpSolverResponse* response) {
-  // Abort if no solution or something is wrong.
-  if (response->status() != CpSolverStatus::FEASIBLE &&
-      response->status() != CpSolverStatus::OPTIMAL) {
-    return;
-  }
-  if (response->solution_size() != postsolve_mapping.size()) return;
+                       std::vector<int64_t>* solution) {
+  CHECK_EQ(solution->size(), postsolve_mapping.size());
 
   // Read the initial variable domains, either from the fixed solution of the
   // presolved problems or from the mapping model.
   std::vector<Domain> domains(mapping_proto.variables_size());
   for (int i = 0; i < postsolve_mapping.size(); ++i) {
     CHECK_LE(postsolve_mapping[i], domains.size());
-    domains[postsolve_mapping[i]] = Domain(response->solution(i));
+    domains[postsolve_mapping[i]] = Domain((*solution)[i]);
   }
   for (int i = 0; i < domains.size(); ++i) {
     if (domains[i].IsEmpty()) {
@@ -229,50 +321,38 @@ void PostsolveResponse(const int64 num_variables_in_original_model,
     CHECK(!domains[i].IsEmpty());
   }
 
-  // Some free variable should be fixed towards their good objective direction.
-  //
-  // TODO(user): currently the objective is not part of the mapping_proto, so
-  // this shouldn't matter for our current presolve reduction.
-  CHECK(!mapping_proto.has_objective());
-  std::vector<bool> prefer_lower_value(domains.size(), true);
-  if (mapping_proto.has_objective()) {
-    const int size = mapping_proto.objective().vars().size();
-    for (int i = 0; i < size; ++i) {
-      int var = mapping_proto.objective().vars(i);
-      int64 coeff = mapping_proto.objective().coeffs(i);
-      if (!RefIsPositive(var)) {
-        var = PositiveRef(var);
-        coeff = -coeff;
-      }
-      prefer_lower_value[i] = (coeff >= 0);
-    }
-  }
-
   // Process the constraints in reverse order.
   const int num_constraints = mapping_proto.constraints_size();
   for (int i = num_constraints - 1; i >= 0; i--) {
     const ConstraintProto& ct = mapping_proto.constraints(i);
 
-    // We should only encounter assigned enforcement literal.
-    bool enforced = true;
-    for (const int ref : ct.enforcement_literal()) {
-      if (domains[PositiveRef(ref)].FixedValue() ==
-          (RefIsPositive(ref) ? 0 : 1)) {
-        enforced = false;
+    // We ignore constraint with an enforcement literal set to false. If the
+    // enforcement is still unclear, we still process this constraint.
+    bool constraint_can_be_ignored = false;
+    for (const int enf : ct.enforcement_literal()) {
+      const int var = PositiveRef(enf);
+      const bool is_false =
+          domains[var].IsFixed() &&
+          RefIsPositive(enf) == (domains[var].FixedValue() == 0);
+      if (is_false) {
+        constraint_can_be_ignored = true;
         break;
       }
     }
-    if (!enforced) continue;
+    if (constraint_can_be_ignored) continue;
 
     switch (ct.constraint_case()) {
       case ConstraintProto::kBoolOr:
         PostsolveClause(ct, &domains);
         break;
-      case ConstraintProto::kLinear:
-        PostsolveLinear(ct, prefer_lower_value, &domains);
+      case ConstraintProto::kExactlyOne:
+        PostsolveExactlyOne(ct, &domains);
         break;
-      case ConstraintProto::kIntMax:
-        PostsolveIntMax(ct, &domains);
+      case ConstraintProto::kLinear:
+        PostsolveLinear(ct, &domains);
+        break;
+      case ConstraintProto::kLinMax:
+        PostsolveLinMax(ct, &domains);
         break;
       case ConstraintProto::kElement:
         PostsolveElement(ct, &domains);
@@ -284,15 +364,12 @@ void PostsolveResponse(const int64 num_variables_in_original_model,
     }
   }
 
-  // Fill the response. Maybe fix some still unfixed variable.
-  response->mutable_solution()->Clear();
+  // Fill the response.
+  // Maybe fix some still unfixed variable.
+  solution->clear();
   CHECK_LE(num_variables_in_original_model, domains.size());
   for (int i = 0; i < num_variables_in_original_model; ++i) {
-    if (prefer_lower_value[i]) {
-      response->add_solution(domains[i].Min());
-    } else {
-      response->add_solution(domains[i].Max());
-    }
+    solution->push_back(domains[i].SmallestValue());
   }
 }
 

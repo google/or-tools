@@ -1,4 +1,4 @@
-﻿// Copyright 2010-2019 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -498,10 +498,11 @@ public class NetworkRoutingSat
             cpModel.AddAllDifferent(nodeVars);
 
             var solver = new CpSolver();
+            solver.StringParameters = "enumerate_all_solutions:true";
 
             var solutionPrinter =
                 new FeasibleSolutionChecker(demandIndex, ref _allPaths, maxLength, arcVars, maxPaths, nodeVars);
-            var status = solver.SearchAllSolutions(cpModel, solutionPrinter);
+            var status = solver.Solve(cpModel, solutionPrinter);
         }
 
         private long[,] getArcsData()
@@ -765,10 +766,10 @@ public class NetworkRoutingSat
             cpModel.Minimize(LinearExpr.Sum(obj));
 
             CpSolver solver = new CpSolver();
-            solver.StringParameters = parameters;
+            solver.StringParameters = parameters + " enumerate_all_solutions:true";
 
-            CpSolverStatus status = solver.SearchAllSolutions(
-                cpModel, new FeasibleSolutionChecker2(maxUsageCost, comfortableTrafficVars, trafficVars));
+            CpSolverStatus status =
+                solver.Solve(cpModel, new FeasibleSolutionChecker2(maxUsageCost, comfortableTrafficVars, trafficVars));
 
             return (long)solver.ObjectiveValue;
         }

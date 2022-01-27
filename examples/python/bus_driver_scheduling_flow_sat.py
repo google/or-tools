@@ -1,4 +1,4 @@
-# Copyright 2010-2018 Google LLC
+# Copyright 2010-2021 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -32,7 +32,7 @@ PARSER = argparse.ArgumentParser()
 PARSER.add_argument(
     '--instance', default=1, type=int, help='Instance number (1..3).')
 PARSER.add_argument(
-    '--output_proto',
+    '--output_proto_file',
     default="",
     help='Output file to write the cp_model'
     'proto to.')

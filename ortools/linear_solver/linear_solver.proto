@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -32,7 +32,6 @@ syntax = "proto2";
 option java_package = "com.google.ortools.linearsolver";
 option java_multiple_files = true;
 
-// import "google/protobuf/wrappers.proto";
 import "ortools/util/optional_boolean.proto";
 
 package operations_research;
@@ -385,7 +384,7 @@ message MPModelDeltaProto {
   // NOTE(user): We may also add more deltas, eg. objective offset.
 }
 
-// Next id: 10.
+// Next id: 15.
 message MPModelRequest {
   // The model to be optimized by the server.
   optional MPModelProto model = 1;
@@ -462,7 +461,19 @@ message MPModelRequest {
   // definition of MPModelDeltaProto.
   optional MPModelDeltaProto model_delta = 8;
 
+
+
+  // Controls the recovery of additional solutions, if any, saved by the
+  // underlying solver back in the MPSolutionResponse.additional_solutions.
+  // The repeated field will be length
+  //    min(populate_addition_solutions_up_to,
+  //        #additional_solutions_available_in_underlying_solver)
+  // These additional solutions may have a worse objective than the main
+  // solution returned in the response.
+  optional int32 populate_additional_solutions_up_to = 11 [default = 0];
+
 }
+
 
 // Status returned by the solver. They follow a hierarchical nomenclature, to
 // allow us to add more enum values in the future. Clients should use
@@ -520,6 +531,9 @@ enum MPSolverResponseStatus {
   // Like "NOT_SOLVED", but typically used by model validation functions
   // returning a "model status", to enhance readability of the client code.
   MPSOLVER_MODEL_IS_VALID = 0x61;
+  // The solve was interrupted by the user, and the solver didn't have time to
+  // return a proper status.
+  MPSOLVER_CANCELLED_BY_USER = 0x62;
   // Special value: the solver status could not be properly translated and is
   // unknown.
   MPSOLVER_UNKNOWN_STATUS = 0x63;
@@ -538,9 +552,30 @@ enum MPSolverResponseStatus {
   // The linear solver binary was probably not linked with the required library,
   // eg //ortools/linear_solver:linear_solver_scip for SCIP.
   MPSOLVER_SOLVER_TYPE_UNAVAILABLE = 0x7;
+  // Some of the selected options were incompatible, e.g. a cancellable solve
+  // was requested via SolverClient::SolveMipRemotely() with an underlying
+  // solver that doesn't support cancellation. status_str should contain a
+  // description of the issue.
+  MPSOLVER_INCOMPATIBLE_OPTIONS = 0x71;
 
 }
 
+message MPSolution {
+  optional double objective_value = 1;
+  repeated double variable_value = 2 [packed = true];
+}
+
+message MPSolveInfo {
+  // How much wall time (resp. user time) elapsed during the Solve() of the
+  // underlying solver library. "wall" time and "user" time are to be
+  // interpreted like for the "time" command in bash (see "help time").
+  // In particular, "user time" is CPU time and can be greater than wall time
+  // when using several threads.
+  optional double solve_wall_time_seconds = 1;
+  optional double solve_user_time_seconds = 2;
+}
+
+// Next id: 11.
 message MPSolutionResponse {
   // Result of the optimization.
   optional /*required*/ MPSolverResponseStatus status = 1
@@ -569,6 +604,11 @@ message MPSolutionResponse {
   // FEASIBLE.
   repeated double variable_value = 3 [packed = true];
 
+  // Contains extra information about the solve, populated if the underlying
+  // solver (and its interface) supports it. As of 2021/07/19 this is supported
+  // by SCIP and Gurobi proto solves.
+  optional MPSolveInfo solve_info = 10;
+
   // [Advanced usage.]
   // Values of the dual variables values in the same order as the
   // MPModelProto::constraint field. This is a dense representation.
@@ -584,4 +624,12 @@ message MPSolutionResponse {
   // is actually a linear program).
   // These are set iff 'status' is OPTIMAL or FEASIBLE.
   repeated double reduced_cost = 6 [packed = true];
+
+  // [Advanced usage.]
+  // If `MPModelRequest.populate_additional_solutions_up_to` > 0, up to that
+  // number of additional solutions may be populated here, if available. These
+  // additional solutions are different than the main solution described by the
+  // above fields `objective_value` and `variable_value`.
+  repeated MPSolution additional_solutions = 8;
+
 }

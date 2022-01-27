@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -23,11 +23,11 @@
 namespace operations_research {
 
 std::string MemoryUsage() {
-  const int64 mem = operations_research::sysinfo::MemoryUsageProcess();
-  static const int64 kDisplayThreshold = 2;
-  static const int64 kKiloByte = 1024;
-  static const int64 kMegaByte = kKiloByte * kKiloByte;
-  static const int64 kGigaByte = kMegaByte * kKiloByte;
+  const int64_t mem = operations_research::sysinfo::MemoryUsageProcess();
+  static const int64_t kDisplayThreshold = 2;
+  static const int64_t kKiloByte = 1024;
+  static const int64_t kMegaByte = kKiloByte * kKiloByte;
+  static const int64_t kGigaByte = kMegaByte * kKiloByte;
   if (mem > kDisplayThreshold * kGigaByte) {
     return absl::StrFormat("%.2lf GB", mem * 1.0 / kGigaByte);
   } else if (mem > kDisplayThreshold * kMegaByte) {
@@ -226,7 +226,7 @@ std::string DoubleDistribution::ValueAsString() const {
                          Average(), StdDeviation());
 }
 
-void IntegerDistribution::Add(int64 value) {
+void IntegerDistribution::Add(int64_t value) {
   AddToDistribution(static_cast<double>(value));
 }
 

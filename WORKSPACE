@@ -1,5 +1,7 @@
+workspace(name = "com_google_ortools")
+
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository", "new_git_repository")
 
 http_archive(
     name = "zlib",
@@ -29,33 +31,45 @@ http_archive(
 # Protobuf
 git_repository(
     name = "com_google_protobuf",
-    commit = "2514f0b",  # release v3.14.0
+    commit = "7c40b2d",  # release v3.19.1
     remote = "https://github.com/protocolbuffers/protobuf.git",
 )
-
-load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
-
 # Load common dependencies.
+load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
 protobuf_deps()
 
 git_repository(
     name = "com_google_absl",
-    commit = "0f3bb46", # release 20200923.2
+    commit = "2151058", # release 20211102.0
     remote = "https://github.com/abseil/abseil-cpp.git",
 )
 
+# Bazel platform rules.
 http_archive(
-    name = "gtest",
-    build_file = "//bazel:gtest.BUILD",
-    strip_prefix = "googletest-release-1.8.0/googletest",
-    url = "https://github.com/google/googletest/archive/release-1.8.0.zip",
+    name = "platforms",
+    sha256 = "b601beaf841244de5c5a50d2b2eddd34839788000fa1be4260ce6603ca0d8eb7",
+    strip_prefix = "platforms-98939346da932eef0b54cf808622f5bb0928f00b",
+    urls = ["https://github.com/bazelbuild/platforms/archive/98939346da932eef0b54cf808622f5bb0928f00b.zip"],
+)
+
+git_repository(
+    name = "com_google_re2",
+    patches = ["//bazel:re2.patch"],
+    commit = "0dade9f", # release 2021-11-01
+    remote = "https://github.com/google/re2.git",
+)
+
+git_repository(
+    name = "com_google_googletest",
+    commit = "e2239ee", # release-1.11.0
+    remote = "https://github.com/google/googletest.git",
 )
 
 http_archive(
     name = "glpk",
     build_file = "//bazel:glpk.BUILD",
-    sha256 = "4281e29b628864dfe48d393a7bedd781e5b475387c20d8b0158f329994721a10",
-    url = "http://ftp.gnu.org/gnu/glpk/glpk-4.65.tar.gz",
+    sha256 = "4a1013eebb50f728fc601bdd833b0b2870333c3b3e5a816eeba921d95bec6f15",
+    url = "http://ftp.gnu.org/gnu/glpk/glpk-5.0.tar.gz",
 )
 
 http_archive(
@@ -63,14 +77,14 @@ http_archive(
     build_file = "//bazel:bliss.BUILD",
     patches = ["//bazel:bliss-0.73.patch"],
     sha256 = "f57bf32804140cad58b1240b804e0dbd68f7e6bf67eba8e0c0fa3a62fd7f0f84",
-    url = "http://www.tcs.hut.fi/Software/bliss/bliss-0.73.zip",
+    url = "https://github.com/google/or-tools/releases/download/v9.0/bliss-0.73.zip",
+    #url = "http://www.tcs.hut.fi/Software/bliss/bliss-0.73.zip",
 )
 
-http_archive(
+new_git_repository(
     name = "scip",
     build_file = "//bazel:scip.BUILD",
     patches = ["//bazel:scip.patch"],
-    sha256 = "033bf240298d3a1c92e8ddb7b452190e0af15df2dad7d24d0572f10ae8eec5aa",
-    url = "https://github.com/google/or-tools/releases/download/v7.7/scip-7.0.1.tgz",
+    commit = "6acb7222e1b871041445bee75fc05bd1bcaed089", # master from Jul 19, 2021
+    remote = "https://github.com/scipopt/scip.git",
 )
-

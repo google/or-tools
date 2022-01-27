@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,6 +19,7 @@
 #ifndef OR_TOOLS_SAT_SAT_SOLVER_H_
 #define OR_TOOLS_SAT_SAT_SOLVER_H_
 
+#include <cstdint>
 #include <functional>
 #include <limits>
 #include <memory>
@@ -33,7 +34,6 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/strong_vector.h"
 #include "ortools/base/timer.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/drat_proof_handler.h"
@@ -85,7 +85,7 @@ class SatSolver {
     const int num_vars = NumVariables();
 
     // We need to be able to encode the variable as a literal.
-    CHECK_LT(2 * num_vars, std::numeric_limits<int32>::max());
+    CHECK_LT(2 * num_vars, std::numeric_limits<int32_t>::max());
     SetNumVariables(num_vars + 1);
     return BooleanVariable(num_vars);
   }
@@ -363,14 +363,14 @@ class SatSolver {
   const VariablesAssignment& Assignment() const { return trail_->Assignment(); }
 
   // Some statistics since the creation of the solver.
-  int64 num_branches() const;
-  int64 num_failures() const;
-  int64 num_propagations() const;
+  int64_t num_branches() const;
+  int64_t num_failures() const;
+  int64_t num_propagations() const;
 
   // Note that we count the number of backtrack to level zero from a positive
   // level. Those can corresponds to actual restarts, or conflicts that learn
   // unit clauses or any other reason that trigger such backtrack.
-  int64 num_restarts() const;
+  int64_t num_restarts() const;
 
   // A deterministic number that should be correlated with the time spent in
   // the Solve() function. The order of magnitude should be close to the time
@@ -430,7 +430,7 @@ class SatSolver {
   // Simplifies the problem when new variables are assigned at level 0.
   void ProcessNewlyFixedVariables();
 
-  int64 NumFixedVariables() const {
+  int64_t NumFixedVariables() const {
     if (!decisions_.empty()) return decisions_[0].trail_index;
     CHECK_EQ(CurrentDecisionLevel(), 0);
     return trail_->Index();
@@ -739,28 +739,28 @@ class SatSolver {
 
   // Tracks various information about the solver progress.
   struct Counters {
-    int64 num_branches = 0;
-    int64 num_failures = 0;
-    int64 num_restarts = 0;
+    int64_t num_branches = 0;
+    int64_t num_failures = 0;
+    int64_t num_restarts = 0;
 
     // Minimization stats.
-    int64 num_minimizations = 0;
-    int64 num_literals_removed = 0;
+    int64_t num_minimizations = 0;
+    int64_t num_literals_removed = 0;
 
     // PB constraints.
-    int64 num_learned_pb_literals = 0;
+    int64_t num_learned_pb_literals = 0;
 
     // Clause learning /deletion stats.
-    int64 num_literals_learned = 0;
-    int64 num_literals_forgotten = 0;
-    int64 num_subsumed_clauses = 0;
+    int64_t num_literals_learned = 0;
+    int64_t num_literals_forgotten = 0;
+    int64_t num_subsumed_clauses = 0;
 
     // TryToMinimizeClause() stats.
-    int64 minimization_num_clauses = 0;
-    int64 minimization_num_decisions = 0;
-    int64 minimization_num_true = 0;
-    int64 minimization_num_subsumed = 0;
-    int64 minimization_num_removed_literals = 0;
+    int64_t minimization_num_clauses = 0;
+    int64_t minimization_num_decisions = 0;
+    int64_t minimization_num_true = 0;
+    int64_t minimization_num_subsumed = 0;
+    int64_t minimization_num_removed_literals = 0;
   };
   Counters counters_;
 
@@ -851,7 +851,8 @@ void MinimizeCore(SatSolver* solver, std::vector<Literal>* core);
 // ============================================================================
 
 inline std::function<void(Model*)> BooleanLinearConstraint(
-    int64 lower_bound, int64 upper_bound, std::vector<LiteralWithCoeff>* cst) {
+    int64_t lower_bound, int64_t upper_bound,
+    std::vector<LiteralWithCoeff>* cst) {
   return [=](Model* model) {
     model->GetOrCreate<SatSolver>()->AddLinearConstraint(
         /*use_lower_bound=*/true, Coefficient(lower_bound),
@@ -860,7 +861,7 @@ inline std::function<void(Model*)> BooleanLinearConstraint(
 }
 
 inline std::function<void(Model*)> CardinalityConstraint(
-    int64 lower_bound, int64 upper_bound,
+    int64_t lower_bound, int64_t upper_bound,
     const std::vector<Literal>& literals) {
   return [=](Model* model) {
     std::vector<LiteralWithCoeff> cst;
@@ -992,7 +993,7 @@ inline std::function<void(Model*)> ReifiedBoolLe(Literal a, Literal b,
 }
 
 // This checks that the variable is fixed.
-inline std::function<int64(const Model&)> Value(Literal l) {
+inline std::function<int64_t(const Model&)> Value(Literal l) {
   return [=](const Model& model) {
     const Trail* trail = model.Get<Trail>();
     CHECK(trail->Assignment().VariableIsAssigned(l.Variable()));
@@ -1001,7 +1002,7 @@ inline std::function<int64(const Model&)> Value(Literal l) {
 }
 
 // This checks that the variable is fixed.
-inline std::function<int64(const Model&)> Value(BooleanVariable b) {
+inline std::function<int64_t(const Model&)> Value(BooleanVariable b) {
   return [=](const Model& model) {
     const Trail* trail = model.Get<Trail>();
     CHECK(trail->Assignment().VariableIsAssigned(b));

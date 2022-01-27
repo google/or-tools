@@ -3,6 +3,7 @@
 
 # Channeling constraints
 
+https://developers.google.com/optimization/
 
 <!--ts-->
    * [Channeling constraints](#channeling-constraints)
@@ -17,7 +18,6 @@
          * [Java code](#java-code-1)
          * [C# code](#c-code-3)
 
-<!-- Added by: lperron, at: Tue Nov  3 17:33:07 CET 2020 -->
 
 <!--te-->
 
@@ -102,10 +102,12 @@ def ChannelingSampleSat():
 
   # Force the solver to follow the decision strategy exactly.
   solver.parameters.search_branching = cp_model.FIXED_SEARCH
+  # Enumerate all solutions.
+  solver.parameters.enumerate_all_solutions = True
 
   # Search and print out all solutions.
   solution_printer = VarArraySolutionPrinter([x, y, b])
-  solver.SearchForAllSolutions(model, solution_printer)
+  solver.Solve(model, solution_printer)
 
 
 ChannelingSampleSat()
@@ -138,7 +140,7 @@ void ChannelingSampleSat() {
 
   // Create our two half-reified constraints.
   // First, b implies (y == 10 - x).
-  cp_model.AddEquality(LinearExpr::Sum({x, y}), 10).OnlyEnforceIf(b);
+  cp_model.AddEquality(x + y, 10).OnlyEnforceIf(b);
   // Second, not(b) implies y == 0.
   cp_model.AddEquality(y, 0).OnlyEnforceIf(Not(b));
 
@@ -219,9 +221,11 @@ public class ChannelingSampleSat {
 
     // Force the solver to follow the decision strategy exactly.
     solver.getParameters().setSearchBranching(SatParameters.SearchBranching.FIXED_SEARCH);
+    // Tell the solver to enumerate all solutions.
+    solver.getParameters().setEnumerateAllSolutions(true);
 
     // Solve the problem with the printer callback.
-    solver.searchAllSolutions(
+    solver.solve(
         model,
         new CpSolverSolutionCallback() {
           public CpSolverSolutionCallback init(IntVar[] variables) {
@@ -303,10 +307,11 @@ public class ChannelingSampleSat
         CpSolver solver = new CpSolver();
 
         // Force solver to follow the decision strategy exactly.
-        solver.StringParameters = "search_branching:FIXED_SEARCH";
+        // Tell the solver to search for all solutions.
+        solver.StringParameters = "search_branching:FIXED_SEARCH, enumerate_all_solutions:true";
 
         VarArraySolutionPrinter cb = new VarArraySolutionPrinter(new IntVar[] { x, y, b });
-        solver.SearchAllSolutions(model, cb);
+        solver.Solve(model, cb);
     }
 }
 ```
@@ -462,7 +467,7 @@ void BinpackingProblemSat() {
   for (int b = 0; b < kNumBins; ++b) {
     LinearExpr expr;
     for (int i = 0; i < num_items; ++i) {
-      expr.AddTerm(x[i][b], items[i][0]);
+      expr += x[i][b] * items[i][0];
     }
     cp_model.AddEquality(expr, load[b]);
   }
@@ -483,7 +488,7 @@ void BinpackingProblemSat() {
   }
 
   // Maximize sum of slacks.
-  cp_model.Maximize(LinearExpr::BooleanSum(slacks));
+  cp_model.Maximize(LinearExpr::Sum(slacks));
 
   // Solving part.
   const CpSolverResponse response = Solve(cp_model.Build());

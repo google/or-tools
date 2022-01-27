@@ -48,6 +48,17 @@
   <url>http://github.com/google/or-tools/issues</url>
 </issueManagement>
 
+<distributionManagement>
+  <snapshotRepository>
+    <id>ossrh</id>
+    <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+  </snapshotRepository>
+  <repository>
+    <id>ossrh</id>
+    <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+  </repository>
+</distributionManagement>
+
 <properties>
   <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   <exec.mainClass>@JAVA_MAIN_CLASS@</exec.mainClass>
@@ -59,9 +70,14 @@
   <dependency>
     <groupId>@JAVA_PACKAGE@</groupId>
     <artifactId>@JAVA_PROJECT@</artifactId>
-    <version>[@PROJECT_VERSION_MAJOR@.@PROJECT_VERSION_MINOR@,)</version>
+    <version>[@PROJECT_VERSION_MAJOR@.@PROJECT_VERSION_MINOR@.@PROJECT_VERSION_PATCH@,)</version>
     <type>jar</type>
     <scope>compile</scope>
+  </dependency>
+  <dependency>
+    <groupId>com.google.guava</groupId>
+    <artifactId>guava</artifactId>
+    <version>30.1.1-jre</version>
   </dependency>
 </dependencies>
 
@@ -95,6 +111,20 @@
           <id>attach-javadocs</id>
           <goals>
             <goal>jar</goal>
+          </goals>
+        </execution>
+      </executions>
+    </plugin>
+    <plugin>
+      <groupId>org.apache.maven.plugins</groupId>
+      <artifactId>maven-gpg-plugin</artifactId>
+      <version>1.6</version>
+      <executions>
+        <execution>
+          <id>sign-artifacts</id>
+          <phase>verify</phase>
+          <goals>
+            <goal>sign</goal>
           </goals>
         </execution>
       </executions>

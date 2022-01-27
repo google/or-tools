@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -316,16 +316,22 @@ inline void ChangeSign(StrictITIVector<IndexType, Fractional>* data) {
 //
 // The numerical accuracy suffers however. If X is 1e100 and SumWithout(X)
 // should be 1e-100, then the value actually returned by SumWithout(X) is likely
-// to be wrong (by up to std::numeric_limits<Fractional>::epsilon() ^ 2).
+// to be wrong.
 template <bool supported_infinity_is_positive>
 class SumWithOneMissing {
  public:
   SumWithOneMissing() : num_infinities_(0), sum_() {}
 
   void Add(Fractional x) {
+    DCHECK(!std::isnan(x));
     if (num_infinities_ > 1) return;
     if (IsFinite(x)) {
       sum_.Add(x);
+
+      // If we overflow, then there is not much we can do. This is needed
+      // because KahanSum seems to give nan if we try to add stuff to an
+      // infinite sum.
+      if (!IsFinite(sum_.Value())) num_infinities_ = 2;
       return;
     }
     DCHECK_EQ(Infinity(), x);
@@ -345,6 +351,18 @@ class SumWithOneMissing {
     DCHECK_EQ(Infinity(), x);
     if (num_infinities_ > 1) return Infinity();
     return sum_.Value();
+  }
+
+  // When the term we substract has a big magnitude, the SumWithout() can be
+  // quite imprecise. On can use these version to have more defensive bounds.
+  Fractional SumWithoutLb(Fractional c) const {
+    if (!IsFinite(c)) return SumWithout(c);
+    return SumWithout(c) - std::abs(c) * 1e-12;
+  }
+
+  Fractional SumWithoutUb(Fractional c) const {
+    if (!IsFinite(c)) return SumWithout(c);
+    return SumWithout(c) + std::abs(c) * 1e-12;
   }
 
  private:

@@ -1,4 +1,5 @@
-# Copyright 2010-2018 Google LLC
+#!/usr/bin/env python3
+# Copyright 2010-2021 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -12,6 +13,7 @@
 # limitations under the License.
 """Solves the Hidato problem with the CP-SAT solver."""
 
+from absl import app
 from ortools.sat.python import visualization
 from ortools.sat.python import cp_model
 
@@ -187,5 +189,10 @@ def solve_hidato(puzzle, index):
             print('  - wall time : %f s' % solver.WallTime())
 
 
-for pb in range(1, 7):
-    solve_hidato(build_puzzle(pb), pb)
+def main(_):
+    for pb in range(1, 7):
+        solve_hidato(build_puzzle(pb), pb)
+
+
+if __name__ == '__main__':
+    app.run(main)

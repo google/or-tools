@@ -1,4 +1,5 @@
-# Copyright 2010-2018 Google LLC
+#!/usr/bin/env python3
+# Copyright 2010-2021 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -13,12 +14,93 @@
 """ Various calls to CP api from python to verify they work."""
 
 import unittest
-
 from ortools.constraint_solver import pywrapcp
 from ortools.constraint_solver import search_limit_pb2
 
 
-class TestCPMethods(unittest.TestCase):
+class TestIntVarContainerAPI(unittest.TestCase):
+
+    def test_contains(self):
+        self.assertTrue(
+            hasattr(pywrapcp.IntVarContainer, 'Contains'),
+            dir(pywrapcp.IntVarContainer))
+
+    def test_element(self):
+        self.assertTrue(
+            hasattr(pywrapcp.IntVarContainer, 'Element'),
+            dir(pywrapcp.IntVarContainer))
+
+    def test_size(self):
+        self.assertTrue(
+            hasattr(pywrapcp.IntVarContainer, 'Size'), dir(pywrapcp.IntVarContainer))
+
+    def test_store(self):
+        self.assertTrue(
+            hasattr(pywrapcp.IntVarContainer, 'Store'), dir(pywrapcp.IntVarContainer))
+
+    def test_restore(self):
+        self.assertTrue(
+            hasattr(pywrapcp.IntVarContainer, 'Restore'),
+            dir(pywrapcp.IntVarContainer))
+
+
+class TestIntervalVarContainerAPI(unittest.TestCase):
+
+    def test_contains(self):
+        self.assertTrue(
+            hasattr(pywrapcp.IntervalVarContainer, 'Contains'),
+            dir(pywrapcp.IntervalVarContainer))
+
+    def test_element(self):
+        self.assertTrue(
+            hasattr(pywrapcp.IntervalVarContainer, 'Element'),
+            dir(pywrapcp.IntervalVarContainer))
+
+    def test_size(self):
+        self.assertTrue(
+            hasattr(pywrapcp.IntervalVarContainer, 'Size'),
+            dir(pywrapcp.IntervalVarContainer))
+
+    def test_store(self):
+        self.assertTrue(
+            hasattr(pywrapcp.IntervalVarContainer, 'Store'),
+            dir(pywrapcp.IntervalVarContainer))
+
+    def test_restore(self):
+        self.assertTrue(
+            hasattr(pywrapcp.IntervalVarContainer, 'Restore'),
+            dir(pywrapcp.IntervalVarContainer))
+
+
+class TestSequenceVarContainerAPI(unittest.TestCase):
+
+    def test_contains(self):
+        self.assertTrue(
+            hasattr(pywrapcp.SequenceVarContainer, 'Contains'),
+            dir(pywrapcp.SequenceVarContainer))
+
+    def test_element(self):
+        self.assertTrue(
+            hasattr(pywrapcp.SequenceVarContainer, 'Element'),
+            dir(pywrapcp.SequenceVarContainer))
+
+    def test_size(self):
+        self.assertTrue(
+            hasattr(pywrapcp.SequenceVarContainer, 'Size'),
+            dir(pywrapcp.SequenceVarContainer))
+
+    def test_store(self):
+        self.assertTrue(
+            hasattr(pywrapcp.SequenceVarContainer, 'Store'),
+            dir(pywrapcp.SequenceVarContainer))
+
+    def test_restore(self):
+        self.assertTrue(
+            hasattr(pywrapcp.SequenceVarContainer, 'Restore'),
+            dir(pywrapcp.SequenceVarContainer))
+
+class CPSolverTest(unittest.TestCase):
+
     def test_member(self):
         solver = pywrapcp.Solver('test member')
         x = solver.IntVar(1, 10, 'x')
@@ -76,8 +158,38 @@ class TestCPMethods(unittest.TestCase):
         #print(repr(proto))
         #print(str(proto))
 
+    def test_size_1_var(self):
+        solver = pywrapcp.Solver('test_size_1_var')
+        x = solver.IntVar([0], 'x')
 
-class SearchMonitorTest(pywrapcp.SearchMonitor):
+
+    def test_cumulative_api(self):
+        solver = pywrapcp.Solver('Problem')
+
+        #Vars
+        S = [
+            solver.FixedDurationIntervalVar(0, 10, 5, False, "S_%s" % a)
+            for a in range(10)
+        ]
+        C = solver.IntVar(2, 5)
+        D = [a % 3 + 2 for a in range(10)]
+        solver.Add(solver.Cumulative(S, D, C, "cumul"))
+
+    def test_search_alldiff(self):
+        solver = pywrapcp.Solver('test_search_alldiff')
+        in_pos = [solver.IntVar(0, 7, "%i" % i) for i in range(8)]
+        solver.Add(solver.AllDifferent(in_pos))
+        aux_phase = solver.Phase(in_pos, solver.CHOOSE_LOWEST_MIN,
+                                 solver.ASSIGN_MAX_VALUE)
+        collector = solver.FirstSolutionCollector()
+        for i in range(8):
+            collector.Add(in_pos[i])
+        solver.Solve(aux_phase, [collector])
+        for i in range(8):
+            print(collector.Value(0, in_pos[i]))
+
+
+class CustomSearchMonitor(pywrapcp.SearchMonitor):
     def __init__(self, solver, nexts):
         print('Build')
         pywrapcp.SearchMonitor.__init__(self, solver)
@@ -92,8 +204,8 @@ class SearchMonitorTest(pywrapcp.SearchMonitor):
         print(self._nexts)
 
 
-class TestSearchMonitor(unittest.TestCase):
-    def runTest(self):
+class SearchMonitorTest(unittest.TestCase):
+    def test_search_monitor(self):
         print('test_search_monitor')
         solver = pywrapcp.Solver('test search monitor')
         x = solver.IntVar(1, 10, 'x')
@@ -101,11 +213,11 @@ class TestSearchMonitor(unittest.TestCase):
         solver.Add(ct)
         db = solver.Phase([x], solver.CHOOSE_FIRST_UNBOUND,
                           solver.ASSIGN_MIN_VALUE)
-        monitor = SearchMonitorTest(solver, x)
+        monitor = CustomSearchMonitor(solver, x)
         solver.Solve(db, monitor)
 
 
-class DemonTest(pywrapcp.PyDemon):
+class CustomDemon(pywrapcp.PyDemon):
     def __init__(self, x):
         pywrapcp.Demon.__init__(self)
         self._x = x
@@ -115,16 +227,16 @@ class DemonTest(pywrapcp.PyDemon):
         print('in Run(), saw ' + str(self._x))
 
 
-class TestDemon(unittest.TestCase):
-    def runTest(self):
+class DemonTest(unittest.TestCase):
+    def test_demon(self):
         print('test_demon')
         solver = pywrapcp.Solver('test export')
         x = solver.IntVar(1, 10, 'x')
-        demon = DemonTest(x)
+        demon = CustomDemon(x)
         demon.Run(solver)
 
 
-class ConstraintTest(pywrapcp.PyConstraint):
+class CustomConstraint(pywrapcp.PyConstraint):
     def __init__(self, solver, x):
         pywrapcp.Constraint.__init__(self, solver)
         self._x = x
@@ -132,7 +244,7 @@ class ConstraintTest(pywrapcp.PyConstraint):
 
     def Post(self):
         print('in Post()')
-        self._demon = DemonTest(self._x)
+        self._demon = CustomDemon(self._x)
         self._x.WhenBound(self._demon)
         print('out of Post()')
 
@@ -143,17 +255,7 @@ class ConstraintTest(pywrapcp.PyConstraint):
         print('out of InitialPropagate()')
 
     def DebugString(self):
-        return ('ConstraintTest')
-
-
-def test_constraint():
-    solver = pywrapcp.Solver('test export')
-    x = solver.IntVar(1, 10, 'x')
-    myct = ConstraintTest(solver, x)
-    solver.Add(myct)
-    db = solver.Phase([x], solver.CHOOSE_FIRST_UNBOUND,
-                      solver.ASSIGN_MIN_VALUE)
-    solver.Solve(db)
+        return ('CustomConstraint')
 
 
 class InitialPropagateDemon(pywrapcp.PyDemon):
@@ -183,24 +285,6 @@ class DumbGreaterOrEqualToFive(pywrapcp.PyConstraint):
                 print('Accept %d' % self._x.Value())
 
 
-def test_failing_constraint():
-    solver = pywrapcp.Solver('test export')
-    x = solver.IntVar(1, 10, 'x')
-    myct = DumbGreaterOrEqualToFive(solver, x)
-    solver.Add(myct)
-    db = solver.Phase([x], solver.CHOOSE_FIRST_UNBOUND,
-                      solver.ASSIGN_MIN_VALUE)
-    solver.Solve(db)
-
-
-def test_domain_iterator():
-    print('test_domain_iterator')
-    solver = pywrapcp.Solver('test_domain_iterator')
-    x = solver.IntVar([1, 2, 4, 6], 'x')
-    for i in x.DomainIterator():
-        print(i)
-
-
 class WatchDomain(pywrapcp.PyDemon):
     def __init__(self, x):
         pywrapcp.Demon.__init__(self)
@@ -211,7 +295,7 @@ class WatchDomain(pywrapcp.PyDemon):
             print('Removed %d' % i)
 
 
-class HoleConstraintTest(pywrapcp.PyConstraint):
+class HoleConstraint(pywrapcp.PyConstraint):
     def __init__(self, solver, x):
         pywrapcp.Constraint.__init__(self, solver)
         self._x = x
@@ -222,17 +306,6 @@ class HoleConstraintTest(pywrapcp.PyConstraint):
 
     def InitialPropagate(self):
         self._x.RemoveValue(5)
-
-
-def test_hole_iterator():
-    print('test_hole_iterator')
-    solver = pywrapcp.Solver('test export')
-    x = solver.IntVar(1, 10, 'x')
-    myct = HoleConstraintTest(solver, x)
-    solver.Add(myct)
-    db = solver.Phase([x], solver.CHOOSE_FIRST_UNBOUND,
-                      solver.ASSIGN_MIN_VALUE)
-    solver.Solve(db)
 
 
 class BinarySum(pywrapcp.PyConstraint):
@@ -256,39 +329,57 @@ class BinarySum(pywrapcp.PyConstraint):
         self._y.SetRange(self._z.Min() - self._x.Max(),
                          self._z.Max() - self._x.Min())
 
+class ConstraintTest(unittest.TestCase):
+    def test_constraint(self):
+        solver = pywrapcp.Solver('test export')
+        x = solver.IntVar(1, 10, 'x')
+        myct = CustomConstraint(solver, x)
+        solver.Add(myct)
+        db = solver.Phase([x], solver.CHOOSE_FIRST_UNBOUND,
+                          solver.ASSIGN_MIN_VALUE)
+        solver.Solve(db)
 
-def test_sum_constraint():
-    print('test_sum_constraint')
-    solver = pywrapcp.Solver('test_sum_constraint')
-    x = solver.IntVar(1, 5, 'x')
-    y = solver.IntVar(1, 5, 'y')
-    z = solver.IntVar(1, 5, 'z')
-    binary_sum = BinarySum(solver, x, y, z)
-    solver.Add(binary_sum)
-    db = solver.Phase([x, y, z], solver.CHOOSE_FIRST_UNBOUND,
-                      solver.ASSIGN_MIN_VALUE)
-    solver.NewSearch(db)
-    while solver.NextSolution():
-        print('%d + %d == %d' % (x.Value(), y.Value(), z.Value()))
-    solver.EndSearch()
-
-
-def test_size_1_var():
-    solver = pywrapcp.Solver('test_size_1_var')
-    x = solver.IntVar([0], 'x')
+    def test_failing_constraint(self):
+        solver = pywrapcp.Solver('test export')
+        x = solver.IntVar(1, 10, 'x')
+        myct = DumbGreaterOrEqualToFive(solver, x)
+        solver.Add(myct)
+        db = solver.Phase([x], solver.CHOOSE_FIRST_UNBOUND,
+                          solver.ASSIGN_MIN_VALUE)
+        solver.Solve(db)
 
 
-def test_cumulative_api():
-    solver = pywrapcp.Solver('Problem')
+    def test_domain_iterator(self):
+        print('test_domain_iterator')
+        solver = pywrapcp.Solver('test_domain_iterator')
+        x = solver.IntVar([1, 2, 4, 6], 'x')
+        for i in x.DomainIterator():
+            print(i)
 
-    #Vars
-    S = [
-        solver.FixedDurationIntervalVar(0, 10, 5, False, "S_%s" % a)
-        for a in range(10)
-    ]
-    C = solver.IntVar(2, 5)
-    D = [a % 3 + 2 for a in range(10)]
-    solver.Add(solver.Cumulative(S, D, C, "cumul"))
+    def test_hole_iterator(self):
+        print('test_hole_iterator')
+        solver = pywrapcp.Solver('test export')
+        x = solver.IntVar(1, 10, 'x')
+        myct = HoleConstraint(solver, x)
+        solver.Add(myct)
+        db = solver.Phase([x], solver.CHOOSE_FIRST_UNBOUND,
+                          solver.ASSIGN_MIN_VALUE)
+        solver.Solve(db)
+
+    def test_sum_constraint(self):
+        print('test_sum_constraint')
+        solver = pywrapcp.Solver('test_sum_constraint')
+        x = solver.IntVar(1, 5, 'x')
+        y = solver.IntVar(1, 5, 'y')
+        z = solver.IntVar(1, 5, 'z')
+        binary_sum = BinarySum(solver, x, y, z)
+        solver.Add(binary_sum)
+        db = solver.Phase([x, y, z], solver.CHOOSE_FIRST_UNBOUND,
+                          solver.ASSIGN_MIN_VALUE)
+        solver.NewSearch(db)
+        while solver.NextSolution():
+            print('%d + %d == %d' % (x.Value(), y.Value(), z.Value()))
+        solver.EndSearch()
 
 
 class CustomDecisionBuilder(pywrapcp.PyDecisionBuilder):
@@ -302,12 +393,6 @@ class CustomDecisionBuilder(pywrapcp.PyDecisionBuilder):
     def DebugString(self):
         return 'CustomDecisionBuilder'
 
-
-def test_custom_decision_builder():
-    solver = pywrapcp.Solver('test_custom_decision_builder')
-    db = CustomDecisionBuilder()
-    print(str(db))
-    solver.Solve(db)
 
 
 class CustomDecision(pywrapcp.PyDecision):
@@ -344,46 +429,18 @@ class CustomDecisionBuilderCustomDecision(pywrapcp.PyDecisionBuilder):
         return 'CustomDecisionBuilderCustomDecision'
 
 
-def test_custom_decision():
-    solver = pywrapcp.Solver('test_custom_decision')
-    db = CustomDecisionBuilderCustomDecision()
-    print(str(db))
-    solver.Solve(db)
+class DecisionTest(unittest.TestCase):
+    def test_custom_decision_builder(self):
+        solver = pywrapcp.Solver('test_custom_decision_builder')
+        db = CustomDecisionBuilder()
+        print(str(db))
+        solver.Solve(db)
 
-
-def test_search_alldiff():
-    solver = pywrapcp.Solver('test_search_alldiff')
-    in_pos = [solver.IntVar(0, 7, "%i" % i) for i in range(8)]
-    solver.Add(solver.AllDifferent(in_pos))
-    aux_phase = solver.Phase(in_pos, solver.CHOOSE_LOWEST_MIN,
-                             solver.ASSIGN_MAX_VALUE)
-    collector = solver.FirstSolutionCollector()
-    for i in range(8):
-        collector.Add(in_pos[i])
-    solver.Solve(aux_phase, [collector])
-    for i in range(8):
-        print(collector.Value(0, in_pos[i]))
-
-
-def main():
-    test_member()
-    test_sparse_var()
-    test_modulo()
-    test_modulo2()
-    #  test_limit()
-    #  test_export()
-    test_search_monitor()
-    test_demon()
-    test_failing_constraint()
-    test_constraint()
-    test_domain_iterator()
-    test_hole_iterator()
-    test_sum_constraint()
-    test_size_1_var()
-    test_cumulative_api()
-    test_custom_decision_builder()
-    test_custom_decision()
-    test_search_alldiff()
+    def test_custom_decision(self):
+        solver = pywrapcp.Solver('test_custom_decision')
+        db = CustomDecisionBuilderCustomDecision()
+        print(str(db))
+        solver.Solve(db)
 
 
 if __name__ == '__main__':

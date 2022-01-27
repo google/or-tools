@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// [START program]
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
@@ -20,8 +21,8 @@ import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.IntVar;
 
 /** Solves a problem with a time limit. */
-public class SolveWithTimeLimitSampleSat {
-  public static void main(String[] args) throws Exception {
+public final class SolveWithTimeLimitSampleSat {
+  public static void main(String[] args) {
     Loader.loadNativeLibraries();
     // Create the model.
     CpModel model = new CpModel();
@@ -45,4 +46,7 @@ public class SolveWithTimeLimitSampleSat {
       System.out.println("z = " + solver.value(z));
     }
   }
+
+  private SolveWithTimeLimitSampleSat() {}
 }
+// [END program]

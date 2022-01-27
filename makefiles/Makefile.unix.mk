@@ -17,7 +17,9 @@ FZ_EX_DIR  = $(OR_ROOT)examples/flatzinc
 FZ_EX_PATH = $(subst /,$S,$(FZ_EX_DIR))
 # C++ relevant directory
 CC_EX_DIR  = $(OR_ROOT)examples/cpp
+CC_GEN_DIR  = $(GEN_DIR)/examples/cpp
 CC_EX_PATH = $(subst /,$S,$(CC_EX_DIR))
+CC_GEN_PATH = $(subst /,$S,$(CC_GEN_DIR))
 # Python relevant directory
 PYTHON_EX_DIR  = $(OR_ROOT)examples/python
 PYTHON_EX_PATH = $(subst /,$S,$(PYTHON_EX_DIR))
@@ -26,7 +28,6 @@ CLASS_DIR = $(OR_ROOT)classes
 JAVA_EX_DIR  = $(OR_ROOT)examples/java
 JAVA_EX_PATH = $(subst /,$S,$(JAVA_EX_DIR))
 # .Net relevant directory
-PACKAGE_DIR = $(OR_ROOT)packages
 DOTNET_EX_DIR  = $(OR_ROOT)examples/dotnet
 DOTNET_EX_PATH = $(subst /,$S,$(DOTNET_EX_DIR))
 # Contrib examples directory
@@ -187,6 +188,7 @@ ifeq ($(PLATFORM),MACOSX)
   endif
   SYS_LNK =
   SET_COMPILER = CXX="$(CCC)"
+  SET_COIN_OPT = OPT_CXXFLAGS="-O1 -DNDEBUG" OPT_CFLAGS="-O1 -DNDEBUG"
   JAVA_INC = -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/darwin
   JAVAC_BIN = $(shell $(WHICH) $(JAVA_HOME)/bin/javac)
   JAVA_BIN = $(shell $(WHICH) $(JAVA_HOME)/bin/java)
@@ -220,7 +222,7 @@ DEPENDENCIES_INC = -I$(INC_DIR) -I$(GEN_DIR) \
  -Wno-deprecated -DUSE_GLOP -DUSE_BOP \
  $(GLPK_INC) $(CPLEX_INC) $(XPRESS_INC)
 
-CFLAGS = $(DEBUG) $(DEPENDENCIES_INC) -DOR_TOOLS_MAJOR=$(OR_TOOLS_MAJOR) -DOR_TOOLS_MINOR=$(OR_TOOLS_MINOR)
+CFLAGS = $(DEBUG) $(DEPENDENCIES_INC) -DOR_TOOLS_MAJOR=$(OR_TOOLS_MAJOR) -DOR_TOOLS_MINOR=$(OR_TOOLS_MINOR) -DOR_TOOLS_PATCH=$(GIT_REVISION)
 JNIFLAGS = $(JNIDEBUG) $(DEPENDENCIES_INC)
 LDFLAGS += $(ZLIB_LNK) $(SYS_LNK) $(LINK_FLAGS)
 DEPENDENCIES_LNK = $(GLPK_LNK) $(CPLEX_LNK) $(XPRESS_LNK)

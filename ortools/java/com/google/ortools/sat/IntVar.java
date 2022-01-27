@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -27,6 +27,13 @@ public final class IntVar implements Literal, LinearExpr {
     for (long b : domain.flattenedIntervals()) {
       this.varBuilder.addDomain(b);
     }
+    this.negation_ = null;
+  }
+
+  IntVar(CpModelProto.Builder builder, int index) {
+    this.modelBuilder = builder;
+    this.variableIndex = index;
+    this.varBuilder = modelBuilder.getVariablesBuilder(index);
     this.negation_ = null;
   }
 
@@ -67,6 +74,11 @@ public final class IntVar implements Literal, LinearExpr {
   public long getCoefficient(int index) {
     assert (index == 0);
     return 1;
+  }
+
+  @Override
+  public long getOffset() {
+    return 0;
   }
 
   /** Returns a short string describing the variable. */
@@ -110,7 +122,7 @@ public final class IntVar implements Literal, LinearExpr {
 
   /** Returns the domain of the variable. */
   public Domain getDomain() {
-    return SatHelper.variableDomain(varBuilder.build());
+    return CpSatHelper.variableDomain(varBuilder.build());
   }
 
   private final CpModelProto.Builder modelBuilder;

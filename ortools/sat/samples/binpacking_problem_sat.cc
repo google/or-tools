@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -54,7 +54,7 @@ void BinpackingProblemSat() {
   for (int b = 0; b < kNumBins; ++b) {
     LinearExpr expr;
     for (int i = 0; i < num_items; ++i) {
-      expr.AddTerm(x[i][b], items[i][0]);
+      expr += x[i][b] * items[i][0];
     }
     cp_model.AddEquality(expr, load[b]);
   }
@@ -75,7 +75,7 @@ void BinpackingProblemSat() {
   }
 
   // Maximize sum of slacks.
-  cp_model.Maximize(LinearExpr::BooleanSum(slacks));
+  cp_model.Maximize(LinearExpr::Sum(slacks));
 
   // Solving part.
   const CpSolverResponse response = Solve(cp_model.Build());

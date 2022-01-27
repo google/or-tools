@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,22 +16,25 @@ package com.google.ortools.sat;
 import com.google.ortools.sat.ConstraintProto;
 import com.google.ortools.sat.CpModelProto;
 import com.google.ortools.sat.IntervalConstraintProto;
+import com.google.ortools.sat.LinearExpressionProto;
 
 /** An interval variable. This class must be constructed from the CpModel class. */
 public final class IntervalVar {
-  IntervalVar(
-      CpModelProto.Builder builder, int startIndex, int sizeIndex, int endIndex, String name) {
+  IntervalVar(CpModelProto.Builder builder, LinearExpressionProto.Builder startBuilder,
+      LinearExpressionProto.Builder sizeBuilder, LinearExpressionProto.Builder endBuilder,
+      String name) {
     this.modelBuilder = builder;
     this.constraintIndex = modelBuilder.getConstraintsCount();
     ConstraintProto.Builder ct = modelBuilder.addConstraintsBuilder();
     ct.setName(name);
     this.intervalBuilder = ct.getIntervalBuilder();
-    this.intervalBuilder.setStart(startIndex);
-    this.intervalBuilder.setSize(sizeIndex);
-    this.intervalBuilder.setEnd(endIndex);
+    this.intervalBuilder.setStart(startBuilder);
+    this.intervalBuilder.setSize(sizeBuilder);
+    this.intervalBuilder.setEnd(endBuilder);
   }
 
-  IntervalVar(CpModelProto.Builder builder, int startIndex, int sizeIndex, int endIndex,
+  IntervalVar(CpModelProto.Builder builder, LinearExpressionProto.Builder startBuilder,
+      LinearExpressionProto.Builder sizeBuilder, LinearExpressionProto.Builder endBuilder,
       int isPresentIndex, String name) {
     this.modelBuilder = builder;
     this.constraintIndex = modelBuilder.getConstraintsCount();
@@ -39,9 +42,9 @@ public final class IntervalVar {
     ct.setName(name);
     ct.addEnforcementLiteral(isPresentIndex);
     this.intervalBuilder = ct.getIntervalBuilder();
-    this.intervalBuilder.setStart(startIndex);
-    this.intervalBuilder.setSize(sizeIndex);
-    this.intervalBuilder.setEnd(endIndex);
+    this.intervalBuilder.setStart(startBuilder);
+    this.intervalBuilder.setSize(sizeBuilder);
+    this.intervalBuilder.setEnd(endBuilder);
   }
 
   @Override
@@ -62,6 +65,21 @@ public final class IntervalVar {
   /** Returns the name passed in the constructor. */
   public String getName() {
     return modelBuilder.getConstraints(constraintIndex).getName();
+  }
+
+  /** Returns the start expression. */
+  public LinearExpr getStartExpr() {
+    return LinearExpr.rebuildFromLinearExpressionProto(intervalBuilder.getStart(), modelBuilder);
+  }
+
+  /** Returns the size expression. */
+  public LinearExpr getSizeExpr() {
+    return LinearExpr.rebuildFromLinearExpressionProto(intervalBuilder.getSize(), modelBuilder);
+  }
+
+  /** Returns the size expression. */
+  public LinearExpr getEndExpr() {
+    return LinearExpr.rebuildFromLinearExpressionProto(intervalBuilder.getEnd(), modelBuilder);
   }
 
   private final CpModelProto.Builder modelBuilder;

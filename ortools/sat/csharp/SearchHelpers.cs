@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -17,102 +17,102 @@ using System.Collections.Generic;
 namespace Google.OrTools.Sat
 {
 
-    public class CpSolverSolutionCallback : SolutionCallback
+public class CpSolverSolutionCallback : SolutionCallback
+{
+    public long Value(LinearExpr e)
     {
-        public long Value(LinearExpr e)
+        List<LinearExpr> exprs = new List<LinearExpr>();
+        List<long> coeffs = new List<long>();
+        exprs.Add(e);
+        coeffs.Add(1L);
+        long constant = 0;
+
+        while (exprs.Count > 0)
         {
-            List<LinearExpr> exprs = new List<LinearExpr>();
-            List<long> coeffs = new List<long>();
-            exprs.Add(e);
-            coeffs.Add(1L);
-            long constant = 0;
+            LinearExpr expr = exprs[0];
+            exprs.RemoveAt(0);
+            long coeff = coeffs[0];
+            coeffs.RemoveAt(0);
+            if (coeff == 0)
+                continue;
 
-            while (exprs.Count > 0)
+            if (expr is ProductCst)
             {
-                LinearExpr expr = exprs[0];
-                exprs.RemoveAt(0);
-                long coeff = coeffs[0];
-                coeffs.RemoveAt(0);
-                if (coeff == 0)
-                    continue;
-
-                if (expr is ProductCst)
+                ProductCst p = (ProductCst)expr;
+                if (p.Coeff != 0)
                 {
-                    ProductCst p = (ProductCst)expr;
-                    if (p.Coeff != 0)
-                    {
-                        exprs.Add(p.Expr);
-                        coeffs.Add(p.Coeff * coeff);
-                    }
-                }
-                else if (expr is SumArray)
-                {
-                    SumArray a = (SumArray)expr;
-                    constant += coeff * a.Constant;
-                    foreach (LinearExpr sub in a.Expressions)
-                    {
-                        exprs.Add(sub);
-                        coeffs.Add(coeff);
-                    }
-                }
-                else if (expr is IntVar)
-                {
-                    int index = expr.Index;
-                    long value = SolutionIntegerValue(index);
-                    constant += coeff * value;
-                }
-                else if (expr is NotBooleanVariable)
-                {
-                    throw new ArgumentException("Cannot evaluate a literal in an integer expression.");
-                }
-                else
-                {
-                    throw new ArgumentException("Cannot evaluate '" + expr.ToString() + "' in an integer expression");
+                    exprs.Add(p.Expr);
+                    coeffs.Add(p.Coeff * coeff);
                 }
             }
-            return constant;
-        }
-
-        public Boolean BooleanValue(ILiteral literal)
-        {
-            if (literal is IntVar || literal is NotBooleanVariable)
+            else if (expr is SumArray)
             {
-                int index = literal.GetIndex();
-                return SolutionBooleanValue(index);
+                SumArray a = (SumArray)expr;
+                constant += coeff * a.Offset;
+                foreach (LinearExpr sub in a.Expressions)
+                {
+                    exprs.Add(sub);
+                    coeffs.Add(coeff);
+                }
+            }
+            else if (expr is IntVar)
+            {
+                int index = expr.Index;
+                long value = SolutionIntegerValue(index);
+                constant += coeff * value;
+            }
+            else if (expr is NotBooleanVariable)
+            {
+                throw new ArgumentException("Cannot evaluate a literal in an integer expression.");
             }
             else
             {
-                throw new ArgumentException("Cannot evaluate '" + literal.ToString() + "' as a boolean literal");
+                throw new ArgumentException("Cannot evaluate '" + expr.ToString() + "' in an integer expression");
             }
         }
+        return constant;
     }
 
-    public class ObjectiveSolutionPrinter : CpSolverSolutionCallback
+    public Boolean BooleanValue(ILiteral literal)
     {
-        private DateTime _startTime;
-        private int _solutionCount;
-
-        public ObjectiveSolutionPrinter()
+        if (literal is IntVar || literal is NotBooleanVariable)
         {
-            _startTime = DateTime.Now;
+            int index = literal.GetIndex();
+            return SolutionBooleanValue(index);
         }
-
-        public override void OnSolutionCallback()
+        else
         {
-            var currentTime = DateTime.Now;
-            var objective = ObjectiveValue();
-            var objectiveBound = BestObjectiveBound();
-            var objLb = Math.Min(objective, objectiveBound);
-            var objUb = Math.Max(objective, objectiveBound);
-            var time = currentTime - _startTime;
-
-            Console.WriteLine(
-                value: $"Solution {_solutionCount}, time = {time.TotalSeconds} s, objective = [{objLb}, {objUb}]");
-
-            _solutionCount++;
+            throw new ArgumentException("Cannot evaluate '" + literal.ToString() + "' as a boolean literal");
         }
-
-        public int solutionCount() => _solutionCount;
     }
+}
+
+public class ObjectiveSolutionPrinter : CpSolverSolutionCallback
+{
+    private DateTime _startTime;
+    private int _solutionCount;
+
+    public ObjectiveSolutionPrinter()
+    {
+        _startTime = DateTime.Now;
+    }
+
+    public override void OnSolutionCallback()
+    {
+        var currentTime = DateTime.Now;
+        var objective = ObjectiveValue();
+        var objectiveBound = BestObjectiveBound();
+        var objLb = Math.Min(objective, objectiveBound);
+        var objUb = Math.Max(objective, objectiveBound);
+        var time = currentTime - _startTime;
+
+        Console.WriteLine(
+            value: $"Solution {_solutionCount}, time = {time.TotalSeconds} s, objective = [{objLb}, {objUb}]");
+
+        _solutionCount++;
+    }
+
+    public int solutionCount() => _solutionCount;
+}
 
 } // namespace Google.OrTools.Sat

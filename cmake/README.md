@@ -1,48 +1,47 @@
 # OR-Tools CMake Build Instructions
+| OS       | C++   | Python   | Java   | .NET   |
+|:-------- | :---: | :------: | :----: | :----: |
+| Linux    | [![Status][linux_cpp_svg]][linux_cpp_link] | [![Status][linux_python_svg]][linux_python_link] | [![Status][linux_java_svg]][linux_java_link] | [![Status][linux_dotnet_svg]][linux_dotnet_link] |
+| MacOS    | [![Status][macos_cpp_svg]][macos_cpp_link] | [![Status][macos_python_svg]][macos_python_link] | [![Status][macos_java_svg]][macos_java_link] | [![Status][macos_dotnet_svg]][macos_dotnet_link] |
+| Windows  | [![Status][windows_cpp_svg]][windows_cpp_link] | [![Status][windows_python_svg]][windows_python_link] | [![Status][windows_java_svg]][windows_java_link] | [![Status][windows_dotnet_svg]][windows_dotnet_link] |
 
-| OS     | C++ | Python | Java | .NET |
-|:-------|-----|--------|------|------|
-| Linux  | [![Status][cpp_linux_svg]][cpp_linux_link] | [![Status][python_linux_svg]][python_linux_link] | [![Status][java_linux_svg]][java_linux_link] | [![Status][dotnet_linux_svg]][dotnet_linux_link] |
-| macOS  | [![Status][cpp_osx_svg]][cpp_osx_link] | [![Status][python_osx_svg]][python_osx_link] | [![Status][java_osx_svg]][java_osx_link] | [![Status][dotnet_osx_svg]][dotnet_osx_link] |
-| Windows  | [![Status][cpp_win_svg]][cpp_win_link] | [![Status][python_win_svg]][python_win_link] | [![Status][java_win_svg]][java_win_link] | [![Status][dotnet_win_svg]][dotnet_win_link] |
+[linux_cpp_svg]: https://github.com/google/or-tools/actions/workflows/cmake_linux_cpp.yml/badge.svg?branch=master
+[linux_cpp_link]: https://github.com/google/or-tools/actions/workflows/cmake_linux_cpp.yml
+[linux_python_svg]: https://github.com/google/or-tools/actions/workflows/cmake_linux_python.yml/badge.svg?branch=master
+[linux_python_link]: https://github.com/google/or-tools/actions/workflows/cmake_linux_python.yml
+[linux_java_svg]: https://github.com/google/or-tools/actions/workflows/cmake_linux_java.yml/badge.svg?branch=master
+[linux_java_link]: https://github.com/google/or-tools/actions/workflows/cmake_linux_java.yml
+[linux_dotnet_svg]: https://github.com/google/or-tools/actions/workflows/cmake_linux_dotnet.yml/badge.svg?branch=master
+[linux_dotnet_link]: https://github.com/google/or-tools/actions/workflows/cmake_linux_dotnet.yml
 
+[macos_cpp_svg]: https://github.com/google/or-tools/actions/workflows/cmake_macos_cpp.yml/badge.svg?branch=master
+[macos_cpp_link]: https://github.com/google/or-tools/actions/workflows/cmake_macos_cpp.yml
+[macos_python_svg]: https://github.com/google/or-tools/actions/workflows/cmake_macos_python.yml/badge.svg?branch=master
+[macos_python_link]: https://github.com/google/or-tools/actions/workflows/cmake_macos_python.yml
+[macos_java_svg]: https://github.com/google/or-tools/actions/workflows/cmake_macos_java.yml/badge.svg?branch=master
+[macos_java_link]: https://github.com/google/or-tools/actions/workflows/cmake_macos_java.yml
+[macos_dotnet_svg]: https://github.com/google/or-tools/actions/workflows/cmake_macos_dotnet.yml/badge.svg?branch=master
+[macos_dotnet_link]: https://github.com/google/or-tools/actions/workflows/cmake_macos_dotnet.yml
 
-[cpp_linux_svg]: https://github.com/google/or-tools/workflows/C++%20Linux%20CI/badge.svg?branch=master
-[cpp_linux_link]: https://github.com/google/or-tools/actions?query=workflow%3A"C%2B%2B+Linux+CI"
-[python_linux_svg]: https://github.com/google/or-tools/workflows/Python%20Linux%20CI/badge.svg?branch=master
-[python_linux_link]: https://github.com/google/or-tools/actions?query=workflow%3A"Python+Linux+CI"
-[java_linux_svg]: https://github.com/google/or-tools/workflows/Java%20Linux%20CI/badge.svg?branch=master
-[java_linux_link]: https://github.com/google/or-tools/actions?query=workflow%3A"Java+Linux+CI"
-[dotnet_linux_svg]: https://github.com/google/or-tools/workflows/.Net%20Linux%20CI/badge.svg?branch=master
-[dotnet_linux_link]: https://github.com/google/or-tools/actions?query=workflow%3A".Net+Linux+CI"
+[windows_cpp_svg]: https://github.com/google/or-tools/actions/workflows/cmake_windows_cpp.yml/badge.svg?branch=master
+[windows_cpp_link]: https://github.com/google/or-tools/actions/workflows/cmake_windows_cpp.yml
+[windows_python_svg]: https://github.com/google/or-tools/actions/workflows/cmake_windows_python.yml/badge.svg?branch=master
+[windows_python_link]: https://github.com/google/or-tools/actions/workflows/cmake_windows_python.yml
+[windows_java_svg]: https://github.com/google/or-tools/actions/workflows/cmake_windows_java.yml/badge.svg?branch=master
+[windows_java_link]: https://github.com/google/or-tools/actions/workflows/cmake_windows_java.yml
+[windows_dotnet_svg]: https://github.com/google/or-tools/actions/workflows/cmake_windows_dotnet.yml/badge.svg?branch=master
+[windows_dotnet_link]: https://github.com/google/or-tools/actions/workflows/cmake_windows_dotnet.yml
 
-[cpp_osx_svg]: https://github.com/google/or-tools/workflows/C++%20MacOS%20CI/badge.svg?branch=master
-[cpp_osx_link]: https://github.com/google/or-tools/actions?query=workflow%3A"C%2B%2B+MacOS+CI"
-[python_osx_svg]: https://github.com/google/or-tools/workflows/Python%20MacOS%20CI/badge.svg?branch=master
-[python_osx_link]: https://github.com/google/or-tools/actions?query=workflow%3A"Python+MacOS+CI"
-[java_osx_svg]: https://github.com/google/or-tools/workflows/Java%20MacOS%20CI/badge.svg?branch=master
-[java_osx_link]: https://github.com/google/or-tools/actions?query=workflow%3A"Java+MacOS+CI"
-[dotnet_osx_svg]: https://github.com/google/or-tools/workflows/.Net%20MacOS%20CI/badge.svg?branch=master
-[dotnet_osx_link]: https://github.com/google/or-tools/actions?query=workflow%3A".Net+MacOS+CI"
+Dockers [Alpine, Archlinux, Centos, Debian, Fedora, OpenSuse, Ubuntu]x[C++, Python, Java, .Net]: [![Status][docker_svg]][docker_link]
 
-[cpp_win_svg]: https://github.com/google/or-tools/workflows/C++%20Windows%20CI/badge.svg?branch=master
-[cpp_win_link]: https://github.com/google/or-tools/actions?query=workflow%3A"C%2B%2B+Windows+CI"
-[python_win_svg]: https://github.com/google/or-tools/workflows/Python%20Windows%20CI/badge.svg?branch=master
-[python_win_link]: https://github.com/google/or-tools/actions?query=workflow%3A"Python+Windows+CI"
-[java_win_svg]: https://github.com/google/or-tools/workflows/Java%20Windows%20CI/badge.svg?branch=master
-[java_win_link]: https://github.com/google/or-tools/actions?query=workflow%3A"Java+Windows+CI"
-[dotnet_win_svg]: https://github.com/google/or-tools/workflows/.Net%20Windows%20CI/badge.svg?branch=master
-[dotnet_win_link]: https://github.com/google/or-tools/actions?query=workflow%3A".Net+Windows+CI"
-
-Dockers: [![Status][docker_svg]][docker_link]
-
-[docker_svg]: https://github.com/google/or-tools/workflows/Docker%20CMake/badge.svg?branch=master
-[docker_link]: https://github.com/google/or-tools/actions?query=workflow%3A"Docker+CMake"
+[docker_svg]: https://github.com/google/or-tools/actions/workflows/cmake_docker.yml/badge.svg?branch=master
+[docker_link]: https://github.com/google/or-tools/actions/workflows/cmake_docker.yml
 
 
 ## Introduction
 <nav for="cmake"> |
 <a href="#deps">Dependencies</a> |
+<a href="#options">Options</a> |
 <a href="doc/cpp.md">C++</a> |
 <a href="doc/swig.md">Swig</a> |
 <a href="doc/python.md">Python 3</a> |
@@ -62,30 +61,37 @@ the compiler environment of your choice.<br>You can either build OR-Tools with
 CMake as a standalone project or it can be incorporated into an existing CMake
  project.
 
-## [Dependencies](#deps)
+<a name="deps"></a>
 
-OR-Tools depends on severals mandatory libraries. You can compile them all at
+## Dependencies
+
+OR-Tools depends on several mandatory libraries. You can compile them all at
 configure time using the option `-DBUILD_DEPS=ON` (`OFF` by default) or you can
-compile few of them using the options below.
+compile few of them using the options below (see [CMake Options](#cmake-options)
+below).
 
-* ZLIB (`BUILD_ZLIB`),
-* Google Abseil-cpp (`BUILD_absl`),
-* Google Protobuf (`BUILD_Protobuf`),
-* SCIP (`BUILD_SCIP`),<br>
+*   ZLIB (`BUILD_ZLIB`),
+*   Google Abseil-cpp (`BUILD_absl`),
+*   Google Protobuf (`BUILD_Protobuf`),
+*   SCIP (`BUILD_SCIP`),<br>
   note: You can disable the support of SCIP solvers
   by using `-DUSE_SCIP=OFF` (`ON` by default).
+*   GLPK (`BUILD_GLPK`),<br>
+  note: You can disable the support of GLPK solvers
+  by using `-DUSE_GLPK=OFF` (`ON` by default).
 
-* COIN-OR solvers,
-  * COIN-OR CoinUtils (`BUILD_CoinUtils`),
-  * COIN-OR Osi (`BUILD_Osi`),
-  * COIN-OR Clp (`BUILD_Clp`),
-  * COIN-OR Cgl (`BUILD_Cgl`),
-  * COIN-OR Cbc (`BUILD_Cbc`),<br>
+*   COIN-OR solvers,
+
+    *   COIN-OR CoinUtils (`BUILD_CoinUtils`),
+    *   COIN-OR Osi (`BUILD_Osi`),
+    *   COIN-OR Clp (`BUILD_Clp`),
+    *   COIN-OR Cgl (`BUILD_Cgl`),
+    *   COIN-OR Cbc (`BUILD_Cbc`),<br>
   note: You can disable the support of COIN-OR solvers (i.e. Cbc and Clp solver)
   by using `-DUSE_COINOR=OFF` (`ON` by default).
 
-OR-Tools also have few (ed compile time) optional solvers support (disabled by
-default):
+OR-Tools can also optionally (disabled by default) be compiled with support for
+the following third-party proprietary solvers:
 
 * CPLEX (`USE_CPLEX`),
 * XPRESS (`USE_XPRESS`)
@@ -93,7 +99,101 @@ default):
 **warning: Since these solvers require license and are proprietary, we can't
 test it on public CI and support can be broken.**
 
-## [Integrating OR-Tools in your CMake Project](#integration)
+### Enabling CPLEX Support
+
+To enable CPLEX support, configure with `-DUSE_CPLEX=ON` and
+`-DCPLEX_ROOT=/absolute/path/to/CPLEX/root/dir`, replacing
+`/absolute/path/to/CPLEX/root/dir` with the path to your CPLEX installation.
+`CPLEX_ROOT` can also be defined as an environment variable rather than an
+option at configure time.
+
+For ease of migration from legacy `make third_party` builds, CMake will also
+read the CPLEX installation path from the `UNIX_CPLEX_DIR` environment variable,
+if defined.
+
+### Enabling XPRESS Support
+
+To enable XPRESS support, configure with `-DUSE_XPRESS=ON` and
+`-DXPRESS_ROOT=/absolute/path/to/XPRESS/root/dir`, replacing
+`/absolute/path/to/XPRESS/root/dir` with the path to your XPRESS installation.
+`XPRESS_ROOT` can also be defined as an environment variable rather than an
+option at configure time.
+
+<a name="options"></a>
+
+## CMake Options
+
+There are several options that can be passed to CMake to modify how the code is built.<br>
+For all of these options and parameters you have to use `-D<Parameter_name>=<value>`.
+
+All CMake options are passed at configure time, i.e., by running <br>
+`cmake -S. -B<your_chosen_build_directory>  -DOPTION_ONE=ON -DOPTION_TWO=OFF ...` <br>
+before running `cmake --build <your_chosen_build_directory>`<br>
+
+For example, to generate build files including dependencies in a new subdirectory called 'build', run:
+```sh
+cmake -S. -Bbuild  -DBUILD_DEPS:BOOL=ON
+```
+and then build with:
+```sh
+cmake --build build
+```
+
+Following is a list of available options, for the full list run:
+
+```sh
+cmake -S. -Bbuild -LH
+```
+
+| CMake Option | Default Value | Note |
+|-|-|-|
+| `CMAKE_BUILD_TYPE` | Release | see CMake documentation [here](https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html) |
+| `BUILD_CXX` | ON | Build C++ |
+| `BUILD_PYTHON` | OFF | Build Python wrapper and package |
+| `BUILD_JAVA` | OFF | Build Java wrapper and packages |
+| `BUILD_DOTNET` | OFF | Build .Net wrapper and packages |
+| `BUILD_FLATZINC` | ON\* | Build the flatzinc library<br>**Forced** to OFF if `BUILD_CXX=OFF` |
+| `BUILD_GLOP` | OFF\* | Build the standalone Glop library<br>**Forced** to OFF if `BUILD_CXX=ON`, otherwise default to ON |
+| | | |
+| `BUILD_DEPS`  | OFF* | Default to ON if `BUILD_JAVA=ON` or `BUILD_PYTHON=ON` or `BUILD_DOTNET=ON` |
+| `BUILD_ZLIB`  | OFF* | Static build the zlib library<br>**Forced** to ON if `BUILD_DEPS=ON` |
+| `BUILD_absl`  | OFF* | Static build the abseil-cpp libraries<br>**Forced** to ON if `BUILD_DEPS=ON` |
+| `BUILD_Protobuf`  | OFF* | Static build the protobuf libraries<br>**Forced** to ON if `BUILD_DEPS=ON` |
+| `USE_SCIP`  | ON\* | Enable SCIP support<br>**Forced** to OFF if `BUILD_CXX=OFF` |
+| `BUILD_SCIP`  | OFF\* | Static build the SCIP libraries<br>**Forced** to ON if `USE_SCIP=ON` **and** `BUILD_DEPS=ON` |
+| `USE_GLPK`  | ON\* | Enable GLPK support<br>**Forced** to OFF if `BUILD_CXX=OFF` |
+| `BUILD_GLPK`  | OFF\* | Static build the GLPK libraries<br>**Forced** to ON if `USE_GLPK=ON` **and** `BUILD_DEPS=ON` |
+| `USE_COINOR`  | ON\* | Enable Coin-OR support<br>**Forced** to OFF if `BUILD_CXX=OFF` |
+| `BUILD_CoinUtils`  | OFF\* | Static build the CoinUtils library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON` |
+| `BUILD_Osi`  | OFF\* | Static build the Osi library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON` |
+| `BUILD_Clp`  | OFF\* | Static build the Clp library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON` |
+| `BUILD_Cgl`  | OFF\* | Static build the Cgl library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON` |
+| `BUILD_Cbc`  | OFF\* | Static build the Cbc library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON` |
+| `USE_CPLEX`  | OFF | Enable CPLEX support |
+| `USE_XPRESS`  | OFF | Enable XPRESS support |
+| | | |
+| `BUILD_SAMPLES`  | OFF\* | Build all samples<br>Default to ON if `BUILD_DEPS=ON` |
+| `BUILD_CXX_SAMPLES`  | ON\* | Build all C++ samples<br>**Forced** to OFF if `BUILD_CXX=OFF` or `BUILD_SAMPLE=OFF` |
+| `BUILD_PYTHON_SAMPLES`  | ON\* | Build all Python samples<br>**Forced** to OFF if `BUILD_PYTHON=OFF` or `BUILD_SAMPLE=OFF` |
+| `BUILD_JAVA_SAMPLES`  | ON\* | Build all Java samples<br>**Forced** to OFF if `BUILD_JAVA=OFF` or `BUILD_SAMPLE=OFF` |
+| `BUILD_DOTNET_SAMPLES`  | ON\* | Build all .Net samples<br>**Forced** to OFF if `BUILD_DOTNET=OFF` or `BUILD_SAMPLE=OFF` |
+| | | |
+| `BUILD_EXAMPLES`  | OFF\* | Build all examples<br>Default to ON if `BUILD_DEPS=ON` |
+| `BUILD_CXX_EXAMPLES`  | ON\* | Build all C++ examples<br>**Forced** to OFF if `BUILD_CXX=OFF` or `BUILD_SAMPLE=OFF` |
+| `BUILD_PYTHON_EXAMPLES`  | ON\* | Build all Python examples<br>**Forced** to OFF if `BUILD_PYTHON=OFF` or `BUILD_SAMPLE=OFF` |
+| `BUILD_JAVA_EXAMPLES`  | ON\* | Build all Java examples<br>**Forced** to OFF if `BUILD_JAVA=OFF` or `BUILD_SAMPLE=OFF` |
+| `BUILD_DOTNET_EXAMPLES`  | ON\* | Build all .Net examples<br>**Forced** to OFF if `BUILD_DOTNET=OFF` or `BUILD_SAMPLE=OFF` |
+| | | |
+| `SKIP_GPG`  | OFF | Disable GPG sign<br>Only available if `BUILD_JAVA=ON` |
+| `UNIVERSAL_JAVA_PACKAGE`  | OFF | Build a multi platform package (i.e. `ortools-java` will depends on all native packages)<br>Only available if `BUILD_JAVA=ON` |
+| `BUILD_FAT_JAR`  | OFF | Build a `ortools-java` .jar that includes all of its own Maven dependencies, including the native package<br>Only available if `BUILD_JAVA=ON` |
+| | | |
+| `FETCH_PYTHON_DEPS`  | BUILD_DEPS | Fetch python modules needed to build ortools package<br>Only available if `BUILD_PYTHON=ON` |
+| | | |
+
+<a name="integration"></a>
+
+## Integrating OR-Tools in your CMake Project
 
 You should be able to integrate OR-Tools in your C++ CMake project following one
 of these methods.

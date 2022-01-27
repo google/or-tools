@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -38,10 +38,23 @@ void PrimalEdgeNorms::Clear() {
   SCOPED_TIME_STAT(&stats_);
   recompute_edge_squared_norms_ = true;
   reset_devex_weights_ = true;
+  for (bool* watcher : watchers_) *watcher = true;
 }
 
 bool PrimalEdgeNorms::NeedsBasisRefactorization() const {
+  if (pricing_rule_ != GlopParameters ::STEEPEST_EDGE) return false;
   return recompute_edge_squared_norms_;
+}
+
+const DenseRow& PrimalEdgeNorms::GetSquaredNorms() {
+  switch (pricing_rule_) {
+    case GlopParameters::DANTZIG:
+      return GetMatrixColumnNorms();
+    case GlopParameters::STEEPEST_EDGE:
+      return GetEdgeSquaredNorms();
+    case GlopParameters::DEVEX:
+      return GetDevexWeights();
+  }
 }
 
 const DenseRow& PrimalEdgeNorms::GetEdgeSquaredNorms() {
@@ -79,6 +92,7 @@ void PrimalEdgeNorms::TestEnteringEdgeNormPrecision(
       VLOG(1) << "Recomputing edge norms: " << sqrt(precise_squared_norm)
               << " vs " << sqrt(old_squared_norm);
       recompute_edge_squared_norms_ = true;
+      for (bool* watcher : watchers_) *watcher = true;
     }
   }
 }
@@ -115,7 +129,7 @@ void PrimalEdgeNorms::ComputeMatrixColumnNorms() {
   SCOPED_TIME_STAT(&stats_);
   matrix_column_norms_.resize(compact_matrix_.num_cols(), 0.0);
   for (ColIndex col(0); col < compact_matrix_.num_cols(); ++col) {
-    matrix_column_norms_[col] = sqrt(SquaredNorm(compact_matrix_.column(col)));
+    matrix_column_norms_[col] = SquaredNorm(compact_matrix_.column(col));
     num_operations_ += compact_matrix_.column(col).num_entries().value();
   }
 }
@@ -167,8 +181,8 @@ void PrimalEdgeNorms::ComputeDirectionLeftInverse(
 
   // TODO(user): Refactorize if estimated accuracy above a threshold.
   IF_STATS_ENABLED(stats_.direction_left_inverse_accuracy.Add(
-      ScalarProduct(direction_left_inverse_.values,
-                    matrix_.column(entering_col)) -
+      compact_matrix_.ColumnScalarProduct(entering_col,
+                                          direction_left_inverse_.values) -
       SquaredNorm(direction.values)));
   IF_STATS_ENABLED(stats_.direction_left_inverse_density.Add(
       Density(direction_left_inverse_.values)));
@@ -244,9 +258,10 @@ void PrimalEdgeNorms::UpdateDevexWeights(
   for (const ColIndex col : update_row.GetNonZeroPositions()) {
     const Fractional coeff = update_row.GetCoefficient(col);
     const Fractional update_vector_norm = std::abs(coeff) * leaving_norm;
-    devex_weights_[col] = std::max(devex_weights_[col], update_vector_norm);
+    devex_weights_[col] =
+        std::max(devex_weights_[col], Square(update_vector_norm));
   }
-  devex_weights_[leaving_col] = leaving_norm;
+  devex_weights_[leaving_col] = Square(leaving_norm);
 }
 
 void PrimalEdgeNorms::ResetDevexWeights() {

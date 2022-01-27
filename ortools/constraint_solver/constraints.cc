@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,6 +14,8 @@
 #include <string.h>
 
 #include <algorithm>
+#include <cstdint>
+#include <limits>
 #include <memory>
 #include <string>
 #include <utility>
@@ -136,7 +138,7 @@ class MapDomain : public Constraint {
     var_->WhenBound(vb);
     std::unique_ptr<IntVarIterator> domain_it(
         var_->MakeDomainIterator(/*reversible=*/false));
-    for (const int64 index : InitAndGetValues(domain_it.get())) {
+    for (const int64_t index : InitAndGetValues(domain_it.get())) {
       if (index >= 0 && index < actives_.size() && !actives_[index]->Bound()) {
         Demon* d = MakeConstraintDemon1(
             solver(), this, &MapDomain::UpdateActive, "UpdateActive", index);
@@ -147,7 +149,7 @@ class MapDomain : public Constraint {
 
   void InitialPropagate() override {
     for (int i = 0; i < actives_.size(); ++i) {
-      actives_[i]->SetRange(int64{0}, int64{1});
+      actives_[i]->SetRange(int64_t{0}, int64_t{1});
       if (!var_->Contains(i)) {
         actives_[i]->SetValue(0);
       } else if (actives_[i]->Max() == 0LL) {
@@ -162,7 +164,7 @@ class MapDomain : public Constraint {
     }
   }
 
-  void UpdateActive(int64 index) {
+  void UpdateActive(int64_t index) {
     IntVar* const act = actives_[index];
     if (act->Max() == 0) {
       var_->RemoveValue(index);
@@ -172,27 +174,28 @@ class MapDomain : public Constraint {
   }
 
   void VarDomain() {
-    const int64 oldmin = var_->OldMin();
-    const int64 oldmax = var_->OldMax();
-    const int64 vmin = var_->Min();
-    const int64 vmax = var_->Max();
-    const int64 size = actives_.size();
-    for (int64 j = std::max(oldmin, int64{0}); j < std::min(vmin, size); ++j) {
+    const int64_t oldmin = var_->OldMin();
+    const int64_t oldmax = var_->OldMax();
+    const int64_t vmin = var_->Min();
+    const int64_t vmax = var_->Max();
+    const int64_t size = actives_.size();
+    for (int64_t j = std::max(oldmin, int64_t{0}); j < std::min(vmin, size);
+         ++j) {
       actives_[j]->SetValue(0);
     }
-    for (const int64 j : InitAndGetValues(holes_)) {
+    for (const int64_t j : InitAndGetValues(holes_)) {
       if (j >= 0 && j < size) {
         actives_[j]->SetValue(0);
       }
     }
-    for (int64 j = std::max(vmax + int64{1}, int64{0});
-         j <= std::min(oldmax, size - int64{1}); ++j) {
-      actives_[j]->SetValue(int64{0});
+    for (int64_t j = std::max(vmax + int64_t{1}, int64_t{0});
+         j <= std::min(oldmax, size - int64_t{1}); ++j) {
+      actives_[j]->SetValue(int64_t{0});
     }
   }
 
   void VarBound() {
-    const int64 val = var_->Min();
+    const int64_t val = var_->Min();
     if (val >= 0 && val < actives_.size()) {
       actives_[val]->SetValue(1);
     }
@@ -388,20 +391,20 @@ class InversePermutationConstraint : public Constraint {
   // See PropagateHolesOfLeftVarToRight() and PropagateHolesOfRightVarToLeft().
   void PropagateHoles(int index, IntVar* const var, IntVarIterator* const holes,
                       const std::vector<IntVar*>& inverse) {
-    const int64 oldmin = std::max(var->OldMin(), int64{0});
-    const int64 oldmax =
-        std::min(var->OldMax(), static_cast<int64>(left_.size() - 1));
-    const int64 vmin = var->Min();
-    const int64 vmax = var->Max();
-    for (int64 value = oldmin; value < vmin; ++value) {
+    const int64_t oldmin = std::max(var->OldMin(), int64_t{0});
+    const int64_t oldmax =
+        std::min(var->OldMax(), static_cast<int64_t>(left_.size() - 1));
+    const int64_t vmin = var->Min();
+    const int64_t vmax = var->Max();
+    for (int64_t value = oldmin; value < vmin; ++value) {
       inverse[value]->RemoveValue(index);
     }
-    for (const int64 hole : InitAndGetValues(holes)) {
+    for (const int64_t hole : InitAndGetValues(holes)) {
       if (hole >= 0 && hole < left_.size()) {
         inverse[hole]->RemoveValue(index);
       }
     }
-    for (int64 value = vmax + 1; value <= oldmax; ++value) {
+    for (int64_t value = vmax + 1; value <= oldmax; ++value) {
       inverse[value]->RemoveValue(index);
     }
   }
@@ -411,7 +414,7 @@ class InversePermutationConstraint : public Constraint {
                        const std::vector<IntVar*>& inverse) {
     // Iterators are not safe w.r.t. removal. Postponing deletions.
     tmp_removed_values_.clear();
-    for (const int64 value : InitAndGetValues(domain)) {
+    for (const int64_t value : InitAndGetValues(domain)) {
       if (!inverse[value]->Contains(index)) {
         tmp_removed_values_.push_back(value);
       }
@@ -431,7 +434,7 @@ class InversePermutationConstraint : public Constraint {
   std::vector<IntVarIterator*> right_domain_iterators_;
 
   // used only in PropagateDomain().
-  std::vector<int64> tmp_removed_values_;
+  std::vector<int64_t> tmp_removed_values_;
 };
 
 // Index of first Max Value
@@ -454,11 +457,11 @@ class IndexOfFirstMaxValue : public Constraint {
   }
 
   void InitialPropagate() override {
-    const int64 vsize = vars_.size();
-    const int64 imin = std::max(int64{0}, index_->Min());
-    const int64 imax = std::min(vsize - 1, index_->Max());
-    int64 max_max = kint64min;
-    int64 max_min = kint64min;
+    const int64_t vsize = vars_.size();
+    const int64_t imin = std::max(int64_t{0}, index_->Min());
+    const int64_t imax = std::min(vsize - 1, index_->Max());
+    int64_t max_max = std::numeric_limits<int64_t>::min();
+    int64_t max_min = std::numeric_limits<int64_t>::min();
 
     // Compute min and max value in the current interval covered by index_.
     for (int i = imin; i <= imax; ++i) {
@@ -476,11 +479,11 @@ class IndexOfFirstMaxValue : public Constraint {
     }
 
     // Shave bounds for index_.
-    int64 min_index = imin;
+    int64_t min_index = imin;
     while (vars_[min_index]->Max() < max_min) {
       min_index++;
     }
-    int64 max_index = imax;
+    int64_t max_index = imax;
     while (vars_[max_index]->Max() < max_min) {
       max_index--;
     }

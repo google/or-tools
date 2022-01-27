@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,6 +14,7 @@
 #include "ortools/sat/encoding.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <deque>
 #include <memory>
 #include <queue>
@@ -94,7 +95,7 @@ int EncodingNode::Reduce(const SatSolver& solver) {
   return i;
 }
 
-void EncodingNode::ApplyUpperBound(int64 upper_bound, SatSolver* solver) {
+void EncodingNode::ApplyUpperBound(int64_t upper_bound, SatSolver* solver) {
   if (size() <= upper_bound) return;
   for (int i = upper_bound; i < size(); ++i) {
     solver->AddUnitClause(literal(i).Negated());

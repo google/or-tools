@@ -119,7 +119,6 @@ function toggleInherit(id)
   }
 }
 /* @license-end */
-
 $(document).ready(function() {
   $('.code,.codeRef').each(function() {
     $(this).data('powertip',$('#a'+$(this).attr('href').replace(/.*\//,'').replace(/[^a-z_A-Z0-9]/g,'_')).html());

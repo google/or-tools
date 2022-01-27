@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,6 +15,7 @@
 #define OR_TOOLS_SAT_PRESOLVE_UTIL_H_
 
 #include <algorithm>
+#include <cstdint>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
@@ -85,7 +86,7 @@ class DomainDeductions {
 
 // Replaces the variable var in ct using the definition constraint.
 // Currently the coefficient in the definition must be 1 or -1.
-void SubstituteVariable(int var, int64 var_coeff_in_definition,
+bool SubstituteVariable(int var, int64_t var_coeff_in_definition,
                         const ConstraintProto& definition, ConstraintProto* ct);
 
 }  // namespace sat

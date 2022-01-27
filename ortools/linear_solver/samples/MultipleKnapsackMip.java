@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// MIP example that solves a multiple knapsack problem.
 // [START program]
+// Solve a multiple knapsack problem using a MIP solver.
 package com.google.ortools.linearsolver.samples;
 // [START import]
 import com.google.ortools.Loader;
@@ -20,27 +20,24 @@ import com.google.ortools.linearsolver.MPConstraint;
 import com.google.ortools.linearsolver.MPObjective;
 import com.google.ortools.linearsolver.MPSolver;
 import com.google.ortools.linearsolver.MPVariable;
+import java.util.stream.IntStream;
 // [END import]
 
 /** Multiple knapsack problem. */
 public class MultipleKnapsackMip {
-  // [START program_part1]
-  // [START data_model]
-  static class DataModel {
-    public final double[] weights = {48, 30, 42, 36, 36, 48, 42, 42, 36, 24, 30, 30, 42, 36, 36};
-    public final double[] values = {10, 30, 25, 50, 35, 30, 15, 40, 30, 35, 45, 10, 20, 30, 25};
-    public final int numItems = weights.length;
-    public final int numBins = 5;
-    public final double[] binCapacities = {100, 100, 100, 100, 100};
-  }
-  // [END data_model]
-
-  public static void main(String[] args) throws Exception {
+  public static void main(String[] args) {
     Loader.loadNativeLibraries();
+    // Instantiate the data problem.
     // [START data]
-    final DataModel data = new DataModel();
+    final double[] weights = {48, 30, 42, 36, 36, 48, 42, 42, 36, 24, 30, 30, 42, 36, 36};
+    final double[] values = {10, 30, 25, 50, 35, 30, 15, 40, 30, 35, 45, 10, 20, 30, 25};
+    final int numItems = weights.length;
+    final int[] allItems = IntStream.range(0, numItems).toArray();
+
+    final double[] binCapacities = {100, 100, 100, 100, 100};
+    final int numBins = binCapacities.length;
+    final int[] allBins = IntStream.range(0, numBins).toArray();
     // [END data]
-    // [END program_part1]
 
     // [START solver]
     // Create the linear solver with the SCIP backend.
@@ -51,64 +48,69 @@ public class MultipleKnapsackMip {
     }
     // [END solver]
 
-    // [START program_part2]
+    // Variables.
     // [START variables]
-    MPVariable[][] x = new MPVariable[data.numItems][data.numBins];
-    for (int i = 0; i < data.numItems; ++i) {
-      for (int j = 0; j < data.numBins; ++j) {
-        x[i][j] = solver.makeIntVar(0, 1, "");
+    MPVariable[][] x = new MPVariable[numItems][numBins];
+    for (int i : allItems) {
+      for (int b : allBins) {
+        x[i][b] = solver.makeBoolVar("x_" + i + "_" + b);
       }
     }
     // [END variables]
 
+    // Constraints.
     // [START constraints]
-    for (int i = 0; i < data.numItems; ++i) {
+    // Each item is assigned to at most one bin.
+    for (int i : allItems) {
       MPConstraint constraint = solver.makeConstraint(0, 1, "");
-      for (int j = 0; j < data.numBins; ++j) {
-        constraint.setCoefficient(x[i][j], 1);
+      for (int b : allBins) {
+        constraint.setCoefficient(x[i][b], 1);
       }
     }
-    for (int j = 0; j < data.numBins; ++j) {
-      MPConstraint constraint = solver.makeConstraint(0, data.binCapacities[j], "");
-      for (int i = 0; i < data.numItems; ++i) {
-        constraint.setCoefficient(x[i][j], data.weights[i]);
+
+    // The amount packed in each bin cannot exceed its capacity.
+    for (int b : allBins) {
+      MPConstraint constraint = solver.makeConstraint(0, binCapacities[b], "");
+      for (int i : allItems) {
+        constraint.setCoefficient(x[i][b], weights[i]);
       }
     }
     // [END constraints]
 
+    // Objective.
     // [START objective]
+    // Maximize total value of packed items.
     MPObjective objective = solver.objective();
-    for (int i = 0; i < data.numItems; ++i) {
-      for (int j = 0; j < data.numBins; ++j) {
-        objective.setCoefficient(x[i][j], data.values[i]);
+    for (int i : allItems) {
+      for (int b : allBins) {
+        objective.setCoefficient(x[i][b], values[i]);
       }
     }
     objective.setMaximization();
     // [END objective]
 
     // [START solve]
-    final MPSolver.ResultStatus resultStatus = solver.solve();
+    final MPSolver.ResultStatus status = solver.solve();
     // [END solve]
 
     // [START print_solution]
     // Check that the problem has an optimal solution.
-    if (resultStatus == MPSolver.ResultStatus.OPTIMAL) {
-      System.out.println("Total packed value: " + objective.value() + "\n");
+    if (status == MPSolver.ResultStatus.OPTIMAL) {
+      System.out.println("Total packed value: " + objective.value());
       double totalWeight = 0;
-      for (int j = 0; j < data.numBins; ++j) {
+      for (int b : allBins) {
         double binWeight = 0;
         double binValue = 0;
-        System.out.println("Bin " + j + "\n");
-        for (int i = 0; i < data.numItems; ++i) {
-          if (x[i][j].solutionValue() == 1) {
-            System.out.println(
-                "Item " + i + " - weight: " + data.weights[i] + "  value: " + data.values[i]);
-            binWeight += data.weights[i];
-            binValue += data.values[i];
+        System.out.println("Bin " + b);
+        for (int i : allItems) {
+          if (x[i][b].solutionValue() == 1) {
+            System.out.println("Item " + i + " weight: " + weights[i] + " value: " + values[i]);
+            binWeight += weights[i];
+            binValue += values[i];
           }
         }
         System.out.println("Packed bin weight: " + binWeight);
-        System.out.println("Packed bin value: " + binValue + "\n");
+        System.out.println("Packed bin value: " + binValue);
         totalWeight += binWeight;
       }
       System.out.println("Total packed weight: " + totalWeight);
@@ -120,5 +122,4 @@ public class MultipleKnapsackMip {
 
   private MultipleKnapsackMip() {}
 }
-// [END program_part2]
 // [END program]

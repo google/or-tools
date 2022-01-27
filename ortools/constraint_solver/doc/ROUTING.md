@@ -1,5 +1,6 @@
 # Using the Vehicle Routing solver
 
+https://developers.google.com/optimization/routing
 
 ## Documentation structure
 
@@ -19,6 +20,7 @@ and .Net. Each language have different requirements for the code samples.
 
 ```cpp
 #include <cmath>
+#include <cstdint>
 
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/constraint_solver/routing_enums.pb.h"
@@ -41,7 +43,7 @@ void SimpleRoutingProgram() {
 
   // Define cost of each arc.
   int distance_call_index = routing.RegisterTransitCallback(
-      [&manager](int64 from_index, int64 to_index) -> int64 {
+      [&manager](int64_t from_index, int64_t to_index) -> int64_t {
         // Convert from routing variable Index to user NodeIndex.
         auto from_node = manager.IndexToNode(from_index).value();
         auto to_node = manager.IndexToNode(to_index).value();
@@ -60,16 +62,16 @@ void SimpleRoutingProgram() {
   // Print solution on console.
   LOG(INFO) << "Objective: " << solution->ObjectiveValue();
   // Inspect solution.
-  int64 index = routing.Start(0);
+  int64_t index = routing.Start(0);
   LOG(INFO) << "Route for Vehicle 0:";
-  int64 route_distance{0};
+  int64_t route_distance{0};
   std::ostringstream route;
   while (routing.IsEnd(index) == false) {
     route << manager.IndexToNode(index).value() << " -> ";
-    int64 previous_index = index;
+    int64_t previous_index = index;
     index = solution->Value(routing.NextVar(index));
     route_distance +=
-        routing.GetArcCostForVehicle(previous_index, index, int64{0});
+        routing.GetArcCostForVehicle(previous_index, index, int64_t{0});
   }
   LOG(INFO) << route.str() << manager.IndexToNode(index).value();
   LOG(INFO) << "Distance of the route: " << route_distance << "m";
@@ -115,6 +117,7 @@ def main():
     from_node = int(manager.IndexToNode(from_index))
     to_node = int(manager.IndexToNode(to_index))
     return abs(to_node - from_node)
+
   transit_callback_index = routing.RegisterTransitCallback(distance_callback)
 
   # Define cost of each arc.

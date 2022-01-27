@@ -1,5 +1,5 @@
 if(NOT BUILD_PYTHON_EXAMPLES)
-	return()
+  return()
 endif()
 
 file(GLOB PYTHON_SRCS "*.py")
