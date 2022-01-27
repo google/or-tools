@@ -2,6 +2,8 @@ load(":code_samples.bzl", "code_sample_cc")
 
 code_sample_cc(name = "minimal_jobshop_cp")
 
+code_sample_cc(name = "nqueens_cp")
+
 code_sample_cc(name = "nurses_cp")
 
 code_sample_cc(name = "rabbits_and_pheasants_cp")
@@ -20,11 +22,11 @@ code_sample_cc(name = "tsp_cities")
 
 code_sample_cc(name = "tsp_distance_matrix")
 
+code_sample_cc(name = "vrp")
+
 code_sample_cc(name = "vrp_breaks")
 
 code_sample_cc(name = "vrp_capacity")
-
-code_sample_cc(name = "vrp")
 
 code_sample_cc(name = "vrp_drop_nodes")
 

@@ -20,9 +20,9 @@
 #include <vector>
 
 #include "absl/flags/flag.h"
-#include "absl/flags/parse.h"
-#include "absl/flags/usage.h"
+#include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/logging_flags.h"
 #include "ortools/linear_solver/linear_solver.h"
 // [END import]
 
@@ -318,8 +318,7 @@ void StiglerDiet() {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  google::InitGoogleLogging(argv[0]);
-  absl::ParseCommandLine(argc, argv);
+  InitGoogle(argv[0], &argc, &argv, true);
   absl::SetFlag(&FLAGS_logtostderr, true);
   operations_research::StiglerDiet();
   return EXIT_SUCCESS;

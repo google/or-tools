@@ -22,6 +22,10 @@
 #include <cstdint>
 #include <vector>
 
+#include "absl/flags/flag.h"
+#include "ortools/base/init_google.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/logging_flags.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 // [END import]
 
@@ -153,6 +157,8 @@ void CPIsFunCp() {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
+  InitGoogle(argv[0], &argc, &argv, true);
+  absl::SetFlag(&FLAGS_logtostderr, true);
   operations_research::CPIsFunCp();
   return EXIT_SUCCESS;
 }

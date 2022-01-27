@@ -19,6 +19,7 @@
 #include <sstream>
 #include <vector>
 
+#include "ortools/base/logging.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 // [END import]
 
