@@ -16,8 +16,14 @@
 #include <algorithm>
 #include <cstdint>
 #include <limits>
+#include <memory>
 #include <numeric>
+#include <string>
+#include <utility>
+#include <vector>
 
+#include "absl/algorithm/container.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/memory/memory.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_format.h"
