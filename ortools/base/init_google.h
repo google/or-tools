@@ -31,7 +31,7 @@
 //         to the `main` function.
 void InitGoogle(const char* usage, int* argc, char*** argv, bool deprecated) {
   google::InitGoogleLogging(usage);
-  absl::ParseCommandLine(argc, argv);
+  absl::ParseCommandLine(*argc, *argv);
 }
 
 #endif  // OR_TOOLS_BASE_INIT_GOOGLE_H_
