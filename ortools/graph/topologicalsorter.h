@@ -311,12 +311,13 @@ class TopologicalSorter {
   // This starts a traversal (if not started already). Note that the
   // graph can only be traversed once.
   bool GetNext(T* node, bool* cyclic_ptr,
-               std::vector<T>* output_cycle_nodes = NULL) {
+               std::vector<T>* output_cycle_nodes = nullptr) {
     StartTraversal();
     int node_index;
-    if (!int_sorter_.GetNext(&node_index, cyclic_ptr,
-                             output_cycle_nodes ? &cycle_int_nodes_ : NULL)) {
-      if (*cyclic_ptr && output_cycle_nodes != NULL) {
+    if (!int_sorter_.GetNext(
+            &node_index, cyclic_ptr,
+            output_cycle_nodes ? &cycle_int_nodes_ : nullptr)) {
+      if (*cyclic_ptr && output_cycle_nodes != nullptr) {
         output_cycle_nodes->clear();
         for (const int int_node : cycle_int_nodes_) {
           output_cycle_nodes->push_back(nodes_[int_node]);
