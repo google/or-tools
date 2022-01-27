@@ -2162,7 +2162,9 @@ class MultiArmedBanditCompoundOperator : public LocalSearchOperator {
   // Sets how often we explore rarely used and unsuccessful in the past
   // operators. Operators are sorted by
   //  avg_improvement_[i] + exploration_coefficient_ *
-  //   sqrt(2 * log(1 + num_neighbors_) / (1 + num_neighbors_per_operator_[i]));
+  //   sqrt(2 * log(1 + num_neighbors_) / (1 + num_neighbors_per_operator_[i])).
+  // This definition uses the UCB1 exploration bonus for unstructured
+  // multi-armed bandits.
   const double exploration_coefficient_;
 };
 

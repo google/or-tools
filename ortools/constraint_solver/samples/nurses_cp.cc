@@ -1,4 +1,4 @@
-// Copyright 2018 Google LLC
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,7 +13,10 @@
 
 #include <numeric>  // std::iota
 
+#include "absl/flags/flag.h"
+#include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/logging_flags.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 
 namespace operations_research {
@@ -197,8 +200,8 @@ void SolveNursesExample() {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  google::InitGoogleLogging(argv[0]);
-  absl::SetFlag(&FLAGS_logtostderr, 1);
+  InitGoogle(argv[0], &argc, &argv, true);
+  absl::SetFlag(&FLAGS_logtostderr, true);
   operations_research::SolveNursesExample();
   return EXIT_SUCCESS;
 }

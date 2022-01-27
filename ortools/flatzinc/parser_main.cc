@@ -18,9 +18,8 @@
 #include <string>
 
 #include "absl/flags/flag.h"
-#include "absl/flags/parse.h"
-#include "absl/flags/usage.h"
 #include "ortools/base/commandlineflags.h"
+#include "ortools/base/init_google.h"
 #include "ortools/base/timer.h"
 #include "ortools/flatzinc/model.h"
 #include "ortools/flatzinc/parser.h"
