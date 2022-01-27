@@ -688,6 +688,7 @@ void SharedResponseManager::RegisterObjectiveBoundImprovement(
 void SharedResponseManager::DisplayImprovementStatistics() {
   absl::MutexLock mutex_lock(&mutex_);
   if (!primal_improvements_count_.empty()) {
+    SOLVER_LOG(logger_, "");
     SOLVER_LOG(logger_, "Solutions found per subsolver:");
     for (const auto& entry : primal_improvements_count_) {
       SOLVER_LOG(logger_, "  '", entry.first, "': ", entry.second);
@@ -842,6 +843,7 @@ void SharedBoundsManager::GetChangedBounds(
 void SharedBoundsManager::LogStatistics(SolverLogger* logger) {
   absl::MutexLock mutex_lock(&mutex_);
   if (!bounds_exported_.empty()) {
+    SOLVER_LOG(logger, "");
     SOLVER_LOG(logger, "Improving variable bounds shared per subsolver:");
     for (const auto& entry : bounds_exported_) {
       SOLVER_LOG(logger, "  '", entry.first, "': ", entry.second);
@@ -906,6 +908,7 @@ void SharedClausesManager::LogStatistics(SolverLogger* logger) {
     name_to_clauses[id_to_worker_name_[id]] = id_to_clauses_exported_[id];
   }
   if (!name_to_clauses.empty()) {
+    SOLVER_LOG(logger, "");
     SOLVER_LOG(logger, "Clauses shared per subsolver:");
     for (const auto& entry : name_to_clauses) {
       SOLVER_LOG(logger, "  '", entry.first, "': ", entry.second);

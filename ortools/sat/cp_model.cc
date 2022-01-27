@@ -736,6 +736,20 @@ IntervalVar CpModelBuilder::NewOptionalFixedSizeIntervalVar(
   return IntervalVar(index, this);
 }
 
+void CpModelBuilder::FixVariable(IntVar var, int64_t value) {
+  FillDomainInProto(Domain(value), cp_model_.mutable_variables(var.index()));
+}
+
+void CpModelBuilder::FixVariable(BoolVar var, bool value) {
+  const int index = var.index();
+  if (RefIsPositive(index)) {
+    FillDomainInProto(Domain(value), cp_model_.mutable_variables(index));
+  } else {
+    FillDomainInProto(Domain(!value),
+                      cp_model_.mutable_variables(NegatedRef(index)));
+  }
+}
+
 Constraint CpModelBuilder::AddBoolOr(absl::Span<const BoolVar> literals) {
   ConstraintProto* const proto = cp_model_.add_constraints();
   for (const BoolVar& lit : literals) {

@@ -138,6 +138,9 @@ bool SatSolver::AddClauseDuringSearch(absl::Span<const Literal> literals) {
   if (literals.empty()) return SetModelUnsat();
   if (literals.size() == 1) return AddUnitClause(literals[0]);
   if (literals.size() == 2) {
+    // TODO(user): We generate in some corner cases clauses with
+    // literals[0].Variable() == literals[1].Variable(). Avoid doing that and
+    // adding such binary clauses to the graph?
     if (!binary_implication_graph_->AddBinaryClauseDuringSearch(literals[0],
                                                                 literals[1])) {
       CHECK_EQ(CurrentDecisionLevel(), 0);
@@ -213,7 +216,17 @@ bool SatSolver::AddProblemClauseInternal(absl::Span<const Literal> literals) {
     }
     trail_->EnqueueWithUnitReason(literals[0]);
   } else if (literals.size() == 2) {
-    AddBinaryClauseInternal(literals[0], literals[1]);
+    // TODO(user): Make sure the presolve do not generate such clauses.
+    if (literals[0] == literals[1]) {
+      // Literal must be true.
+      trail_->EnqueueWithUnitReason(literals[0]);
+    } else if (literals[0] == literals[1].Negated()) {
+      // Always true.
+      return true;
+    } else {
+      AddBinaryClauseInternal(literals[0], literals[1],
+                              /*export_clause=*/false);
+    }
   } else {
     if (!clauses_propagator_->AddClause(literals, trail_)) {
       return SetModelUnsat();
@@ -362,6 +375,7 @@ int SatSolver::AddLearnedClauseAndEnqueueUnitPropagation(
 
   if (literals.size() == 2) {
     if (track_binary_clauses_) {
+      // This clause MUST be knew, otherwise something is wrong.
       CHECK(binary_clauses_.Add(BinaryClause(literals[0], literals[1])));
     }
     if (shared_binary_clauses_callback_ != nullptr) {
@@ -438,10 +452,18 @@ void SatSolver::SaveDebugAssignment() {
   }
 }
 
-void SatSolver::AddBinaryClauseInternal(Literal a, Literal b) {
-  if (!track_binary_clauses_ || binary_clauses_.Add(BinaryClause(a, b))) {
-    binary_implication_graph_->AddBinaryClause(a, b);
+void SatSolver::AddBinaryClauseInternal(Literal a, Literal b,
+                                        bool export_clause) {
+  if (track_binary_clauses_) {
+    // Abort if this clause was already added.
+    if (!binary_clauses_.Add(BinaryClause(a, b))) return;
   }
+
+  if (export_clause && shared_binary_clauses_callback_ != nullptr) {
+    shared_binary_clauses_callback_(a, b);
+  }
+
+  binary_implication_graph_->AddBinaryClause(a, b);
 }
 
 bool SatSolver::ClauseIsValidUnderDebugAssignment(
@@ -905,11 +927,7 @@ bool SatSolver::AddBinaryClauses(const std::vector<BinaryClause>& clauses) {
   SCOPED_TIME_STAT(&stats_);
   CHECK_EQ(CurrentDecisionLevel(), 0);
   for (const BinaryClause c : clauses) {
-    if (trail_->Assignment().LiteralIsFalse(c.a) &&
-        trail_->Assignment().LiteralIsFalse(c.b)) {
-      return SetModelUnsat();
-    }
-    AddBinaryClauseInternal(c.a, c.b);
+    if (!AddBinaryClause(c.a, c.b)) return false;
   }
   if (!Propagate()) return SetModelUnsat();
   return true;
@@ -1081,7 +1099,7 @@ void SatSolver::TryToMinimizeClause(SatClause* clause) {
     counters_.minimization_num_removed_literals += clause->size() - 2;
 
     // The order is important for the drat proof.
-    AddBinaryClauseInternal(candidate[0], candidate[1]);
+    AddBinaryClauseInternal(candidate[0], candidate[1], /*export_clause=*/true);
     clauses_propagator_->Detach(clause);
 
     // This is needed in the corner case where this was the first binary clause
@@ -1581,7 +1599,8 @@ void SatSolver::ProcessNewlyFixedVariables() {
       // This clause is now a binary clause, treat it separately. Note that
       // it is safe to do that because this clause can't be used as a reason
       // since we are at level zero and the clause is not satisfied.
-      AddBinaryClauseInternal(clause->FirstLiteral(), clause->SecondLiteral());
+      AddBinaryClauseInternal(clause->FirstLiteral(), clause->SecondLiteral(),
+                              /*export_clause=*/true);
       clauses_propagator_->LazyDetach(clause);
       ++num_binary;
       continue;

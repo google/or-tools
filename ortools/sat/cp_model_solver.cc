@@ -506,7 +506,7 @@ void FillSolutionInResponse(const CpModelProto& model_proto, const Model& model,
     if (mapping->IsInteger(i)) {
       const IntegerVariable var = mapping->Integer(i);
 
-      // For ignored or not fully instanciated variable, we just use the
+      // For ignored or not fully instantiated variable, we just use the
       // lower bound.
       solution.push_back(model.Get(LowerBound(var)));
     } else {
@@ -2084,6 +2084,9 @@ class FullProblemSolver : public SubSolver {
               *shared_->model_proto, shared_->bounds, local_model_.get());
         }
 
+        // Note that this is done after the loading, so we will never export
+        // problem clauses. We currently also never export binary clauses added
+        // by the initial probing.
         if (shared_->clauses != nullptr) {
           const int id = shared_->clauses->RegisterNewId();
           shared_->clauses->SetWorkerNameForId(id, local_model_->Name());
@@ -2941,26 +2944,27 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
   // Log statistics.
   if (logger->LoggingIsEnabled()) {
     if (parameters.log_subsolver_statistics()) {
-      SOLVER_LOG(logger, "");
-      SOLVER_LOG(logger, "Sub-solver search statistics:");
+      bool first = true;
       for (const auto& subsolver : subsolvers) {
         const std::string stats = subsolver->StatisticsString();
         if (stats.empty()) continue;
+        if (first) {
+          SOLVER_LOG(logger, "");
+          SOLVER_LOG(logger, "Sub-solver search statistics:");
+          first = false;
+        }
         SOLVER_LOG(logger,
                    absl::StrCat("  '", subsolver->name(), "':\n", stats));
       }
     }
 
-    SOLVER_LOG(logger, "");
     shared.response->DisplayImprovementStatistics();
 
     if (shared.bounds) {
-      SOLVER_LOG(logger, "");
       shared.bounds->LogStatistics(logger);
     }
 
     if (shared.clauses) {
-      SOLVER_LOG(logger, "");
       shared.clauses->LogStatistics(logger);
     }
   }
@@ -3557,6 +3561,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
           SOLVER_LOG(logger, lp->Statistics());
         }
       }
+      SOLVER_LOG(logger, "");
     }
   }
 

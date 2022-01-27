@@ -452,7 +452,10 @@ class SatSolver {
 
   // Adds a binary clause to the BinaryImplicationGraph and to the
   // BinaryClauseManager when track_binary_clauses_ is true.
-  void AddBinaryClauseInternal(Literal a, Literal b);
+  //
+  // If export_clause is true, then we will also export_clause that to a
+  // potential shared_binary_clauses_callback_.
+  void AddBinaryClauseInternal(Literal a, Literal b, bool export_clause);
 
   // See SaveDebugAssignment(). Note that these functions only consider the
   // variables at the time the debug_assignment_ was saved. If new variables

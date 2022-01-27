@@ -23,9 +23,8 @@
  IntVar rabbits = cp_model.NewIntVar(all_animals).WithName("rabbits");
  IntVar pheasants = cp_model.NewIntVar(all_animals).WithName("pheasants");
 
- cp_model.AddEquality(LinearExpr::Sum({rabbits, pheasants}), 20);
- cp_model.AddEquality(LinearExpr::WeightedSum({rabbits, pheasants}, {4, 2}),
- 56);
+ cp_model.AddEquality(rabbits + pheasants, 20);
+ cp_model.AddEquality(4 * rabbits + 2 * pheasants, 56);
 
  const CpSolverResponse response = Solve(cp_model.Build());
  if (response.status() == CpSolverStatus::FEASIBLE) {
@@ -759,6 +758,18 @@ class CpModelBuilder {
   /// Creates an optional interval variable with a fixed size.
   IntervalVar NewOptionalFixedSizeIntervalVar(const LinearExpr& start,
                                               int64_t size, BoolVar presence);
+
+  /// It is sometime convenient when building a model to create a bunch of
+  /// variables that will later be fixed. Instead of doing AddEquality(var,
+  /// value) which add a constraint, these functions modify directly the
+  /// underlying variable domain.
+  ///
+  /// Note that this ignore completely the original variable domain and just fix
+  /// the given variable to the given value, even if it was outside the given
+  /// variable domain. You can still use AddEquality() if this is not what you
+  /// want.
+  void FixVariable(IntVar var, int64_t value);
+  void FixVariable(BoolVar var, bool value);
 
   /// Adds the constraint that at least one of the literals must be true.
   Constraint AddBoolOr(absl::Span<const BoolVar> literals);
