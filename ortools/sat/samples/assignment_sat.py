@@ -51,11 +51,11 @@ def main():
     # [START constraints]
     # Each worker is assigned to at most one task.
     for i in range(num_workers):
-        model.AddAtMostOne([x[i][j] for j in range(num_tasks)])
+        model.AddAtMostOne(x[i][j] for j in range(num_tasks))
 
     # Each task is assigned to exactly one worker.
     for j in range(num_tasks):
-        model.AddExactlyOne([x[i][j] for i in range(num_workers)])
+        model.AddExactlyOne(x[i][j] for i in range(num_workers))
     # [END constraints]
 
     # Objective

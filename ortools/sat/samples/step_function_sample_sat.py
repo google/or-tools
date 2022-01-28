@@ -73,7 +73,7 @@ def step_function_sample_sat():
     model.Add(expr == 3).OnlyEnforceIf(b3)
 
     # At least one bi is true. (we could use an exactly one constraint).
-    model.AddBoolOr([b0, b2, b3])
+    model.AddBoolOr(b0, b2, b3)
 
     # Search for x values in increasing order.
     model.AddDecisionStrategy([x], cp_model.CHOOSE_FIRST,

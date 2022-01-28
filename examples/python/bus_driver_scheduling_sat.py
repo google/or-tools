@@ -1897,7 +1897,7 @@ def bus_driver_scheduling(minimize_drivers, max_num_drivers):
 
     # Each shift is covered.
     for s in range(num_shifts):
-        model.AddExactlyOne([performed[d, s] for d in range(num_drivers)])
+        model.AddExactlyOne(performed[d, s] for d in range(num_drivers))
         # Globally, each node has one incoming and one outgoing literal
         model.AddExactlyOne(shared_incoming_literals[s])
         model.AddExactlyOne(shared_outgoing_literals[s])

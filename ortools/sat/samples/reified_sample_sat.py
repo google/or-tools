@@ -25,15 +25,15 @@ def ReifiedSampleSat():
     b = model.NewBoolVar('b')
 
     # First version using a half-reified bool and.
-    model.AddBoolAnd([x, y.Not()]).OnlyEnforceIf(b)
+    model.AddBoolAnd(x, y.Not()).OnlyEnforceIf(b)
 
     # Second version using implications.
     model.AddImplication(b, x)
     model.AddImplication(b, y.Not())
 
     # Third version using bool or.
-    model.AddBoolOr([b.Not(), x])
-    model.AddBoolOr([b.Not(), y.Not()])
+    model.AddBoolOr(b.Not(), x)
+    model.AddBoolOr(b.Not(), y.Not())
 
 
 ReifiedSampleSat()

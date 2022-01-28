@@ -39,11 +39,11 @@ def solve_sudoku():
 
     # AllDifferent on rows.
     for i in line:
-        model.AddAllDifferent([grid[(i, j)] for j in line])
+        model.AddAllDifferent(grid[(i, j)] for j in line)
 
     # AllDifferent on columns.
     for j in line:
-        model.AddAllDifferent([grid[(i, j)] for i in line])
+        model.AddAllDifferent(grid[(i, j)] for i in line)
 
     # AllDifferent on cells.
     for i in cell:

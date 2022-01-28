@@ -58,8 +58,8 @@ from ortools.util import sorted_interval_list
 Domain = sorted_interval_list.Domain
 
 # The classes below allow linear expressions to be expressed naturally with the
-# usual arithmetic operators +-*/ and with constant numbers, which makes the
-# python API very intuitive. See ../samples/*.py for examples.
+# usual arithmetic operators + - * / and with constant numbers, which makes the
+# python API very intuitive. See../ samples/*.py for examples.
 
 INT_MIN = -9223372036854775808  # hardcoded to be platform independent.
 INT_MAX = 9223372036854775807
@@ -796,7 +796,7 @@ class Constraint(object):
         self.__index = len(constraints)
         self.__constraint = constraints.add()
 
-    def OnlyEnforceIf(self, boolvar):
+    def OnlyEnforceIf(self, *boolvar):
         """Adds an enforcement literal to the constraint.
 
     This method adds one or more literals (that is, a boolean variable or its
@@ -808,23 +808,18 @@ class Constraint(object):
     BoolOr, BoolAnd, and linear constraints all support enforcement literals.
 
     Args:
-      boolvar: A boolean literal or a list of boolean literals.
+      *boolvar: One or more Boolean literals.
 
     Returns:
       self.
     """
-
-        if cmh.is_integral(boolvar) and int(boolvar) == 1:
-            # Always true. Do nothing.
-            pass
-        elif isinstance(boolvar, list):
-            for b in boolvar:
-                if cmh.is_integral(b) and int(b) == 1:
-                    pass
-                else:
-                    self.__constraint.enforcement_literal.append(b.Index())
-        else:
-            self.__constraint.enforcement_literal.append(boolvar.Index())
+        for lit in ExpandGeneratorOrTuple(boolvar):
+            if (isinstance(lit, bool) and
+                    bool(lit)) or (cmh.is_integral(lit) and int(lit) == 1):
+                # Always true. Do nothing.
+                pass
+            else:
+                self.__constraint.enforcement_literal.append(lit.Index())
         return self
 
     def Index(self):
@@ -1060,21 +1055,22 @@ class CpModel(object):
 
     # General Integer Constraints.
 
-    def AddAllDifferent(self, expressions):
+    def AddAllDifferent(self, *expressions):
         """Adds AllDifferent(expressions).
 
     This constraint forces all expressions to have different values.
 
     Args:
-      expressions: a list of integer affine expressions.
+      *expressions: simple expressions of the form a * var + constant.
 
     Returns:
       An instance of the `Constraint` class.
     """
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
+        expanded = ExpandGeneratorOrTuple(expressions)
         model_ct.all_diff.exprs.extend(
-            [self.ParseLinearExpression(x) for x in expressions])
+            [self.ParseLinearExpression(x) for x in expanded])
         return ct
 
     def AddElement(self, index, variables, target):
@@ -1496,62 +1492,72 @@ class CpModel(object):
         model_ct.enforcement_literal.append(self.GetOrMakeBooleanIndex(a))
         return ct
 
-    def AddBoolOr(self, literals):
+    def AddBoolOr(self, *literals):
         """Adds `Or(literals) == true`: Sum(literals) >= 1."""
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
-        model_ct.bool_or.literals.extend(
-            [self.GetOrMakeBooleanIndex(x) for x in literals])
+        model_ct.bool_or.literals.extend([
+            self.GetOrMakeBooleanIndex(x)
+            for x in ExpandGeneratorOrTuple(literals)
+        ])
         return ct
 
-    def AddAtLeastOne(self, literals):
+    def AddAtLeastOne(self, *literals):
         """Same as `AddBoolOr`: `Sum(literals) >= 1`."""
-        return self.AddBoolOr(literals)
+        return self.AddBoolOr(*literals)
 
-    def AddAtMostOne(self, literals):
+    def AddAtMostOne(self, *literals):
         """Adds `AtMostOne(literals)`: `Sum(literals) <= 1`."""
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
-        model_ct.at_most_one.literals.extend(
-            [self.GetOrMakeBooleanIndex(x) for x in literals])
+        model_ct.at_most_one.literals.extend([
+            self.GetOrMakeBooleanIndex(x)
+            for x in ExpandGeneratorOrTuple(literals)
+        ])
         return ct
 
-    def AddExactlyOne(self, literals):
+    def AddExactlyOne(self, *literals):
         """Adds `ExactlyOne(literals)`: `Sum(literals) == 1`."""
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
-        model_ct.exactly_one.literals.extend(
-            [self.GetOrMakeBooleanIndex(x) for x in literals])
+        model_ct.exactly_one.literals.extend([
+            self.GetOrMakeBooleanIndex(x)
+            for x in ExpandGeneratorOrTuple(literals)
+        ])
         return ct
 
-    def AddBoolAnd(self, literals):
+    def AddBoolAnd(self, *literals):
         """Adds `And(literals) == true`."""
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
-        model_ct.bool_and.literals.extend(
-            [self.GetOrMakeBooleanIndex(x) for x in literals])
+        model_ct.bool_and.literals.extend([
+            self.GetOrMakeBooleanIndex(x)
+            for x in ExpandGeneratorOrTuple(literals)
+        ])
         return ct
 
-    def AddBoolXOr(self, literals):
+    def AddBoolXOr(self, *literals):
         """Adds `XOr(literals) == true`.
 
     In contrast to AddBoolOr and AddBoolAnd, it does not support
         .OnlyEnforceIf().
 
     Args:
-      literals: the list of literals in the constraint.
+      *literals: the list of literals in the constraint.
 
     Returns:
       An `Constraint` object.
     """
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
-        model_ct.bool_xor.literals.extend(
-            [self.GetOrMakeBooleanIndex(x) for x in literals])
+        model_ct.bool_xor.literals.extend([
+            self.GetOrMakeBooleanIndex(x)
+            for x in ExpandGeneratorOrTuple(literals)
+        ])
         return ct
 
     def AddMinEquality(self, target, exprs):
-        """Adds `target == Min(variables)`."""
+        """Adds `target == Min(exprs)`."""
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
         model_ct.lin_max.exprs.extend(
@@ -1561,7 +1567,7 @@ class CpModel(object):
         return ct
 
     def AddMaxEquality(self, target, exprs):
-        """Adds `target == Max(variables)`."""
+        """Adds `target == Max(exprs)`."""
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
         model_ct.lin_max.exprs.extend(
@@ -1596,12 +1602,14 @@ class CpModel(object):
         model_ct.int_mod.target.CopyFrom(self.ParseLinearExpression(target))
         return ct
 
-    def AddMultiplicationEquality(self, target, expressions):
+    def AddMultiplicationEquality(self, target, *expressions):
         """Adds `target == expressions[0] * .. * expressions[n]`."""
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
-        model_ct.int_prod.exprs.extend(
-            [self.ParseLinearExpression(expr) for expr in expressions])
+        model_ct.int_prod.exprs.extend([
+            self.ParseLinearExpression(expr)
+            for expr in ExpandGeneratorOrTuple(expressions)
+        ])
         model_ct.int_prod.target.CopyFrom(self.ParseLinearExpression(target))
         return ct
 
@@ -2065,6 +2073,16 @@ class CpModel(object):
     def ClearAssumptions(self):
         """Remove all assumptions from the model."""
         self.__model.ClearField('assumptions')
+
+
+def ExpandGeneratorOrTuple(args):
+    if hasattr(args, '__len__'):  # Tuple
+        if len(args) != 1:
+            return args
+        if cmh.is_a_number(args[0]) or isinstance(args[0], LinearExpr):
+            return args
+    # Generator
+    return args[0]
 
 
 def EvaluateLinearExpr(expression, solution):

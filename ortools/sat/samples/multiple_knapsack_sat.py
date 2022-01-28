@@ -53,7 +53,7 @@ def main():
     # [START constraints]
     # Each item is assigned to at most one bin.
     for i in data['all_items']:
-        model.AddAtMostOne([x[i, b] for b in data['all_bins']])
+        model.AddAtMostOne(x[i, b] for b in data['all_bins'])
 
     # The amount packed in each bin cannot exceed its capacity.
     for b in data['all_bins']:

@@ -288,7 +288,7 @@ def solve_shift_scheduling(params, output_proto):
     # Exactly one shift per day.
     for e in range(num_employees):
         for d in range(num_days):
-            model.AddExactlyOne([work[e, s, d] for s in range(num_shifts)])
+            model.AddExactlyOne(work[e, s, d] for s in range(num_shifts))
 
     # Fixed assignments.
     for e, s, d in fixed_assignments:

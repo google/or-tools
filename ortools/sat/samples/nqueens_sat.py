@@ -76,8 +76,8 @@ def main(board_size):
     # different.
 
     # No two queens can be on the same diagonal.
-    model.AddAllDifferent([queens[i] + i for i in range(board_size)])
-    model.AddAllDifferent([queens[i] - i for i in range(board_size)])
+    model.AddAllDifferent(queens[i] + i for i in range(board_size))
+    model.AddAllDifferent(queens[i] - i for i in range(board_size))
     # [END constraints]
 
     # Solve the model.
