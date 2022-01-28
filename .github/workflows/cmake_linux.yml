@@ -77,35 +77,41 @@ jobs:
           cmake -S. \
                 -Bbuildstatic \
                 -DCMAKE_BUILD_TYPE=Release \
+                -DCMAKE_INSTALL_PREFIX="buildstatic/install" \
                 -DBUILD_SHARED_LIBS=OFF \
                 -DBUILD_DEPS=ON \
                 -DUSE_SIRIUS=ON \
                 -Dsirius_solver_DIR="${{ github.workspace }}/sirius-solver/SiriusInstall/cmake" \
                 -DUSE_XPRESS=ON \
                 -DXPRESS_ROOT="${{ github.workspace }}/xpressmp813" \
+                -DBUILD_SAMPLES=OFF
       - name: Build ortools static
         working-directory: ./or-tools
         run: |
           cmake --build buildstatic \
                 --target ortools \
+                         install \
                 -j14
-      - name: Prepare ortools install
+      - name: Prepare ortools install dyn
         working-directory: ./or-tools/build
         run: |
-          mkdir -p install_artifact/cmake
-          mkdir -p install_artifact/lib
-          cp install/lib/cmake/ortools/ortoolsTargets*.cmake install_artifact/cmake
-          cp install/lib/libortools.so install_artifact/lib
-          cp ../buildstatic/lib/libortools.a install_artifact/lib
-          cd install
-          find . -type f -wholename './include/ortools/*.h' -exec cp --parents '{}' ../install_artifact \;
-          find . -type f -wholename './include/absl/*.h' -exec cp --parents '{}' ../install_artifact \;
-          find . -type f -wholename './include/google/*.h' -exec cp --parents '{}' ../install_artifact \;
-      - name: Upload ortools install
+          rm -rf install/bin install/share install/lib/*.so.* install/lib/python3
+          find install/include -mindepth 1 -maxdepth 1 ! \( -name absl -o -name google -o -name ortools \) -execdir rm -rf '{}' \;
+      - name: Upload ortools install dyn
         uses: actions/upload-artifact@v2
         with:
-          name: ortools_install
-          path: ./or-tools/build/install_artifact
+          name: ortools_dyn_install
+          path: ./or-tools/build/install
+      - name: Prepare ortools install static
+        working-directory: ./or-tools/buildstatic
+        run: |
+          rm -rf install/bin install/share
+          find install/include -mindepth 1 -maxdepth 1 ! \( -name absl -o -name google -o -name ortools \) -execdir rm -rf '{}' \;
+      - name: Upload ortools install static
+        uses: actions/upload-artifact@v2
+        with:
+          name: ortools_static_install
+          path: ./or-tools/buildstatic/install
       - name: Upload ortools wheel
         uses: actions/upload-artifact@v2
         with:
