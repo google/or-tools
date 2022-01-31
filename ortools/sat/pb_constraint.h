@@ -23,10 +23,10 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/types/span.h"
-#include "ortools/base/int_type.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
+#include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
@@ -39,7 +39,7 @@ namespace sat {
 
 // The type of the integer coefficients in a pseudo-Boolean constraint.
 // This is also used for the current value of a constraint or its bounds.
-DEFINE_INT_TYPE(Coefficient, int64_t);
+DEFINE_STRONG_INT_TYPE(Coefficient, int64_t);
 
 // IMPORTANT: We can't use numeric_limits<Coefficient>::max() which will compile
 // but just returns zero!!
@@ -626,7 +626,7 @@ class PbConstraints : public SatPropagator {
   // about two times faster with this implementation than one with direct
   // pointer to an UpperBoundedLinearConstraint. The main reason for this is
   // probably that the thresholds_ vector is a lot more efficient cache-wise.
-  DEFINE_INT_TYPE(ConstraintIndex, int32_t);
+  DEFINE_STRONG_INT_TYPE(ConstraintIndex, int32_t);
   struct ConstraintIndexWithCoeff {
     ConstraintIndexWithCoeff() {}  // Needed for vector.resize()
     ConstraintIndexWithCoeff(bool n, ConstraintIndex i, Coefficient c)

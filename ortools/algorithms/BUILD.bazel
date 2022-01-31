@@ -67,7 +67,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//ortools/base",
-        "//ortools/base:int_type",
+        "//ortools/base:intops",
         "//ortools/base:ptr_util",
         "//ortools/base:strong_vector",
         "//ortools/util:time_limit",

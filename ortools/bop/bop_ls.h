@@ -374,7 +374,7 @@ class AssignmentAndConstraintFeasibilityMaintainer {
   // constraint infeasible. An "up" direction means that the constraint activity
   // is lower than the lower bound and we need to make the activity move up to
   // fix the infeasibility.
-  DEFINE_INT_TYPE(ConstraintIndexWithDirection, int32_t);
+  DEFINE_STRONG_INT_TYPE(ConstraintIndexWithDirection, int32_t);
   ConstraintIndexWithDirection FromConstraintIndex(ConstraintIndex index,
                                                    bool up) const {
     return ConstraintIndexWithDirection(2 * index.value() + (up ? 1 : 0));

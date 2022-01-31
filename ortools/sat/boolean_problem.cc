@@ -31,8 +31,8 @@
 #endif  // __PORTABLE_PLATFORM__
 #include "ortools/algorithms/find_graph_symmetries.h"
 #include "ortools/base/hash.h"
-#include "ortools/base/int_type.h"
 #include "ortools/base/map_util.h"
+#include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/graph/util.h"
 #include "ortools/port/proto_utils.h"

@@ -35,12 +35,12 @@
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/base/cleanup.h"
-#include "ortools/base/int_type.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/base/status_macros.h"
+#include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/glop/lp_solver.h"
 #include "ortools/glop/parameters.pb.h"
@@ -264,10 +264,9 @@ void GlopSolver::UpdateLinearConstraintBounds(
   }
 }
 
-std::pair<glop::GlopParameters, std::vector<std::string>>
-GlopSolver::MergeSolveParameters(const SolveParametersProto& solver_parameters,
-                                 const bool setting_initial_basis,
-                                 const bool has_message_callback) {
+absl::StatusOr<glop::GlopParameters> GlopSolver::MergeSolveParameters(
+    const SolveParametersProto& solver_parameters,
+    const bool setting_initial_basis, const bool has_message_callback) {
   glop::GlopParameters result = solver_parameters.glop();
   std::vector<std::string> warnings;
   if (!result.has_max_time_in_seconds() && solver_parameters.has_time_limit()) {
@@ -310,7 +309,7 @@ GlopSolver::MergeSolveParameters(const SolveParametersProto& solver_parameters,
         result.set_use_dual_simplex(true);
         break;
       case LP_ALGORITHM_BARRIER:
-        warnings.push_back(
+        warnings.emplace_back(
             "GLOP does not support 'LP_ALGORITHM_BARRIER' value for "
             "'lp_algorithm' parameter.");
         break;
@@ -385,7 +384,10 @@ GlopSolver::MergeSolveParameters(const SolveParametersProto& solver_parameters,
   if (solver_parameters.has_solution_limit()) {
     warnings.push_back("GLOP does not support 'solution_limit' parameter");
   }
-  return std::make_pair(std::move(result), std::move(warnings));
+  if (!warnings.empty()) {
+    return absl::InvalidArgumentError(absl::StrJoin(warnings, "; "));
+  }
+  return result;
 }
 
 bool GlopSolver::CanUpdate(const ModelUpdateProto& model_update) {
@@ -673,17 +675,18 @@ absl::Status GlopSolver::FillSolveStats(const glop::ProblemStatus status,
   return absl::OkStatus();
 }
 
-absl::Status GlopSolver::FillSolveResult(
+absl::StatusOr<SolveResultProto> GlopSolver::MakeSolveResult(
     const glop::ProblemStatus status,
     const ModelSolveParametersProto& model_parameters,
-    const SolveInterrupter* const interrupter, const absl::Duration solve_time,
-    SolveResultProto& solve_result) {
+    const SolveInterrupter* const interrupter,
+    const absl::Duration solve_time) {
+  SolveResultProto solve_result;
   ASSIGN_OR_RETURN(*solve_result.mutable_termination(),
                    BuildTermination(status, interrupter));
   FillSolution(status, model_parameters, solve_result);
   RETURN_IF_ERROR(
       FillSolveStats(status, solve_time, *solve_result.mutable_solve_stats()));
-  return absl::OkStatus();
+  return solve_result;
 }
 
 void GlopSolver::SetGlopBasis(const BasisProto& basis) {
@@ -713,23 +716,13 @@ absl::StatusOr<SolveResultProto> GlopSolver::Solve(
                                                 /*supported_events=*/{}));
 
   const absl::Time start = absl::Now();
-  SolveResultProto result;
-  {
-    auto [glop_parameters, warnings] = MergeSolveParameters(
-        parameters,
-        /*setting_initial_basis=*/model_parameters.has_initial_basis(),
-        /*has_message_callback=*/message_cb != nullptr);
-    if (!warnings.empty()) {
-      if (parameters.strictness().bad_parameter()) {
-        return absl::InvalidArgumentError(absl::StrJoin(warnings, "; "));
-      } else {
-        for (std::string& warning : warnings) {
-          result.add_warnings(std::move(warning));
-        }
-      }
-    }
-    lp_solver_.SetParameters(glop_parameters);
-  }
+  ASSIGN_OR_RETURN(
+      const glop::GlopParameters glop_parameters,
+      MergeSolveParameters(
+          parameters,
+          /*setting_initial_basis=*/model_parameters.has_initial_basis(),
+          /*has_message_callback=*/message_cb != nullptr));
+  lp_solver_.SetParameters(glop_parameters);
 
   if (model_parameters.has_initial_basis()) {
     SetGlopBasis(model_parameters.initial_basis());
@@ -770,11 +763,7 @@ absl::StatusOr<SolveResultProto> GlopSolver::Solve(
   const glop::ProblemStatus status =
       lp_solver_.SolveWithTimeLimit(linear_program_, time_limit.get());
   const absl::Duration solve_time = absl::Now() - start;
-
-  RETURN_IF_ERROR(FillSolveResult(status, model_parameters, interrupter,
-                                  solve_time, result));
-
-  return result;
+  return MakeSolveResult(status, model_parameters, interrupter, solve_time);
 }
 
 absl::StatusOr<std::unique_ptr<SolverInterface>> GlopSolver::New(

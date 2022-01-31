@@ -26,10 +26,10 @@
 #include "absl/base/attributes.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
-#include "ortools/base/int_type.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
+#include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/model.h"
 #include "ortools/util/bitset.h"
@@ -38,11 +38,11 @@ namespace operations_research {
 namespace sat {
 
 // Index of a variable (>= 0).
-DEFINE_INT_TYPE(BooleanVariable, int);
+DEFINE_STRONG_INT_TYPE(BooleanVariable, int);
 const BooleanVariable kNoBooleanVariable(-1);
 
 // Index of a literal (>= 0), see Literal below.
-DEFINE_INT_TYPE(LiteralIndex, int);
+DEFINE_STRONG_INT_TYPE(LiteralIndex, int);
 const LiteralIndex kNoLiteralIndex(-1);
 
 // Special values used in some API to indicate a literal that is always true

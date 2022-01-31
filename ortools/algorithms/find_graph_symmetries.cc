@@ -933,7 +933,7 @@ void GraphSymmetryFinder::PruneOrbitsUnderPermutationsCompatibleWithPartition(
             compatible = false;
             break;
           }
-          part = partition.PartOf(node);  // Initilization of 'part'.
+          part = partition.PartOf(node);  // Initialization of 'part'.
         }
       }
     }

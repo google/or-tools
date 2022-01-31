@@ -20,10 +20,10 @@
 #include <vector>
 
 #include "absl/types/span.h"
-#include "ortools/base/int_type.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
+#include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/cp_constraints.h"
 #include "ortools/sat/integer.h"
@@ -37,7 +37,7 @@
 namespace operations_research {
 namespace sat {
 
-DEFINE_INT_TYPE(IntervalVariable, int32_t);
+DEFINE_STRONG_INT_TYPE(IntervalVariable, int32_t);
 const IntervalVariable kNoIntervalVariable(-1);
 
 // This class maintains a set of intervals which correspond to three integer

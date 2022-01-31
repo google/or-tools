@@ -34,6 +34,7 @@
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
+#include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
@@ -348,15 +349,6 @@ GurobiParametersProto MergeParameters(
   }
 
   return merged_parameters;
-}
-
-std::string JoinErrors(const std::vector<absl::Status>& errors) {
-  std::string result = "[";
-  for (const absl::Status& error : errors) {
-    absl::StrAppend(&result, error.message());
-  }
-  absl::StrAppend(&result, "]");
-  return result;
 }
 
 absl::StatusOr<int64_t> SafeInt64FromDouble(const double d) {
@@ -1211,19 +1203,22 @@ absl::StatusOr<GurobiSolver::SolutionsAndClaims> GurobiSolver::GetQpSolution(
   return solution_and_claims;
 }
 
-std::vector<absl::Status> GurobiSolver::SetParameters(
+absl::Status GurobiSolver::SetParameters(
     const SolveParametersProto& parameters) {
   const GurobiParametersProto gurobi_parameters = MergeParameters(parameters);
-  std::vector<absl::Status> parameter_errors;
+  std::vector<std::string> parameter_errors;
   for (const GurobiParametersProto::Parameter& parameter :
        gurobi_parameters.parameters()) {
     absl::Status param_status =
         gurobi_->SetParam(parameter.name().c_str(), parameter.value());
     if (!param_status.ok()) {
-      parameter_errors.emplace_back(std::move(param_status));
+      parameter_errors.emplace_back(std::move(param_status).message());
     }
   }
-  return parameter_errors;
+  if (!parameter_errors.empty()) {
+    return absl::InvalidArgumentError(absl::StrJoin(parameter_errors, "; "));
+  }
+  return absl::OkStatus();
 }
 
 absl::Status GurobiSolver::AddNewVariables(
@@ -1874,17 +1869,7 @@ absl::StatusOr<SolveResultProto> GurobiSolver::Solve(
   const absl::Time start = absl::Now();
   // We must set the parameters before calling RegisterCallback since it changes
   // some parameters depending on the callback registration.
-  const std::vector<absl::Status> param_errors = SetParameters(parameters);
-  std::vector<std::string> warnings;
-  if (!param_errors.empty()) {
-    if (parameters.strictness().bad_parameter()) {
-      return absl::InvalidArgumentError(JoinErrors(param_errors));
-    } else {
-      for (const absl::Status& param_error : param_errors) {
-        warnings.push_back(std::string(param_error.message()));
-      }
-    }
-  }
+  RETURN_IF_ERROR(SetParameters(parameters));
 
   // We use a local interrupter that will triggers the calls to GRBterminate()
   // when either the user interrupter is triggered or when a callback returns a
@@ -1913,9 +1898,6 @@ absl::StatusOr<SolveResultProto> GurobiSolver::Solve(
   // `terminate`.
   const ScopedSolveInterrupterCallback scoped_chaining_callback(
       interrupter, [&]() { local_interrupter->Interrupt(); });
-
-  // TODO(user): any warnings above will be lost if we get an error Status
-  // below, reconsider the Solve API.
 
   // Need to run GRBupdatemodel before registering callbacks (to test if the
   // problem is a MIP), setting basis and getting the obj sense.
@@ -1963,10 +1945,6 @@ absl::StatusOr<SolveResultProto> GurobiSolver::Solve(
 
   ASSIGN_OR_RETURN(SolveResultProto solve_result,
                    ExtractSolveResultProto(start, model_parameters));
-  for (const auto& warning : warnings) {
-    solve_result.add_warnings(warning);
-  }
-
   // Reset Gurobi parameters.
   // TODO(user): ensure that resetting parameters does not degrade
   // incrementalism performance.

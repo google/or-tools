@@ -35,13 +35,12 @@
 #include <limits>
 
 #include "absl/container/flat_hash_set.h"
-#include "absl/flags/parse.h"
-#include "absl/flags/usage.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_replace.h"
 #include "absl/strings/string_view.h"
+#include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/status_macros.h"
@@ -369,8 +368,7 @@ void RealMain() {
 }  // namespace
 
 int main(int argc, char** argv) {
-  google::InitGoogleLogging(argv[0]);
-  absl::ParseCommandLine(argc, argv);
+  InitGoogle(argv[0], &argc, &argv, true);
   RealMain();
   return 0;
 }

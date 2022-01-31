@@ -29,17 +29,17 @@
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
-#include "ortools/base/int_type.h"
 #include "ortools/base/map_util.h"
+#include "ortools/base/strong_int.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_update.pb.h"
 
 namespace operations_research {
 namespace math_opt {
 
-DEFINE_INT_TYPE(VariableId, int64_t);
-DEFINE_INT_TYPE(LinearConstraintId, int64_t);
-DEFINE_INT_TYPE(UpdateTrackerId, int64_t);
+DEFINE_STRONG_INT_TYPE(VariableId, int64_t);
+DEFINE_STRONG_INT_TYPE(LinearConstraintId, int64_t);
+DEFINE_STRONG_INT_TYPE(UpdateTrackerId, int64_t);
 
 // An index based C++ API for building & storing optimization problems.
 //

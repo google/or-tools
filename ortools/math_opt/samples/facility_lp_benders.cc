@@ -21,8 +21,6 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/flags/flag.h"
-#include "absl/flags/parse.h"
-#include "absl/flags/usage.h"
 #include "absl/random/random.h"
 #include "absl/random/uniform_int_distribution.h"
 #include "absl/status/statusor.h"
@@ -30,6 +28,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
+#include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 
@@ -219,9 +218,6 @@ void FullProblem(const Network& network, const double location_demand,
     }
   }
   const SolveResult result = Solve(model, SolverType::kGurobi).value();
-  for (const auto& warning : result.warnings) {
-    LOG(WARNING) << "Solver warning: " << warning << std::endl;
-  }
   QCHECK_EQ(result.termination.reason, TerminationReason::kOptimal)
       << "Failed to find an optimal solution: " << result.termination;
   std::cout << "Full problem optimal objective: "
@@ -304,9 +300,6 @@ void Benders(const Network network, const double location_demand,
     LOG(INFO) << "Iteration: " << iteration;
     // Solve and process first stage.
     const SolveResult first_stage_result = first_stage_solver->Solve().value();
-    for (const auto& warning : first_stage_result.warnings) {
-      LOG(WARNING) << "Solver warning: " << warning << std::endl;
-    }
     QCHECK_EQ(first_stage_result.termination.reason,
               TerminationReason::kOptimal)
         << first_stage_result.termination;
@@ -328,9 +321,6 @@ void Benders(const Network network, const double location_demand,
     // Solve and process second stage.
     const SolveResult second_stage_result =
         second_stage_solver->Solve(second_stage_args).value();
-    for (const auto& warning : second_stage_result.warnings) {
-      LOG(WARNING) << "Solver warning: " << warning << std::endl;
-    }
     if (second_stage_result.termination.reason ==
         TerminationReason::kInfeasible) {
       // If the second stage problem is infeasible we will get a dual ray
@@ -448,8 +438,7 @@ void Benders(const Network network, const double location_demand,
 }  // namespace
 
 int main(int argc, char** argv) {
-  google::InitGoogleLogging(argv[0]);
-  absl::ParseCommandLine(argc, argv);
+  InitGoogle(argv[0], &argc, &argv, true);
   const Network network(absl::GetFlag(FLAGS_num_facilities),
                         absl::GetFlag(FLAGS_num_locations),
                         absl::GetFlag(FLAGS_edge_probability));

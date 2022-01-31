@@ -17,8 +17,8 @@
 #include <cmath>
 #include <cstdlib>
 #include <optional>
-#include <ostream>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -27,7 +27,7 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "ortools/base/logging.h"
-#include "ortools/port/proto_utils.h"
+#include "ortools/math_opt/cpp/math_opt.h"
 
 namespace operations_research {
 namespace math_opt {
@@ -123,7 +123,6 @@ void PrintTo(const Solution& solution, std::ostream* const os) {
 
 void PrintTo(const SolveResult& result, std::ostream* const os) {
   *os << "{termination: " << Print(result.termination)
-      << ", warnings: " << Print(result.warnings)
       << ", solve_stats: " << Print(result.solve_stats)
       << ", solutions: " << Print(result.solutions)
       << ", primal_rays: " << Print(result.primal_rays)
@@ -475,26 +474,14 @@ Matcher<DualRay> IsNear(DualRay expected, const double tolerance) {
 ////////////////////////////////////////////////////////////////////////////////
 
 Matcher<SolveResult> TerminatesWithOneOf(
-    const std::vector<TerminationReason>& allowed, const bool check_warnings) {
-  std::vector<Matcher<SolveResult>> matchers;
-  matchers.push_back(
-      Field("termination", &SolveResult::termination,
-            Field("reason", &Termination::reason, AnyOfArray(allowed))));
-  if (check_warnings) {
-    matchers.push_back(Field("warnings", &SolveResult::warnings, IsEmpty()));
-  }
-  return ::testing::AllOfArray(matchers);
+    const std::vector<TerminationReason>& allowed) {
+  return Field("termination", &SolveResult::termination,
+               Field("reason", &Termination::reason, AnyOfArray(allowed)));
 }
 
-Matcher<SolveResult> TerminatesWith(const TerminationReason expected,
-                                    const bool check_warnings) {
-  std::vector<Matcher<SolveResult>> matchers;
-  matchers.push_back(Field("termination", &SolveResult::termination,
-                           Field("reason", &Termination::reason, expected)));
-  if (check_warnings) {
-    matchers.push_back(Field("warnings", &SolveResult::warnings, IsEmpty()));
-  }
-  return ::testing::AllOfArray(matchers);
+Matcher<SolveResult> TerminatesWith(const TerminationReason expected) {
+  return Field("termination", &SolveResult::termination,
+               Field("reason", &Termination::reason, expected));
 }
 
 namespace {
@@ -508,36 +495,31 @@ testing::Matcher<SolveResult> LimitIs(const Limit expected,
   return Field("termination", &SolveResult::termination,
                Field("limit", &Termination::limit, expected));
 }
+
 }  // namespace
 
 testing::Matcher<SolveResult> TerminatesWithLimit(
-    const Limit expected, const bool allow_limit_undetermined,
-    const bool check_warnings) {
+    const Limit expected, const bool allow_limit_undetermined) {
   std::vector<Matcher<SolveResult>> matchers;
   matchers.push_back(LimitIs(expected, allow_limit_undetermined));
   matchers.push_back(TerminatesWithOneOf(
-      {TerminationReason::kFeasible, TerminationReason::kNoSolutionFound},
-      /*check_warnings=*/check_warnings));
+      {TerminationReason::kFeasible, TerminationReason::kNoSolutionFound}));
   return ::testing::AllOfArray(matchers);
 }
 
 testing::Matcher<SolveResult> TerminatesWithReasonFeasible(
-    const Limit expected, const bool allow_limit_undetermined,
-    const bool check_warnings) {
+    const Limit expected, const bool allow_limit_undetermined) {
   std::vector<Matcher<SolveResult>> matchers;
   matchers.push_back(LimitIs(expected, allow_limit_undetermined));
-  matchers.push_back(TerminatesWith(TerminationReason::kFeasible,
-                                    /*check_warnings=*/check_warnings));
+  matchers.push_back(TerminatesWith(TerminationReason::kFeasible));
   return ::testing::AllOfArray(matchers);
 }
 
 testing::Matcher<SolveResult> TerminatesWithReasonNoSolutionFound(
-    const Limit expected, const bool allow_limit_undetermined,
-    const bool check_warnings) {
+    const Limit expected, const bool allow_limit_undetermined) {
   std::vector<Matcher<SolveResult>> matchers;
   matchers.push_back(LimitIs(expected, allow_limit_undetermined));
-  matchers.push_back(TerminatesWith(TerminationReason::kNoSolutionFound,
-                                    /*check_warnings=*/check_warnings));
+  matchers.push_back(TerminatesWith(TerminationReason::kNoSolutionFound));
   return ::testing::AllOfArray(matchers);
 }
 
@@ -576,15 +558,11 @@ MATCHER_P(FirstElementIs, first_element_matcher,
 }
 
 Matcher<SolveResult> IsOptimal(const std::optional<double> expected_objective,
-                               const bool check_warnings,
                                const double tolerance) {
   std::vector<Matcher<SolveResult>> matchers;
   matchers.push_back(Field(
       "termination", &SolveResult::termination,
       Field("reason", &Termination::reason, TerminationReason::kOptimal)));
-  if (check_warnings) {
-    matchers.push_back(Field("warnings", &SolveResult::warnings, IsEmpty()));
-  }
   if (expected_objective.has_value()) {
     matchers.push_back(Field(
         "solutions", &SolveResult::solutions,
@@ -599,10 +577,9 @@ Matcher<SolveResult> IsOptimal(const std::optional<double> expected_objective,
 Matcher<SolveResult> IsOptimalWithSolution(
     const double expected_objective,
     const VariableMap<double> expected_variable_values,
-    const bool check_warnings, const double tolerance) {
+    const double tolerance) {
   return AllOf(
-      IsOptimal(std::make_optional(expected_objective), check_warnings,
-                tolerance),
+      IsOptimal(std::make_optional(expected_objective), tolerance),
       HasSolution(
           PrimalSolution{.variable_values = expected_variable_values,
                          .objective_value = expected_objective,
@@ -613,11 +590,9 @@ Matcher<SolveResult> IsOptimalWithSolution(
 Matcher<SolveResult> IsOptimalWithDualSolution(
     const double expected_objective,
     const LinearConstraintMap<double> expected_dual_values,
-    const VariableMap<double> expected_reduced_costs, const bool check_warnings,
-    const double tolerance) {
+    const VariableMap<double> expected_reduced_costs, const double tolerance) {
   return AllOf(
-      IsOptimal(std::make_optional(expected_objective), check_warnings,
-                tolerance),
+      IsOptimal(std::make_optional(expected_objective), tolerance),
       HasDualSolution(
           DualSolution{
               .dual_values = expected_dual_values,
@@ -749,15 +724,8 @@ Matcher<std::vector<RayType>> CheckRays(
 Matcher<SolveResult> IsConsistentWith(
     const SolveResult& expected, const SolveResultMatcherOptions& options) {
   std::vector<Matcher<SolveResult>> to_check;
-  to_check.push_back(
-      TerminatesWithOneOf(CompatibleReasons(expected.termination.reason,
-                                            options.inf_or_unb_soft_match),
-                          /*check_warnings=*/false));
-  if (options.check_warnings) {
-    to_check.push_back(
-        Field("warnings", &SolveResult::warnings,
-              ::testing::UnorderedElementsAreArray(expected.warnings)));
-  }
+  to_check.push_back(TerminatesWithOneOf(CompatibleReasons(
+      expected.termination.reason, options.inf_or_unb_soft_match)));
   const bool skip_solution =
       MightTerminateWithRays(expected.termination.reason) &&
       !options.check_solutions_if_inf_or_unbounded;

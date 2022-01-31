@@ -32,7 +32,6 @@
 #include "absl/strings/str_split.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
-#include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/base/status_macros.h"
@@ -374,13 +373,7 @@ absl::StatusOr<SolveResultProto> CpSatSolver::Solve(
       }
     }
     if (!param_warnings.empty()) {
-      if (parameters.strictness().bad_parameter()) {
-        return absl::InvalidArgumentError(absl::StrJoin(param_warnings, "; "));
-      } else {
-        for (std::string& warning : param_warnings) {
-          result.add_warnings(std::move(warning));
-        }
-      }
+      return absl::InvalidArgumentError(absl::StrJoin(param_warnings, "; "));
     }
   }
 

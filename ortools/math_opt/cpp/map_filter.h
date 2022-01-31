@@ -18,7 +18,7 @@
 #include <initializer_list>
 #include <optional>
 
-#include "ortools/base/int_type.h"
+#include "ortools/base/strong_int.h"
 #include "ortools/math_opt/core/model_storage.h"
 #include "ortools/math_opt/cpp/id_set.h"
 #include "ortools/math_opt/sparse_containers.pb.h"

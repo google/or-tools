@@ -23,8 +23,8 @@
 #include "absl/base/thread_annotations.h"
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
-#include "ortools/base/int_type.h"
 #include "ortools/base/linked_hash_map.h"
+#include "ortools/base/strong_int.h"
 
 namespace operations_research {
 namespace math_opt {
@@ -39,7 +39,7 @@ namespace math_opt {
 class SolveInterrupter {
  public:
   // Id used to identify a callback.
-  DEFINE_INT_TYPE(CallbackId, int64_t);
+  DEFINE_STRONG_INT_TYPE(CallbackId, int64_t);
 
   using Callback = std::function<void()>;
 

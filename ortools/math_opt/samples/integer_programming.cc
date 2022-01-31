@@ -16,10 +16,9 @@
 #include <iostream>
 #include <limits>
 
-#include "absl/flags/parse.h"
-#include "absl/flags/usage.h"
 #include "absl/status/statusor.h"
 #include "absl/time/time.h"
+#include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 
@@ -59,11 +58,6 @@ void SolveSimpleMIP() {
             << std::endl;
 
   const SolveResult result = Solve(model, SolverType::kGscip).value();
-
-  // Check for warnings.
-  for (const auto& warning : result.warnings) {
-    LOG(ERROR) << "Solver warning: " << warning << std::endl;
-  }
   // Check that the problem has an optimal solution.
   QCHECK_EQ(result.termination.reason, TerminationReason::kOptimal)
       << "Failed to find an optimal solution: " << result.termination;
@@ -80,8 +74,7 @@ void SolveSimpleMIP() {
 }  // namespace
 
 int main(int argc, char** argv) {
-  google::InitGoogleLogging(argv[0]);
-  absl::ParseCommandLine(argc, argv);
+  InitGoogle(argv[0], &argc, &argv, true);
   SolveSimpleMIP();
   return 0;
 }

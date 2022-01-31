@@ -31,7 +31,9 @@ cc_library(
         "//ortools/math_opt:solution_cc_proto",
         "//ortools/math_opt:sparse_containers_cc_proto",
         "//ortools/math_opt/core:math_opt_proto_utils",
+        "//ortools/math_opt/core:solve_interrupter",
         "//ortools/math_opt/core:solver_interface",
+        "//ortools/math_opt/core:sparse_submatrix",
         "//ortools/math_opt/core:sparse_vector_view",
         "//ortools/math_opt/validators:callback_validator",
         "//ortools/port:proto_utils",
@@ -134,7 +136,7 @@ cc_library(
     deps = [
         "//ortools/base",
         "//ortools/base:cleanup",
-        "//ortools/base:int_type",
+        "//ortools/base:intops",
         "//ortools/base:map_util",
         "//ortools/base:protoutil",
         "//ortools/base:status_macros",

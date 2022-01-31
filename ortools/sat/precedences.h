@@ -20,9 +20,9 @@
 #include <vector>
 
 #include "absl/container/inlined_vector.h"
-#include "ortools/base/int_type.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/macros.h"
+#include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"
@@ -132,8 +132,8 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
   int AddGreaterThanAtLeastOneOfConstraints(Model* model);
 
  private:
-  DEFINE_INT_TYPE(ArcIndex, int);
-  DEFINE_INT_TYPE(OptionalArcIndex, int);
+  DEFINE_STRONG_INT_TYPE(ArcIndex, int);
+  DEFINE_STRONG_INT_TYPE(OptionalArcIndex, int);
 
   // Given an existing clause, sees if it can be used to add "greater than at
   // least one of" type of constraints. Returns the number of such constraint

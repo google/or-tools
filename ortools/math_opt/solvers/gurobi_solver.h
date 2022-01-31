@@ -174,10 +174,7 @@ class GurobiSolver : public SolverInterface {
       const ModelSolveParametersProto& model_parameters);
   absl::StatusOr<std::optional<BasisProto>> GetBasisIfAvailable();
 
-  // Returns a list of errors for failures only (and the empty list when all
-  // parameters succeed).
-  std::vector<absl::Status> SetParameters(
-      const SolveParametersProto& parameters);
+  absl::Status SetParameters(const SolveParametersProto& parameters);
   absl::Status AddNewConstraints(const LinearConstraintsProto& constraints);
   absl::Status AddNewVariables(const VariablesProto& new_variables);
   absl::Status AddNewSlacks(const std::vector<SlackInfo>& new_slacks);

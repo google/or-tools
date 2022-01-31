@@ -16,13 +16,13 @@
 
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
-#include "absl/status/statusor.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/protoutil.h"
+#include "ortools/gscip/gscip.pb.h"
 #include "ortools/math_opt/core/model_storage.h"
 #include "ortools/math_opt/cpp/enums.h"  // IWYU pragma: export
 #include "ortools/math_opt/cpp/linear_constraint.h"
@@ -294,9 +294,6 @@ struct SolveResult {
   explicit SolveResult(Termination termination)
       : termination(std::move(termination)) {}
 
-  // Non-fatal errors, e.g. an unsupported parameter that was skipped.
-  std::vector<std::string> warnings;
-
   // The reason the solver stopped.
   Termination termination;
 
@@ -329,6 +326,9 @@ struct SolveResult {
   // infeasibility certificates. Typically provided for TerminationReason
   // kInfeasible.
   std::vector<DualRay> dual_rays;
+
+  // Solver specific output from Gscip. Only populated if Gscip is used.
+  GScipOutput gscip_solver_specific_output;
 
   static SolveResult FromProto(const ModelStorage* model,
                                const SolveResultProto& solve_result_proto);

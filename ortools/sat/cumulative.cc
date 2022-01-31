@@ -16,8 +16,8 @@
 #include <algorithm>
 #include <memory>
 
-#include "ortools/base/int_type.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/strong_int.h"
 #include "ortools/sat/cumulative_energy.h"
 #include "ortools/sat/disjunctive.h"
 #include "ortools/sat/linear_constraint.h"

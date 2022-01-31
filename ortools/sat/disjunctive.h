@@ -18,8 +18,8 @@
 #include <functional>
 #include <vector>
 
-#include "ortools/base/int_type.h"
 #include "ortools/base/macros.h"
+#include "ortools/base/strong_int.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"

@@ -52,7 +52,7 @@ cc_library(
         ":model_update_merge",
         ":sparse_vector_view",
         "//ortools/base",
-        "//ortools/base:int_type",
+        "//ortools/base:intops",
         "//ortools/base:map_util",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:model_update_cc_proto",
@@ -149,7 +149,7 @@ cc_library(
     hdrs = ["solve_interrupter.h"],
     deps = [
         "//ortools/base",
-        "//ortools/base:int_type",
+        "//ortools/base:intops",
         "//ortools/base:linked_hash_map",
         "//ortools/base:map_util",
         "@com_google_absl//absl/base:core_headers",
@@ -178,4 +178,18 @@ cc_library(
 cc_library(
     name = "sparse_vector",
     hdrs = ["sparse_vector.h"],
+)
+
+cc_library(
+    name = "sparse_submatrix",
+    srcs = ["sparse_submatrix.cc"],
+    hdrs = ["sparse_submatrix.h"],
+    deps = [
+        ":sparse_vector",
+        ":sparse_vector_view",
+        "//ortools/base",
+        "//ortools/math_opt:sparse_containers_cc_proto",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/types:span",
+    ],
 )

@@ -23,9 +23,9 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/int_type.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/status_macros.h"
+#include "ortools/base/strong_int.h"
 #include "ortools/math_opt/core/model_storage.h"
 
 namespace operations_research {

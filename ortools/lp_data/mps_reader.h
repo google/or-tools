@@ -36,12 +36,12 @@
 #include "absl/status/statusor.h"
 #include "absl/strings/numbers.h"
 #include "ortools/base/hash.h"
-#include "ortools/base/int_type.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"  // for DISALLOW_COPY_AND_ASSIGN, NULL
 #include "ortools/base/map_util.h"
 #include "ortools/base/protobuf_util.h"
 #include "ortools/base/status_macros.h"
+#include "ortools/base/strong_int.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"

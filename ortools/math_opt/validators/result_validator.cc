@@ -204,7 +204,6 @@ absl::Status ValidateTerminationConsistency(const SolveResultProto& result) {
       // Dual feasible solution is not required.
       // Primal/dual requirements imply primal/dual solution-status consistency.
       return absl::OkStatus();
-      // TODO(b/211677729): update when TERMINATION_REASON_FEASIBLE is added.
     case TERMINATION_REASON_INFEASIBLE:
       RETURN_IF_ERROR(
           CheckPrimalStatusIs(status, FEASIBILITY_STATUS_INFEASIBLE));

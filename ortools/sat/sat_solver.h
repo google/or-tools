@@ -30,10 +30,10 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/types/span.h"
 #include "ortools/base/hash.h"
-#include "ortools/base/int_type.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
+#include "ortools/base/strong_int.h"
 #include "ortools/base/timer.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/drat_proof_handler.h"
@@ -806,7 +806,7 @@ class SatSolver {
   std::vector<Literal> literals_scratchpad_;
 
   // A boolean vector used to temporarily mark decision levels.
-  DEFINE_INT_TYPE(SatDecisionLevel, int);
+  DEFINE_STRONG_INT_TYPE(SatDecisionLevel, int);
   SparseBitset<SatDecisionLevel> is_level_marked_;
 
   // Temporary vectors used by EnqueueDecisionAndBackjumpOnConflict().

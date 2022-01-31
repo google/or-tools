@@ -17,17 +17,17 @@
 #include <cstdint>
 
 #include "ortools/base/basictypes.h"
-#include "ortools/base/int_type.h"
+#include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
 
 namespace operations_research {
 namespace bop {
-DEFINE_INT_TYPE(ConstraintIndex, int);
-DEFINE_INT_TYPE(EntryIndex, int);
-DEFINE_INT_TYPE(SearchIndex, int);
-DEFINE_INT_TYPE(TermIndex, int);
-DEFINE_INT_TYPE(VariableIndex, int);
-DEFINE_INT_TYPE(SolverTimeStamp, int64_t);
+DEFINE_STRONG_INT_TYPE(ConstraintIndex, int);
+DEFINE_STRONG_INT_TYPE(EntryIndex, int);
+DEFINE_STRONG_INT_TYPE(SearchIndex, int);
+DEFINE_STRONG_INT_TYPE(TermIndex, int);
+DEFINE_STRONG_INT_TYPE(VariableIndex, int);
+DEFINE_STRONG_INT_TYPE(SolverTimeStamp, int64_t);
 
 // Status of the solve of Bop.
 enum class BopSolveStatus {
@@ -71,7 +71,7 @@ inline std::ostream& operator<<(std::ostream& os, BopSolveStatus status) {
 }
 
 // TODO(user): Remove.
-DEFINE_INT_TYPE(SparseIndex, int);
+DEFINE_STRONG_INT_TYPE(SparseIndex, int);
 struct BopConstraintTerm {
   BopConstraintTerm(VariableIndex _var_id, int64_t _weight)
       : var_id(_var_id), search_id(0), weight(_weight) {}

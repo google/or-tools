@@ -285,7 +285,7 @@ class BlockedClauseSimplifier {
 
   // We compute the occurrence graph just once at the beginning of each round
   // and we do not shrink it as we remove blocked clauses.
-  DEFINE_INT_TYPE(ClauseIndex, int32_t);
+  DEFINE_STRONG_INT_TYPE(ClauseIndex, int32_t);
   absl::StrongVector<ClauseIndex, SatClause*> clauses_;
   absl::StrongVector<LiteralIndex, std::vector<ClauseIndex>>
       literal_to_clauses_;
@@ -368,7 +368,7 @@ class BoundedVariableElimination {
   // We compute the occurrence graph just once at the beginning of each round.
   // We maintains the sizes at all time and lazily shrink the graph with deleted
   // clauses.
-  DEFINE_INT_TYPE(ClauseIndex, int32_t);
+  DEFINE_STRONG_INT_TYPE(ClauseIndex, int32_t);
   absl::StrongVector<ClauseIndex, SatClause*> clauses_;
   absl::StrongVector<LiteralIndex, std::vector<ClauseIndex>>
       literal_to_clauses_;

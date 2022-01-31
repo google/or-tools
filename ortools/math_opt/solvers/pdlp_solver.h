@@ -51,16 +51,15 @@ class PdlpSolver : public SolverInterface {
   bool CanUpdate(const ModelUpdateProto& model_update) override;
 
   // Returns the merged parameters and a list of warnings.
-  static std::pair<pdlp::PrimalDualHybridGradientParams,
-                   std::vector<std::string>>
-  MergeParameters(const SolveParametersProto& parameters);
+  static absl::StatusOr<pdlp::PrimalDualHybridGradientParams> MergeParameters(
+      const SolveParametersProto& parameters);
 
  private:
   PdlpSolver() = default;
 
-  absl::Status FillSolveResult(const pdlp::SolverResult& pdlp_result,
-                               const ModelSolveParametersProto& model_params,
-                               SolveResultProto& result);
+  absl::StatusOr<SolveResultProto> MakeSolveResult(
+      const pdlp::SolverResult& pdlp_result,
+      const ModelSolveParametersProto& model_params);
 
   PdlpBridge pdlp_bridge_;
 };

@@ -15,11 +15,9 @@
 // Local Search. It solves the same trivial problem with a Large
 // Neighborhood Search approach, a Local Search approach, and a Local
 // Search with Filter approach.
-
-#include "ortools/base/commandlineflags.h"
-#include "ortools/base/hash.h"
-#include "ortools/base/map_util.h"
-#include "ortools/base/stl_util.h"
+#include "ortools/base/init_google.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/logging_flags.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 
@@ -199,7 +197,8 @@ void SolveProblem(SolveType solve_type) {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  absl::ParseCommandLine(argc, argv);
+  InitGoogle(argv[0], &argc, &argv, true);
+  absl::SetFlag(&FLAGS_logtostderr, true);
   operations_research::SolveProblem(operations_research::LNS);
   operations_research::SolveProblem(operations_research::LS);
   operations_research::SolveProblem(operations_research::LS_WITH_FILTER);

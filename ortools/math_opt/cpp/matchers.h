@@ -56,7 +56,7 @@
 //       TerminationReason::kUnbounded,
 //       TerminationReason::kInfeasibleOrUnbounded));
 //   if(!result.primal_rays.empty()) {
-//     EXPECT_THAT(result.primal_rays[0], IsNear({{x, 1,}, {y, 0}}));
+//     EXPECT_THAT(result.primal_rays[0], PrimalRayIsNear({{x, 1,}, {y, 0}}));
 //   }
 //
 //
@@ -97,7 +97,7 @@
 
 #include "gtest/gtest.h"
 #include "ortools/math_opt/cpp/linear_constraint.h"
-#include "ortools/math_opt/cpp/solve.h"
+#include "ortools/math_opt/cpp/math_opt.h"
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
 
 namespace operations_research {
@@ -186,55 +186,44 @@ testing::Matcher<DualRay> IsNear(DualRay expected,
 //  * If expected_objective contains a value, there is at least one feasible
 //    solution and that solution has an objective value within tolerance of
 //    expected_objective.
-//  * If check_warnings, the result has no warnings.
 testing::Matcher<SolveResult> IsOptimal(
     std::optional<double> expected_objective = std::nullopt,
-    bool check_warnings = true, double tolerance = kMatcherDefaultTolerance);
+    double tolerance = kMatcherDefaultTolerance);
 
 testing::Matcher<SolveResult> IsOptimalWithSolution(
     double expected_objective, VariableMap<double> expected_variable_values,
-    bool check_warnings = true, double tolerance = kMatcherDefaultTolerance);
+    double tolerance = kMatcherDefaultTolerance);
 
 testing::Matcher<SolveResult> IsOptimalWithDualSolution(
     double expected_objective, LinearConstraintMap<double> expected_dual_values,
-    VariableMap<double> expected_reduced_costs, bool check_warnings = true,
+    VariableMap<double> expected_reduced_costs,
     double tolerance = kMatcherDefaultTolerance);
 
 // Checks the following:
 //  * The result has the expected termination reason.
-//  * If check_warnings, the result has no warnings.
-testing::Matcher<SolveResult> TerminatesWith(TerminationReason expected,
-                                             bool check_warnings = true);
+testing::Matcher<SolveResult> TerminatesWith(TerminationReason expected);
 
-// Checks the following:
-//  * The result has one of the allowed termination reasons.
-//  * If check_warnings, the result has no warnings.
+// Checks that the result has one of the allowed termination reasons.
 testing::Matcher<SolveResult> TerminatesWithOneOf(
-    const std::vector<TerminationReason>& allowed, bool check_warnings = true);
+    const std::vector<TerminationReason>& allowed);
 
 // Checks the following:
 //  * The result has termination reason kFeasible or kNoSolutionFound.
 //  * The limit is expected, or is kUndetermined if allow_limit_undetermined.
-//  * If check_warnings, the result has no warnings.
 testing::Matcher<SolveResult> TerminatesWithLimit(
-    Limit expected, bool allow_limit_undetermined = false,
-    bool check_warnings = true);
+    Limit expected, bool allow_limit_undetermined = false);
 
 // Checks the following:
 //  * The result has termination reason kFeasible.
 //  * The limit is expected, or is kUndetermined if allow_limit_undetermined.
-//  * If check_warnings, the result has no warnings.
 testing::Matcher<SolveResult> TerminatesWithReasonFeasible(
-    Limit expected, bool allow_limit_undetermined = false,
-    bool check_warnings = true);
+    Limit expected, bool allow_limit_undetermined = false);
 
 // Checks the following:
 //  * The result has termination reason kNoSolutionFound.
 //  * The limit is expected, or is kUndetermined if allow_limit_undetermined.
-//  * If check_warnings, the result has no warnings.
 testing::Matcher<SolveResult> TerminatesWithReasonNoSolutionFound(
-    Limit expected, bool allow_limit_undetermined = false,
-    bool check_warnings = true);
+    Limit expected, bool allow_limit_undetermined = false);
 
 // SolveResult has a primal solution matching expected within tolerance.
 testing::Matcher<SolveResult> HasSolution(
@@ -263,7 +252,6 @@ testing::Matcher<SolveResult> HasDualRay(
 
 // Configures SolveResult matcher IsConsistentWith() below.
 struct SolveResultMatcherOptions {
-  bool check_warnings = true;
   double tolerance = 1e-5;
   bool first_solution_only = true;
   bool check_dual = true;
@@ -337,8 +325,6 @@ struct SolveResultMatcherOptions {
 // EXPECT_THAT(actual, IsConsistentWith(expected));
 //
 // Equivalence is defined as follows:
-//   * The warnings are the same (in any order).
-//       - Disabled if options.check_warnings=false.
 //   * The termination reasons are the same.
 //       - For infeasible and unbounded problems, see
 //         options.inf_or_unb_soft_match.

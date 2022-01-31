@@ -13,16 +13,22 @@
 
 #include "ortools/math_opt/cpp/parameters.h"
 
+#include <cstdint>
 #include <optional>
 #include <string>
+#include <type_traits>
 
 #include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
+#include "absl/time/time.h"
 #include "absl/types/span.h"
+#include "ortools/base/linked_hash_map.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/base/status_macros.h"
+#include "ortools/math_opt/parameters.pb.h"
 #include "ortools/math_opt/solvers/gurobi.pb.h"
-#include "ortools/port/proto_utils.h"
 
 namespace operations_research {
 namespace math_opt {
@@ -116,16 +122,6 @@ absl::Span<const Emphasis> Enum<Emphasis>::AllValues() {
   return absl::MakeConstSpan(kEmphasisValues);
 }
 
-StrictnessProto Strictness::Proto() const {
-  StrictnessProto result;
-  result.set_bad_parameter(bad_parameter);
-  return result;
-}
-
-Strictness Strictness::FromProto(const StrictnessProto& proto) {
-  return {.bad_parameter = proto.bad_parameter()};
-}
-
 GurobiParametersProto GurobiParameters::Proto() const {
   GurobiParametersProto result;
   for (const auto& [key, val] : param_values) {
@@ -147,7 +143,6 @@ GurobiParameters GurobiParameters::FromProto(
 
 SolveParametersProto SolveParameters::Proto() const {
   SolveParametersProto result;
-  *result.mutable_strictness() = strictness.Proto();
   result.set_enable_output(enable_output);
   if (time_limit < absl::InfiniteDuration()) {
     CHECK_OK(util_time::EncodeGoogleApiProto(time_limit,
@@ -195,7 +190,6 @@ SolveParametersProto SolveParameters::Proto() const {
 absl::StatusOr<SolveParameters> SolveParameters::FromProto(
     const SolveParametersProto& proto) {
   SolveParameters result;
-  result.strictness = Strictness::FromProto(proto.strictness());
   result.enable_output = proto.enable_output();
   if (proto.has_time_limit()) {
     ASSIGN_OR_RETURN(result.time_limit,

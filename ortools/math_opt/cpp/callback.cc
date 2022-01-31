@@ -24,16 +24,14 @@
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
-#include "ortools/base/int_type.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/protoutil.h"
+#include "ortools/base/strong_int.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/model_storage.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
-#include "ortools/math_opt/cpp/key_types.h"
 #include "ortools/math_opt/cpp/map_filter.h"
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
-#include "ortools/math_opt/solution.pb.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 
 namespace operations_research {

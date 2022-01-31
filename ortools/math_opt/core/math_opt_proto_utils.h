@@ -41,6 +41,22 @@ inline int NumMatrixNonzeros(const SparseDoubleMatrixProto& matrix) {
   return matrix.row_ids_size();
 }
 
+// Returns the id of the first variable if there is one. If the input proto is
+// valid, this will also be the smallest id.
+inline std::optional<int64_t> FirstVariableId(const VariablesProto& variables) {
+  return variables.ids().empty() ? std::nullopt
+                                 : std::make_optional(variables.ids()[0]);
+}
+
+// Returns the id of the first linear constraint if there is one. If the input
+// proto is valid, this will also be the smallest id.
+inline std::optional<int64_t> FirstLinearConstraintId(
+    const LinearConstraintsProto& linear_constraints) {
+  return linear_constraints.ids().empty()
+             ? std::nullopt
+             : std::make_optional(linear_constraints.ids()[0]);
+}
+
 // Removes the items in the sparse double vector for all indices whose value is
 // exactly 0.0.
 //

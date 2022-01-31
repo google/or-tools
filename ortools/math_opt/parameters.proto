@@ -95,16 +95,16 @@ enum LPAlgorithmProto {
 // SolveParametersProto for use).
 //
 // Emphasis is used to configure a solver feature as follows:
-//  * If a solver doesn't support the feature, only UNSPECIFIED and OFF are
-//    valid, any other setting will give either a warning or error (as
-//    configured for Strictness).
+//  * If a solver doesn't support the feature, only UNSPECIFIED will always be
+//    valid, any other setting will typically an invalid argument error (some
+//    solvers may also accept OFF).
 //  * If the solver supports the feature:
 //    - When set to UNSPECIFIED, the underlying default is used.
-//    - When the feature cannot be turned off, OFF will a warning/error.
+//    - When the feature cannot be turned off, OFF will return an error.
 //    - If the feature is enabled by default, the solver default is typically
 //      mapped to MEDIUM.
 //    - If the feature is supported, LOW, MEDIUM, HIGH, and VERY HIGH will never
-//      give a warning or error, and will map onto their best match.
+//      give an error, and will map onto their best match.
 enum EmphasisProto {
   EMPHASIS_UNSPECIFIED = 0;
   EMPHASIS_OFF = 1;
@@ -116,7 +116,6 @@ enum EmphasisProto {
 
 // Configures if potentially bad solver input is a warning or an error.
 message StrictnessProto {
-  // If true, warnings on bad parameters are converted to Status errors.
   bool bad_parameter = 1;
 }
 
@@ -263,9 +262,6 @@ message SolveParametersProto {
   // solver default effort level if EMPHASIS_UNSPECIFIED.
   EmphasisProto scaling = 10;
 
-  // TODO(b/196132970): this needs to move into SolverInitializerProto.
-  StrictnessProto strictness = 11;
-
   //////////////////////////////////////////////////////////////////////////////
   // Solver specific parameters
   //////////////////////////////////////////////////////////////////////////////
@@ -276,4 +272,6 @@ message SolveParametersProto {
   reserved 16;
 
   reserved 19;
+
+  reserved 11;  // Deleted
 }

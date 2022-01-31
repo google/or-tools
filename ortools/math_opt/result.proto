@@ -20,6 +20,7 @@ import "google/protobuf/duration.proto";
 import "ortools/gscip/gscip.proto";
 import "ortools/math_opt/solution.proto";
 
+
 option java_package = "com.google.ortools.mathopt";
 option java_multiple_files = true;
 
@@ -245,9 +246,6 @@ message TerminationProto {
 // Until an exact contract is finalized, it is safest to simply check if a
 // solution/ray is present rather than relying on the termination reason.
 message SolveResultProto {
-  // Non-fatal errors, e.g. an unsupported parameter that was skipped.
-  repeated string warnings = 1;
-
   // The reason the solver stopped.
   TerminationProto termination = 2;
 
@@ -284,4 +282,6 @@ message SolveResultProto {
   oneof solver_specific_output {
     GScipOutput gscip_output = 7;
   }
+
+  reserved 1;  // Deleted fields.
 }

@@ -19,9 +19,9 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
-#include "ortools/base/int_type.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
@@ -72,7 +72,7 @@ class DomainDeductions {
   int NumDeductions() const { return deductions_.size(); }
 
  private:
-  DEFINE_INT_TYPE(Index, int);
+  DEFINE_STRONG_INT_TYPE(Index, int);
   Index IndexFromLiteral(int ref) {
     return Index(ref >= 0 ? 2 * ref : -2 * ref - 1);
   }

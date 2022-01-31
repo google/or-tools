@@ -16,23 +16,16 @@
 #include <functional>
 #include <memory>
 #include <optional>
-#include <string>
 #include <utility>
-#include <vector>
 
-#include "absl/base/thread_annotations.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/memory/memory.h"
 #include "absl/status/statusor.h"
-#include "absl/strings/string_view.h"
-#include "absl/synchronization/mutex.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/source_location.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/model_storage.h"
 #include "ortools/math_opt/core/solver.h"
-#include "ortools/math_opt/cpp/key_types.h"
 #include "ortools/math_opt/cpp/model.h"
 
 namespace operations_research {
@@ -96,61 +89,7 @@ absl::StatusOr<SolveResult> CallSolve(
   return SolveResult::FromProto(expected_storage, solve_result);
 }
 
-class PrinterMessageCallbackImpl {
- public:
-  PrinterMessageCallbackImpl(std::ostream& output_stream,
-                             const absl::string_view prefix)
-      : output_stream_(output_stream), prefix_(prefix) {}
-
-  void Call(const std::vector<std::string>& messages) {
-    const absl::MutexLock lock(&mutex_);
-    for (const std::string& message : messages) {
-      output_stream_ << prefix_ << message << '\n';
-    }
-    output_stream_.flush();
-  }
-
- private:
-  absl::Mutex mutex_;
-  std::ostream& output_stream_ ABSL_GUARDED_BY(mutex_);
-  const std::string prefix_;
-};
-
 }  // namespace
-
-SolverInitArguments::SolverInitArguments(
-    StreamableSolverInitArguments streamable)
-    : streamable(std::move(streamable)) {}
-
-SolverInitArguments::SolverInitArguments(
-    const NonStreamableSolverInitArguments& non_streamable)
-    : non_streamable(non_streamable.Clone()) {}
-
-SolverInitArguments::SolverInitArguments(
-    StreamableSolverInitArguments streamable,
-    const NonStreamableSolverInitArguments& non_streamable)
-    : streamable(std::move(streamable)),
-      non_streamable(non_streamable.Clone()) {}
-
-SolverInitArguments::SolverInitArguments(const SolverInitArguments& other)
-    : streamable(other.streamable),
-      non_streamable(other.non_streamable != nullptr
-                         ? other.non_streamable->Clone()
-                         : nullptr) {}
-
-SolverInitArguments& SolverInitArguments::operator=(
-    const SolverInitArguments& other) {
-  // Assignment to self is possible.
-  if (&other == this) {
-    return *this;
-  }
-
-  streamable = other.streamable;
-  non_streamable =
-      other.non_streamable != nullptr ? other.non_streamable->Clone() : nullptr;
-
-  return *this;
-}
 
 absl::StatusOr<SolveResult> Solve(const Model& model,
                                   const SolverType solver_type,
@@ -215,17 +154,6 @@ absl::StatusOr<IncrementalSolver::UpdateResult> IncrementalSolver::Update() {
 absl::StatusOr<SolveResult> IncrementalSolver::SolveWithoutUpdate(
     const SolveArguments& arguments) const {
   return CallSolve(*solver_, expected_storage_, arguments);
-}
-
-MessageCallback PrinterMessageCallback(std::ostream& output_stream,
-                                       const absl::string_view prefix) {
-  // Here we must use an std::shared_ptr since std::function requires that its
-  // input is copyable. And PrinterMessageCallbackImpl can't be copyable since
-  // it uses an absl::Mutex that is not.
-  const auto impl =
-      std::make_shared<PrinterMessageCallbackImpl>(output_stream, prefix);
-  return
-      [=](const std::vector<std::string>& messages) { impl->Call(messages); };
 }
 
 }  // namespace math_opt

@@ -16,9 +16,8 @@
 #include <iostream>
 #include <limits>
 
-#include "absl/flags/parse.h"
-#include "absl/flags/usage.h"
 #include "absl/status/statusor.h"
+#include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 
@@ -50,9 +49,6 @@ void SolveVersion1() {
   model.set_objective_coefficient(y, 1.0);
   model.set_maximize();
   const SolveResult result = Solve(model, SolverType::kGscip).value();
-  for (const auto& warning : result.warnings) {
-    std::cerr << "Solver warning: " << warning << std::endl;
-  }
   CHECK_EQ(result.termination.reason, TerminationReason::kOptimal)
       << result.termination;
   // The following code will print:
@@ -82,9 +78,6 @@ void SolveVersion2() {
   objective_expression += y;
   model.Maximize(objective_expression);
   const SolveResult result = Solve(model, SolverType::kGscip).value();
-  for (const auto& warning : result.warnings) {
-    std::cerr << "Solver warning: " << warning << std::endl;
-  }
   CHECK_EQ(result.termination.reason, TerminationReason::kOptimal)
       << result.termination;
   // The following code will print:
@@ -97,8 +90,7 @@ void SolveVersion2() {
 }  // namespace
 
 int main(int argc, char** argv) {
-  google::InitGoogleLogging(argv[0]);
-  absl::ParseCommandLine(argc, argv);
+  InitGoogle(argv[0], &argc, &argv, true);
   SolveVersion1();
   SolveVersion2();
   return 0;

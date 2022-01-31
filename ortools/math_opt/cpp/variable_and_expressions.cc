@@ -18,9 +18,10 @@
 #include <utility>
 #include <vector>
 
-#include "ortools/base/int_type.h"
+#include "absl/base/attributes.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
+#include "ortools/base/strong_int.h"
 
 namespace operations_research {
 namespace math_opt {

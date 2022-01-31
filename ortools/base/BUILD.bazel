@@ -340,6 +340,12 @@ cc_library(
 )
 
 cc_library(
+    name = "intops",
+    hdrs = ["strong_int.h"],
+    deps = [":int_type"],
+)
+
+cc_library(
     name = "source_location",
     hdrs = ["source_location.h"],
     deps = [

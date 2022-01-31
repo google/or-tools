@@ -16,8 +16,8 @@
 #include <algorithm>
 
 #include "absl/memory/memory.h"
-#include "ortools/base/int_type.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
 
 namespace operations_research {

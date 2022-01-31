@@ -19,7 +19,7 @@
 #include <utility>
 #include <vector>
 
-#include "ortools/base/int_type.h"
+#include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/cuts.h"
 #include "ortools/sat/integer.h"

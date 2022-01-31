@@ -30,11 +30,11 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/cleanup.h"
-#include "ortools/base/int_type.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/base/strong_int.h"
 #include "ortools/base/timer.h"
 #if !defined(__PORTABLE_PLATFORM__) && defined(USE_SCIP)
 #include "ortools/linear_solver/linear_solver.h"

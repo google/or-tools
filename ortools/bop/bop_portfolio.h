@@ -32,7 +32,7 @@
 namespace operations_research {
 namespace bop {
 
-DEFINE_INT_TYPE(OptimizerIndex, int);
+DEFINE_STRONG_INT_TYPE(OptimizerIndex, int);
 const OptimizerIndex kInvalidOptimizerIndex(-1);
 
 // Forward declaration.

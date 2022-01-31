@@ -151,7 +151,7 @@ cc_library(
         "@com_google_absl//absl/time",
         #        "//zlib:zlibonly",
         "//ortools/base:bitmap",
-        "//ortools/base:int_type",
+        "//ortools/base:intops",
         "//ortools/base:strong_vector",
         "//ortools/base:iterator_adaptors",
         "//ortools/base:map_util",
@@ -273,7 +273,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//ortools/base",
-        "//ortools/base:int_type",
+        "//ortools/base:intops",
     ],
 )
 

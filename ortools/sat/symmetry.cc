@@ -13,8 +13,8 @@
 
 #include "ortools/sat/symmetry.h"
 
-#include "ortools/base/int_type.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/strong_int.h"
 
 namespace operations_research {
 namespace sat {

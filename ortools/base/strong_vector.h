@@ -14,7 +14,7 @@
 // This file provides the StrongVector container that wraps around the STL
 // std::vector.
 // The wrapper restricts indexing to a pre-specified type-safe integer type or
-// IntType (see int_type.h).  It prevents accidental indexing
+// IntType (see strong_int.h).  It prevents accidental indexing
 // by different "logical" integer-like types (e.g.  another IntType) or native
 // integer types.  The wrapper is useful as C++ and the standard template
 // library allows the user to mix "logical" integral indices that might have a
@@ -23,11 +23,11 @@
 // The container can only be indexed by an instance of an IntType class, which
 // can be declared as:
 //
-//     DEFINE_INT_TYPE(IntTypeName, IntTypeValueType);
+//     DEFINE_STRONG_INT_TYPE(IntTypeName, IntTypeValueType);
 //
 // where IntTypeName is the desired name for the "logical" integer-like type
 // and the ValueType is a supported native integer type such as int or
-// uint64_t (see int_type.h for details).
+// uint64_t (see strong_int.h for details).
 //
 // The wrapper exposes all public methods of STL vector and behaves mostly as
 // pass-through.  The only method modified to ensure type-safety is the operator
@@ -35,7 +35,7 @@
 //
 // EXAMPLES --------------------------------------------------------------------
 //
-//    DEFINE_INT_TYPE(PhysicalChildIndex, int32_t);
+//    DEFINE_STRONG_INT_TYPE(PhysicalChildIndex, int32_t);
 //    absl::StrongVector<PhysicalChildIndex, ChildStats*> vec;
 //
 //    PhysicalChildIndex physical_index;
@@ -46,7 +46,7 @@
 //    vec[physical_index] = ...;        <-- fails to compile.
 //    vec.at(physical_index) = ...;     <-- fails to compile.
 //
-//    DEFINE_INT_TYPE(LogicalChildIndex, int32_t);
+//    DEFINE_STRONG_INT_TYPE(LogicalChildIndex, int32_t);
 //    int32_t logical_index;
 //    vec[logical_index] = ...;        <-- fails to compile.
 //    vec.at(logical_index) = ...;     <-- fails to compile.
@@ -66,8 +66,8 @@
 #include <utility>
 #include <vector>
 
-#include "ortools/base/int_type.h"
 #include "ortools/base/macros.h"
+#include "ortools/base/strong_int.h"
 
 namespace absl {
 

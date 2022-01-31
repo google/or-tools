@@ -73,10 +73,9 @@
 #include <utility>
 #include <vector>
 
-#include "absl/flags/parse.h"
-#include "absl/flags/usage.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/status_builder.h"
 #include "ortools/base/status_macros.h"
@@ -256,8 +255,7 @@ absl::Status RealMain() {
 }  // namespace
 
 int main(int argc, char** argv) {
-  google::InitGoogleLogging(argv[0]);
-  absl::ParseCommandLine(argc, argv);
+  InitGoogle(argv[0], &argc, &argv, true);
   absl::Status result = RealMain();
   if (!result.ok()) {
     std::cout << result;

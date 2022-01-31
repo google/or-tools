@@ -48,6 +48,7 @@
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
 #include "ortools/math_opt/core/solve_interrupter.h"
 #include "ortools/math_opt/core/solver_interface.h"
+#include "ortools/math_opt/core/sparse_submatrix.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_parameters.pb.h"
@@ -299,16 +300,25 @@ absl::Status GScipSolver::AddVariables(
     const absl::flat_hash_map<int64_t, double>& linear_objective_coefficients) {
   for (int i = 0; i < NumVariables(variables); ++i) {
     const int64_t id = SafeId(variables, i);
-    CHECK_GE(id, next_unused_variable_id_);
+    // SCIP is failing with an assert in SCIPcreateVar() when input bounds are
+    // inverted. That said, it is not an issue if the bounds are created
+    // non-inverted and later changed. Thus here we use this hack to bypass the
+    // assertion in this corner case.
+    const bool inverted_bounds =
+        variables.lower_bounds(i) > variables.upper_bounds(i);
     ASSIGN_OR_RETURN(
         SCIP_VAR* const v,
         gscip_->AddVariable(
-            variables.lower_bounds(i), variables.upper_bounds(i),
+            variables.lower_bounds(i),
+            inverted_bounds ? variables.lower_bounds(i)
+                            : variables.upper_bounds(i),
             gtl::FindWithDefault(linear_objective_coefficients, id),
             GScipVarTypeFromIsInteger(variables.integers(i)),
             SafeName(variables, i)));
+    if (inverted_bounds) {
+      RETURN_IF_ERROR(gscip_->SetUb(v, variables.upper_bounds(i)));
+    }
     gtl::InsertOrDie(&variables_, id, v);
-    next_unused_variable_id_ = id + 1;
   }
   return absl::OkStatus();
 }
@@ -335,7 +345,6 @@ absl::Status GScipSolver::AddLinearConstraints(
                                            &linear_constraint_matrix);
        !lin_con_it.IsDone(); lin_con_it.Next()) {
     const LinearConstraintView current = lin_con_it.Current();
-    CHECK_GE(current.linear_constraint_id, next_unused_linear_constraint_id_);
 
     GScipLinearRange range;
     range.lower_bound = current.lower_bound;
@@ -351,14 +360,15 @@ absl::Status GScipSolver::AddLinearConstraints(
         gscip_->AddLinearConstraint(range, std::string(current.name)));
     gtl::InsertOrDie(&linear_constraints_, current.linear_constraint_id,
                      scip_con);
-    next_unused_linear_constraint_id_ = current.linear_constraint_id + 1;
   }
   return absl::OkStatus();
 }
 
 absl::Status GScipSolver::UpdateLinearConstraints(
     const LinearConstraintUpdatesProto linear_constraint_updates,
-    const SparseDoubleMatrixProto& linear_constraint_matrix) {
+    const SparseDoubleMatrixProto& linear_constraint_matrix,
+    const std::optional<int64_t> first_new_var_id,
+    const std::optional<int64_t> first_new_cstr_id) {
   for (const auto [id, lb] :
        MakeView(linear_constraint_updates.lower_bounds())) {
     RETURN_IF_ERROR(
@@ -369,15 +379,14 @@ absl::Status GScipSolver::UpdateLinearConstraints(
     RETURN_IF_ERROR(
         gscip_->SetLinearConstraintUb(linear_constraints_.at(id), ub));
   }
-  for (int i = 0; i < linear_constraint_matrix.row_ids_size(); ++i) {
-    const int64_t lin_con_id = linear_constraint_matrix.row_ids(i);
-    if (lin_con_id >= next_unused_linear_constraint_id_) {
-      break;
+  for (const auto& [lin_con_id, var_coeffs] : SparseSubmatrixByRows(
+           linear_constraint_matrix, /*start_row_id=*/0,
+           /*end_row_id=*/first_new_cstr_id, /*start_col_id=*/0,
+           /*end_col_id=*/first_new_var_id)) {
+    for (const auto& [var_id, value] : var_coeffs) {
+      RETURN_IF_ERROR(gscip_->SetLinearConstraintCoef(
+          linear_constraints_.at(lin_con_id), variables_.at(var_id), value));
     }
-    const int64_t var_id = linear_constraint_matrix.column_ids(i);
-    const double value = linear_constraint_matrix.coefficients(i);
-    RETURN_IF_ERROR(gscip_->SetLinearConstraintCoef(
-        linear_constraints_.at(lin_con_id), variables_.at(var_id), value));
   }
   return absl::OkStatus();
 }
@@ -401,8 +410,8 @@ GScipParameters::MetaParamValue ConvertMathOptEmphasis(EmphasisProto emphasis) {
   }
 }
 
-std::pair<GScipParameters, std::vector<std::string>>
-GScipSolver::MergeParameters(const SolveParametersProto& solve_parameters) {
+absl::StatusOr<GScipParameters> GScipSolver::MergeParameters(
+    const SolveParametersProto& solve_parameters) {
   // First build the result by translating common parameters to a
   // GScipParameters, and then merging with user provided gscip_parameters.
   // This results in user provided solver specific parameters overwriting
@@ -516,7 +525,10 @@ GScipSolver::MergeParameters(const SolveParametersProto& solve_parameters) {
 
   result.MergeFrom(solve_parameters.gscip());
 
-  return {std::move(result), std::move(warnings)};
+  if (!warnings.empty()) {
+    return absl::InvalidArgumentError(absl::StrJoin(warnings, "; "));
+  }
+  return result;
 }
 
 namespace {
@@ -804,12 +816,7 @@ absl::StatusOr<SolveResultProto> GScipSolver::Solve(
         std::make_unique<GScipSolverMessageCallbackHandler>(message_cb);
   }
 
-  const auto [gscip_parameters, warnings] = MergeParameters(parameters);
-  if (parameters.strictness().bad_parameter() && !warnings.empty()) {
-    return absl::InvalidArgumentError(absl::StrJoin(warnings, "; "));
-  }
-  // TODO(user): reorganize gscip to respect warning is error argument on bad
-  //  parameters.
+  ASSIGN_OR_RETURN(auto gscip_parameters, MergeParameters(parameters));
 
   for (const SolutionHintProto& hint : model_parameters.solution_hints()) {
     absl::flat_hash_map<SCIP_VAR*, double> partial_solution;
@@ -851,9 +858,6 @@ absl::StatusOr<SolveResultProto> GScipSolver::Solve(
                              parameters.has_cutoff_limit()
                                  ? std::make_optional(parameters.cutoff_limit())
                                  : std::nullopt));
-  for (const std::string& warning : warnings) {
-    result.add_warnings(warning);
-  }
   CHECK_OK(util_time::EncodeGoogleApiProto(
       absl::Now() - start, result.mutable_solve_stats()->mutable_solve_time()));
   return result;
@@ -896,6 +900,12 @@ absl::Status GScipSolver::Update(const ModelUpdateProto& model_update) {
     }
     RETURN_IF_ERROR(gscip_->SafeBulkDelete(vars_to_delete));
   }
+
+  const std::optional<int64_t> first_new_var_id =
+      FirstVariableId(model_update.new_variables());
+  const std::optional<int64_t> first_new_cstr_id =
+      FirstLinearConstraintId(model_update.new_linear_constraints());
+
   if (model_update.objective_updates().has_direction_update()) {
     RETURN_IF_ERROR(gscip_->SetMaximize(
         model_update.objective_updates().direction_update()));
@@ -909,16 +919,69 @@ absl::Status GScipSolver::Update(const ModelUpdateProto& model_update) {
       SparseDoubleVectorAsMap(
           model_update.objective_updates().linear_coefficients());
   for (const auto& obj_pair : linear_objective_updates) {
-    if (obj_pair.first < next_unused_variable_id_) {
+    // New variables' coefficient is set when the variables are added below.
+    if (!first_new_var_id.has_value() || obj_pair.first < *first_new_var_id) {
       RETURN_IF_ERROR(
           gscip_->SetObjCoef(variables_.at(obj_pair.first), obj_pair.second));
     }
   }
+
+  // Here the model_update.linear_constraint_matrix_updates is split into three
+  // sub-matrix:
+  //
+  //                existing    new
+  //                columns   columns
+  //              /         |         \
+  //    existing  |    1    |    2    |
+  //    rows      |         |         |
+  //              |---------+---------|
+  //    new       |                   |
+  //    rows      |         3         |
+  //              \                   /
+  //
+  // The coefficients of sub-matrix 1 are set by UpdateLinearConstraints(), the
+  // ones of sub-matrix 2 by AddVariables() and the ones of the sub-matrix 3 by
+  // AddLinearConstraints(). The rationale here is that SCIPchgCoefLinear() has
+  // a complexity of O(non_zeros). Thus it is inefficient and can lead to O(n^2)
+  // behaviors if it was used for new rows or for new columns. For new rows it
+  // is more efficient to pass all the variables coefficients at once when
+  // building the constraints. For new columns and existing rows, since we can
+  // assume there is no existing coefficient, we can use SCIPaddCoefLinear()
+  // which is O(1). This leads to only use SCIPchgCoefLinear() for changing the
+  // coefficients of existing rows and columns.
+  //
+  // TODO(b/215722113): maybe we could use SCIPaddCoefLinear() for sub-matrix 1.
+
+  // Add new variables.
   RETURN_IF_ERROR(
       AddVariables(model_update.new_variables(), linear_objective_updates));
+
+  // Update linear constraints properties and sub-matrix 1.
   RETURN_IF_ERROR(
       UpdateLinearConstraints(model_update.linear_constraint_updates(),
-                              model_update.linear_constraint_matrix_updates()));
+                              model_update.linear_constraint_matrix_updates(),
+                              /*first_new_var_id=*/first_new_var_id,
+                              /*first_new_cstr_id=*/first_new_cstr_id));
+
+  // Update the sub-matrix 2.
+  const std::optional first_new_variable_id =
+      FirstVariableId(model_update.new_variables());
+  if (first_new_variable_id.has_value()) {
+    for (const auto& [lin_con_id, var_coeffs] :
+         SparseSubmatrixByRows(model_update.linear_constraint_matrix_updates(),
+                               /*start_row_id=*/0,
+                               /*end_row_id=*/first_new_cstr_id,
+                               /*start_col_id=*/*first_new_variable_id,
+                               /*end_col_id=*/std::nullopt)) {
+      for (const auto& [var_id, value] : var_coeffs) {
+        // See above why we use AddLinearConstraintCoef().
+        RETURN_IF_ERROR(gscip_->AddLinearConstraintCoef(
+            linear_constraints_.at(lin_con_id), variables_.at(var_id), value));
+      }
+    }
+  }
+
+  // Add the new constraints and sets sub-matrix 3.
   RETURN_IF_ERROR(
       AddLinearConstraints(model_update.new_linear_constraints(),
                            model_update.linear_constraint_matrix_updates()));

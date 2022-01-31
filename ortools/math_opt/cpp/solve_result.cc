@@ -20,10 +20,15 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
+#include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/protoutil.h"
 #include "ortools/math_opt/core/model_storage.h"
+#include "ortools/math_opt/cpp/linear_constraint.h"
+#include "ortools/math_opt/cpp/variable_and_expressions.h"
 #include "ortools/math_opt/solution.pb.h"
 #include "ortools/port/proto_utils.h"
 
@@ -319,8 +324,6 @@ std::string SolveStats::ToString() const {
 SolveResult SolveResult::FromProto(const ModelStorage* model,
                                    const SolveResultProto& solve_result_proto) {
   SolveResult result(Termination::FromProto(solve_result_proto.termination()));
-  result.warnings = {solve_result_proto.warnings().begin(),
-                     solve_result_proto.warnings().end()};
   result.solve_stats = SolveStats::FromProto(solve_result_proto.solve_stats());
 
   for (const SolutionProto& solution : solve_result_proto.solutions()) {
@@ -331,6 +334,10 @@ SolveResult SolveResult::FromProto(const ModelStorage* model,
   }
   for (const DualRayProto& dual_ray : solve_result_proto.dual_rays()) {
     result.dual_rays.push_back(DualRay::FromProto(model, dual_ray));
+  }
+  if (solve_result_proto.has_gscip_output()) {
+    result.gscip_solver_specific_output =
+        std::move(solve_result_proto.gscip_output());
   }
   return result;
 }

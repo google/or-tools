@@ -14,10 +14,12 @@
 #ifndef OR_TOOLS_MATH_OPT_CPP_PARAMETERS_H_
 #define OR_TOOLS_MATH_OPT_CPP_PARAMETERS_H_
 
+#include <cstdint>
 #include <optional>
 #include <string>
 
 #include "absl/status/statusor.h"
+#include "absl/strings/string_view.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/base/linked_hash_map.h"
@@ -112,16 +114,16 @@ MATH_OPT_DEFINE_ENUM(LPAlgorithm, LP_ALGORITHM_UNSPECIFIED);
 //
 // Typically used as a std::optional<Emphasis>. It used to configure a solver
 // feature as follows:
-//  * If a solver doesn't support the feature, only nullopt and kOff are
-//    valid, any other setting will give either a warning or error (as
-//    configured for Strictness).
+//  * If a solver doesn't support the feature, only nullopt will always be
+//    valid, any other setting will give an invalid argument error (some solvers
+//    may also accept kOff).
 //  * If the solver supports the feature:
 //    - When unset, the underlying default is used.
-//    - When the feature cannot be turned off, kOff will a warning/error.
+//    - When the feature cannot be turned off, kOff will return an error.
 //    - If the feature is enabled by default, the solver default is typically
 //      mapped to kMedium.
 //    - If the feature is supported, kLow, kMedium, kHigh, and kVeryHigh will
-//      never give a warning or error, and will map onto their best match.
+//      never give an error, and will map onto their best match.
 enum class Emphasis {
   kOff = EMPHASIS_OFF,
   kLow = EMPHASIS_LOW,
@@ -131,15 +133,6 @@ enum class Emphasis {
 };
 
 MATH_OPT_DEFINE_ENUM(Emphasis, EMPHASIS_UNSPECIFIED);
-
-// Configures if potentially bad solver input is a warning or an error.
-struct Strictness {
-  // If true, warnings on bad parameters are converted to Status errors.
-  bool bad_parameter = false;
-
-  StrictnessProto Proto() const;
-  static Strictness FromProto(const StrictnessProto& proto);
-};
 
 // Gurobi specific parameters for solving. See
 //   https://www.gurobi.com/documentation/9.1/refman/parameters.html
@@ -297,9 +290,6 @@ struct SolveParameters {
   GurobiParameters gurobi;
   glop::GlopParameters glop;
   sat::SatParameters cp_sat;
-
-  // TODO(b/196132970): this needs to move into SolverInitializerProto.
-  Strictness strictness;
 
   SolveParametersProto Proto() const;
   static absl::StatusOr<SolveParameters> FromProto(

@@ -20,7 +20,7 @@
 
 #include "absl/container/flat_hash_set.h"
 #include "absl/types/span.h"
-#include "ortools/base/int_type.h"
+#include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/sat_base.h"
 
@@ -28,7 +28,7 @@ namespace operations_research {
 namespace sat {
 
 // Index of a clause (>= 0).
-DEFINE_INT_TYPE(ClauseIndex, int);
+DEFINE_STRONG_INT_TYPE(ClauseIndex, int);
 const ClauseIndex kNoClauseIndex(-1);
 
 // DRAT is a SAT proof format that allows a simple program to check that a

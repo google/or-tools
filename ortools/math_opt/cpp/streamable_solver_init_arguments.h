@@ -24,6 +24,7 @@
 #include <optional>
 #include <string>
 
+#include "ortools/math_opt/cpp/enums.h"
 #include "ortools/math_opt/parameters.pb.h"
 #include "ortools/math_opt/solvers/gurobi.pb.h"
 
@@ -67,8 +68,8 @@ struct StreamableGurobiInitArguments {
   GurobiInitializerProto Proto() const;
 };
 
-// Solver specific initialization parameters that can be streamed to be
-// exchanged with another process.
+// Solver initialization parameters that can be streamed to be exchanged with
+// another process.
 //
 // Parameters that can't be streamed (for example instances of C/C++ types that
 // only exist in the process memory) are dealt with implementations of

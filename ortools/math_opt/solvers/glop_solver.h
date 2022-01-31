@@ -60,9 +60,9 @@ class GlopSolver : public SolverInterface {
 
   // Returns the merged parameters and a list of warnings from any parameter
   // settings that are invalid for this solver.
-  static std::pair<glop::GlopParameters, std::vector<std::string>>
-  MergeSolveParameters(const SolveParametersProto& solver_parameters,
-                       bool setting_initial_basis, bool has_message_callback);
+  static absl::StatusOr<glop::GlopParameters> MergeSolveParameters(
+      const SolveParametersProto& solver_parameters, bool setting_initial_basis,
+      bool has_message_callback);
 
  private:
   GlopSolver();
@@ -85,11 +85,10 @@ class GlopSolver : public SolverInterface {
   void FillSolution(glop::ProblemStatus status,
                     const ModelSolveParametersProto& model_parameters,
                     SolveResultProto& solve_result);
-  absl::Status FillSolveResult(
+  absl::StatusOr<SolveResultProto> MakeSolveResult(
       glop::ProblemStatus status,
       const ModelSolveParametersProto& model_parameters,
-      const SolveInterrupter* interrupter, absl::Duration solve_time,
-      SolveResultProto& solve_result);
+      const SolveInterrupter* interrupter, absl::Duration solve_time);
 
   absl::Status FillSolveStats(const glop::ProblemStatus status,
                               absl::Duration solve_time,

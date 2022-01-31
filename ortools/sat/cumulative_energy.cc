@@ -16,9 +16,9 @@
 #include <memory>
 #include <utility>
 
-#include "ortools/base/int_type.h"
 #include "ortools/base/iterator_adaptors.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/strong_int.h"
 #include "ortools/sat/sat_base.h"
 
 namespace operations_research {

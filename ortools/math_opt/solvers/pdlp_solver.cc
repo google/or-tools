@@ -66,8 +66,8 @@ absl::StatusOr<std::unique_ptr<SolverInterface>> PdlpSolver::New(
   return result;
 }
 
-std::pair<PrimalDualHybridGradientParams, std::vector<std::string>>
-PdlpSolver::MergeParameters(const SolveParametersProto& parameters) {
+absl::StatusOr<PrimalDualHybridGradientParams> PdlpSolver::MergeParameters(
+    const SolveParametersProto& parameters) {
   PrimalDualHybridGradientParams result;
   std::vector<std::string> warnings;
   if (parameters.enable_output()) {
@@ -120,7 +120,10 @@ PdlpSolver::MergeParameters(const SolveParametersProto& parameters) {
         static_cast<int32_t>(limit));
   }
   result.MergeFrom(parameters.pdlp());
-  return {std::move(result), std::move(warnings)};
+  if (!warnings.empty()) {
+    return absl::InvalidArgumentError(absl::StrJoin(warnings, "; "));
+  }
+  return result;
 }
 
 namespace {
@@ -201,9 +204,10 @@ ProblemStatusProto GetProblemStatus(const pdlp::TerminationReason pdlp_reason,
 
 }  // namespace
 
-absl::Status PdlpSolver::FillSolveResult(
+absl::StatusOr<SolveResultProto> PdlpSolver::MakeSolveResult(
     const pdlp::SolverResult& pdlp_result,
-    const ModelSolveParametersProto& model_params, SolveResultProto& result) {
+    const ModelSolveParametersProto& model_params) {
+  SolveResultProto result;
   ASSIGN_OR_RETURN(*result.mutable_termination(),
                    ConvertReason(pdlp_result.solve_log.termination_reason(),
                                  pdlp_result.solve_log.termination_string()));
@@ -319,7 +323,7 @@ absl::Status PdlpSolver::FillSolveResult(
   *result.mutable_solve_stats()->mutable_problem_status() =
       GetProblemStatus(pdlp_result.solve_log.termination_reason(),
                        std::isfinite(result.solve_stats().best_dual_bound()));
-  return absl::OkStatus();
+  return result;
 }
 
 absl::StatusOr<SolveResultProto> PdlpSolver::Solve(
@@ -338,21 +342,10 @@ absl::StatusOr<SolveResultProto> PdlpSolver::Solve(
   RETURN_IF_ERROR(CheckRegisteredCallbackEvents(callback_registration,
                                                 /*supported_events=*/{}));
 
-  SolveResultProto result;
-  auto [pdlp_params, param_warnings] = MergeParameters(parameters);
-  if (!param_warnings.empty()) {
-    if (parameters.strictness().bad_parameter()) {
-      return absl::InvalidArgumentError(absl::StrJoin(param_warnings, "; "));
-    } else {
-      for (std::string& warning : param_warnings) {
-        result.add_warnings(std::move(warning));
-      }
-    }
-  }
+  ASSIGN_OR_RETURN(auto pdlp_params, MergeParameters(parameters));
   const SolverResult pdlp_result =
       PrimalDualHybridGradient(pdlp_bridge_.pdlp_lp(), pdlp_params);
-  RETURN_IF_ERROR(FillSolveResult(pdlp_result, model_parameters, result));
-  return result;
+  return MakeSolveResult(pdlp_result, model_parameters);
 }
 absl::Status PdlpSolver::Update(const ModelUpdateProto& model_update) {
   // This function should never be called since CanUpdate() always returns

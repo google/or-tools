@@ -50,7 +50,7 @@ class LbTreeSearch {
 
  private:
   // Code a binary tree.
-  DEFINE_INT_TYPE(NodeIndex, int);
+  DEFINE_STRONG_INT_TYPE(NodeIndex, int);
   struct Node {
     Node(Literal l, IntegerValue lb)
         : literal(l), true_objective(lb), false_objective(lb) {}

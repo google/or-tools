@@ -57,7 +57,7 @@ class GScipSolver : public SolverInterface {
 
   // Returns the merged parameters and a list of warnings for unsupported
   // parameters.
-  static std::pair<GScipParameters, std::vector<std::string>> MergeParameters(
+  static absl::StatusOr<GScipParameters> MergeParameters(
       const SolveParametersProto& solve_parameters);
 
  private:
@@ -100,16 +100,27 @@ class GScipSolver : public SolverInterface {
 
   explicit GScipSolver(std::unique_ptr<GScip> gscip);
 
+  // Adds the new variables.
   absl::Status AddVariables(const VariablesProto& variables,
                             const absl::flat_hash_map<int64_t, double>&
                                 linear_objective_coefficients);
+
+  // Update existing variables' parameters.
   absl::Status UpdateVariables(const VariableUpdatesProto& variable_updates);
+
+  // Adds the new linear constraints.
   absl::Status AddLinearConstraints(
       const LinearConstraintsProto& linear_constraints,
       const SparseDoubleMatrixProto& linear_constraint_matrix);
+
+  // Updates the existing constraints and the coefficients of the existing
+  // variables of these constraints.
   absl::Status UpdateLinearConstraints(
       const LinearConstraintUpdatesProto linear_constraint_updates,
-      const SparseDoubleMatrixProto& linear_constraint_matrix);
+      const SparseDoubleMatrixProto& linear_constraint_matrix,
+      std::optional<int64_t> first_new_var_id,
+      std::optional<int64_t> first_new_cstr_id);
+
   absl::flat_hash_set<SCIP_VAR*> LookupAllVariables(
       absl::Span<const int64_t> variable_ids);
   absl::StatusOr<SolveResultProto> CreateSolveResultProto(
@@ -121,8 +132,6 @@ class GScipSolver : public SolverInterface {
   InterruptEventHandler interrupt_event_handler_;
   absl::flat_hash_map<int64_t, SCIP_VAR*> variables_;
   absl::flat_hash_map<int64_t, SCIP_CONS*> linear_constraints_;
-  int64_t next_unused_variable_id_ = 0;
-  int64_t next_unused_linear_constraint_id_ = 0;
 };
 
 }  // namespace math_opt
