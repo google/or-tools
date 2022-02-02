@@ -703,7 +703,7 @@ ifeq ($(USE_SCIP),ON)
 ifeq ($(WINDOWS_SCIP_DIR),$(OR_TOOLS_TOP)/dependencies/install)
 	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sscip"
 	$(COPYREC) /E /Y dependencies$Sinstall$Sinclude$Sscip "$(DESTDIR)$(prefix)$Sinclude$Sscip"
-	$(COPY) dependencies$Ssources$Sscip-7.0.1$Sapplications$SPolySCIP$SLICENCE "$(DESTDIR)$(prefix)$Sshare$Sscip_license.txt"
+	$(COPY) dependencies$Ssources$Sscip-v800$Sapplications$SPolySCIP$SLICENCE "$(DESTDIR)$(prefix)$Sshare$Sscip_license.txt"
 endif
 endif  # USE_SCIP
 

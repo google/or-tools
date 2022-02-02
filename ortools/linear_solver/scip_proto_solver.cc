@@ -880,7 +880,7 @@ absl::StatusOr<MPSolutionResponse> ScipSolveProto(
       return variable_value;
     };
 
-    // NOTE(user): As of SCIP 7.0.1, getting the pointer to all
+    // NOTE(user): As of SCIP 8.0.0, getting the pointer to all
     // solutions is as fast as getting the pointer to the best solution.
     SCIP_SOL** const scip_solutions = SCIPgetSols(scip);
     response.set_objective_value(SCIPgetSolOrigObj(scip, scip_solutions[0]));

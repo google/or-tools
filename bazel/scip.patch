@@ -1,54 +1,5 @@
-diff --git a/src/scip/buildflags.c b/src/scip/buildflags.c
-index 4fbbc0e3b..3dc550347 100644
---- src/scip/buildflags.c
-+++ src/scip/buildflags.c
-@@ -0,0 +1,2 @@
-+#define SCIP_BUILDFLAGS " ARCH=x86_64\n COMP=gnu\n DEBUGSOL=false\n EXPRINT=none\n GAMS=false\n SYM=bliss\n GMP=false\n IPOPT=false\n IPOPTOPT=opt\n WORHP=false\n WORHPOPT=opt\n LPS=spx2\n LPSCHECK=false\n LPSOPT=opt\n NOBLKBUFMEM=false\n NOBLKMEM=false\n NOBUFMEM=false\n OPT=opt\n OSTYPE=linux\n PARASCIP=true\n READLINE=false\n SANITIZE=\n SHARED=false\n USRARFLAGS=\n USRCFLAGS=-fPIC\n USRCXXFLAGS=-fPIC\n USRDFLAGS=\n USRFLAGS=\n USRLDFLAGS=\n USROFLAGS=\n VERSION=7.0.1\n ZIMPL=false\n ZIMPLOPT=opt\n ZLIB=true"
-+
-diff --git a/src/scip/githash.c b/src/scip/githash.c
-new file mode 100644
-index 000000000..660dc1976
---- /dev/null
-+++ src/scip/githash.c
-@@ -0,0 +1 @@
-+#define SCIP_GITHASH "b41d526acf"
-diff --git a/src/symmetry/compute_symmetry_bliss.cpp b/src/symmetry/compute_symmetry_bliss.cpp
-index db734cb18..2fda08fd4 100644
---- src/symmetry/compute_symmetry_bliss.cpp
-+++ src/symmetry/compute_symmetry_bliss.cpp
-@@ -24,8 +24,8 @@
- #include "compute_symmetry.h"
-
- /* include bliss graph */
--#include <bliss/defs.hh>
--#include <bliss/graph.hh>
-+#include <bliss-0.73/defs.hh>
-+#include <bliss-0.73/graph.hh>
-
- #include <vector>
- #include <list>
-
-diff --git a/src/nlpi/nlpi_xyz.c b/src/nlpi/nlpi_xyz.c
-index c66511862a..3058216088 100644
---- src/nlpi/nlpi_xyz.c
-+++ src/nlpi/nlpi_xyz.c
-@@ -43,12 +43,14 @@
-
- struct SCIP_NlpiData
- {
-+       void* ptr;
- };
-
- /* TODO: fill in the necessary NLP problem instance data */
-
- struct SCIP_NlpiProblem
- {
-+       void* ptr;
- };
-
-
 diff --git a/src/scip/benders_xyz.c b/src/scip/benders_xyz.c
-index b3a2b710f0..e3e8397ff5 100644
+index 0d812ba6bd..ae9167c260 100644
 --- src/scip/benders_xyz.c
 +++ src/scip/benders_xyz.c
 @@ -47,6 +47,7 @@
@@ -57,10 +8,10 @@ index b3a2b710f0..e3e8397ff5 100644
  {
 +       void* ptr;
  };
-
-
+ 
+ 
 diff --git a/src/scip/benderscut_xyz.c b/src/scip/benderscut_xyz.c
-index 394685e225..0c08fe8b84 100644
+index 0f05582fe4..b07bd19a1f 100644
 --- src/scip/benderscut_xyz.c
 +++ src/scip/benderscut_xyz.c
 @@ -41,6 +41,7 @@
@@ -69,10 +20,10 @@ index 394685e225..0c08fe8b84 100644
  {
 +       void* ptr;
  };
-
-
+ 
+ 
 diff --git a/src/scip/branch_xyz.c b/src/scip/branch_xyz.c
-index a5e7f0f9a2..4970df6cce 100644
+index 1f13ac7460..f31d85dc9a 100644
 --- src/scip/branch_xyz.c
 +++ src/scip/branch_xyz.c
 @@ -42,6 +42,7 @@
@@ -81,10 +32,10 @@ index a5e7f0f9a2..4970df6cce 100644
  {
 +       void* ptr;
  };
-
-
+ 
+ 
 diff --git a/src/scip/cons_xyz.c b/src/scip/cons_xyz.c
-index af256c5485..7fe813a22d 100644
+index 8141039a2e..ca3df9dbce 100644
 --- src/scip/cons_xyz.c
 +++ src/scip/cons_xyz.c
 @@ -69,11 +69,13 @@
@@ -93,16 +44,16 @@ index af256c5485..7fe813a22d 100644
  {
 +       void* ptr;
  };
-
+ 
  /** constraint handler data */
  struct SCIP_ConshdlrData
  {
 +       void* ptr;
  };
-
-
+ 
+ 
 diff --git a/src/scip/dialog_xyz.c b/src/scip/dialog_xyz.c
-index f00d44d9ea..3aee42b2dd 100644
+index 1918057017..bc688b00fa 100644
 --- src/scip/dialog_xyz.c
 +++ src/scip/dialog_xyz.c
 @@ -42,6 +42,7 @@
@@ -111,10 +62,10 @@ index f00d44d9ea..3aee42b2dd 100644
  {
 +       void* ptr;
  };
-
-
+ 
+ 
 diff --git a/src/scip/disp_xyz.c b/src/scip/disp_xyz.c
-index 073f192aa6..fa0e7e970c 100644
+index 6c6a776091..55cb57e666 100644
 --- src/scip/disp_xyz.c
 +++ src/scip/disp_xyz.c
 @@ -47,6 +47,7 @@
@@ -123,10 +74,10 @@ index 073f192aa6..fa0e7e970c 100644
  {
 +       void* ptr;
  };
-
-
+ 
+ 
 diff --git a/src/scip/event_xyz.c b/src/scip/event_xyz.c
-index 04cade95d8..58ad82f06b 100644
+index 31fd333f98..d311cfa672 100644
 --- src/scip/event_xyz.c
 +++ src/scip/event_xyz.c
 @@ -36,6 +36,7 @@
@@ -135,10 +86,10 @@ index 04cade95d8..58ad82f06b 100644
  {
 +       void* ptr;
  };
-
+ 
  /*
- diff --git a/src/scip/heur_xyz.c b/src/scip/heur_xyz.c
-index 8bc7c4f953..c45035611f 100644
+diff --git a/src/scip/heur_xyz.c b/src/scip/heur_xyz.c
+index 9f7d804f4d..4a254ee55f 100644
 --- src/scip/heur_xyz.c
 +++ src/scip/heur_xyz.c
 @@ -46,6 +46,7 @@
@@ -147,10 +98,10 @@ index 8bc7c4f953..c45035611f 100644
  {
 +       void* ptr;
  };
-
-
+ 
+ 
 diff --git a/src/scip/nodesel_xyz.c b/src/scip/nodesel_xyz.c
-index a5139e5f9a..4009fe7793 100644
+index a5b6d9d7d6..ae9eaf4fef 100644
 --- src/scip/nodesel_xyz.c
 +++ src/scip/nodesel_xyz.c
 @@ -41,6 +41,7 @@
@@ -159,22 +110,10 @@ index a5139e5f9a..4009fe7793 100644
  {
 +       void* ptr;
  };
-
-
-diff --git a/src/scip/pricer_xyz.c b/src/scip/pricer_xyz.c
-index c3bbbff655..5bc6ca4795 100644
---- src/scip/pricer_xyz.c
-+++ src/scip/pricer_xyz.c
-@@ -43,6 +43,7 @@
- /** variable pricer data */
- struct SCIP_PricerData
- {
-+       void* ptr;
- };
-
-
+ 
+ 
 diff --git a/src/scip/presol_xyz.c b/src/scip/presol_xyz.c
-index 84ce50bb08..49d6e8f368 100644
+index 38ba9df72e..00cc6c6570 100644
 --- src/scip/presol_xyz.c
 +++ src/scip/presol_xyz.c
 @@ -42,6 +42,7 @@
@@ -183,10 +122,22 @@ index 84ce50bb08..49d6e8f368 100644
  {
 +       void* ptr;
  };
-
-
+ 
+ 
+diff --git a/src/scip/pricer_xyz.c b/src/scip/pricer_xyz.c
+index 16c968b951..fe73877d9c 100644
+--- src/scip/pricer_xyz.c
++++ src/scip/pricer_xyz.c
+@@ -43,6 +43,7 @@
+ /** variable pricer data */
+ struct SCIP_PricerData
+ {
++       void* ptr;
+ };
+ 
+ 
 diff --git a/src/scip/prop_xyz.c b/src/scip/prop_xyz.c
-index d07b374fc3..5313a5643f 100644
+index 431d8e909b..f10cc5349f 100644
 --- src/scip/prop_xyz.c
 +++ src/scip/prop_xyz.c
 @@ -50,6 +50,7 @@
@@ -195,10 +146,10 @@ index d07b374fc3..5313a5643f 100644
  {
 +       void* ptr;
  };
-
-
+ 
+ 
 diff --git a/src/scip/reader_xyz.c b/src/scip/reader_xyz.c
-index 45720677ed..8cf3799639 100644
+index 08e5a6ff7b..7287f0827b 100644
 --- src/scip/reader_xyz.c
 +++ src/scip/reader_xyz.c
 @@ -40,6 +40,7 @@
@@ -207,10 +158,10 @@ index 45720677ed..8cf3799639 100644
  {
 +       void* ptr;
  };
-
-
+ 
+ 
 diff --git a/src/scip/relax_xyz.c b/src/scip/relax_xyz.c
-index 30b0999de4..afdbe5b076 100644
+index 4d4acc80b3..8f62fca710 100644
 --- src/scip/relax_xyz.c
 +++ src/scip/relax_xyz.c
 @@ -43,6 +43,7 @@
@@ -219,10 +170,27 @@ index 30b0999de4..afdbe5b076 100644
  {
 +       void* ptr;
  };
-
-
+ 
+ 
+diff --git a/src/scip/scipbuildflags.c b/src/scip/scipbuildflags.c
+index b54b9112cb..2cc0d83bda 100644
+--- src/scip/scipbuildflags.c
++++ src/scip/scipbuildflags.c
+@@ -21,10 +21,9 @@
+ 
+ /*---+----1----+----2----+----3----+----4----+----5----+----6----+----7----+----8----+----9----+----0----+----1----+----2*/
+ 
++#define SCIP_BUILDFLAGS " ARCH=x86_64\n COMP=gnu\n DEBUGSOL=false\n EXPRINT=none\n GAMS=false\n SYM=bliss\n GMP=false\n IPOPT=false\n IPOPTOPT=opt\n WORHP=false\n WORHPOPT=opt\n LPS=spx2\n LPSCHECK=false\n LPSOPT=opt\n NOBLKBUFMEM=false\n NOBLKMEM=false\n NOBUFMEM=false\n OPT=opt\n OSTYPE=linux\n PARASCIP=true\n READLINE=false\n SANITIZE=\n SHARED=false\n USRARFLAGS=\n USRCFLAGS=-fPIC\n USRCXXFLAGS=-fPIC\n USRDFLAGS=\n USRFLAGS=\n USRLDFLAGS=\n USROFLAGS=\n VERSION=7.0.1\n ZIMPL=false\n ZIMPLOPT=opt\n ZLIB=true"
++
+ #include "scip/scipbuildflags.h"
+-#ifdef NO_CONFIG_HEADER
+-#include "buildflags.c"
+-#endif
+ 
+ /** returns the flags that were used to build SCIP */
+ const char* SCIPgetBuildFlags(
 diff --git a/src/scip/sepa_xyz.c b/src/scip/sepa_xyz.c
-index 930ee78b3d..b25fed4dd7 100644
+index 40d3c1c5f7..4b069b6c71 100644
 --- src/scip/sepa_xyz.c
 +++ src/scip/sepa_xyz.c
 @@ -44,6 +44,7 @@
@@ -231,17 +199,27 @@ index 930ee78b3d..b25fed4dd7 100644
  {
 +       void* ptr;
  };
-
-
-diff --git a/src/scip/table_xyz.c b/src/scip/table_xyz.c
-index 5d479de8a4..61e1307d0d 100644
---- src/scip/table_xyz.c
-+++ src/scip/table_xyz.c
-@@ -43,6 +43,7 @@
- /** statistics table data */
- struct SCIP_TableData
- {
-+       void* ptr;
- };
-
-
+ 
+ 
+diff --git a/src/symmetry/compute_symmetry_bliss.cpp b/src/symmetry/compute_symmetry_bliss.cpp
+index 484627c4b9..27c2895165 100644
+--- src/symmetry/compute_symmetry_bliss.cpp
++++ src/symmetry/compute_symmetry_bliss.cpp
+@@ -25,8 +25,8 @@
+ #include "compute_symmetry.h"
+ 
+ /* include bliss graph */
+-#include <bliss/defs.hh>
+-#include <bliss/graph.hh>
++#include <bliss-0.73/defs.hh>
++#include <bliss-0.73/graph.hh>
+ 
+ #include <string.h>
+ #include <vector>
+diff --git a/src/scip/githash.c b/src/scip/githash.c
+new file mode 100644
+index 0000000000..2891bc72de
+--- /dev/null
++++ src/scip/githash.c
+@@ -0,0 +1 @@
++#define SCIP_GITHASH "a740f0891e"

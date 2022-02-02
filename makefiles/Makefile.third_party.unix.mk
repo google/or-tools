@@ -30,7 +30,7 @@ CLP_TAG = 1.17.4
 OSI_TAG = 0.108.6
 COINUTILS_TAG = 2.11.4
 PATCHELF_TAG = 0.10
-SCIP_TAG = master
+SCIP_TAG = v800
 
 # Main target.
 .PHONY: third_party # Build OR-Tools Prerequisite

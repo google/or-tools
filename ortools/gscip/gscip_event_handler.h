@@ -12,7 +12,7 @@
 // limitations under the License.
 
 // Provides a safe C++ interface for SCIP event handlers, which are described at
-// https://www.scipopt.org/doc-7.0.1/html/EVENT.php.
+// https://www.scipopt.org/doc/html/EVENT.php.
 #ifndef OR_TOOLS_GSCIP_GSCIP_EVENT_HANDLER_H_
 #define OR_TOOLS_GSCIP_GSCIP_EVENT_HANDLER_H_
 
@@ -27,7 +27,7 @@ namespace operations_research {
 struct GScipEventHandlerDescription {
   // For the first two members below, the SCIP constraint handler
   // property name is provided. See
-  // https://www.scipopt.org/doc-7.0.1/html/EVENT.php#EVENTHDLR_PROPERTIES for
+  // https://www.scipopt.org/doc/html/EVENT.php#EVENTHDLR_PROPERTIES for
   // details.
 
   // See CONSHDLR_NAME in SCIP documentation above.

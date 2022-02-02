@@ -5,4 +5,4 @@ Cgl=0.60.3
 Clp=1.17.4
 Osi=0.108.6
 CoinUtils=2.11.4
-Scip=master
+Scip=v800

@@ -46,7 +46,7 @@ CLP_TAG = 1.17.4
 OSI_TAG = 0.108.6
 COINUTILS_TAG = 2.11.4
 SWIG_TAG = 4.0.2
-SCIP_TAG = master
+SCIP_TAG = v800
 
 # Added in support of clean third party targets
 TSVNCACHE_EXE = TSVNCache.exe

@@ -87,6 +87,6 @@ new_git_repository(
     name = "scip",
     build_file = "//bazel:scip.BUILD",
     patches = ["//bazel:scip.patch"],
-    commit = "6acb7222e1b871041445bee75fc05bd1bcaed089", # master from Jul 19, 2021
+    tag = "v800",
     remote = "https://github.com/scipopt/scip.git",
 )
