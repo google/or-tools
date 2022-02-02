@@ -43,5 +43,62 @@ public class CumulativeConstraint extends Constraint {
     return this;
   }
 
+  /**
+   * Adds all pairs (intervals[i], demands[i]) to the constraint.
+   *
+   * @param intervals an array of interval variables
+   * @param deamds an array of linear expression
+   * @return itself
+   * @throws CpModel.MismatchedArrayLengths if intervals and demands have different length
+   */
+  public CumulativeConstraint addDemands(IntervalVar[] intervals, LinearArgument[] demands) {
+    if (intervals.length != demands.length) {
+      throw new CpModel.MismatchedArrayLengths(
+          "CumulativeConstraint.addDemands", "intervals", "demands");
+    }
+    for (int i = 0; i < intervals.length; i++) {
+      addDemand(intervals[i], demands[i]);
+    }
+    return this;
+  }
+
+  /**
+   * Adds all pairs (intervals[i], demands[i]) to the constraint.
+   *
+   * @param intervals an array of interval variables
+   * @param deamds an array of long values
+   * @return itself
+   * @throws CpModel.MismatchedArrayLengths if intervals and demands have different length
+   */
+  public CumulativeConstraint addDemands(IntervalVar[] intervals, long[] demands) {
+    if (intervals.length != demands.length) {
+      throw new CpModel.MismatchedArrayLengths(
+          "CumulativeConstraint.addDemands", "intervals", "demands");
+    }
+    for (int i = 0; i < intervals.length; i++) {
+      addDemand(intervals[i], demands[i]);
+    }
+    return this;
+  }
+
+  /**
+   * Adds all pairs (intervals[i], demands[i]) to the constraint.
+   *
+   * @param intervals an array of interval variables
+   * @param deamds an array of integer values
+   * @return itself
+   * @throws CpModel.MismatchedArrayLengths if intervals and demands have different length
+   */
+  public CumulativeConstraint addDemands(IntervalVar[] intervals, int[] demands) {
+    if (intervals.length != demands.length) {
+      throw new CpModel.MismatchedArrayLengths(
+          "CumulativeConstraint.addDemands", "intervals", "demands");
+    }
+    for (int i = 0; i < intervals.length; i++) {
+      addDemand(intervals[i], demands[i]);
+    }
+    return this;
+  }
+
   private final CpModel model;
 }

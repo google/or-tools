@@ -44,6 +44,11 @@ public interface LinearExpr extends LinearArgument {
     return newBuilder().addTerm(expr, coeff).build();
   }
 
+  /** Shortcut for newBuilder().addTerm(expr, coeff).add(offset).build() */
+  static LinearExpr affine(LinearArgument expr, long coeff, long offset) {
+    return newBuilder().addTerm(expr, coeff).add(offset).build();
+  }
+
   /** Shortcut for newBuilder().addSum(exprs).build() */
   static LinearExpr sum(LinearArgument[] exprs) {
     return newBuilder().addSum(exprs).build();

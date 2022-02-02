@@ -19,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.google.ortools.Loader;
 import com.google.ortools.sat.CpSolverStatus;
+import com.google.ortools.util.Domain;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -276,5 +277,95 @@ public final class CpSolverTest {
     assertThat(log).contains("Parameters");
     assertThat(log).contains("log_to_stdout: false");
     assertThat(log).contains("OPTIMAL");
+  }
+
+  @Test
+  public void issue3108() {
+    final CpModel model = new CpModel();
+    final IntVar var1 = model.newIntVar(0, 1, "CONTROLLABLE__C1[0]");
+    final IntVar var2 = model.newIntVar(0, 1, "CONTROLLABLE__C1[1]");
+    capacityConstraint(model, new IntVar[] {var1, var2}, new long[] {0L, 1L},
+        new long[][] {new long[] {1L, 1L}}, new long[][] {new long[] {1L, 1L}});
+    final CpSolver solver = new CpSolver();
+    solver.getParameters().setLogSearchProgress(false);
+    solver.getParameters().setCpModelProbingLevel(0);
+    solver.getParameters().setNumSearchWorkers(4);
+    solver.getParameters().setMaxTimeInSeconds(1);
+    final CpSolverStatus status = solver.solve(model);
+    assertEquals(status, CpSolverStatus.OPTIMAL);
+  }
+
+  private static void capacityConstraint(final CpModel model, final IntVar[] varsToAssign,
+      final long[] domainArr, final long[][] demands, final long[][] capacities) {
+    final int numTasks = varsToAssign.length;
+    final int numResources = demands.length;
+    final IntervalVar[] tasksIntervals = new IntervalVar[numTasks + capacities[0].length];
+
+    final Domain domainT = Domain.fromValues(domainArr);
+    final Domain intervalRange =
+        Domain.fromFlatIntervals(new long[] {domainT.min() + 1, domainT.max() + 1});
+    final int unitIntervalSize = 1;
+    for (int i = 0; i < numTasks; i++) {
+      final BoolVar presence = model.newBoolVar("");
+      model.addLinearExpressionInDomain(varsToAssign[i], domainT).onlyEnforceIf(presence);
+      model.addLinearExpressionInDomain(varsToAssign[i], domainT.complement())
+          .onlyEnforceIf(presence.not());
+      // interval with start as taskToNodeAssignment and size of 1
+      tasksIntervals[i] =
+          model.newOptionalFixedSizeIntervalVar(varsToAssign[i], unitIntervalSize, presence, "");
+    }
+
+    // Create dummy intervals
+    for (int i = numTasks; i < tasksIntervals.length; i++) {
+      final int nodeIndex = i - numTasks;
+      tasksIntervals[i] = model.newFixedInterval(domainArr[nodeIndex], 1, "");
+    }
+
+    // Convert to list of arrays
+    final long[][] nodeCapacities = new long[numResources][];
+    final long[] maxCapacities = new long[numResources];
+
+    for (int i = 0; i < capacities.length; i++) {
+      final long[] capacityArr = capacities[i];
+      long maxCapacityValue = Long.MIN_VALUE;
+      for (int j = 0; j < capacityArr.length; j++) {
+        maxCapacityValue = Math.max(maxCapacityValue, capacityArr[j]);
+      }
+      nodeCapacities[i] = capacityArr;
+      maxCapacities[i] = maxCapacityValue;
+    }
+
+    // For each resource, create dummy demands to accommodate heterogeneous capacities
+    final long[][] updatedDemands = new long[numResources][];
+    for (int i = 0; i < numResources; i++) {
+      final long[] demand = new long[numTasks + capacities[0].length];
+
+      // copy ver task demands
+      int iter = 0;
+      for (final long taskDemand : demands[i]) {
+        demand[iter] = taskDemand;
+        iter++;
+      }
+
+      // copy over dummy demands
+      final long maxCapacity = maxCapacities[i];
+      for (final long nodeHeterogeneityAdjustment : nodeCapacities[i]) {
+        demand[iter] = maxCapacity - nodeHeterogeneityAdjustment;
+        iter++;
+      }
+      updatedDemands[i] = demand;
+    }
+
+    // 2. Capacity constraints
+    for (int i = 0; i < numResources; i++) {
+      model.addCumulative(maxCapacities[i]).addDemands(tasksIntervals, updatedDemands[i]);
+    }
+
+    // Cumulative score
+    for (int i = 0; i < numResources; i++) {
+      final IntVar max = model.newIntVar(0, maxCapacities[i], "");
+      model.addCumulative(max).addDemands(tasksIntervals, updatedDemands[i]).getBuilder();
+      model.minimize(max);
+    }
   }
 }

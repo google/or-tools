@@ -43,6 +43,7 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_decision.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/util/logging.h"
 #include "ortools/util/stats.h"
 #include "ortools/util/time_limit.h"
 
@@ -724,6 +725,7 @@ class SatSolver {
   SatParameters* parameters_;
   RestartPolicy* restart_;
   SatDecisionPolicy* decision_policy_;
+  SolverLogger* logger_;
 
   // Used for debugging only. See SaveDebugAssignment().
   VariablesAssignment debug_assignment_;

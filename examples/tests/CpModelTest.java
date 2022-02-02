@@ -429,6 +429,14 @@ public final class CpModelTest {
     assertThat(model.model().getConstraints(1).hasInterval()).isTrue();
     assertThat(model.model().getConstraints(2).hasCumulative()).isTrue();
     assertThat(model.model().getConstraints(2).getCumulative().getIntervalsCount()).isEqualTo(2);
+
+    cumul.addDemands(new IntervalVar[] {interval1}, new int[] {2});
+    cumul.addDemands(new IntervalVar[] {interval1}, new long[] {2});
+    cumul.addDemands(
+        new IntervalVar[] {interval2}, new LinearArgument[] {LinearExpr.affine(demandVar2, 1, 2)});
+    cumul.addDemands(
+        new IntervalVar[] {interval2}, new LinearExpr[] {LinearExpr.affine(demandVar2, 1, 3)});
+    assertThat(model.model().getConstraints(2).getCumulative().getIntervalsCount()).isEqualTo(6);
   }
 
   @Test

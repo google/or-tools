@@ -38,6 +38,7 @@ namespace sat {
 SatSolver::SatSolver() : SatSolver(new Model()) {
   owned_model_.reset(model_);
   model_->Register<SatSolver>(this);
+  logger_ = model_->GetOrCreate<SolverLogger>();
 }
 
 SatSolver::SatSolver(Model* model)
@@ -51,6 +52,7 @@ SatSolver::SatSolver(Model* model)
       parameters_(model->GetOrCreate<SatParameters>()),
       restart_(model->GetOrCreate<RestartPolicy>()),
       decision_policy_(model->GetOrCreate<SatDecisionPolicy>()),
+      logger_(model->GetOrCreate<SolverLogger>()),
       clause_activity_increment_(1.0),
       same_reason_identifier_(*trail_),
       is_relevant_for_core_computation_(true),
@@ -118,6 +120,8 @@ void SatSolver::SetParameters(const SatParameters& parameters) {
   *parameters_ = parameters;
   restart_->Reset();
   time_limit_->ResetLimitFromParameters(parameters);
+  logger_->EnableLogging(parameters.log_search_progress() || VLOG_IS_ON(1));
+  logger_->SetLogToStdOut(parameters.log_to_stdout());
 }
 
 bool SatSolver::IsMemoryLimitReached() const {
@@ -956,10 +960,8 @@ SatSolver::Status SatSolver::ResetAndSolveWithGivenAssumptions(
 }
 
 SatSolver::Status SatSolver::StatusWithLog(Status status) {
-  if (parameters_->log_search_progress()) {
-    LOG(INFO) << RunningStatisticsString();
-    LOG(INFO) << StatusString(status);
-  }
+  SOLVER_LOG(logger_, RunningStatisticsString());
+  SOLVER_LOG(logger_, StatusString(status));
   return status;
 }
 
@@ -1129,19 +1131,19 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit) {
   timer_.Restart();
 
   // Display initial statistics.
-  if (parameters_->log_search_progress()) {
-    LOG(INFO) << "Initial memory usage: " << MemoryUsage();
-    LOG(INFO) << "Number of variables: " << num_variables_;
-    LOG(INFO) << "Number of clauses (size > 2): "
-              << clauses_propagator_->num_clauses();
-    LOG(INFO) << "Number of binary clauses: "
-              << binary_implication_graph_->num_implications();
-    LOG(INFO) << "Number of linear constraints: "
-              << pb_constraints_->NumberOfConstraints();
-    LOG(INFO) << "Number of fixed variables: " << trail_->Index();
-    LOG(INFO) << "Number of watched clauses: "
-              << clauses_propagator_->num_watched_clauses();
-    LOG(INFO) << "Parameters: " << ProtobufShortDebugString(*parameters_);
+  if (logger_->LoggingIsEnabled()) {
+    SOLVER_LOG(logger_, "Initial memory usage: ", MemoryUsage());
+    SOLVER_LOG(logger_, "Number of variables: ", num_variables_.value());
+    SOLVER_LOG(logger_, "Number of clauses (size > 2): ",
+               clauses_propagator_->num_clauses());
+    SOLVER_LOG(logger_, "Number of binary clauses: ",
+               binary_implication_graph_->num_implications());
+    SOLVER_LOG(logger_, "Number of linear constraints: ",
+               pb_constraints_->NumberOfConstraints());
+    SOLVER_LOG(logger_, "Number of fixed variables: ", trail_->Index());
+    SOLVER_LOG(logger_, "Number of watched clauses: ",
+               clauses_propagator_->num_watched_clauses());
+    SOLVER_LOG(logger_, "Parameters: ", ProtobufShortDebugString(*parameters_));
   }
 
   // Used to trigger clause minimization via propagation.
@@ -1174,16 +1176,12 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit) {
     if (time_limit != nullptr) {
       AdvanceDeterministicTime(time_limit);
       if (time_limit->LimitReached()) {
-        if (parameters_->log_search_progress()) {
-          LOG(INFO) << "The time limit has been reached. Aborting.";
-        }
+        SOLVER_LOG(logger_, "The time limit has been reached. Aborting.");
         return StatusWithLog(LIMIT_REACHED);
       }
     }
     if (num_failures() >= kFailureLimit) {
-      if (parameters_->log_search_progress()) {
-        LOG(INFO) << "The conflict limit has been reached. Aborting.";
-      }
+      SOLVER_LOG(logger_, "The conflict limit has been reached. Aborting.");
       return StatusWithLog(LIMIT_REACHED);
     }
 
@@ -1195,9 +1193,7 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit) {
     if (counters_.num_failures >= next_memory_check) {
       next_memory_check = NextMultipleOf(num_failures(), kMemoryCheckFrequency);
       if (IsMemoryLimitReached()) {
-        if (parameters_->log_search_progress()) {
-          LOG(INFO) << "The memory limit has been reached. Aborting.";
-        }
+        SOLVER_LOG(logger_, "The memory limit has been reached. Aborting.");
         return StatusWithLog(LIMIT_REACHED);
       }
     }
@@ -1205,7 +1201,7 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit) {
     // Display search progression. We use >= because counters_.num_failures may
     // augment by more than one at each iteration.
     if (counters_.num_failures >= next_display) {
-      LOG(INFO) << RunningStatisticsString();
+      SOLVER_LOG(logger_, RunningStatisticsString());
       next_display = NextMultipleOf(num_failures(), kDisplayFrequency);
     }
 
