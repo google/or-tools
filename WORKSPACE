@@ -31,7 +31,7 @@ http_archive(
 # Protobuf
 git_repository(
     name = "com_google_protobuf",
-    commit = "7c40b2d",  # release v3.19.1
+    commit = "22d0e26",  # release v3.19.4
     remote = "https://github.com/protocolbuffers/protobuf.git",
 )
 # Load common dependencies.
