@@ -19,6 +19,13 @@ git_repository(
     remote = "https://github.com/bazelbuild/platforms.git",
 )
 
+# Bazel Python rules.
+git_repository(
+    name = "rules_python",
+    commit = "b842276",  # release 0.6.0
+    remote = "https://github.com/bazelbuild/rules_python.git",
+)
+
 # ZLIB
 http_archive(
     name = "zlib",
@@ -29,14 +36,6 @@ http_archive(
         "https://mirror.bazel.build/zlib.net/zlib-1.2.11.tar.gz",
         "https://zlib.net/zlib-1.2.11.tar.gz",
     ],
-)
-
-# Python Rules
-http_archive(
-    name = "rules_python",
-    sha256 = "b5668cde8bb6e3515057ef465a35ad712214962f0b3a314e551204266c7be90c",
-    strip_prefix = "rules_python-0.0.2",
-    url = "https://github.com/bazelbuild/rules_python/releases/download/0.0.2/rules_python-0.0.2.tar.gz",
 )
 
 # Protobuf
