@@ -267,6 +267,11 @@ install(DIRECTORY ${PROJECT_BINARY_DIR}/ortools
   PATTERN "*.pb.h"
   PATTERN CMakeFiles EXCLUDE)
 
+if(USE_XPRESS)
+  install(FILES cmake/FindXPRESS.cmake
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/XPRESS)
+endif()
+
 include(CMakePackageConfigHelpers)
 string (TOUPPER "${PROJECT_NAME}" PACKAGE_PREFIX)
 configure_package_config_file(cmake/${PROJECT_NAME}Config.cmake.in
