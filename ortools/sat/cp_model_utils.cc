@@ -543,9 +543,8 @@ void AddLinearExpressionToLinearConstraint(const LinearExpressionProto& expr,
   DCHECK(!linear->domain().empty());
   const int64_t shift = coefficient * expr.offset();
   if (shift != 0) {
-    for (int64_t& d : *linear->mutable_domain()) {
-      d -= shift;
-    }
+    FillDomainInProto(ReadDomainFromProto(*linear).AdditionWith(Domain(-shift)),
+                      linear);
   }
 }
 
