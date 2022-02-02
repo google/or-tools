@@ -113,7 +113,11 @@ message SolveStatsProto {
 
   int64 barrier_iterations = 6;
 
+  int64 first_order_iterations = 8;
+
   int64 node_count = 7;
+
+  // Next id: 9
 }
 
 // The reason a call to Solve() terminates.

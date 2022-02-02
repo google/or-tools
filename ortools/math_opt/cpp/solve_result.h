@@ -133,6 +133,8 @@ struct SolveStats {
 
   int barrier_iterations = 0;
 
+  int first_order_iterations = 0;
+
   int node_count = 0;
 
   // Will CHECK fail on invalid input, if problem_status is invalid.

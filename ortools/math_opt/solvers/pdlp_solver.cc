@@ -214,6 +214,8 @@ absl::StatusOr<SolveResultProto> PdlpSolver::MakeSolveResult(
   ASSIGN_OR_RETURN(*result.mutable_solve_stats()->mutable_solve_time(),
                    util_time::EncodeGoogleApiProto(
                        absl::Seconds(pdlp_result.solve_log.solve_time_sec())));
+  result.mutable_solve_stats()->set_first_order_iterations(
+      pdlp_result.solve_log.iteration_count());
   const std::optional<pdlp::ConvergenceInformation> convergence_information =
       pdlp::GetConvergenceInformation(pdlp_result.solve_log.solution_stats(),
                                       pdlp_result.solve_log.solution_type());

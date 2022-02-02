@@ -152,7 +152,7 @@ absl::Status ValidateSolveStatsConsistency(const SolveStatsProto& solve_stats) {
     return absl::InvalidArgumentError(
         absl::StrCat("best_primal_bound is finite, but primal_status is not "
                      "feasible (primal_status = ",
-                     solve_stats.problem_status().primal_status()));
+                     solve_stats.problem_status().primal_status(), ")"));
   }
   if (solve_stats.problem_status().dual_status() !=
           FEASIBILITY_STATUS_FEASIBLE &&
@@ -160,7 +160,7 @@ absl::Status ValidateSolveStatsConsistency(const SolveStatsProto& solve_stats) {
     return absl::InvalidArgumentError(
         absl::StrCat("best_dual_bound is finite, but dual_status is not "
                      "feasible (dual_status = ",
-                     solve_stats.problem_status().dual_status()));
+                     solve_stats.problem_status().dual_status(), ")"));
   }
   return absl::OkStatus();
 }

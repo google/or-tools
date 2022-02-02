@@ -285,6 +285,7 @@ SolveStatsProto SolveStats::ToProto() const {
   *proto.mutable_problem_status() = problem_status.ToProto();
   proto.set_simplex_iterations(simplex_iterations);
   proto.set_barrier_iterations(barrier_iterations);
+  proto.set_first_order_iterations(first_order_iterations);
   proto.set_node_count(node_count);
   return proto;
 }
@@ -299,6 +300,7 @@ SolveStats SolveStats::FromProto(const SolveStatsProto& solve_stats_proto) {
       ProblemStatus::FromProto(solve_stats_proto.problem_status());
   result.simplex_iterations = solve_stats_proto.simplex_iterations();
   result.barrier_iterations = solve_stats_proto.barrier_iterations();
+  result.first_order_iterations = solve_stats_proto.first_order_iterations();
   result.node_count = solve_stats_proto.node_count();
   return result;
 }
@@ -310,6 +312,7 @@ std::ostream& operator<<(std::ostream& ostr, const SolveStats& solve_stats) {
   ostr << ", problem_status: " << solve_stats.problem_status;
   ostr << ", simplex_iterations: " << solve_stats.simplex_iterations;
   ostr << ", barrier_iterations: " << solve_stats.barrier_iterations;
+  ostr << ", first_order_iterations: " << solve_stats.first_order_iterations;
   ostr << ", node_count: " << solve_stats.node_count;
   ostr << "}";
   return ostr;
