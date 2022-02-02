@@ -93,25 +93,39 @@ jobs:
                          install \
                 -j14
       - name: Prepare ortools install dyn
-        working-directory: ./or-tools/build
-        run: |
-          rm -rf install/bin install/share install/lib/*.so.* install/lib/python3
-          find install/include -mindepth 1 -maxdepth 1 ! \( -name absl -o -name google -o -name ortools \) -execdir rm -rf '{}' \;
+        working-directory: ./or-tools/build/install
+        run: find bin -type f ! \( -name 'protoc*' -o -name 'scip' -o -name 'fz' \) -delete
       - name: Upload ortools install dyn
         uses: actions/upload-artifact@v2
         with:
           name: ortools_dyn_install
           path: ./or-tools/build/install
-      - name: Prepare ortools install static
-        working-directory: ./or-tools/buildstatic
+      - name: Build & run CMake example project using dyn install
+        working-directory: ./or-tools/examples/cmake/linear_programming/
+        env:
+          XPRESS: "${{ github.workspace }}/xpressmp813/bin/"
+          LD_LIBRARY_PATH: "${{ github.workspace }}/sirius-solver/SiriusInstall/lib/:${{ github.workspace }}/xpressmp813/lib/"
         run: |
-          rm -rf install/bin install/share
-          find install/include -mindepth 1 -maxdepth 1 ! \( -name absl -o -name google -o -name ortools \) -execdir rm -rf '{}' \;
+          cmake -Bbuild -S. -DORTOOLS_INSTALL="${{ github.workspace }}/or-tools/build/install" -DXPRESS_ROOT="${{ github.workspace }}/xpressmp813" -Dsirius_solver_DIR="${{ github.workspace }}/sirius-solver/SiriusInstall/cmake"
+          cmake --build build
+          ./build/linear_programming
+      - name: Prepare ortools install static
+        working-directory: ./or-tools/buildstatic/install
+        run: find bin -type f ! \( -name 'protoc*' -o -name 'scip' -o -name 'fz' \) -delete
       - name: Upload ortools install static
         uses: actions/upload-artifact@v2
         with:
           name: ortools_static_install
           path: ./or-tools/buildstatic/install
+      - name: Build & run CMake example project using static install
+        working-directory: ./or-tools/examples/cmake/linear_programming/
+        env:
+          XPRESS: "${{ github.workspace }}/xpressmp813/bin/"
+          LD_LIBRARY_PATH: "${{ github.workspace }}/sirius-solver/SiriusInstall/lib/:${{ github.workspace }}/xpressmp813/lib/"
+        run: |
+          cmake -Bbuildstatic -S. -DORTOOLS_INSTALL="${{ github.workspace }}/or-tools/buildstatic/install" -DXPRESS_ROOT="${{ github.workspace }}/xpressmp813" -Dsirius_solver_DIR="${{ github.workspace }}/sirius-solver/SiriusInstall/cmake"
+          cmake --build buildstatic
+          ./buildstatic/linear_programming
       - name: Upload ortools wheel
         uses: actions/upload-artifact@v2
         with:

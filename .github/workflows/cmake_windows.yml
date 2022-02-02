@@ -68,16 +68,22 @@ jobs:
         working-directory: ./or-tools
         run: cmake --build build --config Release --target ALL_BUILD INSTALL -v -- /maxcpucount
       - name: Prepare ortools install
-        working-directory: ./or-tools/build
+        working-directory: ./or-tools/build/install
         shell: bash
-        run: |
-          rm -rf install/bin install/share install/cmake
-          find install/include -mindepth 1 -maxdepth 1 ! \( -name absl -o -name google -o -name ortools \) -execdir rm -rf '{}' \;
+        run: find bin -type f ! \( -name 'fz.exe' -o -name 'protoc.exe' -o -name 'scip.exe' \) -delete
       - name: Upload ortools install
         uses: actions/upload-artifact@v2
         with:
           name: ortools_install
           path: ./or-tools/build/install
+      - name: Build & run CMake example project
+        working-directory: ./or-tools/examples/cmake/linear_programming/
+        env:
+          XPRESS: "${{ github.workspace }}/xpressmp813/bin/"
+        run: |
+          cmake -Bbuild -S. -DORTOOLS_INSTALL="${{ github.workspace }}/or-tools/build/install" -DCMAKE_BUILD_TYPE=Release -DXPRESS_ROOT="${{ github.workspace }}/xpressmp813" -Dsirius_solver_DIR="${{ github.workspace }}/sirius-solver/SiriusInstall/cmake"
+          cmake --build build --config Release
+          build\Release\linear_programming.exe
       - name: Upload ortools wheel
         uses: actions/upload-artifact@v2
         with:
