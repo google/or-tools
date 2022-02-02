@@ -3,6 +3,15 @@ workspace(name = "com_google_ortools")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository", "new_git_repository")
 
+# Bazel Skylib rules.
+git_repository(
+    name = "bazel_skylib",
+    commit = "b2ed616",  # release 1.1.1
+    remote = "https://github.com/bazelbuild/bazel-skylib.git",
+)
+load("@bazel_skylib//:workspace.bzl", "bazel_skylib_workspace")
+bazel_skylib_workspace()
+
 http_archive(
     name = "zlib",
     build_file = "@com_google_protobuf//:third_party/zlib.BUILD",
@@ -12,12 +21,6 @@ http_archive(
         "https://mirror.bazel.build/zlib.net/zlib-1.2.11.tar.gz",
         "https://zlib.net/zlib-1.2.11.tar.gz",
     ],
-)
-
-git_repository(
-    name = "bazel_skylib",
-    commit = "e59b620",  # release 1.0.2
-    remote = "https://github.com/bazelbuild/bazel-skylib.git",
 )
 
 # Python Rules
