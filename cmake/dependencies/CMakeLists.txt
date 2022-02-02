@@ -165,8 +165,8 @@ if(BUILD_GLPK)
 
   FetchContent_Declare(
     glpk
-    GIT_REPOSITORY https://github.com/Mizux/GLPK.git
-    GIT_TAG        5.0
+    GIT_REPOSITORY "https://github.com/Mizux/GLPK.git"
+    GIT_TAG        "5.0"
   )
   FetchContent_MakeAvailable(glpk)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
