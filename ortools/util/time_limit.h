@@ -292,6 +292,18 @@ class TimeLimit {
   void MergeWithGlobalTimeLimit(TimeLimit* other);
 
   /**
+   * Overwrites the deterministic time limit with the new value.
+   */
+  void ChangeDeterministicLimit(double new_limit) {
+    deterministic_limit_ = new_limit;
+  }
+
+  /**
+   * Queries the deterministic time limit.
+   */
+  double GetDeterministicLimit() const { return deterministic_limit_; }
+
+  /**
    * Returns information about the time limit object in a human-readable form.
    */
   std::string DebugString() const;
