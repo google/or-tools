@@ -107,6 +107,25 @@ index 9f7d804f4d..4a254ee55f 100644
  };
  
  
+diff --git a/src/scip/nlpi_xyz.c b/src/scip/nlpi_xyz.c
+index 3509410b23..901433d2d4 100644
+--- a/src/scip/nlpi_xyz.c
++++ b/src/scip/nlpi_xyz.c
+@@ -43,12 +43,14 @@
+ 
+ struct SCIP_NlpiData
+ {
++  void* ptr;
+ };
+ 
+ /* TODO: fill in the necessary NLP problem instance data */
+ 
+ struct SCIP_NlpiProblem
+ {
++  void* ptr;
+ };
+ 
+ 
 diff --git a/src/scip/nodesel_xyz.c b/src/scip/nodesel_xyz.c
 index a5b6d9d7d6..ae9eaf4fef 100644
 --- a/src/scip/nodesel_xyz.c
