@@ -23,7 +23,6 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/cp_constraints.h"
 #include "ortools/sat/integer.h"
@@ -33,11 +32,12 @@
 #include "ortools/sat/precedences.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/util/strong_index.h"
 
 namespace operations_research {
 namespace sat {
 
-DEFINE_STRONG_INT_TYPE(IntervalVariable, int32_t);
+DEFINE_STRONG_INDEX_TYPE(IntervalVariable);
 const IntervalVariable kNoIntervalVariable(-1);
 
 // This class maintains a set of intervals which correspond to three integer

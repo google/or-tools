@@ -19,8 +19,8 @@
 #include <memory>
 
 #include "ortools/base/logging.h"
-#include "ortools/base/strong_int.h"
 #include "ortools/util/sort.h"
+#include "ortools/util/strong_index.h"
 
 namespace operations_research {
 namespace sat {

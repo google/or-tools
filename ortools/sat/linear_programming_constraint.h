@@ -20,7 +20,6 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
-#include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/glop/revised_simplex.h"
 #include "ortools/lp_data/lp_data.h"
@@ -36,6 +35,7 @@
 #include "ortools/sat/util.h"
 #include "ortools/sat/zero_half_cuts.h"
 #include "ortools/util/rev.h"
+#include "ortools/util/strong_index.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {

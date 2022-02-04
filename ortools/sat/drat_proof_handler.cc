@@ -17,8 +17,8 @@
 
 #include "absl/memory/memory.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/util/strong_index.h"
 
 namespace operations_research {
 namespace sat {

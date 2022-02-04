@@ -28,7 +28,6 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
-#include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/vlog_is_on.h"
 #include "ortools/sat/all_different.h"
@@ -54,6 +53,7 @@
 #include "ortools/util/logging.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
+#include "ortools/util/strong_index.h"
 
 namespace operations_research {
 namespace sat {

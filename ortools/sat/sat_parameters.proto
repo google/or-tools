@@ -1080,15 +1080,21 @@ message SatParameters {
 
   // When scaling constraint with double coefficients to integer coefficients,
   // we will multiply by a power of 2 and round the coefficients. We will choose
-  // the lowest power such that we have no potential overflow and the worst case
-  // constraint activity error do not exceed this threshold relative to the
-  // constraint bounds.
+  // the lowest power such that we have no potential overflow (see
+  // mip_max_activity_exponent) and the worst case constraint activity error
+  // does not exceed this threshold.
   //
-  // We also use this to decide by how much we relax the constraint bounds so
-  // that we can have a feasible integer solution of constraints involving
-  // continuous variable. This is required for instance when you have an == rhs
-  // constraint as in many situation you cannot have a perfect equality with
-  // integer variables and coefficients.
+  // Note that we also detect constraint with rational coefficients and scale
+  // them accordingly when it seems better instead of using a power of 2.
+  //
+  // We also relax all constraint bounds by this absolute value. For pure
+  // integer constraint, if this value if lower than one, this will not change
+  // anything. However it is needed when scaling MIP problems.
+  //
+  // If we manage to scale a constraint correctly, the maximum error we can make
+  // will be twice this value (once for the scaling error and once for the
+  // relaxed bounds). If we are not able to scale that well, we will display
+  // that fact but still scale as best as we can.
   optional double mip_wanted_precision = 126 [default = 1e-6];
 
   // To avoid integer overflow, we always force the maximum possible constraint

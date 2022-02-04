@@ -25,11 +25,11 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/strong_int.h"
 #include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/pb_constraint.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/util/strong_index.h"
 
 namespace operations_research {
 namespace sat {

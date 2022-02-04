@@ -4298,7 +4298,6 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
   int num_greater_half_capacity = 0;
 
   bool has_optional_interval = false;
-  bool all_starts_are_variables = true;
   for (int i = 0; i < num_intervals; ++i) {
     const int index = proto->intervals(i);
     // TODO(user): adapt in the presence of optional intervals.
@@ -4352,13 +4351,24 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
     }
   }
   if (num_greater_half_capacity == num_intervals) {
-    if (num_duration_one == num_intervals && !has_optional_interval &&
-        all_starts_are_variables) {
+    if (num_duration_one == num_intervals && !has_optional_interval) {
       context_->UpdateRuleStats("cumulative: convert to all_different");
       ConstraintProto* new_ct = context_->working_model->add_constraints();
       auto* arg = new_ct->mutable_all_diff();
       for (const LinearExpressionProto& expr : start_exprs) {
         *arg->add_exprs() = expr;
+      }
+      if (!context_->IsFixed(capacity_expr)) {
+        const int64_t capacity_min = context_->MinOf(capacity_expr);
+        for (const LinearExpressionProto& expr : proto->demands()) {
+          if (capacity_min >= context_->MaxOf(expr)) continue;
+          LinearConstraintProto* fit =
+              context_->working_model->add_constraints()->mutable_linear();
+          fit->add_domain(0);
+          fit->add_domain(std::numeric_limits<int64_t>::max());
+          AddLinearExpressionToLinearConstraint(capacity_expr, 1, fit);
+          AddLinearExpressionToLinearConstraint(expr, -1, fit);
+        }
       }
       context_->UpdateNewConstraintsVariableUsage();
       return RemoveConstraint(ct);

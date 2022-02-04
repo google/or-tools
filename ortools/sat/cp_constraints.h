@@ -22,11 +22,11 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/strong_int.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/util/rev.h"
+#include "ortools/util/strong_index.h"
 
 namespace operations_research {
 namespace sat {

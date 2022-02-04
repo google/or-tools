@@ -29,13 +29,13 @@
 #include "ortools/base/adjustable_priority_queue.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/drat_proof_handler.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/util/logging.h"
+#include "ortools/util/strong_index.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {

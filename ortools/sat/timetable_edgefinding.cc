@@ -22,8 +22,8 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/iterator_adaptors.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/strong_int.h"
 #include "ortools/util/sort.h"
+#include "ortools/util/strong_index.h"
 
 namespace operations_research {
 namespace sat {

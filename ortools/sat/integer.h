@@ -44,6 +44,7 @@
 #include "ortools/util/rev.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
+#include "ortools/util/strong_index.h"
 
 namespace operations_research {
 namespace sat {
@@ -66,7 +67,7 @@ DEFINE_STRONG_INT_TYPE(IntegerValue, int64_t);
 // two bounds will "cross" each others and we will get an empty range.
 constexpr IntegerValue kMaxIntegerValue(
     std::numeric_limits<IntegerValue::ValueType>::max() - 1);
-constexpr IntegerValue kMinIntegerValue(-kMaxIntegerValue);
+constexpr IntegerValue kMinIntegerValue(-kMaxIntegerValue.value());
 
 inline double ToDouble(IntegerValue value) {
   const double kInfinity = std::numeric_limits<double>::infinity();
@@ -130,7 +131,7 @@ inline bool AddProductTo(IntegerValue a, IntegerValue b, IntegerValue* result) {
 // Each time we create an IntegerVariable we also create its negation. This is
 // done like that so internally we only stores and deal with lower bound. The
 // upper bound beeing the lower bound of the negated variable.
-DEFINE_STRONG_INT_TYPE(IntegerVariable, int32_t);
+DEFINE_STRONG_INDEX_TYPE(IntegerVariable);
 const IntegerVariable kNoIntegerVariable(-1);
 inline IntegerVariable NegationOf(IntegerVariable i) {
   return IntegerVariable(i.value() ^ 1);
@@ -145,7 +146,7 @@ inline IntegerVariable PositiveVariable(IntegerVariable i) {
 }
 
 // Special type for storing only one thing for var and NegationOf(var).
-DEFINE_STRONG_INT_TYPE(PositiveOnlyIndex, int32_t);
+DEFINE_STRONG_INDEX_TYPE(PositiveOnlyIndex);
 inline PositiveOnlyIndex GetPositiveOnlyIndex(IntegerVariable var) {
   return PositiveOnlyIndex(var.value() / 2);
 }
@@ -1349,7 +1350,7 @@ class GenericLiteralWatcher : public SatPropagator {
   std::vector<bool> in_queue_;
 
   // Data for each propagator.
-  DEFINE_STRONG_INT_TYPE(IdType, int32_t);
+  DEFINE_STRONG_INDEX_TYPE(IdType);
   std::vector<int> id_to_level_at_last_call_;
   RevVector<IdType, int> id_to_greatest_common_level_since_last_call_;
   std::vector<std::vector<ReversibleInterface*>> id_to_reversible_classes_;

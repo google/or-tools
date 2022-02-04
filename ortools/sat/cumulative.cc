@@ -17,7 +17,6 @@
 #include <memory>
 
 #include "ortools/base/logging.h"
-#include "ortools/base/strong_int.h"
 #include "ortools/sat/cumulative_energy.h"
 #include "ortools/sat/disjunctive.h"
 #include "ortools/sat/linear_constraint.h"
@@ -28,6 +27,7 @@
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/timetable.h"
 #include "ortools/sat/timetable_edgefinding.h"
+#include "ortools/util/strong_index.h"
 
 namespace operations_research {
 namespace sat {

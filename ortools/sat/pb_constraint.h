@@ -626,7 +626,7 @@ class PbConstraints : public SatPropagator {
   // about two times faster with this implementation than one with direct
   // pointer to an UpperBoundedLinearConstraint. The main reason for this is
   // probably that the thresholds_ vector is a lot more efficient cache-wise.
-  DEFINE_STRONG_INT_TYPE(ConstraintIndex, int32_t);
+  DEFINE_STRONG_INDEX_TYPE(ConstraintIndex);
   struct ConstraintIndexWithCoeff {
     ConstraintIndexWithCoeff() {}  // Needed for vector.resize()
     ConstraintIndexWithCoeff(bool n, ConstraintIndex i, Coefficient c)

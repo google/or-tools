@@ -34,8 +34,8 @@
 #include "ortools/base/macros.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
-#include "ortools/base/strong_int.h"
 #include "ortools/base/timer.h"
+#include "ortools/util/strong_index.h"
 #if !defined(__PORTABLE_PLATFORM__) && defined(USE_SCIP)
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"

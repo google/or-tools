@@ -49,7 +49,6 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
-#include "ortools/base/strong_int.h"
 #include "ortools/base/threadpool.h"
 #include "ortools/base/timer.h"
 #include "ortools/base/version.h"
@@ -93,6 +92,7 @@
 #include "ortools/sat/synchronization.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/sorted_interval_list.h"
+#include "ortools/util/strong_index.h"
 #include "ortools/util/time_limit.h"
 
 #if defined(_MSC_VER)

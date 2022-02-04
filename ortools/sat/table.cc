@@ -27,11 +27,11 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
-#include "ortools/base/strong_int.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/sorted_interval_list.h"
+#include "ortools/util/strong_index.h"
 
 namespace operations_research {
 namespace sat {

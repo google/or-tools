@@ -31,7 +31,6 @@
 #include "ortools/base/hash.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/drat_proof_handler.h"
 #include "ortools/sat/model.h"
@@ -40,6 +39,7 @@
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/stats.h"
+#include "ortools/util/strong_index.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -163,7 +163,7 @@ class LiteralWatchers : public SatPropagator {
   explicit LiteralWatchers(Model* model);
   ~LiteralWatchers() override;
 
-  // Must be called before adding clauses refering to such variables.
+  // Must be called before adding clauses referring to such variables.
   void Resize(int num_variables);
 
   // SatPropagator API.

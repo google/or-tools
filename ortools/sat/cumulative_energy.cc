@@ -18,8 +18,8 @@
 
 #include "ortools/base/iterator_adaptors.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/strong_int.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/util/strong_index.h"
 
 namespace operations_research {
 namespace sat {

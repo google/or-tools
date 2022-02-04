@@ -33,7 +33,6 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/strong_int.h"
 #include "ortools/base/timer.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/drat_proof_handler.h"
@@ -45,6 +44,7 @@
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/stats.h"
+#include "ortools/util/strong_index.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -808,7 +808,7 @@ class SatSolver {
   std::vector<Literal> literals_scratchpad_;
 
   // A boolean vector used to temporarily mark decision levels.
-  DEFINE_STRONG_INT_TYPE(SatDecisionLevel, int);
+  DEFINE_STRONG_INDEX_TYPE(SatDecisionLevel);
   SparseBitset<SatDecisionLevel> is_level_marked_;
 
   // Temporary vectors used by EnqueueDecisionAndBackjumpOnConflict().
