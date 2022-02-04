@@ -32,11 +32,11 @@ jobs:
       - name: Build & Install Sirius
         working-directory: ./sirius-solver
         run: cmake --build build/ --config Release --target install -j14
-      - name: Upload sirius lib
+      - name: Upload sirius install
         uses: actions/upload-artifact@v2
         with:
-          name: sirius_solver
-          path: ./sirius-solver/SiriusInstall/lib/libsirius_solver.so
+          name: sirius_install
+          path: ./sirius-solver/SiriusInstall
       - name: Checkout xpressmp813
         uses: actions/checkout@v2
         with:
