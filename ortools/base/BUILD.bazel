@@ -38,8 +38,8 @@ cc_library(
         "integral_types.h",
         "log_severity.h",
         "logging.h",
-        "logging_export.h",
         "logging_flags.h",
+        "logging_export.h",
         "logging_utilities.h",
         "macros.h",
         "raw_logging.h",
@@ -358,7 +358,7 @@ cc_library(
     hdrs = ["strong_vector.h"],
     deps = [
         ":base",
-        ":int_type",
+        ":intops",
     ],
 )
 
