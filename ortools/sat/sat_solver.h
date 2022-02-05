@@ -699,14 +699,13 @@ class SatSolver {
 
   // Internal propagators. We keep them here because we need more than the
   // SatPropagator interface for them.
-  bool propagate_binary_ = false;
-  bool propagate_pb_ = false;
   BinaryImplicationGraph* binary_implication_graph_;
   LiteralWatchers* clauses_propagator_;
   PbConstraints* pb_constraints_;
 
   // Ordered list of propagators used by Propagate()/Untrail().
   std::vector<SatPropagator*> propagators_;
+  std::vector<SatPropagator*> non_empty_propagators_;
 
   // Ordered list of propagators added with AddPropagator().
   std::vector<SatPropagator*> external_propagators_;

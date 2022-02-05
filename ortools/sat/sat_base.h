@@ -503,6 +503,12 @@ class SatPropagator {
     return propagation_trail_index_ == trail.Index();
   }
 
+  // Small optimization: If a propagator does not contain any "constraints"
+  // there is no point calling propagate on it. Before each propagation, the
+  // solver will checks for emptiness, and construct an optimized list of
+  // propagator before looping many time over the list.
+  virtual bool IsEmpty() const { return false; }
+
  protected:
   const std::string name_;
   int propagator_id_;

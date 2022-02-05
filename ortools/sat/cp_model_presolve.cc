@@ -79,9 +79,9 @@ void CpModelPresolver::RemoveEmptyConstraints() {
       context_->working_model->constraints_size();
   for (int c = 0; c < old_num_non_empty_constraints; ++c) {
     const auto type = context_->working_model->constraints(c).constraint_case();
-    if (type == ConstraintProto::ConstraintCase::CONSTRAINT_NOT_SET) continue;
-    if (type == ConstraintProto::ConstraintCase::kDummyConstraint) continue;
-    if (type == ConstraintProto::ConstraintCase::kInterval) {
+    if (type == ConstraintProto::CONSTRAINT_NOT_SET) continue;
+    if (type == ConstraintProto::kDummyConstraint) continue;
+    if (type == ConstraintProto::kInterval) {
       interval_mapping[c] = new_num_constraints;
     }
     context_->working_model->mutable_constraints(new_num_constraints++)
@@ -1279,13 +1279,15 @@ bool CpModelPresolver::PresolveIntMod(ConstraintProto* ct) {
   return false;
 }
 
+// TODO(user): Now that everything has affine relations, we should maybe
+// canonicalize all linear subexpression in an generic way.
 bool CpModelPresolver::ExploitEquivalenceRelations(int c, ConstraintProto* ct) {
   bool changed = false;
 
   // Optim: Special case for the linear constraint. We just remap the
   // enforcement literals, the normal variables will be replaced by their
   // representative in CanonicalizeLinear().
-  if (ct->constraint_case() == ConstraintProto::ConstraintCase::kLinear) {
+  if (ct->constraint_case() == ConstraintProto::kLinear) {
     for (int& ref : *ct->mutable_enforcement_literal()) {
       const int rep = this->context_->GetLiteralRepresentative(ref);
       if (rep != ref) {
@@ -1307,17 +1309,6 @@ bool CpModelPresolver::ExploitEquivalenceRelations(int c, ConstraintProto* ct) {
     }
   }
   if (!work_to_do) return false;
-
-  // Remap equal and negated variables to their representative.
-  ApplyToAllVariableIndices(
-      [&changed, this](int* ref) {
-        const int rep = context_->GetVariableRepresentative(*ref);
-        if (rep != *ref) {
-          changed = true;
-          *ref = rep;
-        }
-      },
-      ct);
 
   // Remap literal and negated literal to their representative.
   ApplyToAllLiteralIndices(
@@ -1461,10 +1452,8 @@ bool CpModelPresolver::CanonicalizeLinearExpression(
 }
 
 bool CpModelPresolver::CanonicalizeLinear(ConstraintProto* ct) {
-  if (ct->constraint_case() != ConstraintProto::ConstraintCase::kLinear ||
-      context_->ModelIsUnsat()) {
-    return false;
-  }
+  if (ct->constraint_case() != ConstraintProto::kLinear) return false;
+  if (context_->ModelIsUnsat()) return false;
 
   if (ct->linear().domain().empty()) {
     context_->UpdateRuleStats("linear: no domain");
@@ -1484,7 +1473,7 @@ bool CpModelPresolver::CanonicalizeLinear(ConstraintProto* ct) {
 }
 
 bool CpModelPresolver::RemoveSingletonInLinear(ConstraintProto* ct) {
-  if (ct->constraint_case() != ConstraintProto::ConstraintCase::kLinear ||
+  if (ct->constraint_case() != ConstraintProto::kLinear ||
       context_->ModelIsUnsat()) {
     return false;
   }
@@ -2169,9 +2158,7 @@ void TakeIntersectionWith(const absl::flat_hash_set<int>& current,
 
 bool CpModelPresolver::DetectAndProcessOneSidedLinearConstraint(
     int c, ConstraintProto* ct) {
-  if (ct->constraint_case() != ConstraintProto::ConstraintCase::kLinear) {
-    return false;
-  }
+  if (ct->constraint_case() != ConstraintProto::kLinear) return false;
   if (context_->ModelIsUnsat()) return false;
   if (context_->keep_all_feasible_solutions) return false;
 
@@ -2290,10 +2277,8 @@ bool CpModelPresolver::DetectAndProcessOneSidedLinearConstraint(
 
 bool CpModelPresolver::PropagateDomainsInLinear(int ct_index,
                                                 ConstraintProto* ct) {
-  if (ct->constraint_case() != ConstraintProto::ConstraintCase::kLinear ||
-      context_->ModelIsUnsat()) {
-    return false;
-  }
+  if (ct->constraint_case() != ConstraintProto::kLinear) return false;
+  if (context_->ModelIsUnsat()) return false;
 
   // Compute the implied rhs bounds from the variable ones.
   auto& term_domains = context_->tmp_term_domains;
@@ -2469,7 +2454,7 @@ bool CpModelPresolver::PropagateDomainsInLinear(int ct_index,
       }
       if (c == ct_index) continue;
       if (context_->working_model->constraints(c).constraint_case() !=
-          ConstraintProto::ConstraintCase::kLinear) {
+          ConstraintProto::kLinear) {
         abort = true;
         break;
       }
@@ -2548,10 +2533,8 @@ bool CpModelPresolver::PropagateDomainsInLinear(int ct_index,
 // This operation is similar to coefficient strengthening in the MIP world.
 void CpModelPresolver::ExtractEnforcementLiteralFromLinearConstraint(
     int ct_index, ConstraintProto* ct) {
-  if (ct->constraint_case() != ConstraintProto::ConstraintCase::kLinear ||
-      context_->ModelIsUnsat()) {
-    return;
-  }
+  if (ct->constraint_case() != ConstraintProto::kLinear) return;
+  if (context_->ModelIsUnsat()) return;
 
   const LinearConstraintProto& arg = ct->linear();
   const int num_vars = arg.vars_size();
@@ -2624,7 +2607,9 @@ void CpModelPresolver::ExtractEnforcementLiteralFromLinearConstraint(
                       new_ct2->mutable_linear());
 
     context_->UpdateNewConstraintsVariableUsage();
-    return (void)RemoveConstraint(ct);
+    ct->Clear();
+    context_->UpdateConstraintVariableUsage(ct_index);
+    return;
   }
 
   // Any coefficient greater than this will cause the constraint to be trivially
@@ -2751,10 +2736,8 @@ void CpModelPresolver::ExtractAtMostOneFromLinear(ConstraintProto* ct) {
 // Convert some linear constraint involving only Booleans to their Boolean
 // form.
 bool CpModelPresolver::PresolveLinearOnBooleans(ConstraintProto* ct) {
-  if (ct->constraint_case() != ConstraintProto::ConstraintCase::kLinear ||
-      context_->ModelIsUnsat()) {
-    return false;
-  }
+  if (ct->constraint_case() != ConstraintProto::kLinear) return false;
+  if (context_->ModelIsUnsat()) return false;
 
   const LinearConstraintProto& arg = ct->linear();
   const int num_vars = arg.vars_size();
@@ -4969,7 +4952,7 @@ void CpModelPresolver::ExtractBoolAnd() {
     const ConstraintProto& ct = context_->working_model->constraints(c);
     if (HasEnforcementLiteral(ct)) continue;
 
-    if (ct.constraint_case() == ConstraintProto::ConstraintCase::kBoolOr &&
+    if (ct.constraint_case() == ConstraintProto::kBoolOr &&
         ct.bool_or().literals().size() == 2) {
       AddImplication(NegatedRef(ct.bool_or().literals(0)),
                      ct.bool_or().literals(1), context_->working_model,
@@ -4978,7 +4961,7 @@ void CpModelPresolver::ExtractBoolAnd() {
       continue;
     }
 
-    if (ct.constraint_case() == ConstraintProto::ConstraintCase::kAtMostOne &&
+    if (ct.constraint_case() == ConstraintProto::kAtMostOne &&
         ct.at_most_one().literals().size() == 2) {
       AddImplication(ct.at_most_one().literals(0),
                      NegatedRef(ct.at_most_one().literals(1)),
@@ -5100,8 +5083,8 @@ void CpModelPresolver::PresolvePureSatPart() {
   // reach this point?
   for (int c = 0; c < context_->working_model->constraints_size(); ++c) {
     const ConstraintProto& ct = context_->working_model->constraints(c);
-    if (ct.constraint_case() == ConstraintProto::ConstraintCase::kBoolOr ||
-        ct.constraint_case() == ConstraintProto::ConstraintCase::kBoolAnd) {
+    if (ct.constraint_case() == ConstraintProto::kBoolOr ||
+        ct.constraint_case() == ConstraintProto::kBoolAnd) {
       if (PresolveOneConstraint(c)) {
         context_->UpdateConstraintVariableUsage(c);
       }
@@ -5125,7 +5108,7 @@ void CpModelPresolver::PresolvePureSatPart() {
   for (int i = 0; i < context_->working_model->constraints_size(); ++i) {
     const ConstraintProto& ct = context_->working_model->constraints(i);
 
-    if (ct.constraint_case() == ConstraintProto::ConstraintCase::kBoolOr) {
+    if (ct.constraint_case() == ConstraintProto::kBoolOr) {
       ++num_removed_constraints;
       clause.clear();
       for (const int ref : ct.bool_or().literals()) {
@@ -5141,7 +5124,7 @@ void CpModelPresolver::PresolvePureSatPart() {
       continue;
     }
 
-    if (ct.constraint_case() == ConstraintProto::ConstraintCase::kBoolAnd) {
+    if (ct.constraint_case() == ConstraintProto::kBoolAnd) {
       ++num_removed_constraints;
       std::vector<Literal> clause;
       for (const int ref : ct.enforcement_literal()) {
@@ -5265,7 +5248,7 @@ void CpModelPresolver::ExpandObjective() {
     const ConstraintProto& ct = context_->working_model->constraints(ct_index);
     // Skip everything that is not a linear equality constraint.
     if (!ct.enforcement_literal().empty() ||
-        ct.constraint_case() != ConstraintProto::ConstraintCase::kLinear ||
+        ct.constraint_case() != ConstraintProto::kLinear ||
         ct.linear().domain().size() != 2 ||
         ct.linear().domain(0) != ct.linear().domain(1)) {
       continue;
@@ -5472,9 +5455,7 @@ void CpModelPresolver::MergeNoOverlapConstraints() {
   std::vector<std::vector<Literal>> cliques;
   for (int c = 0; c < num_constraints; ++c) {
     const ConstraintProto& ct = context_->working_model->constraints(c);
-    if (ct.constraint_case() != ConstraintProto::ConstraintCase::kNoOverlap) {
-      continue;
-    }
+    if (ct.constraint_case() != ConstraintProto::kNoOverlap) continue;
     std::vector<Literal> clique;
     for (const int i : ct.no_overlap().intervals()) {
       clique.push_back(Literal(BooleanVariable(i), true));
@@ -5545,7 +5526,7 @@ void CpModelPresolver::TransformIntoMaxCliques() {
 
   for (int c = 0; c < num_constraints; ++c) {
     ConstraintProto* ct = context_->working_model->mutable_constraints(c);
-    if (ct->constraint_case() == ConstraintProto::ConstraintCase::kAtMostOne) {
+    if (ct->constraint_case() == ConstraintProto::kAtMostOne) {
       std::vector<Literal> clique;
       for (const int ref : ct->at_most_one().literals()) {
         clique.push_back(convert(ref));
@@ -5554,8 +5535,7 @@ void CpModelPresolver::TransformIntoMaxCliques() {
       if (RemoveConstraint(ct)) {
         context_->UpdateConstraintVariableUsage(c);
       }
-    } else if (ct->constraint_case() ==
-               ConstraintProto::ConstraintCase::kBoolAnd) {
+    } else if (ct->constraint_case() == ConstraintProto::kBoolAnd) {
       if (ct->enforcement_literal().size() != 1) continue;
       const Literal enforcement = convert(ct->enforcement_literal(0));
       for (const int ref : ct->bool_and().literals()) {
@@ -5679,17 +5659,17 @@ bool CpModelPresolver::PresolveOneConstraint(int c) {
 
   // Call the presolve function for this constraint if any.
   switch (ct->constraint_case()) {
-    case ConstraintProto::ConstraintCase::kBoolOr:
+    case ConstraintProto::kBoolOr:
       return PresolveBoolOr(ct);
-    case ConstraintProto::ConstraintCase::kBoolAnd:
+    case ConstraintProto::kBoolAnd:
       return PresolveBoolAnd(ct);
-    case ConstraintProto::ConstraintCase::kAtMostOne:
+    case ConstraintProto::kAtMostOne:
       return PresolveAtMostOne(ct);
-    case ConstraintProto::ConstraintCase::kExactlyOne:
+    case ConstraintProto::kExactlyOne:
       return PresolveExactlyOne(ct);
-    case ConstraintProto::ConstraintCase::kBoolXor:
+    case ConstraintProto::kBoolXor:
       return PresolveBoolXor(ct);
-    case ConstraintProto::ConstraintCase::kLinMax:
+    case ConstraintProto::kLinMax:
       if (CanonicalizeLinearArgument(*ct, ct->mutable_lin_max())) {
         context_->UpdateConstraintVariableUsage(c);
       }
@@ -5698,22 +5678,22 @@ bool CpModelPresolver::PresolveOneConstraint(int c) {
       } else {
         return PresolveLinMax(ct);
       }
-    case ConstraintProto::ConstraintCase::kIntProd:
+    case ConstraintProto::kIntProd:
       if (CanonicalizeLinearArgument(*ct, ct->mutable_int_prod())) {
         context_->UpdateConstraintVariableUsage(c);
       }
       return PresolveIntProd(ct);
-    case ConstraintProto::ConstraintCase::kIntDiv:
+    case ConstraintProto::kIntDiv:
       if (CanonicalizeLinearArgument(*ct, ct->mutable_int_div())) {
         context_->UpdateConstraintVariableUsage(c);
       }
       return PresolveIntDiv(ct);
-    case ConstraintProto::ConstraintCase::kIntMod:
+    case ConstraintProto::kIntMod:
       if (CanonicalizeLinearArgument(*ct, ct->mutable_int_mod())) {
         context_->UpdateConstraintVariableUsage(c);
       }
       return PresolveIntMod(ct);
-    case ConstraintProto::ConstraintCase::kLinear: {
+    case ConstraintProto::kLinear: {
       // In the presence of affine relation, it is possible that the sign of a
       // variable change during canonicalization, and a variable that could
       // freely move in one direction can no longer do so. So we make sure we
@@ -5756,16 +5736,15 @@ bool CpModelPresolver::PresolveOneConstraint(int c) {
       if (PresolveLinearOnBooleans(ct)) {
         context_->UpdateConstraintVariableUsage(c);
       }
-      if (ct->constraint_case() == ConstraintProto::kLinear) {
-        const int old_num_enforcement_literals = ct->enforcement_literal_size();
-        ExtractEnforcementLiteralFromLinearConstraint(c, ct);
-        if (ct->constraint_case() ==
-            ConstraintProto::ConstraintCase::CONSTRAINT_NOT_SET) {
+
+      // If we extracted some enforcement, we redo some preoslve.
+      const int old_num_enforcement_literals = ct->enforcement_literal_size();
+      ExtractEnforcementLiteralFromLinearConstraint(c, ct);
+      if (ct->enforcement_literal_size() > old_num_enforcement_literals) {
+        if (DivideLinearByGcd(ct)) {
           context_->UpdateConstraintVariableUsage(c);
-          return true;
         }
-        if (ct->enforcement_literal_size() > old_num_enforcement_literals &&
-            PresolveSmallLinear(ct)) {
+        if (PresolveSmallLinear(ct)) {
           context_->UpdateConstraintVariableUsage(c);
         }
       }
@@ -5773,35 +5752,34 @@ bool CpModelPresolver::PresolveOneConstraint(int c) {
       // Note that it is important for this to be last, so that if a constraint
       // is marked as being in one direction, no other presolve is applied until
       // it is processed again and unmarked at the beginning of this case.
-      if (ct->constraint_case() == ConstraintProto::kLinear &&
-          DetectAndProcessOneSidedLinearConstraint(c, ct)) {
+      if (DetectAndProcessOneSidedLinearConstraint(c, ct)) {
         context_->UpdateConstraintVariableUsage(c);
       }
       return false;
     }
-    case ConstraintProto::ConstraintCase::kInterval:
+    case ConstraintProto::kInterval:
       return PresolveInterval(c, ct);
-    case ConstraintProto::ConstraintCase::kInverse:
+    case ConstraintProto::kInverse:
       return PresolveInverse(ct);
-    case ConstraintProto::ConstraintCase::kElement:
+    case ConstraintProto::kElement:
       return PresolveElement(ct);
-    case ConstraintProto::ConstraintCase::kTable:
+    case ConstraintProto::kTable:
       return PresolveTable(ct);
-    case ConstraintProto::ConstraintCase::kAllDiff:
+    case ConstraintProto::kAllDiff:
       return PresolveAllDiff(ct);
-    case ConstraintProto::ConstraintCase::kNoOverlap:
+    case ConstraintProto::kNoOverlap:
       return PresolveNoOverlap(ct);
-    case ConstraintProto::ConstraintCase::kNoOverlap2D:
+    case ConstraintProto::kNoOverlap2D:
       return PresolveNoOverlap2D(c, ct);
-    case ConstraintProto::ConstraintCase::kCumulative:
+    case ConstraintProto::kCumulative:
       return PresolveCumulative(ct);
-    case ConstraintProto::ConstraintCase::kCircuit:
+    case ConstraintProto::kCircuit:
       return PresolveCircuit(ct);
-    case ConstraintProto::ConstraintCase::kRoutes:
+    case ConstraintProto::kRoutes:
       return PresolveRoutes(ct);
-    case ConstraintProto::ConstraintCase::kAutomaton:
+    case ConstraintProto::kAutomaton:
       return PresolveAutomaton(ct);
-    case ConstraintProto::ConstraintCase::kReservoir:
+    case ConstraintProto::kReservoir:
       return PresolveReservoir(ct);
     default:
       return false;
@@ -7059,7 +7037,7 @@ void CpModelPresolver::PresolveToFixPoint() {
   std::deque<int> queue;
   for (int c = 0; c < in_queue.size(); ++c) {
     if (context_->working_model->constraints(c).constraint_case() !=
-        ConstraintProto::ConstraintCase::CONSTRAINT_NOT_SET) {
+        ConstraintProto::CONSTRAINT_NOT_SET) {
       in_queue[c] = true;
       queue.push_back(c);
     }
@@ -7227,25 +7205,25 @@ void CpModelPresolver::PresolveToFixPoint() {
   for (int c = 0; c < num_constraints; ++c) {
     ConstraintProto* ct = context_->working_model->mutable_constraints(c);
     switch (ct->constraint_case()) {
-      case ConstraintProto::ConstraintCase::kNoOverlap:
+      case ConstraintProto::kNoOverlap:
         // Filter out absent intervals.
         if (PresolveNoOverlap(ct)) {
           context_->UpdateConstraintVariableUsage(c);
         }
         break;
-      case ConstraintProto::ConstraintCase::kNoOverlap2D:
+      case ConstraintProto::kNoOverlap2D:
         // Filter out absent intervals.
         if (PresolveNoOverlap2D(c, ct)) {
           context_->UpdateConstraintVariableUsage(c);
         }
         break;
-      case ConstraintProto::ConstraintCase::kCumulative:
+      case ConstraintProto::kCumulative:
         // Filter out absent intervals.
         if (PresolveCumulative(ct)) {
           context_->UpdateConstraintVariableUsage(c);
         }
         break;
-      case ConstraintProto::ConstraintCase::kBoolOr: {
+      case ConstraintProto::kBoolOr: {
         // Try to infer domain reductions from clauses and the saved "implies in
         // domain" relations.
         for (const auto& pair :
@@ -7750,19 +7728,19 @@ CpSolverStatus CpModelPresolver::Presolve() {
       ConstraintProto* ct = context_->working_model->mutable_constraints(c);
       PresolveEnforcementLiteral(ct);
       switch (ct->constraint_case()) {
-        case ConstraintProto::ConstraintCase::kBoolOr:
+        case ConstraintProto::kBoolOr:
           PresolveBoolOr(ct);
           break;
-        case ConstraintProto::ConstraintCase::kBoolAnd:
+        case ConstraintProto::kBoolAnd:
           PresolveBoolAnd(ct);
           break;
-        case ConstraintProto::ConstraintCase::kAtMostOne:
+        case ConstraintProto::kAtMostOne:
           PresolveAtMostOne(ct);
           break;
-        case ConstraintProto::ConstraintCase::kExactlyOne:
+        case ConstraintProto::kExactlyOne:
           PresolveExactlyOne(ct);
           break;
-        case ConstraintProto::ConstraintCase::kLinear:
+        case ConstraintProto::kLinear:
           CanonicalizeLinear(ct);
           break;
         default:
@@ -7822,7 +7800,7 @@ CpSolverStatus CpModelPresolver::Presolve() {
     for (int c = 0; c < context_->working_model->constraints_size(); ++c) {
       const auto type =
           context_->working_model->constraints(c).constraint_case();
-      if (type == ConstraintProto::ConstraintCase::CONSTRAINT_NOT_SET) continue;
+      if (type == ConstraintProto::CONSTRAINT_NOT_SET) continue;
       old_num_non_empty_constraints++;
     }
 
@@ -7868,9 +7846,7 @@ CpSolverStatus CpModelPresolver::Presolve() {
       const int old_size = context_->working_model->constraints_size();
       for (int c = 0; c < old_size; ++c) {
         ConstraintProto* ct = context_->working_model->mutable_constraints(c);
-        if (ct->constraint_case() != ConstraintProto::ConstraintCase::kLinear) {
-          continue;
-        }
+        if (ct->constraint_case() != ConstraintProto::kLinear) continue;
         ExtractAtMostOneFromLinear(ct);
       }
       context_->UpdateNewConstraintsVariableUsage();
@@ -8239,7 +8215,7 @@ std::vector<std::pair<int, int>> FindDuplicateConstraints(
 
     // TODO(user): we could delete duplicate identical interval, but we need
     // to make sure reference to them are updated.
-    if (type == ConstraintProto::ConstraintCase::kInterval) continue;
+    if (type == ConstraintProto::kInterval) continue;
 
     // We ignore names when comparing constraints.
     //

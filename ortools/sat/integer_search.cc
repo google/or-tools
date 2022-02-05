@@ -16,6 +16,7 @@
 #include <cmath>
 #include <cstdint>
 #include <functional>
+#include <limits>
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
@@ -1080,129 +1081,226 @@ SatSolver::Status SolveIntegerProblemWithLazyEncoding(Model* model) {
   return ResetAndSolveIntegerProblem(/*assumptions=*/{}, model);
 }
 
-SatSolver::Status ContinuousProbing(
-    const std::vector<BooleanVariable>& bool_vars,
-    const std::vector<IntegerVariable>& int_vars,
-    const std::function<void()>& feasible_solution_observer, Model* model) {
-  VLOG(2) << "Start continuous probing with " << bool_vars.size()
-          << " Boolean variables, and " << int_vars.size()
-          << " integer variables";
-
-  SatSolver* solver = model->GetOrCreate<SatSolver>();
-  TimeLimit* time_limit = model->GetOrCreate<TimeLimit>();
-  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-  IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
-  const SatParameters& sat_parameters = *(model->GetOrCreate<SatParameters>());
-  auto* level_zero_callbacks = model->GetOrCreate<LevelZeroCallbackHelper>();
-  Prober* prober = model->GetOrCreate<Prober>();
-  auto* shared_response_manager = model->Mutable<SharedResponseManager>();
-  auto* shared_bounds_manager = model->Mutable<SharedBoundsManager>();
-
-  std::vector<BooleanVariable> active_vars;
-  std::vector<BooleanVariable> integer_bounds;
-  absl::flat_hash_set<BooleanVariable> integer_bounds_set;
-
-  int iteration = 1;
-  absl::Time last_check = absl::Now();
-
-  while (!time_limit->LimitReached()) {
-    if (shared_response_manager != nullptr &&
-        shared_bounds_manager != nullptr &&
-        absl::Now() - last_check >= absl::Seconds(10)) {
-      shared_response_manager->LogMessage(
-          "Probe",
-          absl::StrCat("#iterations:", iteration,
-                       " #literals_fixed:", prober->num_new_literals_fixed(),
-                       " #new_integer_bounds:",
-                       shared_bounds_manager->NumBoundsExported("probing")));
-      last_check = absl::Now();
-    }
-    iteration++;
-
-    // Sync the bounds first.
-    auto SyncBounds = [solver, &level_zero_callbacks]() {
-      if (!solver->ResetToLevelZero()) return false;
-      for (const auto& cb : level_zero_callbacks->callbacks) {
-        if (!cb()) {
-          solver->NotifyThatModelIsUnsat();
-          return false;
-        }
+ContinuousProber::ContinuousProber(const CpModelProto& model_proto,
+                                   Model* model)
+    : model_(model),
+      sat_solver_(model->GetOrCreate<SatSolver>()),
+      time_limit_(model->GetOrCreate<TimeLimit>()),
+      trail_(model->GetOrCreate<Trail>()),
+      integer_trail_(model->GetOrCreate<IntegerTrail>()),
+      encoder_(model->GetOrCreate<IntegerEncoder>()),
+      sat_parameters_(*(model->GetOrCreate<SatParameters>())),
+      deterministic_time_(sat_parameters_.shaving_search_deterministic_time()),
+      use_shaving_(sat_parameters_.use_shaving_in_probing_search()),
+      level_zero_callbacks_(model->GetOrCreate<LevelZeroCallbackHelper>()),
+      prober_(model->GetOrCreate<Prober>()),
+      shared_response_manager_(model->Mutable<SharedResponseManager>()),
+      shared_bounds_manager_(model->Mutable<SharedBoundsManager>()),
+      active_limit_(deterministic_time_) {
+  auto* mapping = model_->GetOrCreate<CpModelMapping>();
+  absl::flat_hash_set<BooleanVariable> visited;
+  for (int v = 0; v < model_proto.variables_size(); ++v) {
+    if (mapping->IsBoolean(v)) {
+      const BooleanVariable bool_var = mapping->Literal(v).Variable();
+      const auto [_, inserted] = visited.insert(bool_var);
+      if (inserted) {
+        bool_vars_.push_back(bool_var);
       }
-      return true;
-    };
-    if (!SyncBounds()) {
-      return SatSolver::INFEASIBLE;
+    } else {
+      IntegerVariable var = mapping->Integer(v);
+      if (integer_trail_->IsFixed(var)) continue;
+      int_vars_.push_back(var);
     }
+  }
+  VLOG(2) << "Start continuous probing with " << bool_vars_.size()
+          << " Boolean variables, and " << int_vars_.size()
+          << " integer variables"
+          << ", deterministic time limit = "
+          << time_limit_->GetDeterministicLimit() << " on " << model_->Name();
+  last_check_ = absl::Now();
+}
 
+// Continuous probing procedure.
+// TODO(user):
+//   - sort variables before the iteration (statically or dynamically)
+//   - compress clause databases regularly (especially the implication graph)
+//   - better interleaving of the probing and shaving phases
+//   - move the shaving code directly in the probing class
+SatSolver::Status ContinuousProber::Probe() {
+  while (!time_limit_->LimitReached()) {
     // Run sat in-processing to reduce the size of the clause database.
-    if (sat_parameters.use_sat_inprocessing() &&
-        !model->GetOrCreate<Inprocessing>()->InprocessingRound()) {
+    if (sat_parameters_.use_sat_inprocessing() &&
+        !model_->GetOrCreate<Inprocessing>()->InprocessingRound()) {
       return SatSolver::INFEASIBLE;
     }
-
-    // TODO(user): Explore fast probing methods.
 
     // Probe each Boolean variable at most once per loop.
-    absl::flat_hash_set<BooleanVariable> probed;
+    probed_bool_vars_.clear();
+    probed_literals_.clear();
+
+    // Store current statistics to detect an iteration without any improvement.
+    const int64_t initial_num_literals_fixed =
+        prober_->num_new_literals_fixed();
+    const int64_t initial_num_bounds_shaved = num_bounds_shaved_;
 
     // Probe variable bounds.
     // TODO(user): Probe optional variables.
-    for (const IntegerVariable int_var : int_vars) {
-      if (integer_trail->IsFixed(int_var) ||
-          integer_trail->IsOptional(int_var)) {
+    for (const IntegerVariable int_var : int_vars_) {
+      if (integer_trail_->IsFixed(int_var) ||
+          integer_trail_->IsOptional(int_var)) {
         continue;
       }
 
+      if (!ImportFromSharedClasses()) {
+        return SatSolver::INFEASIBLE;
+      }
+
+      if (time_limit_->LimitReached()) {
+        return SatSolver::LIMIT_REACHED;
+      }
+
       const BooleanVariable shave_lb =
-          encoder
+          encoder_
               ->GetOrCreateAssociatedLiteral(IntegerLiteral::LowerOrEqual(
-                  int_var, integer_trail->LowerBound(int_var)))
+                  int_var, integer_trail_->LowerBound(int_var)))
               .Variable();
-      if (!probed.contains(shave_lb)) {
-        probed.insert(shave_lb);
-        if (!prober->ProbeOneVariable(shave_lb)) {
+      const auto [_lb, lb_inserted] = probed_bool_vars_.insert(shave_lb);
+      if (lb_inserted) {
+        if (!prober_->ProbeOneVariable(shave_lb)) {
           return SatSolver::INFEASIBLE;
         }
+        num_literals_probed_++;
       }
 
       const BooleanVariable shave_ub =
-          encoder
+          encoder_
               ->GetOrCreateAssociatedLiteral(IntegerLiteral::GreaterOrEqual(
-                  int_var, integer_trail->UpperBound(int_var)))
+                  int_var, integer_trail_->UpperBound(int_var)))
               .Variable();
-      if (!probed.contains(shave_ub)) {
-        probed.insert(shave_ub);
-        if (!prober->ProbeOneVariable(shave_ub)) {
+      const auto [_ub, ub_inserted] = probed_bool_vars_.insert(shave_ub);
+      if (ub_inserted) {
+        if (!prober_->ProbeOneVariable(shave_ub)) {
           return SatSolver::INFEASIBLE;
         }
+        num_literals_probed_++;
       }
 
-      if (!SyncBounds()) {
-        return SatSolver::INFEASIBLE;
+      if (use_shaving_) {
+        const SatSolver::Status lb_status =
+            ShaveLiteral(Literal(shave_lb, true));
+        if (ReportStatus(lb_status)) return lb_status;
+
+        const SatSolver::Status ub_status =
+            ShaveLiteral(Literal(shave_ub, true));
+        if (ReportStatus(ub_status)) return ub_status;
       }
-      if (time_limit->LimitReached()) {
-        return SatSolver::LIMIT_REACHED;
-      }
+
+      LogStatistics();
     }
 
     // Probe Boolean variables from the model.
-    for (const BooleanVariable& bool_var : bool_vars) {
-      if (solver->Assignment().VariableIsAssigned(bool_var)) continue;
-      if (time_limit->LimitReached()) {
-        return SatSolver::LIMIT_REACHED;
-      }
-      if (!SyncBounds()) {
+    for (const BooleanVariable& bool_var : bool_vars_) {
+      if (sat_solver_->Assignment().VariableIsAssigned(bool_var)) continue;
+
+      if (!ImportFromSharedClasses()) {
         return SatSolver::INFEASIBLE;
       }
-      if (!probed.contains(bool_var)) {
-        probed.insert(bool_var);
-        if (!prober->ProbeOneVariable(bool_var)) {
+
+      if (time_limit_->LimitReached()) {
+        return SatSolver::LIMIT_REACHED;
+      }
+
+      const auto [_, inserted] = probed_bool_vars_.insert(bool_var);
+      if (inserted) {
+        if (!prober_->ProbeOneVariable(bool_var)) {
           return SatSolver::INFEASIBLE;
         }
+        num_literals_probed_++;
       }
+
+      const Literal literal(bool_var, true);
+      if (use_shaving_ &&
+          !sat_solver_->Assignment().LiteralIsAssigned(literal)) {
+        const SatSolver::Status true_status = ShaveLiteral(literal);
+        if (ReportStatus(true_status)) return true_status;
+        if (true_status == SatSolver::ASSUMPTIONS_UNSAT) continue;
+
+        const SatSolver::Status false_status = ShaveLiteral(literal.Negated());
+        if (ReportStatus(false_status)) return false_status;
+      }
+
+      LogStatistics();
     }
+
+    // Adjust the active_limit.
+    const bool something_has_been_detected =
+        num_bounds_shaved_ != initial_num_bounds_shaved ||
+        prober_->num_new_literals_fixed() != initial_num_literals_fixed;
+    if (something_has_been_detected) {  // Reset the limit.
+      active_limit_ = deterministic_time_;
+    } else if (active_limit_ < 10 * deterministic_time_) {  // Bump the limit.
+      active_limit_ += deterministic_time_;
+    }
+
+    ++iteration_;
   }
   return SatSolver::LIMIT_REACHED;
+}
+
+bool ContinuousProber::ImportFromSharedClasses() {
+  if (!sat_solver_->ResetToLevelZero()) return false;
+  for (const auto& cb : level_zero_callbacks_->callbacks) {
+    if (!cb()) {
+      sat_solver_->NotifyThatModelIsUnsat();
+      return false;
+    }
+  }
+  return true;
+}
+
+SatSolver::Status ContinuousProber::ShaveLiteral(Literal literal) {
+  const auto [_, inserted] = probed_literals_.insert(literal.Index());
+  if (trail_->Assignment().LiteralIsAssigned(literal) || !inserted) {
+    return SatSolver::LIMIT_REACHED;
+  }
+  num_bounds_tried_++;
+
+  const double original_dtime_limit = time_limit_->GetDeterministicLimit();
+  time_limit_->ChangeDeterministicLimit(
+      std::min(original_dtime_limit,
+               time_limit_->GetElapsedDeterministicTime() + active_limit_));
+  const SatSolver::Status status =
+      ResetAndSolveIntegerProblem({literal}, model_);
+  time_limit_->ChangeDeterministicLimit(original_dtime_limit);
+
+  if (status == SatSolver::ASSUMPTIONS_UNSAT) {
+    num_bounds_shaved_++;
+  }
+
+  return status;
+}
+
+bool ContinuousProber::ReportStatus(const SatSolver::Status status) {
+  return status == SatSolver::INFEASIBLE || status == SatSolver::FEASIBLE;
+}
+
+void ContinuousProber::LogStatistics() {
+  if (shared_response_manager_ == nullptr ||
+      shared_bounds_manager_ == nullptr) {
+    return;
+  }
+  const absl::Time now = absl::Now();
+  if (now <= last_check_ + absl::Seconds(10)) return;
+  shared_response_manager_->LogMessage(
+      "Probe",
+      absl::StrCat(
+          "#iterations:", iteration_,
+          " #literals fixed/probed:", prober_->num_new_literals_fixed(), "/",
+          num_literals_probed_, " #bounds shaved/tried:", num_bounds_shaved_,
+          "/", num_bounds_tried_, " #new_integer_bounds:",
+          shared_bounds_manager_->NumBoundsExported("probing"),
+          ", #new_binary_clauses:", prober_->num_new_binary_clauses()));
+  last_check_ = now;
 }
 
 }  // namespace sat

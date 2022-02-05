@@ -1444,25 +1444,23 @@ void SolveLoadedCpModel(const CpModelProto& model_proto, Model* model) {
   const auto& mapping = *model->GetOrCreate<CpModelMapping>();
   SatSolver::Status status;
   const SatParameters& parameters = *model->GetOrCreate<SatParameters>();
+
   if (parameters.use_probing_search()) {
-    std::vector<BooleanVariable> bool_vars;
-    std::vector<IntegerVariable> int_vars;
-    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-    absl::flat_hash_set<BooleanVariable> visited;
-    for (int v = 0; v < model_proto.variables_size(); ++v) {
-      if (mapping.IsBoolean(v)) {
-        const BooleanVariable bool_var = mapping.Literal(v).Variable();
-        if (!visited.contains(bool_var)) {
-          visited.insert(bool_var);
-          bool_vars.push_back(bool_var);
-        }
-      } else {
-        IntegerVariable var = mapping.Integer(v);
-        if (integer_trail->IsFixed(var)) continue;
-        int_vars.push_back(var);
+    ContinuousProber prober(model_proto, model);
+    while (true) {
+      status = prober.Probe();
+      if (status == SatSolver::INFEASIBLE) {
+        shared_response_manager->NotifyThatImprovingProblemIsInfeasible(
+            solution_info);
+        break;
+      }
+      if (status == SatSolver::FEASIBLE) {
+        solution_observer();
+      }
+      if (status == SatSolver::LIMIT_REACHED) {
+        break;
       }
     }
-    status = ContinuousProbing(bool_vars, int_vars, solution_observer, model);
   } else if (!model_proto.has_objective()) {
     while (true) {
       status = ResetAndSolveIntegerProblem(

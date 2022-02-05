@@ -1617,17 +1617,29 @@ void SatSolver::ProcessNewlyFixedVariables() {
   deterministic_time_of_last_fixed_variables_cleanup_ = deterministic_time();
 }
 
+bool SatSolver::PropagationIsDone() const {
+  for (SatPropagator* propagator : propagators_) {
+    if (propagator->IsEmpty()) continue;
+    if (!propagator->PropagationIsDone(*trail_)) return false;
+  }
+  return true;
+}
+
 // TODO(user): Support propagating only the "first" propagators. That can
 // be useful for probing/in-processing, so we can control if we do only the SAT
 // part or the full integer part...
 bool SatSolver::Propagate() {
   SCOPED_TIME_STAT(&stats_);
 
-  // If new binary or pb constraint were added for the first time, we need
-  // to "re-initialize" the list of propagators.
-  if ((!propagate_binary_ && !binary_implication_graph_->IsEmpty()) ||
-      (!propagate_pb_ && pb_constraints_->NumberOfConstraints() > 0)) {
-    InitializePropagators();
+  // Because we might potentially iterate often on this list below, we remove
+  // empty propagators.
+  //
+  // TODO(user): This might not really be needed.
+  non_empty_propagators_.clear();
+  for (SatPropagator* propagator : propagators_) {
+    if (!propagator->IsEmpty()) {
+      non_empty_propagators_.push_back(propagator);
+    }
   }
 
   while (true) {
@@ -1639,7 +1651,7 @@ bool SatSolver::Propagate() {
     // and that its Propagate() functions will not abort on the first
     // propagation to be slightly more efficient.
     const int old_index = trail_->Index();
-    for (SatPropagator* propagator : propagators_) {
+    for (SatPropagator* propagator : non_empty_propagators_) {
       DCHECK(propagator->PropagatePreconditionsAreSatisfied(*trail_));
       if (!propagator->Propagate(trail_)) return false;
       if (trail_->Index() > old_index) break;
@@ -1651,37 +1663,15 @@ bool SatSolver::Propagate() {
 
 void SatSolver::InitializePropagators() {
   propagators_.clear();
-
-  // To make Propagate() as fast as possible, we only add the
-  // binary_implication_graph_/pb_constraints_ propagators if there is anything
-  // to propagate.
-  //
-  // TODO(user): uses the Model classes here to only call
-  // model.GetOrCreate<BinaryImplicationGraph>() when the first binary
-  // constraint is needed, and have a mecanism to always make this propagator
-  // first. Same for the linear constraints.
-  if (!binary_implication_graph_->IsEmpty()) {
-    propagate_binary_ = true;
-    propagators_.push_back(binary_implication_graph_);
-  }
+  propagators_.push_back(binary_implication_graph_);
   propagators_.push_back(clauses_propagator_);
-  if (pb_constraints_->NumberOfConstraints() > 0) {
-    propagate_pb_ = true;
-    propagators_.push_back(pb_constraints_);
-  }
+  propagators_.push_back(pb_constraints_);
   for (int i = 0; i < external_propagators_.size(); ++i) {
     propagators_.push_back(external_propagators_[i]);
   }
   if (last_propagator_ != nullptr) {
     propagators_.push_back(last_propagator_);
   }
-}
-
-bool SatSolver::PropagationIsDone() const {
-  for (SatPropagator* propagator : propagators_) {
-    if (!propagator->PropagationIsDone(*trail_)) return false;
-  }
-  return true;
 }
 
 bool SatSolver::ResolvePBConflict(BooleanVariable var,
@@ -1768,13 +1758,8 @@ void SatSolver::EnqueueNewDecision(Literal literal) {
 void SatSolver::Untrail(int target_trail_index) {
   SCOPED_TIME_STAT(&stats_);
   DCHECK_LT(target_trail_index, trail_->Index());
-
-  if ((!propagate_binary_ && !binary_implication_graph_->IsEmpty()) ||
-      (!propagate_pb_ && pb_constraints_->NumberOfConstraints() > 0)) {
-    InitializePropagators();
-  }
-
   for (SatPropagator* propagator : propagators_) {
+    if (propagator->IsEmpty()) continue;
     propagator->Untrail(*trail_, target_trail_index);
   }
   decision_policy_->Untrail(target_trail_index);

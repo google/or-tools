@@ -571,6 +571,7 @@ class PbConstraints : public SatPropagator {
 
   // Returns the number of constraints managed by this class.
   int NumberOfConstraints() const { return constraints_.size(); }
+  bool IsEmpty() const final { return constraints_.empty(); }
 
   // ConflictingConstraint() returns the last PB constraint that caused a
   // conflict. Calling ClearConflictingConstraint() reset this to nullptr.

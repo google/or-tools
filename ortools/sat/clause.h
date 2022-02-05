@@ -479,7 +479,9 @@ class BinaryImplicationGraph : public SatPropagator {
   void Resize(int num_variables);
 
   // Returns true if there is no constraints in this class.
-  bool IsEmpty() { return num_implications_ == 0 && at_most_ones_.empty(); }
+  bool IsEmpty() const final {
+    return num_implications_ == 0 && at_most_ones_.empty();
+  }
 
   // Adds the binary clause (a OR b), which is the same as (not a => b).
   // Note that it is also equivalent to (not b => a).

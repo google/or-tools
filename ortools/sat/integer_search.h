@@ -25,8 +25,10 @@
 
 #include <vector>
 
+#include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/linear_programming_constraint.h"
+#include "ortools/sat/probing.h"
 #include "ortools/sat/pseudo_costs.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
@@ -231,8 +233,7 @@ std::vector<std::function<BooleanOrIntegerLiteral()>> CompleteHeuristics(
 // of integer variables.
 SatSolver::Status ContinuousProbing(
     const std::vector<BooleanVariable>& bool_vars,
-    const std::vector<IntegerVariable>& int_vars,
-    const std::function<void()>& feasible_solution_observer, Model* model);
+    const std::vector<IntegerVariable>& int_vars, Model* model);
 
 // An helper class to share the code used by the different kind of search.
 class IntegerSearchHelper {
@@ -260,6 +261,46 @@ class IntegerSearchHelper {
   TimeLimit* time_limit_;
   PseudoCosts* pseudo_costs_;
   IntegerVariable objective_var_ = kNoIntegerVariable;
+};
+
+// This class will loop continuously on model variables and try to probe/shave
+// its bounds.
+class ContinuousProber {
+ public:
+  ContinuousProber(const CpModelProto& model_proto, Model* model);
+  SatSolver::Status Probe();
+
+ private:
+  bool ImportFromSharedClasses();
+  SatSolver::Status ShaveLiteral(Literal literal);
+  bool ReportStatus(const SatSolver::Status status);
+  void LogStatistics();
+
+  std::vector<BooleanVariable> bool_vars_;
+  std::vector<IntegerVariable> int_vars_;
+  Model* model_;
+  SatSolver* sat_solver_;
+  TimeLimit* time_limit_;
+  Trail* trail_;
+  IntegerTrail* integer_trail_;
+  IntegerEncoder* encoder_;
+  const SatParameters sat_parameters_;
+  const double deterministic_time_;
+  const bool use_shaving_;
+  LevelZeroCallbackHelper* level_zero_callbacks_;
+  Prober* prober_;
+  SharedResponseManager* shared_response_manager_;
+  SharedBoundsManager* shared_bounds_manager_;
+  double active_limit_;
+  int64_t num_bounds_shaved_ = 0;
+  int64_t num_bounds_tried_ = 0;
+  // Probe each Boolean variable or literal at most once per loop.
+  // TODO(user): use 2 vector<bool>.
+  absl::flat_hash_set<BooleanVariable> probed_bool_vars_;
+  absl::flat_hash_set<LiteralIndex> probed_literals_;
+  int iteration_ = 1;
+  int64_t num_literals_probed_ = 0;
+  absl::Time last_check_;
 };
 
 }  // namespace sat

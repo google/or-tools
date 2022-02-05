@@ -76,6 +76,7 @@ class Prober {
   // They are reset each time ProbleBooleanVariables() is called.
   // Note however that we do not reset them on a call to ProbeOneVariable().
   int num_new_literals_fixed() const { return num_new_literals_fixed_; }
+  int num_new_binary_clauses() const { return num_new_binary_; }
 
  private:
   bool ProbeOneVariableInternal(BooleanVariable b);
