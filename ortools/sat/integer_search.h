@@ -301,6 +301,8 @@ class ContinuousProber {
   int iteration_ = 1;
   int64_t num_literals_probed_ = 0;
   absl::Time last_check_;
+  int current_int_var_ = 0;
+  int current_bool_var_ = 0;
 };
 
 }  // namespace sat

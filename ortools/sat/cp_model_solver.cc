@@ -1456,8 +1456,7 @@ void SolveLoadedCpModel(const CpModelProto& model_proto, Model* model) {
       }
       if (status == SatSolver::FEASIBLE) {
         solution_observer();
-      }
-      if (status == SatSolver::LIMIT_REACHED) {
+      } else {
         break;
       }
     }

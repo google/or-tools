@@ -1126,7 +1126,11 @@ ContinuousProber::ContinuousProber(const CpModelProto& model_proto,
 //   - compress clause databases regularly (especially the implication graph)
 //   - better interleaving of the probing and shaving phases
 //   - move the shaving code directly in the probing class
+//   - probe all variables and not just the model ones
 SatSolver::Status ContinuousProber::Probe() {
+  // backtrack to level 0. Needed the solver has just found a solution.
+  if (!sat_solver_->ResetToLevelZero()) return SatSolver::INFEASIBLE;
+
   while (!time_limit_->LimitReached()) {
     // Run sat in-processing to reduce the size of the clause database.
     if (sat_parameters_.use_sat_inprocessing() &&
@@ -1145,7 +1149,8 @@ SatSolver::Status ContinuousProber::Probe() {
 
     // Probe variable bounds.
     // TODO(user): Probe optional variables.
-    for (const IntegerVariable int_var : int_vars_) {
+    for (; current_int_var_ < int_vars_.size(); ++current_int_var_) {
+      const IntegerVariable int_var = int_vars_[current_int_var_];
       if (integer_trail_->IsFixed(int_var) ||
           integer_trail_->IsOptional(int_var)) {
         continue;
@@ -1199,7 +1204,9 @@ SatSolver::Status ContinuousProber::Probe() {
     }
 
     // Probe Boolean variables from the model.
-    for (const BooleanVariable& bool_var : bool_vars_) {
+    for (; current_bool_var_ < bool_vars_.size(); ++current_bool_var_) {
+      const BooleanVariable& bool_var = bool_vars_[current_bool_var_];
+
       if (sat_solver_->Assignment().VariableIsAssigned(bool_var)) continue;
 
       if (!ImportFromSharedClasses()) {
@@ -1238,11 +1245,13 @@ SatSolver::Status ContinuousProber::Probe() {
         prober_->num_new_literals_fixed() != initial_num_literals_fixed;
     if (something_has_been_detected) {  // Reset the limit.
       active_limit_ = deterministic_time_;
-    } else if (active_limit_ < 10 * deterministic_time_) {  // Bump the limit.
+    } else if (active_limit_ < 25 * deterministic_time_) {  // Bump the limit.
       active_limit_ += deterministic_time_;
     }
 
     ++iteration_;
+    current_bool_var_ = 0;
+    current_int_var_ = 0;
   }
   return SatSolver::LIMIT_REACHED;
 }
