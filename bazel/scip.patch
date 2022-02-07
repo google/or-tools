@@ -11,6 +11,21 @@ index 4fbbc0e3b3..964b2d030d 100644
  
  # settings
  settings/
+diff --git a/CHANGELOG b/CHANGELOG
+index 24eb800135..6f5f57eef0 100644
+--- a/CHANGELOG
++++ b/CHANGELOG
+@@ -2463,8 +2463,8 @@ Interface changes
+   number of binary variable for performing clique table analysis
+ - `separating/maxincrounds`
+ - `separating/maxlocalbounddist`, `separating/maxcoefratio` and `separating/intsupportfac`
+-- 'presolving/milp/maxbadgesizepar' to limit the maximal badge size if PaPILO is called in parallel mode
+-- 'presolving/milp/maxbadgesizeseq' to limit the maximal badge size if PaPILO is called in sequential mode
++- if PaPILO >= 2.1: `presolving/milp/maxbadgesizepar` to limit the maximal badge size if PaPILO is called in parallel mode
++- if PaPILO >= 2.1: `presolving/milp/maxbadgesizeseq` to limit the maximal badge size if PaPILO is called in sequential mode
+ 
+ ### Data structures
+ 
 diff --git a/src/scip/benders_xyz.c b/src/scip/benders_xyz.c
 index 0d812ba6bd..ffe1badee0 100644
 --- a/src/scip/benders_xyz.c
@@ -56,6 +71,18 @@ index 1f13ac7460..e8ded751cf 100644
           BRANCHRULE_MAXBOUNDDIST,
           branchCopyXyz, branchFreeXyz, branchInitXyz, branchExitXyz, branchInitsolXyz, branchExitsolXyz,
           branchExeclpXyz, branchExecextXyz, branchExecpsXyz,
+diff --git a/src/scip/compr_xyz.c b/src/scip/compr_xyz.c
+index 2f6b29e88c..a6142d7785 100644
+--- a/src/scip/compr_xyz.c
++++ b/src/scip/compr_xyz.c
+@@ -41,6 +41,7 @@
+ /** tree compression data */
+ struct SCIP_ComprData
+ {
++  void* ptr;
+ };
+ 
+ 
 diff --git a/src/scip/cons_xyz.c b/src/scip/cons_xyz.c
 index 8141039a2e..e3f5d2b94b 100644
 --- a/src/scip/cons_xyz.c
@@ -69,6 +96,18 @@ index 8141039a2e..e3f5d2b94b 100644
  
  /** constraint handler data */
  struct SCIP_ConshdlrData
+ {
++  void* ptr;
+ };
+ 
+ 
+diff --git a/src/scip/cutsel_xyz.c b/src/scip/cutsel_xyz.c
+index c660098bb0..92f3fb9d92 100644
+--- a/src/scip/cutsel_xyz.c
++++ b/src/scip/cutsel_xyz.c
+@@ -40,6 +40,7 @@
+ /** cut selector data */
+ struct SCIP_CutselData
  {
 +  void* ptr;
  };
@@ -168,6 +207,24 @@ index 31fd333f98..c793d69bc4 100644
           eventInitsolXyz, eventExitsolXyz, eventDeleteXyz, eventExecXyz,
           eventhdlrdata) );
  #else
+diff --git a/src/scip/expr_xyz.c b/src/scip/expr_xyz.c
+index 2eb7914e1d..4e924b03b5 100644
+--- a/src/scip/expr_xyz.c
++++ b/src/scip/expr_xyz.c
+@@ -38,11 +38,13 @@
+ /** expression handler data */
+ struct SCIP_ExprhdlrData
+ {
++  void* ptr;
+ };
+ 
+ /** expression data */
+ struct SCIP_ExprData
+ {
++  void* ptr;
+ };
+ 
+ /*
 diff --git a/src/scip/githash.c b/src/scip/githash.c
 new file mode 100644
 index 0000000000..2891bc72de
@@ -236,6 +293,38 @@ index a5b6d9d7d6..0aacc3c8d2 100644
  };
  
  
+diff --git a/src/scip/presol_milp.cpp b/src/scip/presol_milp.cpp
+index 1577f643e3..5d323909b5 100644
+--- a/src/scip/presol_milp.cpp
++++ b/src/scip/presol_milp.cpp
+@@ -343,7 +343,7 @@ SCIP_DECL_PRESOLEXEC(presolExecMILP)
+       presolve.addPresolveMethod( uptr( new DualInfer<SCIP_Real>() ) );
+    if( data->enableprobing )
+    {
+-#if (PAPILO_VERSION_MAJOR>=2 && PAPILO_VERSION_MINOR>=1)
++#if PAPILO_VERSION_MAJOR > 2 || (PAPILO_VERSION_MAJOR == 2 && PAPILO_VERSION_MINOR >= 1)
+       Probing<SCIP_Real> *probing = new Probing<SCIP_Real>();
+       if( presolve.getPresolveOptions().runs_sequential() )
+       {
+@@ -876,6 +876,7 @@ SCIP_RETCODE SCIPincludePresolMILP(
+          "absolute bound value that is considered too huge for activitity based calculations",
+          &presoldata->hugebound, FALSE, DEFAULT_HUGEBOUND, 0.0, SCIP_REAL_MAX, NULL, NULL) );
+ 
++#if PAPILO_VERSION_MAJOR > 2 || (PAPILO_VERSION_MAJOR == 2 && PAPILO_VERSION_MINOR >= 1)
+    SCIP_CALL(SCIPaddIntParam(scip, "presolving/" PRESOL_NAME "/maxbadgesizeseq",
+          "maximal badge size in Probing in PaPILO if PaPILO is executed in sequential mode",
+          &presoldata->maxbadgesizeseq, FALSE, DEFAULT_MAXBADGESIZE_SEQ, -1, INT_MAX, NULL, NULL));
+@@ -883,6 +884,10 @@ SCIP_RETCODE SCIPincludePresolMILP(
+    SCIP_CALL(SCIPaddIntParam(scip, "presolving/" PRESOL_NAME "/maxbadgesizepar",
+          "maximal badge size in Probing in PaPILO if PaPILO is executed in parallel mode",
+          &presoldata->maxbadgesizepar, FALSE, DEFAULT_MAXBADGESIZE_PAR, -1, INT_MAX, NULL, NULL));
++#else
++   presoldata->maxbadgesizeseq = DEFAULT_MAXBADGESIZE_SEQ;
++   presoldata->maxbadgesizepar = DEFAULT_MAXBADGESIZE_PAR;
++#endif
+ 
+    SCIP_CALL( SCIPaddBoolParam(scip,
+          "presolving/" PRESOL_NAME "/enableparallelrows",
 diff --git a/src/scip/presol_xyz.c b/src/scip/presol_xyz.c
 index 38ba9df72e..04fe8605f5 100644
 --- a/src/scip/presol_xyz.c
