@@ -27,7 +27,7 @@
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/timetable.h"
 #include "ortools/sat/timetable_edgefinding.h"
-#include "ortools/util/strong_index.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {

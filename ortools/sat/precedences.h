@@ -28,7 +28,7 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/util/bitset.h"
-#include "ortools/util/strong_index.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {

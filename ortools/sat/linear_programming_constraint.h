@@ -35,7 +35,7 @@
 #include "ortools/sat/util.h"
 #include "ortools/sat/zero_half_cuts.h"
 #include "ortools/util/rev.h"
-#include "ortools/util/strong_index.h"
+#include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {

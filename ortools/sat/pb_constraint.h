@@ -33,13 +33,14 @@
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/stats.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {
 
 // The type of the integer coefficients in a pseudo-Boolean constraint.
 // This is also used for the current value of a constraint or its bounds.
-DEFINE_STRONG_INT_TYPE(Coefficient, int64_t);
+DEFINE_STRONG_INT64_TYPE(Coefficient);
 
 // IMPORTANT: We can't use numeric_limits<Coefficient>::max() which will compile
 // but just returns zero!!
@@ -58,6 +59,13 @@ struct LiteralWithCoeff {
            coefficient == other.coefficient;
   }
 };
+
+template <typename H>
+H AbslHashValue(H h, const LiteralWithCoeff& term) {
+  return H::combine(std::move(h), term.literal.Index(),
+                    term.coefficient.value());
+}
+
 inline std::ostream& operator<<(std::ostream& os, LiteralWithCoeff term) {
   os << term.coefficient << "[" << term.literal.DebugString() << "]";
   return os;
@@ -178,7 +186,7 @@ class MutableUpperBoundedLinearConstraint {
   void ClearAndResize(int num_variables);
 
   // Reset the constraint to 0 <= 0.
-  // Note that the contraint size stays the same.
+  // Note that the constraint size stays the same.
   void ClearAll();
 
   // Returns the coefficient (>= 0) of the given variable.
@@ -470,7 +478,7 @@ class UpperBoundedLinearConstraint {
 
   // Returns a fingerprint of the constraint linear expression (without rhs).
   // This is used for duplicate detection.
-  int64_t hash() const { return hash_; }
+  uint64_t hash() const { return hash_; }
 
   // This is used to get statistics of the number of literals inspected by
   // a Propagate() call.
@@ -508,7 +516,7 @@ class UpperBoundedLinearConstraint {
   std::vector<Literal> literals_;
   Coefficient rhs_;
 
-  int64_t hash_;
+  uint64_t hash_;
 };
 
 // Class responsible for managing a set of pseudo-Boolean constraints and their

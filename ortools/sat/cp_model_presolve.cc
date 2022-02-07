@@ -6487,6 +6487,363 @@ void CpModelPresolver::DetectDominatedLinearConstraints() {
              " time=", wall_timer.Get(), "s");
 }
 
+bool CpModelPresolver::IsImpliedFree(const std::vector<int>& constraints, int x,
+                                     int64_t* work_done) {
+  const Domain dx = context_->DomainOf(x);
+  Domain overall_implied_domain = Domain::AllValues();
+  for (const int c : constraints) {
+    // Enforced constraint do not implies anything on the domain of x.
+    const ConstraintProto& ct = context_->working_model->constraints(c);
+    if (!ct.enforcement_literal().empty()) continue;
+    const LinearConstraintProto& lin = ct.linear();
+
+    // We don't use Domain functions here because it is a hot spot. Note that we
+    // shouldn't have overflow while computing the sums because of our model
+    // preconditions.
+    int64_t min_sum = 0;
+    int64_t max_sum = 0;
+
+    int64_t coeff_x = 0;
+    const int num_terms = lin.vars().size();
+    *work_done += num_terms;
+    for (int i = 0; i < num_terms; ++i) {
+      const int v = lin.vars(i);
+      const int64_t coeff = lin.coeffs(i);
+      if (v == x) {
+        coeff_x = coeff;
+        continue;
+      }
+      const int64_t a = context_->MinOf(v) * coeff;
+      const int64_t b = context_->MaxOf(v) * coeff;
+      if (a <= b) {
+        min_sum += a;
+        max_sum += b;
+      } else {
+        min_sum += b;
+        max_sum += a;
+      }
+    }
+    DCHECK_NE(coeff_x, 0);
+    overall_implied_domain = overall_implied_domain.IntersectionWith(
+        ReadDomainFromProto(lin)
+            .AdditionWith(Domain(-max_sum, -min_sum))
+            .InverseMultiplicationBy(coeff_x));
+    if (overall_implied_domain.IsIncludedIn(dx)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+void CpModelPresolver::PerformFreeColumnSubstitution(
+    const std::vector<std::pair<int, int64_t>>& constraints_with_x_coeff, int x,
+    int y, int64_t factor) {
+  CHECK_NE(x, y);
+  DCHECK_EQ(constraints_with_x_coeff.size(),
+            context_->VarToConstraints(x).size());
+
+  // Compute the domain of the new variable x + factor * y
+  //
+  // TODO(user): Shift the domain at the same time if it do not contain zero?
+  const Domain ds = context_->DomainOf(x).AdditionWith(
+      context_->DomainOf(y).MultiplicationBy(factor));
+  const int s = context_->NewIntVar(ds);
+
+  // Substitute x by (s = x + factor * y) in all constraints.
+  //
+  // TODO(user): Pay attention to possible overflow.
+  int num_cancelled = 0;
+  int num_added = 0;
+  for (const auto [c, coeff_x] : constraints_with_x_coeff) {
+    ConstraintProto* ct = context_->working_model->mutable_constraints(c);
+    LinearConstraintProto* mutable_linear = ct->mutable_linear();
+    CHECK_NE(coeff_x, 0);
+
+    bool found = false;
+    int new_size = 0;
+    const int num_terms = mutable_linear->vars().size();
+    for (int i = 0; i < num_terms; ++i) {
+      const int var = mutable_linear->vars(i);
+      const int64_t coeff = mutable_linear->coeffs(i);
+      int new_var = var;
+      int64_t new_coeff = coeff;
+      if (var == x) {
+        // We replace x by s, and keep the coefficient.
+        CHECK_EQ(coeff, coeff_x);
+        new_var = s;
+      } else if (var == y) {
+        found = true;
+        new_coeff = coeff - factor * coeff_x;
+      }
+      if (new_coeff == 0) {
+        ++num_cancelled;
+        continue;
+      }
+      mutable_linear->set_vars(new_size, new_var);
+      mutable_linear->set_coeffs(new_size, new_coeff);
+      ++new_size;
+    }
+    mutable_linear->mutable_vars()->Truncate(new_size);
+    mutable_linear->mutable_coeffs()->Truncate(new_size);
+    if (!found) {
+      ++num_added;
+      mutable_linear->add_vars(y);
+      mutable_linear->add_coeffs(-factor * coeff_x);
+    }
+
+    context_->UpdateConstraintVariableUsage(c);
+  }
+
+  // Add x = s - factor * y to the mapping.
+  //
+  // Because x is implied free, we don't nee to add "s - y \in DomainOf(x)" to
+  // the working model.
+  {
+    LinearConstraintProto* lin =
+        context_->mapping_model->add_constraints()->mutable_linear();
+    lin->add_vars(x);
+    lin->add_coeffs(1);
+    lin->add_vars(y);
+    lin->add_coeffs(factor);
+    lin->add_vars(s);
+    lin->add_coeffs(-1);
+    lin->add_domain(0);
+    lin->add_domain(0);
+  }
+
+  // Remove x and update the graph.
+  context_->MarkVariableAsRemoved(x);
+  context_->UpdateNewConstraintsVariableUsage();
+  CHECK(context_->VarToConstraints(x).empty());
+  context_->UpdateRuleStats("columns: dual sparsify using substitution");
+}
+
+// TODO(user): The algo is slow, since for each candidate variable, we scan
+// the entries of all the constraints that contains it.
+//
+// TODO(user): The main goal should be to improve the LP relaxation rather than
+// the number of non-zeros.
+void CpModelPresolver::DetectOverlappingColumns() {
+  if (context_->time_limit()->LimitReached()) return;
+  if (context_->ModelIsUnsat()) return;
+  if (context_->params().presolve_inclusion_work_limit() == 0) return;
+
+  WallTimer wall_timer;
+  wall_timer.Start();
+
+  // Only consider substitution that reduce the overall non-zeros by this much.
+  const int kMinReduction = 3;
+
+  // For now we only look for two columns where a lot of coefficients are the
+  // same or opposite from each other.
+  //
+  // TODO(user): Generialize to factors other than 1 and -1 ? We can also
+  // consider general aX + bY substitution.
+  struct ColInfo {
+    int num_seen;
+    int num_equal_coeff;
+    int num_opposite_coeff;
+  };
+  std::vector<ColInfo> infos;
+  std::vector<bool> processed;
+  std::vector<int> to_clean;
+
+  // We consider columns that ONLY belongs to linear constraints. Note that the
+  // rational behind not considering Boolean constraints is that we want to
+  // preserve "Structure". It is also more work to handle them :)
+  //
+  // Note that this correspond to the variable that we will replace. We don't
+  // have any criteria for the variable we substitute it with.
+  //
+  // TODO(user): Sort and process "interesting" variable first? Note however
+  // that for some problem like neos-5045105-creuse.pb.gz it is important to
+  // "chain" substitution and try as candidate columns that were just created.
+  int num_processed = 0;
+  int64_t work_done = 0;
+  int64_t nz_reduction = 0;
+  const int64_t kMaxWork = 1e7;
+  std::vector<int> constraints;
+  for (int x = 0; x < context_->working_model->variables().size(); ++x) {
+    if (work_done > kMaxWork) break;
+
+    // To be deterministic.
+    //
+    // TODO(user): sort by size or other criteria? we could for example sort by
+    // size so that we process the fast constraints first and might abort before
+    // processing the long ones.
+    constraints.assign(context_->VarToConstraints(x).begin(),
+                       context_->VarToConstraints(x).end());
+    if (constraints.size() < kMinReduction) continue;
+    std::sort(constraints.begin(), constraints.end());
+
+    bool skip = false;
+    for (const int c : constraints) {
+      if (c < 0) {
+        // TODO(user): Handle the kObjective case.
+        skip = true;
+        break;
+      }
+      const ConstraintProto& ct = context_->working_model->constraints(c);
+      if (ct.constraint_case() != ConstraintProto::kLinear) {
+        skip = true;
+        break;
+      }
+
+      // We do not care about enforcement literal as long as the variable do
+      // not appear there.
+      for (const int ref : ct.enforcement_literal()) {
+        if (PositiveRef(ref) == x) {
+          skip = true;
+          break;
+        }
+      }
+      if (skip) break;
+    }
+    if (skip) continue;
+
+    // In case new variables were created.
+    const int num_variables = context_->working_model->variables().size();
+    infos.resize(num_variables);
+    processed.resize(num_variables, false);
+
+    // TODO(user): This is by FAR the most expansive call here. This is because
+    // we not only scan all constraint, we also do expansive domain operations.
+    //
+    // TODO(user): If the column is not implied free, we can still substitute
+    // it, but we need to add a constraint of size two to encode its original
+    // domain constraints. So it is not interesting but can still be good if we
+    // remove a lot of non-zeros.
+    ++num_processed;
+    if (!IsImpliedFree(constraints, x, &work_done)) continue;
+
+    // Heuristic, if we have constraint of size two, we never want to make
+    // them of size 3 by doing a substitution. This is for instance necessary
+    // to not degrade performance on neos-5051588-culgoa.mps.
+    //
+    // TODO(user): This was added after the fact, but knowning this we can
+    // avoid a bunch of computation in this function.
+    const int kNoRestriction = std::numeric_limits<int>::min();
+    int only_candidate = kNoRestriction;
+
+    std::vector<std::pair<int, int64_t>> constraints_with_x_coeff;
+    for (const int c : constraints) {
+      const LinearConstraintProto& lin =
+          context_->working_model->constraints(c).linear();
+      const int num_terms = lin.vars().size();
+
+      if (num_terms == 2) {
+        for (int i = 0; i < num_terms; ++i) {
+          if (lin.vars(i) == x) continue;
+          if (only_candidate == kNoRestriction) {
+            only_candidate = lin.vars(i);
+          } else if (only_candidate != lin.vars(i)) {
+            skip = true;
+            break;
+          }
+        }
+      }
+      if (skip) break;
+
+      // Find coefficient of x in this constraint.
+      int64_t x_coeff = 0;
+      for (int i = 0; i < num_terms; ++i) {
+        ++work_done;
+        const int var = lin.vars(i);
+        if (!RefIsPositive(var)) {
+          // The code requires "canonicalized" constraints.
+          skip = true;
+          break;
+        }
+        if (var == x) {
+          x_coeff = lin.coeffs(i);
+          break;
+        }
+      }
+      if (skip) break;
+      CHECK_NE(x_coeff, 0);
+      constraints_with_x_coeff.push_back({c, x_coeff});
+
+      // Update ColInfo.
+      //
+      // TODO(user): Temporarily mark columns that looks bad as not relevant
+      // anymore. Also abort early if no promising column are left.
+      work_done += num_terms;
+      for (int i = 0; i < num_terms; ++i) {
+        const int var = lin.vars(i);
+        if (var == x) continue;
+        if (!processed[var]) {
+          to_clean.push_back(var);
+          processed[var] = true;
+          infos[var].num_seen = 0;
+          infos[var].num_opposite_coeff = 0;
+          infos[var].num_equal_coeff = 0;
+        }
+        infos[var].num_seen++;
+        if (lin.coeffs(i) == x_coeff) infos[var].num_equal_coeff++;
+        if (lin.coeffs(i) == -x_coeff) infos[var].num_opposite_coeff++;
+      }
+    }
+    if (skip) {
+      for (const int var : to_clean) processed[var] = false;
+      to_clean.clear();
+      continue;
+    }
+
+    // Heuristic, in addition to removing at least kMinReduction non-zeros we
+    // also do not want to do substitution on long columns if we don't remove
+    // much.
+    //
+    // TODO(user): Not sure about that. Only care about the non-zeros? or try to
+    // not create too much new nonzeros and penalize num_not_seen?
+    int best_nz_reduction =
+        std::max(kMinReduction - 1, static_cast<int>(constraints.size()) / 4);
+
+    // Find the best column to do the substitution of x with.
+    int best_choice = -1;
+    int64_t best_factor;
+    CHECK(!processed[x]);
+    for (const int var : to_clean) {
+      if (only_candidate != kNoRestriction && var != only_candidate) {
+        processed[var] = false;
+        continue;
+      }
+
+      const int num_not_seen = constraints.size() - infos[var].num_seen;
+      {
+        const int nz_reduction = infos[var].num_equal_coeff - num_not_seen;
+        if (nz_reduction > best_nz_reduction) {
+          best_choice = var;
+          best_nz_reduction = nz_reduction;
+          best_factor = 1;
+        }
+      }
+      {
+        const int nz_reduction = infos[var].num_opposite_coeff - num_not_seen;
+        if (nz_reduction > best_nz_reduction) {
+          best_choice = var;
+          best_nz_reduction = nz_reduction;
+          best_factor = -1;
+        }
+      }
+
+      // Sparse clear.
+      processed[var] = false;
+    }
+    to_clean.clear();
+
+    if (best_choice >= 0) {
+      nz_reduction += best_nz_reduction;
+      PerformFreeColumnSubstitution(constraints_with_x_coeff, x, best_choice,
+                                    best_factor);
+    }
+  }
+
+  DCHECK(context_->ConstraintVariableUsageIsConsistent());
+  SOLVER_LOG(logger_, "[DetectOverlappingColumns]",
+             " #processed_columns=", num_processed, " #work_done=", work_done,
+             " #nz_reduction=", nz_reduction, " time=", wall_timer.Get(), "s");
+}
+
 void CpModelPresolver::ExtractEncodingFromLinear() {
   if (context_->time_limit()->LimitReached()) return;
   if (context_->ModelIsUnsat()) return;
@@ -7862,6 +8219,7 @@ CpSolverStatus CpModelPresolver::Presolve() {
     // TODO(user): merge these code instead of doing 3 passes?
     DetectDuplicateConstraints();
     DetectDominatedLinearConstraints();
+    DetectOverlappingColumns();
     ProcessSetPPC();
     if (context_->ModelIsUnsat()) return InfeasibleStatus();
 

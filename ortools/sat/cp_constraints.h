@@ -26,7 +26,7 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/util/rev.h"
-#include "ortools/util/strong_index.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {

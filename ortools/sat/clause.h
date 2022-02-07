@@ -39,7 +39,7 @@
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/stats.h"
-#include "ortools/util/strong_index.h"
+#include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {

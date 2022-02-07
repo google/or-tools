@@ -36,7 +36,7 @@
 #include "ortools/graph/util.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/sat_parameters.pb.h"
-#include "ortools/util/strong_index.h"
+#include "ortools/util/strong_integers.h"
 
 ABSL_FLAG(std::string, debug_dump_symmetry_graph_to_file, "",
           "If this flag is non-empty, an undirected graph whose"

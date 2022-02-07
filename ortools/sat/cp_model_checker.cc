@@ -426,6 +426,11 @@ std::string ValidateAutomatonConstraint(const CpModelProto& model,
     const int64_t tail = ct.automaton().transition_tail(i);
     const int64_t head = ct.automaton().transition_head(i);
     const int64_t label = ct.automaton().transition_label(i);
+    if (label <= std::numeric_limits<int64_t>::min() + 1 ||
+        label == std::numeric_limits<int64_t>::max()) {
+      return absl::StrCat("labels in the automaton constraint are too big: ",
+                          label);
+    }
     const auto [it, inserted] =
         tail_label_to_head.insert({{tail, label}, head});
     if (!inserted) {

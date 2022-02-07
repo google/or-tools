@@ -92,7 +92,7 @@
 #include "ortools/sat/synchronization.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/sorted_interval_list.h"
-#include "ortools/util/strong_index.h"
+#include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 
 #if defined(_MSC_VER)

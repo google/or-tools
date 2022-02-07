@@ -33,7 +33,7 @@
 #include "ortools/sat/integer.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/util/fp_utils.h"
-#include "ortools/util/strong_index.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {

@@ -26,7 +26,7 @@
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/sorted_interval_list.h"
-#include "ortools/util/strong_index.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {

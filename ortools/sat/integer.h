@@ -34,7 +34,6 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 #include "ortools/base/map_util.h"
-#include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/graph/iterators.h"
 #include "ortools/sat/model.h"
@@ -44,7 +43,7 @@
 #include "ortools/util/rev.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
-#include "ortools/util/strong_index.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {
@@ -56,7 +55,7 @@ namespace sat {
 // Note that both bounds are inclusive, which allows to write many propagation
 // algorithms for just one of the bound and apply it to the negated variables to
 // get the symmetric algorithm for the other bound.
-DEFINE_STRONG_INT_TYPE(IntegerValue, int64_t);
+DEFINE_STRONG_INT64_TYPE(IntegerValue);
 
 // The max range of an integer variable is [kMinIntegerValue, kMaxIntegerValue].
 //

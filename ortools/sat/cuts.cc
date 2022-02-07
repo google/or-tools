@@ -1373,7 +1373,12 @@ CutGenerator CreatePositiveMultiplicationCutGenerator(AffineExpression z,
         // TODO(user): Compute a better bound (int_max / 4 ?).
         const int64_t kMaxSafeInteger = (int64_t{1} << 53) - 1;
 
-        if (CapProd(x_ub, y_ub) >= kMaxSafeInteger) {
+        // Check for overflow with the product of expression bounds and the
+        // product of one expression bound times the constant part of the other
+        // expression.
+        if (CapProd(CapProd(x_ub, y_ub), 2) >= kMaxSafeInteger ||
+            CapAdd(CapProd(x_ub, y.constant.value()),
+                   CapProd(y_ub, x.constant.value())) >= kMaxSafeInteger) {
           VLOG(3) << "Potential overflow in PositiveMultiplicationCutGenerator";
           return true;
         }

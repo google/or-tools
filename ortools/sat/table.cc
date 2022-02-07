@@ -31,7 +31,7 @@
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/sorted_interval_list.h"
-#include "ortools/util/strong_index.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {

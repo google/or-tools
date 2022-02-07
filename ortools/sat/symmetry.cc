@@ -14,7 +14,7 @@
 #include "ortools/sat/symmetry.h"
 
 #include "ortools/base/logging.h"
-#include "ortools/util/strong_index.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {

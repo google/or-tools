@@ -267,7 +267,16 @@ class IntegerSearchHelper {
 // its bounds.
 class ContinuousProber {
  public:
+  // The model_proto is just used to construct the lists of variable to probe.
   ContinuousProber(const CpModelProto& model_proto, Model* model);
+
+  // Starts or continues probing variables and their bounds.
+  // It returns:
+  //   - SatSolver::INFEASIBLE if the problem is proven infeasible.
+  //   - SatSolver::FEASIBLE when a feasible solution is found
+  //   - SatSolver::LIMIT_REACHED if the limit stored in the model is reached
+  // Calling Probe() after it has returned FEASIBLE or LIMIT_REACHED will resume
+  // probing from its previous state.
   SatSolver::Status Probe();
 
  private:
@@ -276,31 +285,35 @@ class ContinuousProber {
   bool ReportStatus(const SatSolver::Status status);
   void LogStatistics();
 
+  // Variables to probe.
   std::vector<BooleanVariable> bool_vars_;
   std::vector<IntegerVariable> int_vars_;
+
+  // Model object.
   Model* model_;
   SatSolver* sat_solver_;
   TimeLimit* time_limit_;
   Trail* trail_;
   IntegerTrail* integer_trail_;
   IntegerEncoder* encoder_;
-  const SatParameters sat_parameters_;
-  const double deterministic_time_;
-  const bool use_shaving_;
+  const SatParameters parameters_;
   LevelZeroCallbackHelper* level_zero_callbacks_;
   Prober* prober_;
   SharedResponseManager* shared_response_manager_;
   SharedBoundsManager* shared_bounds_manager_;
-  double active_limit_;
+
+  // Statistics.
+  int64_t num_literals_probed_ = 0;
   int64_t num_bounds_shaved_ = 0;
   int64_t num_bounds_tried_ = 0;
-  // Probe each Boolean variable or literal at most once per loop.
+
+  // Current state of the probe.
+  double active_limit_;
   // TODO(user): use 2 vector<bool>.
   absl::flat_hash_set<BooleanVariable> probed_bool_vars_;
   absl::flat_hash_set<LiteralIndex> probed_literals_;
   int iteration_ = 1;
-  int64_t num_literals_probed_ = 0;
-  absl::Time last_check_;
+  absl::Time last_logging_time_;
   int current_int_var_ = 0;
   int current_bool_var_ = 0;
 };

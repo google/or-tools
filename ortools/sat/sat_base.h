@@ -32,7 +32,7 @@
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/model.h"
 #include "ortools/util/bitset.h"
-#include "ortools/util/strong_index.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {

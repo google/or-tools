@@ -15,9 +15,9 @@
 
 #include <utility>
 
+#include "absl/hash/hash.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/strong_vector.h"
-#include "ortools/base/thorough_hash.h"
 #include "ortools/util/saturated_arithmetic.h"
 
 namespace operations_research {
@@ -424,8 +424,7 @@ UpperBoundedLinearConstraint::UpperBoundedLinearConstraint(
   // Sentinel.
   starts_.push_back(literals_.size());
 
-  hash_ = ThoroughHash(reinterpret_cast<const char*>(cst.data()),
-                       cst.size() * sizeof(LiteralWithCoeff));
+  hash_ = absl::Hash<std::vector<LiteralWithCoeff>>()(cst);
 }
 
 void UpperBoundedLinearConstraint::AddToConflict(

@@ -1089,14 +1089,12 @@ ContinuousProber::ContinuousProber(const CpModelProto& model_proto,
       trail_(model->GetOrCreate<Trail>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
       encoder_(model->GetOrCreate<IntegerEncoder>()),
-      sat_parameters_(*(model->GetOrCreate<SatParameters>())),
-      deterministic_time_(sat_parameters_.shaving_search_deterministic_time()),
-      use_shaving_(sat_parameters_.use_shaving_in_probing_search()),
+      parameters_(*(model->GetOrCreate<SatParameters>())),
       level_zero_callbacks_(model->GetOrCreate<LevelZeroCallbackHelper>()),
       prober_(model->GetOrCreate<Prober>()),
       shared_response_manager_(model->Mutable<SharedResponseManager>()),
       shared_bounds_manager_(model->Mutable<SharedBoundsManager>()),
-      active_limit_(deterministic_time_) {
+      active_limit_(parameters_.shaving_search_deterministic_time()) {
   auto* mapping = model_->GetOrCreate<CpModelMapping>();
   absl::flat_hash_set<BooleanVariable> visited;
   for (int v = 0; v < model_proto.variables_size(); ++v) {
@@ -1117,7 +1115,7 @@ ContinuousProber::ContinuousProber(const CpModelProto& model_proto,
           << " integer variables"
           << ", deterministic time limit = "
           << time_limit_->GetDeterministicLimit() << " on " << model_->Name();
-  last_check_ = absl::Now();
+  last_logging_time_ = absl::Now();
 }
 
 // Continuous probing procedure.
@@ -1128,12 +1126,12 @@ ContinuousProber::ContinuousProber(const CpModelProto& model_proto,
 //   - move the shaving code directly in the probing class
 //   - probe all variables and not just the model ones
 SatSolver::Status ContinuousProber::Probe() {
-  // backtrack to level 0. Needed the solver has just found a solution.
+  // Backtrack to level 0 in case we are not there.
   if (!sat_solver_->ResetToLevelZero()) return SatSolver::INFEASIBLE;
 
   while (!time_limit_->LimitReached()) {
     // Run sat in-processing to reduce the size of the clause database.
-    if (sat_parameters_.use_sat_inprocessing() &&
+    if (parameters_.use_sat_inprocessing() &&
         !model_->GetOrCreate<Inprocessing>()->InprocessingRound()) {
       return SatSolver::INFEASIBLE;
     }
@@ -1190,7 +1188,7 @@ SatSolver::Status ContinuousProber::Probe() {
         num_literals_probed_++;
       }
 
-      if (use_shaving_) {
+      if (parameters_.use_shaving_in_probing_search()) {
         const SatSolver::Status lb_status =
             ShaveLiteral(Literal(shave_lb, true));
         if (ReportStatus(lb_status)) return lb_status;
@@ -1226,7 +1224,7 @@ SatSolver::Status ContinuousProber::Probe() {
       }
 
       const Literal literal(bool_var, true);
-      if (use_shaving_ &&
+      if (parameters_.use_shaving_in_probing_search() &&
           !sat_solver_->Assignment().LiteralIsAssigned(literal)) {
         const SatSolver::Status true_status = ShaveLiteral(literal);
         if (ReportStatus(true_status)) return true_status;
@@ -1240,13 +1238,17 @@ SatSolver::Status ContinuousProber::Probe() {
     }
 
     // Adjust the active_limit.
-    const bool something_has_been_detected =
-        num_bounds_shaved_ != initial_num_bounds_shaved ||
-        prober_->num_new_literals_fixed() != initial_num_literals_fixed;
-    if (something_has_been_detected) {  // Reset the limit.
-      active_limit_ = deterministic_time_;
-    } else if (active_limit_ < 25 * deterministic_time_) {  // Bump the limit.
-      active_limit_ += deterministic_time_;
+    {
+      const double deterministic_time =
+          parameters_.shaving_search_deterministic_time();
+      const bool something_has_been_detected =
+          num_bounds_shaved_ != initial_num_bounds_shaved ||
+          prober_->num_new_literals_fixed() != initial_num_literals_fixed;
+      if (something_has_been_detected) {  // Reset the limit.
+        active_limit_ = deterministic_time;
+      } else if (active_limit_ < 25 * deterministic_time) {  // Bump the limit.
+        active_limit_ += deterministic_time;
+      }
     }
 
     ++iteration_;
@@ -1299,7 +1301,7 @@ void ContinuousProber::LogStatistics() {
     return;
   }
   const absl::Time now = absl::Now();
-  if (now <= last_check_ + absl::Seconds(10)) return;
+  if (now <= last_logging_time_ + absl::Seconds(10)) return;
   shared_response_manager_->LogMessage(
       "Probe",
       absl::StrCat(
@@ -1309,7 +1311,7 @@ void ContinuousProber::LogStatistics() {
           "/", num_bounds_tried_, " #new_integer_bounds:",
           shared_bounds_manager_->NumBoundsExported("probing"),
           ", #new_binary_clauses:", prober_->num_new_binary_clauses()));
-  last_check_ = now;
+  last_logging_time_ = now;
 }
 
 }  // namespace sat

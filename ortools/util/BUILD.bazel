@@ -439,8 +439,8 @@ cc_library(
 )
 
 cc_library(
-    name = "strong_index",
-    hdrs = ["strong_index.h"],
+    name = "strong_integers",
+    hdrs = ["strong_integers.h"],
     deps = [
         "//ortools/base",
         "@com_google_absl//absl/strings",
