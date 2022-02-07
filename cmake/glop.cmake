@@ -279,6 +279,7 @@ install(FILES
   ortools/base/file.h
   ortools/base/hash.h
   ortools/base/int_type.h
+  ortools/base/strong_int.h
   ortools/base/strong_vector.h
   ortools/base/integral_types.h
   ortools/base/log_severity.h
