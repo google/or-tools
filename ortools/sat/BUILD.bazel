@@ -113,6 +113,7 @@ cc_library(
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_utils",
+        ":sat_parameters_cc_proto",
         "//ortools/base",
         "//ortools/base:hash",
         "//ortools/base:map_util",
@@ -1175,6 +1176,7 @@ cc_library(
         ":sat_base",
         ":sat_parameters_cc_proto",
         "//ortools/base",
+        "//ortools/base:mathutil",
         "//ortools/base:stl_util",
         "//ortools/util:random_engine",
         "//ortools/util:saturated_arithmetic",

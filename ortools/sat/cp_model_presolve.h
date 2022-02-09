@@ -151,8 +151,16 @@ class CpModelPresolver {
   bool AddVarAffineRepresentativeFromLinearEquality(int target_index,
                                                     ConstraintProto* ct);
   bool PresolveLinearEqualityWithModulo(ConstraintProto* ct);
-
   bool DetectAndProcessOneSidedLinearConstraint(int c, ConstraintProto* ct);
+
+  // If a constraint is of the form "a * expr_X + expr_Y" and expr_Y can only
+  // take small values compared to a, depending on the bounds, the constraint
+  // can be equivalent to a constraint on expr_X only.
+  //
+  // For instance "10'001 X + 9'999 Y <= 105'000, with X, Y in [0, 100]" can
+  // be rewritten as X + Y <= 10 ! This can easily happen after scaling to
+  // integer cofficient a floating point constraint.
+  void TryToReduceCoefficientsOfLinearConstraint(int c, ConstraintProto* ct);
 
   // This detects and converts constraints of the form:
   // "X = sum Boolean * value", with "sum Boolean <= 1".

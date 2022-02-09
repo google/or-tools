@@ -1300,8 +1300,9 @@ void ContinuousProber::LogStatistics() {
       shared_bounds_manager_ == nullptr) {
     return;
   }
+  const double freq = parameters_.workers_periodic_log_frequency_in_seconds();
   const absl::Time now = absl::Now();
-  if (now <= last_logging_time_ + absl::Seconds(10)) return;
+  if (freq <= 0.0 || now <= last_logging_time_ + absl::Seconds(freq)) return;
   shared_response_manager_->LogMessage(
       "Probe",
       absl::StrCat(

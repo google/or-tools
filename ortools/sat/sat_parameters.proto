@@ -24,7 +24,7 @@ option csharp_namespace = "Google.OrTools.Sat";
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 206
+// NEXT TAG: 214
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -380,6 +380,12 @@ message SatParameters {
   // LOG(INFO). This can be overwritten by the log_destination parameter.
   optional bool log_search_progress = 41 [default = false];
 
+  // Indicates how much logging should wait before logging periodic search
+  // information from specialized workers (lb_tree_search, probing).
+  // A value <= 0.0 will disable periodic logs.
+  optional double workers_periodic_log_frequency_in_seconds = 3
+      [default = 30.0];
+
   // Whether the solver should display per sub-solver search statistics.
   // This is only useful is log_search_progress is set to true, and if the
   // number of search workers is > 1.
@@ -504,6 +510,97 @@ message SatParameters {
 
   // If true, we don't keep names in our internal copy of the user given model.
   optional bool ignore_names = 202 [default = true];
+
+  // ==========================================================================
+  // Multithread
+  // ==========================================================================
+
+  // Specify the number of parallel workers (i.e. threads) to use during search.
+  // This should usually be lower than your number of available cpus +
+  // hyperthread in your machine.
+  //
+  // A value of 0 means the solver will try to use all cores on the machine.
+  // A number of 1 means no parallelism.
+  //
+  // Note that 'num_workers' is the preferred name, but if it is set to zero,
+  // we will still read the deprecated 'num_search_worker'.
+  //
+  // As of 2020-04-10, if you're using SAT via MPSolver (to solve integer
+  // programs) this field is overridden with a value of 8, if the field is not
+  // set *explicitly*. Thus, always set this field explicitly or via
+  // MPSolver::SetNumThreads().
+  optional int32 num_workers = 206 [default = 0];
+  optional int32 num_search_workers = 100 [default = 0];
+
+  // If there is an objective and we are not in interleave mode, we will reserve
+  // at least this number of worker for LNS thread.
+  //
+  // TODO(user): Also define like for subsolvers the list of "active" type of
+  // neighborhood used.
+  optional int32 min_num_lns_workers = 211 [default = 2];
+
+  // In multi-thread, the solver can be mainly seen as a portfolio of solvers
+  // with different parameters. This field indicates the names of the parameters
+  // that are used in multithread.
+  //
+  // See cp_model_search.cc to see a list of the names and the default value (if
+  // left empty) that looks like:
+  // - default_lp           (linearization_level:1)
+  // - fixed                (only if fixed search specified or scheduling)
+  // - less_encoding        (only if no objective)
+  // - no_lp                (linearization_level:0)
+  // - max_lp               (linearization_level:2)
+  // - pseudo_costs         (only if objective, change search heuristic)
+  // - reduced_costs        (only if objective, change search heuristic)
+  // - quick_restart        (kind of probing)
+  // - quick_restart_no_lp  (kind of probing with linearization_level:0)
+  // - lb_tree_search       (to improve lower bound, MIP like tree search)
+  // - probing              (continuous probing and shaving)
+  //
+  // Also, note that some set of parameters will be ignored if they do not make
+  // sense. For instance if there is no objective, pseudo_cost or reduced_cost
+  // search will be ignored. Core based search will only work if the objective
+  // has many terms. If there is no fixed strategy fixed will be ignored. And so
+  // on.
+  //
+  // The order is important, as only the first usable "num_workers -
+  // min_num_lns_workers" subsolvers will be scheduled. You can see in the log
+  // which one are selected for a given run. All the others will be LNS if there
+  // is an objective, or randomized SAT search for pure satisfiability problems.
+  repeated string subsolvers = 207;
+
+  // Rather than fully specifying subsolvers, it is often convenient to just
+  // remove the ones that are not useful on a given problem.
+  repeated string ignore_subsolvers = 209;
+
+  // It is possible to specify additional subsolver configuration. These can be
+  // refered by their params.name() in the fields above. Note that only the
+  // specified field will "overwrite" the ones of the base parameter. It is also
+  // possible to overwrite the default names above.
+  repeated SatParameters subsolver_params = 210;
+
+  // Experimental. If this is true, then we interleave all our major search
+  // strategy and distribute the work amongst num_workers.
+  //
+  // The search is deterministic (independently of num_workers!), and we
+  // schedule and wait for interleave_batch_size task to be completed before
+  // synchronizing and scheduling the next batch of tasks.
+  optional bool interleave_search = 136 [default = false];
+  optional int32 interleave_batch_size = 134 [default = 1];
+
+  // Temporary parameter until the memory usage is more optimized. Note that
+  // this completely ignore any of the subsolvers parameters above and does its
+  // own things.
+  optional bool reduce_memory_usage_in_interleave_mode = 141 [default = false];
+
+  // Allows objective sharing between workers.
+  optional bool share_objective_bounds = 113 [default = true];
+
+  // Allows sharing of the bounds of modified variables at level 0.
+  optional bool share_level_zero_bounds = 114 [default = true];
+
+  // Allows sharing of new learned binary clause between workers.
+  optional bool share_binary_clauses = 203 [default = true];
 
   // ==========================================================================
   // Debugging parameters
@@ -855,6 +952,11 @@ message SatParameters {
   // the worst open node in the tree.
   optional bool optimize_with_lb_tree_search = 188 [default = false];
 
+  // Indicates the frequency of restarts in lb_tree_search. In practise, every
+  // `lb_tree_search_restart_frequency` nodes explored, the search will
+  // backtrack to root level and import data shared by other workers.
+  optional int64 lb_tree_search_restart_frequency = 212 [default = 10000];
+
   // If non-negative, perform a binary search on the objective variable in order
   // to find an [min, max] interval outside of which the solver proved unsat/sat
   // under this amount of conflict. This can quickly reduce the objective domain
@@ -925,36 +1027,6 @@ message SatParameters {
   // Mainly used when improving the presolver. When true, stops the solver after
   // the presolve is complete.
   optional bool stop_after_presolve = 149 [default = false];
-
-  // Specify the number of parallel workers to use during search.
-  // A value of 0 means the solver will try to use all cores on the machine.
-  // A number of 1 means no parallelism.
-  // As of 2020-04-10, if you're using SAT via MPSolver (to solve integer
-  // programs) this field is overridden with a value of 8, if the field is not
-  // set *explicitly*. Thus, always set this field explicitly or via
-  // MPSolver::SetNumThreads().
-  optional int32 num_search_workers = 100 [default = 0];
-
-  // Experimental. If this is true, then we interleave all our major search
-  // strategy and distribute the work amongst num_search_workers.
-  //
-  // The search is deterministic (independently of num_search_workers!), and we
-  // schedule and wait for interleave_batch_size task to be completed before
-  // synchronizing and scheduling the next batch of tasks.
-  optional bool interleave_search = 136 [default = false];
-  optional int32 interleave_batch_size = 134 [default = 1];
-
-  // Temporary parameter until the memory usage is more optimized.
-  optional bool reduce_memory_usage_in_interleave_mode = 141 [default = false];
-
-  // Allows objective sharing between workers.
-  optional bool share_objective_bounds = 113 [default = true];
-
-  // Allows sharing of the bounds of modified variables at level 0.
-  optional bool share_level_zero_bounds = 114 [default = true];
-
-  // Allows sharing of new learned binary clause between workers.
-  optional bool share_binary_clauses = 203 [default = true];
 
   // LNS parameters.
   optional bool use_lns_only = 101 [default = false];

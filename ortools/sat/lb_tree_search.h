@@ -106,6 +106,8 @@ class LbTreeSearch {
   SatDecisionPolicy* sat_decision_;
   IntegerSearchHelper* search_helper_;
   IntegerVariable objective_var_;
+  const int64_t restart_frequency_;
+  const double log_frequency_;
 
   // This can stay null. Otherwise it will be the lp constraint with
   // objective_var_ as objective.
@@ -124,6 +126,21 @@ class LbTreeSearch {
   std::function<BooleanOrIntegerLiteral()> search_heuristic_;
 
   int64_t num_rc_detected_ = 0;
+
+  // Counts the number of decisions we are taking while exploring the search
+  // tree.
+  int64_t num_nodes_explored_ = 0;
+
+  // Used to trigger restarts.
+  int64_t num_nodes_explored_of_last_import_ = 0;
+
+  // Count the number of hard restarts (where all nodes are cleared) and soft
+  // restarts (where the search backtracks to level 0 to import other solver
+  // changes).
+  int64_t num_restarts_ = 0;
+
+  // Used to display periodic info to the log.
+  absl::Time last_logging_time_;
 };
 
 }  // namespace sat

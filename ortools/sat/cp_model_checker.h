@@ -20,6 +20,7 @@
 
 #include "ortools/base/integral_types.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/sat_parameters.pb.h"
 
 namespace operations_research {
 namespace sat {
@@ -37,6 +38,15 @@ namespace sat {
 // some work to put in place.
 std::string ValidateCpModel(const CpModelProto& model,
                             bool after_presolve = false);
+
+// Some validation (in particular the floating point objective) requires to
+// read parameters.
+//
+// TODO(user): Ideally we would have just one ValidateCpModel() function but
+// this was introduced after many users already use ValidateCpModel() without
+// parameters.
+std::string ValidateInputCpModel(const SatParameters& params,
+                                 const CpModelProto& model);
 
 // Verifies that the given variable assignment is a feasible solution of the
 // given model. The values vector should be in one to one correspondence with

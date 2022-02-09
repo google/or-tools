@@ -2088,6 +2088,92 @@ bool CpModelPresolver::PresolveSmallLinear(ConstraintProto* ct) {
   return false;
 }
 
+// We use a simple heuristic for now.
+void CpModelPresolver::TryToReduceCoefficientsOfLinearConstraint(
+    int c, ConstraintProto* ct) {
+  if (ct->constraint_case() != ConstraintProto::kLinear) return;
+  if (context_->ModelIsUnsat()) return;
+
+  // Only consider "simple" constraints.
+  const LinearConstraintProto& lin = ct->linear();
+  const Domain rhs = ReadDomainFromProto(lin);
+  if (rhs.NumIntervals() != 1) return;
+
+  // As an heuristic we try the smallest coeff above 10 as a base, and try to
+  // express everything as a multiple of it.
+  //
+  // TODO(user): Find something better.
+  int64_t base = std::numeric_limits<int64_t>::max();
+  std::vector<int64_t> coeffs;
+  std::vector<int64_t> lbs;
+  std::vector<int64_t> ubs;
+  uint64_t gcd = 0;
+  const int num_terms = lin.vars().size();
+  for (int i = 0; i < num_terms; ++i) {
+    const int64_t coeff = lin.coeffs(i);
+    if (coeff > 0) {
+      coeffs.push_back(coeff);
+      lbs.push_back(context_->MinOf(lin.vars(i)));
+      ubs.push_back(context_->MaxOf(lin.vars(i)));
+    } else {
+      coeffs.push_back(-coeff);
+      lbs.push_back(-context_->MaxOf(lin.vars(i)));
+      ubs.push_back(-context_->MinOf(lin.vars(i)));
+    }
+    const int64_t magnitude = std::abs(lin.coeffs(i));
+    gcd = MathUtil::GCD64(gcd, magnitude);
+    if (magnitude >= 10) {
+      base = std::min(base, std::abs(lin.coeffs(i)));
+    }
+  }
+
+  if (gcd > 1) {
+    // This might happen as a result of extra reduction after we already tried
+    // this reduction.
+    if (DivideLinearByGcd(ct)) {
+      context_->UpdateConstraintVariableUsage(c);
+    }
+    return;
+  }
+  if (base == std::numeric_limits<int64_t>::max()) return;
+
+  // Try the <= side first.
+  int64_t new_ub;
+  if (!LinearInequalityCanBeReducedWithClosestMultiple(base, coeffs, lbs, ubs,
+                                                       rhs.Max(), &new_ub)) {
+    return;
+  }
+
+  // The other side.
+  int64_t minus_new_lb;
+  for (int i = 0; i < num_terms; ++i) {
+    std::swap(lbs[i], ubs[i]);
+    lbs[i] = -lbs[i];
+    ubs[i] = -ubs[i];
+  }
+  if (!LinearInequalityCanBeReducedWithClosestMultiple(
+          base, coeffs, lbs, ubs, -rhs.Min(), &minus_new_lb)) {
+    return;
+  }
+
+  // Rewrite the constraint !
+  context_->UpdateRuleStats("linear: reduce coefficients");
+  int new_size = 0;
+  LinearConstraintProto* mutable_linear = ct->mutable_linear();
+  for (int i = 0; i < num_terms; ++i) {
+    const int64_t new_coeff = ClosestMultiple(lin.coeffs(i), base) / base;
+    if (new_coeff != 0) {
+      mutable_linear->set_vars(new_size, lin.vars(i));
+      mutable_linear->set_coeffs(new_size, new_coeff);
+      new_size++;
+    }
+  }
+  mutable_linear->mutable_vars()->Truncate(new_size);
+  mutable_linear->mutable_coeffs()->Truncate(new_size);
+  FillDomainInProto(Domain(-minus_new_lb, new_ub), mutable_linear);
+  context_->UpdateConstraintVariableUsage(c);
+}
+
 namespace {
 
 // Return true if the given domain only restrict the values with an upper bound.
@@ -5749,12 +5835,15 @@ bool CpModelPresolver::PresolveOneConstraint(int c) {
         }
       }
 
+      TryToReduceCoefficientsOfLinearConstraint(c, ct);
+
       // Note that it is important for this to be last, so that if a constraint
       // is marked as being in one direction, no other presolve is applied until
       // it is processed again and unmarked at the beginning of this case.
       if (DetectAndProcessOneSidedLinearConstraint(c, ct)) {
         context_->UpdateConstraintVariableUsage(c);
       }
+
       return false;
     }
     case ConstraintProto::kInterval:

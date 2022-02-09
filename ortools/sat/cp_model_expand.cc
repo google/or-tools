@@ -1366,8 +1366,6 @@ void ExpandAllDiff(bool force_alldiff_expansion, ConstraintProto* ct,
             ? context->working_model->add_constraints()->mutable_exactly_one()
             : context->working_model->add_constraints()->mutable_at_most_one();
     for (const LinearExpressionProto& expr : possible_exprs) {
-      DCHECK(context->DomainContains(expr, v));
-      DCHECK(!context->IsFixed(expr));
       const int encoding = context->GetOrCreateAffineValueEncoding(expr, v);
       at_most_or_equal_one->add_literals(encoding);
     }

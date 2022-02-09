@@ -772,35 +772,34 @@ void RegisterVariableBoundsLevelZeroExport(
     const CpModelProto& model_proto, SharedBoundsManager* shared_bounds_manager,
     Model* model) {
   CHECK(shared_bounds_manager != nullptr);
+
+  auto* mapping = model->GetOrCreate<CpModelMapping>();
+  auto* trail = model->Get<Trail>();
+  auto* integer_trail = model->Get<IntegerTrail>();
+
   int saved_trail_index = 0;
+  std::vector<int> model_variables;
+  std::vector<int64_t> new_lower_bounds;
+  std::vector<int64_t> new_upper_bounds;
+  absl::flat_hash_set<int> visited_variables;
+
   auto broadcast_level_zero_bounds =
-      [&model_proto, saved_trail_index, model, shared_bounds_manager](
-          const std::vector<IntegerVariable>& modified_vars) mutable {
-        CpModelMapping* const mapping = model->GetOrCreate<CpModelMapping>();
-
-        std::vector<int> model_variables;
-        std::vector<int64_t> new_lower_bounds;
-        std::vector<int64_t> new_upper_bounds;
-        absl::flat_hash_set<int> visited_variables;
-
+      [=](const std::vector<IntegerVariable>& modified_vars) mutable {
         // Inspect the modified IntegerVariables.
-        auto* integer_trail = model->Get<IntegerTrail>();
         for (const IntegerVariable& var : modified_vars) {
           const IntegerVariable positive_var = PositiveVariable(var);
           const int model_var =
               mapping->GetProtoVariableFromIntegerVariable(positive_var);
-          if (model_var == -1 || visited_variables.contains(model_var)) {
-            // TODO(user): I don't think we should see the same model_var twice
-            // here so maybe we don't need the visited_variables.contains()
-            // part.
-            continue;
-          }
 
-          visited_variables.insert(model_var);
+          if (model_var == -1) continue;
+          const auto [_, inserted] = visited_variables.insert(model_var);
+          if (!inserted) continue;
+
           const int64_t new_lb =
               integer_trail->LevelZeroLowerBound(positive_var).value();
           const int64_t new_ub =
               integer_trail->LevelZeroUpperBound(positive_var).value();
+
           // TODO(user): We could imagine an API based on atomic<int64_t>
           // that could preemptively check if this new bounds are improving.
           model_variables.push_back(model_var);
@@ -809,19 +808,15 @@ void RegisterVariableBoundsLevelZeroExport(
         }
 
         // Inspect the newly modified Booleans.
-        auto* trail = model->Get<Trail>();
         for (; saved_trail_index < trail->Index(); ++saved_trail_index) {
           const Literal fixed_literal = (*trail)[saved_trail_index];
           const int model_var = mapping->GetProtoVariableFromBooleanVariable(
               fixed_literal.Variable());
-          if (model_var == -1 || visited_variables.contains(model_var)) {
-            // If the variable is already visited, it should mean that this
-            // Boolean also has an IntegerVariable view, and we should already
-            // have set its bound correctly.
-            continue;
-          }
 
-          visited_variables.insert(model_var);
+          if (model_var == -1) continue;
+          const auto [_, inserted] = visited_variables.insert(model_var);
+          if (!inserted) continue;
+
           model_variables.push_back(model_var);
           if (fixed_literal.IsPositive()) {
             new_lower_bounds.push_back(1);
@@ -836,6 +831,12 @@ void RegisterVariableBoundsLevelZeroExport(
           shared_bounds_manager->ReportPotentialNewBounds(
               model_proto, model->Name(), model_variables, new_lower_bounds,
               new_upper_bounds);
+
+          // Clear for next call.
+          model_variables.clear();
+          new_lower_bounds.clear();
+          new_upper_bounds.clear();
+          visited_variables.clear();
 
           // If we are not in interleave_search we synchronize right away.
           if (!model->Get<SatParameters>()->interleave_search()) {
@@ -2689,19 +2690,18 @@ class LnsSolver : public SubSolver {
 
 void SolveCpModelParallel(const CpModelProto& model_proto,
                           Model* global_model) {
-  const SatParameters& parameters = *global_model->GetOrCreate<SatParameters>();
-  const int num_search_workers = parameters.num_search_workers();
-  CHECK(!parameters.enumerate_all_solutions())
+  const SatParameters& params = *global_model->GetOrCreate<SatParameters>();
+  CHECK(!params.enumerate_all_solutions())
       << "Enumerating all solutions in parallel is not supported.";
 
   std::unique_ptr<SharedBoundsManager> shared_bounds_manager;
-  if (parameters.share_level_zero_bounds()) {
+  if (params.share_level_zero_bounds()) {
     shared_bounds_manager = absl::make_unique<SharedBoundsManager>(model_proto);
   }
 
   std::unique_ptr<SharedRelaxationSolutionRepository>
       shared_relaxation_solutions;
-  if (parameters.use_relaxation_lns()) {
+  if (params.use_relaxation_lns()) {
     shared_relaxation_solutions =
         absl::make_unique<SharedRelaxationSolutionRepository>(
             /*num_solutions_to_keep=*/10);
@@ -2716,10 +2716,9 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
   // We currently only use the feasiblity pump if it is enabled and some other
   // parameters are not on.
   std::unique_ptr<SharedIncompleteSolutionManager> shared_incomplete_solutions;
-  const bool use_feasibility_pump = parameters.use_feasibility_pump() &&
-                                    parameters.linearization_level() > 0 &&
-                                    !parameters.use_lns_only() &&
-                                    !parameters.interleave_search();
+  const bool use_feasibility_pump =
+      params.use_feasibility_pump() && params.linearization_level() > 0 &&
+      !params.use_lns_only() && !params.interleave_search();
   if (use_feasibility_pump) {
     shared_incomplete_solutions =
         absl::make_unique<SharedIncompleteSolutionManager>();
@@ -2728,7 +2727,7 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
   }
 
   std::unique_ptr<SharedClausesManager> shared_clauses;
-  if (parameters.share_binary_clauses()) {
+  if (params.share_binary_clauses()) {
     shared_clauses = absl::make_unique<SharedClausesManager>();
   }
 
@@ -2762,32 +2761,33 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
     }
   }));
 
-  if (parameters.use_lns_only()) {
+  if (params.use_lns_only()) {
     // Register something to find a first solution. Note that this is mainly
     // used for experimentation, and using no LP ususally result in a faster
     // first solution.
-    SatParameters local_params = parameters;
+    SatParameters local_params = params;
     local_params.set_stop_after_first_solution(true);
     local_params.set_linearization_level(0);
     subsolvers.push_back(absl::make_unique<FullProblemSolver>(
         "first_solution", local_params,
         /*split_in_chunks=*/false, &shared));
   } else {
-    for (const SatParameters& local_params : GetDiverseSetOfParameters(
-             parameters, model_proto, num_search_workers)) {
+    for (const SatParameters& local_params :
+         GetDiverseSetOfParameters(params, model_proto)) {
       // TODO(user): This is currently not supported here.
-      if (parameters.optimize_with_max_hs()) continue;
+      if (params.optimize_with_max_hs()) continue;
 
       subsolvers.push_back(absl::make_unique<FullProblemSolver>(
           local_params.name(), local_params,
-          /*split_in_chunks=*/parameters.interleave_search(), &shared));
+          /*split_in_chunks=*/params.interleave_search(), &shared));
     }
   }
+  const int num_full_subsolvers = subsolvers.size();
 
   // Add FeasibilityPumpSolver if enabled.
   if (use_feasibility_pump) {
     subsolvers.push_back(
-        absl::make_unique<FeasibilityPumpSolver>(parameters, &shared));
+        absl::make_unique<FeasibilityPumpSolver>(params, &shared));
   }
 
   // Add LNS SubSolver(s).
@@ -2795,17 +2795,18 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
   // Add the NeighborhoodGeneratorHelper as a special subsolver so that its
   // Synchronize() is called before any LNS neighborhood solvers.
   auto unique_helper = absl::make_unique<NeighborhoodGeneratorHelper>(
-      &model_proto, &parameters, shared.response, shared.time_limit,
-      shared.bounds);
+      &model_proto, &params, shared.response, shared.time_limit, shared.bounds);
   NeighborhoodGeneratorHelper* helper = unique_helper.get();
   subsolvers.push_back(std::move(unique_helper));
 
   // By default we use the user provided parameters.
-  std::vector<SatParameters> lns_params = {parameters};
+  std::vector<SatParameters> lns_params = {params};
   lns_params.back().set_name("default");
-  if (parameters.diversify_lns_params()) {
-    std::vector<SatParameters> lns_params =
-        GetDiverseSetOfParameters(parameters, model_proto, 6);
+  if (params.diversify_lns_params()) {
+    SatParameters copy = params;
+    copy.set_num_workers(6);
+    copy.set_min_num_lns_workers(0);
+    lns_params = GetDiverseSetOfParameters(copy, model_proto);
   }
   for (const SatParameters& local_params : lns_params) {
     // Only register following LNS SubSolver if there is an objective.
@@ -2872,7 +2873,7 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
 
     // TODO(user): for now this is not deterministic so we disable it on
     // interleave search. Fix.
-    if (parameters.use_rins_lns() && !parameters.interleave_search()) {
+    if (params.use_rins_lns() && !params.interleave_search()) {
       // Note that we always create the SharedLPSolutionRepository. This meets
       // the requirement of having at least one of
       // SharedRelaxationSolutionRepository or SharedLPSolutionRepository to
@@ -2895,7 +2896,7 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
           local_params, helper, &shared));
     }
 
-    if (parameters.use_relaxation_lns()) {
+    if (params.use_relaxation_lns()) {
       subsolvers.push_back(absl::make_unique<LnsSolver>(
           absl::make_unique<
               ConsecutiveConstraintsRelaxationNeighborhoodGenerator>(
@@ -2919,28 +2920,39 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
   auto* logger = global_model->GetOrCreate<SolverLogger>();
   if (logger->LoggingIsEnabled()) {
     std::vector<std::string> names;
-    for (const auto& subsolver : subsolvers) {
-      if (!subsolver->name().empty()) names.push_back(subsolver->name());
+    int full_subsolver_index = 0;
+    for (int i = 0; i < subsolvers.size(); ++i) {
+      const auto& subsolver = subsolvers[i];
+      if (!subsolver->name().empty()) {
+        names.push_back(subsolver->name());
+        if (i < num_full_subsolvers) ++full_subsolver_index;
+      }
     }
     SOLVER_LOG(logger, "");
     SOLVER_LOG(logger,
-               absl::StrFormat("Starting Search at %.2fs with %i "
-                               "workers and subsolvers: [ %s ]",
-                               shared.wall_timer->Get(), num_search_workers,
-                               absl::StrJoin(names, ", ")));
+               absl::StrFormat("Starting Search at %.2fs with %i workers.",
+                               shared.wall_timer->Get(), params.num_workers()));
+    SOLVER_LOG(logger, full_subsolver_index, " full subsolvers: [",
+               absl::StrJoin(names.begin(),
+                             names.begin() + full_subsolver_index, ", "),
+               "]");
+    SOLVER_LOG(
+        logger, "Interleaved subsolvers: [",
+        absl::StrJoin(names.begin() + full_subsolver_index, names.end(), ", "),
+        "]");
   }
 
   // Launch the main search loop.
-  if (parameters.interleave_search()) {
-    DeterministicLoop(subsolvers, num_search_workers,
-                      parameters.interleave_batch_size());
+  if (params.interleave_search()) {
+    DeterministicLoop(subsolvers, params.num_workers(),
+                      params.interleave_batch_size());
   } else {
-    NonDeterministicLoop(subsolvers, num_search_workers);
+    NonDeterministicLoop(subsolvers, params.num_workers());
   }
 
   // Log statistics.
   if (logger->LoggingIsEnabled()) {
-    if (parameters.log_subsolver_statistics()) {
+    if (params.log_subsolver_statistics()) {
       bool first = true;
       for (const auto& subsolver : subsolvers) {
         const std::string stats = subsolver->StatisticsString();
@@ -3112,9 +3124,16 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   SOLVER_LOG(logger, "");
   SOLVER_LOG(logger, "Starting CP-SAT solver v", OrToolsMajorVersion(), ".",
              OrToolsMinorVersion(), ".", OrToolsPatchVersion());
+  SOLVER_LOG(logger, "Parameters: ", params.ShortDebugString());
+
+  // Update params.num_workers() if the old field was used.
+  if (params.num_workers() == 0) {
+    model->GetOrCreate<SatParameters>()->set_num_workers(
+        params.num_search_workers());
+  }
 
   // Initialize the number of workers if set to 0.
-  if (params.num_search_workers() == 0) {
+  if (params.num_workers() == 0) {
 #if !defined(__PORTABLE_PLATFORM__)
     // Sometimes, hardware_concurrency will return 0. So always default to 1.
     const int num_cores =
@@ -3125,10 +3144,9 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     const int num_cores = 1;
 #endif
     SOLVER_LOG(logger, "Setting number of workers to ", num_cores);
-    model->GetOrCreate<SatParameters>()->set_num_search_workers(num_cores);
+    model->GetOrCreate<SatParameters>()->set_num_workers(num_cores);
   }
 
-  SOLVER_LOG(logger, "Parameters: ", params.ShortDebugString());
   if (logger->LoggingIsEnabled() && params.use_absl_random()) {
     model->GetOrCreate<ModelRandomGenerator>()->LogSalt();
   }
@@ -3136,7 +3154,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   // Validate model_proto.
   // TODO(user): provide an option to skip this step for speed?
   {
-    const std::string error = ValidateCpModel(model_proto);
+    const std::string error = ValidateInputCpModel(params, model_proto);
     if (!error.empty()) {
       SOLVER_LOG(logger, "Invalid model: ", error);
       shared_response_manager->MutableResponse()->set_status(
@@ -3156,7 +3174,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   if (!params.use_sat_inprocessing() && !model_proto.has_objective() &&
       !model_proto.has_floating_point_objective() &&
       !model_proto.has_solution_hint() && !params.enumerate_all_solutions() &&
-      !params.use_lns_only() && params.num_search_workers() <= 1 &&
+      !params.use_lns_only() && params.num_workers() <= 1 &&
       model_proto.assumptions().empty()) {
     bool is_pure_sat = true;
     for (const IntegerVariableProto& var : model_proto.variables()) {
@@ -3321,7 +3339,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   }
 
   if (!model_proto.assumptions().empty() &&
-      (params.num_search_workers() > 1 || model_proto.has_objective())) {
+      (params.num_workers() > 1 || model_proto.has_objective())) {
     SOLVER_LOG(
         logger,
         "Warning: solving with assumptions was requested in a non-fully "
@@ -3527,7 +3545,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   if (/* DISABLES CODE */ (false)) {
     // We ignore the multithreading parameter in this case.
 #else   // __PORTABLE_PLATFORM__
-  if (params.num_search_workers() > 1 || params.interleave_search()) {
+  if (params.num_workers() > 1 || params.interleave_search()) {
     SolveCpModelParallel(new_cp_model_proto, model);
 #endif  // __PORTABLE_PLATFORM__
   } else {

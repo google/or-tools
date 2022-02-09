@@ -18,6 +18,7 @@
 #include <cstdint>
 
 #include "absl/numeric/int128.h"
+#include "ortools/base/mathutil.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/util/saturated_arithmetic.h"
 
@@ -185,6 +186,77 @@ int64_t CeilSquareRoot(int64_t a) {
   while (CapProd(result, result) < a) ++result;
   while ((result - 1) * (result - 1) >= a) --result;
   return result;
+}
+
+int64_t ClosestMultiple(int64_t value, int64_t base) {
+  if (value < 0) return -ClosestMultiple(-value, base);
+  int64_t result = value / base * base;
+  if (value - result > base / 2) result += base;
+  return result;
+}
+
+bool LinearInequalityCanBeReducedWithClosestMultiple(
+    int64_t base, const std::vector<int64_t>& coeffs,
+    const std::vector<int64_t>& lbs, const std::vector<int64_t>& ubs,
+    int64_t rhs, int64_t* new_rhs) {
+  // Precompute some bounds for the equation base * X + error <= rhs.
+  int64_t max_activity = 0;
+  int64_t max_x = 0;
+  int64_t min_error = 0;
+  const int num_terms = coeffs.size();
+  if (num_terms == 0) return false;
+  for (int i = 0; i < num_terms; ++i) {
+    const int64_t coeff = coeffs[i];
+    CHECK_GT(coeff, 0);
+    const int64_t closest = ClosestMultiple(coeff, base);
+    max_activity += coeff * ubs[i];
+    max_x += closest / base * ubs[i];
+
+    const int64_t error = coeff - closest;
+    if (error >= 0) {
+      min_error += error * lbs[i];
+    } else {
+      min_error += error * ubs[i];
+    }
+  }
+
+  if (max_activity <= rhs) {
+    // The constraint is trivially true.
+    *new_rhs = max_x;
+    return true;
+  }
+
+  // This is the max error assuming that activity > rhs.
+  int64_t max_error_if_invalid = 0;
+  const int64_t slack = max_activity - rhs - 1;
+  for (int i = 0; i < num_terms; ++i) {
+    const int64_t coeff = coeffs[i];
+    const int64_t closest = ClosestMultiple(coeff, base);
+    const int64_t error = coeff - closest;
+    if (error >= 0) {
+      max_error_if_invalid += error * ubs[i];
+    } else {
+      const int64_t lb = std::max(lbs[i], ubs[i] - slack / coeff);
+      max_error_if_invalid += error * lb;
+    }
+  }
+
+  // We have old solution valid =>
+  //     base * X + error <= rhs
+  //     base * X <= rhs - error
+  //     base * X <= rhs - min_error
+  //     X <= new_rhs
+  *new_rhs = std::min(max_x, MathUtil::FloorOfRatio(rhs - min_error, base));
+
+  // And we have old solution invalid =>
+  //     base * X + error >= rhs + 1
+  //     base * X >= rhs + 1 - max_error_if_invalid
+  //     X >= infeasibility_bound
+  const int64_t infeasibility_bound =
+      MathUtil::CeilOfRatio(rhs + 1 - max_error_if_invalid, base);
+
+  // If the two bounds can be separated, we have an equivalence !
+  return *new_rhs < infeasibility_bound;
 }
 
 int MoveOneUnprocessedLiteralLast(const std::set<LiteralIndex>& processed,

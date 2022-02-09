@@ -81,6 +81,28 @@ bool SolveDiophantineEquationOfSizeTwo(int64_t& a, int64_t& b, int64_t& cte,
 int64_t FloorSquareRoot(int64_t a);
 int64_t CeilSquareRoot(int64_t a);
 
+// Returns the multiple of base closest to value. If there is a tie, we return
+// the one closest to zero. This way we have ClosestMultiple(x) =
+// -ClosestMultiple(-x) which is important for how this is used.
+int64_t ClosestMultiple(int64_t value, int64_t base);
+
+// Given a linear equation "sum coeff_i * X_i <= rhs. We can rewrite it using
+// ClosestMultiple() as "base * new_terms + error <= rhs" where error can be
+// bounded using the provided bounds on each variables. This will return true if
+// the error can be ignored and this equation is completely equivalent to
+// new_terms <= new_rhs.
+//
+// This is useful for cases like 9'999 X + 10'0001 Y <= 155'000 where we have
+// weird coefficient (maybe due to scaling). With a base of 10K, this is
+// equivalent to X + Y <= 15.
+//
+// Preconditions: All coeffs are assumed to be positive. You can easily negate
+// all the negative coeffs and corresponding bounds before calling this.
+bool LinearInequalityCanBeReducedWithClosestMultiple(
+    int64_t base, const std::vector<int64_t>& coeffs,
+    const std::vector<int64_t>& lbs, const std::vector<int64_t>& ubs,
+    int64_t rhs, int64_t* new_rhs);
+
 // The model "singleton" random engine used in the solver.
 //
 // In test, we usually set use_absl_random() so that the sequence is changed at

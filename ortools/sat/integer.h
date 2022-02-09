@@ -1343,6 +1343,9 @@ class GenericLiteralWatcher : public SatPropagator {
   std::vector<PropagatorInterface*> watchers_;
   SparseBitset<IntegerVariable> modified_vars_;
 
+  // For RegisterLevelZeroModifiedVariablesCallback().
+  SparseBitset<IntegerVariable> modified_vars_for_callback_;
+
   // Propagator ids that needs to be called. There is one queue per priority but
   // just one Boolean to indicate if a propagator is in one of them.
   std::vector<std::deque<int>> queue_by_priority_;

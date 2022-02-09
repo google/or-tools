@@ -735,7 +735,8 @@ std::string ValidateObjective(const CpModelProto& model,
   return "";
 }
 
-std::string ValidateFloatingPointObjective(const CpModelProto& model,
+std::string ValidateFloatingPointObjective(double max_valid_magnitude,
+                                           const CpModelProto& model,
                                            const FloatObjectiveProto& obj) {
   if (obj.vars().size() != obj.coeffs().size()) {
     return absl::StrCat("vars and coeffs size do not match in objective: ",
@@ -747,10 +748,16 @@ std::string ValidateFloatingPointObjective(const CpModelProto& model,
                           " in objective: ", ProtobufShortDebugString(obj));
     }
   }
-  for (const double coef : obj.coeffs()) {
-    if (!std::isfinite(coef)) {
-      return absl::StrCat("Coefficients must be finites in objective: ",
+  for (const double coeff : obj.coeffs()) {
+    if (!std::isfinite(coeff)) {
+      return absl::StrCat("Coefficients must be finite in objective: ",
                           ProtobufShortDebugString(obj));
+    }
+    if (std::abs(coeff) > max_valid_magnitude) {
+      return absl::StrCat(
+          "Coefficients larger than params.mip_max_valid_magnitude() [value = ",
+          max_valid_magnitude,
+          "] in objective: ", ProtobufShortDebugString(obj));
     }
   }
   if (!std::isfinite(obj.offset())) {
@@ -983,10 +990,6 @@ std::string ValidateCpModel(const CpModelProto& model, bool after_presolve) {
   if (model.has_objective()) {
     RETURN_IF_NOT_EMPTY(ValidateObjective(model, model.objective()));
   }
-  if (model.has_floating_point_objective()) {
-    RETURN_IF_NOT_EMPTY(ValidateFloatingPointObjective(
-        model, model.floating_point_objective()));
-  }
   RETURN_IF_NOT_EMPTY(ValidateSearchStrategies(model));
   RETURN_IF_NOT_EMPTY(ValidateSolutionHint(model));
   for (const int ref : model.assumptions()) {
@@ -994,6 +997,17 @@ std::string ValidateCpModel(const CpModelProto& model, bool after_presolve) {
       return absl::StrCat("Invalid literal reference ", ref,
                           " in the 'assumptions' field.");
     }
+  }
+  return "";
+}
+
+std::string ValidateInputCpModel(const SatParameters& params,
+                                 const CpModelProto& model) {
+  RETURN_IF_NOT_EMPTY(ValidateCpModel(model));
+  if (model.has_floating_point_objective()) {
+    RETURN_IF_NOT_EMPTY(
+        ValidateFloatingPointObjective(params.mip_max_valid_magnitude(), model,
+                                       model.floating_point_objective()));
   }
   return "";
 }

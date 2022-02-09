@@ -1843,11 +1843,11 @@ void GenericLiteralWatcher::UpdateCallingNeeds(Trail* trail) {
     }
   }
 
-  if (trail->CurrentDecisionLevel() == 0) {
-    const std::vector<IntegerVariable>& modified_vars =
-        modified_vars_.PositionsSetAtLeastOnce();
-    for (const auto& callback : level_zero_modified_variable_callback_) {
-      callback(modified_vars);
+  if (trail->CurrentDecisionLevel() == 0 &&
+      !level_zero_modified_variable_callback_.empty()) {
+    modified_vars_for_callback_.Resize(modified_vars_.size());
+    for (const IntegerVariable var : modified_vars_.PositionsSetAtLeastOnce()) {
+      modified_vars_for_callback_.Set(var);
     }
   }
 
@@ -1965,6 +1965,18 @@ bool GenericLiteralWatcher::Propagate(Trail* trail) {
       }
     }
   }
+
+  // We wait until we reach the fix point before calling the callback.
+  if (trail->CurrentDecisionLevel() == 0) {
+    const std::vector<IntegerVariable>& modified_vars =
+        modified_vars_for_callback_.PositionsSetAtLeastOnce();
+    for (const auto& callback : level_zero_modified_variable_callback_) {
+      callback(modified_vars);
+    }
+    modified_vars_for_callback_.ClearAndResize(
+        integer_trail_->NumIntegerVariables());
+  }
+
   return true;
 }
 

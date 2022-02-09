@@ -394,11 +394,13 @@ std::function<BooleanOrIntegerLiteral()> InstrumentSearchStrategy(
 //   - Fast restart in randomized search
 //   - Different propatation levels for scheduling constraints
 std::vector<SatParameters> GetDiverseSetOfParameters(
-    const SatParameters& base_params, const CpModelProto& cp_model,
-    const int num_workers) {
+    const SatParameters& base_params, const CpModelProto& cp_model) {
   // Defines a set of named strategies so it is easier to read in one place
   // the one that are used. See below.
-  std::map<std::string, SatParameters> strategies;
+  absl::flat_hash_map<std::string, SatParameters> strategies;
+
+  // The "default" name can be used for the base_params unchanged.
+  strategies["default"] = base_params;
 
   // Lp variations only.
   {
@@ -441,6 +443,15 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     new_params.set_optimize_with_core(true);
     new_params.set_linearization_level(2);
     strategies["core_max_lp"] = new_params;
+  }
+
+  {
+    SatParameters new_params = base_params;
+    new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+    new_params.set_optimize_with_core(true);
+    new_params.set_optimize_with_max_hs(true);
+    new_params.set_find_multiple_cores(false);
+    strategies["core_max_hs"] = new_params;
   }
 
   {
@@ -498,6 +509,11 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     strategies["less_encoding"] = new_params;
   }
 
+  // Add user defined ones.
+  for (const SatParameters& params : base_params.subsolver_params()) {
+    strategies[params.name()] = params;
+  }
+
   // We only use a "fixed search" worker if some strategy is specified or
   // if we have a scheduling model.
   //
@@ -512,6 +528,7 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
   // TODO(user, fdid): Avoid launching two strategies if they are the same,
   // like if there is no lp, or everything is already linearized at level 1.
   std::vector<std::string> names;
+
   if (base_params.reduce_memory_usage_in_interleave_mode() &&
       base_params.interleave_search()) {
     // Low memory mode for interleaved search in single thread.
@@ -527,68 +544,106 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
       names.push_back("max_lp");
       names.push_back("quick_restart");
     }
-  } else if (cp_model.has_objective()) {
-    names.push_back("default_lp");
-    if (use_fixed_strategy) {
-      names.push_back("fixed");
-      if (num_workers > 8) names.push_back("reduced_costs");
-    } else {
-      names.push_back("reduced_costs");
-    }
-    names.push_back("pseudo_costs");
-    names.push_back("no_lp");
-    names.push_back("max_lp");
-
-    // TODO(user): Experiment with core and LP.
-    if (cp_model.objective().vars_size() > 1) names.push_back("core");
-
-    // Only add this strategy if we have enough worker left for LNS.
-    if (num_workers > 8 || base_params.interleave_search()) {
-      names.push_back("quick_restart");
-    }
-    if (num_workers > 10) {
-      names.push_back("quick_restart_no_lp");
-    }
-    // Only add lb_tree_search if there is an objective.
-    if (num_workers > 12) {
-      names.push_back("lb_tree_search");
-    }
   } else {
-    names.push_back("default_lp");
-    if (use_fixed_strategy) names.push_back("fixed");
-    names.push_back("less_encoding");
-    names.push_back("no_lp");
-    names.push_back("max_lp");
-    names.push_back("quick_restart");
-    if (num_workers > 10) {
+    // We use the default if empty.
+    if (base_params.subsolvers().empty()) {
+      names.push_back("default_lp");
+      names.push_back("fixed");
+      names.push_back("less_encoding");
+
+      names.push_back("no_lp");
+      names.push_back("max_lp");
+      names.push_back("core");
+
+      names.push_back("reduced_costs");
+      names.push_back("pseudo_costs");
+
+      names.push_back("quick_restart");
       names.push_back("quick_restart_no_lp");
+      names.push_back("lb_tree_search");
+      names.push_back("probing");
+    } else {
+      for (const std::string& name : base_params.subsolvers()) {
+        names.push_back(name);
+      }
     }
-  }
-  if (num_workers > 12) {
-    names.push_back("probing");
+
+    // Remove the names that should be ignored.
+    absl::flat_hash_set<std::string> to_ignore;
+    for (const std::string& name : base_params.ignore_subsolvers()) {
+      to_ignore.insert(name);
+    }
+    int new_size = 0;
+    for (const std::string& name : names) {
+      if (to_ignore.contains(name)) continue;
+      names[new_size++] = name;
+    }
+    names.resize(new_size);
   }
 
-  // Creates the diverse set of parameters with names and seed. We remove the
-  // last ones if needed below.
+  // Creates the diverse set of parameters with names and seed.
   std::vector<SatParameters> result;
   for (const std::string& name : names) {
-    SatParameters new_params = strategies.at(name);
-    new_params.set_name(name);
-    new_params.set_random_seed(result.size() + 1);
-    result.push_back(new_params);
+    if (!strategies.contains(name)) {
+      // TODO(user): Check that at parameter validation and return nice error
+      // instead.
+      LOG(WARNING) << "Unknown parameter name '" << name << "'";
+      continue;
+    }
+    SatParameters params = strategies.at(name);
+
+    // Do some filtering.
+    if (!use_fixed_strategy &&
+        params.search_branching() == SatParameters::FIXED_SEARCH) {
+      continue;
+    }
+    if (cp_model.has_objective()) {
+      if (cp_model.objective().vars_size() <= 1 &&
+          params.optimize_with_core()) {
+        continue;
+      }
+      if (params.optimize_with_max_hs() && base_params.num_workers() <= 16) {
+        continue;
+      }
+      if (name == "less_encoding") continue;
+    } else {
+      if (params.optimize_with_core()) continue;
+      if (params.search_branching() == SatParameters::LP_SEARCH) continue;
+      if (params.search_branching() == SatParameters::PSEUDO_COST_SEARCH) {
+        continue;
+      }
+    }
+
+    // Add this strategy.
+    //
+    // TODO(user): Find a better randomization for the seed so that changing
+    // random_seed() has more impact?
+    params.set_name(name);
+    params.set_random_seed(base_params.random_seed() + result.size() + 1);
+    result.push_back(params);
   }
 
-  // If there is no objective, we complete with randomized fixed search.
-  // If there is an objective, the extra workers will use LNS.
-  if (!cp_model.has_objective()) {
-    int target = num_workers;
-
+  if (cp_model.has_objective()) {
+    // If there is an objective, the extra workers will use LNS.
+    // Make sure we have at least min_num_lns_workers() of them.
+    const int target = std::max(
+        1, base_params.num_workers() - base_params.min_num_lns_workers());
+    if (!base_params.interleave_search() && result.size() > target) {
+      result.resize(target);
+    }
+  } else {
+    // If there is no objective, we complete with randomized fixed search.
+    //
     // If strategies that do not require a full worker are present, leave one
     // worker for them.
+    int target = base_params.num_workers();
     if (!base_params.interleave_search() &&
         (base_params.use_rins_lns() || base_params.use_relaxation_lns() ||
          base_params.use_feasibility_pump())) {
-      target = std::max(1, num_workers - 1);
+      target = std::max(1, base_params.num_workers() - 1);
+    }
+    if (!base_params.interleave_search() && result.size() > target) {
+      result.resize(target);
     }
 
     int index = 1;
@@ -598,19 +653,11 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
       new_params.set_search_branching(SatParameters::FIXED_SEARCH);
       new_params.set_randomize_search(true);
       new_params.set_search_randomization_tolerance(index);
-      new_params.set_random_seed(result.size() + 1);
+      new_params.set_random_seed(base_params.random_seed() + result.size() + 1);
       new_params.set_name(absl::StrCat("random_", index));
       result.push_back(new_params);
       ++index;
     }
-  }
-
-  // If we are not in interleave search, we cannot run more strategies than
-  // the number of worker.
-  //
-  // TODO(user): consider using LNS if we use a small number of workers.
-  if (!base_params.interleave_search() && result.size() > num_workers) {
-    result.resize(num_workers);
   }
 
   return result;

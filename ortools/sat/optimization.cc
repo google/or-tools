@@ -1383,6 +1383,7 @@ bool CoreBasedOptimizer::PropagateObjectiveBounds() {
   while (some_bound_were_tightened) {
     some_bound_were_tightened = false;
     if (!sat_solver_->ResetToLevelZero()) return false;
+    if (time_limit_->LimitReached()) return true;
 
     // Compute implied lb.
     IntegerValue implied_objective_lb(0);
@@ -1426,8 +1427,8 @@ bool CoreBasedOptimizer::PropagateObjectiveBounds() {
       if (gap / term.weight < var_ub - var_lb) {
         some_bound_were_tightened = true;
         const IntegerValue new_ub = var_lb + gap / term.weight;
-        CHECK_LT(new_ub, var_ub);
-        CHECK(!integer_trail_->IsCurrentlyIgnored(term.var));
+        DCHECK_LT(new_ub, var_ub);
+        DCHECK(!integer_trail_->IsCurrentlyIgnored(term.var));
         if (!integer_trail_->Enqueue(
                 IntegerLiteral::LowerOrEqual(term.var, new_ub), {}, {})) {
           return false;
@@ -1533,8 +1534,7 @@ bool CoreBasedOptimizer::CoverOptimization() {
     }
   }
 
-  if (!PropagateObjectiveBounds()) return false;
-  return true;
+  return PropagateObjectiveBounds();
 }
 
 SatSolver::Status CoreBasedOptimizer::Optimize() {
@@ -1550,6 +1550,7 @@ SatSolver::Status CoreBasedOptimizer::Optimize() {
     // TODO(user): This always resets the solver to level zero.
     // Because of that we don't resume a solve in "chunk" perfectly. Fix.
     if (!PropagateObjectiveBounds()) return SatSolver::INFEASIBLE;
+    if (time_limit_->LimitReached()) return SatSolver::LIMIT_REACHED;
 
     // Bulk cover optimization.
     //
