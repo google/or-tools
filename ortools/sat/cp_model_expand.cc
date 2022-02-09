@@ -1366,6 +1366,13 @@ void ExpandAllDiff(bool force_alldiff_expansion, ConstraintProto* ct,
             ? context->working_model->add_constraints()->mutable_exactly_one()
             : context->working_model->add_constraints()->mutable_at_most_one();
     for (const LinearExpressionProto& expr : possible_exprs) {
+      // The above propagation can remove a value after the expressions was
+      // added to possible_exprs.
+      if (!context->DomainContains(expr, v)) continue;
+
+      // If the expression is fixed, the created literal will be the true
+      // literal. We still need to fail if two expressions are fixed to the same
+      // value.
       const int encoding = context->GetOrCreateAffineValueEncoding(expr, v);
       at_most_or_equal_one->add_literals(encoding);
     }

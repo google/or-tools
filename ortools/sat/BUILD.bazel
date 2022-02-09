@@ -719,6 +719,7 @@ cc_library(
         ":integer_search",
         ":linear_programming_constraint",
         ":sat_base",
+        ":sat_parameters",
         ":sat_solver",
         ":synchronization",
     ],

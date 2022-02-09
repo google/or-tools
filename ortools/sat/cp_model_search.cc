@@ -451,7 +451,7 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     new_params.set_optimize_with_core(true);
     new_params.set_optimize_with_max_hs(true);
     new_params.set_find_multiple_cores(false);
-    strategies["core_max_hs"] = new_params;
+    strategies["max_hs"] = new_params;
   }
 
   {
@@ -600,9 +600,6 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     if (cp_model.has_objective()) {
       if (cp_model.objective().vars_size() <= 1 &&
           params.optimize_with_core()) {
-        continue;
-      }
-      if (params.optimize_with_max_hs() && base_params.num_workers() <= 16) {
         continue;
       }
       if (name == "less_encoding") continue;
