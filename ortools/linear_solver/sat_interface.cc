@@ -265,6 +265,7 @@ void SatInterface::ExtractNewConstraints() { NonIncrementalChange(); }
 void SatInterface::ExtractObjective() { NonIncrementalChange(); }
 
 void SatInterface::SetParameters(const MPSolverParameters& param) {
+  parameters_.Clear();
   parameters_.set_num_search_workers(num_threads_);
   SetCommonParameters(param);
 }

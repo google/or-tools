@@ -1,4 +1,5 @@
 file(GLOB _SRCS "*.h" "*.cc")
+list(FILTER _SRCS EXCLUDE REGEX ".*/pdlp_interface.cc") # Needs eigen3.
 
 if(USE_SCIP)
   list(APPEND _SRCS ${LPI_GLOP_SRC})

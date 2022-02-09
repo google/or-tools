@@ -91,3 +91,23 @@ new_git_repository(
     tag = "v800",
     remote = "https://github.com/scipopt/scip.git",
 )
+
+# Eigen has no Bazel build.
+http_archive(
+    name = "eigen",
+    sha256 = "b4c198460eba6f28d34894e3a5710998818515104d6e74e5cc331ce31e46e626",
+    strip_prefix = "eigen-3.4.0",
+    urls = [
+        "https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.bz2",
+    ],
+    build_file_content =
+"""
+cc_library(
+    name = 'eigen3',
+    srcs = [],
+    includes = ['.'],
+    hdrs = glob(['Eigen/**']),
+    visibility = ['//visibility:public'],
+)
+"""
+)

@@ -293,6 +293,29 @@ message MPModelProto {
   // try to return a solution "close" to this assignment in case of multiple
   // optimal solutions.
   optional PartialVariableAssignment solution_hint = 6;
+
+  // Annotations can be freely added by users who want to attach arbitrary
+  // payload to the model's variables or constraints.
+  message Annotation {
+    // The target of an Annotation is a single entity (e.g. a variable).
+    // Several Annotations may apply to the same entity.
+    enum TargetType {
+      VARIABLE_DEFAULT = 0;
+      CONSTRAINT = 1;
+      GENERAL_CONSTRAINT = 2;
+    }
+    optional TargetType target_type = 1;
+    // If both `target_index` and `target_name` are set, they must point to the
+    // same entity.
+    optional int32 target_index = 2;  // Index in the MPModelProto.
+    optional string target_name = 3;  // Alternate to index. Assumes uniqueness.
+
+    // The payload is a (key, value) string pair. Depending on the use cases,
+    // one of the two may be omitted.
+    optional string payload_key = 4;
+    optional string payload_value = 5;
+  }
+  repeated Annotation annotation = 9;
 }
 
 // To support 'unspecified' double value in proto3, the simplest is to wrap
@@ -417,6 +440,11 @@ message MPModelRequest {
     // variables).
     SAT_INTEGER_PROGRAMMING = 14;
 
+
+    // In-house linear programming solver based on the primal-dual hybrid
+    // gradient method. Sometimes faster than Glop for medium-size problems and
+    // scales to much larger problems than Glop.
+    PDLP_LINEAR_PROGRAMMING = 8;
     KNAPSACK_MIXED_INTEGER_PROGRAMMING = 13;
   }
   optional SolverType solver_type = 2;

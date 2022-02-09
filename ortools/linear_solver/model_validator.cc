@@ -20,12 +20,14 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/optional.h"
 #include "ortools/base/accurate_sum.h"
 #include "ortools/base/commandlineflags.h"
+#include "ortools/base/map_util.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/port/file.h"
 #include "ortools/port/proto_utils.h"
@@ -418,6 +420,133 @@ std::string FindErrorInSolutionHint(
   return std::string();
 }
 
+namespace {
+// Maps the names of variables (or constraints, or other entities) to their
+// index in the MPModelProto. Non-unique names are supported, but are singled
+// out as such, by setting their index (the 'value' of the map entry) to -1.
+template <class NamedEntity>
+absl::flat_hash_map<std::string, int> BuildNameToIndexMap(
+    const google::protobuf::RepeatedPtrField<NamedEntity>& entities) {
+  absl::flat_hash_map<std::string, int> out;
+  for (int i = 0; i < entities.size(); ++i) {
+    int& index = gtl::LookupOrInsert(&out, entities.Get(i).name(), i);
+    if (index != i) index = -1;
+  }
+  return out;
+}
+
+class LazyMPModelNameToIndexMaps {
+ public:
+  explicit LazyMPModelNameToIndexMaps(const MPModelProto& model)
+      : model_(model) {}
+
+  absl::StatusOr<int> LookupName(
+      MPModelProto::Annotation::TargetType target_type,
+      const std::string& name) {
+    const absl::flat_hash_map<std::string, int>* map = nullptr;
+    switch (target_type) {
+      case MPModelProto::Annotation::VARIABLE_DEFAULT:
+        if (!variable_name_to_index_) {
+          variable_name_to_index_ = BuildNameToIndexMap(model_.variable());
+        }
+        map = &variable_name_to_index_.value();
+        break;
+      case MPModelProto::Annotation::CONSTRAINT:
+        if (!constraint_name_to_index_) {
+          constraint_name_to_index_ = BuildNameToIndexMap(model_.constraint());
+        }
+        map = &constraint_name_to_index_.value();
+        break;
+      case MPModelProto::Annotation::GENERAL_CONSTRAINT:
+        if (!general_constraint_name_to_index_) {
+          general_constraint_name_to_index_ =
+              BuildNameToIndexMap(model_.general_constraint());
+        }
+        map = &general_constraint_name_to_index_.value();
+        break;
+    }
+    const int index = gtl::FindWithDefault(*map, name, -2);
+    if (index == -2) return absl::NotFoundError("name not found");
+    if (index == -1) return absl::InvalidArgumentError("name is not unique");
+    return index;
+  }
+
+ private:
+  const MPModelProto& model_;
+  std::optional<absl::flat_hash_map<std::string, int>> variable_name_to_index_;
+  std::optional<absl::flat_hash_map<std::string, int>>
+      constraint_name_to_index_;
+  std::optional<absl::flat_hash_map<std::string, int>>
+      general_constraint_name_to_index_;
+};
+}  // namespace
+
+std::string FindErrorInAnnotation(const MPModelProto::Annotation& annotation,
+                                  const MPModelProto& model,
+                                  LazyMPModelNameToIndexMaps* name_maps) {
+  // Checks related to the 'target' fields.
+  if (!annotation.has_target_index() && !annotation.has_target_name()) {
+    return "One of target_index or target_name must be set";
+  }
+  if (!MPModelProto::Annotation::TargetType_IsValid(annotation.target_type())) {
+    return "Invalid target_type";
+  }
+  int num_entitities = -1;
+  switch (annotation.target_type()) {
+    case MPModelProto::Annotation::VARIABLE_DEFAULT:
+      num_entitities = model.variable_size();
+      break;
+    case MPModelProto::Annotation::CONSTRAINT:
+      num_entitities = model.constraint_size();
+      break;
+    case MPModelProto::Annotation::GENERAL_CONSTRAINT:
+      num_entitities = model.general_constraint_size();
+      break;
+  }
+  int target_index = -1;
+  if (annotation.has_target_index()) {
+    target_index = annotation.target_index();
+    if (target_index < 0 || target_index >= num_entitities) {
+      return "Invalid target_index";
+    }
+  }
+  if (annotation.has_target_name()) {
+    if (annotation.has_target_index()) {
+      // No need to build the name lookup maps to verify consistency: we can
+      // even accept a name that is not unique, as long as the pointed entity
+      // (identified by its index) has the right name.
+      std::string name;
+      switch (annotation.target_type()) {
+        case MPModelProto::Annotation::VARIABLE_DEFAULT:
+          name = model.variable(target_index).name();
+          break;
+        case MPModelProto::Annotation::CONSTRAINT:
+          name = model.constraint(target_index).name();
+          break;
+        case MPModelProto::Annotation::GENERAL_CONSTRAINT:
+          name = model.general_constraint(target_index).name();
+          break;
+      }
+      if (annotation.target_name() != name) {
+        return absl::StrFormat(
+            "target_name='%s' doesn't match the name '%s' of target_index=%d",
+            annotation.target_name(), name, target_index);
+      }
+    } else {  // !annotation.has_target_index()
+      const absl::StatusOr<int> index_or = name_maps->LookupName(
+          annotation.target_type(), annotation.target_name());
+      if (!index_or.ok()) {
+        return absl::StrCat("Bad target_name: ", index_or.status().message());
+      }
+      target_index = index_or.value();
+    }
+  }
+
+  // As of 2022-02, there are no checks related to the 'payload' fields. They
+  // can be set, unset, everything goes.
+  return "";
+}
+
 }  // namespace
 
 std::string FindErrorInMPModelProto(
@@ -532,6 +661,17 @@ std::string FindErrorInMPModelProto(
                                   abs_value_threshold);
   if (!error.empty()) {
     return absl::StrCat("In solution_hint(): ", error);
+  }
+
+  // Validate the annotations.
+  {
+    LazyMPModelNameToIndexMaps name_maps(model);
+    for (int a = 0; a < model.annotation_size(); ++a) {
+      error = FindErrorInAnnotation(model.annotation(a), model, &name_maps);
+      if (!error.empty()) {
+        return absl::StrCat("In annotation #", a, ": ", error);
+      }
+    }
   }
 
   return std::string();

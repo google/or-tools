@@ -23,6 +23,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <string>
 #include <utility>
 
 #include "absl/status/status.h"
@@ -69,6 +70,7 @@ namespace operations_research {
 
 bool SolverTypeIsMip(MPModelRequest::SolverType solver_type) {
   switch (solver_type) {
+    case MPModelRequest::PDLP_LINEAR_PROGRAMMING:
     case MPModelRequest::GLOP_LINEAR_PROGRAMMING:
     case MPModelRequest::CLP_LINEAR_PROGRAMMING:
     case MPModelRequest::GLPK_LINEAR_PROGRAMMING:
@@ -530,6 +532,7 @@ constexpr
         {MPSolver::BOP_INTEGER_PROGRAMMING, "bop"},
         {MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING, "gurobi"},
         {MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING, "glpk"},
+        {MPSolver::PDLP_LINEAR_PROGRAMMING, "pdlp"},
         {MPSolver::KNAPSACK_MIXED_INTEGER_PROGRAMMING, "knapsack"},
         {MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING, "cplex"},
         {MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING, "xpress"},
