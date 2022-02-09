@@ -30,10 +30,7 @@ LbTreeSearch::LbTreeSearch(Model* model)
       shared_response_(model->GetOrCreate<SharedResponseManager>()),
       sat_decision_(model->GetOrCreate<SatDecisionPolicy>()),
       search_helper_(model->GetOrCreate<IntegerSearchHelper>()),
-      restart_frequency_(model->GetOrCreate<SatParameters>()
-                             ->lb_tree_search_restart_frequency()),
-      log_frequency_(model->GetOrCreate<SatParameters>()
-                         ->workers_periodic_log_frequency_in_seconds()) {
+      parameters_(*model->GetOrCreate<SatParameters>()) {
   // We should create this class only in the presence of an objective.
   //
   // TODO(user): Starts with an initial variable score for all variable in
@@ -216,8 +213,8 @@ SatSolver::Status LbTreeSearch::Search(
       const IntegerValue bound = nodes_[current_branch_[0]].MinObjective();
       if (bound > current_objective_lb_) {
         shared_response_->UpdateInnerObjectiveBounds(
-            absl::StrCat("lb_tree_search #nodes:", nodes_.size(), " #rc:",
-                         num_rc_detected_, " #restarts:", num_restarts_),
+            absl::StrCat("lb_tree_search #nodes:", nodes_.size(),
+                         " #rc:", num_rc_detected_, " #imports:", num_imports_),
             bound, integer_trail_->LevelZeroUpperBound(objective_var_));
         current_objective_lb_ = bound;
         if (VLOG_IS_ON(2)) DebugDisplayTree(current_branch_[0]);
@@ -246,8 +243,8 @@ SatSolver::Status LbTreeSearch::Search(
     // Forget the whole tree and restart?
     if (nodes_.size() > num_restart * restart && num_restart < kNumRestart) {
       nodes_.clear();
-      num_nodes_explored_of_last_import_ = num_nodes_explored_;
-      num_restarts_++;
+      num_decisions_taken_at_last_import_ = num_decisions_taken_;
+      num_imports_++;
       current_branch_.clear();
       if (!sat_solver_->RestoreSolverToAssumptionLevel()) {
         return sat_solver_->UnsatStatus();
@@ -271,20 +268,21 @@ SatSolver::Status LbTreeSearch::Search(
     }
 
     // Backtrack the solver.
-    int backtrack_level =
-        std::max(0, static_cast<int>(current_branch_.size()) - 1);
+    {
+      int backtrack_level =
+          std::max(0, static_cast<int>(current_branch_.size()) - 1);
 
-    // Periodic restart.
-    if (restart_frequency_ > 0 &&
-        num_nodes_explored_ >=
-            num_nodes_explored_of_last_import_ + restart_frequency_) {
-      backtrack_level = 0;
-      num_restarts_++;
-      num_nodes_explored_of_last_import_ = num_nodes_explored_;
-    }
-    sat_solver_->Backtrack(backtrack_level);
-    if (!sat_solver_->FinishPropagation()) {
-      return sat_solver_->UnsatStatus();
+      // Periodic restart.
+      if (num_decisions_taken_ >= num_decisions_taken_at_last_import_ + 10000) {
+        backtrack_level = 0;
+        num_imports_++;
+        num_decisions_taken_at_last_import_ = num_decisions_taken_;
+      }
+
+      sat_solver_->Backtrack(backtrack_level);
+      if (!sat_solver_->FinishPropagation()) {
+        return sat_solver_->UnsatStatus();
+      }
     }
 
     // This will import other workers bound if we are back to level zero.
@@ -350,7 +348,7 @@ SatSolver::Status LbTreeSearch::Search(
           search_helper_->TakeDecision(node.literal.Negated());
         }
 
-        num_nodes_explored_++;
+        num_decisions_taken_++;
 
         // Conflict?
         if (current_branch_.size() != sat_solver_->CurrentDecisionLevel()) {
@@ -374,12 +372,13 @@ SatSolver::Status LbTreeSearch::Search(
       }
 
       const absl::Time now = absl::Now();
-      if (log_frequency_ > 0.0 &&
-          now >= last_logging_time_ + absl::Seconds(log_frequency_)) {
+      if (parameters_.log_frequency_in_seconds() > 0.0 &&
+          now >= last_logging_time_ +
+                     absl::Seconds(parameters_.log_frequency_in_seconds())) {
         shared_response_->LogMessage(
             "TreeS", absl::StrCat("#nodes:", nodes_.size(),
-                                  " #explored:", num_nodes_explored_,
-                                  " #restarts:", num_restarts_));
+                                  " #branches:", num_decisions_taken_,
+                                  " #imports:", num_imports_));
         last_logging_time_ = now;
       }
 

@@ -2640,7 +2640,7 @@ class LnsSolver : public SubSolver {
 
       generator_->AddSolveData(data);
 
-      if (VLOG_IS_ON(2) || display_lns_info) {
+      if (VLOG_IS_ON(1) && display_lns_info) {
         auto* logger = shared_->global_model->GetOrCreate<SolverLogger>();
         std::string s = absl::StrCat("              LNS ", name(), ":");
         if (new_solution) {

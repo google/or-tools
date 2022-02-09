@@ -21,6 +21,7 @@
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/synchronization.h"
 
@@ -106,8 +107,7 @@ class LbTreeSearch {
   SatDecisionPolicy* sat_decision_;
   IntegerSearchHelper* search_helper_;
   IntegerVariable objective_var_;
-  const int64_t restart_frequency_;
-  const double log_frequency_;
+  const SatParameters& parameters_;
 
   // This can stay null. Otherwise it will be the lp constraint with
   // objective_var_ as objective.
@@ -129,15 +129,15 @@ class LbTreeSearch {
 
   // Counts the number of decisions we are taking while exploring the search
   // tree.
-  int64_t num_nodes_explored_ = 0;
+  int64_t num_decisions_taken_ = 0;
 
   // Used to trigger restarts.
-  int64_t num_nodes_explored_of_last_import_ = 0;
+  int64_t num_decisions_taken_at_last_import_ = 0;
 
   // Count the number of hard restarts (where all nodes are cleared) and soft
   // restarts (where the search backtracks to level 0 to import other solver
   // changes).
-  int64_t num_restarts_ = 0;
+  int64_t num_imports_ = 0;
 
   // Used to display periodic info to the log.
   absl::Time last_logging_time_;
