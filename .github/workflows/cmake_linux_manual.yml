@@ -40,7 +40,7 @@ jobs:
       - name: Checkout xpressmp813
         uses: actions/checkout@v2
         with:
-          repository: jdarlay/xpressmp813Lin
+          repository: rte-france/xpress-mp
           path: ./xpressmp813
           ref: master
           token: ${{ secrets.ACCESS_TOKEN }}
