@@ -50,7 +50,7 @@ jobs:
       - name: Checkout xpressmp813Win
         uses: actions/checkout@v2
         with:
-          repository: jdarlay/xpressmp813Win
+          repository: rte-france/xpress-mp-temp
           path: ./xpressmp813
           ref: master
           token: ${{ secrets.ACCESS_TOKEN }}
