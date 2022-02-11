@@ -16,10 +16,8 @@
 #include <cstdint>
 #include <limits>
 
-
 #if !defined(__PORTABLE_PLATFORM__)
 #include "ortools/base/file.h"
-#include "ortools/sat/cp_model_mapping.h"
 #endif  // __PORTABLE_PLATFORM__
 
 #include "absl/container/btree_map.h"
@@ -29,6 +27,7 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/linear_programming_constraint.h"
@@ -148,13 +147,12 @@ void SharedResponseManager::LogPeriodicMessage(const std::string& prefix,
   const double freq = parameters_.log_frequency_in_seconds();
   if (freq <= 0.0 || last_logging_time == nullptr) return;
   const absl::Time now = absl::Now();
-  if (now - *last_logging_time <
-      absl::Milliseconds(static_cast<int64_t>(freq * 1000))) {
+  if (now - *last_logging_time < absl::Seconds(freq)) {
     return;
   }
-  *last_logging_time = now;
 
   absl::MutexLock mutex_lock(&mutex_);
+  *last_logging_time = now;
   SOLVER_LOG(logger_, absl::StrFormat("#%-5s %6.2fs %s", prefix,
                                       wall_timer_.Get(), message));
 }

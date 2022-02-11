@@ -204,7 +204,10 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
   int reduced_ct_index = 0;
   for (int ct_index = 0; ct_index < constraints.size(); ++ct_index) {
     // We remove the interval constraints since we should have an equivalent
-    // linear constraint somewhere else.
+    // linear constraint somewhere else. This is not the case if we have a fixed
+    // size optional interval variable. But it should not matter as the
+    // intervals are replaced by their underlying variables in the scheduling
+    // constrainst.
     if (constraints[ct_index].constraint_case() == ConstraintProto::kInterval) {
       continue;
     }
@@ -295,6 +298,8 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
   //
   // TODO(user): Exploit connected component while generating fragments.
   // TODO(user): Do not generate fragment not touching the objective.
+  if (!shared_response_->LoggingIsEnabled()) return;
+
   std::vector<int> component_sizes;
   for (const std::vector<int>& component : components_) {
     component_sizes.push_back(component.size());
