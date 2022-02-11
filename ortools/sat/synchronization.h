@@ -328,6 +328,8 @@ class SharedResponseManager {
   void DisplayImprovementStatistics();
 
   void LogMessage(const std::string& prefix, const std::string& message);
+  void LogPeriodicMessage(const std::string& prefix, const std::string& message,
+                          absl::Time* last_logging_time);
 
   // This is here for the few codepath that needs to modify the returned
   // response directly. Note that this do not work in parallel.

@@ -16,6 +16,7 @@
 #include <cstdint>
 #include <limits>
 
+
 #if !defined(__PORTABLE_PLATFORM__)
 #include "ortools/base/file.h"
 #include "ortools/sat/cp_model_mapping.h"
@@ -24,6 +25,7 @@
 #include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/random/random.h"
+#include "absl/time/time.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -135,6 +137,23 @@ std::string SatProgressMessage(const std::string& event_or_solution_count,
 
 void SharedResponseManager::LogMessage(const std::string& prefix,
                                        const std::string& message) {
+  absl::MutexLock mutex_lock(&mutex_);
+  SOLVER_LOG(logger_, absl::StrFormat("#%-5s %6.2fs %s", prefix,
+                                      wall_timer_.Get(), message));
+}
+
+void SharedResponseManager::LogPeriodicMessage(const std::string& prefix,
+                                               const std::string& message,
+                                               absl::Time* last_logging_time) {
+  const double freq = parameters_.log_frequency_in_seconds();
+  if (freq <= 0.0 || last_logging_time == nullptr) return;
+  const absl::Time now = absl::Now();
+  if (now - *last_logging_time <
+      absl::Milliseconds(static_cast<int64_t>(freq * 1000))) {
+    return;
+  }
+  *last_logging_time = now;
+
   absl::MutexLock mutex_lock(&mutex_);
   SOLVER_LOG(logger_, absl::StrFormat("#%-5s %6.2fs %s", prefix,
                                       wall_timer_.Get(), message));

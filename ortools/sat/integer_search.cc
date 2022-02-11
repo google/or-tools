@@ -1300,19 +1300,15 @@ void ContinuousProber::LogStatistics() {
       shared_bounds_manager_ == nullptr) {
     return;
   }
-  const double freq = parameters_.log_frequency_in_seconds();
-  const absl::Time now = absl::Now();
-  if (freq <= 0.0 || now <= last_logging_time_ + absl::Seconds(freq)) return;
-  shared_response_manager_->LogMessage(
+  shared_response_manager_->LogPeriodicMessage(
       "Probe",
-      absl::StrCat(
-          "#iterations:", iteration_,
-          " #literals fixed/probed:", prober_->num_new_literals_fixed(), "/",
-          num_literals_probed_, " #bounds shaved/tried:", num_bounds_shaved_,
-          "/", num_bounds_tried_, " #new_integer_bounds:",
-          shared_bounds_manager_->NumBoundsExported("probing"),
-          ", #new_binary_clauses:", prober_->num_new_binary_clauses()));
-  last_logging_time_ = now;
+      absl::StrCat("#iterations:", iteration_, " #literals fixed/probed:",
+                   prober_->num_new_literals_fixed(), "/", num_literals_probed_,
+                   " #bounds shaved/tried:", num_bounds_shaved_, "/",
+                   num_bounds_tried_, " #new_integer_bounds:",
+                   shared_bounds_manager_->NumBoundsExported("probing"),
+                   ", #new_binary_clauses:", prober_->num_new_binary_clauses()),
+      &last_logging_time_);
 }
 
 }  // namespace sat

@@ -371,16 +371,11 @@ SatSolver::Status LbTreeSearch::Search(
         if (lb > current_objective_lb_) break;
       }
 
-      const absl::Time now = absl::Now();
-      if (parameters_.log_frequency_in_seconds() > 0.0 &&
-          now >= last_logging_time_ +
-                     absl::Seconds(parameters_.log_frequency_in_seconds())) {
-        shared_response_->LogMessage(
-            "TreeS", absl::StrCat("#nodes:", nodes_.size(),
-                                  " #branches:", num_decisions_taken_,
-                                  " #imports:", num_imports_));
-        last_logging_time_ = now;
-      }
+      shared_response_->LogPeriodicMessage(
+          "TreeS",
+          absl::StrCat("#nodes:", nodes_.size(), " #branches:",
+                       num_decisions_taken_, " #imports:", num_imports_),
+          &last_logging_time_);
 
       if (n < nodes_.size()) {
         current_branch_.push_back(n);
