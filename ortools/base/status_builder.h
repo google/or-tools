@@ -16,21 +16,32 @@
 
 #include <sstream>
 #include <string>
+#include <utility>
 
 #include "absl/status/status.h"
+#include "absl/strings/str_cat.h"
 
 namespace util {
 
 class StatusBuilder {
  public:
-  explicit StatusBuilder(const absl::StatusCode code) : code_(code) {}
+  explicit StatusBuilder(const absl::StatusCode code)
+      : base_status_(code, /*msg=*/{}) {}
 
-  explicit StatusBuilder(const absl::Status& status) : code_(status.code()) {
-    ss_ << std::string(status.message());
-  }
+  explicit StatusBuilder(const absl::Status status)
+      : base_status_(std::move(status)) {}
 
   operator absl::Status() const {  // NOLINT
-    return absl::Status(code_, ss_.str());
+    const std::string annotation = ss_.str();
+    if (annotation.empty()) {
+      return base_status_;
+    }
+    if (base_status_.message().empty()) {
+      return absl::Status(base_status_.code(), annotation);
+    }
+    const std::string annotated_message =
+        absl::StrCat(base_status_.message(), "; ", annotation);
+    return absl::Status(base_status_.code(), annotated_message);
   }
 
   template <class T>
@@ -42,7 +53,7 @@ class StatusBuilder {
   StatusBuilder& SetAppend() { return *this; }
 
  private:
-  const absl::StatusCode code_;
+  const absl::Status base_status_;
   std::ostringstream ss_;
 };
 

@@ -18,8 +18,6 @@
 #include "absl/status/statusor.h"
 #include "ortools/base/status_builder.h"
 
-namespace absl {
-
 // Run a command that returns a absl::Status.  If the called code returns an
 // error status, return that status up out of this method too.
 //
@@ -70,7 +68,5 @@ namespace absl {
 // Internal helper for concatenating macro values.
 #define STATUS_MACROS_IMPL_CONCAT_INNER_(x, y) x##y
 #define STATUS_MACROS_IMPL_CONCAT_(x, y) STATUS_MACROS_IMPL_CONCAT_INNER_(x, y)
-
-}  // namespace absl
 
 #endif  // OR_TOOLS_BASE_STATUS_MACROS_H_
