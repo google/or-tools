@@ -55,6 +55,7 @@ NeighborhoodGeneratorHelper::NeighborhoodGeneratorHelper(
   InitializeHelperData();
   RecomputeHelperData();
   Synchronize();
+  last_logging_time_ = absl::Now();
 }
 
 void NeighborhoodGeneratorHelper::Synchronize() {
@@ -204,6 +205,8 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
   for (int ct_index = 0; ct_index < constraints.size(); ++ct_index) {
     // We remove the interval constraints since we should have an equivalent
     // linear constraint somewhere else.
+    // TODO(user): Fix, the above is not true for a fixed size optional
+    // interval var.
     if (constraints[ct_index].constraint_case() == ConstraintProto::kInterval) {
       continue;
     }
@@ -294,6 +297,10 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
   //
   // TODO(user): Exploit connected component while generating fragments.
   // TODO(user): Do not generate fragment not touching the objective.
+  const double freq = parameters_.log_frequency_in_seconds();
+  absl::Time now = absl::Now();
+  if (freq <= 0.0 || now <= last_logging_time_ + absl::Seconds(freq)) return;
+
   std::vector<int> component_sizes;
   for (const std::vector<int>& component : components_) {
     component_sizes.push_back(component.size());
@@ -316,6 +323,7 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
       absl::StrCat("var:", active_variables_.size(), "/", num_variables,
                    " constraints:", simplied_model_proto_.constraints().size(),
                    "/", model_proto_.constraints().size(), compo_message));
+  last_logging_time_ = now;
 }
 
 bool NeighborhoodGeneratorHelper::IsActive(int var) const {

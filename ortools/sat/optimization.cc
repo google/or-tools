@@ -1274,8 +1274,19 @@ SatSolver::Status FindMultipleCoresForMaxHs(
   cores->clear();
   SatSolver* sat_solver = model->GetOrCreate<SatSolver>();
   TimeLimit* limit = model->GetOrCreate<TimeLimit>();
+  const double saved_dlimit = limit->GetDeterministicLimit();
+  auto cleanup = ::absl::MakeCleanup([limit, saved_dlimit]() {
+    limit->ChangeDeterministicLimit(saved_dlimit);
+  });
+
+  bool first_loop = true;
   do {
     if (limit->LimitReached()) return SatSolver::LIMIT_REACHED;
+
+    // The order of assumptions do not matter.
+    // Randomizing it should improve diversity.
+    auto* random = model->GetOrCreate<ModelRandomGenerator>();
+    std::shuffle(assumptions.begin(), assumptions.end(), *random);
 
     const SatSolver::Status result =
         ResetAndSolveIntegerProblem(assumptions, model);
@@ -1291,7 +1302,6 @@ SatSolver::Status FindMultipleCoresForMaxHs(
     // Pick a random literal from the core and remove it from the set of
     // assumptions.
     CHECK(!core.empty());
-    auto* random = model->GetOrCreate<ModelRandomGenerator>();
     const Literal random_literal =
         core[absl::Uniform<int>(*random, 0, core.size())];
     for (int i = 0; i < assumptions.size(); ++i) {
@@ -1300,6 +1310,14 @@ SatSolver::Status FindMultipleCoresForMaxHs(
         assumptions.pop_back();
         break;
       }
+    }
+
+    // Once we found at least one core, we impose a time limit to not spend
+    // too much time finding more.
+    if (first_loop) {
+      limit->ChangeDeterministicLimit(
+          std::min(saved_dlimit, limit->GetElapsedDeterministicTime() + 1.0));
+      first_loop = false;
     }
   } while (!assumptions.empty());
   return SatSolver::ASSUMPTIONS_UNSAT;
@@ -1640,7 +1658,8 @@ SatSolver::Status CoreBasedOptimizer::Optimize() {
                               " gap:",
                               gap, "%", " assumptions:", term_indices.size(),
                               " strat:", stratification_threshold_.value(),
-                              " depth:", max_depth);
+                              " depth:", max_depth,
+                              " bool: ", sat_solver_->NumVariables());
     }
 
     // Convert integer_assumptions to Literals.
@@ -1764,9 +1783,10 @@ SatSolver::Status MinimizeWithHittingSetAndLazyEncoding(
   std::vector<IntegerVariable> variables = objective_definition.vars;
   std::vector<IntegerValue> coefficients = objective_definition.coeffs;
 
-  SatSolver* sat_solver = model->GetOrCreate<SatSolver>();
-  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-  IntegerEncoder* integer_encoder = model->GetOrCreate<IntegerEncoder>();
+  auto* sat_solver = model->GetOrCreate<SatSolver>();
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  auto* integer_encoder = model->GetOrCreate<IntegerEncoder>();
+  auto* time_limit = model->GetOrCreate<TimeLimit>();
 
   // This will be called each time a feasible solution is found.
   const auto process_solution = [&]() {
@@ -1839,8 +1859,18 @@ SatSolver::Status MinimizeWithHittingSetAndLazyEncoding(
     // TODO(user): Even though we keep the same solver, currently the solve is
     // not really done incrementally. It might be hard to improve though.
     //
-    // TODO(user): deal with time limit.
+    // TODO(user): C^c is broken when using SCIP.
     MPSolver::SolveWithProto(request, &response);
+    if (response.status() != MPSolverResponseStatus::MPSOLVER_OPTIMAL) {
+      // We currently abort if we have a non-optimal result.
+      // This is correct if we had a limit reached, but not in the other cases.
+      //
+      // TODO(user): It is actually easy to use a FEASIBLE result. If when
+      // passing it to SAT it is no feasbile, we can still create cores. If it
+      // is feasible, we have a solution, but we cannot increase the lower
+      // bound.
+      return SatSolver::LIMIT_REACHED;
+    }
     CHECK_EQ(response.status(), MPSolverResponseStatus::MPSOLVER_OPTIMAL);
 
     const IntegerValue mip_objective(
@@ -1911,6 +1941,10 @@ SatSolver::Status MinimizeWithHittingSetAndLazyEncoding(
         --iter;  // "false" iteration, the lower bound does not increase.
         continue;
       }
+    } else if (result == SatSolver::LIMIT_REACHED) {
+      // Hack: we use a local limit internally that we restore at the end.
+      // However we still return LIMIT_REACHED in this case...
+      if (time_limit->LimitReached()) break;
     } else if (result != SatSolver::ASSUMPTIONS_UNSAT) {
       break;
     }

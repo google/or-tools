@@ -383,7 +383,7 @@ message SatParameters {
   // Indicates how much logging should wait before logging periodic search
   // information from specialized workers (lb_tree_search, probing).
   // A value <= 0.0 will disable periodic logs.
-  optional double log_frequency_in_seconds = 212 [default = 30.0];
+  optional double log_frequency_in_seconds = 212 [default = 0.0];
 
   // Whether the solver should display per sub-solver search statistics.
   // This is only useful is log_search_progress is set to true, and if the
@@ -636,6 +636,7 @@ message SatParameters {
 
   // If true, when the max-sat algo find a core, we compute the minimal number
   // of literals in the core that needs to be true to have a feasible solution.
+  // This is also called core exhaustion in more recent max-SAT papers.
   optional bool cover_optimization = 89 [default = true];
 
   // In what order do we add the assumptions in a core-based max-sat algorithm

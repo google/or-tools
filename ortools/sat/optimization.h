@@ -114,10 +114,9 @@ SatSolver::Status SolveWithCardinalityEncodingAndCore(
     LogBehavior log, const LinearBooleanProblem& problem, SatSolver* solver,
     std::vector<bool>* solution);
 
-// Model-based API, for now we just provide a basic algorithm that minimizes a
-// given IntegerVariable by solving a sequence of decision problem by using
-// SolveIntegerProblem(). Returns the status of the last solved decision
-// problem.
+// Model-based API to minimize a given IntegerVariable by solving a sequence of
+// decision problem. Each problem is solved using SolveIntegerProblem(). Returns
+// the status of the last solved decision problem.
 //
 // The feasible_solution_observer function will be called each time a new
 // feasible solution is found.
@@ -223,7 +222,7 @@ class CoreBasedOptimizer {
 // on the industrial category, see
 // http://maxsat.ia.udl.cat/results/#wpms-industrial
 //
-// TODO(user): This function brings dependency to the SCIP MIP solver which is
+// TODO(user): This function requires linking with the SCIP MIP solver which is
 // quite big, maybe we should find a way not to do that.
 SatSolver::Status MinimizeWithHittingSetAndLazyEncoding(
     const ObjectiveDefinition& objective_definition,

@@ -280,6 +280,9 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   std::vector<int> active_variables_ ABSL_GUARDED_BY(graph_mutex_);
 
   mutable absl::Mutex domain_mutex_;
+
+  // Used to display periodic info to the log.
+  absl::Time last_logging_time_;
 };
 
 // Base class for a CpModelProto neighborhood generator.
