@@ -1562,7 +1562,7 @@ SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
       const int num_bools = sat_solver_->NumVariables();
       const int num_fixed = sat_solver_->NumFixedVariables();
       model_->GetOrCreate<SharedResponseManager>()->UpdateInnerObjectiveBounds(
-          absl::StrFormat("BoolCore num_cores:%d [%s] assumptions:%u "
+          absl::StrFormat("bool_core num_cores:%d [%s] assumptions:%u "
                           "depth:%d fixed_bools:%d/%d",
                           iter, previous_core_info, nodes.size(), max_depth,
                           num_fixed, num_bools),
