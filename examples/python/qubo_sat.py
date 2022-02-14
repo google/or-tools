@@ -541,8 +541,6 @@ def solve_qubo():
     model = cp_model.CpModel()
 
     num_vars = len(RAW_DATA)
-    print(num_vars)
-    print(len(RAW_DATA[0]))
     all_vars = range(num_vars)
     variables = [model.NewBoolVar('x_%i' % i) for i in all_vars]
 
