@@ -23,6 +23,10 @@
 #include "ortools/sat/integer.h"
 #include "ortools/sat/util.h"
 
+// TODO(user): remove this when the code is stable and does not use SCIP
+// anymore.
+ABSL_FLAG(bool, cp_model_use_max_hs, false, "Use max_hs in search portfolio.");
+
 namespace operations_research {
 namespace sat {
 
@@ -450,7 +454,6 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
     new_params.set_optimize_with_core(true);
     new_params.set_optimize_with_max_hs(true);
-    new_params.set_find_multiple_cores(false);
     strategies["max_hs"] = new_params;
   }
 
@@ -562,6 +565,9 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
       names.push_back("quick_restart_no_lp");
       names.push_back("lb_tree_search");
       names.push_back("probing");
+#if !defined(__PORTABLE_PLATFORM__) && defined(USE_SCIP)
+      if (absl::GetFlag(FLAGS_cp_model_use_max_hs)) names.push_back("max_hs");
+#endif  // !defined(__PORTABLE_PLATFORM__) && defined(USE_SCIP)
     } else {
       for (const std::string& name : base_params.subsolvers()) {
         names.push_back(name);

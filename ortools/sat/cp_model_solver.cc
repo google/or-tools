@@ -78,6 +78,7 @@
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/linear_relaxation.h"
 #include "ortools/sat/lp_utils.h"
+#include "ortools/sat/max_hs.h"
 #include "ortools/sat/optimization.h"
 #include "ortools/sat/parameters_validation.h"
 #include "ortools/sat/precedences.h"
@@ -1080,7 +1081,8 @@ void LoadBaseModel(const CpModelProto& model_proto, Model* model) {
   const bool view_all_booleans_as_integers =
       (parameters.linearization_level() >= 2) ||
       (parameters.search_branching() == SatParameters::FIXED_SEARCH &&
-       model_proto.search_strategy().empty());
+       model_proto.search_strategy().empty()) ||
+      parameters.optimize_with_max_hs();
   LoadVariables(model_proto, view_all_booleans_as_integers, model);
   DetectOptionalVariables(model_proto, model);
 
@@ -1412,11 +1414,18 @@ void LoadCpModel(const CpModelProto& model_proto, Model* model) {
     };
 
     const auto& objective = *model->GetOrCreate<ObjectiveDefinition>();
-    CoreBasedOptimizer* core =
-        new CoreBasedOptimizer(objective_var, objective.vars, objective.coeffs,
-                               solution_observer, model);
-    model->Register<CoreBasedOptimizer>(core);
-    model->TakeOwnership(core);
+    if (parameters.optimize_with_max_hs()) {
+      HittingSetOptimizer* max_hs = new HittingSetOptimizer(
+          model_proto, objective, solution_observer, model);
+      model->Register<HittingSetOptimizer>(max_hs);
+      model->TakeOwnership(max_hs);
+    } else {
+      CoreBasedOptimizer* core =
+          new CoreBasedOptimizer(objective_var, objective.vars,
+                                 objective.coeffs, solution_observer, model);
+      model->Register<CoreBasedOptimizer>(core);
+      model->TakeOwnership(core);
+    }
   }
 }
 
@@ -1506,8 +1515,7 @@ void SolveLoadedCpModel(const CpModelProto& model_proto, Model* model) {
       // TODO(user): This doesn't work with splitting in chunk for now. It
       // shouldn't be too hard to fix.
       if (parameters.optimize_with_max_hs()) {
-        status = MinimizeWithHittingSetAndLazyEncoding(
-            objective, solution_observer, model);
+        status = model->Mutable<HittingSetOptimizer>()->Optimize();
       } else {
         status = model->Mutable<CoreBasedOptimizer>()->Optimize();
       }

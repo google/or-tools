@@ -34,7 +34,7 @@ namespace sat {
 // be inferred by propagation by any subset of the other literal, it will be
 // removed.
 //
-// Note that this function doest NOT preserve the order of Literal in the core.
+// Note that the literal of the minimized core will stay in the same order.
 //
 // TODO(user): Avoid spending too much time trying to minimize a core.
 void MinimizeCoreWithPropagation(TimeLimit* limit, SatSolver* solver,
@@ -154,6 +154,19 @@ class CoreBasedOptimizer {
   // some of the work already done, so it might just never find anything.
   SatSolver::Status Optimize();
 
+  // A different way to encode the objective as core are found. This one do
+  // not introduce IntegerVariable and encode everything in Boolean.
+  //
+  // It seems to be more powerful, but it isn't completely implemented yet.
+  // TODO(user):
+  // - Make it work for integer variable in the objective.
+  // - Only call it if the objective domain is not too large?
+  // - Support resuming for interleaved search.
+  // - Implement all core heurisitics.
+  SatSolver::Status OptimizeWithSatEncoding(
+      const std::vector<Literal>& literals,
+      const std::vector<Coefficient>& coefficients, IntegerValue offset);
+
  private:
   CoreBasedOptimizer(const CoreBasedOptimizer&) = delete;
   CoreBasedOptimizer& operator=(const CoreBasedOptimizer&) = delete;
@@ -209,24 +222,6 @@ class CoreBasedOptimizer {
   // to stop a solver from the feasible solution callback.
   bool stop_ = false;
 };
-
-// Generalization of the max-HS algorithm (HS stands for Hitting Set). This is
-// similar to MinimizeWithCoreAndLazyEncoding() but it uses a hybrid approach
-// with a MIP solver to handle the discovered infeasibility cores.
-//
-// See, Jessica Davies and Fahiem Bacchus, "Solving MAXSAT by Solving a
-// Sequence of Simpler SAT Instances",
-// http://www.cs.toronto.edu/~jdavies/daviesCP11.pdf"
-//
-// Note that an implementation of this approach won the 2016 max-SAT competition
-// on the industrial category, see
-// http://maxsat.ia.udl.cat/results/#wpms-industrial
-//
-// TODO(user): This function requires linking with the SCIP MIP solver which is
-// quite big, maybe we should find a way not to do that.
-SatSolver::Status MinimizeWithHittingSetAndLazyEncoding(
-    const ObjectiveDefinition& objective_definition,
-    const std::function<void()>& feasible_solution_observer, Model* model);
 
 }  // namespace sat
 }  // namespace operations_research

@@ -1404,7 +1404,7 @@ bool FixedModuloPropagator::PropagateOuterBounds() {
 bool FixedModuloPropagator::PropagateBoundsWhenExprIsPositive(
     AffineExpression expr, AffineExpression target) {
   const IntegerValue min_target = integer_trail_->LowerBound(target);
-  DCHECK_GE(min_target, 0);
+  DCHECK_GE(min_target, 0) << target.DebugString();
   const IntegerValue max_target = integer_trail_->UpperBound(target);
 
   // The propagation rules below will not be triggered if the domain of target

@@ -377,9 +377,10 @@ std::vector<Literal> ReduceNodesAndExtractAssumptions(
   }
 
   // Fix the nodes right-most variables that are above the gap.
+  // If we closed the problem, we abort and return and empty vector.
   if (upper_bound != kCoefficientMax) {
     const Coefficient gap = upper_bound - *lower_bound;
-    if (gap <= 0) return {};
+    if (gap < 0) return {};
     for (EncodingNode* n : *nodes) {
       n->ApplyUpperBound((gap / n->weight()).value(), solver);
     }
