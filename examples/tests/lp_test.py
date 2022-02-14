@@ -230,10 +230,12 @@ class PyWrapLpTest(unittest.TestCase):
         print(result_status) # outputs: 0
 
     def testLoadSolutionFromProto(self):
+        print('testLoadSolutionFromProto')
         solver = pywraplp.Solver('', pywraplp.Solver.GLOP_LINEAR_PROGRAMMING)
         solver.LoadSolutionFromProto(linear_solver_pb2.MPSolutionResponse())
 
     def testSolveFromProto(self):
+        print('testSolveFromProto')
         request_str = '''
             model {
                 maximize: false
@@ -294,10 +296,12 @@ class PyWrapLpTest(unittest.TestCase):
         '''
         request = linear_solver_pb2.MPModelRequest()
         text_format.Parse(request_str, request)
-        print(request)
         response = linear_solver_pb2.MPSolutionResponse()
+        self.assertEqual(len(request.model.variable), 3)
         pywraplp.Solver.SolveWithProto(model_request=request, response=response)
-        print(response)
+        self.assertEqual(
+            linear_solver_pb2.MPSolverResponseStatus.MPSOLVER_OPTIMAL,
+            response.status)
 
 
 if __name__ == '__main__':
