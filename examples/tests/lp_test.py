@@ -14,6 +14,7 @@
 """Tests for ortools.linear_solver.pywraplp."""
 
 import unittest
+from google.protobuf import text_format
 from ortools.linear_solver import linear_solver_pb2
 from ortools.linear_solver import pywraplp
 
@@ -228,9 +229,75 @@ class PyWrapLpTest(unittest.TestCase):
         result_status = solver.Solve()
         print(result_status) # outputs: 0
 
-    def testSolveFromProto(self):
+    def testLoadSolutionFromProto(self):
         solver = pywraplp.Solver('', pywraplp.Solver.GLOP_LINEAR_PROGRAMMING)
         solver.LoadSolutionFromProto(linear_solver_pb2.MPSolutionResponse())
+
+    def testSolveFromProto(self):
+        request_str = '''
+            model {
+                maximize: false
+                objective_offset: 0
+                variable {
+                    lower_bound: 0
+                    upper_bound: 4
+                    objective_coefficient: 1
+                    is_integer: false
+                    name: "XONE"
+                }
+                variable {
+                    lower_bound: -1
+                    upper_bound: 1
+                    objective_coefficient: 4
+                    is_integer: false
+                    name: "YTWO"
+                }
+                variable {
+                    lower_bound: 0
+                    upper_bound: inf
+                    objective_coefficient: 9
+                    is_integer: false
+                    name: "ZTHREE"
+                }
+                constraint {
+                    lower_bound: -inf
+                    upper_bound: 5
+                    name: "LIM1"
+                    var_index: 0
+                    var_index: 1
+                    coefficient: 1
+                    coefficient: 1
+                }
+                constraint {
+                    lower_bound: 10
+                    upper_bound: inf
+                    name: "LIM2"
+                    var_index: 0
+                    var_index: 2
+                    coefficient: 1
+                    coefficient: 1
+                }
+                constraint {
+                    lower_bound: 7
+                    upper_bound: 7
+                    name: "MYEQN"
+                    var_index: 1
+                    var_index: 2
+                    coefficient: -1
+                    coefficient: 1
+                }
+                name: "NAME_LONGER_THAN_8_CHARACTERS"
+            }
+            solver_type: GLOP_LINEAR_PROGRAMMING
+            solver_time_limit_seconds: 1.0
+            solver_specific_parameters: ""
+        '''
+        request = linear_solver_pb2.MPModelRequest()
+        text_format.Parse(request_str, request)
+        print(request)
+        response = linear_solver_pb2.MPSolutionResponse()
+        pywraplp.Solver.SolveWithProto(model_request=request, response=response)
+        print(response)
 
 
 if __name__ == '__main__':
