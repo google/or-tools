@@ -446,3 +446,12 @@ cc_library(
         "@com_google_absl//absl/strings",
     ],
 )
+
+cc_library(
+    name = "status_macros",
+    hdrs = ["status_macros.h"],
+    deps = [
+        "//ortools/base:status_macros",
+        "@com_google_absl//absl/status",
+    ],
+)

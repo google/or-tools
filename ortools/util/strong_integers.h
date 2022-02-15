@@ -220,6 +220,11 @@ class StrongInt64 {
 
   constexpr int64_t value() const { return value_; }
 
+  template <typename ValType>  // Needed for StrongVector.
+  constexpr ValType value() const {
+    return static_cast<ValType>(value_);
+  }
+
   INCREMENT_AND_DECREMENT_OPERATORS;
 
   constexpr const ThisType operator+() const { return ThisType(value_); }
@@ -277,6 +282,7 @@ std::ostream& operator<<(std::ostream& os,  // NOLINT
 STRONG_TYPE_ARITHMETIC_OP(StrongIndex, int, +);
 STRONG_TYPE_ARITHMETIC_OP(StrongIndex, int, -);
 STRONG_TYPE_ARITHMETIC_OP(StrongIndex, int, *);
+STRONG_TYPE_ARITHMETIC_OP(StrongIndex, int, %);
 
 STRONG_TYPE_ARITHMETIC_OP(StrongInt64, int64_t, +);
 STRONG_TYPE_ARITHMETIC_OP(StrongInt64, int64_t, -);
