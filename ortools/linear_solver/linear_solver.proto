@@ -419,8 +419,8 @@ message MPModelRequest {
   // program?).
   // This must remain consistent with MPSolver::OptimizationProblemType.
   enum SolverType {
-    GLOP_LINEAR_PROGRAMMING = 2;  // Recommended default for LP models.
     CLP_LINEAR_PROGRAMMING = 0;
+    GLOP_LINEAR_PROGRAMMING = 2;  // Recommended default for LP models.
     GLPK_LINEAR_PROGRAMMING = 1;
     GUROBI_LINEAR_PROGRAMMING = 6;  // Commercial, needs a valid license.
     XPRESS_LINEAR_PROGRAMMING = 101;  // Commercial, needs a valid license. NOLINT

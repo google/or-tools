@@ -119,6 +119,19 @@ $(GEN_DIR)/ortools/constraint_solver/RoutingEnums.pb.cs: \
  --csharp_opt=file_extension=.pb.cs \
  $(SRC_DIR)$Sortools$Sconstraint_solver$Srouting_enums.proto
 
+ $(GEN_DIR)/ortools/linear_solver/linear_solver.proto: \
+ $(SRC_DIR)/ortools/linear_solver/linear_solver.proto \
+ | $(GEN_DIR)/ortools/linear_solver
+	$(SED) -f tools$Sproto2_to_proto3.sed $(SRC_DIR)/ortools/linear_solver/linear_solver.proto > $(GEN_DIR)/ortools/linear_solver/linear_solver.proto
+
+$(GEN_DIR)/ortools/linear_solver/LinearSolver.pb.cs: \
+ $(GEN_DIR)/ortools/linear_solver/linear_solver.proto \
+ | $(GEN_DIR)/ortools/linear_solver
+	$(PROTOC) --proto_path=$(GEN_DIR)  --proto_path=$(SRC_DIR) \
+ --csharp_out=$(GEN_PATH)$Sortools$Slinear_solver \
+ --csharp_opt=file_extension=.pb.cs \
+ $(GEN_DIR)$Sortools$Slinear_solver$Slinear_solver.proto
+
 $(GEN_DIR)/ortools/sat/CpModel.pb.cs: \
  $(SRC_DIR)/ortools/sat/cp_model.proto \
  | $(GEN_DIR)/ortools/sat
