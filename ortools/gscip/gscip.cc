@@ -40,6 +40,7 @@
 #include "ortools/gscip/legacy_scip_params.h"
 #include "ortools/linear_solver/scip_helper_macros.h"
 #include "ortools/port/proto_utils.h"
+#include "ortools/util/status_macros.h"
 #include "scip/cons_linear.h"
 #include "scip/cons_quadratic.h"
 #include "scip/scip.h"
@@ -326,8 +327,8 @@ absl::StatusOr<SCIP_VAR*> GScip::AddVariable(
     double lb, double ub, double obj_coef, GScipVarType var_type,
     const std::string& var_name, const GScipVariableOptions& options) {
   SCIP_VAR* var = nullptr;
-  lb = ScipInfClamp(lb);
-  ub = ScipInfClamp(ub);
+  OR_ASSIGN_OR_RETURN3(lb, ScipInfClamp(lb), _ << "invalid lower bound");
+  OR_ASSIGN_OR_RETURN3(ub, ScipInfClamp(ub), _ << "invalid upper bound");
   RETURN_IF_SCIP_ERROR(SCIPcreateVarBasic(scip_, /*var=*/&var,
                                           /*name=*/var_name.c_str(),
                                           /*lb=*/lb, /*ub=*/ub,
@@ -360,11 +361,15 @@ absl::StatusOr<SCIP_CONS*> GScip::AddLinearConstraint(
   SCIP_CONS* constraint = nullptr;
   RETURN_ERROR_UNLESS(range.variables.size() == range.coefficients.size())
       << "Error adding constraint: " << name << ".";
+  OR_ASSIGN_OR_RETURN3(const double lb, ScipInfClamp(range.lower_bound),
+                       _ << "invalid lower bound");
+  OR_ASSIGN_OR_RETURN3(const double ub, ScipInfClamp(range.upper_bound),
+                       _ << "invalid upper bound");
   RETURN_IF_SCIP_ERROR(SCIPcreateConsLinear(
       scip_, &constraint, name.c_str(), range.variables.size(),
       const_cast<SCIP_VAR**>(range.variables.data()),
       const_cast<double*>(range.coefficients.data()),
-      ScipInfClamp(range.lower_bound), ScipInfClamp(range.upper_bound),
+      /*lhs=*/lb, /*rhs=*/ub,
       /*initial=*/options.initial,
       /*separate=*/options.separate,
       /*enforce=*/options.enforce,
@@ -392,6 +397,10 @@ absl::StatusOr<SCIP_CONS*> GScip::AddQuadraticConstraint(
       << "Error adding quadratic constraint: " << name << " in quadratic term.";
   RETURN_ERROR_UNLESS(num_quad_vars == range.quadratic_coefficients.size())
       << "Error adding quadratic constraint: " << name << " in quadratic term.";
+  OR_ASSIGN_OR_RETURN3(const double lb, ScipInfClamp(range.lower_bound),
+                       _ << "invalid lower bound");
+  OR_ASSIGN_OR_RETURN3(const double ub, ScipInfClamp(range.upper_bound),
+                       _ << "invalid upper bound");
   RETURN_IF_SCIP_ERROR(SCIPcreateConsQuadratic(
       scip_, &constraint, name.c_str(), num_lin_vars,
       const_cast<SCIP_Var**>(range.linear_variables.data()),
@@ -399,7 +408,7 @@ absl::StatusOr<SCIP_CONS*> GScip::AddQuadraticConstraint(
       const_cast<SCIP_Var**>(range.quadratic_variables1.data()),
       const_cast<SCIP_Var**>(range.quadratic_variables2.data()),
       const_cast<double*>(range.quadratic_coefficients.data()),
-      ScipInfClamp(range.lower_bound), ScipInfClamp(range.upper_bound),
+      /*lhs=*/lb, /*rhs=*/ub,
       /*initial=*/options.initial,
       /*separate=*/options.separate,
       /*enforce=*/options.enforce,
@@ -428,12 +437,15 @@ absl::StatusOr<SCIP_CONS*> GScip::AddIndicatorConstraint(
   RETURN_ERROR_UNLESS(indicator_constraint.variables.size() ==
                       indicator_constraint.coefficients.size())
       << "Error adding indicator constraint: " << name << ".";
+  OR_ASSIGN_OR_RETURN3(const double ub,
+                       ScipInfClamp(indicator_constraint.upper_bound),
+                       _ << "invalid upper bound");
   RETURN_IF_SCIP_ERROR(SCIPcreateConsIndicator(
       scip_, &constraint, name.c_str(), indicator,
       indicator_constraint.variables.size(),
       const_cast<SCIP_Var**>(indicator_constraint.variables.data()),
       const_cast<double*>(indicator_constraint.coefficients.data()),
-      ScipInfClamp(indicator_constraint.upper_bound),
+      /*rhs=*/ub,
       /*initial=*/options.initial,
       /*separate=*/options.separate,
       /*enforce=*/options.enforce,
@@ -598,13 +610,13 @@ absl::Status GScip::SetBranchingPriority(SCIP_VAR* var, int priority) {
 }
 
 absl::Status GScip::SetLb(SCIP_VAR* var, double lb) {
-  lb = ScipInfClamp(lb);
+  OR_ASSIGN_OR_RETURN3(lb, ScipInfClamp(lb), _ << "invalid lower bound");
   RETURN_IF_SCIP_ERROR(SCIPchgVarLb(scip_, var, lb));
   return absl::OkStatus();
 }
 
 absl::Status GScip::SetUb(SCIP_VAR* var, double ub) {
-  ub = ScipInfClamp(ub);
+  OR_ASSIGN_OR_RETURN3(ub, ScipInfClamp(ub), _ << "invalid upper bound");
   RETURN_IF_SCIP_ERROR(SCIPchgVarUb(scip_, var, ub));
   return absl::OkStatus();
 }
@@ -711,13 +723,13 @@ absl::string_view GScip::Name(SCIP_CONS* constraint) {
 }
 
 absl::Status GScip::SetLinearConstraintLb(SCIP_CONS* constraint, double lb) {
-  lb = ScipInfClamp(lb);
+  OR_ASSIGN_OR_RETURN3(lb, ScipInfClamp(lb), _ << "invalid lower bound");
   RETURN_IF_SCIP_ERROR(SCIPchgLhsLinear(scip_, constraint, lb));
   return absl::OkStatus();
 }
 
 absl::Status GScip::SetLinearConstraintUb(SCIP_CONS* constraint, double ub) {
-  ub = ScipInfClamp(ub);
+  OR_ASSIGN_OR_RETURN3(ub, ScipInfClamp(ub), _ << "invalid upper bound");
   RETURN_IF_SCIP_ERROR(SCIPchgRhsLinear(scip_, constraint, ub));
   return absl::OkStatus();
 }
@@ -810,8 +822,10 @@ absl::StatusOr<GScipResult> GScip::Solve(
         scip_, params.scip_model_filename().c_str(), "cip", FALSE));
   }
   if (params.has_objective_limit()) {
-    RETURN_IF_SCIP_ERROR(
-        SCIPsetObjlimit(scip_, ScipInfClamp(params.objective_limit())));
+    OR_ASSIGN_OR_RETURN3(const double scip_obj_limit,
+                         ScipInfClamp(params.objective_limit()),
+                         _ << "invalid objective_limit");
+    RETURN_IF_SCIP_ERROR(SCIPsetObjlimit(scip_, scip_obj_limit));
   }
 
   // Install the message handler if necessary. We do this after setting the
@@ -986,10 +1000,20 @@ absl::StatusOr<std::string> GScip::DefaultStringParamValue(
   return std::string(result);
 }
 
-double GScip::ScipInfClamp(double d) {
+absl::StatusOr<double> GScip::ScipInfClamp(const double d) {
   const double kScipInf = ScipInf();
-  if (d > kScipInf) return kScipInf;
-  if (d < -kScipInf) return -kScipInf;
+  if (d == std::numeric_limits<double>::infinity()) {
+    return kScipInf;
+  }
+  if (d == -std::numeric_limits<double>::infinity()) {
+    return -kScipInf;
+  }
+  // NaN is considered finite here.
+  if (d >= kScipInf || d <= -kScipInf) {
+    return util::InvalidArgumentErrorBuilder()
+           << d << " is not in SCIP's finite range: (" << -kScipInf << ", "
+           << kScipInf << ")";
+  }
   return d;
 }
 
