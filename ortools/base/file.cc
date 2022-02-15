@@ -292,6 +292,19 @@ absl::Status SetTextProto(const absl::string_view& filename,
       absl::StrCat("Could not write proto to '", filename, "'."));
 }
 
+absl::Status GetBinaryProto(const absl::string_view filename,
+                            google::protobuf::Message* const proto,
+                            const int flags) {
+  std::string str;
+  if (flags == Defaults() && ReadFileToString(filename, &str) &&
+      proto->ParseFromString(str)) {
+    return absl::OkStatus();
+  }
+  return absl::Status(
+      absl::StatusCode::kInvalidArgument,
+      absl::StrCat("Could not read proto from '", filename, "'."));
+}
+
 absl::Status SetBinaryProto(const absl::string_view& filename,
                             const google::protobuf::Message& proto, int flags) {
   if (flags == Defaults()) {

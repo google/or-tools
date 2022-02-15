@@ -26,6 +26,7 @@
 #include "google/protobuf/text_format.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/status_macros.h"
 
 // This file defines some IO interfaces for compatibility with Google
 // IO specifications.
@@ -125,8 +126,22 @@ File* OpenOrDie(const absl::string_view& filename,
                 const absl::string_view& mode, int flags);
 absl::Status GetTextProto(const absl::string_view& filename,
                           google::protobuf::Message* proto, int flags);
+template <typename T>
+absl::StatusOr<T> GetTextProto(absl::string_view filename, int flags) {
+  T proto;
+  RETURN_IF_ERROR(GetTextProto(filename, &proto, flags));
+  return proto;
+}
 absl::Status SetTextProto(const absl::string_view& filename,
                           const google::protobuf::Message& proto, int flags);
+absl::Status GetBinaryProto(absl::string_view filename,
+                            google::protobuf::Message* proto, int flags);
+template <typename T>
+absl::StatusOr<T> GetBinaryProto(absl::string_view filename, int flags) {
+  T proto;
+  RETURN_IF_ERROR(GetBinaryProto(filename, &proto, flags));
+  return proto;
+}
 absl::Status SetBinaryProto(const absl::string_view& filename,
                             const google::protobuf::Message& proto, int flags);
 absl::Status SetContents(const absl::string_view& filename,

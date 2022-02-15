@@ -110,6 +110,11 @@ class ABSL_MUST_USE_RESULT Cleanup {
 
   bool is_released() const { return !storage_.ContainsCallback(); }
 
+  void Invoke() && {
+    CHECK(storage_.ContainsCallback());
+    storage_.InvokeCallback();
+  }
+
  private:
   friend AccessStorage;
 

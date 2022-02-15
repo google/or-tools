@@ -15,7 +15,7 @@
 
 ScopedWallTime::ScopedWallTime(double* aggregate_time)
     : aggregate_time_(aggregate_time), timer_() {
-  DCHECK(aggregate_time != NULL);
+  DCHECK(aggregate_time != nullptr);
   timer_.Start();
 }
 

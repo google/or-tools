@@ -113,7 +113,7 @@ void FixFlagsAndEnvironmentForSwig();
 //   vector<string> errors;
 //   LOG_STRING(ERROR, &errors) << "Couldn't parse cookie #" << cookie_num;
 //
-// This pushes back the new error onto 'errors'; if given a NULL pointer,
+// This pushes back the new error onto 'errors'; if given a null pointer,
 // it reports the error via LOG(ERROR).
 //
 // You can also do conditional logging:
@@ -394,11 +394,11 @@ ABSL_DECLARE_FLAG(bool, stop_logging_if_full_disk);
 // A very useful logging macro to log windows errors:
 #define LOG_SYSRESULT(result)                                           \
   if (FAILED(HRESULT_FROM_WIN32(result))) {                             \
-    LPSTR message = NULL;                                               \
+    LPSTR message = nullptr;                                            \
     LPSTR msg = reinterpret_cast<LPSTR>(&message);                      \
     DWORD message_length = FormatMessageA(                              \
         FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, 0, \
-        result, 0, msg, 100, NULL);                                     \
+        result, 0, msg, 100, nullptr);                                  \
     if (message_length > 0) {                                           \
       google::LogMessage(__FILE__, __LINE__, google::GLOG_ERROR, 0,     \
                          &google::LogMessage::SendToLog)                \
@@ -434,14 +434,14 @@ GOOGLE_GLOG_DLL_DECL void InstallFailureFunction(void (*fail_func)());
 
 class LogSink;  // defined below
 
-// If a non-NULL sink pointer is given, we push this message to that sink.
+// If a non-null sink pointer is given, we push this message to that sink.
 // For LOG_TO_SINK we then do normal LOG(severity) logging as well.
 // This is useful for capturing messages and passing/storing them
 // somewhere more specific than the global log of the process.
 // Argument types:
 //   LogSink* sink;
 //   LogSeverity severity;
-// The cast is to disambiguate NULL arguments.
+// The cast is to disambiguate null pointer arguments.
 #define LOG_TO_SINK(sink, severity)                               \
   google::LogMessage(__FILE__, __LINE__, google::GLOG_##severity, \
                      static_cast<google::LogSink*>(sink), true)   \
@@ -451,27 +451,27 @@ class LogSink;  // defined below
                      static_cast<google::LogSink*>(sink), false)  \
       .stream()
 
-// If a non-NULL string pointer is given, we write this message to that string.
-// We then do normal LOG(severity) logging as well.
-// This is useful for capturing messages and storing them somewhere more
-// specific than the global log of the process.
+// If a non-null string pointer is given, we write this message to that string.
+// We then do normal LOG(severity) logging as well. This is useful for capturing
+// messages and storing them somewhere more specific than the global log of the
+// process.
 // Argument types:
 //   string* message;
 //   LogSeverity severity;
-// The cast is to disambiguate NULL arguments.
+// The cast is to disambiguate null pointer arguments.
 // NOTE: LOG(severity) expands to LogMessage().stream() for the specified
 // severity.
 #define LOG_TO_STRING(severity, message) \
   LOG_TO_STRING_##severity(static_cast<string*>(message)).stream()
 
-// If a non-NULL pointer is given, we push the message onto the end
+// If a non-null pointer is given, we push the message onto the end
 // of a vector of strings; otherwise, we report it with LOG(severity).
 // This is handy for capturing messages and perhaps passing them back
 // to the caller, rather than reporting them immediately.
 // Argument types:
 //   LogSeverity severity;
 //   vector<string> *outvec;
-// The cast is to disambiguate NULL arguments.
+// The cast is to disambiguate null pointer arguments.
 #define LOG_STRING(severity, outvec)                                       \
   LOG_TO_STRING_##severity(static_cast<std::vector<std::string>*>(outvec)) \
       .stream()
@@ -497,13 +497,13 @@ class LogSink;  // defined below
       << "Check failed: " #condition " "
 
 // A container for a string pointer which can be evaluated to a bool -
-// true iff the pointer is NULL.
+// true iff the pointer is null.
 struct CheckOpString {
   CheckOpString(std::string* str) : str_(str) {}
-  // No destructor: if str_ is non-NULL, we're about to LOG(FATAL),
+  // No destructor: if str_ is non-null, we're about to LOG(FATAL),
   // so there's no point in cleaning up str_.
   operator bool() const {
-    return GOOGLE_PREDICT_BRANCH_NOT_TAKEN(str_ != NULL);
+    return GOOGLE_PREDICT_BRANCH_NOT_TAKEN(str_ != nullptr);
   }
   std::string* str_;
 };
@@ -563,7 +563,7 @@ template <typename T1, typename T2>
 std::string* MakeCheckOpString(const T1& v1, const T2& v2,
                                const char* exprtext) ATTRIBUTE_NOINLINE;
 
-// Provide printable value for nullptr_t
+// Provide printable value for std::nullptr_t
 template <>
 GOOGLE_GLOG_DLL_DECL void MakeCheckOpValueString(std::ostream* os,
                                                  const std::nullptr_t& v);
@@ -621,7 +621,7 @@ std::string* MakeCheckOpString(const T1& v1, const T2& v2,
   inline std::string* name##Impl(const T1& v1, const T2& v2,             \
                                  const char* exprtext) {                 \
     if (GOOGLE_PREDICT_TRUE(v1 op v2))                                   \
-      return NULL;                                                       \
+      return nullptr;                                                    \
     else                                                                 \
       return MakeCheckOpString(v1, v2, exprtext);                        \
   }                                                                      \
@@ -633,8 +633,9 @@ std::string* MakeCheckOpString(const T1& v1, const T2& v2,
 // base/logging.h provides its own #defines for the simpler names EQ, NE, etc.
 // This happens if, for example, those are used as token names in a
 // yacc grammar.
-DEFINE_CHECK_OP_IMPL(Check_EQ, ==)  // Compilation error with CHECK_EQ(NULL, x)?
-DEFINE_CHECK_OP_IMPL(Check_NE, !=)  // Use CHECK(x == NULL) instead.
+DEFINE_CHECK_OP_IMPL(Check_EQ,
+                     ==)  // Compilation error with CHECK_EQ(nullptr, x)?
+DEFINE_CHECK_OP_IMPL(Check_NE, !=)  // Use CHECK(x == nullptr) instead.
 DEFINE_CHECK_OP_IMPL(Check_LE, <=)
 DEFINE_CHECK_OP_IMPL(Check_LT, <)
 DEFINE_CHECK_OP_IMPL(Check_GE, >=)
@@ -706,11 +707,11 @@ typedef std::string _Check_string;
 #define CHECK_GE(val1, val2) CHECK_OP(_GE, >=, val1, val2)
 #define CHECK_GT(val1, val2) CHECK_OP(_GT, >, val1, val2)
 
-// Check that the input is non NULL.  This very useful in constructor
-// initializer lists.
+// Check that the input is non-null. This very useful in constructor initializer
+// lists.
 
 #define CHECK_NOTNULL(val) \
-  google::CheckNotNull(__FILE__, __LINE__, "'" #val "' Must be non NULL", (val))
+  google::CheckNotNull(__FILE__, __LINE__, "'" #val "' Must be non null", (val))
 
 // Helper functions for string comparisons.
 // To avoid bloat, the definitions are in logging.cc.
@@ -1036,7 +1037,7 @@ class GOOGLE_GLOG_DLL_DECL LogMessage {
     GLOG_MSVC_POP_WARNING()
    public:
     LogStream(char* buf, int len, int ctr)
-        : std::ostream(NULL), streambuf_(buf, len), ctr_(ctr), self_(this) {
+        : std::ostream(nullptr), streambuf_(buf, len), ctr_(ctr), self_(this) {
       rdbuf(&streambuf_);
     }
 
@@ -1081,20 +1082,20 @@ class GOOGLE_GLOG_DLL_DECL LogMessage {
   // saves 17 bytes per call site.
   LogMessage(const char* file, int line, LogSeverity severity);
 
-  // Constructor to log this message to a specified sink (if not NULL).
+  // Constructor to log this message to a specified sink (if not null).
   // Implied are: ctr = 0, send_method = &LogMessage::SendToSinkAndLog if
   // also_send_to_log is true, send_method = &LogMessage::SendToSink otherwise.
   LogMessage(const char* file, int line, LogSeverity severity, LogSink* sink,
              bool also_send_to_log);
 
   // Constructor where we also give a vector<string> pointer
-  // for storing the messages (if the pointer is not NULL).
+  // for storing the messages (if the pointer is not null).
   // Implied are: ctr = 0, send_method = &LogMessage::SaveOrSendToLog.
   LogMessage(const char* file, int line, LogSeverity severity,
              std::vector<std::string>* outvec);
 
   // Constructor where we also give a string pointer for storing the
-  // message (if the pointer is not NULL).  Implied are: ctr = 0,
+  // message (if the pointer is not null).  Implied are: ctr = 0,
   // send_method = &LogMessage::WriteToStringAndLog.
   LogMessage(const char* file, int line, LogSeverity severity,
              std::string* message);
@@ -1215,7 +1216,7 @@ T CheckNotNull(const char* file, int line, const char* names, T&& t) {
 // A small helper for CHECK_NOTNULL().
 template <typename T>
 T* CheckNotNull(const char* file, int line, const char* names, T* t) {
-  if (t == NULL) {
+  if (t == nullptr) {
     LogMessageFatal(file, line, new std::string(names));
   }
   return t;
