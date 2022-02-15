@@ -22,9 +22,9 @@
 
 #include "ortools/base/basictypes.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/util/bitset.h"
+#include "ortools/util/strong_integers.h"
 
 // We use typedefs as much as possible to later permit the usage of
 // types such as quad-doubles or rationals.
@@ -39,11 +39,11 @@ typedef int32_t Index;
 
 // ColIndex is the type for integers representing column/variable indices.
 // int32s are enough for handling even the largest problems.
-DEFINE_STRONG_INT_TYPE(ColIndex, Index);
+DEFINE_STRONG_INDEX_TYPE(ColIndex);
 
 // RowIndex is the type for integers representing row/constraint indices.
 // int32s are enough for handling even the largest problems.
-DEFINE_STRONG_INT_TYPE(RowIndex, Index);
+DEFINE_STRONG_INDEX_TYPE(RowIndex);
 
 // Get the ColIndex corresponding to the column # row.
 inline ColIndex RowToColIndex(RowIndex row) { return ColIndex(row.value()); }
@@ -61,9 +61,9 @@ inline Index RowToIntIndex(RowIndex row) { return row.value(); }
 // An entry in a sparse matrix is a pair (row, value) for a given known column.
 // See classes SparseColumn and SparseMatrix.
 #if defined(__ANDROID__)
-DEFINE_STRONG_INT_TYPE(EntryIndex, int32_t);
+DEFINE_STRONG_INDEX_TYPE(EntryIndex);
 #else
-DEFINE_STRONG_INT_TYPE(EntryIndex, int64_t);
+DEFINE_STRONG_INT64_TYPE(EntryIndex);
 #endif
 
 static inline double ToDouble(double f) { return f; }

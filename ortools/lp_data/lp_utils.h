@@ -324,18 +324,24 @@ class SumWithOneMissing {
 
   void Add(Fractional x) {
     DCHECK(!std::isnan(x));
-    if (num_infinities_ > 1) return;
-    if (IsFinite(x)) {
-      sum_.Add(x);
 
-      // If we overflow, then there is not much we can do. This is needed
-      // because KahanSum seems to give nan if we try to add stuff to an
-      // infinite sum.
-      if (!IsFinite(sum_.Value())) num_infinities_ = 2;
+    if (!IsFinite(x)) {
+      DCHECK_EQ(x, Infinity());
+      ++num_infinities_;
       return;
     }
-    DCHECK_EQ(Infinity(), x);
-    ++num_infinities_;
+
+    // If we overflow, then there is not much we can do. This is needed
+    // because KahanSum seems to give nan if we try to add stuff to an
+    // infinite sum.
+    if (!IsFinite(sum_.Value())) return;
+
+    sum_.Add(x);
+  }
+
+  void RemoveOneInfinity() {
+    DCHECK_GE(num_infinities_, 1);
+    --num_infinities_;
   }
 
   Fractional Sum() const {
@@ -370,8 +376,7 @@ class SumWithOneMissing {
     return supported_infinity_is_positive ? kInfinity : -kInfinity;
   }
 
-  // Count how many times Add() was called with an infinite value. The count is
-  // stopped at 2 to be a bit faster.
+  // Count how many times Add() was called with an infinite value.
   int num_infinities_;
   KahanSum sum_;  // stripped of all the infinite values.
 };

@@ -41,7 +41,6 @@
 #include "ortools/base/map_util.h"
 #include "ortools/base/protobuf_util.h"
 #include "ortools/base/status_macros.h"
-#include "ortools/base/strong_int.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
@@ -50,12 +49,21 @@
 namespace operations_research {
 namespace glop {
 
+// Parses an MPS model from a string.
+absl::StatusOr<MPModelProto> MpsDataToMPModelProto(const std::string& mps_data);
+
+// Parses an MPS model from a file.
+absl::StatusOr<MPModelProto> MpsFileToMPModelProto(const std::string& mps_file);
+
+// Implementation class. Please use the 2 functions above.
+//
 // Reads a linear program in the mps format.
 //
 // All Parse() methods clear the previously parsed instance and store the result
 // in the given Data class.
-
-class MPSReader {
+//
+// TODO(user): Remove the MPSReader class.
+class ABSL_DEPRECATED("Use the direct methods instead") MPSReader {
  public:
   enum Form { AUTO_DETECT, FREE, FIXED };
 
@@ -65,6 +73,14 @@ class MPSReader {
 
   absl::Status ParseFile(const std::string& file_name, MPModelProto* data,
                          Form form = AUTO_DETECT);
+  // Loads instance from string. Useful with MapReduce. Automatically detects
+  // the file's format (free or fixed).
+  absl::Status ParseProblemFromString(const std::string& source,
+                                      LinearProgram* data,
+                                      MPSReader::Form form = AUTO_DETECT);
+  absl::Status ParseProblemFromString(const std::string& source,
+                                      MPModelProto* data,
+                                      MPSReader::Form form = AUTO_DETECT);
 };
 
 }  // namespace glop

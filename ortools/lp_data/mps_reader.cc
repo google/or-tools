@@ -37,6 +37,12 @@ class MPSReaderImpl {
   absl::Status ParseFile(const std::string& file_name, Data* data,
                          MPSReader::Form form);
 
+  // Loads instance from string. Useful with MapReduce. Automatically detects
+  // the file's format (free or fixed).
+  template <class Data>
+  absl::Status ParseProblemFromString(const std::string& source, Data* data,
+                                      MPSReader::Form form);
+
  private:
   // Number of fields in one line of MPS file.
   static const int kNumFields;
@@ -83,7 +89,7 @@ class MPSReaderImpl {
 
   // Line processor.
   template <class DataWrapper>
-  absl::Status ProcessLine(const std::string& line, DataWrapper* data);
+  absl::Status ProcessLine(absl::string_view line, DataWrapper* data);
 
   // Process section OBJSENSE in MPS file.
   template <class DataWrapper>
@@ -517,12 +523,11 @@ absl::Status MPSReaderImpl::ParseFile(const std::string& file_name, Data* data,
     return ParseFile(file_name, data, MPSReader::FREE);
   }
 
-  // TODO(user): Use the form directly.
   free_form_ = form == MPSReader::FREE;
   Reset();
   DataWrapper<Data> data_wrapper(data);
   data_wrapper.SetUp();
-  for (const std::string& line :
+  for (absl::string_view line :
        FileLines(file_name, FileLineIterator::REMOVE_INLINE_CR)) {
     RETURN_IF_ERROR(ProcessLine(line, &data_wrapper));
   }
@@ -531,8 +536,31 @@ absl::Status MPSReaderImpl::ParseFile(const std::string& file_name, Data* data,
   return absl::OkStatus();
 }
 
+template <class Data>
+absl::Status MPSReaderImpl::ParseProblemFromString(const std::string& source,
+                                                   Data* data,
+                                                   MPSReader::Form form) {
+  if (form == MPSReader::AUTO_DETECT) {
+    if (ParseProblemFromString(source, data, MPSReader::FIXED).ok()) {
+      return absl::OkStatus();
+    }
+    return ParseProblemFromString(source, data, MPSReader::FREE);
+  }
+
+  free_form_ = form == MPSReader::FREE;
+  Reset();
+  DataWrapper<Data> data_wrapper(data);
+  data_wrapper.SetUp();
+  for (absl::string_view line : absl::StrSplit(source, '\n')) {
+    RETURN_IF_ERROR(ProcessLine(line, &data_wrapper));
+  }
+  data_wrapper.CleanUp();
+  DisplaySummary();
+  return absl::OkStatus();
+}
+
 template <class DataWrapper>
-absl::Status MPSReaderImpl::ProcessLine(const std::string& line,
+absl::Status MPSReaderImpl::ProcessLine(absl::string_view line,
                                         DataWrapper* data) {
   ++line_num_;
   line_ = line;
@@ -1123,6 +1151,36 @@ absl::Status MPSReader::ParseFile(const std::string& file_name,
 absl::Status MPSReader::ParseFile(const std::string& file_name,
                                   MPModelProto* data, Form form) {
   return MPSReaderImpl().ParseFile(file_name, data, form);
+}
+
+// Loads instance from string. Useful with MapReduce. Automatically detects
+// the file's format (free or fixed).
+absl::Status MPSReader::ParseProblemFromString(const std::string& source,
+                                               LinearProgram* data,
+                                               MPSReader::Form form) {
+  return MPSReaderImpl().ParseProblemFromString(source, data, form);
+}
+
+absl::Status MPSReader::ParseProblemFromString(const std::string& source,
+                                               MPModelProto* data,
+                                               MPSReader::Form form) {
+  return MPSReaderImpl().ParseProblemFromString(source, data, form);
+}
+
+absl::StatusOr<MPModelProto> MpsDataToMPModelProto(
+    const std::string& mps_data) {
+  MPModelProto model;
+  RETURN_IF_ERROR(MPSReaderImpl().ParseProblemFromString(
+      mps_data, &model, MPSReader::AUTO_DETECT));
+  return model;
+}
+
+absl::StatusOr<MPModelProto> MpsFileToMPModelProto(
+    const std::string& mps_file) {
+  MPModelProto model;
+  RETURN_IF_ERROR(
+      MPSReaderImpl().ParseFile(mps_file, &model, MPSReader::AUTO_DETECT));
+  return model;
 }
 
 }  // namespace glop

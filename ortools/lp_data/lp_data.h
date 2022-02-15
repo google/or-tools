@@ -35,11 +35,11 @@
 #include "ortools/base/hash.h"
 #include "ortools/base/logging.h"  // for CHECK*
 #include "ortools/base/macros.h"   // for DISALLOW_COPY_AND_ASSIGN, NULL
-#include "ortools/base/strong_int.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/sparse.h"
 #include "ortools/util/fp_utils.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace glop {
