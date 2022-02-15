@@ -14,11 +14,19 @@
 #ifndef OR_TOOLS_SAT_LINEAR_CONSTRAINT_H_
 #define OR_TOOLS_SAT_LINEAR_CONSTRAINT_H_
 
+#include <algorithm>
+#include <ostream>
+#include <string>
+#include <utility>
 #include <vector>
 
+#include "absl/base/attributes.h"
+#include "absl/strings/str_cat.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/sat_base.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {

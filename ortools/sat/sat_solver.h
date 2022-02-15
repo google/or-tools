@@ -28,6 +28,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/integral_types.h"
@@ -42,6 +43,7 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_decision.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/util/bitset.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/stats.h"
 #include "ortools/util/strong_integers.h"

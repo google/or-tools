@@ -13,21 +13,41 @@
 
 #include "ortools/sat/cp_model_symmetries.h"
 
+#include <stddef.h>
+
+#include <algorithm>
 #include <cstdint>
 #include <limits>
 #include <memory>
+#include <utility>
+#include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/memory/memory.h"
+#include "absl/meta/type_traits.h"
+#include "absl/status/status.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
-#include "google/protobuf/repeated_field.h"
+#include "google/protobuf/message.h"
 #include "ortools/algorithms/find_graph_symmetries.h"
+#include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/hash.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
+#include "ortools/graph/graph.h"
+#include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cp_model_utils.h"
+#include "ortools/sat/model.h"
+#include "ortools/sat/presolve_context.h"
+#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/symmetry_util.h"
+#include "ortools/util/affine_relation.h"
+#include "ortools/util/logging.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {

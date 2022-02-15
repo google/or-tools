@@ -13,7 +13,15 @@
 
 // [START program]
 // [START import]
+#include <stdlib.h>
+
+#include <vector>
+
+#include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"
+#include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_solver.h"
+
 // [END import]
 namespace operations_research {
 namespace sat {

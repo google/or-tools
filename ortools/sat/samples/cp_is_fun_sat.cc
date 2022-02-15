@@ -19,12 +19,17 @@
 //
 // This problem has 72 different solutions in base 10.
 // [START import]
-#include <cstdint>
-#include <vector>
+#include <stdlib.h>
 
+#include <cstdint>
+
+#include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"
+#include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/util/sorted_interval_list.h"
 // [END import]
 
 namespace operations_research {

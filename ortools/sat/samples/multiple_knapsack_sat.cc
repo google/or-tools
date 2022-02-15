@@ -14,13 +14,18 @@
 // [START program]
 // Solves a multiple knapsack problem using the CP-SAT solver.
 // [START import]
+#include <stdlib.h>
+
 #include <map>
 #include <numeric>
 #include <tuple>
 #include <vector>
 
 #include "absl/strings/str_format.h"
+#include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"
+#include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_solver.h"
 // [END import]
 
 namespace operations_research {

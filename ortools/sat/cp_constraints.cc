@@ -14,11 +14,13 @@
 #include "ortools/sat/cp_constraints.h"
 
 #include <algorithm>
+#include <vector>
 
-#include "absl/container/flat_hash_map.h"
-#include "ortools/base/map_util.h"
-#include "ortools/sat/sat_solver.h"
-#include "ortools/util/sort.h"
+#include "absl/types/span.h"
+#include "ortools/sat/integer.h"
+#include "ortools/sat/model.h"
+#include "ortools/sat/sat_base.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {

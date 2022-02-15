@@ -13,14 +13,16 @@
 
 #include "ortools/sat/drat_writer.h"
 
-#include <cstdlib>
+#include <string>
 
-#include "absl/strings/str_format.h"
 #include "ortools/base/logging.h"
 #if !defined(__PORTABLE_PLATFORM__)
 #include "ortools/base/file.h"
 #endif  // !__PORTABLE_PLATFORM__
 #include "absl/status/status.h"
+#include "absl/strings/str_format.h"
+#include "absl/types/span.h"
+#include "ortools/sat/sat_base.h"
 
 namespace operations_research {
 namespace sat {

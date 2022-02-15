@@ -15,14 +15,18 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <functional>
 #include <limits>
 #include <map>
-#include <memory>
+#include <utility>
+#include <vector>
 
-#include "absl/container/flat_hash_set.h"
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/map_util.h"
 #include "ortools/graph/strongly_connected_components.h"
+#include "ortools/sat/integer.h"
+#include "ortools/sat/model.h"
+#include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/util/sort.h"
 #include "ortools/util/strong_integers.h"

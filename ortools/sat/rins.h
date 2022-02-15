@@ -15,6 +15,7 @@
 #define OR_TOOLS_SAT_RINS_H_
 
 #include <cstdint>
+#include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
@@ -25,6 +26,7 @@
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/synchronization.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {

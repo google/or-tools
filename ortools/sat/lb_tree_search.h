@@ -14,16 +14,28 @@
 #ifndef OR_TOOLS_SAT_LB_TREE_SEARCH_H_
 #define OR_TOOLS_SAT_LB_TREE_SEARCH_H_
 
+#include <stdint.h>
+
+#include <algorithm>
+#include <functional>
 #include <limits>
 #include <vector>
 
+#include "absl/strings/string_view.h"
+#include "absl/time/time.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/linear_programming_constraint.h"
+#include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_decision.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/synchronization.h"
+#include "ortools/sat/util.h"
+#include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -51,7 +63,7 @@ class LbTreeSearch {
 
  private:
   // Code a binary tree.
-  DEFINE_STRONG_INT_TYPE(NodeIndex, int);
+  DEFINE_STRONG_INDEX_TYPE(NodeIndex);
   struct Node {
     Node(Literal l, IntegerValue lb)
         : literal(l), true_objective(lb), false_objective(lb) {}

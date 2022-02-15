@@ -15,14 +15,12 @@
 
 #include <algorithm>
 #include <cstdint>
-#include <functional>
-#include <memory>
 #include <vector>
 
-#include "ortools/base/integral_types.h"
 #include "ortools/base/iterator_adaptors.h"
 #include "ortools/base/logging.h"
-#include "ortools/util/sort.h"
+#include "ortools/sat/integer.h"
+#include "ortools/sat/intervals.h"
 #include "ortools/util/strong_integers.h"
 
 namespace operations_research {

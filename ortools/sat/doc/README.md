@@ -87,7 +87,13 @@ solve status, the values for each variable in the model if solve was successful,
 and some metrics.
 
 ```cpp
+#include <stdlib.h>
+
+#include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"
+#include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_solver.h"
+#include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
 namespace sat {

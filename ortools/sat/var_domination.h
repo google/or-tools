@@ -15,7 +15,11 @@
 #define OR_TOOLS_SAT_VAR_DOMINATION_H_
 
 #include <cstdint>
+#include <memory>
+#include <string>
+#include <vector>
 
+#include "absl/types/span.h"
 #include "ortools/algorithms/dynamic_partition.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/cp_model_utils.h"

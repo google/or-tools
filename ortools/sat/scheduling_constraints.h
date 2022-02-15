@@ -15,6 +15,7 @@
 #define OR_TOOLS_SAT_SCHEDULING_CONSTRAINTS_H_
 
 #include <cstddef>
+#include <functional>
 #include <vector>
 
 #include "ortools/base/integral_types.h"

@@ -13,9 +13,14 @@
 
 #include "ortools/sat/symmetry_util.h"
 
+#include <algorithm>
 #include <cstdint>
+#include <memory>
+#include <vector>
 
 #include "ortools/algorithms/dynamic_partition.h"
+#include "ortools/algorithms/sparse_permutation.h"
+#include "ortools/base/logging.h"
 
 namespace operations_research {
 namespace sat {

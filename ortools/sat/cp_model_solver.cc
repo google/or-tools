@@ -14,9 +14,10 @@
 #include "ortools/sat/cp_model_solver.h"
 
 #include <algorithm>
-#include <atomic>
 #include <cmath>
 #include <cstdint>
+#include <cstdlib>
+#include <deque>
 #include <functional>
 #include <limits>
 #include <map>
@@ -28,39 +29,35 @@
 #include <utility>
 #include <vector>
 
+#include "ortools/base/logging.h"
+#include "ortools/base/timer.h"
 #if !defined(__PORTABLE_PLATFORM__)
-#include "absl/synchronization/notification.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/file.h"
-#include "ortools/util/sigint.h"
 #endif  // __PORTABLE_PLATFORM__
-
-#include "absl/base/attributes.h"
+#include "absl/base/thread_annotations.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/flags/flag.h"
 #include "absl/memory/memory.h"
 #include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
+#include "absl/types/span.h"
 #include "ortools/base/cleanup.h"
-#include "ortools/base/commandlineflags.h"
-#include "ortools/base/integral_types.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
-#include "ortools/base/threadpool.h"
-#include "ortools/base/timer.h"
-#include "ortools/base/version.h"
-#include "ortools/base/vlog_is_on.h"
 #include "ortools/graph/connected_components.h"
 #include "ortools/port/proto_utils.h"
-#include "ortools/sat/circuit.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model_lns.h"
 #include "ortools/sat/cp_model_loader.h"
+#include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cp_model_postsolve.h"
 #include "ortools/sat/cp_model_presolve.h"
 #include "ortools/sat/cp_model_search.h"
@@ -73,15 +70,17 @@
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_expr.h"
 #include "ortools/sat/integer_search.h"
-#include "ortools/sat/intervals.h"
 #include "ortools/sat/lb_tree_search.h"
+#include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/linear_relaxation.h"
 #include "ortools/sat/lp_utils.h"
 #include "ortools/sat/max_hs.h"
+#include "ortools/sat/model.h"
 #include "ortools/sat/optimization.h"
 #include "ortools/sat/parameters_validation.h"
 #include "ortools/sat/precedences.h"
+#include "ortools/sat/presolve_context.h"
 #include "ortools/sat/probing.h"
 #include "ortools/sat/rins.h"
 #include "ortools/sat/sat_base.h"
@@ -91,7 +90,13 @@
 #include "ortools/sat/simplification.h"
 #include "ortools/sat/subsolver.h"
 #include "ortools/sat/synchronization.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/logging.h"
+#include "ortools/util/random_engine.h"
+#if !defined(__PORTABLE_PLATFORM__)
+#include "ortools/util/sigint.h"
+#endif  // __PORTABLE_PLATFORM__
+#include "ortools/base/version.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
@@ -338,17 +343,54 @@ std::string CpModelStats(const CpModelProto& model_proto) {
         "\n");
   }
 
-  const std::string objective_string =
-      model_proto.has_objective()
-          ? absl::StrCat(" (", model_proto.objective().vars_size(),
-                         " in objective)")
-          : (model_proto.has_floating_point_objective()
-                 ? absl::StrCat(
-                       " (", model_proto.floating_point_objective().vars_size(),
-                       " in floating point objective)")
-                 : "");
-  absl::StrAppend(&result, "#Variables: ", model_proto.variables_size(),
-                  objective_string, "\n");
+  auto count_variables_by_type =
+      [&model_proto](const google::protobuf::RepeatedField<int>& vars,
+                     int* num_booleans, int* num_integers) {
+        for (const int ref : vars) {
+          const auto& var_proto = model_proto.variables(PositiveRef(ref));
+          if (var_proto.domain_size() == 2 && var_proto.domain(0) == 0 &&
+              var_proto.domain(1) == 1) {
+            (*num_booleans)++;
+          }
+        }
+        *num_integers = model_proto.objective().vars_size() - *num_booleans;
+      };
+
+  {
+    int num_boolean_variables_in_objective = 0;
+    int num_integer_variables_in_objective = 0;
+    if (model_proto.has_objective()) {
+      count_variables_by_type(model_proto.objective().vars(),
+                              &num_boolean_variables_in_objective,
+                              &num_integer_variables_in_objective);
+    }
+    if (model_proto.has_floating_point_objective()) {
+      count_variables_by_type(model_proto.floating_point_objective().vars(),
+                              &num_boolean_variables_in_objective,
+                              &num_integer_variables_in_objective);
+    }
+
+    std::vector<std::string> obj_vars_strings;
+    if (num_boolean_variables_in_objective > 0) {
+      obj_vars_strings.push_back(
+          absl::StrCat("#bools:", num_boolean_variables_in_objective));
+    }
+    if (num_integer_variables_in_objective > 0) {
+      obj_vars_strings.push_back(
+          absl::StrCat("#ints:", num_integer_variables_in_objective));
+    }
+
+    const std::string objective_string =
+        model_proto.has_objective()
+            ? absl::StrCat(" (", absl::StrJoin(obj_vars_strings, " "),
+                           " in objective)")
+            : (model_proto.has_floating_point_objective()
+                   ? absl::StrCat(" (", absl::StrJoin(obj_vars_strings, " "),
+                                  " in floating point objective)")
+                   : "");
+    absl::StrAppend(&result, "#Variables: ", model_proto.variables_size(),
+                    objective_string, "\n");
+  }
   if (num_vars_per_domains.size() < 100) {
     for (const auto& entry : num_vars_per_domains) {
       const std::string temp = absl::StrCat("  - ", entry.second, " in ",

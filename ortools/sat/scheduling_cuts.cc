@@ -15,10 +15,8 @@
 
 #include <algorithm>
 #include <cmath>
-#include <cstdint>
+#include <cstdlib>
 #include <functional>
-#include <limits>
-#include <memory>
 #include <optional>
 #include <string>
 #include <tuple>
@@ -26,18 +24,20 @@
 #include <vector>
 
 #include "absl/strings/str_cat.h"
-#include "ortools/base/integral_types.h"
+#include "absl/types/span.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/sat/cuts.h"
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/linear_constraint_manager.h"
+#include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
-#include "ortools/sat/util.h"
-#include "ortools/util/time_limit.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {

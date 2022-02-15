@@ -15,7 +15,10 @@
 #define OR_TOOLS_SAT_LINEAR_PROGRAMMING_CONSTRAINT_H_
 
 #include <cstdint>
+#include <functional>
 #include <limits>
+#include <memory>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -32,6 +35,8 @@
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/linear_constraint_manager.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/util.h"
 #include "ortools/sat/zero_half_cuts.h"
 #include "ortools/util/rev.h"
@@ -128,6 +133,7 @@ class ScatteredIntegerVector {
 // However, by default, we interpret the LP result by recomputing everything
 // in integer arithmetic, so we are exact.
 class LinearProgrammingDispatcher;
+
 class LinearProgrammingConstraint : public PropagatorInterface,
                                     ReversibleInterface {
  public:

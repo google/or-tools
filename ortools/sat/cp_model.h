@@ -40,9 +40,11 @@
 
 #include <cstdint>
 #include <initializer_list>
+#include <iosfwd>
 #include <limits>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/types/span.h"
@@ -57,8 +59,8 @@ namespace operations_research {
 namespace sat {
 
 class CpModelBuilder;
-class LinearExpr;
 class IntVar;
+class LinearExpr;
 
 /**
  * A Boolean variable.

@@ -14,12 +14,19 @@
 #include "ortools/sat/subsolver.h"
 
 #include <cstdint>
+#include <functional>
+#include <memory>
+#include <string>
+#include <vector>
 
-#include "ortools/base/logging.h"
-
-#if !defined(__PORTABLE_PLATFORM__)
+#include "absl/flags/flag.h"
+#include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/time/clock.h"
+#include "absl/time/time.h"
+#include "ortools/base/logging.h"
+#if !defined(__PORTABLE_PLATFORM__)
+#include "ortools/base/threadpool.h"
 #endif  // __PORTABLE_PLATFORM__
 
 namespace operations_research {

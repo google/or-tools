@@ -13,15 +13,32 @@
 
 #include "ortools/sat/sat_inprocessing.h"
 
+#include <algorithm>
+#include <cmath>
 #include <cstdint>
+#include <deque>
 #include <limits>
+#include <utility>
+#include <vector>
 
 #include "absl/container/inlined_vector.h"
+#include "absl/random/distributions.h"
+#include "absl/types/span.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/timer.h"
+#include "ortools/sat/clause.h"
+#include "ortools/sat/drat_checker.h"
 #include "ortools/sat/probing.h"
+#include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_decision.h"
+#include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/sat_solver.h"
+#include "ortools/util/bitset.h"
+#include "ortools/util/integer_pq.h"
+#include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {

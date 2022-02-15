@@ -14,42 +14,37 @@
 #include "ortools/sat/max_hs.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
-#include <cstdio>
-#include <cstdlib>
-#include <deque>
 #include <functional>
 #include <limits>
-#include <map>
-#include <memory>
-#include <set>
-#include <string>
 #include <utility>
+#include <vector>
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
-#include "absl/random/bit_gen_ref.h"
+#include "absl/flags/flag.h"
+#include "absl/meta/type_traits.h"
 #include "absl/random/random.h"
-#include "absl/strings/str_cat.h"
-#include "absl/strings/str_format.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/cleanup.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/macros.h"
-#include "ortools/base/timer.h"
+#include "ortools/base/strong_vector.h"
 #if !defined(__PORTABLE_PLATFORM__) && defined(USE_SCIP)
 #include "ortools/linear_solver/linear_solver.h"
 #endif  // __PORTABLE_PLATFORM__
 #include "ortools/linear_solver/linear_solver.pb.h"
-#include "ortools/port/proto_utils.h"
-#include "ortools/sat/boolean_problem.h"
-#include "ortools/sat/cp_model_utils.h"
-#include "ortools/sat/encoding.h"
+#include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/integer.h"
-#include "ortools/sat/integer_expr.h"
+#include "ortools/sat/integer_search.h"
+#include "ortools/sat/linear_constraint.h"
+#include "ortools/sat/linear_relaxation.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/optimization.h"
-#include "ortools/sat/pb_constraint.h"
+#include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/sat_solver.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/strong_integers.h"
@@ -300,17 +295,9 @@ void HittingSetOptimizer::ProjectAndAddAtMostOne(
     }
   }
 
-  int num_extracted_variables = 0;
-  const LinearConstraint linear = builder.Build();
-  for (const IntegerVariable var : linear.vars) {
-    if (GetExtractedIndex(var) != kUnextracted) num_extracted_variables++;
+  if (ProjectAndAddLinear(builder.Build()) != nullptr) {
+    num_extracted_at_most_ones_++;
   }
-
-  if (num_extracted_variables <= 1) return;
-
-  MPConstraintProto* ct = request_.mutable_model()->add_constraint();
-  ProjectLinear(linear, ct);
-  num_extracted_at_most_ones_++;
 }
 
 MPConstraintProto* HittingSetOptimizer::ProjectAndAddLinear(

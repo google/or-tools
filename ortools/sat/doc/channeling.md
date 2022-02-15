@@ -116,7 +116,13 @@ ChannelingSampleSat()
 ### C++ code
 
 ```cpp
+#include <stdlib.h>
+
+#include "ortools/base/logging.h"
+#include "absl/types/span.h"
 #include "ortools/sat/cp_model.h"
+#include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
 
@@ -424,7 +430,14 @@ BinpackingProblemSat()
 ### C++ code
 
 ```cpp
+#include <stdlib.h>
+
+#include <vector>
+
+#include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"
+#include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_solver.h"
 
 namespace operations_research {
 namespace sat {

@@ -14,6 +14,8 @@
 #ifndef OR_TOOLS_SAT_ZERO_HALF_CUTS_H_
 #define OR_TOOLS_SAT_ZERO_HALF_CUTS_H_
 
+#include <functional>
+#include <utility>
 #include <vector>
 
 #include "ortools/lp_data/lp_types.h"

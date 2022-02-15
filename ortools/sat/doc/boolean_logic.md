@@ -67,6 +67,9 @@ LiteralSampleSat()
 ### C++ code
 
 ```cpp
+#include <stdlib.h>
+
+#include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"
 
 namespace operations_research {
@@ -165,6 +168,9 @@ BoolOrSampleSat()
 ### C++ code
 
 ```cpp
+#include <stdlib.h>
+
+#include "absl/types/span.h"
 #include "ortools/sat/cp_model.h"
 
 namespace operations_research {
@@ -281,6 +287,9 @@ ReifiedSampleSat()
 ### C++ code
 
 ```cpp
+#include <stdlib.h>
+
+#include "absl/types/span.h"
 #include "ortools/sat/cp_model.h"
 
 namespace operations_research {

@@ -14,8 +14,10 @@
 #ifndef OR_TOOLS_SAT_RESTART_H_
 #define OR_TOOLS_SAT_RESTART_H_
 
+#include <string>
 #include <vector>
 
+#include "ortools/base/logging.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_decision.h"
 #include "ortools/sat/sat_parameters.pb.h"

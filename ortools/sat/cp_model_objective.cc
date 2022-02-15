@@ -13,9 +13,14 @@
 
 #include "ortools/sat/cp_model_objective.h"
 
+#include <algorithm>
 #include <cstdint>
+#include <cstdlib>
 
+#include "ortools/base/logging.h"
+#include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
+#include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
 namespace sat {

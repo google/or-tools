@@ -14,19 +14,29 @@
 #ifndef OR_TOOLS_SAT_MAX_HS_H_
 #define OR_TOOLS_SAT_MAX_HS_H_
 
+#include <stdint.h>
+
+#include <cstdint>
 #include <functional>
+#include <utility>
+#include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
+#include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_search.h"
+#include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/linear_relaxation.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {

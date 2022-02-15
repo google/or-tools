@@ -22,15 +22,22 @@
 #define OR_TOOLS_SAT_SAT_INPROCESSING_H_
 
 #include <cstdint>
+#include <deque>
+#include <vector>
 
+#include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/clause.h"
+#include "ortools/sat/drat_checker.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_decision.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/integer_pq.h"
+#include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -49,9 +56,9 @@ struct PostsolveClauses {
   std::deque<std::vector<Literal>> clauses;
 };
 
-class StampingSimplifier;
 class BlockedClauseSimplifier;
 class BoundedVariableElimination;
+class StampingSimplifier;
 
 struct SatPresolveOptions {
   // The time budget to spend.

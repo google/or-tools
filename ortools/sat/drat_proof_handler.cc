@@ -14,10 +14,21 @@
 #include "ortools/sat/drat_proof_handler.h"
 
 #include <algorithm>
+#include <cmath>
+#include <memory>
+#include <utility>
+#include <vector>
 
-#include "absl/memory/memory.h"
 #include "ortools/base/logging.h"
+#if !defined(__PORTABLE_PLATFORM__)
+#include "ortools/base/file.h"
+#endif  // !defined(__PORTABLE_PLATFORM__)
+#include "absl/memory/memory.h"
+#include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/sat/drat_checker.h"
+#include "ortools/sat/drat_writer.h"
+#include "ortools/sat/sat_base.h"
 #include "ortools/util/strong_integers.h"
 
 namespace operations_research {

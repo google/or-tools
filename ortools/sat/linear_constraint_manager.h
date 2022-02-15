@@ -14,18 +14,25 @@
 #ifndef OR_TOOLS_SAT_LINEAR_CONSTRAINT_MANAGER_H_
 #define OR_TOOLS_SAT_LINEAR_CONSTRAINT_MANAGER_H_
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <map>
+#include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/glop/revised_simplex.h"
+#include "ortools/sat/integer.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/logging.h"
+#include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -77,7 +84,7 @@ class LinearConstraintManager {
   // basic preprocessing. If added is given, it will be set to true if this
   // constraint was actually a new one and to false if it was dominated by an
   // already existing one.
-  DEFINE_STRONG_INT_TYPE(ConstraintIndex, int32_t);
+  DEFINE_STRONG_INDEX_TYPE(ConstraintIndex);
   ConstraintIndex Add(LinearConstraint ct, bool* added = nullptr);
 
   // Same as Add(), but logs some information about the newly added constraint.

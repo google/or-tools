@@ -13,15 +13,28 @@
 
 #include "ortools/sat/drat_checker.h"
 
+#include <stddef.h>
+
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <fstream>
+#include <limits>
+#include <string>
+#include <utility>
+#include <vector>
 
+#include "absl/container/flat_hash_set.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
 #include "absl/time/clock.h"
+#include "absl/types/span.h"
 #include "ortools/base/hash.h"
-#include "ortools/base/stl_util.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/strong_vector.h"
+#include "ortools/sat/sat_base.h"
+#include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {

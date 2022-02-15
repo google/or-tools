@@ -16,22 +16,26 @@
 #include <algorithm>
 #include <cstdint>
 #include <limits>
+#include <utility>
 #include <vector>
 
-#include "absl/container/flat_hash_map.h"
-#include "absl/strings/str_join.h"
-#include "ortools/base/iterator_adaptors.h"
-#include "ortools/base/map_util.h"
-#include "ortools/base/stl_util.h"
+#include "absl/container/flat_hash_set.h"
+#include "absl/types/span.h"
+#include "ortools/base/logging.h"
 #include "ortools/sat/cumulative_energy.h"
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/disjunctive.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_expr.h"
 #include "ortools/sat/intervals.h"
-#include "ortools/sat/sat_solver.h"
-#include "ortools/sat/theta_tree.h"
+#include "ortools/sat/linear_constraint.h"
+#include "ortools/sat/model.h"
+#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/timetable.h"
-#include "ortools/util/sort.h"
+#include "ortools/sat/util.h"
+#include "ortools/util/saturated_arithmetic.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {

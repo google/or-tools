@@ -179,7 +179,13 @@ RabbitsAndPheasantsSat()
 ### C++ code
 
 ```cpp
+#include <stdlib.h>
+
+#include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"
+#include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_solver.h"
+#include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
 namespace sat {
@@ -408,9 +414,15 @@ earliness_tardiness_cost_sample_sat()
 ### C++ code
 
 ```cpp
+#include <stdlib.h>
+
 #include <cstdint>
 
+#include "ortools/base/logging.h"
+#include "absl/types/span.h"
 #include "ortools/sat/cp_model.h"
+#include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
 
@@ -751,9 +763,19 @@ step_function_sample_sat()
 ### C++ code
 
 ```cpp
+#include <stdlib.h>
+
+#include <memory>
+
+#include "ortools/base/integral_types.h"
+#include "ortools/base/logging.h"
+#include "absl/types/span.h"
 #include "ortools/sat/cp_model.h"
+#include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
 namespace sat {

@@ -13,12 +13,21 @@
 
 #include "ortools/sat/diffn_util.h"
 
-#include <functional>
-#include <limits>
-#include <memory>
+#include <stddef.h>
 
+#include <algorithm>
+#include <utility>
+#include <vector>
+
+#include "absl/container/flat_hash_set.h"
+#include "absl/random/bit_gen_ref.h"
+#include "absl/types/span.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/sat/integer.h"
+#include "ortools/sat/intervals.h"
 #include "ortools/util/integer_pq.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {

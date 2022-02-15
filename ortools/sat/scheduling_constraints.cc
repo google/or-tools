@@ -13,8 +13,22 @@
 
 #include "ortools/sat/scheduling_constraints.h"
 
+#include <algorithm>
+#include <functional>
+#include <vector>
+
+#include "absl/types/span.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/macros.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_expr.h"
+#include "ortools/sat/intervals.h"
+#include "ortools/sat/linear_constraint.h"
+#include "ortools/sat/model.h"
+#include "ortools/sat/precedences.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_solver.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {

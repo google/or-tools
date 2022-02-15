@@ -16,6 +16,11 @@
 #ifndef OR_TOOLS_SAT_LP_UTILS_H_
 #define OR_TOOLS_SAT_LP_UTILS_H_
 
+#include <stdint.h>
+
+#include <utility>
+#include <vector>
+
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/sat/boolean_problem.pb.h"

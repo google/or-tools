@@ -16,7 +16,10 @@
 
 #include <atomic>
 #include <cstdint>
+#include <functional>
+#include <string>
 
+#include "absl/status/status.h"
 #include "absl/strings/match.h"
 #include "ortools/base/file.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -26,6 +29,7 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/logging.h"
+#include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {

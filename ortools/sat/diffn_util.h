@@ -14,14 +14,21 @@
 #ifndef OR_TOOLS_SAT_DIFFN_UTIL_H_
 #define OR_TOOLS_SAT_DIFFN_UTIL_H_
 
+#include <algorithm>
 #include <cstdint>
+#include <iosfwd>
+#include <string>
+#include <tuple>
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
+#include "absl/random/bit_gen_ref.h"
 #include "absl/strings/str_format.h"
+#include "absl/types/span.h"
 #include "ortools/graph/connected_components.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/intervals.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {

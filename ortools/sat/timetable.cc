@@ -15,11 +15,15 @@
 
 #include <algorithm>
 #include <cstdint>
-#include <functional>
-#include <memory>
+#include <utility>
+#include <vector>
 
 #include "ortools/base/logging.h"
-#include "ortools/util/sort.h"
+#include "ortools/sat/integer.h"
+#include "ortools/sat/intervals.h"
+#include "ortools/sat/model.h"
+#include "ortools/sat/sat_base.h"
+#include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/strong_integers.h"
 
 namespace operations_research {

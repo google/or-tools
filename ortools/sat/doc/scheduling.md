@@ -101,7 +101,11 @@ IntervalSampleSat()
 ### C++ code
 
 ```cpp
+#include <stdlib.h>
+
+#include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"
+#include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
 namespace sat {
@@ -271,7 +275,11 @@ OptionalIntervalSampleSat()
 ### C++ code
 
 ```cpp
+#include <stdlib.h>
+
+#include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"
+#include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
 namespace sat {
@@ -468,9 +476,17 @@ NoOverlapSampleSat()
 ### C++ code
 
 ```cpp
+#include <stdlib.h>
+
 #include <cstdint>
 
+#include "ortools/base/logging.h"
+#include "absl/types/span.h"
 #include "ortools/sat/cp_model.h"
+#include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_solver.h"
+#include "ortools/sat/model.h"
+#include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
 namespace sat {
@@ -842,7 +858,17 @@ RankingSampleSat()
 ### C++ code
 
 ```cpp
+#include <stdint.h>
+#include <stdlib.h>
+
+#include <vector>
+
+#include "ortools/base/logging.h"
+#include "absl/types/span.h"
 #include "ortools/sat/cp_model.h"
+#include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_solver.h"
+#include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
 namespace sat {

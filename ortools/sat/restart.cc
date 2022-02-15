@@ -13,9 +13,16 @@
 
 #include "ortools/sat/restart.h"
 
+#include <string>
+#include <vector>
+
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_split.h"
+#include "ortools/base/logging.h"
 #include "ortools/port/proto_utils.h"
+#include "ortools/sat/sat_decision.h"
+#include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/util/running_stat.h"
 
 namespace operations_research {
 namespace sat {

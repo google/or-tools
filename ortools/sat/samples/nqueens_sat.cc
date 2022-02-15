@@ -14,13 +14,20 @@
 // [START program]
 // OR-Tools solution to the N-queens problem.
 // [START import]
-#include <cstdint>
+#include <stdlib.h>
+
+#include <sstream>
+#include <string>
 #include <vector>
 
 #include "absl/strings/numbers.h"
+#include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"
+#include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/util/sorted_interval_list.h"
 // [END import]
 
 namespace operations_research {

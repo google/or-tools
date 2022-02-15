@@ -14,10 +14,18 @@
 #ifndef OR_TOOLS_SAT_INCLUSION_H_
 #define OR_TOOLS_SAT_INCLUSION_H_
 
+#include <stddef.h>
+#include <stdint.h>
+
 #include <algorithm>
+#include <cstdint>
 #include <functional>
+#include <limits>
+#include <tuple>
+#include <utility>
 #include <vector>
 
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
 
 namespace operations_research {

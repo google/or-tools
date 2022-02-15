@@ -13,6 +13,10 @@
 
 #include "ortools/sat/parameters_validation.h"
 
+#include <string>
+
+#include "ortools/sat/sat_parameters.pb.h"
+
 namespace operations_research {
 namespace sat {
 

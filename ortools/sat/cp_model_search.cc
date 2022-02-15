@@ -13,15 +13,31 @@
 
 #include "ortools/sat/cp_model_search.h"
 
+#include <algorithm>
 #include <cstdint>
+#include <functional>
 #include <limits>
-#include <random>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "absl/container/flat_hash_map.h"
-#include "absl/strings/str_format.h"
+#include "absl/container/flat_hash_set.h"
+#include "absl/flags/flag.h"
+#include "absl/random/distributions.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
+#include "ortools/base/logging.h"
+#include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_search.h"
+#include "ortools/sat/model.h"
+#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/strong_integers.h"
 
 // TODO(user): remove this when the code is stable and does not use SCIP
 // anymore.

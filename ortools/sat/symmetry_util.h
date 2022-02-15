@@ -14,6 +14,9 @@
 #ifndef OR_TOOLS_SAT_SYMMETRY_UTIL_H_
 #define OR_TOOLS_SAT_SYMMETRY_UTIL_H_
 
+#include <memory>
+#include <vector>
+
 #include "ortools/algorithms/sparse_permutation.h"
 
 namespace operations_research {

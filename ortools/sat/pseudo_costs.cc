@@ -13,13 +13,18 @@
 
 #include "ortools/sat/pseudo_costs.h"
 
-#include <cmath>
+#include <algorithm>
+#include <limits>
 #include <vector>
 
+#include "ortools/base/logging.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/sat/integer.h"
-#include "ortools/sat/sat_decision.h"
+#include "ortools/sat/model.h"
+#include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {

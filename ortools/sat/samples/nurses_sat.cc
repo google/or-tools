@@ -14,14 +14,20 @@
 // [START program]
 // Example of a simple nurse scheduling problem.
 // [START import]
+#include <stdlib.h>
+
 #include <atomic>
 #include <map>
 #include <numeric>
+#include <string>
 #include <tuple>
 #include <vector>
 
 #include "absl/strings/str_format.h"
+#include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"
+#include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/time_limit.h"

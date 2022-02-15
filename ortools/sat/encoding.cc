@@ -16,10 +16,16 @@
 #include <algorithm>
 #include <cstdint>
 #include <deque>
-#include <memory>
 #include <queue>
+#include <vector>
 
+#include "ortools/base/logging.h"
+#include "ortools/sat/boolean_problem.pb.h"
+#include "ortools/sat/pb_constraint.h"
+#include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/sat_solver.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {

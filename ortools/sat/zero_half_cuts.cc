@@ -13,6 +13,17 @@
 
 #include "ortools/sat/zero_half_cuts.h"
 
+#include <algorithm>
+#include <functional>
+#include <utility>
+#include <vector>
+
+#include "ortools/base/logging.h"
+#include "ortools/lp_data/lp_types.h"
+#include "ortools/sat/integer.h"
+#include "ortools/sat/util.h"
+#include "ortools/util/strong_integers.h"
+
 namespace operations_research {
 namespace sat {
 

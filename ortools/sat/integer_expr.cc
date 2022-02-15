@@ -15,15 +15,27 @@
 
 #include <algorithm>
 #include <cstdint>
-#include <memory>
+#include <cstdlib>
+#include <functional>
+#include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/memory/memory.h"
+#include "absl/types/span.h"
+#include "ortools/base/integral_types.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/mathutil.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/linear_constraint.h"
+#include "ortools/sat/model.h"
+#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_solver.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
+#include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -1404,7 +1416,7 @@ bool FixedModuloPropagator::PropagateOuterBounds() {
 bool FixedModuloPropagator::PropagateBoundsWhenExprIsPositive(
     AffineExpression expr, AffineExpression target) {
   const IntegerValue min_target = integer_trail_->LowerBound(target);
-  DCHECK_GE(min_target, 0) << target.DebugString();
+  DCHECK_GE(min_target, 0);
   const IntegerValue max_target = integer_trail_->UpperBound(target);
 
   // The propagation rules below will not be triggered if the domain of target

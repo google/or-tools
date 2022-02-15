@@ -13,7 +13,15 @@
 
 #include "ortools/sat/symmetry.h"
 
+#include <memory>
+#include <vector>
+
+#include "absl/types/span.h"
+#include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/strong_vector.h"
+#include "ortools/sat/sat_base.h"
+#include "ortools/util/stats.h"
 #include "ortools/util/strong_integers.h"
 
 namespace operations_research {
