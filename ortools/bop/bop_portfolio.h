@@ -27,12 +27,13 @@
 #include "ortools/sat/sat_solver.h"
 #include "ortools/util/random_engine.h"
 #include "ortools/util/stats.h"
+#include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace bop {
 
-DEFINE_STRONG_INT_TYPE(OptimizerIndex, int);
+DEFINE_STRONG_INDEX_TYPE(OptimizerIndex);
 const OptimizerIndex kInvalidOptimizerIndex(-1);
 
 // Forward declaration.
