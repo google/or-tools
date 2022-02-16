@@ -11,8 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "absl/strings/str_cat.h"
 #include "ortools/init/init.h"
+
+#include "absl/strings/str_cat.h"
 
 namespace operations_research {
 void TestLogging() {

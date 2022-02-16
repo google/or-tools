@@ -160,12 +160,13 @@ void LocationContainer::AddRandomLocation(int64_t x_max, int64_t y_max,
   }
 }
 
-int64_t LocationContainer::ManhattanDistance(NodeIndex from, NodeIndex to) const {
+int64_t LocationContainer::ManhattanDistance(NodeIndex from,
+                                             NodeIndex to) const {
   return locations_[from].DistanceTo(locations_[to]);
 }
 
 int64_t LocationContainer::NegManhattanDistance(NodeIndex from,
-                                              NodeIndex to) const {
+                                                NodeIndex to) const {
   return -ManhattanDistance(from, to);
 }
 
@@ -179,7 +180,8 @@ bool LocationContainer::SameLocation(NodeIndex node1, NodeIndex node2) const {
   }
   return false;
 }
-int64_t LocationContainer::SameLocationFromIndex(int64_t node1, int64_t node2) const {
+int64_t LocationContainer::SameLocationFromIndex(int64_t node1,
+                                                 int64_t node2) const {
   // The direct conversion from constraint model indices to routing model
   // nodes is correct because the depot is node 0.
   // TODO(user): Fetch proper indices from routing model.
@@ -190,7 +192,8 @@ LocationContainer::Location::Location() : x_(0), y_(0) {}
 
 LocationContainer::Location::Location(int64_t x, int64_t y) : x_(x), y_(y) {}
 
-int64_t LocationContainer::Location::DistanceTo(const Location& location) const {
+int64_t LocationContainer::Location::DistanceTo(
+    const Location& location) const {
   return Abs(x_ - location.x_) + Abs(y_ - location.y_);
 }
 
@@ -220,8 +223,8 @@ void RandomDemand::Initialize() {
     if (order == depot_) {
       demand_[order] = 0;
     } else {
-      demand_[order] =
-          kDemandMin + absl::Uniform(randomizer, 0, kDemandMax - kDemandMin + 1);
+      demand_[order] = kDemandMin + absl::Uniform(randomizer, 0,
+                                                  kDemandMax - kDemandMin + 1);
     }
   }
 }
@@ -249,7 +252,7 @@ StopServiceTimePlusTransition::StopServiceTimePlusTransition(
       transition_time_(std::move(transition_time)) {}
 
 int64_t StopServiceTimePlusTransition::Compute(NodeIndex from,
-                                             NodeIndex to) const {
+                                               NodeIndex to) const {
   return location_container_.SameLocation(from, to)
              ? 0
              : stop_time_ + transition_time_(from, to);
