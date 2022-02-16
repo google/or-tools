@@ -22,13 +22,11 @@ PROTOC_BINARY := $(shell $(WHICH) ${UNIX_PROTOC_BINARY})
 # Tags of dependencies to checkout.
 PROTOBUF_TAG = v3.19.4
 ABSL_TAG = 20211102.0
-CBC_TAG = 2.10.5
-CGL_TAG = 0.60.3
-# Clp >= 1.17.5 is broken, so we must keep 1.17.4
-# see: https://github.com/coin-or/Clp/issues/130
-CLP_TAG = 1.17.4
-OSI_TAG = 0.108.6
-COINUTILS_TAG = 2.11.4
+CBC_TAG = 2.10.7
+CGL_TAG = 0.60.5
+CLP_TAG = 1.17.7
+OSI_TAG = 0.108.7
+COINUTILS_TAG = 2.11.6
 PATCHELF_TAG = 0.10
 SCIP_TAG = v800
 
