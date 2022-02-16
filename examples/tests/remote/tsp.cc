@@ -85,13 +85,13 @@ class RandomMatrix {
     }
   }
   int64_t Distance(RoutingModel::NodeIndex from,
-                 RoutingModel::NodeIndex to) const {
+                   RoutingModel::NodeIndex to) const {
     return matrix_[MatrixIndex(from, to)];
   }
 
  private:
   int64_t MatrixIndex(RoutingModel::NodeIndex from,
-                    RoutingModel::NodeIndex to) const {
+                      RoutingModel::NodeIndex to) const {
     return (from * size_ + to).value();
   }
   std::unique_ptr<int64_t[]> matrix_;
@@ -129,7 +129,8 @@ int main(int argc, char** argv) {
     int64_t forbidden_connections = 0;
     while (forbidden_connections <
            absl::GetFlag(FLAGS_tsp_random_forbidden_connections)) {
-      const int64_t from = randomizer.Uniform(absl::GetFlag(FLAGS_tsp_size) - 1);
+      const int64_t from =
+          randomizer.Uniform(absl::GetFlag(FLAGS_tsp_size) - 1);
       const int64_t to =
           randomizer.Uniform(absl::GetFlag(FLAGS_tsp_size) - 1) + 1;
       if (routing.NextVar(from)->Contains(to)) {

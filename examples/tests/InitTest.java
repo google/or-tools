@@ -40,15 +40,15 @@ public final class InitTest {
 
   @Test
   public void testFlags() {
-     final CppFlags cpp_flags = new CppFlags();
-     assertNotNull(cpp_flags);
-     cpp_flags.setLogtostderr(true);
-     cpp_flags.setLog_prefix(true);
-     cpp_flags.setCp_model_dump_prefix("init");
-     cpp_flags.setCp_model_dump_models(true);
-     cpp_flags.setCp_model_dump_lns(true);
-     cpp_flags.setCp_model_dump_response(true);
-     CppBridge.setFlags(cpp_flags);
+    final CppFlags cpp_flags = new CppFlags();
+    assertNotNull(cpp_flags);
+    cpp_flags.setLogtostderr(true);
+    cpp_flags.setLog_prefix(true);
+    cpp_flags.setCp_model_dump_prefix("init");
+    cpp_flags.setCp_model_dump_models(true);
+    cpp_flags.setCp_model_dump_lns(true);
+    cpp_flags.setCp_model_dump_response(true);
+    CppBridge.setFlags(cpp_flags);
   }
 
   @Test
@@ -58,7 +58,7 @@ public final class InitTest {
     final int major = v.getMajorNumber();
     final int minor = v.getMinorNumber();
     final int patch = v.getPatchNumber();
-    final String version =  v.getVersionString();
+    final String version = v.getVersionString();
     final String check = major + "." + minor + "." + patch;
     assertEquals(check, version);
   }

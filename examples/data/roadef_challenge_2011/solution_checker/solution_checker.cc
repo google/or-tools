@@ -87,7 +87,7 @@ int64_t RemainingCapacities::GetLoadCost(
        ++resource_id) {
     const int load_cost_weight = resources_.at(resource_id).load_cost_weight;
     const int64_t delta = safety_remaining_capacities.at(resource_id) -
-                        remaining_capacities_.at(resource_id);
+                          remaining_capacities_.at(resource_id);
     load_cost += load_cost_weight * std::max(delta, int64_t{0});
   }
   return load_cost;
@@ -252,7 +252,7 @@ int64_t SolutionChecker::GetObjectiveCost() const {
   const int64_t service_move_cost = GetServiceMoveCost();
   const int64_t machine_move_cost = GetMachineMoveCost();
   const int64_t total_cost = load_cost + balance_cost + process_move_cost +
-                           service_move_cost + machine_move_cost;
+                             service_move_cost + machine_move_cost;
   return total_cost;
 }
 

@@ -19,8 +19,7 @@
 
 namespace operations_research {
 void SolveAndPrint(MPSolver& solver, std::vector<MPVariable*> variables,
-                   std::vector<MPConstraint*> constraints,
-                   bool is_continuous) {
+                   std::vector<MPConstraint*> constraints, bool is_continuous) {
   LOG(INFO) << "Number of variables = " << solver.NumVariables();
   LOG(INFO) << "Number of constraints = " << solver.NumConstraints();
 
@@ -47,7 +46,7 @@ void SolveAndPrint(MPSolver& solver, std::vector<MPVariable*> variables,
     const std::vector<double> activities = solver.ComputeConstraintActivities();
     for (const auto& i : constraints) {
       LOG(INFO) << i->name() << ": dual value = " << i->dual_value()
-        << " activity = " << activities[i->index()];
+                << " activity = " << activities[i->index()];
     }
   }
 }

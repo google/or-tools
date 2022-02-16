@@ -236,12 +236,11 @@ public final class RoutingSolverTest {
     final RoutingIndexManager manager = new RoutingIndexManager(coordinates.size(), 1, 0);
     final RoutingModel model = new RoutingModel(manager);
     assertEquals(5, model.nodes());
-    final int cost = model.registerTransitCallback(
-      (long fromIndex, long toIndex) -> {
-        final int fromNode = manager.indexToNode(fromIndex);
-        final int toNode = manager.indexToNode(toIndex);
-        return (long) Math.abs(toNode - fromNode);
-      });
+    final int cost = model.registerTransitCallback((long fromIndex, long toIndex) -> {
+      final int fromNode = manager.indexToNode(fromIndex);
+      final int toNode = manager.indexToNode(toIndex);
+      return (long) Math.abs(toNode - fromNode);
+    });
     System.gc(); // model should keep alive the callback
     model.setArcCostEvaluatorOfAllVehicles(cost);
 
@@ -290,11 +289,10 @@ public final class RoutingSolverTest {
     final RoutingIndexManager manager = new RoutingIndexManager(coordinates.size(), 1, 0);
     final RoutingModel model = new RoutingModel(manager);
     assertEquals(5, model.nodes());
-    final int cost = model.registerUnaryTransitCallback(
-      (long fromIndex) -> {
-        final int fromNode = manager.indexToNode(fromIndex);
-        return (long) Math.abs(fromNode);
-      });
+    final int cost = model.registerUnaryTransitCallback((long fromIndex) -> {
+      final int fromNode = manager.indexToNode(fromIndex);
+      return (long) Math.abs(fromNode);
+    });
     System.gc(); // model should keep alive the callback
     model.setArcCostEvaluatorOfAllVehicles(cost);
 

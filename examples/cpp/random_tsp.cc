@@ -68,7 +68,7 @@ int32_t GetSeed() {
 
 // Sample function.
 int64_t MyDistance(RoutingIndexManager::NodeIndex from,
-                 RoutingIndexManager::NodeIndex to) {
+                   RoutingIndexManager::NodeIndex to) {
   // Put your distance code here.
   return (from + to).value();  // for instance
 }
@@ -84,7 +84,8 @@ class RandomMatrix {
     for (RoutingIndexManager::NodeIndex from(0); from < size_; ++from) {
       for (RoutingIndexManager::NodeIndex to(0); to < size_; ++to) {
         if (to != from) {
-          matrix_[MatrixIndex(from, to)] = absl::Uniform(randomizer, 0, kDistanceMax);
+          matrix_[MatrixIndex(from, to)] =
+              absl::Uniform(randomizer, 0, kDistanceMax);
         } else {
           matrix_[MatrixIndex(from, to)] = 0LL;
         }
@@ -92,13 +93,13 @@ class RandomMatrix {
     }
   }
   int64_t Distance(RoutingIndexManager::NodeIndex from,
-                 RoutingIndexManager::NodeIndex to) const {
+                   RoutingIndexManager::NodeIndex to) const {
     return matrix_[MatrixIndex(from, to)];
   }
 
  private:
   int64_t MatrixIndex(RoutingIndexManager::NodeIndex from,
-                    RoutingIndexManager::NodeIndex to) const {
+                      RoutingIndexManager::NodeIndex to) const {
     return (from * size_ + to).value();
   }
   std::unique_ptr<int64_t[]> matrix_;
@@ -144,9 +145,10 @@ void Tsp() {
     int64_t forbidden_connections = 0;
     while (forbidden_connections <
            absl::GetFlag(FLAGS_tsp_random_forbidden_connections)) {
-      const int64_t from = absl::Uniform(randomizer, 0, absl::GetFlag(FLAGS_tsp_size) - 1);
+      const int64_t from =
+          absl::Uniform(randomizer, 0, absl::GetFlag(FLAGS_tsp_size) - 1);
       const int64_t to =
-          absl::Uniform(randomizer, 0 , absl::GetFlag(FLAGS_tsp_size) - 1) + 1;
+          absl::Uniform(randomizer, 0, absl::GetFlag(FLAGS_tsp_size) - 1) + 1;
       if (routing.NextVar(from)->Contains(to)) {
         LOG(INFO) << "Forbidding connection " << from << " -> " << to;
         routing.NextVar(from)->RemoveValue(to);

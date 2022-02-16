@@ -479,10 +479,11 @@ public final class LinearSolverTest {
                                          .setObjectiveCoefficient(1.0)
                                          .build();
     modelBuilder.addVariable(variable);
-    final MPModelRequest request = MPModelRequest.newBuilder()
-                                 .setModel(modelBuilder.build())
-                                 .setSolverType(MPModelRequest.SolverType.GLOP_LINEAR_PROGRAMMING)
-                                 .build();
+    final MPModelRequest request =
+        MPModelRequest.newBuilder()
+            .setModel(modelBuilder.build())
+            .setSolverType(MPModelRequest.SolverType.GLOP_LINEAR_PROGRAMMING)
+            .build();
     final MPSolutionResponse response = MPSolver.solveWithProto(request);
     assertEquals(MPSolverResponseStatus.MPSOLVER_OPTIMAL, response.getStatus());
     assertEquals(10.0, response.getObjectiveValue(), 1e-6);

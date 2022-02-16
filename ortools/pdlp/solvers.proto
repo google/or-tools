@@ -244,7 +244,7 @@ message PrimalDualHybridGradientParams {
     optional bool use_glop = 1;
 
     // Parameters to control glop's presolver. Only used when use_glop is true.
-    // These are merged with and override Bisco's defaults.
+    // These are merged with and override PDLP's defaults.
     optional operations_research.glop.GlopParameters glop_parameters = 2;
   }
   optional PresolveOptions presolve_options = 16;

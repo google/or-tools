@@ -143,7 +143,8 @@ static void UncapacitatedFacilityLocation(
   // Set options and solve
   if (optimization_problem_type != MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING) {
     if (!solver.SetNumThreads(8).ok()) {
-      LOG(INFO) << "Could not set parallelism for " << optimization_problem_type;
+      LOG(INFO) << "Could not set parallelism for "
+                << optimization_problem_type;
     }
   }
   solver.EnableOutput();

@@ -211,7 +211,8 @@ public final class ConstraintSolverTest {
     assertEquals(0, countApply.intValue());
     assertEquals(0, countRefute.intValue());
     final Decision decision = solver.makeDecision(
-        (Solver s) -> {
+        (Solver s)
+            -> {
           assertEquals(s.model_name(), modelName);
           countApply.addAndGet(1);
         },
@@ -267,8 +268,7 @@ public final class ConstraintSolverTest {
     assertEquals(0, countApply.intValue());
     assertEquals(0, countRefute.intValue());
     final DecisionBuilder db = new ActionDecisionBuilder(
-        (Solver s) -> countApply.addAndGet(1),
-        (Solver s) -> countRefute.addAndGet(1));
+        (Solver s) -> countApply.addAndGet(1), (Solver s) -> countRefute.addAndGet(1));
     solver.newSearch(db);
     assertTrue(solver.nextSolution());
     assertEquals(1, countApply.intValue());
