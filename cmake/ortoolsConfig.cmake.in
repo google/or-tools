@@ -45,6 +45,12 @@ if(@USE_GLPK@)
   endif()
 endif()
 
+if(@USE_PDLP@)
+  if(NOT Eigen3_FOUND AND NOT TARGET Eigen3::Eigen)
+    find_dependency(Eigen3 REQUIRED ${CONFIG_FLAG})
+  endif()
+endif()
+
 if(@USE_SCIP@)
   if(NOT scip_FOUND AND NOT TARGET libscip)
     find_dependency(scip REQUIRED ${CONFIG_FLAG})

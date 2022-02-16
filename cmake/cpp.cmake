@@ -19,6 +19,10 @@ list(APPEND OR_TOOLS_COMPILE_DEFINITIONS
   "USE_BOP" # enable BOP support
   "USE_GLOP" # enable GLOP support
   )
+if(USE_PDLP)
+  list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_PDLP")
+  set(PDLP_DIR pdlp)
+endif()
 if(USE_SCIP)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_SCIP")
   set(GSCIP_DIR gscip)
@@ -126,9 +130,10 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   protobuf::libprotobuf
   ${RE2_DEPS}
   ${COINOR_DEPS}
-  $<$<BOOL:${USE_SCIP}>:libscip>
-  $<$<BOOL:${USE_GLPK}>:GLPK::GLPK>
   $<$<BOOL:${USE_CPLEX}>:CPLEX::CPLEX>
+  $<$<BOOL:${USE_GLPK}>:GLPK::GLPK>
+  ${PDLP_DEPS}
+  $<$<BOOL:${USE_SCIP}>:libscip>
   $<$<BOOL:${USE_XPRESS}>:XPRESS::XPRESS>
   Threads::Threads)
 if(WIN32)
@@ -153,6 +158,10 @@ file(GLOB_RECURSE proto_files RELATIVE ${PROJECT_SOURCE_DIR}
   "ortools/scheduling/*.proto"
   "ortools/util/*.proto"
   )
+if(USE_PDLP)
+  file(GLOB_RECURSE pdlp_proto_files RELATIVE ${PROJECT_SOURCE_DIR} "ortools/pdlp/*.proto")
+  list(APPEND proto_files ${pdlp_proto_files})
+endif()
 if(USE_SCIP)
   file(GLOB_RECURSE gscip_proto_files RELATIVE ${PROJECT_SOURCE_DIR} "ortools/gscip/*.proto")
   list(APPEND proto_files ${gscip_proto_files})
@@ -215,6 +224,7 @@ foreach(SUBPROJECT IN ITEMS
  base
  bop
  constraint_solver
+ ${PDLP_DIR}
  ${GSCIP_DIR}
  glop
  graph

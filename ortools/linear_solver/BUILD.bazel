@@ -6,8 +6,13 @@ package(default_visibility = ["//visibility:public"])
 exports_files(["model_exporter_swig_helper.h"])
 
 config_setting(
-    name = "with_glpk",
-    values = {"define": "USE_GLPK="},
+    name = "with_cbc",
+    values = {"define": "USE_CBC="},
+)
+
+config_setting(
+    name = "with_clp",
+    values = {"define": "USE_CLP="},
 )
 
 config_setting(
@@ -16,18 +21,18 @@ config_setting(
 )
 
 config_setting(
+    name = "with_glpk",
+    values = {"define": "USE_GLPK="},
+)
+
+config_setting(
+    name = "with_pdlp",
+    values = {"define": "USE_PDLP="},
+)
+
+config_setting(
     name = "with_xpress",
     values = {"define": "USE_XPRESS="},
-)
-
-config_setting(
-    name = "with_cbc",
-    values = {"define": "USE_CBC="},
-)
-
-config_setting(
-    name = "with_clp",
-    values = {"define": "USE_CLP="},
 )
 
 proto_library(
@@ -60,7 +65,6 @@ cc_library(
         "linear_solver.cc",
         "lpi_glop.cpp",
         "model_validator.cc",
-        "pdlp_interface.cc",
         "sat_interface.cc",
         "sat_proto_solver.cc",
         "sat_solver_utils.cc",
@@ -77,6 +81,9 @@ cc_library(
         ":with_cplex": ["cplex_interface.cc"],
         "//conditions:default": [],
     }) + select({
+        ":with_pdlp": ["pdlp_interface.cc"],
+        "//conditions:default": ["pdlp_interface.cc"],
+    }) + select({
         ":with_xpress": ["xpress_interface.cc"],
         "//conditions:default": [],
     }) + select({
@@ -84,7 +91,6 @@ cc_library(
         "//conditions:default": [],
     }),
     hdrs = [
-        "glop_interface.cc",
         "glop_utils.h",
         "gurobi_proto_solver.h",
         "linear_expr.h",
@@ -97,7 +103,10 @@ cc_library(
         "scip_helper_macros.h",
         "scip_proto_solver.h",
     ],
-    copts = ["-DUSE_SCIP"],
+    copts = [
+        "-DUSE_PDLP",
+        "-DUSE_SCIP",
+    ],
     deps = [
         ":linear_solver_cc_proto",
         ":scip_with_glop",

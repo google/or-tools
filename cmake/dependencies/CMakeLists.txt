@@ -124,6 +124,27 @@ if(BUILD_re2)
 endif()
 
 # ##############################################################################
+# EIGEN3
+# ##############################################################################
+if(BUILD_Eigen3)
+  message(CHECK_START "Fetching Eigen3")
+  list(APPEND CMAKE_MESSAGE_INDENT "  ")
+  set(EIGEN_BUILD_PKGCONFIG OFF)
+  set(EIGEN_BUILD_DOC OFF)
+  set(EIGEN_BUILD_TESTING OFF)
+  set(EIGEN_BUILD_DOC OFF)
+  FetchContent_Declare(
+    eigen3
+    GIT_REPOSITORY "https://gitlab.com/libeigen/eigen.git"
+    GIT_TAG "3.4.0"
+    PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/eigen3-3.4.0.patch"
+  )
+  FetchContent_MakeAvailable(eigen3)
+  list(POP_BACK CMAKE_MESSAGE_INDENT)
+  message(CHECK_PASS "fetched")
+endif()
+
+# ##############################################################################
 # SCIP
 # ##############################################################################
 if(BUILD_SCIP)

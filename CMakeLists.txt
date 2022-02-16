@@ -144,6 +144,21 @@ if(BUILD_LP_PARSER)
 endif()
 
 # Optional third party solvers (enabled by default)
+## PDLP
+CMAKE_DEPENDENT_OPTION(USE_PDLP "Use the PDLP solver" ON "BUILD_CXX" OFF)
+message(STATUS "PDLP support: ${USE_PDLP}")
+if(USE_PDLP)
+  CMAKE_DEPENDENT_OPTION(BUILD_PDLP "Build the PDLP dependency Library" ON
+    "NOT BUILD_DEPS" ON)
+  message(STATUS "Build PDLP: ${BUILD_PDLP}")
+  if(BUILD_PDLP)
+    CMAKE_DEPENDENT_OPTION(BUILD_Eigen3 "Build the eigen3 dependency Library" OFF
+      "NOT BUILD_DEPS" ON)
+    message(STATUS "Build eigen3: ${BUILD_Eigen3}")
+  endif()
+endif()
+
+## SCIP
 CMAKE_DEPENDENT_OPTION(USE_SCIP "Use the Scip solver" ON "BUILD_CXX" OFF)
 message(STATUS "SCIP support: ${USE_SCIP}")
 if(USE_SCIP)
@@ -152,6 +167,7 @@ if(USE_SCIP)
   message(STATUS "Build SCIP: ${BUILD_SCIP}")
 endif()
 
+## GLPK
 # Disable by default since it is GLPv3, user could enable it and release under GLPv3
 # see: https://www.apache.org/licenses/GPL-compatibility.html
 CMAKE_DEPENDENT_OPTION(USE_GLPK "Use the GLPK solver" OFF "BUILD_CXX" OFF)
@@ -162,6 +178,7 @@ if(USE_GLPK)
   message(STATUS "Build GLPK: ${BUILD_GLPK}")
 endif()
 
+## COIN-OR
 CMAKE_DEPENDENT_OPTION(USE_COINOR "Use the COIN-OR solver" ON "BUILD_CXX" OFF)
 message(STATUS "COIN-OR support: ${USE_COINOR}")
 if(USE_COINOR)
