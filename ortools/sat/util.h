@@ -19,19 +19,18 @@
 #include <set>
 #include <vector>
 
+#include "ortools/base/logging.h"
+#if !defined(__PORTABLE_PLATFORM__)
+#include "google/protobuf/descriptor.h"
+#endif  // __PORTABLE_PLATFORM__
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/random.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/random_engine.h"
 #include "ortools/util/time_limit.h"
-
-#if !defined(__PORTABLE_PLATFORM__)
-#include "google/protobuf/descriptor.h"
-#endif  // __PORTABLE_PLATFORM__
 
 namespace operations_research {
 namespace sat {

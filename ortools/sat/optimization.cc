@@ -1293,6 +1293,7 @@ CoreBasedOptimizer::CoreBasedOptimizer(
     : parameters_(model->GetOrCreate<SatParameters>()),
       sat_solver_(model->GetOrCreate<SatSolver>()),
       time_limit_(model->GetOrCreate<TimeLimit>()),
+      implications_(model->GetOrCreate<BinaryImplicationGraph>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
       integer_encoder_(model->GetOrCreate<IntegerEncoder>()),
       model_(model),
@@ -1517,14 +1518,22 @@ bool CoreBasedOptimizer::CoverOptimization() {
 
 SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
     const std::vector<Literal>& literals,
-    const std::vector<Coefficient>& coefficients, IntegerValue offset) {
+    const std::vector<Coefficient>& coefficients, Coefficient offset) {
   // Create one initial nodes per variables with cost.
   // TODO(user): We could create EncodingNode out of IntegerVariable.
+  //
+  // Note that the nodes order and assumptions extracted from it will be stable.
+  // In particular, new nodes will be appended at the end, which make the solver
+  // more likely to find core involving only the first assumptions. This is
+  // important at the beginning so the solver as a chance to find a lot of
+  // non-overlapping small cores without the need to have dedicated
+  // non-overlapping core finder.
+  // TODO(user): It could still be beneficial to add one. Experiments.
   std::deque<EncodingNode> repository;
-  Coefficient unused = 0;
-  std::vector<EncodingNode*> nodes =
-      CreateInitialEncodingNodes(literals, coefficients, &unused, &repository);
-  CHECK_EQ(unused, 0);
+  Coefficient extra_offset = 0;
+  std::vector<EncodingNode*> nodes = CreateInitialEncodingNodes(
+      literals, coefficients, &extra_offset, &repository);
+  CHECK_EQ(extra_offset, 0);
 
   // Initialize the bounds.
   // This is in term of number of variables not at their minimal value.
@@ -1545,7 +1554,7 @@ SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
     if (!sat_solver_->ResetToLevelZero()) return SatSolver::INFEASIBLE;
 
     const Coefficient upper_bound(
-        (integer_trail_->UpperBound(objective_var_) - offset).value());
+        integer_trail_->UpperBound(objective_var_).value() - offset.value());
     const std::vector<Literal> assumptions = ReduceNodesAndExtractAssumptions(
         upper_bound, stratified_lower_bound, &lower_bound, &nodes, sat_solver_);
     if (assumptions.empty()) {
@@ -1618,13 +1627,136 @@ SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
   return SatSolver::FEASIBLE;  // shouldn't reach here.
 }
 
+void CoreBasedOptimizer::PresolveObjectiveWithAtMostOne(
+    std::vector<Literal>* literals, std::vector<Coefficient>* coefficients,
+    Coefficient* offset) {
+  // This contains non-negative value. If a literal has negative weight, then
+  // we just put a positive weight on its negation and update the offset.
+  const int num_literals = implications_->literal_size();
+  absl::StrongVector<LiteralIndex, Coefficient> weights(num_literals);
+  absl::StrongVector<LiteralIndex, bool> is_candidate(num_literals);
+
+  // TODO(user): We can assign preferences to literals to favor certain at most
+  // one instead of other. For now we don't, so ExpandAtMostOneWithWeight() will
+  // kind of randomize the expansion amongst possible choices.
+  absl::StrongVector<LiteralIndex, double> preferences(num_literals, 1.0);
+
+  // Collect all literals with "negative weights", we will try to find at most
+  // one between them.
+  std::vector<Literal> candidates;
+  const int num_terms = literals->size();
+  for (int i = 0; i < num_terms; ++i) {
+    const Literal lit = (*literals)[i];
+    const Coefficient coeff = (*coefficients)[i];
+
+    // For now we know the input only has positive weight, but it is easy to
+    // adapt if needed.
+    CHECK_GT(coeff, 0);
+    weights[lit.Index()] = coeff;
+
+    candidates.push_back(lit.Negated());
+    is_candidate[lit.NegatedIndex()] = true;
+  }
+
+  int num_at_most_ones = 0;
+  Coefficient overall_lb_increase(0);
+
+  std::vector<Literal> at_most_one;
+  std::vector<std::pair<Literal, Coefficient>> new_obj_terms;
+  implications_->ResetWorkDone();
+  for (const Literal root : candidates) {
+    if (weights[root.NegatedIndex()] == 0) continue;
+    if (implications_->WorkDone() > 1e8) continue;
+
+    // We never put weight on both a literal and its negation.
+    CHECK_EQ(weights[root.Index()], 0);
+
+    // Note that for this to be as exhaustive as possible, the probing needs
+    // to have added binary clauses corresponding to lvl0 propagation.
+    at_most_one = implications_->ExpandAtMostOneWithWeight({root}, is_candidate,
+                                                           preferences);
+    if (at_most_one.size() <= 1) continue;
+    ++num_at_most_ones;
+
+    // Change the objective weights. Note that all the literal in the at most
+    // one will not be processed again since the weight of their negation will
+    // be zero after this step.
+    Coefficient max_coeff(0);
+    Coefficient lb_increase(0);
+    for (const Literal lit : at_most_one) {
+      const Coefficient coeff = weights[lit.NegatedIndex()];
+      lb_increase += coeff;
+      max_coeff = std::max(max_coeff, coeff);
+    }
+    lb_increase -= max_coeff;
+
+    *offset += lb_increase;
+    overall_lb_increase += lb_increase;
+
+    for (const Literal lit : at_most_one) {
+      is_candidate[lit.Index()] = false;
+      const Coefficient new_weight = max_coeff - weights[lit.NegatedIndex()];
+      CHECK_EQ(weights[lit.Index()], 0);
+      weights[lit.Index()] = new_weight;
+      weights[lit.NegatedIndex()] = 0;
+      if (new_weight > 0) {
+        // TODO(user): While we autorize this to be in future at most one, it
+        // will not appear in the "literal" list. We might also want to continue
+        // until we reached the fix point.
+        is_candidate[lit.NegatedIndex()] = true;
+      }
+    }
+
+    // Create a new Boolean with weight max_coeff.
+    const Literal new_lit(sat_solver_->NewBooleanVariable(), true);
+    new_obj_terms.push_back({new_lit, max_coeff});
+
+    // The new boolean is true only if all the one in the at most one are false.
+    at_most_one.push_back(new_lit);
+    sat_solver_->AddProblemClause(at_most_one);
+    is_candidate.resize(implications_->literal_size(), false);
+    preferences.resize(implications_->literal_size(), 1.0);
+  }
+
+  if (overall_lb_increase > 0) {
+    // Report new bounds right away with extra information.
+    model_->GetOrCreate<SharedResponseManager>()->UpdateInnerObjectiveBounds(
+        absl::StrFormat("am1_presolve num_literals:%d num_am1:%d "
+                        "increase:%lld work_done:%lld",
+                        (int)candidates.size(), num_at_most_ones,
+                        overall_lb_increase.value(), implications_->WorkDone()),
+        IntegerValue(offset->value()),
+        integer_trail_->LevelZeroUpperBound(objective_var_));
+  }
+
+  // Reconstruct the objective.
+  literals->clear();
+  coefficients->clear();
+  for (const Literal root : candidates) {
+    if (weights[root.Index()] > 0) {
+      CHECK_EQ(weights[root.NegatedIndex()], 0);
+      literals->push_back(root);
+      coefficients->push_back(weights[root.Index()]);
+    }
+    if (weights[root.NegatedIndex()] > 0) {
+      CHECK_EQ(weights[root.Index()], 0);
+      literals->push_back(root.Negated());
+      coefficients->push_back(weights[root.NegatedIndex()]);
+    }
+  }
+  for (const auto [lit, coeff] : new_obj_terms) {
+    literals->push_back(lit);
+    coefficients->push_back(coeff);
+  }
+}
+
 SatSolver::Status CoreBasedOptimizer::Optimize() {
   // Hack: If the objective is fully Boolean, we use the
   // OptimizeWithSatEncoding() version as it seems to be better.
   //
   // TODO(user): Try to understand exactly why and merge both code path.
   if (!parameters_->interleave_search()) {
-    IntegerValue offset(0);
+    Coefficient offset(0);
     std::vector<Literal> literals;
     std::vector<Coefficient> coefficients;
     bool all_booleans = true;
@@ -1634,7 +1766,7 @@ SatSolver::Status CoreBasedOptimizer::Optimize() {
       const IntegerValue lb = integer_trail_->LowerBound(var);
       const IntegerValue ub = integer_trail_->UpperBound(var);
       if (ub - lb == 1) {
-        offset += lb * coeff;
+        offset += Coefficient((lb * coeff).value());
         literals.push_back(integer_encoder_->GetOrCreateAssociatedLiteral(
             IntegerLiteral::GreaterOrEqual(var, ub)));
         coefficients.push_back(Coefficient(coeff.value()));
@@ -1644,6 +1776,15 @@ SatSolver::Status CoreBasedOptimizer::Optimize() {
       }
     }
     if (all_booleans) {
+      // TODO(user): It might be interesting to redo this kind of presolving
+      // once high cost booleans have been fixed as we might have more at most
+      // one between literal in the objective by then.
+      //
+      // Or alternatively, we could try this or something like it on the
+      // literals from the cores as they are found. We should probably make sure
+      // that if it exist, a core of size two is always added. And for such
+      // core, we can always try to see if the "at most one" can be extended.
+      PresolveObjectiveWithAtMostOne(&literals, &coefficients, &offset);
       return OptimizeWithSatEncoding(literals, coefficients, offset);
     }
   }

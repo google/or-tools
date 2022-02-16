@@ -1652,7 +1652,9 @@ std::vector<Literal> BinaryImplicationGraph::ExpandAtMostOneWithWeight(
     MarkDescendants(clique[i]);
     if (i == 0) {
       for (const LiteralIndex index : is_marked_.PositionsSetAtLeastOnce()) {
-        if (can_be_included[index]) intersection.push_back(index);
+        if (can_be_included[Literal(index).NegatedIndex()]) {
+          intersection.push_back(index);
+        }
       }
       for (const Literal l : clique) is_marked_.Clear(l.NegatedIndex());
     }

@@ -714,6 +714,17 @@ class BinaryImplicationGraph : public SatPropagator {
   // TODO(user): consider at most ones.
   void CleanupAllRemovedVariables();
 
+  // ExpandAtMostOneWithWeight() will increase this, so a client can put a limit
+  // on this possibly expansive operation.
+  void ResetWorkDone() { work_done_in_mark_descendants_ = 0; }
+  int64_t WorkDone() const { return work_done_in_mark_descendants_; }
+
+  // Same as ExpandAtMostOne() but try to maximize the weight in the clique.
+  std::vector<Literal> ExpandAtMostOneWithWeight(
+      const absl::Span<const Literal> at_most_one,
+      const absl::StrongVector<LiteralIndex, bool>& can_be_included,
+      const absl::StrongVector<LiteralIndex, double>& expanded_lp_values);
+
  private:
   // Simple wrapper to not forget to output newly fixed variable to the DRAT
   // proof if needed. This will propagate rigth away the implications.
@@ -739,12 +750,6 @@ class BinaryImplicationGraph : public SatPropagator {
   std::vector<Literal> ExpandAtMostOne(
       const absl::Span<const Literal> at_most_one,
       int64_t max_num_explored_nodes);
-
-  // Same as ExpandAtMostOne() but try to maximize the weight in the clique.
-  std::vector<Literal> ExpandAtMostOneWithWeight(
-      const absl::Span<const Literal> at_most_one,
-      const absl::StrongVector<LiteralIndex, bool>& can_be_included,
-      const absl::StrongVector<LiteralIndex, double>& expanded_lp_values);
 
   // Process all at most one constraints starting at or after base_index in
   // at_most_one_buffer_. This replace literal by their representative, remove

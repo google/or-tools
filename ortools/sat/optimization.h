@@ -169,7 +169,7 @@ class CoreBasedOptimizer {
   // - Implement all core heurisitics.
   SatSolver::Status OptimizeWithSatEncoding(
       const std::vector<Literal>& literals,
-      const std::vector<Coefficient>& coefficients, IntegerValue offset);
+      const std::vector<Coefficient>& coefficients, Coefficient offset);
 
  private:
   CoreBasedOptimizer(const CoreBasedOptimizer&) = delete;
@@ -203,12 +203,29 @@ class CoreBasedOptimizer {
   // Sets it to zero if all the assumptions where already considered.
   void ComputeNextStratificationThreshold();
 
+  // If we have an "at most one can be false" between literals with a positive
+  // cost, you then know that at least n - 1 will contribute to the cost, and
+  // you can increase the objective lower bound. This is the same as having
+  // a real "at most one" constraint on the negation of such literals.
+  //
+  // This detects such "at most ones" and rewrite the objective accordingly.
+  // For each at most one, the rewrite create a new Boolean variable and update
+  // the cost so that the trivial objective lower bound reflect the increase.
+  //
+  // TODO(user) : Code that as a general presolve rule? I am not sure adding
+  // the extra Booleans is always a good idea though. Especially since the LP
+  // will see the same lower bound that what is computed by this.
+  void PresolveObjectiveWithAtMostOne(std::vector<Literal>* literals,
+                                      std::vector<Coefficient>* coefficients,
+                                      Coefficient* offset);
+
   SatParameters* parameters_;
   SatSolver* sat_solver_;
   TimeLimit* time_limit_;
+  BinaryImplicationGraph* implications_;
   IntegerTrail* integer_trail_;
   IntegerEncoder* integer_encoder_;
-  Model* model_;  // TODO(user): remove this one.
+  Model* model_;
 
   IntegerVariable objective_var_;
   std::vector<ObjectiveTerm> terms_;
