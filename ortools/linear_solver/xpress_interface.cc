@@ -1322,7 +1322,8 @@ MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const& param) {
   if (feasible) {
     if (mMip) {
       CHECK_STATUS(XPRSgetdblattrib(mLp, XPRS_MIPOBJVAL, &objective_value_));
-      CHECK_STATUS(XPRSgetdblattrib(mLp, XPRS_BESTBOUND, &best_objective_bound_));
+      CHECK_STATUS(
+          XPRSgetdblattrib(mLp, XPRS_BESTBOUND, &best_objective_bound_));
     } else {
       CHECK_STATUS(XPRSgetdblattrib(mLp, XPRS_LPOBJVAL, &objective_value_));
     }

@@ -102,7 +102,8 @@ public class NursesSat
         // Creates shift variables.
         // shifts[(n, d, s)]: nurse 'n' works shift 's' on day 'd'.
         // [START variables]
-        Dictionary<(int, int, int), BoolVar> shifts = new Dictionary<(int, int, int), BoolVar>(numNurses * numDays * numShifts);
+        Dictionary<(int, int, int), BoolVar> shifts =
+            new Dictionary<(int, int, int), BoolVar>(numNurses * numDays * numShifts);
         foreach (int n in allNurses)
         {
             foreach (int d in allDays)
@@ -182,8 +183,7 @@ public class NursesSat
         // [START parameters]
         CpSolver solver = new CpSolver();
         // Tell the solver to enumerate all solutions.
-        solver.StringParameters += "linearization_level:0 " +
-                                   "enumerate_all_solutions:true ";
+        solver.StringParameters += "linearization_level:0 " + "enumerate_all_solutions:true ";
         // [END parameters]
 
         // Display the first five solutions.
