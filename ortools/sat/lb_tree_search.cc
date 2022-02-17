@@ -164,11 +164,13 @@ SatSolver::Status LbTreeSearch::Search(
   }
 
   // We currently restart the search tree from scratch from time to times:
-  //   - every kNumBranchesBeforeInitialRestarts branches explored for at most
-  //    kMaxNumInitialRestarts times
+  //   - At most every kNumBranchesBeforePeriodicRestarts branches explored for
+  //     at most kMaxNumInitialRestarts times.
   //   - Every time we backtrack to level zero, we count how many nodes are
   //   worse than the best known objective lower bound. If this is true for more
   //   than half of the existing nodes, we restart and clear all nodes.
+  //   If if this happens during the initial restarts phase, it reset the above
+  //   counter and uses 1 of the available initial restarts.
   //
   // This has 2 advantages:
   //   - It allows our "pseudo-cost" to kick in and experimentally result in
@@ -180,7 +182,7 @@ SatSolver::Status LbTreeSearch::Search(
   //
   // TODO(user): It would also be cool to exploit the reason for the LB increase
   // even more.
-  const int64_t kNumBranchesBeforeInitialRestarts = 1000;
+  const int64_t kNumBranchesBeforePeriodicRestarts = 1000;
   int64_t num_restarts = 0;
   const int kMaxNumInitialRestarts = 10;
 
@@ -277,10 +279,11 @@ SatSolver::Status LbTreeSearch::Search(
     // We will do it periodically at the beginning of the search each time we
     // cross the k * kNumBranchesBeforeInitialRestarts branches explored.
     // This will happen at most kMaxNumInitialRestarts times.
-    if (num_decisions_taken_ >=
-            (num_restarts + 1) * kNumBranchesBeforeInitialRestarts &&
+    if (num_decisions_taken_ >= num_decisions_taken_at_last_restart_ +
+                                    kNumBranchesBeforePeriodicRestarts &&
         num_restarts < kMaxNumInitialRestarts) {
       ++num_restarts;
+      num_decisions_taken_at_last_restart_ = num_decisions_taken_;
       VLOG(2) << "lb_tree_search initial_restart nodes: " << nodes_.size()
               << ", branches:" << num_decisions_taken_
               << ", restarts: " << num_restarts;
@@ -314,7 +317,6 @@ SatSolver::Status LbTreeSearch::Search(
       // Periodic restart.
       if (num_decisions_taken_ >= num_decisions_taken_at_last_import_ + 10000) {
         backtrack_level = 0;
-        num_decisions_taken_at_last_import_ = num_decisions_taken_;
       }
 
       sat_solver_->Backtrack(backtrack_level);
@@ -348,7 +350,8 @@ SatSolver::Status LbTreeSearch::Search(
         if (node.MinObjective() < latest_lb) num_nodes_with_lower_objective++;
       }
       if (num_nodes_with_lower_objective * 2 > nodes_.size()) {
-        num_restarts++;
+        ++num_restarts;
+        num_decisions_taken_at_last_restart_ = num_decisions_taken_;
         VLOG(2) << "lb_tree_search restart nodes: "
                 << num_nodes_with_lower_objective << "/" << nodes_.size()
                 << " : "

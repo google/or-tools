@@ -143,7 +143,8 @@ class LbTreeSearch {
   // tree.
   int64_t num_decisions_taken_ = 0;
 
-  // Used to trigger restarts.
+  // Used to trigger the initial restarts and imports.
+  int64_t num_decisions_taken_at_last_restart_ = 0;
   int64_t num_decisions_taken_at_last_import_ = 0;
 
   // Count the number of hard restarts (where all nodes are cleared) and soft
