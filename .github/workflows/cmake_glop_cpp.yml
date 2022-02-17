@@ -58,7 +58,7 @@ jobs:
     - name: Check cmake
       run: cmake --version
     - name: Configure
-      run: cmake -S. -Bbuild -G "Visual Studio 16 2019" -DCMAKE_BUILD_TYPE=Release -DBUILD_DEPS=ON -DBUILD_CXX=OFF -DBUILD_GLOP=ON
+      run: cmake -S. -Bbuild -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=Release -DBUILD_DEPS=ON -DBUILD_CXX=OFF -DBUILD_GLOP=ON
     - name: Build
       run: cmake --build build --config Release --target ALL_BUILD -- /maxcpucount
     - name: Install
