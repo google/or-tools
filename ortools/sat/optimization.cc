@@ -1455,6 +1455,8 @@ void CoreBasedOptimizer::ComputeNextStratificationThreshold() {
 }
 
 bool CoreBasedOptimizer::CoverOptimization() {
+  if (!sat_solver_->ResetToLevelZero()) return false;
+
   // We set a fix deterministic time limit per all sub-solve and skip to the
   // next core if the sum of the subsolve is also over this limit.
   constexpr double max_dtime_per_core = 0.5;
@@ -1508,6 +1510,8 @@ bool CoreBasedOptimizer::CoverOptimization() {
     }
     if (result == SatSolver::INFEASIBLE) return false;
     if (result == SatSolver::ASSUMPTIONS_UNSAT) {
+      if (!sat_solver_->ResetToLevelZero()) return false;
+
       // TODO(user): If we improve the lower bound of var, we should check
       // if our global lower bound reached our current best solution in
       // order to abort early if the optimal is proved.
@@ -1625,7 +1629,9 @@ SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
 
     // We only count an iter when we found a core.
     ++iter;
-    ProcessCore(core, min_weight, &repository, &nodes, sat_solver_);
+    if (!ProcessCore(core, min_weight, &repository, &nodes, sat_solver_)) {
+      return SatSolver::INFEASIBLE;
+    }
     max_depth = std::max(max_depth, nodes.back()->depth());
   }
 
@@ -1770,7 +1776,9 @@ SatSolver::Status CoreBasedOptimizer::Optimize() {
       const IntegerValue coeff = term.weight;
       const IntegerValue lb = integer_trail_->LowerBound(var);
       const IntegerValue ub = integer_trail_->UpperBound(var);
-      if (ub - lb == 1) {
+      if (lb == ub) {
+        offset += Coefficient((lb * coeff).value());
+      } else if (ub - lb == 1) {
         offset += Coefficient((lb * coeff).value());
         literals.push_back(integer_encoder_->GetOrCreateAssociatedLiteral(
             IntegerLiteral::GreaterOrEqual(var, ub)));
@@ -1786,9 +1794,10 @@ SatSolver::Status CoreBasedOptimizer::Optimize() {
       // one between literal in the objective by then.
       //
       // Or alternatively, we could try this or something like it on the
-      // literals from the cores as they are found. We should probably make sure
-      // that if it exist, a core of size two is always added. And for such
-      // core, we can always try to see if the "at most one" can be extended.
+      // literals from the cores as they are found. We should probably make
+      // sure that if it exist, a core of size two is always added. And for
+      // such core, we can always try to see if the "at most one" can be
+      // extended.
       PresolveObjectiveWithAtMostOne(&literals, &coefficients, &offset);
       return OptimizeWithSatEncoding(literals, coefficients, offset);
     }
@@ -1940,9 +1949,14 @@ SatSolver::Status CoreBasedOptimizer::Optimize() {
     // weight of each core to it.
     if (!sat_solver_->ResetToLevelZero()) return SatSolver::INFEASIBLE;
     for (const std::vector<Literal>& core : cores) {
-      // This just increase the lower-bound of the corresponding node, which
-      // should already be done by the solver.
-      if (core.size() == 1) continue;
+      // This just increase the lower-bound of the corresponding node.
+      // TODO(user): Maybe the solver should do it right away.
+      if (core.size() == 1) {
+        if (!sat_solver_->AddUnitClause(core[0].Negated())) {
+          return SatSolver::INFEASIBLE;
+        }
+        continue;
+      }
 
       // Compute the min weight of all the terms in the core. The lower bound
       // will be increased by that much because at least one assumption in the
