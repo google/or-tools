@@ -25,10 +25,13 @@ Hints
 A user may set ``SCIP_ROOT`` to a SCIP installation root to tell this
 module where to look.
 #]=======================================================================]
+include(FindPackageHandleStandardArgs)
+
 # first specifically look for the CMake version of SCIP
 find_package(SCIP QUIET NO_MODULE)
 # if we found the SCIP cmake package then we are done.
 if(SCIP_FOUND)
+  find_package_handle_standard_args(SCIP CONFIG_MODE)
   return()
 endif()
 

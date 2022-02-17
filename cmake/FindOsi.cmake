@@ -37,7 +37,7 @@ endif()
 
 find_package(PkgConfig QUIET)
 if(PKG_CONFIG_FOUND)
-  pkg_check_modules(CoinUTILS QUIET coinutils IMPORTED_TARGET GLOBAL)
+  pkg_check_modules(Osi QUIET osi IMPORTED_TARGET GLOBAL)
   if(Osi_FOUND)
     add_library(Coin::Osi ALIAS PkgConfig::Osi)
   endif()
