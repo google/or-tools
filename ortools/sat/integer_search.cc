@@ -888,9 +888,12 @@ bool IntegerSearchHelper::TakeDecision(Literal decision) {
   }
   const int old_level = sat_solver_->CurrentDecisionLevel();
 
+  // Note that kUnsatTrailIndex might also mean ASSUMPTIONS_UNSAT.
+  //
   // TODO(user): on some problems, this function can be quite long. Expand
   // so that we can check the time limit at each step?
-  sat_solver_->EnqueueDecisionAndBackjumpOnConflict(decision);
+  const int index = sat_solver_->EnqueueDecisionAndBackjumpOnConflict(decision);
+  if (index == kUnsatTrailIndex) return false;
 
   // Update the implied bounds each time we enqueue a literal at level zero.
   // This is "almost free", so we might as well do it.

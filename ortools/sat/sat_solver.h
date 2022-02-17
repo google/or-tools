@@ -237,6 +237,10 @@ class SatSolver {
   // literal. If there is a conflict and the problem is detected to be UNSAT,
   // returns kUnsatTrailIndex.
   //
+  // Important: In the presence of assumptions, this also returns
+  // kUnsatTrailIndex on ASSUMPTION_UNSAT. One can know the difference with
+  // IsModelUnsat().
+  //
   // A client can determine if there is a conflict by checking if the
   // CurrentDecisionLevel() was increased by 1 or not.
   //
@@ -299,6 +303,15 @@ class SatSolver {
 
   // Changes the assumptions level and the current solver assumptions. Returns
   // false if the model is UNSAT or ASSUMPTION_UNSAT, true otherwise.
+  //
+  // This uses the "new" assumptions handling, where all assumptions are
+  // enqueued at once at decision level 1 before we start to propagate. This has
+  // many advantages. In particular, because we propagate with the binary
+  // implications first, if we ever have assumption => not(other_assumptions) we
+  // are guaranteed to find it and returns a core of size 2.
+  //
+  // Paper: "Speeding Up Assumption-Based SAT", Randy Hickey and Fahiem Bacchus
+  // http://www.maxhs.org/docs/Hickey-Bacchus2019_Chapter_SpeedingUpAssumption-BasedSAT.pdf
   bool ResetWithGivenAssumptions(const std::vector<Literal>& assumptions);
 
   // Advanced usage. If the decision level is smaller than the assumption level,
@@ -448,6 +461,9 @@ class SatSolver {
   // Calls Propagate() and returns true if no conflict occurred. Otherwise,
   // learns the conflict, backtracks, enqueues the consequence of the learned
   // conflict and returns false.
+  //
+  // When handling assumptions, this might return false without backtracking
+  // in case of ASSUMPTIONS_UNSAT.
   bool PropagateAndStopAfterOneConflictResolution();
 
   // All Solve() functions end up calling this one.
@@ -607,14 +623,6 @@ class SatSolver {
   void ComputeUnionOfReasons(const std::vector<Literal>& input,
                              std::vector<Literal>* literals);
 
-  // Given an assumption (i.e. literal) currently assigned to false, this will
-  // returns the set of all assumptions that caused this particular assignment.
-  //
-  // This is useful to get a small set of assumptions that can't be all
-  // satisfied together.
-  void FillUnsatAssumptions(Literal false_assumption,
-                            std::vector<Literal>* unsat_assumptions);
-
   // Do the full pseudo-Boolean constraint analysis. This calls multiple
   // time ResolvePBConflict() on the current conflict until we have a conflict
   // that allow us to propagate more at a lower decision level. This level
@@ -744,6 +752,7 @@ class SatSolver {
 
   // The assumption level. See SolveWithAssumptions().
   int assumption_level_ = 0;
+  std::vector<Literal> assumptions_;
 
   // The size of the trail when ProcessNewlyFixedVariables() was last called.
   // Note that the trail contains only fixed literals (that is literals of
@@ -860,6 +869,8 @@ class SatSolver {
 //
 // Important: The given SatSolver must be the one that just produced the given
 // core.
+//
+// TODO(user): One should use MinimizeCoreWithPropagation() instead.
 void MinimizeCore(SatSolver* solver, std::vector<Literal>* core);
 
 // ============================================================================

@@ -1239,6 +1239,11 @@ SatSolver::Status FindCores(std::vector<Literal> assumptions,
     if (sat_solver->parameters().minimize_core()) {
       MinimizeCoreWithPropagation(limit, sat_solver, &core);
     }
+    if (core.size() == 1) {
+      if (!sat_solver->AddUnitClause(core[0].Negated())) {
+        return SatSolver::INFEASIBLE;
+      }
+    }
     if (core.empty()) return sat_solver->UnsatStatus();
     cores->push_back(core);
     if (!sat_solver->parameters().find_multiple_cores()) break;

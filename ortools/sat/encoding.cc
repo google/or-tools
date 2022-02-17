@@ -76,12 +76,13 @@ void EncodingNode::InitializeLazyNode(EncodingNode* a, EncodingNode* b,
 }
 
 bool EncodingNode::IncreaseCurrentUB(SatSolver* solver) {
-  CHECK(!literals_.empty());
   if (current_ub() == ub_) return false;
   literals_.emplace_back(BooleanVariable(solver->NumVariables()), true);
   solver->SetNumVariables(solver->NumVariables() + 1);
-  solver->AddBinaryClause(literals_.back().Negated(),
-                          literals_[literals_.size() - 2]);
+  if (literals_.size() > 1) {
+    solver->AddBinaryClause(literals_.back().Negated(),
+                            literals_[literals_.size() - 2]);
+  }
   return true;
 }
 
@@ -108,6 +109,29 @@ void EncodingNode::ApplyUpperBound(int64_t upper_bound, SatSolver* solver) {
   }
   literals_.resize(upper_bound);
   ub_ = lb_ + literals_.size();
+}
+
+std::string EncodingNode::DebugString(
+    const VariablesAssignment& assignment) const {
+  std::string result;
+  absl::StrAppend(&result, "depth:", depth_);
+  absl::StrAppend(&result, " [", lb_, ",", lb_ + literals_.size(), "]");
+  absl::StrAppend(&result, " ub:", ub_);
+  absl::StrAppend(&result, " values:");
+  const size_t limit = 20;
+  int value = 0;
+  for (int i = 0; i < std::min(literals_.size(), limit); ++i) {
+    char c = '?';
+    if (assignment.LiteralIsTrue(literals_[i])) {
+      c = '1';
+      value = i + 1;
+    } else if (assignment.LiteralIsFalse(literals_[i])) {
+      c = '0';
+    }
+    result += c;
+  }
+  absl::StrAppend(&result, " val:", lb_ + value);
+  return result;
 }
 
 EncodingNode LazyMerge(EncodingNode* a, EncodingNode* b, SatSolver* solver) {
@@ -142,7 +166,6 @@ void IncreaseNodeSize(EncodingNode* node, SatSolver* solver) {
     // n->GreaterThan(target) is the new literal of n.
     CHECK(a != nullptr);
     CHECK(b != nullptr);
-    CHECK_GE(n->size(), 2);
     const int target = n->current_ub() - 1;
 
     // Add a literal to a if needed.
@@ -380,6 +403,13 @@ std::vector<Literal> ReduceNodesAndExtractAssumptions(
   solver->Backtrack(0);
   for (EncodingNode* n : *nodes) {
     *lower_bound += n->Reduce(*solver) * n->weight();
+
+    // Tricky: When we solve a partial set of assumptions, some unused nodes
+    // might have literals that get fixed to one. If that happens we do need
+    // to create new literals so we can fix these nodes to their lower bound.
+    if (n->size() == 0 && n->lb() < n->ub()) {
+      IncreaseNodeSize(n, solver);
+    }
   }
 
   // Fix the nodes right-most variables that are above the gap.
@@ -450,20 +480,21 @@ Coefficient MaxNodeWeightSmallerThan(const std::vector<EncodingNode*>& nodes,
   return result;
 }
 
-void ProcessCore(const std::vector<Literal>& core, Coefficient min_weight,
+bool ProcessCore(const std::vector<Literal>& core, Coefficient min_weight,
                  std::deque<EncodingNode>* repository,
                  std::vector<EncodingNode*>* nodes, SatSolver* solver) {
   // Backtrack to be able to add new constraints.
-  solver->Backtrack(0);
+  solver->ResetToLevelZero();
 
   if (core.size() == 1) {
+    if (!solver->AddUnitClause(core[0].Negated())) return false;
+
     // The core will be reduced at the beginning of the next loop.
     // Find the associated node, and call IncreaseNodeSize() on it.
-    CHECK(solver->Assignment().LiteralIsFalse(core[0]));
     for (EncodingNode* n : *nodes) {
       if (n->literal(0).Negated() == core[0]) {
         IncreaseNodeSize(n, solver);
-        return;
+        return true;
       }
     }
     LOG(FATAL) << "Node with literal " << core[0] << " not found!";
@@ -506,7 +537,7 @@ void ProcessCore(const std::vector<Literal>& core, Coefficient min_weight,
   nodes->push_back(LazyMergeAllNodeWithPQ(to_merge, solver, repository));
   IncreaseNodeSize(nodes->back(), solver);
   nodes->back()->set_weight(min_weight);
-  CHECK(solver->AddUnitClause(nodes->back()->literal(0)));
+  return solver->AddUnitClause(nodes->back()->literal(0));
 }
 
 }  // namespace sat

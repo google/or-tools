@@ -531,12 +531,15 @@ bool ClauseSubsumption(const std::vector<Literal>& a, SatClause* b) {
 int SatSolver::EnqueueDecisionAndBackjumpOnConflict(Literal true_literal) {
   SCOPED_TIME_STAT(&stats_);
   if (model_is_unsat_) return kUnsatTrailIndex;
-  CHECK(PropagationIsDone());
-  EnqueueNewDecision(true_literal);
-  while (!PropagateAndStopAfterOneConflictResolution()) {
-    if (model_is_unsat_) return kUnsatTrailIndex;
+  DCHECK(PropagationIsDone());
+
+  // We should never enqueue before the assumptions_.
+  if (DEBUG_MODE && !assumptions_.empty()) {
+    CHECK_GE(current_decision_level_, assumption_level_);
   }
-  CHECK(PropagationIsDone());
+
+  EnqueueNewDecision(true_literal);
+  if (!FinishPropagation()) return kUnsatTrailIndex;
   return last_decision_or_backtrack_trail_index_;
 }
 
@@ -552,15 +555,26 @@ bool SatSolver::RestoreSolverToAssumptionLevel() {
 
 bool SatSolver::FinishPropagation() {
   if (model_is_unsat_) return false;
-  while (!PropagateAndStopAfterOneConflictResolution()) {
-    if (model_is_unsat_) return false;
+  while (true) {
+    const int old_decision_level = current_decision_level_;
+    if (!PropagateAndStopAfterOneConflictResolution()) {
+      if (model_is_unsat_) return false;
+      if (current_decision_level_ == old_decision_level) {
+        CHECK(!assumptions_.empty());
+        return false;
+      }
+      continue;
+    }
+    break;
   }
+  CHECK(PropagationIsDone());
   return true;
 }
 
 bool SatSolver::ResetToLevelZero() {
   if (model_is_unsat_) return false;
   assumption_level_ = 0;
+  assumptions_.clear();
   Backtrack(0);
   return FinishPropagation();
 }
@@ -568,17 +582,22 @@ bool SatSolver::ResetToLevelZero() {
 bool SatSolver::ResetWithGivenAssumptions(
     const std::vector<Literal>& assumptions) {
   if (!ResetToLevelZero()) return false;
+  if (assumptions.empty()) return true;
 
-  // Assuming there is no duplicate in assumptions, but they can be a literal
-  // and its negation (weird corner case), there will always be a conflict if we
-  // enqueue stricly more assumptions than the number of variables, so there is
-  // no point considering the end of the list. Note that there is no overflow
-  // since decisions_.size() == num_variables_ + 1;
-  assumption_level_ =
-      std::min<int>(assumptions.size(), num_variables_.value() + 1);
-  for (int i = 0; i < assumption_level_; ++i) {
-    decisions_[i].literal = assumptions[i];
+  // We do not use EnqueueNewDecision() here so we duplicate this.
+  //
+  // TODO(user): move somewhere in common?
+  const double kMinDeterministicTimeBetweenCleanups = 1.0;
+  if (num_processed_fixed_variables_ < trail_->Index() &&
+      deterministic_time() >
+          deterministic_time_of_last_fixed_variables_cleanup_ +
+              kMinDeterministicTimeBetweenCleanups) {
+    ProcessNewlyFixedVariables();
   }
+
+  DCHECK(assumptions_.empty());
+  assumption_level_ = 1;
+  assumptions_ = assumptions;
   return ReapplyAssumptionsIfNeeded();
 }
 
@@ -587,6 +606,46 @@ bool SatSolver::ReapplyAssumptionsIfNeeded() {
   if (model_is_unsat_) return false;
   if (CurrentDecisionLevel() >= assumption_level_) return true;
 
+  if (CurrentDecisionLevel() == 0 && !assumptions_.empty()) {
+    // When assumptions_ is not empty, the first "decision" actually contains
+    // multiple one, and we should never use its literal.
+    CHECK_EQ(current_decision_level_, 0);
+    last_decision_or_backtrack_trail_index_ = trail_->Index();
+    decisions_[0] = Decision(trail_->Index(), Literal());
+
+    ++current_decision_level_;
+    trail_->SetDecisionLevel(current_decision_level_);
+
+    // We enqueue all assumptions at once at decision level 1.
+    int num_decisions = 0;
+    for (const Literal lit : assumptions_) {
+      if (Assignment().LiteralIsTrue(lit)) continue;
+      if (Assignment().LiteralIsFalse(lit)) {
+        // See GetLastIncompatibleDecisions().
+        *trail_->MutableConflict() = {lit.Negated(), lit};
+        if (num_decisions == 0) {
+          // This is needed to avoid an empty level that cause some CHECK fail.
+          current_decision_level_ = 0;
+          trail_->SetDecisionLevel(0);
+        }
+        return false;
+      }
+      ++num_decisions;
+      trail_->EnqueueSearchDecision(lit);
+    }
+
+    // Corner case: all assumptions are fixed at level zero, we ignore them.
+    if (num_decisions == 0) {
+      current_decision_level_ = 0;
+      trail_->SetDecisionLevel(0);
+      return ResetToLevelZero();
+    }
+
+    // Now that everything is enqueued, we propagate.
+    return FinishPropagation();
+  }
+
+  DCHECK(assumptions_.empty());
   int unused = 0;
   const int64_t old_num_branches = counters_.num_branches;
   const SatSolver::Status status =
@@ -607,6 +666,18 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
   // A conflict occurred, compute a nice reason for this failure.
   same_reason_identifier_.Clear();
   const int max_trail_index = ComputeMaxTrailIndex(trail_->FailingClause());
+  if (!assumptions_.empty()) {
+    // If the failing clause only contains literal at the assumptions level,
+    // we cannot use the ComputeFirstUIPConflict() code as we might have more
+    // than one decision.
+    //
+    // TODO(user): We might still want to "learn" the clause, especially if
+    // it reduces to only one literal in which case we can just fix it.
+    const int highest_level =
+        DecisionLevel((*trail_)[max_trail_index].Variable());
+    if (highest_level == 1) return false;
+  }
+
   ComputeFirstUIPConflict(max_trail_index, &learned_conflict_,
                           &reason_used_to_infer_the_conflict_,
                           &subsumed_clauses_);
@@ -848,6 +919,7 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
 SatSolver::Status SatSolver::ReapplyDecisionsUpTo(
     int max_level, int* first_propagation_index) {
   SCOPED_TIME_STAT(&stats_);
+  DCHECK(assumptions_.empty());
   int decision_index = current_decision_level_;
   while (decision_index <= max_level) {
     DCHECK_GE(decision_index, current_decision_level_);
@@ -860,8 +932,9 @@ SatSolver::Status SatSolver::ReapplyDecisionsUpTo(
       continue;
     }
     if (Assignment().LiteralIsFalse(previous_decision)) {
-      // Update decision so that GetLastIncompatibleDecisions() works.
-      decisions_[current_decision_level_].literal = previous_decision;
+      // See GetLastIncompatibleDecisions().
+      *trail_->MutableConflict() = {previous_decision.Negated(),
+                                    previous_decision};
       return ASSUMPTIONS_UNSAT;
     }
 
@@ -891,6 +964,7 @@ SatSolver::Status SatSolver::ReapplyDecisionsUpTo(
 int SatSolver::EnqueueDecisionAndBacktrackOnConflict(Literal true_literal) {
   SCOPED_TIME_STAT(&stats_);
   CHECK(PropagationIsDone());
+  CHECK(assumptions_.empty());
 
   if (model_is_unsat_) return kUnsatTrailIndex;
   DCHECK_LT(CurrentDecisionLevel(), decisions_.size());
@@ -941,6 +1015,7 @@ void SatSolver::Backtrack(int target_level) {
     --current_decision_level_;
     target_trail_index = decisions_[current_decision_level_].trail_index;
   }
+
   Untrail(target_trail_index);
   last_decision_or_backtrack_trail_index_ = trail_->Index();
 }
@@ -987,6 +1062,12 @@ void SatSolver::SetAssumptionLevel(int assumption_level) {
   CHECK_GE(assumption_level, 0);
   CHECK_LE(assumption_level, CurrentDecisionLevel());
   assumption_level_ = assumption_level;
+
+  // New assumption code.
+  if (!assumptions_.empty()) {
+    CHECK_EQ(assumption_level, 0);
+    assumptions_.clear();
+  }
 }
 
 SatSolver::Status SatSolver::SolveWithTimeLimit(TimeLimit* time_limit) {
@@ -1223,9 +1304,14 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit) {
       next_display = NextMultipleOf(num_failures(), kDisplayFrequency);
     }
 
+    const int old_level = current_decision_level_;
     if (!PropagateAndStopAfterOneConflictResolution()) {
       // A conflict occurred, continue the loop.
       if (model_is_unsat_) return StatusWithLog(INFEASIBLE);
+      if (old_level == current_decision_level_) {
+        CHECK(!assumptions_.empty());
+        return StatusWithLog(ASSUMPTIONS_UNSAT);
+      }
     } else {
       // We need to reapply any assumptions that are not currently applied.
       if (!ReapplyAssumptionsIfNeeded()) return StatusWithLog(UnsatStatus());
@@ -1289,42 +1375,35 @@ void SatSolver::MinimizeSomeClauses(int decisions_budget) {
 
 std::vector<Literal> SatSolver::GetLastIncompatibleDecisions() {
   SCOPED_TIME_STAT(&stats_);
-  const Literal false_assumption = decisions_[CurrentDecisionLevel()].literal;
   std::vector<Literal> unsat_assumptions;
-  if (!trail_->Assignment().LiteralIsFalse(false_assumption)) {
-    // This can only happen in some corner cases where: we enqueued
-    // false_assumption, it leads to a conflict, but after re-enqueing the
-    // decisions that were backjumped over, there is no conflict anymore. This
-    // can only happen in the presence of propagators that are non-monotonic
-    // and do not propagate the same thing when there is more literal on the
-    // trail.
-    //
-    // In this case, we simply return all the decisions since we know that is
-    // a valid conflict. Since this should be rare, it is okay to not "minimize"
-    // what we return like we do below.
-    //
-    // TODO(user): unit-test this case with a mock propagator.
-    unsat_assumptions.reserve(CurrentDecisionLevel());
-    for (int i = 0; i < CurrentDecisionLevel(); ++i) {
-      unsat_assumptions.push_back(decisions_[i].literal);
-    }
-    return unsat_assumptions;
-  }
 
-  unsat_assumptions.push_back(false_assumption);
-
-  // This will be used to mark all the literals inspected while we process the
-  // false_assumption and the reasons behind each of its variable assignments.
   is_marked_.ClearAndResize(num_variables_);
-  is_marked_.Set(false_assumption.Variable());
 
-  int trail_index = trail_->Info(false_assumption.Variable()).trail_index;
+  int trail_index = 0;
+  int num_true = 0;
+  for (const Literal lit : trail_->FailingClause()) {
+    CHECK(Assignment().LiteralIsAssigned(lit));
+    if (Assignment().LiteralIsTrue(lit)) {
+      // literal at true in the conflict must be decision/assumptions that could
+      // not be taken.
+      ++num_true;
+      unsat_assumptions.push_back(lit.Negated());
+      continue;
+    }
+    trail_index =
+        std::max(trail_index, trail_->Info(lit.Variable()).trail_index);
+    is_marked_.Set(lit.Variable());
+  }
+  CHECK_LE(num_true, 1);
+
+  // We just expand the conflict until we only have decisions.
   const int limit =
       CurrentDecisionLevel() > 0 ? decisions_[0].trail_index : trail_->Index();
   CHECK_LT(trail_index, trail_->Index());
   while (true) {
     // Find next marked literal to expand from the trail.
-    while (trail_index >= 0 && !is_marked_[(*trail_)[trail_index].Variable()]) {
+    while (trail_index >= limit &&
+           !is_marked_[(*trail_)[trail_index].Variable()]) {
       --trail_index;
     }
     if (trail_index < limit) break;
@@ -2229,9 +2308,10 @@ void SatSolver::MinimizeConflictRecursively(std::vector<Literal>* conflict) {
   int index = 1;
   for (int i = 1; i < conflict->size(); ++i) {
     const BooleanVariable var = (*conflict)[i].Variable();
+    const AssignmentInfo& info = trail_->Info(var);
     if (time_limit_->LimitReached() ||
-        trail_->Info(var).trail_index <=
-            min_trail_index_per_level_[DecisionLevel(var)] ||
+        info.type == AssignmentType::kSearchDecision ||
+        info.trail_index <= min_trail_index_per_level_[info.level] ||
         !CanBeInferedFromConflictVariables(var)) {
       // Mark the conflict variable as independent. Note that is_marked_[var]
       // will still be true.
@@ -2279,12 +2359,12 @@ bool SatSolver::CanBeInferedFromConflictVariables(BooleanVariable variable) {
   variable_to_process_.push_back(variable);
 
   // First we expand the reason for the given variable.
-  for (Literal literal : trail_->Reason(variable)) {
+  for (const Literal literal : trail_->Reason(variable)) {
     const BooleanVariable var = literal.Variable();
     DCHECK_NE(var, variable);
     if (is_marked_[var]) continue;
-    const int level = DecisionLevel(var);
-    if (level == 0) {
+    const AssignmentInfo& info = trail_->Info(var);
+    if (info.level == 0) {
       // Note that this is not needed if the solver is not configured to produce
       // an unsat proof. However, the (level == 0) test should always be false
       // in this case because there will never be literals of level zero in any
@@ -2292,8 +2372,8 @@ bool SatSolver::CanBeInferedFromConflictVariables(BooleanVariable variable) {
       is_marked_.Set(var);
       continue;
     }
-    if (trail_->Info(var).trail_index <= min_trail_index_per_level_[level] ||
-        is_independent_[var]) {
+    if (info.trail_index <= min_trail_index_per_level_[info.level] ||
+        info.type == AssignmentType::kSearchDecision || is_independent_[var]) {
       return false;
     }
     variable_to_process_.push_back(var);
@@ -2342,9 +2422,10 @@ bool SatSolver::CanBeInferedFromConflictVariables(BooleanVariable variable) {
     for (Literal literal : trail_->Reason(current_var)) {
       const BooleanVariable var = literal.Variable();
       DCHECK_NE(var, current_var);
-      const int level = DecisionLevel(var);
-      if (level == 0 || is_marked_[var]) continue;
-      if (trail_->Info(var).trail_index <= min_trail_index_per_level_[level] ||
+      const AssignmentInfo& info = trail_->Info(var);
+      if (info.level == 0 || is_marked_[var]) continue;
+      if (info.trail_index <= min_trail_index_per_level_[info.level] ||
+          info.type == AssignmentType::kSearchDecision ||
           is_independent_[var]) {
         abort_early = true;
         break;
@@ -2569,33 +2650,18 @@ std::string SatStatusString(SatSolver::Status status) {
 }
 
 void MinimizeCore(SatSolver* solver, std::vector<Literal>* core) {
-  std::vector<Literal> temp = *core;
-  std::reverse(temp.begin(), temp.end());
-  solver->Backtrack(0);
-  solver->SetAssumptionLevel(0);
+  std::vector<Literal> result;
 
-  // Note that this Solve() is really fast, since the solver should detect that
-  // the assumptions are unsat with unit propagation only. This is just a
-  // convenient way to remove assumptions that are propagated by the one before
-  // them.
-  const SatSolver::Status status =
-      solver->ResetAndSolveWithGivenAssumptions(temp);
-  if (status != SatSolver::ASSUMPTIONS_UNSAT) {
-    if (status != SatSolver::LIMIT_REACHED) {
-      CHECK_NE(status, SatSolver::FEASIBLE);
-      // This should almost never happen, but it is not impossible. The reason
-      // is that the solver may delete some learned clauses required by the unit
-      // propagation to show that the core is unsat.
-      LOG(WARNING) << "This should only happen rarely! otherwise, investigate. "
-                   << "Returned status is " << SatStatusString(status);
-    }
-    return;
+  solver->ResetToLevelZero();
+  for (const Literal lit : *core) {
+    if (solver->Assignment().LiteralIsTrue(lit)) continue;
+    result.push_back(lit);
+    if (solver->Assignment().LiteralIsFalse(lit)) break;
+    if (!solver->EnqueueDecisionIfNotConflicting(lit)) break;
   }
-  temp = solver->GetLastIncompatibleDecisions();
-  if (temp.size() < core->size()) {
-    VLOG(1) << "minimization " << core->size() << " -> " << temp.size();
-    std::reverse(temp.begin(), temp.end());
-    *core = temp;
+  if (result.size() < core->size()) {
+    VLOG(1) << "minimization " << core->size() << " -> " << result.size();
+    *core = result;
   }
 }
 

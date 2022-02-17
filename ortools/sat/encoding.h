@@ -20,6 +20,7 @@
 
 #include <cstdint>
 #include <deque>
+#include <string>
 #include <vector>
 
 #include "ortools/base/integral_types.h"
@@ -113,6 +114,9 @@ class EncodingNode {
   EncodingNode* child_a() const { return child_a_; }
   EncodingNode* child_b() const { return child_b_; }
 
+  // We use the solver to display the current values of the literals.
+  std::string DebugString(const VariablesAssignment& assignment) const;
+
  private:
   int depth_;
   int lb_;
@@ -203,8 +207,8 @@ Coefficient MaxNodeWeightSmallerThan(const std::vector<EncodingNode*>& nodes,
                                      Coefficient upper_bound);
 
 // Updates the encoding using the given core. The literals in the core must
-// match the order in nodes.
-void ProcessCore(const std::vector<Literal>& core, Coefficient min_weight,
+// match the order in nodes. Returns false if the model become infeasible.
+bool ProcessCore(const std::vector<Literal>& core, Coefficient min_weight,
                  std::deque<EncodingNode>* repository,
                  std::vector<EncodingNode*>* nodes, SatSolver* solver);
 
