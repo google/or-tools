@@ -24,13 +24,6 @@ jobs:
         with:
           sirius-ref: ${{ env.Sirius_Ref }}
 
-      - name: user guide upload
-        id: userguide_upload
-        uses: actions/upload-artifact@v2
-        with:
-          name: user-guide
-          path: ${{ steps.create-user-guide.outputs.pdf-path }}
-
       - name: Upload sirius install
         uses: actions/upload-artifact@v2
         with:
