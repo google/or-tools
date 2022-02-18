@@ -1,10 +1,9 @@
 Makefile.local
+Makefile.local~
 
-dependencies/archives/
-
-dependencies/install/
-dependencies/sources/
-dependencies/check.log
+dependencies/
+include/
+share/
 
 or-tools*.tar.gz
 or-tools*.zip
