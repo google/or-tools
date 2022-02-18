@@ -26,7 +26,7 @@ runs:
     - name: set env variables
       shell: bash
       run: |
-        SIRIUS_BASE_PATH=${{ env.GITHUB_WORKSPACE}}/sirius-solver
+        SIRIUS_BASE_PATH=${{ env.GITHUB_WORKSPACE }}/sirius-solver
         echo $SIRIUS_BASE_PATH
         echo "SIRIUS_BASE_PATH=$SIRIUS_BASE_PATH" >> $GITHUB_ENV
         echo "SIRIUS_INSTALL_DIR=SiriusInstall" >> $GITHUB_ENV
