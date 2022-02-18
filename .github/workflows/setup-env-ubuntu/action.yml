@@ -11,7 +11,7 @@ outputs:
 runs:
   using: "composite"
   env:
-    SIRIUS_BASE_PATH: ${{ github.workspace }}/sirius-solver
+    SIRIUS_BASE_PATH: ${{ env.GITHUB_WORKSPACE}}/sirius-solver
     SIRIUS_INSTALL_DIR: SiriusInstall
     SIRIUS_INSTALL_PATH: $SIRIUS_BASE_PATH/$SIRIUS_INSTALL_DIR
   steps:
