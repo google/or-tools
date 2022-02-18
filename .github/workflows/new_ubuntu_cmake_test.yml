@@ -17,7 +17,6 @@ jobs:
       matrix:
         xprs: [ON, OFF]
         sirius: [ON, OFF]
-    if: ${{ matrix.sirius }} == ON || ${{ matrix.xprs }} == ON
     steps:
       - name: set name variables
         id: names
