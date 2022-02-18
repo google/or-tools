@@ -49,14 +49,16 @@ cc: dependencies/CMakeCache.txt
 	cmake --build dependencies --target install -j 8
 
 test_cc: \
+ cc \
  test_cc_tests \
  test_cc_contrib \
- test_cc_cpp | cc
+ test_cc_cpp
 
 .PHONY: test_fz
 test_fz: \
+ cc \
  rfz_golomb \
- rfz_alpha | cc
+ rfz_alpha
 
 
 
