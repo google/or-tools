@@ -10,6 +10,16 @@ jobs:
   cmake:
     runs-on: ubuntu-latest
     steps:
+      - name: Setup .NET Core 3.1
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 3.1.x
+      - name: Setup .NET 6.0
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 6.0.x
+      - name: Pip install reqs
+        run: python3 -m pip install --user mypy-protobuf absl-py setuptools wheel numpy pandas virtualenv
       - name: Checkout Sirius repo
         uses: actions/checkout@v2
         with:
@@ -35,6 +45,17 @@ jobs:
         uses: actions/checkout@v2
         with:
           path: ./or-tools
+      - name: Checkout xpressmp813
+        uses: actions/checkout@v2
+        with:
+          repository: rte-france/xpress-mp
+          path: ./xpressmp813
+          ref: master
+          token: ${{ secrets.ACCESS_TOKEN }}
+      - name: Checkout or-tools
+        uses: actions/checkout@v2
+        with:
+          path: ./or-tools
       - name: Configure or-tools
         working-directory: ./or-tools
         run: |
@@ -46,21 +67,31 @@ jobs:
                 -DBUILD_DEPS=ON \
                 -DUSE_SIRIUS=ON \
                 -Dsirius_solver_DIR="${{ github.workspace }}/sirius-solver/SiriusInstall/cmake" \
-                -DBUILD_PYTHON=OFF \
-                -DBUILD_JAVA=OFF \
-                -DBUILD_DOTNET=OFF
-      - name: Build tests
+                -DUSE_XPRESS=ON \
+                -DXPRESS_ROOT="${{ github.workspace }}/xpressmp813" \
+                -DBUILD_PYTHON=ON \
+                -DBUILD_JAVA=ON \
+                -DBUILD_DOTNET=ON
+      - name: Build
         working-directory: ./or-tools
         run: |
           cmake --build build \
                 --target all \
-                         install \
+                install \
                 -j4
       - name: Prepare ortools install dyn
         working-directory: ./or-tools/build/install
         run: find bin -type f ! \( -name 'protoc*' -o -name 'scip' -o -name 'fz' \) -delete
-      - name: Upload ortools install dyn
+      - name: Upload artifact ortools install dyn
         uses: actions/upload-artifact@v2
         with:
           name: ortools_dyn_install
           path: ./or-tools/build/install
+      - name: Publish asset  file upload
+        if:  github.event_name == 'release' && github.event.action == 'created'
+        uses: actions/upload-release-asset@v1.0.2
+        with:
+          upload_url: ${{ steps.get_release.outputs.upload_url }}
+          asset_path: ./or-tools/build/install
+          asset_name: ortools_dyn_install
+
