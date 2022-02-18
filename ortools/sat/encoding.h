@@ -138,6 +138,10 @@ class EncodingNode {
 // In debug, with msvc, std::Vector<T> is 32
 static_assert(sizeof(EncodingNode) == 72,
               "ERROR_EncodingNode_is_not_well_compacted");
+#elif defined(_GLIBCXX_DEBUG)
+// In debug GNU libstdc++ std::Vector<T> is up to 56
+static_assert(sizeof(EncodingNode) <= 96,
+              "ERROR_EncodingNode_is_not_well_compacted");
 #else
 // Note that we use <= because on 32 bits architecture, the size will actually
 // be smaller than 64 bytes.
