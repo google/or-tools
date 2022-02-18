@@ -1,4 +1,4 @@
-name: CMake linux test
+name: Ubuntu composite
 
 on:
   push:
@@ -23,7 +23,7 @@ jobs:
 
       - name: setup envoronment
         id: setup
-        uses: ./or-tools/.github/workflows/setup-env-ubuntu
+        uses: $OR_Tools_Path/.github/workflows/setup-env-ubuntu
         with:
           sirius-ref: $Sirius_Ref
 
