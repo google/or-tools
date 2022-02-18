@@ -20,9 +20,11 @@ runs:
       with:
         dotnet-version: 6.0.x
     - name: Pip install reqs
+      shell: bash
       run: python3 -m pip install --user mypy-protobuf absl-py setuptools wheel numpy pandas virtualenv
 
     - name: set env variables
+      shell: bash
       run: |
         echo "SIRIUS_BASE_PATH=${{ env.GITHUB_WORKSPACE }}/sirius-solver" >> $GITHUB_ENV \
         echo "SIRIUS_INSTALL_DIR=SiriusInstall" >> $GITHUB_ENV \
@@ -36,6 +38,7 @@ runs:
         ref: ${{ inputs.sirius-ref }}
     - name: Configure Sirius
       working-directory: ${{ env.SIRIUS_BASE_PATH }}
+      shell: bash
       run: |
         cmake -S src \
               -B build \
@@ -44,9 +47,11 @@ runs:
 
     - name: Build & Install Sirius
       working-directory: ${{ env.SIRIUS_BASE_PATH }}
+      shell: bash
       run: cmake --build build/ --config Release --target install -j14
 
     - name: set output sirius-install-path
       id: set-output
+      shell: bash
       run: |
         echo "::set-output name=sirius-install-path::${{ env.SIRIUS_INSTALL_PATH }}"
