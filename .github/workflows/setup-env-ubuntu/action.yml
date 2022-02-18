@@ -7,7 +7,7 @@ inputs:
 outputs:
   sirius-install-path:
     description: "path of the sirius installation"
-    value: ${{ steps.set-output.outputs.sirius-install-path }}
+    value: ${{ steps.sirius-variables.outputs.sirius-install-path }}
 runs:
   using: "composite"
   steps:
@@ -23,7 +23,8 @@ runs:
       shell: bash
       run: python3 -m pip install --user mypy-protobuf absl-py setuptools wheel numpy pandas virtualenv
 
-    - name: set env variables
+    - name: set sirius variables
+      id: sirius-variables
       shell: bash
       run: |
         SIRIUS_BASE_PATH=${{ github.workspace }}/sirius-solver
@@ -32,29 +33,26 @@ runs:
         echo "SIRIUS_BASE_PATH=$SIRIUS_BASE_PATH" >> $GITHUB_ENV
         echo "SIRIUS_INSTALL_DIR=$SIRIUS_INSTALL_DIR" >> $GITHUB_ENV
         echo "SIRIUS_INSTALL_PATH=$SIRIUS_INSTALL_PATH" >> $GITHUB_ENV
+        echo "::set-output name=sirius-base-path::$SIRIUS_BASE_PATH"
+        echo "::set-output name=sirius-install-dir::$SIRIUS_INSTALL_DIR"
+        echo "::set-output name=sirius-install-path::$SIRIUS_INSTALL_PATH"
 
     - name: Checkout Sirius repo
       uses: actions/checkout@v2
       with:
         repository: rte-france/sirius-solver
-        path: ${{ env.SIRIUS_BASE_PATH }}
+        path: ${{ steps.sirius-variables.outputs.sirius-base-path }}
         ref: ${{ inputs.sirius-ref }}
     - name: Configure Sirius
-      working-directory: ${{ env.SIRIUS_BASE_PATH }}
+      working-directory: ${{ steps.sirius-variables.outputs.sirius-base-path }}
       shell: bash
       run: |
         cmake -S src \
               -B build \
               -DCMAKE_BUILD_TYPE=Release \
-              -DCMAKE_INSTALL_PREFIX=${{ env.SIRIUS_INSTALL_DIR }}
+              -DCMAKE_INSTALL_PREFIX=${{ steps.sirius-variables.outputs.sirius-install-dir }}
 
     - name: Build & Install Sirius
-      working-directory: ${{ env.SIRIUS_BASE_PATH }}
+      working-directory: ${{ steps.sirius-variables.outputs.sirius-base-path }}
       shell: bash
       run: cmake --build build/ --config Release --target install -j14
-
-    - name: set output sirius-install-path
-      id: set-output
-      shell: bash
-      run: |
-        echo "::set-output name=sirius-install-path::${{ env.SIRIUS_INSTALL_PATH }}"
