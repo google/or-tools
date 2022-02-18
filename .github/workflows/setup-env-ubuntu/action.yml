@@ -27,11 +27,10 @@ runs:
       shell: bash
       run: |
         SIRIUS_BASE_PATH=${{ github.workspace }}/sirius-solver
-        echo $SIRIUS_BASE_PATH
+        SIRIUS_INSTALL_DIR=SiriusInstall
+        SIRIUS_INSTALL_PATH=$SIRIUS_BASE_PATH/$SIRIUS_INSTALL_DIR
         echo "SIRIUS_BASE_PATH=$SIRIUS_BASE_PATH" >> $GITHUB_ENV
-        echo "SIRIUS_INSTALL_DIR=SiriusInstall" >> $GITHUB_ENV
-        SIRIUS_INSTALL_PATH=${{ env.SIRIUS_BASE_PATH }}/${{ env.SIRIUS_INSTALL_DIR }}
-        echo $SIRIUS_INSTALL_PATH
+        echo "SIRIUS_INSTALL_DIR=$SIRIUS_INSTALL_DIR" >> $GITHUB_ENV
         echo "SIRIUS_INSTALL_PATH=$SIRIUS_INSTALL_PATH" >> $GITHUB_ENV
 
     - name: Checkout Sirius repo
