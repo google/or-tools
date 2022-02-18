@@ -22,7 +22,7 @@ jobs:
         id: setup
         uses: ./.github/workflows/setup-env-ubuntu
         with:
-          sirius-ref: $Sirius_Ref
+          sirius-ref: ${{ env.Sirius_Ref }}
 
       - name: user guide upload
         id: userguide_upload
