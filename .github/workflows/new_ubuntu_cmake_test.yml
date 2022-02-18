@@ -23,7 +23,7 @@ jobs:
 
       - name: setup envoronment
         id: setup
-        uses: ./.github/workflows/setup-env-ubuntu
+        uses: ./or-tools/.github/workflows/setup-env-ubuntu
         with:
           sirius-ref: $Sirius_Ref
 
