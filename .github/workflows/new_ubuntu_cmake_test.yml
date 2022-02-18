@@ -32,8 +32,10 @@ jobs:
         id: names
         shell: bash
         run: |
-          WITH_XPRS=$(( ${{ matrix.xprs }} == ON ? "_xprs" : "" ))
-          WITH_SIRIUS=$(( ${{ matrix.sirius }} == ON ? "_sirius" : "" ))
+          XPRS=${{ matrix.xprs }}
+          [ $XPRS == "ON" ] && WITH_XPRS="_xprs" || WITH_XPRS=""
+          SIRIUS=${{ matrix.sirius }}
+          [ $SIRIUS == "ON" ] && WITH_SIRIUS="_sirius" || WITH_SIRIUS=""
           APPENDIX="${WITH_SIRIUS}${WITH_XPRS}"
           echo "::set-output name=appendix::$APPENDIX"
           LIB_NAME="ortools_dyn_install${WITH_SIRIUS_$WITH_XPRS}"
