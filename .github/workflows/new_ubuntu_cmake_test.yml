@@ -17,6 +17,8 @@ jobs:
       matrix:
         xprs: [ON, OFF]
         sirius: [ON, OFF]
+    name: build ubuntu sirius=${{ matrix.sirius }} xprs=${{ matrix.xprs }}
+
     steps:
       - name: set name variables
         id: names
@@ -26,6 +28,8 @@ jobs:
           WITH_SIRIUS=$(( ${{ matrix.sirius }} == ON ? "_sirius" : "" ))
           APPENDIX=$WITH_SIRIUS_$WITH_XPRS
           echo "::set-output name=appendix::$APPENDIX"
+          LIB_NAME=ortools_dyn_install$WITH_SIRIUS_$WITH_XPRS
+          echo "::set-output name=lib-name::$LIB_NAME"
 
       - name: Checkout or-tools
         uses: actions/checkout@v2
@@ -77,7 +81,7 @@ jobs:
       - name: Upload artifact ortools install dyn
         uses: actions/upload-artifact@v2
         with:
-          name: ortools_dyn_install${{ steps.names.outputs.appendix }}
+          name: ${{ steps.names.outputs.lib-name }}
           path: ./build/install
 
       - name: Publish asset  file upload
@@ -86,5 +90,5 @@ jobs:
         with:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
           asset_path: ./build/install
-          asset_name: ortools_dyn_install
+          asset_name: ${{ steps.names.outputs.lib-name }}
 
