@@ -1,0 +1,49 @@
+name: "setup ubuntu environement"
+description: "setup dotnet python and compile sirius"
+inputs:
+  sirius-ref:
+    description: 'sirius repository ref, tag or branch'
+    required: true
+outputs:
+  sirius-install-path:
+    description: "path of the sirius installation"
+    value: ${{ steps.set-output.outputs.sirius-install-path }}
+runs:
+  using: "composite"
+  env:
+    SIRIUS_BASE_PATH: ${{ github.workspace }}/sirius-solver
+    SIRIUS_INSTALL_DIR: SiriusInstall
+    SIRIUS_INSTALL_PATH: $SIRIUS_BASE_PATH/$SIRIUS_INSTALL_DIR
+  steps:
+    - name: Setup .NET Core 3.1
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 3.1.x
+    - name: Setup .NET 6.0
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 6.0.x
+    - name: Pip install reqs
+      run: python3 -m pip install --user mypy-protobuf absl-py setuptools wheel numpy pandas virtualenv
+    - name: Checkout Sirius repo
+      uses: actions/checkout@v2
+      with:
+        repository: rte-france/sirius-solver
+        path: ${{ env.SIRIUS_BASE_PATH }}
+        ref: ${{ inputs.sirius-ref }}
+    - name: Configure Sirius
+      working-directory: ${{ env.SIRIUS_BASE_PATH }}
+      run: |
+        cmake -S src \
+              -B build \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX=${{ env.SIRIUS_INSTALL_DIR }}
+
+    - name: Build & Install Sirius
+      working-directory: ${{ env.SIRIUS_BASE_PATH }}
+      run: cmake --build build/ --config Release --target install -j14
+
+    - name: set output sirius-install-path
+      id: set-output
+      run: |
+        echo "::set-output name=sirius-install-path::$SIRIUS_INSTALL_PATH"

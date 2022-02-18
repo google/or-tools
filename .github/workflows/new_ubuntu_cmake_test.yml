@@ -7,55 +7,47 @@ on:
       - feature/*
 
 jobs:
+
   cmake:
     runs-on: ubuntu-latest
+    env:
+      Sirius_Ref: antares_integration
+      OR_Tools_Path: ${{ github.workspace }}/or-tools
+      XPRS_Path: ${{ github.workspace }}/xpressmp813
+
     steps:
-      - name: Setup .NET Core 3.1
-        uses: actions/setup-dotnet@v1
-        with:
-          dotnet-version: 3.1.x
-      - name: Setup .NET 6.0
-        uses: actions/setup-dotnet@v1
-        with:
-          dotnet-version: 6.0.x
-      - name: Pip install reqs
-        run: python3 -m pip install --user mypy-protobuf absl-py setuptools wheel numpy pandas virtualenv
-      - name: Checkout Sirius repo
+      - name: Checkout or-tools
         uses: actions/checkout@v2
         with:
-          repository: rte-france/sirius-solver
-          path: ./sirius-solver
-          ref: antares_integration
-      - name: Configure Sirius
-        working-directory: ./sirius-solver
-        run: |
-          cmake -S src \
-                -B build \
-                -DCMAKE_BUILD_TYPE=Release \
-                -DCMAKE_INSTALL_PREFIX=SiriusInstall
-      - name: Build & Install Sirius
-        working-directory: ./sirius-solver
-        run: cmake --build build/ --config Release --target install -j14
+          path: $OR_Tools_Path
+
+      - name: setup envoronment
+        id: setup
+        uses: ./or-tools/.github/workflows/setup-env-ubuntu
+        with:
+          sirius-ref: $Sirius_Ref
+
+      - name: user guide upload
+        id: userguide_upload
+        uses: actions/upload-artifact@v2
+        with:
+          name: user-guide
+          path: ${{ steps.create-user-guide.outputs.pdf-path }}
+
       - name: Upload sirius install
         uses: actions/upload-artifact@v2
         with:
           name: sirius_install
-          path: ./sirius-solver/SiriusInstall
-      - name: Checkout or-tools
-        uses: actions/checkout@v2
-        with:
-          path: ./or-tools
+          path: ${{ steps.setup.outputs.sirius-install-path }}
+
       - name: Checkout xpressmp813
         uses: actions/checkout@v2
         with:
           repository: rte-france/xpress-mp
-          path: ./xpressmp813
+          path: $XPRS_Path
           ref: master
           token: ${{ secrets.ACCESS_TOKEN }}
-      - name: Checkout or-tools
-        uses: actions/checkout@v2
-        with:
-          path: ./or-tools
+
       - name: Configure or-tools
         working-directory: ./or-tools
         run: |
@@ -66,9 +58,9 @@ jobs:
                 -DBUILD_SHARED_LIBS=ON \
                 -DBUILD_DEPS=ON \
                 -DUSE_SIRIUS=ON \
-                -Dsirius_solver_DIR="${{ github.workspace }}/sirius-solver/SiriusInstall/cmake" \
+                -Dsirius_solver_DIR="${{ steps.setup.outputs.sirius-install-path }}/cmake" \
                 -DUSE_XPRESS=ON \
-                -DXPRESS_ROOT="${{ github.workspace }}/xpressmp813" \
+                -DXPRESS_ROOT="${{ env.XPRS_Path }}" \
                 -DBUILD_PYTHON=OFF \
                 -DBUILD_JAVA=OFF \
                 -DBUILD_DOTNET=OFF
