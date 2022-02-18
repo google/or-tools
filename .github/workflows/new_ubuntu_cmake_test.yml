@@ -18,12 +18,10 @@ jobs:
     steps:
       - name: Checkout or-tools
         uses: actions/checkout@v2
-        with:
-          path: $OR_Tools_Path
 
       - name: setup envoronment
         id: setup
-        uses: ./or-tools/.github/workflows/setup-env-ubuntu
+        uses: ./.github/workflows/setup-env-ubuntu
         with:
           sirius-ref: $Sirius_Ref
 
@@ -49,7 +47,6 @@ jobs:
           token: ${{ secrets.ACCESS_TOKEN }}
 
       - name: Configure or-tools
-        working-directory: ./or-tools
         run: |
           cmake -S. \
                 -Bbuild \
@@ -65,25 +62,24 @@ jobs:
                 -DBUILD_JAVA=OFF \
                 -DBUILD_DOTNET=OFF
       - name: Build
-        working-directory: ./or-tools
         run: |
           cmake --build build \
                 --target all \
                 install \
                 -j4
       - name: Prepare ortools install dyn
-        working-directory: ./or-tools/build/install
+        working-directory: ${{ github.workspace }}/build/install
         run: find bin -type f ! \( -name 'protoc*' -o -name 'scip' -o -name 'fz' \) -delete
       - name: Upload artifact ortools install dyn
         uses: actions/upload-artifact@v2
         with:
           name: ortools_dyn_install
-          path: ./or-tools/build/install
+          path: ./build/install
       - name: Publish asset  file upload
         if:  github.event_name == 'release' && github.event.action == 'created'
         uses: actions/upload-release-asset@v1.0.2
         with:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
-          asset_path: ./or-tools/build/install
+          asset_path: ./build/install
           asset_name: ortools_dyn_install
 
