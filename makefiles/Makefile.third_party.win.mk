@@ -48,6 +48,12 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo # Paths must be without spaces, try to use 'dir "directory*" /x' to get the shortname without space of each directory >> Makefile.local
 	@echo #   e.g. dir "%ProgramFiles%*" /x >> Makefile.local
 
+dependencies:
+	mkdir dependencies
+
+cmake_third_party: | dependencies
+	cmake -S . -B dependencies -DBUILD_DEPS=ON -DBUILD_EXAMPLES=ON -DBUILD_SAMPLES=ON -DUSE_COINOR=$(USE_COINOR) -DUSE_SCIP=$(USE_SCIP) -DUSE_GLPK=$(USE_GLPK) -DCMAKE_INSTALL_PREFIX=$(OR_ROOT_FULL)
+
 .PHONY: clean_third_party # Clean everything. Remember to also delete archived dependencies, i.e. in the event of download failure, etc.
 clean_third_party:
 	-$(DEL) Makefile.local
