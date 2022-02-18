@@ -206,7 +206,7 @@ ifeq ($(PLATFORM),MACOSX)
  -Wl,-rpath,@loader_path/../../../../dependencies/install/lib
 endif # ifeq ($(PLATFORM),MACOSX)
 
-DEPENDENCIES_INC = -I$(INC_DIR) -I$(GEN_DIR) \
+DEPENDENCIES_INC = -I$(INC_DIR) -I$(SRC_DIR) -I$(GEN_DIR) \
  -Wno-deprecated -DUSE_GLOP -DUSE_BOP \
  $(GLPK_INC) $(CPLEX_INC) $(XPRESS_INC)
 

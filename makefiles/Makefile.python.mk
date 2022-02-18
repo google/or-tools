@@ -291,8 +291,8 @@ $(GEN_DIR)/ortools/constraint_solver/pywrapcp.py: \
  $(GEN_DIR)/ortools/constraint_solver/routing_parameters_pb2.py \
  $(GEN_DIR)/ortools/constraint_solver/search_limit_pb2.py \
  $(GEN_DIR)/ortools/constraint_solver/solver_parameters_pb2.py \
- $(GEN_DIR)/ortools/constraint_solver/assignment.pb.h \
- $(GEN_DIR)/ortools/constraint_solver/search_limit.pb.h \
+ $(INC_DIR)/ortools/constraint_solver/assignment.pb.h \
+ $(INC_DIR)/ortools/constraint_solver/search_limit.pb.h \
  $(CP_LIB_OBJS) \
  $(PROTOBUF_PYTHON_DESC) \
  | $(GEN_DIR)/ortools/constraint_solver
