@@ -21,6 +21,10 @@ jobs:
         exclude:
           - xprs: OFF
             sirius: OFF
+          - xprs: ON
+            sirius: OFF
+          - xprs: OFF
+            sirius: ON
     name: build ubuntu sirius=${{ matrix.sirius }} xprs=${{ matrix.xprs }}
 
     steps:
@@ -30,9 +34,9 @@ jobs:
         run: |
           WITH_XPRS=$(( ${{ matrix.xprs }} == ON ? "_xprs" : "" ))
           WITH_SIRIUS=$(( ${{ matrix.sirius }} == ON ? "_sirius" : "" ))
-          APPENDIX=$WITH_SIRIUS_$WITH_XPRS
+          APPENDIX="${WITH_SIRIUS}${WITH_XPRS}"
           echo "::set-output name=appendix::$APPENDIX"
-          LIB_NAME=ortools_dyn_install$WITH_SIRIUS_$WITH_XPRS
+          LIB_NAME="ortools_dyn_install${WITH_SIRIUS_$WITH_XPRS}"
           echo "::set-output name=lib-name::$LIB_NAME"
 
       - name: Checkout or-tools
@@ -82,6 +86,7 @@ jobs:
       - name: Prepare ortools install dyn
         working-directory: ${{ github.workspace }}/build/install
         run: find bin -type f ! \( -name 'protoc*' -o -name 'scip' -o -name 'fz' \) -delete
+
       - name: Upload artifact ortools install dyn
         uses: actions/upload-artifact@v2
         with:
