@@ -30,9 +30,6 @@ runs:
         SIRIUS_BASE_PATH=${{ github.workspace }}/sirius-solver
         SIRIUS_INSTALL_DIR=SiriusInstall
         SIRIUS_INSTALL_PATH=$SIRIUS_BASE_PATH/$SIRIUS_INSTALL_DIR
-        echo "SIRIUS_BASE_PATH=$SIRIUS_BASE_PATH" >> $GITHUB_ENV
-        echo "SIRIUS_INSTALL_DIR=$SIRIUS_INSTALL_DIR" >> $GITHUB_ENV
-        echo "SIRIUS_INSTALL_PATH=$SIRIUS_INSTALL_PATH" >> $GITHUB_ENV
         echo "::set-output name=sirius-base-path::$SIRIUS_BASE_PATH"
         echo "::set-output name=sirius-install-dir::$SIRIUS_INSTALL_DIR"
         echo "::set-output name=sirius-install-path::$SIRIUS_INSTALL_PATH"

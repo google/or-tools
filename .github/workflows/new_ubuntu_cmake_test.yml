@@ -8,7 +8,7 @@ on:
 
 jobs:
 
-  cmake:
+  build-ubuntu:
     runs-on: ubuntu-latest
     env:
       Sirius_Ref: antares_integration
@@ -67,6 +67,7 @@ jobs:
         with:
           name: ortools_dyn_install
           path: ./build/install
+
       - name: Publish asset  file upload
         if:  github.event_name == 'release' && github.event.action == 'created'
         uses: actions/upload-release-asset@v1.0.2
