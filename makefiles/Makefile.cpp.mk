@@ -35,9 +35,9 @@ endif
 # Main target
 .PHONY: cc # Build C++ OR-Tools library.
 .PHONY: test_cc # Run all C++ OR-Tools test targets.
-.PHONY: or-tools-libs
 
 ortools_libs: $(OR_TOOLS_LIBS)
+ortools-libs: $(OR_TOOLS_LIBS)
 or_tools_libs: $(OR_TOOLS_LIBS)
 or-tools-libs: $(OR_TOOLS_LIBS)
 
@@ -45,10 +45,8 @@ or-tools-libs: $(OR_TOOLS_LIBS)
 $(OR_TOOLS_LIBS): dependencies/CMakeCache.txt
 	cmake --build dependencies --target install -j 8
 
-force_cc:
+cc: dependencies/CMakeCache.txt
 	cmake --build dependencies --target install -j 8
-
-cc: | $(OR_TOOLS_LIBS)
 
 test_cc: \
  $(OR_TOOLS_LIBS) \
