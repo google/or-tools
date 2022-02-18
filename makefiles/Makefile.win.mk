@@ -101,7 +101,7 @@ TASKKILL = taskkill
 
 # Compilation macros.
 DEBUG=/O2 -DNDEBUG
-CCC=cl /std:c++17 /EHsc /MD /nologo -nologo $(SYSCFLAGS) /D__WIN32__ /DPSAPI_VERSION=1 \
+CCC=cl /std:c++20 /EHsc /MD /nologo -nologo $(SYSCFLAGS) /D__WIN32__ /DPSAPI_VERSION=1 \
  /DNOMINMAX /DWIN32_LEAN_AND_MEAN=1 /D_CRT_SECURE_NO_WARNINGS
 
 PYTHON_VERSION = $(WINDOWS_PYTHON_VERSION)
