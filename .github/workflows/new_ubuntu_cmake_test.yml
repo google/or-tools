@@ -34,7 +34,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           repository: rte-france/xpress-mp
-          path: $XPRS_Path
+          path: ${{ env.XPRS_Path }}
           ref: master
           token: ${{ secrets.ACCESS_TOKEN }}
 
