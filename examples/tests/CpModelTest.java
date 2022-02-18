@@ -19,6 +19,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import com.google.ortools.Loader;
 import com.google.ortools.sat.LinearArgumentProto;
 import com.google.ortools.util.Domain;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -508,4 +510,42 @@ public final class CpModelTest {
     assertThat(ex1).hasMessageThat().isEqualTo("test1: ar1 and ar2 have mismatched lengths");
     assertThat(ex2).hasMessageThat().isEqualTo("test2: ar");
   }
+
+  @Test
+  public void testCpModel_clearConstraint() throws Exception {
+    final CpModel model = new CpModel();
+    assertNotNull(model);
+    final IntVar x = model.newIntVar(0, 92, "x");
+    final IntVar y = model.newIntVar(0, 10, "y");
+    List<Constraint> constraints = new ArrayList<>();
+    for (int i = 0; i < 10; ++i) {
+      Constraint ct =
+          model.addLinearExpressionInDomain(
+              LinearExpr.newBuilder().add(x).add(y),
+              Domain.fromFlatIntervals(new long[] {6 + i, 92 - i}));
+      constraints.add(ct);
+    }
+
+    for (int i = 0; i < 10; ++i) {
+      Constraint ct = constraints.get(i);
+      assertThat(ct.getBuilder().toString())
+          .isEqualTo(model.getBuilder().getConstraintsBuilder(i).toString());
+      assertThat(ct.getBuilder().hasLinear()).isTrue();
+      assertThat(model.getBuilder().getConstraintsBuilder(i).hasLinear()).isTrue();
+      assertThat(ct.getBuilder().toString())
+          .isEqualTo(model.getBuilder().getConstraintsBuilder(i).toString());
+    }
+
+    for (int i = 0; i < 10; ++i) {
+      Constraint ct = constraints.get(i);
+      ct.getBuilder().clear();
+    }
+
+    for (int i = 0; i < 10; ++i) {
+      Constraint ct = constraints.get(i);
+      assertThat(ct.getBuilder().hasLinear()).isFalse();
+      assertThat(model.getBuilder().getConstraintsBuilder(i).hasLinear()).isFalse();
+    }
+  }
+
 }
