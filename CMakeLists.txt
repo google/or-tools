@@ -81,11 +81,11 @@ include(CMakeDependentOption)
 CMAKE_DEPENDENT_OPTION(BUILD_FLATZINC "Build flatzinc" ON "BUILD_CXX" OFF)
 message(STATUS "Build Flatzinc: ${BUILD_FLATZINC}")
 
+CMAKE_DEPENDENT_OPTION(BUILD_LP_PARSER "Build lp_parser" ON "BUILD_CXX" OFF)
+message(STATUS "Build LP Parser: ${BUILD_LP_PARSER}")
+
 CMAKE_DEPENDENT_OPTION(BUILD_GLOP "Build GLOP standalone" ON "NOT BUILD_CXX" OFF)
 message(STATUS "Build standalone Glop: ${BUILD_GLOP}")
-
-option(BUILD_LP_PARSER "Build lp_parser" OFF)
-message(STATUS "Build LP Parser: ${BUILD_LP_PARSER}")
 
 option(BUILD_SAMPLES "Build samples" ON)
 message(STATUS "Build samples: ${BUILD_SAMPLES}")
