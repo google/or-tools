@@ -32,7 +32,7 @@ runs:
         echo "SIRIUS_INSTALL_DIR=SiriusInstall" >> $GITHUB_ENV
         SIRIUS_INSTALL_PATH=${{ env.SIRIUS_BASE_PATH }}/${{ env.SIRIUS_INSTALL_DIR }}
         echo $SIRIUS_INSTALL_PATH
-        echo "SIRIUS_INSTALL_PATH=${{ env.SIRIUS_BASE_PATH }}/${{ env.SIRIUS_INSTALL_DIR }}" >> $GITHUB_ENV
+        echo "SIRIUS_INSTALL_PATH=$SIRIUS_INSTALL_PATH" >> $GITHUB_ENV
 
     - name: Checkout Sirius repo
       uses: actions/checkout@v2
