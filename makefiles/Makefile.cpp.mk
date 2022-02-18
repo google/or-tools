@@ -49,15 +49,14 @@ cc: dependencies/CMakeCache.txt
 	cmake --build dependencies --target install -j 8
 
 test_cc: \
- $(OR_TOOLS_LIBS) \
  test_cc_tests \
  test_cc_contrib \
- test_cc_cpp
+ test_cc_cpp | cc
 
-.PHONY: test_fz_pimpl
-test_fz_pimpl: \
+.PHONY: test_fz
+test_fz: \
  rfz_golomb \
- rfz_alpha
+ rfz_alpha | cc
 
 
 
@@ -430,7 +429,7 @@ test_cc_cpp: \
  SOURCE=examples/cpp/solve.cc \
  ARGS="--input examples/data/tests/test2.mps"
 
-rfz_%: fz $(FZ_EX_DIR)/%.fzn
+rfz_%: $(BIN_DIR)/fz
 	$(BIN_DIR)$Sfz$E $(FZ_EX_PATH)$S$*.fzn
 
 #################
