@@ -294,11 +294,6 @@ $(JAVA_ORTOOLS_NATIVE_LIBS): \
 ############
 ##  JAVA  ##
 ############
-$(LIB_DIR)/protobuf.jar: \
- dependencies/install/lib/protobuf.jar \
- | $(LIB_DIR)
-	$(COPY) dependencies$Sinstall$Slib$Sprotobuf.jar $(LIB_DIR)
-
 $(GEN_DIR)/java/com/google/ortools/constraintsolver/SearchLimitProtobuf.java: \
  $(SRC_DIR)/ortools/constraint_solver/search_limit.proto \
  | $(GEN_DIR)/java/com/google/ortools/constraintsolver
@@ -452,7 +447,7 @@ $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_NATIVE_PROJECT)/timestamp: \
 	$(MKDIR_P) $(JAVA_NATIVE_PATH)$Sresources$S$(JAVA_ORTOOLS_NATIVE_PROJECT)
 	$(COPY) $(subst /,$S,$(JAVA_ORTOOLS_NATIVE_LIBS)) $(JAVA_NATIVE_PATH)$Sresources$S$(JAVA_ORTOOLS_NATIVE_PROJECT)
 ifeq ($(SYSTEM),unix)
-	$(COPY) $(OR_TOOLS_LIBS) $(JAVA_NATIVE_PATH)$Sresources$S$(JAVA_ORTOOLS_NATIVE_PROJECT)
+	$(COPY) $(OR_TOOLS_LIBS).$(OR_TOOLS_MAJOR) $(JAVA_NATIVE_PATH)$Sresources$S$(JAVA_ORTOOLS_NATIVE_PROJECT)
 endif
 	cd $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_NATIVE_PROJECT) && "$(MVN_BIN)" compile -B
 	cd $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_NATIVE_PROJECT) && "$(MVN_BIN)" package -B

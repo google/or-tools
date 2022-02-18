@@ -10,7 +10,7 @@ else
 	@echo
 endif
 
-OR_TOOLS_PYTHONPATH = $(OR_ROOT_FULL)$(CPSEP)$(OR_ROOT_FULL)$Sdependencies$Ssources$Sprotobuf-$(PROTOBUF_TAG)$Spython
+OR_TOOLS_PYTHONPATH = $(OR_ROOT_FULL)$(CPSEP)$(OR_ROOT_FULL)$Sdependencies$S_deps$Sprotobuf-src$Spython
 
 # Check for required build tools
 ifeq ($(SYSTEM),win)
@@ -84,25 +84,21 @@ package_python: python
 publish_python: python
 endif
 
-PROTOBUF_PYTHON_DESC = dependencies/sources/protobuf-$(PROTOBUF_TAG)/python/google/protobuf/descriptor_pb2.py
+PROTOBUF_PYTHON_DESC = dependencies/_deps/protobuf-src/python/google/protobuf/descriptor_pb2.py
 $(PROTOBUF_PYTHON_DESC): \
-dependencies/sources/protobuf-$(PROTOBUF_TAG)/python/setup.py
+dependencies/_deps/protobuf-src/python/setup.py
 ifeq ($(SYSTEM),win)
-	copy dependencies$Sinstall$Sbin$Sprotoc.exe dependencies$Ssources$Sprotobuf-$(PROTOBUF_TAG)$Ssrc
-	cd dependencies$Ssources$Sprotobuf-$(PROTOBUF_TAG)$Spython && \
+	copy $(PROTOC) dependencies$S_deps$Sprotobuf-src$Ssrc
+	cd dependencies$S_deps$Sprotobuf-src$Spython && \
  "$(PYTHON_EXECUTABLE)" setup.py build
 endif
 ifeq ($(PLATFORM),LINUX)
-	cd dependencies$Ssources$Sprotobuf-$(PROTOBUF_TAG)$Spython && \
- LD_LIBRARY_PATH="$(UNIX_PROTOBUF_DIR)/lib64":"$(UNIX_PROTOBUF_DIR)/lib":$(LD_LIBRARY_PATH) \
- PROTOC=$(PROTOC_BINARY) \
- "$(PYTHON_EXECUTABLE)" setup.py build
+	cd dependencies$S_deps$Sprotobuf-src$Spython && \
+	PATH=$(OR_TOOLS_TOP)/bin "$(PYTHON_EXECUTABLE)" setup.py build
 endif
 ifeq ($(PLATFORM),MACOSX)
-	cd dependencies$Ssources$Sprotobuf-$(PROTOBUF_TAG)$Spython && \
- DYLD_LIBRARY_PATH="$(UNIX_PROTOBUF_DIR)/lib":$(DYLD_LIBRARY_PATH) \
- PROTOC=$(PROTOC_BINARY) \
- "$(PYTHON_EXECUTABLE)" setup.py build
+	cd dependencies$S_deps$Sprotobuf-src$Spython && \
+    PATH=$(OR_TOOLS_TOP)/bin "$(PYTHON_EXECUTABLE)" setup.py build
 endif
 
 $(GEN_DIR)/ortools/__init__.py: | $(GEN_DIR)/ortools
@@ -144,8 +140,6 @@ $(PYINIT_LIBS): $(OBJ_DIR)/swig/init_python_wrap.$O $(OR_TOOLS_LIBS)
  $(PYINIT_LDFLAGS) \
  $(LD_OUT)$(LIB_DIR)$S_pywrapinit.$(SWIG_PYTHON_LIB_SUFFIX) \
  $(OBJ_DIR)$Sswig$Sinit_python_wrap.$O \
- $(OR_TOOLS_LNK) \
- $(SYS_LNK) \
  $(PYTHON_LNK) \
  $(PYTHON_LDFLAGS)
 ifeq ($(SYSTEM),win)
@@ -252,28 +246,28 @@ $(GEN_DIR)/ortools/constraint_solver/search_limit_pb2.py: \
  $(SRC_DIR)/ortools/constraint_solver/search_limit.proto \
  $(PROTOBUF_PYTHON_DESC) \
  | $(GEN_DIR)/ortools/constraint_solver
-	$(PROTOC) --proto_path=$(INC_DIR) --python_out=$(GEN_PATH) $(MYPY_OUT) \
+	$(PROTOC) --proto_path=$(SRC_DIR) --python_out=$(GEN_PATH) $(MYPY_OUT) \
  $(SRC_DIR)$Sortools$Sconstraint_solver$Ssearch_limit.proto
 
 $(GEN_DIR)/ortools/constraint_solver/assignment_pb2.py: \
  $(SRC_DIR)/ortools/constraint_solver/assignment.proto \
  $(PROTOBUF_PYTHON_DESC) \
  | $(GEN_DIR)/ortools/constraint_solver
-	$(PROTOC) --proto_path=$(INC_DIR) --python_out=$(GEN_PATH) $(MYPY_OUT) \
+	$(PROTOC) --proto_path=$(SRC_DIR) --python_out=$(GEN_PATH) $(MYPY_OUT) \
  $(SRC_DIR)$Sortools$Sconstraint_solver$Sassignment.proto
 
 $(GEN_DIR)/ortools/constraint_solver/solver_parameters_pb2.py: \
  $(SRC_DIR)/ortools/constraint_solver/solver_parameters.proto \
  $(PROTOBUF_PYTHON_DESC) \
  | $(GEN_DIR)/ortools/constraint_solver
-	$(PROTOC) --proto_path=$(INC_DIR) --python_out=$(GEN_PATH) $(MYPY_OUT) \
+	$(PROTOC) --proto_path=$(SRC_DIR) --python_out=$(GEN_PATH) $(MYPY_OUT) \
  $(SRC_DIR)$Sortools$Sconstraint_solver$Ssolver_parameters.proto
 
 $(GEN_DIR)/ortools/constraint_solver/routing_enums_pb2.py: \
  $(SRC_DIR)/ortools/constraint_solver/routing_enums.proto \
  $(PROTOBUF_PYTHON_DESC) \
  | $(GEN_DIR)/ortools/constraint_solver
-	$(PROTOC) --proto_path=$(INC_DIR) --python_out=$(GEN_PATH) $(MYPY_OUT) \
+	$(PROTOC) --proto_path=$(SRC_DIR) --python_out=$(GEN_PATH) $(MYPY_OUT) \
  $(SRC_DIR)$Sortools$Sconstraint_solver$Srouting_enums.proto
 
 $(GEN_DIR)/ortools/constraint_solver/routing_parameters_pb2.py: \
@@ -282,7 +276,7 @@ $(GEN_DIR)/ortools/constraint_solver/routing_parameters_pb2.py: \
  $(GEN_DIR)/ortools/constraint_solver/routing_enums_pb2.py \
  $(PROTOBUF_PYTHON_DESC) \
  | $(GEN_DIR)/ortools/constraint_solver
-	$(PROTOC) --proto_path=$(INC_DIR) --python_out=$(GEN_PATH) $(MYPY_OUT) \
+	$(PROTOC) --proto_path=$(SRC_DIR) --python_out=$(GEN_PATH) $(MYPY_OUT) \
  $(SRC_DIR)$Sortools$Sconstraint_solver$Srouting_parameters.proto
 
 $(GEN_DIR)/ortools/constraint_solver/pywrapcp.py: \
@@ -342,7 +336,7 @@ $(GEN_DIR)/ortools/util/optional_boolean_pb2.py: \
  $(SRC_DIR)/ortools/util/optional_boolean.proto \
  $(PROTOBUF_PYTHON_DESC) \
  | $(GEN_DIR)/ortools/util
-	$(PROTOC) --proto_path=$(INC_DIR) --python_out=$(GEN_PATH) $(MYPY_OUT) \
+	$(PROTOC) --proto_path=$(SRC_DIR) --python_out=$(GEN_PATH) $(MYPY_OUT) \
  $(SRC_DIR)/ortools/util/optional_boolean.proto
 
 $(GEN_DIR)/ortools/linear_solver/linear_solver_pb2.py: \
@@ -350,15 +344,15 @@ $(GEN_DIR)/ortools/linear_solver/linear_solver_pb2.py: \
  $(GEN_DIR)/ortools/util/optional_boolean_pb2.py \
  $(PROTOBUF_PYTHON_DESC) \
  | $(GEN_DIR)/ortools/linear_solver
-	$(PROTOC) --proto_path=$(INC_DIR) --python_out=$(GEN_PATH) $(MYPY_OUT) \
+	$(PROTOC) --proto_path=$(SRC_DIR) --python_out=$(GEN_PATH) $(MYPY_OUT) \
  $(SRC_DIR)/ortools/linear_solver/linear_solver.proto
 
 $(GEN_DIR)/ortools/linear_solver/pywraplp.py: \
  $(SRC_DIR)/ortools/base/base.i \
  $(SRC_DIR)/ortools/util/python/vector.i \
  $(SRC_DIR)/ortools/linear_solver/python/linear_solver.i \
- $(SRC_DIR)/ortools/linear_solver/linear_solver.h \
- $(GEN_DIR)/ortools/linear_solver/linear_solver.pb.h \
+ $(INC_DIR)/ortools/linear_solver/linear_solver.h \
+ $(INC_DIR)/ortools/linear_solver/linear_solver.pb.h \
  $(GEN_DIR)/ortools/linear_solver/linear_solver_pb2.py \
  $(PROTOBUF_PYTHON_DESC) \
  | $(GEN_DIR)/ortools/linear_solver
@@ -402,14 +396,14 @@ $(GEN_DIR)/ortools/sat/cp_model_pb2.py: \
  $(SRC_DIR)/ortools/sat/cp_model.proto \
  $(PROTOBUF_PYTHON_DESC) \
  | $(GEN_DIR)/ortools/sat
-	$(PROTOC) --proto_path=$(INC_DIR) --python_out=$(GEN_PATH) $(MYPY_OUT) \
+	$(PROTOC) --proto_path=$(SRC_DIR) --python_out=$(GEN_PATH) $(MYPY_OUT) \
  $(SRC_DIR)/ortools/sat/cp_model.proto
 
 $(GEN_DIR)/ortools/sat/sat_parameters_pb2.py: \
  $(SRC_DIR)/ortools/sat/sat_parameters.proto \
  $(PROTOBUF_PYTHON_DESC) \
  | $(GEN_DIR)/ortools/sat
-	$(PROTOC) --proto_path=$(INC_DIR) --python_out=$(GEN_PATH) $(MYPY_OUT) \
+	$(PROTOC) --proto_path=$(SRC_DIR) --python_out=$(GEN_PATH) $(MYPY_OUT) \
  $(SRC_DIR)/ortools/sat/sat_parameters.proto
 
 $(GEN_DIR)/ortools/sat/pywrapsat.py: \
@@ -457,7 +451,7 @@ $(GEN_DIR)/ortools/packing/vector_bin_packing_pb2.py: \
  $(SRC_DIR)/ortools/packing/vector_bin_packing.proto \
  $(PROTOBUF_PYTHON_DESC) \
  | $(GEN_DIR)/ortools/packing
-	$(PROTOC) --proto_path=$(INC_DIR) --python_out=$(GEN_PATH) $(MYPY_OUT) \
+	$(PROTOC) --proto_path=$(SRC_DIR) --python_out=$(GEN_PATH) $(MYPY_OUT) \
  $(SRC_DIR)/ortools/packing/vector_bin_packing.proto
 
 # pywraprcpsp
@@ -469,7 +463,7 @@ $(GEN_DIR)/ortools/scheduling/rcpsp_pb2.py: \
  $(SRC_DIR)/ortools/scheduling/rcpsp.proto \
  $(PROTOBUF_PYTHON_DESC) \
  | $(GEN_DIR)/ortools/scheduling
-	$(PROTOC) --proto_path=$(INC_DIR) --python_out=$(GEN_PATH) $(MYPY_OUT) \
+	$(PROTOC) --proto_path=$(SRC_DIR) --python_out=$(GEN_PATH) $(MYPY_OUT) \
  $(SRC_DIR)/ortools/scheduling/rcpsp.proto
 
 $(GEN_DIR)/ortools/scheduling/pywraprcpsp.py: \

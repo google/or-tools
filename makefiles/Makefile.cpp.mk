@@ -21,33 +21,9 @@ endif
 # All libraries and dependecies
 OR_TOOLS_LIBS = $(LIB_DIR)/$(LIB_PREFIX)ortools.$L
 
-HAS_CCC = true
-ifndef CCC
-HAS_CCC =
-endif
-
 # Main target
 .PHONY: cc # Build C++ OR-Tools library.
-.PHONY: check_cc # Quick check only running C++ OR-Tools samples targets.
 .PHONY: test_cc # Run all C++ OR-Tools test targets.
-.PHONY: test_fz # Run all Flatzinc OR-Tools examples.
-.PHONY: package_cc # Create C++ OR-Tools "package" (archive).
-ifndef HAS_CCC
-cc:
-	@echo CCC = $(CCC)
-	$(warning Cannot find '$@' command which is needed for build. Please make sure it is installed and in system PATH.)
-check_cc: cc
-test_cc: cc
-test_fz: cc
-package_cc: cc
-else
-cc: $(OR_TOOLS_LIBS)
-check_cc: check_cc_pimpl
-test_cc: test_cc_pimpl
-test_fz: test_fz_pimpl
-package_cc: package_cc_pimpl
-BUILT_LANGUAGES += C++
-endif
 
 $(GEN_DIR):
 	-$(MKDIR_P) $(GEN_PATH)
@@ -160,146 +136,17 @@ $(OBJ_DIR)/util: | $(OBJ_DIR)
 $(OBJ_DIR)/swig: | $(OBJ_DIR)
 	-$(MKDIR_P) $(OBJ_DIR)$Sswig
 
-###############
-##  CPP LIB  ##
-###############
-# build from: $> grep "pb\.h:" makefiles/Makefile.gen.mk
-PROTO_DEPS = \
-$(GEN_DIR)/ortools/bop/bop_parameters.pb.h \
-$(GEN_DIR)/ortools/constraint_solver/assignment.pb.h \
-$(GEN_DIR)/ortools/constraint_solver/demon_profiler.pb.h \
-$(GEN_DIR)/ortools/constraint_solver/routing_enums.pb.h \
-$(GEN_DIR)/ortools/constraint_solver/routing_parameters.pb.h \
-$(GEN_DIR)/ortools/constraint_solver/search_limit.pb.h \
-$(GEN_DIR)/ortools/constraint_solver/search_stats.pb.h \
-$(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.h \
-$(GEN_DIR)/ortools/glop/parameters.pb.h \
-$(GEN_DIR)/ortools/graph/flow_problem.pb.h \
-$(GEN_DIR)/ortools/linear_solver/linear_solver.pb.h \
-$(GEN_DIR)/ortools/packing/multiple_dimensions_bin_packing.pb.h \
-$(GEN_DIR)/ortools/packing/vector_bin_packing.pb.h \
-$(GEN_DIR)/ortools/sat/boolean_problem.pb.h \
-$(GEN_DIR)/ortools/sat/cp_model.pb.h \
-$(GEN_DIR)/ortools/sat/sat_parameters.pb.h \
-$(GEN_DIR)/ortools/scheduling/jobshop_scheduling.pb.h \
-$(GEN_DIR)/ortools/scheduling/rcpsp.pb.h \
-$(GEN_DIR)/ortools/util/optional_boolean.pb.h
-
 include $(OR_ROOT)makefiles/Makefile.gen.mk
 
-ifeq ($(USE_SCIP),ON)
-PROTO_DEPS += $(GEN_DIR)/ortools/gscip/gscip.pb.h
-else
-undefine GSCIP_LIB_OBJS
-endif
-
-all_protos: $(PROTO_DEPS)
-
 # OR Tools unique library.
-$(OR_TOOLS_LIBS): \
- dependencies/check.log \
- $(BASE_LIB_OBJS) \
- $(PORT_LIB_OBJS) \
- $(UTIL_LIB_OBJS) \
- $(SCHEDULING_LIB_OBJS) \
- $(LP_DATA_LIB_OBJS) \
- $(GLOP_LIB_OBJS) \
- $(BOP_LIB_OBJS) \
- $(LP_LIB_OBJS) \
- $(GRAPH_LIB_OBJS) \
- $(ALGORITHMS_LIB_OBJS) \
- $(SAT_LIB_OBJS) \
- $(PACKING_LIB_OBJS) \
- $(CP_LIB_OBJS) \
- $(GSCIP_LIB_OBJS) \
- $(GUROBI_LIB_OBJS) | $(LIB_DIR)
-	$(LINK_CMD) \
- $(LD_OUT)$(LIB_DIR)$S$(LIB_PREFIX)ortools.$L \
- $(BASE_LIB_OBJS) \
- $(PORT_LIB_OBJS) \
- $(UTIL_LIB_OBJS) \
- $(SCHEDULING_LIB_OBJS) \
- $(LP_DATA_LIB_OBJS) \
- $(GLOP_LIB_OBJS) \
- $(GRAPH_LIB_OBJS) \
- $(ALGORITHMS_LIB_OBJS) \
- $(SAT_LIB_OBJS) \
- $(BOP_LIB_OBJS) \
- $(LP_LIB_OBJS) \
- $(PACKING_LIB_OBJS) \
- $(CP_LIB_OBJS) \
- $(GSCIP_LIB_OBJS) \
- $(GUROBI_LIB_OBJS) \
- $(DEPENDENCIES_LNK) \
- $(LDFLAGS)
+$(OR_TOOLS_LIBS): cc
 
-#####################
-##  Flatzinc code  ##
-#####################
-FLATZINC_LIBS = $(LIB_DIR)/$(LIB_PREFIX)fz.$L
-FLATZINC_PATH = $(subst /,$S,$(FLATZINC_LIBS))
-FLATZINC_DEPS = \
-	$(SRC_DIR)/ortools/flatzinc/checker.h \
-	$(SRC_DIR)/ortools/flatzinc/cp_model_fz_solver.h \
-	$(SRC_DIR)/ortools/flatzinc/model.h \
-	$(SRC_DIR)/ortools/flatzinc/parser.h \
-	$(SRC_DIR)/ortools/flatzinc/parser.tab.hh \
-	$(SRC_DIR)/ortools/flatzinc/presolve.h \
-	$(CP_DEPS) \
-	$(SAT_DEPS)
-FLATZINC_LNK = $(PRE_LIB)fz$(POST_LIB) $(OR_TOOLS_LNK)
-ifeq ($(PLATFORM),MACOSX)
-FLATZINC_LDFLAGS = -install_name @rpath/$(LIB_PREFIX)fz.$L #
-endif
+cc:
+	cmake --build dependencies --target install -j 8
 
-FLATZINC_OBJS=\
-	$(OBJ_DIR)/flatzinc/checker.$O \
-	$(OBJ_DIR)/flatzinc/cp_model_fz_solver.$O \
-	$(OBJ_DIR)/flatzinc/model.$O \
-	$(OBJ_DIR)/flatzinc/parser.$O \
-	$(OBJ_DIR)/flatzinc/parser.tab.$O \
-	$(OBJ_DIR)/flatzinc/parser.yy.$O \
-	$(OBJ_DIR)/flatzinc/presolve.$O
+test_cc:
+	cd dependencies && ctest -R cxx_ -VV
 
-fz_parser: #$(SRC_DIR)/ortools/flatzinc/parser.lex $(SRC_DIR)/ortools/flatzinc/parser.yy
-	flex -o $(SRC_DIR)/ortools/flatzinc/parser.yy.cc $(SRC_DIR)/ortools/flatzinc/parser.lex
-	bison -t -o $(SRC_DIR)/ortools/flatzinc/parser.tab.cc -d $(SRC_DIR)/ortools/flatzinc/parser.yy
-
-$(OBJ_DIR)/flatzinc/%.$O: $(SRC_DIR)/ortools/flatzinc/%.cc $(FLATZINC_DEPS) | $(OBJ_DIR)/flatzinc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sflatzinc$S$*.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$S$*.$O
-
-$(FLATZINC_LIBS): $(OR_TOOLS_LIBS) $(FLATZINC_OBJS) | $(LIB_DIR)
-	$(LINK_CMD) \
- $(FLATZINC_LDFLAGS) \
- $(LD_OUT)$(LIB_DIR)$S$(LIB_PREFIX)fz.$L \
- $(FLATZINC_OBJS) \
- $(OR_TOOLS_LNK) \
- $(OR_TOOLS_LDFLAGS)
-
-.PHONY: fz # Build Flatzinc binaries.
-fz: \
- $(BIN_DIR)/ortools.msc \
- $(BIN_DIR)/fz$E \
- $(BIN_DIR)/parser_main$E
-
-$(BIN_DIR)/ortools.msc: $(SRC_DIR)/ortools/flatzinc/ortools.msc.in | $(BIN_DIR)
-	$(SED) -e "s/@PROJECT_VERSION@/$(OR_TOOLS_VERSION)/" \
- ortools$Sflatzinc$Sortools.msc.in \
- > $(BIN_DIR)$Sortools.msc
-	$(SED) -i -e "s/@FZ_REL_INSTALL_BINARY@/.\/fz$E/" \
- $(BIN_DIR)$Sortools.msc
-
-$(BIN_DIR)/fz$E: $(OBJ_DIR)/flatzinc/fz.$O $(FLATZINC_LIBS) $(OR_TOOLS_LIBS) | $(BIN_DIR)
-	$(CCC) $(CFLAGS) $(OBJ_DIR)$Sflatzinc$Sfz.$O $(FLATZINC_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Sfz$E
-
-$(BIN_DIR)/parser_main$E: $(OBJ_DIR)/flatzinc/parser_main.$O $(FLATZINC_LIBS) $(OR_TOOLS_LIBS) | $(BIN_DIR)
-	$(CCC) $(CFLAGS) $(OBJ_DIR)$Sflatzinc$Sparser_main.$O $(FLATZINC_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Sparser_main$E
-
-.PHONY: clean_fz # Clean Flatzinc output from previous build.
-clean_fz:
-	-$(DEL) $(BIN_DIR)$Sortools.msc
-	-$(DEL) $(BIN_DIR)$Sfz$E
-	-$(DEL) $(BIN_DIR)$Sparser_main$E
 
 ##################
 ##  Sat solver  ##
@@ -311,7 +158,7 @@ $(OBJ_DIR)/sat_runner.$O: \
  $(CC_EX_DIR)/opb_reader.h \
  $(CC_EX_DIR)/sat_cnf_reader.h \
  $(SAT_DEPS) | $(OBJ_DIR)
-	$(CCC) $(CFLAGS) -c $(CC_EX_PATH)$Ssat_runner.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat_runner.$O
+	$(CCC) $(CFLAGS) -I$(SRC_DIR) -c $(CC_EX_PATH)$Ssat_runner.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat_runner.$O
 
 ##################
 ##  C++ SOURCE  ##
@@ -402,179 +249,6 @@ $(BIN_DIR)/course_scheduling$E: $(OBJ_DIR)/course_scheduling.$O $(OBJ_DIR)/cours
 
 rcc_course_scheduling: $(BIN_DIR)/course_scheduling$E FORCE
 	$(BIN_DIR)$S$*$E $(ARGS)
-
-
-##################################
-##  Test targets                ##
-##################################
-
-.PHONY: test_cc_algorithms_samples # Build and Run all C++ Algorithms Samples (located in ortools/algorithms/samples)
-test_cc_algorithms_samples: \
- rcc_knapsack \
- rcc_simple_knapsack_program
-
-.PHONY: test_cc_graph_samples # Build and Run all C++ Graph Samples (located in ortools/graph/samples)
-test_cc_graph_samples: \
- rcc_assignment_linear_sum_assignment \
- rcc_assignment_min_flow \
- rcc_balance_min_flow \
- rcc_simple_max_flow_program \
- rcc_simple_min_cost_flow_program
-
-.PHONY: test_cc_linear_solver_samples # Build and Run all C++ LP Samples (located in ortools/linear_solver/samples)
-test_cc_linear_solver_samples: \
- rcc_assignment_mip \
- rcc_basic_example \
- rcc_bin_packing_mip \
- rcc_integer_programming_example \
- rcc_linear_programming_example \
- rcc_mip_var_array \
- rcc_multiple_knapsack_mip \
- rcc_simple_lp_program \
- rcc_simple_mip_program \
- rcc_stigler_diet
-
-.PHONY: test_cc_constraint_solver_samples # Build and Run all C++ CP Samples (located in ortools/constraint_solver/samples)
-test_cc_constraint_solver_samples: \
- rcc_minimal_jobshop_cp \
- rcc_nurses_cp \
- rcc_rabbits_and_pheasants_cp \
- rcc_simple_ls_program \
- rcc_simple_cp_program \
- rcc_simple_routing_program \
- rcc_tsp \
- rcc_tsp_cities \
- rcc_tsp_circuit_board \
- rcc_tsp_distance_matrix \
- rcc_vrp \
- rcc_vrp_breaks \
- rcc_vrp_capacity \
- rcc_vrp_drop_nodes \
- rcc_vrp_global_span \
- rcc_vrp_initial_routes \
- rcc_vrp_pickup_delivery \
- rcc_vrp_pickup_delivery_fifo \
- rcc_vrp_pickup_delivery_lifo \
- rcc_vrp_resources \
- rcc_vrp_starts_ends \
- rcc_vrp_time_windows \
- rcc_vrp_with_time_limit
-
-.PHONY: test_cc_sat_samples # Build and Run all C++ Sat Samples (located in ortools/sat/samples)
-test_cc_sat_samples: \
- rcc_assignment_sat \
- rcc_assumptions_sample_sat \
- rcc_binpacking_problem_sat \
- rcc_bool_or_sample_sat \
- rcc_channeling_sample_sat \
- rcc_cp_is_fun_sat \
- rcc_earliness_tardiness_cost_sample_sat \
- rcc_interval_sample_sat \
- rcc_literal_sample_sat \
- rcc_no_overlap_sample_sat \
- rcc_optional_interval_sample_sat \
- rcc_rabbits_and_pheasants_sat \
- rcc_ranking_sample_sat \
- rcc_reified_sample_sat \
- rcc_search_for_all_solutions_sample_sat \
- rcc_simple_sat_program \
- rcc_solution_hinting_sample_sat \
- rcc_solve_and_print_intermediate_solutions_sample_sat \
- rcc_solve_with_time_limit_sample_sat \
- rcc_step_function_sample_sat \
- rcc_stop_after_n_solutions_sample_sat
-
-.PHONY: check_cc_pimpl
-check_cc_pimpl: \
- test_cc_algorithms_samples \
- test_cc_constraint_solver_samples \
- test_cc_graph_samples \
- test_cc_linear_solver_samples \
- test_cc_sat_samples \
- \
- rcc_linear_programming \
- rcc_constraint_programming_cp \
- rcc_integer_programming \
- rcc_knapsack \
- rcc_max_flow \
- rcc_min_cost_flow ;
-
-.PHONY: test_cc_tests # Build and Run all C++ Tests (located in ortools/examples/tests)
-test_cc_tests: \
- rcc_lp_test \
- rcc_bug_fz1 \
- rcc_cpp11_test \
- rcc_forbidden_intervals_test \
- rcc_issue57 \
- rcc_min_max_test
-#	$(MAKE) rcc_issue173 # error: too long
-
-.PHONY: test_cc_contrib # Build and Run all C++ Contrib (located in ortools/examples/contrib)
-test_cc_contrib: ;
-
-.PHONY: test_cc_cpp # Build and Run all C++ Examples (located in ortools/examples/cpp)
-test_cc_cpp: \
- rcc_costas_array_sat \
- rcc_cryptarithm_sat \
- rcc_cvrp_disjoint_tw \
- rcc_cvrptw \
- rcc_cvrptw_with_breaks \
- rcc_cvrptw_with_refueling \
- rcc_cvrptw_with_resources \
- rcc_cvrptw_with_stop_times_and_resources \
- rcc_flow_api \
- rcc_linear_assignment_api \
- rcc_linear_solver_protocol_buffers \
- rcc_magic_sequence_sat \
- rcc_magic_square_sat \
- rcc_nqueens \
- rcc_random_tsp \
- rcc_slitherlink_sat \
- rcc_strawberry_fields_with_column_generation \
- rcc_uncapacitated_facility_location \
- rcc_weighted_tardiness_sat
-	$(MAKE) run \
- SOURCE=examples/cpp/dimacs_assignment.cc \
- ARGS=examples/data/dimacs/assignment/small.asn
-	$(MAKE) run \
- SOURCE=examples/cpp/dobble_ls.cc \
- ARGS="--time_limit_in_ms=10000"
-	$(MAKE) run \
- SOURCE=examples/cpp/golomb_sat.cc \
- ARGS="--size=5"
-	$(MAKE) run \
- SOURCE=examples/cpp/jobshop_sat.cc \
- ARGS="--input=examples/data/jobshop/ft06"
-	$(MAKE) run \
- SOURCE=examples/cpp/mps_driver.cc \
- ARGS="--input examples/data/tests/test.mps"
-	$(MAKE) run \
- SOURCE=examples/cpp/network_routing_sat.cc \
- ARGS="--clients=10 --backbones=5 --demands=10 --traffic_min=5 --traffic_max=10 --min_client_degree=2 --max_client_degree=5 --min_backbone_degree=3 --max_backbone_degree=5 --max_capacity=20 --fixed_charge_cost=10"
-	$(MAKE) run \
- SOURCE=examples/cpp/sports_scheduling_sat.cc \
- ARGS="--params max_time_in_seconds:10.0"
-#	$(MAKE) run SOURCE=examples/cpp/frequency_assignment_problem.cc  # Need data file
-#	$(MAKE) run SOURCE=examples/cpp/pdptw.cc ARGS="--pdp_file examples/data/pdptw/LC1_2_1.txt" # Fails on windows...
-	$(MAKE) run SOURCE=examples/cpp/shift_minimization_sat.cc  ARGS="--input examples/data/shift_scheduling/minimization/data_1_23_40_66.dat"
-	$(MAKE) run \
- SOURCE=examples/cpp/solve.cc \
- ARGS="--input examples/data/tests/test2.mps"
-
-.PHONY: test_cc_pimpl
-test_cc_pimpl: \
- check_cc_pimpl \
- test_cc_tests \
- test_cc_contrib \
- test_cc_cpp
-
-.PHONY: test_fz_pimpl
-test_fz_pimpl: \
- rfz_golomb \
- rfz_alpha
-
-rfz_%: fz $(FZ_EX_DIR)/%.fzn
-	$(BIN_DIR)$Sfz$E $(FZ_EX_PATH)$S$*.fzn
 
 #################
 ##  Packaging  ##

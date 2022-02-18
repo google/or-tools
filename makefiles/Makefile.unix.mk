@@ -4,9 +4,9 @@
 
 # Unix specific definitions
 LIB_PREFIX = lib
-DEP_BIN_DIR = $(OR_ROOT)dependencies/install/bin
+DEP_BIN_DIR = $(OR_ROOT)bin
 # C++ relevant directory
-INC_DIR = $(OR_ROOT).
+INC_DIR = $(OR_ROOT)include
 SRC_DIR = $(OR_ROOT).
 GEN_DIR = $(OR_ROOT)ortools/gen
 GEN_PATH = $(subst /,$S,$(GEN_DIR))
@@ -86,17 +86,7 @@ PATH_TO_PYTHON_INCLUDE = $(shell python$(UNIX_PYTHON_VER) -c 'import sysconfig; 
 PYTHON_INC = -I$(PATH_TO_PYTHON_INCLUDE) -I$(PATH_TO_PYTHON_LIB) $(ADD_PYTHON_INC)
 
 PYTHON_INC += $(shell pkg-config --cflags python$(MAJOR_PYTHON_VERSION) 2> /dev/null)
-#PYTHON_LNK += $(shell pkg-config --libs   python$(MAJOR_PYTHON_VERSION) 2> /dev/null)
 
-#ifeq ("${PYTHON_LNK}","")
-#PYTHON_LNK = "-lpython${UNIX_PYTHON_VERSION}"
-#endif
-
-# This is needed to find GLPK include files.
-ifdef UNIX_GLPK_DIR
-  GLPK_INC = -I$(UNIX_GLPK_DIR)/include -DUSE_GLPK
-  GLPK_SWIG = $(GLPK_INC)
-endif
 ifdef UNIX_CPLEX_DIR
   CPLEX_INC = -I$(UNIX_CPLEX_DIR)/cplex/include -DUSE_CPLEX
   CPLEX_SWIG = $(CPLEX_INC)
@@ -152,16 +142,14 @@ ifeq ($(PLATFORM),LINUX)
   POST_LIB =
   LINK_FLAGS = \
  -Wl,-rpath,'$$ORIGIN' \
- -Wl,-rpath,'$$ORIGIN/../lib' \
- -Wl,-rpath,'$$ORIGIN/../dependencies/install/lib64' \
- -Wl,-rpath,'$$ORIGIN/../dependencies/install/lib'
+ -Wl,-rpath,'$$ORIGIN/../lib' 
+
   PYTHON_LDFLAGS = \
  -Wl,-rpath,'$$ORIGIN' \
  -Wl,-rpath,'$$ORIGIN/../../ortools' \
  -Wl,-rpath,'$$ORIGIN/../../ortools/.libs' \
- -Wl,-rpath,'$$ORIGIN/../../../../lib' \
- -Wl,-rpath,'$$ORIGIN/../../../../dependencies/install/lib64' \
- -Wl,-rpath,'$$ORIGIN/../../../../dependencies/install/lib'
+ -Wl,-rpath,'$$ORIGIN/../../../../lib'
+
 endif  # ifeq ($(PLATFORM),LINUX)
 ifeq ($(PLATFORM),MACOSX)
   MAC_VERSION = -mmacosx-version-min=$(MAC_MIN_VERSION)
