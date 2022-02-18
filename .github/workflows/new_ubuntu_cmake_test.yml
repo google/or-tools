@@ -13,8 +13,21 @@ jobs:
     env:
       Sirius_Ref: antares_integration
       XPRS_Path: ${{ github.workspace }}/xpressmp813
-
+    strategy:
+      matrix:
+        xprs: [ON, OFF]
+        sirius: [ON, OFF]
+    if: matrix.xprs == ON || matrix.sirius == ON
     steps:
+      - name: set name variables
+        id: names
+        shell: bash
+        run: |
+          WITH_XPRS=$(( ${{ matrix.xprs }} == ON ? "_xprs" : "" ))
+          WITH_SIRIUS=$(( ${{ matrix.sirius }} == ON ? "_sirius" : "" ))
+          APPENDIX=$WITH_SIRIUS_$WITH_XPRS
+          echo "::set-output name=appendix::$APPENDIX"
+
       - name: Checkout or-tools
         uses: actions/checkout@v2
 
@@ -46,9 +59,9 @@ jobs:
                 -DCMAKE_INSTALL_PREFIX="build/install" \
                 -DBUILD_SHARED_LIBS=ON \
                 -DBUILD_DEPS=ON \
-                -DUSE_SIRIUS=ON \
+                -DUSE_SIRIUS=${{ matrix.sirius }} \
                 -Dsirius_solver_DIR="${{ steps.setup.outputs.sirius-install-path }}/cmake" \
-                -DUSE_XPRESS=ON \
+                -DUSE_XPRESS=${{ matrix.xprs }} \
                 -DXPRESS_ROOT="${{ env.XPRS_Path }}" \
                 -DBUILD_PYTHON=OFF \
                 -DBUILD_JAVA=OFF \
@@ -65,7 +78,7 @@ jobs:
       - name: Upload artifact ortools install dyn
         uses: actions/upload-artifact@v2
         with:
-          name: ortools_dyn_install
+          name: ortools_dyn_install${{ steps.names.outputs.appendix }}
           path: ./build/install
 
       - name: Publish asset  file upload
