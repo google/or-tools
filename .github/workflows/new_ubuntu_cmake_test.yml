@@ -12,7 +12,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       Sirius_Ref: antares_integration
-      OR_Tools_Path: ${{ github.workspace }}/or-tools
       XPRS_Path: ${{ github.workspace }}/xpressmp813
 
     steps:

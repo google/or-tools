@@ -10,10 +10,6 @@ outputs:
     value: ${{ steps.set-output.outputs.sirius-install-path }}
 runs:
   using: "composite"
-  env:
-    SIRIUS_BASE_PATH: ${{ env.GITHUB_WORKSPACE}}/sirius-solver
-    SIRIUS_INSTALL_DIR: SiriusInstall
-    SIRIUS_INSTALL_PATH: $SIRIUS_BASE_PATH/$SIRIUS_INSTALL_DIR
   steps:
     - name: Setup .NET Core 3.1
       uses: actions/setup-dotnet@v1
