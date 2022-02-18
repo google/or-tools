@@ -197,7 +197,7 @@ endif()
 # ##############################################################################
 # Coinutils
 # ##############################################################################
-# Coin-OR does not support C++17 (use of 'register' storage class specifier)
+# Coin-OR does not support C++17/C++20 (use of 'register' storage class specifier)
 set(CMAKE_CXX_STANDARD 11)
 
 if(BUILD_CoinUtils)
@@ -282,4 +282,4 @@ if(BUILD_Cbc)
   message(CHECK_PASS "fetched")
 endif()
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
