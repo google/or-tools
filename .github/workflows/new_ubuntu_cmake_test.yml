@@ -38,7 +38,7 @@ jobs:
           [ $SIRIUS == "ON" ] && WITH_SIRIUS="_sirius" || WITH_SIRIUS=""
           APPENDIX="${WITH_SIRIUS}${WITH_XPRS}"
           echo "::set-output name=appendix::$APPENDIX"
-          LIB_NAME="ortools_dyn_install${WITH_SIRIUS_$WITH_XPRS}"
+          LIB_NAME="ortools_dyn_install${APPENDIX}"
           echo "::set-output name=lib-name::$LIB_NAME"
 
       - name: Checkout or-tools
