@@ -25,6 +25,13 @@ runs:
         dotnet-version: 6.0.x
     - name: Pip install reqs
       run: python3 -m pip install --user mypy-protobuf absl-py setuptools wheel numpy pandas virtualenv
+
+    - name: set env variables
+      run: |
+        echo "SIRIUS_BASE_PATH=${{ env.GITHUB_WORKSPACE }}/sirius-solver" >> $GITHUB_ENV \
+        echo "SIRIUS_INSTALL_DIR=SiriusInstall" >> $GITHUB_ENV \
+        echo "SIRIUS_INSTALL_PATH=${{ env.SIRIUS_BASE_PATH }}/${{ env.SIRIUS_INSTALL_DIR }}" >> $GITHUB_ENV
+
     - name: Checkout Sirius repo
       uses: actions/checkout@v2
       with:
@@ -46,4 +53,4 @@ runs:
     - name: set output sirius-install-path
       id: set-output
       run: |
-        echo "::set-output name=sirius-install-path::$SIRIUS_INSTALL_PATH"
+        echo "::set-output name=sirius-install-path::${{ env.SIRIUS_INSTALL_PATH }}"
