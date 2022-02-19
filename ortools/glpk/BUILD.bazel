@@ -1,0 +1,31 @@
+# Code specific to Glpk solver used by linear_solver/ and math_opt/.
+package(default_visibility = ["//ortools:__subpackages__"])
+
+cc_library(
+    name = "glpk_env_deleter",
+    srcs = ["glpk_env_deleter.cc"],
+    hdrs = ["glpk_env_deleter.h"],
+    deps = [
+        "//ortools/base",
+        "@glpk",
+    ],
+)
+
+cc_library(
+    name = "glpk_formatters",
+    srcs = ["glpk_formatters.cc"],
+    hdrs = ["glpk_formatters.h"],
+    deps = [
+        "//ortools/base",
+        "@com_google_absl//absl/strings",
+        "@glpk",
+    ],
+)
+
+cc_library(
+    name = "glpk_computational_form",
+    hdrs = ["glpk_computational_form.h"],
+    deps = [
+        "@glpk",
+    ],
+)
