@@ -83,9 +83,9 @@ jobs:
                 -Dsirius_solver_DIR="${{ steps.setup.outputs.sirius-install-path }}/cmake" \
                 -DUSE_XPRESS=${{ matrix.xprs }} \
                 -DXPRESS_ROOT="${{ env.XPRS_Path }}" \
-                -DBUILD_PYTHON=ON \
-                -DBUILD_JAVA=ON \
-                -DBUILD_DOTNET=ON
+                -DBUILD_PYTHON=${{ matrix.shared }} \
+                -DBUILD_JAVA=${{ matrix.shared }} \
+                -DBUILD_DOTNET=${{ matrix.shared }}
       - name: Build
         run: |
           cmake --build build \
