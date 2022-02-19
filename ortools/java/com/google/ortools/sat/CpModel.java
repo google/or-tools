@@ -912,6 +912,8 @@ public final class CpModel {
 
   /** Adds a minimization objective of a linear expression. */
   public void minimize(LinearArgument expr) {
+    modelBuilder.clearObjective();
+    modelBuilder.clearFloatingPointObjective();
     CpObjectiveProto.Builder obj = modelBuilder.getObjectiveBuilder();
     final LinearExpr e = expr.build();
     for (int i = 0; i < e.numElements(); ++i) {
@@ -921,6 +923,8 @@ public final class CpModel {
   }
 
   public void minimize(DoubleLinearExpr expr) {
+    modelBuilder.clearObjective();
+    modelBuilder.clearFloatingPointObjective();
     FloatObjectiveProto.Builder obj = modelBuilder.getFloatingPointObjectiveBuilder();
     for (int i = 0; i < expr.numElements(); ++i) {
       obj.addVars(expr.getVariableIndex(i)).addCoeffs(expr.getCoefficient(i));
@@ -930,6 +934,8 @@ public final class CpModel {
 
   /** Adds a maximization objective of a linear expression. */
   public void maximize(LinearArgument expr) {
+    modelBuilder.clearObjective();
+    modelBuilder.clearFloatingPointObjective();
     CpObjectiveProto.Builder obj = modelBuilder.getObjectiveBuilder();
     final LinearExpr e = expr.build();
     for (int i = 0; i < e.numElements(); ++i) {
@@ -940,6 +946,8 @@ public final class CpModel {
   }
 
   public void maximize(DoubleLinearExpr expr) {
+    modelBuilder.clearObjective();
+    modelBuilder.clearFloatingPointObjective();
     FloatObjectiveProto.Builder obj = modelBuilder.getFloatingPointObjectiveBuilder();
     for (int i = 0; i < expr.numElements(); ++i) {
       obj.addVars(expr.getVariableIndex(i)).addCoeffs(expr.getCoefficient(i));
