@@ -17,25 +17,28 @@ jobs:
       matrix:
         xprs: [ON, OFF]
         sirius: [ON, OFF]
+        shared: [ON, OFF]
 
         exclude:
           - xprs: OFF
             sirius: OFF
 
-    name: build ubuntu sirius=${{ matrix.sirius }} xprs=${{ matrix.xprs }}
+    name: build ubuntu shared=${{ matrix.shared }} sirius=${{ matrix.sirius }} xprs=${{ matrix.xprs }}
 
     steps:
       - name: set name variables
         id: names
         shell: bash
         run: |
+          SHARED=${{ matrix.shared }}
+          [ $SHARED == "ON" ] && WITH_SHARED="_shared" || WITH_SHARED="_static"
           XPRS=${{ matrix.xprs }}
           [ $XPRS == "ON" ] && WITH_XPRS="_xprs" || WITH_XPRS=""
           SIRIUS=${{ matrix.sirius }}
           [ $SIRIUS == "ON" ] && WITH_SIRIUS="_sirius" || WITH_SIRIUS=""
-          APPENDIX="${WITH_SIRIUS}${WITH_XPRS}"
+          APPENDIX="${WITH_SHARED}${WITH_SIRIUS}${WITH_XPRS}"
           echo "::set-output name=appendix::$APPENDIX"
-          LIB_NAME="ortools_dyn_install${APPENDIX}"
+          LIB_NAME="ortools_install${APPENDIX}"
           echo "::set-output name=lib-name::$LIB_NAME"
 
       - name: Checkout or-tools
@@ -67,7 +70,7 @@ jobs:
                 -Bbuild \
                 -DCMAKE_BUILD_TYPE=Release \
                 -DCMAKE_INSTALL_PREFIX="build/install" \
-                -DBUILD_SHARED_LIBS=ON \
+                -DBUILD_SHARED_LIBS=${{ matrix.shared }}  \
                 -DBUILD_DEPS=ON \
                 -DUSE_SIRIUS=${{ matrix.sirius }} \
                 -Dsirius_solver_DIR="${{ steps.setup.outputs.sirius-install-path }}/cmake" \
@@ -82,11 +85,11 @@ jobs:
                 --target all \
                 install \
                 -j4
-      - name: Prepare ortools install dyn
+      - name: Prepare ortools install
         working-directory: ${{ github.workspace }}/build/install
         run: find bin -type f ! \( -name 'protoc*' -o -name 'scip' -o -name 'fz' \) -delete
 
-      - name: Upload artifact ortools install dyn
+      - name: Upload artifact ortools install
         uses: actions/upload-artifact@v2
         with:
           name: ${{ steps.names.outputs.lib-name }}
