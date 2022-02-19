@@ -42,10 +42,10 @@ or_tools_libs: $(OR_TOOLS_LIBS)
 or-tools-libs: $(OR_TOOLS_LIBS)
 
 # OR Tools unique library.
-$(OR_TOOLS_LIBS): dependencies/CMakeCache.txt
+$(OR_TOOLS_LIBS): third_party
 	cmake --build dependencies --target install -j 8
 
-cc: dependencies/CMakeCache.txt
+cc: third_party
 	cmake --build dependencies --target install -j 8
 
 test_cc: \

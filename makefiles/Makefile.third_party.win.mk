@@ -14,8 +14,7 @@ SWIG_BINARY = "$(OR_TOOLS_TOP)\\bin\\swig.exe"
 .PHONY: third_party # Build OR-Tools Prerequisite
 third_party: \
   Makefile.local \
-  cmake_third_party
-
+  dependencies/ortools.sln
 
 ######################
 ##  Makefile.local  ##
@@ -48,11 +47,8 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo # Paths must be without spaces, try to use 'dir "directory*" /x' to get the shortname without space of each directory >> Makefile.local
 	@echo #   e.g. dir "%ProgramFiles%*" /x >> Makefile.local
 
-cmake_third_party: dependencies/CMakeCache.txt
-
-dependencies/CMakeCache.txt: | dependencies
-	cmake -S . -B dependencies -DBUILD_DEPS=ON -DBUILD_EXAMPLES=OFF -DBUILD_SAMPLES=OFF -DUSE_COINOR=$(USE_COINOR) -DUSE_SCIP=$(USE_SCIP) -DUSE_GLPK=$(USE_GLPK) -DCMAKE_INSTALL_PREFIX=$(OR_ROOT_FULL)
-
+dependencies/ortools.sln: | dependencies
+	cmake -S . -B dependencies -DBUILD_DEPS=ON -DBUILD_EXAMPLES=OFF -DBUILD_SAMPLES=OFF -DUSE_COINOR=$(USE_COINOR) -DUSE_SCIP=$(USE_SCIP) -DUSE_GLPK=$(USE_GLPK) -DCMAKE_INSTALL_PREFIX=$(OR_ROOT_FULL) -DCMAKE_BUILD_TYPE=Release
 
 .PHONY: clean_third_party # Clean everything. Remember to also delete archived dependencies, i.e. in the event of download failure, etc.
 clean_third_party:

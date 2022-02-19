@@ -2,6 +2,8 @@ if(NOT BUILD_CXX)
   return()
 endif()
 
+
+
 # Main Target
 add_library(${PROJECT_NAME} "")
 # Xcode fails to build if library doesn't contains at least one source file.
@@ -95,13 +97,23 @@ target_include_directories(${PROJECT_NAME} INTERFACE
   $<INSTALL_INTERFACE:include>
   )
 
+if (win32)
+set(cxx_compile_feature "cxx_std_20")
+else()
+set(cxx_compile_feature "cxx_std_17")
+endif()
+
 # Compile options
 set_target_properties(${PROJECT_NAME} PROPERTIES
+if(WIN32)
+  CXX_STANDARD 20
+else()
   CXX_STANDARD 17
+endif()
   CXX_STANDARD_REQUIRED ON
   CXX_EXTENSIONS OFF
   )
-target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
+target_compile_features(${PROJECT_NAME} PUBLIC ${cxx_compile_feature})
 target_compile_definitions(${PROJECT_NAME} PUBLIC ${OR_TOOLS_COMPILE_DEFINITIONS})
 target_compile_options(${PROJECT_NAME} PUBLIC ${OR_TOOLS_COMPILE_OPTIONS})
 
@@ -320,7 +332,7 @@ function(add_cxx_sample FILE_NAME)
 
   add_executable(${SAMPLE_NAME} ${FILE_NAME})
   target_include_directories(${SAMPLE_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-  target_compile_features(${SAMPLE_NAME} PRIVATE cxx_std_17)
+  target_compile_features(${SAMPLE_NAME} PRIVATE ${cxx_compile_feature})
   target_link_libraries(${SAMPLE_NAME} PRIVATE ${PROJECT_NAMESPACE}::ortools)
 
   include(GNUInstallDirs)
@@ -353,7 +365,7 @@ function(add_cxx_example FILE_NAME)
 
   add_executable(${EXAMPLE_NAME} ${FILE_NAME})
   target_include_directories(${EXAMPLE_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-  target_compile_features(${EXAMPLE_NAME} PRIVATE cxx_std_17)
+  target_compile_features(${EXAMPLE_NAME} PRIVATE ${cxx_compile_feature})
   target_link_libraries(${EXAMPLE_NAME} PRIVATE ${PROJECT_NAMESPACE}::ortools)
 
   include(GNUInstallDirs)
@@ -386,7 +398,7 @@ function(add_cxx_test FILE_NAME)
 
   add_executable(${TEST_NAME} ${FILE_NAME})
   target_include_directories(${TEST_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-  target_compile_features(${TEST_NAME} PRIVATE cxx_std_17)
+  target_compile_features(${TEST_NAME} PRIVATE ${cxx_compile_feature})
   target_link_libraries(${TEST_NAME} PRIVATE ${PROJECT_NAMESPACE}::ortools)
 
   if(BUILD_TESTING)
