@@ -46,6 +46,9 @@ jobs:
       - name: Checkout or-tools
         uses: actions/checkout@v2
 
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1
+
       - name: setup envoronment
         id: setup
         uses: ./.github/workflows/setup-env-ubuntu
@@ -70,6 +73,8 @@ jobs:
         run: |
           cmake -S. \
                 -Bbuild \
+                -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+                -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
                 -DCMAKE_BUILD_TYPE=Release \
                 -DCMAKE_INSTALL_PREFIX="build/install" \
                 -DBUILD_SHARED_LIBS=${{ matrix.shared }}  \
