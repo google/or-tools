@@ -11,10 +11,12 @@ PROTOC = "$(OR_TOOLS_TOP)\\bin\\protoc.exe"
 SWIG_BINARY = swig.exe
 
 # Main target.
+dependencies:
+	mkdir dependencies
 .PHONY: third_party # Build OR-Tools Prerequisite
 third_party: \
   Makefile.local \
-  dependencies/ortools.sln
+  dependencies/ortools.sln | dependencies
 
 ######################
 ##  Makefile.local  ##
@@ -53,12 +55,12 @@ dependencies/ortools.sln: | dependencies
 .PHONY: clean_third_party # Clean everything. Remember to also delete archived dependencies, i.e. in the event of download failure, etc.
 clean_third_party:
 	-$(DEL) Makefile.local
-	-$(DELREC) dependencies\*
+	-$(DELREC) dependencies\\*
 	-$(DELREC) include
 	-$(DELREC) share
-	-$(DELREC) lib\*.lib
-	-$(DELREC) lib\cmake
-	-$(DELREC) lib\pkgconfig
+	-$(DELREC) lib\\*.lib
+	-$(DELREC) lib\\cmake
+	-$(DELREC) lib\\pkgconfig
 
 .PHONY: detect_third_party # Show variables used to find third party
 detect_third_party:
