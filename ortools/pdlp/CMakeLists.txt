@@ -13,7 +13,11 @@ set(NAME ${PROJECT_NAME}_pdlp)
 #add_library(${NAME} STATIC ${_SRCS})
 add_library(${NAME} OBJECT ${_SRCS})
 set_target_properties(${NAME} PROPERTIES
+if(WIN32)
+  CXX_STANDARD 20
+else()
   CXX_STANDARD 17
+endif()
   CXX_STANDARD_REQUIRED ON
   CXX_EXTENSIONS OFF
   POSITION_INDEPENDENT_CODE ON
