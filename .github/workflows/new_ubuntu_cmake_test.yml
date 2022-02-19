@@ -21,10 +21,7 @@ jobs:
         exclude:
           - xprs: OFF
             sirius: OFF
-          - xprs: ON
-            sirius: OFF
-          - xprs: OFF
-            sirius: ON
+
     name: build ubuntu sirius=${{ matrix.sirius }} xprs=${{ matrix.xprs }}
 
     steps:
