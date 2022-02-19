@@ -173,13 +173,6 @@ ifeq ("$(SYSTEM)","win")
   # Third party specific
   CBC_PLATFORM = $(CBC_PLATFORM_PREFIX)-$(VS_RELEASE)-Release
 
-  # Java specific
-  ifeq ($(JAVA_HOME),)
-    SELECTED_PATH_TO_JDK = JAVA_HOME = \# JAVA_HOME is not set on your system. Set it to the path to jdk to build the java files.
-  else
-    SELECTED_PATH_TO_JDK = JAVA_HOME = $(JAVA_HOME)
-  endif
-
   # Detect Python
   ifeq ($(WINDOWS_PATH_TO_PYTHON),)
     DETECTED_PATH_TO_PYTHON = $(shell python -c "from sys import executable; from os.path import sep; print(sep.join(executable.split(sep)[:-1]).rstrip())")

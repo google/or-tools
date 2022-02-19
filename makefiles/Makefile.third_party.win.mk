@@ -25,7 +25,6 @@ third_party: \
 # Make sure that local file lands correctly across platforms
 Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	-$(DEL) Makefile.local
-	@echo $(SELECTED_PATH_TO_JDK)>> Makefile.local
 	@echo $(SELECTED_PATH_TO_PYTHON)>> Makefile.local
 	@echo # >> Makefile.local
 	@echo ## OPTIONAL DEPENDENCIES ## >> Makefile.local
