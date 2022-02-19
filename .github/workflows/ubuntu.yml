@@ -83,9 +83,9 @@ jobs:
                 -Dsirius_solver_DIR="${{ steps.setup.outputs.sirius-install-path }}/cmake" \
                 -DUSE_XPRESS=${{ matrix.xprs }} \
                 -DXPRESS_ROOT="${{ env.XPRS_Path }}" \
-                -DBUILD_PYTHON=OFF \
-                -DBUILD_JAVA=OFF \
-                -DBUILD_DOTNET=OFF
+                -DBUILD_PYTHON=ON \
+                -DBUILD_JAVA=ON \
+                -DBUILD_DOTNET=ON
       - name: Build
         run: |
           cmake --build build \
@@ -110,7 +110,7 @@ jobs:
           asset_path: ./build/install
           asset_name: ${{ steps.names.outputs.lib-name }}
 
-      - name: put ld_library_path in variable
+      - name: set ld_library_path
         run: |
           LD_PATH="${{ steps.setup.outputs.sirius-install-path }}/lib/:${{ env.XPRS_LIB_Path }}/"
           echo "LD_LIBRARY_PATH=$LD_PATH" >> $GITHUB_ENV
