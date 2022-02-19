@@ -584,16 +584,10 @@ bool SatSolver::ResetWithGivenAssumptions(
   if (!ResetToLevelZero()) return false;
   if (assumptions.empty()) return true;
 
-  // We do not use EnqueueNewDecision() here so we duplicate this.
-  //
-  // TODO(user): move somewhere in common?
-  const double kMinDeterministicTimeBetweenCleanups = 1.0;
-  if (num_processed_fixed_variables_ < trail_->Index() &&
-      deterministic_time() >
-          deterministic_time_of_last_fixed_variables_cleanup_ +
-              kMinDeterministicTimeBetweenCleanups) {
-    ProcessNewlyFixedVariables();
-  }
+  // For assumptions and core-based search, it is really important to add as
+  // many binary clauses as possible. This is because we do not wan to miss any
+  // early core of size 2.
+  ProcessNewlyFixedVariables();
 
   DCHECK(assumptions_.empty());
   assumption_level_ = 1;
