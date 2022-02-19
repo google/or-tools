@@ -16,7 +16,7 @@ STATIC_LIB_SUFFIX = lib
 LINK_CMD = lib
 STATIC_LINK_CMD = lib
 # C++ relevant directory
-INC_DIR = $(OR_ROOT).
+INC_DIR = $(OR_ROOT)include
 SRC_DIR = $(OR_ROOT).
 GEN_DIR = $(OR_ROOT)ortools/gen
 GEN_PATH = $(subst /,$S,$(GEN_DIR))
@@ -140,7 +140,7 @@ JAVAC_BIN=$(shell $(WHICH) "$(JAVA_HOME)\bin\javac")
 JAVA_BIN=$(shell $(WHICH) "$(JAVA_HOME)\bin\java")
 JAR_BIN=$(shell $(WHICH) "$(JAVA_HOME)\bin\jar")
 
-DEPENDENCIES_INC = /I$(INC_DIR) /I$(GEN_DIR) \
+DEPENDENCIES_INC = /I$(INC_DIR) /I$(SRC_DIR) /I$(GEN_DIR) \
  /DUSE_GLOP /DUSE_BOP \
  $(GLPK_INC) $(GUROBI_INC) $(CPLEX_INC) $(XPRESS_INC)
 

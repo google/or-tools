@@ -119,7 +119,7 @@ $(GEN_DIR)/ortools/init/pywrapinit.py: \
  $(SRC_DIR)/ortools/init/python/init.i \
  $(INIT_DEPS) \
  | $(GEN_DIR)/ortools/init
-	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -python $(SWIG_DOXYGEN) $(SWIG_PYTHON3_FLAG) \
+	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -I$(SRC_DIR) -c++ -python $(SWIG_DOXYGEN) $(SWIG_PYTHON3_FLAG) \
  -o $(GEN_PATH)$Sortools$Sinit$Sinit_python_wrap.cc \
  -module pywrapinit \
  ortools$Sinit$Spython$Sinit.i
@@ -140,6 +140,7 @@ $(PYINIT_LIBS): $(OBJ_DIR)/swig/init_python_wrap.$O $(OR_TOOLS_LIBS)
  $(PYINIT_LDFLAGS) \
  $(LD_OUT)$(LIB_DIR)$S_pywrapinit.$(SWIG_PYTHON_LIB_SUFFIX) \
  $(OBJ_DIR)$Sswig$Sinit_python_wrap.$O \
+ $(OR_TOOLS_LNK) \
  $(PYTHON_LNK) \
  $(PYTHON_LDFLAGS)
 ifeq ($(SYSTEM),win)

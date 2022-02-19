@@ -8,7 +8,7 @@ help_third_party:
 USE_COINOR ?= ON
 USE_SCIP ?= ON
 PROTOC = "$(OR_TOOLS_TOP)\\bin\\protoc.exe"
-SWIG_BINARY = "$(OR_TOOLS_TOP)\\bin\\swig.exe"
+SWIG_BINARY = swig.exe
 
 # Main target.
 .PHONY: third_party # Build OR-Tools Prerequisite
