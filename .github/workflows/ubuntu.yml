@@ -1,4 +1,4 @@
-name: Ubuntu composite
+name: Ubuntu
 
 on:
   push:
@@ -146,4 +146,19 @@ jobs:
             ./build/dotnet/packages/Google.OrTools.[0-9]*.[0-9]*.[0-9]*.nupkg
             ./build/dotnet/packages/Google.OrTools.runtime.*.[0-9]*.[0-9]*.[0-9]*.nupkg
 
+      - name: Publish ortools wheel
+        if:  ${{ github.event_name == 'release' && github.event.action == 'created' && matrix.shared == 'ON' }}
+        uses: actions/upload-release-asset@v1.0.2
+        with:
+          upload_url: ${{ steps.get_release.outputs.upload_url }}
+          asset_path: './build/python/dist/*.whl'
+          asset_name: ortools_wheel${{ steps.names.outputs.appendix }}
+
+      - name: Publish ortools jar
+        if:  ${{ github.event_name == 'release' && github.event.action == 'created' && matrix.shared == 'ON' }}
+        uses: actions/upload-release-asset@v1.0.2
+        with:
+          upload_url: ${{ steps.get_release.outputs.upload_url }}
+          asset_path: ./build/java/ortools-*/target/*.jar
+          asset_name: ortools_jar${{ steps.names.outputs.appendix }}
 
