@@ -149,6 +149,12 @@ ifeq ("$(SYSTEM)","win")
     VS_RELEASE = v142
     CMAKE_PLATFORM = "Visual Studio 16 2019" -A x64
   endif
+  ifeq ("$(VisualStudioVersion)","17.0")
+    VISUAL_STUDIO_YEAR = 2022
+    VISUAL_STUDIO_MAJOR = 17
+    VS_RELEASE = v143
+    CMAKE_PLATFORM = "Visual Studio 17 2022" -A x64
+  endif
 
   ifeq ("$(VISUAL_STUDIO_YEAR)","")
     $(warning "Unrecognized visual studio version")
