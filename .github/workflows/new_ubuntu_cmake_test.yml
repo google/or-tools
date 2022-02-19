@@ -13,6 +13,8 @@ jobs:
     env:
       Sirius_Ref: antares_integration
       XPRS_Path: ${{ github.workspace }}/xpressmp813
+      XPRS_BIN_Path: ${{ github.workspace }}/xpressmp813/bin
+      XPRS_LIB_Path: ${{ github.workspace }}/xpressmp813/lib
     strategy:
       matrix:
         xprs: [ON, OFF]
@@ -102,4 +104,39 @@ jobs:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
           asset_path: ./build/install
           asset_name: ${{ steps.names.outputs.lib-name }}
+
+      - name: Build & run CMake example project using dyn install
+        working-directory: ./examples/cmake/linear_programming/
+        env:
+          XPRESS: "${{ env.XPRS_BIN_Path }}/"
+          LD_LIBRARY_PATH: "${{ steps.setup.outputs.sirius-install-path }}/lib/:${{ env.XPRS_LIB_Path }}//"
+        run: |
+          cmake -Bbuild -S. \
+                -DORTOOLS_INSTALL="${{ github.workspace }}/build/install" \
+                -DXPRESS_ROOT="${{ env.XPRS_Path }}" \
+                -Dsirius_solver_DIR="${{ steps.setup.outputs.sirius-install-path }}/cmake"
+          cmake --build build
+          ./build/linear_programming
+
+      - name: Upload ortools wheel
+        if: ${{ matrix.shared == 'ON' }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: ortools_wheel${{ steps.names.outputs.appendix }}
+          path: './or-tools/build/python/dist/*.whl'
+      - name: Upload ortools jar
+        if: ${{ matrix.shared == 'ON' }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: ortools_jar${{ steps.names.outputs.appendix }}
+          path: ./or-tools/build/java/ortools-*/target/*.jar
+      - name: Upload ortools dotnet
+        if: ${{ matrix.shared == 'ON' }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: ortools_dotnet${{ steps.names.outputs.appendix }}
+          path: |
+            ./or-tools/build/dotnet/packages/Google.OrTools.[0-9]*.[0-9]*.[0-9]*.nupkg
+            ./or-tools/build/dotnet/packages/Google.OrTools.runtime.*.[0-9]*.[0-9]*.[0-9]*.nupkg
+
 
