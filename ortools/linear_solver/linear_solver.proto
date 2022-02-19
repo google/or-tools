@@ -447,7 +447,7 @@ message MPModelRequest {
     PDLP_LINEAR_PROGRAMMING = 8;
     KNAPSACK_MIXED_INTEGER_PROGRAMMING = 13;
   }
-  optional SolverType solver_type = 2;
+  optional SolverType solver_type = 2 [default = GLOP_LINEAR_PROGRAMMING];
 
   // Maximum time to be spent by the solver to solve 'model'. If the server is
   // busy and the RPC's deadline_left is less than this, it will immediately
