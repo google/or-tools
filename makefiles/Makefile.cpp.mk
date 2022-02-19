@@ -43,10 +43,10 @@ or-tools-libs: $(OR_TOOLS_LIBS)
 
 # OR Tools unique library.
 $(OR_TOOLS_LIBS): third_party
-	cmake --build dependencies --target install -j 8
+	cmake --build dependencies --target install --config RELEASE -j 8
 
 cc: third_party
-	cmake --build dependencies --target install -j 8
+	cmake --build dependencies --target install --config RELEASE -j 8
 
 test_cc: \
  cc \
