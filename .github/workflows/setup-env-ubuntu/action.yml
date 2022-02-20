@@ -45,6 +45,7 @@ runs:
         path: ${{ steps.sirius-variables.outputs.sirius-base-path }}
         ref: ${{ inputs.sirius-ref }}
     - name: Configure Sirius
+      shell: bash
       working-directory: "${{ steps.sirius-variables.outputs.sirius-base-path }}"
       run: |
         cmake -S src \
