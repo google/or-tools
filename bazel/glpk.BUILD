@@ -13,7 +13,7 @@ cc_library(
         "glpk-5.0/src/glpk.h",
     ],
     copts = [
-        "-Wno-error",
+#        "-Wno-error",
         "-w",
         "-Iexternal/glpk/glpk-5.0/src",
         "-Iexternal/glpk/glpk-5.0/src/amd",
