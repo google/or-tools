@@ -26,7 +26,7 @@ jobs:
           - xprs: OFF
             sirius: OFF
 
-    name: build ${{ matrix.os }} shared=${{ matrix.shared }} sirius=${{ matrix.sirius }} xprs=${{ matrix.xprs }}
+    name: ${{ matrix.os }} shared=${{ matrix.shared }} sirius=${{ matrix.sirius }} xprs=${{ matrix.xprs }}
 
     steps:
       - name: set name variables
