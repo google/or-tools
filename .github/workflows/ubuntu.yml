@@ -92,8 +92,8 @@ jobs:
 
       - name: Configure or-tools
         run: |
-          cmake -S. \
-                -Bbuild \
+          cmake -S . \
+                -B build \
                 -DCMAKE_C_COMPILER_LAUNCHER=ccache \
                 -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
                 -DCMAKE_BUILD_TYPE=Release \
