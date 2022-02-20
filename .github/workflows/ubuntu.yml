@@ -39,7 +39,8 @@ jobs:
           [ $XPRS == "ON" ] && WITH_XPRS="_xprs" || WITH_XPRS=""
           SIRIUS=${{ matrix.sirius }}
           [ $SIRIUS == "ON" ] && WITH_SIRIUS="_sirius" || WITH_SIRIUS=""
-          APPENDIX="${WITH_SHARED}${WITH_SIRIUS}${WITH_XPRS}"
+          OS="_${{ matrix.os }}"
+          APPENDIX="${OS}${WITH_SHARED}${WITH_SIRIUS}${WITH_XPRS}"
           echo "::set-output name=appendix::$APPENDIX"
           LIB_NAME="ortools_install${APPENDIX}"
           echo "::set-output name=lib-name::$LIB_NAME"
@@ -66,9 +67,10 @@ jobs:
           sirius-ref: ${{ env.Sirius_Ref }}
 
       - name: Upload sirius install
+        if: ${{ matrix.xprs == 'ON' && matrix.sirius == 'ON' }}
         uses: actions/upload-artifact@v2
         with:
-          name: sirius_install
+          name: sirius_install_${{ matrix.os }}
           path: ${{ steps.setup.outputs.sirius-install-path }}
 
       - name: Checkout xpressmp813
