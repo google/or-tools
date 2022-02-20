@@ -21,14 +21,11 @@ endif
 # All libraries and dependecies
 ifeq ($(PLATFORM),WIN64)
 OR_TOOLS_LIBS = $(LIB_DIR)/$(LIB_PREFIX)ortools.$L
-OR_TOOLS_LIB_MAJOR =  $(LIB_DIR)/$(LIB_PREFIX)ortools.$L
 else
 ifeq ($(PLATFORM),MACOSX)
-OR_TOOLS_LIBS = $(LIB_DIR)/$(LIB_PREFIX)ortools.$(OR_TOOLS_MAJOR).$(OR_TOOLS_MINOR).$L
-OR_TOOLS_LIB_MAJOR =  $(LIB_DIR)/$(LIB_PREFIX)ortools.$(OR_TOOLS_MAJOR).$L
+OR_TOOLS_LIBS = $(LIB_DIR)/$(LIB_PREFIX)ortools.$(OR_TOOLS_MAJOR).$L
 else
-OR_TOOLS_LIBS = $(LIB_DIR)/$(LIB_PREFIX)ortools.$L.$(OR_TOOLS_MAJOR).$(OR_TOOLS_MINOR)
-OR_TOOLS_LIB_MAJOR =  $(LIB_DIR)/$(LIB_PREFIX)ortools.$L.$(OR_TOOLS_MAJOR)
+OR_TOOLS_LIBS = $(LIB_DIR)/$(LIB_PREFIX)ortools.$L.$(OR_TOOLS_MAJOR)
 endif
 endif
 
@@ -42,14 +39,14 @@ or_tools_libs: $(OR_TOOLS_LIBS)
 or-tools-libs: $(OR_TOOLS_LIBS)
 
 # OR Tools unique library.
-$(OR_TOOLS_LIBS): third_party
+$(OR_TOOLS_LIBS): $(THIRD_PARTY_TARGET)
 	cmake --build dependencies --target install --config RELEASE -j 8
+	$(TOUCH) $(OR_TOOLS_LIBS)
 
-cc: third_party
-	cmake --build dependencies --target install --config RELEASE -j 8
+cc: $(OR_TOOLS_LIBS)
 
 test_cc: \
- cc \
+ $(OR_TOOLS_LIBS) \
  test_cc_tests \
  test_cc_contrib \
  test_cc_cpp
@@ -551,23 +548,11 @@ clean_cc:
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)dimacs.$L
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)fap.$L
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)fz.$L
-	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)ortools.$L
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)ortools*.$L*
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)flatzinc*.$L*
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)*.a
 	-$(DEL) $(OBJ_DIR)$S*.$O
-	-$(DEL) $(OBJ_DIR)$Salgorithms$S*.$O
-	-$(DEL) $(OBJ_DIR)$Sbase$S*.$O
-	-$(DEL) $(OBJ_DIR)$Sbop$S*.$O
-	-$(DEL) $(OBJ_DIR)$Sconstraint_solver$S*.$O
-	-$(DEL) $(OBJ_DIR)$Spacking$S*.$O
-	-$(DEL) $(OBJ_DIR)$Sscheduling$S*.$O
-	-$(DEL) $(OBJ_DIR)$Sflatzinc$S*.$O
-	-$(DEL) $(OBJ_DIR)$Sglop$S*.$O
-	-$(DEL) $(OBJ_DIR)$Sgraph$S*.$O
-	-$(DEL) $(OBJ_DIR)$Slinear_solver$S*.$O
-	-$(DEL) $(OBJ_DIR)$Slp_data$S*.$O
-	-$(DEL) $(OBJ_DIR)$Sport$S*.$O
-	-$(DEL) $(OBJ_DIR)$Ssat$S*.$O
-	-$(DEL) $(OBJ_DIR)$Sutil$S*.$O
+	-$(DELREC) $(OBJ_DIR)
 	-$(DEL) $(BIN_DIR)$Sortools.msc
 	-$(DEL) $(BIN_DIR)$Sfz$E
 	-$(DEL) $(BIN_DIR)$Sparser_main$E
@@ -575,25 +560,10 @@ clean_cc:
 	-$(DEL) $(CC_SAMPLES)
 	-$(DEL) $(CC_EXAMPLES)
 	-$(DEL) $(CC_TESTS)
-	-$(DEL) $(GEN_PATH)$Sortools$Sbop$S*.pb.*
-	-$(DEL) $(GEN_PATH)$Sortools$Sconstraint_solver$S*.pb.*
-	-$(DEL) $(GEN_PATH)$Sortools$Spacking$S*.pb.*
-	-$(DEL) $(GEN_PATH)$Sortools$Sscheduling$S*.pb.*
-	-$(DEL) $(GEN_PATH)$Sortools$Sflatzinc$S*.tab.*
-	-$(DEL) $(GEN_PATH)$Sortools$Sflatzinc$S*.yy.*
-	-$(DEL) $(GEN_PATH)$Sortools$Sflatzinc$Sparser.*
-	-$(DEL) $(GEN_PATH)$Sortools$Sglop$S*.pb.*
-	-$(DEL) $(GEN_PATH)$Sortools$Sgraph$S*.pb.*
-	-$(DEL) $(GEN_PATH)$Sortools$Slinear_solver$S*.pb.*
-	-$(DEL) $(GEN_PATH)$Sortools$Ssat$S*.pb.*
-	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S*.pb.*
 	-$(DEL) $(BIN_DIR)$S*.exp
 	-$(DEL) $(BIN_DIR)$S*.lib
-	-$(DELREC) $(GEN_PATH)$Sflatzinc$S*
-	-$(DELREC) $(OBJ_DIR)$Sflatzinc$S*
 	-$(DELREC) $(TEMP_PACKAGE_CC_DIR)
 	-$(DELREC) $(TEMP_CC_DIR)
-	-$(DEL) $(GEN_PATH)$Sortools$Slinear_solver$Slpi_glop.cc
 
 .PHONY: clean_compat
 clean_compat:

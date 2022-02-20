@@ -14,10 +14,13 @@ SWIG_BINARY = swig.exe
 # Main target.
 dependencies:
 	mkdir dependencies
+
 .PHONY: third_party # Build OR-Tools Prerequisite
 third_party: \
   Makefile.local \
   dependencies/ortools.sln | dependencies
+
+THIRD_PARTY_TARGET = dependencies/ortools.sln
 
 ######################
 ##  Makefile.local  ##

@@ -17,12 +17,9 @@ SWIG_DOXYGEN = -doxygen
 
 # Main target.
 .PHONY: third_party # Build OR-Tools Prerequisite
-third_party: build_third_party
+third_party:  Makefile.local dependencies/Makefile
 
-.PHONY: build_third_party
-build_third_party: \
-  Makefile.local \
-  dependencies/Makefile
+THIRD_PARTY_TARGET = dependencies/Makefile
 
 ######################
 ##  Makefile.local  ##
