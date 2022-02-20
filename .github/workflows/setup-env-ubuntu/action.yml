@@ -33,9 +33,11 @@ runs:
       id: sirius-variables
       shell: bash
       run: |
+        SIRIUS_WORKING_DIR=./sirius-solver
         SIRIUS_BASE_PATH=${{ github.workspace }}/sirius-solver
         SIRIUS_INSTALL_DIR=SiriusInstall
         SIRIUS_INSTALL_PATH=$SIRIUS_BASE_PATH/$SIRIUS_INSTALL_DIR
+        echo "::set-output name=sirius-working-dir::$SIRIUS_WORKING_DIR"
         echo "::set-output name=sirius-base-path::$SIRIUS_BASE_PATH"
         echo "::set-output name=sirius-install-dir::$SIRIUS_INSTALL_DIR"
         echo "::set-output name=sirius-install-path::$SIRIUS_INSTALL_PATH"
@@ -44,11 +46,11 @@ runs:
       uses: actions/checkout@v2
       with:
         repository: rte-france/sirius-solver
-        path: ${{ steps.sirius-variables.outputs.sirius-base-path }}
+        path: "${{ steps.sirius-variables.outputs.sirius-working-dir }}"
         ref: ${{ inputs.sirius-ref }}
     - name: Configure Sirius
       shell: bash
-      working-directory: "${{ steps.sirius-variables.outputs.sirius-base-path }}"
+      working-directory: "${{ steps.sirius-variables.outputs.sirius-working-dir }}"
       run: |
         cmake -S src \
               -B build \
