@@ -17,7 +17,7 @@ jobs:
       XPRS_LIB_Path: ${{ github.workspace }}/xpressmp813/lib
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest]
         xprs: [ON, OFF]
         sirius: [ON, OFF]
         shared: [ON, OFF]
