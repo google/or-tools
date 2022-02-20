@@ -458,118 +458,21 @@ endif
 # ref: https://www.gnu.org/prep/standards/html_node/DESTDIR.html
 install_dirs:
 	-$(MKDIR_P) "$(DESTDIR)$(prefix)"
-	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude"
 	-$(MKDIR) "$(DESTDIR)$(prefix)$Slib"
 	-$(MKDIR) "$(DESTDIR)$(prefix)$Sbin"
-	-$(MKDIR) "$(DESTDIR)$(prefix)$Sshare"
-
-install_ortools_dirs: install_dirs
-	-$(DELREC) "$(DESTDIR)$(prefix)$Sinclude$Sortools"
-	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools"
-	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Salgorithms"
-	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sbase"
-	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sbop"
-	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sconstraint_solver"
-	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sglop"
-	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sgraph"
-	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Slinear_solver"
-	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Slp_data"
-	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sport"
-	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Ssat"
-	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sutil"
-	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sscheduling"
-	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Spacking"
-
-.PHONY: install_cc # Install C++ OR-Tools to $(DESTDIR)$(prefix)
-install_cc: install_libortools install_third_party install_doc
-
-.PHONY: install_libortools
-install_libortools: $(OR_TOOLS_LIBS) install_ortools_dirs
-	$(COPY) LICENSE-2.0.txt "$(DESTDIR)$(prefix)"
-	$(COPY) ortools$Salgorithms$S*.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Salgorithms"
-	$(COPY) ortools$Sbase$S*.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sbase"
-	$(COPY) ortools$Sconstraint_solver$S*.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sconstraint_solver"
-	$(COPY) $(GEN_PATH)$Sortools$Sconstraint_solver$S*.pb.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sconstraint_solver"
-	$(COPY) ortools$Sbop$S*.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sbop"
-	$(COPY) $(GEN_PATH)$Sortools$Sbop$S*.pb.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sbop"
-	$(COPY) ortools$Sglop$S*.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sglop"
-	$(COPY) $(GEN_PATH)$Sortools$Sglop$S*.pb.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sglop"
-	$(COPY) ortools$Sgraph$S*.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sgraph"
-	$(COPY) $(GEN_PATH)$Sortools$Sgraph$S*.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sgraph"
-	$(COPY) ortools$Slinear_solver$S*.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Slinear_solver"
-	$(COPY) $(GEN_PATH)$Sortools$Slinear_solver$S*.pb.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Slinear_solver"
-	$(COPY) ortools$Slp_data$S*.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Slp_data"
-	$(COPY) ortools$Sport$S*.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sport"
-	$(COPY) ortools$Ssat$S*.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Ssat"
-	$(COPY) $(GEN_PATH)$Sortools$Ssat$S*.pb.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Ssat"
-	$(COPY) ortools$Sutil$S*.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sutil"
-	$(COPY) $(GEN_PATH)$Sortools$Sutil$S*.pb.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sutil"
-	$(COPY) ortools$Spacking$S*.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Spacking"
-	$(COPY) $(GEN_PATH)$Sortools$Spacking$S*.pb.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Spacking"
-	$(COPY) ortools$Sscheduling$S*.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sscheduling"
-	$(COPY) $(GEN_PATH)$Sortools$Sscheduling$S*.pb.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sscheduling"
-	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)ortools.$L "$(DESTDIR)$(prefix)$Slib"
-
-.PHONY: install_third_party
-install_third_party: install_dirs
-ifeq ($(UNIX_PROTOBUF_DIR),$(OR_TOOLS_TOP)/dependencies/install)
-	$(COPYREC) dependencies$Sinstall$Sinclude$Sgoogle "$(DESTDIR)$(prefix)$Sinclude"
-	$(COPYREC) dependencies$Sinstall$Slib*$Slibproto* "$(DESTDIR)$(prefix)$Slib"
-	$(COPY) dependencies$Sinstall$Sbin$Sprotoc* "$(DESTDIR)$(prefix)$Sbin"
-endif
-ifeq ($(UNIX_ABSL_DIR),$(OR_TOOLS_TOP)/dependencies/install)
-	$(COPYREC) dependencies$Sinstall$Sinclude$Sabsl "$(DESTDIR)$(prefix)$Sinclude"
-	-$(COPYREC) $(subst /,$S,$(_ABSL_STATIC_LIB_DIR))$Slibabsl* "$(DESTDIR)$(prefix)$Slib"
-endif
-ifeq ($(USE_COINOR),ON)
-ifeq ($(UNIX_CBC_DIR),$(OR_TOOLS_TOP)/dependencies/install)
-	$(COPYREC) dependencies$Sinstall$Sinclude$Scoin "$(DESTDIR)$(prefix)$Sinclude"
-	$(COPYREC) dependencies$Sinstall$Slib*$SlibCbc* "$(DESTDIR)$(prefix)$Slib"
-	$(COPYREC) dependencies$Sinstall$Slib*$SlibCgl* "$(DESTDIR)$(prefix)$Slib"
-	$(COPYREC) dependencies$Sinstall$Slib*$SlibClp* "$(DESTDIR)$(prefix)$Slib"
-	$(COPYREC) dependencies$Sinstall$Slib*$SlibOsi* "$(DESTDIR)$(prefix)$Slib"
-	$(COPYREC) dependencies$Sinstall$Slib*$SlibCoinUtils* "$(DESTDIR)$(prefix)$Slib"
-	$(COPYREC) dependencies$Sinstall$Sbin$Scbc "$(DESTDIR)$(prefix)$Sbin"
-	$(COPYREC) dependencies$Sinstall$Sbin$Sclp "$(DESTDIR)$(prefix)$Sbin"
-endif
-endif  # USE_COINOR
-ifeq ($(USE_SCIP),ON)
-ifeq ($(UNIX_SCIP_DIR),$(OR_TOOLS_TOP)/dependencies/install)
-	$(COPYREC) dependencies$Sinstall$Sinclude$Sscip "$(DESTDIR)$(prefix)$Sinclude"
-	$(COPY) dependencies$Ssources$Sscip-$(SCIP_TAG)$Sapplications$SPolySCIP$SLICENCE "$(DESTDIR)$(prefix)$Sshare$Sscip_license.txt"
-endif
-endif  # USE_SCIP
-ifeq ($(WINDOWS_ZLIB_DIR),$(OR_ROOT)dependencies/install)
-	$(COPY) dependencies$Sinstall$Sinclude$Szlib.h "$(DESTDIR)$(prefix)$Sinclude"
-	$(COPY) dependencies$Sinstall$Sinclude$Szconf.h "$(DESTDIR)$(prefix)$Sinclude"
-endif
-ifeq ($(WINDOWS_PROTOBUF_DIR),$(OR_ROOT)dependencies/install)
-	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sgoogle"
-	$(COPYREC) /E /Y dependencies$Sinstall$Sinclude$Sgoogle "$(DESTDIR)$(prefix)$Sinclude$Sgoogle"
-endif
-ifeq ($(WINDOWS_ABSL_DIR),$(OR_ROOT)dependencies/install)
-	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sabsl"
-	$(COPYREC) /E /Y dependencies$Sinstall$Sinclude$Sabsl "$(DESTDIR)$(prefix)$Sinclude$Sabsl"
-endif
-ifeq ($(USE_COINOR),ON)
-ifeq ($(WINDOWS_CBC_DIR),$(OR_ROOT)dependencies/install)
-	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Scoin"
-	$(COPYREC) /E /Y dependencies$Sinstall$Sinclude$Scoin "$(DESTDIR)$(prefix)$Sinclude$Scoin"
-endif
-endif  # USE_COINOR
-ifeq ($(USE_SCIP),ON)
-ifeq ($(WINDOWS_SCIP_DIR),$(OR_TOOLS_TOP)/dependencies/install)
-	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sscip"
-	$(COPYREC) /E /Y dependencies$Sinstall$Sinclude$Sscip "$(DESTDIR)$(prefix)$Sinclude$Sscip"
-	$(COPY) dependencies$Ssources$Sscip-v800$Sapplications$SPolySCIP$SLICENCE "$(DESTDIR)$(prefix)$Sshare$Sscip_license.txt"
-endif
-endif  # USE_SCIP
-
-install_doc:
-	-$(MKDIR_P) "$(DESTDIR)$(prefix)$Sshare$Sdoc$Sortools"
+	-$(MKDIR) "$(DESTDIR)$(prefix)$Sshare$Sdoc"
+	-$(MKDIR) "$(DESTDIR)$(prefix)$Sshare$Sdoc$Sortools"
 	-$(MKDIR) "$(DESTDIR)$(prefix)$Sshare$Sdoc$Sortools$Ssat"
-	-$(MKDIR) "$(DESTDIR)$(prefix)$Sshare$Sdoc$Sortools$Ssat$Sdoc"
-#$(COPY) ortools$Ssat$S*.md "$(DESTDIR)$(prefix)$Sshare$Sdoc$Sortools$Ssat"
+	-$(MKDIR) "$(DESTDIR)$(prefix)$Sshare$Sdoc$Sortools$Ssat$Sdoc"	
+
+# Install C++ OR-Tools to $(DESTDIR)$(prefix)
+.PHONY: install_cc
+install_cc: | install_dirs
+	$(COPY) LICENSE-2.0.txt "$(DESTDIR)$(prefix)"
+	$(COPYREC) include "$(DESTDIR)$(prefix)"
+	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)ortools.$L "$(DESTDIR)$(prefix)$Slib"
+	$(COPY) bin$Sprotoc* "$(DESTDIR)$(prefix)$Sbin"
+	$(COPYREC) share "$(DESTDIR)$(prefix)"
 	$(COPY) ortools$Ssat$Sdoc$S*.md "$(DESTDIR)$(prefix)$Sshare$Sdoc$Sortools$Ssat$Sdoc"
 
 #######################
