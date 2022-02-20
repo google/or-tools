@@ -457,6 +457,7 @@ install_dirs:
 	-$(MKDIR_P) "$(DESTDIR)$(prefix)"
 	-$(MKDIR) "$(DESTDIR)$(prefix)$Slib"
 	-$(MKDIR) "$(DESTDIR)$(prefix)$Sbin"
+	-$(MKDIR) "$(DESTDIR)$(prefix)$Sshare"
 	-$(MKDIR) "$(DESTDIR)$(prefix)$Sshare$Sdoc"
 	-$(MKDIR) "$(DESTDIR)$(prefix)$Sshare$Sdoc$Sortools"
 	-$(MKDIR) "$(DESTDIR)$(prefix)$Sshare$Sdoc$Sortools$Ssat"
