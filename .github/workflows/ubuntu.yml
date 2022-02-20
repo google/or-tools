@@ -9,7 +9,7 @@ on:
 jobs:
 
   build-ubuntu:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     env:
       Sirius_Ref: antares_integration
       XPRS_Path: ${{ github.workspace }}/xpressmp813
@@ -17,6 +17,7 @@ jobs:
       XPRS_LIB_Path: ${{ github.workspace }}/xpressmp813/lib
     strategy:
       matrix:
+        os: [ubuntu-latest, windows-latest]
         xprs: [ON, OFF]
         sirius: [ON, OFF]
         shared: [ON, OFF]
@@ -42,6 +43,14 @@ jobs:
           echo "::set-output name=appendix::$APPENDIX"
           LIB_NAME="ortools_install${APPENDIX}"
           echo "::set-output name=lib-name::$LIB_NAME"
+
+
+      - name: Install SWIG 4.0.2
+        if: ${{ matrix.os == 'windows-latest'}}
+        run: |
+          (New-Object System.Net.WebClient).DownloadFile("http://prdownloads.sourceforge.net/swig/swigwin-4.0.2.zip","swigwin-4.0.2.zip");
+          Expand-Archive .\swigwin-4.0.2.zip .;
+          echo "$((Get-Item .).FullName)/swigwin-4.0.2" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: Checkout or-tools
         uses: actions/checkout@v2
