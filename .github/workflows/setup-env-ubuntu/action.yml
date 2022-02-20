@@ -50,14 +50,15 @@ runs:
         ref: ${{ inputs.sirius-ref }}
     - name: Configure Sirius
       shell: bash
-      working-directory: "${{ steps.sirius-variables.outputs.sirius-working-dir }}"
       run: |
+        cd sirius-solver
         cmake -S src \
               -B build \
               -DCMAKE_BUILD_TYPE=Release \
               -DCMAKE_INSTALL_PREFIX="${{ steps.sirius-variables.outputs.sirius-install-dir }}"
 
     - name: Build & Install Sirius
-      working-directory: ${{ steps.sirius-variables.outputs.sirius-base-path }}
       shell: bash
-      run: cmake --build build --config Release --target install -j14
+      run: |
+        cd sirius-solver
+        cmake --build build --config Release --target install -j14
