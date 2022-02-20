@@ -137,6 +137,7 @@ jobs:
         working-directory: ./build
         run: ctest -V -R cxx_cpp_linear_programming
       - name: Run specific python tests
+        if: ${{ matrix.xprs == 'ON' && matrix.sirius == 'ON' }}
         working-directory: ./build
         run: ctest -V -R python_python_linear_programming
       - name: Run specific java tests
@@ -149,6 +150,7 @@ jobs:
         working-directory: ./build
         run: ctest --output-on-failure -R cxx_cpp -E cxx_cpp_linear_programming
       - name: Run other python tests
+        if: ${{ matrix.xprs == 'ON' && matrix.sirius == 'ON' }}
         working-directory: ./build
         run: ctest --output-on-failure -R python_python -E python_python_linear_programming
       - name: Run other java tests
