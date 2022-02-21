@@ -225,6 +225,9 @@ if(BUILD_JAVA)
 endif()
 
 if(BUILD_PYTHON)
+  option(BUILD_pybind11 "Build pybind11 library" ON)
+  message(STATUS "Build pybind11: ${BUILD_pybind11}")
+
   option(FETCH_PYTHON_DEPS "Install python required modules if not available" ${BUILD_DEPS})
   message(STATUS "Python fetch dependencies: ${FETCH_PYTHON_DEPS}")
 endif()

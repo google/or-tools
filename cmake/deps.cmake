@@ -118,3 +118,11 @@ endif()
 if(USE_XPRESS)
   find_package(XPRESS REQUIRED)
 endif()
+
+# Check language Dependencies
+if(BUILD_PYTHON)
+  if(NOT BUILD_pybind11)
+    find_package(pybind11 REQUIRED)
+  endif()
+endif()
+
