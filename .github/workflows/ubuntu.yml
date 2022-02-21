@@ -38,7 +38,7 @@ jobs:
         run: |
           REF=${GITHUB_REF#refs/*/}
           REF_WO_SLASHES=${REF//[/]/-}
-          echo "VERSION=REF_WO_SLASHES" >> $GITHUB_ENV
+          echo "VERSION=${REF_WO_SLASHES}" >> $GITHUB_ENV
 
       - name: set name variables
         id: names
