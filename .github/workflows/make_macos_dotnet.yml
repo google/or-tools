@@ -33,12 +33,10 @@ jobs:
       run: make detect_port
     - name: Check .Net
       run: make detect_dotnet
-    - name: Build third party
-      run: make third_party -j4
-    - name: Build C++
-      run: make cc -j4
-    - name: Build .Net
-      run: make dotnet -j4
+    - name: Build third party 
+      run: make third_party BUILD_DOTNET=ON -j4
+    - name: Build C++ and .NET
+      run: make all -j4
     - name: Test .Net
       run: make test_dotnet -j4
     - name: Create nuget packages

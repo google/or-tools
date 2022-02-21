@@ -27,11 +27,9 @@ jobs:
     - name: Check Python
       run: tools\make detect_python
     - name: Build third party
-      run: tools\make third_party -j4
-    - name: Generate protos
-      run: tools\make all_protos
-    - name: Build C++
-      run: tools\make cc -j4
+      run: tools\make third_party BUILD_PYTHON=ON -j4
+    - name: Build C++ and Python
+      run: tools\make all -j4
     - name: Build Python
       run: tools\make python -j4
     - name: Test Python

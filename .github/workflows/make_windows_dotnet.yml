@@ -33,13 +33,9 @@ jobs:
     - name: Check .Net
       run: tools\make detect_dotnet
     - name: Build third party
-      run: tools\make third_party -j4
-    - name: Generate protos
-      run: tools\make all_protos
-    - name: Build C++
-      run: tools\make cc -j4
-    - name: Build .Net
-      run: tools\make dotnet -j4
+      run: tools\make third_party BUILD_DOTNET=ON -j4
+    - name: Build C++ and .NET
+      run: tools\make all -j4
     - name: Test .Net
       run: tools\make test_dotnet -j4
     - name: Create nuget packages

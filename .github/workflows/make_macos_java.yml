@@ -24,12 +24,10 @@ jobs:
       run: make detect_port
     - name: Check Java
       run: make detect_java
-    - name: Build third party
-      run: make third_party -j4
-    - name: Build C++
-      run: make cc -j4
-    - name: Build Java
-      run: make java -j4
+    - name: Build third party 
+      run: make third_party BUILD_JAVA=ON -j4
+    - name: Build C++ and Java
+      run: make all -j4
     - name: Test Java
       run: make test_java -j4
     - name: Create maven package

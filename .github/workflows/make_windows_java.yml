@@ -24,13 +24,9 @@ jobs:
     - name: Check Java
       run: tools\make detect_java
     - name: Build third party
-      run: tools\make third_party -j4
-    - name: Generate protos
-      run: tools\make all_protos
-    - name: Build C++
-      run: tools\make cc -j4
-    - name: Build Java
-      run: tools\make java -j4
+      run: tools\make third_party BUILD_JAVA=ON -j4
+    - name: Build C++ and Java
+      run: tools\make all -j4
     - name: Test Java
       run: tools\make test_java -j4
     - name: Create maven package
