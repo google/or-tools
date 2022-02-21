@@ -15,6 +15,9 @@ outputs:
   sirius-archive-path:
     description: "path of the sirius archive file"
     value: ${{ steps.sirius-variables.outputs.sirius-archive-path }}
+  sirius-archive-name:
+    description: "filename of the sirius archive file"
+    value: ${{ steps.sirius-variables.outputs.sirius-archive-name }}
 runs:
   using: "composite"
   steps:
@@ -44,11 +47,13 @@ runs:
         SIRIUS_BASE_PATH=${{ github.workspace }}/sirius-solver
         SIRIUS_INSTALL_DIR=SiriusInstall
         SIRIUS_INSTALL_PATH=$SIRIUS_BASE_PATH/$SIRIUS_INSTALL_DIR
-        ARCHIVE_PATH="${SIRIUS_BASE_PATH}/sirius_install.zip"
+        ARCHIVE_NAME="sirius_install.zip"
+        ARCHIVE_PATH="${SIRIUS_BASE_PATH}/${ARCHIVE_NAME}"
         echo "::set-output name=sirius-working-dir::$SIRIUS_WORKING_DIR"
         echo "::set-output name=sirius-base-path::$SIRIUS_BASE_PATH"
         echo "::set-output name=sirius-install-dir::$SIRIUS_INSTALL_DIR"
         echo "::set-output name=sirius-install-path::$SIRIUS_INSTALL_PATH"
+        echo "::set-output name=sirius-archive-name::$ARCHIVE_NAME"
         echo "::set-output name=sirius-archive-path::$ARCHIVE_PATH"
 
     - name: Checkout Sirius repo

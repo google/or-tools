@@ -94,7 +94,7 @@ jobs:
         with:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
           asset_path: ${{ steps.setup.outputs.sirius-archive-path }}
-          asset_name: sirius_install_${{ matrix.os }}
+          asset_name: ${{ steps.setup.outputs.sirius-archive-name }}
           asset_content_type: application/zip
 
       - name: Checkout xpressmp813
@@ -153,15 +153,17 @@ jobs:
           cd build/install
           find bin -type f ! \( -name 'protoc*' -o -name 'scip' -o -name 'fz' \) -delete
           cd ..
-          ARCHIVE_PATH=${{ github.workspace }}/build/ortools_install${{ steps.names.outputs.appendix }}.zip
+          ARCHIVE_NAME=ortools_install${{ steps.names.outputs.appendix }}.zip
+          ARCHIVE_PATH=${{ github.workspace }}/build/${ARCHIVE_NAME}
           zip -r $ARCHIVE_PATH ./install
+          echo "::set-output name=ortools_archive_name::$ARCHIVE_NAME"
           echo "::set-output name=ortools_archive_path::$ARCHIVE_PATH"
 
 
       - name: Upload artifact ortools install
         uses: actions/upload-artifact@v2
         with:
-          name: ortools_install${{ steps.names.outputs.appendix }}
+          name: ${{ steps.or-install.outputs.ortools_archive_name }}
           path: ${{ steps.or-install.outputs.ortools_archive_path }}
 
       - name: Publish asset  file upload
@@ -170,7 +172,7 @@ jobs:
         with:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
           asset_path: ${{ steps.or-install.outputs.ortools_archive_path }}
-          asset_name: ortools_install${{ steps.names.outputs.appendix }}
+          asset_name: ${{ steps.or-install.outputs.ortools_archive_name }}
           asset_content_type: application/zip
 
       - name: set ld_library_path
@@ -233,8 +235,10 @@ jobs:
           MY_DIR=ortools_wheel_${{ steps.names.outputs.appendix }}
           mkdir $MY_DIR
           cp *.whl $MY_DIR
-          ARCHIVE_PATH=${{ github.workspace }}/build/${MY_DIR}.zip
+          ARCHIVE_NAME=${MY_DIR}.zip
+          ARCHIVE_PATH=${{ github.workspace }}/build/${ARCHIVE_NAME}
           zip -r $ARCHIVE_PATH $MY_DIR
+          echo "::set-output name=archive_name::$ARCHIVE_NAME"
           echo "::set-output name=archive_path::$ARCHIVE_PATH"
 
       - name: prepare ortools jar
@@ -246,8 +250,10 @@ jobs:
           MY_DIR=ortools_jar_${{ steps.names.outputs.appendix }}
           mkdir $MY_DIR
           cp ortools-*/target/*.jar $MY_DIR
-          ARCHIVE_PATH=${{ github.workspace }}/build/${MY_DIR}.zip
+          ARCHIVE_NAME=${MY_DIR}.zip
+          ARCHIVE_PATH=${{ github.workspace }}/build/${ARCHIVE_NAME}
           zip -r $ARCHIVE_PATH $MY_DIR
+          echo "::set-output name=archive_name::$ARCHIVE_NAME"
           echo "::set-output name=archive_path::$ARCHIVE_PATH"
 
       - name: prepare ortools dotnet
@@ -259,27 +265,29 @@ jobs:
           MY_DIR=ortools_dotnet_${{ steps.names.outputs.appendix }}
           mkdir $MY_DIR
           cp Google.OrTools.[0-9]*.[0-9]*.[0-9]*.nupkg $MY_DIR
-          ARCHIVE_PATH=${{ github.workspace }}/build/${MY_DIR}.zip
+          ARCHIVE_NAME=${MY_DIR}.zip
+          ARCHIVE_PATH=${{ github.workspace }}/build/${ARCHIVE_NAME}
           zip -r $ARCHIVE_PATH $MY_DIR
+          echo "::set-output name=archive_name::$ARCHIVE_NAME"
           echo "::set-output name=archive_path::$ARCHIVE_PATH"
 
       - name: Upload ortools wheel
         if: ${{ matrix.shared == 'ON' }}
         uses: actions/upload-artifact@v2
         with:
-          name: ortools_wheel${{ steps.names.outputs.appendix }}
+          name: ${{ steps.wheel.outputs.archive_name }}
           path: ${{ steps.wheel.outputs.archive_path }}
       - name: Upload ortools jar
         if: ${{ matrix.shared == 'ON' }}
         uses: actions/upload-artifact@v2
         with:
-          name: ortools_jar${{ steps.names.outputs.appendix }}
+          name: ${{ steps.jar.outputs.archive_name }}
           path: ${{ steps.jar.outputs.archive_path }}
       - name: Upload ortools dotnet
         if: ${{ matrix.shared == 'ON' }}
         uses: actions/upload-artifact@v2
         with:
-          name: ortools_dotnet${{ steps.names.outputs.appendix }}
+          name: ${{ steps.dotnet.outputs.archive_name }}
           path: ${{ steps.dotnet.outputs.archive_path }}
 
       - name: Publish ortools wheel
@@ -288,7 +296,7 @@ jobs:
         with:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
           asset_path: ${{ steps.wheel.outputs.archive_path }}
-          asset_name: ortools_wheel${{ steps.names.outputs.appendix }}
+          asset_name: ${{ steps.wheel.outputs.archive_name }}
           asset_content_type: application/zip
 
       - name: Publish ortools jar
@@ -297,7 +305,7 @@ jobs:
         with:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
           asset_path: ${{ steps.jar.outputs.archive_path }}
-          asset_name: ortools_jar${{ steps.names.outputs.appendix }}
+          asset_name: ${{ steps.jar.outputs.archive_name }}
           asset_content_type: application/zip
 
       - name: Publish ortools dotnet
@@ -306,5 +314,5 @@ jobs:
         with:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
           asset_path: ${{ steps.dotnet.outputs.archive_path }}
-          asset_name: ortools_dotnet${{ steps.names.outputs.appendix }}
+          asset_name: ${{ steps.dotnet.outputs.archive_name }}
           asset_content_type: application/zip
