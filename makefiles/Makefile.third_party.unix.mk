@@ -9,6 +9,12 @@ USE_COINOR ?= ON
 USE_SCIP ?= ON
 USE_GLPK ?= OFF
 PROTOC ?= $(OR_TOOLS_TOP)/bin/protoc
+
+# language targets
+BUILD_PYTHON ?= OFF
+BUILD_JAVA ?= OFF
+BUILD_DOTNET ?= OFF
+
 # Swig is only needed when building .Net, Java or Python wrapper
 UNIX_SWIG_BINARY ?= swig
 SWIG_BINARY = $(shell $(WHICH) $(UNIX_SWIG_BINARY))
@@ -57,7 +63,16 @@ dependencies:
 	mkdir dependencies
 
 dependencies/Makefile: | dependencies
-	cmake -S . -B dependencies -DBUILD_DEPS=ON -DBUILD_PYTHON=ON -DBUILD_EXAMPLES=OFF -DBUILD_SAMPLES=OFF -DUSE_COINOR=$(USE_COINOR) -DUSE_SCIP=$(USE_SCIP) -DUSE_GLPK=$(USE_GLPK) -DCMAKE_INSTALL_PREFIX=$(OR_ROOT_FULL)
+	cmake -S . -B dependencies -DBUILD_DEPS=ON \
+	-DBUILD_PYTHON=$(BUILD_PYTHON) \
+	-DBUILD_JAVA=$(BUILD_JAVA) \
+	-DBUILD_DOTNET=$(BUILD_DOTNET) \
+	-DBUILD_EXAMPLES=OFF \
+	-DBUILD_SAMPLES=OFF \
+	-DUSE_COINOR=$(USE_COINOR) \
+	-DUSE_SCIP=$(USE_SCIP) \
+	-DUSE_GLPK=$(USE_GLPK) \
+	-DCMAKE_INSTALL_PREFIX=$(OR_ROOT_FULL)
 
 .PHONY: clean_third_party # Clean everything. Remember to also delete archived dependencies, i.e. in the event of download failure, etc.
 clean_third_party:

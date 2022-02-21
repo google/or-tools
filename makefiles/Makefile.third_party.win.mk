@@ -11,6 +11,11 @@ USE_GLPK ?= OFF
 PROTOC = "$(OR_TOOLS_TOP)\\bin\\protoc.exe"
 SWIG_BINARY = swig.exe
 
+# language targets
+BUILD_PYTHON ?= OFF
+BUILD_JAVA ?= OFF
+BUILD_DOTNET ?= OFF
+
 # Main target.
 dependencies:
 	mkdir dependencies
@@ -53,7 +58,16 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo #   e.g. dir "%ProgramFiles%*" /x >> Makefile.local
 
 dependencies/ortools.sln: | dependencies
-	cmake -S . -B dependencies -DBUILD_DEPS=ON -DBUILD_PYTHON=ON -DBUILD_EXAMPLES=OFF -DBUILD_SAMPLES=OFF -DUSE_COINOR=$(USE_COINOR) -DUSE_SCIP=$(USE_SCIP) -DUSE_GLPK=$(USE_GLPK) -DCMAKE_INSTALL_PREFIX=$(OR_ROOT_FULL) -DCMAKE_BUILD_TYPE=RELEASE
+	cmake -S . -B dependencies -DBUILD_DEPS=ON \
+	-DBUILD_PYTHON=$(BUILD_PYTHON) \
+	-DBUILD_JAVA=$(BUILD_JAVA) \
+	-DBUILD_DOTNET=$(BUILD_DOTNET) \
+	-DBUILD_EXAMPLES=OFF \
+	-DBUILD_SAMPLES=OFF \
+	-DUSE_COINOR=$(USE_COINOR) \
+	-DUSE_SCIP=$(USE_SCIP) \
+	-DUSE_GLPK=$(USE_GLPK) \
+	-DCMAKE_INSTALL_PREFIX=$(OR_ROOT_FULL)
 
 .PHONY: clean_third_party # Clean everything. Remember to also delete archived dependencies, i.e. in the event of download failure, etc.
 clean_third_party:

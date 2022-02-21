@@ -76,7 +76,6 @@ test_python_constraint_solver_samples: \
  rpy_vrp_time_windows \
  rpy_vrp_tokens \
  rpy_vrp_with_time_limit \
- \
  rpy_vrpgs \
  rpy_cvrp \
  rpy_cvrp_reload \
