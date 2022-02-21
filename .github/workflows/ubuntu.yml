@@ -23,7 +23,7 @@ jobs:
       XPRS_LIB_Path: ${{ github.workspace }}/xpressmp813/lib
     strategy:
       matrix:
-        os: [ubuntu-20.04]
+        os: [ubuntu-20.04, windows-2019]
         xprs: [ON, OFF]
         sirius: [ON, OFF]
         shared: [ON, OFF]
@@ -63,7 +63,7 @@ jobs:
           bruceadams/get-release@v1.2.3
 
       - name: Install SWIG 4.0.2
-        if: ${{ matrix.os == 'windows-latest'}}
+        if: ${{ matrix.os == 'windows-2019'}}
         run: |
           (New-Object System.Net.WebClient).DownloadFile("http://prdownloads.sourceforge.net/swig/swigwin-4.0.2.zip","swigwin-4.0.2.zip");
           Expand-Archive .\swigwin-4.0.2.zip .;
@@ -73,7 +73,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: ccache
-        if: ${{ matrix.os != 'windows-latest'}}
+        if: ${{ matrix.os != 'windows-2019'}}
         uses: hendrikmuhs/ccache-action@v1
 
       - name: setup envoronment
@@ -106,7 +106,7 @@ jobs:
           ref: master
           token: ${{ secrets.ACCESS_TOKEN }}
       - name: Checkout xpressmp813Win
-        if: ${{ matrix.os == 'windows-latest'}}
+        if: ${{ matrix.os == 'windows-2019'}}
         uses: actions/checkout@v2
         with:
           repository: rte-france/xpress-mp-temp
