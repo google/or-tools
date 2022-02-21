@@ -14,6 +14,7 @@ env:
 jobs:
 
   build:
+    name: ${{ matrix.os }} shared=${{ matrix.shared }} sirius=${{ matrix.sirius }} xprs=${{ matrix.xprs }}
     runs-on: ${{ matrix.os }}
     env:
       Sirius_Ref: antares_integration
@@ -31,11 +32,12 @@ jobs:
           - xprs: OFF
             sirius: OFF
 
-    name: ${{ matrix.os }} shared=${{ matrix.shared }} sirius=${{ matrix.sirius }} xprs=${{ matrix.xprs }}
-
     steps:
-      - name: Set env
-        run: echo "VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+      - name: Set version
+        run: |
+          REF=${GITHUB_REF#refs/*/}
+          REF_WO_SLASHES=${REF//[/]/-}
+          echo "VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
 
       - name: set name variables
         id: names
