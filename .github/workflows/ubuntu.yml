@@ -74,6 +74,13 @@ jobs:
         with:
           name: sirius_install_${{ matrix.os }}
           path: ${{ steps.setup.outputs.sirius-install-path }}
+      - name: Publish sirius install
+        if:  ${{ github.event_name == 'release' && github.event.action == 'created' && matrix.shared == 'ON' && matrix.xprs == 'ON' && matrix.sirius == 'ON' }}
+        uses: actions/upload-release-asset@v1.0.2
+        with:
+          upload_url: ${{ steps.get_release.outputs.upload_url }}
+          asset_path: ${{ steps.setup.outputs.sirius-install-path }}
+          asset_name: sirius_install_${{ matrix.os }}
 
       - name: Checkout xpressmp813
         if: ${{ matrix.os == 'ubuntu-latest'}}
