@@ -34,6 +34,9 @@ jobs:
     name: ${{ matrix.os }} shared=${{ matrix.shared }} sirius=${{ matrix.sirius }} xprs=${{ matrix.xprs }}
 
     steps:
+      - name: Set env
+        run: echo "VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+
       - name: set name variables
         id: names
         shell: bash
@@ -45,10 +48,11 @@ jobs:
           SIRIUS=${{ matrix.sirius }}
           [ $SIRIUS == "ON" ] && WITH_SIRIUS="_sirius" || WITH_SIRIUS=""
           OS="_${{ matrix.os }}"
-          APPENDIX="${OS}${WITH_SHARED}${WITH_SIRIUS}${WITH_XPRS}"
+          APPENDIX="${OS}${WITH_SHARED}${WITH_SIRIUS}${WITH_XPRS}_${{ env.VERSION }}"
           echo "::set-output name=appendix::$APPENDIX"
           LIB_NAME="ortools_install${APPENDIX}"
           echo "::set-output name=lib-name::$LIB_NAME"
+
 
       - name: Get release
         if: github.event_name == 'release' && github.event.action == 'created'
@@ -89,7 +93,7 @@ jobs:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
           asset_path: ${{ steps.setup.outputs.sirius-archive-path }}
           asset_name: sirius_install_${{ matrix.os }}
-          asset_content_type: application/gzip
+          asset_content_type: application/zip
 
       - name: Checkout xpressmp813
         if: ${{ matrix.os == 'ubuntu-20.04'}}
@@ -147,8 +151,8 @@ jobs:
           cd build/install
           find bin -type f ! \( -name 'protoc*' -o -name 'scip' -o -name 'fz' \) -delete
           cd ..
-          ARCHIVE_PATH=${{ github.workspace }}/build/ortools_install${{ steps.names.outputs.appendix }}.tgz
-          tar -czf $ARCHIVE_PATH ./install
+          ARCHIVE_PATH=${{ github.workspace }}/build/ortools_install${{ steps.names.outputs.appendix }}.zip
+          zip -r $ARCHIVE_PATH ./install
           echo "::set-output name=ortools_archive_path::$ARCHIVE_PATH"
 
 
@@ -165,7 +169,7 @@ jobs:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
           asset_path: ${{ steps.or-install.outputs.ortools_archive_path }}
           asset_name: ortools_install${{ steps.names.outputs.appendix }}
-          asset_content_type: application/gzip
+          asset_content_type: application/zip
 
       - name: set ld_library_path
         run: |
@@ -218,12 +222,23 @@ jobs:
         run: ctest --output-on-failure -R dotnet_dotnet -E dotnet_dotnet_cslinearprogramming
 
 
+      - name: prepare ortools wheel
+        id: wheel
+        shell: bash
+        run: |
+          cd ./build/python/dist
+          mkdir ortools_wheel_${{ steps.names.outputs.appendix }}
+          cp *.whl ortools_wheel_${{ steps.names.outputs.appendix }}
+          ARCHIVE_PATH=${{ github.workspace }}/build/ortools_wheel${{ steps.names.outputs.appendix }}.zip
+          zip -r $ARCHIVE_PATH ortools_wheel_${{ steps.names.outputs.appendix }}
+          echo "::set-output name=wheel_archive_path::$ARCHIVE_PATH"
+
       - name: Upload ortools wheel
         if: ${{ matrix.shared == 'ON' }}
         uses: actions/upload-artifact@v2
         with:
           name: ortools_wheel${{ steps.names.outputs.appendix }}
-          path: './build/python/dist/*.whl'
+          path: ${{ steps.wheel.outputs.wheel_archive_path }}
       - name: Upload ortools jar
         if: ${{ matrix.shared == 'ON' }}
         uses: actions/upload-artifact@v2
@@ -244,9 +259,9 @@ jobs:
         uses: actions/upload-release-asset@v1.0.2
         with:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
-          asset_path: './build/python/dist/*.whl'
+          asset_path: ${{ steps.wheel.outputs.wheel_archive_path }}
           asset_name: ortools_wheel${{ steps.names.outputs.appendix }}
-          asset_content_type: application/octet-stream
+          asset_content_type: application/zip
 
       - name: Publish ortools jar
         if:  ${{ github.event_name == 'release' && github.event.action == 'created' && matrix.shared == 'ON' }}
