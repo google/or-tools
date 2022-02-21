@@ -638,6 +638,11 @@ endif
 ######################
 ##  Nuget artifact  ##
 ######################
+
+package_dotnet: compile_libraries
+	-$(DEL) $.*pkg
+	$(COPY) dependencies$Sdotnet$Spackages$S*.*pkg .
+
 .PHONY: nuget_archive # Build .Net "Google.OrTools" Nuget Package
 nuget_archive: dotnet | $(TEMP_DOTNET_DIR)
 	"$(DOTNET_BIN)" publish $(DOTNET_BUILD_ARGS) --no-build --no-dependencies --no-restore -f net6.0 \
