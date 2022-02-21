@@ -40,7 +40,7 @@ runs:
         SIRIUS_BASE_PATH=${{ github.workspace }}/sirius-solver
         SIRIUS_INSTALL_DIR=SiriusInstall
         SIRIUS_INSTALL_PATH=$SIRIUS_BASE_PATH/$SIRIUS_INSTALL_DIR
-        ARCHIVE_PATH=$SIRIUS_BASE_PATH/sirius_install.tgz
+        ARCHIVE_PATH="${SIRIUS_BASE_PATH}/sirius_install.tgz"
         echo "::set-output name=sirius-working-dir::$SIRIUS_WORKING_DIR"
         echo "::set-output name=sirius-base-path::$SIRIUS_BASE_PATH"
         echo "::set-output name=sirius-install-dir::$SIRIUS_INSTALL_DIR"
@@ -67,4 +67,4 @@ runs:
       run: |
         cd ${{ steps.sirius-variables.outputs.sirius-working-dir }}
         cmake --build build --config Release --target install -j14
-        tar -czf ${{ steps.sirius-variables.outputs.sirius-archive-path }} -C ${{ steps.sirius-variables.outputs.sirius-install-dir }}
+        tar -czf ${{ steps.sirius-variables.outputs.sirius-archive-path }} ${{ steps.sirius-variables.outputs.sirius-install-dir }}
