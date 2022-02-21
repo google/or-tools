@@ -5,6 +5,8 @@ on:
     branches:
       - main
       - feature/*
+  release:
+    types: [ created ]
 
 jobs:
 
