@@ -8,6 +8,9 @@ on:
   release:
     types: [ created ]
 
+env:
+  GITHUB_TOKEN: ${{ github.token }}
+
 jobs:
 
   build-ubuntu:
@@ -19,7 +22,7 @@ jobs:
       XPRS_LIB_Path: ${{ github.workspace }}/xpressmp813/lib
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [ubuntu-20.04]
         xprs: [ON, OFF]
         sirius: [ON, OFF]
         shared: [ON, OFF]
