@@ -13,7 +13,7 @@ env:
 
 jobs:
 
-  build-ubuntu:
+  build:
     runs-on: ${{ matrix.os }}
     env:
       Sirius_Ref: antares_integration
@@ -72,7 +72,7 @@ jobs:
           sirius-ref: ${{ env.Sirius_Ref }}
 
       - name: Upload sirius install
-        if: ${{ matrix.xprs == 'ON' && matrix.sirius == 'ON' }}
+        if: ${{ matrix.xprs == 'ON' && matrix.sirius == 'ON' && matrix.shared == 'ON' }}
         uses: actions/upload-artifact@v2
         with:
           name: sirius_install_${{ matrix.os }}
@@ -81,12 +81,12 @@ jobs:
         if:  ${{ github.event_name == 'release' && github.event.action == 'created' && matrix.shared == 'ON' && matrix.xprs == 'ON' && matrix.sirius == 'ON' }}
         uses: actions/upload-release-asset@v1.0.2
         with:
-          upload_url: ${{ steps.get_release.outputs.upload_url }}
-          asset_path: ${{ steps.setup.outputs.sirius-install-path }}
           asset_name: sirius_install_${{ matrix.os }}
+          asset_path: ${{ steps.setup.outputs.sirius-install-path }}
+          upload_url: ${{ steps.get_release.outputs.upload_url }}
 
       - name: Checkout xpressmp813
-        if: ${{ matrix.os == 'ubuntu-latest'}}
+        if: ${{ matrix.os == 'ubuntu-20.04'}}
         uses: actions/checkout@v2
         with:
           repository: rte-france/xpress-mp
@@ -102,12 +102,20 @@ jobs:
           ref: master
           token: ${{ secrets.ACCESS_TOKEN }}
 
+      - name: set linux cache variables
+        id: cache
+        shell: bash
+        run: |
+          OS=${{ matrix.os }}
+          [ $OS == "ubuntu-20.04" ] && CCACHE="-DCMAKE_C_COMPILER_LAUNCHER=ccache" || CCACHE=""
+          [ $OS == "ubuntu-20.04" ] && CXXCACHE="-DCMAKE_CXX_COMPILER_LAUNCHER=ccache" || CXXCACHE=""
+          echo "::set-output name=CMAKE_CCACHE::$CCACHE"
+          echo "::set-output name=CMAKE_CXXCACHE::$CXXCACHE"
+
       - name: Configure or-tools
         run: |
           cmake -S . \
-                -B build \
-                -DCMAKE_C_COMPILER_LAUNCHER=ccache \
-                -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+                -B build ${{ steps.cache.outputs.CMAKE_CCACHE }} ${{ steps.cache.outputs.CMAKE_CXXCACHE }} \
                 -DCMAKE_BUILD_TYPE=Release \
                 -DCMAKE_INSTALL_PREFIX="build/install" \
                 -DBUILD_SHARED_LIBS=${{ matrix.shared }}  \
@@ -119,6 +127,7 @@ jobs:
                 -DBUILD_PYTHON=${{ matrix.shared }} \
                 -DBUILD_JAVA=${{ matrix.shared }} \
                 -DBUILD_DOTNET=${{ matrix.shared }}
+
       - name: Build
         run: |
           cmake --build build \
