@@ -19,7 +19,7 @@ if(WIN32
   endif()
 
   execute_process(
-    COMMAND ${CMAKE_COMMAND} --build project_build --config ${CMAKE_BUILD_TYPE}
+    COMMAND ${CMAKE_COMMAND} --build project_build --config Release
     RESULT_VARIABLE result
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/SWIG)
   if(result)
