@@ -120,7 +120,7 @@ jobs:
       - name: Upload artifact ortools install
         uses: actions/upload-artifact@v2
         with:
-          name: ${{ steps.names.outputs.lib-name }}
+          name: ortools_install${{ steps.names.outputs.appendix }}
           path: ./build/install
 
       - name: Publish asset  file upload
@@ -129,7 +129,7 @@ jobs:
         with:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
           asset_path: ./build/install
-          asset_name: ${{ steps.names.outputs.lib-name }}
+          asset_name: ortools_install${{ steps.names.outputs.appendix }}
 
       - name: set ld_library_path
         run: |
@@ -219,3 +219,12 @@ jobs:
           asset_path: ./build/java/ortools-*/target/*.jar
           asset_name: ortools_jar${{ steps.names.outputs.appendix }}
 
+      - name: Publish ortools dotnet
+        if:  ${{ github.event_name == 'release' && github.event.action == 'created' && matrix.shared == 'ON' }}
+        uses: actions/upload-release-asset@v1.0.2
+        with:
+          upload_url: ${{ steps.get_release.outputs.upload_url }}
+          asset_path: |
+            ./build/dotnet/packages/Google.OrTools.[0-9]*.[0-9]*.[0-9]*.nupkg
+            ./build/dotnet/packages/Google.OrTools.runtime.*.[0-9]*.[0-9]*.[0-9]*.nupkg
+          asset_name: ortools_dotnet${{ steps.names.outputs.appendix }}

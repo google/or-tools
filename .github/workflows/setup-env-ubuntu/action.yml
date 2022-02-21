@@ -33,7 +33,7 @@ runs:
       id: sirius-variables
       shell: bash
       run: |
-        SIRIUS_WORKING_DIR=./sirius-solver
+        SIRIUS_WORKING_DIR=sirius-solver
         SIRIUS_BASE_PATH=${{ github.workspace }}/sirius-solver
         SIRIUS_INSTALL_DIR=SiriusInstall
         SIRIUS_INSTALL_PATH=$SIRIUS_BASE_PATH/$SIRIUS_INSTALL_DIR
@@ -51,7 +51,7 @@ runs:
     - name: Configure Sirius
       shell: bash
       run: |
-        cd sirius-solver
+        cd ${{ steps.sirius-variables.outputs.sirius-working-dir }}
         cmake -S src \
               -B build \
               -DCMAKE_BUILD_TYPE=Release \
@@ -60,5 +60,5 @@ runs:
     - name: Build & Install Sirius
       shell: bash
       run: |
-        cd sirius-solver
+        cd ${{ steps.sirius-variables.outputs.sirius-working-dir }}
         cmake --build build --config Release --target install -j14
