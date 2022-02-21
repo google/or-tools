@@ -50,6 +50,11 @@ jobs:
           LIB_NAME="ortools_install${APPENDIX}"
           echo "::set-output name=lib-name::$LIB_NAME"
 
+      - name: Get release
+        if: github.event_name == 'release' && github.event.action == 'created'
+        id: get_release
+        uses:
+          bruceadams/get-release@v1.2.3
 
       - name: Install SWIG 4.0.2
         if: ${{ matrix.os == 'windows-latest'}}
