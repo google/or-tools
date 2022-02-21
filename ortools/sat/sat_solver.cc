@@ -660,7 +660,7 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
   // A conflict occurred, compute a nice reason for this failure.
   same_reason_identifier_.Clear();
   const int max_trail_index = ComputeMaxTrailIndex(trail_->FailingClause());
-  if (!assumptions_.empty()) {
+  if (!assumptions_.empty() && !trail_->FailingClause().empty()) {
     // If the failing clause only contains literal at the assumptions level,
     // we cannot use the ComputeFirstUIPConflict() code as we might have more
     // than one decision.
@@ -1703,6 +1703,10 @@ void SatSolver::ProcessNewlyFixedVariables() {
   }
 
   // We also clean the binary implication graph.
+  // Tricky: If we added the first binary clauses above, the binary graph
+  // is not in "propagated" state as it should be, so we call Propagate() so
+  // all the checks are happy.
+  CHECK(binary_implication_graph_->Propagate(trail_));
   binary_implication_graph_->RemoveFixedVariables();
   num_processed_fixed_variables_ = trail_->Index();
   deterministic_time_of_last_fixed_variables_cleanup_ = deterministic_time();

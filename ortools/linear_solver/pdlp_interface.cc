@@ -129,25 +129,27 @@ MPSolver::ResultStatus PdlpInterface::Solve(const MPSolverParameters& param) {
   MPModelProto model_proto;
   solver_->ExportModelToProto(&model_proto);
   // TODO(user): Adjust logging level based on quiet_.
-  absl::StatusOr<pdlp::SolutionResponseAndLog> solution =
+  absl::StatusOr<MPSolutionResponse> response =
       pdlp::SolveMpModelProto(model_proto, parameters_,
                               /*relax_integer_variables=*/true);
 
-  if (!solution.ok()) {
-    LOG(ERROR) << "Unexpected error solving with PDLP: " << solution.status();
+  if (!response.ok()) {
+    LOG(ERROR) << "Unexpected error solving with PDLP: " << response.status();
     return MPSolver::ABNORMAL;
   }
 
-  const MPSolutionResponse& response = solution->response;
-
   // The solution must be marked as synchronized even when no solution exists.
   sync_status_ = SOLUTION_SYNCHRONIZED;
-  result_status_ = static_cast<MPSolver::ResultStatus>(response.status());
-  solve_log_ = solution->solve_log;
+  result_status_ = static_cast<MPSolver::ResultStatus>(response->status());
+  LOG_IF(DFATAL, !response->has_solver_specific_info())
+      << response->DebugString();
+  if (!solve_log_.ParseFromString(response->solver_specific_info())) {
+    LOG(DFATAL) << "Unable to parse PDLP's SolveLog from solver_specific_info";
+  }
 
-  if (response.status() == MPSOLVER_FEASIBLE ||
-      response.status() == MPSOLVER_OPTIMAL) {
-    const absl::Status result = solver_->LoadSolutionFromProto(response);
+  if (response->status() == MPSOLVER_FEASIBLE ||
+      response->status() == MPSOLVER_OPTIMAL) {
+    const absl::Status result = solver_->LoadSolutionFromProto(*response);
     if (!result.ok()) {
       LOG(ERROR) << "LoadSolutionFromProto failed: " << result;
     }
@@ -162,13 +164,13 @@ absl::optional<MPSolutionResponse> PdlpInterface::DirectlySolveProto(
     return absl::nullopt;
   }
 
-  MPSolutionResponse response;
+  MPSolutionResponse error_response;
   if (request.has_solver_specific_parameters()) {
     if (!solver_->SetSolverSpecificParametersAsString(
             request.solver_specific_parameters())) {
-      response.set_status(
+      error_response.set_status(
           MPSolverResponseStatus::MPSOLVER_MODEL_INVALID_SOLVER_PARAMETERS);
-      return response;
+      return error_response;
     }
   }
 
@@ -182,27 +184,28 @@ absl::optional<MPSolutionResponse> PdlpInterface::DirectlySolveProto(
   }
 
   const absl::optional<LazyMutableCopy<MPModelProto>> optional_model =
-      ExtractValidMPModelOrPopulateResponseStatus(request, &response);
+      ExtractValidMPModelOrPopulateResponseStatus(request, &error_response);
   if (!optional_model) {
     LOG_IF(WARNING, request.enable_internal_solver_output())
         << "Failed to extract a valid model from protocol buffer. Status: "
-        << ProtoEnumToString<MPSolverResponseStatus>(response.status()) << " ("
-        << response.status() << "): " << response.status_str();
+        << ProtoEnumToString<MPSolverResponseStatus>(error_response.status())
+        << " (" << error_response.status()
+        << "): " << error_response.status_str();
     return absl::nullopt;
   }
 
-  absl::StatusOr<pdlp::SolutionResponseAndLog> solution =
+  absl::StatusOr<MPSolutionResponse> response =
       pdlp::SolveMpModelProto(optional_model->get(), parameters_,
                               /*relax_integer_variables=*/true);
 
-  if (!solution.ok()) {
-    LOG(ERROR) << "Unexpected error solving with PDLP: " << solution.status();
-    response.set_status(MPSolverResponseStatus::MPSOLVER_ABNORMAL);
-    response.set_status_str(solution.status().ToString());
-    return response;
+  if (!response.ok()) {
+    LOG(ERROR) << "Unexpected error solving with PDLP: " << response.status();
+    error_response.set_status(MPSolverResponseStatus::MPSOLVER_ABNORMAL);
+    error_response.set_status_str(response.status().ToString());
+    return error_response;
   }
 
-  return solution->response;
+  return *response;
 }
 
 void PdlpInterface::Reset() { ResetExtractionInformation(); }

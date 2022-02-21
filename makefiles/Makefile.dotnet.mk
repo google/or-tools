@@ -703,6 +703,8 @@ clean_dotnet:
 	-$(DELREC) ortools$Slinear_solver$Ssamples$Sobj
 	-$(DELREC) ortools$Ssat$Ssamples$Sbin
 	-$(DELREC) ortools$Ssat$Ssamples$Sobj
+	-$(DEL) *.nupkg
+	-$(DEL) *.snupkg
 	-@"$(DOTNET_BIN)" nuget locals all --clear
 
 #############

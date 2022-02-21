@@ -501,7 +501,7 @@ test_package_python: package_python
 	$(COPY) ortools$Sconstraint_solver$Ssamples$Scvrptw_break.py $(PYPI_ARCHIVE_TEMP_DIR)$Svenv
 ifneq ($(SYSTEM),win)
 	$(PYPI_ARCHIVE_TEMP_DIR)/venv/bin/python -m pip install $(PYPI_ARCHIVE_TEMP_DIR)/ortools/dist/*.whl
-	$(PYPI_ARCHIVE_TEMP_DIR)/venv/bin/python -m pip install pandas matplotlib
+	$(PYPI_ARCHIVE_TEMP_DIR)/venv/bin/python -m pip install pandas matplotlibgit
 	$(PYPI_ARCHIVE_TEMP_DIR)/venv/bin/python $(PYPI_ARCHIVE_TEMP_DIR)/venv/test.py
 	$(PYPI_ARCHIVE_TEMP_DIR)/venv/bin/python $(PYPI_ARCHIVE_TEMP_DIR)/venv/simple_knapsack_program.py
 	$(PYPI_ARCHIVE_TEMP_DIR)/venv/bin/python $(PYPI_ARCHIVE_TEMP_DIR)/venv/simple_max_flow_program.py
@@ -678,6 +678,7 @@ clean_python:
 	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S_*
 	-$(DEL) $(LIB_DIR)$S_*.$(SWIG_PYTHON_LIB_SUFFIX)
 	-$(DEL) $(OBJ_DIR)$Sswig$S*python_wrap.$O
+	-$(DEL) *.whl
 	-$(DELREC) temp_python*
 
 #############

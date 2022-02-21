@@ -137,6 +137,22 @@ LagrangianPart ComputePrimalGradient(const ShardedQuadraticProgram& sharded_qp,
                                      const Eigen::VectorXd& primal_solution,
                                      const Eigen::VectorXd& dual_product);
 
+// Returns a subderivative of the concave dual penalty function that appears in
+// the Lagrangian: -p(dual; -constraint_upper_bound, -constraint_lower_bound) =
+// { constraint_upper_bound * dual when dual < 0, 0 when dual == 0, and
+//   constraint_lower_bound * dual when dual > 0}
+// (as defined at https://developers.google.com/optimization/lp/pdlp_math).
+// The subderivative is not necessarily unique when dual == 0. In this case, if
+// only one of the bounds is finite, we return that one. If both are finite, we
+// return the primal product projected onto the bounds, which causes the dual
+// Lagrangian gradient to be zero when the constraint is not violated. If both
+// are infinite, we return zero. The value returned is valid only when the
+// function is finite-valued.
+double DualSubgradientCoefficient(const double constraint_lower_bound,
+                                  const double constraint_upper_bound,
+                                  const double dual,
+                                  const double primal_product);
+
 // Computes the value of the dual part of the Lagrangian function defined at
 // https://developers.google.com/optimization/lp/pdlp_math, i.e., -h^*(y) and
 // the gradient of the Lagrangian with respect to the dual variables y, i.e.,

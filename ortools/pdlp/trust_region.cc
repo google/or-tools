@@ -21,7 +21,6 @@
 #include <vector>
 
 #include "Eigen/Core"
-#include "absl/algorithm/container.h"
 #include "absl/types/optional.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
@@ -98,80 +97,6 @@ class VectorTrustRegionProblem {
   const VectorXd& norm_weight_;
 };
 
-// PrimalTrustRegionProblem defines the primal trust region problem given a
-// QuadraticProgram, primal solution, and primal gradient. It captures const
-// references to the constructor arguments, which should outlive the class
-// instance.
-// The corresponding trust region problem is
-// min_x primal_gradient' * (x - primal_solution)
-// s.t. qp.variable_lower_bounds <= x <= qp.variable_upper_bounds
-//      || x - primal_solution ||_2 <= target_radius
-class PrimalTrustRegionProblem {
- public:
-  PrimalTrustRegionProblem(const QuadraticProgram* qp,
-                           const VectorXd* primal_solution,
-                           const VectorXd* primal_gradient)
-      : qp_(*qp),
-        primal_solution_(*primal_solution),
-        primal_gradient_(*primal_gradient) {}
-  double Objective(int64_t index) const { return primal_gradient_[index]; }
-  double LowerBound(int64_t index) const {
-    return qp_.variable_lower_bounds[index];
-  }
-  double UpperBound(int64_t index) const {
-    return qp_.variable_upper_bounds[index];
-  }
-  double CenterPoint(int64_t index) const { return primal_solution_[index]; }
-  double NormWeight(int64_t index) const { return 1.0; }
-
- private:
-  const QuadraticProgram& qp_;
-  const VectorXd& primal_solution_;
-  const VectorXd& primal_gradient_;
-};
-
-// DualTrustRegionProblem defines the dual trust region problem given a
-// QuadraticProgram, dual solution, and dual gradient. It captures const
-// references to the constructor arguments, which should outlive the class
-// instance.
-// The corresponding trust region problem is
-// max_y dual_gradient' * (y - dual_solution)
-// s.t. qp.implicit_dual_lower_bounds <= y <= qp.implicit_dual_upper_bounds
-//      || y - dual_solution ||_2 <= target_radius
-// where the implicit dual bounds are those given in
-// https://developers.google.com/optimization/lp/pdlp_math#dual_variable_bounds
-class DualTrustRegionProblem {
- public:
-  DualTrustRegionProblem(const QuadraticProgram* qp,
-                         const VectorXd* dual_solution,
-                         const VectorXd* dual_gradient)
-      : qp_(*qp),
-        dual_solution_(*dual_solution),
-        dual_gradient_(*dual_gradient) {}
-  double Objective(int64_t index) const {
-    // The objective is negated because the trust region problem objective is
-    // minimize, but for the dual problem we want to maximize the gradient.
-    return -dual_gradient_[index];
-  }
-  double LowerBound(int64_t index) const {
-    return std::isfinite(qp_.constraint_upper_bounds[index])
-               ? -std::numeric_limits<double>::infinity()
-               : 0.0;
-  }
-  double UpperBound(int64_t index) const {
-    return std::isfinite(qp_.constraint_lower_bounds[index])
-               ? std::numeric_limits<double>::infinity()
-               : 0.0;
-  }
-  double CenterPoint(int64_t index) const { return dual_solution_[index]; }
-  double NormWeight(int64_t index) const { return 1.0; }
-
- private:
-  const QuadraticProgram& qp_;
-  const VectorXd& dual_solution_;
-  const VectorXd& dual_gradient_;
-};
-
 // JointTrustRegionProblem defines the joint primal/dual trust region problem
 // given a QuadraticProgram, primal and dual solutions, primal and dual
 // gradients, and the primal weight. The joint problem (implicitly) concatenates
@@ -242,69 +167,6 @@ struct TrustRegionResultStepSize {
   double objective_value;
 };
 
-// The distance (in the indexed element) from the center point to the bound, in
-// the direction that reduces the objective.
-template <typename TrustRegionProblem>
-double DistanceAtCriticalStepSize(const TrustRegionProblem& problem,
-                                  const int64_t index) {
-  if (problem.Objective(index) == 0.0) {
-    return 0.0;
-  }
-  if (problem.Objective(index) > 0.0) {
-    return problem.LowerBound(index) - problem.CenterPoint(index);
-  } else {
-    return problem.UpperBound(index) - problem.CenterPoint(index);
-  }
-}
-
-// The critical step size is the step size at which the indexed element hits its
-// bound (or infinity if that doesn't happen).
-template <typename TrustRegionProblem>
-double CriticalStepSize(const TrustRegionProblem& problem,
-                        const int64_t index) {
-  if (problem.Objective(index) == 0.0) {
-    return std::numeric_limits<double>::infinity();
-  }
-  return -problem.NormWeight(index) *
-         DistanceAtCriticalStepSize(problem, index) / problem.Objective(index);
-}
-
-// The value of the indexed element at the given step_size, projected onto the
-// bounds.
-template <typename TrustRegionProblem>
-double ProjectedValue(const TrustRegionProblem& problem, const int64_t index,
-                      const double step_size) {
-  const double full_step =
-      problem.CenterPoint(index) -
-      step_size * problem.Objective(index) / problem.NormWeight(index);
-  return std::min(std::max(full_step, problem.LowerBound(index)),
-                  problem.UpperBound(index));
-}
-
-// The distance (in the indexed element) from the center point to the value at
-// at the given step size projected onto the bounds.
-template <typename TrustRegionProblem>
-double DistanceAtProjectedValue(const TrustRegionProblem& problem,
-                                const int64_t index, const double step_size) {
-  return ProjectedValue(problem, index, step_size) - problem.CenterPoint(index);
-}
-
-// This is an easy way of computing medians that's slightly off when the length
-// of the array is even. "array" is intentionally passed by copy.
-// "value_function" maps an element of "array" to its (double) value.  Returns
-// the value of the median element.
-template <typename ArrayType, typename ValueFunction>
-double EasyMedian(ArrayType array, ValueFunction value_function) {
-  CHECK_GT(array.size(), 0);
-  auto middle = array.begin() + (array.size() / 2);
-  absl::c_nth_element(array, middle,
-                      [&](typename ArrayType::value_type lhs,
-                          typename ArrayType::value_type rhs) {
-                        return value_function(lhs) < value_function(rhs);
-                      });
-  return value_function(*middle);
-}
-
 // "problem" is sharded according to the given sharder. Within each shard,
 // this function selects the subset of elements corresponding to
 // indexed_components_by_shard, and takes the median of the critical step sizes
@@ -322,9 +184,9 @@ double MedianOfShardMedians(
     const auto& indexed_shard_components =
         indexed_components_by_shard[shard.Index()];
     if (!indexed_shard_components.empty()) {
-      shard_medians[shard.Index()] =
-          EasyMedian(indexed_shard_components, [&](const int64_t index) {
-            return CriticalStepSize(problem, index);
+      shard_medians[shard.Index()] = internal::EasyMedian(
+          indexed_shard_components, [&](const int64_t index) {
+            return internal::CriticalStepSize(problem, index);
           });
     }
   });
@@ -335,122 +197,63 @@ double MedianOfShardMedians(
     }
   }
   CHECK(!non_empty_medians.empty());
-  return EasyMedian(non_empty_medians, [](const double x) { return x; });
+  return internal::EasyMedian(non_empty_medians,
+                              [](const double x) { return x; });
 }
 
 struct InitialState {
   std::vector<std::vector<int64_t>> undecided_components_by_shard;
-  double radius_coefficient_of_decided_coefficients;
+  double radius_coefficient_of_decided_components;
 };
 
-// Lists the undecided components (per shard) as those with finite critical step
-// sizes. The components with infinite critical step sizes will never hit their
-// bounds, so we compute their contribution to the radius as
-// radius_coefficient_of_decided_coefficients.
 template <typename TrustRegionProblem>
 InitialState ComputeInitialState(const TrustRegionProblem& problem,
                                  const Sharder& sharder) {
   InitialState result;
   result.undecided_components_by_shard.resize(sharder.NumShards());
-  result.radius_coefficient_of_decided_coefficients =
+  result.radius_coefficient_of_decided_components =
       sharder.ParallelSumOverShards([&](const Sharder::Shard& shard) {
-        std::vector<int64_t>& undecided_components =
-            result.undecided_components_by_shard[shard.Index()];
         const int64_t shard_start = sharder.ShardStart(shard.Index());
         const int64_t shard_size = sharder.ShardSize(shard.Index());
-        undecided_components.reserve(shard_size);
-        double radius_coefficient = 0.0;
-        for (int64_t index = shard_start; index < shard_start + shard_size;
-             ++index) {
-          if (std::isfinite(CriticalStepSize(problem, index))) {
-            undecided_components.push_back(index);
-          } else {
-            // Simplified from norm_weight * (objective / norm_weight)^2.
-            radius_coefficient += MathUtil::Square(problem.Objective(index)) /
-                                  problem.NormWeight(index);
-          }
-        }
-        return radius_coefficient;
+        return internal::ComputeInitialUndecidedComponents(
+            problem, shard_start, shard_start + shard_size,
+            result.undecided_components_by_shard[shard.Index()]);
       });
   return result;
 }
 
 template <typename TrustRegionProblem>
-double RadiusSquaredAtUndecidedComponents(
-    const TrustRegionProblem& problem,
-    const std::vector<std::vector<int64_t>>& undecided_components_by_shard,
-    const double step_size, const Sharder& sharder) {
+double RadiusSquaredOfUndecidedComponents(
+    const TrustRegionProblem& problem, const double step_size,
+    const Sharder& sharder,
+    const std::vector<std::vector<int64_t>>& undecided_components_by_shard) {
   return sharder.ParallelSumOverShards([&](const Sharder::Shard& shard) {
-    const std::vector<int64_t>& undecided_components =
-        undecided_components_by_shard[shard.Index()];
-    return absl::c_accumulate(
-        undecided_components, 0.0, [&](double sum, int64_t index) {
-          return sum + problem.NormWeight(index) *
-                           MathUtil::Square(DistanceAtProjectedValue(
-                               problem, index, step_size));
-        });
+    return internal::RadiusSquaredOfUndecidedComponents(
+        problem, step_size, undecided_components_by_shard[shard.Index()]);
   });
 }
 
-// Points whose critical step-sizes are greater than or equal to pivot are
-// eliminated from the undecided components (we know they'll be determined by
-// center_point - step_size * objective / norm_weights). Returns the coefficient
-// of step_size^2 that accounts of the contribution of the removed variables
-// to the radius squared.
 template <typename TrustRegionProblem>
-double RemoveCriticalStepsAbovePivot(
-    const double pivot, const TrustRegionProblem& problem,
+double RemoveCriticalStepsAboveThreshold(
+    const TrustRegionProblem& problem, const double step_size_threshold,
     const Sharder& sharder,
     std::vector<std::vector<int64_t>>& undecided_components_by_shard) {
   return sharder.ParallelSumOverShards([&](const Sharder::Shard& shard) {
-    std::vector<int64_t>& undecided_components =
-        undecided_components_by_shard[shard.Index()];
-    double variable_radius_coefficient = 0.0;
-    for (const int64_t index : undecided_components) {
-      if (CriticalStepSize(problem, index) >= pivot) {
-        // Simplified from norm_weight * (objective / norm_weight)^2.
-        variable_radius_coefficient +=
-            MathUtil::Square(problem.Objective(index)) /
-            problem.NormWeight(index);
-      }
-    }
-    auto result =
-        std::remove_if(undecided_components.begin(), undecided_components.end(),
-                       [&](const int64_t index) {
-                         return CriticalStepSize(problem, index) >= pivot;
-                       });
-    undecided_components.erase(result, undecided_components.end());
-    return variable_radius_coefficient;
+    return internal::RemoveCriticalStepsAboveThreshold(
+        problem, step_size_threshold,
+        undecided_components_by_shard[shard.Index()]);
   });
 }
 
-// Points whose critical step-sizes are smaller than or equal to pivot are
-// eliminated from the undecided components (we know they'll always be at their
-// bounds). Returns the weighted distance squared from the center point for the
-// removed components.
 template <typename TrustRegionProblem>
-double RemoveCriticalStepsBelowPivot(
-    const double pivot, const TrustRegionProblem& problem,
+double RemoveCriticalStepsBelowThreshold(
+    const TrustRegionProblem& problem, const double step_size_threshold,
     const Sharder& sharder,
     std::vector<std::vector<int64_t>>& undecided_components_by_shard) {
   return sharder.ParallelSumOverShards([&](const Sharder::Shard& shard) {
-    std::vector<int64_t>& undecided_components =
-        undecided_components_by_shard[shard.Index()];
-    double radius_sq = 0.0;
-    for (const int64_t index : undecided_components) {
-      if (CriticalStepSize(problem, index) <= pivot) {
-        radius_sq +=
-            problem.NormWeight(index) *
-            MathUtil::Square(DistanceAtCriticalStepSize(problem, index));
-      }
-    }
-    auto result =
-        std::remove_if(undecided_components.begin(), undecided_components.end(),
-                       [&](const int64_t index) {
-                         return CriticalStepSize(problem, index) <= pivot;
-                       });
-    undecided_components.erase(result, undecided_components.end());
-    return radius_sq;
+    return internal::RemoveCriticalStepsBelowThreshold(
+        problem, step_size_threshold,
+        undecided_components_by_shard[shard.Index()]);
   });
 }
 
@@ -481,7 +284,7 @@ VectorXd ComputeSolution(const TrustRegionProblem& problem,
     const int64_t shard_size = sharder.ShardSize(shard.Index());
     for (int64_t index = shard_start; index < shard_start + shard_size;
          ++index) {
-      solution[index] = ProjectedValue(problem, index, step_size);
+      solution[index] = internal::ProjectedValue(problem, index, step_size);
     }
   });
   return solution;
@@ -497,7 +300,7 @@ double ComputeObjectiveValue(const TrustRegionProblem& problem,
     for (int64_t index = shard_start; index < shard_start + shard_size;
          ++index) {
       shard_value += problem.Objective(index) *
-                     (ProjectedValue(problem, index, step_size) -
+                     (internal::ProjectedValue(problem, index, step_size) -
                       problem.CenterPoint(index));
     }
     return shard_value;
@@ -572,7 +375,7 @@ TrustRegionResultStepSize SolveTrustRegionStepSize(
   // center_point - step_size * objective / norm_weights. These variables are
   // not at their bounds in the solution, except in degenerate cases.
   double variable_radius_coefficient =
-      initial_state.radius_coefficient_of_decided_coefficients;
+      initial_state.radius_coefficient_of_decided_components;
 
   // For each shard, the components of the variables that aren't accounted for
   // in fixed_radius_squared or variable_radius_coefficient, i.e., we don't know
@@ -595,23 +398,23 @@ TrustRegionResultStepSize SolveTrustRegionStepSize(
     actual_elements_seen +=
         NumUndecidedComponents(undecided_components_by_shard);
 
-    const double pivot =
+    const double step_size_threshold =
         MedianOfShardMedians(problem, undecided_components_by_shard, sharder);
-    const double radius_squared_at_undecided_components =
-        RadiusSquaredAtUndecidedComponents(problem,
-                                           undecided_components_by_shard,
-                                           /*step_size=*/pivot, sharder);
+    const double radius_squared_of_undecided_components =
+        RadiusSquaredOfUndecidedComponents(
+            problem, /*step_size=*/step_size_threshold, sharder,
+            undecided_components_by_shard);
 
-    const double radius_squared_at_pivot =
-        radius_squared_at_undecided_components + fixed_radius_squared +
-        variable_radius_coefficient * MathUtil::Square(pivot);
+    const double radius_squared_at_threshold =
+        radius_squared_of_undecided_components + fixed_radius_squared +
+        variable_radius_coefficient * MathUtil::Square(step_size_threshold);
 
-    if (radius_squared_at_pivot > MathUtil::Square(target_radius)) {
-      variable_radius_coefficient += RemoveCriticalStepsAbovePivot(
-          pivot, problem, sharder, undecided_components_by_shard);
+    if (radius_squared_at_threshold > MathUtil::Square(target_radius)) {
+      variable_radius_coefficient += RemoveCriticalStepsAboveThreshold(
+          problem, step_size_threshold, sharder, undecided_components_by_shard);
     } else {
-      fixed_radius_squared += RemoveCriticalStepsBelowPivot(
-          pivot, problem, sharder, undecided_components_by_shard);
+      fixed_radius_squared += RemoveCriticalStepsBelowThreshold(
+          problem, step_size_threshold, sharder, undecided_components_by_shard);
     }
   }
   VLOG(1) << "Total passes through variables: "
@@ -997,8 +800,8 @@ MaxNormBoundResult ComputeMaxNormPrimalTrustRegionBound(
     const double primal_radius, const VectorXd& dual_product) {
   LagrangianPart primal_part =
       ComputePrimalGradient(sharded_qp, primal_solution, dual_product);
-  PrimalTrustRegionProblem primal_problem(&sharded_qp.Qp(), &primal_solution,
-                                          &primal_part.gradient);
+  internal::PrimalTrustRegionProblem primal_problem(
+      &sharded_qp.Qp(), &primal_solution, &primal_part.gradient);
   TrustRegionResultStepSize trust_region_result = SolveTrustRegionStepSize(
       primal_problem, primal_radius, sharded_qp.PrimalSharder());
   return {.part_of_lagrangian_value = primal_part.value,
@@ -1010,8 +813,8 @@ MaxNormBoundResult ComputeMaxNormDualTrustRegionBound(
     const double dual_radius, const VectorXd& primal_product) {
   LagrangianPart dual_part =
       ComputeDualGradient(sharded_qp, dual_solution, primal_product);
-  DualTrustRegionProblem dual_problem(&sharded_qp.Qp(), &dual_solution,
-                                      &dual_part.gradient);
+  internal::DualTrustRegionProblem dual_problem(
+      &sharded_qp.Qp(), &dual_solution, &dual_part.gradient);
   TrustRegionResultStepSize trust_region_result = SolveTrustRegionStepSize(
       dual_problem, dual_radius, sharded_qp.DualSharder());
   return {.part_of_lagrangian_value = dual_part.value,

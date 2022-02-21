@@ -494,6 +494,7 @@ clean_java:
 	-$(DEL) $(OBJ_DIR)$Sswig$S*_java_wrap.$O
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)jni*.$(JNI_LIB_EXT)
 	-$(DEL) $(LIB_DIR)$S*.jar
+	-$(DEL) *.jar
 	-$(DELREC) $(TEMP_JAVA_DIR)
 
 #############

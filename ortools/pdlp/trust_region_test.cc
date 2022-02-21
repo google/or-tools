@@ -646,19 +646,23 @@ TEST_P(ComputeLocalizedLagrangianBoundsTest, OptimalInBoundRange) {
   primal_solution << 0.0, 0.0, 0.0, 3.0;
   VectorXd dual_solution = VectorXd::Zero(4);
 
-  const double primal_distance_to_optimal =
-      std::sqrt(0.5 * (1.0 + 8.0 * 8.0 + 1.0 + 0.5 * 0.5));
-  const double dual_distance_to_optimal =
-      std::sqrt(0.5 * (4.0 + 2.375 * 2.375 + 4.0 / 6.0));
-  const double max_norm_distance_to_optimal =
-      std::max(primal_distance_to_optimal, dual_distance_to_optimal);
-
   const auto [primal_dual_norm, use_diagonal_qp_solver] = GetParam();
+
+  const double primal_distance_squared_to_optimal =
+      0.5 * (1.0 + 8.0 * 8.0 + 1.0 + 0.5 * 0.5);
+  const double dual_distance_squared_to_optimal =
+      0.5 * (4.0 + 2.375 * 2.375 + 4.0 / 6.0);
+  const double distance_to_optimal =
+      primal_dual_norm == PrimalDualNorm::kEuclideanNorm
+          ? std::sqrt(primal_distance_squared_to_optimal +
+                      dual_distance_squared_to_optimal)
+          : std::sqrt(std::max(primal_distance_squared_to_optimal,
+                               dual_distance_squared_to_optimal));
 
   LocalizedLagrangianBounds bounds = ComputeLocalizedLagrangianBounds(
       lp, primal_solution, dual_solution, primal_dual_norm,
       /*primal_weight=*/1.0,
-      /*radius=*/max_norm_distance_to_optimal,
+      /*radius=*/distance_to_optimal,
       /*primal_product=*/nullptr,
       /*dual_product=*/nullptr, use_diagonal_qp_solver,
       /*diagonal_qp_trust_region_solver_tolerance=*/1.0e-6);
@@ -690,30 +694,40 @@ TEST_P(ComputeLocalizedLagrangianBoundsTest, OptimalNotInBoundRange) {
   const double expected_lagrangian = 3.0;
   EXPECT_DOUBLE_EQ(bounds.lagrangian_value, expected_lagrangian);
 
-  // The rough intervals below are based on the observations that:
-  // 1) All components of the gradients are between 1 and 10.
-  // 2) The radius of 0.1 is small enough that the variable bounds have a minor
-  // effect.
-  // 3) For the trust-region problem with no variable bounds, we have that:
-  // objective_vector' * (x - center_point) = -target_radius *
-  // ||objective_vector||.
+  // Because the dual solution is all zero, the primal gradient is just the
+  // objective, [5.5, -2, -1, 1]. The dual gradient is the dual subgradient
+  // coefficient minus the primal product. With a zero dual, for one-sided
+  // constraints, the dual subgradient coefficient is the bound, and for
+  // two-sided constraints it is the violated bound (or zero if feasible). Thus,
+  // the dual subgradient coefficients are [12, 7, -4, -1], and the primal
+  // product is [6, 0, 0, -3], giving a dual gradient of [6, 7, -4, 2].
 
   switch (primal_dual_norm) {
     case PrimalDualNorm::kMaxNorm:
-      // ||objective_vector|| is between 2 and 20 (because the vector has
-      // length 4), and target_radius = sqrt(2) * 0.1 ≈ 0.14.
-      // So the bounds should move between 0.28 and 2.8.
-      EXPECT_LE(bounds.lower_bound, expected_lagrangian - 0.28);
-      EXPECT_GE(bounds.lower_bound, expected_lagrangian - 2.8);
-      EXPECT_GE(bounds.upper_bound, expected_lagrangian + 0.28);
-      EXPECT_LE(bounds.upper_bound, expected_lagrangian + 2.8);
+      // The target_radius r = sqrt(2) * 0.1 ≈ 0.14, and the projected primal
+      // direction is d=[-5.5, 2, 1, -1]. The resulting delta is d / ||d|| * r,
+      // giving an objective delta of
+      // ||d|| * r.
+      EXPECT_NEAR(bounds.lower_bound,
+                  expected_lagrangian - 0.1 * sqrt(2) * sqrt(36.25), 1.0e-6);
+      // The target_radius r = sqrt(2) * 0.1 ≈ 0.14, and the projected dual
+      // direction is d=[6, 0, 0, 2]. The resulting delta is d / ||d|| * r,
+      // giving an objective delta of
+      // ||d|| * r.
+      EXPECT_NEAR(bounds.upper_bound,
+                  expected_lagrangian + 0.1 * sqrt(2) * sqrt(40.0), 1.0e-6);
       break;
     case PrimalDualNorm::kEuclideanNorm:
-      // In this case, the value of objective_vector' * (x - center_point) is
-      // upper_bound - lower_bound. ||objective_vector|| is between 2.8 and 28,
-      // and target_radius ≈ 0.14.
-      EXPECT_GE(bounds.upper_bound - bounds.lower_bound, 0.39);
-      EXPECT_LE(bounds.upper_bound - bounds.lower_bound, 3.9);
+      // In this case, r = target_radius * sqrt(2) (because the euclidean norm
+      // includes a factor of 0.5). The projected combined direction is d=[-5.5,
+      // 2, 1, -1; 6, 0, 0, 2]. The resulting primal delta is d[primal] / ||d||
+      // * r, and the resulting dual delta is d[dual] / ||d|| * r.
+      EXPECT_NEAR(bounds.lower_bound,
+                  expected_lagrangian - 0.1 * sqrt(2) * 36.25 / sqrt(76.25),
+                  1.0e-6);
+      EXPECT_NEAR(bounds.upper_bound,
+                  expected_lagrangian + 0.1 * sqrt(2) * 40 / sqrt(76.25),
+                  1.0e-6);
       break;
   }
 }

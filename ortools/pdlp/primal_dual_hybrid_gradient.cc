@@ -1886,7 +1886,7 @@ SolverResult PrimalDualHybridGradient(
                       std::move(iteration_stats_callback));
 }
 
-absl::StatusOr<SolutionResponseAndLog> SolveMpModelProto(
+absl::StatusOr<MPSolutionResponse> SolveMpModelProto(
     const MPModelProto& model, const PrimalDualHybridGradientParams& params,
     const bool relax_integer_variables,
     IterationStatsCallback iteration_stats_callback) {
@@ -1944,8 +1944,9 @@ absl::StatusOr<SolutionResponseAndLog> SolveMpModelProto(
     response.add_reduced_cost(objective_scaling_factor * v);
   }
 
-  return SolutionResponseAndLog{.response = response,
-                                .solve_log = pdhg_result.solve_log};
+  response.set_solver_specific_info(pdhg_result.solve_log.SerializeAsString());
+
+  return response;
 }
 
 namespace internal {

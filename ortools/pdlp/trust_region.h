@@ -14,7 +14,16 @@
 #ifndef PDLP_TRUST_REGION_H_
 #define PDLP_TRUST_REGION_H_
 
+#include <algorithm>
+#include <cmath>
+#include <cstdint>
+#include <limits>
+#include <vector>
+
 #include "Eigen/Core"
+#include "absl/algorithm/container.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/mathutil.h"
 #include "ortools/pdlp/sharded_quadratic_program.h"
 #include "ortools/pdlp/sharder.h"
 
@@ -161,6 +170,248 @@ LocalizedLagrangianBounds ComputeLocalizedLagrangianBounds(
     const Eigen::VectorXd* dual_product,
     bool use_diagonal_qp_trust_region_solver,
     double diagonal_qp_trust_region_solver_tolerance);
+
+namespace internal {
+
+// These functions templated on TrustRegionProblem compute values useful to the
+// trust region solve. The templated TrustRegionProblem type should provide
+// methods:
+//   double Objective(int64_t index) const;
+//   double LowerBound(int64_t index) const;
+//   double UpperBound(int64_t index) const;
+//   double CenterPoint(int64_t index) const;
+//   double NormWeight(int64_t index) const;
+// See trust_region.cc for more details and several implementations.
+
+// The distance (in the indexed element) from the center point to the bound, in
+// the direction that reduces the objective.
+template <typename TrustRegionProblem>
+double DistanceAtCriticalStepSize(const TrustRegionProblem& problem,
+                                  const int64_t index) {
+  if (problem.Objective(index) == 0.0) {
+    return 0.0;
+  }
+  if (problem.Objective(index) > 0.0) {
+    return problem.LowerBound(index) - problem.CenterPoint(index);
+  } else {
+    return problem.UpperBound(index) - problem.CenterPoint(index);
+  }
+}
+
+// The critical step size is the step size at which the indexed element hits its
+// bound (or infinity if that doesn't happen).
+template <typename TrustRegionProblem>
+double CriticalStepSize(const TrustRegionProblem& problem,
+                        const int64_t index) {
+  if (problem.Objective(index) == 0.0) {
+    return std::numeric_limits<double>::infinity();
+  }
+  return -problem.NormWeight(index) *
+         DistanceAtCriticalStepSize(problem, index) / problem.Objective(index);
+}
+
+// The value of the indexed element at the given step_size, projected onto the
+// bounds.
+template <typename TrustRegionProblem>
+double ProjectedValue(const TrustRegionProblem& problem, const int64_t index,
+                      const double step_size) {
+  const double full_step =
+      problem.CenterPoint(index) -
+      step_size * problem.Objective(index) / problem.NormWeight(index);
+  return std::min(std::max(full_step, problem.LowerBound(index)),
+                  problem.UpperBound(index));
+}
+
+// An easy way of computing medians that's slightly off when the length of the
+// array is even. "array" is intentionally passed by copy.
+// "value_function" maps an element of "array" to its (double) value.  Returns
+// the value of the median element.
+template <typename ArrayType, typename ValueFunction>
+double EasyMedian(ArrayType array, ValueFunction value_function) {
+  CHECK_GT(array.size(), 0);
+  auto middle = array.begin() + (array.size() / 2);
+  absl::c_nth_element(array, middle,
+                      [&](typename ArrayType::value_type lhs,
+                          typename ArrayType::value_type rhs) {
+                        return value_function(lhs) < value_function(rhs);
+                      });
+  return value_function(*middle);
+}
+
+// Lists the undecided components (from [start_index, end_index) as those with
+// finite critical step sizes. The components with infinite critical step sizes
+// will never hit their bounds, so returns their contribution to square of the
+// radius.
+template <typename TrustRegionProblem>
+double ComputeInitialUndecidedComponents(
+    const TrustRegionProblem& problem, int64_t start_index, int64_t end_index,
+    std::vector<int64_t>& undecided_components) {
+  // TODO(user): Evaluate dropping this reserve(), since it wastes space
+  // if many components are decided.
+  undecided_components.clear();
+  undecided_components.reserve(end_index - start_index);
+  double radius_coefficient = 0.0;
+  for (int64_t index = start_index; index < end_index; ++index) {
+    if (std::isfinite(internal::CriticalStepSize(problem, index))) {
+      undecided_components.push_back(index);
+    } else {
+      // Simplified from norm_weight * (objective / norm_weight)^2.
+      radius_coefficient += MathUtil::Square(problem.Objective(index)) /
+                            problem.NormWeight(index);
+    }
+  }
+  return radius_coefficient;
+}
+
+template <typename TrustRegionProblem>
+double RadiusSquaredOfUndecidedComponents(
+    const TrustRegionProblem& problem, const double step_size,
+    const std::vector<int64_t>& undecided_components) {
+  return absl::c_accumulate(
+      undecided_components, 0.0, [&](double sum, int64_t index) {
+        const double distance_at_projected_value =
+            internal::ProjectedValue(problem, index, step_size) -
+            problem.CenterPoint(index);
+        return sum + problem.NormWeight(index) *
+                         MathUtil::Square(distance_at_projected_value);
+      });
+}
+
+// Points whose critical step-sizes are greater than or equal to
+// step_size_threshold are eliminated from the undecided components (we know
+// they'll be determined by center_point - step_size * objective /
+// norm_weights). Returns the coefficient of step_size^2 that accounts of the
+// contribution of the removed variables to the radius squared.
+template <typename TrustRegionProblem>
+double RemoveCriticalStepsAboveThreshold(
+    const TrustRegionProblem& problem, const double step_size_threshold,
+    std::vector<int64_t>& undecided_components) {
+  double variable_radius_coefficient = 0.0;
+  for (const int64_t index : undecided_components) {
+    if (internal::CriticalStepSize(problem, index) >= step_size_threshold) {
+      // Simplified from norm_weight * (objective / norm_weight)^2.
+      variable_radius_coefficient +=
+          MathUtil::Square(problem.Objective(index)) /
+          problem.NormWeight(index);
+    }
+  }
+  auto result =
+      std::remove_if(undecided_components.begin(), undecided_components.end(),
+                     [&](const int64_t index) {
+                       return internal::CriticalStepSize(problem, index) >=
+                              step_size_threshold;
+                     });
+  undecided_components.erase(result, undecided_components.end());
+  return variable_radius_coefficient;
+}
+
+// Points whose critical step-sizes are smaller than or equal to
+// step_size_threshold are eliminated from the undecided components (we know
+// they'll always be at their bounds). Returns the weighted distance squared
+// from the center point for the removed components.
+template <typename TrustRegionProblem>
+double RemoveCriticalStepsBelowThreshold(
+    const TrustRegionProblem& problem, const double step_size_threshold,
+    std::vector<int64_t>& undecided_components) {
+  double radius_sq = 0.0;
+  for (const int64_t index : undecided_components) {
+    if (internal::CriticalStepSize(problem, index) <= step_size_threshold) {
+      radius_sq += problem.NormWeight(index) *
+                   MathUtil::Square(
+                       internal::DistanceAtCriticalStepSize(problem, index));
+    }
+  }
+  auto result =
+      std::remove_if(undecided_components.begin(), undecided_components.end(),
+                     [&](const int64_t index) {
+                       return internal::CriticalStepSize(problem, index) <=
+                              step_size_threshold;
+                     });
+  undecided_components.erase(result, undecided_components.end());
+  return radius_sq;
+}
+
+// PrimalTrustRegionProblem defines the primal trust region problem given a
+// QuadraticProgram, primal solution, and primal gradient. It captures const
+// references to the constructor arguments, which should outlive the class
+// instance.
+// The corresponding trust region problem is
+// min_x primal_gradient' * (x - primal_solution)
+// s.t. qp.variable_lower_bounds <= x <= qp.variable_upper_bounds
+//      || x - primal_solution ||_2 <= target_radius
+class PrimalTrustRegionProblem {
+ public:
+  PrimalTrustRegionProblem(const QuadraticProgram* qp,
+                           const Eigen::VectorXd* primal_solution,
+                           const Eigen::VectorXd* primal_gradient,
+                           const double norm_weight = 1.0)
+      : qp_(*qp),
+        primal_solution_(*primal_solution),
+        primal_gradient_(*primal_gradient),
+        norm_weight_(norm_weight) {}
+  double Objective(int64_t index) const { return primal_gradient_[index]; }
+  double LowerBound(int64_t index) const {
+    return qp_.variable_lower_bounds[index];
+  }
+  double UpperBound(int64_t index) const {
+    return qp_.variable_upper_bounds[index];
+  }
+  double CenterPoint(int64_t index) const { return primal_solution_[index]; }
+  double NormWeight(int64_t index) const { return norm_weight_; }
+
+ private:
+  const QuadraticProgram& qp_;
+  const Eigen::VectorXd& primal_solution_;
+  const Eigen::VectorXd& primal_gradient_;
+  const double norm_weight_;
+};
+
+// DualTrustRegionProblem defines the dual trust region problem given a
+// QuadraticProgram, dual solution, and dual gradient. It captures const
+// references to the constructor arguments, which should outlive the class
+// instance.
+// The corresponding trust region problem is
+// max_y dual_gradient' * (y - dual_solution)
+// s.t. qp.implicit_dual_lower_bounds <= y <= qp.implicit_dual_upper_bounds
+//      || y - dual_solution ||_2 <= target_radius
+// where the implicit dual bounds are those given in
+// https://developers.google.com/optimization/lp/pdlp_math#dual_variable_bounds
+class DualTrustRegionProblem {
+ public:
+  DualTrustRegionProblem(const QuadraticProgram* qp,
+                         const Eigen::VectorXd* dual_solution,
+                         const Eigen::VectorXd* dual_gradient,
+                         const double norm_weight = 1.0)
+      : qp_(*qp),
+        dual_solution_(*dual_solution),
+        dual_gradient_(*dual_gradient),
+        norm_weight_(norm_weight) {}
+  double Objective(int64_t index) const {
+    // The objective is negated because the trust region problem objective is
+    // minimize, but for the dual problem we want to maximize the gradient.
+    return -dual_gradient_[index];
+  }
+  double LowerBound(int64_t index) const {
+    return std::isfinite(qp_.constraint_upper_bounds[index])
+               ? -std::numeric_limits<double>::infinity()
+               : 0.0;
+  }
+  double UpperBound(int64_t index) const {
+    return std::isfinite(qp_.constraint_lower_bounds[index])
+               ? std::numeric_limits<double>::infinity()
+               : 0.0;
+  }
+  double CenterPoint(int64_t index) const { return dual_solution_[index]; }
+  double NormWeight(int64_t index) const { return norm_weight_; }
+
+ private:
+  const QuadraticProgram& qp_;
+  const Eigen::VectorXd& dual_solution_;
+  const Eigen::VectorXd& dual_gradient_;
+  const double norm_weight_;
+};
+
+}  // namespace internal
 
 }  // namespace operations_research::pdlp
 

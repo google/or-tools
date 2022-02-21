@@ -1126,24 +1126,26 @@ TEST(SolveProtoTest, SolvesEasyMinimizationLp) {
   )pb");
   // Using default convergence tolerances and 1 thread.
   PrimalDualHybridGradientParams params;
-  absl::StatusOr<SolutionResponseAndLog> result =
+  absl::StatusOr<MPSolutionResponse> response =
       SolveMpModelProto(proto, params);
-  ASSERT_TRUE(result.ok()) << result.status();
-  EXPECT_EQ(result->response.status(), MPSOLVER_OPTIMAL);
-  EXPECT_DOUBLE_EQ(result->response.objective_value(), -2.0);
-  EXPECT_THAT(result->response.variable_value(), ElementsAre(0.0, 1.0));
-  EXPECT_THAT(result->response.dual_value(), ElementsAre(-2.0));
-  EXPECT_THAT(result->response.reduced_cost(), ElementsAre(2.0, 0.0));
+  ASSERT_TRUE(response.ok()) << response.status();
+  SolveLog solve_log;
+  ASSERT_TRUE(solve_log.ParseFromString(response->solver_specific_info()));
+  EXPECT_EQ(response->status(), MPSOLVER_OPTIMAL);
+  EXPECT_DOUBLE_EQ(response->objective_value(), -2.0);
+  EXPECT_THAT(response->variable_value(), ElementsAre(0.0, 1.0));
+  EXPECT_THAT(response->dual_value(), ElementsAre(-2.0));
+  EXPECT_THAT(response->reduced_cost(), ElementsAre(2.0, 0.0));
 
-  EXPECT_TRUE(result->solve_log.has_solution_stats());
-  EXPECT_GT(result->solve_log.iteration_count(), 0);
+  EXPECT_TRUE(solve_log.has_solution_stats());
+  EXPECT_GT(solve_log.iteration_count(), 0);
 
   // The signs of the duals are consistent with Glop.
   const MPSolutionResponse glop_response = GlopSolution(proto);
   EXPECT_THAT(glop_response.dual_value(),
-              ElementsAreArray(result->response.dual_value()));
+              ElementsAreArray(response->dual_value()));
   EXPECT_THAT(glop_response.reduced_cost(),
-              ElementsAreArray(result->response.reduced_cost()));
+              ElementsAreArray(response->reduced_cost()));
 }
 
 // This test solves an LP that's designed to terminate with
@@ -1167,16 +1169,19 @@ TEST(SolveProtoTest, SolvesWithDifferenceOfIterates) {
   params.set_major_iteration_frequency(1);
   params.set_l_inf_ruiz_iterations(0);
   params.set_l2_norm_rescaling(false);
-  absl::StatusOr<SolutionResponseAndLog> result =
+  absl::StatusOr<MPSolutionResponse> response =
       SolveMpModelProto(proto, params);
-  ASSERT_TRUE(result.ok()) << result.status();
-  EXPECT_EQ(result->response.status(), MPSOLVER_NOT_SOLVED);
-  EXPECT_THAT(result->response.variable_value(), ElementsAre(-0.4, 0.0));
-  EXPECT_THAT(result->response.dual_value(), ElementsAre(0.0));
-  EXPECT_THAT(result->response.reduced_cost(), ElementsAre(0.0, 0.0));
-  EXPECT_FALSE(result->response.has_objective_value());
-  EXPECT_TRUE(result->solve_log.has_solution_stats());
-  EXPECT_EQ(result->solve_log.iteration_count(), 1);
+  ASSERT_TRUE(response.ok()) << response.status();
+  SolveLog solve_log;
+  ASSERT_TRUE(solve_log.ParseFromString(response->solver_specific_info()));
+
+  EXPECT_EQ(response->status(), MPSOLVER_NOT_SOLVED);
+  EXPECT_THAT(response->variable_value(), ElementsAre(-0.4, 0.0));
+  EXPECT_THAT(response->dual_value(), ElementsAre(0.0));
+  EXPECT_THAT(response->reduced_cost(), ElementsAre(0.0, 0.0));
+  EXPECT_FALSE(response->has_objective_value());
+  EXPECT_TRUE(solve_log.has_solution_stats());
+  EXPECT_EQ(solve_log.iteration_count(), 1);
 }
 
 TEST_P(SolveMpModelProtoMaybePresolveTest, SolvesEasyMaximizationLp) {
@@ -1201,26 +1206,30 @@ TEST_P(SolveMpModelProtoMaybePresolveTest, SolvesEasyMaximizationLp) {
   const bool presolve_on = GetParam();
   params.mutable_presolve_options()->set_use_glop(presolve_on);
 
-  absl::StatusOr<SolutionResponseAndLog> result =
+  absl::StatusOr<MPSolutionResponse> response =
       SolveMpModelProto(proto, params);
-  ASSERT_TRUE(result.ok()) << result.status();
-  EXPECT_EQ(result->response.status(), MPSOLVER_OPTIMAL);
-  EXPECT_DOUBLE_EQ(result->response.objective_value(), 2.0);
-  EXPECT_THAT(result->response.variable_value(), ElementsAre(0.0, 1.0));
-  EXPECT_THAT(result->response.dual_value(), ElementsAre(2.0));
-  EXPECT_THAT(result->response.reduced_cost(), ElementsAre(-2.0, 0.0));
+  ASSERT_TRUE(response.ok()) << response.status();
+  SolveLog solve_log;
+  ASSERT_TRUE(solve_log.ParseFromString(response->solver_specific_info()));
 
-  EXPECT_TRUE(result->solve_log.has_solution_stats());
+  EXPECT_EQ(response->status(), MPSOLVER_OPTIMAL);
+  EXPECT_DOUBLE_EQ(response->objective_value(), 2.0);
+  EXPECT_THAT(response->variable_value(), ElementsAre(0.0, 1.0));
+  EXPECT_THAT(response->dual_value(), ElementsAre(2.0));
+  EXPECT_THAT(response->reduced_cost(), ElementsAre(-2.0, 0.0));
+
+  EXPECT_TRUE(solve_log.has_solution_stats());
   if (presolve_on) {
-    EXPECT_EQ(result->solve_log.iteration_count(), 0);
+    EXPECT_EQ(solve_log.iteration_count(), 0);
   } else {
-    EXPECT_GT(result->solve_log.iteration_count(), 0);
+    EXPECT_GT(solve_log.iteration_count(), 0);
   }
   // The signs of the duals are consistent with Glop.
-  EXPECT_THAT(result->response.dual_value(),
-              ElementsAreArray(result->response.dual_value()));
-  EXPECT_THAT(result->response.reduced_cost(),
-              ElementsAreArray(result->response.reduced_cost()));
+  const MPSolutionResponse glop_response = GlopSolution(proto);
+  EXPECT_THAT(glop_response.dual_value(),
+              ElementsAreArray(response->dual_value()));
+  EXPECT_THAT(glop_response.reduced_cost(),
+              ElementsAreArray(response->reduced_cost()));
 }
 
 TEST(SolveProtoTest, RelaxesIntegerVariables) {
@@ -1237,13 +1246,13 @@ TEST(SolveProtoTest, RelaxesIntegerVariables) {
   )pb");
   // Using default convergence tolerances and 1 thread.
   PrimalDualHybridGradientParams params;
-  absl::StatusOr<SolutionResponseAndLog> result =
+  absl::StatusOr<MPSolutionResponse> response =
       SolveMpModelProto(proto, params, /*relax_integer_variables=*/true);
-  ASSERT_TRUE(result.ok()) << result.status();
-  EXPECT_EQ(result->response.status(), MPSOLVER_OPTIMAL);
-  EXPECT_DOUBLE_EQ(result->response.objective_value(), 1.0);
-  EXPECT_THAT(result->response.variable_value(), ElementsAre(1.0));
-  EXPECT_THAT(result->response.reduced_cost(), ElementsAre(1.0));
+  ASSERT_TRUE(response.ok()) << response.status();
+  EXPECT_EQ(response->status(), MPSOLVER_OPTIMAL);
+  EXPECT_DOUBLE_EQ(response->objective_value(), 1.0);
+  EXPECT_THAT(response->variable_value(), ElementsAre(1.0));
+  EXPECT_THAT(response->reduced_cost(), ElementsAre(1.0));
 }
 
 TEST(SolveProtoTest, ErrorsOnIntegerVariables) {
@@ -1289,11 +1298,10 @@ TEST(SolveProtoTest, SolvesEasyLpWithMPSolver) {
   // Using default convergence tolerances and 1 thread.
   PrimalDualHybridGradientParams params;
 
-  absl::StatusOr<SolutionResponseAndLog> result =
+  absl::StatusOr<MPSolutionResponse> response =
       SolveMpModelProto(proto, params);
-  ASSERT_TRUE(result.ok()) << result.status();
-  const absl::Status load_status =
-      model.LoadSolutionFromProto(result->response);
+  ASSERT_TRUE(response.ok()) << response.status();
+  const absl::Status load_status = model.LoadSolutionFromProto(*response);
   ASSERT_TRUE(load_status.ok()) << load_status;
 
   EXPECT_DOUBLE_EQ(x->solution_value(), 0.0);

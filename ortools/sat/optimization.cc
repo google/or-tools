@@ -1625,7 +1625,8 @@ SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
     // The lower bound will be increased by that much.
     const Coefficient min_weight = ComputeCoreMinWeight(nodes, core);
     previous_core_info =
-        absl::StrFormat("core:%u mw:%d", core.size(), min_weight.value());
+        absl::StrFormat("core:%u mw:%d d:%d", core.size(), min_weight.value(),
+                        nodes.back()->depth());
 
     // We only count an iter when we found a core.
     ++iter;

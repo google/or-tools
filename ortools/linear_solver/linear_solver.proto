@@ -603,7 +603,7 @@ message MPSolveInfo {
   optional double solve_user_time_seconds = 2;
 }
 
-// Next id: 11.
+// Next id: 12.
 message MPSolutionResponse {
   // Result of the optimization.
   optional /*required*/ MPSolverResponseStatus status = 1
@@ -636,6 +636,10 @@ message MPSolutionResponse {
   // solver (and its interface) supports it. As of 2021/07/19 this is supported
   // by SCIP and Gurobi proto solves.
   optional MPSolveInfo solve_info = 10;
+
+  // Opaque solver-specific information.
+  // For the PDLP solver, this is a serialized pdlp::SolveLog proto.
+  optional string solver_specific_info = 11;
 
   // [Advanced usage.]
   // Values of the dual variables values in the same order as the
