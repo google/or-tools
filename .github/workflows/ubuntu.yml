@@ -227,39 +227,62 @@ jobs:
         shell: bash
         run: |
           cd ./build/python/dist
-          mkdir ortools_wheel_${{ steps.names.outputs.appendix }}
-          cp *.whl ortools_wheel_${{ steps.names.outputs.appendix }}
-          ARCHIVE_PATH=${{ github.workspace }}/build/ortools_wheel${{ steps.names.outputs.appendix }}.zip
-          zip -r $ARCHIVE_PATH ortools_wheel_${{ steps.names.outputs.appendix }}
-          echo "::set-output name=wheel_archive_path::$ARCHIVE_PATH"
+          MY_DIR=ortools_wheel_${{ steps.names.outputs.appendix }}
+          mkdir $MY_DIR
+          cp *.whl $MY_DIR
+          ARCHIVE_PATH=${{ github.workspace }}/build/${MY_DIR}.zip
+          zip -r $ARCHIVE_PATH $MY_DIR
+          echo "::set-output name=archive_path::$ARCHIVE_PATH"
+
+      - name: prepare ortools jar
+        id: jar
+        shell: bash
+        run: |
+          cd ./build/java
+          MY_DIR=ortools_jar_${{ steps.names.outputs.appendix }}
+          mkdir $MY_DIR
+          cp ortools-*/target/*.jar $MY_DIR
+          ARCHIVE_PATH=${{ github.workspace }}/build/${MY_DIR}.zip
+          zip -r $ARCHIVE_PATH $MY_DIR
+          echo "::set-output name=archive_path::$ARCHIVE_PATH"
+
+      - name: prepare ortools dotnet
+        id: dotnet
+        shell: bash
+        run: |
+          cd ./build/dotnet/packages/
+          MY_DIR=ortools_dotnet_${{ steps.names.outputs.appendix }}
+          mkdir $MY_DIR
+          cp Google.OrTools.[0-9]*.[0-9]*.[0-9]*.nupkg $MY_DIR
+          ARCHIVE_PATH=${{ github.workspace }}/build/${MY_DIR}.zip
+          zip -r $ARCHIVE_PATH $MY_DIR
+          echo "::set-output name=archive_path::$ARCHIVE_PATH"
 
       - name: Upload ortools wheel
         if: ${{ matrix.shared == 'ON' }}
         uses: actions/upload-artifact@v2
         with:
           name: ortools_wheel${{ steps.names.outputs.appendix }}
-          path: ${{ steps.wheel.outputs.wheel_archive_path }}
+          path: ${{ steps.wheel.outputs.archive_path }}
       - name: Upload ortools jar
         if: ${{ matrix.shared == 'ON' }}
         uses: actions/upload-artifact@v2
         with:
           name: ortools_jar${{ steps.names.outputs.appendix }}
-          path: ./build/java/ortools-*/target/*.jar
+          path: ${{ steps.jar.outputs.archive_path }}
       - name: Upload ortools dotnet
         if: ${{ matrix.shared == 'ON' }}
         uses: actions/upload-artifact@v2
         with:
           name: ortools_dotnet${{ steps.names.outputs.appendix }}
-          path: |
-            ./build/dotnet/packages/Google.OrTools.[0-9]*.[0-9]*.[0-9]*.nupkg
-            ./build/dotnet/packages/Google.OrTools.runtime.*.[0-9]*.[0-9]*.[0-9]*.nupkg
+          path: ${{ steps.dotnet.outputs.archive_path }}
 
       - name: Publish ortools wheel
         if:  ${{ github.event_name == 'release' && github.event.action == 'created' && matrix.shared == 'ON' }}
         uses: actions/upload-release-asset@v1.0.2
         with:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
-          asset_path: ${{ steps.wheel.outputs.wheel_archive_path }}
+          asset_path: ${{ steps.wheel.outputs.archive_path }}
           asset_name: ortools_wheel${{ steps.names.outputs.appendix }}
           asset_content_type: application/zip
 
@@ -268,17 +291,15 @@ jobs:
         uses: actions/upload-release-asset@v1.0.2
         with:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
-          asset_path: ./build/java/ortools-*/target/*.jar
+          asset_path: ${{ steps.jar.outputs.archive_path }}
           asset_name: ortools_jar${{ steps.names.outputs.appendix }}
-          asset_content_type: application/octet-stream
+          asset_content_type: application/zip
 
       - name: Publish ortools dotnet
         if:  ${{ github.event_name == 'release' && github.event.action == 'created' && matrix.shared == 'ON' }}
         uses: actions/upload-release-asset@v1.0.2
         with:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
-          asset_path: |
-            ./build/dotnet/packages/Google.OrTools.[0-9]*.[0-9]*.[0-9]*.nupkg
-            ./build/dotnet/packages/Google.OrTools.runtime.*.[0-9]*.[0-9]*.[0-9]*.nupkg
+          asset_path: ${{ steps.dotnet.outputs.archive_path }}
           asset_name: ortools_dotnet${{ steps.names.outputs.appendix }}
-          asset_content_type: application/octet-stream
+          asset_content_type: application/zip
