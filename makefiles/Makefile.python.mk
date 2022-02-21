@@ -10,7 +10,11 @@ else
 	@echo
 endif
 
-PYTHON_EXECUTABLE := dependencies$Spython$Svenv$Sbin$Spython#######################
+PYTHON_EXECUTABLE := dependencies$Spython$Svenv$Sbin$Spython
+
+python: $(OR_TOOLS_LIBS)
+
+#######################
 ##  Python SOURCE  ##
 #######################
 ifeq ($(SOURCE_SUFFIX),.py) # Those rules will be used if SOURCE contains a .py file

@@ -50,7 +50,7 @@ check_java: java
 test_java: java
 else
 java_runtime: java_runtime_pimpl
-java:
+java: $(OR_TOOLS_LIBS)
 check_java: check_java_pimpl
 test_java: test_java_pimpl
 BUILT_LANGUAGES +=, Java

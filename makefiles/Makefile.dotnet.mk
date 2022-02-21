@@ -22,6 +22,9 @@ TEMP_DOTNET_DIR = temp_dotnet
 DOTNET_PACKAGE_DIR = temp_dotnet/packages
 DOTNET_PACKAGE_PATH = $(subst /,$S,$(DOTNET_PACKAGE_DIR))
 DOTNET_ORTOOLS_ASSEMBLY_NAME := Google.OrTools
+
+dotnet: $(OR_TOOLS_LIBS)
+
 ###################
 ##  .NET SOURCE  ##
 ###################

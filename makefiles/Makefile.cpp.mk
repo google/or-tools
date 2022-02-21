@@ -44,6 +44,7 @@ $(OR_TOOLS_LIBS): $(THIRD_PARTY_TARGET)
 	$(TOUCH) $(OR_TOOLS_LIBS)
 
 compile_libraries: $(OR_TOOLS_LIBS)
+cc: OR_TOOLS_LIBS
 
 test_cc: \
  $(OR_TOOLS_LIBS) \
