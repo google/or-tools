@@ -53,7 +53,7 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo #   e.g. dir "%ProgramFiles%*" /x >> Makefile.local
 
 dependencies/ortools.sln: | dependencies
-	cmake -S . -B dependencies -DBUILD_DEPS=ON -DBUILD_EXAMPLES=OFF -DBUILD_SAMPLES=OFF -DUSE_COINOR=$(USE_COINOR) -DUSE_SCIP=$(USE_SCIP) -DUSE_GLPK=$(USE_GLPK) -DCMAKE_INSTALL_PREFIX=$(OR_ROOT_FULL) -DCMAKE_BUILD_TYPE=RELEASE
+	cmake -S . -B dependencies -DBUILD_DEPS=ON -DBUILD_PYTHON=ON -DBUILD_EXAMPLES=OFF -DBUILD_SAMPLES=OFF -DUSE_COINOR=$(USE_COINOR) -DUSE_SCIP=$(USE_SCIP) -DUSE_GLPK=$(USE_GLPK) -DCMAKE_INSTALL_PREFIX=$(OR_ROOT_FULL) -DCMAKE_BUILD_TYPE=RELEASE
 
 .PHONY: clean_third_party # Clean everything. Remember to also delete archived dependencies, i.e. in the event of download failure, etc.
 clean_third_party:
