@@ -34,6 +34,7 @@ jobs:
 
     steps:
       - name: Set version
+        shell: bash
         run: |
           REF=${GITHUB_REF#refs/*/}
           REF_WO_SLASHES=${REF//[/]/-}
