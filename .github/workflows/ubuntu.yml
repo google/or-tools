@@ -225,6 +225,7 @@ jobs:
 
 
       - name: prepare ortools wheel
+        if: ${{ matrix.shared == 'ON' }}
         id: wheel
         shell: bash
         run: |
@@ -237,6 +238,7 @@ jobs:
           echo "::set-output name=archive_path::$ARCHIVE_PATH"
 
       - name: prepare ortools jar
+        if: ${{ matrix.shared == 'ON' }}
         id: jar
         shell: bash
         run: |
@@ -249,6 +251,7 @@ jobs:
           echo "::set-output name=archive_path::$ARCHIVE_PATH"
 
       - name: prepare ortools dotnet
+        if: ${{ matrix.shared == 'ON' }}
         id: dotnet
         shell: bash
         run: |
