@@ -81,14 +81,15 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: sirius_install_${{ matrix.os }}
-          path: ${{ steps.setup.outputs.sirius-install-path }}
+          path: ${{ steps.setup.outputs.sirius-archive-path }}
       - name: Publish sirius install
         if:  ${{ github.event_name == 'release' && github.event.action == 'created' && matrix.shared == 'ON' && matrix.xprs == 'ON' && matrix.sirius == 'ON' }}
         uses: actions/upload-release-asset@v1.0.2
         with:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
-          asset_path: ${{ steps.setup.outputs.sirius-install-path }}
+          asset_path: ${{ steps.setup.outputs.sirius-archive-path }}
           asset_name: sirius_install_${{ matrix.os }}
+          asset_content_type: application/gzip
 
       - name: Checkout xpressmp813
         if: ${{ matrix.os == 'ubuntu-20.04'}}
@@ -140,22 +141,31 @@ jobs:
                 install \
                 -j4
       - name: Prepare ortools install
-        working-directory: ${{ github.workspace }}/build/install
-        run: find bin -type f ! \( -name 'protoc*' -o -name 'scip' -o -name 'fz' \) -delete
+        id: or-install
+        shell: bash
+        run: |
+          cd build/install
+          find bin -type f ! \( -name 'protoc*' -o -name 'scip' -o -name 'fz' \) -delete
+          cd ..
+          ARCHIVE_PATH=${{ github.workspace }}/build/ortools_install${{ steps.names.outputs.appendix }}.tgz
+          tar -czf $ARCHIVE_PATH ./install
+          echo "::set-output name=ortools_archive_path::$ARCHIVE_PATH"
+
 
       - name: Upload artifact ortools install
         uses: actions/upload-artifact@v2
         with:
           name: ortools_install${{ steps.names.outputs.appendix }}
-          path: ./build/install
+          path: ${{ steps.or-install.outputs.ortools_archive_path }}
 
       - name: Publish asset  file upload
         if:  github.event_name == 'release' && github.event.action == 'created'
         uses: actions/upload-release-asset@v1.0.2
         with:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
-          asset_path: ./build/install
+          asset_path: ${{ steps.or-install.outputs.ortools_archive_path }}
           asset_name: ortools_install${{ steps.names.outputs.appendix }}
+          asset_content_type: application/gzip
 
       - name: set ld_library_path
         run: |
@@ -236,6 +246,7 @@ jobs:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
           asset_path: './build/python/dist/*.whl'
           asset_name: ortools_wheel${{ steps.names.outputs.appendix }}
+          asset_content_type: application/octet-stream
 
       - name: Publish ortools jar
         if:  ${{ github.event_name == 'release' && github.event.action == 'created' && matrix.shared == 'ON' }}
@@ -244,6 +255,7 @@ jobs:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
           asset_path: ./build/java/ortools-*/target/*.jar
           asset_name: ortools_jar${{ steps.names.outputs.appendix }}
+          asset_content_type: application/octet-stream
 
       - name: Publish ortools dotnet
         if:  ${{ github.event_name == 'release' && github.event.action == 'created' && matrix.shared == 'ON' }}
@@ -254,3 +266,4 @@ jobs:
             ./build/dotnet/packages/Google.OrTools.[0-9]*.[0-9]*.[0-9]*.nupkg
             ./build/dotnet/packages/Google.OrTools.runtime.*.[0-9]*.[0-9]*.[0-9]*.nupkg
           asset_name: ortools_dotnet${{ steps.names.outputs.appendix }}
+          asset_content_type: application/octet-stream

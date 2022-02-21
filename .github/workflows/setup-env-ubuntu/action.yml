@@ -8,6 +8,9 @@ outputs:
   sirius-install-path:
     description: "path of the sirius installation"
     value: ${{ steps.sirius-variables.outputs.sirius-install-path }}
+  sirius-archive-path:
+    description: "path of the sirius archive file"
+    value: ${{ steps.sirius-variables.outputs.sirius-archive-path }}
 runs:
   using: "composite"
   steps:
@@ -37,10 +40,12 @@ runs:
         SIRIUS_BASE_PATH=${{ github.workspace }}/sirius-solver
         SIRIUS_INSTALL_DIR=SiriusInstall
         SIRIUS_INSTALL_PATH=$SIRIUS_BASE_PATH/$SIRIUS_INSTALL_DIR
+        ARCHIVE_PATH=$SIRIUS_BASE_PATH/sirius_install.tgz
         echo "::set-output name=sirius-working-dir::$SIRIUS_WORKING_DIR"
         echo "::set-output name=sirius-base-path::$SIRIUS_BASE_PATH"
         echo "::set-output name=sirius-install-dir::$SIRIUS_INSTALL_DIR"
         echo "::set-output name=sirius-install-path::$SIRIUS_INSTALL_PATH"
+        echo "::set-output name=sirius-archive-path::$ARCHIVE_PATH"
 
     - name: Checkout Sirius repo
       uses: actions/checkout@v2
@@ -62,3 +67,4 @@ runs:
       run: |
         cd ${{ steps.sirius-variables.outputs.sirius-working-dir }}
         cmake --build build --config Release --target install -j14
+        tar -czf ${{ steps.sirius-variables.outputs.sirius-archive-path }} -C ${{ steps.sirius-variables.outputs.sirius-install-dir }}
