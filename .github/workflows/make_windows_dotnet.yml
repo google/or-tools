@@ -35,7 +35,7 @@ jobs:
     - name: Build third party
       run: tools\make third_party BUILD_DOTNET=ON -j4
     - name: Build C++ and .NET
-      run: tools\make all -j4
+      run: tools\make compile_libraries -j4
     - name: Test .Net
       run: tools\make test_dotnet -j4
     - name: Create nuget packages

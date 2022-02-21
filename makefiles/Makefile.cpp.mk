@@ -43,7 +43,7 @@ $(OR_TOOLS_LIBS): $(THIRD_PARTY_TARGET)
 	cmake --build dependencies --target install --config RELEASE -j 8
 	$(TOUCH) $(OR_TOOLS_LIBS)
 
-all: $(OR_TOOLS_LIBS)
+compile_libraries: $(OR_TOOLS_LIBS)
 
 test_cc: \
  $(OR_TOOLS_LIBS) \

@@ -24,7 +24,7 @@ jobs:
     - name: Generate protos
       run: tools\make all_protos
     - name: Build C++
-      run: tools\make cc -j4
+      run: tools\make compile_libraries -j4
     - name: Test C++
       run: tools\make test_cc
     - name: Install

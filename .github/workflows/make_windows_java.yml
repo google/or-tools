@@ -26,7 +26,7 @@ jobs:
     - name: Build third party
       run: tools\make third_party BUILD_JAVA=ON -j4
     - name: Build C++ and Java
-      run: tools\make all -j4
+      run: tools\make compile_libraries -j4
     - name: Test Java
       run: tools\make test_java -j4
     - name: Create maven package

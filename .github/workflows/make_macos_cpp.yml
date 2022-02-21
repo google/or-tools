@@ -21,7 +21,7 @@ jobs:
     - name: Build third party
       run: make third_party -j4
     - name: Build C++
-      run: make cc -j4
+      run: make compile_libraries -j4
     - name: Test C++
       run: make test_cc
     - name: Install

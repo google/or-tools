@@ -27,7 +27,7 @@ jobs:
     - name: Build third party 
       run: make third_party BUILD_PYTHON=ON -j4
     - name: Build C++ and Python
-      run: make all -j4
+      run: make compile_libraries -j4
     - name: Test Python
       run: make test_python -j4
     - name: Create wheel package
