@@ -40,7 +40,7 @@ or-tools-libs: $(OR_TOOLS_LIBS)
 
 # OR Tools unique library.
 $(OR_TOOLS_LIBS): $(THIRD_PARTY_TARGET)
-	cmake --build dependencies --target install --config RELEASE -j 8
+	cmake --build dependencies --target install --config Release -j 8
 	$(TOUCH) $(OR_TOOLS_LIBS)
 
 compile_libraries: $(OR_TOOLS_LIBS)
@@ -461,7 +461,7 @@ install_dirs:
 	-$(MKDIR) "$(DESTDIR)$(prefix)$Sshare$Sdoc"
 	-$(MKDIR) "$(DESTDIR)$(prefix)$Sshare$Sdoc$Sortools"
 	-$(MKDIR) "$(DESTDIR)$(prefix)$Sshare$Sdoc$Sortools$Ssat"
-	-$(MKDIR) "$(DESTDIR)$(prefix)$Sshare$Sdoc$Sortools$Ssat$Sdoc"	
+	-$(MKDIR) "$(DESTDIR)$(prefix)$Sshare$Sdoc$Sortools$Ssat$Sdoc"
 
 # Install C++ OR-Tools to $(DESTDIR)$(prefix)
 .PHONY: install_cc
