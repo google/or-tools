@@ -79,8 +79,8 @@ JAVA_PATH := $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_PROJECT)$Ssrc$Smain
 $(TEMP_JAVA_DIR):
 	$(MKDIR) $(TEMP_JAVA_DIR)
 
-package_java: compile_libraries
-	$(DEL) *.jar
+package_java: $(OR_TOOLS_LIBS)
+	-$(DEL) *.jar
 	$(COPY) dependencies$Sjava$Sortools-java$Starget$S*.jar .
 	$(COPY) dependencies$Sjava$Sortools-$(JAVA_NATIVE_IDENTIFIER)$Starget$S*.jar .
 

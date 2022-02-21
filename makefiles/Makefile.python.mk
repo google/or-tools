@@ -481,12 +481,9 @@ $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/.libs: | $(PYPI_ARCHIVE_TEMP_DIR)/ortoo
 	-$(MKDIR) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$S.libs
 
 ifneq ($(PYTHON_EXECUTABLE),)
-.PHONY: pypi_archive
-package_python pypi_archive: $(OR_TOOLS_LIBS) python $(MISSING_PYPI_FILES)
-ifeq ($(SYSTEM),unix)
-	cp $(OR_TOOLS_LIBS) $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/.libs
-endif
-	cd $(PYPI_ARCHIVE_TEMP_DIR)$Sortools && "$(PYTHON_EXECUTABLE)" setup.py bdist_wheel
+package_python: $(OR_TOOLS_LIBS)
+	-$(DEL) $.*whl
+	$(COPY) dependencies$Spython$Sdist$S*.whl .
 
 .PHONY: test_package_python # Test Python "ortools" wheel package
 test_package_python: package_python

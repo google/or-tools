@@ -639,7 +639,7 @@ endif
 ##  Nuget artifact  ##
 ######################
 
-package_dotnet: compile_libraries
+package_dotnet: $(OR_TOOLS_LIBS)
 	-$(DEL) $.*pkg
 	$(COPY) dependencies$Sdotnet$Spackages$S*.*pkg .
 
