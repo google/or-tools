@@ -46,6 +46,7 @@ class PySolutionCallback : public SolutionCallback {
   using SolutionCallback::SolutionCallback; /* Inherit constructors */
 
   void OnSolutionCallback() const override {
+    ::pybind11::gil_scoped_acquire acquire;
     PYBIND11_OVERRIDE_PURE(
         void,               /* Return type */
         SolutionCallback,   /* Parent class */
@@ -66,6 +67,7 @@ void SetSerializedParameters(const std::string& serialized_parameters,
 
 pybind11::bytes SerializedSolve(const std::string& serialized_model,
                                 SolveWrapper* solve_wrapper) {
+  ::pybind11::gil_scoped_release release;
   CpModelProto model_proto;
   model_proto.ParseFromString(serialized_model);
   return solve_wrapper->Solve(model_proto).SerializeAsString();
