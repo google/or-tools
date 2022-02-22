@@ -96,11 +96,12 @@ jobs:
           path: ./or-tools/build/install
       - name: Build & run CMake example project
         working-directory: ./or-tools/examples/cmake/linear_programming/
+        shell: bash
         env:
           XPRESS: "${{ github.workspace }}/xpressmp813/bin/"
         run: |
-          cmake -Bbuild \
-                -S. \
+          cmake -B build \
+                -S . \
                 -DORTOOLS_INSTALL="${{ github.workspace }}/or-tools/build/install" \
                 -DCMAKE_BUILD_TYPE=Release -DXPRESS_ROOT="${{ github.workspace }}/xpressmp813" \
                 -Dsirius_solver_DIR="${{ github.workspace }}/sirius-solver/SiriusInstall/cmake"

@@ -76,4 +76,4 @@ runs:
       run: |
         cd ${{ steps.sirius-variables.outputs.sirius-working-dir }}
         cmake --build build --config Release --target install -j14
-        zip -r ${{ steps.sirius-variables.outputs.sirius-archive-path }} ${{ steps.sirius-variables.outputs.sirius-install-dir }}
+        zip -r "${{ steps.sirius-variables.outputs.sirius-archive-path }}" "${{ steps.sirius-variables.outputs.sirius-install-dir }}"
