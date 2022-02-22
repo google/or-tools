@@ -30,7 +30,7 @@ jobs:
     - name: Check .Net
       run: make detect_dotnet
     - name: Build third party 
-      run: make third_party BUILD_DOTNET=ON -j4
+      run: make third_party BUILD_PYTHON=OFF BUILD_JAVA=OFF BUILD_DOTNET=ON
     - name: Build C++ and .NET
       run: make compile_libraries -j4
     - name: Test .Net

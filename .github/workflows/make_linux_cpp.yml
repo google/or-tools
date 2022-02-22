@@ -15,9 +15,9 @@ jobs:
     - name: Check C++
       run: make detect_cc
     - name: Build third party
-      run: make third_party -j4
+      run: make third_party BUILD_PYTHON=OFF BUILD_JAVA=OFF BUILD_DOTNET=OFF
     - name: Build C++
-      run: make compile_libraries -j4
+      run: make all -j4
     - name: Test C++
       run: make test_cc
     - name: Install

@@ -24,7 +24,7 @@ jobs:
     - name: Check Java
       run: tools\make detect_java
     - name: Build third party
-      run: tools\make third_party BUILD_JAVA=ON -j4
+      run: tools\make third_party BUILD_PYTHON=OFF BUILD_JAVA=ON BUILD_DOTNET=OFF
     - name: Build C++ and Java
       run: tools\make compile_libraries -j4
     - name: Test Java
