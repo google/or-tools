@@ -14,12 +14,6 @@ jobs:
         python-version: '3.9'
     - name: Install python3
       run: python3 -m pip install --user mypy-protobuf absl-py setuptools wheel numpy pandas
-    - name: Clean sh.exe
-      run: |
-        where sh
-        rm 'C:\Program Files\Git\usr\bin\sh.exe'
-        rm 'C:\Program Files\Git\bin\sh.exe'
-      shell: bash
     - name: Check make
       run: tools\make --version
     - name: Check system

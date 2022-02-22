@@ -11,12 +11,6 @@ jobs:
     - uses: ilammy/msvc-dev-cmd@v1
     - name: Check java
       run: java -version
-    - name: Clean sh.exe
-      run: |
-        where sh
-        rm 'C:\Program Files\Git\usr\bin\sh.exe'
-        rm 'C:\Program Files\Git\bin\sh.exe'
-      shell: bash
     - name: Check make
       run: tools\make --version
     - name: Check system

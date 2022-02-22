@@ -124,7 +124,7 @@ ifeq ("$(SYSTEM)","win")
   NETPLATFORM = x64
 
   # Check 64 bit.
-  ifneq ("$(Platform)","x64")  # Visual Studio 2017/2019 64 bit
+  ifneq ("$(Platform)","x64")  # Visual Studio 2017/2019/2022 64 bit
     $(warning "Only 64 bit compilation is supported")
   endif
 
