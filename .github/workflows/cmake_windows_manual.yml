@@ -69,8 +69,8 @@ jobs:
         working-directory: ./or-tools
         shell: bash
         run: |
-          cmake -S.\
-                -Bbuild \
+          cmake -S . \
+                -B build \
                 -DCMAKE_BUILD_TYPE=Release \
                 -DCMAKE_INSTALL_PREFIX="build/install" \
                 -G "Visual Studio 16 2019" \

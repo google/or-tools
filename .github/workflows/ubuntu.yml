@@ -92,7 +92,7 @@ jobs:
         if: ${{ matrix.xprs == 'ON' && matrix.sirius == 'ON' && matrix.shared == 'ON' }}
         uses: actions/upload-artifact@v2
         with:
-          name: sirius_install_${{ matrix.os }}
+          name: ${{ steps.setup.outputs.sirius-archive-name }}_${{ matrix.os }}
           path: ${{ steps.setup.outputs.sirius-archive-path }}
       - name: Publish sirius install
         if:  ${{ github.event_name == 'release' && github.event.action == 'created' && matrix.shared == 'ON' && matrix.xprs == 'ON' && matrix.sirius == 'ON' }}
@@ -131,6 +131,7 @@ jobs:
           echo "::set-output name=CMAKE_CXXCACHE::$CXXCACHE"
 
       - name: Configure or-tools
+        shell: bash
         run: |
           cmake -S . \
                 -B build ${{ steps.cache.outputs.CMAKE_CCACHE }} ${{ steps.cache.outputs.CMAKE_CXXCACHE }} \
@@ -147,6 +148,7 @@ jobs:
                 -DBUILD_DOTNET=${{ matrix.shared }}
 
       - name: Build
+        shell: bash
         run: |
           cmake --build build \
                 --target all \
