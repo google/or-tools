@@ -702,6 +702,7 @@ clean_python:
 .PHONY: detect_python # Show variables used to build Python OR-Tools.
 detect_python:
 	@echo Relevant info for the Python build:
+	@echo BUILD_PYTHON = $(BUILD_PYTHON)
 	@echo PYTHON_EXECUTABLE = "$(PYTHON_EXECUTABLE)"
 	@echo PYTHON_VERSION = $(PYTHON_VERSION)
 ifeq ($(SYSTEM),win)

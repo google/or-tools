@@ -487,6 +487,7 @@ clean_java:
 .PHONY: detect_java # Show variables used to build Java OR-Tools.
 detect_java:
 	@echo Relevant info for the Java build:
+	@echo BUILD_JAVA = $(BUILD_JAVA)
 	@echo JAVA_HOME = $(JAVA_HOME)
 	@echo JAVAC_BIN = $(JAVAC_BIN)
 	@echo CLASS_DIR = $(CLASS_DIR)
