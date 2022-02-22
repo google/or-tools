@@ -121,24 +121,22 @@ help_all: help_usage help_third_party help_cc help_python help_java help_dotnet 
 
 .PHONY: build_all
 build_all: cc python java dotnet
-	@echo Or-tools has been built for $(BUILT_LANGUAGES)
+	@echo Or-tools has been built for "$(BUILT_LANGUAGES)"
 
 .PHONY: check_all
 check_all: check_cc check_python check_java check_dotnet
-	@echo Or-tools has been built and checked for $(BUILT_LANGUAGES)
+	@echo Or-tools has been built and checked for "$(BUILT_LANGUAGES)"
 
 .PHONY: test_all
 test_all: test_cc test_python test_java test_dotnet
-	@echo Or-tools have been built and tested for $(BUILT_LANGUAGES)
+	@echo Or-tools have been built and tested for "$(BUILT_LANGUAGES)"
 
 .PHONY: clean_all
-clean_all: #clean_cc clean_python clean_java clean_dotnet clean_archive clean_third_party
+clean_all: clean_cc clean_python clean_java clean_dotnet clean_archive clean_third_party
 	-$(DELREC) $(BIN_DIR)
 	-$(DELREC) $(LIB_DIR)
 	-$(DELREC) $(OBJ_DIR)
-	@echo NNN $(BUILT_LANGUAGES)
-	@echo Or-Tools has been cleaned for $(BUILT_LANGUAGES)
-	@echo AAA
+	@echo Or-Tools has been cleaned for "$(BUILT_LANGUAGES)"
 
 .PHONY: detect_all
 detect_all: detect_port detect_third_party detect_cc detect_python detect_java detect_dotnet detect_archive

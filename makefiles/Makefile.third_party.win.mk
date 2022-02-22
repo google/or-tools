@@ -37,7 +37,7 @@ dependencies/ortools.sln: | dependencies
 	-DUSE_GLPK=$(USE_GLPK) \
 	-DCMAKE_INSTALL_PREFIX=$(OR_ROOT_FULL)
 
-.PHONY: clean_third_party # Clean everything. Remember to also delete archived dependencies, i.e. in the event of download failure, etc.
+.PHONY: clean_third_party
 clean_third_party:
 	-$(DEL) Makefile.local
 	-$(DELREC) dependencies\\*
@@ -50,7 +50,6 @@ clean_third_party:
 .PHONY: detect_third_party # Show variables used to find third party
 detect_third_party:
 	@echo Relevant info on third party:
-	@echo WINDOWS_SCIP_DIR = $(WINDOWS_SCIP_DIR)
 	@echo USE_COINOR = $(USE_COINOR)
 	@echo USE_SCIP = $(USE_SCIP)
 ifdef WINDOWS_GLPK_DIR
