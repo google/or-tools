@@ -8,6 +8,10 @@ inputs:
     description: 'python version'
     required: false
     default: '3.10'
+  zip-sirius:
+    description: 'boolean, should create a sirius archive'
+    required: false
+    default: 'true'
 outputs:
   sirius-install-path:
     description: "path of the sirius installation"
@@ -76,4 +80,10 @@ runs:
       run: |
         cd ${{ steps.sirius-variables.outputs.sirius-working-dir }}
         cmake --build build --config Release --target install -j14
+
+    - name: Zip Install Sirius
+      if : ${{ inputs.zip-sirius == 'true' }}
+      shell: bash
+      run: |
+        cd ${{ steps.sirius-variables.outputs.sirius-working-dir }}
         zip -r "${{ steps.sirius-variables.outputs.sirius-archive-path }}" "${{ steps.sirius-variables.outputs.sirius-install-dir }}"

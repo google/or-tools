@@ -63,17 +63,24 @@ jobs:
         uses:
           bruceadams/get-release@v1.2.3
 
+      - name: install zip for windows
+        if: ${{ matrix.os == 'windows-2019'}}
+        shell: cmd
+        run: |
+          choco install wget zip unzip --no-progress
+
+      - name: try zip
+        shell: bash
+        run: |
+          touch toto.txt
+          zip -r toto.zip toto.*
+
       - name: Install SWIG 4.0.2
         if: ${{ matrix.os == 'windows-2019'}}
         run: |
           (New-Object System.Net.WebClient).DownloadFile("http://prdownloads.sourceforge.net/swig/swigwin-4.0.2.zip","swigwin-4.0.2.zip");
           Expand-Archive .\swigwin-4.0.2.zip .;
           echo "$((Get-Item .).FullName)/swigwin-4.0.2" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-      - name: install zip for windows
-        if: ${{ matrix.os == 'windows-2019'}}
-        shell: cmd
-        run: |
-          choco install wget zip unzip --no-progress
 
       - name: Checkout or-tools
         uses: actions/checkout@v2
@@ -87,15 +94,16 @@ jobs:
         uses: ./.github/workflows/setup-env-ubuntu
         with:
           sirius-ref: ${{ env.Sirius_Ref }}
+          zip-sirius: 'false'
 
       - name: Upload sirius install
-        if: ${{ matrix.xprs == 'ON' && matrix.sirius == 'ON' && matrix.shared == 'ON' }}
+        if: ${{ matrix.xprs == 'NONONO' && matrix.sirius == 'ON' && matrix.shared == 'ON' }}
         uses: actions/upload-artifact@v2
         with:
           name: ${{ matrix.os }}_${{ steps.setup.outputs.sirius-archive-name }}
           path: ${{ steps.setup.outputs.sirius-archive-path }}
       - name: Publish sirius install
-        if:  ${{ github.event_name == 'release' && github.event.action == 'created' && matrix.shared == 'ON' && matrix.xprs == 'ON' && matrix.sirius == 'ON' }}
+        if:  ${{ github.event_name == 'NONOrelease' && github.event.action == 'created' && matrix.shared == 'ON' && matrix.xprs == 'ON' && matrix.sirius == 'ON' }}
         uses: actions/upload-release-asset@v1.0.2
         with:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
