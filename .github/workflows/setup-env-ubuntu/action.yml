@@ -55,9 +55,9 @@ runs:
       shell: bash
       run: |
         SIRIUS_WORKING_DIR=sirius-solver
-        SIRIUS_BASE_PATH=${{ github.workspace }}/sirius-solver
+        SIRIUS_BASE_PATH="${{ github.workspace }}/sirius-solver"
         SIRIUS_INSTALL_DIR=SiriusInstall
-        SIRIUS_INSTALL_PATH=$SIRIUS_BASE_PATH/$SIRIUS_INSTALL_DIR
+        SIRIUS_INSTALL_PATH="${SIRIUS_BASE_PATH}/${SIRIUS_INSTALL_DIR}"
         ARCHIVE_NAME="sirius_install.zip"
         ARCHIVE_PATH="${SIRIUS_BASE_PATH}/${ARCHIVE_NAME}"
         echo "::set-output name=sirius-working-dir::$SIRIUS_WORKING_DIR"
