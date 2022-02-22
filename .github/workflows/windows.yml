@@ -177,8 +177,8 @@ jobs:
           cd build/install
           find bin -type f ! \( -name 'protoc*' -o -name 'scip' -o -name 'fz' \) -delete
           cd ..
-          ARCHIVE_NAME=ortools_install${{ steps.names.outputs.appendix }}.zip
-          ARCHIVE_PATH=${{ github.workspace }}/build/${ARCHIVE_NAME}
+          ARCHIVE_NAME="ortools_install${{ steps.names.outputs.appendix }}.zip"
+          ARCHIVE_PATH="${{ github.workspace }}/build/${ARCHIVE_NAME}"
           zip -r $ARCHIVE_PATH ./install
           echo "::set-output name=ortools_archive_name::$ARCHIVE_NAME"
           echo "::set-output name=ortools_archive_path::$ARCHIVE_PATH"
