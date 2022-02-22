@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - NONOfeature/*
+      - feature/*
   release:
     types: [ created ]
 
@@ -81,6 +81,8 @@ jobs:
       - name: ccache
         if: ${{ matrix.os != 'windows-2019'}}
         uses: hendrikmuhs/ccache-action@v1
+        with:
+          key: ${{ matrix.os }}-${{ matrix.shared }}-${{ matrix.sirius }}-${{ matrix.xprs }}
 
       - name: setup envoronment
         id: setup
