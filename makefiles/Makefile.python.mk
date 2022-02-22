@@ -4,6 +4,7 @@ python:
 
 test_python: python
 package_python: python
+check_python: python
 
 else  # BUILD_PYTHON=ON
 

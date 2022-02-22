@@ -4,6 +4,7 @@ dotnet:
 
 test_dotnet: dotnet
 package_dotnet: dotnet
+check_dotnet: dotnet
 else
 
 .PHONY: help_dotnet # Generate list of dotnet targets with descriptions.
