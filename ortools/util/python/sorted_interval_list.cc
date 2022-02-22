@@ -15,8 +15,8 @@
 
 #include <cstdint>
 
-#include "pybind11/include/pybind11/pybind11.h"
-#include "pybind11/include/pybind11/stl.h"
+#include "pybind11/pybind11.h"
+#include "pybind11/stl.h"
 
 using ::operations_research::Domain;
 using ::pybind11::arg;

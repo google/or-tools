@@ -479,6 +479,14 @@ void FindCpModelSymmetries(
   CHECK(generators != nullptr);
   generators->clear();
 
+  if (params.symmetry_level() < 3 && problem.variables().size() > 1e6 &&
+      problem.constraints().size() > 1e6) {
+    SOLVER_LOG(logger,
+               "[Symmetry] Problem too large. Skipping. You can use "
+               "symmetry_level:3 or more to force it.");
+    return;
+  }
+
   typedef GraphSymmetryFinder::Graph Graph;
 
   std::vector<int> equivalence_classes;

@@ -13,7 +13,10 @@
 
 #include "ortools/util/range_query_function.h"
 
+#include <algorithm>
+#include <functional>
 #include <memory>
+#include <utility>
 
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"

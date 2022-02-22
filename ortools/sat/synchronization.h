@@ -470,13 +470,13 @@ class SharedBoundsManager {
   // These are always up to date.
   std::vector<int64_t> lower_bounds_ ABSL_GUARDED_BY(mutex_);
   std::vector<int64_t> upper_bounds_ ABSL_GUARDED_BY(mutex_);
-  SparseBitset<int64_t> changed_variables_since_last_synchronize_
+  SparseBitset<int> changed_variables_since_last_synchronize_
       ABSL_GUARDED_BY(mutex_);
 
   // These are only updated on Synchronize().
   std::vector<int64_t> synchronized_lower_bounds_ ABSL_GUARDED_BY(mutex_);
   std::vector<int64_t> synchronized_upper_bounds_ ABSL_GUARDED_BY(mutex_);
-  std::deque<SparseBitset<int64_t>> id_to_changed_variables_
+  std::deque<SparseBitset<int>> id_to_changed_variables_
       ABSL_GUARDED_BY(mutex_);
   std::map<std::string, int> bounds_exported_ ABSL_GUARDED_BY(mutex_);
 };

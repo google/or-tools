@@ -52,8 +52,8 @@ import warnings
 from ortools.sat import cp_model_pb2
 from ortools.sat import sat_parameters_pb2
 from ortools.sat.python import cp_model_helper as cmh
-from ortools.sat import pywrapsat
-from ortools.util import sorted_interval_list
+from ortools.sat.python import swig_helper
+from ortools.util.python import sorted_interval_list
 
 Domain = sorted_interval_list.Domain
 
@@ -2023,11 +2023,13 @@ class CpModel(object):
 
     def ModelStats(self):
         """Returns a string containing some model statistics."""
-        return pywrapsat.CpSatHelper.ModelStats(self.__model)
+        return swig_helper.CpSatHelper.SerializedModelStats(
+            self.__model.SerializeToString())
 
     def Validate(self):
         """Returns a string indicating that the model is invalid."""
-        return pywrapsat.CpSatHelper.ValidateModel(self.__model)
+        return swig_helper.CpSatHelper.SerializedValidateModel(
+            self.__model.SerializeToString())
 
     def ExportToFile(self, file):
         """Write the model as a protocol buffer to 'file'.
@@ -2040,7 +2042,8 @@ class CpModel(object):
     Returns:
       True if the model was correctly written.
     """
-        return pywrapsat.CpSatHelper.WriteModelToFile(self.__model, file)
+        return swig_helper.CpSatHelper.SerializedWriteModelToFile(
+            self.__model.SerializeToString(), file)
 
     def AssertIsBooleanVariable(self, x):
         if isinstance(x, IntVar):
@@ -2153,22 +2156,25 @@ class CpSolver(object):
         self.__solution: cp_model_pb2.CpSolverResponse = None
         self.parameters = sat_parameters_pb2.SatParameters()
         self.log_callback = None
-        self.__solve_wrapper: pywrapsat.SolveWrapper = None
+        self.__solve_wrapper: swig_helper.SolveWrapper = None
         self.__lock = threading.Lock()
 
     def Solve(self, model, solution_callback=None):
         """Solves a problem and passes each solution to the callback if not null."""
         with self.__lock:
-            solve_wrapper = pywrapsat.SolveWrapper()
+            solve_wrapper = swig_helper.SolveWrapper()
 
-        solve_wrapper.SetParameters(self.parameters)
+        swig_helper.SolveWrapper.SetSerializedParameters(
+            self.parameters.SerializeToString(), solve_wrapper)
         if solution_callback is not None:
             solve_wrapper.AddSolutionCallback(solution_callback)
 
         if self.log_callback is not None:
             solve_wrapper.AddLogCallback(self.log_callback)
 
-        self.__solution = solve_wrapper.Solve(model.Proto())
+        self.__solution = cp_model_pb2.CpSolverResponse.FromString(
+            swig_helper.SolveWrapper.SerializedSolve(
+                model.Proto().SerializeToString(), solve_wrapper))
 
         if solution_callback is not None:
             solve_wrapper.ClearSolutionCallback(solution_callback)
@@ -2276,7 +2282,8 @@ class CpSolver(object):
 
     def ResponseStats(self):
         """Returns some statistics on the solution found as a string."""
-        return pywrapsat.CpSatHelper.SolverResponseStats(self.__solution)
+        return swig_helper.CpSatHelper.SerializedSolverResponseStats(
+            self.__solution.SerializeToString())
 
     def ResponseProto(self):
         """Returns the response object."""
@@ -2295,7 +2302,7 @@ class CpSolver(object):
         return self.__solution.solution_info
 
 
-class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
+class CpSolverSolutionCallback(swig_helper.SolutionCallback):
     """Solution callback.
 
   This class implements a callback that will be called at each new solution
@@ -2320,7 +2327,7 @@ class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
   """
 
     def __init__(self):
-        pywrapsat.SolutionCallback.__init__(self)
+        swig_helper.SolutionCallback.__init__(self)
 
     def OnSolutionCallback(self):
         """Proxy for the same method in snake case."""
@@ -2394,6 +2401,11 @@ class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
                     f'Cannot interpret {expression} as a linear expression.')
 
         return value
+
+    def Response(self):
+        """Returns the current solution response."""
+        return cp_model_pb2.CpSolverResponse.FromString(
+            swig_helper.SolutionCallback.SerializedResponse(self))
 
 
 class ObjectiveSolutionPrinter(CpSolverSolutionCallback):

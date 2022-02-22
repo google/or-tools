@@ -386,6 +386,8 @@ class PresolveContext {
   // the case, we also have an affine linear constraint, so we can't really do
   // anything with that variable since it appear in at least two constraints.
   void ReadObjectiveFromProto();
+  void AddToObjectiveOffset(int64_t delta);
+  ABSL_MUST_USE_RESULT bool CanonicalizeOneObjectiveVariable(int var);
   ABSL_MUST_USE_RESULT bool CanonicalizeObjective(bool simplify_domain = true);
   void WriteObjectiveToProto() const;
   ABSL_MUST_USE_RESULT bool ScaleFloatingPointObjective();
@@ -401,7 +403,6 @@ class PresolveContext {
   // Allows to manipulate the objective coefficients.
   void RemoveVariableFromObjective(int var);
   void AddToObjective(int var, int64_t value);
-  void AddToObjectiveOffset(int64_t value);
 
   // Given a variable defined by the given inequality that also appear in the
   // objective, remove it from the objective by transferring its cost to other
@@ -542,12 +543,18 @@ class PresolveContext {
   absl::flat_hash_set<int> tmp_literal_set;
 
   // Each time a domain is modified this is set to true.
-  SparseBitset<int64_t> modified_domains;
+  SparseBitset<int> modified_domains;
+
+  // Each time the constraint <-> variable graph is updated, we update this.
+  // A variable is added here iff its usage decreased and is now one or two.
+  SparseBitset<int> var_with_reduced_small_degree;
 
   // Advanced presolve. See this class comment.
   DomainDeductions deductions;
 
  private:
+  void EraseFromVarToConstraint(int var, int c);
+
   // Helper to add an affine relation x = c.y + o to the given repository.
   bool AddRelation(int x, int y, int64_t c, int64_t o, AffineRelation* repo);
 

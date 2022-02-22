@@ -573,11 +573,11 @@ bool ProcessCore(const std::vector<Literal>& core, Coefficient min_weight,
   return !solver->IsModelUnsat();
 }
 
-bool ProcessCoreWithNewEncoding(const std::vector<Literal>& core,
-                                Coefficient min_weight,
-                                std::deque<EncodingNode>* repository,
-                                std::vector<EncodingNode*>* nodes,
-                                SatSolver* solver) {
+bool ProcessCoreWithAlternativeEncoding(const std::vector<Literal>& core,
+                                        Coefficient min_weight,
+                                        std::deque<EncodingNode>* repository,
+                                        std::vector<EncodingNode*>* nodes,
+                                        SatSolver* solver) {
   // Backtrack to be able to add new constraints.
   solver->ResetToLevelZero();
 

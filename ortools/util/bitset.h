@@ -665,7 +665,7 @@ class Bitset64 {
  private:
   // Returns the value of the index type.
   // This function is specialized below to work with IntType and int64_t.
-  static int64_t Value(IndexType input);
+  static int Value(IndexType input);
 
   IndexType size_;
   std::vector<uint64_t> data_;
@@ -750,12 +750,17 @@ class BitQueue64 {
 
 // The specialization of Value() for IntType and int64_t.
 template <typename IntType>
-inline int64_t Bitset64<IntType>::Value(IntType input) {
+inline int Bitset64<IntType>::Value(IntType input) {
   DCHECK_GE(input.value(), 0);
   return input.value();
 }
 template <>
-inline int64_t Bitset64<int64_t>::Value(int64_t input) {
+inline int Bitset64<int>::Value(int input) {
+  DCHECK_GE(input, 0);
+  return input;
+}
+template <>
+inline int Bitset64<int64_t>::Value(int64_t input) {
   DCHECK_GE(input, 0);
   return input;
 }
