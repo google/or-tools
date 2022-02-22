@@ -25,6 +25,12 @@ outputs:
 runs:
   using: "composite"
   steps:
+    - name: try zip
+      shell: bash
+      run: |
+        touch toto.txt
+        zip -r toto.zip toto.*
+
     - name: Setup .NET Core 3.1
       uses: actions/setup-dotnet@v1
       with:
