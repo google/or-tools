@@ -155,13 +155,13 @@ jobs:
                 -DCMAKE_INSTALL_PREFIX="build/install" \
                 -DBUILD_SHARED_LIBS=${{ matrix.shared }}  \
                 -DBUILD_DEPS=ON \
-                -DUSE_SIRIUS=${{ matrix.sirius }} \
+                -DUSE_SIRIUS=OFF \
                 -Dsirius_solver_DIR="${{ steps.setup.outputs.sirius-install-path }}/cmake" \
-                -DUSE_XPRESS=${{ matrix.xprs }} \
+                -DUSE_XPRESS=FF \
                 -DXPRESS_ROOT="${{ env.XPRS_Path }}" \
-                -DBUILD_PYTHON=${{ matrix.shared }} \
-                -DBUILD_JAVA=${{ matrix.shared }} \
-                -DBUILD_DOTNET=${{ matrix.shared }}
+                -DBUILD_PYTHON=OFF \
+                -DBUILD_JAVA=OFF \
+                -DBUILD_DOTNET=OFF
 
       - name: Build
         shell: bash
