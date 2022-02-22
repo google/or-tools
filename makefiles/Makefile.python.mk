@@ -19,7 +19,11 @@ else
 	@echo
 endif
 
-PYTHON_EXECUTABLE := dependencies$Spython$Svenv$Sbin$Spython
+ifeq ($(SYSTEM),win)
+PYTHON_EXECUTABLE := dependencies\\python\\venv\\Scripts\\python
+else
+PYTHON_EXECUTABLE := dependencies/python/venv/bin/python
+endif
 
 python: $(OR_TOOLS_LIBS)
 
