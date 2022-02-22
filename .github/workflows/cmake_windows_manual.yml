@@ -1,6 +1,10 @@
 name: CMake Windows
 
-on: workflow_dispatch
+on:
+  push:
+    branches:
+      - main
+      - feature/*
 
 jobs:
   cmake:
@@ -63,7 +67,20 @@ jobs:
           path: ./or-tools
       - name: Configure or-tools
         working-directory: ./or-tools
-        run: cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="build/install" -G "Visual Studio 16 2019" -DBUILD_DEPS=ON -DUSE_SIRIUS=ON -Dsirius_solver_DIR="${{ github.workspace }}/sirius-solver/SiriusInstall/cmake" -DUSE_XPRESS=ON -DXPRESS_ROOT="${{ github.workspace }}/xpressmp813" -DBUILD_PYTHON=ON -DBUILD_JAVA=ON -DBUILD_DOTNET=ON
+        run: |
+          cmake -S.\
+                -Bbuild \
+                -DCMAKE_BUILD_TYPE=Release \
+                -DCMAKE_INSTALL_PREFIX="build/install" \
+                -G "Visual Studio 16 2019" \
+                -DBUILD_DEPS=ON \
+                -DUSE_SIRIUS=ON \
+                -Dsirius_solver_DIR="${{ github.workspace }}/sirius-solver/SiriusInstall/cmake" \
+                -DUSE_XPRESS=ON \
+                -DXPRESS_ROOT="${{ github.workspace }}/xpressmp813" \
+                -DBUILD_PYTHON=ON \
+                -DBUILD_JAVA=ON \
+                -DBUILD_DOTNET=ON
       - name: Build tests
         working-directory: ./or-tools
         run: cmake --build build --config Release --target ALL_BUILD INSTALL -v -- /maxcpucount
@@ -81,7 +98,11 @@ jobs:
         env:
           XPRESS: "${{ github.workspace }}/xpressmp813/bin/"
         run: |
-          cmake -Bbuild -S. -DORTOOLS_INSTALL="${{ github.workspace }}/or-tools/build/install" -DCMAKE_BUILD_TYPE=Release -DXPRESS_ROOT="${{ github.workspace }}/xpressmp813" -Dsirius_solver_DIR="${{ github.workspace }}/sirius-solver/SiriusInstall/cmake"
+          cmake -Bbuild \
+                -S. \
+                -DORTOOLS_INSTALL="${{ github.workspace }}/or-tools/build/install" \
+                -DCMAKE_BUILD_TYPE=Release -DXPRESS_ROOT="${{ github.workspace }}/xpressmp813" \
+                -Dsirius_solver_DIR="${{ github.workspace }}/sirius-solver/SiriusInstall/cmake"
           cmake --build build --config Release
           build\Release\linear_programming.exe
       - name: Upload ortools wheel
