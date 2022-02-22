@@ -74,36 +74,13 @@ CMAKE := $(shell $(WHICH) cmake)
 ifeq ($(CMAKE),)
 $(error Please add "cmake" to your PATH)
 endif
-MVN_BIN := $(shell $(WHICH) mvn)
-
-# This is needed to find python.h
-PYTHON_VERSION = $(UNIX_PYTHON_VER)
-MAJOR_PYTHON_VERSION = $(shell python$(UNIX_PYTHON_VER) -c "from sys import version_info as v; print (str(v[0]))")
-MINOR_PYTHON_VERSION = $(shell python$(UNIX_PYTHON_VER) -c "from sys import version_info as v; print (str(v[1]))")
-
-PATH_TO_PYTHON_LIB = $(shell python$(UNIX_PYTHON_VER) -c 'import sysconfig; print (sysconfig.get_paths()["stdlib"])')
-PATH_TO_PYTHON_INCLUDE = $(shell python$(UNIX_PYTHON_VER) -c 'import sysconfig; print (sysconfig.get_paths()["platinclude"])')
-PYTHON_INC = -I$(PATH_TO_PYTHON_INCLUDE) -I$(PATH_TO_PYTHON_LIB) $(ADD_PYTHON_INC)
-
-PYTHON_INC += $(shell pkg-config --cflags python$(MAJOR_PYTHON_VERSION) 2> /dev/null)
 
 ifdef UNIX_CPLEX_DIR
   CPLEX_INC = -I$(UNIX_CPLEX_DIR)/cplex/include -DUSE_CPLEX
-  CPLEX_SWIG = $(CPLEX_INC)
 endif
 ifdef UNIX_XPRESS_DIR
   XPRESS_INC = -I$(UNIX_XPRESS_DIR)/include -DUSE_XPRESS -DXPRESS_PATH="$(UNIX_XPRESS_DIR)"
-  XPRESS_SWIG = $(XPRESS_INC)
 endif
-
-ifeq ($(PLATFORM),LINUX)
-  SWIG_INC = -DSWIGWORDSIZE64
-else
-  SWIG_INC =
-endif
-SWIG_INC += \
- -DUSE_GLOP -DUSE_BOP -DABSL_MUST_USE_RESULT \
- $(GLPK_SWIG) $(CPLEX_SWIG) $(XPRESS_INC)
 
 # Compilation flags
 DEBUG = -O4 -DNDEBUG
@@ -129,26 +106,14 @@ ifeq ($(PLATFORM),LINUX)
   endif
 
   SYS_LNK = -lrt -lpthread -Wl,--no-as-needed -ldl
-  JAVA_INC = -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux
-  JAVAC_BIN = $(shell $(WHICH) $(JAVA_HOME)/bin/javac)
-  JAVA_BIN = $(shell $(WHICH) $(JAVA_HOME)/bin/java)
-  JAR_BIN = $(shell $(WHICH) $(JAVA_HOME)/bin/jar)
   JNI_LIB_EXT = so
 
-  SWIG_PYTHON_LIB_SUFFIX = so
-  SWIG_DOTNET_LIB_SUFFIX = so
   LINK_CMD = $(DYNAMIC_LD)
   PRE_LIB = -L$(OR_ROOT_FULL)/lib -l
   POST_LIB =
   LINK_FLAGS = \
  -Wl,-rpath,'$$ORIGIN' \
  -Wl,-rpath,'$$ORIGIN/../lib'
-
-  PYTHON_LDFLAGS = \
- -Wl,-rpath,'$$ORIGIN' \
- -Wl,-rpath,'$$ORIGIN/../../ortools' \
- -Wl,-rpath,'$$ORIGIN/../../ortools/.libs' \
- -Wl,-rpath,'$$ORIGIN/../../../../lib'
 
 endif  # ifeq ($(PLATFORM),LINUX)
 ifeq ($(PLATFORM),MACOSX)
@@ -177,14 +142,8 @@ ifeq ($(PLATFORM),MACOSX)
   SYS_LNK =
   SET_COMPILER = CXX="$(CCC)"
   SET_COIN_OPT = OPT_CXXFLAGS="-O1 -DNDEBUG" OPT_CFLAGS="-O1 -DNDEBUG"
-  JAVA_INC = -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/darwin
-  JAVAC_BIN = $(shell $(WHICH) $(JAVA_HOME)/bin/javac)
-  JAVA_BIN = $(shell $(WHICH) $(JAVA_HOME)/bin/java)
-  JAR_BIN = $(shell $(WHICH) $(JAVA_HOME)/bin/jar)
   JNI_LIB_EXT = dylib
 
-  SWIG_PYTHON_LIB_SUFFIX = so# To overcome a bug in Mac OS X loader.
-  SWIG_DOTNET_LIB_SUFFIX = dylib
   LINK_CMD = clang++ -dynamiclib $(MAC_VERSION) \
  -Wl,-search_paths_first \
  -Wl,-headerpad_max_install_names \
@@ -198,12 +157,6 @@ ifeq ($(PLATFORM),MACOSX)
  -Wl,-rpath,@loader_path/../lib \
  -Wl,-rpath,@loader_path/../dependencies/install/lib
   LDFLAGS = -install_name @rpath/$(LIB_PREFIX)ortools.$L #
-  PYTHON_LDFLAGS = \
- -Wl,-rpath,@loader_path \
- -Wl,-rpath,@loader_path/../../ortools \
- -Wl,-rpath,@loader_path/../../ortools/.libs \
- -Wl,-rpath,@loader_path/../../../../lib \
- -Wl,-rpath,@loader_path/../../../../dependencies/install/lib
 endif # ifeq ($(PLATFORM),MACOSX)
 
 DEPENDENCIES_INC = -I$(INC_DIR) -I$(SRC_DIR) -I$(GEN_DIR) \
@@ -217,3 +170,40 @@ DEPENDENCIES_LNK = $(GLPK_LNK) $(CPLEX_LNK) $(XPRESS_LNK)
 
 OR_TOOLS_LNK = $(PRE_LIB)ortools$(POST_LIB)
 OR_TOOLS_LDFLAGS = $(ZLIB_LNK) $(SYS_LNK) $(LINK_FLAGS)
+
+# language targets
+
+BUILD_PYTHON ?= ON
+ifeq ($(PYTHON_VERSION),)
+BUILD_PYTHON = OFF
+endif
+
+BUILD_JAVA ?= ON
+JAVAC_BIN = $(shell $(WHICH) $(JAVA_HOME)/bin/javac)
+JAVA_BIN = $(shell $(WHICH) $(JAVA_HOME)/bin/java)
+JAR_BIN = $(shell $(WHICH) $(JAVA_HOME)/bin/jar)
+MVN_BIN := $(shell $(WHICH) mvn)
+ifndef JAVAC_BIN
+BUILD_JAVA = OFF
+endif
+ifndef JAR_BIN
+BUILD_JAVA = OFF
+endif
+ifndef JAVA_BIN
+BUILD_JAVA = OFF
+endif
+ifndef MVN_BIN
+BUILD_JAVA = OFF
+endif
+
+BUILD_DOTNET ?= ON
+DOTNET := $(shell which dotnet)
+ifeq ($(DOTNET),)
+BUILD_DOTNET=OFF
+endif
+
+.PHONY detect_languages:
+detect_languages:
+	@echo BUILD_PYTHON = $(BUILD_PYTHON)
+	@echo BUILD_JAVA = $(BUILD_JAVA)
+	@echo BUILD_DOTNET = $(BUILD_DOTNET)

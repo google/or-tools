@@ -1,4 +1,21 @@
-# ---------- Java support using SWIG ----------
+ifeq ($(BUILD_JAVA),OFF)
+java_runtime: java
+java:
+	@echo JAVA_HOME = $(JAVA_HOME)
+	@echo JAVAC_BIN = $(JAVAC_BIN)
+	@echo JAR_BIN = $(JAR_BIN)
+	@echo JAVA_BIN = $(JAVA_BIN)
+	@echo MVN_BIN = $(MVN_BIN)
+	$(warning Either JAVA support was turned off, or the the makefile cannot\
+	 find 'java' or 'maven' command which is needed for build. \
+     Please make sure it is installed and in system path. \
+     Or turn java support ON.)
+check_java: java
+test_java: java
+package_java: java
+
+else  # BUILD_JAVA=ON
+
 .PHONY: help_java # Generate list of Java targets with descriptions.
 help_java:
 	@echo Use one of the following Java targets:
@@ -10,51 +27,16 @@ else
 	@echo
 endif
 
-# Check for required build tools
-HAS_JAVA = true
-ifndef JAVAC_BIN
-HAS_JAVA =
-endif
-ifndef JAR_BIN
-HAS_JAVA =
-endif
-ifndef JAVA_BIN
-HAS_JAVA =
-endif
-ifndef MVN_BIN
-HAS_JAVA =
-endif
-
 TEMP_JAVA_DIR = temp_java
 JAVA_ORTOOLS_PACKAGE := com.google.ortools
-JAVA_ORTOOLS_JAR := $(LIB_DIR)/$(JAVA_ORTOOLS_PACKAGE)$J
-JAVA_ORTOOLS_NATIVE_LIBS := $(LIB_DIR)/$(LIB_PREFIX)jniortools.$(JNI_LIB_EXT)
-JAVAFLAGS := -Djava.library.path=$(LIB_DIR)
 
 # Main target
 .PHONY: java_runtime # Build Java OR-Tools runtime.
 .PHONY: java # Build Java OR-Tools.
 .PHONY: test_java # Test Java OR-Tools using various examples.
-ifndef HAS_JAVA
-java_runtime: java
-java:
-	@echo JAVA_HOME = $(JAVA_HOME)
-	@echo JAVAC_BIN = $(JAVAC_BIN)
-	@echo JAR_BIN = $(JAR_BIN)
-	@echo JAVA_BIN = $(JAVA_BIN)
-	@echo MVN_BIN = $(MVN_BIN)
-	$(warning Cannot find 'java' or 'maven' command which is needed for build. \
- Please make sure it is installed and in system path. \
- Check Makefile.local for more information.)
-check_java: java
-test_java: java
-else
-java_runtime: java_runtime_pimpl
 java: $(OR_TOOLS_LIBS)
-check_java: check_java_pimpl
-test_java: test_java_pimpl
 BUILT_LANGUAGES +=, Java
-endif
+
 # Detect RuntimeIDentifier
 ifeq ($(OS),Windows)
 JAVA_NATIVE_IDENTIFIER=win32-x86-64
@@ -310,8 +292,8 @@ test_java_sat_samples: \
  rjava_StepFunctionSampleSat \
  rjava_StopAfterNSolutionsSampleSat
 
-.PHONY: check_java_pimpl
-check_java_pimpl: \
+.PHONY: check_java
+check_java: \
  test_java_algorithms_samples \
  test_java_constraint_solver_samples \
  test_java_graph_samples \
@@ -388,19 +370,19 @@ test_java_java: \
  rjava_RabbitsPheasants \
  rjava_RandomTsp
 
-.PHONY: test_java_pimpl
-test_java_pimpl: \
- check_java_pimpl \
+.PHONY: test_java
+test_java: \
+ check_java \
  test_java_tests \
  test_java_contrib \
  test_java_java
 
-.PHONY: publish_java_runtime_pimpl
-publish_java_runtime_pimpl: java_runtime
+.PHONY: publish_java_runtime
+publish_java_runtime: java_runtime
 	cd $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_NATIVE_PROJECT) && "$(MVN_BIN)" deploy
 
-.PHONY: publish_java_pimpl
-publish_java_pimpl: java
+.PHONY: publish_java
+publish_java: java
 	cd $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_PROJECT) && "$(MVN_BIN)" deploy
 
 #######################
@@ -475,6 +457,8 @@ else
 endif
 	-$(DELREC) $(TEMP_JAVA_DIR)$Sortools_examples
 
+endif  # BUILD_JAVA=ON	
+
 ################
 ##  Cleaning  ##
 ################
@@ -503,17 +487,11 @@ clean_java:
 .PHONY: detect_java # Show variables used to build Java OR-Tools.
 detect_java:
 	@echo Relevant info for the Java build:
-	@echo JAVA_INC = $(JAVA_INC)
-	@echo JNIFLAGS = $(JNIFLAGS)
 	@echo JAVA_HOME = $(JAVA_HOME)
 	@echo JAVAC_BIN = $(JAVAC_BIN)
 	@echo CLASS_DIR = $(CLASS_DIR)
 	@echo JAR_BIN = $(JAR_BIN)
 	@echo JAVA_BIN = $(JAVA_BIN)
-	@echo JAVAFLAGS = $(JAVAFLAGS)
-	@echo JAVA_ORTOOLS_JAR = $(JAVA_ORTOOLS_JAR)
-	@echo SWIG_BINARY = $(SWIG_BINARY)
-	@echo SWIG_INC = $(SWIG_INC)
 	@echo MVN_BIN = $(MVN_BIN)
 	@echo JAVA_ORTOOLS_PACKAGE = $(JAVA_ORTOOLS_PACKAGE)
 	@echo JAVA_ORTOOLS_NATIVE_PROJECT = $(JAVA_ORTOOLS_NATIVE_PROJECT)

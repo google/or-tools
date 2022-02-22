@@ -17,15 +17,7 @@ endif
 ifeq ($(SYSTEM),unix)
   OR_TOOLS_TOP ?= $(shell pwd)
   OS = $(shell uname -s)
-  ifeq ($(UNIX_PYTHON_VER),)
-    ifeq ($(shell which python3),)
-      DETECTED_PYTHON_VERSION := $(shell python -c "from sys import version_info as v; print (str(v[0]) + '.' + str(v[1]))")
-    else
-      DETECTED_PYTHON_VERSION := $(shell python3 -c "from sys import version_info as v; print (str(v[0]) + '.' + str(v[1]))")
-    endif
-  else
-    DETECTED_PYTHON_VERSION := $(UNIX_PYTHON_VER)
-  endif
+  PYTHON_VERSION ?= $(shell python3 -c "from sys import version_info as v; print (str(v[0]) + '.' + str(v[1]))")
 
   ifeq ($(OS),Linux)
     PLATFORM = LINUX
@@ -174,21 +166,7 @@ ifeq ("$(SYSTEM)","win")
   CBC_PLATFORM = $(CBC_PLATFORM_PREFIX)-$(VS_RELEASE)-Release
 
   # Detect Python
-  ifeq ($(WINDOWS_PATH_TO_PYTHON),)
-    DETECTED_PATH_TO_PYTHON = $(shell python -c "from sys import executable; from os.path import sep; print(sep.join(executable.split(sep)[:-1]).rstrip())")
-    CANONIC_DETECTED_PATH_TO_PYTHON = $(subst $(SPACE),$(BACKSLASH_SPACE),$(subst \,/,$(subst \\,/,$(DETECTED_PATH_TO_PYTHON))))
-    ifeq ($(wildcard $(CANONIC_DETECTED_PATH_TO_PYTHON)),)
-      SELECTED_PATH_TO_PYTHON = WINDOWS_PATH_TO_PYTHON =\# python was not found. Set this variable to the path to python to build the python files. Don\'t include the name of the executable in the path! (ex: WINDOWS_PATH_TO_PYTHON = c:\\python37-64)
-    else
-      SELECTED_PATH_TO_PYTHON = WINDOWS_PATH_TO_PYTHON = $(DETECTED_PATH_TO_PYTHON)
-      WINDOWS_PATH_TO_PYTHON = $(DETECTED_PATH_TO_PYTHON)
-    endif
-  else
-    SELECTED_PATH_TO_PYTHON = WINDOWS_PATH_TO_PYTHON = $(WINDOWS_PATH_TO_PYTHON)
-  endif
-  ifneq ($(WINDOWS_PATH_TO_PYTHON),)
-    WINDOWS_PYTHON_VERSION = $(shell "$(WINDOWS_PATH_TO_PYTHON)\python" -c "from sys import version_info as v; print (str(v[0]) + str(v[1]))")
-  endif
+  PYTHON_VERSION ?= $(shell  -c "from sys import version_info as v; print (str(v[0]) + str(v[1]))")
 endif # ($(SYSTEM),win)
 
 # Get github revision level
@@ -233,8 +211,6 @@ detect_port:
 ifeq ($(SYSTEM),win)
 	@echo CMAKE_PLATFORM = $(CMAKE_PLATFORM)
 endif
-	@echo SWIG_BINARY = $(SWIG_BINARY)
-	@echo SWIG_INC = $(SWIG_INC)
 ifeq ($(SYSTEM),win)
 	@echo off & echo(
 else

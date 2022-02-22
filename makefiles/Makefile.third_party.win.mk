@@ -9,7 +9,6 @@ USE_COINOR ?= ON
 USE_SCIP ?= ON
 USE_GLPK ?= OFF
 PROTOC = "$(OR_TOOLS_TOP)\\bin\\protoc.exe"
-SWIG_BINARY = swig.exe
 
 # language targets
 BUILD_PYTHON ?= OFF
@@ -21,41 +20,10 @@ dependencies:
 	mkdir dependencies
 
 .PHONY: third_party # Build OR-Tools Prerequisite
-third_party: \
-  Makefile.local \
-  dependencies/ortools.sln | dependencies
+third_party: dependencies/ortools.sln | dependencies
 
 THIRD_PARTY_TARGET = dependencies/ortools.sln
 
-######################
-##  Makefile.local  ##
-######################
-# Make sure that local file lands correctly across platforms
-Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
-	-$(DEL) Makefile.local
-	@echo $(SELECTED_PATH_TO_PYTHON)>> Makefile.local
-	@echo # >> Makefile.local
-	@echo ## OPTIONAL DEPENDENCIES ## >> Makefile.local
-	@echo # Define WINDOWS_CPLEX_DIR to point to a installation directory of the CPLEX Studio >> Makefile.local
-	@echo #   e.g.: WINDOWS_CPLEX_DIR = C:\Progra~1\CPLEX_STUDIO2010\IBM\ILOG\CPLEX_STUDIO2010 >> Makefile.local
-	@echo # >> Makefile.local
-	@echo # Define WINDOWS_CPLEX_VERSION to specify the suffix of the library >> Makefile.local
-	@echo #   e.g.: WINDOWS_CPLEX_VERSION = 2010 >> Makefile.local
-	@echo # >> Makefile.local
-	@echo # Define WINDOWS_XPRESS_DIR to point to a installation directory of the XPRESS-MP >> Makefile.local
-	@echo #   e.g.: WINDOWS_XPRESS_DIR = C:\xpressmp>> Makefile.local
-	@echo # >> Makefile.local
-	@echo # SCIP is enabled and built-in by default. >> Makefile.local
-	@echo # To disable support, uncomment the following line: >> Makefile.local
-	@echo # USE_SCIP = OFF >> Makefile.local
-	@echo # >> Makefile.local
-	@echo # Coin OR solvers (CLP, CBC) are enabled and built-in by default. >> Makefile.local
-	@echo # To disable support, uncomment the following line: >> Makefile.local
-	@echo # USE_COINOR = OFF >> Makefile.local
-	@echo # >> Makefile.local
-	@echo # Define absolute paths without trailing "\". E.g. "C:\Foo\Bar" >> Makefile.local
-	@echo # Paths must be without spaces, try to use 'dir "directory*" /x' to get the shortname without space of each directory >> Makefile.local
-	@echo #   e.g. dir "%ProgramFiles%*" /x >> Makefile.local
 
 dependencies/ortools.sln: | dependencies
 	cmake -S . -B dependencies -DBUILD_DEPS=ON \

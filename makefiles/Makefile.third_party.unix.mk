@@ -10,54 +10,11 @@ USE_SCIP ?= ON
 USE_GLPK ?= OFF
 PROTOC ?= $(OR_TOOLS_TOP)/bin/protoc
 
-# language targets
-BUILD_PYTHON ?= OFF
-BUILD_JAVA ?= OFF
-BUILD_DOTNET ?= OFF
-
-# Swig is only needed when building .Net, Java or Python wrapper
-UNIX_SWIG_BINARY ?= swig
-SWIG_BINARY = $(shell $(WHICH) $(UNIX_SWIG_BINARY))
-SWIG_DOXYGEN = -doxygen
-
-
 # Main target.
 .PHONY: third_party # Build OR-Tools Prerequisite
-third_party:  Makefile.local dependencies/Makefile
+third_party:  dependencies/Makefile
 
 THIRD_PARTY_TARGET = dependencies/Makefile
-
-######################
-##  Makefile.local  ##
-######################
-# Make sure that local file lands correctly across platforms
-Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
-	-$(DEL) Makefile.local
-	@echo Generating Makefile.local
-	@echo "# Define UNIX_SWIG_BINARY to use a custom version." >> Makefile.local
-	@echo "#   e.g. UNIX_SWIG_BINARY = /opt/swig-x.y.z/bin/swig" >> Makefile.local
-	@echo JAVA_HOME = $(JAVA_HOME)>> Makefile.local
-	@echo UNIX_PYTHON_VER = $(DETECTED_PYTHON_VERSION)>> Makefile.local
-	@echo >> Makefile.local
-	@echo "## OPTIONAL DEPENDENCIES ##" >> Makefile.local
-	@echo "# Define UNIX_CPLEX_DIR to use CPLEX" >> Makefile.local
-	@echo "#   e.g. UNIX_CPLEX_DIR = /opt/CPLEX_Studio-X.Y" >> Makefile.local
-	@echo >> Makefile.local
-	@echo "# Define UNIX_XPRESS_DIR to use XPRESS MP" >> Makefile.local
-	@echo "#   e.g. on Mac OS X: UNIX_XPRESS_DIR = /Applications/FICO\ Xpress/xpressmp" >> Makefile.local
-	@echo "#   e.g. on linux: UNIX_XPRESS_DIR = /opt/xpressmp" >> Makefile.local
-	@echo >> Makefile.local
-	@echo "# SCIP is enabled and built-in by default. To disable SCIP support" >> Makefile.local
-	@echo "# completely, uncomment the following line:">> Makefile.local
-	@echo "# USE_SCIP = OFF" >> Makefile.local
-	@echo >> Makefile.local
-	@echo "# Define UNIX_GLPK_DIR to point to a compiled version of GLPK to use it" >> Makefile.local
-	@echo "#   e.g. UNIX_GLPK_DIR = /opt/glpk-x.y.z" >> Makefile.local
-	@echo >> Makefile.local
-	@echo "# Coin OR solvers (CLP, CBC) are enabled and built-in by default." >> Makefile.local
-	@echo "# To disable Coin OR support completely, uncomment the following line:">> Makefile.local
-	@echo "# USE_COINOR = OFF" >> Makefile.local
-	@echo >> Makefile.local
 
 dependencies:
 	mkdir dependencies
@@ -105,5 +62,4 @@ ifdef UNIX_XPRESS_DIR
 	@echo XPRESS_INC = $(XPRESS_INC)
 	@echo XPRESS_LNK = $(XPRESS_LNK)
 endif
-	@echo SWIG_VERSION = $(SWIG_VERSION)
 	@echo

@@ -29,6 +29,8 @@ OR_TOOLS_LIBS = $(LIB_DIR)/$(LIB_PREFIX)ortools.$L.$(OR_TOOLS_MAJOR)
 endif
 endif
 
+BUILT_LANGUAGES = C++
+
 # Main target
 .PHONY: cc # Build C++ OR-Tools library.
 .PHONY: test_cc # Run all C++ OR-Tools test targets.
@@ -566,14 +568,6 @@ clean_cc:
 	-$(DEL) $(BIN_DIR)$S*.lib
 	-$(DELREC) $(TEMP_PACKAGE_CC_DIR)
 	-$(DELREC) $(TEMP_CC_DIR)
-
-.PHONY: clean_compat
-clean_compat:
-	-$(DELREC) $(OR_ROOT)constraint_solver
-	-$(DELREC) $(OR_ROOT)linear_solver
-	-$(DELREC) $(OR_ROOT)algorithms
-	-$(DELREC) $(OR_ROOT)graph
-	-$(DELREC) $(OR_ROOT)gen
 
 #############
 ##  DEBUG  ##

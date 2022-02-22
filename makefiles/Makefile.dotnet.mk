@@ -1,4 +1,11 @@
-# ---------- dotnet support using SWIG ----------
+ifeq ($(BUILD_DOTNET),OFF)
+dotnet:
+	$(warning Either .NET support was turned of, of the dotnet binary was not found.)
+
+test_dotnet: dotnet
+package_dotnet: dotnet
+else
+
 .PHONY: help_dotnet # Generate list of dotnet targets with descriptions.
 help_dotnet:
 	@echo Use one of the following dotnet targets:
@@ -11,12 +18,12 @@ else
 endif
 
 # Check for required build tools
-DOTNET = dotnet
 ifeq ($(SYSTEM),win)
-DOTNET_BIN := $(shell $(WHICH) $(DOTNET) 2> NUL)
+DOTNET_BIN := $(shell $(WHICH) dotnet 2> NUL)
 else # UNIX
-DOTNET_BIN := $(shell command -v $(DOTNET) 2> /dev/null)
+DOTNET_BIN := $(shell $(WHICH) dotnet 2> /dev/null)
 endif
+
 # All libraries and dependencies
 TEMP_DOTNET_DIR = temp_dotnet
 DOTNET_PACKAGE_DIR = temp_dotnet/packages
@@ -24,6 +31,7 @@ DOTNET_PACKAGE_PATH = $(subst /,$S,$(DOTNET_PACKAGE_DIR))
 DOTNET_ORTOOLS_ASSEMBLY_NAME := Google.OrTools
 
 dotnet: $(OR_TOOLS_LIBS)
+BUILT_LANGUAGES +=, .Net (6.0)
 
 ###################
 ##  .NET SOURCE  ##
@@ -663,6 +671,8 @@ nuget_upload: nuget_archive
 	@echo Uploading Nuget package for "net6.0".
 	$(warning Not Implemented)
 
+endif  # BUILD_DOTNET=ON
+
 ################
 ##  Cleaning  ##
 ################
@@ -670,7 +680,7 @@ nuget_upload: nuget_archive
 clean_dotnet:
 	-$(DELREC) ortools$Sdotnet$SCreateSigningKey$Sbin
 	-$(DELREC) ortools$Sdotnet$SCreateSigningKey$Sobj
-	-$(DEL) $(DOTNET_ORTOOLS_SNK_PATH)
+#	-$(DEL) $(DOTNET_ORTOOLS_SNK_PATH)
 	-$(DELREC) $(TEMP_DOTNET_DIR)
 	-$(DEL) $(GEN_PATH)$Sortools$Salgorithms$S*.cs
 	-$(DEL) $(GEN_PATH)$Sortools$Salgorithms$S*csharp_wrap*
@@ -687,9 +697,9 @@ clean_dotnet:
 	-$(DEL) $(GEN_PATH)$Sortools$Sinit$S*.cs
 	-$(DEL) $(GEN_PATH)$Sortools$Sinit$S*csharp_wrap*
 	-$(DEL) $(OBJ_DIR)$Sswig$S*_csharp_wrap.$O
-	-$(DEL) $(LIB_DIR)$S$(DOTNET_ORTOOLS_NATIVE).*
-	-$(DEL) $(BIN_DIR)$S$(DOTNET_ORTOOLS_ASSEMBLY_NAME).*
-	-$(DEL) $(BIN_DIR)$S$(FSHARP_ORTOOLS_ASSEMBLY_NAME).*
+#	-$(DEL) $(LIB_DIR)$S$(DOTNET_ORTOOLS_NATIVE).*
+#	-$(DEL) $(BIN_DIR)$S$(DOTNET_ORTOOLS_ASSEMBLY_NAME).*
+#	-$(DEL) $(BIN_DIR)$S$(FSHARP_ORTOOLS_ASSEMBLY_NAME).*
 	-$(DELREC) $(DOTNET_EX_PATH)$Sbin
 	-$(DELREC) $(DOTNET_EX_PATH)$Sobj
 	-$(DELREC) $(CONTRIB_EX_PATH)$Sbin
@@ -721,9 +731,6 @@ detect_dotnet:
 	@echo PROTOC = $(PROTOC)
 	@echo DOTNET_SNK = $(DOTNET_SNK)
 	@echo DOTNET_ORTOOLS_SNK = $(DOTNET_ORTOOLS_SNK)
-	@echo SWIG_BINARY = $(SWIG_BINARY)
-	@echo SWIG_INC = $(SWIG_INC)
-	@echo SWIG_DOTNET_LIB_SUFFIX = $(SWIG_DOTNET_LIB_SUFFIX)
 	@echo DOTNET_ORTOOLS_NATIVE = $(DOTNET_ORTOOLS_NATIVE)
 	@echo DOTNET_ORTOOLS_RUNTIME_ASSEMBLY_NAME =$(DOTNET_ORTOOLS_RUNTIME_ASSEMBLY_NAME)
 	@echo DOTNET_ORTOOLS_RUNTIME_NUPKG = $(DOTNET_ORTOOLS_RUNTIME_NUPKG)
@@ -737,3 +744,4 @@ ifeq ($(SYSTEM),win)
 else
 	@echo
 endif
+

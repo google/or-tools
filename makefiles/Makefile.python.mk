@@ -1,4 +1,12 @@
-# ---------- Python support using SWIG ----------
+ifeq ($(BUILD_PYTHON),OFF)
+python:
+	$(warning Either Python support was turned off, or the python3 binary was not found.)
+
+test_python: python
+package_python: python
+
+else  # BUILD_PYTHON=ON
+
 .PHONY: help_python # Generate list of Python targets with descriptions.
 help_python:
 	@echo Use one of the following Python targets:
@@ -13,6 +21,8 @@ endif
 PYTHON_EXECUTABLE := dependencies$Spython$Svenv$Sbin$Spython
 
 python: $(OR_TOOLS_LIBS)
+
+BUILT_LANGUAGES += , Python$(PYTHON_VERSION)
 
 #######################
 ##  Python SOURCE  ##
@@ -612,6 +622,8 @@ else
 endif
 	-$(DELREC) $(TEMP_PYTHON_DIR)$Sortools_examples
 
+endif  # BUILD_PYTHON=ON
+
 ################
 ##  Cleaning  ##
 ################
@@ -680,7 +692,6 @@ clean_python:
 	-$(DELREC) ortools$Sutil$S__pycache__
 	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S*_python_wrap.*
 	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S_*
-	-$(DEL) $(LIB_DIR)$S_*.$(SWIG_PYTHON_LIB_SUFFIX)
 	-$(DEL) $(OBJ_DIR)$Sswig$S*python_wrap.$O
 	-$(DEL) *.whl
 	-$(DELREC) temp_python*
@@ -691,24 +702,8 @@ clean_python:
 .PHONY: detect_python # Show variables used to build Python OR-Tools.
 detect_python:
 	@echo Relevant info for the Python build:
-ifeq ($(SYSTEM),win)
-	@echo WINDOWS_PATH_TO_PYTHON = "$(WINDOWS_PATH_TO_PYTHON)"
-else
-	@echo UNIX_PYTHON_VER = "$(UNIX_PYTHON_VER)"
-endif
-	@echo PYTHON_COMPILER = $(PYTHON_COMPILER)
 	@echo PYTHON_EXECUTABLE = "$(PYTHON_EXECUTABLE)"
 	@echo PYTHON_VERSION = $(PYTHON_VERSION)
-	@echo PYTHON3 = $(PYTHON3)
-	@echo PYTHON_INC = $(PYTHON_INC)
-	@echo PYTHON_LNK = $(PYTHON_LNK)
-	@echo PYTHON_LDFLAGS = $(PYTHON_LDFLAGS)
-	@echo SWIG_BINARY = $(SWIG_BINARY)
-	@echo SWIG_INC = $(SWIG_INC)
-	@echo SWIG_PYTHON3_FLAG = $(SWIG_PYTHON3_FLAG)
-	@echo SWIG_PYTHON_LIB_SUFFIX = $(SWIG_PYTHON_LIB_SUFFIX)
-	@echo SET_PYTHONPATH = "$(SET_PYTHONPATH)"
-	@echo MYPY_OUT = "$(MYPY_OUT)"
 ifeq ($(SYSTEM),win)
 	@echo off & echo(
 else

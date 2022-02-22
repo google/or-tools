@@ -53,9 +53,6 @@ include $(OR_ROOT)Version.txt
 include $(OR_ROOT)makefiles/Makefile.port.mk
 OR_ROOT_FULL=$(OR_TOOLS_TOP)
 
-# Load local variables
-include $(OR_ROOT)Makefile.local
-
 # Change the file extensions to increase diff tool friendliness.
 # Then include specific system commands and definitions
 include $(OR_ROOT)makefiles/Makefile.$(SYSTEM).mk
@@ -127,11 +124,10 @@ test_all: test_cc test_python test_java test_dotnet
 	@echo Or-tools have been built and tested for $(BUILT_LANGUAGES)
 
 .PHONY: clean_all
-clean_all: clean_cc clean_python clean_java clean_dotnet clean_compat clean_archive
+clean_all: clean_cc clean_python clean_java clean_dotnet clean_archive clean_third_party
 	-$(DELREC) $(BIN_DIR)
 	-$(DELREC) $(LIB_DIR)
 	-$(DELREC) $(OBJ_DIR)
-	-$(DELREC) $(GEN_PATH)
 	@echo Or-tools have been cleaned for $(BUILT_LANGUAGES)
 
 .PHONY: detect_all
