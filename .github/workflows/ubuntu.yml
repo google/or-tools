@@ -92,7 +92,7 @@ jobs:
         if: ${{ matrix.xprs == 'ON' && matrix.sirius == 'ON' && matrix.shared == 'ON' }}
         uses: actions/upload-artifact@v2
         with:
-          name: ${{ steps.setup.outputs.sirius-archive-name }}_${{ matrix.os }}
+          name: ${{ matrix.os }}_${{ steps.setup.outputs.sirius-archive-name }}
           path: ${{ steps.setup.outputs.sirius-archive-path }}
       - name: Publish sirius install
         if:  ${{ github.event_name == 'release' && github.event.action == 'created' && matrix.shared == 'ON' && matrix.xprs == 'ON' && matrix.sirius == 'ON' }}
@@ -100,7 +100,7 @@ jobs:
         with:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
           asset_path: ${{ steps.setup.outputs.sirius-archive-path }}
-          asset_name: ${{ steps.setup.outputs.sirius-archive-name }}
+          asset_name: ${{ matrix.os }}_${{ steps.setup.outputs.sirius-archive-name }}
           asset_content_type: application/zip
 
       - name: Checkout xpressmp813
