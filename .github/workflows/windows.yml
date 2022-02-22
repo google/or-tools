@@ -169,7 +169,7 @@ jobs:
       - name: Build
         shell: bash
         run: |
-          cmake --build build --config Release --target install -- /maxcpucount
+          cmake --build build --config Release --target install -j2
       - name: Prepare ortools install
         id: or-install
         shell: bash
