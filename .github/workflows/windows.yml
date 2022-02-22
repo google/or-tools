@@ -24,7 +24,7 @@ jobs:
     strategy:
       matrix:
         os: [windows-2019]
-        xprs: [ON, OFF]
+        xprs: [OFF]
         sirius: [ON, OFF]
         shared: [ON, OFF]
         extras: [OFF]
