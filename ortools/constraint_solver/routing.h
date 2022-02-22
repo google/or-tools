@@ -383,6 +383,7 @@ class RoutingModel {
     // clang-format on
   };
 
+  #if !defined(SWIG)
   /// A ResourceGroup defines a set of available Resources with attributes on
   /// one or multiple dimensions.
   /// For every ResourceGroup in the model, each (used) vehicle in the solution
@@ -473,6 +474,7 @@ class RoutingModel {
     /// All indices of dimensions affected by this resource group.
     absl::flat_hash_set<DimensionIndex> affected_dimension_indices_;
   };
+  #endif  // !defined(SWIG)
 
   /// Constant used to express a hard constraint instead of a soft penalty.
   static const int64_t kNoPenalty;
@@ -712,6 +714,7 @@ class RoutingModel {
   /// Adds a resource group to the routing model. Returns its index in
   /// resource_groups_.
   int AddResourceGroup();
+#if !defined(SWIG)
   // clang-format off
   const std::vector<std::unique_ptr<ResourceGroup> >& GetResourceGroups()
       const {
@@ -722,6 +725,7 @@ class RoutingModel {
     DCHECK_LT(rg_index, resource_groups_.size());
     return resource_groups_[rg_index].get();
   }
+#endif  // !defined(SWIG)
 
   /// Returns the indices of resource groups for this dimension. This method can
   /// only be called after the model has been closed.
