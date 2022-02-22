@@ -139,6 +139,13 @@ jobs:
           echo "::set-output name=CMAKE_CCACHE::$CCACHE"
           echo "::set-output name=CMAKE_CXXCACHE::$CXXCACHE"
 
+      - name: Add xpress and sirius bin to path
+        if: ${{ matrix.os == 'windows-2019'}}
+        shell: bash
+        run: |
+          echo "${{ env.XPRS_Path }}\bin" >> $GITHUB_PATH
+          echo "${{ steps.setup.outputs.sirius-install-path }}\bin" >> $GITHUB_PATH
+
       - name: Configure or-tools
         shell: bash
         run: |
@@ -159,9 +166,8 @@ jobs:
       - name: Build
         shell: bash
         run: |
-          cmake --build build \
-                --target all \
-                install \
+          cmake --build build --config Release \
+                --target install \
                 -j4
       - name: Prepare ortools install
         id: or-install
