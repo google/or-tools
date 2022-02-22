@@ -27,10 +27,13 @@ jobs:
         xprs: [ON, OFF]
         sirius: [ON, OFF]
         shared: [ON, OFF]
+        extras: [ON]
 
         exclude:
           - xprs: OFF
             sirius: OFF
+          - shared: OFF
+            extras: ON
 
     steps:
       - name: Set version
@@ -63,17 +66,25 @@ jobs:
         uses:
           bruceadams/get-release@v1.2.3
 
+      - name: install zip for windows
+        if: ${{ matrix.os == 'windows-2019'}}
+        shell: cmd
+        run: |
+          choco install wget zip unzip --no-progress
+
+      - name: try zip
+        shell: bash
+        run: |
+          mkdir titi
+          touch titi/toto.txt
+          zip -r toto.zip titi
+
       - name: Install SWIG 4.0.2
         if: ${{ matrix.os == 'windows-2019'}}
         run: |
           (New-Object System.Net.WebClient).DownloadFile("http://prdownloads.sourceforge.net/swig/swigwin-4.0.2.zip","swigwin-4.0.2.zip");
           Expand-Archive .\swigwin-4.0.2.zip .;
           echo "$((Get-Item .).FullName)/swigwin-4.0.2" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-      - name: install zip for windows
-        if: ${{ matrix.os == 'windows-2019'}}
-        shell: cmd
-        run: |
-          choco install wget zip unzip --no-progress
 
       - name: Checkout or-tools
         uses: actions/checkout@v2
@@ -132,6 +143,13 @@ jobs:
           echo "::set-output name=CMAKE_CCACHE::$CCACHE"
           echo "::set-output name=CMAKE_CXXCACHE::$CXXCACHE"
 
+      - name: Add xpress and sirius bin to path
+        if: ${{ matrix.os == 'windows-2019'}}
+        shell: bash
+        run: |
+          echo "${{ env.XPRS_Path }}\bin" >> $GITHUB_PATH
+          echo "${{ steps.setup.outputs.sirius-install-path }}\bin" >> $GITHUB_PATH
+
       - name: Configure or-tools
         shell: bash
         run: |
@@ -145,9 +163,9 @@ jobs:
                 -Dsirius_solver_DIR="${{ steps.setup.outputs.sirius-install-path }}/cmake" \
                 -DUSE_XPRESS=${{ matrix.xprs }} \
                 -DXPRESS_ROOT="${{ env.XPRS_Path }}" \
-                -DBUILD_PYTHON=${{ matrix.shared }} \
-                -DBUILD_JAVA=${{ matrix.shared }} \
-                -DBUILD_DOTNET=${{ matrix.shared }}
+                -DBUILD_PYTHON=${{ matrix.extras }} \
+                -DBUILD_JAVA=${{ matrix.extras }} \
+                -DBUILD_DOTNET=${{ matrix.extras }}
 
       - name: Build
         shell: bash
@@ -163,8 +181,8 @@ jobs:
           cd build/install
           find bin -type f ! \( -name 'protoc*' -o -name 'scip' -o -name 'fz' \) -delete
           cd ..
-          ARCHIVE_NAME=ortools_install${{ steps.names.outputs.appendix }}.zip
-          ARCHIVE_PATH=${{ github.workspace }}/build/${ARCHIVE_NAME}
+          ARCHIVE_NAME="ortools_install${{ steps.names.outputs.appendix }}.zip"
+          ARCHIVE_PATH="${{ github.workspace }}/build/${ARCHIVE_NAME}"
           zip -r $ARCHIVE_PATH ./install
           echo "::set-output name=ortools_archive_name::$ARCHIVE_NAME"
           echo "::set-output name=ortools_archive_path::$ARCHIVE_PATH"
@@ -237,7 +255,7 @@ jobs:
 
 
       - name: prepare ortools wheel
-        if: ${{ matrix.shared == 'ON' }}
+        if: ${{ matrix.extras == 'ON' }}
         id: wheel
         shell: bash
         run: |
@@ -252,7 +270,7 @@ jobs:
           echo "::set-output name=archive_path::$ARCHIVE_PATH"
 
       - name: prepare ortools jar
-        if: ${{ matrix.shared == 'ON' }}
+        if: ${{ matrix.extras == 'ON' }}
         id: jar
         shell: bash
         run: |
@@ -267,7 +285,7 @@ jobs:
           echo "::set-output name=archive_path::$ARCHIVE_PATH"
 
       - name: prepare ortools dotnet
-        if: ${{ matrix.shared == 'ON' }}
+        if: ${{ matrix.extras == 'ON' }}
         id: dotnet
         shell: bash
         run: |
@@ -282,26 +300,26 @@ jobs:
           echo "::set-output name=archive_path::$ARCHIVE_PATH"
 
       - name: Upload ortools wheel
-        if: ${{ matrix.shared == 'ON' }}
+        if: ${{ matrix.extras == 'ON' }}
         uses: actions/upload-artifact@v2
         with:
           name: ${{ steps.wheel.outputs.archive_name }}
           path: ${{ steps.wheel.outputs.archive_path }}
       - name: Upload ortools jar
-        if: ${{ matrix.shared == 'ON' }}
+        if: ${{ matrix.extras == 'ON' }}
         uses: actions/upload-artifact@v2
         with:
           name: ${{ steps.jar.outputs.archive_name }}
           path: ${{ steps.jar.outputs.archive_path }}
       - name: Upload ortools dotnet
-        if: ${{ matrix.shared == 'ON' }}
+        if: ${{ matrix.extras == 'ON' }}
         uses: actions/upload-artifact@v2
         with:
           name: ${{ steps.dotnet.outputs.archive_name }}
           path: ${{ steps.dotnet.outputs.archive_path }}
 
       - name: Publish ortools wheel
-        if:  ${{ github.event_name == 'release' && github.event.action == 'created' && matrix.shared == 'ON' }}
+        if:  ${{ github.event_name == 'release' && github.event.action == 'created' && matrix.extras == 'ON' }}
         uses: actions/upload-release-asset@v1.0.2
         with:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
@@ -310,7 +328,7 @@ jobs:
           asset_content_type: application/zip
 
       - name: Publish ortools jar
-        if:  ${{ github.event_name == 'release' && github.event.action == 'created' && matrix.shared == 'ON' }}
+        if:  ${{ github.event_name == 'release' && github.event.action == 'created' && matrix.extras == 'ON' }}
         uses: actions/upload-release-asset@v1.0.2
         with:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
@@ -319,7 +337,7 @@ jobs:
           asset_content_type: application/zip
 
       - name: Publish ortools dotnet
-        if:  ${{ github.event_name == 'release' && github.event.action == 'created' && matrix.shared == 'ON' }}
+        if:  ${{ github.event_name == 'release' && github.event.action == 'created' && matrix.extras == 'ON' }}
         uses: actions/upload-release-asset@v1.0.2
         with:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
