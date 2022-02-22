@@ -77,6 +77,17 @@ endif
 endif
 
 # Include .mk files.
+BUILT_LANGUAGES = C++
+ifeq ($(BUILD_PYTHON),ON)
+BUILT_LANGUAGES +=, Python$(PYTHON_VERSION)
+endif
+ifeq ($(BUILD_JAVA),ON)
+BUILT_LANGUAGES +=, Java
+endif
+ifeq ($(BUILD_DOTNET),ON)
+BUILT_LANGUAGES +=, .Net (6.0)
+endif
+
 include $(OR_ROOT)makefiles/Makefile.cpp.mk
 include $(OR_ROOT)makefiles/Makefile.python.mk
 include $(OR_ROOT)makefiles/Makefile.java.mk

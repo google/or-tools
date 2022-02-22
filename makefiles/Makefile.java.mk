@@ -35,7 +35,6 @@ JAVA_ORTOOLS_PACKAGE := com.google.ortools
 .PHONY: java # Build Java OR-Tools.
 .PHONY: test_java # Test Java OR-Tools using various examples.
 java: $(OR_TOOLS_LIBS)
-BUILT_LANGUAGES +=, Java
 
 # Detect RuntimeIDentifier
 ifeq ($(OS),Windows)

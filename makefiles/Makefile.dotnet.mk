@@ -32,8 +32,6 @@ DOTNET_ORTOOLS_ASSEMBLY_NAME := Google.OrTools
 
 dotnet: $(OR_TOOLS_LIBS)
 
-BUILT_LANGUAGES += , .Net (6.0)
-
 ###################
 ##  .NET SOURCE  ##
 ###################

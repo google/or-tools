@@ -29,8 +29,6 @@ OR_TOOLS_LIBS = $(LIB_DIR)/$(LIB_PREFIX)ortools.$L.$(OR_TOOLS_MAJOR)
 endif
 endif
 
-BUILT_LANGUAGES = C++
-
 # Main target
 .PHONY: cc # Build C++ OR-Tools library.
 .PHONY: test_cc # Run all C++ OR-Tools test targets.

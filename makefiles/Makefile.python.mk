@@ -22,8 +22,6 @@ PYTHON_EXECUTABLE := dependencies$Spython$Svenv$Sbin$Spython
 
 python: $(OR_TOOLS_LIBS)
 
-BUILT_LANGUAGES += , Python$(PYTHON_VERSION)
-
 #######################
 ##  Python SOURCE  ##
 #######################
