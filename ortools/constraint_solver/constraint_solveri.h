@@ -3072,6 +3072,16 @@ class PathState {
   // NodeRange is a range, its iterator PathNodeIterator, its value type int.
   class NodeRange;
 
+  struct ChainBounds {
+    ChainBounds() = default;
+    ChainBounds(int begin_index, int end_index)
+        : begin_index(begin_index), end_index(end_index) {}
+    int begin_index;
+    int end_index;
+  };
+  int CommittedIndex(int node) const { return committed_index_[node]; }
+  ChainBounds CommittedPathRange(int path) const { return chains_[path]; }
+
   // Path constructor: path_start and path_end must be disjoint,
   // their values in [0, num_nodes).
   PathState(int num_nodes, std::vector<int> path_start,
@@ -3094,14 +3104,11 @@ class PathState {
   int Path(int node) const {
     return committed_nodes_[committed_index_[node]].path;
   }
-  // Returns the set of arcs that have been added,
-  // i.e. that were changed and were not in the committed state.
-  const std::vector<std::pair<int, int>>& ChangedArcs() const {
-    return changed_arcs_;
-  }
   // Returns the set of paths that actually changed,
-  // i.e. that have an arc in ChangedArcs().
+  // i.e. that have more than one chain.
   const std::vector<int>& ChangedPaths() const { return changed_paths_; }
+  // Returns the set of loops that were added by the change.
+  const std::vector<int>& ChangedLoops() const { return changed_loops_; }
   // Returns the current range of chains of path.
   ChainRange Chains(int path) const;
   // Returns the current range of nodes of path.
@@ -3109,19 +3116,30 @@ class PathState {
 
   // State modifiers.
 
-  // Adds arc (node, new_next) to the changed state, more formally,
-  // changes the state from (P0, D) to (P0, D + (node, new_next)).
-  void ChangeNext(int node, int new_next) {
-    changed_arcs_.emplace_back(node, new_next);
+  // Changes the path to the given sequence of chains of the committed state.
+  // Chains are described by semi-open intervals. No optimization is made in
+  // case two consecutive chains are actually already consecutive in the
+  // committed state: they are not merged into one chain, and Chains(path) will
+  // report the two chains.
+  void ChangePath(int path, const std::vector<ChainBounds>& chains);
+  // Same as above, but the initializer_list interface avoids the need to pass
+  // a vector.
+  void ChangePath(int path, const std::initializer_list<ChainBounds>& chains) {
+    changed_paths_.push_back(path);
+    const int path_begin_index = chains_.size();
+    chains_.insert(chains_.end(), chains.begin(), chains.end());
+    const int path_end_index = chains_.size();
+    paths_[path] = {path_begin_index, path_end_index};
+    // Always add sentinel, in case this is the last path change.
+    chains_.emplace_back(0, 0);
   }
-  // Marks the end of ChangeNext() sequence, more formally,
-  // changes the state from (P0, D) to (P0 |> D, D).
-  void CutChains();
-  // Makes the current temporary state permanent, more formally,
-  // changes the state from (P0 |> D, D) to (P0 + D, \emptyset),
+
+  // Describes the nodes that are newly loops in this change.
+  void ChangeLoops(const std::vector<int>& new_loops);
+
+  // Set the current state G1 as committed. See class comment for details.
   void Commit();
-  // Erase incremental changes made by ChangeNext() and CutChains(),
-  // more formally, changes the state from (P0 |> D, D) to (P0, \emptyset).
+  // Erase incremental changes. See class comment for details.
   void Revert();
 
   // LNS Operators may not fix variables,
@@ -3143,13 +3161,6 @@ class PathState {
     int begin_index;
     int end_index;
   };
-  struct ChainBounds {
-    ChainBounds() = default;
-    ChainBounds(int begin_index, int end_index)
-        : begin_index(begin_index), end_index(end_index) {}
-    int begin_index;
-    int end_index;
-  };
   struct CommittedNode {
     CommittedNode(int node, int path) : node(node), path(path) {}
     int node;
@@ -3158,23 +3169,6 @@ class PathState {
     // with committed_index_, or in its own vector, or just recomputed.
     int path;
   };
-  // Used in temporary structures, see below.
-  struct TailHeadIndices {
-    int tail_index;
-    int head_index;
-  };
-  struct IndexArc {
-    int index;
-    int arc;
-    bool operator<(const IndexArc& other) const { return index < other.index; }
-  };
-
-  // From changed_paths_ and changed_arcs_, fill chains_ and paths_.
-  // Selection-based algorithm in O(n^2), to use for small change sets.
-  void MakeChainsFromChangedPathsAndArcsWithSelectionAlgorithm();
-  // From changed_paths_ and changed_arcs_, fill chains_ and paths_.
-  // Generic algorithm in O(std::sort(n)+n), to use for larger change sets.
-  void MakeChainsFromChangedPathsAndArcsWithGenericAlgorithm();
 
   // Copies nodes in chains of path at the end of nodes,
   // and sets those nodes' path member to value path.
@@ -3198,42 +3192,34 @@ class PathState {
   // chains_. When committed (after construction, Revert() or Commit()):
   // - path ranges are [path, path+1): they have one chain.
   // - chain ranges don't overlap, chains_ has an empty sentinel at the end.
-  // - committed_nodes_ contains all nodes and old duplicates may appear,
+  //   The sentinel allows the Nodes() iterator to maintain its current pointer
+  //   to committed nodes on NodeRange::operator++().
+  // - committed_nodes_ contains all nodes, both paths and loops.
+  //   Actually, old duplicates will likely appear,
   //   the current version of a node is at the index given by
   //   committed_index_[node]. A Commit() can add nodes at the end of
   //   committed_nodes_ in a space/time tradeoff, but if committed_nodes_' size
   //   is above num_nodes_threshold_, Commit() must reclaim useless duplicates'
   //   space by rewriting the path/chain/nodes structure.
-  // When changed (after CutChains()), new chains are computed,
-  // and the structure is updated accordingly:
+  // When changed (after ChangePaths() and ChangeLoops()),
+  // the structure is updated accordingly:
   // - path ranges that were changed have nonoverlapping values [begin, end)
   //   where begin is >= num_paths_ + 1, i.e. new chains are stored after
-  //   committed state.
-  // - additional chain ranges are stored after the committed chains
-  //   to represent the new chains resulting from the changes.
-  //   Those chains do not overlap with each other or with unchanged chains.
-  //   An empty sentinel chain is added at the end of additional chains.
+  //   the committed state.
+  // - additional chain ranges are stored after the committed chains and its
+  //   sentinel to represent the new chains resulting from the changes.
+  //   Those chains do not overlap with one another or with committed chains.
   // - committed_nodes_ are not modified, and still represent the committed
-  // paths.
-  //   committed_index_ is not modified either.
+  //   paths. committed_index_ is not modified either.
   std::vector<CommittedNode> committed_nodes_;
   std::vector<int> committed_index_;
   const int num_nodes_threshold_;
   std::vector<ChainBounds> chains_;
   std::vector<PathBounds> paths_;
 
-  // Incremental information: indices of nodes whose successor have changed,
-  // path that have changed nodes.
-  std::vector<std::pair<int, int>> changed_arcs_;
+  // Incremental information.
   std::vector<int> changed_paths_;
-  std::vector<bool> path_has_changed_;
-
-  // Temporary structures, since they will be reused heavily,
-  // those are members in order to be allocated once and for all.
-  std::vector<TailHeadIndices> tail_head_indices_;
-  std::vector<IndexArc> arcs_by_tail_index_;
-  std::vector<IndexArc> arcs_by_head_index_;
-  std::vector<int> next_arc_;
+  std::vector<int> changed_loops_;
 
   // See IsInvalid() and SetInvalid().
   bool is_invalid_ = false;
@@ -3398,7 +3384,8 @@ class UnaryDimensionChecker {
   UnaryDimensionChecker(const PathState* path_state,
                         std::vector<Interval> path_capacity,
                         std::vector<int> path_class,
-                        std::vector<std::vector<Interval>> demand,
+                        std::vector<std::function<Interval(int64_t)>>
+                            min_max_demand_per_path_class,
                         std::vector<Interval> node_capacity);
 
   // Given the change made in PathState, checks that the unary dimension
@@ -3443,7 +3430,9 @@ class UnaryDimensionChecker {
   const PathState* const path_state_;
   const std::vector<Interval> path_capacity_;
   const std::vector<int> path_class_;
-  const std::vector<std::vector<Interval>> demand_;
+  const std::vector<std::function<Interval(int64_t)>>
+      min_max_demand_per_path_class_;
+  std::vector<Interval> cached_demand_;
   const std::vector<Interval> node_capacity_;
 
   // Precomputed data.

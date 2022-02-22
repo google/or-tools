@@ -34,28 +34,28 @@ def create_data_model():
             468, 776, 662
         ],
         [
-            548, 0, 684, 308, 194, 502, 730, 354, 696, 742, 1084, 594, 480,
-            674, 1016, 868, 1210
+            548, 0, 684, 308, 194, 502, 730, 354, 696, 742, 1084, 594, 480, 674,
+            1016, 868, 1210
         ],
         [
             776, 684, 0, 992, 878, 502, 274, 810, 468, 742, 400, 1278, 1164,
             1130, 788, 1552, 754
         ],
         [
-            696, 308, 992, 0, 114, 650, 878, 502, 844, 890, 1232, 514, 628,
-            822, 1164, 560, 1358
+            696, 308, 992, 0, 114, 650, 878, 502, 844, 890, 1232, 514, 628, 822,
+            1164, 560, 1358
         ],
         [
-            582, 194, 878, 114, 0, 536, 764, 388, 730, 776, 1118, 400, 514,
-            708, 1050, 674, 1244
+            582, 194, 878, 114, 0, 536, 764, 388, 730, 776, 1118, 400, 514, 708,
+            1050, 674, 1244
         ],
         [
             274, 502, 502, 650, 536, 0, 228, 308, 194, 240, 582, 776, 662, 628,
             514, 1050, 708
         ],
         [
-            502, 730, 274, 878, 764, 228, 0, 536, 194, 468, 354, 1004, 890,
-            856, 514, 1278, 480
+            502, 730, 274, 878, 764, 228, 0, 536, 194, 468, 354, 1004, 890, 856,
+            514, 1278, 480
         ],
         [
             194, 354, 810, 502, 388, 308, 536, 0, 342, 388, 730, 468, 354, 320,
@@ -78,12 +78,12 @@ def create_data_model():
             308, 650, 274, 844
         ],
         [
-            388, 480, 1164, 628, 514, 662, 890, 354, 696, 422, 764, 114, 0,
-            194, 536, 388, 730
+            388, 480, 1164, 628, 514, 662, 890, 354, 696, 422, 764, 114, 0, 194,
+            536, 388, 730
         ],
         [
-            354, 674, 1130, 822, 708, 628, 856, 320, 662, 388, 730, 308, 194,
-            0, 342, 422, 536
+            354, 674, 1130, 822, 708, 628, 856, 320, 662, 388, 730, 308, 194, 0,
+            342, 422, 536
         ],
         [
             468, 1016, 788, 1164, 1050, 514, 514, 662, 320, 274, 388, 650, 536,
@@ -121,6 +121,7 @@ def create_data_model():
     data['num_vehicles'] = 4
     data['depot'] = 0
     return data
+
 # [END data_model]
 
 
@@ -158,6 +159,7 @@ def print_solution(data, manager, routing, solution):
         print(plan_output)
         max_route_distance = max(route_distance, max_route_distance)
     print('Maximum of the route distances: {}m'.format(max_route_distance))
+
 # [END solution_printer]
 
 
@@ -170,15 +172,14 @@ def main():
 
     # Create the routing index manager.
     # [START index_manager]
-    manager = pywrapcp.RoutingIndexManager(
-            len(data['distance_matrix']),
-            data['num_vehicles'],
-            data['depot'])
+    manager = pywrapcp.RoutingIndexManager(len(data['distance_matrix']),
+                                           data['num_vehicles'], data['depot'])
     # [END index_manager]
 
     # Create Routing Model.
     # [START routing_model]
     routing = pywrapcp.RoutingModel(manager)
+
     # [END routing_model]
 
     # Create and register a transit callback.

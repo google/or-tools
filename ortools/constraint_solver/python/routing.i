@@ -21,7 +21,6 @@
 %include "ortools/constraint_solver/python/constraint_solver.i"
 %include "ortools/constraint_solver/python/routing_types.i"
 %include "ortools/constraint_solver/python/routing_index_manager.i"
-%include "ortools/util/python/sorted_interval_list.i"
 
 // We need to forward-declare the proto here, so that PROTO_INPUT involving it
 // works correctly. The order matters very much: this declaration needs to be

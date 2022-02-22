@@ -360,7 +360,10 @@ bool DisjunctivePropagator::DistanceDuration(Tasks* tasks) {
     const int64_t route_start_time =
         CapAdd(tasks->end_max[route_start], max_distance);
     const int64_t route_end_time = tasks->start_min[route_end];
-    int index_break_by_smin = tasks->num_chain_tasks;
+    // NOTE: all smin events must be closed by a corresponding emax event,
+    // otherwise num_active_tasks is wrong (too high) and the reasoning misses
+    // some filtering.
+    int index_break_by_smin = index_break_by_emax;
     while (index_break_by_emax < num_tasks) {
       // Find next time point among start/end of covering intervals.
       int64_t current_time =

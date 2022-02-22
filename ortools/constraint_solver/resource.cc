@@ -508,7 +508,8 @@ bool NotLast::Propagate() {
            twi->interval->EndMax() > by_start_max_[j]->interval->StartMax()) {
       if (j > 0 && theta_tree_.Ect() > by_start_max_[j]->interval->StartMax()) {
         const int64_t new_end_max = by_start_max_[j - 1]->interval->StartMax();
-        new_lct_[by_start_max_[j]->index] = new_end_max;
+        new_lct_[by_start_max_[j]->index] =
+            std::min(new_lct_[by_start_max_[j]->index], new_end_max);
       }
       theta_tree_.Insert(by_start_max_[j]);
       j++;
@@ -521,9 +522,10 @@ bool NotLast::Propagate() {
     if (inserted) {
       theta_tree_.Insert(twi);
     }
-    if (ect_theta_less_i > twi->interval->EndMax() && j > 0) {
-      const int64_t new_end_max = by_start_max_[j - 1]->interval->EndMax();
-      if (new_end_max > new_lct_[twi->index]) {
+
+    if (ect_theta_less_i > twi->interval->StartMax() && j > 0) {
+      const int64_t new_end_max = by_start_max_[j - 1]->interval->StartMax();
+      if (new_end_max < new_lct_[twi->index]) {
         new_lct_[twi->index] = new_end_max;
       }
     }

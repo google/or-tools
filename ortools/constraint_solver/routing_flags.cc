@@ -312,9 +312,10 @@ void SetMiscellaneousParametersFromFlags(RoutingSearchParameters* parameters) {
       FLAGS_routing_relocate_expensive_chain_num_arcs_to_consider));
   parameters->set_heuristic_expensive_chain_lns_num_arcs_to_consider(4);
   parameters->set_heuristic_close_nodes_lns_num_nodes(5);
-  parameters->set_continuous_scheduling_solver(RoutingSearchParameters::GLOP);
+  parameters->set_continuous_scheduling_solver(
+      RoutingSearchParameters::SCHEDULING_GLOP);
   parameters->set_mixed_integer_scheduling_solver(
-      RoutingSearchParameters::CP_SAT);
+      RoutingSearchParameters::SCHEDULING_CP_SAT);
 }
 
 RoutingSearchParameters BuildSearchParametersFromFlags() {

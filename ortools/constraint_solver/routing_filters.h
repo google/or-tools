@@ -54,11 +54,10 @@ IntVarLocalSearchFilter* MakeVehicleVarFilter(
     const RoutingModel& routing_model);
 
 /// Returns a filter handling dimension costs and constraints.
-IntVarLocalSearchFilter* MakePathCumulFilter(
-    const RoutingDimension& dimension,
-    const RoutingSearchParameters& parameters,
-    bool propagate_own_objective_value, bool filter_objective_cost,
-    bool can_use_lp = true);
+IntVarLocalSearchFilter* MakePathCumulFilter(const RoutingDimension& dimension,
+                                             bool propagate_own_objective_value,
+                                             bool filter_objective_cost,
+                                             bool can_use_lp);
 
 /// Returns a filter handling dimension cumul bounds.
 IntVarLocalSearchFilter* MakeCumulBoundsPropagatorFilter(

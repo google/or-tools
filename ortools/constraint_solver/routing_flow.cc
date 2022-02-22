@@ -24,10 +24,10 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
-#include "ortools/base/int_type.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
+#include "ortools/base/strong_int.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/constraint_solver/routing_lp_scheduling.h"
@@ -155,6 +155,11 @@ struct FlowArc {
 
 bool RoutingModel::SolveMatchingModel(
     Assignment* assignment, const RoutingSearchParameters& parameters) {
+  if (parameters.disable_scheduling_beware_this_may_degrade_performance()) {
+    // We need to use LocalDimensionCumulOptimizers below, so we return false if
+    // LP scheduling is disabled.
+    return false;
+  }
   VLOG(2) << "Solving with flow";
   assignment->Clear();
 

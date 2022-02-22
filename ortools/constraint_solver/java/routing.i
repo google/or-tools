@@ -19,7 +19,6 @@
 %include "ortools/constraint_solver/java/constraint_solver.i"
 %include "ortools/constraint_solver/java/routing_types.i"
 %include "ortools/constraint_solver/java/routing_index_manager.i"
-%include "ortools/util/java/sorted_interval_list.i"
 
 // We need to forward-declare the proto here, so that PROTO_INPUT involving it
 // works correctly. The order matters very much: this declaration needs to be

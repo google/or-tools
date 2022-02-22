@@ -263,16 +263,6 @@ cc_library(
 )
 
 cc_library(
-    name = "small_ordered_set",
-    hdrs = [
-        "small_ordered_set.h",
-    ],
-    deps = [
-        ":base",
-    ],
-)
-
-cc_library(
     name = "status_builder",
     hdrs = [
         "status_builder.h",

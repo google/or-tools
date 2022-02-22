@@ -19,9 +19,9 @@
 
 #include "absl/strings/str_format.h"
 #include "ortools/base/hash.h"
-#include "ortools/base/int_type.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/strong_int.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/util/string_array.h"
@@ -29,7 +29,7 @@
 namespace operations_research {
 // Diffn constraint, Non overlapping boxs.
 namespace {
-DEFINE_INT_TYPE(Box, int);
+DEFINE_STRONG_INT_TYPE(Box, int);
 class Diffn : public Constraint {
  public:
   Diffn(Solver* const solver, const std::vector<IntVar*>& x_vars,

@@ -173,7 +173,7 @@ LocalDimensionCumulOptimizer::LocalDimensionCumulOptimizer(
   const int vehicles = dimension->model()->vehicles();
   solver_.resize(vehicles);
   switch (solver_type) {
-    case RoutingSearchParameters::GLOP: {
+    case RoutingSearchParameters::SCHEDULING_GLOP: {
       const glop::GlopParameters parameters = GetGlopParametersForLocalLP();
       for (int vehicle = 0; vehicle < vehicles; ++vehicle) {
         // TODO(user): Instead of passing false, detect if the relaxation
@@ -183,7 +183,7 @@ LocalDimensionCumulOptimizer::LocalDimensionCumulOptimizer(
       }
       break;
     }
-    case RoutingSearchParameters::CP_SAT: {
+    case RoutingSearchParameters::SCHEDULING_CP_SAT: {
       for (int vehicle = 0; vehicle < vehicles; ++vehicle) {
         solver_[vehicle] = absl::make_unique<RoutingCPSatWrapper>();
       }
@@ -1712,7 +1712,7 @@ GlobalDimensionCumulOptimizer::GlobalDimensionCumulOptimizer(
                       /*use_precedence_propagator=*/
                       !dimension->GetNodePrecedences().empty()) {
   switch (solver_type) {
-    case RoutingSearchParameters::GLOP: {
+    case RoutingSearchParameters::SCHEDULING_GLOP: {
       solver_ = absl::make_unique<RoutingGlopWrapper>(
           /*is_relaxation=*/!dimension->model()
               ->GetDimensionResourceGroupIndices(dimension)
@@ -1720,7 +1720,7 @@ GlobalDimensionCumulOptimizer::GlobalDimensionCumulOptimizer(
           GetGlopParametersForGlobalLP());
       break;
     }
-    case RoutingSearchParameters::CP_SAT: {
+    case RoutingSearchParameters::SCHEDULING_CP_SAT: {
       solver_ = absl::make_unique<RoutingCPSatWrapper>();
       break;
     }

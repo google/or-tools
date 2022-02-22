@@ -19,8 +19,8 @@
 #include <vector>
 
 #include "absl/strings/string_view.h"
-#include "ortools/base/int_type.h"
 #include "ortools/base/integral_types.h"
+#include "ortools/base/strong_int.h"
 
 namespace operations_research {
 
@@ -33,11 +33,11 @@ namespace operations_research {
 ///
 /// Users that depend on routing.{h,cc} should just use the
 /// RoutingModel:: equivalent, eg. RoutingModel::NodeIndex.
-DEFINE_INT_TYPE(RoutingNodeIndex, int);
-DEFINE_INT_TYPE(RoutingCostClassIndex, int);
-DEFINE_INT_TYPE(RoutingDimensionIndex, int);
-DEFINE_INT_TYPE(RoutingDisjunctionIndex, int);
-DEFINE_INT_TYPE(RoutingVehicleClassIndex, int);
+DEFINE_STRONG_INT_TYPE(RoutingNodeIndex, int);
+DEFINE_STRONG_INT_TYPE(RoutingCostClassIndex, int);
+DEFINE_STRONG_INT_TYPE(RoutingDimensionIndex, int);
+DEFINE_STRONG_INT_TYPE(RoutingDisjunctionIndex, int);
+DEFINE_STRONG_INT_TYPE(RoutingVehicleClassIndex, int);
 
 typedef std::function<int64_t(int64_t)> RoutingTransitCallback1;
 typedef std::function<int64_t(int64_t, int64_t)> RoutingTransitCallback2;

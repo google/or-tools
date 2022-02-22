@@ -162,6 +162,7 @@ class IntVarFilteredDecisionBuilder : public DecisionBuilder {
 class IntVarFilteredHeuristic {
  public:
   IntVarFilteredHeuristic(Solver* solver, const std::vector<IntVar*>& vars,
+                          const std::vector<IntVar*>& secondary_vars,
                           LocalSearchFilterManager* filter_manager);
 
   virtual ~IntVarFilteredHeuristic() {}
@@ -184,10 +185,14 @@ class IntVarFilteredHeuristic {
   virtual bool InitializeSolution() { return true; }
   /// Virtual method to redefine how to build a solution.
   virtual bool BuildSolutionInternal() = 0;
-  /// Commits the modifications to the current solution if these modifications
-  /// are "filter-feasible", returns false otherwise; in any case discards
-  /// all modifications.
-  bool Commit();
+  /// Evaluates the modifications to the current solution. If these
+  /// modifications are "filter-feasible" returns their corresponding cost
+  /// computed by filters.
+  /// If 'commit' is true, the modifications are committed to the current
+  /// solution.
+  /// In any case all modifications to the internal delta are cleared before
+  /// returning.
+  std::optional<int64_t> Evaluate(bool commit);
   /// Returns true if the search must be stopped.
   virtual bool StopSearch() { return false; }
   /// Modifies the current solution by setting the variable of index 'index' to
@@ -215,6 +220,15 @@ class IntVarFilteredHeuristic {
   int Size() const { return vars_.size(); }
   /// Returns the variable of index 'index'.
   IntVar* Var(int64_t index) const { return vars_[index]; }
+  /// Returns the index of a secondary var.
+  int64_t SecondaryVarIndex(int64_t index) const {
+    DCHECK(HasSecondaryVars());
+    return index + base_vars_size_;
+  }
+  /// Returns true if there are secondary variables.
+  bool HasSecondaryVars() const { return base_vars_size_ != vars_.size(); }
+  /// Returns true if 'index' is a secondary variable index.
+  bool IsSecondaryVar(int64_t index) const { return index >= base_vars_size_; }
   /// Synchronizes filters with an assignment (the current solution).
   void SynchronizeFilters();
 
@@ -226,12 +240,14 @@ class IntVarFilteredHeuristic {
   bool FilterAccept();
 
   Solver* solver_;
-  const std::vector<IntVar*> vars_;
+  std::vector<IntVar*> vars_;
+  const int base_vars_size_;
   Assignment* const delta_;
   std::vector<int> delta_indices_;
   std::vector<bool> is_in_delta_;
   Assignment* const empty_;
   LocalSearchFilterManager* filter_manager_;
+  int64_t objective_upper_bound_;
   /// Stats on search
   int64_t number_of_decisions_;
   int64_t number_of_rejects_;
@@ -241,7 +257,8 @@ class IntVarFilteredHeuristic {
 class RoutingFilteredHeuristic : public IntVarFilteredHeuristic {
  public:
   RoutingFilteredHeuristic(RoutingModel* model,
-                           LocalSearchFilterManager* filter_manager);
+                           LocalSearchFilterManager* filter_manager,
+                           bool omit_secondary_vars = true);
   ~RoutingFilteredHeuristic() override {}
   /// Builds a solution starting from the routes formed by the next accessor.
   const Assignment* BuildSolutionFromRoutes(
@@ -332,11 +349,13 @@ class CheapestInsertionFilteredHeuristic : public RoutingFilteredHeuristic {
       Queue* priority_queue);
   // clang-format on
 
-  /// Inserts 'node' just after 'predecessor', and just before 'successor',
-  /// resulting in the following subsequence: predecessor -> node -> successor.
+  /// Inserts 'node' just after 'predecessor', and just before 'successor' on
+  /// the route of 'vehicle', resulting in the following subsequence:
+  /// predecessor -> node -> successor.
   /// If 'node' is part of a disjunction, other nodes of the disjunction are
   /// made unperformed.
-  void InsertBetween(int64_t node, int64_t predecessor, int64_t successor);
+  void InsertBetween(int64_t node, int64_t predecessor, int64_t successor,
+                     int vehicle = -1);
   /// Helper method to the ComputeEvaluatorSortedPositions* methods. Finds all
   /// possible insertion positions of node 'node_to_insert' in the partial route
   /// starting at node 'start' and adds them to 'node_insertions' (no sorting is
@@ -737,6 +756,7 @@ class LocalCheapestInsertionFilteredHeuristic
   LocalCheapestInsertionFilteredHeuristic(
       RoutingModel* model,
       std::function<int64_t(int64_t, int64_t, int64_t)> evaluator,
+      bool evaluate_pickup_delivery_costs_independently,
       LocalSearchFilterManager* filter_manager);
   ~LocalCheapestInsertionFilteredHeuristic() override {}
   bool BuildSolutionInternal() override;
@@ -745,21 +765,39 @@ class LocalCheapestInsertionFilteredHeuristic
   }
 
  private:
+  struct PickupDeliveryInsertion {
+    int64_t insert_pickup_after;
+    int64_t insert_delivery_after;
+    int64_t value;
+    int vehicle;
+
+    bool operator<(const PickupDeliveryInsertion& other) const {
+      return std::tie(value, insert_pickup_after, insert_delivery_after,
+                      vehicle) <
+             std::tie(other.value, other.insert_pickup_after,
+                      other.insert_delivery_after, other.vehicle);
+    }
+  };
+
   /// Computes the possible insertion positions of 'node' and sorts them
   /// according to the current cost evaluator.
-  /// 'node' is a variable index corresponding to a node, 'sorted_insertions' is
-  /// a sorted vector of insertions.
-  void ComputeEvaluatorSortedPositions(
-      int64_t node, std::vector<NodeInsertion>* sorted_insertions);
+  /// 'node' is a variable index corresponding to a node.
+  std::vector<NodeInsertion> ComputeEvaluatorSortedPositions(int64_t node);
   /// Like ComputeEvaluatorSortedPositions, subject to the additional
   /// restrictions that the node may only be inserted after node 'start' on the
   /// route. For convenience, this method also needs the node that is right
   /// after 'start' on the route.
-  void ComputeEvaluatorSortedPositionsOnRouteAfter(
-      int64_t node, int64_t start, int64_t next_after_start, int vehicle,
-      std::vector<NodeInsertion>* sorted_insertions);
+  std::vector<NodeInsertion> ComputeEvaluatorSortedPositionsOnRouteAfter(
+      int64_t node, int64_t start, int64_t next_after_start, int vehicle);
+
+  /// Computes the possible simultaneous insertion positions of the pair
+  /// 'pickup' and 'delivery'. Sorts them according to the current cost
+  /// evaluator.
+  std::vector<PickupDeliveryInsertion> ComputeEvaluatorSortedPairPositions(
+      int64_t pickup, int64_t delivery);
 
   std::vector<std::vector<StartEndValue>> start_end_distances_per_node_;
+  const bool evaluate_pickup_delivery_costs_independently_;
 };
 
 /// Filtered-base decision builder based on the addition heuristic, extending
@@ -1040,8 +1078,8 @@ class ChristofidesFilteredHeuristic : public RoutingFilteredHeuristic {
   const bool use_minimum_matching_;
 };
 
-/// Class to arrange indices by by their distance and their angles from the
-/// depot. Used in the Sweep first solution heuristic.
+/// Class to arrange indices by their distance and their angle from the depot.
+/// Used in the Sweep first solution heuristic.
 class SweepArranger {
  public:
   explicit SweepArranger(

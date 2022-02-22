@@ -43,7 +43,7 @@
 ///   * "next(i)" variables representing the immediate successor of the node
 ///     corresponding to i; use IndexToNode() to get the node corresponding to
 ///     a "next" variable value; note that node indices are strongly typed
-///     integers (cf. ortools/base/int_type.h);
+///     integers (cf. ortools/base/strong_int.h);
 ///   * "vehicle(i)" variables representing the vehicle route to which the
 ///     node corresponding to i belongs;
 ///   * "active(i)" boolean variables, true if the node corresponding to i is
@@ -172,11 +172,11 @@
 #include "absl/functional/bind_front.h"
 #include "absl/memory/memory.h"
 #include "absl/time/time.h"
-#include "ortools/base/int_type.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 #include "ortools/base/map_util.h"
+#include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
@@ -220,7 +220,9 @@ class RoutingModel {
     /// Time limit reached before finding a solution with RoutingModel::Solve().
     ROUTING_FAIL_TIMEOUT,
     /// Model, model parameters or flags are not valid.
-    ROUTING_INVALID
+    ROUTING_INVALID,
+    /// Problem proven to be infeasible.
+    ROUTING_INFEASIBLE
   };
 
   /// Types of precedence policy applied to pickup and delivery pairs.
@@ -1121,9 +1123,16 @@ class RoutingModel {
   /// Adds a variable to minimize in the solution finalizer, with a weighted
   /// priority: the higher the more priority it has.
   void AddWeightedVariableMinimizedByFinalizer(IntVar* var, int64_t cost);
+  /// Adds a variable to maximize in the solution finalizer, with a weighted
+  /// priority: the higher the more priority it has.
+  void AddWeightedVariableMaximizedByFinalizer(IntVar* var, int64_t cost);
   /// Add a variable to set the closest possible to the target value in the
   /// solution finalizer.
   void AddVariableTargetToFinalizer(IntVar* var, int64_t target);
+  /// Same as above with a weighted priority: the higher the cost, the more
+  /// priority it has to be set close to the target value.
+  void AddWeightedVariableTargetToFinalizer(IntVar* var, int64_t target,
+                                            int64_t cost);
   /// Closes the current routing model; after this method is called, no
   /// modification to the model can be done, but RoutesToAssignment becomes
   /// available. Note that CloseModel() is automatically called by Solve() and
@@ -1841,18 +1850,27 @@ class RoutingModel {
       const std::vector<LocalSearchOperator*>& operators) const;
   LocalSearchOperator* GetNeighborhoodOperators(
       const RoutingSearchParameters& search_parameters) const;
-  std::vector<LocalSearchFilterManager::FilterEvent>
-  GetOrCreateLocalSearchFilters(const RoutingSearchParameters& parameters,
-                                bool filter_cost = true);
+
+  struct FilterOptions {
+    bool filter_objective;
+    bool filter_with_cp_solver;
+
+    bool operator==(const FilterOptions& other) const {
+      return other.filter_objective == filter_objective &&
+             other.filter_with_cp_solver == filter_with_cp_solver;
+    }
+    template <typename H>
+    friend H AbslHashValue(H h, const FilterOptions& options) {
+      return H::combine(std::move(h), options.filter_objective,
+                        options.filter_with_cp_solver);
+    }
+  };
+  std::vector<LocalSearchFilterManager::FilterEvent> CreateLocalSearchFilters(
+      const RoutingSearchParameters& parameters, const FilterOptions& options);
   LocalSearchFilterManager* GetOrCreateLocalSearchFilterManager(
-      const RoutingSearchParameters& parameters);
-  std::vector<LocalSearchFilterManager::FilterEvent>
-  GetOrCreateFeasibilityFilters(const RoutingSearchParameters& parameters);
-  LocalSearchFilterManager* GetOrCreateFeasibilityFilterManager(
-      const RoutingSearchParameters& parameters);
-  LocalSearchFilterManager* GetOrCreateStrongFeasibilityFilterManager(
-      const RoutingSearchParameters& parameters);
-  DecisionBuilder* CreateSolutionFinalizer(SearchLimit* lns_limit);
+      const RoutingSearchParameters& parameters, const FilterOptions& options);
+  DecisionBuilder* CreateSolutionFinalizer(
+      const RoutingSearchParameters& parameters, SearchLimit* lns_limit);
   DecisionBuilder* CreateFinalizerForMinimizedAndMaximizedVariables();
   void CreateFirstSolutionDecisionBuilders(
       const RoutingSearchParameters& search_parameters);
@@ -2087,14 +2105,20 @@ class RoutingModel {
   std::vector<IntVar*> extra_vars_;
   std::vector<IntervalVar*> extra_intervals_;
   std::vector<LocalSearchOperator*> extra_operators_;
-  LocalSearchFilterManager* local_search_filter_manager_ = nullptr;
-  LocalSearchFilterManager* feasibility_filter_manager_ = nullptr;
-  LocalSearchFilterManager* strong_feasibility_filter_manager_ = nullptr;
+  absl::flat_hash_map<FilterOptions, LocalSearchFilterManager*>
+      local_search_filter_managers_;
   std::vector<LocalSearchFilterManager::FilterEvent> extra_filters_;
 #ifndef SWIG
-  std::vector<std::pair<IntVar*, int64_t>> finalizer_variable_cost_pairs_;
-  std::vector<std::pair<IntVar*, int64_t>> finalizer_variable_target_pairs_;
-  absl::flat_hash_map<IntVar*, int> finalizer_variable_cost_index_;
+  struct VarTarget {
+    VarTarget(IntVar* v, int64_t t) : var(v), target(t) {}
+
+    IntVar* var;
+    int64_t target;
+  };
+  std::vector<std::pair<VarTarget, int64_t>>
+      weighted_finalizer_variable_targets_;
+  std::vector<VarTarget> finalizer_variable_targets_;
+  absl::flat_hash_map<IntVar*, int> weighted_finalizer_variable_index_;
   absl::flat_hash_set<IntVar*> finalizer_variable_target_set_;
   std::unique_ptr<SweepArranger> sweep_arranger_;
 #endif

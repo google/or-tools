@@ -35,7 +35,7 @@ package operations_research;
 // then the routing library will pick its preferred value for that parameter
 // automatically: this should be the case for most parameters.
 // To see those "default" parameters, call GetDefaultRoutingSearchParameters().
-// Next ID: 49
+// Next ID: 51
 message RoutingSearchParameters {
   // First solution strategies, used as starting point of local search.
   FirstSolutionStrategy.Value first_solution_strategy = 1;
@@ -105,6 +105,13 @@ message RoutingSearchParameters {
   // Whether or not to consider entries making the nodes/pairs unperformed in
   // the GlobalCheapestInsertion heuristic.
   bool cheapest_insertion_add_unperformed_entries = 40;
+
+  // Whether or not to insert pickup/delivery pairs greedily in the
+  // LocalCheapestInsertion heuristic. If true, the insertion position of a
+  // pickup is evaluated independently of its delivery. If false, insertion
+  // positions of both a pickup and its delivery are evaluated together.
+  bool local_cheapest_insertion_evaluate_pickup_delivery_costs_independently =
+      49;
 
   // If true use minimum matching instead of minimal matching in the
   // Christofides algorithm.
@@ -435,12 +442,15 @@ message RoutingSearchParameters {
   // Underlying solver to use in dimension scheduling, respectively for
   // continuous and mixed models.
   enum SchedulingSolver {
-    UNSET = 0;
-    GLOP = 1;
-    CP_SAT = 2;
+    SCHEDULING_UNSET = 0;
+    SCHEDULING_GLOP = 1;
+    SCHEDULING_CP_SAT = 2;
   }
   SchedulingSolver continuous_scheduling_solver = 33;
   SchedulingSolver mixed_integer_scheduling_solver = 34;
+  // Setting this to true completely disables the LP and MIP scheduling in the
+  // solver. This overrides the 2 SchedulingSolver options above.
+  optional bool disable_scheduling_beware_this_may_degrade_performance = 50;
   // Minimum step by which the solution must be improved in local search. 0
   // means "unspecified". If this value is fractional, it will get rounded to
   // the nearest integer.

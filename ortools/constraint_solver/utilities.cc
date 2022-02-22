@@ -672,7 +672,7 @@ class ModelStatisticsVisitor : public ModelVisitor {
   }
 
   bool AlreadyVisited(const BaseObject* const object) {
-    return gtl::ContainsKey(already_visited_, object);
+    return already_visited_.contains(object);
   }
 
   // T should derive from BaseObject
@@ -723,7 +723,7 @@ class VariableDegreeVisitor : public ModelVisitor {
   void VisitIntegerVariable(const IntVar* const variable,
                             IntExpr* const delegate) override {
     IntVar* const var = const_cast<IntVar*>(variable);
-    if (gtl::ContainsKey(*map_, var)) {
+    if (map_->contains(var)) {
       (*map_)[var]++;
     }
     if (delegate) {
@@ -735,7 +735,7 @@ class VariableDegreeVisitor : public ModelVisitor {
                             const std::string& operation, int64_t value,
                             IntVar* const delegate) override {
     IntVar* const var = const_cast<IntVar*>(variable);
-    if (gtl::ContainsKey(*map_, var)) {
+    if (map_->contains(var)) {
       (*map_)[var]++;
     }
     VisitSubArgument(delegate);

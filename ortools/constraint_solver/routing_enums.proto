@@ -91,6 +91,9 @@ message FirstSolutionStrategy {
     // the start/ends of the routes, i.e. farthest nodes are inserted first.
     // Is faster than SEQUENTIAL_CHEAPEST_INSERTION.
     LOCAL_CHEAPEST_INSERTION = 9;
+    // Same as LOCAL_CHEAPEST_INSERTION except that the cost of insertion is
+    // based on the routing model cost function instead of arc costs only.
+    LOCAL_CHEAPEST_COST_INSERTION = 16;
 
     // --- Variable-based heuristics ---
     // Iteratively connect two nodes which produce the cheapest route segment.
