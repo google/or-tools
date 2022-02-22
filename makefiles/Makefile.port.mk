@@ -166,7 +166,7 @@ ifeq ("$(SYSTEM)","win")
   CBC_PLATFORM = $(CBC_PLATFORM_PREFIX)-$(VS_RELEASE)-Release
 
   # Detect Python
-  PYTHON_VERSION ?= $(shell  -c "from sys import version_info as v; print (str(v[0]) + str(v[1]))")
+  PYTHON_VERSION ?= $(shell python -c "from sys import version_info as v; print (str(v[0]) + str(v[1]))")
 endif # ($(SYSTEM),win)
 
 # Get github revision level
