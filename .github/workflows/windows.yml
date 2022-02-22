@@ -72,8 +72,9 @@ jobs:
       - name: try zip
         shell: bash
         run: |
-          touch toto.txt
-          zip -r toto.zip toto.*
+          mkdir titi
+          touch titi/toto.txt
+          zip -r toto.zip titi
 
       - name: Install SWIG 4.0.2
         if: ${{ matrix.os == 'windows-2019'}}

@@ -28,8 +28,9 @@ runs:
     - name: try zip
       shell: bash
       run: |
-        touch toto.txt
-        zip -r toto.zip toto.*
+        mkdir titi
+        touch titi/toto.txt
+        zip -r toto.zip titi
 
     - name: Setup .NET Core 3.1
       uses: actions/setup-dotnet@v1
@@ -92,4 +93,5 @@ runs:
       shell: bash
       run: |
         cd ${{ steps.sirius-variables.outputs.sirius-working-dir }}
-        zip -r "${{ steps.sirius-variables.outputs.sirius-archive-path }}" "${{ steps.sirius-variables.outputs.sirius-install-dir }}"
+        ARCHIVE_NAME="${{ steps.sirius-variables.outputs.sirius-archive-name }}"
+        zip -r $ARCHIVE_NAME "${{ steps.sirius-variables.outputs.sirius-install-dir }}"
