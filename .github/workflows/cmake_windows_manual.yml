@@ -67,6 +67,7 @@ jobs:
           path: ./or-tools
       - name: Configure or-tools
         working-directory: ./or-tools
+        shell: bash
         run: |
           cmake -S.\
                 -Bbuild \
