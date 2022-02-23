@@ -30,10 +30,10 @@ jobs:
         extras: [OFF]
 
         exclude:
+          - xprs: OFF
+            sirius: OFF
           - shared: OFF
             extras: ON
-          - shared: ON
-            extras: OFF
 
     steps:
       - name: Set version
