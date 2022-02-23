@@ -29,6 +29,8 @@ OR_TOOLS_LIBS = $(LIB_DIR)/$(LIB_PREFIX)ortools.$L.$(OR_TOOLS_MAJOR)
 endif
 endif
 
+JOBS ?= 4
+
 # Main target
 .PHONY: cc # Build C++ OR-Tools library.
 .PHONY: test_cc # Run all C++ OR-Tools test targets.
@@ -40,7 +42,7 @@ or-tools-libs: $(OR_TOOLS_LIBS)
 
 # OR Tools unique library.
 $(OR_TOOLS_LIBS): $(THIRD_PARTY_TARGET)
-	cmake --build dependencies --target install --config Release -j 8
+	cmake --build dependencies --target install --config $(BUILD_TYPE) -j $(JOBS)
 	$(TOUCH) $(OR_TOOLS_LIBS)
 
 compile_libraries: $(OR_TOOLS_LIBS)

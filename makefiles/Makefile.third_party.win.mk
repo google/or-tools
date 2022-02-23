@@ -14,6 +14,7 @@ PROTOC = "$(OR_TOOLS_TOP)\\bin\\protoc.exe"
 BUILD_PYTHON ?= OFF
 BUILD_JAVA ?= OFF
 BUILD_DOTNET ?= OFF
+BUILD_TYPE ?= Release
 
 # Main target.
 dependencies:
