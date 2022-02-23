@@ -8321,6 +8321,7 @@ CpSolverStatus CpModelPresolver::Presolve() {
     if (!context_->ModelIsExpanded()) {
       ExtractEncodingFromLinear();
       ExpandCpModel(context_);
+      if (context_->ModelIsUnsat()) return InfeasibleStatus();
 
       // We need to re-evaluate the degree because some presolve rule only
       // run after expansion.
