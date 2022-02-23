@@ -13,8 +13,8 @@
 
 #include <atomic>
 #include <cstdint>
-#include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/base/attributes.h"
@@ -22,15 +22,14 @@
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/optional.h"
+#include "google/protobuf/text_format.h"
 #include "ortools/base/logging.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
-#include "ortools/linear_solver/model_validator.h"
-#include "ortools/pdlp/primal_dual_hybrid_gradient.h"
+#include "ortools/linear_solver/pdlp_proto_solver.h"
 #include "ortools/pdlp/solve_log.pb.h"
 #include "ortools/pdlp/solvers.pb.h"
 #include "ortools/port/proto_utils.h"
-#include "ortools/util/lazy_mutable_copy.h"
 
 namespace operations_research {
 
@@ -118,6 +117,8 @@ MPSolver::ResultStatus PdlpInterface::Solve(const MPSolverParameters& param) {
         static_cast<double>(solver_->time_limit()) / 1000.0);
   }
 
+  // TODO(user): Adjust logging level based on quiet_.
+
   // Mark variables and constraints as extracted.
   for (int i = 0; i < solver_->variables_.size(); ++i) {
     set_variable_as_extracted(i, true);
@@ -128,10 +129,15 @@ MPSolver::ResultStatus PdlpInterface::Solve(const MPSolverParameters& param) {
 
   MPModelProto model_proto;
   solver_->ExportModelToProto(&model_proto);
-  // TODO(user): Adjust logging level based on quiet_.
+  MPModelRequest request;
+  *request.mutable_model() = std::move(model_proto);
+  if (!google::protobuf::TextFormat::PrintToString(
+          parameters_, request.mutable_solver_specific_parameters())) {
+    LOG(QFATAL) << "Error converting parameters to text format: "
+                << parameters_.DebugString();
+  }
   absl::StatusOr<MPSolutionResponse> response =
-      pdlp::SolveMpModelProto(model_proto, parameters_,
-                              /*relax_integer_variables=*/true);
+      PdlpSolveProto(request, /*relax_integer_variables=*/true);
 
   if (!response.ok()) {
     LOG(ERROR) << "Unexpected error solving with PDLP: " << response.status();
@@ -164,42 +170,12 @@ absl::optional<MPSolutionResponse> PdlpInterface::DirectlySolveProto(
     return absl::nullopt;
   }
 
-  MPSolutionResponse error_response;
-  if (request.has_solver_specific_parameters()) {
-    if (!solver_->SetSolverSpecificParametersAsString(
-            request.solver_specific_parameters())) {
-      error_response.set_status(
-          MPSolverResponseStatus::MPSOLVER_MODEL_INVALID_SOLVER_PARAMETERS);
-      return error_response;
-    }
-  }
-
-  // TODO(user): Adjust logging level based on enable_internal_solver_output.
-
-  if (request.has_solver_time_limit_seconds()) {
-    VLOG(1) << "Setting time limit = " << request.solver_time_limit_seconds()
-            << " s.";
-    parameters_.mutable_termination_criteria()->set_time_sec_limit(
-        request.solver_time_limit_seconds());
-  }
-
-  const absl::optional<LazyMutableCopy<MPModelProto>> optional_model =
-      ExtractValidMPModelOrPopulateResponseStatus(request, &error_response);
-  if (!optional_model) {
-    LOG_IF(WARNING, request.enable_internal_solver_output())
-        << "Failed to extract a valid model from protocol buffer. Status: "
-        << ProtoEnumToString<MPSolverResponseStatus>(error_response.status())
-        << " (" << error_response.status()
-        << "): " << error_response.status_str();
-    return absl::nullopt;
-  }
-
   absl::StatusOr<MPSolutionResponse> response =
-      pdlp::SolveMpModelProto(optional_model->get(), parameters_,
-                              /*relax_integer_variables=*/true);
+      PdlpSolveProto(request, /*relax_integer_variables=*/true);
 
   if (!response.ok()) {
     LOG(ERROR) << "Unexpected error solving with PDLP: " << response.status();
+    MPSolutionResponse error_response;
     error_response.set_status(MPSolverResponseStatus::MPSOLVER_ABNORMAL);
     error_response.set_status_str(response.status().ToString());
     return error_response;
