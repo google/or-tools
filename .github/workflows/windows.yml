@@ -72,13 +72,6 @@ jobs:
         run: |
           choco install wget zip unzip --no-progress
 
-      - name: try zip
-        shell: bash
-        run: |
-          mkdir titi
-          touch titi/toto.txt
-          zip -r toto.zip titi
-
       - name: Install SWIG 4.0.2
         if: ${{ matrix.os == 'windows-2019'}}
         run: |
@@ -154,29 +147,16 @@ jobs:
         if: ${{ matrix.os == 'ubuntu-20.04'}}
         shell: bash
         run: |
-          cmake -S . \
-                -B build ${{ steps.cache.outputs.CMAKE_CCACHE }} ${{ steps.cache.outputs.CMAKE_CXXCACHE }} \
-                -DCMAKE_BUILD_TYPE=Release \
-                -DCMAKE_INSTALL_PREFIX="build/install" \
-                -DBUILD_SHARED_LIBS=${{ matrix.shared }}  \
-                -DBUILD_DEPS=ON \
-                -DUSE_SIRIUS=${{ matrix.sirius }} \
-                -Dsirius_solver_DIR="${{ steps.setup.outputs.sirius-install-path }}/cmake" \
-                -DUSE_XPRESS=${{ matrix.xprs }} \
-                -DXPRESS_ROOT="${{ env.XPRS_Path }}" \
-                -DBUILD_PYTHON=${{ matrix.extras }} \
-                -DBUILD_JAVA=${{ matrix.extras }} \
-                -DBUILD_DOTNET=${{ matrix.extras }}
+             cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="build/install" -DBUILD_SHARED_LIBS=${{ matrix.shared }} -DBUILD_DEPS=ON -DUSE_SIRIUS=${{ matrix.sirius }} -Dsirius_solver_DIR="${{ steps.setup.outputs.sirius-install-path }}/cmake" -DUSE_XPRESS=${{ matrix.xprs }} -DXPRESS_ROOT="${{ env.XPRS_Path }}" -DBUILD_PYTHON=${{ matrix.extras }} -DBUILD_JAVA=${{ matrix.extras }} -DBUILD_DOTNET=${{ matrix.extras }} ${{ steps.cache.outputs.CMAKE_CCACHE }} ${{ steps.cache.outputs.CMAKE_CXXCACHE }}
+      - name: Configure or-tools windows
+        if: ${{ matrix.os == 'windows-2019'}}
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="build/install" -DBUILD_SHARED_LIBS=${{ matrix.shared }} -DBUILD_DEPS=ON -DUSE_SIRIUS=${{ matrix.sirius }} -Dsirius_solver_DIR="${{ steps.setup.outputs.sirius-install-path }}/cmake" -DUSE_XPRESS=${{ matrix.xprs }} -DXPRESS_ROOT="${{ env.XPRS_Path }}" -DBUILD_PYTHON=${{ matrix.extras }} -DBUILD_JAVA=${{ matrix.extras }} -DBUILD_DOTNET=${{ matrix.extras }}
 
-      - name: Build
+      - name: Build Linux
         if: ${{ matrix.os == 'ubuntu-20.04'}}
         shell: bash
         run: |
           cmake --build build --config Release --target all install -j2
-
-      - name: Configure or-tools windows
-        if: ${{ matrix.os == 'windows-2019'}}
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="build/install" -DBUILD_DEPS=ON -DUSE_SIRIUS=${{ matrix.sirius }} -Dsirius_solver_DIR="${{ steps.setup.outputs.sirius-install-path }}/cmake" -DUSE_XPRESS=${{ matrix.xprs }} -DXPRESS_ROOT="${{ env.XPRS_Path }}" -DBUILD_PYTHON=${{ matrix.extras }} -DBUILD_JAVA=${{ matrix.extras }} -DBUILD_DOTNET=${{ matrix.extras }}
       - name: Build windows
         if: ${{ matrix.os == 'windows-2019'}}
         run: cmake --build build --config Release --target ALL_BUILD INSTALL -v -- /maxcpucount
@@ -226,6 +206,15 @@ jobs:
                 -Dsirius_solver_DIR="${{ steps.setup.outputs.sirius-install-path }}/cmake"
           cmake --build build
           ./build/linear_programming
+      - name: Build & run CMake example project
+        if: ${{ matrix.os == 'windows-2019'}}
+        working-directory: ./examples/cmake/linear_programming/
+        env:
+          XPRESS: "${{ github.workspace }}/xpressmp813/bin/"
+        run: |
+          cmake -Bbuild -S. -DORTOOLS_INSTALL="${{ github.workspace }}/build/install" -DCMAKE_BUILD_TYPE=Release -DXPRESS_ROOT="${{ github.workspace }}/xpressmp813" -Dsirius_solver_DIR="${{ github.workspace }}/sirius-solver/SiriusInstall/cmake"
+          cmake --build build --config Release
+          build\Release\linear_programming.exe
 
       - name: Run sirius_interface unittests
         if: ${{ matrix.sirius == 'ON' }}
