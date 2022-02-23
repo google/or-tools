@@ -2,8 +2,6 @@ if(NOT BUILD_CXX)
   return()
 endif()
 
-
-
 # Main Target
 add_library(${PROJECT_NAME} "")
 # Xcode fails to build if library doesn't contains at least one source file.
@@ -100,7 +98,6 @@ target_include_directories(${PROJECT_NAME} INTERFACE
 # Compile options
 set_target_properties(${PROJECT_NAME} PROPERTIES
   CXX_STANDARD 20
-  CXX_STANDARD 17
   CXX_STANDARD_REQUIRED ON
   CXX_EXTENSIONS OFF
   )
