@@ -217,6 +217,7 @@ jobs:
           echo "LD_LIBRARY_PATH=$LD_PATH" >> $GITHUB_ENV
 
       - name: Build & run CMake example project
+        if: ${{ matrix.os == 'ubuntu-20.04'}}
         working-directory: ./examples/cmake/linear_programming/
         run: |
           cmake -Bbuild -S. \
@@ -226,6 +227,7 @@ jobs:
           cmake --build build
           ./build/linear_programming
       - name: Build & run CMake example project
+        if: ${{ matrix.os == 'windows-2019'}}
         working-directory: ./or-tools/examples/cmake/linear_programming/
         env:
           XPRESS: "${{ github.workspace }}/xpressmp813/bin/"
