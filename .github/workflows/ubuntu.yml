@@ -34,6 +34,8 @@ jobs:
             sirius: OFF
           - shared: OFF
             extras: ON
+          - shared: ON
+            extras: OFF
 
     steps:
       - name: Set version
