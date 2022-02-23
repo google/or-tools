@@ -78,15 +78,6 @@ ZIP = tools\win\zip.exe
 WGET = tools\win\wget.exe
 WHICH = tools\win\which.exe
 
-# We Can't force SHELL to cmd.exe if sh.exe is in the PATH
-# cf https://www.gnu.org/software/make/manual/html_node/Choosing-the-Shell.html
-SHCHECK := $(shell where sh.exe 2>NUL)
-ifneq ($(SHCHECK),)
-$(error Please remove sh.exe ($(SHCHECK)) from your PATH (e.g. set PATH=%PATH:C:\Program Files\Git\bin\;=%))
-else
-SHELL = cmd
-endif
-
 CMAKE := $(shell $(WHICH) cmake)
 ifeq ($(CMAKE),)
 $(error Please add "cmake" to your PATH)
@@ -212,7 +203,7 @@ ABSL_LNK = \
  $(PRE_LIB)absl_throw_delegate.lib \
  $(PRE_LIB)absl_time.lib \
  $(PRE_LIB)absl_time_zone.lib
- 
+
  DEPENDENCIES_LNK += $(ABSL_LNK) $(COINOR_LNK) $(SCIP_LNK) $(SYS_LNK) $(STATIC_GLPK_LNK) $(STATIC_CPLEX_LNK) $(STATIC_XPRESS_LNK)
 
 OR_TOOLS_LNK = $(PRE_LIB)ortools$(POST_LIB) $(DEPENDENCIES_LNK)
