@@ -42,14 +42,15 @@ You'll need:
 
 ## Dependencies
 
-OR-Tools depends on severals mandatory libraries.
+OR-Tools depends on several mandatory libraries.
 
-* Google Abseil-cpp,
-* Google Protobuf,
-* Google Gtest,
-* Bliss,
-* SCIP,
-* GLPK (GNU Linear Programming Kit)
+*   Eigen
+*   Google Abseil-cpp,
+*   Google Protobuf,
+*   Google Gtest,
+*   Bliss,
+*   SCIP,
+*   GLPK (GNU Linear Programming Kit)
 
 ## Compilation
 
