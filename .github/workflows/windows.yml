@@ -149,6 +149,7 @@ jobs:
           echo "${{ steps.setup.outputs.sirius-install-path }}\bin" >> $GITHUB_PATH
 
       - name: Configure or-tools
+        if: ${{ matrix.os == 'ubuntu-20.04'}}
         shell: bash
         run: |
           cmake -S . \
@@ -166,9 +167,20 @@ jobs:
                 -DBUILD_DOTNET=${{ matrix.extras }}
 
       - name: Build
+        if: ${{ matrix.os == 'ubuntu-20.04'}}
         shell: bash
         run: |
           cmake --build build --config Release --target install -j2
+
+      - name: Configure or-tools windows
+        if: ${{ matrix.os == 'windows-2019'}}
+        working-directory: ./or-tools
+        run: cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="build/install" -DBUILD_DEPS=ON -DUSE_SIRIUS=ON -Dsirius_solver_DIR="${{ github.workspace }}/sirius-solver/SiriusInstall/cmake" -DUSE_XPRESS=ON -DXPRESS_ROOT="${{ github.workspace }}/xpressmp813" -DBUILD_PYTHON=OFF -DBUILD_JAVA=OFF -DBUILD_DOTNET=OFF
+      - name: Build windows
+        if: ${{ matrix.os == 'windows-2019'}}
+        working-directory: ./or-tools
+        run: cmake --build build --config Release --target ALL_BUILD INSTALL -v -- /maxcpucount
+
       - name: Prepare ortools install
         id: or-install
         shell: bash
