@@ -137,6 +137,7 @@ target_sources(glop PRIVATE
   ortools/util/rational_approximation.h
   ortools/util/stats.cc
   ortools/util/stats.h
+  ortools/util/strong_integers.h
   ortools/util/time_limit.cc
   ortools/util/time_limit.h
   )
