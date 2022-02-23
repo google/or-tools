@@ -224,7 +224,7 @@ def SolveRcpsp(problem, proto_file, params):
                                 m2]
                             s2 = task_starts[next_id]
                             p2 = task_to_presence_literals[next_id][m2]
-                            model.Add(s1 + delay <= s2).OnlyEnforceIf([p1, p2])
+                            model.Add(s1 + delay <= s2).OnlyEnforceIf(p1, p2)
     else:
         # Normal dependencies (task ends before the start of successors).
         for t in all_active_tasks:
