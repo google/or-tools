@@ -1,4 +1,4 @@
-name: Windows
+name: Windows-Ubuntu
 
 on:
   push:
@@ -23,7 +23,7 @@ jobs:
       XPRS_LIB_Path: ${{ github.workspace }}/xpressmp813/lib
     strategy:
       matrix:
-        os: [windows-2019]
+        os: [windows-2019, ubuntu-20.04]
         xprs: [ON, OFF]
         sirius: [ON, OFF]
         shared: [ON, OFF]
@@ -172,7 +172,7 @@ jobs:
         if: ${{ matrix.os == 'ubuntu-20.04'}}
         shell: bash
         run: |
-          cmake --build build --config Release --target install -j2
+          cmake --build build --config Release --target all install -j2
 
       - name: Configure or-tools windows
         if: ${{ matrix.os == 'windows-2019'}}
@@ -237,42 +237,41 @@ jobs:
           build\Release\linear_programming.exe
 
       - name: Run sirius_interface unittests
+        if: ${{ matrix.sirius == 'ON' }}
         working-directory: ./build
         run: ctest -V -R 'cxx_unittests_sirius_interface'
       - name: Run xpress_interface unittests
-        if: ${{ matrix.xprs == 'NOON' }}
+        if: ${{ matrix.xprs == 'ON' }}
         working-directory: ./build
         run: ctest -V -R 'cxx_unittests_xpress_interface'
       - name: Run specific cpp tests
-        if: ${{ matrix.os == 'NOwindows-2019'}}
         working-directory: ./build
         run: ctest -V -R cxx_cpp_linear_programming
       - name: Run specific python tests
-        if: ${{ matrix.xprs == 'NOON' && matrix.sirius == 'ON' }}
+        if: ${{ matrix.xprs == 'ON' && matrix.sirius == 'ON' }}
         working-directory: ./build
         run: ctest -V -R python_python_linear_programming
       - name: Run specific java tests
-        if: ${{ matrix.sirius == 'NOON' }}
+        if: ${{ matrix.extras == 'ON' }}
         working-directory: ./build
         run: ctest -V -R java_java_LinearProgramming
       - name: Run specific dotnet tests
-        if: ${{ matrix.sirius == 'NOON' }}
+        if: ${{ matrix.extras == 'ON' }}
         working-directory: ./build
         run: ctest -V -R dotnet_dotnet_cslinearprogramming
       - name: Run other cpp tests
-        if: ${{ matrix.sirius == 'NOON' }}
         working-directory: ./build
         run: ctest --output-on-failure -R cxx_cpp -E cxx_cpp_linear_programming
       - name: Run other python tests
-        if: ${{ matrix.xprs == 'NOON' && matrix.sirius == 'ON' }}
+        if: ${{ matrix.extras == 'ON' && matrix.xprs == 'ON' && matrix.sirius == 'ON' }}
         working-directory: ./build
         run: ctest --output-on-failure -R python_python -E python_python_linear_programming
       - name: Run other java tests
-        if: ${{ matrix.sirius == 'NOON' }}
+        if: ${{ matrix.extras == 'ON' }}
         working-directory: ./build
         run: ctest --output-on-failure -R java_java -E java_java_LinearProgramming
       - name: Run other dotnet tests
-        if: ${{ matrix.sirius == 'NOON' }}
+        if: ${{ matrix.extras == 'ON' }}
         working-directory: ./build
         run: ctest --output-on-failure -R dotnet_dotnet -E dotnet_dotnet_cslinearprogramming
 

@@ -170,12 +170,10 @@ jobs:
                 -DBUILD_DOTNET=${{ matrix.extras }}
 
       - name: Build
+        if: ${{ matrix.os == 'ubuntu-20.04'}}
         shell: bash
         run: |
-          cmake --build build \
-                --target all \
-                install \
-                -j4
+          cmake --build build --config Release --target all install -j4
       - name: Prepare ortools install
         id: or-install
         shell: bash
@@ -206,6 +204,7 @@ jobs:
           asset_content_type: application/zip
 
       - name: set ld_library_path
+        shell: bash
         run: |
           LD_PATH="${{ steps.setup.outputs.sirius-install-path }}/lib/:${{ env.XPRS_LIB_Path }}/"
           echo "LD_LIBRARY_PATH=$LD_PATH" >> $GITHUB_ENV
@@ -236,22 +235,26 @@ jobs:
         working-directory: ./build
         run: ctest -V -R python_python_linear_programming
       - name: Run specific java tests
+        if: ${{ matrix.extras == 'ON' }}
         working-directory: ./build
         run: ctest -V -R java_java_LinearProgramming
       - name: Run specific dotnet tests
+        if: ${{ matrix.extras == 'ON' }}
         working-directory: ./build
         run: ctest -V -R dotnet_dotnet_cslinearprogramming
       - name: Run other cpp tests
         working-directory: ./build
         run: ctest --output-on-failure -R cxx_cpp -E cxx_cpp_linear_programming
       - name: Run other python tests
-        if: ${{ matrix.xprs == 'ON' && matrix.sirius == 'ON' }}
+        if: ${{ matrix.extras == 'ON' && matrix.xprs == 'ON' && matrix.sirius == 'ON' }}
         working-directory: ./build
         run: ctest --output-on-failure -R python_python -E python_python_linear_programming
       - name: Run other java tests
+        if: ${{ matrix.extras == 'ON' }}
         working-directory: ./build
         run: ctest --output-on-failure -R java_java -E java_java_LinearProgramming
       - name: Run other dotnet tests
+        if: ${{ matrix.extras == 'ON' }}
         working-directory: ./build
         run: ctest --output-on-failure -R dotnet_dotnet -E dotnet_dotnet_cslinearprogramming
 
