@@ -303,6 +303,7 @@ class ModelCopy {
 
   // All these functions return false if the constraint is found infeasible.
   bool CopyBoolOr(const ConstraintProto& ct);
+  bool CopyBoolOrWithDupSupport(const ConstraintProto& ct);
   bool CopyBoolAnd(const ConstraintProto& ct);
   bool CopyLinear(const ConstraintProto& ct);
   bool CopyAtMostOne(const ConstraintProto& ct);
@@ -325,7 +326,9 @@ class ModelCopy {
   absl::flat_hash_map<int, int> interval_mapping_;
   int starting_constraint_index_ = 0;
   std::vector<int> temp_enforcement_literals_;
+
   std::vector<int> temp_literals_;
+  absl::flat_hash_set<int> tmp_literals_set_;
 };
 
 // Copy in_model to the model in the presolve context.

@@ -3389,7 +3389,8 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   }
 
   if (!model_proto.assumptions().empty() &&
-      (params.num_workers() > 1 || model_proto.has_objective())) {
+      (params.num_workers() > 1 || model_proto.has_objective() ||
+       model_proto.has_floating_point_objective())) {
     SOLVER_LOG(
         logger,
         "Warning: solving with assumptions was requested in a non-fully "
@@ -3412,6 +3413,9 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
           *response->mutable_sufficient_assumptions_for_infeasibility() =
               model_proto.assumptions();
         });
+
+    // Clear them from the new proto.
+    new_cp_model_proto.clear_assumptions();
 
     context->InitializeNewDomains();
     for (const int ref : model_proto.assumptions()) {

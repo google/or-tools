@@ -1345,6 +1345,7 @@ bool BoundedVariableElimination::ResolveAllClauseContaining(Literal lit) {
       if (!score_only && l != lit) resolvant_.push_back(l);
       marked_[l.Index()] = true;
     }
+    DCHECK(marked_[lit.Index()]);
     num_inspected_literals_ += clause.size() + implications.size();
 
     // If this is true, then "clause" is subsumed by one of its resolvant and we
@@ -1401,7 +1402,12 @@ bool BoundedVariableElimination::ResolveAllClauseContaining(Literal lit) {
         // If this is the case, the other clause is subsumed by the resolvant.
         // We can just remove not_lit from it and ignore it.
         if (score_only && clause.size() + extra_size <= other.size()) {
-          CHECK_EQ(clause.size() + extra_size, other.size());
+          // TODO(user): We should have an exact equality here, except if
+          // presolve is off before the clause are added to the sat solver and
+          // we have duplicate literals. The code should still work but it
+          // wasn't written with that in mind nor tested like this, so we should
+          // just enforce the invariant.
+          if (false) DCHECK_EQ(clause.size() + extra_size, other.size());
           ++num_simplifications_;
 
           // Note that we update the threshold since this clause was counted in

@@ -263,6 +263,10 @@ bool CpModelPresolver::PresolveBoolOr(ConstraintProto* ct) {
   }
 
   // Inspects the literals and deal with fixed ones.
+  //
+  // TODO(user): Because we remove literal on the first copy, maybe we can get
+  // rid of the set here. However we still need to be careful when remapping
+  // literals to their representatives.
   bool changed = false;
   context_->tmp_literals.clear();
   context_->tmp_literal_set.clear();
@@ -7786,7 +7790,11 @@ bool ModelCopy::ImportAndSimplifyConstraints(
       case ConstraintProto::CONSTRAINT_NOT_SET:
         break;
       case ConstraintProto::kBoolOr:
-        if (!CopyBoolOr(ct)) return CreateUnsatModel();
+        if (first_copy) {
+          if (!CopyBoolOrWithDupSupport(ct)) return CreateUnsatModel();
+        } else {
+          if (!CopyBoolOr(ct)) return CreateUnsatModel();
+        }
         break;
       case ConstraintProto::kBoolAnd:
         if (!CopyBoolAnd(ct)) return CreateUnsatModel();
@@ -7895,6 +7903,54 @@ bool ModelCopy::CopyBoolOr(const ConstraintProto& ct) {
     } else {
       temp_literals_.push_back(lit);
     }
+  }
+
+  context_->working_model->add_constraints()
+      ->mutable_bool_or()
+      ->mutable_literals()
+      ->Add(temp_literals_.begin(), temp_literals_.end());
+  return !temp_literals_.empty();
+}
+
+bool ModelCopy::CopyBoolOrWithDupSupport(const ConstraintProto& ct) {
+  temp_literals_.clear();
+  tmp_literals_set_.clear();
+  for (const int enforcement_lit : ct.enforcement_literal()) {
+    // Having an enforcement literal is the same as having its negation on
+    // the clause.
+    const int lit = NegatedRef(enforcement_lit);
+
+    // This code is a duplicate of the code below.
+    if (context_->LiteralIsTrue(lit)) {
+      context_->UpdateRuleStats("bool_or: always true");
+      return true;
+    }
+    if (context_->LiteralIsFalse(lit)) {
+      skipped_non_zero_++;
+      continue;
+    }
+    if (tmp_literals_set_.contains(NegatedRef(lit))) {
+      context_->UpdateRuleStats("bool_or: always true");
+      return true;
+    }
+    const auto [it, inserted] = tmp_literals_set_.insert(lit);
+    if (inserted) temp_literals_.push_back(lit);
+  }
+  for (const int lit : ct.bool_or().literals()) {
+    if (context_->LiteralIsTrue(lit)) {
+      context_->UpdateRuleStats("bool_or: always true");
+      return true;
+    }
+    if (context_->LiteralIsFalse(lit)) {
+      skipped_non_zero_++;
+      continue;
+    }
+    if (tmp_literals_set_.contains(NegatedRef(lit))) {
+      context_->UpdateRuleStats("bool_or: always true");
+      return true;
+    }
+    const auto [it, inserted] = tmp_literals_set_.insert(lit);
+    if (inserted) temp_literals_.push_back(lit);
   }
 
   context_->working_model->add_constraints()

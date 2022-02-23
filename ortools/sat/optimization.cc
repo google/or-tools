@@ -1080,6 +1080,7 @@ SatSolver::Status MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
   const SatParameters& parameters = *(model->GetOrCreate<SatParameters>());
 
   // Simple linear scan algorithm to find the optimal.
+  if (!sat_solver->ResetToLevelZero()) return SatSolver::INFEASIBLE;
   while (true) {
     const SatSolver::Status result = SolveIntegerProblem(model);
     if (result != SatSolver::FEASIBLE) return result;

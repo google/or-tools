@@ -194,6 +194,11 @@ bool SatSolver::AddTernaryClause(Literal a, Literal b, Literal c) {
   return AddProblemClause({a, b, c});
 }
 
+// Note(user): we assume there is no duplicate literals in the clauses added
+// here. Most of the code works, but some advanced algo might be
+// wrong/suboptimal if this is the case. So even when presolve is off we need
+// some "cleanup" to enforce this invariant. Alternatively we could have robut
+// algo in all the stack, but that seems a worse design.
 bool SatSolver::AddProblemClause(absl::Span<const Literal> literals) {
   SCOPED_TIME_STAT(&stats_);
   CHECK_EQ(CurrentDecisionLevel(), 0);
