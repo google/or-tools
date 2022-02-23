@@ -42,7 +42,6 @@ class VarArrayAndObjectiveSolutionPrinter(cp_model.CpSolverSolutionCallback):
 
 def SolveAndPrintIntermediateSolutionsSampleSat():
     """Showcases printing intermediate solutions found during search."""
-
     # Creates the model.
     # [START model]
     model = cp_model.CpModel()
@@ -64,6 +63,7 @@ def SolveAndPrintIntermediateSolutionsSampleSat():
     # [START objective]
     model.Maximize(x + 2 * y + 3 * z)
     # [END objective]
+
     # Creates a solver and solves.
     # [START solve]
     solver = cp_model.CpSolver()

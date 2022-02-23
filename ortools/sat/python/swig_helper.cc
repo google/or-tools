@@ -110,7 +110,7 @@ pybind11::bytes SerializedResponse(const SolutionCallback& solution_callback) {
 }
 
 PYBIND11_MODULE(swig_helper, m) {
-pybind11::module::import("ortools.util.python.sorted_interval_list");
+  pybind11::module::import("ortools.util.python.sorted_interval_list");
 
   pybind11::class_<SolutionCallback, PySolutionCallback>(m, "SolutionCallback")
       .def(pybind11::init<>())

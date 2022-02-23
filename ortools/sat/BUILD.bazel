@@ -1508,6 +1508,7 @@ cc_library(
 
 cc_library(
     name = "swig_helper",
+    srcs = ["swig_helper.cc"],
     hdrs = ["swig_helper.h"],
     visibility = [
         "//ortools/sat/java:__pkg__",
