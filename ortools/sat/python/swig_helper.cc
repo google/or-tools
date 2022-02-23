@@ -98,11 +98,11 @@ Domain SerializedVariableDomain(const std::string& serialized_variable) {
   return CpSatHelper::VariableDomain(variable_proto);
 }
 
-void SerializedWriteModelToFile(const std::string& serialized_model,
+bool SerializedWriteModelToFile(const std::string& serialized_model,
                                 const std::string& filename) {
   CpModelProto model_proto;
   model_proto.ParseFromString(serialized_model);
-  CpSatHelper::WriteModelToFile(model_proto, filename);
+  return CpSatHelper::WriteModelToFile(model_proto, filename);
 }
 
 pybind11::bytes SerializedResponse(const SolutionCallback& solution_callback) {
