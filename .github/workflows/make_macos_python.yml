@@ -12,19 +12,19 @@ jobs:
       run: |
         brew install make
         echo "/usr/local/opt/make/libexec/gnubin" >> $GITHUB_PATH
-    - name: Install python3 packages
-      run: python3 -m pip install --user mypy-protobuf absl-py numpy pandas
+    - name: Check make
+      run: make --version
     - name: Swig install
       run: brew install swig
     - name: Check swig
       run: swig -version
-    - name: Check make
-      run: make --version
+    - name: Update Path
+      run: echo "$HOME/Library/Python/3.9/bin" >> $GITHUB_PATH
     - name: Check system
       run: make detect_port
     - name: Check Python
       run: make detect_python
-    - name: Build third party 
+    - name: Build third party
       run: make third_party BUILD_PYTHON=ON BUILD_JAVA=OFF BUILD_DOTNET=OFF
     - name: Build C++ and Python
       run: make compile_libraries -j4
