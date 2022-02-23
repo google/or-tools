@@ -15,7 +15,7 @@
 
 
 import unittest
-from ortools.util import sorted_interval_list
+from ortools.util.python import sorted_interval_list
 
 
 class SortedIntervalListTest(unittest.TestCase):
