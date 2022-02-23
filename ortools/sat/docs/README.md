@@ -7,13 +7,13 @@ https://developers.google.com/optimization/cp/cp_solver
 
 
 <!--ts-->
-   * [Using the CP-SAT solver](#using-the-cp-sat-solver)
-      * [Documentation structure](#documentation-structure)
-      * [Searching for one (optimal) solution of a CP-SAT model](#searching-for-one-optimal-solution-of-a-cp-sat-model)
-         * [Python code samples](#python-code-samples)
-         * [C   code samples](#c-code-samples)
-         * [Java code samples](#java-code-samples)
-         * [C# code samples](#c-code-samples-1)
+* [Using the CP-SAT solver](#using-the-cp-sat-solver)
+   * [Documentation structure](#documentation-structure)
+   * [Searching for one (optimal) solution of a CP-SAT model](#searching-for-one-optimal-solution-of-a-cp-sat-model)
+      * [Python code samples](#python-code-samples)
+      * [C++ code samples](#c-code-samples)
+      * [Java code samples](#java-code-samples)
+      * [C# code samples](#c-code-samples-1)
 
 
 <!--te-->

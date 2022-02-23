@@ -144,4 +144,4 @@ Scheduling constraints:
 ## Recipes
 
 You can find a set a code recipes in
-[the documentation directory](doc/README.md).
+[the documentation directory](docs/README.md).
