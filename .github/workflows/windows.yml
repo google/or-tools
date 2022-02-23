@@ -25,13 +25,11 @@ jobs:
       matrix:
         os: [windows-2019]
         xprs: [OFF]
-        sirius: [ON, OFF]
+        sirius: [OFF]
         shared: [ON, OFF]
         extras: [OFF]
 
         exclude:
-          - xprs: OFF
-            sirius: OFF
           - shared: OFF
             extras: ON
 
