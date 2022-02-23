@@ -211,6 +211,7 @@ jobs:
           asset_content_type: application/zip
 
       - name: set ld_library_path
+        shell: bash
         run: |
           LD_PATH="${{ steps.setup.outputs.sirius-install-path }}/lib/:${{ env.XPRS_LIB_Path }}/"
           echo "LD_LIBRARY_PATH=$LD_PATH" >> $GITHUB_ENV
@@ -224,6 +225,14 @@ jobs:
                 -Dsirius_solver_DIR="${{ steps.setup.outputs.sirius-install-path }}/cmake"
           cmake --build build
           ./build/linear_programming
+      - name: Build & run CMake example project
+        working-directory: ./or-tools/examples/cmake/linear_programming/
+        env:
+          XPRESS: "${{ github.workspace }}/xpressmp813/bin/"
+        run: |
+          cmake -Bbuild -S. -DORTOOLS_INSTALL="${{ github.workspace }}/or-tools/build/install" -DCMAKE_BUILD_TYPE=Release -DXPRESS_ROOT="${{ github.workspace }}/xpressmp813" -Dsirius_solver_DIR="${{ github.workspace }}/sirius-solver/SiriusInstall/cmake"
+          cmake --build build --config Release
+          build\Release\linear_programming.exe
 
       - name: Run sirius_interface unittests
         if: ${{ matrix.sirius == 'ON' }}
