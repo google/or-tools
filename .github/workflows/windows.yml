@@ -227,17 +227,16 @@ jobs:
           cmake --build build
           ./build/linear_programming
       - name: Build & run CMake example project
-        if: ${{ matrix.os == 'NOwindows-2019'}}
+        if: ${{ matrix.os == 'windows-2019'}}
         working-directory: ./examples/cmake/linear_programming/
         env:
           XPRESS: "${{ github.workspace }}/xpressmp813/bin/"
         run: |
-          cmake -Bbuild -S. -DORTOOLS_INSTALL="${{ github.workspace }}/or-tools/build/install" -DCMAKE_BUILD_TYPE=Release -DXPRESS_ROOT="${{ github.workspace }}/xpressmp813" -Dsirius_solver_DIR="${{ github.workspace }}/sirius-solver/SiriusInstall/cmake"
+          cmake -Bbuild -S. -DORTOOLS_INSTALL="${{ github.workspace }}/build/install" -DCMAKE_BUILD_TYPE=Release -DXPRESS_ROOT="${{ github.workspace }}/xpressmp813" -Dsirius_solver_DIR="${{ github.workspace }}/sirius-solver/SiriusInstall/cmake"
           cmake --build build --config Release
           build\Release\linear_programming.exe
 
       - name: Run sirius_interface unittests
-        if: ${{ matrix.sirius == 'NOON' }}
         working-directory: ./build
         run: ctest -V -R 'cxx_unittests_sirius_interface'
       - name: Run xpress_interface unittests
