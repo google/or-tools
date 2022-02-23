@@ -1,6 +1,7 @@
 # CI: Makefile/Docker testing
 
-To test the build on various distro, I'm using docker containers and a Makefile for orchestration.
+To test the build on various distro, I'm using docker containers and a Makefile
+for orchestration.
 
 pros:
 * You are independent of third party CI runner VM images (e.g. [github actions/virtual-environments](https://github.com/actions/virtual-environments)).
@@ -32,6 +33,6 @@ make ubuntu_test
 
 ## Docker Layers
 
-Dockerfile is splitted in several stages.
+Dockerfile is split in several stages.
 
 ![docker](docker.svg)
