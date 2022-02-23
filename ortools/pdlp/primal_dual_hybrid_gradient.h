@@ -129,21 +129,6 @@ SolverResult PrimalDualHybridGradient(
     std::function<void(const IterationCallbackInfo&)> iteration_stats_callback =
         nullptr);
 
-// Uses PrimalDualHybridGradient to solve the instance specified by the
-// MPModelProto. If relax_integer_variables is true, integrality constraints are
-// relaxed before solving. If false, integrality constraints result in an error.
-// The solver_specific_info field in the MPSolutionResponse contains a
-// serialized SolveLog. Users of this interface should be aware of the size
-// limitations of MPModelProto (see, e.g., large_linear_program.proto). Returns
-// an error if the conversion from MPModelProto to QuadraticProgram fails. The
-// lack of an error does not imply success. Check the SolveLog's
-// termination_reason for more refined status details.
-absl::StatusOr<MPSolutionResponse> SolveMpModelProto(
-    const MPModelProto& model, const PrimalDualHybridGradientParams& params,
-    bool relax_integer_variables = false,
-    std::function<void(const IterationCallbackInfo&)> iteration_stats_callback =
-        nullptr);
-
 namespace internal {
 
 // Computes variable and constraint statuses. This determines if primal

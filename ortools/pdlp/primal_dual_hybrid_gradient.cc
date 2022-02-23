@@ -29,17 +29,16 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
-#include "absl/time/clock.h"
-#include "absl/time/time.h"
 #include "absl/types/optional.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/base/timer.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/preprocessor.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
+#include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/proto_utils.h"
 #include "ortools/pdlp/iteration_stats.h"
@@ -1884,69 +1883,6 @@ SolverResult PrimalDualHybridGradient(
   Solver solver(std::move(qp), params);
   return solver.Solve(std::move(initial_solution),
                       std::move(iteration_stats_callback));
-}
-
-absl::StatusOr<MPSolutionResponse> SolveMpModelProto(
-    const MPModelProto& model, const PrimalDualHybridGradientParams& params,
-    const bool relax_integer_variables,
-    IterationStatsCallback iteration_stats_callback) {
-  ASSIGN_OR_RETURN(QuadraticProgram qp,
-                   QpFromMpModelProto(model, relax_integer_variables));
-  const double objective_scaling_factor = qp.objective_scaling_factor;
-
-  SolverResult pdhg_result = PrimalDualHybridGradient(
-      std::move(qp), params, std::move(iteration_stats_callback));
-
-  // PDLP's statuses don't map very cleanly to MPSolver statuses. Do the best
-  // we can for now.
-  MPSolutionResponse response;
-  switch (pdhg_result.solve_log.termination_reason()) {
-    case TERMINATION_REASON_OPTIMAL:
-      response.set_status(MPSOLVER_OPTIMAL);
-      break;
-    case TERMINATION_REASON_NUMERICAL_ERROR:
-      response.set_status(MPSOLVER_ABNORMAL);
-      break;
-    case TERMINATION_REASON_PRIMAL_INFEASIBLE:
-      response.set_status(MPSOLVER_INFEASIBLE);
-      break;
-    default:
-      response.set_status(MPSOLVER_NOT_SOLVED);
-  }
-  if (pdhg_result.solve_log.has_termination_string()) {
-    response.set_status_str(pdhg_result.solve_log.termination_string());
-  }
-
-  const absl::optional<ConvergenceInformation> convergence_information =
-      GetConvergenceInformation(pdhg_result.solve_log.solution_stats(),
-                                pdhg_result.solve_log.solution_type());
-
-  if (convergence_information.has_value()) {
-    response.set_objective_value(convergence_information->primal_objective());
-  }
-  // variable_value and dual_value are supposed to be set iff 'status' is
-  // OPTIMAL or FEASIBLE. However, we set them in all cases.
-
-  for (const double v : pdhg_result.primal_solution) {
-    response.add_variable_value(v);
-  }
-
-  // Recall QpFromMpModelProto converts maximization problems to minimization
-  // problems for PDLP by negating the objective and setting
-  // objective_scaling_factor to -1. This maintains the same set of primal
-  // solutions. Dual solutions need to be negated if objective_scaling_factor is
-  // -1.
-  for (const double v : pdhg_result.dual_solution) {
-    response.add_dual_value(objective_scaling_factor * v);
-  }
-
-  for (const double v : pdhg_result.reduced_costs) {
-    response.add_reduced_cost(objective_scaling_factor * v);
-  }
-
-  response.set_solver_specific_info(pdhg_result.solve_log.SerializeAsString());
-
-  return response;
 }
 
 namespace internal {

@@ -13,6 +13,8 @@
 
 #include "ortools/pdlp/primal_dual_hybrid_gradient.h"
 
+#include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <limits>
 #include <string>
@@ -28,9 +30,8 @@
 #include "absl/types/optional.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
-#include "ortools/base/protobuf_util.h"
-#include "ortools/base/status_macros.h"
-#include "ortools/linear_solver/linear_solver.h"
+#include "ortools/base/logging.h"
+#include "ortools/glop/parameters.pb.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
@@ -45,8 +46,6 @@
 namespace operations_research::pdlp {
 namespace {
 
-using ::google::protobuf::util::ParseTextOrDie;
-
 using ::operations_research::glop::ConstraintStatus;
 using ::operations_research::glop::VariableStatus;
 using ::testing::_;
@@ -54,7 +53,6 @@ using ::testing::AnyNumber;
 using ::testing::AnyOf;
 using ::testing::DoubleNear;
 using ::testing::ElementsAre;
-using ::testing::ElementsAreArray;
 using ::testing::Eq;
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;
@@ -196,10 +194,6 @@ class PresolveDualScalingTest
           std::tuple</*Dualize=*/bool,
                      /*NegateAndScaleObjective=*/bool>> {};
 
-// The param true means presolve is on, false means presolve is off.
-class SolveMpModelProtoMaybePresolveTest : public testing::TestWithParam<bool> {
-};
-
 INSTANTIATE_TEST_SUITE_P(
     QP, PrimalDualHybridGradientDiagonalQPTest,
     testing::Combine(testing::Bool(), testing::Values(1, 4), testing::Bool(),
@@ -236,14 +230,6 @@ INSTANTIATE_TEST_SUITE_P(
       return absl::StrCat(std::get<1>(info.param) ? "Dualize" : "NoDualize",
                           std::get<0>(info.param) ? "NegateAndScaleObjective"
                                                   : "NoObjectiveScaling");
-    });
-
-INSTANTIATE_TEST_SUITE_P(
-    SolveMpModelProtoMaybePresolve, SolveMpModelProtoMaybePresolveTest,
-    testing::Bool(),
-    [](const testing::TestParamInfo<
-        SolveMpModelProtoMaybePresolveTest::ParamType>& info) {
-      return info.param ? "PresolveOn" : "PresolveOff";
     });
 
 TEST_P(PrimalDualHybridGradientLPTest, UnboundedVariables) {
@@ -1094,222 +1080,6 @@ TEST(PrimalDualHybridGradientTest, EmptyQp) {
   EXPECT_THAT(output.dual_solution, ElementsAre());
   EXPECT_EQ(output.solve_log.iteration_count(), 0);
   EXPECT_EQ(output.solve_log.termination_reason(), TERMINATION_REASON_OPTIMAL);
-}
-
-MPSolutionResponse GlopSolution(const MPModelProto& proto) {
-  MPSolver model("test lp", MPSolver::GLOP_LINEAR_PROGRAMMING);
-  std::string error_string;
-  CHECK_EQ(model.LoadModelFromProto(proto, &error_string),
-           MPSOLVER_MODEL_IS_VALID)
-      << " error " << error_string;
-  CHECK_EQ(model.Solve(), MPSolver::OPTIMAL);
-  MPSolutionResponse glop_response;
-  model.FillSolutionResponseProto(&glop_response);
-  return glop_response;
-}
-
-TEST(SolveProtoTest, SolvesEasyMinimizationLp) {
-  // min -2y
-  // s.t. x + y <= 1
-  //      x, y >= 0
-  const auto proto = ParseTextOrDie<MPModelProto>(R"pb(
-    variable { lower_bound: 0 }
-    variable { lower_bound: 0 objective_coefficient: -2.0 }
-    constraint {
-      var_index: 0
-      var_index: 1
-      coefficient: 1.0
-      coefficient: 1.0
-      lower_bound: -inf
-      upper_bound: 1.0
-    }
-  )pb");
-  // Using default convergence tolerances and 1 thread.
-  PrimalDualHybridGradientParams params;
-  absl::StatusOr<MPSolutionResponse> response =
-      SolveMpModelProto(proto, params);
-  ASSERT_TRUE(response.ok()) << response.status();
-  SolveLog solve_log;
-  ASSERT_TRUE(solve_log.ParseFromString(response->solver_specific_info()));
-  EXPECT_EQ(response->status(), MPSOLVER_OPTIMAL);
-  EXPECT_DOUBLE_EQ(response->objective_value(), -2.0);
-  EXPECT_THAT(response->variable_value(), ElementsAre(0.0, 1.0));
-  EXPECT_THAT(response->dual_value(), ElementsAre(-2.0));
-  EXPECT_THAT(response->reduced_cost(), ElementsAre(2.0, 0.0));
-
-  EXPECT_TRUE(solve_log.has_solution_stats());
-  EXPECT_GT(solve_log.iteration_count(), 0);
-
-  // The signs of the duals are consistent with Glop.
-  const MPSolutionResponse glop_response = GlopSolution(proto);
-  EXPECT_THAT(glop_response.dual_value(),
-              ElementsAreArray(response->dual_value()));
-  EXPECT_THAT(glop_response.reduced_cost(),
-              ElementsAreArray(response->reduced_cost()));
-}
-
-// This test solves an LP that's designed to terminate with
-// POINT_TYPE_ITERATE_DIFFERENCE. This yields a solution without any convergence
-// information. SolveMpModelProto() should return a proto without
-// objective_value set but otherwise function normally.
-TEST(SolveProtoTest, SolvesWithDifferenceOfIterates) {
-  // This test uses the LP min x + y s.t. 2*y >= 0, y >= 5. This is primal
-  // unbounded and dual infeasible. The solver will start at x=0, y=5 and the
-  // current iterate won't be a dual infeasibility certificate until x < -5,
-  // which takes several iterations due to the 2*y >= 0 constraint limiting the
-  // step size. Difference of iterates detects dual infeasibility immediately.
-  const auto proto = ParseTextOrDie<MPModelProto>(R"pb(
-    variable { objective_coefficient: 1 }
-    variable { lower_bound: 5 objective_coefficient: 1 }
-    constraint { var_index: 1 coefficient: 2.0 lower_bound: 0.0 }
-  )pb");
-  PrimalDualHybridGradientParams params;
-  params.set_linesearch_rule(
-      PrimalDualHybridGradientParams::CONSTANT_STEP_SIZE_RULE);
-  params.set_major_iteration_frequency(1);
-  params.set_l_inf_ruiz_iterations(0);
-  params.set_l2_norm_rescaling(false);
-  absl::StatusOr<MPSolutionResponse> response =
-      SolveMpModelProto(proto, params);
-  ASSERT_TRUE(response.ok()) << response.status();
-  SolveLog solve_log;
-  ASSERT_TRUE(solve_log.ParseFromString(response->solver_specific_info()));
-
-  EXPECT_EQ(response->status(), MPSOLVER_NOT_SOLVED);
-  EXPECT_THAT(response->variable_value(), ElementsAre(-0.4, 0.0));
-  EXPECT_THAT(response->dual_value(), ElementsAre(0.0));
-  EXPECT_THAT(response->reduced_cost(), ElementsAre(0.0, 0.0));
-  EXPECT_FALSE(response->has_objective_value());
-  EXPECT_TRUE(solve_log.has_solution_stats());
-  EXPECT_EQ(solve_log.iteration_count(), 1);
-}
-
-TEST_P(SolveMpModelProtoMaybePresolveTest, SolvesEasyMaximizationLp) {
-  // max 2y
-  // s.t. x + y <= 1
-  //      x, y >= 0
-  const auto proto = ParseTextOrDie<MPModelProto>(R"pb(
-    variable { lower_bound: 0 }
-    variable { lower_bound: 0 objective_coefficient: 2.0 }
-    constraint {
-      var_index: 0
-      var_index: 1
-      coefficient: 1.0
-      coefficient: 1.0
-      lower_bound: -inf
-      upper_bound: 1.0
-    }
-    maximize: true
-  )pb");
-  // Using default convergence tolerances and 1 thread.
-  PrimalDualHybridGradientParams params;
-  const bool presolve_on = GetParam();
-  params.mutable_presolve_options()->set_use_glop(presolve_on);
-
-  absl::StatusOr<MPSolutionResponse> response =
-      SolveMpModelProto(proto, params);
-  ASSERT_TRUE(response.ok()) << response.status();
-  SolveLog solve_log;
-  ASSERT_TRUE(solve_log.ParseFromString(response->solver_specific_info()));
-
-  EXPECT_EQ(response->status(), MPSOLVER_OPTIMAL);
-  EXPECT_DOUBLE_EQ(response->objective_value(), 2.0);
-  EXPECT_THAT(response->variable_value(), ElementsAre(0.0, 1.0));
-  EXPECT_THAT(response->dual_value(), ElementsAre(2.0));
-  EXPECT_THAT(response->reduced_cost(), ElementsAre(-2.0, 0.0));
-
-  EXPECT_TRUE(solve_log.has_solution_stats());
-  if (presolve_on) {
-    EXPECT_EQ(solve_log.iteration_count(), 0);
-  } else {
-    EXPECT_GT(solve_log.iteration_count(), 0);
-  }
-  // The signs of the duals are consistent with Glop.
-  const MPSolutionResponse glop_response = GlopSolution(proto);
-  EXPECT_THAT(glop_response.dual_value(),
-              ElementsAreArray(response->dual_value()));
-  EXPECT_THAT(glop_response.reduced_cost(),
-              ElementsAreArray(response->reduced_cost()));
-}
-
-TEST(SolveProtoTest, RelaxesIntegerVariables) {
-  // max x
-  // s.t. 0 <= x <= 1, x integer
-  const auto proto = ParseTextOrDie<MPModelProto>(R"pb(
-    variable {
-      lower_bound: 0
-      upper_bound: 1
-      is_integer: true
-      objective_coefficient: 1
-    }
-    maximize: true
-  )pb");
-  // Using default convergence tolerances and 1 thread.
-  PrimalDualHybridGradientParams params;
-  absl::StatusOr<MPSolutionResponse> response =
-      SolveMpModelProto(proto, params, /*relax_integer_variables=*/true);
-  ASSERT_TRUE(response.ok()) << response.status();
-  EXPECT_EQ(response->status(), MPSOLVER_OPTIMAL);
-  EXPECT_DOUBLE_EQ(response->objective_value(), 1.0);
-  EXPECT_THAT(response->variable_value(), ElementsAre(1.0));
-  EXPECT_THAT(response->reduced_cost(), ElementsAre(1.0));
-}
-
-TEST(SolveProtoTest, ErrorsOnIntegerVariables) {
-  // max x
-  // s.t. 0 <= x <= 1, x integer
-  const auto proto = ParseTextOrDie<MPModelProto>(R"pb(
-    variable {
-      lower_bound: 0
-      upper_bound: 1
-      is_integer: true
-      objective_coefficient: 1
-    }
-    maximize: true
-  )pb");
-
-  PrimalDualHybridGradientParams params;
-  EXPECT_EQ(SolveMpModelProto(proto, PrimalDualHybridGradientParams(),
-                              /*relax_integer_variables=*/false)
-                .status()
-                .code(),
-            absl::StatusCode::kInvalidArgument);
-}
-
-// This is an integration test with MPSolver and a small example.
-TEST(SolveProtoTest, SolvesEasyLpWithMPSolver) {
-  // min -2y
-  // s.t. x + y <= 1
-  //      x, y >= 0
-  MPSolver model("easy lp", MPSolver::GLOP_LINEAR_PROGRAMMING);
-  auto* x =
-      model.MakeVar(0.0, MPSolver::infinity(), /*integer=*/false, /*name=*/"");
-  auto* y =
-      model.MakeVar(0.0, MPSolver::infinity(), /*integer=*/false, /*name=*/"");
-  model.MutableObjective()->SetCoefficient(y, -2.0);
-  model.MutableObjective()->SetMinimization();
-  auto* constraint = model.MakeRowConstraint(-MPSolver::infinity(), 1.0);
-  constraint->SetCoefficient(x, 1.0);
-  constraint->SetCoefficient(y, 1.0);
-
-  MPModelProto proto;
-  model.ExportModelToProto(&proto);
-
-  // Using default convergence tolerances and 1 thread.
-  PrimalDualHybridGradientParams params;
-
-  absl::StatusOr<MPSolutionResponse> response =
-      SolveMpModelProto(proto, params);
-  ASSERT_TRUE(response.ok()) << response.status();
-  const absl::Status load_status = model.LoadSolutionFromProto(*response);
-  ASSERT_TRUE(load_status.ok()) << load_status;
-
-  EXPECT_DOUBLE_EQ(x->solution_value(), 0.0);
-  EXPECT_DOUBLE_EQ(y->solution_value(), 1.0);
-  EXPECT_DOUBLE_EQ(x->reduced_cost(), 2.0);
-  EXPECT_DOUBLE_EQ(y->reduced_cost(), 0.0);
-  EXPECT_DOUBLE_EQ(constraint->dual_value(), -2.0);
-  EXPECT_DOUBLE_EQ(model.Objective().Value(), -2.0);
 }
 
 // Verifies that the primal and dual solution satisfy the bounds constraints.
