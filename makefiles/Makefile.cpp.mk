@@ -461,10 +461,10 @@ install_dirs:
 	-$(MKDIR) "$(DESTDIR)$(prefix)$Slib"
 	-$(MKDIR) "$(DESTDIR)$(prefix)$Sbin"
 	-$(MKDIR) "$(DESTDIR)$(prefix)$Sshare"
-	-$(MKDIR) "$(DESTDIR)$(prefix)$Sshare$Sdoc"
-	-$(MKDIR) "$(DESTDIR)$(prefix)$Sshare$Sdoc$Sortools"
-	-$(MKDIR) "$(DESTDIR)$(prefix)$Sshare$Sdoc$Sortools$Ssat"
-	-$(MKDIR) "$(DESTDIR)$(prefix)$Sshare$Sdoc$Sortools$Ssat$Sdoc"
+	-$(MKDIR) "$(DESTDIR)$(prefix)$Sshare$Sdocs"
+	-$(MKDIR) "$(DESTDIR)$(prefix)$Sshare$Sdocs$Sortools"
+	-$(MKDIR) "$(DESTDIR)$(prefix)$Sshare$Sdocs$Sortools$Ssat"
+	-$(MKDIR) "$(DESTDIR)$(prefix)$Sshare$Sdocs$Sortools$Ssat$Sdocs"
 
 # Install C++ OR-Tools to $(DESTDIR)$(prefix)
 .PHONY: install_cc
@@ -474,7 +474,7 @@ install_cc: | install_dirs
 	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)ortools.$L "$(DESTDIR)$(prefix)$Slib"
 	$(COPY) bin$Sprotoc* "$(DESTDIR)$(prefix)$Sbin"
 	$(COPYREC) share "$(DESTDIR)$(prefix)"
-	$(COPY) ortools$Ssat$Sdoc$S*.md "$(DESTDIR)$(prefix)$Sshare$Sdoc$Sortools$Ssat$Sdoc"
+	$(COPY) ortools$Ssat$Sdocs$S*.md "$(DESTDIR)$(prefix)$Sshare$Sdocs$Sortools$Ssat$Sdocs"
 
 #######################
 ##  EXAMPLE ARCHIVE  ##
