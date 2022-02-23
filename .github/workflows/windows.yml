@@ -226,15 +226,6 @@ jobs:
                 -Dsirius_solver_DIR="${{ steps.setup.outputs.sirius-install-path }}/cmake"
           cmake --build build
           ./build/linear_programming
-      - name: Build & run CMake example project
-        if: ${{ matrix.os == 'windows-2019'}}
-        working-directory: ./examples/cmake/linear_programming/
-        env:
-          XPRESS: "${{ github.workspace }}/xpressmp813/bin/"
-        run: |
-          cmake -Bbuild -S. -DORTOOLS_INSTALL="${{ github.workspace }}/build/install" -DCMAKE_BUILD_TYPE=Release -DXPRESS_ROOT="${{ github.workspace }}/xpressmp813" -Dsirius_solver_DIR="${{ github.workspace }}/sirius-solver/SiriusInstall/cmake"
-          cmake --build build --config Release
-          build\Release\linear_programming.exe
 
       - name: Run sirius_interface unittests
         if: ${{ matrix.sirius == 'ON' }}
