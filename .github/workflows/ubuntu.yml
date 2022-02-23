@@ -74,13 +74,6 @@ jobs:
         run: |
           choco install wget zip unzip --no-progress
 
-      - name: try zip
-        shell: bash
-        run: |
-          mkdir titi
-          touch titi/toto.txt
-          zip -r toto.zip titi
-
       - name: Install SWIG 4.0.2
         if: ${{ matrix.os == 'windows-2019'}}
         run: |
@@ -210,6 +203,7 @@ jobs:
           echo "LD_LIBRARY_PATH=$LD_PATH" >> $GITHUB_ENV
 
       - name: Build & run CMake example project
+        if: ${{ matrix.os == 'ubuntu-20.04'}}
         working-directory: ./examples/cmake/linear_programming/
         run: |
           cmake -Bbuild -S. \

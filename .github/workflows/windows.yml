@@ -27,13 +27,15 @@ jobs:
         xprs: [ON, OFF]
         sirius: [ON, OFF]
         shared: [ON, OFF]
-        extras: [OFF]
+        extras: [ON, OFF]
 
         exclude:
           - xprs: OFF
             sirius: OFF
           - shared: OFF
             extras: ON
+          - shared: ON
+            extras: OFF
 
     steps:
       - name: Set version
@@ -207,7 +209,7 @@ jobs:
           cmake --build build
           ./build/linear_programming
       - name: Build & run CMake example project
-        if: ${{ matrix.os == 'windows-2019'}}
+        if: ${{ matrix.os == 'NONOwindows-2019'}}
         working-directory: ./examples/cmake/linear_programming/
         env:
           XPRESS: "${{ github.workspace }}/xpressmp813/bin/"
