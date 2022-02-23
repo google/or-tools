@@ -24,14 +24,16 @@ jobs:
     strategy:
       matrix:
         os: [windows-2019]
-        xprs: [OFF]
-        sirius: [OFF]
+        xprs: [ON, OFF]
+        sirius: [ON, OFF]
         shared: [ON, OFF]
         extras: [OFF]
 
         exclude:
           - shared: OFF
             extras: ON
+          - shared: ON
+            extras: OFF
 
     steps:
       - name: Set version
@@ -175,7 +177,7 @@ jobs:
       - name: Configure or-tools windows
         if: ${{ matrix.os == 'windows-2019'}}
         working-directory: ./or-tools
-        run: cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="build/install" -DBUILD_DEPS=ON -DUSE_SIRIUS=ON -Dsirius_solver_DIR="${{ github.workspace }}/sirius-solver/SiriusInstall/cmake" -DUSE_XPRESS=ON -DXPRESS_ROOT="${{ github.workspace }}/xpressmp813" -DBUILD_PYTHON=OFF -DBUILD_JAVA=OFF -DBUILD_DOTNET=OFF
+        run: cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="build/install" -DBUILD_DEPS=ON -DUSE_SIRIUS=${{ matrix.sirius }} -Dsirius_solver_DIR="${{ github.workspace }}/sirius-solver/SiriusInstall/cmake" -DUSE_XPRESS=${{ matrix.xprs }} -DXPRESS_ROOT="${{ github.workspace }}/xpressmp813" -DBUILD_PYTHON=${{ matrix.extras }} -DBUILD_JAVA=${{ matrix.extras }} -DBUILD_DOTNET=${{ matrix.extras }}
       - name: Build windows
         if: ${{ matrix.os == 'windows-2019'}}
         working-directory: ./or-tools
