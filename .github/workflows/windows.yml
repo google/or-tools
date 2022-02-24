@@ -27,13 +27,19 @@ jobs:
         xprs: [ON, OFF]
         sirius: [ON, OFF]
         shared: [ON, OFF]
-        extras: [ON]
+        extras: [ON, OFF]
 
         exclude:
           - xprs: OFF
             sirius: OFF
-          - shared: ON
-            os: windows-2019
+          - os: windows-2019
+            shared: ON
+          - os: ubuntu-20.04
+            shared: OFF
+            extras: ON
+          - os: ubuntu-20.04
+            shared: ON
+            extras: OFF
 
     steps:
       - name: Set version
