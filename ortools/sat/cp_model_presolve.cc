@@ -1084,6 +1084,7 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
         return context_->NotifyThatModelIsUnsat(
             "int_prod: constant factor does not divide constant target");
       }
+      changed = true;
       proto->clear_target();
       proto->mutable_target()->set_offset(target_value / constant_factor);
       context_->UpdateRuleStats(
