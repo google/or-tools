@@ -11,6 +11,9 @@ jobs:
   # Building using the github runner environement directly.
   bazel:
     runs-on: ubuntu-latest
+    env:
+      CC:  gcc-10
+      CXX: g++-10
     steps:
       - name: Check out repository code
         uses: actions/checkout@v2
