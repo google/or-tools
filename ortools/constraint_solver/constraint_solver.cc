@@ -549,7 +549,7 @@ class NoCompressionTrailPacker : public TrailPacker<T> {
   }
 
  private:
-  DISALLOW_COPY_AND_ASSIGN(NoCompressionTrailPacker<T>);
+  DISALLOW_COPY_AND_ASSIGN(NoCompressionTrailPacker);
 };
 
 template <class T>
@@ -588,7 +588,7 @@ class ZlibTrailPacker : public TrailPacker<T> {
  private:
   const uint64_t tmp_size_;
   std::unique_ptr<char[]> tmp_block_;
-  DISALLOW_COPY_AND_ASSIGN(ZlibTrailPacker<T>);
+  DISALLOW_COPY_AND_ASSIGN(ZlibTrailPacker);
 };
 
 template <class T>
