@@ -78,7 +78,7 @@ jobs:
         run: |
           choco install wget zip unzip --no-progress
 
-      - name: Install SWIG 4.0.2
+      - name: Install SWIG 4.0.2 for windows
         if: ${{ matrix.os == 'windows-2019'}}
         run: |
           (New-Object System.Net.WebClient).DownloadFile("http://prdownloads.sourceforge.net/swig/swigwin-4.0.2.zip","swigwin-4.0.2.zip");
@@ -115,7 +115,7 @@ jobs:
           asset_name: ${{ matrix.os }}_${{ steps.setup.outputs.sirius-archive-name }}
           asset_content_type: application/zip
 
-      - name: Checkout xpressmp813
+      - name: Checkout xpressmp813 linux
         if: ${{ matrix.os == 'ubuntu-20.04'}}
         uses: actions/checkout@v2
         with:
@@ -123,7 +123,7 @@ jobs:
           path: ${{ env.XPRS_Path }}
           ref: master
           token: ${{ secrets.ACCESS_TOKEN }}
-      - name: Checkout xpressmp813Win
+      - name: Checkout xpressmp813 windows
         if: ${{ matrix.os == 'windows-2019'}}
         uses: actions/checkout@v2
         with:
@@ -161,7 +161,7 @@ jobs:
 
       - name: Build windows
         if: ${{ matrix.os == 'windows-2019'}}
-        run: cmake --build build --config Release --target ALL_BUILD INSTALL -v -- /maxcpucount
+        run: cmake --build build --config Release --target all install -j4
 
       - name: Prepare ortools install
         id: or-install
@@ -177,13 +177,13 @@ jobs:
           echo "::set-output name=ortools_archive_path::$ARCHIVE_PATH"
 
 
-      - name: Upload artifact ortools install
+      - name: Upload ortools install artifact
         uses: actions/upload-artifact@v2
         with:
           name: ${{ steps.or-install.outputs.ortools_archive_name }}
           path: ${{ steps.or-install.outputs.ortools_archive_path }}
 
-      - name: Publish asset  file upload
+      - name: Publish ortools install asset
         if:  github.event_name == 'release' && github.event.action == 'created'
         uses: actions/upload-release-asset@v1.0.2
         with:
@@ -303,26 +303,26 @@ jobs:
           echo "::set-output name=archive_name::$ARCHIVE_NAME"
           echo "::set-output name=archive_path::$ARCHIVE_PATH"
 
-      - name: Upload ortools wheel
+      - name: Upload ortools wheel artifact
         if: ${{ matrix.extras == 'ON' }}
         uses: actions/upload-artifact@v2
         with:
           name: ${{ steps.wheel.outputs.archive_name }}
           path: ${{ steps.wheel.outputs.archive_path }}
-      - name: Upload ortools jar
+      - name: Upload ortools jar artifact
         if: ${{ matrix.extras == 'ON' }}
         uses: actions/upload-artifact@v2
         with:
           name: ${{ steps.jar.outputs.archive_name }}
           path: ${{ steps.jar.outputs.archive_path }}
-      - name: Upload ortools dotnet
+      - name: Upload ortools dotnet artifact
         if: ${{ matrix.extras == 'ON' }}
         uses: actions/upload-artifact@v2
         with:
           name: ${{ steps.dotnet.outputs.archive_name }}
           path: ${{ steps.dotnet.outputs.archive_path }}
 
-      - name: Publish ortools wheel
+      - name: Publish ortools wheel asset
         if:  ${{ github.event_name == 'release' && github.event.action == 'created' && matrix.extras == 'ON' }}
         uses: actions/upload-release-asset@v1.0.2
         with:
@@ -331,7 +331,7 @@ jobs:
           asset_name: ${{ steps.wheel.outputs.archive_name }}
           asset_content_type: application/zip
 
-      - name: Publish ortools jar
+      - name: Publish ortools jar asset
         if:  ${{ github.event_name == 'release' && github.event.action == 'created' && matrix.extras == 'ON' }}
         uses: actions/upload-release-asset@v1.0.2
         with:
@@ -340,7 +340,7 @@ jobs:
           asset_name: ${{ steps.jar.outputs.archive_name }}
           asset_content_type: application/zip
 
-      - name: Publish ortools dotnet
+      - name: Publish ortools dotnet asset
         if:  ${{ github.event_name == 'release' && github.event.action == 'created' && matrix.extras == 'ON' }}
         uses: actions/upload-release-asset@v1.0.2
         with:
