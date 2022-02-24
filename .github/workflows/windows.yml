@@ -27,7 +27,7 @@ jobs:
         xprs: [ON, OFF]
         sirius: [ON, OFF]
         shared: [ON, OFF]
-        extras: [OFF]
+        extras: [ON]
 
         exclude:
           - xprs: OFF
