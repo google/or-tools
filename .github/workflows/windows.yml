@@ -267,12 +267,12 @@ jobs:
         shell: bash
         run: |
           cd ./build/python/dist
-          MY_DIR=ortools_wheel_${{ steps.names.outputs.appendix }}
-          mkdir $MY_DIR
-          cp *.whl $MY_DIR
-          ARCHIVE_NAME=${MY_DIR}.zip
-          ARCHIVE_PATH=${{ github.workspace }}/build/${ARCHIVE_NAME}
-          zip -r $ARCHIVE_PATH $MY_DIR
+          MY_DIR="ortools_wheel_${{ steps.names.outputs.appendix }}"
+          mkdir ${MY_DIR}
+          cp *.whl "${MY_DIR}"
+          ARCHIVE_NAME="${MY_DIR}.zip"
+          ARCHIVE_PATH="${{ github.workspace }}/build/${ARCHIVE_NAME}"
+          zip -r "${ARCHIVE_PATH}" "${MY_DIR}"
           echo "::set-output name=archive_name::$ARCHIVE_NAME"
           echo "::set-output name=archive_path::$ARCHIVE_PATH"
 
@@ -282,13 +282,12 @@ jobs:
         shell: bash
         run: |
           cd ./build/java
-          MY_DIR=ortools_jar_${{ steps.names.outputs.appendix }}
-          mkdir $MY_DIR
-          cp ortools-*/target/*.jar $MY_DIR
-          ARCHIVE_NAME=${MY_DIR}.zip
-          ARCHIVE_PATH=${{ github.workspace }}/build/${ARCHIVE_NAME}
-          zip -r $ARCHIVE_PATH $MY_DIR
-          echo "::set-output name=archive_name::$ARCHIVE_NAME"
+          MY_DIR="ortools_jar_${{ steps.names.outputs.appendix }}"
+          mkdir ${MY_DIR}
+          cp ortools-*/target/*.jar "${MY_DIR}"
+          ARCHIVE_NAME="${MY_DIR}.zip"
+          ARCHIVE_PATH="${{ github.workspace }}/build/${ARCHIVE_NAME}"
+          zip -r "${ARCHIVE_PATH}" "${MY_DIR}"
           echo "::set-output name=archive_path::$ARCHIVE_PATH"
 
       - name: prepare ortools dotnet
@@ -297,12 +296,12 @@ jobs:
         shell: bash
         run: |
           cd ./build/dotnet/packages/
-          MY_DIR=ortools_dotnet_${{ steps.names.outputs.appendix }}
-          mkdir $MY_DIR
-          cp Google.OrTools.[0-9]*.[0-9]*.[0-9]*.nupkg $MY_DIR
-          ARCHIVE_NAME=${MY_DIR}.zip
-          ARCHIVE_PATH=${{ github.workspace }}/build/${ARCHIVE_NAME}
-          zip -r $ARCHIVE_PATH $MY_DIR
+          MY_DIR="ortools_dotnet_${{ steps.names.outputs.appendix }}"
+          mkdir ${MY_DIR}
+          cp Google.OrTools.[0-9]*.[0-9]*.[0-9]*.nupkg "${MY_DIR}"
+          ARCHIVE_NAME="${MY_DIR}.zip"
+          ARCHIVE_PATH="${{ github.workspace }}/build/${ARCHIVE_NAME}"
+          zip -r "${ARCHIVE_PATH}" "${MY_DIR}"
           echo "::set-output name=archive_name::$ARCHIVE_NAME"
           echo "::set-output name=archive_path::$ARCHIVE_PATH"
 
