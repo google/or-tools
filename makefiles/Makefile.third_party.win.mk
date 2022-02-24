@@ -24,7 +24,7 @@ dependencies:
 third_party: dependencies/ortools.sln | dependencies
 
 THIRD_PARTY_TARGET = dependencies/ortools.sln
-
+GENERATOR ?= "MMake Makefiles"
 
 dependencies/ortools.sln: | dependencies
 	cmake -S . -B dependencies -DBUILD_DEPS=ON \
@@ -36,7 +36,9 @@ dependencies/ortools.sln: | dependencies
 	-DUSE_COINOR=$(USE_COINOR) \
 	-DUSE_SCIP=$(USE_SCIP) \
 	-DUSE_GLPK=$(USE_GLPK) \
-	-DCMAKE_INSTALL_PREFIX=$(OR_ROOT_FULL)
+	-DCMAKE_INSTALL_PREFIX=$(OR_ROOT_FULL) \
+	-DCMAKE_BUILD_TYPE=Release \
+	-G $(GENERATOR)
 
 .PHONY: clean_third_party
 clean_third_party:
