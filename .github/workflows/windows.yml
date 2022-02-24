@@ -151,7 +151,6 @@ jobs:
 
       - name: Configure or-tools
         if: ${{ matrix.os == 'ubuntu-20.04'}}
-        shell: bash
         run: |
              cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="build/install" -DBUILD_SHARED_LIBS=${{ matrix.shared }} -DBUILD_DEPS=ON -DUSE_SIRIUS=${{ matrix.sirius }} -Dsirius_solver_DIR="${{ steps.setup.outputs.sirius-install-path }}/cmake" -DUSE_XPRESS=${{ matrix.xprs }} -DXPRESS_ROOT="${{ env.XPRS_Path }}" -DBUILD_PYTHON=${{ matrix.extras }} -DBUILD_JAVA=${{ matrix.extras }} -DBUILD_DOTNET=${{ matrix.extras }} ${{ steps.cache.outputs.CMAKE_CCACHE }} ${{ steps.cache.outputs.CMAKE_CXXCACHE }}
       - name: Build Linux
@@ -162,7 +161,7 @@ jobs:
 
       - name: Configure or-tools windows
         if: ${{ matrix.os == 'windows-2019'}}
-        run: cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="build/install" -DBUILD_SHARED_LIBS=${{ matrix.shared }} -DBUILD_DEPS=ON -DUSE_SIRIUS=${{ matrix.sirius }} -Dsirius_solver_DIR="${{ github.workspace }}/sirius-solver/SiriusInstall/cmake" -DUSE_XPRESS=${{ matrix.xprs }} -DXPRESS_ROOT="${{ github.workspace }}/xpressmp813" -DBUILD_PYTHON=${{ matrix.extras }} -DBUILD_JAVA=${{ matrix.extras }} -DBUILD_DOTNET=${{ matrix.extras }}
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="build/install" -DBUILD_SHARED_LIBS=${{ matrix.shared }} -DBUILD_DEPS=ON -DUSE_SIRIUS=${{ matrix.sirius }} -Dsirius_solver_DIR="${{ github.workspace }}/sirius-solver/SiriusInstall/cmake" -DUSE_XPRESS=${{ matrix.xprs }} -DXPRESS_ROOT="${{ github.workspace }}/xpressmp813" -DBUILD_PYTHON=${{ matrix.extras }} -DBUILD_JAVA=${{ matrix.extras }} -DBUILD_DOTNET=${{ matrix.extras }}
       - name: Build windows
         if: ${{ matrix.os == 'windows-2019'}}
         run: cmake --build build --config Release --target ALL_BUILD INSTALL -v -- /maxcpucount
