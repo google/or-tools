@@ -1447,7 +1447,7 @@ bool CpModelPresolver::CanonicalizeLinearExpressionInternal(
   std::sort(tmp_terms_.begin(), tmp_terms_.end());
   int current_var = 0;
   int64_t current_coeff = 0;
-  for (const auto entry : tmp_terms_) {
+  for (const auto& entry : tmp_terms_) {
     CHECK(RefIsPositive(entry.first));
     if (entry.first == current_var) {
       current_coeff += entry.second;
@@ -6317,7 +6317,7 @@ void CpModelPresolver::DetectDuplicateConstraints() {
   // usage is not biased by duplicate constraints.
   const std::vector<std::pair<int, int>> duplicates =
       FindDuplicateConstraints(*context_->working_model);
-  for (const auto [dup, rep] : duplicates) {
+  for (const auto& [dup, rep] : duplicates) {
     // Note that it is important to look at the type of the representative in
     // case the constraint became empty.
     DCHECK_LT(kObjectiveConstraint, 0);
@@ -6674,7 +6674,7 @@ void CpModelPresolver::PerformFreeColumnSubstitution(
   // TODO(user): Pay attention to possible overflow.
   int num_cancelled = 0;
   int num_added = 0;
-  for (const auto [c, coeff_x] : constraints_with_x_coeff) {
+  for (const auto& [c, coeff_x] : constraints_with_x_coeff) {
     ConstraintProto* ct = context_->working_model->mutable_constraints(c);
     LinearConstraintProto* mutable_linear = ct->mutable_linear();
     CHECK_NE(coeff_x, 0);

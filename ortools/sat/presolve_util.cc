@@ -149,7 +149,7 @@ void SortAndMergeTerms(std::vector<std::pair<int, int64_t>>* terms,
   std::sort(terms->begin(), terms->end());
   int current_var = 0;
   int64_t current_coeff = 0;
-  for (const auto entry : *terms) {
+  for (const auto& entry : *terms) {
     CHECK(RefIsPositive(entry.first));
     if (entry.first == current_var) {
       current_coeff += entry.second;

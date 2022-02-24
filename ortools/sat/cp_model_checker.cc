@@ -1177,7 +1177,7 @@ class ConstraintChecker {
     }
     std::sort(start_durations_pairs.begin(), start_durations_pairs.end());
     int64_t previous_end = std::numeric_limits<int64_t>::min();
-    for (const auto pair : start_durations_pairs) {
+    for (const auto& pair : start_durations_pairs) {
       if (pair.first < previous_end) return false;
       previous_end = pair.first + pair.second;
     }

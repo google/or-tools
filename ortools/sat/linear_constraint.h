@@ -285,7 +285,7 @@ void CleanTermsAndFillConstraint(
   std::sort(terms->begin(), terms->end());
   IntegerVariable previous_var = kNoIntegerVariable;
   IntegerValue current_coeff(0);
-  for (const std::pair<IntegerVariable, IntegerValue> entry : *terms) {
+  for (const std::pair<IntegerVariable, IntegerValue>& entry : *terms) {
     if (previous_var == entry.first) {
       current_coeff += entry.second;
     } else if (previous_var == NegationOf(entry.first)) {

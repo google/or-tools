@@ -162,7 +162,7 @@ class SatSolver {
   void ResetDecisionHeuristicAndSetAllPreferences(
       const std::vector<std::pair<Literal, double>>& prefs) {
     decision_policy_->ResetDecisionHeuristic();
-    for (const std::pair<Literal, double> p : prefs) {
+    for (const std::pair<Literal, double>& p : prefs) {
       decision_policy_->SetAssignmentPreference(p.first, p.second);
     }
   }

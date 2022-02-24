@@ -104,7 +104,7 @@ bool ScatteredIntegerVector::AddLinearExpressionMultiple(
     const std::vector<std::pair<glop::ColIndex, IntegerValue>>& terms) {
   const double threshold = 0.1 * static_cast<double>(dense_vector_.size());
   if (is_sparse_ && static_cast<double>(terms.size()) < threshold) {
-    for (const std::pair<glop::ColIndex, IntegerValue> term : terms) {
+    for (const std::pair<glop::ColIndex, IntegerValue>& term : terms) {
       if (is_zeros_[term.first]) {
         is_zeros_[term.first] = false;
         non_zeros_.push_back(term.first);
@@ -118,7 +118,7 @@ bool ScatteredIntegerVector::AddLinearExpressionMultiple(
     }
   } else {
     is_sparse_ = false;
-    for (const std::pair<glop::ColIndex, IntegerValue> term : terms) {
+    for (const std::pair<glop::ColIndex, IntegerValue>& term : terms) {
       if (!AddProductTo(multiplier, term.second, &dense_vector_[term.first])) {
         return false;
       }
@@ -317,7 +317,7 @@ bool LinearProgrammingConstraint::CreateLpFromConstraintManager() {
   // scaling, but also our integer reason computation.
   int new_size = 0;
   objective_infinity_norm_ = 0;
-  for (const auto entry : integer_objective_) {
+  for (const auto& entry : integer_objective_) {
     const IntegerVariable var = integer_variables_[entry.first.value()];
     if (integer_trail_->IsFixedAtLevelZero(var)) {
       integer_objective_offset_ +=
@@ -800,7 +800,7 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
       first_new_var + IntegerVariable(2 * tmp_ib_slack_infos_.size()));
   tmp_slack_rows_.clear();
   tmp_slack_bounds_.clear();
-  for (const auto pair : integer_multipliers) {
+  for (const auto& pair : integer_multipliers) {
     const RowIndex row = pair.first;
     const IntegerValue coeff = pair.second;
     const auto status = simplex_.GetConstraintStatus(row);
@@ -1229,7 +1229,7 @@ void LinearProgrammingConstraint::AddMirCuts() {
 
     // Copy cut.
     const IntegerValue multiplier = entry.second;
-    for (const std::pair<ColIndex, IntegerValue> term :
+    for (const std::pair<ColIndex, IntegerValue>& term :
          integer_lp_[entry.first].terms) {
       const ColIndex col = term.first;
       const IntegerValue coeff = term.second;
@@ -1375,7 +1375,7 @@ void LinearProgrammingConstraint::AddMirCuts() {
       for (ColIndex col : non_zeros_.PositionsSetAtLeastOnce()) {
         dense_cut[col] *= mult1;
       }
-      for (const std::pair<ColIndex, IntegerValue> term :
+      for (const std::pair<ColIndex, IntegerValue>& term :
            integer_lp_[row_to_combine].terms) {
         const ColIndex col = term.first;
         const IntegerValue coeff = term.second;
@@ -1929,7 +1929,7 @@ LinearProgrammingConstraint::ScaleLpMultiplier(
   // Scale the multipliers by *scaling.
   //
   // TODO(user): Maybe use int128 to avoid overflow?
-  for (const auto entry : tmp_cp_multipliers_) {
+  for (const auto& entry : tmp_cp_multipliers_) {
     const IntegerValue coeff(std::round(entry.second * (*scaling)));
     if (coeff != 0) integer_multipliers.push_back({entry.first, coeff});
   }
@@ -1945,7 +1945,7 @@ bool LinearProgrammingConstraint::ComputeNewLinearConstraint(
 
   // Compute the new constraint by taking the linear combination given by
   // integer_multipliers of the integer constraints in integer_lp_.
-  for (const std::pair<RowIndex, IntegerValue> term : integer_multipliers) {
+  for (const std::pair<RowIndex, IntegerValue>& term : integer_multipliers) {
     const RowIndex row = term.first;
     const IntegerValue multiplier = term.second;
     CHECK_LT(row, integer_lp_.size());
@@ -2022,7 +2022,7 @@ void LinearProgrammingConstraint::AdjustNewLinearConstraint(
     // TODO(user): we could relax a bit some of the condition and allow a sign
     // change. It is just trickier to compute the diff when we allow such
     // changes.
-    for (const auto entry : integer_lp_[row].terms) {
+    for (const auto& entry : integer_lp_[row].terms) {
       const ColIndex col = entry.first;
       const IntegerValue coeff = entry.second;
       const IntegerValue abs_coef = IntTypeAbs(coeff);
@@ -2464,7 +2464,7 @@ void SeparateSubtourInequalities(
     }
     return r;
   };
-  for (const auto pair : arc_by_decreasing_lp_values) {
+  for (const auto& pair : arc_by_decreasing_lp_values) {
     if (num_components == 2) break;
     const int tail = get_root_and_compress_path(tails[pair.second]);
     const int head = get_root_and_compress_path(heads[pair.second]);

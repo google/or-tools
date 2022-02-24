@@ -382,13 +382,13 @@ bool HittingSetOptimizer::ComputeInitialMpModel() {
 
 void HittingSetOptimizer::TightenMpModel() {
   // Update the MP variables bounds from the SAT level 0 bounds.
-  for (const auto [var, var_proto] : extracted_variables_info_) {
+  for (const auto& [var, var_proto] : extracted_variables_info_) {
     var_proto->set_lower_bound(ToDouble(integer_trail_->LowerBound(var)));
     var_proto->set_upper_bound(ToDouble(integer_trail_->UpperBound(var)));
   }
 
   int tightened = 0;
-  for (const auto [index, ct] : linear_extract_info_) {
+  for (const auto& [index, ct] : linear_extract_info_) {
     const double original_lb = ct->lower_bound();
     const double original_ub = ct->upper_bound();
     ct->Clear();

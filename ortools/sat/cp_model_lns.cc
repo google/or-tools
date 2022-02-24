@@ -1366,7 +1366,7 @@ Neighborhood RelaxationInducedNeighborhoodGenerator::Generate(
 
   absl::ReaderMutexLock graph_lock(&helper_.graph_mutex_);
   // Fix the variables in the local model.
-  for (const std::pair</*model_var*/ int, /*value*/ int64_t> fixed_var :
+  for (const std::pair</*model_var*/ int, /*value*/ int64_t>& fixed_var :
        rins_neighborhood.fixed_vars) {
     const int var = fixed_var.first;
     const int64_t value = fixed_var.second;
@@ -1385,8 +1385,8 @@ Neighborhood RelaxationInducedNeighborhoodGenerator::Generate(
   }
 
   for (const std::pair</*model_var*/ int,
-                       /*domain*/ std::pair<int64_t, int64_t>>
-           reduced_var : rins_neighborhood.reduced_domain_vars) {
+                       /*domain*/ std::pair<int64_t, int64_t>>& reduced_var :
+       rins_neighborhood.reduced_domain_vars) {
     const int var = reduced_var.first;
     const int64_t lb = reduced_var.second.first;
     const int64_t ub = reduced_var.second.second;

@@ -1576,7 +1576,7 @@ bool BinaryImplicationGraph::TransformIntoMaxCliques(
       [](const std::pair<int, int> a, const std::pair<int, int>& b) {
         return a.second > b.second;
       });
-  for (const auto [index, old_size] : index_size_vector) {
+  for (const auto& [index, old_size] : index_size_vector) {
     std::vector<Literal>& clique = (*at_most_ones)[index];
     if (time_limit_->LimitReached()) break;
 
@@ -1635,6 +1635,7 @@ bool BinaryImplicationGraph::TransformIntoMaxCliques(
   return true;
 }
 
+template <bool use_weight>
 std::vector<Literal> BinaryImplicationGraph::ExpandAtMostOneWithWeight(
     const absl::Span<const Literal> at_most_one,
     const absl::StrongVector<LiteralIndex, bool>& can_be_included,
@@ -1643,7 +1644,11 @@ std::vector<Literal> BinaryImplicationGraph::ExpandAtMostOneWithWeight(
   std::vector<LiteralIndex> intersection;
   double clique_weight = 0.0;
   const int64_t old_work = work_done_in_mark_descendants_;
-  for (const Literal l : clique) clique_weight += expanded_lp_values[l.Index()];
+  if (use_weight) {
+    for (const Literal l : clique) {
+      clique_weight += expanded_lp_values[l.Index()];
+    }
+  }
   for (int i = 0; i < clique.size(); ++i) {
     // Do not spend too much time here.
     if (work_done_in_mark_descendants_ - old_work > 1e8) break;
@@ -1666,14 +1671,16 @@ std::vector<Literal> BinaryImplicationGraph::ExpandAtMostOneWithWeight(
     for (const LiteralIndex index : intersection) {
       if (!is_marked_[index]) continue;
       intersection[new_size++] = index;
-      intersection_weight += expanded_lp_values[index];
+      if (use_weight) {
+        intersection_weight += expanded_lp_values[index];
+      }
     }
     intersection.resize(new_size);
     if (intersection.empty()) break;
 
     // We can't generate a violated cut this way. This is because intersection
     // contains all the possible ways to extend the current clique.
-    if (clique_weight + intersection_weight <= 1.0) {
+    if (use_weight && clique_weight + intersection_weight <= 1.0) {
       clique.clear();
       return clique;
     }
@@ -1685,8 +1692,11 @@ std::vector<Literal> BinaryImplicationGraph::ExpandAtMostOneWithWeight(
       int index = -1;
       double max_lp = 0.0;
       for (int j = 0; j < intersection.size(); ++j) {
-        const double lp = 1.0 - expanded_lp_values[intersection[j]] +
-                          absl::Uniform<double>(*random_, 0.0, 1e-4);
+        // If we don't use weight, we prefer variable that comes first.
+        const double lp =
+            use_weight ? 1.0 - expanded_lp_values[intersection[j]] +
+                             absl::Uniform<double>(*random_, 0.0, 1e-4)
+                       : can_be_included.size() - intersection[j].value();
         if (index == -1 || lp > max_lp) {
           index = j;
           max_lp = lp;
@@ -1696,12 +1706,24 @@ std::vector<Literal> BinaryImplicationGraph::ExpandAtMostOneWithWeight(
         clique.push_back(Literal(intersection[index]).Negated());
         std::swap(intersection.back(), intersection[index]);
         intersection.pop_back();
-        clique_weight += expanded_lp_values[clique.back().Index()];
+        if (use_weight) {
+          clique_weight += expanded_lp_values[clique.back().Index()];
+        }
       }
     }
   }
   return clique;
 }
+
+// Make sure both version are compiled.
+template std::vector<Literal> BinaryImplicationGraph::ExpandAtMostOneWithWeight<
+    true>(const absl::Span<const Literal> at_most_one,
+          const absl::StrongVector<LiteralIndex, bool>& can_be_included,
+          const absl::StrongVector<LiteralIndex, double>& expanded_lp_values);
+template std::vector<Literal> BinaryImplicationGraph::ExpandAtMostOneWithWeight<
+    false>(const absl::Span<const Literal> at_most_one,
+           const absl::StrongVector<LiteralIndex, bool>& can_be_included,
+           const absl::StrongVector<LiteralIndex, double>& expanded_lp_values);
 
 const std::vector<std::vector<Literal>>&
 BinaryImplicationGraph::GenerateAtMostOnesWithLargeWeight(

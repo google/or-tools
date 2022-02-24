@@ -589,7 +589,7 @@ IntegerVariable GetOrCreateVariableWithTightBound(
 
   int64_t sum_min = 0;
   int64_t sum_max = 0;
-  for (const std::pair<IntegerVariable, int64_t> var_coeff : terms) {
+  for (const std::pair<IntegerVariable, int64_t>& var_coeff : terms) {
     const int64_t min_domain = model->Get(LowerBound(var_coeff.first));
     const int64_t max_domain = model->Get(UpperBound(var_coeff.first));
     const int64_t coeff = var_coeff.second;
@@ -1089,7 +1089,7 @@ int RegisterClausesLevelZeroImport(int id,
                                            sat_solver]() {
     std::vector<std::pair<int, int>> new_binary_clauses;
     shared_clauses_manager->GetUnseenBinaryClauses(id, &new_binary_clauses);
-    for (const auto [ref1, ref2] : new_binary_clauses) {
+    for (const auto& [ref1, ref2] : new_binary_clauses) {
       const Literal l1 = mapping->Literal(ref1);
       const Literal l2 = mapping->Literal(ref2);
       if (!sat_solver->AddBinaryClause(l1, l2)) {

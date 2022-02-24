@@ -1649,10 +1649,14 @@ void CoreBasedOptimizer::PresolveObjectiveWithAtMostOne(
   absl::StrongVector<LiteralIndex, Coefficient> weights(num_literals);
   absl::StrongVector<LiteralIndex, bool> is_candidate(num_literals);
 
+  // For now, we do not use weight. Note that finding the at most on in the
+  // creation order of the variable make a HUGE difference on the max-sat frb
+  // family.
+  //
   // TODO(user): We can assign preferences to literals to favor certain at most
   // one instead of other. For now we don't, so ExpandAtMostOneWithWeight() will
   // kind of randomize the expansion amongst possible choices.
-  absl::StrongVector<LiteralIndex, double> preferences(num_literals, 1.0);
+  absl::StrongVector<LiteralIndex, double> preferences;
 
   // Collect all literals with "negative weights", we will try to find at most
   // one between them.
@@ -1686,8 +1690,9 @@ void CoreBasedOptimizer::PresolveObjectiveWithAtMostOne(
 
     // Note that for this to be as exhaustive as possible, the probing needs
     // to have added binary clauses corresponding to lvl0 propagation.
-    at_most_one = implications_->ExpandAtMostOneWithWeight({root}, is_candidate,
-                                                           preferences);
+    at_most_one =
+        implications_->ExpandAtMostOneWithWeight</*use_weight=*/false>(
+            {root}, is_candidate, preferences);
     if (at_most_one.size() <= 1) continue;
     ++num_at_most_ones;
 
@@ -1757,7 +1762,7 @@ void CoreBasedOptimizer::PresolveObjectiveWithAtMostOne(
       coefficients->push_back(weights[root.NegatedIndex()]);
     }
   }
-  for (const auto [lit, coeff] : new_obj_terms) {
+  for (const auto& [lit, coeff] : new_obj_terms) {
     literals->push_back(lit);
     coefficients->push_back(coeff);
   }

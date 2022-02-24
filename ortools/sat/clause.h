@@ -720,6 +720,7 @@ class BinaryImplicationGraph : public SatPropagator {
   int64_t WorkDone() const { return work_done_in_mark_descendants_; }
 
   // Same as ExpandAtMostOne() but try to maximize the weight in the clique.
+  template <bool use_weight = true>
   std::vector<Literal> ExpandAtMostOneWithWeight(
       const absl::Span<const Literal> at_most_one,
       const absl::StrongVector<LiteralIndex, bool>& can_be_included,

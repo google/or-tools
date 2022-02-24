@@ -462,7 +462,7 @@ void SatPresolver::SimpleBva(LiteralIndex l) {
 
     // Set m_cls_ to p_[lmax].
     m_cls_.clear();
-    for (const auto entry : flattened_p_) {
+    for (const auto& entry : flattened_p_) {
       literal_to_p_size_[entry.first] = 0;
       if (entry.first == lmax) m_cls_.push_back(entry.second);
     }
@@ -470,7 +470,7 @@ void SatPresolver::SimpleBva(LiteralIndex l) {
   }
 
   // Make sure literal_to_p_size_ is all zero.
-  for (const auto entry : flattened_p_) literal_to_p_size_[entry.first] = 0;
+  for (const auto& entry : flattened_p_) literal_to_p_size_[entry.first] = 0;
   flattened_p_.clear();
 
   // A strictly positive reduction means that applying the BVA transform will

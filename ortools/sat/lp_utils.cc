@@ -1071,7 +1071,7 @@ bool ScaleAndSetObjective(const SatParameters& params,
   double min_magnitude = std::numeric_limits<double>::infinity();
   double max_magnitude = 0.0;
   double l1_norm = 0.0;
-  for (const auto [var, coeff] : objective) {
+  for (const auto& [var, coeff] : objective) {
     const auto& var_proto = cp_model->variables(var);
     const int64_t lb = var_proto.domain(0);
     const int64_t ub = var_proto.domain(var_proto.domain_size() - 1);
