@@ -57,49 +57,6 @@ run_test: build
 	cd $(SOURCE_PROJECT_PATH) && "$(DOTNET_BIN)" test --no-build -c Release $(ARGS)
 endif
 
-# .Net F#
-ifeq ($(SOURCE_SUFFIX),.fs) # Those rules will be used if SOURCE contain a .cs file
-
-SOURCE_PROJECT_DIR := $(SOURCE)
-SOURCE_PROJECT_DIR := $(subst /$(SOURCE_NAME).fs,, $(SOURCE_PROJECT_DIR))
-SOURCE_PROJECT_PATH = $(subst /,$S,$(SOURCE_PROJECT_DIR))
-
-.PHONY: build # Build a .Net F# program (using 'dotnet test').
-build: $(SOURCE) $(SOURCE)proj $(FSHARP_ORTOOLS_NUPKG)
-	cd $(SOURCE_PROJECT_PATH) && "$(DOTNET_BIN)" build -c Release
-	cd $(SOURCE_PROJECT_PATH) && "$(DOTNET_BIN)" pack -c Release
-
-.PHONY: run # Run a .Net F# program (using 'dotnet test').
-run: build
-	cd $(SOURCE_PROJECT_PATH) && "$(DOTNET_BIN)" run --no-build -c Release $(ARGS)
-endif
-
-$(TEMP_DOTNET_DIR):
-	$(MKDIR) $(TEMP_DOTNET_DIR)
-# create test fsproj
-$(TEMP_DOTNET_DIR)/$(FSHARP_ORTOOLS_TESTS_ASSEMBLY_NAME): | $(TEMP_DOTNET_DIR)
-	$(MKDIR_P) $(TEMP_DOTNET_DIR)$S$(FSHARP_ORTOOLS_TESTS_ASSEMBLY_NAME)
-
-$(TEMP_DOTNET_DIR)/$(FSHARP_ORTOOLS_TESTS_ASSEMBLY_NAME)/%.fs: \
- $(SRC_DIR)/ortools/dotnet/$(FSHARP_ORTOOLS_TESTS_ASSEMBLY_NAME)/%.fs | $(TEMP_DOTNET_DIR)/$(FSHARP_ORTOOLS_TESTS_ASSEMBLY_NAME)
-	$(COPY) $(SRC_DIR)$Sortools$Sdotnet$S$(FSHARP_ORTOOLS_TESTS_ASSEMBLY_NAME)$S$*.fs $(TEMP_DOTNET_DIR)$S$(FSHARP_ORTOOLS_TESTS_ASSEMBLY_NAME)$S$*.fs
-
-$(TEMP_DOTNET_DIR)/$(FSHARP_ORTOOLS_TESTS_ASSEMBLY_NAME)/$(FSHARP_ORTOOLS_TESTS_ASSEMBLY_NAME).fsproj: \
- ortools/dotnet/$(FSHARP_ORTOOLS_TESTS_ASSEMBLY_NAME)/$(FSHARP_ORTOOLS_TESTS_ASSEMBLY_NAME).fsproj.in | $(TEMP_DOTNET_DIR)/$(FSHARP_ORTOOLS_TESTS_ASSEMBLY_NAME)
-	$(SED) -e "s/@PROJECT_VERSION@/$(OR_TOOLS_VERSION)/" \
- ortools$Sdotnet$S$(FSHARP_ORTOOLS_TESTS_ASSEMBLY_NAME)$S$(FSHARP_ORTOOLS_TESTS_ASSEMBLY_NAME).fsproj.in > \
- $(TEMP_DOTNET_DIR)$S$(FSHARP_ORTOOLS_TESTS_ASSEMBLY_NAME)$S$(FSHARP_ORTOOLS_TESTS_ASSEMBLY_NAME).fsproj
-	$(SED) -i -e 's/@DOTNET_PACKAGES_DIR@/..\/packages/' \
- $(TEMP_DOTNET_DIR)$S$(FSHARP_ORTOOLS_TESTS_ASSEMBLY_NAME)$S$(FSHARP_ORTOOLS_TESTS_ASSEMBLY_NAME).fsproj
-
-.PHONY: test_dotnet_fsharp # Run F# OrTools Tests
-test_dotnet_fsharp: $(FSHARP_ORTOOLS_NUPKG) \
- $(TEMP_DOTNET_DIR)/$(FSHARP_ORTOOLS_TESTS_ASSEMBLY_NAME)/$(FSHARP_ORTOOLS_TESTS_ASSEMBLY_NAME).fsproj \
- $(TEMP_DOTNET_DIR)/$(FSHARP_ORTOOLS_TESTS_ASSEMBLY_NAME)/Program.fs \
- $(TEMP_DOTNET_DIR)/$(FSHARP_ORTOOLS_TESTS_ASSEMBLY_NAME)/Tests.fs
-	"$(DOTNET_BIN)" build $(DOTNET_BUILD_ARGS) $(TEMP_DOTNET_DIR)$S$(FSHARP_ORTOOLS_TESTS_ASSEMBLY_NAME)$S$(FSHARP_ORTOOLS_TESTS_ASSEMBLY_NAME).fsproj
-	"$(DOTNET_BIN)" test $(DOTNET_BUILD_ARGS) $(TEMP_DOTNET_DIR)$S$(FSHARP_ORTOOLS_TESTS_ASSEMBLY_NAME)
-
 #############################
 ##  .NET Examples/Samples  ##
 #############################
@@ -247,52 +204,6 @@ rdotnet_%: \
  FORCE
 	cd $(TEMP_DOTNET_DIR)$Stests$S$* && "$(DOTNET_BIN)" build -c Release
 	cd $(TEMP_DOTNET_DIR)$Stests$S$* && "$(DOTNET_BIN)" test --no-build -c Release $(ARGS)
-
-DOTNET_FS_EXAMPLES := contrib dotnet
-
-define dotnet-fs-example-target =
-$$(TEMP_DOTNET_DIR)/$1/%: \
- $$(SRC_DIR)/examples/$1/%.fs \
- | $$(TEMP_DOTNET_DIR)/$1
-	-$$(MKDIR) $$(TEMP_DOTNET_DIR)$$S$1$$S$$*
-
-$$(TEMP_DOTNET_DIR)/$1/%/%.fsproj: \
- $${SRC_DIR}/ortools/dotnet/Sample.fsproj.in \
- | $$(TEMP_DOTNET_DIR)/$1/%
-	$$(SED) -e "s/@DOTNET_PACKAGES_DIR@/..\/..\/..\/dependencies\/dotnet\/packages/" \
- ortools$$Sdotnet$$SSample.fsproj.in \
- > $$(TEMP_DOTNET_DIR)$$S$1$$S$$*$$S$$*.fsproj
-	$$(SED) -i -e 's/@DOTNET_PROJECT@/$$(DOTNET_ORTOOLS_ASSEMBLY_NAME)/' \
- $$(TEMP_DOTNET_DIR)$$S$1$$S$$*$$S$$*.fsproj
-	$$(SED) -i -e 's/@SAMPLE_NAME@/$$*/' \
- $$(TEMP_DOTNET_DIR)$$S$1$$S$$*$$S$$*.fsproj
-	$$(SED) -i -e 's/@PROJECT_VERSION@/$$(OR_TOOLS_VERSION)/' \
- $$(TEMP_DOTNET_DIR)$$S$1$$S$$*$$S$$*.fsproj
-	$$(SED) -i -e 's/@PROJECT_VERSION_MAJOR@/$$(OR_TOOLS_MAJOR)/' \
- $$(TEMP_DOTNET_DIR)$$S$1$$S$$*$$S$$*.fsproj
-	$$(SED) -i -e 's/@PROJECT_VERSION_MINOR@/$$(OR_TOOLS_MINOR)/' \
- $$(TEMP_DOTNET_DIR)$$S$1$$S$$*$$S$$*.fsproj
-	$$(SED) -i -e 's/@PROJECT_VERSION_PATCH@/$$(GIT_REVISION)/' \
- $$(TEMP_DOTNET_DIR)$$S$1$$S$$*$$S$$*.fsproj
-	$$(SED) -i -e 's/@FILE_NAME@/$$*.fs/' \
- $$(TEMP_DOTNET_DIR)$$S$1$$S$$*$$S$$*.fsproj
-
-$$(TEMP_DOTNET_DIR)/$1/%/%.fs: \
- $$(SRC_DIR)/examples/$1/%.fs \
- | $$(TEMP_DOTNET_DIR)/$1/%
-	$$(COPY) $$(SRC_DIR)$$Sexamples$$S$1$$S$$*.fs \
- $$(TEMP_DOTNET_DIR)$$S$1$$S$$*
-
-rdotnet_%: \
- $(FSHARP_ORTOOLS_NUPKG) \
- $$(TEMP_DOTNET_DIR)/$1/%/%.fsproj \
- $$(TEMP_DOTNET_DIR)/$1/%/%.fs \
- FORCE
-	cd $$(TEMP_DOTNET_DIR)$$S$1$$S$$* && "$$(DOTNET_BIN)" build -c Release
-	cd $$(TEMP_DOTNET_DIR)$$S$1$$S$$* && "$$(DOTNET_BIN)" run --no-build --framework net6.0 -c Release $$(ARGS)
-endef
-
-$(foreach example,$(DOTNET_FS_EXAMPLES),$(eval $(call dotnet-fs-example-target,$(example))))
 
 #############################
 ##  .NET Examples/Samples  ##
@@ -492,23 +403,7 @@ test_dotnet_contrib: \
 	rdotnet_who_killed_agatha \
 	rdotnet_xkcd \
 	rdotnet_young_tableaux \
-	rdotnet_zebra \
-	rdotnet_fsdiet \
-	rdotnet_fsequality-inequality \
-	rdotnet_fsequality \
-	rdotnet_fsinteger-linear-program \
-	rdotnet_fsintegerprogramming \
-	rdotnet_fsknapsack \
-	rdotnet_fslinearprogramming \
-	rdotnet_fsnetwork-max-flow-lpSolve \
-	rdotnet_fsnetwork-max-flow \
-	rdotnet_fsnetwork-min-cost-flow \
-	rdotnet_fsProgram \
-	rdotnet_fsrabbit-pheasant \
-	rdotnet_fsvolsay \
-	rdotnet_fsvolsay3-lpSolve \
-	rdotnet_fsvolsay3 \
-	rdotnet_SimpleProgramFSharp
+	rdotnet_zebra
 #	rdotnet_coins_grid ARGS="5 2" \
 #	rdotnet_nontransitive_dice \ # too long
 #	rdotnet_partition \ # too long
@@ -659,9 +554,6 @@ nuget_archive: dotnet | $(TEMP_DOTNET_DIR)
 	"$(DOTNET_BIN)" publish $(DOTNET_BUILD_ARGS) --no-build --no-dependencies --no-restore -f net6.0 \
  -o "..$S..$S..$S$(TEMP_DOTNET_DIR)" \
  ortools$Sdotnet$S$(DOTNET_ORTOOLS_ASSEMBLY_NAME)$S$(DOTNET_ORTOOLS_ASSEMBLY_NAME).csproj
-	"$(DOTNET_BIN)" publish $(DOTNET_BUILD_ARGS) --no-build --no-dependencies --no-restore -f net6.0 \
- -o "..$S..$S..$S$(TEMP_DOTNET_DIR)" \
- ortools$Sdotnet$S$(FSHARP_ORTOOLS_ASSEMBLY_NAME)$S$(FSHARP_ORTOOLS_ASSEMBLY_NAME).fsproj
 	"$(DOTNET_BIN)" pack -c Release $(NUGET_PACK_ARGS) --no-build \
  -o "..$S..$S..$S$(BIN_DIR)" \
  ortools$Sdotnet
@@ -699,7 +591,6 @@ clean_dotnet:
 	-$(DEL) $(OBJ_DIR)$Sswig$S*_csharp_wrap.$O
 #	-$(DEL) $(LIB_DIR)$S$(DOTNET_ORTOOLS_NATIVE).*
 #	-$(DEL) $(BIN_DIR)$S$(DOTNET_ORTOOLS_ASSEMBLY_NAME).*
-#	-$(DEL) $(BIN_DIR)$S$(FSHARP_ORTOOLS_ASSEMBLY_NAME).*
 	-$(DELREC) $(DOTNET_EX_PATH)$Sbin
 	-$(DELREC) $(DOTNET_EX_PATH)$Sobj
 	-$(DELREC) $(CONTRIB_EX_PATH)$Sbin
@@ -737,9 +628,6 @@ detect_dotnet:
 	@echo DOTNET_ORTOOLS_RUNTIME_NUPKG = $(DOTNET_ORTOOLS_RUNTIME_NUPKG)
 	@echo DOTNET_ORTOOLS_ASSEMBLY_NAME = $(DOTNET_ORTOOLS_ASSEMBLY_NAME)
 	@echo DOTNET_ORTOOLS_NUPKG = $(DOTNET_ORTOOLS_NUPKG)
-	@echo FSHARP_ORTOOLS_ASSEMBLY_NAME = $(FSHARP_ORTOOLS_ASSEMBLY_NAME)
-	@echo FSHARP_ORTOOLS_NUPKG = $(FSHARP_ORTOOLS_NUPKG)
-	@echo FSHARP_ORTOOLS_TESTS_ASSEMBLY_NAME = $(FSHARP_ORTOOLS_TESTS_ASSEMBLY_NAME)
 ifeq ($(SYSTEM),win)
 	@echo off & echo(
 else
