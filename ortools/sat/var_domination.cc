@@ -931,7 +931,8 @@ void DetectDominanceRelations(
       }
       FillMinMaxActivity(context, cp_model.objective(), &min_activity,
                          &max_activity);
-      if (phase == 0) {
+      const auto& domain = cp_model.objective().domain();
+      if (phase == 0 && !domain.empty()) {
         dual_bound_strengthening->ProcessLinearConstraint(
             true, context, cp_model.objective(), min_activity, max_activity);
       }
