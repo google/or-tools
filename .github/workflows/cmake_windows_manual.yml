@@ -41,7 +41,7 @@ jobs:
           ref: antares_integration
       - name: Configure Sirius
         working-directory: ./sirius-solver
-        run: cmake -Ssrc -Bbuild -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=SiriusInstall -G "Visual Studio 16 2019"
+        run: cmake -Ssrc -Bbuild -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=SiriusInstall
       - name: Build & Install Sirius
         working-directory: ./sirius-solver
         run: cmake --build build/ --config Release --target INSTALL -- /maxcpucount
