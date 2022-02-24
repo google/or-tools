@@ -22,6 +22,7 @@ target_include_directories(${NAME} PUBLIC
 target_link_libraries(${NAME} PRIVATE
   absl::memory
   absl::strings
+  absl::status
   absl::str_format
   protobuf::libprotobuf
   $<$<BOOL:${USE_COINOR}>:Coin::Cbc>
