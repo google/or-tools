@@ -18,11 +18,11 @@
 #include <set>
 #include <vector>
 
+#include "absl/container/btree_set.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/types/span.h"
 #include "ortools/base/cleanup.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/clause.h"
@@ -876,11 +876,11 @@ int PrecedencesPropagator::
 
     if (clause.size() > 1) {
       // Extract the set of arc for which at least one must be present.
-      const std::set<Literal> clause_set(clause.begin(), clause.end());
+      const absl::btree_set<Literal> clause_set(clause.begin(), clause.end());
       std::vector<ArcIndex> arcs_in_clause;
       for (const ArcIndex arc_index : incoming_arcs_[target]) {
         const Literal literal(arcs_[arc_index].presence_literals.front());
-        if (gtl::ContainsKey(clause_set, literal.Negated())) {
+        if (clause_set.contains(literal.Negated())) {
           arcs_in_clause.push_back(arc_index);
         }
       }

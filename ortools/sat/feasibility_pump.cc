@@ -24,7 +24,6 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/meta/type_traits.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/map_util.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/revised_simplex.h"
@@ -436,7 +435,7 @@ void FeasibilityPump::UpdateBoundsOfLpVariables() {
 }
 
 double FeasibilityPump::GetLPSolutionValue(IntegerVariable variable) const {
-  return lp_solution_[gtl::FindOrDie(mirror_lp_variable_, variable).value()];
+  return lp_solution_[mirror_lp_variable_.at(variable).value()];
 }
 
 double FeasibilityPump::GetVariableValueAtCpScale(ColIndex var) {
@@ -449,8 +448,7 @@ double FeasibilityPump::GetVariableValueAtCpScale(ColIndex var) {
 
 int64_t FeasibilityPump::GetIntegerSolutionValue(
     IntegerVariable variable) const {
-  return integer_solution_[gtl::FindOrDie(mirror_lp_variable_, variable)
-                               .value()];
+  return integer_solution_[mirror_lp_variable_.at(variable).value()];
 }
 
 bool FeasibilityPump::Round() {

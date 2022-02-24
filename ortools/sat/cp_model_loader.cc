@@ -17,11 +17,11 @@
 #include <cstdint>
 #include <limits>
 #include <memory>
-#include <set>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/memory/memory.h"
@@ -30,7 +30,6 @@
 #include "absl/types/span.h"
 #include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/all_different.h"
@@ -784,7 +783,7 @@ void DetectOptionalVariables(const CpModelProto& model_proto, Model* m) {
   // Boolean implication (once the presolve remove cycles). Not sure if we can
   // properly exploit that afterwards though. Do some research!
   std::vector<std::vector<int>> enforcement_intersection(num_proto_variables);
-  std::set<int> literals_set;
+  absl::btree_set<int> literals_set;
   for (int c = 0; c < model_proto.constraints_size(); ++c) {
     const ConstraintProto& ct = model_proto.constraints(c);
     if (ct.enforcement_literal().empty()) {
@@ -805,7 +804,7 @@ void DetectOptionalVariables(const CpModelProto& model_proto, Model* m) {
           std::vector<int>& vector_ref = enforcement_intersection[var];
           int new_size = 0;
           for (const int literal : vector_ref) {
-            if (gtl::ContainsKey(literals_set, literal)) {
+            if (literals_set.contains(literal)) {
               vector_ref[new_size++] = literal;
             }
           }

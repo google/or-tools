@@ -20,7 +20,6 @@
 #include <deque>
 #include <limits>
 #include <map>
-#include <set>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -36,7 +35,6 @@
 #include "absl/types/span.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/map_util.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/timer.h"
@@ -1509,7 +1507,7 @@ bool CpModelPresolver::RemoveSingletonInLinear(ConstraintProto* ct) {
     return false;
   }
 
-  std::set<int> index_to_erase;
+  absl::btree_set<int> index_to_erase;
   const int num_vars = ct->linear().vars().size();
   Domain rhs = ReadDomainFromProto(ct->linear());
 
@@ -4844,7 +4842,7 @@ bool CpModelPresolver::PresolveAutomaton(ConstraintProto* ct) {
   const std::vector<int> vars = {proto.vars().begin(), proto.vars().end()};
 
   // Compute the set of reachable state at each time point.
-  std::vector<std::set<int64_t>> reachable_states(n + 1);
+  std::vector<absl::btree_set<int64_t>> reachable_states(n + 1);
   reachable_states[0].insert(proto.starting_state());
   reachable_states[n] = {proto.final_states().begin(),
                          proto.final_states().end()};
@@ -4855,25 +4853,25 @@ bool CpModelPresolver::PresolveAutomaton(ConstraintProto* ct) {
       const int64_t tail = proto.transition_tail(t);
       const int64_t label = proto.transition_label(t);
       const int64_t head = proto.transition_head(t);
-      if (!gtl::ContainsKey(reachable_states[time], tail)) continue;
+      if (!reachable_states[time].contains(tail)) continue;
       if (!context_->DomainContains(vars[time], label)) continue;
       reachable_states[time + 1].insert(head);
     }
   }
 
-  std::vector<std::set<int64_t>> reached_values(n);
+  std::vector<absl::btree_set<int64_t>> reached_values(n);
 
   // Backward.
   for (int time = n - 1; time >= 0; --time) {
-    std::set<int64_t> new_set;
+    absl::btree_set<int64_t> new_set;
     for (int t = 0; t < proto.transition_tail_size(); ++t) {
       const int64_t tail = proto.transition_tail(t);
       const int64_t label = proto.transition_label(t);
       const int64_t head = proto.transition_head(t);
 
-      if (!gtl::ContainsKey(reachable_states[time], tail)) continue;
+      if (!reachable_states[time].contains(tail)) continue;
       if (!context_->DomainContains(vars[time], label)) continue;
-      if (!gtl::ContainsKey(reachable_states[time + 1], head)) continue;
+      if (!reachable_states[time + 1].contains(head)) continue;
       new_set.insert(tail);
       reached_values[time].insert(label);
     }
@@ -5378,7 +5376,7 @@ void CpModelPresolver::ExpandObjective() {
     }
   }
 
-  std::set<int> var_to_process;
+  absl::btree_set<int> var_to_process;
   for (const auto entry : context_->ObjectiveMap()) {
     const int var = entry.first;
     CHECK(RefIsPositive(var));
