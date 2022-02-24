@@ -936,7 +936,6 @@ void DetectDominanceRelations(
         dual_bound_strengthening->ProcessLinearConstraint(
             true, context, cp_model.objective(), min_activity, max_activity);
       }
-      const auto& domain = cp_model.objective().domain();
       if (domain.empty() || (domain.size() == 2 && domain[0] <= min_activity)) {
         var_domination->ActivityShouldNotIncrease(
             /*enforcements=*/{}, cp_model.objective().vars(),
