@@ -178,31 +178,10 @@ EXAMPLE_DOTNET_FILES = \
   $(addsuffix /plop,$(addprefix $(TEMP_ARCHIVE_DIR)/$(INSTALL_DIR)/examples/dotnet/,$(basename $(notdir $(wildcard examples/contrib/*.cs))))) \
   $(addsuffix /plop,$(addprefix $(TEMP_ARCHIVE_DIR)/$(INSTALL_DIR)/examples/dotnet/,$(basename $(notdir $(wildcard examples/dotnet/*.cs)))))
 
-define dotnet-fs-example-archive =
-$$(TEMP_ARCHIVE_DIR)/$$(INSTALL_DIR)/examples/dotnet/%/plop: \
- $$(TEMP_DOTNET_DIR)/$1/%/%.fsproj \
- examples/$1/%.fs \
- | $$(TEMP_ARCHIVE_DIR)/$$(INSTALL_DIR)/examples/dotnet
-	-$$(MKDIR_P) $$(TEMP_ARCHIVE_DIR)$$S$$(INSTALL_DIR)$$Sexamples$$Sdotnet$$S$$*
-	$$(COPY) $$(SRC_DIR)$$Sexamples$$S$1$$S$$*.fs \
- $$(TEMP_ARCHIVE_DIR)$$S$$(INSTALL_DIR)$$Sexamples$$Sdotnet$$S$$*
-	$$(COPY) $$(TEMP_DOTNET_DIR)$$S$1$$S$$*$$S$$*.fsproj \
- $$(TEMP_ARCHIVE_DIR)$$S$$(INSTALL_DIR)$$Sexamples$$Sdotnet$$S$$*
-	-$$(SED) -i -e 's/..\/..\/packages/..\/..\/..\/packages/' \
- $$(TEMP_ARCHIVE_DIR)$$S$$(INSTALL_DIR)$$Sexamples$$Sdotnet$$S$$*$$S$$*.fsproj
-endef
-
-$(foreach example,$(DOTNET_FS_EXAMPLES),$(eval $(call dotnet-fs-example-archive,$(example))))
-
-EXAMPLE_FS_DOTNET_FILES = \
-  $(addsuffix /plop,$(addprefix $(TEMP_ARCHIVE_DIR)/$(INSTALL_DIR)/examples/dotnet/,$(basename $(notdir $(wildcard examples/contrib/*.fs))))) \
-  $(addsuffix /plop,$(addprefix $(TEMP_ARCHIVE_DIR)/$(INSTALL_DIR)/examples/dotnet/,$(basename $(notdir $(wildcard examples/dotnet/*.fs)))))
-
 .PHONY: archive_dotnet # Add .Net OR-Tools to archive.
 archive_dotnet: dotnet \
  $(SAMPLE_DOTNET_FILES) \
  $(EXAMPLE_DOTNET_FILES) \
- $(EXAMPLE_FS_DOTNET_FILES) \
  | $(TEMP_ARCHIVE_DIR)/$(INSTALL_DIR)/examples/dotnet
 	-$(MKDIR_P) $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Spackages
 	$(COPY) $(TEMP_DOTNET_DIR)$Spackages$S*.nupkg $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Spackages
