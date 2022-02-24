@@ -243,6 +243,10 @@ foreach(SUBPROJECT IN ITEMS
   add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_${SUBPROJECT})
 endforeach()
 
+add_subdirectory(ortools/model_builder/wrappers)
+target_sources(${PROJECT_NAME} PRIVATE $<TARGET_OBJECTS:${PROJECT_NAME}_model_builder_wrappers>)
+add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_model_builder_wrappers)
+
 # Install rules
 include(GNUInstallDirs)
 include(GenerateExportHeader)
