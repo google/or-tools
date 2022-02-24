@@ -161,7 +161,7 @@ jobs:
 
       - name: Build windows
         if: ${{ matrix.os == 'windows-2019'}}
-        run: cmake --build build --config Release --target all install -j4
+        run: cmake --build build --config Release --target ALL_BUILD INSTALL -v -- /maxcpucount
 
       - name: Prepare ortools install
         id: or-install
