@@ -20,8 +20,10 @@
 #include <deque>
 #include <functional>
 #include <limits>
+#include <map>
 #include <memory>
 #include <random>
+#include <set>
 #include <string>
 #include <thread>
 #include <utility>
@@ -34,8 +36,6 @@
 #include "ortools/base/file.h"
 #endif  // __PORTABLE_PLATFORM__
 #include "absl/base/thread_annotations.h"
-#include "absl/container/btree_map.h"
-#include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
 #include "absl/memory/memory.h"
@@ -175,11 +175,11 @@ std::string Summarize(const std::string& input) {
 // =============================================================================
 
 std::string CpModelStats(const CpModelProto& model_proto) {
-  absl::btree_map<std::string, int> num_constraints_by_name;
-  absl::btree_map<std::string, int> num_reif_constraints_by_name;
-  absl::btree_map<std::string, int> name_to_num_literals;
-  absl::btree_map<std::string, int> name_to_num_terms;
-  absl::btree_map<std::string, int> name_to_num_complex_domain;
+  std::map<std::string, int> num_constraints_by_name;
+  std::map<std::string, int> num_reif_constraints_by_name;
+  std::map<std::string, int> name_to_num_literals;
+  std::map<std::string, int> name_to_num_terms;
+  std::map<std::string, int> name_to_num_complex_domain;
 
   int no_overlap_2d_num_rectangles = 0;
   int no_overlap_2d_num_optional_rectangles = 0;
@@ -310,8 +310,8 @@ std::string CpModelStats(const CpModelProto& model_proto) {
   }
 
   int num_constants = 0;
-  absl::btree_set<int64_t> constant_values;
-  absl::btree_map<Domain, int> num_vars_per_domains;
+  std::set<int64_t> constant_values;
+  std::map<Domain, int> num_vars_per_domains;
   for (const IntegerVariableProto& var : model_proto.variables()) {
     if (var.domain_size() == 2 && var.domain(0) == var.domain(1)) {
       ++num_constants;
@@ -424,19 +424,19 @@ std::string CpModelStats(const CpModelProto& model_proto) {
   for (const auto& entry : num_constraints_by_name) {
     const std::string& name = entry.first;
     constraints.push_back(absl::StrCat("#", name, ": ", entry.second));
-    if (num_reif_constraints_by_name.contains(name)) {
+    if (gtl::ContainsKey(num_reif_constraints_by_name, name)) {
       absl::StrAppend(&constraints.back(),
                       " (#enforced: ", num_reif_constraints_by_name[name], ")");
     }
-    if (name_to_num_literals.contains(name)) {
+    if (gtl::ContainsKey(name_to_num_literals, name)) {
       absl::StrAppend(&constraints.back(),
                       " (#literals: ", name_to_num_literals[name], ")");
     }
-    if (name_to_num_terms.contains(name)) {
+    if (gtl::ContainsKey(name_to_num_terms, name)) {
       absl::StrAppend(&constraints.back(),
                       " (#terms: ", name_to_num_terms[name], ")");
     }
-    if (name_to_num_complex_domain.contains(name)) {
+    if (gtl::ContainsKey(name_to_num_complex_domain, name)) {
       absl::StrAppend(&constraints.back(),
                       " (#complex_domain: ", name_to_num_complex_domain[name],
                       ")");
@@ -1147,7 +1147,7 @@ void LoadBaseModel(const CpModelProto& model_proto, Model* model) {
   AddFullEncodingFromSearchBranching(model_proto, model);
 
   // Load the constraints.
-  absl::btree_set<std::string> unsupported_types;
+  std::set<std::string> unsupported_types;
   int num_ignored_constraints = 0;
   for (const ConstraintProto& ct : model_proto.constraints()) {
     if (mapping->ConstraintIsAlreadyLoaded(&ct)) {

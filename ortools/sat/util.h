@@ -16,9 +16,9 @@
 
 #include <cstdint>
 #include <deque>
+#include <set>
 #include <vector>
 
-#include "absl/container/btree_set.h"
 #include "ortools/base/logging.h"
 #if !defined(__PORTABLE_PLATFORM__)
 #include "google/protobuf/descriptor.h"
@@ -171,9 +171,9 @@ void RandomizeDecisionHeuristic(absl::BitGenRef random,
 // relevant_prefix_size is used as a hint when keeping more that this prefix
 // size do not matter. The returned value will always be lower or equal to
 // relevant_prefix_size.
-int MoveOneUnprocessedLiteralLast(
-    const absl::btree_set<LiteralIndex>& processed, int relevant_prefix_size,
-    std::vector<Literal>* literals);
+int MoveOneUnprocessedLiteralLast(const std::set<LiteralIndex>& processed,
+                                  int relevant_prefix_size,
+                                  std::vector<Literal>* literals);
 
 // ============================================================================
 // Implementation.

@@ -21,11 +21,11 @@
 #include <functional>
 #include <limits>
 #include <map>
+#include <set>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/random.h"
@@ -34,6 +34,7 @@
 #include "ortools/base/cleanup.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
+#include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/boolean_problem.h"
@@ -222,7 +223,7 @@ class FuMalikSymmetryBreaker {
 void MinimizeCoreWithPropagation(TimeLimit* limit, SatSolver* solver,
                                  std::vector<Literal>* core) {
   if (solver->IsModelUnsat()) return;
-  absl::btree_set<LiteralIndex> moved_last;
+  std::set<LiteralIndex> moved_last;
   std::vector<Literal> candidate(core->begin(), core->end());
 
   solver->Backtrack(0);
@@ -1252,9 +1253,9 @@ SatSolver::Status FindCores(std::vector<Literal> assumptions,
     // core.
     std::vector<int> indices;
     {
-      absl::btree_set<Literal> temp(core.begin(), core.end());
+      std::set<Literal> temp(core.begin(), core.end());
       for (int i = 0; i < assumptions.size(); ++i) {
-        if (temp.contains(assumptions[i])) {
+        if (gtl::ContainsKey(temp, assumptions[i])) {
           indices.push_back(i);
         }
       }
@@ -1974,7 +1975,7 @@ SatSolver::Status CoreBasedOptimizer::Optimize() {
       IntegerValue new_var_ub(0);
       int new_depth = 0;
       for (const Literal lit : core) {
-        const int index = literal_to_term_index.at(lit.Index());
+        const int index = gtl::FindOrDie(literal_to_term_index, lit.Index());
 
         // When this happen, the core is now trivially "minimized" by the new
         // bound on this variable, so there is no point in adding it.
@@ -2010,7 +2011,7 @@ SatSolver::Status CoreBasedOptimizer::Optimize() {
         std::vector<IntegerVariable> constraint_vars;
         std::vector<int64_t> constraint_coeffs;
         for (const Literal lit : core) {
-          const int index = literal_to_term_index.at(lit.Index());
+          const int index = gtl::FindOrDie(literal_to_term_index, lit.Index());
           terms_[index].weight -= min_weight;
           constraint_vars.push_back(terms_[index].var);
           constraint_coeffs.push_back(1);
