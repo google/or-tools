@@ -36,7 +36,6 @@ cc_library(
     deps = [
         "//ortools/base",
         "//ortools/base:hash",
-        "//ortools/base:map_util",
         "//ortools/base:stl_util",
         "//ortools/graph:iterators",
         "//ortools/util:logging",
@@ -62,7 +61,6 @@ cc_library(
     deps = [
         ":model",
         "//ortools/base",
-        "//ortools/base:map_util",
         "//ortools/base:mathutil",
         "//ortools/base:stl_util",
         "//ortools/util:string_array",
@@ -123,7 +121,6 @@ cc_library(
         ":model",
         "//ortools/base",
         "//ortools/base:hash",
-        "//ortools/base:map_util",
         "//ortools/util:logging",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/strings",
@@ -138,7 +135,6 @@ cc_library(
         ":checker",
         ":model",
         "//ortools/base",
-        "//ortools/base:map_util",
         "//ortools/base:threadpool",
         "//ortools/sat:cp_constraints",
         "//ortools/sat:cp_model_cc_proto",

@@ -1773,15 +1773,15 @@ yyreduce:
     {
       // A reference to an existing integer constant or variable.
       const std::string& id = (yyvsp[0].string_value);
-      if (gtl::ContainsKey(context->integer_map, id)) {
+      if (context->integer_map.contains(id)) {
         (yyval.var_or_value) =
-            VarRefOrValue::Value(gtl::FindOrDie(context->integer_map, id));
-      } else if (gtl::ContainsKey(context->float_map, id)) {
+            VarRefOrValue::Value(context->integer_map.at(id));
+      } else if (context->float_map.contains(id)) {
         (yyval.var_or_value) =
-            VarRefOrValue::FloatValue(gtl::FindOrDie(context->float_map, id));
-      } else if (gtl::ContainsKey(context->variable_map, id)) {
+            VarRefOrValue::FloatValue(context->float_map.at(id));
+      } else if (context->variable_map.contains(id)) {
         (yyval.var_or_value) =
-            VarRefOrValue::VarRef(gtl::FindOrDie(context->variable_map, id));
+            VarRefOrValue::VarRef(context->variable_map.at(id));
       } else {
         LOG(ERROR) << "Unknown symbol " << id;
         (yyval.var_or_value) = VarRefOrValue::Undefined();
@@ -1797,15 +1797,15 @@ yyreduce:
       // A given element of an existing constant array or variable array.
       const std::string& id = (yyvsp[-3].string_value);
       const int64_t value = (yyvsp[-1].integer_value);
-      if (gtl::ContainsKey(context->integer_array_map, id)) {
+      if (context->integer_array_map.contains(id)) {
         (yyval.var_or_value) = VarRefOrValue::Value(
-            Lookup(gtl::FindOrDie(context->integer_array_map, id), value));
-      } else if (gtl::ContainsKey(context->float_array_map, id)) {
+            Lookup(context->integer_array_map.at(id), value));
+      } else if (context->float_array_map.contains(id)) {
         (yyval.var_or_value) = VarRefOrValue::FloatValue(
-            Lookup(gtl::FindOrDie(context->float_array_map, id), value));
-      } else if (gtl::ContainsKey(context->variable_array_map, id)) {
+            Lookup(context->float_array_map.at(id), value));
+      } else if (context->variable_array_map.contains(id)) {
         (yyval.var_or_value) = VarRefOrValue::VarRef(
-            Lookup(gtl::FindOrDie(context->variable_array_map, id), value));
+            Lookup(context->variable_array_map.at(id), value));
       } else {
         LOG(ERROR) << "Unknown symbol " << id;
         (yyval.var_or_value) = VarRefOrValue::Undefined();
@@ -1956,8 +1956,7 @@ yyreduce:
     case 54: /* integer: IDENTIFIER  */
 #line 448 "./ortools/flatzinc/parser.yy"
     {
-      (yyval.integer_value) =
-          gtl::FindOrDie(context->integer_map, (yyvsp[0].string_value));
+      (yyval.integer_value) = context->integer_map.at((yyvsp[0].string_value));
     }
 #line 2037 "./ortools/flatzinc/parser.tab.cc"
     break;
@@ -1965,9 +1964,9 @@ yyreduce:
     case 55: /* integer: IDENTIFIER '[' IVALUE ']'  */
 #line 449 "./ortools/flatzinc/parser.yy"
     {
-      (yyval.integer_value) = Lookup(
-          gtl::FindOrDie(context->integer_array_map, (yyvsp[-3].string_value)),
-          (yyvsp[-1].integer_value));
+      (yyval.integer_value) =
+          Lookup(context->integer_array_map.at((yyvsp[-3].string_value)),
+                 (yyvsp[-1].integer_value));
     }
 #line 2045 "./ortools/flatzinc/parser.tab.cc"
     break;
@@ -2001,8 +2000,7 @@ yyreduce:
     case 59: /* float: IDENTIFIER  */
 #line 459 "./ortools/flatzinc/parser.yy"
     {
-      (yyval.double_value) =
-          gtl::FindOrDie(context->float_map, (yyvsp[0].string_value));
+      (yyval.double_value) = context->float_map.at((yyvsp[0].string_value));
     }
 #line 2069 "./ortools/flatzinc/parser.tab.cc"
     break;
@@ -2010,9 +2008,9 @@ yyreduce:
     case 60: /* float: IDENTIFIER '[' IVALUE ']'  */
 #line 460 "./ortools/flatzinc/parser.yy"
     {
-      (yyval.double_value) = Lookup(
-          gtl::FindOrDie(context->float_array_map, (yyvsp[-3].string_value)),
-          (yyvsp[-1].integer_value));
+      (yyval.double_value) =
+          Lookup(context->float_array_map.at((yyvsp[-3].string_value)),
+                 (yyvsp[-1].integer_value));
     }
 #line 2077 "./ortools/flatzinc/parser.tab.cc"
     break;
@@ -2064,7 +2062,7 @@ yyreduce:
 #line 476 "./ortools/flatzinc/parser.yy"
     {
       (yyval.domain) = Domain::IntegerValue(
-          gtl::FindOrDie(context->integer_map, (yyvsp[0].string_value)));
+          context->integer_map.at((yyvsp[0].string_value)));
     }
 #line 2119 "./ortools/flatzinc/parser.tab.cc"
     break;
@@ -2072,9 +2070,9 @@ yyreduce:
     case 67: /* const_literal: IDENTIFIER '[' IVALUE ']'  */
 #line 477 "./ortools/flatzinc/parser.yy"
     {
-      (yyval.domain) = Domain::IntegerValue(Lookup(
-          gtl::FindOrDie(context->integer_array_map, (yyvsp[-3].string_value)),
-          (yyvsp[-1].integer_value)));
+      (yyval.domain) = Domain::IntegerValue(
+          Lookup(context->integer_array_map.at((yyvsp[-3].string_value)),
+                 (yyvsp[-1].integer_value)));
     }
 #line 2128 "./ortools/flatzinc/parser.tab.cc"
     break;
@@ -2179,33 +2177,27 @@ yyreduce:
 #line 522 "./ortools/flatzinc/parser.yy"
     {
       const std::string& id = (yyvsp[0].string_value);
-      if (gtl::ContainsKey(context->integer_map, id)) {
-        (yyval.arg) =
-            Argument::IntegerValue(gtl::FindOrDie(context->integer_map, id));
-      } else if (gtl::ContainsKey(context->integer_array_map, id)) {
-        (yyval.arg) = Argument::IntegerList(
-            gtl::FindOrDie(context->integer_array_map, id));
-      } else if (gtl::ContainsKey(context->float_map, id)) {
-        const double d = gtl::FindOrDie(context->float_map, id);
+      if (context->integer_map.contains(id)) {
+        (yyval.arg) = Argument::IntegerValue(context->integer_map.at(id));
+      } else if (context->integer_array_map.contains(id)) {
+        (yyval.arg) = Argument::IntegerList(context->integer_array_map.at(id));
+      } else if (context->float_map.contains(id)) {
+        const double d = context->float_map.at(id);
         (yyval.arg) = Argument::FloatValue(d);
-      } else if (gtl::ContainsKey(context->float_array_map, id)) {
-        const auto& double_values =
-            gtl::FindOrDie(context->float_array_map, id);
+      } else if (context->float_array_map.contains(id)) {
+        const auto& double_values = context->float_array_map.at(id);
         (yyval.arg) = Argument::FloatList(std::move(double_values));
-      } else if (gtl::ContainsKey(context->variable_map, id)) {
-        (yyval.arg) =
-            Argument::VarRef(gtl::FindOrDie(context->variable_map, id));
-      } else if (gtl::ContainsKey(context->variable_array_map, id)) {
-        (yyval.arg) = Argument::VarRefArray(
-            gtl::FindOrDie(context->variable_array_map, id));
-      } else if (gtl::ContainsKey(context->domain_map, id)) {
-        const Domain& d = gtl::FindOrDie(context->domain_map, id);
+      } else if (context->variable_map.contains(id)) {
+        (yyval.arg) = Argument::VarRef(context->variable_map.at(id));
+      } else if (context->variable_array_map.contains(id)) {
+        (yyval.arg) = Argument::VarRefArray(context->variable_array_map.at(id));
+      } else if (context->domain_map.contains(id)) {
+        const Domain& d = context->domain_map.at(id);
         (yyval.arg) = Argument::FromDomain(d);
       } else {
-        CHECK(gtl::ContainsKey(context->domain_array_map, id))
+        CHECK(context->domain_array_map.contains(id))
             << "Unknown identifier: " << id;
-        const std::vector<Domain>& d =
-            gtl::FindOrDie(context->domain_array_map, id);
+        const std::vector<Domain>& d = context->domain_array_map.at(id);
         (yyval.arg) = Argument::DomainList(d);
       }
     }
@@ -2217,17 +2209,16 @@ yyreduce:
     {
       const std::string& id = (yyvsp[-3].string_value);
       const int64_t index = (yyvsp[-1].integer_value);
-      if (gtl::ContainsKey(context->integer_array_map, id)) {
+      if (context->integer_array_map.contains(id)) {
         (yyval.arg) = Argument::IntegerValue(
-            Lookup(gtl::FindOrDie(context->integer_array_map, id), index));
-      } else if (gtl::ContainsKey(context->variable_array_map, id)) {
-        (yyval.arg) = Argument::VarRef(
-            Lookup(gtl::FindOrDie(context->variable_array_map, id), index));
+            Lookup(context->integer_array_map.at(id), index));
+      } else if (context->variable_array_map.contains(id)) {
+        (yyval.arg) =
+            Argument::VarRef(Lookup(context->variable_array_map.at(id), index));
       } else {
-        CHECK(gtl::ContainsKey(context->domain_array_map, id))
+        CHECK(context->domain_array_map.contains(id))
             << "Unknown identifier: " << id;
-        const Domain& d =
-            Lookup(gtl::FindOrDie(context->domain_array_map, id), index);
+        const Domain& d = Lookup(context->domain_array_map.at(id), index);
         (yyval.arg) = Argument::FromDomain(d);
       }
     }
@@ -2362,12 +2353,11 @@ yyreduce:
 #line 636 "./ortools/flatzinc/parser.yy"
     {
       const std::string& id = (yyvsp[0].string_value);
-      if (gtl::ContainsKey(context->variable_map, id)) {
+      if (context->variable_map.contains(id)) {
+        (yyval.annotation) = Annotation::VarRef(context->variable_map.at(id));
+      } else if (context->variable_array_map.contains(id)) {
         (yyval.annotation) =
-            Annotation::VarRef(gtl::FindOrDie(context->variable_map, id));
-      } else if (gtl::ContainsKey(context->variable_array_map, id)) {
-        (yyval.annotation) = Annotation::VarRefArray(
-            gtl::FindOrDie(context->variable_array_map, id));
+            Annotation::VarRefArray(context->variable_array_map.at(id));
       } else {
         (yyval.annotation) = Annotation::Identifier(id);
       }
@@ -2393,12 +2383,11 @@ yyreduce:
     case 93: /* annotation: IDENTIFIER '[' IVALUE ']'  */
 #line 655 "./ortools/flatzinc/parser.yy"
     {
-      CHECK(gtl::ContainsKey(context->variable_array_map,
-                             (yyvsp[-3].string_value)))
+      CHECK(context->variable_array_map.contains((yyvsp[-3].string_value)))
           << "Unknown identifier: " << (yyvsp[-3].string_value);
-      (yyval.annotation) = Annotation::VarRef(Lookup(
-          gtl::FindOrDie(context->variable_array_map, (yyvsp[-3].string_value)),
-          (yyvsp[-1].integer_value)));
+      (yyval.annotation) = Annotation::VarRef(
+          Lookup(context->variable_array_map.at((yyvsp[-3].string_value)),
+                 (yyvsp[-1].integer_value)));
     }
 #line 2403 "./ortools/flatzinc/parser.tab.cc"
     break;

@@ -26,7 +26,6 @@
 #include "absl/synchronization/mutex.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/iterator_adaptors.h"
-#include "ortools/base/map_util.h"
 #include "ortools/base/threadpool.h"
 #include "ortools/base/timer.h"
 #include "ortools/flatzinc/checker.h"
@@ -996,7 +995,7 @@ void CpModelProtoWithMapping::TranslateSearchAnnotations(
 
       DecisionStrategyProto* strategy = proto.add_search_strategy();
       for (fz::Variable* v : vars) {
-        strategy->add_variables(gtl::FindOrDie(fz_var_to_index, v));
+        strategy->add_variables(fz_var_to_index.at(v));
       }
 
       const fz::Annotation& choose = args[1];
@@ -1251,7 +1250,7 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
                          solution_logger](const CpSolverResponse& r) {
       const std::string solution_string =
           SolutionString(fz_model, [&m, &r](fz::Variable* v) {
-            return r.solution(gtl::FindOrDie(m.fz_var_to_index, v));
+            return r.solution(m.fz_var_to_index.at(v));
           });
       SOLVER_LOG(solution_logger, solution_string);
       if (p.display_statistics) {
@@ -1278,7 +1277,7 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
     CHECK(CheckSolution(
         fz_model,
         [&response, &m](fz::Variable* v) {
-          return response.solution(gtl::FindOrDie(m.fz_var_to_index, v));
+          return response.solution(m.fz_var_to_index.at(v));
         },
         logger));
   }
@@ -1290,7 +1289,7 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
       if (!p.display_all_solutions) {  // Already printed otherwise.
         const std::string solution_string =
             SolutionString(fz_model, [&response, &m](fz::Variable* v) {
-              return response.solution(gtl::FindOrDie(m.fz_var_to_index, v));
+              return response.solution(m.fz_var_to_index.at(v));
             });
         SOLVER_LOG(solution_logger, solution_string);
         SOLVER_LOG(solution_logger, "----------");
