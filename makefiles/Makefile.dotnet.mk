@@ -33,6 +33,9 @@ DOTNET_ORTOOLS_ASSEMBLY_NAME := Google.OrTools
 
 dotnet: $(OR_TOOLS_LIBS)
 
+temp_dotnet:
+	mkdir temp_dotnet
+
 ###################
 ##  .NET SOURCE  ##
 ###################
