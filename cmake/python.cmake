@@ -166,7 +166,7 @@ set(PYTHON_PROJECT_DIR ${PROJECT_BINARY_DIR}/python/${PYTHON_PROJECT})
 message(STATUS "Python project build path: ${PYTHON_PROJECT_DIR}")
 
 # Swig wrap all libraries
-foreach(SUBPROJECT IN ITEMS init algorithms graph linear_solver constraint_solver sat scheduling util)
+foreach(SUBPROJECT IN ITEMS init algorithms graph linear_solver model_builder constraint_solver sat scheduling util)
   add_subdirectory(ortools/${SUBPROJECT}/python)
 endforeach()
 
