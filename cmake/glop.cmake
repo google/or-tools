@@ -329,6 +329,7 @@ install(FILES
   ortools/util/return_macros.h
   ortools/util/running_stat.h
   ortools/util/stats.h
+  ortools/util/strong_integers.h
   ortools/util/time_limit.h
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ortools/util
   COMPONENT Devel)
