@@ -11,6 +11,7 @@ jobs:
     - uses: actions/setup-python@v2
       with:
         python-version: '3.9'
+    - uses: seanmiddleditch/gha-setup-ninja@master
     - name: Install python3
       run: python3 -m pip install --user mypy-protobuf absl-py setuptools wheel numpy pandas
     - name: Install SWIG 4.0.2
@@ -25,7 +26,7 @@ jobs:
     - name: Check cmake
       run: cmake --version
     - name: Configure
-      run: cmake -S. -Bbuild -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=Release -DBUILD_PYTHON=ON -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
+      run: cmake -S. -Bbuild -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_PYTHON=ON -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
     - name: Build
       run: cmake --build build --config Release --target ALL_BUILD -v -- /maxcpucount
     - name: Test

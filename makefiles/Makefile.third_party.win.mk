@@ -24,7 +24,7 @@ dependencies:
 third_party: dependencies/ortools.sln | dependencies
 
 THIRD_PARTY_TARGET = dependencies/ortools.sln
-GENERATOR ?= "MMake Makefiles"
+GENERATOR ?= $(CMAKE_PLATFORM)
 
 dependencies/ortools.sln: | dependencies
 	cmake -S . -B dependencies -DBUILD_DEPS=ON \

@@ -9,6 +9,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - uses: ilammy/msvc-dev-cmd@v1
+    - uses: seanmiddleditch/gha-setup-ninja@master
     - name: Check java
       run: java -version
     - name: Check make
@@ -20,7 +21,7 @@ jobs:
     - name: Build third party
       run: tools\make third_party BUILD_PYTHON=OFF BUILD_JAVA=ON BUILD_DOTNET=OFF
     - name: Build C++ and Java
-      run: tools\make compile_libraries -j4
+      run: tools\make all JOBS=4
     - name: Test Java
       run: tools\make test_java -j4
     - name: Create maven package

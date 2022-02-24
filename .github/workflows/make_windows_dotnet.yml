@@ -9,6 +9,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - uses: ilammy/msvc-dev-cmd@v1
+    - uses: seanmiddleditch/gha-setup-ninja@master
       # Install .NET SDKs
     - name: Setup .NET Core 3.1
       uses: actions/setup-dotnet@v1
@@ -29,7 +30,7 @@ jobs:
     - name: Build third party
       run: tools\make third_party BUILD_PYTHON=OFF BUILD_JAVA=OFF BUILD_DOTNET=ON
     - name: Build C++ and .NET
-      run: tools\make compile_libraries -j4
+      run: tools\make all JOBS=4
     - name: Test .Net
       run: tools\make test_dotnet -j4
     - name: Create nuget packages
