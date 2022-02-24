@@ -233,6 +233,10 @@ jobs:
         if: ${{ matrix.xprs == 'ON' && matrix.sirius == 'ON' }}
         working-directory: ./build
         run: ctest -V -C Release -R python_python_linear_programming
+        env:
+          XPRESS: "${{ github.workspace }}/xpressmp813/bin/"
+          SIRIUS_BIN_DIR: "${{ github.workspace }}/sirius-solver/SiriusInstall/bin"
+          XPRESS_BIN_DIR: "${{ github.workspace }}/xpressmp813/bin"
       - name: Run specific java tests
         if: ${{ matrix.extras == 'ON' }}
         working-directory: ./build
