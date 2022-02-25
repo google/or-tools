@@ -28,7 +28,6 @@ jobs:
         sirius: [ON, OFF]
         shared: [ON, OFF]
         extras: [ON, OFF]
-        dotnet: [OFF]
 
         exclude:
           - xprs: OFF
@@ -48,9 +47,11 @@ jobs:
           - extras: ON
             java: ON
             python: ON
+            dotnet: OFF
           - extras: OFF
             java: OFF
             python: OFF
+            dotnet: OFF
 
 
     steps:
