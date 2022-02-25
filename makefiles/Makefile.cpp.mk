@@ -442,9 +442,25 @@ TEMP_PACKAGE_CC_DIR = temp_package_cc
 $(TEMP_PACKAGE_CC_DIR):
 	-$(MKDIR_P) $(TEMP_PACKAGE_CC_DIR)
 
-package_cc_pimpl: cc | $(TEMP_PACKAGE_CC_DIR)
-	$(MAKE) install_libortools prefix=$(TEMP_PACKAGE_CC_DIR)$S$(INSTALL_DIR)
-	$(MAKE) install_third_party prefix=$(TEMP_PACKAGE_CC_DIR)$S$(INSTALL_DIR)
+$(TEMP_PACKAGE_CC_DIR)/$(INSTALL_DIR): | $(TEMP_PACKAGE_CC_DIR)
+	$(MKDIR) $(TEMP_PACKAGE_CC_DIR)$S$(INSTALL_DIR)
+
+package_cc: cc | $(TEMP_PACKAGE_CC_DIR)/$(INSTALL_DIR)
+ifeq ($(SYSTEM),win)
+	cd $(TEMP_PACKAGE_CC_DIR)\$(INSTALL_DIR) && \
+		..\..\$(TAR) -C ..\.. -c -v include | ..\..\$(TAR) xvm
+	cd $(TEMP_PACKAGE_CC_DIR)\$(INSTALL_DIR) && \
+		..\..\$(TAR) -C ..\.. -c -v lib | ..\..\$(TAR) xvm
+	cd $(TEMP_PACKAGE_CC_DIR)\$(INSTALL_DIR) && \
+		..\..\$(TAR) -C ..\.. -c -v share | ..\..\$(TAR) xvm
+else
+	cd $(TEMP_PACKAGE_CC_DIR)/$(INSTALL_DIR) && \
+		tar -C ../.. -c -v include | tar xvm
+	cd $(TEMP_PACKAGE_CC_DIR)/$(INSTALL_DIR) && \
+		tar -C ../.. -c -v lib | tar xvm
+	cd $(TEMP_PACKAGE_CC_DIR)/$(INSTALL_DIR) && \
+		tar -C ../.. -c -v share | tar xvm
+endif
 ifeq ($(SYSTEM),win)
 	cd $(TEMP_PACKAGE_CC_DIR) && ..$S$(ZIP) -r ..$S$(INSTALL_DIR)$(ARCHIVE_EXT) $(INSTALL_DIR)
 else
