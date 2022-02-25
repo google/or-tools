@@ -14,6 +14,7 @@ STATIC_LIB_SUFFIX = lib
 LINK_CMD = lib
 STATIC_LINK_CMD = lib
 # C++ relevant directory
+BUILD_DIR = $(OR_ROOT)dependencies
 INC_DIR = $(OR_ROOT)include
 SRC_DIR = $(OR_ROOT).
 GEN_DIR = $(OR_ROOT)ortools/gen

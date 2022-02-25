@@ -1,13 +1,4 @@
-ifeq ($(BUILD_PYTHON),OFF)
-python:
-	$(warning Either Python support was turned off, or the python3 binary was not found.)
-
-test_python: python
-package_python: python
-check_python: python
-
-else  # BUILD_PYTHON=ON
-
+# ---------- Python support ----------
 .PHONY: help_python # Generate list of Python targets with descriptions.
 help_python:
 	@echo Use one of the following Python targets:
@@ -19,13 +10,33 @@ else
 	@echo
 endif
 
-ifeq ($(SYSTEM),win)
-PYTHON_EXECUTABLE := dependencies\\python\\venv\\Scripts\\python
-else
-PYTHON_EXECUTABLE := dependencies/python/venv/bin/python
-endif
 
-python: $(OR_TOOLS_LIBS)
+ifeq ($(BUILD_PYTHON),OFF)
+python:
+	$(warning Either Python support was turned off, or the python3 binary was not found.)
+
+test_python: python
+package_python: python
+check_python: python
+
+else  # BUILD_PYTHON=ON
+
+PYTHON_BUILD_DIR = $(BUILD_DIR)$Spython
+
+# Main target
+.PHONY: python # Build Python OR-Tools.
+.PHONY: check_python # Quick check only running Python OR-Tools samples.
+.PHONY: test_python # Run all Python OR-Tools test targets.
+.PHONY: package_python # Create Python ortools Wheel package.
+.PHONY: test_package_python # Test Python "ortools" Wheel package
+.PHONY: install_python # Install Python OR-Tools on the host system
+python: cc
+
+ifeq ($(SYSTEM),win)
+PYTHON_EXECUTABLE := $(PYTHON_BUILD_DIR)\\venv\\Scripts\\python
+else
+PYTHON_EXECUTABLE := $(PYTHON_BUILD_DIR)/venv/bin/python
+endif
 
 #######################
 ##  Python SOURCE  ##
@@ -146,7 +157,6 @@ test_python_sat_samples: \
  rpy_step_function_sample_sat \
  rpy_stop_after_n_solutions_sample_sat
 
-.PHONY: check_python
 check_python: \
  test_python_algorithms_samples \
  test_python_constraint_solver_samples \
@@ -342,7 +352,6 @@ test_python_python: \
  rpy_worker_schedule_sat \
  rpy_zebra_sat
 
-.PHONY: test_python
 test_python: \
  check_python \
  test_python_tests \
@@ -500,9 +509,8 @@ $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/.libs: | $(PYPI_ARCHIVE_TEMP_DIR)/ortoo
 ifneq ($(PYTHON_EXECUTABLE),)
 package_python: $(OR_TOOLS_LIBS)
 	-$(DEL) $.*whl
-	$(COPY) dependencies$Spython$Sdist$S*.whl .
+	$(COPY) $(PYTHON_BUILD_DIR)$Sdist$S*.whl .
 
-.PHONY: test_package_python # Test Python "ortools" wheel package
 test_package_python: package_python
 	-$(DELREC) $(PYPI_ARCHIVE_TEMP_DIR)$Svenv
 	$(PYTHON_EXECUTABLE) -m venv --system-site-packages $(PYPI_ARCHIVE_TEMP_DIR)$Svenv
@@ -551,7 +559,6 @@ endif # ifneq ($(PYTHON_EXECUTABLE),)
 publish_python_pimpl: package_python
 	cd $(PYPI_ARCHIVE_TEMP_DIR)$Sortools && "$(TWINE_EXECUTABLE)" upload "*.whl"
 
-.PHONY: install_python # Install Python OR-Tools on the host system
 install_python: pypi_archive
 	cd "$(PYPI_ARCHIVE_TEMP_DIR)$Sortools" && "$(PYTHON_EXECUTABLE)" setup.py install --user
 

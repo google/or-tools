@@ -6,6 +6,7 @@
 LIB_PREFIX = lib
 DEP_BIN_DIR = $(OR_ROOT)bin
 # C++ relevant directory
+BUILD_DIR = $(OR_ROOT)dependencies
 INC_DIR = $(OR_ROOT)include
 SRC_DIR = $(OR_ROOT).
 GEN_DIR = $(OR_ROOT)ortools/gen

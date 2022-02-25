@@ -1,3 +1,16 @@
+# ---------- Java support ----------
+.PHONY: help_java # Generate list of Java targets with descriptions.
+help_java:
+	@echo Use one of the following Java targets:
+ifeq ($(SYSTEM),win)
+	@$(GREP) "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.java.mk | $(SED) "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/"
+	@echo off & echo(
+else
+	@$(GREP) "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.java.mk | $(SED) "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/" | expand -t24
+	@echo
+endif
+
+
 ifeq ($(BUILD_JAVA),OFF)
 java_runtime: java
 java:
@@ -16,17 +29,7 @@ package_java: java
 
 else  # BUILD_JAVA=ON
 
-.PHONY: help_java # Generate list of Java targets with descriptions.
-help_java:
-	@echo Use one of the following Java targets:
-ifeq ($(SYSTEM),win)
-	@$(GREP) "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.java.mk | $(SED) "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/"
-	@echo off & echo(
-else
-	@$(GREP) "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.java.mk | $(SED) "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/" | expand -t24
-	@echo
-endif
-
+JAVA_BUILD_DIR = $(BUILD_DIR)$Sjava
 TEMP_JAVA_DIR = temp_java
 JAVA_ORTOOLS_PACKAGE := com.google.ortools
 
@@ -34,6 +37,7 @@ JAVA_ORTOOLS_PACKAGE := com.google.ortools
 .PHONY: java_runtime # Build Java OR-Tools runtime.
 .PHONY: java # Build Java OR-Tools.
 .PHONY: test_java # Test Java OR-Tools using various examples.
+.PHONY: package_java # Create jar OR-Tools Maven package.
 java: cc
 
 # Detect RuntimeIDentifier
@@ -62,8 +66,8 @@ $(TEMP_JAVA_DIR):
 
 package_java: $(OR_TOOLS_LIBS)
 	-$(DEL) *.jar
-	$(COPY) dependencies$Sjava$Sortools-java$Starget$S*.jar .
-	$(COPY) dependencies$Sjava$Sortools-$(JAVA_NATIVE_IDENTIFIER)$Starget$S*.jar .
+	$(COPY) $(JAVA_BUILD_DIR)$Sortools-java$Starget$S*.jar .
+	$(COPY) $(JAVA_BUILD_DIR)$Sortools-$(JAVA_NATIVE_IDENTIFIER)$Starget$S*.jar .
 
 
 #############################

@@ -14,17 +14,17 @@ USE_XPRESS ?= OFF
 PROTOC = "$(OR_TOOLS_TOP)\\bin\\protoc.exe"
 
 # Main target.
-dependencies:
-	mkdir dependencies
+$(BUILD_DIR):
+	mkdir $(BUILD_DIR)
 
 .PHONY: third_party # Build OR-Tools Prerequisite
-third_party: dependencies/ortools.sln | dependencies
+third_party: $(BUILD_DIR)/ortools.sln | $(BUILD_DIR)
 
-THIRD_PARTY_TARGET = dependencies/ortools.sln
+THIRD_PARTY_TARGET = $(BUILD_DIR)/ortools.sln
 GENERATOR ?= $(CMAKE_PLATFORM)
 
-dependencies/ortools.sln: | dependencies
-	cmake -S . -B dependencies -DBUILD_DEPS=ON \
+$(BUILD_DIR)/ortools.sln: | $(BUILD_DIR)
+	cmake -S . -B $(BUILD_DIR) -DBUILD_DEPS=ON \
 	-DBUILD_PYTHON=$(BUILD_PYTHON) \
 	-DBUILD_JAVA=$(BUILD_JAVA) \
 	-DBUILD_DOTNET=$(BUILD_DOTNET) \
@@ -39,10 +39,10 @@ dependencies/ortools.sln: | dependencies
 	-DCMAKE_INSTALL_PREFIX=$(OR_ROOT_FULL) \
 	-G $(GENERATOR)
 
-.PHONY: clean_third_party
+.PHONY: clean_third_party # clean everything.
 clean_third_party:
 	-$(DEL) Makefile.local
-	-$(DELREC) dependencies\\*
+	-$(DELREC) $(BUILD_DIR)\\*
 	-$(DELREC) include
 	-$(DELREC) share
 	-$(DELREC) lib\\*.lib

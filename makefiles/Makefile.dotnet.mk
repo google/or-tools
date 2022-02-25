@@ -1,12 +1,4 @@
-ifeq ($(BUILD_DOTNET),OFF)
-dotnet:
-	$(warning Either .NET support was turned of, of the dotnet binary was not found.)
-
-test_dotnet: dotnet
-package_dotnet: dotnet
-check_dotnet: dotnet
-else
-
+# ---------- .Net support ----------
 .PHONY: help_dotnet # Generate list of dotnet targets with descriptions.
 help_dotnet:
 	@echo Use one of the following dotnet targets:
@@ -18,13 +10,30 @@ else
 	@echo
 endif
 
+
+ifeq ($(BUILD_DOTNET),OFF)
+dotnet:
+	$(warning Either .NET support was turned of, of the dotnet binary was not found.)
+
+test_dotnet: dotnet
+package_dotnet: dotnet
+check_dotnet: dotnet
+
+else # BUILD_DOTNET=ON
+
+DOTNET_BUILD_DIR = $(BUILD_DIR)$Sdotnet
+
 # All libraries and dependencies
 TEMP_DOTNET_DIR = temp_dotnet
 DOTNET_PACKAGE_DIR = temp_dotnet/packages
 DOTNET_PACKAGE_PATH = $(subst /,$S,$(DOTNET_PACKAGE_DIR))
 DOTNET_ORTOOLS_ASSEMBLY_NAME := Google.OrTools
 
+# Main target
 .PHONY: dotnet # Build .Net OR-Tools library.
+.PHONY: check_dotnet # Quick check only running .Net OR-Tools samples.
+.PHONY: test_dotnet # Run all .Net OR-Tools test targets.
+.PHONY: package_dotnet # Create .Net OR-Tools Nuget package.
 dotnet: cc
 
 temp_dotnet:
@@ -71,7 +80,7 @@ $$(TEMP_DOTNET_DIR)/$1/%: \
 $$(TEMP_DOTNET_DIR)/$1/%/%.csproj: \
  $${SRC_DIR}/ortools/dotnet/Sample.csproj.in \
  | $$(TEMP_DOTNET_DIR)/$1/%
-	$$(SED) -e "s/@DOTNET_PACKAGES_DIR@/..\/..\/..\/dependencies\/dotnet\/packages/" \
+	$$(SED) -e "s/@DOTNET_PACKAGES_DIR@/..\/..\/..\/$(BUILD_DIR)\/dotnet\/packages/" \
  ortools$$Sdotnet$$SSample.csproj.in \
  > $$(TEMP_DOTNET_DIR)$$S$1$$S$$*$$S$$*.csproj
 	$$(SED) -i -e 's/@DOTNET_PROJECT@/$$(DOTNET_ORTOOLS_ASSEMBLY_NAME)/' \
@@ -120,7 +129,7 @@ $$(TEMP_DOTNET_DIR)/$1/%: \
 $$(TEMP_DOTNET_DIR)/$1/%/%.csproj: \
  $${SRC_DIR}/ortools/dotnet/Sample.csproj.in \
  | $$(TEMP_DOTNET_DIR)/$1/%
-	$$(SED) -e "s/@DOTNET_PACKAGES_DIR@/..\/..\/..\/dependencies\/dotnet\/packages/" \
+	$$(SED) -e "s/@DOTNET_PACKAGES_DIR@/..\/..\/..\/$(BUILD_DIR)\/dotnet\/packages/" \
  ortools$$Sdotnet$$SSample.csproj.in \
  > $$(TEMP_DOTNET_DIR)$$S$1$$S$$*$$S$$*.csproj
 	$$(SED) -i -e 's/@DOTNET_PROJECT@/$$(DOTNET_ORTOOLS_ASSEMBLY_NAME)/' \
@@ -168,7 +177,7 @@ $(TEMP_DOTNET_DIR)/tests/%: \
 $(TEMP_DOTNET_DIR)/tests/%/%.csproj: \
  ${SRC_DIR}/ortools/dotnet/Test.csproj.in \
  | $(TEMP_DOTNET_DIR)/tests/%
-	$(SED) -e "s/@DOTNET_PACKAGES_DIR@/..\/..\/..\/dependencies\/dotnet\/packages/" \
+	$(SED) -e "s/@DOTNET_PACKAGES_DIR@/..\/..\/..\/$(BUILD_DIR)\/dotnet\/packages/" \
  ortools$Sdotnet$STest.csproj.in \
  > $(TEMP_DOTNET_DIR)$Stests$S$*$S$*.csproj
 	$(SED) -i -e 's/@DOTNET_PROJECT@/$(DOTNET_ORTOOLS_ASSEMBLY_NAME)/' \
@@ -544,7 +553,7 @@ endif
 
 package_dotnet: $(OR_TOOLS_LIBS)
 	-$(DEL) $.*pkg
-	$(COPY) dependencies$Sdotnet$Spackages$S*.*pkg .
+	$(COPY) $(DOTNET_BUILD_DIR)$Spackages$S*.*pkg .
 
 .PHONY: nuget_archive # Build .Net "Google.OrTools" Nuget Package
 nuget_archive: dotnet | $(TEMP_DOTNET_DIR)

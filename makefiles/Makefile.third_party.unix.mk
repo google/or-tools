@@ -15,15 +15,15 @@ PROTOC ?= $(OR_TOOLS_TOP)/bin/protoc
 
 # Main target.
 .PHONY: third_party # Build OR-Tools Prerequisite
-third_party:  dependencies/Makefile
+third_party:  $(BUILD_DIR)/Makefile
 
-THIRD_PARTY_TARGET = dependencies/Makefile
+THIRD_PARTY_TARGET = $(BUILD_DIR)/Makefile
 
-dependencies:
-	mkdir dependencies
+$(BUILD_DIR):
+	mkdir $(BUILD_DIR)
 
-dependencies/Makefile: | dependencies
-	cmake -S . -B dependencies -DBUILD_DEPS=ON \
+$(BUILD_DIR)/Makefile: | $(BUILD_DIR)
+	cmake -S . -B $(BUILD_DIR) -DBUILD_DEPS=ON \
 	-DBUILD_PYTHON=$(BUILD_PYTHON) \
 	-DBUILD_JAVA=$(BUILD_JAVA) \
 	-DBUILD_DOTNET=$(BUILD_DOTNET) \
@@ -37,10 +37,10 @@ dependencies/Makefile: | dependencies
 	-DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
 	-DCMAKE_INSTALL_PREFIX=$(OR_ROOT_FULL)
 
-.PHONY: clean_third_party # Clean everything. Remember to also delete archived dependencies, i.e. in the event of download failure, etc.
+.PHONY: clean_third_party # Clean everything.
 clean_third_party:
 	-$(DEL) Makefile.local
-	-$(DELREC) dependencies/*
+	-$(DELREC) $(BUILD_DIR)/*
 	-$(DELREC) include
 	-$(DELREC) share
 	-$(DELREC) lib/*.a
