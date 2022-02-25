@@ -21,7 +21,7 @@ jobs:
     - name: Check Python
       run: tools\make detect_python
     - name: Build third party
-      run: tools\make third_party BUILD_PYTHON=ON BUILD_JAVA=OFF BUILD_DOTNET=OFF GENERATOR="\"Unix Makefiles\""
+      run: tools\make third_party BUILD_PYTHON=ON BUILD_JAVA=OFF BUILD_DOTNET=OFF
     - name: Build C++ and Python
       run: tools\make all JOBS=4
     - name: Build Python
