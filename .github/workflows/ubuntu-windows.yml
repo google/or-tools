@@ -51,8 +51,7 @@ jobs:
         run: |
           REF=${GITHUB_REF#refs/*/}
           REF_WO_SLASHES=${REF//\//-}
-          EVENT=${{ github.event_name }}
-          [ EVENT == 'release' ] && WITH_VERSION="_${REF_WO_SLASHES}" || WITH_VERSION=""
+          WITH_VERSION="_${REF_WO_SLASHES}"
           SHARED=${{ matrix.shared }}
           [ $SHARED == "ON" ] && WITH_SHARED="_shared" || WITH_SHARED="_static"
           XPRS=${{ matrix.xprs }}
@@ -60,8 +59,10 @@ jobs:
           SIRIUS=${{ matrix.sirius }}
           [ $SIRIUS == "ON" ] && WITH_SIRIUS="_sirius" || WITH_SIRIUS=""
           OS="_${{ matrix.os }}"
-          APPENDIX="${OS}${WITH_SHARED}${WITH_SIRIUS}${WITH_XPRS}${WITH_VERSION}"
+          APPENDIX="${OS}${WITH_SHARED}${WITH_SIRIUS}${WITH_XPRS}"
+          APPENDIX_VERSION="${OS}${WITH_SHARED}${WITH_SIRIUS}${WITH_XPRS}${WITH_VERSION}"
           echo "::set-output name=appendix::$APPENDIX"
+          echo "::set-output name=appendix_version::$APPENDIX_VERSION"
 
       - name: Get release
         if: github.event_name == 'release' && github.event.action == 'created'

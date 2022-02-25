@@ -1,11 +1,6 @@
 name: CMake Windows
 
-on:
-  push:
-    branches:
-      - main
-  release:
-    types: [ created ]
+on: workflow_dispatch
 
 jobs:
   cmake:
