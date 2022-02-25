@@ -107,7 +107,9 @@ jobs:
         uses: ./.github/workflows/setup-env-ubuntu
         with:
           sirius-ref: ${{ env.Sirius_Ref }}
+          python-version: '3.10'
           dotnet: ${{ matrix.dotnet }}
+          python: ${{ matrix.python }}
 
       - name: Upload sirius install
         if: ${{ matrix.xprs == 'ON' && matrix.sirius == 'ON' && matrix.shared == 'ON' }}
