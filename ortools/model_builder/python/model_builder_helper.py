@@ -14,6 +14,7 @@
 """
 
 from ortools.linear_solver import linear_solver_pb2
+from ortools.model_builder.python import pywrap_model_builder_helper
 
 MPModelExportOptions = pywrap_model_builder_helper.MPModelExportOptions
 
