@@ -28,6 +28,7 @@ jobs:
         sirius: [ON, OFF]
         shared: [ON, OFF]
         extras: [ON, OFF]
+        dotnet: [OFF]
 
         exclude:
           - xprs: OFF
@@ -43,6 +44,14 @@ jobs:
           - os: ubuntu-20.04
             shared: ON
             extras: OFF
+        include:
+          - extras: ON
+            java: ON
+            python: ON
+          - extras: OFF
+            java: OFF
+            python: OFF
+
 
     steps:
       - name: set name variables
@@ -98,6 +107,7 @@ jobs:
         uses: ./.github/workflows/setup-env-ubuntu
         with:
           sirius-ref: ${{ env.Sirius_Ref }}
+          dotnet: ${{ matrix.dotnet }}
 
       - name: Upload sirius install
         if: ${{ matrix.xprs == 'ON' && matrix.sirius == 'ON' && matrix.shared == 'ON' }}
@@ -152,7 +162,7 @@ jobs:
       - name: Configure or-tools
         shell: bash
         run: |
-             cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="build/install" -DBUILD_SHARED_LIBS=${{ matrix.shared }} -DBUILD_DEPS=ON -DUSE_SIRIUS=${{ matrix.sirius }} -Dsirius_solver_DIR="${{ steps.setup.outputs.sirius-install-path }}/cmake" -DUSE_XPRESS=${{ matrix.xprs }} -DXPRESS_ROOT="${{ env.XPRS_Path }}" -DBUILD_PYTHON=${{ matrix.extras }} -DBUILD_JAVA=${{ matrix.extras }} -DBUILD_DOTNET=${{ matrix.extras }} ${{ steps.cache.outputs.CMAKE_CCACHE }} ${{ steps.cache.outputs.CMAKE_CXXCACHE }}
+             cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="build/install" -DBUILD_SHARED_LIBS=${{ matrix.shared }} -DBUILD_DEPS=ON -DUSE_SIRIUS=${{ matrix.sirius }} -Dsirius_solver_DIR="${{ steps.setup.outputs.sirius-install-path }}/cmake" -DUSE_XPRESS=${{ matrix.xprs }} -DXPRESS_ROOT="${{ env.XPRS_Path }}" -DBUILD_PYTHON=${{ matrix.python }} -DBUILD_JAVA=${{ matrix.java }} -DBUILD_DOTNET=${{ matrix.dotnet }} ${{ steps.cache.outputs.CMAKE_CCACHE }} ${{ steps.cache.outputs.CMAKE_CXXCACHE }}
       - name: Build Linux
         if: ${{ matrix.os == 'ubuntu-20.04'}}
         shell: bash
@@ -234,32 +244,32 @@ jobs:
         working-directory: ./build
         run: ctest -V -C Release -R python_python_linear_programming
       - name: Run specific java tests
-        if: ${{ matrix.extras == 'ON' }}
+        if: ${{ matrix.java == 'ON' }}
         working-directory: ./build
         run: ctest -V -C Release -R java_java_LinearProgramming
       - name: Run specific dotnet tests
-        if: ${{ matrix.extras == 'ON' }}
+        if: ${{ matrix.dotnet == 'ON' }}
         working-directory: ./build
         run: ctest -V -C Release -R dotnet_dotnet_cslinearprogramming
       - name: Run other cpp tests
         working-directory: ./build
         run: ctest --output-on-failure -C Release -R cxx_cpp -E cxx_cpp_linear_programming
       - name: Run other python tests
-        if: ${{ matrix.os == 'ubuntu-20.04' && matrix.extras == 'ON' && matrix.xprs == 'ON' && matrix.sirius == 'ON' }}
+        if: ${{ matrix.os == 'ubuntu-20.04' && matrix.python == 'ON' && matrix.xprs == 'ON' && matrix.sirius == 'ON' }}
         working-directory: ./build
         run: ctest --output-on-failure -C Release -R python_python -E python_python_linear_programming
       - name: Run other java tests
-        if: ${{ matrix.extras == 'ON' }}
+        if: ${{ matrix.java == 'ON' }}
         working-directory: ./build
         run: ctest --output-on-failure -C Release -R java_java -E java_java_LinearProgramming
       - name: Run other dotnet tests
-        if: ${{ matrix.extras == 'ON' }}
+        if: ${{ matrix.dotnet == 'ON' }}
         working-directory: ./build
         run: ctest --output-on-failure -C Release -R dotnet_dotnet -E dotnet_dotnet_cslinearprogramming
 
 
       - name: prepare ortools wheel
-        if: ${{ matrix.extras == 'ON' }}
+        if: ${{ matrix.python == 'ON' }}
         id: wheel
         shell: bash
         run: |
@@ -274,7 +284,7 @@ jobs:
           echo "::set-output name=archive_path::$ARCHIVE_PATH"
 
       - name: prepare ortools jar
-        if: ${{ matrix.extras == 'ON' }}
+        if: ${{ matrix.java == 'ON' }}
         id: jar
         shell: bash
         run: |
@@ -289,7 +299,7 @@ jobs:
           echo "::set-output name=archive_path::$ARCHIVE_PATH"
 
       - name: prepare ortools dotnet
-        if: ${{ matrix.extras == 'ON' }}
+        if: ${{ matrix.dotnet == 'ON' }}
         id: dotnet
         shell: bash
         run: |
@@ -304,26 +314,26 @@ jobs:
           echo "::set-output name=archive_path::$ARCHIVE_PATH"
 
       - name: Upload ortools wheel artifact
-        if: ${{ matrix.extras == 'ON' }}
+        if: ${{ matrix.python == 'ON' }}
         uses: actions/upload-artifact@v2
         with:
           name: ${{ steps.wheel.outputs.archive_name }}
           path: ${{ steps.wheel.outputs.archive_path }}
       - name: Upload ortools jar artifact
-        if: ${{ matrix.extras == 'ON' }}
+        if: ${{ matrix.java == 'ON' }}
         uses: actions/upload-artifact@v2
         with:
           name: ${{ steps.jar.outputs.archive_name }}
           path: ${{ steps.jar.outputs.archive_path }}
       - name: Upload ortools dotnet artifact
-        if: ${{ matrix.extras == 'ON' }}
+        if: ${{ matrix.dotnet == 'ON' }}
         uses: actions/upload-artifact@v2
         with:
           name: ${{ steps.dotnet.outputs.archive_name }}
           path: ${{ steps.dotnet.outputs.archive_path }}
 
       - name: Publish ortools wheel asset
-        if:  ${{ github.event_name == 'release' && github.event.action == 'created' && matrix.extras == 'ON' }}
+        if:  ${{ github.event_name == 'release' && github.event.action == 'created' && matrix.python == 'ON' }}
         uses: actions/upload-release-asset@v1.0.2
         with:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
@@ -332,7 +342,7 @@ jobs:
           asset_content_type: application/zip
 
       - name: Publish ortools jar asset
-        if:  ${{ github.event_name == 'release' && github.event.action == 'created' && matrix.extras == 'ON' }}
+        if:  ${{ github.event_name == 'release' && github.event.action == 'created' && matrix.java == 'ON' }}
         uses: actions/upload-release-asset@v1.0.2
         with:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
@@ -341,7 +351,7 @@ jobs:
           asset_content_type: application/zip
 
       - name: Publish ortools dotnet asset
-        if:  ${{ github.event_name == 'release' && github.event.action == 'created' && matrix.extras == 'ON' }}
+        if:  ${{ github.event_name == 'release' && github.event.action == 'created' && matrix.dotnet == 'ON' }}
         uses: actions/upload-release-asset@v1.0.2
         with:
           upload_url: ${{ steps.get_release.outputs.upload_url }}

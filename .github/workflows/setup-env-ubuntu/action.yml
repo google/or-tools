@@ -12,6 +12,10 @@ inputs:
     description: 'boolean, should create a sirius archive'
     required: false
     default: 'true'
+  dotnet:
+    description: 'should install dotnet ON OFF'
+    required: false
+    default: 'OFF'
 outputs:
   sirius-install-path:
     description: "path of the sirius installation"
@@ -33,10 +37,12 @@ runs:
         zip -r toto.zip titi
 
     - name: Setup .NET Core 3.1
+      if: ${{ inputs.dotnet == 'ON' }}
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: 3.1.x
     - name: Setup .NET 6.0
+      if: ${{ inputs.dotnet == 'ON' }}
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: 6.0.x
