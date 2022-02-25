@@ -107,7 +107,7 @@ jobs:
           name: ${{ matrix.os }}_${{ steps.setup.outputs.sirius-archive-name }}
           path: ${{ steps.setup.outputs.sirius-archive-path }}
       - name: Publish sirius install
-        if:  ${{ github.event_name == 'release' && github.event.action == 'created' && matrix.shared == 'ON' && matrix.xprs == 'ON' && matrix.sirius == 'ON' }}
+        if:  ${{ github.event_name == 'release' && github.event.action == 'created' && matrix.extras == 'ON' && matrix.xprs == 'ON' && matrix.sirius == 'ON' }}
         uses: actions/upload-release-asset@v1.0.2
         with:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
