@@ -29,7 +29,7 @@ jobs:
     - name: Check cmake
       run: cmake --version
     - name: Configure
-      run: cmake -S. -Bbuild -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=Release -DBUILD_DOTNET=ON -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
+      run: cmake -S. -Bbuild -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=Release -DBUILD_DOTNET=ON -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
     - name: Build
       run: cmake --build build --config Release --target ALL_BUILD -v -- /maxcpucount
     - name: Test
