@@ -19,6 +19,15 @@ list(APPEND OR_TOOLS_COMPILE_DEFINITIONS
   "USE_BOP" # enable BOP support
   "USE_GLOP" # enable GLOP support
   )
+if(USE_COINOR)
+  list(APPEND OR_TOOLS_COMPILE_DEFINITIONS
+    "USE_CBC" # enable COIN-OR CBC support
+    "USE_CLP" # enable COIN-OR CLP support
+  )
+endif()
+if(USE_GLPK)
+  list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_GLPK")
+endif()
 if(USE_PDLP)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_PDLP")
   set(PDLP_DIR pdlp)
@@ -26,15 +35,6 @@ endif()
 if(USE_SCIP)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_SCIP")
   set(GSCIP_DIR gscip)
-endif()
-if(USE_GLPK)
-  list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_GLPK")
-endif()
-if(USE_COINOR)
-  list(APPEND OR_TOOLS_COMPILE_DEFINITIONS
-    "USE_CBC" # enable COIN-OR CBC support
-    "USE_CLP" # enable COIN-OR CLP support
-  )
 endif()
 if(USE_CPLEX)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_CPLEX")

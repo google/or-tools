@@ -56,6 +56,7 @@ setup(
         '@PROJECT_NAME@.linear_solver':['$<TARGET_FILE_NAME:pywraplp>', '*.pyi'],
         '@PROJECT_NAME@.model_builder.python':['$<TARGET_FILE_NAME:pywrap_model_builder_helper>', '*.pyi'],
         '@PROJECT_NAME@.packing':['*.pyi'],
+        '@PROJECT_NAME@.pdlp':['*.pyi'],
         '@PROJECT_NAME@.sat.python':['$<TARGET_FILE_NAME:swig_helper>', '*.pyi'],
         '@PROJECT_NAME@.scheduling':['$<TARGET_FILE_NAME:pywraprcpsp>', '*.pyi'],
         '@PROJECT_NAME@.util.python':['$<TARGET_FILE_NAME:sorted_interval_list>', '*.pyi'],
