@@ -34,6 +34,8 @@ JOBS ?= 4
 # Main target
 .PHONY: cc # Build C++ OR-Tools library.
 .PHONY: test_cc # Run all C++ OR-Tools test targets.
+.PHONY: fz # Build Flatzinc.
+.PHONY: test_fz # Run all Flatzinc test targets.
 
 ortools_libs: $(OR_TOOLS_LIBS)
 ortools-libs: $(OR_TOOLS_LIBS)
@@ -54,7 +56,9 @@ test_cc: \
  test_cc_contrib \
  test_cc_cpp
 
-.PHONY: test_fz
+# Now flatzinc is build with cc
+fz: cc
+
 test_fz: \
  cc \
  rfz_golomb \

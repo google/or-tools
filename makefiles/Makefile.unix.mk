@@ -197,8 +197,8 @@ BUILD_JAVA = OFF
 endif
 
 BUILD_DOTNET ?= ON
-DOTNET := $(shell which dotnet)
-ifeq ($(DOTNET),)
+DOTNET_BIN := $(shell $(WHICH) dotnet 2> /dev/null)
+ifndef DOTNET_BIN
 BUILD_DOTNET=OFF
 endif
 
