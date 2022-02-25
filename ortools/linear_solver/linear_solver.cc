@@ -370,6 +370,7 @@ extern MPSolverInterface* BuildGLPKInterface(bool mip, MPSolver* const solver);
 extern MPSolverInterface* BuildBopInterface(MPSolver* const solver);
 extern MPSolverInterface* BuildGLOPInterface(MPSolver* const solver);
 extern MPSolverInterface* BuildSatInterface(MPSolver* const solver);
+extern MPSolverInterface* BuildPdlpInterface(MPSolver* const solver);
 #if defined(USE_SCIP)
 extern MPSolverInterface* BuildSCIPInterface(MPSolver* const solver);
 #endif
@@ -395,6 +396,8 @@ MPSolverInterface* BuildSolverInterface(MPSolver* const solver) {
       return BuildSatInterface(solver);
     case MPSolver::GLOP_LINEAR_PROGRAMMING:
       return BuildGLOPInterface(solver);
+    case MPSolver::PDLP_LINEAR_PROGRAMMING:
+      return BuildPdlpInterface(solver);
 #if defined(USE_GLPK)
     case MPSolver::GLPK_LINEAR_PROGRAMMING:
       return BuildGLPKInterface(false, solver);
@@ -479,6 +482,7 @@ bool MPSolver::SupportsProblemType(OptimizationProblemType problem_type) {
   if (problem_type == BOP_INTEGER_PROGRAMMING) return true;
   if (problem_type == SAT_INTEGER_PROGRAMMING) return true;
   if (problem_type == GLOP_LINEAR_PROGRAMMING) return true;
+  if (problem_type == PDLP_LINEAR_PROGRAMMING) return true;
   if (problem_type == GUROBI_LINEAR_PROGRAMMING ||
       problem_type == GUROBI_MIXED_INTEGER_PROGRAMMING) {
     return GurobiIsCorrectlyInstalled();
