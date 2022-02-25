@@ -89,7 +89,6 @@ jobs:
         uses: actions/checkout@v2
 
       - name: ccache
-        if: ${{ matrix.os != 'windows-2019'}}
         uses: hendrikmuhs/ccache-action@v1
         with:
           key: ${{ matrix.os }}-${{ matrix.shared }}-${{ matrix.sirius }}-${{ matrix.xprs }}
@@ -132,13 +131,13 @@ jobs:
           ref: master
           token: ${{ secrets.ACCESS_TOKEN }}
 
-      - name: set linux cache variables
+      - name: set  cache variables
         id: cache
         shell: bash
         run: |
           OS=${{ matrix.os }}
-          [ $OS == "ubuntu-20.04" ] && CCACHE="-DCMAKE_C_COMPILER_LAUNCHER=ccache" || CCACHE=""
-          [ $OS == "ubuntu-20.04" ] && CXXCACHE="-DCMAKE_CXX_COMPILER_LAUNCHER=ccache" || CXXCACHE=""
+          [ $OS == "ubuntu-20.04" ] && CCACHE="-DCMAKE_C_COMPILER_LAUNCHER=ccache" || CCACHE="-DCMAKE_C_COMPILER_LAUNCHER=ccache"
+          [ $OS == "ubuntu-20.04" ] && CXXCACHE="-DCMAKE_CXX_COMPILER_LAUNCHER=ccache" || CXXCACHE="-DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
           echo "::set-output name=CMAKE_CCACHE::$CCACHE"
           echo "::set-output name=CMAKE_CXXCACHE::$CXXCACHE"
 
