@@ -99,6 +99,10 @@ jobs:
         with:
           sirius-ref: ${{ env.Sirius_Ref }}
 
+      - name: print GITHUB_PATH
+        shell: bash
+        run: echo $GITHUB_PATH
+
       - name: Upload sirius install
         if: ${{ matrix.xprs == 'ON' && matrix.sirius == 'ON' && matrix.shared == 'ON' }}
         uses: actions/upload-artifact@v2
