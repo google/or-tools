@@ -10,9 +10,8 @@ jobs:
     - uses: actions/checkout@v2
     - uses: ilammy/msvc-dev-cmd@v1
     - uses: actions/setup-python@v2
-    - uses: seanmiddleditch/gha-setup-ninja@master
       with:
-        python-version: '3.9'    
+        python-version: '3.10'    
     - name: Install python3
       run: python3 -m pip install --user mypy-protobuf absl-py setuptools wheel numpy pandas
     - name: Check make
@@ -22,12 +21,12 @@ jobs:
     - name: Check Python
       run: tools\make detect_python
     - name: Build third party
-      run: tools\make third_party BUILD_PYTHON=ON BUILD_JAVA=OFF BUILD_DOTNET=OFF GENERATOR=Ninja
+      run: tools\make third_party BUILD_PYTHON=ON BUILD_JAVA=OFF BUILD_DOTNET=OFF GENERATOR="\"Unix Makefiles\""
     - name: Build C++ and Python
       run: tools\make all JOBS=4
     - name: Build Python
-      run: tools\make python -j4
+      run: tools\make python JOBS=4
     - name: Test Python
-      run: tools\make test_python -j4
+      run: tools\make test_python
     - name: Create wheel package
       run: tools\make package_python
