@@ -1,4 +1,5 @@
-FROM centos:8
+# ref: https://quay.io/repository/centos/centos
+FROM quay.io/centos/centos:stream8
 LABEL maintainer="corentinl@google.com"
 
 RUN dnf -y update \

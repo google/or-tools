@@ -1,5 +1,5 @@
-# ref: https://hub.docker.com/_/centos
-FROM centos:8 AS env
+# ref: https://quay.io/repository/centos/centos
+FROM quay.io/centos/centos:stream8 AS env
 
 #############
 ##  SETUP  ##
