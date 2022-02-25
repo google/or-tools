@@ -13,10 +13,9 @@
 
 // Integer programming example that shows how to use the API.
 
-#include "absl/flags/parse.h"
-#include "absl/flags/usage.h"
 #include "absl/strings/match.h"
 #include "absl/strings/string_view.h"
+#include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/linear_solver/linear_solver.h"
 
@@ -89,9 +88,7 @@ void RunAllExamples() {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  absl::SetFlag(&FLAGS_alsologtostderr, true);
-  google::InitGoogleLogging(argv[0]);
-  absl::ParseCommandLine(argc, argv);
+  InitGoogle(argv[0], &argc, &argv, true);
   operations_research::RunAllExamples();
   return EXIT_SUCCESS;
 }

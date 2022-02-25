@@ -22,10 +22,9 @@
 #include <map>
 
 #include "absl/container/flat_hash_map.h"
-#include "absl/flags/parse.h"
-#include "absl/flags/usage.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/commandlineflags.h"
+#include "ortools/base/init_google.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
@@ -272,8 +271,7 @@ void NQueens(int size) {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  google::InitGoogleLogging(argv[0]);
-  absl::ParseCommandLine(argc, argv);
+  InitGoogle(argv[0], &argc, &argv, true);
   if (absl::GetFlag(FLAGS_size) != 0) {
     operations_research::NQueens(absl::GetFlag(FLAGS_size));
   } else {
@@ -281,5 +279,5 @@ int main(int argc, char** argv) {
       operations_research::NQueens(n);
     }
   }
-  return EXIT_SUCCESS;
+  return 0;
 }

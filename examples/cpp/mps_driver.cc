@@ -18,8 +18,6 @@
 
 #include <string>
 
-#include "absl/flags/parse.h"
-#include "absl/flags/usage.h"
 #include "absl/status/status.h"
 #include "absl/strings/match.h"
 #include "google/protobuf/descriptor.h"
@@ -27,6 +25,7 @@
 #include "google/protobuf/text_format.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/file.h"
+#include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
 #include "ortools/glop/lp_solver.h"
@@ -82,7 +81,12 @@ void ReadGlopParameters(GlopParameters* parameters) {
 }
 
 int main(int argc, char* argv[]) {
-  absl::ParseCommandLine(argc, argv);
+  InitGoogle(
+      "Runs Glop on a given pattern of files given by --input. "
+      "The files must be in Mps or linear_solver.proto format and can be "
+      "compressed with gzip.",
+      &argc, &argv, true);
+  absl::SetFlag(&FLAGS_logtostderr, true);
 
   GlopParameters parameters;
   ReadGlopParameters(&parameters);

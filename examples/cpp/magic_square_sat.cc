@@ -15,10 +15,9 @@
 #include <vector>
 
 #include "absl/flags/flag.h"
-#include "absl/flags/parse.h"
-#include "absl/flags/usage.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
+#include "ortools/base/init_google.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"
@@ -103,8 +102,7 @@ void MagicSquare(int size) {
 
 int main(int argc, char** argv) {
   absl::SetFlag(&FLAGS_logtostderr, true);
-  google::InitGoogleLogging(argv[0]);
-  absl::ParseCommandLine(argc, argv);
+  InitGoogle(argv[0], &argc, &argv, true);
 
   operations_research::sat::MagicSquare(absl::GetFlag(FLAGS_size));
   return EXIT_SUCCESS;

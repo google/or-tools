@@ -24,12 +24,11 @@
 #include <cstdint>
 #include <vector>
 
-#include "absl/flags/parse.h"
-#include "absl/flags/usage.h"
 #include "absl/random/random.h"
 #include "examples/cpp/cvrptw_lib.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/commandlineflags.h"
+#include "ortools/base/init_google.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/constraint_solver/routing.h"
@@ -65,8 +64,7 @@ const int64_t kMaxNodesPerGroup = 10;
 const int64_t kSameVehicleCost = 1000;
 
 int main(int argc, char** argv) {
-  google::InitGoogleLogging(argv[0]);
-  absl::ParseCommandLine(argc, argv);
+  InitGoogle(argv[0], &argc, &argv, true);
   CHECK_LT(0, absl::GetFlag(FLAGS_vrp_orders))
       << "Specify an instance size greater than 0.";
   CHECK_LT(0, absl::GetFlag(FLAGS_vrp_vehicles))

@@ -13,8 +13,7 @@
 
 #include <cstdlib>
 
-#include "absl/flags/parse.h"
-#include "absl/flags/usage.h"
+#include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/graph/ebert_graph.h"
 #include "ortools/graph/max_flow.h"
@@ -84,8 +83,7 @@ void MaxFeasibleFlow() {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  google::InitGoogleLogging(argv[0]);
-  absl::ParseCommandLine(argc, argv);
+  InitGoogle(argv[0], &argc, &argv, true);
   operations_research::MinCostFlowOn4x4Matrix();
   operations_research::MaxFeasibleFlow();
   return EXIT_SUCCESS;

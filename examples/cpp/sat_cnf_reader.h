@@ -15,12 +15,13 @@
 #define OR_TOOLS_SAT_SAT_CNF_READER_H_
 
 #include <cstdint>
-#include <map>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/container/btree_map.h"
+#include "absl/flags/flag.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
@@ -317,7 +318,7 @@ class SatCnfReader {
 
   // We stores the objective in a map because we want the variables to appear
   // only once in the LinearObjective proto.
-  std::map<int, int64_t> positive_literal_to_weight_;
+  absl::btree_map<int, int64_t> positive_literal_to_weight_;
   int64_t objective_offset_;
 
   // Used for the wcnf format.

@@ -28,10 +28,9 @@
 #include <utility>
 
 #include "absl/flags/flag.h"
-#include "absl/flags/parse.h"
-#include "absl/flags/usage.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
+#include "ortools/base/init_google.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"
@@ -297,8 +296,7 @@ void CostasBoolSoft(const int dim) {
 
 int main(int argc, char** argv) {
   absl::SetFlag(&FLAGS_logtostderr, true);
-  google::InitGoogleLogging(argv[0]);
-  absl::ParseCommandLine(argc, argv);
+  InitGoogle(argv[0], &argc, &argv, true);
 
   int min = 1;
   int max = 10;

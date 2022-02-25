@@ -50,7 +50,7 @@ void SendMoreMoney() {
   cp_model.AddEquality(c0, m);
 
   // Column 1:
-  cp_model.AddEquality(c1 + s + m + o, 10 * c0);
+  cp_model.AddEquality(c1 + s + m, o + 10 * c0);
 
   // Column 2:
   cp_model.AddEquality(c2 + e + o, n + 10 * c1);

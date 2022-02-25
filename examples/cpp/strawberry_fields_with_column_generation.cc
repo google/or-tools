@@ -59,10 +59,9 @@
 #include <utility>
 #include <vector>
 
-#include "absl/flags/parse.h"
-#include "absl/flags/usage.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/commandlineflags.h"
+#include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 #include "ortools/linear_solver/linear_solver.h"
@@ -604,8 +603,7 @@ int main(int argc, char** argv) {
   usage += "  --colgen_max_iterations <n>  max columns to generate\n";
   usage += "  --colgen_complete            generate all columns at start\n";
 
-  google::InitGoogleLogging(usage.c_str());
-  absl::ParseCommandLine(argc, argv);
+  InitGoogle(usage.c_str(), &argc, &argv, true);
 
   operations_research::MPSolver::OptimizationProblemType solver_type;
   bool found = false;

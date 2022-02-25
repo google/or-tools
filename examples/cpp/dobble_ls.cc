@@ -34,11 +34,10 @@
 #include <cstdlib>
 #include <vector>
 
-#include "absl/flags/parse.h"
-#include "absl/flags/usage.h"
 #include "absl/random/random.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/commandlineflags.h"
+#include "ortools/base/init_google.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/map_util.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
@@ -761,8 +760,7 @@ void SolveDobble(int num_cards, int num_symbols, int num_symbols_per_card) {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  google::InitGoogleLogging(argv[0]);
-  absl::ParseCommandLine(argc, argv);
+  InitGoogle(argv[0], &argc, &argv, true);
   // These constants comes directly from the dobble game.
   // There are actually 55 cards, but we can create up to 57 cards.
   const int kSymbolsPerCard = absl::GetFlag(FLAGS_symbols_per_card);

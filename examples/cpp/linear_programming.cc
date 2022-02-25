@@ -16,11 +16,10 @@
 #include <cstdlib>
 
 #include "absl/flags/flag.h"
-#include "absl/flags/parse.h"
-#include "absl/flags/usage.h"
 #include "absl/strings/match.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/commandlineflags.h"
+#include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
@@ -120,8 +119,7 @@ void RunAllExamples() {
 
 int main(int argc, char** argv) {
   absl::SetFlag(&FLAGS_alsologtostderr, true);
-  google::InitGoogleLogging(argv[0]);
-  absl::ParseCommandLine(argc, argv);
+  InitGoogle(argv[0], &argc, &argv, true);
   operations_research::RunAllExamples();
   return EXIT_SUCCESS;
 }

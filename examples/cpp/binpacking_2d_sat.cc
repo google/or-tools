@@ -23,10 +23,9 @@
 #include <vector>
 
 #include "absl/flags/flag.h"
-#include "absl/flags/parse.h"
-#include "absl/flags/usage.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/commandlineflags.h"
+#include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/packing/binpacking_2d_parser.h"
 #include "ortools/packing/multiple_dimensions_bin_packing.pb.h"
@@ -38,8 +37,7 @@ ABSL_FLAG(std::string, params, "", "Sat parameters in text proto format.");
 ABSL_FLAG(int, max_bins, 0,
           "Maximum number of bins. The 0 default value implies the code will "
           "use some heuristics to compute this number.");
-ABSL_FLAG(bool, symmetry_breaking, true,
-          "Use the advanced symmetry breaking constraints");
+ABSL_FLAG(bool, symmetry_breaking, true, "Use symmetry breaking constraints");
 ABSL_FLAG(bool, global_area_constraint, false,
           "Redundant constraint to link the global area covered");
 ABSL_FLAG(bool, alternate_model, true,
@@ -222,8 +220,7 @@ void LoadAndSolve(const std::string& file_name, int instance) {
 
 int main(int argc, char** argv) {
   absl::SetFlag(&FLAGS_logtostderr, true);
-  google::InitGoogleLogging(argv[0]);
-  absl::ParseCommandLine(argc, argv);
+  InitGoogle(argv[0], &argc, &argv, true);
   if (absl::GetFlag(FLAGS_input).empty()) {
     LOG(FATAL) << "Please supply a data file with --input=";
   }

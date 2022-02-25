@@ -23,9 +23,8 @@
 #include <vector>
 
 #include "absl/flags/flag.h"
-#include "absl/flags/parse.h"
-#include "absl/flags/usage.h"
 #include "ortools/base/commandlineflags.h"
+#include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"
 
@@ -110,8 +109,7 @@ void MultiKnapsackSat(int scaling, const std::string& params) {
 
 int main(int argc, char** argv) {
   absl::SetFlag(&FLAGS_logtostderr, true);
-  google::InitGoogleLogging(argv[0]);
-  absl::ParseCommandLine(argc, argv);
+  InitGoogle(argv[0], &argc, &argv, true);
   operations_research::sat::MultiKnapsackSat(absl::GetFlag(FLAGS_size),
                                              absl::GetFlag(FLAGS_params));
   return EXIT_SUCCESS;

@@ -12,7 +12,6 @@
 // limitations under the License.
 
 #include <cstdint>
-#include <cstdio>
 #include <cstdlib>
 #include <memory>
 #include <string>
@@ -20,29 +19,31 @@
 #include <vector>
 
 #include "absl/flags/flag.h"
-#include "absl/flags/parse.h"
-#include "absl/flags/usage.h"
 #include "absl/memory/memory.h"
+#include "absl/random/random.h"
 #include "absl/status/status.h"
 #include "absl/strings/match.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
+#include "absl/strings/string_view.h"
 #include "examples/cpp/opb_reader.h"
 #include "examples/cpp/sat_cnf_reader.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/algorithms/sparse_permutation.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/file.h"
-#include "ortools/base/int_type.h"
-#include "ortools/base/integral_types.h"
+#include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/logging_flags.h"
 #include "ortools/base/timer.h"
+#include "ortools/linear_solver/linear_solver.pb.h"
+#include "ortools/lp_data/lp_data.h"
+#include "ortools/lp_data/mps_reader.h"
+#include "ortools/lp_data/proto_utils.h"
 #include "ortools/sat/boolean_problem.h"
 #include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
-#include "ortools/sat/drat_proof_handler.h"
 #include "ortools/sat/lp_utils.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/optimization.h"
@@ -53,6 +54,8 @@
 #include "ortools/sat/simplification.h"
 #include "ortools/sat/symmetry.h"
 #include "ortools/util/file_util.h"
+#include "ortools/util/logging.h"
+#include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 
 ABSL_FLAG(
@@ -450,8 +453,7 @@ int main(int argc, char** argv) {
   // By default, we want to show how the solver progress. Note that this needs
   // to be set before InitGoogle() which has the nice side-effect of allowing
   // the user to override it.
-  google::InitGoogleLogging(kUsage);
-  absl::ParseCommandLine(argc, argv);
+  InitGoogle(kUsage, &argc, &argv, /*remove_flags=*/true);
   absl::SetFlag(&FLAGS_alsologtostderr, true);
   return operations_research::sat::Run();
 }
