@@ -5,11 +5,13 @@ help_third_party:
 	@echo
 
 # Checks if the user has overwritten default libraries and binaries.
+BUILD_TYPE ?= Release
 USE_COINOR ?= ON
 USE_SCIP ?= ON
 USE_GLPK ?= OFF
+USE_CPLEX ?= OFF
+USE_XPRESS ?= OFF
 PROTOC ?= $(OR_TOOLS_TOP)/bin/protoc
-BUILD_TYPE ?= Release
 
 # Main target.
 .PHONY: third_party # Build OR-Tools Prerequisite
@@ -30,6 +32,8 @@ dependencies/Makefile: | dependencies
 	-DUSE_COINOR=$(USE_COINOR) \
 	-DUSE_SCIP=$(USE_SCIP) \
 	-DUSE_GLPK=$(USE_GLPK) \
+	-DUSE_CPLEX=$(USE_CPLEX) \
+	-DUSE_XPRESS=$(USE_XPRESS) \
 	-DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
 	-DCMAKE_INSTALL_PREFIX=$(OR_ROOT_FULL)
 
@@ -47,8 +51,14 @@ clean_third_party:
 .PHONY: detect_third_party # Show variables used to find third party
 detect_third_party:
 	@echo Relevant info on third party:
+	@echo BUILD_TYPE = $(BUILD_TYPE)
+	@echo USE_GLOP = ON
+	@echo USE_PDLP = ON
 	@echo USE_COINOR = $(USE_COINOR)
 	@echo USE_SCIP = $(USE_SCIP)
+	@echo USE_GLPK = $(USE_GLPK)
+	@echo USE_CPLEX = $(USE_CPLEX)
+	@echo USE_XPRESS = $(USE_XPRESS)
 ifdef UNIX_GLPK_DIR
 	@echo UNIX_GLPK_DIR = $(UNIX_GLPK_DIR)
 	@echo GLPK_INC = $(GLPK_INC)

@@ -18,20 +18,14 @@ else
 	@echo
 endif
 
-# Check for required build tools
-ifeq ($(SYSTEM),win)
-DOTNET_BIN := $(shell $(WHICH) dotnet 2> NUL)
-else # UNIX
-DOTNET_BIN := $(shell $(WHICH) dotnet 2> /dev/null)
-endif
-
 # All libraries and dependencies
 TEMP_DOTNET_DIR = temp_dotnet
 DOTNET_PACKAGE_DIR = temp_dotnet/packages
 DOTNET_PACKAGE_PATH = $(subst /,$S,$(DOTNET_PACKAGE_DIR))
 DOTNET_ORTOOLS_ASSEMBLY_NAME := Google.OrTools
 
-dotnet: $(OR_TOOLS_LIBS)
+.PHONY: dotnet # Build .Net OR-Tools library.
+dotnet: cc
 
 temp_dotnet:
 	mkdir temp_dotnet
@@ -622,7 +616,6 @@ detect_dotnet:
 	@echo Relevant info for the dotnet build:
 	@echo BUILD_DOTNET = $(BUILD_DOTNET)
 	@echo DOTNET_BIN = $(DOTNET_BIN)
-	@echo NUGET_BIN = $(NUGET_BIN)
 	@echo PROTOC = $(PROTOC)
 	@echo DOTNET_SNK = $(DOTNET_SNK)
 	@echo DOTNET_ORTOOLS_SNK = $(DOTNET_ORTOOLS_SNK)

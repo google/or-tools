@@ -34,7 +34,7 @@ JAVA_ORTOOLS_PACKAGE := com.google.ortools
 .PHONY: java_runtime # Build Java OR-Tools runtime.
 .PHONY: java # Build Java OR-Tools.
 .PHONY: test_java # Test Java OR-Tools using various examples.
-java: $(OR_TOOLS_LIBS)
+java: cc
 
 # Detect RuntimeIDentifier
 ifeq ($(OS),Windows)
@@ -456,7 +456,7 @@ else
 endif
 	-$(DELREC) $(TEMP_JAVA_DIR)$Sortools_examples
 
-endif  # BUILD_JAVA=ON	
+endif  # BUILD_JAVA=ON
 
 ################
 ##  Cleaning  ##

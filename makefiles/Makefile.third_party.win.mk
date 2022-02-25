@@ -5,16 +5,13 @@ help_third_party:
 	@echo off & echo(
 
 # Checks if the user has overwritten default libraries and binaries.
+BUILD_TYPE ?= Release
 USE_COINOR ?= ON
 USE_SCIP ?= ON
 USE_GLPK ?= OFF
+USE_CPLEX ?= OFF
+USE_XPRESS ?= OFF
 PROTOC = "$(OR_TOOLS_TOP)\\bin\\protoc.exe"
-
-# language targets
-BUILD_PYTHON ?= OFF
-BUILD_JAVA ?= OFF
-BUILD_DOTNET ?= OFF
-BUILD_TYPE ?= Release
 
 # Main target.
 dependencies:
@@ -36,8 +33,10 @@ dependencies/ortools.sln: | dependencies
 	-DUSE_COINOR=$(USE_COINOR) \
 	-DUSE_SCIP=$(USE_SCIP) \
 	-DUSE_GLPK=$(USE_GLPK) \
+	-DUSE_CPLEX=$(USE_CPLEX) \
+	-DUSE_XPRESS=$(USE_XPRESS) \
+	-DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
 	-DCMAKE_INSTALL_PREFIX=$(OR_ROOT_FULL) \
-	-DCMAKE_BUILD_TYPE=Release \
 	-G $(GENERATOR)
 
 .PHONY: clean_third_party
@@ -53,8 +52,14 @@ clean_third_party:
 .PHONY: detect_third_party # Show variables used to find third party
 detect_third_party:
 	@echo Relevant info on third party:
+	@echo BUILD_TYPE = $(BUILD_TYPE)
+	@echo USE_GLOP = ON
+	@echo USE_PDLP = ON
 	@echo USE_COINOR = $(USE_COINOR)
 	@echo USE_SCIP = $(USE_SCIP)
+	@echo USE_GLPK = $(USE_GLPK)
+	@echo USE_CPLEX = $(USE_CPLEX)
+	@echo USE_XPRESS = $(USE_XPRESS)
 ifdef WINDOWS_GLPK_DIR
 	@echo WINDOWS_GLPK_DIR = $(WINDOWS_GLPK_DIR)
 	@echo GLPK_INC = $(GLPK_INC)
