@@ -62,9 +62,6 @@ jobs:
           OS="_${{ matrix.os }}"
           APPENDIX="${OS}${WITH_SHARED}${WITH_SIRIUS}${WITH_XPRS}${WITH_VERSION}"
           echo "::set-output name=appendix::$APPENDIX"
-          LIB_NAME="ortools_install${APPENDIX}"
-          echo "::set-output name=lib-name::$LIB_NAME"
-
 
       - name: Get release
         if: github.event_name == 'release' && github.event.action == 'created'
@@ -99,12 +96,6 @@ jobs:
         uses: ./.github/workflows/setup-env-ubuntu
         with:
           sirius-ref: ${{ env.Sirius_Ref }}
-
-      - name: print GITHUB_PATH and env
-        shell: bash
-        run: |
-          echo "$PATH"
-          env
 
       - name: Upload sirius install
         if: ${{ matrix.xprs == 'ON' && matrix.sirius == 'ON' && matrix.shared == 'ON' }}
@@ -178,7 +169,7 @@ jobs:
           cd ..
           ARCHIVE_NAME="ortools_install${{ steps.names.outputs.appendix }}.zip"
           ARCHIVE_PATH="${{ github.workspace }}/build/${ARCHIVE_NAME}"
-          zip -r $ARCHIVE_PATH ./install
+          zip -r "$ARCHIVE_PATH" ./install
           echo "::set-output name=ortools_archive_name::$ARCHIVE_NAME"
           echo "::set-output name=ortools_archive_path::$ARCHIVE_PATH"
 
