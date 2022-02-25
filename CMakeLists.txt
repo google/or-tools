@@ -223,27 +223,27 @@ message(STATUS "XPRESS support: ${USE_XPRESS}")
 
 if(BUILD_JAVA)
   option(BUILD_FAT_JAR "Create single .jar with all dependencies (including native binaries)" OFF)
-  message(STATUS "Java build single fat .jar: ${BUILD_FAT_JAR}")
+  message(STATUS "Java: Build single fat .jar: ${BUILD_FAT_JAR}")
 
   option(SKIP_GPG "Disable GPG sign" ON)
-  message(STATUS "Java disable gpg:sign: ${SKIP_GPG}")
+  message(STATUS "Java: Disable gpg:sign: ${SKIP_GPG}")
 
   option(UNIVERSAL_JAVA_PACKAGE "Build a Java multi OS Package" OFF)
-  message(STATUS "Java multiple os package: ${UNIVERSAL_JAVA_PACKAGE}")
+  message(STATUS "Java: Create multiple os package: ${UNIVERSAL_JAVA_PACKAGE}")
 
   set(GPG_ARGS "<arg>--pinentry-mode</arg><arg>loopback</arg>" CACHE STRING "Extra options for GPG")
-  message(STATUS "Java GPG options: ${GPG_ARGS}")
+  message(STATUS "Java: Add GPG options: ${GPG_ARGS}")
 endif()
 
 if(BUILD_PYTHON)
   option(BUILD_pybind11 "Build pybind11 library" ON)
-  message(STATUS "Build pybind11: ${BUILD_pybind11}")
+  message(STATUS "Python: Build pybind11: ${BUILD_pybind11}")
 
   option(VENV_USE_SYSTEM_SITE_PACKAGES "Python venv can use system site packages" OFF)
-  message(STATUS "venv use system site packages: ${VENV_USE_SYSTEM_SITE_PACKAGES}")
+  message(STATUS "Python: Allow venv to use system site packages: ${VENV_USE_SYSTEM_SITE_PACKAGES}")
 
   option(FETCH_PYTHON_DEPS "Install python required modules if not available" ${BUILD_DEPS})
-  message(STATUS "Python fetch dependencies: ${FETCH_PYTHON_DEPS}")
+  message(STATUS "Python: Fetch dependencies: ${FETCH_PYTHON_DEPS}")
 endif()
 
 # Build Needed dependencies
