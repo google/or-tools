@@ -9,13 +9,12 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - uses: ilammy/msvc-dev-cmd@v1
-    - uses: seanmiddleditch/gha-setup-ninja@master
     - name: Check make
       run: tools\make --version
     - name: Check system
       run: tools\make detect_port
     - name: Build third party
-      run: tools\make third_party BUILD_PYTHON=OFF BUILD_JAVA=OFF BUILD_DOTNET=OFF GENERATOR=Ninja
+      run: tools\make third_party BUILD_PYTHON=OFF BUILD_JAVA=OFF BUILD_DOTNET=OFF
     - name: Build C++
       run: tools\make all JOBS=4
     - name: Test C++
