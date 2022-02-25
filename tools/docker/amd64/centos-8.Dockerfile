@@ -78,10 +78,12 @@ RUN git clone -b "${SRC_GIT_BRANCH}" --single-branch https://github.com/google/o
 # Build third parties
 FROM devel AS third_party
 WORKDIR /root/or-tools
-RUN make detect && make third_party
+RUN make detect \
+&& make third_party BUILD_PYTHON=OFF BUILD_JAVA=ON BUILD_DOTNET=ON
 
 # Build project
 FROM third_party AS build
-RUN make detect_cc && make cc
-RUN make detect_java && make java
-RUN make detect_dotnet && make dotnet
+RUN make detect_cc \
+&& make detect_java \
+&& make detect_dotnet
+RUN make all JOBS=4
