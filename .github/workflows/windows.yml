@@ -100,9 +100,11 @@ jobs:
         with:
           sirius-ref: ${{ env.Sirius_Ref }}
 
-      - name: print GITHUB_PATH
+      - name: print GITHUB_PATH and env
         shell: bash
-        run: echo $GITHUB_PATH
+        run: |
+          echo "$PATH"
+          env
 
       - name: Upload sirius install
         if: ${{ matrix.xprs == 'ON' && matrix.sirius == 'ON' && matrix.shared == 'ON' }}
