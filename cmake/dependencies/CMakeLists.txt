@@ -148,6 +148,9 @@ endif()
 # pybind11
 # ##############################################################################
 if(BUILD_PYTHON AND BUILD_pybind11)
+  # Find Python 3
+  find_package(Python3 REQUIRED COMPONENTS Interpreter Development.Module)
+
   message(CHECK_START "Fetching pybind11")
   list(APPEND CMAKE_MESSAGE_INDENT "  ")
   set(PYBIND11_INSTALL ON)
