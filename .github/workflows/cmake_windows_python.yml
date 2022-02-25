@@ -11,9 +11,9 @@ jobs:
     - uses: actions/setup-python@v2
       with:
         python-version: '3.10'
-    - uses: seanmiddleditch/gha-setup-ninja@master
     - name: Install python3
       run: python3 -m pip install --user mypy-protobuf absl-py setuptools wheel numpy pandas
+    - uses: seanmiddleditch/gha-setup-ninja@master
     - name: Install SWIG 4.0.2
       run: |
         (New-Object System.Net.WebClient).DownloadFile("http://prdownloads.sourceforge.net/swig/swigwin-4.0.2.zip","swigwin-4.0.2.zip");
@@ -22,7 +22,7 @@ jobs:
     - name: Check swig
       run: swig -version
     - name: Add Python binaries to path
-      run: echo "$((Get-Item ~).FullName)/AppData/Roaming/Python/Python39/Scripts" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      run: echo "$((Get-Item ~).FullName)/AppData/Roaming/Python/Python310/Scripts" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
     - name: Check cmake
       run: cmake --version
     - name: Configure
