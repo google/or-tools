@@ -16,11 +16,11 @@
 #include <algorithm>
 #include <cstdint>
 #include <limits>
-#include <map>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/meta/type_traits.h"
@@ -576,7 +576,7 @@ void LinkLiteralsAndValues(const std::vector<int>& literals,
   //
   // TODO(user): Make sure this does not appear in the profile. We could use
   // the same code as in ProcessOneVariable() otherwise.
-  std::map<int, std::vector<int>> encoding_lit_to_support;
+  absl::btree_map<int, std::vector<int>> encoding_lit_to_support;
 
   // If a value is false (i.e not possible), then the tuple with this
   // value is false too (i.e not possible). Conversely, if the tuple is
@@ -1061,8 +1061,8 @@ void AddSizeTwoTable(
     return;
   }
 
-  std::map<int, std::vector<int>> left_to_right;
-  std::map<int, std::vector<int>> right_to_left;
+  absl::btree_map<int, std::vector<int>> left_to_right;
+  absl::btree_map<int, std::vector<int>> right_to_left;
 
   for (const auto& tuple : tuples) {
     const int64_t left_value(tuple[0]);

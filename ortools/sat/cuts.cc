@@ -20,7 +20,6 @@
 #include <functional>
 #include <limits>
 #include <memory>
-#include <set>
 #include <string>
 #include <utility>
 #include <vector>
@@ -191,7 +190,7 @@ bool LiftKnapsackCut(
     const std::vector<IntegerValue>& cut_vars_original_coefficients,
     const IntegerTrail& integer_trail, TimeLimit* time_limit,
     LinearConstraint* cut) {
-  std::set<IntegerVariable> vars_in_cut;
+  absl::btree_set<IntegerVariable> vars_in_cut;
   for (IntegerVariable var : cut->vars) {
     vars_in_cut.insert(var);
   }
@@ -588,7 +587,7 @@ CutGenerator CreateKnapsackCoverCutGenerator(
         // Constraint is eligible for the cover.
 
         IntegerValue constraint_ub_for_cut = preprocessed_constraint.ub;
-        std::set<IntegerVariable> vars_in_cut;
+        absl::btree_set<IntegerVariable> vars_in_cut;
         for (int i = 0; i < preprocessed_constraint.vars.size(); ++i) {
           const IntegerVariable var = preprocessed_constraint.vars[i];
           const IntegerValue coefficient = preprocessed_constraint.coeffs[i];

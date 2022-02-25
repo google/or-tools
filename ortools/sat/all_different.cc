@@ -17,10 +17,10 @@
 #include <cstdint>
 #include <functional>
 #include <limits>
-#include <map>
 #include <utility>
 #include <vector>
 
+#include "absl/container/btree_map.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/graph/strongly_connected_components.h"
@@ -41,7 +41,7 @@ std::function<void(Model*)> AllDifferentBinary(
     // List of literal each indicating that a given variable takes this value.
     //
     // Note that we use a map to always add the constraints in the same order.
-    std::map<IntegerValue, std::vector<Literal>> value_to_literals;
+    absl::btree_map<IntegerValue, std::vector<Literal>> value_to_literals;
     IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
     for (const IntegerVariable var : vars) {
       model->Add(FullyEncodeVariable(var));

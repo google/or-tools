@@ -19,14 +19,14 @@
 #include <cstdlib>
 #include <deque>
 #include <limits>
-#include <map>
-#include <set>
 #include <string>
 #include <tuple>
 #include <utility>
 #include <vector>
 
 #include "absl/base/attributes.h"
+#include "absl/container/btree_map.h"
+#include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/hash/hash.h"
@@ -1509,7 +1509,7 @@ bool CpModelPresolver::RemoveSingletonInLinear(ConstraintProto* ct) {
     return false;
   }
 
-  std::set<int> index_to_erase;
+  absl::btree_set<int> index_to_erase;
   const int num_vars = ct->linear().vars().size();
   Domain rhs = ReadDomainFromProto(ct->linear());
 
@@ -4242,7 +4242,7 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
   // separate function to unit test it more properly.
   {
     // Build max load profiles.
-    std::map<int64_t, int64_t> time_to_demand_deltas;
+    absl::btree_map<int64_t, int64_t> time_to_demand_deltas;
     const int64_t capacity_min = context_->MinOf(proto->capacity());
     for (int i = 0; i < proto->intervals_size(); ++i) {
       const int interval_index = proto->intervals(i);
@@ -4844,7 +4844,7 @@ bool CpModelPresolver::PresolveAutomaton(ConstraintProto* ct) {
   const std::vector<int> vars = {proto.vars().begin(), proto.vars().end()};
 
   // Compute the set of reachable state at each time point.
-  std::vector<std::set<int64_t>> reachable_states(n + 1);
+  std::vector<absl::btree_set<int64_t>> reachable_states(n + 1);
   reachable_states[0].insert(proto.starting_state());
   reachable_states[n] = {proto.final_states().begin(),
                          proto.final_states().end()};
@@ -4861,11 +4861,11 @@ bool CpModelPresolver::PresolveAutomaton(ConstraintProto* ct) {
     }
   }
 
-  std::vector<std::set<int64_t>> reached_values(n);
+  std::vector<absl::btree_set<int64_t>> reached_values(n);
 
   // Backward.
   for (int time = n - 1; time >= 0; --time) {
-    std::set<int64_t> new_set;
+    absl::btree_set<int64_t> new_set;
     for (int t = 0; t < proto.transition_tail_size(); ++t) {
       const int64_t tail = proto.transition_tail(t);
       const int64_t label = proto.transition_label(t);
@@ -5378,7 +5378,7 @@ void CpModelPresolver::ExpandObjective() {
     }
   }
 
-  std::set<int> var_to_process;
+  absl::btree_set<int> var_to_process;
   for (const auto entry : context_->ObjectiveMap()) {
     const int var = entry.first;
     CHECK(RefIsPositive(var));
@@ -6211,7 +6211,7 @@ bool CpModelPresolver::ProcessEncodingFromLinear(
 
   // Extract the encoding.
   std::vector<int64_t> all_values;
-  std::map<int64_t, std::vector<int>> value_to_refs;
+  absl::btree_map<int64_t, std::vector<int>> value_to_refs;
   for (const auto& [ref, coeff] : ref_to_coeffs) {
     const int64_t value = rhs - coeff;
     all_values.push_back(value);

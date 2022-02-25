@@ -17,11 +17,11 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
-#include <map>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/strings/string_view.h"
@@ -206,7 +206,7 @@ class LinearConstraintManager {
 
   int64_t num_cuts_ = 0;
   int64_t num_add_cut_calls_ = 0;
-  std::map<std::string, int> type_to_num_cuts_;
+  absl::btree_map<std::string, int> type_to_num_cuts_;
 
   bool objective_is_defined_ = false;
   bool objective_norm_computed_ = false;

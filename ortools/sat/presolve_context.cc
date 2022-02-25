@@ -17,7 +17,6 @@
 #include <cstdint>
 #include <cstdlib>
 #include <limits>
-#include <map>
 #include <numeric>
 #include <string>
 #include <tuple>
@@ -25,6 +24,7 @@
 #include <vector>
 
 #include "absl/base/attributes.h"
+#include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/meta/type_traits.h"
@@ -2004,8 +2004,8 @@ void PresolveContext::LogInfo() {
   SOLVER_LOG(logger_, "Presolve summary:");
   SOLVER_LOG(logger_, "  - ", NumAffineRelations(),
              " affine relations were detected.");
-  std::map<std::string, int> sorted_rules(stats_by_rule_name_.begin(),
-                                          stats_by_rule_name_.end());
+  absl::btree_map<std::string, int> sorted_rules(stats_by_rule_name_.begin(),
+                                                 stats_by_rule_name_.end());
   for (const auto& entry : sorted_rules) {
     if (entry.second == 1) {
       SOLVER_LOG(logger_, "  - rule '", entry.first, "' was applied 1 time.");

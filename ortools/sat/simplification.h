@@ -22,10 +22,10 @@
 #include <cstdint>
 #include <deque>
 #include <memory>
-#include <set>
 #include <utility>
 #include <vector>
 
+#include "absl/container/btree_set.h"
 #include "absl/types/span.h"
 #include "ortools/base/adjustable_priority_queue.h"
 #include "ortools/base/integral_types.h"
@@ -325,7 +325,7 @@ class SatPresolver {
   AdjustablePriorityQueue<BvaPqElement> bva_pq_;
 
   // Temporary data for SimpleBva().
-  std::set<LiteralIndex> m_lit_;
+  absl::btree_set<LiteralIndex> m_lit_;
   std::vector<ClauseIndex> m_cls_;
   absl::StrongVector<LiteralIndex, int> literal_to_p_size_;
   std::vector<std::pair<LiteralIndex, ClauseIndex>> flattened_p_;

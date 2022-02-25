@@ -21,13 +21,13 @@
 #include <deque>
 #include <functional>
 #include <limits>
-#include <map>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "absl/base/attributes.h"
+#include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/strings/str_cat.h"
@@ -535,10 +535,10 @@ class IntegerEncoder {
   // Returns the set of Literal associated to IntegerLiteral of the form var >=
   // value. We make a copy, because this can be easily invalidated when calling
   // any function of this class. So it is less efficient but safer.
-  std::map<IntegerValue, Literal> PartialGreaterThanEncoding(
+  absl::btree_map<IntegerValue, Literal> PartialGreaterThanEncoding(
       IntegerVariable var) const {
     if (var >= encoding_by_var_.size()) {
-      return std::map<IntegerValue, Literal>();
+      return absl::btree_map<IntegerValue, Literal>();
     }
     return encoding_by_var_[var];
   }
@@ -556,9 +556,10 @@ class IntegerEncoder {
   //    slight optimization.
   //  - 'it' is the current position of associated_lit in map, i.e. we must have
   //    it->second == associated_lit.
-  void AddImplications(const std::map<IntegerValue, Literal>& map,
-                       std::map<IntegerValue, Literal>::const_iterator it,
-                       Literal associated_lit);
+  void AddImplications(
+      const absl::btree_map<IntegerValue, Literal>& map,
+      absl::btree_map<IntegerValue, Literal>::const_iterator it,
+      Literal associated_lit);
 
   SatSolver* sat_solver_;
   IntegerDomains* domains_;
@@ -572,7 +573,7 @@ class IntegerEncoder {
   //
   // TODO(user): Remove the entry no longer needed because of level zero
   // propagations.
-  absl::StrongVector<IntegerVariable, std::map<IntegerValue, Literal>>
+  absl::StrongVector<IntegerVariable, absl::btree_map<IntegerValue, Literal>>
       encoding_by_var_;
 
   // Store for a given LiteralIndex the list of its associated IntegerLiterals.

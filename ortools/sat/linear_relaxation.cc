@@ -16,11 +16,11 @@
 #include <algorithm>
 #include <cstdint>
 #include <limits>
-#include <map>
 #include <utility>
 #include <vector>
 
 #include "absl/base/attributes.h"
+#include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
@@ -281,7 +281,7 @@ void AppendPartialGreaterThanEncodingRelaxation(IntegerVariable var,
   const auto* encoder = model.Get<IntegerEncoder>();
   if (integer_trail == nullptr || encoder == nullptr) return;
 
-  const std::map<IntegerValue, Literal>& greater_than_encoding =
+  const absl::btree_map<IntegerValue, Literal>& greater_than_encoding =
       encoder->PartialGreaterThanEncoding(var);
   if (greater_than_encoding.empty()) return;
 
@@ -531,8 +531,8 @@ void AppendCircuitRelaxation(const ConstraintProto& ct, Model* model,
 
   // Each node must have exactly one incoming and one outgoing arc (note
   // that it can be the unique self-arc of this node too).
-  std::map<int, std::vector<Literal>> incoming_arc_constraints;
-  std::map<int, std::vector<Literal>> outgoing_arc_constraints;
+  absl::btree_map<int, std::vector<Literal>> incoming_arc_constraints;
+  absl::btree_map<int, std::vector<Literal>> outgoing_arc_constraints;
   for (int i = 0; i < num_arcs; i++) {
     const Literal arc = mapping->Literal(ct.circuit().literals(i));
     const int tail = ct.circuit().tails(i);
@@ -574,8 +574,8 @@ void AppendRoutesRelaxation(const ConstraintProto& ct, Model* model,
   // arc (note that it can be the unique self-arc of this node too). For node
   // zero, the number of incoming arcs should be the same as the number of
   // outgoing arcs.
-  std::map<int, std::vector<Literal>> incoming_arc_constraints;
-  std::map<int, std::vector<Literal>> outgoing_arc_constraints;
+  absl::btree_map<int, std::vector<Literal>> incoming_arc_constraints;
+  absl::btree_map<int, std::vector<Literal>> outgoing_arc_constraints;
   for (int i = 0; i < num_arcs; i++) {
     const Literal arc = mapping->Literal(ct.routes().literals(i));
     const int tail = ct.routes().tails(i);

@@ -17,11 +17,11 @@
 #include <cstdint>
 #include <limits>
 #include <memory>
-#include <set>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/memory/memory.h"
@@ -784,7 +784,7 @@ void DetectOptionalVariables(const CpModelProto& model_proto, Model* m) {
   // Boolean implication (once the presolve remove cycles). Not sure if we can
   // properly exploit that afterwards though. Do some research!
   std::vector<std::vector<int>> enforcement_intersection(num_proto_variables);
-  std::set<int> literals_set;
+  absl::btree_set<int> literals_set;
   for (int c = 0; c < model_proto.constraints_size(); ++c) {
     const ConstraintProto& ct = model_proto.constraints(c);
     if (ct.enforcement_literal().empty()) {

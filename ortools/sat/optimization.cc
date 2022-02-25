@@ -20,12 +20,12 @@
 #include <deque>
 #include <functional>
 #include <limits>
-#include <map>
-#include <set>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/container/btree_map.h"
+#include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/random.h"
@@ -223,7 +223,7 @@ class FuMalikSymmetryBreaker {
 void MinimizeCoreWithPropagation(TimeLimit* limit, SatSolver* solver,
                                  std::vector<Literal>* core) {
   if (solver->IsModelUnsat()) return;
-  std::set<LiteralIndex> moved_last;
+  absl::btree_set<LiteralIndex> moved_last;
   std::vector<Literal> candidate(core->begin(), core->end());
 
   solver->Backtrack(0);
@@ -1253,7 +1253,7 @@ SatSolver::Status FindCores(std::vector<Literal> assumptions,
     // core.
     std::vector<int> indices;
     {
-      std::set<Literal> temp(core.begin(), core.end());
+      absl::btree_set<Literal> temp(core.begin(), core.end());
       for (int i = 0; i < assumptions.size(); ++i) {
         if (gtl::ContainsKey(temp, assumptions[i])) {
           indices.push_back(i);
@@ -1814,7 +1814,7 @@ SatSolver::Status CoreBasedOptimizer::Optimize() {
   // so we don't really need this map, we could just do a linear scan to
   // recover which node are part of the core. This however needs to be properly
   // unit tested before usage.
-  std::map<LiteralIndex, int> literal_to_term_index;
+  absl::btree_map<LiteralIndex, int> literal_to_term_index;
 
   // Start the algorithm.
   stop_ = false;

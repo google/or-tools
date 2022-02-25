@@ -19,12 +19,12 @@
 #include <functional>
 #include <limits>
 #include <memory>
-#include <set>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "absl/base/attributes.h"
+#include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/meta/type_traits.h"
 #include "absl/strings/str_cat.h"
@@ -1110,7 +1110,7 @@ void SatSolver::TryToMinimizeClause(SatClause* clause) {
   CHECK_EQ(CurrentDecisionLevel(), 0);
   ++counters_.minimization_num_clauses;
 
-  std::set<LiteralIndex> moved_last;
+  absl::btree_set<LiteralIndex> moved_last;
   std::vector<Literal> candidate(clause->begin(), clause->end());
   while (!model_is_unsat_) {
     // We want each literal in candidate to appear last once in our propagation
@@ -1919,7 +1919,7 @@ void SatSolver::ComputeFirstUIPConflict(
   if (highest_level == 0) return;
 
   // To find the 1-UIP conflict clause, we start by the failing_clause, and
-  // expand each of its literal using the reason for this literal assignement to
+  // expand each of its literal using the reason for this literal assignment to
   // false. The is_marked_ set allow us to never expand the same literal twice.
   //
   // The expansion is not done (i.e. stop) for literals that were assigned at a
@@ -2225,9 +2225,9 @@ void SatSolver::MinimizeConflict(
 // other literals of the conflict. It is directly infered if the literals of its
 // reason clause are either from level 0 or from the conflict itself.
 //
-// Note that because of the assignement structure, there is no need to process
+// Note that because of the assignment structure, there is no need to process
 // the literals of the conflict in order. While exploring the reason for a
-// literal assignement, there will be no cycles.
+// literal assignment, there will be no cycles.
 void SatSolver::MinimizeConflictSimple(std::vector<Literal>* conflict) {
   SCOPED_TIME_STAT(&stats_);
   const int current_level = CurrentDecisionLevel();
@@ -2262,7 +2262,7 @@ void SatSolver::MinimizeConflictSimple(std::vector<Literal>* conflict) {
 
 // This is similar to MinimizeConflictSimple() except that for each literal of
 // the conflict, the literals of its reason are recursively expanded using their
-// reason and so on. The recusion stop until we show that the initial literal
+// reason and so on. The recursion loops until we show that the initial literal
 // can be infered from the conflict variables alone, or if we show that this is
 // not the case. The result of any variable expansion will be cached in order
 // not to be expended again.

@@ -18,11 +18,11 @@
 #include <deque>
 #include <functional>
 #include <limits>
-#include <map>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/meta/type_traits.h"
 #include "absl/strings/str_cat.h"
@@ -177,8 +177,8 @@ std::vector<ValueLiteralPair> IntegerEncoder::RawDomainEncoding(
 // use twice as much implication (2 by literals) instead of only one between
 // consecutive literals.
 void IntegerEncoder::AddImplications(
-    const std::map<IntegerValue, Literal>& map,
-    std::map<IntegerValue, Literal>::const_iterator it,
+    const absl::btree_map<IntegerValue, Literal>& map,
+    absl::btree_map<IntegerValue, Literal>::const_iterator it,
     Literal associated_lit) {
   if (!add_implications_) return;
   DCHECK_EQ(it->second, associated_lit);
@@ -203,7 +203,8 @@ void IntegerEncoder::AddImplications(
 void IntegerEncoder::AddAllImplicationsBetweenAssociatedLiterals() {
   CHECK_EQ(0, sat_solver_->CurrentDecisionLevel());
   add_implications_ = true;
-  for (const std::map<IntegerValue, Literal>& encoding : encoding_by_var_) {
+  for (const absl::btree_map<IntegerValue, Literal>& encoding :
+       encoding_by_var_) {
     LiteralIndex previous = kNoLiteralIndex;
     for (const auto value_literal : encoding) {
       const Literal lit = value_literal.second;
@@ -480,13 +481,15 @@ void IntegerEncoder::HalfAssociateGivenLiteral(IntegerLiteral i_lit,
 
 bool IntegerEncoder::LiteralIsAssociated(IntegerLiteral i) const {
   if (i.var >= encoding_by_var_.size()) return false;
-  const std::map<IntegerValue, Literal>& encoding = encoding_by_var_[i.var];
+  const absl::btree_map<IntegerValue, Literal>& encoding =
+      encoding_by_var_[i.var];
   return encoding.find(i.bound) != encoding.end();
 }
 
 LiteralIndex IntegerEncoder::GetAssociatedLiteral(IntegerLiteral i) const {
   if (i.var >= encoding_by_var_.size()) return kNoLiteralIndex;
-  const std::map<IntegerValue, Literal>& encoding = encoding_by_var_[i.var];
+  const absl::btree_map<IntegerValue, Literal>& encoding =
+      encoding_by_var_[i.var];
   const auto result = encoding.find(i.bound);
   if (result == encoding.end()) return kNoLiteralIndex;
   return result->second.Index();
@@ -497,7 +500,8 @@ LiteralIndex IntegerEncoder::SearchForLiteralAtOrBefore(
   // We take the element before the upper_bound() which is either the encoding
   // of i if it already exists, or the encoding just before it.
   if (i.var >= encoding_by_var_.size()) return kNoLiteralIndex;
-  const std::map<IntegerValue, Literal>& encoding = encoding_by_var_[i.var];
+  const absl::btree_map<IntegerValue, Literal>& encoding =
+      encoding_by_var_[i.var];
   auto after_it = encoding.upper_bound(i.bound);
   if (after_it == encoding.begin()) return kNoLiteralIndex;
   --after_it;

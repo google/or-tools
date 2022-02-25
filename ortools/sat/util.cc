@@ -20,7 +20,6 @@
 #include <deque>
 #include <limits>
 #include <numeric>
-#include <set>
 #include <utility>
 #include <vector>
 
@@ -29,6 +28,7 @@
 #if !defined(__PORTABLE_PLATFORM__)
 #include "google/protobuf/descriptor.h"
 #endif  // __PORTABLE_PLATFORM__
+#include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/numeric/int128.h"
 #include "absl/random/bit_gen_ref.h"
@@ -279,9 +279,9 @@ bool LinearInequalityCanBeReducedWithClosestMultiple(
   return *new_rhs < infeasibility_bound;
 }
 
-int MoveOneUnprocessedLiteralLast(const std::set<LiteralIndex>& processed,
-                                  int relevant_prefix_size,
-                                  std::vector<Literal>* literals) {
+int MoveOneUnprocessedLiteralLast(
+    const absl::btree_set<LiteralIndex>& processed, int relevant_prefix_size,
+    std::vector<Literal>* literals) {
   if (literals->empty()) return -1;
   if (!gtl::ContainsKey(processed, literals->back().Index())) {
     return std::min<int>(relevant_prefix_size, literals->size());

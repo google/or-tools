@@ -18,11 +18,11 @@
 #include <cstdint>
 #include <cstdlib>
 #include <limits>
-#include <map>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/meta/type_traits.h"
@@ -1447,7 +1447,7 @@ class ConstraintChecker {
     const int num_variables = ct.reservoir().time_exprs_size();
     const int64_t min_level = ct.reservoir().min_level();
     const int64_t max_level = ct.reservoir().max_level();
-    std::map<int64_t, int64_t> deltas;
+    absl::btree_map<int64_t, int64_t> deltas;
     const bool has_active_variables = ct.reservoir().active_literals_size() > 0;
     for (int i = 0; i < num_variables; i++) {
       const int64_t time = LinearExpressionValue(ct.reservoir().time_exprs(i));

@@ -18,12 +18,12 @@
 #include <deque>
 #include <functional>
 #include <limits>
-#include <map>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "absl/base/thread_annotations.h"
+#include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/random/bit_gen_ref.h"
@@ -412,8 +412,10 @@ class SharedResponseManager {
   std::string dump_prefix_;
 
   // Used for statistics of the improvements found by workers.
-  std::map<std::string, int> primal_improvements_count_ ABSL_GUARDED_BY(mutex_);
-  std::map<std::string, int> dual_improvements_count_ ABSL_GUARDED_BY(mutex_);
+  absl::btree_map<std::string, int> primal_improvements_count_
+      ABSL_GUARDED_BY(mutex_);
+  absl::btree_map<std::string, int> dual_improvements_count_
+      ABSL_GUARDED_BY(mutex_);
 
   SolverLogger* logger_;
 };
@@ -478,7 +480,7 @@ class SharedBoundsManager {
   std::vector<int64_t> synchronized_upper_bounds_ ABSL_GUARDED_BY(mutex_);
   std::deque<SparseBitset<int>> id_to_changed_variables_
       ABSL_GUARDED_BY(mutex_);
-  std::map<std::string, int> bounds_exported_ ABSL_GUARDED_BY(mutex_);
+  absl::btree_map<std::string, int> bounds_exported_ ABSL_GUARDED_BY(mutex_);
 };
 
 // This class holds all the binary clauses that were found and shared by the
