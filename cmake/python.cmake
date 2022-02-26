@@ -117,7 +117,10 @@ search_python_module(
   NO_VERSION)
 set(PROTO_PYS)
 file(GLOB_RECURSE proto_py_files RELATIVE ${PROJECT_SOURCE_DIR}
+  "ortools/bop/*.proto"
   "ortools/constraint_solver/*.proto"
+  "ortools/glop/*.proto"
+  "ortools/graph/*.proto"
   "ortools/linear_solver/*.proto"
   "ortools/packing/*.proto"
   "ortools/sat/*.proto"

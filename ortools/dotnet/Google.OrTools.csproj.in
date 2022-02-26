@@ -37,6 +37,10 @@
       <Link>algorithms/%(Filename)%(Extension)</Link>
     </Compile>
 
+    <Compile Include="@DOTNET_PROJECT_DIR@/ortools/bop/*.cs">
+      <Link>bop/%(Filename)%(Extension)</Link>
+    </Compile>
+
     <Compile Include="@DOTNET_PROJECT_DIR@/ortools/graph/*.cs">
       <Link>graph/%(Filename)%(Extension)</Link>
     </Compile>
@@ -60,6 +64,10 @@
 
     <Compile Include="@DOTNET_PROJECT_DIR@/ortools/init/*.cs">
       <Link>init/%(Filename)%(Extension)</Link>
+    </Compile>
+
+    <Compile Include="@DOTNET_PROJECT_DIR@/ortools/pdlp/*.cs">
+      <Link>sat/%(Filename)%(Extension)</Link>
     </Compile>
 
     <Compile Include="@DOTNET_PROJECT_DIR@/ortools/sat/*.cs">
@@ -128,6 +136,11 @@
     </Content>
     <Content Include="@PROJECT_SOURCE_DIR@/ortools/linear_solver/*.proto">
       <PackagePath>content/linear_solver</PackagePath>
+      <Pack>true</Pack>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="@PROJECT_SOURCE_DIR@/ortools/pdlp/*.proto">
+      <PackagePath>content/pdlp</PackagePath>
       <Pack>true</Pack>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

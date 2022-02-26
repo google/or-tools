@@ -13,6 +13,10 @@
 
 syntax = "proto2";
 
+option java_package = "com.google.ortools.bop";
+option java_multiple_files = true;
+option csharp_namespace = "Google.OrTools.Bop";
+
 package operations_research.bop;
 
 // Method used to optimize a solution in Bop.

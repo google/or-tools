@@ -98,7 +98,10 @@ configure_file(${PROJECT_SOURCE_DIR}/ortools/dotnet/Directory.Build.props.in dot
 # Generate Protobuf .Net sources
 set(PROTO_DOTNETS)
 file(GLOB_RECURSE proto_dotnet_files RELATIVE ${PROJECT_SOURCE_DIR}
+  "ortools/bop/*.proto"
   "ortools/constraint_solver/*.proto"
+  "ortools/glop/*.proto"
+  "ortools/graph/*.proto"
   "ortools/linear_solver/*.proto"
   "ortools/sat/*.proto"
   "ortools/util/*.proto"
@@ -117,6 +120,7 @@ foreach(PROTO_FILE IN LISTS proto_dotnet_files)
   #message(STATUS "protoc dotnet: ${PROTO_DOTNET}")
   add_custom_command(
     OUTPUT ${PROTO_DOTNET}
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${DOTNET_PROJECT_DIR}/${PROTO_DIR}
     COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_BINARY_DIR}/dotnet/${PROTO_DIR}
     COMMAND ${PROTOC_PRG}
     "--proto_path=${PROJECT_SOURCE_DIR}"

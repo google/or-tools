@@ -83,7 +83,10 @@ list(APPEND CMAKE_SWIG_FLAGS ${FLAGS} "-I${PROJECT_SOURCE_DIR}")
 # Generate Protobuf java sources
 set(PROTO_JAVAS)
 file(GLOB_RECURSE proto_java_files RELATIVE ${PROJECT_SOURCE_DIR}
+  "ortools/bop/*.proto"
   "ortools/constraint_solver/*.proto"
+  "ortools/glop/*.proto"
+  "ortools/graph/*.proto"
   "ortools/linear_solver/*.proto"
   "ortools/sat/*.proto"
   "ortools/util/*.proto"

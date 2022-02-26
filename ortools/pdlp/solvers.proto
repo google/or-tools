@@ -13,9 +13,13 @@
 
 syntax = "proto2";
 
-package operations_research.pdlp;
+option java_package = "com.google.ortools.pdlp";
+option java_multiple_files = true;
+option csharp_namespace = "Google.OrTools.Pdlp";
 
 import "ortools/glop/parameters.proto";
+
+package operations_research.pdlp;
 
 enum OptimalityNorm {
   OPTIMALITY_NORM_UNSPECIFIED = 0;
