@@ -36,7 +36,9 @@ class PyWrapLpTest(unittest.TestCase):
         sum_of_vars = sum([x1, x2, x3])
         c2 = solver.Add(sum_of_vars <= 100.0, 'OtherConstraintName')
 
-        self.SolveAndPrint(solver, [x1, x2, x3], [c0, c1, c2])
+        self.SolveAndPrint(solver, [x1, x2, x3], [c0, c1, c2],
+                optimization_problem_type != pywraplp.Solver.PDLP_LINEAR_PROGRAMMING)
+
         # Print a linear expression's solution value.
         print(('Sum of vars: %s = %s' % (sum_of_vars,
                                          sum_of_vars.solution_value())))
@@ -76,7 +78,8 @@ class PyWrapLpTest(unittest.TestCase):
         c2.SetCoefficient(x2, 2)
         c2.SetCoefficient(x3, 6)
 
-        self.SolveAndPrint(solver, [x1, x2, x3], [c0, c1, c2])
+        self.SolveAndPrint(solver, [x1, x2, x3], [c0, c1, c2],
+                optimization_problem_type != pywraplp.Solver.PDLP_LINEAR_PROGRAMMING)
 
     def RunMixedIntegerExampleCppStyleAPI(self, optimization_problem_type):
         """Example of simple mixed integer program with the C++ style API."""
@@ -103,7 +106,7 @@ class PyWrapLpTest(unittest.TestCase):
         c1.SetCoefficient(x1, 1)
         c1.SetCoefficient(x2, 0)
 
-        self.SolveAndPrint(solver, [x1, x2], [c0, c1])
+        self.SolveAndPrint(solver, [x1, x2], [c0, c1], True)
 
     def RunBooleanExampleCppStyleAPI(self, optimization_problem_type):
         """Example of simple boolean program with the C++ style API."""
@@ -124,9 +127,9 @@ class PyWrapLpTest(unittest.TestCase):
         c0.SetCoefficient(x1, 1)
         c0.SetCoefficient(x2, 2)
 
-        self.SolveAndPrint(solver, [x1, x2], [c0])
+        self.SolveAndPrint(solver, [x1, x2], [c0], True)
 
-    def SolveAndPrint(self, solver, variable_list, constraint_list, tolerance=1e-7):
+    def SolveAndPrint(self, solver, variable_list, constraint_list, is_precise):
         """Solve the problem and print the solution."""
         print(('Number of variables = %d' % solver.NumVariables()))
         self.assertEqual(solver.NumVariables(), len(variable_list))
@@ -141,7 +144,8 @@ class PyWrapLpTest(unittest.TestCase):
 
         # The solution looks legit (when using solvers others than
         # GLOP_LINEAR_PROGRAMMING, verifying the solution is highly recommended!).
-        self.assertTrue(solver.VerifySolution(tolerance, True))
+        if is_precise:
+            self.assertTrue(solver.VerifySolution(1e-7, True))
 
         print(('Problem solved in %f milliseconds' % solver.wall_time()))
 

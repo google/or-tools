@@ -178,6 +178,10 @@ void RunAllExamples() {
   LOG(INFO) << "---- Linear programming example with GLOP ----";
   RunLinearProgrammingExample(MPSolver::GLOP_LINEAR_PROGRAMMING);
 #endif  // USE_GLOP
+#if defined(USE_PDLP)
+  LOG(INFO) << "---- Linear programming example with PDLP ----";
+  RunLinearProgrammingExample(MPSolver::PDLP_LINEAR_PROGRAMMING);
+#endif  // USE_PDLP
 #if defined(USE_GUROBI)
   LOG(INFO) << "---- Linear programming example with Gurobi ----";
   RunLinearProgrammingExample(MPSolver::GUROBI_LINEAR_PROGRAMMING);
