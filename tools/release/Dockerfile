@@ -12,20 +12,20 @@ RUN yum -y update \
 && yum clean all \
 && rm -rf /var/cache/yum
 
-# Bump to gcc-9
+# Bump to gcc-11
 RUN yum -y update \
 && yum -y install centos-release-scl \
-&& yum -y install devtoolset-9 \
+&& yum -y install devtoolset-11 \
 && yum clean all \
-&& echo "source /opt/rh/devtoolset-9/enable" >> /etc/bashrc
+&& echo "source /opt/rh/devtoolset-11/enable" >> /etc/bashrc
 SHELL ["/bin/bash", "--login", "-c"]
 # RUN gcc --version
 
-# Install CMake 3.21.1
-RUN wget -q "https://cmake.org/files/v3.21/cmake-3.21.1-linux-x86_64.sh" \
-&& chmod a+x cmake-3.21.1-linux-x86_64.sh \
-&& ./cmake-3.21.1-linux-x86_64.sh --prefix=/usr/local/ --skip-license \
-&& rm cmake-3.21.1-linux-x86_64.sh
+# Install CMake 3.22.2
+RUN wget -q "https://cmake.org/files/v3.22/cmake-3.22.2-linux-x86_64.sh" \
+&& chmod a+x cmake-3.22.2-linux-x86_64.sh \
+&& ./cmake-3.22.2-linux-x86_64.sh --prefix=/usr/local/ --skip-license \
+&& rm cmake-3.22.2-linux-x86_64.sh
 
 # Install Swig 4.0.2
 RUN curl --location-trusted \
