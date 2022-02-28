@@ -66,9 +66,6 @@ jobs:
         id: names
         shell: bash
         run: |
-          REF=${GITHUB_REF#refs/*/}
-          REF_WO_SLASHES=${REF//\//-}
-          WITH_VERSION="_${REF_WO_SLASHES}"
           SHARED=${{ matrix.shared }}
           [ $SHARED == "ON" ] && WITH_SHARED="_shared" || WITH_SHARED="_static"
           XPRS=${{ matrix.xprs }}
@@ -77,9 +74,7 @@ jobs:
           [ $SIRIUS == "ON" ] && WITH_SIRIUS="_sirius" || WITH_SIRIUS=""
           OS="_${{ matrix.os }}"
           APPENDIX="${OS}${WITH_SHARED}${WITH_SIRIUS}${WITH_XPRS}"
-          APPENDIX_VERSION="${OS}${WITH_SHARED}${WITH_SIRIUS}${WITH_XPRS}${WITH_VERSION}"
           echo "::set-output name=appendix::$APPENDIX"
-          echo "::set-output name=appendix_version::$APPENDIX_VERSION"
 
       - name: Get release
         if: github.event_name == 'release' && github.event.action == 'created'
@@ -292,6 +287,20 @@ jobs:
           zip -r "${ARCHIVE_PATH}" "${MY_DIR}"
           echo "::set-output name=archive_name::$ARCHIVE_NAME"
           echo "::set-output name=archive_path::$ARCHIVE_PATH"
+      - name: Upload ortools wheel artifact
+        if: ${{ matrix.python == 'ON' }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ steps.wheel.outputs.archive_name }}
+          path: ${{ steps.wheel.outputs.archive_path }}
+      - name: Publish ortools wheel asset
+        if:  ${{ github.event_name == 'release' && github.event.action == 'created' && matrix.python == 'ON' }}
+        uses: actions/upload-release-asset@v1.0.2
+        with:
+          upload_url: ${{ steps.get_release.outputs.upload_url }}
+          asset_path: ${{ steps.wheel.outputs.archive_path }}
+          asset_name: ${{ steps.wheel.outputs.archive_name }}
+          asset_content_type: application/zip
 
       - name: prepare ortools jar
         if: ${{ matrix.java == 'ON' }}
@@ -307,6 +316,20 @@ jobs:
           zip -r "${ARCHIVE_PATH}" "${MY_DIR}"
           echo "::set-output name=archive_name::$ARCHIVE_NAME"
           echo "::set-output name=archive_path::$ARCHIVE_PATH"
+      - name: Upload ortools jar artifact
+        if: ${{ matrix.java == 'ON' }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ steps.jar.outputs.archive_name }}
+          path: ${{ steps.jar.outputs.archive_path }}
+      - name: Publish ortools jar asset
+        if:  ${{ github.event_name == 'release' && github.event.action == 'created' && matrix.java == 'ON' }}
+        uses: actions/upload-release-asset@v1.0.2
+        with:
+          upload_url: ${{ steps.get_release.outputs.upload_url }}
+          asset_path: ${{ steps.jar.outputs.archive_path }}
+          asset_name: ${{ steps.jar.outputs.archive_name }}
+          asset_content_type: application/zip
 
       - name: prepare ortools dotnet
         if: ${{ matrix.dotnet == 'ON' }}
@@ -322,44 +345,12 @@ jobs:
           zip -r "${ARCHIVE_PATH}" "${MY_DIR}"
           echo "::set-output name=archive_name::$ARCHIVE_NAME"
           echo "::set-output name=archive_path::$ARCHIVE_PATH"
-
-      - name: Upload ortools wheel artifact
-        if: ${{ matrix.python == 'ON' }}
-        uses: actions/upload-artifact@v2
-        with:
-          name: ${{ steps.wheel.outputs.archive_name }}
-          path: ${{ steps.wheel.outputs.archive_path }}
-      - name: Upload ortools jar artifact
-        if: ${{ matrix.java == 'ON' }}
-        uses: actions/upload-artifact@v2
-        with:
-          name: ${{ steps.jar.outputs.archive_name }}
-          path: ${{ steps.jar.outputs.archive_path }}
       - name: Upload ortools dotnet artifact
         if: ${{ matrix.dotnet == 'ON' }}
         uses: actions/upload-artifact@v2
         with:
           name: ${{ steps.dotnet.outputs.archive_name }}
           path: ${{ steps.dotnet.outputs.archive_path }}
-
-      - name: Publish ortools wheel asset
-        if:  ${{ github.event_name == 'release' && github.event.action == 'created' && matrix.python == 'ON' }}
-        uses: actions/upload-release-asset@v1.0.2
-        with:
-          upload_url: ${{ steps.get_release.outputs.upload_url }}
-          asset_path: ${{ steps.wheel.outputs.archive_path }}
-          asset_name: ${{ steps.wheel.outputs.archive_name }}
-          asset_content_type: application/zip
-
-      - name: Publish ortools jar asset
-        if:  ${{ github.event_name == 'release' && github.event.action == 'created' && matrix.java == 'ON' }}
-        uses: actions/upload-release-asset@v1.0.2
-        with:
-          upload_url: ${{ steps.get_release.outputs.upload_url }}
-          asset_path: ${{ steps.jar.outputs.archive_path }}
-          asset_name: ${{ steps.jar.outputs.archive_name }}
-          asset_content_type: application/zip
-
       - name: Publish ortools dotnet asset
         if:  ${{ github.event_name == 'release' && github.event.action == 'created' && matrix.dotnet == 'ON' }}
         uses: actions/upload-release-asset@v1.0.2

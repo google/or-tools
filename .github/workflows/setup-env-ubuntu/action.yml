@@ -33,13 +33,6 @@ outputs:
 runs:
   using: "composite"
   steps:
-    - name: try zip
-      shell: bash
-      run: |
-        mkdir titi
-        touch titi/toto.txt
-        zip -r toto.zip titi
-
     - name: Setup .NET Core 3.1
       if: ${{ inputs.dotnet == 'ON' }}
       uses: actions/setup-dotnet@v1
@@ -67,7 +60,7 @@ runs:
       shell: bash
       run: |
         SIRIUS_WORKING_DIR=sirius-solver
-        SIRIUS_BASE_PATH="${{ github.workspace }}/sirius-solver"
+        SIRIUS_BASE_PATH="${{ github.workspace }}/${SIRIUS_WORKING_DIR}"
         SIRIUS_INSTALL_DIR=SiriusInstall
         SIRIUS_INSTALL_PATH="${SIRIUS_BASE_PATH}/${SIRIUS_INSTALL_DIR}"
         ARCHIVE_NAME="sirius_install.zip"
