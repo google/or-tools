@@ -41,6 +41,10 @@
       <Link>bop/%(Filename)%(Extension)</Link>
     </Compile>
 
+    <Compile Include="@DOTNET_PROJECT_DIR@/ortools/glop/*.cs">
+      <Link>graph/%(Filename)%(Extension)</Link>
+    </Compile>
+
     <Compile Include="@DOTNET_PROJECT_DIR@/ortools/graph/*.cs">
       <Link>graph/%(Filename)%(Extension)</Link>
     </Compile>
