@@ -14,7 +14,7 @@ env:
 jobs:
 
   build:
-    name: ${{ matrix.os }} shared=${{ matrix.shared }} sirius=${{ matrix.sirius }} xprs=${{ matrix.xprs }}
+    name: ${{ matrix.os }} shared=${{ matrix.shared }} sirius=${{ matrix.sirius }} xprs=${{ matrix.xprs }} dotnet=${{ matrix.dotnet }}
     runs-on: ${{ matrix.os }}
     env:
       Sirius_Ref: antares_integration
@@ -28,6 +28,7 @@ jobs:
         sirius: [ON, OFF]
         shared: [ON, OFF]
         extras: [ON, OFF]
+        dotnet: [ON, OFF]
 
         exclude:
           - xprs: OFF
@@ -43,15 +44,17 @@ jobs:
           - os: ubuntu-20.04
             shared: ON
             extras: OFF
+          - extras: OFF
+            dotnet: ON
         include:
           - extras: ON
+            dotnet: OFF
             java: ON
             python: ON
-            dotnet: OFF
           - extras: ON
+            dotnet: ON
             java: OFF
             python: OFF
-            dotnet: ON
           - extras: OFF
             java: OFF
             python: OFF
