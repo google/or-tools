@@ -491,7 +491,7 @@ install_dirs:
 install_cc: | install_dirs
 	$(COPY) LICENSE-2.0.txt "$(DESTDIR)$(prefix)"
 	$(COPYREC) include "$(DESTDIR)$(prefix)"
-	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)ortools.$L "$(DESTDIR)$(prefix)$Slib"
+	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)ortools.$L* "$(DESTDIR)$(prefix)$Slib"
 	$(COPY) bin$Sprotoc* "$(DESTDIR)$(prefix)$Sbin"
 	$(COPYREC) share "$(DESTDIR)$(prefix)"
 	$(COPY) ortools$Ssat$Sdocs$S*.md "$(DESTDIR)$(prefix)$Sshare$Sdocs$Sortools$Ssat$Sdocs"
