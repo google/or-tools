@@ -51,6 +51,8 @@ setup(
         '@PROJECT_NAME@':[$<$<STREQUAL:$<TARGET_PROPERTY:@PYTHON_PROJECT@,TYPE>,SHARED_LIBRARY>:'.libs/*', '../$<TARGET_SONAME_FILE_NAME:@PYTHON_PROJECT@>'>],
         '@PROJECT_NAME@.init':['$<TARGET_FILE_NAME:pywrapinit>'],
         '@PROJECT_NAME@.algorithms':['$<TARGET_FILE_NAME:pywrapknapsack_solver>'],
+        '@PROJECT_NAME@.bop':['*.pyi'],
+        '@PROJECT_NAME@.glop':['*.pyi'],
         '@PROJECT_NAME@.graph':['$<TARGET_FILE_NAME:pywrapgraph>'],
         '@PROJECT_NAME@.constraint_solver':['$<TARGET_FILE_NAME:pywrapcp>', '*.pyi'],
         '@PROJECT_NAME@.linear_solver':['$<TARGET_FILE_NAME:pywraplp>', '*.pyi'],
