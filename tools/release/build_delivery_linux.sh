@@ -77,9 +77,10 @@ function build_dotnet() {
     echo "build .Net up to date!"
     return 0
   fi
-  build_cxx
 
+  command -v swig
   command -v swig | xargs echo "swig: " | tee -a build.log
+  command -v dotnet
   command -v dotnet | xargs echo "dotnet: " | tee -a build.log
 
   # Install .Net SNK
@@ -96,16 +97,19 @@ function build_dotnet() {
   echo "DONE" | tee -a build.log
 
   # Clean dotnet
+  echo -n "Clean .Net..." | tee -a build.log
   cd "${ROOT_DIR}" || exit 2
-  make clean_dotnet
+  rm -rf "${ROOT_DIR}/temp_dotnet"
+  echo "DONE" | tee -a build.log
 
   echo -n "Build .Net..." | tee -a build.log
-  make dotnet -l 4 UNIX_PYTHON_VER=3
+  cmake -S. -Btemp_dotnet -DBUILD_DOTNET=ON
+  cmake --build temp_dotnet -j8 -v
   echo "DONE" | tee -a build.log
-  #make test_dotnet -l 4 UNIX_PYTHON_VER=3
-  #echo "make test_dotnet: DONE" | tee -a build.log
+  #cmake --build temp_dotnet --target test
+  #echo "cmake test: DONE" | tee -a build.log
 
-  cp temp_dotnet/packages/*nupkg export/
+  cp temp_dotnet/dotnet/packages/*nupkg export/
   echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/dotnet_build"
 }
 
@@ -115,8 +119,8 @@ function build_java() {
     echo "build Java up to date!" | tee -a build.log
     return 0
   fi
-  build_cxx
 
+  command -v swig
   command -v swig | xargs echo "swig: " | tee -a build.log
   # maven require JAVA_HOME
   if [[ -z "${JAVA_HOME}" ]]; then
@@ -151,17 +155,20 @@ function build_java() {
   echo "DONE" | tee -a build.log
 
   # Clean java
+  echo -n "Clean Java..." | tee -a build.log
   cd "${ROOT_DIR}" || exit 2
-  make clean_java
+  rm -rf "${ROOT_DIR}/temp_java"
+  echo "DONE" | tee -a build.log
 
   echo -n "Build Java..." | tee -a build.log
-  make java -l 4 UNIX_PYTHON_VER=3
+  cmake -S. -Btemp_java -DBUILD_JAVA=ON -DSKIP_GPG=OFF
+  cmake --build temp_java -j8 -v
   echo "DONE" | tee -a build.log
-  #make test_java -l 4 UNIX_PYTHON_VER=3
-  #echo "make test_java: DONE" | tee -a build.log
+  #cmake --build temp_java --target test
+  #echo "cmake test: DONE" | tee -a build.log
 
-  cp temp_java/ortools-linux-x86-64/target/*.jar* export/
-  cp temp_java/ortools-java/target/*.jar* export/
+  cp temp_java/java/ortools-linux-x86-64/target/*.jar* export/
+  cp temp_java/java/ortools-java/target/*.jar* export/
   echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/java_build"
 }
 
@@ -241,29 +248,30 @@ function build_examples() {
 # Python 3
 # todo(mizux) Use `make --directory tools/docker python` instead
 function build_python() {
-  build_cxx
+  if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/python_build" -; then
+    echo "build python up to date!" | tee -a build.log
+    return 0
+  fi
 
+  command -v swig
   command -v swig | xargs echo "swig: " | tee -a build.log
   command -v python3 | xargs echo "python3: " | tee -a build.log
   command -v protoc-gen-mypy | xargs echo "protoc-gen-mypy: " | tee -a build.log
+  protoc-gen-mypy --version | xargs echo "protoc-gen-mypy version: " | tee -a build.log
+  protoc-gen-mypy --version | grep "3\.2\.0"
 
   echo -n "Cleaning Python 3..." | tee -a build.log
-  make clean_python UNIX_PYTHON_VER=3
+  rm -rf temp_python
   echo "DONE" | tee -a build.log
 
   echo -n "Build Python 3..." | tee -a build.log
-  make python -l 4 UNIX_PYTHON_VER=3
+  cmake -S . -B temp_python -DBUILD_PYTHON=ON
+  cmake --build temp_python build -j8
   echo "DONE" | tee -a build.log
-  #make test_python UNIX_PYTHON_VER=3
-  #echo "make test_python3: DONE" | tee -a build.log
-  echo -n "Build Python 3 wheel archive..." | tee -a build.log
-  make package_python UNIX_PYTHON_VER=3
-  echo "DONE" | tee -a build.log
-  echo -n "Test Python 3 wheel archive..." | tee -a build.log
-  make test_package_python UNIX_PYTHON_VER=3
-  echo "DONE" | tee -a build.log
+  #cmake --build test_python --target test
+  #echo "cmake test_python: DONE" | tee -a build.log
 
-  cp temp_python3/ortools/dist/*.whl export/
+  cp temp_python/python/dist/*.whl export/
   echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/python_build"
 }
 

@@ -35,28 +35,22 @@ echo SHA1: %SHA1% | tee.exe -a build.log
 
 md export
 
-if "%1"=="java" (
-call :BUILD_CXX
-call :BUILD_JAVA
-exit /B %ERRORLEVEL%
-)
-
 if "%1"=="dotnet" (
-call :BUILD_CXX
 call :BUILD_DOTNET
 exit /B %ERRORLEVEL%
 )
 
+if "%1"=="java" (
+call :BUILD_JAVA
+exit /B %ERRORLEVEL%
+)
+
 if "%1"=="python" (
-call :BUILD_CXX
 call :BUILD_PYTHON
 exit /B %ERRORLEVEL%
 )
 
 if "%1"=="archive" (
-call :BUILD_CXX
-call :BUILD_JAVA
-call :BUILD_DOTNET
 call :BUILD_ARCHIVE
 exit /B %ERRORLEVEL%
 )
@@ -67,9 +61,8 @@ exit /B %ERRORLEVEL%
 )
 
 if "%1"=="all" (
-call :BUILD_CXX
-call :BUILD_JAVA
 call :BUILD_DOTNET
+call :BUILD_JAVA
 call :BUILD_ARCHIVE
 call :BUILD_EXAMPLES
 call :BUILD_PYTHON
@@ -80,6 +73,11 @@ if "%1"=="reset" (
 echo clean everything... | tee.exe -a build.log
 make.exe clean || exit 1
 make.exe clean_third_party || exit 1
+rm.exe -rf temp_dotnet
+rm.exe -rf temp_java
+for %%v in (6 7 8 9 10) do (
+  rm.exe -rf temp_python3%%v
+)
 rm.exe -rf export
 del or-tools.snk
 for %%i in (*.zip) DO del %%i
@@ -153,6 +151,44 @@ echo %BRANCH% %SHA1%>build_cxx.log
 exit /B 0
 
 
+:BUILD_DOTNET
+title Build .Net
+set HASH=
+for /F "tokens=* delims=" %%x in (build_dotnet.log) do (set HASH=%%x)
+if "%HASH%"=="%BRANCH% %SHA1%" (
+echo .Net build seems up to date, skipping
+exit /B 0
+)
+
+REM Check .Net
+which.exe dotnet || exit 1
+which.exe dotnet | tee.exe -a build.log
+
+REM Install .Net snk
+echo Install .Net snk | tee.exe -a build.log
+openssl aes-256-cbc -iter 42 -pass pass:%ORTOOLS_TOKEN% -in tools\release\or-tools.snk.enc -out or-tools.snk -d
+set DOTNET_SNK=or-tools.snk
+
+echo Cleaning .Net... | tee.exe -a build.log
+rm.exe -rf temp_dotnet
+echo DONE | tee.exe -a build.log
+
+echo Build dotnet: ... | tee.exe -a build.log
+cmake -S. -Btemp_dotnet -DBUILD_DOTNET=ON
+cmake --build temp_dotnet --config Release -j8 -v
+echo DONE | tee.exe -a build.log
+REM make.exe test_dotnet WINDOWS_PATH_TO_PYTHON=c:\python39-64 || exit 1
+REM echo make test_dotnet: DONE | tee.exe -a build.log
+
+for %%i in (temp_dotnet\dotnet\packages\*nupkg*) do (
+  echo Copy %%i to export... | tee.exe -a build.log
+  copy %%i export\.
+  echo Copy %%i to export...DONE | tee.exe -a build.log
+)
+echo %BRANCH% %SHA1%>build_dotnet.log
+exit /B 0
+
+
 :BUILD_JAVA
 title Build Java
 set HASH=
@@ -183,56 +219,28 @@ mkdir -p %userprofile%/.m2
 openssl aes-256-cbc -iter 42 -pass pass:%ORTOOLS_TOKEN% -in tools\release\settings.xml.enc -out %userprofile%/.m2/settings.xml -d
 echo Install Java GPG: DONE | tee -a build.log
 
-echo make java: ... | tee.exe -a build.log
-make.exe java WINDOWS_PATH_TO_PYTHON=c:\python39-64 || exit 1
-echo make java: DONE | tee.exe -a build.log
-REM make.exe test_java WINDOWS_PATH_TO_PYTHON=c:\python39-64 || exit 1
-REM echo make test_java: DONE | tee.exe -a build.log
+echo Cleaning Java... | tee.exe -a build.log
+rm.exe -rf temp_java
+echo DONE | tee.exe -a build.log
 
-for %%i in (temp_java\ortools-win32-x86-64\target\*.jar*) do (
+echo Build java: ... | tee.exe -a build.log
+cmake -S. -Btemp_java -DBUILD_JAVA=ON -DSKIP_GPG=OFF
+cmake --build temp_java --config Release -j8 -v
+echo DONE | tee.exe -a build.log
+REM cmake --build temp_java --config Release --target RUN_TEST || exit 1
+REM echo cmake test_java: DONE | tee.exe -a build.log
+
+for %%i in (temp_java\java\ortools-win32-x86-64\target\*.jar*) do (
   echo Copy %%i to export... | tee.exe -a build.log
   copy %%i export\.
   echo Copy %%i to export...DONE | tee.exe -a build.log
 )
-for %%i in (temp_java\ortools-java\target\*.jar*) do (
+for %%i in (temp_java\java\ortools-java\target\*.jar*) do (
   echo Copy %%i to export... | tee.exe -a build.log
   copy %%i export\.
   echo Copy %%i to export...DONE | tee.exe -a build.log
 )
 echo %BRANCH% %SHA1%>build_java.log
-exit /B 0
-
-
-:BUILD_DOTNET
-title Build .Net
-set HASH=
-for /F "tokens=* delims=" %%x in (build_dotnet.log) do (set HASH=%%x)
-if "%HASH%"=="%BRANCH% %SHA1%" (
-echo .Net build seems up to date, skipping
-exit /B 0
-)
-
-REM Check .Net
-which.exe dotnet || exit 1
-which.exe dotnet | tee.exe -a build.log
-
-REM Install .Net snk
-echo Install .Net snk | tee.exe -a build.log
-openssl aes-256-cbc -iter 42 -pass pass:%ORTOOLS_TOKEN% -in tools\release\or-tools.snk.enc -out or-tools.snk -d
-set DOTNET_SNK=or-tools.snk
-
-echo make dotnet: ... | tee.exe -a build.log
-make.exe dotnet WINDOWS_PATH_TO_PYTHON=c:\python39-64 || exit 1
-echo make dotnet: DONE | tee.exe -a build.log
-REM make.exe test_dotnet WINDOWS_PATH_TO_PYTHON=c:\python39-64 || exit 1
-REM echo make test_dotnet: DONE | tee.exe -a build.log
-
-for %%i in (packages\*nupkg*) do (
-  echo Copy %%i to export... | tee.exe -a build.log
-  copy %%i export\.
-  echo Copy %%i to export...DONE | tee.exe -a build.log
-)
-echo %BRANCH% %SHA1%>build_dotnet.log
 exit /B 0
 
 
@@ -295,7 +303,7 @@ echo %BRANCH% %SHA1%>build_examples.log
 exit /B 0
 
 
-REM PYTHON 3.6,3.7,3.8,3.9,3.10
+REM PYTHON 3.6, 3.7, 3.8, 3.9, 3.10
 :BUILD_PYTHON
 title Build Python
 set HASH=
@@ -310,26 +318,24 @@ for %%v in (6 7 8 9 10) do (
   REM Check Python
   which.exe C:\python3%%v-64\python.exe || exit 1
   echo C:\python3%%v-64\python.exe: FOUND | tee.exe -a build.log
-  C:\python3%%v-64\python.exe -m pip install --user absl-py mypy-protobuf
+  C:\python3%%v-64\python.exe -m pip install --upgrade --user absl-py mypy-protobuf
   set PATH+=;%userprofile%\appdata\roaming\python\python3%%v\Scripts"
   set PATH+=;C:\python3%%v-64\Scripts"
 
-  echo Cleaning Python... | tee.exe -a build.log
- make.exe clean_python WINDOWS_PATH_TO_PYTHON=c:\python3%%v-64
-  echo Cleaning Python...DONE | tee.exe -a build.log
+  echo Cleaning Python 3.%%v... | tee.exe -a build.log
+  rm.exe -rf temp_python3%%v
+  echo DONE | tee.exe -a build.log
 
-  REM make.exe python WINDOWS_PATH_TO_PYTHON=c:\python3%%v-64 || exit 1
-  REM echo make python3.%%v: DONE | tee.exe -a build.log
-  REM make.exe test_python WINDOWS_PATH_TO_PYTHON=c:\python3%%v-64 || exit 1
-  REM echo make test_python3.%%v: DONE | tee.exe -a build.log
-  echo Rebuild Python3.%%v pypi archive... | tee.exe -a build.log
-  make.exe package_python WINDOWS_PATH_TO_PYTHON=c:\python3%%v-64 || exit 1
-  echo Rebuild Python3.%%v pypi archive...DONE | tee.exe -a build.log
-  echo Test Python3.%%v pypi archive... | tee.exe -a build.log
-  make.exe test_package_python WINDOWS_PATH_TO_PYTHON=c:\python3%%v-64 || exit 1
-  echo Test Python3.%%v pypi archive...DONE | tee.exe -a build.log
+  echo Build Python 3.%%v... | tee.exe -a build.log
+  cmake -S. -Btemp_python3%%v -DBUILD_PYTHON=ON -DPython3_ROOT_DIR=C:\python3%%v-64
+  cmake --build temp_python3%%v --config Release -j8 -v
+  echo DONE | tee.exe -a build.log
 
-  for %%i in (temp_python3%%v\ortools\dist\*.whl) do (
+  ::echo Test Python 3.%%v pypi archive... | tee.exe -a build.log
+  ::cmake --build temp_python3%%v --config Release --taget RUN_TEST || exit 1
+  ::echo DONE | tee.exe -a build.log
+
+  for %%i in (temp_python3%%v\python\dist\*.whl) do (
     echo Copy %%i to export... | tee.exe -a build.log
     copy %%i export\.
     echo Copy %%i to export...DONE | tee.exe -a build.log
