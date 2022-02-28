@@ -107,7 +107,9 @@ if(APPLE)
 elseif(UNIX)
   set(CMAKE_INSTALL_RPATH "$ORIGIN/../${CMAKE_INSTALL_LIBDIR}:$ORIGIN")
 endif()
-# Binary
+
+
+# Fz Binary
 add_executable(fz
   ortools/flatzinc/fz.cc
   )
@@ -130,6 +132,31 @@ target_link_libraries(fz PRIVATE ortools::flatzinc)
 ## Alias
 add_executable(${PROJECT_NAME}::fz ALIAS fz)
 
+
+# Parser Binary
+add_executable(parser_main
+  ortools/flatzinc/parser_main.cc
+  )
+## Includes
+target_include_directories(parser_main PRIVATE
+  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+  $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>
+  )
+## Compile options
+set_target_properties(parser_main PROPERTIES
+  CXX_STANDARD 17
+  CXX_STANDARD_REQUIRED ON
+  CXX_EXTENSIONS OFF
+  )
+target_compile_features(parser_main PUBLIC cxx_std_17)
+target_compile_definitions(parser_main PUBLIC ${FLATZINC_COMPILE_DEFINITIONS})
+target_compile_options(parser_main PUBLIC ${FLATZINC_COMPILE_OPTIONS})
+## Dependencies
+target_link_libraries(parser_main PRIVATE ortools::flatzinc)
+## Alias
+add_executable(${PROJECT_NAME}::parser_main ALIAS parser_main)
+
+
 # MiniZinc solver configuration
 file(RELATIVE_PATH FZ_REL_INSTALL_BINARY
   ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/minizinc/solvers
@@ -141,7 +168,7 @@ configure_file(
 
 # Install rules
 include(GNUInstallDirs)
-install(TARGETS flatzinc fz
+install(TARGETS flatzinc fz parser_main
   EXPORT ${PROJECT_NAME}Targets
   INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
