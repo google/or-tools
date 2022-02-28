@@ -55,13 +55,13 @@ digraph CMake {
           CoinUtils [label="Coin::CoinUtils", color=royalblue];
 
           color=royalblue;
-          label = "mizux/CoinUtils.git";
+          label = "Mizux/CoinUtils.git";
         }
         subgraph clusterOsi {
           Osi [label="Coin::Osi", color=royalblue];
 
           color=royalblue;
-          label = "mizux/Osi.git";
+          label = "Mizux/Osi.git";
         }
         subgraph clusterClp {
           Clp [label="Coin::Clp", color=royalblue];
@@ -69,13 +69,13 @@ digraph CMake {
           ClpSolver [label="Coin::ClpSolver", color=royalblue];
 
           color=royalblue;
-          label = "mizux/Clp.git";
+          label = "Mizux/Clp.git";
         }
         subgraph clusterCgl {
           Cgl [label="Coin::Cgl", color=royalblue];
 
           color=royalblue;
-          label = "mizux/Cgl.git";
+          label = "Mizux/Cgl.git";
         }
         subgraph clusterCbc {
           Cbc [label="Coin::Cbc", color=royalblue];
@@ -83,7 +83,7 @@ digraph CMake {
           CbcSolver [label="Coin::CbcSolver", color=royalblue];
 
           color=royalblue;
-          label = "mizux/Cbc.git";
+          label = "Mizux/Cbc.git";
         }
 
         CoinUtils -> Osi;
@@ -116,6 +116,28 @@ digraph CMake {
         label = "Coin-OR Solver\n(-DUSE_COINOR=ON)";
       }
 
+      subgraph clusterGLPKSolver {
+        subgraph clusterGLPK {
+          GLPK [label="glpk::glpk"];
+
+          color=royalblue;
+          label = "Mizux/GLPK.git";
+        }
+        color=royalblue;
+        label = "GLPK Solver\n(-DUSE_GLPK=ON)";
+      }
+
+      subgraph clusterSCIPSolver {
+        subgraph clusterSCIP {
+          SCIP [label="scip::scip"];
+
+          color=royalblue;
+          label = "scipopt/scip.git";
+        }
+        color=royalblue;
+        label = "SCIP Solver\n(-DUSE_SCIP=ON)";
+      }
+
       SWIG_WIN [label="swigwin\n(Windows)", color=chocolate];
 
       // Intra deps
@@ -145,6 +167,8 @@ digraph CMake {
       Protobuf -> OR_SRC;
       ClpSolver -> OR_SRC;
       CbcSolver -> OR_SRC;
+      GLPK -> OR_SRC;
+      SCIP -> OR_SRC;
       // rendering hack
       //OsiCbc -> OR_SRC [arrowhead=none, style=invisible];
 
