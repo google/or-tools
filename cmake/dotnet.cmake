@@ -213,10 +213,17 @@ add_custom_target(dotnet_native_package
 ####################
 ##  .Net Package  ##
 ####################
-configure_file(
-  ${PROJECT_SOURCE_DIR}/ortools/dotnet/${DOTNET_PROJECT}.csproj.in
-  ${DOTNET_PROJECT_DIR}/${DOTNET_PROJECT}.csproj.in
-  @ONLY)
+if(UNIVERSAL_DOTNET_PACKAGE)
+  configure_file(
+    ${PROJECT_SOURCE_DIR}/ortools/dotnet/${DOTNET_PROJECT}-full.csproj.in
+    ${DOTNET_PROJECT_DIR}/${DOTNET_PROJECT}.csproj.in
+    @ONLY)
+else()
+  configure_file(
+    ${PROJECT_SOURCE_DIR}/ortools/dotnet/${DOTNET_PROJECT}-local.csproj.in
+    ${DOTNET_PROJECT_DIR}/${DOTNET_PROJECT}.csproj.in
+    @ONLY)
+endif()
 
 add_custom_command(
   OUTPUT ${DOTNET_PROJECT_DIR}/${DOTNET_PROJECT}.csproj

@@ -221,6 +221,11 @@ message(STATUS "CPLEX support: ${USE_CPLEX}")
 option(USE_XPRESS "Use the XPRESS solver" OFF)
 message(STATUS "XPRESS support: ${USE_XPRESS}")
 
+if(BUILD_DOTNET)
+  option(UNIVERSAL_DOTNET_PACKAGE "Build a .Net multi OS Package" OFF)
+  message(STATUS ".Net: Create multiple os package: ${UNIVERSAL_DOTNET_PACKAGE}")
+endif()
+
 if(BUILD_JAVA)
   option(BUILD_FAT_JAR "Create single .jar with all dependencies (including native binaries)" OFF)
   message(STATUS "Java: Build single fat .jar: ${BUILD_FAT_JAR}")
