@@ -610,21 +610,6 @@ dotnet:
 	$(MAKE) run SOURCE=examples/dotnet/xkcd/xkcd.cs
 	$(MAKE) run SOURCE=examples/dotnet/young_tableaux/young_tableaux.cs
 	$(MAKE) run SOURCE=examples/dotnet/zebra/zebra.cs
-	$(MAKE) run SOURCE=examples/dotnet/fsintegerprogramming/fsintegerprogramming.fs
-	$(MAKE) run SOURCE=examples/dotnet/fslinearprogramming/fslinearprogramming.fs
-	$(MAKE) run SOURCE=examples/dotnet/fsdiet/fsdiet.fs
-	$(MAKE) run SOURCE=examples/dotnet/fsequality/fsequality.fs
-	$(MAKE) run SOURCE=examples/dotnet/fsequality-inequality/fsequality-inequality.fs
-	$(MAKE) run SOURCE=examples/dotnet/fsinteger-linear-program/fsinteger-linear-program.fs
-	$(MAKE) run SOURCE=examples/dotnet/fsknapsack/fsknapsack.fs
-	$(MAKE) run SOURCE=examples/dotnet/fsnetwork-max-flow/fsnetwork-max-flow.fs
-	$(MAKE) run SOURCE=examples/dotnet/fsnetwork-max-flow-lpSolve/fsnetwork-max-flow-lpSolve.fs
-	$(MAKE) run SOURCE=examples/dotnet/fsnetwork-min-cost-flow/fsnetwork-min-cost-flow.fs
-	$(MAKE) run SOURCE=examples/dotnet/fsProgram/fsProgram.fs
-	$(MAKE) run SOURCE=examples/dotnet/fsrabbit-pheasant/fsrabbit-pheasant.fs
-	$(MAKE) run SOURCE=examples/dotnet/fsvolsay3/fsvolsay3.fs
-	$(MAKE) run SOURCE=examples/dotnet/fsvolsay3-lpSolve/fsvolsay3-lpSolve.fs
-	$(MAKE) run SOURCE=examples/dotnet/fsvolsay/fsvolsay.fs
 #	$(MAKE) run SOURCE=examples/dotnet/word_square/word_square.cs # depends on /usr/share/dict/words
 
 test_dotnet: detect_dotnet
@@ -634,7 +619,6 @@ test_dotnet: detect_dotnet
 	$(MAKE) run SOURCE=examples/dotnet/Vrp/Vrp.cs
 	$(MAKE) run SOURCE=examples/dotnet/JobshopSat/JobshopSat.cs
 	$(MAKE) run SOURCE=examples/dotnet/NursesSat/NursesSat.cs
-	$(MAKE) run SOURCE=examples/dotnet/fsProgram/fsProgram.fs
 
 ###################
 ##  .NET SOURCE  ##
@@ -653,21 +637,6 @@ build: $(SOURCE) $(SOURCE)proj
 run: build
 	"$(DOTNET_BIN)" run --no-build --framework net6.0 --project $(SOURCE_PATH)proj -- $(ARGS)
 endif # ifeq ($(SOURCE_SUFFIX),.cs)
-
-# .Net F#
-ifeq ($(SOURCE_SUFFIX),.fs) # Those rules will be used if SOURCE contain a .cs file
-ifeq (,$(wildcard $(SOURCE)proj))
-$(error File "$(SOURCE)proj" does not exist !)
-endif
-
-.PHONY: build # Build a .Net F# program.
-build: $(SOURCE) $(SOURCE)proj
-	"$(DOTNET_BIN)" build $(SOURCE_PATH)proj
-
-.PHONY: run # Run a .Net F# program.
-run: build
-	"$(DOTNET_BIN)" run --no-build --framework net6.0 --project $(SOURCE_PATH)proj -- $(ARGS)
-endif # ifeq ($(SOURCE_SUFFIX),.fs)
 
 endif # ifndef DOTNET_BIN
 
