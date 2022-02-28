@@ -66,7 +66,7 @@ ifeq ($(SYSTEM),unix)
   DEBUG = -O4 -DNDEBUG
   CXXFLAGS = -fPIC -std=c++20 $(DEBUG) \
  -I$(INC_DIR) -I. $(ARCH) -Wno-deprecated \
- -DUSE_BOP -DUSE_GLOP \
+ -DUSE_BOP -DUSE_GLOP -DUSE_PDLP \
  -DUSE_CBC -DUSE_CLP \
  -DUSE_SCIP
   LIB_PREFIX = lib
@@ -127,7 +127,7 @@ ifeq ($(SYSTEM),win)
     /DPSAPI_VERSION=1 /D__WIN32__ /DNOMINMAX /DWIN32_LEAN_AND_MEAN=1 /D_CRT_SECURE_NO_WARNINGS \
     /DGOOGLE_GLOG_DLL_DECL= \
     /I$(INC_DIR)\\src\\windows /I$(INC_DIR) /I. \
-    /DUSE_BOP /DUSE_GLOP \
+    /DUSE_BOP /DUSE_GLOP /DUSE_PDLP \
     /DUSE_CBC /DUSE_CLP \
     /DUSE_SCIP
   LDFLAGS = psapi.lib ws2_32.lib
