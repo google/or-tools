@@ -190,6 +190,8 @@ archive_dotnet: dotnet \
 ################
 ##  FLATZINC  ##
 ################
+$(TEMP_FZ_DIR):
+	-$(MKDIR_P) $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)
 
 $(FZ_INSTALL_DIR)$(ARCHIVE_EXT): fz | $(TEMP_FZ_DIR)
 	-$(DELREC) $(TEMP_FZ_DIR)$S*
@@ -198,8 +200,11 @@ $(FZ_INSTALL_DIR)$(ARCHIVE_EXT): fz | $(TEMP_FZ_DIR)
 	-$(DELREC) $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sbin/cbc*
 	-$(DELREC) $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sbin/clp*
 	-$(DELREC) $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sbin/protoc*
-	-$(DELREC) $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sshare/doc
-	$(COPY) $(FLATZINC_PATH) $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Slib
+	-$(DELREC) $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sshare/cmake
+	-$(DELREC) $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sshare/docs
+	-$(DELREC) $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sshare/eigen3
+	-$(DELREC) $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sshare/man
+	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)flatzinc.$L* $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Slib
 	$(COPY) $(BIN_DIR)$Sfz$E $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sbin$S$(FZ_EXE)
 	$(COPY) $(BIN_DIR)$Sparser_main$E $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sbin$Sparser-or-tools$E
 	-$(MKDIR_P) $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sshare
@@ -213,9 +218,6 @@ else
 	$(TAR) -C $(TEMP_FZ_DIR) --no-same-owner -czvf $(FZ_INSTALL_DIR)$(ARCHIVE_EXT) $(FZ_INSTALL_DIR)
 endif
 #	-$(DELREC) $(TEMP_FZ_DIR)
-
-$(TEMP_FZ_DIR):
-	-$(MKDIR_P) $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)
 
 $(DATA_INSTALL_DIR)$(ARCHIVE_EXT):
 	-$(DELREC) $(TEMP_DATA_DIR)

@@ -24,7 +24,7 @@ OR_TOOLS_LIBS = $(LIB_DIR)/$(LIB_PREFIX)ortools.$L
 else
 ifeq ($(PLATFORM),MACOSX)
 OR_TOOLS_LIBS = $(LIB_DIR)/$(LIB_PREFIX)ortools.$(OR_TOOLS_MAJOR).$L
-else
+else # linux
 OR_TOOLS_LIBS = $(LIB_DIR)/$(LIB_PREFIX)ortools.$L.$(OR_TOOLS_MAJOR)
 endif
 endif
