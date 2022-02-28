@@ -48,6 +48,10 @@ jobs:
             java: ON
             python: ON
             dotnet: OFF
+          - extras: ON
+            java: OFF
+            python: OFF
+            dotnet: ON
           - extras: OFF
             java: OFF
             python: OFF
