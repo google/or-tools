@@ -250,10 +250,11 @@ jobs:
           cmake --build build
           ./build/linear_programming
       - name: Build & run CMake example project
-        if: ${{ startsWith(matrix.os, 'NONOwindows') }}
+        if: ${{ startsWith(matrix.os, 'NONO') }}
         working-directory: ./examples/cmake/linear_programming/
         env:
           XPRESS: "${{ github.workspace }}/xpressmp813/bin/"
+        shell: bash
         run: |
           cmake -Bbuild -S. -DORTOOLS_INSTALL="${{ github.workspace }}/build/install" -DCMAKE_BUILD_TYPE=Release -DXPRESS_ROOT="${{ github.workspace }}/xpressmp813" -Dsirius_solver_DIR="${{ github.workspace }}/sirius-solver/SiriusInstall/cmake"
           cmake --build build --config Release
