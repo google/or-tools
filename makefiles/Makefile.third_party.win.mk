@@ -23,7 +23,7 @@ third_party: $(BUILD_DIR)/ortools.sln | $(BUILD_DIR)
 THIRD_PARTY_TARGET = $(BUILD_DIR)/ortools.sln
 GENERATOR ?= $(CMAKE_PLATFORM)
 
-$(BUILD_DIR)/ortools.sln: | $(BUILD_DIR)
+$(BUILD_DIR)/ortools.sln: $(CURDIR)/makefiles/Makefile.third_party.win.mk | $(BUILD_DIR)
 	cmake -S . -B $(BUILD_DIR) -DBUILD_DEPS=ON \
 	-DBUILD_PYTHON=$(BUILD_PYTHON) \
 	-DBUILD_JAVA=$(BUILD_JAVA) \
