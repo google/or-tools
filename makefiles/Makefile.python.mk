@@ -507,7 +507,7 @@ $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/.libs: | $(PYPI_ARCHIVE_TEMP_DIR)/ortoo
 	-$(MKDIR) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$S.libs
 
 ifneq ($(PYTHON_EXECUTABLE),)
-package_python: $(OR_TOOLS_LIBS)
+package_python: cc
 	-$(DEL) $.*whl
 	$(COPY) $(PYTHON_BUILD_DIR)$Sdist$S*.whl .
 

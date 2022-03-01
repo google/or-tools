@@ -551,7 +551,7 @@ endif
 ##  Nuget artifact  ##
 ######################
 
-package_dotnet: $(OR_TOOLS_LIBS)
+package_dotnet: cc
 	-$(DEL) $.*pkg
 	$(COPY) $(DOTNET_BUILD_DIR)$Spackages$S*.*pkg .
 
