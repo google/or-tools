@@ -179,6 +179,10 @@ jobs:
           ref: master
           token: ${{ secrets.ACCESS_TOKEN }}
 
+      - name: check windows space
+        if: ${{ startsWith(matrix.os, 'windows') }}
+        run: Get-PSDrive
+
       - name: set  cache variables
         id: cache
         shell: bash
@@ -201,6 +205,10 @@ jobs:
         run: |
              cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="build/install" -DBUILD_SHARED_LIBS=${{ matrix.shared }} -DBUILD_DEPS=ON -DUSE_SIRIUS=${{ matrix.sirius }} -Dsirius_solver_DIR="${{ env.SIRIUS_INSTALL_PATH }}/cmake" -DUSE_XPRESS=${{ matrix.xprs }} -DXPRESS_ROOT="${{ env.XPRS_Path }}" -DBUILD_PYTHON=${{ matrix.python }} -DBUILD_JAVA=${{ matrix.java }} -DBUILD_DOTNET=${{ matrix.dotnet }} ${{ steps.cache.outputs.CMAKE_CCACHE }} ${{ steps.cache.outputs.CMAKE_CXXCACHE }}
 
+      - name: check windows space
+        if: ${{ startsWith(matrix.os, 'windows') }}
+        run: Get-PSDrive
+
       - name: Build Linux
         if: ${{ startsWith(matrix.os, 'ubuntu') }}
         shell: bash
@@ -209,6 +217,10 @@ jobs:
       - name: Build windows
         if: ${{ startsWith(matrix.os, 'windows') }}
         run: cmake --build build --config Release --target ALL_BUILD INSTALL -v -- /maxcpucount
+
+      - name: check windows space
+        if: ${{ startsWith(matrix.os, 'windows') }}
+        run: Get-PSDrive
 
       - name: Prepare ortools install
         if: ${{ matrix.dotnet == 'OFF' }}
@@ -224,6 +236,10 @@ jobs:
           echo "::set-output name=ortools_archive_name::$ARCHIVE_NAME"
           echo "::set-output name=ortools_archive_path::$ARCHIVE_PATH"
 
+
+      - name: check windows space
+        if: ${{ startsWith(matrix.os, 'windows') }}
+        run: Get-PSDrive
 
       - name: Upload ortools install artifact
         uses: actions/upload-artifact@v2
