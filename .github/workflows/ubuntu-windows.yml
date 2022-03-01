@@ -13,7 +13,54 @@ env:
 
 jobs:
 
+  build_sirius:
+    name: ${{ matrix.os }} build sirius
+    runs-on: ${{ matrix.os }}
+    env:
+      Sirius_Ref: antares_integration
+    strategy:
+      matrix:
+        os: [windows-2019, ubuntu-20.04]
+    steps:
+      - name: Get release
+        if: github.event_name == 'release' && github.event.action == 'created'
+        id: get_release
+        uses:
+          bruceadams/get-release@v1.2.3
+
+      - name: install zip for windows
+        if: ${{ matrix.os == 'windows-2019'}}
+        shell: cmd
+        run: |
+          choco install zip --no-progress
+
+      - name: Checkout or-tools
+        uses: actions/checkout@v2
+
+      - name: setup sirius
+        id: setup
+        uses: ./.github/workflows/build-sirius
+        with:
+          sirius-ref: ${{ env.Sirius_Ref }}
+
+      - name: Upload sirius install
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.os }}_sirius
+          path: ${{ steps.setup.outputs.sirius-install-path }}
+
+      - name: Publish sirius install
+        if:  ${{ github.event_name == 'release' && github.event.action == 'created' }}
+        uses: actions/upload-release-asset@v1.0.2
+        with:
+          upload_url: ${{ steps.get_release.outputs.upload_url }}
+          asset_path: ${{ steps.setup.outputs.sirius-archive-path }}
+          asset_name: ${{ matrix.os }}_${{ steps.setup.outputs.sirius-archive-name }}
+          asset_content_type: application/zip
+
+
   build:
+    needs: [build_sirius]
     name: ${{ matrix.os }} shared=${{ matrix.shared }} sirius=${{ matrix.sirius }} xprs=${{ matrix.xprs }} dotnet=${{ matrix.dotnet }}
     runs-on: ${{ matrix.os }}
     env:
@@ -21,6 +68,7 @@ jobs:
       XPRS_Path: ${{ github.workspace }}/xpressmp813
       XPRESS: ${{ github.workspace }}/xpressmp813/bin
       XPRS_LIB_Path: ${{ github.workspace }}/xpressmp813/lib
+      SIRIUS_INSTALL_PATH : ${{ github.workspace }}/sirius_install
     strategy:
       matrix:
         os: [windows-2019, ubuntu-20.04]
@@ -118,21 +166,11 @@ jobs:
         with:
           sirius-ref: ${{ env.Sirius_Ref }}
 
-      - name: Upload sirius install
-        if: ${{ matrix.xprs == 'ON' && matrix.sirius == 'ON' && matrix.shared == 'ON' }}
-        uses: actions/upload-artifact@v2
+      - name: Download sirius
+        uses: actions/download-artifact@v2
         with:
-          name: ${{ matrix.os }}_${{ steps.setup.outputs.sirius-archive-name }}
-          path: ${{ steps.setup.outputs.sirius-archive-path }}
-
-      - name: Publish sirius install
-        if:  ${{ github.event_name == 'release' && github.event.action == 'created' && matrix.extras == 'ON' && matrix.xprs == 'ON' && matrix.sirius == 'ON' }}
-        uses: actions/upload-release-asset@v1.0.2
-        with:
-          upload_url: ${{ steps.get_release.outputs.upload_url }}
-          asset_path: ${{ steps.setup.outputs.sirius-archive-path }}
-          asset_name: ${{ matrix.os }}_${{ steps.setup.outputs.sirius-archive-name }}
-          asset_content_type: application/zip
+          name: ${{ matrix.os }}_sirius
+          path: ${{ env.SIRIUS_INSTALL_PATH }}
 
       - name: Checkout xpressmp813 linux
         if: ${{ matrix.os == 'ubuntu-20.04'}}
