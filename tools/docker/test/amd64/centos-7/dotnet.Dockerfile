@@ -20,7 +20,7 @@ SHELL ["/bin/bash", "--login", "-c"]
 # see https://docs.microsoft.com/en-us/dotnet/core/install/linux-centos#centos-7-
 RUN rpm -Uvh https://packages.microsoft.com/config/centos/7/packages-microsoft-prod.rpm \
 && yum -y update \
-&& yum -y install dotnet-sdk-3.1 dotnet-sdk-5.0 \
+&& yum -y install dotnet-sdk-3.1 dotnet-sdk-6.0 \
 && yum clean all \
 && rm -rf /var/cache/yum
 # Trigger first run experience by running arbitrary cmd

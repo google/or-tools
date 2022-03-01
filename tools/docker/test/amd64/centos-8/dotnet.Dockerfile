@@ -11,7 +11,7 @@ RUN dnf -y update \
 # Install dotnet
 # see https://docs.microsoft.com/en-us/dotnet/core/install/linux-package-manager-centos8
 RUN dnf -y update \
-&& dnf -y install dotnet-sdk-3.1 dotnet-sdk-5.0 \
+&& dnf -y install dotnet-sdk-3.1 dotnet-sdk-6.0 \
 && dnf clean all \
 && rm -rf /var/cache/dnf
 # Trigger first run experience by running arbitrary cmd
