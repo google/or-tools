@@ -22,6 +22,10 @@ jobs:
       matrix:
         os: [windows-2019, ubuntu-20.04]
     steps:
+      - name: check windows space
+        if: ${{ startsWith(matrix.os, 'windows') }}
+        run: Get-PSDrive
+
       - name: Get release
         if: github.event_name == 'release' && github.event.action == 'created'
         id: get_release
@@ -110,6 +114,10 @@ jobs:
 
 
     steps:
+      - name: check windows space
+        if: ${{ startsWith(matrix.os, 'windows') }}
+        run: Get-PSDrive
+
       - name: set name variables
         id: names
         shell: bash
