@@ -19,11 +19,6 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Setup .NET Core 3.1
-      if: ${{ inputs.dotnet == 'ON' }}
-      uses: actions/setup-dotnet@v1
-      with:
-        dotnet-version: 3.1.x
     - name: Setup .NET 6.0
       if: ${{ inputs.dotnet == 'ON' }}
       uses: actions/setup-dotnet@v1
@@ -51,7 +46,7 @@ runs:
       shell: pwsh
       run: |
         (New-Object System.Net.WebClient).DownloadFile("http://prdownloads.sourceforge.net/swig/swigwin-4.0.2.zip",".\swigwin-4.0.2.zip");
-        Expand-Archive -Force .\swigwin-4.0.2.zip .;
+        Expand-Archive .\swigwin-4.0.2.zip .;
         echo "$((Get-Item .).FullName)/swigwin-4.0.2" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
         Remove-Item .\swigwin-4.0.2.zip
 
