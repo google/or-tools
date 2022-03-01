@@ -106,13 +106,17 @@ jobs:
           key: ${{ matrix.os }}-${{ matrix.shared }}-${{ matrix.sirius }}-${{ matrix.xprs }}
 
       - name: setup envoronment
-        id: setup
         uses: ./.github/workflows/setup-env-ubuntu
         with:
-          sirius-ref: ${{ env.Sirius_Ref }}
           python-version: '3.10'
           dotnet: ${{ matrix.dotnet }}
           python: ${{ matrix.python }}
+
+      - name: setup sirius
+        id: setup
+        uses: ./.github/workflows/build-sirius
+        with:
+          sirius-ref: ${{ env.Sirius_Ref }}
 
       - name: Upload sirius install
         if: ${{ matrix.xprs == 'ON' && matrix.sirius == 'ON' && matrix.shared == 'ON' }}
