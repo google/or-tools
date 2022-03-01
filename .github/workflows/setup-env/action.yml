@@ -48,7 +48,7 @@ runs:
         choco install zip --no-progress
     - name: Install SWIG 4.0.2 for windows
       if: ${{ startsWith(inputs.os, 'windows') }}
-      shell: cmd
+      shell: pwsh
       run: |
         (New-Object System.Net.WebClient).DownloadFile("http://prdownloads.sourceforge.net/swig/swigwin-4.0.2.zip","swigwin-4.0.2.zip");
         Expand-Archive .\swigwin-4.0.2.zip .;
