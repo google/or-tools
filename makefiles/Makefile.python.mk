@@ -559,8 +559,8 @@ endif # ifneq ($(PYTHON_EXECUTABLE),)
 publish_python_pimpl: package_python
 	cd $(PYPI_ARCHIVE_TEMP_DIR)$Sortools && "$(TWINE_EXECUTABLE)" upload "*.whl"
 
-install_python: pypi_archive
-	cd "$(PYPI_ARCHIVE_TEMP_DIR)$Sortools" && "$(PYTHON_EXECUTABLE)" setup.py install --user
+install_python: package_python
+	cd "$(PYTHON_BUILD_DIR)" && "$(PYTHON_EXECUTABLE)" setup.py install --user
 
 .PHONY: uninstall_python # Uninstall Python OR-Tools from the host system
 uninstall_python:
