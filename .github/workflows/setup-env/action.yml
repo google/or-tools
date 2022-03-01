@@ -1,17 +1,10 @@
 name: "setup ubuntu environement"
 description: "setup dotnet python and compile sirius"
 inputs:
-  sirius-ref:
-    description: 'sirius repository ref, tag or branch'
-    required: true
   python-version:
     description: 'python version'
     required: false
     default: '3.10'
-  zip-sirius:
-    description: 'boolean, should create a sirius archive'
-    required: false
-    default: 'true'
   dotnet:
     description: 'should install dotnet ON OFF'
     required: false
@@ -20,16 +13,6 @@ inputs:
     description: 'should install python'
     required: false
     default: 'OFF'
-outputs:
-  sirius-install-path:
-    description: "path of the sirius installation"
-    value: ${{ steps.sirius-variables.outputs.sirius-install-path }}
-  sirius-archive-path:
-    description: "path of the sirius archive file"
-    value: ${{ steps.sirius-variables.outputs.sirius-archive-path }}
-  sirius-archive-name:
-    description: "filename of the sirius archive file"
-    value: ${{ steps.sirius-variables.outputs.sirius-archive-name }}
 runs:
   using: "composite"
   steps:

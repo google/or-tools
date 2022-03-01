@@ -154,17 +154,11 @@ jobs:
           key: ${{ matrix.os }}-${{ matrix.shared }}-${{ matrix.sirius }}-${{ matrix.xprs }}
 
       - name: setup envoronment
-        uses: ./.github/workflows/setup-env-ubuntu
+        uses: ./.github/workflows/setup-env
         with:
           python-version: '3.10'
           dotnet: ${{ matrix.dotnet }}
           python: ${{ matrix.python }}
-
-      - name: setup sirius
-        id: setup
-        uses: ./.github/workflows/build-sirius
-        with:
-          sirius-ref: ${{ env.Sirius_Ref }}
 
       - name: Download sirius
         uses: actions/download-artifact@v2
@@ -210,17 +204,18 @@ jobs:
         shell: bash
         run: |
              cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="build/install" -DBUILD_SHARED_LIBS=${{ matrix.shared }} -DBUILD_DEPS=ON -DUSE_SIRIUS=${{ matrix.sirius }} -Dsirius_solver_DIR="${{ env.SIRIUS_INSTALL_PATH }}/cmake" -DUSE_XPRESS=${{ matrix.xprs }} -DXPRESS_ROOT="${{ env.XPRS_Path }}" -DBUILD_PYTHON=${{ matrix.python }} -DBUILD_JAVA=${{ matrix.java }} -DBUILD_DOTNET=${{ matrix.dotnet }} ${{ steps.cache.outputs.CMAKE_CCACHE }} ${{ steps.cache.outputs.CMAKE_CXXCACHE }}
+
       - name: Build Linux
         if: ${{ startsWith(matrix.os, 'ubuntu') }}
         shell: bash
         run: |
           cmake --build build --config Release --target all install -j2
-
       - name: Build windows
         if: ${{ startsWith(matrix.os, 'windows') }}
         run: cmake --build build --config Release --target ALL_BUILD INSTALL -v -- /maxcpucount
 
       - name: Prepare ortools install
+        if: ${{ matrix.dotnet == 'OFF' }}
         id: or-install
         shell: bash
         run: |
@@ -236,12 +231,13 @@ jobs:
 
       - name: Upload ortools install artifact
         uses: actions/upload-artifact@v2
+        if: ${{ matrix.dotnet == 'OFF' }}
         with:
           name: ${{ steps.or-install.outputs.ortools_archive_name }}
           path: ${{ steps.or-install.outputs.ortools_archive_path }}
 
       - name: Publish ortools install asset
-        if:  github.event_name == 'release' && github.event.action == 'created'
+        if:  ${{ github.event_name == 'release' && github.event.action == 'created' && matrix.dotnet == 'OFF' }}
         uses: actions/upload-release-asset@v1.0.2
         with:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
@@ -252,7 +248,7 @@ jobs:
       - name: set ld_library_path
         shell: bash
         run: |
-          LD_PATH="${{ steps.setup.outputs.sirius-install-path }}/lib/:${{ env.XPRS_LIB_Path }}/"
+          LD_PATH="${{ env.SIRIUS_INSTALL_PATH }}/lib/:${{ env.XPRS_LIB_Path }}/"
           echo "LD_LIBRARY_PATH=$LD_PATH" >> $GITHUB_ENV
 
       - name: Build & run CMake example project
@@ -262,7 +258,7 @@ jobs:
           cmake -Bbuild -S. \
                 -DORTOOLS_INSTALL="${{ github.workspace }}/build/install" \
                 -DXPRESS_ROOT="${{ env.XPRS_Path }}" \
-                -Dsirius_solver_DIR="${{ steps.setup.outputs.sirius-install-path }}/cmake"
+                -Dsirius_solver_DIR="${{ env.SIRIUS_INSTALL_PATH }}/cmake"
           cmake --build build
           ./build/linear_programming
       - name: Build & run CMake example project
