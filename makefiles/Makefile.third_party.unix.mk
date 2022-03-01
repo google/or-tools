@@ -40,13 +40,11 @@ $(BUILD_DIR)/Makefile: $(CURDIR)/makefiles/Makefile.third_party.unix.mk | $(BUIL
 .PHONY: clean_third_party # Clean everything.
 clean_third_party:
 	-$(DEL) Makefile.local
-	-$(DELREC) $(BUILD_DIR)/*
+	-$(DELREC) $(BUILD_DIR)
+	-$(DELREC) bin
 	-$(DELREC) include
 	-$(DELREC) share
-	-$(DELREC) lib/*.a
-	-$(DELREC) lib/cmake
-	-$(DELREC) lib/pkgconfig
-
+	-$(DELREC) lib
 
 .PHONY: detect_third_party # Show variables used to find third party
 detect_third_party:
@@ -59,19 +57,13 @@ detect_third_party:
 	@echo USE_GLPK = $(USE_GLPK)
 	@echo USE_CPLEX = $(USE_CPLEX)
 	@echo USE_XPRESS = $(USE_XPRESS)
-ifdef UNIX_GLPK_DIR
-	@echo UNIX_GLPK_DIR = $(UNIX_GLPK_DIR)
-	@echo GLPK_INC = $(GLPK_INC)
-	@echo GLPK_LNK = $(GLPK_LNK)
+ifdef GLPK_ROOT
+	@echo GLPK_ROOT = $(GLPK_ROOT)
 endif
-ifdef UNIX_CPLEX_DIR
-	@echo UNIX_CPLEX_DIR = $(UNIX_CPLEX_DIR)
-	@echo CPLEX_INC = $(CPLEX_INC)
-	@echo CPLEX_LNK = $(CPLEX_LNK)
+ifdef CPLEX_ROOT
+	@echo CPLEX_ROOT = $(CPLEX_ROOT)
 endif
-ifdef UNIX_XPRESS_DIR
-	@echo UNIX_XPRESS_DIR = $(UNIX_XPRESS_DIR)
-	@echo XPRESS_INC = $(XPRESS_INC)
-	@echo XPRESS_LNK = $(XPRESS_LNK)
+ifdef XPRESS_ROOT
+	@echo XPRESS_ROOT = $(XPRESS_ROOT)
 endif
 	@echo

@@ -42,12 +42,11 @@ $(BUILD_DIR)/ortools.sln: $(CURDIR)/makefiles/Makefile.third_party.win.mk | $(BU
 .PHONY: clean_third_party # clean everything.
 clean_third_party:
 	-$(DEL) Makefile.local
-	-$(DELREC) $(BUILD_DIR)\\*
+	-$(DELREC) $(BUILD_DIR)
+	-$(DELREC) bin
 	-$(DELREC) include
 	-$(DELREC) share
-	-$(DELREC) lib\\*.lib
-	-$(DELREC) lib\\cmake
-	-$(DELREC) lib\\pkgconfig
+	-$(DELREC) lib
 
 .PHONY: detect_third_party # Show variables used to find third party
 detect_third_party:
@@ -60,21 +59,13 @@ detect_third_party:
 	@echo USE_GLPK = $(USE_GLPK)
 	@echo USE_CPLEX = $(USE_CPLEX)
 	@echo USE_XPRESS = $(USE_XPRESS)
-ifdef WINDOWS_GLPK_DIR
-	@echo WINDOWS_GLPK_DIR = $(WINDOWS_GLPK_DIR)
-	@echo GLPK_INC = $(GLPK_INC)
-	@echo DYNAMIC_GLPK_LNK = $(DYNAMIC_GLPK_LNK)
-	@echo STATIC_GLPK_LNK = $(STATIC_GLPK_LNK)
+ifdef GLPK_ROOT
+	@echo GLPK_ROOT = $(GLPK_ROOT)
 endif
-ifdef WINDOWS_CPLEX_DIR
-	@echo WINDOWS_CPLEX_DIR = $(WINDOWS_CPLEX_DIR)
-	@echo CPLEX_INC = $(CPLEX_INC)
-	@echo DYNAMIC_CPLEX_LNK = $(DYNAMIC_CPLEX_LNK)
-	@echo STATIC_CPLEX_LNK = $(STATIC_CPLEX_LNK)
+ifdef CPLEX_ROOT
+	@echo CPLEX_ROOT = $(CPLEX_ROOT)
 endif
-ifdef WINDOWS_XPRESS_DIR
-	@echo WINDOWS_XPRESS_DIR = $(WINDOWS_XPRESS_DIR)
-	@echo XPRESS_INC = $(XPRESS_INC)
-	@echo XPRESS_LNK = $(XPRESS_LNK)
+ifdef XPRESS_ROOT
+	@echo XPRESS_ROOT = $(XPRESS_ROOT)
 endif
 	@echo off & echo(
