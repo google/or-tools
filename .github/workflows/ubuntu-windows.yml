@@ -143,19 +143,16 @@ jobs:
       - name: setup envoronment
         uses: ./.github/workflows/setup-env
         with:
+          os: ${{ matrix.os }}
           python-version: '3.10'
           dotnet: ${{ matrix.dotnet }}
           python: ${{ matrix.python }}
 
-      - name: install zip for windows
-        if: ${{ startsWith(matrix.os, 'windows') }}
-        shell: cmd
-        run: |
-          choco install zip --no-progress
       - name: Install SWIG 4.0.2 for windows
         if: ${{ startsWith(matrix.os, 'windows') }}
+        shell: pwsh
         run: |
-          (New-Object System.Net.WebClient).DownloadFile("http://prdownloads.sourceforge.net/swig/swigwin-4.0.2.zip","swigwin-4.0.2.zip");
+          (New-Object System.Net.WebClient).DownloadFile("http://prdownloads.sourceforge.net/swig/swigwin-4.0.2.zip",".\swigwin-4.0.2.zip");
           Expand-Archive .\swigwin-4.0.2.zip .;
           echo "$((Get-Item .).FullName)/swigwin-4.0.2" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
           Remove-Item .\swigwin-4.0.2.zip
@@ -252,7 +249,7 @@ jobs:
           LD_PATH="${{ env.SIRIUS_INSTALL_PATH }}/lib/:${{ env.XPRS_LIB_Path }}/"
           echo "LD_LIBRARY_PATH=$LD_PATH" >> $GITHUB_ENV
 
-      - name: Build & run CMake example project
+      - name: Build & run CMake example project linux
         if: ${{ startsWith(matrix.os, 'ubuntu') }}
         working-directory: ./examples/cmake/linear_programming/
         run: |
@@ -262,8 +259,8 @@ jobs:
                 -Dsirius_solver_DIR="${{ env.SIRIUS_INSTALL_PATH }}/cmake"
           cmake --build build
           ./build/linear_programming
-      - name: Build & run CMake example project
-        if: ${{ startsWith(matrix.os, 'windows') }}
+      - name: Build & run CMake example project windows
+        if: ${{ startsWith(matrix.os, 'NONOwindows') }}
         working-directory: ./examples/cmake/linear_programming/
         env:
           XPRESS: "${{ github.workspace }}/xpressmp813/bin/"
