@@ -476,25 +476,30 @@ endif
 ###############
 # ref: https://www.gnu.org/prep/standards/html_node/Directory-Variables.html#index-prefix
 # ref: https://www.gnu.org/prep/standards/html_node/DESTDIR.html
+.PHONY: install_dirs
 install_dirs:
 	-$(MKDIR_P) "$(DESTDIR)$(prefix)"
+	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude"
 	-$(MKDIR) "$(DESTDIR)$(prefix)$Slib"
 	-$(MKDIR) "$(DESTDIR)$(prefix)$Sbin"
 	-$(MKDIR) "$(DESTDIR)$(prefix)$Sshare"
-	-$(MKDIR) "$(DESTDIR)$(prefix)$Sshare$Sdocs"
-	-$(MKDIR) "$(DESTDIR)$(prefix)$Sshare$Sdocs$Sortools"
-	-$(MKDIR) "$(DESTDIR)$(prefix)$Sshare$Sdocs$Sortools$Ssat"
-	-$(MKDIR) "$(DESTDIR)$(prefix)$Sshare$Sdocs$Sortools$Ssat$Sdocs"
+	-$(MKDIR_P) "$(DESTDIR)$(prefix)$Sshare$Sdocs$Sortools$Ssat"
 
 # Install C++ OR-Tools to $(DESTDIR)$(prefix)
 .PHONY: install_cc
 install_cc: | install_dirs
 	$(COPY) LICENSE-2.0.txt "$(DESTDIR)$(prefix)"
-	$(COPYREC) include "$(DESTDIR)$(prefix)"
-	$(COPY) $(LIB_DIR)*$S$(LIB_PREFIX)ortools.$L* "$(DESTDIR)$(prefix)$Slib"
+ifeq ($(SYSTEM),win)
+	$(COPYREC) /E /Y include "$(DESTDIR)$(prefix)"
+	$(COPY) "$(LIB_DIR)$S$(LIB_PREFIX)ortools.$L*" "$(DESTDIR)$(prefix)$Slib"
+	$(COPYREC) /E /Y share "$(DESTDIR)$(prefix)"
+else
+	$(COPYREC) include "$(DESTDIR)$(prefix)$S"
+	$(COPY) $(LIB_DIR)*$S$(LIB_PREFIX)ortools.$L* "$(DESTDIR)$(prefix)$Slib$S"
+	$(COPYREC) share "$(DESTDIR)$(prefix)$S"
+endif
 	$(COPY) bin$Sprotoc* "$(DESTDIR)$(prefix)$Sbin"
-	$(COPYREC) share "$(DESTDIR)$(prefix)"
-	$(COPY) ortools$Ssat$Sdocs$S*.md "$(DESTDIR)$(prefix)$Sshare$Sdocs$Sortools$Ssat$Sdocs"
+	$(COPY) ortools$Ssat$Sdocs$S*.md "$(DESTDIR)$(prefix)$Sshare$Sdocs$Sortools$Ssat"
 
 #######################
 ##  EXAMPLE ARCHIVE  ##
