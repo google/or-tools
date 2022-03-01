@@ -44,7 +44,7 @@ or-tools-libs: cc
 
 # OR Tools unique library.
 $(LIB_DIR)/build_timestamp: $(THIRD_PARTY_TARGET)
-	cmake --build dependencies --target install --config $(BUILD_TYPE) -j $(JOBS)
+	cmake --build dependencies --target install --config $(BUILD_TYPE) -j $(JOBS) -v
 	$(TOUCH) $(LIB_DIR)$Sbuild_timestamp
 
 compile_libraries: $(LIB_DIR)/build_timestamp
