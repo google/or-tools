@@ -46,6 +46,7 @@ clean_third_party:
 	-$(DELREC) bin
 	-$(DELREC) include
 	-$(DELREC) share
+	-$(DEL) cmake$Sprotobuf-*.cmake
 	-$(DELREC) lib
 
 .PHONY: detect_third_party # Show variables used to find third party

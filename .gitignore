@@ -24,6 +24,7 @@ test.log
 publish*.log
 ortools/gen/
 objs/
+cmake/protobuf-*.cmake
 classes/
 packages/
 temp_test/
