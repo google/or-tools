@@ -240,7 +240,7 @@ jobs:
           echo "LD_LIBRARY_PATH=$LD_PATH" >> $GITHUB_ENV
 
       - name: Build & run CMake example project
-        if: ${{ startsWith(matrix.os, 'windows') }}
+        if: ${{ startsWith(matrix.os, 'ubuntu') }}
         working-directory: ./examples/cmake/linear_programming/
         run: |
           cmake -Bbuild -S. \
