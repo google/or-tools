@@ -29,7 +29,7 @@ jobs:
           bruceadams/get-release@v1.2.3
 
       - name: install zip for windows
-        if: ${{ matrix.os == 'windows-2019'}}
+        if: ${{ startsWith(matrix.os, 'windows') }}
         shell: cmd
         run: |
           choco install zip --no-progress
@@ -131,13 +131,13 @@ jobs:
           bruceadams/get-release@v1.2.3
 
       - name: install zip for windows
-        if: ${{ matrix.os == 'windows-2019'}}
+        if: ${{ startsWith(matrix.os, 'windows') }}
         shell: cmd
         run: |
           choco install zip --no-progress
 
       - name: Install SWIG 4.0.2 for windows
-        if: ${{ matrix.os == 'windows-2019'}}
+        if: ${{ startsWith(matrix.os, 'windows') }}
         run: |
           (New-Object System.Net.WebClient).DownloadFile("http://prdownloads.sourceforge.net/swig/swigwin-4.0.2.zip","swigwin-4.0.2.zip");
           Expand-Archive .\swigwin-4.0.2.zip .;
@@ -148,7 +148,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: ccache
-        if: ${{ matrix.os != 'windows-2019'}}
+        if: ${{ startsWith(matrix.os, 'ubuntu') }}
         uses: hendrikmuhs/ccache-action@v1
         with:
           key: ${{ matrix.os }}-${{ matrix.shared }}-${{ matrix.sirius }}-${{ matrix.xprs }}
@@ -173,7 +173,7 @@ jobs:
           path: ${{ env.SIRIUS_INSTALL_PATH }}
 
       - name: Checkout xpressmp813 linux
-        if: ${{ matrix.os == 'ubuntu-20.04'}}
+        if: ${{ startsWith(matrix.os, 'ubuntu') }}
         uses: actions/checkout@v2
         with:
           repository: rte-france/xpress-mp
@@ -181,7 +181,7 @@ jobs:
           ref: master
           token: ${{ secrets.ACCESS_TOKEN }}
       - name: Checkout xpressmp813 windows
-        if: ${{ matrix.os == 'windows-2019'}}
+        if: ${{ startsWith(matrix.os, 'windows') }}
         uses: actions/checkout@v2
         with:
           repository: rte-france/xpress-mp-temp
@@ -200,24 +200,24 @@ jobs:
           echo "::set-output name=CMAKE_CXXCACHE::$CXXCACHE"
 
       - name: Add xpress and sirius bin to path
-        if: ${{ matrix.os == 'windows-2019'}}
+        if: ${{ startsWith(matrix.os, 'windows') }}
         shell: bash
         run: |
           echo "${{ env.XPRS_Path }}\bin" >> $GITHUB_PATH
-          echo "${{ steps.setup.outputs.sirius-install-path }}\bin" >> $GITHUB_PATH
+          echo "${{ env.SIRIUS_INSTALL_PATH }}\bin" >> $GITHUB_PATH
 
       - name: Configure or-tools
         shell: bash
         run: |
              cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="build/install" -DBUILD_SHARED_LIBS=${{ matrix.shared }} -DBUILD_DEPS=ON -DUSE_SIRIUS=${{ matrix.sirius }} -Dsirius_solver_DIR="${{ env.SIRIUS_INSTALL_PATH }}/cmake" -DUSE_XPRESS=${{ matrix.xprs }} -DXPRESS_ROOT="${{ env.XPRS_Path }}" -DBUILD_PYTHON=${{ matrix.python }} -DBUILD_JAVA=${{ matrix.java }} -DBUILD_DOTNET=${{ matrix.dotnet }} ${{ steps.cache.outputs.CMAKE_CCACHE }} ${{ steps.cache.outputs.CMAKE_CXXCACHE }}
       - name: Build Linux
-        if: ${{ matrix.os == 'ubuntu-20.04'}}
+        if: ${{ startsWith(matrix.os, 'ubuntu') }}
         shell: bash
         run: |
           cmake --build build --config Release --target all install -j2
 
       - name: Build windows
-        if: ${{ matrix.os == 'windows-2019'}}
+        if: ${{ startsWith(matrix.os, 'windows') }}
         run: cmake --build build --config Release --target ALL_BUILD INSTALL -v -- /maxcpucount
 
       - name: Prepare ortools install
@@ -256,7 +256,7 @@ jobs:
           echo "LD_LIBRARY_PATH=$LD_PATH" >> $GITHUB_ENV
 
       - name: Build & run CMake example project
-        if: ${{ matrix.os == 'ubuntu-20.04'}}
+        if: ${{ startsWith(matrix.os, 'windows') }}
         working-directory: ./examples/cmake/linear_programming/
         run: |
           cmake -Bbuild -S. \
@@ -266,7 +266,7 @@ jobs:
           cmake --build build
           ./build/linear_programming
       - name: Build & run CMake example project
-        if: ${{ matrix.os == 'NONOwindows-2019'}}
+        if: ${{ startsWith(matrix.os, 'NONOwindows') }}
         working-directory: ./examples/cmake/linear_programming/
         env:
           XPRESS: "${{ github.workspace }}/xpressmp813/bin/"
@@ -287,7 +287,7 @@ jobs:
         working-directory: ./build
         run: ctest -V -C Release -R cxx_cpp_linear_programming
       - name: Run specific python tests
-        if: ${{ matrix.os == 'ubuntu-20.04' && matrix.xprs == 'ON' && matrix.sirius == 'ON' }}
+        if: ${{ startsWith(matrix.os, 'ubuntu')  && matrix.xprs == 'ON' && matrix.sirius == 'ON' }}
         working-directory: ./build
         run: ctest -V -C Release -R python_python_linear_programming
       - name: Run specific java tests
@@ -302,7 +302,7 @@ jobs:
         working-directory: ./build
         run: ctest --output-on-failure -C Release -R cxx_cpp -E cxx_cpp_linear_programming
       - name: Run other python tests
-        if: ${{ matrix.os == 'ubuntu-20.04' && matrix.python == 'ON' && matrix.xprs == 'ON' && matrix.sirius == 'ON' }}
+        if: ${{ startsWith(matrix.os, 'ubuntu') && matrix.python == 'ON' && matrix.xprs == 'ON' && matrix.sirius == 'ON' }}
         working-directory: ./build
         run: ctest --output-on-failure -C Release -R python_python -E python_python_linear_programming
       - name: Run other java tests
