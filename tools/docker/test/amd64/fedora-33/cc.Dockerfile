@@ -9,6 +9,6 @@ RUN dnf -y update \
 && dnf clean all
 
 WORKDIR /root
-ADD or-tools_fedora-33_v*.tar.gz .
+ADD or-tools_amd64_fedora-33_v*.tar.gz .
 
 RUN cd or-tools_*_v* && make test_cc

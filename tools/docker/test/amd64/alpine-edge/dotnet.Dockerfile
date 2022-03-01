@@ -32,6 +32,6 @@ RUN dotnet_sdk_version=5.0.401 \
 RUN dotnet --info
 
 WORKDIR /root
-ADD or-tools_alpine-edge_v*.tar.gz .
+ADD or-tools_amd64_alpine-edge_v*.tar.gz .
 
 RUN cd or-tools_*_v* && make test_dotnet

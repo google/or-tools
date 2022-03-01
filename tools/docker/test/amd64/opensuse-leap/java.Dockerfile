@@ -18,6 +18,6 @@ RUN zypper update -y \
 && zypper clean -a
 
 WORKDIR /root
-ADD or-tools_opensuse-leap_v*.tar.gz .
+ADD or-tools_amd64_opensuse-leap_v*.tar.gz .
 
 RUN cd or-tools_*_v* && make test_java

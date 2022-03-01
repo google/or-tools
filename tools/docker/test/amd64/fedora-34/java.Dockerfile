@@ -15,6 +15,6 @@ RUN dnf -y update \
 ENV JAVA_HOME=/usr/lib/jvm/java-openjdk
 
 WORKDIR /root
-ADD or-tools_fedora-34_v*.tar.gz .
+ADD or-tools_amd64_fedora-34_v*.tar.gz .
 
 RUN cd or-tools_*_v* && make test_java
