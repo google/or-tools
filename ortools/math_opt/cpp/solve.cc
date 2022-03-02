@@ -102,14 +102,18 @@ absl::StatusOr<SolveResult> Solve(const Model& model,
 }
 
 absl::StatusOr<std::unique_ptr<IncrementalSolver>> IncrementalSolver::New(
-    Model& model, const SolverType solver_type, SolverInitArguments arguments) {
-  std::unique_ptr<UpdateTracker> update_tracker = model.NewUpdateTracker();
-  ASSIGN_OR_RETURN(
-      std::unique_ptr<Solver> solver,
-      Solver::New(EnumToProto(solver_type), update_tracker->ExportModel(),
-                  ToSolverInitArgs(arguments)));
+    Model* const model, const SolverType solver_type,
+    SolverInitArguments arguments) {
+  if (model == nullptr) {
+    return absl::InvalidArgumentError("input model can't be null");
+  }
+  std::unique_ptr<UpdateTracker> update_tracker = model->NewUpdateTracker();
+  ASSIGN_OR_RETURN(const ModelProto model_proto, update_tracker->ExportModel());
+  ASSIGN_OR_RETURN(std::unique_ptr<Solver> solver,
+                   Solver::New(EnumToProto(solver_type), model_proto,
+                               ToSolverInitArgs(arguments)));
   return absl::WrapUnique<IncrementalSolver>(
-      new IncrementalSolver(solver_type, std::move(arguments), model.storage(),
+      new IncrementalSolver(solver_type, std::move(arguments), model->storage(),
                             std::move(update_tracker), std::move(solver)));
 }
 
@@ -131,21 +135,22 @@ absl::StatusOr<SolveResult> IncrementalSolver::Solve(
 }
 
 absl::StatusOr<IncrementalSolver::UpdateResult> IncrementalSolver::Update() {
-  std::optional<ModelUpdateProto> model_update =
-      update_tracker_->ExportModelUpdate();
+  ASSIGN_OR_RETURN(std::optional<ModelUpdateProto> model_update,
+                   update_tracker_->ExportModelUpdate());
   if (!model_update) {
     return UpdateResult(true, std::move(model_update));
   }
 
   ASSIGN_OR_RETURN(const bool did_update, solver_->Update(*model_update));
-  update_tracker_->Checkpoint();
+  RETURN_IF_ERROR(update_tracker_->Checkpoint());
 
   if (did_update) {
     return UpdateResult(true, std::move(model_update));
   }
 
-  ASSIGN_OR_RETURN(solver_, Solver::New(EnumToProto(solver_type_),
-                                        update_tracker_->ExportModel(),
+  ASSIGN_OR_RETURN(const ModelProto model_proto,
+                   update_tracker_->ExportModel());
+  ASSIGN_OR_RETURN(solver_, Solver::New(EnumToProto(solver_type_), model_proto,
                                         ToSolverInitArgs(init_args_)));
 
   return UpdateResult(false, std::move(model_update));

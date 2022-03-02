@@ -33,8 +33,6 @@
 namespace operations_research {
 namespace math_opt {
 
-constexpr double kInf = std::numeric_limits<double>::infinity();
-
 namespace {
 absl::Status CheckSortedIdsSubsetWithIndexOffset(
     const absl::Span<const int64_t> ids,

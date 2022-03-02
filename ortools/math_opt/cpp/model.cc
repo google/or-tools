@@ -209,7 +209,7 @@ QuadraticExpression Model::ObjectiveAsQuadraticExpression() const {
 
 ModelProto Model::ExportModel() const { return storage()->ExportModel(); }
 
-std::unique_ptr<UpdateTracker> Model::NewUpdateTracker() const {
+std::unique_ptr<UpdateTracker> Model::NewUpdateTracker() {
   return std::make_unique<UpdateTracker>(storage_);
 }
 

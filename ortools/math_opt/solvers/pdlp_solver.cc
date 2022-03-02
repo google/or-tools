@@ -13,6 +13,7 @@
 
 #include "ortools/math_opt/solvers/pdlp_solver.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <functional>
@@ -34,6 +35,7 @@
 #include "ortools/base/protoutil.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/callback.pb.h"
+#include "ortools/math_opt/core/inverted_bounds.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
 #include "ortools/math_opt/core/solve_interrupter.h"
 #include "ortools/math_opt/core/solver_interface.h"
@@ -71,9 +73,7 @@ absl::StatusOr<PrimalDualHybridGradientParams> PdlpSolver::MergeParameters(
   PrimalDualHybridGradientParams result;
   std::vector<std::string> warnings;
   if (parameters.enable_output()) {
-    // TODO(b/183502493): this is not a robust solution. It is not thread safe
-    // and will interfere with the global vlog state.
-    SetVLOGLevel("primal_dual_hybrid_gradient", 2);
+    result.set_verbosity_level(3);
   }
   if (parameters.has_threads()) {
     result.set_num_threads(parameters.threads());
@@ -82,6 +82,9 @@ absl::StatusOr<PrimalDualHybridGradientParams> PdlpSolver::MergeParameters(
     result.mutable_termination_criteria()->set_time_sec_limit(
         absl::ToDoubleSeconds(
             util_time::DecodeGoogleApiProto(parameters.time_limit()).value()));
+  }
+  if (parameters.has_node_limit()) {
+    warnings.push_back("parameter node_limit not supported for PDLP");
   }
   if (parameters.has_cutoff_limit()) {
     warnings.push_back("parameter cutoff_limit not supported for PDLP");
@@ -149,6 +152,8 @@ absl::StatusOr<TerminationProto> ConvertReason(
     case pdlp::TERMINATION_REASON_NUMERICAL_ERROR:
       return TerminateForReason(TERMINATION_REASON_NUMERICAL_ERROR,
                                 pdlp_detail);
+    case pdlp::TERMINATION_REASON_INTERRUPTED_BY_USER:
+      return NoSolutionFoundTermination(LIMIT_INTERRUPTED, pdlp_detail);
     case pdlp::TERMINATION_REASON_INVALID_PROBLEM:
       // Indicates that the solver detected invalid problem data, e.g.,
       // inconsistent bounds.
@@ -240,7 +245,8 @@ absl::StatusOr<SolveResultProto> PdlpSolver::MakeSolveResult(
     case pdlp::TERMINATION_REASON_TIME_LIMIT:
     case pdlp::TERMINATION_REASON_ITERATION_LIMIT:
     case pdlp::TERMINATION_REASON_KKT_MATRIX_PASS_LIMIT:
-    case pdlp::TERMINATION_REASON_NUMERICAL_ERROR: {
+    case pdlp::TERMINATION_REASON_NUMERICAL_ERROR:
+    case pdlp::TERMINATION_REASON_INTERRUPTED_BY_USER: {
       SolutionProto* solution_proto = result.add_solutions();
       {
         auto maybe_primal = pdlp_bridge_.PrimalVariablesToProto(
@@ -334,8 +340,6 @@ absl::StatusOr<SolveResultProto> PdlpSolver::Solve(
     const MessageCallback message_cb,
     const CallbackRegistrationProto& callback_registration, const Callback cb,
     SolveInterrupter* const interrupter) {
-  // TODO(b/192274409): Use interrupter if PDLP supports interruption.
-
   // TODO(b/183502493): Implement message callback when PDLP supports that.
   if (message_cb != nullptr) {
     return absl::InvalidArgumentError(internal::kMessageCallbackNotSupported);
@@ -345,8 +349,17 @@ absl::StatusOr<SolveResultProto> PdlpSolver::Solve(
                                                 /*supported_events=*/{}));
 
   ASSIGN_OR_RETURN(auto pdlp_params, MergeParameters(parameters));
+
+  // PDLP returns `(TERMINATION_REASON_INVALID_PROBLEM): The input problem has
+  // inconsistent bounds.` but we want a more detailed error.
+  RETURN_IF_ERROR(pdlp_bridge_.ListInvertedBounds().ToStatus());
+
+  std::atomic<bool> interrupt = false;
+  const ScopedSolveInterrupterCallback set_interrupt(
+      interrupter, [&]() { interrupt = true; });
+
   const SolverResult pdlp_result =
-      PrimalDualHybridGradient(pdlp_bridge_.pdlp_lp(), pdlp_params);
+      PrimalDualHybridGradient(pdlp_bridge_.pdlp_lp(), pdlp_params, &interrupt);
   return MakeSolveResult(pdlp_result, model_parameters);
 }
 absl::Status PdlpSolver::Update(const ModelUpdateProto& model_update) {

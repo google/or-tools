@@ -152,29 +152,26 @@ message SolveParametersProto {
 
   // Limit on the iterations of the underlying algorithm (e.g. simplex pivots).
   // The specific behavior is dependent on the solver and algorithm used, but
-  // should result in a deterministic solve limit.
-  // TODO(b/195295177): suggest node_limit as an alternative when it's added
+  // often can give a deterministic solve limit (further configuration may be
+  // needed, e.g. one thread).
+  //
+  // Typically supported by LP, QP, and MIP solvers, but for MIP solvers see
+  // also node_limit.
   optional int64 iteration_limit = 2;
 
-  // Optimality tolerances (primarily) for MIP solvers. The absolute GAP of a
-  // feasible solution is the distance between its objective value and a dual
-  // bound (e.g. an upper bound on the optimal value for maximization problems).
-  // The relative GAP is a solver-dependent scaled version of the absolute GAP
-  // (e.g. it could be the relative GAP divided by the objective value of the
-  // feasible solution if this is non-zero). Solvers consider a solution optimal
-  // if its GAPs are below these limits (most solvers use both versions).
-  // TODO(b/213603287): rename as relative_gap_tolerance and
-  // absolute_gap_tolerance.
-  optional double relative_gap_limit = 17;
-  optional double absolute_gap_limit = 18;
+  // Limit on the number of subproblems solved in enumerative search (e.g.
+  // branch and bound). For many solvers this can be used to deterministically
+  // limit computation (further configuration may be needed, e.g. one thread).
+  //
+  // Typically for MIP solvers, see also iteration_limit.
+  optional int64 node_limit = 24;
 
   // The solver stops early if it can prove there are no primal solutions at
   // least as good as cutoff.
   //
-  // On an early stop, the solver returns termination reason
-  // LIMIT_NO_SOLUTION_FOUND and with limit CUTOFF and is not required to give
-  // any extra solution information. Has no effect on the return value if there
-  // is no early stop.
+  // On an early stop, the solver returns termination reason NO_SOLUTION_FOUND
+  // and with limit CUTOFF and is not required to give any extra solution
+  // information. Has no effect on the return value if there is no early stop.
   //
   // It is recommended that you use a tolerance if you want solutions with
   // objective exactly equal to cutoff to be returned.
@@ -183,23 +180,21 @@ message SolveParametersProto {
   optional double cutoff_limit = 20;
 
   // The solver stops early as soon as it finds a solution at least this good,
-  // with termination reason LIMIT_FEASIBLE or LIMIT_NO_SOLUTION_FOUND and
-  // limit LIMIT_OBJECTIVE.
-  // TODO(b/214567536): maybe it should only be LIMIT_FEASIBLE.
+  // with termination reason FEASIBLE and limit OBJECTIVE.
   optional double objective_limit = 21;
 
   // The solver stops early as soon as it proves the best bound is at least this
-  // good, with termination reason LIMIT_FEASIBLE or LIMIT_NO_SOLUTION_FOUND and
-  // limit LIMIT_OBJECTIVE.
+  // good, with termination reason FEASIBLE or NO_SOLUTION_FOUND and limit
+  // OBJECTIVE.
   //
   // See the user guide for more details and a comparison with cutoff_limit.
   optional double best_bound_limit = 22;
 
   // The solver stops early after finding this many feasible solutions, with
-  // termination reason LIMIT_FEASIBLE and limit LIMIT_SOLUTION. Must be greater
-  // than zero if set. It is often used get the solver to stop on the first
-  // feasible solution found. Note that there is no guarantee on the objective
-  // value for any of the returned solutions.
+  // termination reason FEASIBLE and limit SOLUTION. Must be greater than zero
+  // if set. It is often used get the solver to stop on the first feasible
+  // solution found. Note that there is no guarantee on the objective value for
+  // any of the returned solutions.
   //
   // Solvers will typically not return more solutions than the solution limit,
   // but this is not enforced by MathOpt, see also b/214041169.
@@ -233,6 +228,34 @@ message SolveParametersProto {
   // In all cases, the solver will receive a value equal to:
   // MAX(0, MIN(MAX_VALID_VALUE_FOR_SOLVER, random_seed)).
   optional int32 random_seed = 5;
+
+  // An absolute optimality tolerance (primarily) for MIP solvers.
+  //
+  // The absolute GAP is the absolute value of the difference between:
+  //   * the objective value of the best feasible solution found,
+  //   * the dual bound produced by the search.
+  // The solver can stop once the absolute GAP is at most absolute_gap_tolerance
+  // (when set), and return TERMINATION_REASON_OPTIMAL.
+  //
+  // Must be >= 0 if set.
+  //
+  // See also relative_gap_tolerance.
+  optional double absolute_gap_tolerance = 18;
+
+  // A relative optimality tolerance (primarily) for MIP solvers.
+  //
+  // The relative GAP is a normalized version of the absolute GAP (defined on
+  // absolute_gap_tolerance), where the normalization is solver-dependent, e.g.
+  // the absolute GAP divided by the objective value of the best feasible
+  // solution found.
+  //
+  // The solver can stop once the relative GAP is at most relative_gap_tolerance
+  // (when set), and return TERMINATION_REASON_OPTIMAL.
+  //
+  // Must be >= 0 if set.
+  //
+  // See also absolute_gap_tolerance.
+  optional double relative_gap_tolerance = 17;
 
   // The algorithm for solving a linear program. If LP_ALGORITHM_UNSPECIFIED,
   // use the solver default algorithm.

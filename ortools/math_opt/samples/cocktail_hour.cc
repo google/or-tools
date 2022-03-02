@@ -45,6 +45,7 @@
 #include "ortools/base/map_util.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/cpp/math_opt.h"
+#include "ortools/util/status_macros.h"
 
 ABSL_FLAG(std::string, mode, "text",
           "One of \"text\", \"latex\", or \"analysis\".");
@@ -251,10 +252,14 @@ absl::StatusOr<Menu> SolveForMenu(
   ASSIGN_OR_RETURN(const math_opt::SolveResult result,
                    math_opt::Solve(model, math_opt::SolverType::kGscip, args));
 
-  // Check that the problem has an optimal solution.
-  QCHECK_EQ(result.termination.reason, math_opt::TerminationReason::kOptimal)
-      << "Failed to find an optimal solution: " << result.termination;
-
+  switch (result.termination.reason) {
+    case math_opt::TerminationReason::kOptimal:
+    case math_opt::TerminationReason::kFeasible:
+      break;
+    default:
+      return util::InternalErrorBuilder()
+             << "failed to find a solution: " << result.termination;
+  }
   Menu menu;
   for (const absl::string_view ingredient : kIngredients) {
     if (result.variable_values().at(ingredient_vars.at(ingredient)) > 0.5) {
@@ -315,7 +320,7 @@ std::string ExportToLaTeX(const std::vector<Cocktail>& cocktails,
   return absl::StrReplaceAll(absl::StrJoin(lines, "\n"), {{"#", "\\#"}});
 }
 
-void RealMain() {
+absl::Status Main() {
   const std::string mode = absl::GetFlag(FLAGS_mode);
   CHECK(absl::flat_hash_set<std::string>({"text", "latex", "analysis"})
             .contains(mode))
@@ -323,52 +328,50 @@ void RealMain() {
 
   // We are in analysis mode.
   if (mode == "analysis") {
-    const absl::Status status = AnalysisMode();
-    if (!status.ok()) {
-      LOG(QFATAL) << status;
-    }
-    return;
+    return AnalysisMode();
   }
 
-  absl::StatusOr<Menu> menu =
+  OR_ASSIGN_OR_RETURN3(
+      Menu menu,
       SolveForMenu(absl::GetFlag(FLAGS_num_ingredients), mode == "text",
                    SetFromVec(absl::GetFlag(FLAGS_existing_ingredients)),
                    SetFromVec(absl::GetFlag(FLAGS_unavailable_ingredients)),
                    SetFromVec(absl::GetFlag(FLAGS_required_cocktails)),
-                   SetFromVec(absl::GetFlag(FLAGS_blocked_cocktails)));
-  if (!menu.ok()) {
-    LOG(QFATAL) << "Error when solving for optimal set of ingredients: "
-                << menu.status();
-  }
+                   SetFromVec(absl::GetFlag(FLAGS_blocked_cocktails))),
+      _ << "error when solving for optimal set of ingredients");
 
   // We are in latex mode.
   if (mode == "latex") {
-    std::cout << ExportToLaTeX(menu->cocktails) << std::endl;
-    return;
+    std::cout << ExportToLaTeX(menu.cocktails) << std::endl;
+    return absl::OkStatus();
   }
 
   // We are in text mode
   std::cout << "Considered " << AllCocktails().size() << " cocktails and "
             << kIngredientsSize << " ingredients." << std::endl;
-  std::cout << "Solution has " << menu->ingredients.size()
-            << " ingredients to make " << menu->cocktails.size()
-            << " cocktails." << std::endl
+  std::cout << "Solution has " << menu.ingredients.size()
+            << " ingredients to make " << menu.cocktails.size() << " cocktails."
+            << std::endl
             << std::endl;
 
   std::cout << "Ingredients:" << std::endl;
-  for (const std::string& ingredient : menu->ingredients) {
+  for (const std::string& ingredient : menu.ingredients) {
     std::cout << "  " << ingredient << std::endl;
   }
   std::cout << "Cocktails:" << std::endl;
-  for (const Cocktail& cocktail : menu->cocktails) {
+  for (const Cocktail& cocktail : menu.cocktails) {
     std::cout << "  " << cocktail.name << std::endl;
   }
+  return absl::OkStatus();
 }
 
 }  // namespace
 
 int main(int argc, char** argv) {
   InitGoogle(argv[0], &argc, &argv, true);
-  RealMain();
+  const absl::Status status = Main();
+  if (!status.ok()) {
+    LOG(QFATAL) << status;
+  }
   return 0;
 }

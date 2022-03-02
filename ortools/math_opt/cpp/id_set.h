@@ -125,7 +125,7 @@ class IdSet {
   inline std::pair<const_iterator, bool> emplace(const K& k);
 
   // Returns the number of elements erased (zero or one).
-  inline int erase(const K& k);
+  inline size_type erase(const K& k);
   // In STL erase(const_iterator) returns an iterator. But flat_hash_set instead
   // has void return types. So here we also use void.
   inline void erase(const_iterator pos);
@@ -289,9 +289,9 @@ std::pair<typename IdSet<K>::const_iterator, bool> IdSet<K>::emplace(
 }
 
 template <typename K>
-int IdSet<K>::erase(const K& k) {
+typename IdSet<K>::size_type IdSet<K>::erase(const K& k) {
   CheckModel(k);
-  const int ret = set_.erase(k.typed_id());
+  const size_type ret = set_.erase(k.typed_id());
   if (set_.empty()) {
     storage_ = nullptr;
   }

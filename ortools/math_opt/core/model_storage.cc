@@ -748,7 +748,7 @@ std::optional<ModelUpdateProto> ModelStorage::ExportModelUpdate(
   // * Use n-way merge here if the performances justify it.
   const auto merge = std::make_shared<ModelUpdateProto>();
   for (const auto& update : data->updates) {
-    MergeIntoUpdate(/*from=*/*update, /*into=*/*merge);
+    MergeIntoUpdate(/*from_new=*/*update, /*into_old=*/*merge);
   }
 
   // Push the merge to all trackers that have the same checkpoint (including
@@ -762,7 +762,7 @@ std::optional<ModelUpdateProto> ModelStorage::ExportModelUpdate(
   const std::optional<ModelUpdateProto> pending_update =
       ExportSharedModelUpdate();
   if (pending_update) {
-    MergeIntoUpdate(/*from=*/*pending_update, /*into=*/update);
+    MergeIntoUpdate(/*from_new=*/*pending_update, /*into_old=*/update);
   }
 
   // Named returned value optimization (NRVO) does not apply here since the

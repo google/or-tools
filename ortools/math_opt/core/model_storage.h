@@ -140,7 +140,7 @@ DEFINE_STRONG_INT_TYPE(UpdateTrackerId, int64_t);
 // the modifications since the previous call to ModelStorage::Checkpoint(). Note
 // that, for newly initialized models, before the first checkpoint, there is no
 // additional memory overhead from tracking changes. See
-// g3doc/ortools/math_opt/g3doc/model_building_complexity.md
+// docs/ortools/math_opt/docs/model_building_complexity.md
 // for details.
 //
 // On bad input:

@@ -163,7 +163,7 @@ class IdMap {
   inline std::pair<iterator, bool> try_emplace(const K& k, Args&&... args);
 
   // Returns the number of elements erased (zero or one).
-  inline int erase(const K& k);
+  inline size_type erase(const K& k);
   // In STL erase(const_iterator) and erase(iterator) both return an
   // iterator. But flat_hash_map instead has void return types. So here we also
   // use void.
@@ -442,9 +442,9 @@ std::pair<typename IdMap<K, V>::iterator, bool> IdMap<K, V>::try_emplace(
 }
 
 template <typename K, typename V>
-int IdMap<K, V>::erase(const K& k) {
+typename IdMap<K, V>::size_type IdMap<K, V>::erase(const K& k) {
   CheckModel(k);
-  const int ret = map_.erase(k.typed_id());
+  const size_type ret = map_.erase(k.typed_id());
   if (map_.empty()) {
     storage_ = nullptr;
   }

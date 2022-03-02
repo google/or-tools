@@ -137,8 +137,8 @@ absl::StatusOr<std::pair<Configuration, double>> BestConfiguration(
                    math_opt::Solve(model, math_opt::SolverType::kCpSat));
   if (solve_result.termination.reason !=
       math_opt::TerminationReason::kOptimal) {
-    return util::InvalidArgumentErrorBuilder()
-           << "Failed to solve knapsack pricing problem: "
+    return util::InternalErrorBuilder()
+           << "Failed to solve knapsack pricing problem to optimality: "
            << solve_result.termination;
   }
   Configuration config;
@@ -185,18 +185,26 @@ absl::StatusOr<CuttingStockSolution> SolveCuttingStock(
   }
 
   ASSIGN_OR_RETURN(auto solver, math_opt::IncrementalSolver::New(
-                                    model, math_opt::SolverType::kGlop));
+                                    &model, math_opt::SolverType::kGlop));
   int pricing_round = 0;
   while (true) {
     ASSIGN_OR_RETURN(math_opt::SolveResult solve_result, solver->Solve());
     if (solve_result.termination.reason !=
         math_opt::TerminationReason::kOptimal) {
       return util::InternalErrorBuilder()
-             << "Failed to solve leader LP problem at iteration "
+             << "Failed to solve leader LP problem to optimality at "
+                "iteration "
              << pricing_round << " termination: " << solve_result.termination;
     }
-    // GLOP always returns a dual solution on optimal
-    CHECK(solve_result.has_dual_feasible_solution());
+    if (!solve_result.has_dual_feasible_solution()) {
+      // MathOpt does not require solvers to return a dual solution on optimal,
+      // but most LP solvers always will, see go/mathopt-solver-contracts for
+      // details.
+      return util::InternalErrorBuilder()
+             << "no dual solution was returned with optimal solution at "
+                "iteration "
+             << pricing_round;
+    }
     std::vector<double> prices;
     for (const math_opt::LinearConstraint d : demand_met) {
       prices.push_back(solve_result.dual_values().at(d));
@@ -219,11 +227,14 @@ absl::StatusOr<CuttingStockSolution> SolveCuttingStock(
   }
   ASSIGN_OR_RETURN(const math_opt::SolveResult solve_result,
                    math_opt::Solve(model, math_opt::SolverType::kCpSat));
-  if (solve_result.termination.reason !=
-      math_opt::TerminationReason::kOptimal) {
-    return util::InternalErrorBuilder()
-           << "Failed to solve final cutting stock MIP, termination: "
-           << solve_result.termination;
+  switch (solve_result.termination.reason) {
+    case math_opt::TerminationReason::kOptimal:
+    case math_opt::TerminationReason::kFeasible:
+      break;
+    default:
+      return util::InternalErrorBuilder()
+             << "Failed to solve final cutting stock MIP, termination: "
+             << solve_result.termination;
   }
   CuttingStockSolution solution;
   for (const auto& [config, var] : configs) {

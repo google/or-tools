@@ -189,19 +189,19 @@ struct SolveParameters {
 
   // Limit on the iterations of the underlying algorithm (e.g. simplex pivots).
   // The specific behavior is dependent on the solver and algorithm used, but
-  // should result in a deterministic solve limit.
-  // TODO(b/195295177): suggest node_limit as an alternative when it's added
+  // often can give a deterministic solve limit (further configuration may be
+  // needed, e.g. one thread).
+  //
+  // Typically supported by LP, QP, and MIP solvers, but for MIP solvers see
+  // also node_limit.
   std::optional<int64_t> iteration_limit;
 
-  // Optimality tolerances (primarily) for MIP solvers. The absolute GAP of a
-  // feasible solution is the distance between its objective value and a dual
-  // bound (e.g. an upper bound on the optimal value for maximization problems).
-  // The relative GAP is a solver-dependent scaled version of the absolute GAP
-  // (e.g. it could be the relative GAP divided by the objective value of the
-  // feasible solution if this is non-zero). Solvers consider a solution optimal
-  // if its GAPs are below these limits (most solvers use both versions).
-  std::optional<double> relative_gap_limit;
-  std::optional<double> absolute_gap_limit;
+  // Limit on the number of subproblems solved in enumerative search (e.g.
+  // branch and bound). For many solvers this can be used to deterministically
+  // limit computation (further configuration may be needed, e.g. one thread).
+  //
+  // Typically for MIP solvers, see also iteration_limit.
+  std::optional<int64_t> node_limit;
 
   // The solver stops early if it can prove there are no primal solutions at
   // least as good as cutoff.
@@ -217,8 +217,7 @@ struct SolveParameters {
   std::optional<double> cutoff_limit;
 
   // The solver stops early as soon as it finds a solution at least this good,
-  // with termination reason kFeasible or kNoSolutionFound and limit kObjective.
-  // TODO(b/214567536): maybe it should only be kFeasible.
+  // with termination reason kFeasible and limit kObjective.
   std::optional<double> objective_limit;
 
   // The solver stops early as soon as it proves the best bound is at least this
@@ -257,6 +256,34 @@ struct SolveParameters {
   // In all cases, the solver will receive a value equal to:
   // MAX(0, MIN(MAX_VALID_VALUE_FOR_SOLVER, random_seed)).
   std::optional<int32_t> random_seed;
+
+  // An absolute optimality tolerance (primarily) for MIP solvers.
+  //
+  // The absolute GAP is the absolute value of the difference between:
+  //   * the objective value of the best feasible solution found,
+  //   * the dual bound produced by the search.
+  // The solver can stop once the absolute GAP is at most absolute_gap_tolerance
+  // (when set), and return TerminationReason::kOptimal.
+  //
+  // Must be >= 0 if set.
+  //
+  // See also relative_gap_tolerance.
+  std::optional<double> absolute_gap_tolerance;
+
+  // A relative optimality tolerance (primarily) for MIP solvers.
+  //
+  // The relative GAP is a normalized version of the absolute GAP (defined on
+  // absolute_gap_tolerance), where the normalization is solver-dependent, e.g.
+  // the absolute GAP divided by the objective value of the best feasible
+  // solution found.
+  //
+  // The solver can stop once the relative GAP is at most relative_gap_tolerance
+  // (when set), and return TerminationReason::kOptimal.
+  //
+  // Must be >= 0 if set.
+  //
+  // See also absolute_gap_tolerance.
+  std::optional<double> relative_gap_tolerance;
 
   // The algorithm for solving a linear program. If nullopt, use the solver
   // default algorithm.

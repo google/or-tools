@@ -52,7 +52,7 @@ namespace operations_research::math_opt {
 struct GurobiIsvKey {
   std::string name;
   std::string application_name;
-  int64_t expiration = 0;
+  int32_t expiration = 0;
   std::string key;
 };
 

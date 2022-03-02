@@ -31,8 +31,6 @@ namespace operations_research {
 namespace math_opt {
 namespace {
 
-constexpr double kInf = std::numeric_limits<double>::infinity();
-
 absl::Status ValidateFeasibilityStatus(const FeasibilityStatusProto& status) {
   if (!FeasibilityStatusProto_IsValid(status)) {
     return absl::InvalidArgumentError(absl::StrCat("invalid status ", status));

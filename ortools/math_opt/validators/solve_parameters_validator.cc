@@ -13,19 +13,33 @@
 
 #include "ortools/math_opt/validators/solve_parameters_validator.h"
 
+#include <cmath>
+#include <string>
+#include <type_traits>
+
 #include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
+#include "absl/time/time.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/parameters.pb.h"
+#include "ortools/util/status_macros.h"
 
 namespace operations_research {
 namespace math_opt {
 
 absl::Status ValidateSolveParameters(const SolveParametersProto& parameters) {
-  RETURN_IF_ERROR(
-      util_time::DecodeGoogleApiProto(parameters.time_limit()).status())
-      << "invalid SolveParameters.time_limit";
+  {
+    OR_ASSIGN_OR_RETURN3(
+        const absl::Duration time_limit,
+        util_time::DecodeGoogleApiProto(parameters.time_limit()),
+        _ << "invalid SolveParameters.time_limit");
+    if (time_limit < absl::ZeroDuration()) {
+      return util::InvalidArgumentErrorBuilder()
+             << "SolveParameters.time_limit = " << time_limit << " < 0";
+    }
+  }
 
   if (parameters.has_threads()) {
     if (parameters.threads() <= 0) {
@@ -34,20 +48,25 @@ absl::Status ValidateSolveParameters(const SolveParametersProto& parameters) {
     }
   }
 
-  if (parameters.has_relative_gap_limit()) {
-    if (parameters.relative_gap_limit() < 0) {
+  if (parameters.has_relative_gap_tolerance()) {
+    if (parameters.relative_gap_tolerance() < 0) {
       return absl::InvalidArgumentError(
-          absl::StrCat("SolveParameters.relative_gap_limit = ",
-                       parameters.relative_gap_limit(), " < 0"));
+          absl::StrCat("SolveParameters.relative_gap_tolerance = ",
+                       parameters.relative_gap_tolerance(), " < 0"));
     }
   }
 
-  if (parameters.has_absolute_gap_limit()) {
-    if (parameters.absolute_gap_limit() < 0) {
+  if (parameters.has_absolute_gap_tolerance()) {
+    if (parameters.absolute_gap_tolerance() < 0) {
       return absl::InvalidArgumentError(
-          absl::StrCat("SolveParameters.absolute_gap_limit = ",
-                       parameters.absolute_gap_limit(), " < 0"));
+          absl::StrCat("SolveParameters.absolute_gap_tolerance = ",
+                       parameters.absolute_gap_tolerance(), " < 0"));
     }
+  }
+  if (parameters.has_node_limit() && parameters.node_limit() < 0) {
+    return util::InvalidArgumentErrorBuilder()
+           << "SolveParameters.node_limit = " << parameters.node_limit()
+           << " should be nonnegative.";
   }
 
   if (parameters.has_solution_limit() && parameters.solution_limit() <= 0) {

@@ -68,8 +68,6 @@ namespace operations_research {
 namespace math_opt {
 namespace {
 
-constexpr int kGrbOk = 0;
-
 absl::StatusOr<std::unique_ptr<Gurobi>> GurobiFromInitArgs(
     const SolverInterface::InitArgs& init_args) {
   // We don't test or return an error for incorrect non streamable arguments
@@ -146,6 +144,13 @@ GurobiParametersProto MergeParameters(
     parameter->set_value(absl::StrCat(time_limit));
   }
 
+  if (solve_parameters.has_node_limit()) {
+    GurobiParametersProto::Parameter* const parameter =
+        merged_parameters.add_parameters();
+    parameter->set_name(GRB_DBL_PAR_NODELIMIT);
+    parameter->set_value(absl::StrCat(solve_parameters.node_limit()));
+  }
+
   if (solve_parameters.has_threads()) {
     const int threads = solve_parameters.threads();
     GurobiParametersProto::Parameter* const parameter =
@@ -154,20 +159,22 @@ GurobiParametersProto MergeParameters(
     parameter->set_value(absl::StrCat(threads));
   }
 
-  if (solve_parameters.has_absolute_gap_limit()) {
-    const double absolute_gap_limit = solve_parameters.absolute_gap_limit();
+  if (solve_parameters.has_absolute_gap_tolerance()) {
+    const double absolute_gap_tolerance =
+        solve_parameters.absolute_gap_tolerance();
     GurobiParametersProto::Parameter* const parameter =
         merged_parameters.add_parameters();
     parameter->set_name(GRB_DBL_PAR_MIPGAPABS);
-    parameter->set_value(absl::StrCat(absolute_gap_limit));
+    parameter->set_value(absl::StrCat(absolute_gap_tolerance));
   }
 
-  if (solve_parameters.has_relative_gap_limit()) {
-    const double relative_gap_limit = solve_parameters.relative_gap_limit();
+  if (solve_parameters.has_relative_gap_tolerance()) {
+    const double relative_gap_tolerance =
+        solve_parameters.relative_gap_tolerance();
     GurobiParametersProto::Parameter* const parameter =
         merged_parameters.add_parameters();
     parameter->set_name(GRB_DBL_PAR_MIPGAP);
-    parameter->set_value(absl::StrCat(relative_gap_limit));
+    parameter->set_value(absl::StrCat(relative_gap_tolerance));
   }
 
   if (solve_parameters.has_cutoff_limit()) {
@@ -1373,7 +1380,7 @@ absl::Status GurobiSolver::UpdateDoubleListAttribute(
   }
   std::vector<int> index;
   index.reserve(update.ids_size());
-  for (const int id : update.ids()) {
+  for (const int64_t id : update.ids()) {
     index.push_back(id_hash_map.at(id));
   }
   return gurobi_->SetDoubleAttrList(attribute_name, index, update.values());
@@ -1387,7 +1394,7 @@ absl::Status GurobiSolver::UpdateInt32ListAttribute(
   }
   std::vector<int> index;
   index.reserve(update.ids_size());
-  for (const int id : update.ids()) {
+  for (const int64_t id : update.ids()) {
     index.push_back(id_hash_map.at(id));
   }
   return gurobi_->SetIntAttrList(attribute_name, index, update.values());
@@ -1599,11 +1606,13 @@ absl::Status GurobiSolver::UpdateLinearConstraints(
       }
     }
     // If the constraint had a slack, and now is marked for deletion, we reset
-    // the stored slack_index in linear_constraints_map_[id] and save the index
-    // in the list of variables to be deleted later on.
+    // the stored slack_index in linear_constraints_map_[id], save the index
+    // in the list of variables to be deleted later on and remove the constraint
+    // from slack_map_.
     if (delete_slack && update_data.source.slack_index != kUnspecifiedIndex) {
       deleted_variables_index.emplace_back(update_data.source.slack_index);
       update_data.source.slack_index = kUnspecifiedIndex;
+      slack_map_.erase(update_data.constraint_id);
     }
   }
 
@@ -1717,7 +1726,7 @@ absl::Status GurobiSolver::Update(const ModelUpdateProto& model_update) {
         model_update.variable_updates().integers();
     std::vector<GurobiVariableIndex> index;
     index.reserve(update.ids_size());
-    for (int id : update.ids()) {
+    for (const int64_t id : update.ids()) {
       index.push_back(variables_map_.at(id));
     }
     std::vector<char> value;
@@ -1860,6 +1869,34 @@ GurobiSolver::RegisterCallback(const CallbackRegistrationProto& registration,
       local_interrupter);
 }
 
+absl::StatusOr<InvertedBounds> GurobiSolver::ListInvertedBounds() const {
+  InvertedBounds inverted_bounds;
+  {
+    ASSIGN_OR_RETURN(
+        const std::vector<double> var_lbs,
+        gurobi_->GetDoubleAttrArray(GRB_DBL_ATTR_LB, num_gurobi_variables_));
+    ASSIGN_OR_RETURN(
+        const std::vector<double> var_ubs,
+        gurobi_->GetDoubleAttrArray(GRB_DBL_ATTR_UB, num_gurobi_variables_));
+    for (const auto& [id, index] : variables_map_) {
+      if (var_lbs[index] > var_ubs[index]) {
+        inverted_bounds.variables.push_back(id);
+      }
+    }
+  }
+  for (const auto& [id, cstr_data] : linear_constraints_map_) {
+    if (cstr_data.lower_bound > cstr_data.upper_bound) {
+      inverted_bounds.linear_constraints.push_back(id);
+    }
+  }
+
+  // Above code have inserted ids in non-stable order.
+  std::sort(inverted_bounds.variables.begin(), inverted_bounds.variables.end());
+  std::sort(inverted_bounds.linear_constraints.begin(),
+            inverted_bounds.linear_constraints.end());
+  return inverted_bounds;
+}
+
 absl::StatusOr<SolveResultProto> GurobiSolver::Solve(
     const SolveParametersProto& parameters,
     const ModelSolveParametersProto& model_parameters,
@@ -1934,6 +1971,14 @@ absl::StatusOr<SolveResultProto> GurobiSolver::Solve(
                                 gurobi_cb_data->local_interrupter);
     };
   }
+
+  // Gurobi returns "infeasible" when bounds are inverted.
+  {
+    ASSIGN_OR_RETURN(const InvertedBounds inverted_bounds,
+                     ListInvertedBounds());
+    RETURN_IF_ERROR(inverted_bounds.ToStatus());
+  }
+
   RETURN_IF_ERROR(gurobi_->Optimize(grb_cb));
 
   // We flush message callbacks before testing for Gurobi error in case where

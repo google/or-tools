@@ -99,7 +99,7 @@ class SparseVectorFilterPredicate {
   // Invariant: next input id must be >= next_input_id_lower_bound_.
   //
   // The initial value is 0 since all ids are expected to be non-negative.
-  int next_input_id_lower_bound_ = 0;
+  int64_t next_input_id_lower_bound_ = 0;
 #endif  // NDEBUG
 };
 

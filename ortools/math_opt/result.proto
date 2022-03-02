@@ -83,7 +83,7 @@ message SolveStatsProto {
   // minimization and larger for maximization) than best_primal_bound:
   //   * best_primal_bound is trivial (+inf for minimization and -inf
   //     maximization) when the solver does not claim to have such bound. This
-  //     may happen for some solvers (e.g. bisco, typically continuous solvers)
+  //     may happen for some solvers (e.g. PDLP, typically continuous solvers)
   //     even when returning optimal (solver could terminate with slightly
   //     infeasible primal solutions).
   //   * best_primal_bound can be closer to the optimal value than the objective

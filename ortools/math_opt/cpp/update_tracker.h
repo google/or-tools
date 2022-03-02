@@ -17,6 +17,8 @@
 #include <memory>
 #include <optional>
 
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "ortools/math_opt/core/model_storage.h"
 #include "ortools/math_opt/model.pb.h"
@@ -55,9 +57,9 @@ namespace math_opt {
 //   model.AddVariable(0.0, 1.0, true, "y");
 //   model.set_maximize(true);
 //
-//   const std::optional<ModelUpdateProto> update_proto =
-//     update_tracker.ExportModelUpdate();
-//   update_tracker.Checkpoint();
+//   ASSIGN_OR_RETURN(const std::optional<ModelUpdateProto> update_proto,
+//                    update_tracker.ExportModelUpdate());
+//   RETURN_IF_ERROR(update_tracker.Checkpoint());
 //
 //   if (update_proto) {
 //     ... use *update_proto here ...
@@ -73,18 +75,24 @@ class UpdateTracker {
   // Returns a proto representation of the changes to the model since the most
   // recent checkpoint (i.e. last time Checkpoint() was called); nullopt if
   // the update would have been empty.
-  std::optional<ModelUpdateProto> ExportModelUpdate();
+  //
+  // If fails if the Model has been destroyed.
+  absl::StatusOr<std::optional<ModelUpdateProto>> ExportModelUpdate();
 
   // Uses the current model state as the starting point to calculate the
   // ModelUpdateProto next time ExportModelUpdate() is called.
-  void Checkpoint();
+  //
+  // If fails if the Model has been destroyed.
+  absl::Status Checkpoint();
 
   // Returns a proto representation of the whole model.
   //
   // This is a shortcut method that is equivalent to calling
   // Model::ExportModel(). It is there so that users of the UpdateTracker
   // can avoid having to keep a reference to the Model model.
-  ModelProto ExportModel() const;
+  //
+  // If fails if the Model has been destroyed.
+  absl::StatusOr<ModelProto> ExportModel() const;
 
  private:
   const std::weak_ptr<ModelStorage> storage_;
@@ -93,10 +101,10 @@ class UpdateTracker {
 
 namespace internal {
 
-// The CHECK message used when a function of UpdateTracker is called after the
+// The failure message used when a function of UpdateTracker is called after the
 // destruction of the model..
 constexpr absl::string_view kModelIsDestroyed =
-    "Can't call this function after the associated model has been destroyed.";
+    "can't call this function after the associated model has been destroyed";
 
 }  // namespace internal
 

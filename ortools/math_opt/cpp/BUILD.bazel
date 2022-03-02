@@ -242,6 +242,7 @@ cc_library(
     deps = [
         ":streamable_solver_init_arguments",
         "//ortools/math_opt/core:non_streamable_solver_init_arguments",
+        "@com_google_absl//absl/status:statusor",
     ],
 )
 
@@ -289,6 +290,7 @@ cc_library(
         "//ortools/math_opt:parameters_cc_proto",
         "//ortools/math_opt/cpp:enums",
         "//ortools/math_opt/solvers:gurobi_cc_proto",
+        "@com_google_absl//absl/status:statusor",
     ],
 )
 

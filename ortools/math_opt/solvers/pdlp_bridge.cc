@@ -24,6 +24,7 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
+#include "ortools/math_opt/core/inverted_bounds.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/model.pb.h"
@@ -103,26 +104,29 @@ absl::StatusOr<PdlpBridge> PdlpBridge::FromProto(
   }
   const SparseDoubleMatrixProto& quadratic_objective =
       model_proto.objective().quadratic_coefficients();
-  std::vector<Eigen::Triplet<double, int64_t>> obj_triplets;
   const int obj_nnz = quadratic_objective.row_ids().size();
+  if (obj_nnz > 0) {
+    pdlp_lp.objective_matrix.emplace();
+    pdlp_lp.objective_matrix->setZero(variables.ids_size());
+  }
   for (int i = 0; i < obj_nnz; ++i) {
     const int64_t row_index =
         result.var_id_to_pdlp_index_.at(quadratic_objective.row_ids(i));
     const int64_t column_index =
         result.var_id_to_pdlp_index_.at(quadratic_objective.column_ids(i));
     const double value = obj_scale * quadratic_objective.coefficients(i);
+    if (row_index != column_index) {
+      return absl::InvalidArgumentError(
+          "PDLP cannot solve problems with non-diagonal objective matrices");
+    }
     // MathOpt represents quadratic objectives in "terms" form, i.e. as a sum
     // of double * Variable * Variable terms. They are stored in upper
     // triangular form with row_index <= column_index. In contrast, PDLP
-    // represents quadratic objectives in "matrix" form as 1/2 x'Qx; it wants
-    // the symmetric matrix Q. To get to the right format, we simply add each
-    // term and its transposed entry, and defer to Eigen to sum duplicate
-    // entries along the diagonal.
-    obj_triplets.push_back({row_index, column_index, value});
-    obj_triplets.push_back({column_index, row_index, value});
+    // represents quadratic objectives in "matrix" form as 1/2 x'Qx, where Q is
+    // diagonal. To get to the right format, we simply double each diagonal
+    // entry.
+    pdlp_lp.objective_matrix->diagonal()[row_index] = 2 * value;
   }
-  pdlp_lp.objective_matrix.setFromTriplets(obj_triplets.begin(),
-                                           obj_triplets.end());
   pdlp_lp.objective_scaling_factor = obj_scale;
   // Note: MathOpt stores the constraint data in row major order, but PDLP
   // wants the data in column major order. There is probably a more efficient
@@ -143,6 +147,26 @@ absl::StatusOr<PdlpBridge> PdlpBridge::FromProto(
   pdlp_lp.constraint_matrix.setFromTriplets(mat_triplets.begin(),
                                             mat_triplets.end());
   return result;
+}
+
+InvertedBounds PdlpBridge::ListInvertedBounds() const {
+  InvertedBounds inverted_bounds;
+  for (int64_t var_index = 0; var_index < pdlp_index_to_var_id_.size();
+       ++var_index) {
+    if (pdlp_lp_.variable_lower_bounds[var_index] >
+        pdlp_lp_.variable_upper_bounds[var_index]) {
+      inverted_bounds.variables.push_back(pdlp_index_to_var_id_[var_index]);
+    }
+  }
+  for (int64_t lin_con_index = 0;
+       lin_con_index < pdlp_index_to_lin_con_id_.size(); ++lin_con_index) {
+    if (pdlp_lp_.constraint_lower_bounds[lin_con_index] >
+        pdlp_lp_.constraint_upper_bounds[lin_con_index]) {
+      inverted_bounds.linear_constraints.push_back(
+          pdlp_index_to_lin_con_id_[lin_con_index]);
+    }
+  }
+  return inverted_bounds;
 }
 
 absl::StatusOr<SparseDoubleVectorProto> PdlpBridge::PrimalVariablesToProto(

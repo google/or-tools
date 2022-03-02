@@ -16,6 +16,7 @@
 #include <optional>
 #include <type_traits>
 
+#include "absl/status/statusor.h"
 #include "ortools/math_opt/parameters.pb.h"
 #include "ortools/math_opt/solvers/gurobi.pb.h"
 
@@ -31,6 +32,16 @@ GurobiInitializerProto::ISVKey GurobiISVKey::Proto() const {
   return isv_key_proto;
 }
 
+GurobiISVKey GurobiISVKey::FromProto(
+    const GurobiInitializerProto::ISVKey& key_proto) {
+  return GurobiISVKey{
+      .name = key_proto.name(),
+      .application_name = key_proto.application_name(),
+      .expiration = key_proto.expiration(),
+      .key = key_proto.key(),
+  };
+}
+
 GurobiInitializerProto StreamableGurobiInitArguments::Proto() const {
   GurobiInitializerProto params_proto;
 
@@ -41,6 +52,15 @@ GurobiInitializerProto StreamableGurobiInitArguments::Proto() const {
   return params_proto;
 }
 
+StreamableGurobiInitArguments StreamableGurobiInitArguments::FromProto(
+    const GurobiInitializerProto& args_proto) {
+  StreamableGurobiInitArguments args;
+  if (args_proto.has_isv_key()) {
+    args.isv_key = GurobiISVKey::FromProto(args_proto.isv_key());
+  }
+  return args;
+}
+
 SolverInitializerProto StreamableSolverInitArguments::Proto() const {
   SolverInitializerProto params_proto;
 
@@ -49,6 +69,16 @@ SolverInitializerProto StreamableSolverInitArguments::Proto() const {
   }
 
   return params_proto;
+}
+
+absl::StatusOr<StreamableSolverInitArguments>
+StreamableSolverInitArguments::FromProto(
+    const SolverInitializerProto& args_proto) {
+  StreamableSolverInitArguments args;
+  if (args_proto.has_gurobi()) {
+    args.gurobi = StreamableGurobiInitArguments::FromProto(args_proto.gurobi());
+  }
+  return args;
 }
 
 }  // namespace math_opt

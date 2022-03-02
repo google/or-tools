@@ -40,7 +40,6 @@ using ::testing::AnyOf;
 using ::testing::AnyOfArray;
 using ::testing::Contains;
 using ::testing::DoubleNear;
-using ::testing::Eq;
 using ::testing::ExplainMatchResult;
 using ::testing::Field;
 using ::testing::IsEmpty;

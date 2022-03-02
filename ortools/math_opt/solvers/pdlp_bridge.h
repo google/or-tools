@@ -20,6 +20,7 @@
 #include "Eigen/Core"
 #include "absl/container/flat_hash_map.h"
 #include "absl/status/statusor.h"
+#include "ortools/math_opt/core/inverted_bounds.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 #include "ortools/pdlp/quadratic_program.h"
@@ -47,6 +48,9 @@ class PdlpBridge {
   static absl::StatusOr<PdlpBridge> FromProto(const ModelProto& model_proto);
 
   const pdlp::QuadraticProgram& pdlp_lp() const { return pdlp_lp_; }
+
+  // Returns the ids of variables and linear constraints with inverted bounds.
+  InvertedBounds ListInvertedBounds() const;
 
   // TODO(b/183616124): we need to support the inverse of these methods for
   // warm start.

@@ -67,6 +67,8 @@ namespace math_opt {
 
 namespace {
 
+constexpr double kInf = std::numeric_limits<double>::infinity();
+
 absl::string_view SafeName(const VariablesProto& variables, int index) {
   if (variables.names().empty()) {
     return {};
@@ -299,6 +301,9 @@ absl::StatusOr<glop::GlopParameters> GlopSolver::MergeSolveParameters(
       solver_parameters.iteration_limit()) {
     result.set_max_number_of_iterations(solver_parameters.iteration_limit());
   }
+  if (solver_parameters.has_node_limit()) {
+    warnings.emplace_back("GLOP does snot support 'node_limit' parameter");
+  }
   if (!result.has_use_dual_simplex() &&
       solver_parameters.lp_algorithm() != LP_ALGORITHM_UNSPECIFIED) {
     switch (solver_parameters.lp_algorithm()) {
@@ -479,6 +484,72 @@ std::vector<int64_t> GetSortedIs(
   return sorted;
 }
 
+// Returns a vector of containing the MathOpt id of each row or column. Here T
+// is either (Col|Row)Index and id_map is expected to be
+// GlopSolver::(linear_constraints_|variables_).
+template <typename T>
+glop::StrictITIVector<T, int64_t> IndexToId(
+    const absl::flat_hash_map<int64_t, T>& id_map) {
+  // Guard value used to identify not-yet-set elements of index_to_id.
+  constexpr int64_t kEmptyId = -1;
+  glop::StrictITIVector<T, int64_t> index_to_id(T(id_map.size()), kEmptyId);
+  for (const auto& [id, index] : id_map) {
+    CHECK(index >= 0 && index < index_to_id.size()) << index;
+    CHECK_EQ(index_to_id[index], kEmptyId);
+    index_to_id[index] = id;
+  }
+
+  // At this point, index_to_id can't contain any kEmptyId values since
+  // index_to_id.size() == id_map.size() and we modified id_map.size() elements
+  // in the loop, after checking that the modified element was changed by a
+  // previous iteration.
+  return index_to_id;
+}
+
+InvertedBounds GlopSolver::ListInvertedBounds() const {
+  // Identify rows and columns by index first.
+  std::vector<glop::ColIndex> inverted_columns;
+  const glop::ColIndex num_cols = linear_program_.num_variables();
+  for (glop::ColIndex col(0); col < num_cols; ++col) {
+    if (linear_program_.variable_lower_bounds()[col] >
+        linear_program_.variable_upper_bounds()[col]) {
+      inverted_columns.push_back(col);
+    }
+  }
+  std::vector<glop::RowIndex> inverted_rows;
+  const glop::RowIndex num_rows = linear_program_.num_constraints();
+  for (glop::RowIndex row(0); row < num_rows; ++row) {
+    if (linear_program_.constraint_lower_bounds()[row] >
+        linear_program_.constraint_upper_bounds()[row]) {
+      inverted_rows.push_back(row);
+    }
+  }
+
+  // Convert column/row indices into MathOpt ids. We avoid calling the expensive
+  // IndexToId() when not necessary.
+  InvertedBounds inverted_bounds;
+  if (!inverted_columns.empty()) {
+    const glop::StrictITIVector<glop::ColIndex, int64_t> ids =
+        IndexToId(variables_);
+    CHECK_EQ(ids.size(), num_cols);
+    inverted_bounds.variables.reserve(inverted_columns.size());
+    for (const glop::ColIndex col : inverted_columns) {
+      inverted_bounds.variables.push_back(ids[col]);
+    }
+  }
+  if (!inverted_rows.empty()) {
+    const glop::StrictITIVector<glop::RowIndex, int64_t> ids =
+        IndexToId(linear_constraints_);
+    CHECK_EQ(ids.size(), num_rows);
+    inverted_bounds.linear_constraints.reserve(inverted_rows.size());
+    for (const glop::RowIndex row : inverted_rows) {
+      inverted_bounds.linear_constraints.push_back(ids[row]);
+    }
+  }
+
+  return inverted_bounds;
+}
+
 void GlopSolver::FillSolution(const glop::ProblemStatus status,
                               const ModelSolveParametersProto& model_parameters,
                               SolveResultProto& solve_result) {
@@ -600,7 +671,6 @@ absl::Status GlopSolver::FillSolveStats(const glop::ProblemStatus status,
                                         const absl::Duration solve_time,
                                         SolveStatsProto& solve_stats) {
   const bool is_maximize = linear_program_.IsMaximizationProblem();
-  constexpr double kInf = std::numeric_limits<double>::infinity();
 
   // Set default status and bounds.
   solve_stats.mutable_problem_status()->set_primal_status(
@@ -759,6 +829,11 @@ absl::StatusOr<SolveResultProto> GlopSolver::Solve(
       lp_solver_.GetSolverLogger().ClearInfoLoggingCallbacks();
     }
   });
+
+  // Glop returns an error when bounds are inverted and does not list the
+  // offending variables/constraints. Here we want to return a more detailed
+  // status.
+  RETURN_IF_ERROR(ListInvertedBounds().ToStatus());
 
   const glop::ProblemStatus status =
       lp_solver_.SolveWithTimeLimit(linear_program_, time_limit.get());

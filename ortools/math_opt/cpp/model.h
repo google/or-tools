@@ -46,65 +46,29 @@ namespace math_opt {
 //            x in {0.0, 1.0}
 //            y in [0.0, 2.5]
 //
-//   using ::operations_research::math_opt::LinearConstraint;
-//   using ::operations_research::math_opt::Model;
-//   using ::operations_research::math_opt::SolveResult;
-//   using ::operations_research::math_opt::SolveParameters;
-//   using ::operations_research::math_opt::SolveResultProto;
-//   using ::operations_research::math_opt::Variable;
-//   using ::operations_research::math_opt::SolverType;
-//
-// Version 1:
-//
-//   Model model("my_model");
-//   const Variable x = model.AddBinaryVariable("x");
-//   const Variable y = model.AddContinuousVariable(0.0, 2.5, "y");
-//   const LinearConstraint c = model.AddLinearConstraint(
-//       -std::numeric_limits<double>::infinity(), 1.5, "c");
-//   model.set_coefficient(c, x, 1.0);
-//   model.set_coefficient(c, y, 1.0);
-//   model.set_objective_coefficient(x, 2.0);
-//   model.set_objective_coefficient(y, 1.0);
-//   model.set_maximize();
-//   const SolveResult result = Solve(
-//     model, SolverType::kGscip, SolveParametersProto()).value();
-//   for (const auto& warning : result.warnings) {
-//     std::cerr << "Solver warning: " << warning << std::endl;
-//   }
-//   CHECK_EQ(result.termination.reason, TerminationReason::kOptimal)
-//       << result.termination_detail;
-//   // The following code will print:
-//   //  objective value: 2.5
-//   //  value for variable x: 1
-//   std::cout << "objective value: " << result.objective_value()
-//             << "\nvalue for variable x: " << result.variable_values().at(x)
-//             << std::endl;
-//
-// Version 2 (with linear expressions):
-//
-//   Model model("my_model");
-//   const Variable x = model.AddBinaryVariable("x");
-//   const Variable y = model.AddContinuousVariable(0.0, 2.5, "y");
-//   // We can directly use linear combinations of variables ...
-//   model.AddLinearConstraint(x + y <= 1.5, "c");
-//   // ... or build them incrementally.
-//   LinearExpression objective_expression;
-//   objective_expression += 2*x;
-//   objective_expression += y;
-//   model.Maximize(objective_expression);
-//   const SolveResult result = Solve(
-//     model, SolverType::kGscip, SolveParametersProto()).value();
-//   for (const auto& warning : result.warnings) {
-//     std::cerr << "Solver warning: " << warning << std::endl;
-//   }
-//   CHECK_EQ(result.termination.reason, TerminationReason::kOptimal)
-//       << result.termination_detail;
-//   // The following code will print:
-//   //  objective value: 2.5
-//   //  value for variable x: 1
-//   std::cout << "objective value: " << result.objective_value()
-//             << "\nvalue for variable x: " << result.variable_values().at(x)
-//             << std::endl;
+// math_opt::Model model("my_model");
+// const math_opt::Variable x = model.AddBinaryVariable("x");
+// const math_opt::Variable y = model.AddContinuousVariable(0.0, 2.5, "y");
+// // We can directly use linear combinations of variables ...
+// model.AddLinearConstraint(x + y <= 1.5, "c");
+// // ... or build them incrementally.
+// math_opt::LinearExpression objective_expression;
+// objective_expression += 2 * x;
+// objective_expression += y;
+// model.Maximize(objective_expression);
+// ASSIGN_OR_RETURN(const math_opt::SolveResult result,
+//                  Solve(model, math_opt::SolverType::kGscip));
+// switch (result.termination.reason) {
+//   case math_opt::TerminationReason::kOptimal:
+//   case math_opt::TerminationReason::kFeasible:
+//     std::cout << "objective value: " << result.objective_value() << std::endl
+//               << "value for variable x: " << result.variable_values().at(x)
+//               << std::endl;
+//     return absl::OkStatus();
+//   default:
+//     return util::InternalErrorBuilder()
+//            << "model failed to solve: " << result.termination;
+// }
 //
 // Memory model:
 //
@@ -165,10 +129,12 @@ class Model {
   // That said, the Variable and LinearConstraint reference objects are model
   // specific. Hence the ones linked to the original model must NOT be used with
   // the clone. The Variable and LinearConstraint reference objects for the
-  // clone can be obtained via Variables() and LinearConstraints(). One can also
-  // use SortedVariables() and SortedLinearConstraints() that will return (until
-  // one of the two models is modified) the variables and constraints in the
-  // same order for the two models and provide a one-to-one correspondence.
+  // clone can be obtained using:
+  //   * the variable() and linear_constraint() methods on the ids from the old
+  //     Variable and LinearConstraint objects.
+  //   * in increasing id order using SortedVariables() and
+  //     SortedLinearConstraints()
+  //   * in an arbitrary order using Variables() and LinearConstraints().
   //
   // Note that the returned model does not have any update tracker.
   std::unique_ptr<Model> Clone() const;
@@ -209,10 +175,19 @@ class Model {
   // The returned id of the next call to AddVariable.
   //
   // Equal to the number of variables created.
-  inline int next_variable_id() const;
+  inline int64_t next_variable_id() const;
 
   // Returns true if this id has been created and not yet deleted.
-  inline bool has_variable(int id) const;
+  inline bool has_variable(int64_t id) const;
+
+  // Returns true if this id has been created and not yet deleted.
+  inline bool has_variable(VariableId id) const;
+
+  // Will CHECK if has_variable(id) is false.
+  inline Variable variable(int64_t id) const;
+
+  // Will CHECK if has_variable(id) is false.
+  inline Variable variable(VariableId id) const;
 
   // Returns the variable name.
   inline const std::string& name(Variable variable) const;
@@ -292,10 +267,19 @@ class Model {
   // The returned id of the next call to AddLinearConstraint.
   //
   // Equal to the number of linear constraints created.
-  inline int next_linear_constraint_id() const;
+  inline int64_t next_linear_constraint_id() const;
 
   // Returns true if this id has been created and not yet deleted.
-  inline bool has_linear_constraint(int id) const;
+  inline bool has_linear_constraint(int64_t id) const;
+
+  // Returns true if this id has been created and not yet deleted.
+  inline bool has_linear_constraint(LinearConstraintId id) const;
+
+  // Will CHECK if has_linear_constraint(id) is false.
+  inline LinearConstraint linear_constraint(int64_t id) const;
+
+  // Will CHECK if has_linear_constraint(id) is false.
+  inline LinearConstraint linear_constraint(LinearConstraintId id) const;
 
   // Returns the linear constraint name.
   inline const std::string& name(LinearConstraint constraint) const;
@@ -447,7 +431,7 @@ class Model {
   // (variables, constraints, ...). The user is expected to use proper
   // synchronization primitive to serialize changes to the model and the use of
   // this method.
-  std::unique_ptr<UpdateTracker> NewUpdateTracker() const;
+  std::unique_ptr<UpdateTracker> NewUpdateTracker();
 
   // Apply the provided update to this model. Returns a failure if the update is
   // not valid.
@@ -534,12 +518,25 @@ void Model::DeleteVariable(const Variable variable) {
 
 int Model::num_variables() const { return storage()->num_variables(); }
 
-int Model::next_variable_id() const {
+int64_t Model::next_variable_id() const {
   return storage()->next_variable_id().value();
 }
 
-bool Model::has_variable(const int id) const {
-  return storage()->has_variable(VariableId(id));
+bool Model::has_variable(const int64_t id) const {
+  return has_variable(VariableId(id));
+}
+
+bool Model::has_variable(const VariableId id) const {
+  return storage()->has_variable(id);
+}
+
+Variable Model::variable(const int64_t id) const {
+  return variable(VariableId(id));
+}
+
+Variable Model::variable(const VariableId id) const {
+  CHECK(has_variable(id)) << "No variable with id: " << id.value();
+  return Variable(storage(), id);
 }
 
 const std::string& Model::name(const Variable variable) const {
@@ -604,12 +601,26 @@ int Model::num_linear_constraints() const {
   return storage()->num_linear_constraints();
 }
 
-int Model::next_linear_constraint_id() const {
+int64_t Model::next_linear_constraint_id() const {
   return storage()->next_linear_constraint_id().value();
 }
 
-bool Model::has_linear_constraint(const int id) const {
-  return storage()->has_linear_constraint(LinearConstraintId(id));
+bool Model::has_linear_constraint(const int64_t id) const {
+  return has_linear_constraint(LinearConstraintId(id));
+}
+
+bool Model::has_linear_constraint(const LinearConstraintId id) const {
+  return storage()->has_linear_constraint(id);
+}
+
+LinearConstraint Model::linear_constraint(const int64_t id) const {
+  return linear_constraint(LinearConstraintId(id));
+}
+
+LinearConstraint Model::linear_constraint(const LinearConstraintId id) const {
+  CHECK(has_linear_constraint(id))
+      << "No linear constraint with id: " << id.value();
+  return LinearConstraint(storage(), id);
 }
 
 const std::string& Model::name(const LinearConstraint constraint) const {

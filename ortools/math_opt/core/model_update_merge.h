@@ -180,7 +180,7 @@ void UpdateNewElementProperty(
   int updates_i = 0;
 
   for (int i = 0; i < ids.size(); ++i) {
-    const int id = ids[i];
+    const int64_t id = ids[i];
 
     while (deleted_i < deleted.size() && deleted[deleted_i] < id) {
       ++deleted_i;

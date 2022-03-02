@@ -27,6 +27,7 @@
 #include "ortools/gscip/gscip.pb.h"
 #include "ortools/gscip/gscip_event_handler.h"
 #include "ortools/math_opt/callback.pb.h"
+#include "ortools/math_opt/core/inverted_bounds.h"
 #include "ortools/math_opt/core/solve_interrupter.h"
 #include "ortools/math_opt/core/solver_interface.h"
 #include "ortools/math_opt/model.pb.h"
@@ -127,6 +128,9 @@ class GScipSolver : public SolverInterface {
       GScipResult gscip_result,
       const ModelSolveParametersProto& model_parameters,
       std::optional<double> cutoff);
+
+  // Returns the ids of variables and linear constraints with inverted bounds.
+  InvertedBounds ListInvertedBounds() const;
 
   const std::unique_ptr<GScip> gscip_;
   InterruptEventHandler interrupt_event_handler_;

@@ -20,15 +20,13 @@
 #include "absl/time/time.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/status_builder.h"
+#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 
 namespace {
-using ::operations_research::math_opt::Model;
-using ::operations_research::math_opt::SolveResult;
-using ::operations_research::math_opt::SolverType;
-using ::operations_research::math_opt::TerminationReason;
-using ::operations_research::math_opt::Variable;
-using ::operations_research::math_opt::VariableMap;
+
+namespace math_opt = ::operations_research::math_opt;
 
 constexpr double kInf = std::numeric_limits<double>::infinity();
 
@@ -39,12 +37,12 @@ constexpr double kInf = std::numeric_limits<double>::infinity();
 //            x in {0.0, 1.0, 2.0, ...,
 //            y in {0.0, 1.0, 2.0, ...,
 //
-void SolveSimpleMIP() {
-  Model model("Integer programming example");
+absl::Status Main() {
+  math_opt::Model model("Integer programming example");
 
   // Variables
-  const Variable x = model.AddIntegerVariable(0.0, kInf, "x");
-  const Variable y = model.AddIntegerVariable(0.0, kInf, "y");
+  const math_opt::Variable x = model.AddIntegerVariable(0.0, kInf, "x");
+  const math_opt::Variable y = model.AddIntegerVariable(0.0, kInf, "y");
 
   // Constraints
   model.AddLinearConstraint(x + 7 * y <= 17.5, "c1");
@@ -53,28 +51,29 @@ void SolveSimpleMIP() {
   // Objective
   model.Maximize(x + 10 * y);
 
-  std::cout << "Num variables: " << model.num_variables() << std::endl;
-  std::cout << "Num constraints: " << model.num_linear_constraints()
-            << std::endl;
+  ASSIGN_OR_RETURN(const math_opt::SolveResult result,
+                   Solve(model, math_opt::SolverType::kGscip));
 
-  const SolveResult result = Solve(model, SolverType::kGscip).value();
-  // Check that the problem has an optimal solution.
-  QCHECK_EQ(result.termination.reason, TerminationReason::kOptimal)
-      << "Failed to find an optimal solution: " << result.termination;
-
-  std::cout << "Problem solved in " << result.solve_time() << std::endl;
-  std::cout << "Objective value: " << result.objective_value() << std::endl;
-
-  const double x_val = result.variable_values().at(x);
-  const double y_val = result.variable_values().at(y);
-
-  std::cout << "Variable values: [x=" << x_val << ", y=" << y_val << "]"
-            << std::endl;
+  switch (result.termination.reason) {
+    case math_opt::TerminationReason::kOptimal:
+    case math_opt::TerminationReason::kFeasible:
+      std::cout << "Problem solved in " << result.solve_time() << std::endl;
+      std::cout << "objective value: " << result.objective_value() << std::endl;
+      std::cout << "Variable values: [x=" << result.variable_values().at(x)
+                << ", y=" << result.variable_values().at(y) << "]" << std::endl;
+      return absl::OkStatus();
+    default:
+      return util::InternalErrorBuilder()
+             << "model failed to solve: " << result.termination;
+  }
 }
 }  // namespace
 
 int main(int argc, char** argv) {
   InitGoogle(argv[0], &argc, &argv, true);
-  SolveSimpleMIP();
+  const absl::Status status = Main();
+  if (!status.ok()) {
+    LOG(QFATAL) << status;
+  }
   return 0;
 }

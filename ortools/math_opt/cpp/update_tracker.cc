@@ -16,6 +16,8 @@
 #include <memory>
 #include <optional>
 
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "ortools/base/logging.h"
 #include "ortools/math_opt/core/model_storage.h"
 #include "ortools/math_opt/model.pb.h"
@@ -37,21 +39,29 @@ UpdateTracker::UpdateTracker(const std::shared_ptr<ModelStorage>& storage)
     : storage_(ABSL_DIE_IF_NULL(storage)),
       update_tracker_(storage->NewUpdateTracker()) {}
 
-std::optional<ModelUpdateProto> UpdateTracker::ExportModelUpdate() {
+absl::StatusOr<std::optional<ModelUpdateProto>>
+UpdateTracker::ExportModelUpdate() {
   const std::shared_ptr<ModelStorage> storage = storage_.lock();
-  CHECK(storage != nullptr) << internal::kModelIsDestroyed;
+  if (storage == nullptr) {
+    return absl::InvalidArgumentError(internal::kModelIsDestroyed);
+  }
   return storage->ExportModelUpdate(update_tracker_);
 }
 
-void UpdateTracker::Checkpoint() {
+absl::Status UpdateTracker::Checkpoint() {
   const std::shared_ptr<ModelStorage> storage = storage_.lock();
-  CHECK(storage != nullptr) << internal::kModelIsDestroyed;
+  if (storage == nullptr) {
+    return absl::InvalidArgumentError(internal::kModelIsDestroyed);
+  }
   storage->Checkpoint(update_tracker_);
+  return absl::OkStatus();
 }
 
-ModelProto UpdateTracker::ExportModel() const {
+absl::StatusOr<ModelProto> UpdateTracker::ExportModel() const {
   const std::shared_ptr<ModelStorage> storage = storage_.lock();
-  CHECK(storage != nullptr) << internal::kModelIsDestroyed;
+  if (storage == nullptr) {
+    return absl::InvalidArgumentError(internal::kModelIsDestroyed);
+  }
   return storage->ExportModel();
 }
 

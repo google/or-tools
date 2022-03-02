@@ -24,7 +24,7 @@
 #include <optional>
 #include <string>
 
-#include "ortools/math_opt/cpp/enums.h"
+#include "absl/status/statusor.h"
 #include "ortools/math_opt/parameters.pb.h"
 #include "ortools/math_opt/solvers/gurobi.pb.h"
 
@@ -52,10 +52,12 @@ struct StreamableGlpkInitArguments {};
 struct GurobiISVKey {
   std::string name;
   std::string application_name;
-  int64_t expiration = 0;
+  int32_t expiration = 0;
   std::string key;
 
   GurobiInitializerProto::ISVKey Proto() const;
+  static GurobiISVKey FromProto(
+      const GurobiInitializerProto::ISVKey& key_proto);
 };
 
 // Streamable Gurobi specific parameters for solver instantiation.
@@ -66,6 +68,10 @@ struct StreamableGurobiInitArguments {
 
   // Returns the proto corresponding to these parameters.
   GurobiInitializerProto Proto() const;
+
+  // Parses the proto corresponding to these parameters.
+  static StreamableGurobiInitArguments FromProto(
+      const GurobiInitializerProto& args_proto);
 };
 
 // Solver initialization parameters that can be streamed to be exchanged with
@@ -83,6 +89,10 @@ struct StreamableSolverInitArguments {
 
   // Returns the proto corresponding to these parameters.
   SolverInitializerProto Proto() const;
+
+  // Parses the proto corresponding to these parameters.
+  static absl::StatusOr<StreamableSolverInitArguments> FromProto(
+      const SolverInitializerProto& args_proto);
 };
 
 }  // namespace math_opt

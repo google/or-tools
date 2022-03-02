@@ -31,6 +31,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/gurobi/environment.h"
 #include "ortools/math_opt/callback.pb.h"
+#include "ortools/math_opt/core/inverted_bounds.h"
 #include "ortools/math_opt/core/solve_interrupter.h"
 #include "ortools/math_opt/core/solver_interface.h"
 #include "ortools/math_opt/model.pb.h"
@@ -226,6 +227,9 @@ class GurobiSolver : public SolverInterface {
       const CallbackRegistrationProto& registration, Callback cb,
       const MessageCallback message_cb, absl::Time start,
       SolveInterrupter* interrupter);
+
+  // Returns the ids of variables and linear constraints with inverted bounds.
+  absl::StatusOr<InvertedBounds> ListInvertedBounds() const;
 
   const std::unique_ptr<Gurobi> gurobi_;
 

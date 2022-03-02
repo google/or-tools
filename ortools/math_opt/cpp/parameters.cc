@@ -151,6 +151,9 @@ SolveParametersProto SolveParameters::Proto() const {
   if (iteration_limit.has_value()) {
     result.set_iteration_limit(*iteration_limit);
   }
+  if (node_limit.has_value()) {
+    result.set_node_limit(*node_limit);
+  }
   if (cutoff_limit.has_value()) {
     result.set_cutoff_limit(*cutoff_limit);
   }
@@ -169,11 +172,11 @@ SolveParametersProto SolveParameters::Proto() const {
   if (random_seed.has_value()) {
     result.set_random_seed(*random_seed);
   }
-  if (relative_gap_limit.has_value()) {
-    result.set_relative_gap_limit(*relative_gap_limit);
+  if (relative_gap_tolerance.has_value()) {
+    result.set_relative_gap_tolerance(*relative_gap_tolerance);
   }
-  if (absolute_gap_limit.has_value()) {
-    result.set_absolute_gap_limit(*absolute_gap_limit);
+  if (absolute_gap_tolerance.has_value()) {
+    result.set_absolute_gap_tolerance(*absolute_gap_tolerance);
   }
   result.set_lp_algorithm(EnumToProto(lp_algorithm));
   result.set_presolve(EnumToProto(presolve));
@@ -200,6 +203,9 @@ absl::StatusOr<SolveParameters> SolveParameters::FromProto(
   if (proto.has_iteration_limit()) {
     result.iteration_limit = proto.iteration_limit();
   }
+  if (proto.has_node_limit()) {
+    result.node_limit = proto.node_limit();
+  }
   if (proto.has_cutoff_limit()) {
     result.cutoff_limit = proto.cutoff_limit();
   }
@@ -218,11 +224,11 @@ absl::StatusOr<SolveParameters> SolveParameters::FromProto(
   if (proto.has_random_seed()) {
     result.random_seed = proto.random_seed();
   }
-  if (proto.has_absolute_gap_limit()) {
-    result.absolute_gap_limit = proto.absolute_gap_limit();
+  if (proto.has_absolute_gap_tolerance()) {
+    result.absolute_gap_tolerance = proto.absolute_gap_tolerance();
   }
-  if (proto.has_relative_gap_limit()) {
-    result.relative_gap_limit = proto.relative_gap_limit();
+  if (proto.has_relative_gap_tolerance()) {
+    result.relative_gap_tolerance = proto.relative_gap_tolerance();
   }
   result.lp_algorithm = EnumFromProto(proto.lp_algorithm());
   result.presolve = EnumFromProto(proto.presolve());

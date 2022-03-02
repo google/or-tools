@@ -75,15 +75,15 @@ absl::StatusOr<SolveResult> Solve(const Model& model, SolverType solver_type,
 // MIPs. In both cases, even if the solver supports the model changes,
 // incremental solve may actually be slower.
 //
-// The New() function instantiates the solver and setup it from the current
-// state of the Model. Calling Solve() will update the underlying solver with
-// latest model changes and solve this model.
+// The New() function instantiates the solver, setup it from the current state
+// of the Model and register on it to listen to changes. Calling Solve() will
+// update the underlying solver with latest model changes and solve this model.
 //
 // Usage:
 //   Model model = ...;
 //   ASSIGN_OR_RETURN(
 //     const std::unique_ptr<IncrementalSolver> incremental_solve,
-//     IncrementalSolver::New(model, SolverType::kXxx));
+//     IncrementalSolver::New(&model, SolverType::kXxx));
 //
 //   ASSIGN_OR_RETURN(const SolveResult result1, incremental_solve->Solve());
 //
@@ -93,6 +93,11 @@ absl::StatusOr<SolveResult> Solve(const Model& model, SolverType solver_type,
 //   ASSIGN_OR_RETURN(const SolveResult result2, incremental_solve->Solve());
 //
 //   ...
+//
+// Lifecycle: The IncrementalSolver is only keeping a std::weak_ref on Model's
+// internal data and thus it returns an error if Update() or Solve() are called
+// after the Model has been destroyed. It is fine to destroy the
+// IncrementalSolver after the associated Model though.
 //
 // Thread-safety: The New(), Solve() and Update() methods must not be called
 // while modifying the Model() (adding variables...). The user is expected to
@@ -134,9 +139,10 @@ class IncrementalSolver {
   // The returned IncrementalSolver keeps a copy of `arguments`. Thus the
   // content of arguments.non_streamable (for example pointers to solver
   // specific struct) must be valid until the destruction of the
-  // IncrementalSolver.
+  // IncrementalSolver. It also registers on the Model to keep track of updates
+  // (see class documentation for details).
   static absl::StatusOr<std::unique_ptr<IncrementalSolver>> New(
-      Model& model, SolverType solver_type, SolverInitArguments arguments = {});
+      Model* model, SolverType solver_type, SolverInitArguments arguments = {});
 
   // Updates the underlying solver with latest model changes and runs the solve.
   //

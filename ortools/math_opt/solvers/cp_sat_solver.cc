@@ -100,6 +100,9 @@ std::vector<std::string> SetSolveParameters(
     request.set_solver_time_limit_seconds(absl::ToDoubleSeconds(
         util_time::DecodeGoogleApiProto(parameters.time_limit()).value()));
   }
+  if (parameters.has_node_limit()) {
+    warnings.push_back("The node_limit parameter is not supported for CP-SAT.");
+  }
 
   // Build CP SAT parameters by first initializing them from the common
   // parameters, and then using the values in `solver_specific_parameters` to
@@ -120,12 +123,12 @@ std::vector<std::string> SetSolveParameters(
   if (parameters.has_threads()) {
     sat_parameters.set_num_search_workers(parameters.threads());
   }
-  if (parameters.has_relative_gap_limit()) {
-    sat_parameters.set_relative_gap_limit(parameters.relative_gap_limit());
+  if (parameters.has_relative_gap_tolerance()) {
+    sat_parameters.set_relative_gap_limit(parameters.relative_gap_tolerance());
   }
 
-  if (parameters.has_absolute_gap_limit()) {
-    sat_parameters.set_absolute_gap_limit(parameters.absolute_gap_limit());
+  if (parameters.has_absolute_gap_tolerance()) {
+    sat_parameters.set_absolute_gap_limit(parameters.absolute_gap_tolerance());
   }
   // cutoff_limit is handled outside this function as it modifies the model.
   if (parameters.has_best_bound_limit()) {
@@ -315,6 +318,7 @@ GetTerminationAndStats(const bool is_interrupted, const bool maximize,
   }
   return std::make_pair(std::move(solve_stats), std::move(termination));
 }
+
 }  // namespace
 
 absl::StatusOr<std::unique_ptr<SolverInterface>> CpSatSolver::New(
@@ -323,14 +327,18 @@ absl::StatusOr<std::unique_ptr<SolverInterface>> CpSatSolver::New(
                    MathOptModelToMPModelProto(model));
   std::vector variable_ids(model.variables().ids().begin(),
                            model.variables().ids().end());
+  std::vector linear_constraint_ids(model.linear_constraints().ids().begin(),
+                                    model.linear_constraints().ids().end());
   // TODO(b/204083726): Remove this check if QP support is added
   if (!model.objective().quadratic_coefficients().row_ids().empty()) {
     return absl::InvalidArgumentError(
         "MathOpt does not currently support CP-SAT models with quadratic "
         "objectives");
   }
-  return absl::WrapUnique(
-      new CpSatSolver(std::move(cp_sat_model), std::move(variable_ids)));
+  return absl::WrapUnique(new CpSatSolver(
+      std::move(cp_sat_model),
+      /*variable_ids=*/std::move(variable_ids),
+      /*linear_constraint_ids=*/std::move(linear_constraint_ids)));
 }
 
 absl::StatusOr<SolveResultProto> CpSatSolver::Solve(
@@ -435,6 +443,10 @@ absl::StatusOr<SolveResultProto> CpSatSolver::Solve(
       // supported by CP-SAT and we have validated they are empty.
     };
   }
+
+  // CP-SAT returns "infeasible" for inverted bounds.
+  RETURN_IF_ERROR(ListInvertedBounds().ToStatus());
+
   ASSIGN_OR_RETURN(const MPSolutionResponse response,
                    SatSolveProto(std::move(req), &interrupt_solve,
                                  logging_callback, solution_callback));
@@ -473,9 +485,11 @@ absl::Status CpSatSolver::Update(const ModelUpdateProto& model_update) {
 }
 
 CpSatSolver::CpSatSolver(MPModelProto cp_sat_model,
-                         std::vector<int64_t> variable_ids)
+                         std::vector<int64_t> variable_ids,
+                         std::vector<int64_t> linear_constraint_ids)
     : cp_sat_model_(std::move(cp_sat_model)),
-      variable_ids_(std::move(variable_ids)) {}
+      variable_ids_(std::move(variable_ids)),
+      linear_constraint_ids_(std::move(linear_constraint_ids)) {}
 
 SparseDoubleVectorProto CpSatSolver::ExtractSolution(
     const absl::Span<const double> cp_sat_variable_values,
@@ -496,6 +510,24 @@ SparseDoubleVectorProto CpSatSolver::ExtractSolution(
     }
   }
   return result;
+}
+
+InvertedBounds CpSatSolver::ListInvertedBounds() const {
+  InvertedBounds inverted_bounds;
+  for (int v = 0; v < cp_sat_model_.variable_size(); ++v) {
+    const MPVariableProto& var = cp_sat_model_.variable(v);
+    if (var.lower_bound() > var.upper_bound()) {
+      inverted_bounds.variables.push_back(variable_ids_[v]);
+    }
+  }
+  for (int c = 0; c < cp_sat_model_.constraint_size(); ++c) {
+    const MPConstraintProto& cstr = cp_sat_model_.constraint(c);
+    if (cstr.lower_bound() > cstr.upper_bound()) {
+      inverted_bounds.linear_constraints.push_back(linear_constraint_ids_[c]);
+    }
+  }
+
+  return inverted_bounds;
 }
 
 MATH_OPT_REGISTER_SOLVER(SOLVER_TYPE_CP_SAT, CpSatSolver::New);

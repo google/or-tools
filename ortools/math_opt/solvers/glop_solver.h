@@ -31,6 +31,7 @@
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/math_opt/callback.pb.h"
+#include "ortools/math_opt/core/inverted_bounds.h"
 #include "ortools/math_opt/core/solve_interrupter.h"
 #include "ortools/math_opt/core/solver_interface.h"
 #include "ortools/math_opt/model.pb.h"
@@ -81,6 +82,9 @@ class GlopSolver : public SolverInterface {
   void UpdateVariableBounds(const VariableUpdatesProto& variable_updates);
   void UpdateLinearConstraintBounds(
       const LinearConstraintUpdatesProto& linear_constraint_updates);
+
+  // Returns the ids of variables and linear constraints with inverted bounds.
+  InvertedBounds ListInvertedBounds() const;
 
   void FillSolution(glop::ProblemStatus status,
                     const ModelSolveParametersProto& model_parameters,

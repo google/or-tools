@@ -50,7 +50,6 @@ namespace {
 // at, see the table here:
 //   https://www.gurobi.com/documentation/9.1/refman/cb_codes.html
 constexpr int kNumGurobiEvents = 9;
-constexpr int kGrbOk = 0;
 constexpr double kInf = std::numeric_limits<double>::infinity();
 
 template <int where>

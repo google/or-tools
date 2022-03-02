@@ -21,7 +21,7 @@ message GurobiInitializerProto {
   message ISVKey {
     string name = 1;
     string application_name = 2;
-    int64 expiration = 3;
+    int32 expiration = 3;
     string key = 4;
   }
 

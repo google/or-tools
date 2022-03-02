@@ -122,8 +122,8 @@ absl::flat_hash_map<int64_t, double> SparseDoubleVectorAsMap(
 // order, does a linear scan from index scan_start to find the index of the
 // first entry with row >= row_id. Returns the size the tuple list if there is
 // no such entry.
-inline int FindRowStart(const SparseDoubleMatrixProto& matrix, const int row_id,
-                        const int scan_start) {
+inline int FindRowStart(const SparseDoubleMatrixProto& matrix,
+                        const int64_t row_id, const int scan_start) {
   int result = scan_start;
   while (result < matrix.row_ids_size() && matrix.row_ids(result) < row_id) {
     ++result;
@@ -178,11 +178,11 @@ class LinearConstraintIterator {
     result.name = SafeName(*linear_constraints_, current_con_);
     result.linear_constraint_id = SafeId(*linear_constraints_, current_con_);
 
-    const auto vars_begin = linear_constraint_matrix_->column_ids().begin();
+    const auto vars_begin = linear_constraint_matrix_->column_ids().data();
     result.variable_ids = absl::MakeConstSpan(vars_begin + matrix_start_,
                                               vars_begin + matrix_end_);
     const auto coefficients_begins =
-        linear_constraint_matrix_->coefficients().begin();
+        linear_constraint_matrix_->coefficients().data();
     result.coefficients = absl::MakeConstSpan(
         coefficients_begins + matrix_start_, coefficients_begins + matrix_end_);
     return result;
@@ -433,14 +433,18 @@ absl::StatusOr<GScipParameters> GScipSolver::MergeParameters(
     GScipSetMaxNumThreads(solve_parameters.threads(), &result);
   }
 
-  if (solve_parameters.has_relative_gap_limit()) {
+  if (solve_parameters.has_relative_gap_tolerance()) {
     (*result.mutable_real_params())["limits/gap"] =
-        solve_parameters.relative_gap_limit();
+        solve_parameters.relative_gap_tolerance();
   }
 
-  if (solve_parameters.has_absolute_gap_limit()) {
+  if (solve_parameters.has_absolute_gap_tolerance()) {
     (*result.mutable_real_params())["limits/absgap"] =
-        solve_parameters.absolute_gap_limit();
+        solve_parameters.absolute_gap_tolerance();
+  }
+  if (solve_parameters.has_node_limit()) {
+    (*result.mutable_long_params())["limits/totalnodes"] =
+        solve_parameters.node_limit();
   }
 
   if (solve_parameters.has_objective_limit()) {
@@ -688,13 +692,6 @@ absl::StatusOr<SolveResultProto> GScipSolver::CreateSolveResultProto(
     GScipResult gscip_result, const ModelSolveParametersProto& model_parameters,
     const std::optional<double> cutoff) {
   SolveResultProto solve_result;
-  ASSIGN_OR_RETURN(
-      *solve_result.mutable_termination(),
-      ConvertTerminationReason(
-          gscip_result.gscip_output.status(),
-          gscip_result.gscip_output.status_detail(),
-          /*has_feasible_solution=*/!gscip_result.solutions.empty(),
-          /*had_cutoff=*/cutoff.has_value()));
   const bool is_maximize = gscip_->ObjectiveIsMaximize();
   // When an objective limit is set, SCIP returns the solutions worse than the
   // limit, we need to filter these out manually.
@@ -740,6 +737,12 @@ absl::StatusOr<SolveResultProto> GScipSolver::CreateSolveResultProto(
                                model_parameters.variable_values_filter());
   }
   const bool has_feasible_solution = solve_result.solutions_size() > 0;
+  ASSIGN_OR_RETURN(
+      *solve_result.mutable_termination(),
+      ConvertTerminationReason(gscip_result.gscip_output.status(),
+                               gscip_result.gscip_output.status_detail(),
+                               /*has_feasible_solution=*/has_feasible_solution,
+                               /*had_cutoff=*/cutoff.has_value()));
   *solve_result.mutable_solve_stats()->mutable_problem_status() =
       GetProblemStatusProto(
           gscip_result.gscip_output.status(),
@@ -838,6 +841,9 @@ absl::StatusOr<SolveResultProto> GScipSolver::Solve(
   const auto interrupter_cleanup = absl::MakeCleanup(
       [&]() { interrupt_event_handler_.interrupter = nullptr; });
 
+  // SCIP returns "infeasible" when the model contain invalid bounds.
+  RETURN_IF_ERROR(ListInvertedBounds().ToStatus());
+
   ASSIGN_OR_RETURN(GScipResult gscip_result,
                    gscip_->Solve(gscip_parameters,
                                  /*legacy_params=*/"",
@@ -871,6 +877,28 @@ absl::flat_hash_set<SCIP_VAR*> GScipSolver::LookupAllVariables(
     result.insert(variables_.at(var_id));
   }
   return result;
+}
+
+// Returns the ids of variables and linear constraints with inverted bounds.
+InvertedBounds GScipSolver::ListInvertedBounds() const {
+  // Get the SCIP variables/constraints with inverted bounds.
+  InvertedBounds inverted_bounds;
+  for (const auto& [id, var] : variables_) {
+    if (gscip_->Lb(var) > gscip_->Ub(var)) {
+      inverted_bounds.variables.push_back(id);
+    }
+  }
+  for (const auto& [id, cstr] : linear_constraints_) {
+    if (gscip_->LinearConstraintLb(cstr) > gscip_->LinearConstraintUb(cstr)) {
+      inverted_bounds.linear_constraints.push_back(id);
+    }
+  }
+
+  // Above code have inserted ids in non-stable order.
+  std::sort(inverted_bounds.variables.begin(), inverted_bounds.variables.end());
+  std::sort(inverted_bounds.linear_constraints.begin(),
+            inverted_bounds.linear_constraints.end());
+  return inverted_bounds;
 }
 
 bool GScipSolver::CanUpdate(const ModelUpdateProto& model_update) {

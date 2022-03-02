@@ -25,6 +25,7 @@
 #include "absl/types/span.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/math_opt/callback.pb.h"
+#include "ortools/math_opt/core/inverted_bounds.h"
 #include "ortools/math_opt/core/solve_interrupter.h"
 #include "ortools/math_opt/core/solver_interface.h"
 #include "ortools/math_opt/model.pb.h"
@@ -52,18 +53,27 @@ class CpSatSolver : public SolverInterface {
   bool CanUpdate(const ModelUpdateProto& model_update) override;
 
  private:
-  CpSatSolver(MPModelProto cp_sat_model, std::vector<int64_t> variable_ids);
+  CpSatSolver(MPModelProto cp_sat_model, std::vector<int64_t> variable_ids,
+              std::vector<int64_t> linear_constraint_ids);
 
   // Extract the solution from CP-SAT's response.
   SparseDoubleVectorProto ExtractSolution(
       absl::Span<const double> cp_sat_variable_values,
       const ModelSolveParametersProto& model_parameters) const;
 
+  // Returns the ids of variables and linear constraints with inverted bounds.
+  InvertedBounds ListInvertedBounds() const;
+
   const MPModelProto cp_sat_model_;
 
   // For the i-th variable in `cp_sat_model_`, `variable_ids_[i]` contains the
   // corresponding id in the input `Model`.
   const std::vector<int64_t> variable_ids_;
+
+  // For the i-th linear constraint in `cp_sat_model_`,
+  // `linear_constraint_ids_[i]` contains the corresponding id in the input
+  // `Model`.
+  const std::vector<int64_t> linear_constraint_ids_;
 };
 
 }  // namespace math_opt

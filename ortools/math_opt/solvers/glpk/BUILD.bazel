@@ -1,0 +1,18 @@
+# Code specific to GLPK used in glpk_solver.cc.
+package(default_visibility = ["//ortools/math_opt/solvers:__subpackages__"])
+
+cc_library(
+    name = "rays",
+    srcs = ["rays.cc"],
+    hdrs = ["rays.h"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:status_macros",
+        "//ortools/glpk:glpk_computational_form",
+        "//ortools/glpk:glpk_formatters",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@glpk",
+    ],
+)

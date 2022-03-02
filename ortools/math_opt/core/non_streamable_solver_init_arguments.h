@@ -21,12 +21,12 @@
 namespace operations_research {
 namespace math_opt {
 
-struct NonStreamableBiscoInitArguments;
 struct NonStreamableCpSatInitArguments;
 struct NonStreamableGScipInitArguments;
 struct NonStreamableGlopInitArguments;
 struct NonStreamableGlpkInitArguments;
 struct NonStreamableGurobiInitArguments;
+struct NonStreamablePdlpInitArguments;
 
 // Interface for solver specific parameters used at the solver instantiation
 // that can't be streamed (for example instances of C/C++ types that only exist
@@ -50,13 +50,6 @@ struct NonStreamableSolverInitArguments {
 
   // Returns the type of solver that the implementation is for.
   virtual SolverTypeProto solver_type() const = 0;
-
-  // Returns this for the NonStreamableBiscoInitArguments class, nullptr for
-  // other classes.
-  virtual const NonStreamableBiscoInitArguments*
-  ToNonStreamableBiscoInitArguments() const {
-    return nullptr;
-  }
 
   // Returns this for the NonStreamableCpSatInitArguments class, nullptr for
   // other classes.
@@ -90,6 +83,13 @@ struct NonStreamableSolverInitArguments {
   // other classes.
   virtual const NonStreamableGurobiInitArguments*
   ToNonStreamableGurobiInitArguments() const {
+    return nullptr;
+  }
+
+  // Returns this for the NonStreamablePdlpInitArguments class, nullptr for
+  // other classes.
+  virtual const NonStreamablePdlpInitArguments*
+  ToNonStreamablePdlpInitArguments() const {
     return nullptr;
   }
 
