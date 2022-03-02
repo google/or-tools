@@ -36,7 +36,7 @@ make alpine-edge_test
 
 ## Docker layers
 
-Dockerfile is splitted in several stages.
+Dockerfile is split in several stages.
 
 ![docker](doc/deps.svg)
 

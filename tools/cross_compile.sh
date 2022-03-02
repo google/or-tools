@@ -22,7 +22,7 @@ function unpack() {
   if [[  ! -d "${DESTINATION}" ]] ; then
     echo "Downloading ${URL}..."
     local -r ARCHIVE_NAME=$(basename "${URL}")
-    test -f "${ARCHIVE_NAME}" || wget --no-verbose "${URL}"
+    [[ -f "${ARCHIVE_NAME}" ]] || wget --no-verbose "${URL}"
     extract "${ARCHIVE_NAME}"
     rm -f "${ARCHIVE_NAME}"
   fi

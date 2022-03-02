@@ -149,7 +149,7 @@ $$(TEMP_ARCHIVE_DIR)/$$(INSTALL_DIR)/examples/dotnet/%/plop: \
  $$(TEMP_ARCHIVE_DIR)$$S$$(INSTALL_DIR)$$Sexamples$$Sdotnet$$S$$*
 	$$(COPY) $$(TEMP_DOTNET_DIR)$$S$1$$S$$*$$S$$*.csproj \
  $$(TEMP_ARCHIVE_DIR)$$S$$(INSTALL_DIR)$$Sexamples$$Sdotnet$$S$$*
-		-$$(SED) -i -e 's/$$(BUILD_DIR)\/dotnet\///' \
+	-$$(SED) -i -e 's/$$(BUILD_DIR)\/dotnet\///' \
  $$(TEMP_ARCHIVE_DIR)$$S$$(INSTALL_DIR)$$Sexamples$$Sdotnet$$S$$*$$S$$*.csproj
 endef
 

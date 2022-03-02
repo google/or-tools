@@ -134,11 +134,14 @@ All CMake options are passed at configure time, i.e., by running <br>
 `cmake -S. -B<your_chosen_build_directory>  -DOPTION_ONE=ON -DOPTION_TWO=OFF ...` <br>
 before running `cmake --build <your_chosen_build_directory>`<br>
 
-For example, to generate build files including dependencies in a new subdirectory called 'build', run:
+For example, to generate build files including dependencies in a new
+subdirectory called 'build', run:
+
 ```sh
-cmake -S. -Bbuild  -DBUILD_DEPS:BOOL=ON
+cmake -S. -Bbuild -DBUILD_DEPS:BOOL=ON
 ```
 and then build with:
+
 ```sh
 cmake --build build
 ```
@@ -150,7 +153,7 @@ cmake -S. -Bbuild -LH
 ```
 
 | CMake Option | Default Value | Note |
-|-|-|-|
+|:-------------|:--------------|:-----|
 | `CMAKE_BUILD_TYPE` | Release | see CMake documentation [here](https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html) |
 | `BUILD_CXX` | ON | Build C++ |
 | `BUILD_PYTHON` | OFF | Build Python wrapper and package |

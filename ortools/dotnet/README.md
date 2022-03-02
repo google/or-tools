@@ -32,14 +32,14 @@ The library is compiled against `netstandard2.0`, so you'll only need:
 ## Directory Layout
 
 * [`Google.OrTools.runtime.linux-x64`](Google.OrTools.runtime.linux-x64)
-Contains the .Net Standard 2.0 native project for the rid linux-x64.
+  Contains the .Net Standard 2.0 native project for the rid linux-x64.
 * [`Google.OrTools.runtime.osx-x64`](Google.OrTools.runtime.osx-x64)
-Contains the .Net Standard 2.0 native project for the rid osx-x64.
+  Contains the .Net Standard 2.0 native project for the rid osx-x64.
 * [`Google.OrTools.runtime.win-x64`](Google.OrTools.runtime.win-x64)
-Contains the .Net Standard 2.0 native project for the rid win-x64.
+  Contains the .Net Standard 2.0 native project for the rid win-x64.
 * [`Google.OrTools`](Google.OrTools) Is the .Net Standard 2.0 meta-package which
-should depends on all previous available packages and contains the Reference
-Assembly.
+  should depends on all previous available packages and contains the Reference
+  Assembly.
 
 note: While Microsoft use `runtime-<rid>.Company.Project` for native libraries
 naming, it is very difficult to get ownership on it, so you should prefer to use
