@@ -110,7 +110,7 @@ ifeq ($(PLATFORM),LINUX)
   JNI_LIB_EXT = so
 
   LINK_CMD = $(DYNAMIC_LD)
-  PRE_LIB = -L$(OR_ROOT_FULL)/lib -l
+  PRE_LIB = -L$(OR_ROOT_FULL)/lib64 -L$(OR_ROOT_FULL)/lib -l
   POST_LIB =
   LINK_FLAGS = \
  -Wl,-rpath,'$$ORIGIN' \
