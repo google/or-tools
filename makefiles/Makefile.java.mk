@@ -446,7 +446,7 @@ java_examples_archive: \
  $(EXAMPLE_JAVA_FILES) \
  | $(TEMP_JAVA_DIR)/ortools_examples/examples/java
 	$(COPY) tools$SREADME.java.md $(TEMP_JAVA_DIR)$Sortools_examples$SREADME.md
-	$(COPY) LICENSE-2.0.txt $(TEMP_JAVA_DIR)$Sortools_examples
+	$(COPY) LICENSE $(TEMP_JAVA_DIR)$Sortools_examples
 ifeq ($(SYSTEM),win)
 	cd $(TEMP_JAVA_DIR) \
  && ..\$(ZIP) \

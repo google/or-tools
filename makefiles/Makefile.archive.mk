@@ -238,7 +238,7 @@ $(DATA_INSTALL_DIR)$(ARCHIVE_EXT):
 	-$(MKDIR) $(TEMP_DATA_DIR)$S$(DATA_INSTALL_DIR)$Sexamples$Sdata$Squasigroup_completion
 	-$(MKDIR) $(TEMP_DATA_DIR)$S$(DATA_INSTALL_DIR)$Sexamples$Sdata$Sdiscrete_tomography
 #credits
-	$(COPY) LICENSE-2.0.txt $(TEMP_DATA_DIR)$S$(DATA_INSTALL_DIR)
+	$(COPY) LICENSE $(TEMP_DATA_DIR)$S$(DATA_INSTALL_DIR)
 	$(TAR) -c -v \
 --exclude *svn* \
 --exclude *roadef* \

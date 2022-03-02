@@ -488,7 +488,7 @@ install_dirs:
 # Install C++ OR-Tools to $(DESTDIR)$(prefix)
 .PHONY: install_cc
 install_cc: | install_dirs
-	$(COPY) LICENSE-2.0.txt "$(DESTDIR)$(prefix)"
+	$(COPY) LICENSE "$(DESTDIR)$(prefix)"
 ifeq ($(SYSTEM),win)
 	$(COPYREC) /E /Y include "$(DESTDIR)$(prefix)"
 	$(COPY) "$(LIB_DIR)$S$(LIB_PREFIX)ortools.$L*" "$(DESTDIR)$(prefix)$Slib"
@@ -534,7 +534,7 @@ cc_examples_archive: | \
 	$(COPY) ortools$Sconstraint_solver$Ssamples$S*.cc $(TEMP_CC_DIR)$Sortools_examples$Sexamples$Scpp
 	$(COPY) ortools$Ssat$Ssamples$S*.cc $(TEMP_CC_DIR)$Sortools_examples$Sexamples$Scpp
 	$(COPY) tools$SREADME.cpp.md $(TEMP_CC_DIR)$Sortools_examples$SREADME.md
-	$(COPY) LICENSE-2.0.txt $(TEMP_CC_DIR)$Sortools_examples
+	$(COPY) LICENSE $(TEMP_CC_DIR)$Sortools_examples
 ifeq ($(SYSTEM),win)
 	cd $(TEMP_CC_DIR)\ortools_examples \
  && ..\..\$(TAR) -C ..\.. -c -v \
