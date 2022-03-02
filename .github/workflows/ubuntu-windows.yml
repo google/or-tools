@@ -391,6 +391,7 @@ jobs:
           MY_DIR="ortools_dotnet${{ steps.names.outputs.appendix }}"
           mkdir ${MY_DIR}
           cp Google.OrTools.[0-9]*.[0-9]*.[0-9]*.nupkg "${MY_DIR}"
+          cp Google.OrTools.runtime.*.[0-9]*.[0-9]*.[0-9]*.nupkg "${MY_DIR}"
           ARCHIVE_NAME="${MY_DIR}.zip"
           ARCHIVE_PATH="${{ github.workspace }}/build/${ARCHIVE_NAME}"
           zip -r "${ARCHIVE_PATH}" "${MY_DIR}"
