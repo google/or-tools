@@ -10,7 +10,7 @@ WORKDIR /home/project
 COPY . .
 
 FROM devel AS build
-RUN make third_party
+RUN make third_party BUILD_DOTNET=OFF BUILD_JAVA=ON BUILD_PYTHON=OFF
 RUN make java
 
 FROM build AS test
