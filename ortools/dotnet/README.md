@@ -89,8 +89,8 @@ Let's start with scenario 1: Create a *Local* `Google.OrTools` package targeting
 on one `Google.OrTools.runtime.{rid}.nupkg` in order to work locally.
 
 The pipeline for `linux-x64` should be as follow:
-![Local Pipeline](doc/local_pipeline.svg)
-![Legend](doc/legend.svg)
+![Local Pipeline](docs/local_pipeline.svg)
+![Legend](docs/legend.svg)
 note: The pipeline will be similar for `osx-x64` and `win-x64` architecture,
 don't hesitate to look at the CI log.
 
@@ -218,8 +218,8 @@ targeting multiple
 The pipeline should be as follow: \
 note: This pipeline should be run on any architecture, provided you have
 generated the three architecture dependent `Google.OrTools.runtime.{rid}.nupkg`
-nuget packages. ![Full Pipeline](doc/full_pipeline.svg)
-![Legend](doc/legend.svg)
+nuget packages. ![Full Pipeline](docs/full_pipeline.svg)
+![Legend](docs/legend.svg)
 
 #### Building All runtime Google.OrTools Package
 
@@ -290,7 +290,7 @@ Some issue related to this process
 
 Image has been generated using [plantuml](http://plantuml.com/):
 ```bash
-plantuml -Tpng doc/{file}.dot
+plantuml -Tpng docs/{file}.dot
 ```
 
 So you can find the dot source files in [doc](doc).

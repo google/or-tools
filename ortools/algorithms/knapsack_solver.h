@@ -332,7 +332,7 @@ typedef KnapsackItem* KnapsackItemPtr;
 // KnapsackSearchNode is a class used to describe a decision in the decision
 // search tree.
 // The node is defined by a pointer to the parent search node and an
-// assignment (see KnapsackAssignement).
+// assignment (see KnapsackAssignment).
 // As the current state is not explicitly stored in a search node, one should
 // go through the search tree to incrementally build a partial solution from
 // a previous search node.

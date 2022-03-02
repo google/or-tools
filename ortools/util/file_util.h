@@ -45,8 +45,7 @@ Proto ReadFileToProtoOrDie(absl::string_view filename) {
 }
 
 // Specifies how the proto should be formatted when writing it to a file.
-// kCanonicalJson applies Proto3 to JSON encoding conventions and converts field
-// names to lower camel-case.
+// kCanonicalJson converts field names to lower camel-case.
 enum class ProtoWriteFormat { kProtoText, kProtoBinary, kJson, kCanonicalJson };
 
 // Writes a proto to a file. Supports the following formats: binary, text, JSON,

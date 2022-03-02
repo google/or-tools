@@ -58,4 +58,4 @@ Holds the solution of a Routing problem.
 ## Recipes
 
 You can find a set of code recipes in
-[the documentation directory](doc/README.md).
+[the documentation directory](docs/README.md).
