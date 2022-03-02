@@ -107,6 +107,12 @@ MPSolver::ResultStatus PdlpInterface::Solve(const MPSolverParameters& param) {
   ExtractModel();
 
   SetParameters(param);
+  if (quiet_) {
+    parameters_.set_verbosity_level(0);
+  } else {
+    parameters_.set_verbosity_level(3);
+  }
+
   solver_->SetSolverSpecificParametersAsString(
       solver_->solver_specific_parameter_string_);
 
@@ -116,8 +122,6 @@ MPSolver::ResultStatus PdlpInterface::Solve(const MPSolverParameters& param) {
     parameters_.mutable_termination_criteria()->set_time_sec_limit(
         static_cast<double>(solver_->time_limit()) / 1000.0);
   }
-
-  // TODO(user): Adjust logging level based on quiet_.
 
   // Mark variables and constraints as extracted.
   for (int i = 0; i < solver_->variables_.size(); ++i) {
@@ -166,12 +170,8 @@ MPSolver::ResultStatus PdlpInterface::Solve(const MPSolverParameters& param) {
 
 absl::optional<MPSolutionResponse> PdlpInterface::DirectlySolveProto(
     const MPModelRequest& request, std::atomic<bool>* interrupt) {
-  if (interrupt != nullptr) {
-    return absl::nullopt;
-  }
-
   absl::StatusOr<MPSolutionResponse> response =
-      PdlpSolveProto(request, /*relax_integer_variables=*/true);
+      PdlpSolveProto(request, /*relax_integer_variables=*/true, interrupt);
 
   if (!response.ok()) {
     LOG(ERROR) << "Unexpected error solving with PDLP: " << response.status();

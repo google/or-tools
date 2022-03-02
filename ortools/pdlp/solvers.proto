@@ -210,6 +210,19 @@ message PrimalDualHybridGradientParams {
   // increase the size of the output.
   optional bool record_iteration_stats = 3;
 
+  // The verbosity of logging.
+  // 0: No informational logging. (Errors are logged.)
+  // 1: Summary statistics only. No iteration-level details.
+  // 2: A table of iteration-level statistics is logged.
+  //    (See ToShortString() in primal_dual_hybrid_gradient.cc).
+  // 3: A more detailed table of iteration-level statistics is logged.
+  //    (See ToString() in primal_dual_hybrid_gradient.cc).
+  // 4: For iteration-level details, prints the statistics of both the average
+  //    (prefixed with A) and the current iterate (prefixed with C). Also prints
+  //    internal algorithmic state and details.
+  // Logging at levels 2-4 also includes messages from level 1.
+  optional int32 verbosity_level = 26 [default = 0];
+
   // The frequency at which extra work is performed to make major algorithmic
   // decisions, e.g., performing restarts and updating the primal weight. Major
   // iterations also trigger a termination check. For best performance using

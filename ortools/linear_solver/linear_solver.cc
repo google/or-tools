@@ -369,8 +369,8 @@ extern MPSolverInterface* BuildGLPKInterface(bool mip, MPSolver* const solver);
 #endif
 extern MPSolverInterface* BuildBopInterface(MPSolver* const solver);
 extern MPSolverInterface* BuildGLOPInterface(MPSolver* const solver);
-extern MPSolverInterface* BuildSatInterface(MPSolver* const solver);
 extern MPSolverInterface* BuildPdlpInterface(MPSolver* const solver);
+extern MPSolverInterface* BuildSatInterface(MPSolver* const solver);
 #if defined(USE_SCIP)
 extern MPSolverInterface* BuildSCIPInterface(MPSolver* const solver);
 #endif
@@ -378,8 +378,6 @@ extern MPSolverInterface* BuildGurobiInterface(bool mip,
                                                MPSolver* const solver);
 #if defined(USE_CPLEX)
 extern MPSolverInterface* BuildCplexInterface(bool mip, MPSolver* const solver);
-
-extern MPSolverInterface* BuildGLOPInterface(MPSolver* const solver);
 #endif
 #if defined(USE_XPRESS)
 extern MPSolverInterface* BuildXpressInterface(bool mip,
@@ -392,12 +390,12 @@ MPSolverInterface* BuildSolverInterface(MPSolver* const solver) {
   switch (solver->ProblemType()) {
     case MPSolver::BOP_INTEGER_PROGRAMMING:
       return BuildBopInterface(solver);
-    case MPSolver::SAT_INTEGER_PROGRAMMING:
-      return BuildSatInterface(solver);
     case MPSolver::GLOP_LINEAR_PROGRAMMING:
       return BuildGLOPInterface(solver);
     case MPSolver::PDLP_LINEAR_PROGRAMMING:
       return BuildPdlpInterface(solver);
+    case MPSolver::SAT_INTEGER_PROGRAMMING:
+      return BuildSatInterface(solver);
 #if defined(USE_GLPK)
     case MPSolver::GLPK_LINEAR_PROGRAMMING:
       return BuildGLPKInterface(false, solver);

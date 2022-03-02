@@ -87,6 +87,9 @@ absl::Status ValidatePrimalDualHybridGradientParams(
   if (params.num_threads() <= 0) {
     return InvalidArgumentError("num_threads must be positive");
   }
+  if (params.verbosity_level() < 0) {
+    return InvalidArgumentError("verbosity_level must be non-negative");
+  }
   if (params.major_iteration_frequency() <= 0) {
     return InvalidArgumentError("major_iteration_frequency must be positive");
   }

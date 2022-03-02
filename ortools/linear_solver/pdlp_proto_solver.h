@@ -14,22 +14,31 @@
 #ifndef OR_TOOLS_LINEAR_SOLVER_PDLP_PROTO_SOLVER_H_
 #define OR_TOOLS_LINEAR_SOLVER_PDLP_PROTO_SOLVER_H_
 
+#include <atomic>
+
 #include "absl/status/statusor.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 
 namespace operations_research {
 
 // Uses pdlp::PrimalDualHybridGradient to solve the problem specified by the
-// MPModelRequest. If relax_integer_variables is true, integrality constraints
-// are relaxed before solving. If false, integrality constraints result in an
-// error. The solver_specific_info field in the MPSolutionResponse contains a
-// serialized SolveLog. Users of this interface should be aware of the size
-// limitations of MPModelProto (see, e.g., large_linear_program.proto). Returns
-// an error if the conversion from MPModelProto to pdlp::QuadraticProgram fails.
-// The lack of an error does not imply success. Check the SolveLog's
-// termination_reason for more refined status details.
+// MPModelRequest. Users of this interface should be aware of the size
+// limitations of MPModelProto (see, e.g., large_linear_program.proto).
+//
+// The optional interrupt_solve can be used to interrupt the solve early. The
+// solver will periodically check its value and stop if it holds true.
+//
+// If relax_integer_variables is true, integrality constraints are relaxed
+// before solving. If false, integrality constraints result in an error. The
+// solver_specific_info field in the MPSolutionResponse contains a serialized
+// SolveLog.
+//
+// Returns an error if the conversion from MPModelProto to
+// pdlp::QuadraticProgram fails. The lack of an error does not imply success.
+// Check the SolveLog's termination_reason for more refined status details.
 absl::StatusOr<MPSolutionResponse> PdlpSolveProto(
-    const MPModelRequest& request, bool relax_integer_variables = false);
+    const MPModelRequest& request, bool relax_integer_variables = false,
+    const std::atomic<bool>* interrupt_solve = nullptr);
 
 }  // namespace operations_research
 

@@ -13,6 +13,7 @@
 
 #include "ortools/linear_solver/pdlp_proto_solver.h"
 
+#include <atomic>
 #include <optional>
 #include <string>
 #include <utility>
@@ -33,8 +34,14 @@
 namespace operations_research {
 
 absl::StatusOr<MPSolutionResponse> PdlpSolveProto(
-    const MPModelRequest& request, const bool relax_integer_variables) {
+    const MPModelRequest& request, const bool relax_integer_variables,
+    const std::atomic<bool>* interrupt_solve) {
   pdlp::PrimalDualHybridGradientParams params;
+  if (request.enable_internal_solver_output()) {
+    params.set_verbosity_level(3);
+  } else {
+    params.set_verbosity_level(0);
+  }
 
   MPSolutionResponse error_response;
   if (!ProtobufTextFormatMergeFromString(request.solver_specific_parameters(),
@@ -43,11 +50,14 @@ absl::StatusOr<MPSolutionResponse> PdlpSolveProto(
         MPSolverResponseStatus::MPSOLVER_MODEL_INVALID_SOLVER_PARAMETERS);
     return error_response;
   }
+  if (interrupt_solve != nullptr && interrupt_solve->load() == true) {
+    error_response.set_status(MPSolverResponseStatus::MPSOLVER_NOT_SOLVED);
+    return error_response;
+  }
   if (request.has_solver_time_limit_seconds()) {
     params.mutable_termination_criteria()->set_time_sec_limit(
         request.solver_time_limit_seconds());
   }
-  // TODO(user): Adjust logging level based on enable_internal_solver_output.
 
   const absl::optional<LazyMutableCopy<MPModelProto>> optional_model =
       ExtractValidMPModelOrPopulateResponseStatus(request, &error_response);
@@ -66,7 +76,7 @@ absl::StatusOr<MPSolutionResponse> PdlpSolveProto(
   const double objective_scaling_factor = qp.objective_scaling_factor;
 
   pdlp::SolverResult pdhg_result =
-      pdlp::PrimalDualHybridGradient(std::move(qp), params);
+      pdlp::PrimalDualHybridGradient(std::move(qp), params, interrupt_solve);
 
   // PDLP's statuses don't map very cleanly to MPSolver statuses. Do the best
   // we can for now.
@@ -80,6 +90,9 @@ absl::StatusOr<MPSolutionResponse> PdlpSolveProto(
       break;
     case pdlp::TERMINATION_REASON_PRIMAL_INFEASIBLE:
       response.set_status(MPSOLVER_INFEASIBLE);
+      break;
+    case pdlp::TERMINATION_REASON_INTERRUPTED_BY_USER:
+      response.set_status(MPSOLVER_CANCELLED_BY_USER);
       break;
     default:
       response.set_status(MPSOLVER_NOT_SOLVED);

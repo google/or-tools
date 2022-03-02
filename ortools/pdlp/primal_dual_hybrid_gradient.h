@@ -14,6 +14,7 @@
 #ifndef PDLP_PRIMAL_DUAL_HYBRID_GRADIENT_H_
 #define PDLP_PRIMAL_DUAL_HYBRID_GRADIENT_H_
 
+#include <atomic>
 #include <functional>
 
 #include "Eigen/Core"
@@ -50,10 +51,10 @@ struct PrimalAndDualSolution {
 //   infeasible but no certificate of infeasibility is available. The
 //   primal_solution and dual_solution have no meaning. This status is only used
 //   when presolve is enabled.
-// * TIME_LIMIT, ITERATION_LIMIT, KKT_MATRIX_PASS_LIMIT, NUMERICAL_ERROR:
-//   the vectors contain an iterate at the time that the respective event
-//   occurred.  Their values may or may not be meaningful. In some cases
-//   solution quality information is available; see documentation for
+// * TIME_LIMIT, ITERATION_LIMIT, KKT_MATRIX_PASS_LIMIT, NUMERICAL_ERROR,
+//   INTERRUPTED_BY_USER: the vectors contain an iterate at the time that the
+//   respective event occurred.  Their values may or may not be meaningful. In
+//   some cases solution quality information is available; see documentation for
 //   solve_log.solution_type.
 // * INVALID_PROBLEM, INVALID_PARAMETER, OTHER: the solution vectors are
 //   meaningless and may not have lengths consistent with the input problem.
@@ -100,8 +101,12 @@ struct IterationCallbackInfo {
 // and params.primal_weight_update_smoothing controls how primal_weight is
 // updated.
 //
+// If interrupt_solve is not nullptr, then the solver will periodically check if
+// interrupt_solve->load() is true, in which case the solve will terminate with
+// TERMINATION_REASON_INTERRUPTED_BY_USER.
+//
 // If iteration_stats_callback is not nullptr, then at each termination step
-// (when iteration stats are VLOG(2)ed), iteration_stats_callback will also
+// (when iteration stats are logged), iteration_stats_callback will also
 // be called with those iteration stats.
 //
 // Callers MUST check solve_log.termination_reason before using the vectors in
@@ -115,6 +120,7 @@ struct IterationCallbackInfo {
 // modifies its copy.
 SolverResult PrimalDualHybridGradient(
     QuadraticProgram qp, const PrimalDualHybridGradientParams& params,
+    const std::atomic<bool>* interrupt_solve = nullptr,
     std::function<void(const IterationCallbackInfo&)> iteration_stats_callback =
         nullptr);
 
@@ -126,6 +132,7 @@ SolverResult PrimalDualHybridGradient(
 SolverResult PrimalDualHybridGradient(
     QuadraticProgram qp, const PrimalDualHybridGradientParams& params,
     absl::optional<PrimalAndDualSolution> initial_solution,
+    const std::atomic<bool>* interrupt_solve = nullptr,
     std::function<void(const IterationCallbackInfo&)> iteration_stats_callback =
         nullptr);
 

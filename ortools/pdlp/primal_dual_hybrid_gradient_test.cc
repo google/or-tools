@@ -14,6 +14,7 @@
 #include "ortools/pdlp/primal_dual_hybrid_gradient.h"
 
 #include <algorithm>
+#include <atomic>
 #include <cmath>
 #include <cstdint>
 #include <limits>
@@ -1016,7 +1017,7 @@ TEST(PrimalDualHybridGradientTest, CallsCallback) {
 
   int callback_count = 0;
   SolverResult output = PrimalDualHybridGradient(
-      TestLp(), params,
+      TestLp(), params, /*interrupt_solve=*/nullptr,
       [&callback_count](const IterationCallbackInfo& callback_info) {
         ++callback_count;
       });
@@ -1080,6 +1081,53 @@ TEST(PrimalDualHybridGradientTest, EmptyQp) {
   EXPECT_THAT(output.dual_solution, ElementsAre());
   EXPECT_EQ(output.solve_log.iteration_count(), 0);
   EXPECT_EQ(output.solve_log.termination_reason(), TERMINATION_REASON_OPTIMAL);
+}
+
+TEST(PrimalDualHybridGradientTest, RespectsInterrupt) {
+  std::atomic<bool> interrupt_solve;
+  PrimalDualHybridGradientParams params;
+  params.mutable_termination_criteria()->set_eps_optimal_absolute(0.0);
+  params.mutable_termination_criteria()->set_eps_optimal_relative(0.0);
+
+  interrupt_solve.store(true);
+  const SolverResult output =
+      PrimalDualHybridGradient(TestLp(), params, &interrupt_solve);
+  EXPECT_EQ(output.solve_log.termination_reason(),
+            TERMINATION_REASON_INTERRUPTED_BY_USER);
+}
+
+TEST(PrimalDualHybridGradientTest, RespectsInterruptFromCallback) {
+  std::atomic<bool> interrupt_solve;
+  PrimalDualHybridGradientParams params;
+  params.mutable_termination_criteria()->set_eps_optimal_absolute(0.0);
+  params.mutable_termination_criteria()->set_eps_optimal_relative(0.0);
+
+  interrupt_solve.store(false);
+  auto callback = [&](const IterationCallbackInfo& info) {
+    if (info.iteration_stats.iteration_number() >= 10) {
+      interrupt_solve.store(true);
+    }
+  };
+
+  const SolverResult output =
+      PrimalDualHybridGradient(TestLp(), params, &interrupt_solve, callback);
+  EXPECT_EQ(output.solve_log.termination_reason(),
+            TERMINATION_REASON_INTERRUPTED_BY_USER);
+  EXPECT_GE(output.solve_log.iteration_count(), 10);
+}
+
+TEST(PrimalDualHybridGradientTest, IgnoresFalseInterrupt) {
+  std::atomic<bool> interrupt_solve;
+  PrimalDualHybridGradientParams params;
+  params.mutable_termination_criteria()->set_eps_optimal_absolute(0.0);
+  params.mutable_termination_criteria()->set_eps_optimal_relative(0.0);
+  params.mutable_termination_criteria()->set_kkt_matrix_pass_limit(1);
+
+  interrupt_solve.store(false);
+  const SolverResult output =
+      PrimalDualHybridGradient(TestLp(), params, &interrupt_solve);
+  EXPECT_EQ(output.solve_log.termination_reason(),
+            TERMINATION_REASON_KKT_MATRIX_PASS_LIMIT);
 }
 
 // Verifies that the primal and dual solution satisfy the bounds constraints.

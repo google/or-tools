@@ -179,6 +179,14 @@ TEST(ValidatePrimalDualHybridGradientParams, BadNumThreads) {
   EXPECT_THAT(status.message(), HasSubstr("num_threads"));
 }
 
+TEST(ValidatePrimalDualHybridGradientParams, BadVerbosityLevel) {
+  PrimalDualHybridGradientParams params;
+  params.set_verbosity_level(-1);
+  const absl::Status status = ValidatePrimalDualHybridGradientParams(params);
+  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status.message(), HasSubstr("verbosity_level"));
+}
+
 TEST(ValidatePrimalDualHybridGradientParams, BadMajorIterationFrequency) {
   PrimalDualHybridGradientParams params;
   params.set_major_iteration_frequency(0);

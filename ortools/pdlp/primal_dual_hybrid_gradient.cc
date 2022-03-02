@@ -237,6 +237,7 @@ class Solver {
 
   // Zero is used if initial_solution is nullopt.
   SolverResult Solve(absl::optional<PrimalAndDualSolution> initial_solution,
+                     const std::atomic<bool>* interrupt_solve,
                      IterationStatsCallback iteration_stats_callback);
 
  private:
@@ -809,8 +810,9 @@ double Solver::ComputeNewPrimalWeight() const {
   const double new_primal_weight =
       std::exp(smoothing_param * std::log(unsmoothed_new_primal_weight) +
                (1.0 - smoothing_param) * std::log(primal_weight_));
-  VLOG(4) << "New computed primal weight is " << new_primal_weight
-          << " at iteration " << iterations_completed_;
+  LOG_IF(INFO, params_.verbosity_level() >= 4)
+      << "New computed primal weight is " << new_primal_weight
+      << " at iteration " << iterations_completed_;
   return new_primal_weight;
 }
 
@@ -879,13 +881,15 @@ SolverResult Solver::ConstructSolverResult(VectorXd primal_solution,
          .bound_norms = original_bound_norms_});
   }
 
-  VLOG(1) << "Termination reason: "
-          << TerminationReason_Name(termination_reason);
-  VLOG(1) << "Solution point type: " << PointType_Name(output_type);
-  VLOG(1) << "Final solution stats:";
-  VLOG(1) << IterationStatsLabelString();
-  VLOG(1) << ToString(stats, params_.termination_criteria(),
-                      original_bound_norms_, solve_log.solution_type());
+  if (params_.verbosity_level() >= 1) {
+    LOG(INFO) << "Termination reason: "
+              << TerminationReason_Name(termination_reason);
+    LOG(INFO) << "Solution point type: " << PointType_Name(output_type);
+    LOG(INFO) << "Final solution stats:";
+    LOG(INFO) << IterationStatsLabelString();
+    LOG(INFO) << ToString(stats, params_.termination_criteria(),
+                          original_bound_norms_, solve_log.solution_type());
+  }
   solve_log.set_iteration_count(stats.iteration_number());
   solve_log.set_termination_reason(termination_reason);
   solve_log.set_solve_time_sec(stats.cumulative_time_sec());
@@ -1071,7 +1075,7 @@ Solver::UpdateIterationStatsAndCheckTermination(
   }
   constexpr int kLogEvery = 15;
   static std::atomic_int log_counter{0};
-  if (VLOG_IS_ON(4)) {
+  if (params_.verbosity_level() >= 4) {
     if (log_counter == 0) {
       LogInfoWithoutPrefix(absl::StrCat("I ", IterationStatsLabelString()));
     }
@@ -1081,14 +1085,14 @@ Solver::UpdateIterationStatsAndCheckTermination(
     LogInfoWithoutPrefix(absl::StrCat(
         "C ", ToString(stats, params_.termination_criteria(),
                        original_bound_norms_, POINT_TYPE_CURRENT_ITERATE)));
-  } else if (VLOG_IS_ON(3)) {
+  } else if (params_.verbosity_level() >= 3) {
     if (log_counter == 0) {
       LogInfoWithoutPrefix(IterationStatsLabelString());
     }
     LogInfoWithoutPrefix(ToString(stats, params_.termination_criteria(),
                                   original_bound_norms_,
                                   POINT_TYPE_AVERAGE_ITERATE));
-  } else {
+  } else if (params_.verbosity_level() >= 2) {
     if (log_counter == 0) {
       LogInfoWithoutPrefix(IterationStatsLabelShortString());
     }
@@ -1152,12 +1156,14 @@ void Solver::ApplyRestartChoice(const RestartChoice restart_to_apply) {
     case RESTART_CHOICE_NO_RESTART:
       return;
     case RESTART_CHOICE_WEIGHTED_AVERAGE_RESET:
-      VLOG(4) << "Restarted to current on iteration " << iterations_completed_
-              << " after " << primal_average_.NumTerms() << " iterations";
+      LOG_IF(INFO, params_.verbosity_level() >= 4)
+          << "Restarted to current on iteration " << iterations_completed_
+          << " after " << primal_average_.NumTerms() << " iterations";
       break;
     case RESTART_CHOICE_RESTART_TO_AVERAGE:
-      VLOG(4) << "Restarted to average on iteration " << iterations_completed_
-              << " after " << primal_average_.NumTerms() << " iterations";
+      LOG_IF(INFO, params_.verbosity_level() >= 4)
+          << "Restarted to average on iteration " << iterations_completed_
+          << " after " << primal_average_.NumTerms() << " iterations";
       current_primal_solution_ = primal_average_.ComputeAverage();
       current_dual_solution_ = dual_average_.ComputeAverage();
       current_dual_product_ = TransposedMatrixVectorProduct(
@@ -1258,52 +1264,53 @@ void Solver::LogInnerIterationLimitHit() const {
 }
 
 void Solver::LogQuadraticProgramStats(const QuadraticProgramStats& stats) {
-  VLOG(1) << absl::StrFormat("There are %i variables, %i constraints, and %i ",
-                             stats.num_variables(), stats.num_constraints(),
-                             stats.constraint_matrix_num_nonzeros())
-          << "constraint matrix nonzeros.";
+  LOG(INFO) << absl::StrFormat(
+                   "There are %i variables, %i constraints, and %i ",
+                   stats.num_variables(), stats.num_constraints(),
+                   stats.constraint_matrix_num_nonzeros())
+            << "constraint matrix nonzeros.";
   if (WorkingQp().constraint_matrix.nonZeros() > 0) {
-    VLOG(1) << "Absolute values of nonzero constraint matrix elements: "
-            << absl::StrFormat("largest=%f, smallest=%f, avg=%f",
-                               stats.constraint_matrix_abs_max(),
-                               stats.constraint_matrix_abs_min(),
-                               stats.constraint_matrix_abs_avg());
-    VLOG(1) << "Constraint matrix, infinity norm: "
-            << absl::StrFormat("max(row & col)=%f, min_col=%f, min_row=%f",
-                               stats.constraint_matrix_abs_max(),
-                               stats.constraint_matrix_col_min_l_inf_norm(),
-                               stats.constraint_matrix_row_min_l_inf_norm());
-    VLOG(1) << "Constraint bounds statistics (max absolute value per row): "
-            << absl::StrFormat("largest=%f, smallest=%f, avg=%f, l2_norm=%f",
-                               stats.combined_bounds_max(),
-                               stats.combined_bounds_min(),
-                               stats.combined_bounds_avg(),
-                               stats.combined_bounds_l2_norm());
+    LOG(INFO) << "Absolute values of nonzero constraint matrix elements: "
+              << absl::StrFormat("largest=%f, smallest=%f, avg=%f",
+                                 stats.constraint_matrix_abs_max(),
+                                 stats.constraint_matrix_abs_min(),
+                                 stats.constraint_matrix_abs_avg());
+    LOG(INFO) << "Constraint matrix, infinity norm: "
+              << absl::StrFormat("max(row & col)=%f, min_col=%f, min_row=%f",
+                                 stats.constraint_matrix_abs_max(),
+                                 stats.constraint_matrix_col_min_l_inf_norm(),
+                                 stats.constraint_matrix_row_min_l_inf_norm());
+    LOG(INFO) << "Constraint bounds statistics (max absolute value per row): "
+              << absl::StrFormat("largest=%f, smallest=%f, avg=%f, l2_norm=%f",
+                                 stats.combined_bounds_max(),
+                                 stats.combined_bounds_min(),
+                                 stats.combined_bounds_avg(),
+                                 stats.combined_bounds_l2_norm());
   }
   if (!IsLinearProgram(WorkingQp())) {
-    VLOG(1) << absl::StrFormat(
+    LOG(INFO) << absl::StrFormat(
         "There are %i nonzero diagonal coefficients in the objective matrix.",
         stats.objective_matrix_num_nonzeros());
-    VLOG(1) << "Absolute values of nonzero objective matrix elements: "
-            << absl::StrFormat("largest=%f, smallest=%f, avg=%f",
-                               stats.objective_matrix_abs_max(),
-                               stats.objective_matrix_abs_min(),
-                               stats.objective_matrix_abs_avg());
+    LOG(INFO) << "Absolute values of nonzero objective matrix elements: "
+              << absl::StrFormat("largest=%f, smallest=%f, avg=%f",
+                                 stats.objective_matrix_abs_max(),
+                                 stats.objective_matrix_abs_min(),
+                                 stats.objective_matrix_abs_avg());
   }
-  VLOG(1) << "Absolute values of objective vector elements: "
-          << absl::StrFormat("largest=%f, smallest=%f, avg=%f, l2_norm=%f",
-                             stats.objective_vector_abs_max(),
-                             stats.objective_vector_abs_min(),
-                             stats.objective_vector_abs_avg(),
-                             stats.objective_vector_l2_norm());
+  LOG(INFO) << "Absolute values of objective vector elements: "
+            << absl::StrFormat("largest=%f, smallest=%f, avg=%f, l2_norm=%f",
+                               stats.objective_vector_abs_max(),
+                               stats.objective_vector_abs_min(),
+                               stats.objective_vector_abs_avg(),
+                               stats.objective_vector_l2_norm());
 
-  VLOG(1) << "Gaps between variable upper and lower bounds: "
-          << absl::StrFormat(
-                 "#finite=%i of %i, largest=%f, smallest=%f, avg=%f",
-                 stats.variable_bound_gaps_num_finite(), stats.num_variables(),
-                 stats.variable_bound_gaps_max(),
-                 stats.variable_bound_gaps_min(),
-                 stats.variable_bound_gaps_avg());
+  LOG(INFO) << "Gaps between variable upper and lower bounds: "
+            << absl::StrFormat(
+                   "#finite=%i of %i, largest=%f, smallest=%f, avg=%f",
+                   stats.variable_bound_gaps_num_finite(),
+                   stats.num_variables(), stats.variable_bound_gaps_max(),
+                   stats.variable_bound_gaps_min(),
+                   stats.variable_bound_gaps_avg());
 }
 
 InnerStepOutcome Solver::TakeMalitskyPockStep() {
@@ -1667,6 +1674,7 @@ PrimalAndDualSolution Solver::RecoverOriginalSolution(
 
 SolverResult Solver::Solve(
     absl::optional<PrimalAndDualSolution> initial_solution,
+    const std::atomic<bool>* interrupt_solve,
     IterationStatsCallback iteration_stats_callback) {
   SolveLog solve_log;
   if (sharded_working_qp_.Qp().problem_name.has_value()) {
@@ -1680,8 +1688,10 @@ SolverResult Solver::Solve(
   const std::string preprocessing_string = absl::StrCat(
       params_.presolve_options().use_glop() ? "presolving and " : "",
       "rescaling:");
-  VLOG(1) << "Problem stats before " << preprocessing_string;
-  LogQuadraticProgramStats(solve_log.original_problem_stats());
+  if (params_.verbosity_level() >= 1) {
+    LOG(INFO) << "Problem stats before " << preprocessing_string;
+    LogQuadraticProgramStats(solve_log.original_problem_stats());
+  }
   timer_.Start();
   iteration_stats_callback_ = std::move(iteration_stats_callback);
   absl::optional<TerminationReason> maybe_terminate =
@@ -1748,8 +1758,10 @@ SolverResult Solver::Solve(
   ComputeAndApplyRescaling();
   *solve_log.mutable_preprocessed_problem_stats() = ComputeStats(
       sharded_working_qp_, params_.infinite_constraint_bound_threshold());
-  VLOG(1) << "Problem stats after " << preprocessing_string;
-  LogQuadraticProgramStats(solve_log.preprocessed_problem_stats());
+  if (params_.verbosity_level() >= 1) {
+    LOG(INFO) << "Problem stats after " << preprocessing_string;
+    LogQuadraticProgramStats(solve_log.preprocessed_problem_stats());
+  }
 
   if (params_.linesearch_rule() ==
       PrimalDualHybridGradientParams::CONSTANT_STEP_SIZE_RULE) {
@@ -1817,6 +1829,13 @@ SolverResult Solver::Solve(
     if (maybe_result.has_value()) {
       return maybe_result.value();
     }
+    // Check for interrupt on every iteration.
+    if (interrupt_solve != nullptr && interrupt_solve->load() == true) {
+      return ConstructSolverResult(
+          PrimalAverage(), DualAverage(),
+          CreateSimpleIterationStats(RESTART_CHOICE_NO_RESTART),
+          TERMINATION_REASON_INTERRUPTED_BY_USER, POINT_TYPE_NONE, solve_log);
+    }
 
     // TODO(user): If we use a step rule that could reject many steps in a
     // row, we should add a termination check within this loop also. For the
@@ -1847,14 +1866,17 @@ SolverResult Solver::Solve(
 
 SolverResult PrimalDualHybridGradient(
     QuadraticProgram qp, const PrimalDualHybridGradientParams& params,
+    const std::atomic<bool>* interrupt_solve,
     IterationStatsCallback iteration_stats_callback) {
   return PrimalDualHybridGradient(std::move(qp), params, absl::nullopt,
+                                  interrupt_solve,
                                   std::move(iteration_stats_callback));
 }
 
 SolverResult PrimalDualHybridGradient(
     QuadraticProgram qp, const PrimalDualHybridGradientParams& params,
     absl::optional<PrimalAndDualSolution> initial_solution,
+    const std::atomic<bool>* interrupt_solve,
     IterationStatsCallback iteration_stats_callback) {
   const absl::Status params_status =
       ValidatePrimalDualHybridGradientParams(params);
@@ -1881,7 +1903,7 @@ SolverResult PrimalDualHybridGradient(
                              "The objective scaling factor cannot be zero.");
   }
   Solver solver(std::move(qp), params);
-  return solver.Solve(std::move(initial_solution),
+  return solver.Solve(std::move(initial_solution), interrupt_solve,
                       std::move(iteration_stats_callback));
 }
 

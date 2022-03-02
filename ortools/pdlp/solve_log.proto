@@ -306,6 +306,7 @@ enum TerminationReason {
   TERMINATION_REASON_TIME_LIMIT = 4;
   TERMINATION_REASON_ITERATION_LIMIT = 5;
   TERMINATION_REASON_KKT_MATRIX_PASS_LIMIT = 8;
+  TERMINATION_REASON_INTERRUPTED_BY_USER = 12;
   TERMINATION_REASON_NUMERICAL_ERROR = 6;
   // Indicates that the solver detected invalid problem data, e.g., inconsistent
   // bounds.

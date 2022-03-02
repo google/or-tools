@@ -651,7 +651,7 @@ TEST_P(ComputeLocalizedLagrangianBoundsTest, OptimalInBoundRange) {
   const double primal_distance_squared_to_optimal =
       0.5 * (1.0 + 8.0 * 8.0 + 1.0 + 0.5 * 0.5);
   const double dual_distance_squared_to_optimal =
-      0.5 * (4.0 + 2.375 * 2.375 + 4.0 / 6.0);
+      0.5 * (4.0 + 2.375 * 2.375 + 4.0 / 9.0);
   const double distance_to_optimal =
       primal_dual_norm == PrimalDualNorm::kEuclideanNorm
           ? std::sqrt(primal_distance_squared_to_optimal +
@@ -774,19 +774,23 @@ TEST_P(ComputeLocalizedLagrangianBoundsTest, AcceptsCachedProducts) {
   primal_product << 6.0, 0.0, 0.0, -3.0;
   VectorXd dual_product = VectorXd::Zero(4);
 
-  const double primal_distance_to_optimal =
-      std::sqrt(0.5 * (1.0 + 8.0 * 8.0 + 1.0 + 0.5 * 0.5));
-  const double dual_distance_to_optimal =
-      std::sqrt(0.5 * (4.0 + 2.375 * 2.375 + 4.0 / 6.0));
-  const double max_norm_distance_to_optimal =
-      std::max(primal_distance_to_optimal, dual_distance_to_optimal);
-
   const auto [primal_dual_norm, use_diagonal_qp_solver] = GetParam();
+
+  const double primal_distance_squared_to_optimal =
+      0.5 * (1.0 + 8.0 * 8.0 + 1.0 + 0.5 * 0.5);
+  const double dual_distance_squared_to_optimal =
+      0.5 * (4.0 + 2.375 * 2.375 + 4.0 / 9.0);
+  const double distance_to_optimal =
+      primal_dual_norm == PrimalDualNorm::kEuclideanNorm
+          ? std::sqrt(primal_distance_squared_to_optimal +
+                      dual_distance_squared_to_optimal)
+          : std::sqrt(std::max(primal_distance_squared_to_optimal,
+                               dual_distance_squared_to_optimal));
 
   LocalizedLagrangianBounds bounds = ComputeLocalizedLagrangianBounds(
       lp, primal_solution, dual_solution, primal_dual_norm,
       /*primal_weight=*/1.0,
-      /*radius=*/max_norm_distance_to_optimal,
+      /*radius=*/distance_to_optimal,
       /*primal_product=*/&primal_product,
       /*dual_product=*/&dual_product, use_diagonal_qp_solver,
       /*diagonal_qp_trust_region_solver_tolerance=*/1.0e-6);

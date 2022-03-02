@@ -569,7 +569,8 @@ class MPSolver {
     return solver == MPModelRequest::GLOP_LINEAR_PROGRAMMING ||
            solver == MPModelRequest::GUROBI_LINEAR_PROGRAMMING ||
            solver == MPModelRequest::GUROBI_MIXED_INTEGER_PROGRAMMING ||
-           solver == MPModelRequest::SAT_INTEGER_PROGRAMMING;
+           solver == MPModelRequest::SAT_INTEGER_PROGRAMMING ||
+           solver == MPModelRequest::PDLP_LINEAR_PROGRAMMING;
   }
 
   /// Exports model to protocol buffer.
