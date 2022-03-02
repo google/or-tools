@@ -114,6 +114,7 @@ ifeq ($(PLATFORM),LINUX)
   POST_LIB =
   LINK_FLAGS = \
  -Wl,-rpath,'$$ORIGIN' \
+ -Wl,-rpath,'$$ORIGIN/../lib64' \
  -Wl,-rpath,'$$ORIGIN/../lib'
 
 endif  # ifeq ($(PLATFORM),LINUX)
