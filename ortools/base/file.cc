@@ -47,7 +47,7 @@ bool File::Flush() { return fflush(f_) == 0; }
 
 bool File::Close() {
   if (fclose(f_) == 0) {
-    f_ = NULL;
+    f_ = nullptr;
     return true;
   } else {
     return false;
@@ -80,7 +80,7 @@ size_t File::Write(const void* const buf, size_t size) {
 
 File* File::OpenOrDie(const char* const name, const char* const flag) {
   FILE* const f_des = fopen(name, flag);
-  if (f_des == NULL) {
+  if (f_des == nullptr) {
     std::cerr << "Cannot open " << name;
     exit(1);
   }
@@ -90,7 +90,7 @@ File* File::OpenOrDie(const char* const name, const char* const flag) {
 
 File* File::Open(const char* const name, const char* const flag) {
   FILE* const f_des = fopen(name, flag);
-  if (f_des == NULL) return NULL;
+  if (f_des == nullptr) return nullptr;
   File* const f = new File(f_des, name);
   return f;
 }
@@ -134,7 +134,7 @@ bool File::WriteLine(const std::string& line) {
 
 absl::string_view File::filename() const { return name_; }
 
-bool File::Open() const { return f_ != NULL; }
+bool File::Open() const { return f_ != nullptr; }
 
 void File::Init() {}
 
@@ -164,7 +164,7 @@ absl::Status GetContents(const absl::string_view& filename, std::string* output,
                          int flags) {
   if (flags == Defaults()) {
     File* file = File::Open(filename, "r");
-    if (file != NULL) {
+    if (file != nullptr) {
       const int64_t size = file->Size();
       if (file->ReadToString(output, size) == size) return absl::OkStatus();
 #if defined(_MSC_VER)
@@ -183,7 +183,7 @@ absl::Status GetContents(const absl::string_view& filename, std::string* output,
 
 absl::Status WriteString(File* file, const absl::string_view& contents,
                          int flags) {
-  if (flags == Defaults() && file != NULL &&
+  if (flags == Defaults() && file != nullptr &&
       file->Write(contents.data(), contents.size()) == contents.size() &&
       file->Close()) {
     return absl::OkStatus();

@@ -289,8 +289,8 @@ class KnapsackSolver {
 // TODO(user): Add a new propagator class used as a guide when the problem has
 // several dimensions.
 
-// ----- KnapsackAssignement -----
-// KnapsackAssignement is a small struct used to pair an item with its
+// ----- KnapsackAssignment -----
+// KnapsackAssignment is a small struct used to pair an item with its
 // assignment. It is mainly used for search nodes and updates.
 struct KnapsackAssignment {
   KnapsackAssignment(int _item_id, bool _is_in)

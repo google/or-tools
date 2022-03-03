@@ -966,7 +966,7 @@ PROTO2_RETURN(operations_research::CpModel,
 
 namespace operations_research {
 // Globals
-// IMPORTANT(user): Global will be placed in operations_research_constraint_solver.cs
+// IMPORTANT(corentinl): Global will be placed in operations_research_constraint_solver.cs
 // Ignored:
 %ignore FillValues;
 }  // namespace operations_research

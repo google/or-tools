@@ -116,9 +116,9 @@ static void VLOG2Initializer() {
   const std::string vmodule_flag = absl::GetFlag(FLAGS_vmodule);
   const char* vmodule = vmodule_flag.c_str();
   const char* sep;
-  VModuleInfo* head = NULL;
-  VModuleInfo* tail = NULL;
-  while ((sep = strchr(vmodule, '=')) != NULL) {
+  VModuleInfo* head = nullptr;
+  VModuleInfo* tail = nullptr;
+  while ((sep = strchr(vmodule, '=')) != nullptr) {
     std::string pattern(vmodule, sep - vmodule);
     int module_level;
     if (sscanf(sep, "=%d", &module_level) == 1) {
@@ -133,7 +133,7 @@ static void VLOG2Initializer() {
     }
     // Skip past this entry
     vmodule = strchr(sep, ',');
-    if (vmodule == NULL) break;
+    if (vmodule == nullptr) break;
     vmodule++;  // Skip past ","
   }
   if (head) {  // Put them into the list at the head:
@@ -150,7 +150,7 @@ int SetVLOGLevel(const char* module_pattern, int log_level) {
   bool found = false;
   {
     absl::MutexLock l(&vmodule_lock);  // protect whole read-modify-write
-    for (const VModuleInfo* info = vmodule_list; info != NULL;
+    for (const VModuleInfo* info = vmodule_list; info != nullptr;
          info = info->next) {
       if (info->module_pattern == module_pattern) {
         if (!found) {
@@ -210,7 +210,7 @@ bool InitVLOG3__(int32_t** vmodule_info, bool* initialized, const char* fname,
 
   // find target in vector of modules, replace site_flag_value with
   // a module-specific verbose level, if any.
-  for (const VModuleInfo* info = vmodule_list; info != NULL;
+  for (const VModuleInfo* info = vmodule_list; info != nullptr;
        info = info->next) {
     if (SafeFNMatch_(info->module_pattern.c_str(), info->module_pattern.size(),
                      base, base_length)) {

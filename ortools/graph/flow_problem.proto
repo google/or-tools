@@ -35,11 +35,11 @@
 
 syntax = "proto2";
 
+package operations_research;
+
 option java_package = "com.google.ortools.graph";
 option java_multiple_files = true;
 option csharp_namespace = "Google.OrTools.Graph";
-
-package operations_research;
 
 message FlowArcProto {
   // A directed arc goes from a tail node to a head node.

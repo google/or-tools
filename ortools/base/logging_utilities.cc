@@ -132,7 +132,7 @@ inline char* strerror_r(int errnum, char* buf, size_t buflen) {
 
 namespace google {
 
-static const char* g_program_invocation_short_name = NULL;
+static const char* g_program_invocation_short_name = nullptr;
 static pthread_t g_main_thread_id;
 
 }  // namespace google
@@ -205,14 +205,14 @@ static void DumpStackTrace(int skip_count, DebugWriter* writerfn, void* arg) {
 }
 
 static void DumpStackTraceAndExit() {
-  DumpStackTrace(1, DebugWriteToStderr, NULL);
+  DumpStackTrace(1, DebugWriteToStderr, nullptr);
   abort();
 }
 
 namespace logging_internal {
 
 const char* ProgramInvocationShortName() {
-  if (g_program_invocation_short_name != NULL) {
+  if (g_program_invocation_short_name != nullptr) {
     return g_program_invocation_short_name;
   } else {
     // TODO(user): Use /proc/self/cmdline and so?
@@ -221,7 +221,7 @@ const char* ProgramInvocationShortName() {
 }
 
 bool IsGoogleLoggingInitialized() {
-  return g_program_invocation_short_name != NULL;
+  return g_program_invocation_short_name != nullptr;
 }
 
 unsigned int GetTID() {
@@ -251,12 +251,12 @@ static void MyUserNameInitializer() {
 #else
   const char* user = getenv("USER");
 #endif
-  if (user != NULL) {
+  if (user != nullptr) {
     g_my_user_name = user;
   } else {
 #if !defined(_MSC_VER)  // Not windows.
     struct passwd pwd;
-    struct passwd* result = NULL;
+    struct passwd* result = nullptr;
     char buffer[1024] = {'\0'};
     uid_t uid = geteuid();
     int pwuid_res = getpwuid_r(uid, &pwd, buffer, sizeof(buffer), &result);
@@ -318,7 +318,7 @@ void ShutdownGoogleLoggingUtilities() {
   CHECK(IsGoogleLoggingInitialized())
       << "You called ShutdownGoogleLogging() without calling "
          "InitGoogleLogging() first!";
-  g_program_invocation_short_name = NULL;
+  g_program_invocation_short_name = nullptr;
 #if !defined(_MSC_VER)
   closelog();
 #endif  // !defined(_MSC_VER)

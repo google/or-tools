@@ -44,7 +44,7 @@ static inline int PyString_AsStringAndSize(PyObject* obj, char** buf,
                                            Py_ssize_t* psize) {
   if (PyUnicode_Check(obj)) {
     *buf = const_cast<char*>(PyUnicode_AsUTF8AndSize(obj, psize));
-    return *buf == NULL ? -1 : 0;
+    return *buf == nullptr ? -1 : 0;
   } else if (PyBytes_Check(obj)) {
     return PyBytes_AsStringAndSize(obj, buf, psize);
   }
@@ -300,15 +300,15 @@ inline bool vector_input_wrap_helper(PyObject* seq, std::vector<T>* out,
 // into the corresponding Python object.
 template <class T, class Converter>
 inline PyObject* list_output_helper(const T* vec, Converter converter) {
-  if (vec == NULL) Py_RETURN_NONE;  // Return a nice out-of-band value.
+  if (vec == nullptr) Py_RETURN_NONE;  // Return a nice out-of-band value.
   PyObject* lst = PyList_New(vec->size());
-  if (lst == NULL) return NULL;
+  if (lst == nullptr) return nullptr;
   int i = 0;
   for (typename T::const_reference pt : *vec) {
     PyObject* obj = converter(pt);
     if (!obj) {
       Py_DECREF(lst);
-      return NULL;
+      return nullptr;
     }
     PyList_SET_ITEM(lst, i++, obj);
   }

@@ -19,7 +19,7 @@ namespace operations_research {
 void RunWorker(void* data) {
   ThreadPool* const thread_pool = reinterpret_cast<ThreadPool*>(data);
   std::function<void()> work = thread_pool->GetNextTask();
-  while (work != NULL) {
+  while (work != nullptr) {
     work();
     work = thread_pool->GetNextTask();
   }

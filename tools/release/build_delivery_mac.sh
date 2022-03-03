@@ -277,7 +277,7 @@ function build_python() {
     echo "DONE" | tee -a build.log
 
     PY_PATH="/Library/Frameworks/Python.framework/Versions/$i"
-    if [ ! -d "$PY_PATH" ]; then
+    if [[ ! -d "$PY_PATH" ]]; then
       echo "Error: Python $i is not found (${PY_PATH})." | tee -a build.log
       exit 1
     fi

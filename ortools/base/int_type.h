@@ -174,9 +174,9 @@ class IntType;
 // operators.
 //
 // The template parameter IntTypeName defines the name for the int type and must
-// be unique within a binary (the convenient DEFINE_INT_TYPE macro at the end of
-// the file generates a unique IntTypeName).  The parameter ValueType defines
-// the integer type value (see supported list above).
+// be unique within a binary (the convenient DEFINE_INT_TYPE macro at the
+// end of the file generates a unique IntTypeName).  The parameter ValueType
+// defines the integer type value (see supported list above).
 //
 // This class is NOT thread-safe.
 template <typename IntTypeName, typename _ValueType>
