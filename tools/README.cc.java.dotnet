@@ -14,16 +14,16 @@ Upon decompressing the archive, you will get the following structure:
 
 ```
 or-tools/
-  LICENSE-2.0.txt <- Apache 2.0 License
-  README.md       <- This file
-  Makefile        <- Main Makefile for C++,Java and .Net
-  examples/       <- C++, Java and .Net examples
-  include/        <- all include files
-  objs/           <- directory containing C++ compiled object files (*.o)
-  classes/        <- directory containing Java class files.
-  packages/       <- directory containing .Net nuget packages.
-  lib/            <- directory containing libraries and jar files.
-  bin/            <- directory containing executable files
+  LICENSE   <- Apache 2.0 License
+  README.md <- This file
+  Makefile  <- Main Makefile for C++,Java and .Net
+  examples/ <- C++, Java and .Net examples
+  include/  <- all include files
+  objs/     <- directory containing C++ compiled object files (*.o)
+  classes/  <- directory containing Java class files.
+  packages/ <- directory containing .Net nuget packages.
+  lib/      <- directory containing libraries and jar files.
+  bin/      <- directory containing executable files
 ```
 
 # C++

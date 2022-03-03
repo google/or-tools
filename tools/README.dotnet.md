@@ -20,10 +20,10 @@ Upon decompressing the archive, you will get the following structure:
 
 ```
 or-tools/
-  [LICENSE-2.0.txt](LICENSE-2.0.txt)     <- Apache License
-  [README.md](README.md)                 <- This file
-  [examples/data/](examples/data)        <- Data for the examples
-  [examples/dotnet](examples/dotnet)     <- .Net examples
+  [LICENSE](LICENSE)                 <- Apache License
+  [README.md](README.md)             <- This file
+  [examples/data/](examples/data)    <- Data for the examples
+  [examples/dotnet](examples/dotnet) <- .Net examples
 ```
 
 To build an example, open the folder in the command prompt and type the following commands:

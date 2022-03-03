@@ -20,8 +20,8 @@ Upon decompressing the archive, you will get the following structure:
 
 ```
 or-tools/
-  [LICENSE-2.0.txt](LICENSE-2.0.txt)     <- Apache License
-  [README.md](README.md)                 <- This file
-  [examples/data/](examples/data)        <- Data for the examples
-  [examples/cpp](examples/cpp)           <- C++ examples
+  [LICENSE](LICENSE)              <- Apache License
+  [README.md](README.md)          <- This file
+  [examples/data/](examples/data) <- Data for the examples
+  [examples/cpp](examples/cpp)    <- C++ examples
 ```
