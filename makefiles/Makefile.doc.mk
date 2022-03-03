@@ -27,35 +27,35 @@ python-doc:
  -o docs/python/ \
  --no-search -d google \
  --footer-text "OR-Tools ${OR_TOOLS_MAJOR}.${OR_TOOLS_MINOR}" \
- ortools/sat/python/cp_model.py
+ dependencies/python/ortools/sat/python/cp_model.py
 	$(SET_PYTHONPATH) pdoc \
  --logo https://developers.google.com/optimization/images/orLogo.png \
  -o docs/python/ortools/util/ \
  --no-search -d google \
  --footer-text "OR-Tools ${ORTOOLS_MAJOR}.${ORTOOLS_MINOR}" \
  --footer-text "OR-Tools ${OR_TOOLS_MAJOR}.${OR_TOOLS_MINOR}" \
- ortools/gen/ortools/util/sorted_interval_list.py
+ dependencies/python/ortools/util/python/sorted_interval_list.py
 	$(SET_PYTHONPATH) pdoc \
  --logo https://developers.google.com/optimization/images/orLogo.png \
  -o docs/python/ortools/linear_solver/ \
  --no-search -d google \
  --footer-text "OR-Tools ${OR_TOOLS_MAJOR}.${OR_TOOLS_MINOR}" \
- ortools/gen/ortools/linear_solver/pywraplp.py
+ dependencies/python/ortools/linear_solver/pywraplp.py
 	$(SET_PYTHONPATH) pdoc \
  --logo https://developers.google.com/optimization/images/orLogo.png \
  -o docs/python/ortools/constraint_solver/ \
  --no-search -d google \
  --footer-text "OR-Tools ${OR_TOOLS_MAJOR}.${OR_TOOLS_MINOR}" \
- ortools/gen/ortools/constraint_solver/pywrapcp.py
+ dependencies/python/ortools/constraint_solver/pywrapcp.py
 	$(SET_PYTHONPATH) pdoc \
  --logo https://developers.google.com/optimization/images/orLogo.png \
  -o docs/python/ortools/algorithms/ \
  --no-search -d google \
  --footer-text "OR-Tools ${OR_TOOLS_MAJOR}.${OR_TOOLS_MINOR}" \
- ortools/gen/ortools/algorithms/pywrapknapsack_solver.py
+ dependencies/python/ortools/algorithms/pywrapknapsack_solver.py
 	$(SET_PYTHONPATH) pdoc \
  --logo https://developers.google.com/optimization/images/orLogo.png \
  -o docs/python/ortools/graph/ \
  --no-search -d google \
  --footer-text "OR-Tools ${OR_TOOLS_MAJOR}.${OR_TOOLS_MINOR}" \
- ortools/gen/ortools/graph/pywrapgraph.py
+ dependencies/python/ortools/graph/pywrapgraph.py
