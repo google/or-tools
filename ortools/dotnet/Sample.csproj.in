@@ -21,6 +21,7 @@
     <PackageTags>sample</PackageTags>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PackageOutputPath>@DOTNET_PACKAGES_DIR@/samples</PackageOutputPath>
 
     <!-- Signing -->
     <SignAssembly>false</SignAssembly>
