@@ -9,7 +9,6 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - uses: ilammy/msvc-dev-cmd@v1
-    - uses: seanmiddleditch/gha-setup-ninja@master
     - name: Check java
       run: java -version
     - name: Check make

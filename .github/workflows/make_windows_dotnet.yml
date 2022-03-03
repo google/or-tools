@@ -9,7 +9,6 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - uses: ilammy/msvc-dev-cmd@v1
-    - uses: seanmiddleditch/gha-setup-ninja@master
       # Install .NET SDKs
     - name: Setup .NET Core 3.1
       uses: actions/setup-dotnet@v1
