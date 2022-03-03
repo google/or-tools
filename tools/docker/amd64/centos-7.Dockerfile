@@ -10,12 +10,12 @@ RUN yum -y update \
 && yum clean all \
 && rm -rf /var/cache/yum
 
-# Bump to gcc-9
+# Bump to gcc-11
 RUN yum -y update \
 && yum -y install centos-release-scl \
-&& yum -y install devtoolset-9 \
+&& yum -y install devtoolset-11 \
 && yum clean all \
-&& echo "source /opt/rh/devtoolset-9/enable" >> /etc/bashrc
+&& echo "source /opt/rh/devtoolset-11/enable" >> /etc/bashrc
 SHELL ["/bin/bash", "--login", "-c"]
 ENTRYPOINT ["/usr/bin/bash", "--login", "-c"]
 CMD ["/usr/bin/bash", "--login"]
