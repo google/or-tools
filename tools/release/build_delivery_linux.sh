@@ -103,7 +103,7 @@ function build_dotnet() {
   echo "DONE" | tee -a build.log
 
   echo -n "Build .Net..." | tee -a build.log
-  cmake -S. -Btemp_dotnet -DBUILD_DOTNET=ON
+  cmake -S. -Btemp_dotnet -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_DOTNET=ON
   cmake --build temp_dotnet -j8 -v
   echo "DONE" | tee -a build.log
   #cmake --build temp_dotnet --target test
@@ -161,7 +161,7 @@ function build_java() {
   echo "DONE" | tee -a build.log
 
   echo -n "Build Java..." | tee -a build.log
-  cmake -S. -Btemp_java -DBUILD_JAVA=ON -DSKIP_GPG=OFF
+  cmake -S. -Btemp_java -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_JAVA=ON -DSKIP_GPG=OFF
   cmake --build temp_java -j8 -v
   echo "DONE" | tee -a build.log
   #cmake --build temp_java --target test
@@ -265,7 +265,7 @@ function build_python() {
   echo "DONE" | tee -a build.log
 
   echo -n "Build Python 3..." | tee -a build.log
-  cmake -S . -B temp_python -DBUILD_PYTHON=ON
+  cmake -S . -B temp_python -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_PYTHON=ON
   cmake --build temp_python build -j8
   echo "DONE" | tee -a build.log
   #cmake --build test_python --target test

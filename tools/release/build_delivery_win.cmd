@@ -22,7 +22,6 @@ call :PRINT_HELP
 exit /B %ERRORLEVEL%
 )
 
-
 if "%ORTOOLS_TOKEN%"=="" (
 echo ORTOOLS_TOKEN: NOT FOUND | tee.exe -a build.log
 exit /B 1
@@ -33,7 +32,7 @@ FOR /F "tokens=* USEBACKQ" %%F IN (`git rev-parse --verify HEAD`) DO (SET SHA1=%
 echo BRANCH: %BRANCH% | tee.exe -a build.log
 echo SHA1: %SHA1% | tee.exe -a build.log
 
-md export
+if not exist .\export md .\export
 
 if "%1"=="dotnet" (
 call :BUILD_DOTNET
@@ -114,6 +113,7 @@ echo EXAMPLES
 echo   cmd /c %PRG%
 exit /B 0
 
+
 :BUILD_CXX
 title Build C++
 set HASH=
@@ -174,7 +174,7 @@ rm.exe -rf temp_dotnet
 echo DONE | tee.exe -a build.log
 
 echo Build dotnet: ... | tee.exe -a build.log
-cmake -S. -Btemp_dotnet -DBUILD_DOTNET=ON
+cmake -S. -Btemp_dotnet -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_DOTNET=ON
 cmake --build temp_dotnet --config Release -j8 -v
 echo DONE | tee.exe -a build.log
 REM make.exe test_dotnet WINDOWS_PATH_TO_PYTHON=c:\python39-64 || exit 1
@@ -224,7 +224,7 @@ rm.exe -rf temp_java
 echo DONE | tee.exe -a build.log
 
 echo Build java: ... | tee.exe -a build.log
-cmake -S. -Btemp_java -DBUILD_JAVA=ON -DSKIP_GPG=OFF
+cmake -S. -Btemp_java -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_JAVA=ON -DSKIP_GPG=OFF
 cmake --build temp_java --config Release -j8 -v
 echo DONE | tee.exe -a build.log
 REM cmake --build temp_java --config Release --target RUN_TEST || exit 1
@@ -315,7 +315,7 @@ exit /B 0
 
 for %%v in (6 7 8 9 10) do (
   title Build Python 3.%%v
-  REM Check Python
+  :: Check Python
   which.exe C:\python3%%v-64\python.exe || exit 1
   echo C:\python3%%v-64\python.exe: FOUND | tee.exe -a build.log
   C:\python3%%v-64\python.exe -m pip install --upgrade --user absl-py mypy-protobuf
@@ -327,13 +327,13 @@ for %%v in (6 7 8 9 10) do (
   echo DONE | tee.exe -a build.log
 
   echo Build Python 3.%%v... | tee.exe -a build.log
-  cmake -S. -Btemp_python3%%v -DBUILD_PYTHON=ON -DPython3_ROOT_DIR=C:\python3%%v-64
+  cmake -S. -Btemp_python3%%v -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_PYTHON=ON -DPython3_ROOT_DIR=C:\python3%%v-64
   cmake --build temp_python3%%v --config Release -j8 -v
   echo DONE | tee.exe -a build.log
 
-  ::echo Test Python 3.%%v pypi archive... | tee.exe -a build.log
-  ::cmake --build temp_python3%%v --config Release --taget RUN_TEST || exit 1
-  ::echo DONE | tee.exe -a build.log
+  REM echo Test Python 3.%%v pypi archive... | tee.exe -a build.log
+  REM cmake --build temp_python3%%v --config Release --taget RUN_TEST || exit 1
+  REM echo DONE | tee.exe -a build.log
 
   for %%i in (temp_python3%%v\python\dist\*.whl) do (
     echo Copy %%i to export... | tee.exe -a build.log
@@ -341,7 +341,5 @@ for %%v in (6 7 8 9 10) do (
     echo Copy %%i to export...DONE | tee.exe -a build.log
   )
 )
-
 echo %BRANCH% %SHA1%>build_python.log
 exit /B 0
-
