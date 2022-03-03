@@ -53,10 +53,9 @@ This software suite is composed of the following components:
 *   [CMakeLists.txt](CMakeLists.txt) Top-level for
     [CMake](https://cmake.org/cmake/help/latest/) based build.
 *   [cmake](cmake) Subsidiary CMake files, CI and build system documentation.
+*   [WORKSPACE](WORKSPACE) Top-level for
+    [Bazel](https://docs.bazel.build/versions/master/bazel-overview.html) based build.
 *   [bazel](bazel) Subsidiary Bazel files, CI and build system documentation.
-    *   [BUILD](bazel/BUILD) Top-level for
-        [Bazel](https://docs.bazel.build/versions/master/bazel-overview.html)
-        based build.
 *   [ortools](ortools) Root directory for source code.
     *   [base](ortools/base) Basic utilities.
     *   [algorithms](ortools/algorithms) Basic algorithms.
