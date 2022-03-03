@@ -1,3 +1,18 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classGoogle_1_1OrTools_1_1Sat_1_1BoundedLinearExpression.html" title="Holds a linear constraint: &#160;expression ∈ domain" alt="" coords="5,5,179,32"/>
+<area shape="rect" id="node1" title=" " alt="" coords="9,5,105,32"/>
+<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarIterator.html" title=" " alt="" coords="202,5,311,32"/>
+<area shape="rect" id="node3" title=" " alt="" coords="8,335,107,361"/>
+<area shape="rect" id="node4" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DecisionBuilderVector.html" title=" " alt="" coords="173,157,340,184"/>
+<area shape="rect" id="node5" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarVector.html" title=" " alt="" coords="205,208,308,235"/>
+<area shape="rect" id="node6" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntervalVarVector.html" title=" " alt="" coords="189,259,325,285"/>
+<area shape="rect" id="node7" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchFilterVector.html" title=" " alt="" coords="169,309,344,336"/>
+<area shape="rect" id="node8" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchOperatorVector.html" title=" " alt="" coords="157,360,356,387"/>
+<area shape="rect" id="node9" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SearchMonitorVector.html" title=" " alt="" coords="177,411,336,437"/>
+<area shape="rect" id="node10" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SequenceVarVector.html" title=" " alt="" coords="182,461,331,488"/>
+<area shape="rect" id="node11" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Solver.html" title=" " alt="" coords="225,563,288,589"/>
+<area shape="rect" id="node12" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SymmetryBreakerVector.html" title=" " alt="" coords="165,512,348,539"/>
+<area shape="rect" id="node13" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1MPConstraintVector.html" title=" " alt="" coords="181,56,332,83"/>
+<area shape="rect" id="node14" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector.html" title=" " alt="" coords="187,107,326,133"/>
+<area shape="rect" id="node15" title=" " alt="" coords="5,233,109,260"/>
+<area shape="rect" id="node16" title=" " alt="" coords="33,284,82,311"/>
 </map>

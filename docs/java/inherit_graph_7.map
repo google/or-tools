@@ -1,3 +1,12 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProtobuf.html" title=" " alt="" coords="5,5,128,32"/>
+<area shape="rect" id="node1" href="$interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearArgument.html" title="A object that can build a LinearExpr object." alt="" coords="5,132,132,159"/>
+<area shape="rect" id="node2" href="$classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html" title="An integer variable." alt="" coords="218,107,279,133"/>
+<area shape="rect" id="node4" href="$interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html" title="A linear expression (sum (ai * xi) + b)." alt="" coords="203,56,294,83"/>
+<area shape="rect" id="node8" href="$classcom_1_1google_1_1ortools_1_1sat_1_1LinearExprBuilder.html" title="Builder class for the LinearExpr container." alt="" coords="180,157,317,184"/>
+<area shape="rect" id="node9" href="$interfacecom_1_1google_1_1ortools_1_1sat_1_1Literal.html" title="Interface to describe a boolean variable or its negation." alt="" coords="217,208,280,235"/>
+<area shape="rect" id="node3" href="$classcom_1_1google_1_1ortools_1_1sat_1_1BoolVar.html" title="An Boolean variable." alt="" coords="421,157,494,184"/>
+<area shape="rect" id="node5" href="$classcom_1_1google_1_1ortools_1_1sat_1_1AffineExpression.html" title="A specialized linear expression: a * x + b." alt="" coords="392,107,523,133"/>
+<area shape="rect" id="node6" href="$classcom_1_1google_1_1ortools_1_1sat_1_1ConstantExpression.html" title="A specialized constant linear expression." alt="" coords="382,5,533,32"/>
+<area shape="rect" id="node7" href="$classcom_1_1google_1_1ortools_1_1sat_1_1WeightedSumExpression.html" title="A specialized linear expression: sum(ai * xi) + b." alt="" coords="365,56,549,83"/>
+<area shape="rect" id="node10" href="$classcom_1_1google_1_1ortools_1_1sat_1_1NotBoolVar.html" title="The negation of a boolean variable." alt="" coords="409,208,505,235"/>
 </map>

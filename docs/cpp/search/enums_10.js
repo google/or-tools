@@ -12,7 +12,6 @@ var searchData=
   ['variablestatus_9',['VariableStatus',['../namespaceoperations__research_1_1glop.html#aaddc7ccf1acc75842c2129ee4590d358',1,'operations_research::glop']]],
   ['variabletype_10',['VariableType',['../classoperations__research_1_1glop_1_1_linear_program.html#ac62972ff1b21a037e56530cde67309ab',1,'operations_research::glop::LinearProgram::VariableType()'],['../namespaceoperations__research_1_1glop.html#a4452e21ffb34da40470f1e0791800027',1,'operations_research::glop::VariableType()']]],
   ['vartypes_11',['VarTypes',['../namespaceoperations__research.html#a403e52e933033645c3388146d5e2edd2',1,'operations_research']]],
-  ['vectorbinpackingsolvestatus_12',['VectorBinPackingSolveStatus',['../namespaceoperations__research_1_1packing_1_1vbp.html#a4604191fbd84a43686f44c25d7bd0161',1,'operations_research::packing::vbp']]],
-  ['visittypepolicy_13',['VisitTypePolicy',['../classoperations__research_1_1_routing_model.html#a495b53b94a8c31a8f13755962d6c6059',1,'operations_research::RoutingModel']]],
-  ['voidconstrainttype_14',['VoidConstraintType',['../classoperations__research_1_1_model_cache.html#a0398df73722b0a777674f8300b61e640',1,'operations_research::ModelCache']]]
+  ['visittypepolicy_12',['VisitTypePolicy',['../classoperations__research_1_1_routing_model.html#a495b53b94a8c31a8f13755962d6c6059',1,'operations_research::RoutingModel']]],
+  ['voidconstrainttype_13',['VoidConstraintType',['../classoperations__research_1_1_model_cache.html#a0398df73722b0a777674f8300b61e640',1,'operations_research::ModelCache']]]
 ];

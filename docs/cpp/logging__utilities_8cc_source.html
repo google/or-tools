@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.2</span>
+   &#160;<span id="projectnumber">9.3</span>
    </div>
   </td>
  </tr>
@@ -223,7 +223,7 @@ $(document).ready(function(){initNavTree('logging__utilities_8cc_source.html',''
 <div class="line"><a id="l00132" name="l00132"></a><span class="lineno">  132</span> </div>
 <div class="line"><a id="l00133" name="l00133"></a><span class="lineno">  133</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespacegoogle.html">google</a> {</div>
 <div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span> </div>
-<div class="line"><a id="l00135" name="l00135"></a><span class="lineno"><a class="line" href="namespacegoogle.html#ac5c2b8742bf06126bf261af57d826226">  135</a></span><span class="keyword">static</span> <span class="keyword">const</span> <span class="keywordtype">char</span>* <a class="code hl_variable" href="namespacegoogle.html#ac5c2b8742bf06126bf261af57d826226">g_program_invocation_short_name</a> = NULL;</div>
+<div class="line"><a id="l00135" name="l00135"></a><span class="lineno"><a class="line" href="namespacegoogle.html#ac5c2b8742bf06126bf261af57d826226">  135</a></span><span class="keyword">static</span> <span class="keyword">const</span> <span class="keywordtype">char</span>* <a class="code hl_variable" href="namespacegoogle.html#ac5c2b8742bf06126bf261af57d826226">g_program_invocation_short_name</a> = <span class="keyword">nullptr</span>;</div>
 <div class="line"><a id="l00136" name="l00136"></a><span class="lineno"><a class="line" href="namespacegoogle.html#a0e8c4aa281121b50ebb0dea4bf96b907">  136</a></span><span class="keyword">static</span> pthread_t <a class="code hl_variable" href="namespacegoogle.html#a0e8c4aa281121b50ebb0dea4bf96b907">g_main_thread_id</a>;</div>
 <div class="line"><a id="l00137" name="l00137"></a><span class="lineno">  137</span> </div>
 <div class="line"><a id="l00138" name="l00138"></a><span class="lineno">  138</span>}  <span class="comment">// namespace google</span></div>
@@ -296,14 +296,14 @@ $(document).ready(function(){initNavTree('logging__utilities_8cc_source.html',''
 <div class="line"><a id="l00205" name="l00205"></a><span class="lineno">  205</span>}</div>
 <div class="line"><a id="l00206" name="l00206"></a><span class="lineno">  206</span> </div>
 <div class="line"><a id="l00207" name="l00207"></a><span class="lineno"><a class="line" href="namespacegoogle.html#a22d08fc0b76c06ab090b73db7326fb14">  207</a></span><span class="keyword">static</span> <span class="keywordtype">void</span> <a class="code hl_function" href="namespacegoogle.html#a22d08fc0b76c06ab090b73db7326fb14">DumpStackTraceAndExit</a>() {</div>
-<div class="line"><a id="l00208" name="l00208"></a><span class="lineno">  208</span>  <a class="code hl_function" href="namespacegoogle.html#adddb104cc8ef7511c77c7a124147e67c">DumpStackTrace</a>(1, <a class="code hl_function" href="namespacegoogle.html#a0b4b2082a121da9a86f65d734b627a34">DebugWriteToStderr</a>, NULL);</div>
+<div class="line"><a id="l00208" name="l00208"></a><span class="lineno">  208</span>  <a class="code hl_function" href="namespacegoogle.html#adddb104cc8ef7511c77c7a124147e67c">DumpStackTrace</a>(1, <a class="code hl_function" href="namespacegoogle.html#a0b4b2082a121da9a86f65d734b627a34">DebugWriteToStderr</a>, <span class="keyword">nullptr</span>);</div>
 <div class="line"><a id="l00209" name="l00209"></a><span class="lineno">  209</span>  abort();</div>
 <div class="line"><a id="l00210" name="l00210"></a><span class="lineno">  210</span>}</div>
 <div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span> </div>
 <div class="line"><a id="l00212" name="l00212"></a><span class="lineno">  212</span><span class="keyword">namespace </span>logging_internal {</div>
 <div class="line"><a id="l00213" name="l00213"></a><span class="lineno">  213</span> </div>
 <div class="line"><a id="l00214" name="l00214"></a><span class="lineno"><a class="line" href="namespacegoogle_1_1logging__internal.html#a43adca49683a5766aecb000c340e988c">  214</a></span><span class="keyword">const</span> <span class="keywordtype">char</span>* <a class="code hl_function" href="namespacegoogle_1_1logging__internal.html#a43adca49683a5766aecb000c340e988c">ProgramInvocationShortName</a>() {</div>
-<div class="line"><a id="l00215" name="l00215"></a><span class="lineno">  215</span>  <span class="keywordflow">if</span> (<a class="code hl_variable" href="namespacegoogle.html#ac5c2b8742bf06126bf261af57d826226">g_program_invocation_short_name</a> != NULL) {</div>
+<div class="line"><a id="l00215" name="l00215"></a><span class="lineno">  215</span>  <span class="keywordflow">if</span> (<a class="code hl_variable" href="namespacegoogle.html#ac5c2b8742bf06126bf261af57d826226">g_program_invocation_short_name</a> != <span class="keyword">nullptr</span>) {</div>
 <div class="line"><a id="l00216" name="l00216"></a><span class="lineno">  216</span>    <span class="keywordflow">return</span> <a class="code hl_variable" href="namespacegoogle.html#ac5c2b8742bf06126bf261af57d826226">g_program_invocation_short_name</a>;</div>
 <div class="line"><a id="l00217" name="l00217"></a><span class="lineno">  217</span>  } <span class="keywordflow">else</span> {</div>
 <div class="line"><a id="l00218" name="l00218"></a><span class="lineno">  218</span>    <span class="comment">// TODO(user): Use /proc/self/cmdline and so?</span></div>
@@ -312,7 +312,7 @@ $(document).ready(function(){initNavTree('logging__utilities_8cc_source.html',''
 <div class="line"><a id="l00221" name="l00221"></a><span class="lineno">  221</span>}</div>
 <div class="line"><a id="l00222" name="l00222"></a><span class="lineno">  222</span> </div>
 <div class="line"><a id="l00223" name="l00223"></a><span class="lineno"><a class="line" href="namespacegoogle_1_1logging__internal.html#aa3792ddc75755350b76a7b196369eda3">  223</a></span><span class="keywordtype">bool</span> <a class="code hl_function" href="namespacegoogle_1_1logging__internal.html#aa3792ddc75755350b76a7b196369eda3">IsGoogleLoggingInitialized</a>() {</div>
-<div class="line"><a id="l00224" name="l00224"></a><span class="lineno">  224</span>  <span class="keywordflow">return</span> <a class="code hl_variable" href="namespacegoogle.html#ac5c2b8742bf06126bf261af57d826226">g_program_invocation_short_name</a> != NULL;</div>
+<div class="line"><a id="l00224" name="l00224"></a><span class="lineno">  224</span>  <span class="keywordflow">return</span> <a class="code hl_variable" href="namespacegoogle.html#ac5c2b8742bf06126bf261af57d826226">g_program_invocation_short_name</a> != <span class="keyword">nullptr</span>;</div>
 <div class="line"><a id="l00225" name="l00225"></a><span class="lineno">  225</span>}</div>
 <div class="line"><a id="l00226" name="l00226"></a><span class="lineno">  226</span> </div>
 <div class="line"><a id="l00227" name="l00227"></a><span class="lineno"><a class="line" href="namespacegoogle_1_1logging__internal.html#aa5bcfef09a25e887a41b29f9ba9be836">  227</a></span><span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> <a class="code hl_function" href="namespacegoogle_1_1logging__internal.html#aa5bcfef09a25e887a41b29f9ba9be836">GetTID</a>() {</div>
@@ -342,12 +342,12 @@ $(document).ready(function(){initNavTree('logging__utilities_8cc_source.html',''
 <div class="line"><a id="l00251" name="l00251"></a><span class="lineno">  251</span><span class="preprocessor">#else</span></div>
 <div class="line"><a id="l00252" name="l00252"></a><span class="lineno">  252</span>  <span class="keyword">const</span> <span class="keywordtype">char</span>* user = getenv(<span class="stringliteral">&quot;USER&quot;</span>);</div>
 <div class="line"><a id="l00253" name="l00253"></a><span class="lineno">  253</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00254" name="l00254"></a><span class="lineno">  254</span>  <span class="keywordflow">if</span> (user != NULL) {</div>
+<div class="line"><a id="l00254" name="l00254"></a><span class="lineno">  254</span>  <span class="keywordflow">if</span> (user != <span class="keyword">nullptr</span>) {</div>
 <div class="line"><a id="l00255" name="l00255"></a><span class="lineno">  255</span>    <a class="code hl_variable" href="namespacegoogle_1_1logging__internal.html#aa536dcb5cfc111872f678b2b2137226a">g_my_user_name</a> = user;</div>
 <div class="line"><a id="l00256" name="l00256"></a><span class="lineno">  256</span>  } <span class="keywordflow">else</span> {</div>
 <div class="line"><a id="l00257" name="l00257"></a><span class="lineno">  257</span><span class="preprocessor">#if !defined(_MSC_VER)  </span><span class="comment">// Not windows.</span></div>
 <div class="line"><a id="l00258" name="l00258"></a><span class="lineno">  258</span>    <span class="keyword">struct </span>passwd pwd;</div>
-<div class="line"><a id="l00259" name="l00259"></a><span class="lineno">  259</span>    <span class="keyword">struct </span>passwd* result = NULL;</div>
+<div class="line"><a id="l00259" name="l00259"></a><span class="lineno">  259</span>    <span class="keyword">struct </span>passwd* result = <span class="keyword">nullptr</span>;</div>
 <div class="line"><a id="l00260" name="l00260"></a><span class="lineno">  260</span>    <span class="keywordtype">char</span> buffer[1024] = {<span class="charliteral">&#39;\0&#39;</span>};</div>
 <div class="line"><a id="l00261" name="l00261"></a><span class="lineno">  261</span>    uid_t uid = geteuid();</div>
 <div class="line"><a id="l00262" name="l00262"></a><span class="lineno">  262</span>    <span class="keywordtype">int</span> pwuid_res = getpwuid_r(uid, &amp;pwd, buffer, <span class="keyword">sizeof</span>(buffer), &amp;result);</div>
@@ -409,7 +409,7 @@ $(document).ready(function(){initNavTree('logging__utilities_8cc_source.html',''
 <div class="line"><a id="l00318" name="l00318"></a><span class="lineno">  318</span>  <a class="code hl_define" href="base_2logging_8h.html#a3e1cfef60e774a81f30eaddf26a3a274">CHECK</a>(<a class="code hl_function" href="namespacegoogle_1_1logging__internal.html#aa3792ddc75755350b76a7b196369eda3">IsGoogleLoggingInitialized</a>())</div>
 <div class="line"><a id="l00319" name="l00319"></a><span class="lineno">  319</span>      &lt;&lt; <span class="stringliteral">&quot;You called ShutdownGoogleLogging() without calling &quot;</span></div>
 <div class="line"><a id="l00320" name="l00320"></a><span class="lineno">  320</span>         <span class="stringliteral">&quot;InitGoogleLogging() first!&quot;</span>;</div>
-<div class="line"><a id="l00321" name="l00321"></a><span class="lineno">  321</span>  <a class="code hl_variable" href="namespacegoogle.html#ac5c2b8742bf06126bf261af57d826226">g_program_invocation_short_name</a> = NULL;</div>
+<div class="line"><a id="l00321" name="l00321"></a><span class="lineno">  321</span>  <a class="code hl_variable" href="namespacegoogle.html#ac5c2b8742bf06126bf261af57d826226">g_program_invocation_short_name</a> = <span class="keyword">nullptr</span>;</div>
 <div class="line"><a id="l00322" name="l00322"></a><span class="lineno">  322</span><span class="preprocessor">#if !defined(_MSC_VER)</span></div>
 <div class="line"><a id="l00323" name="l00323"></a><span class="lineno">  323</span>  closelog();</div>
 <div class="line"><a id="l00324" name="l00324"></a><span class="lineno">  324</span><span class="preprocessor">#endif  </span><span class="comment">// !defined(_MSC_VER)</span></div>

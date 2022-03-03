@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.2</span>
+   &#160;<span id="projectnumber">9.3</span>
    </div>
   </td>
  </tr>
@@ -106,7 +106,7 @@ $(document).ready(function(){initNavTree('timer_8cc_source.html',''); initResiza
 <div class="line"><a id="l00015" name="l00015"></a><span class="lineno">   15</span> </div>
 <div class="line"><a id="l00016" name="l00016"></a><span class="lineno"><a class="line" href="class_scoped_wall_time.html#aa994b3d111ae36076335e94ef03d8c4b">   16</a></span><a class="code hl_function" href="class_scoped_wall_time.html#aa994b3d111ae36076335e94ef03d8c4b">ScopedWallTime::ScopedWallTime</a>(<span class="keywordtype">double</span>* aggregate_time)</div>
 <div class="line"><a id="l00017" name="l00017"></a><span class="lineno">   17</span>    : aggregate_time_(aggregate_time), timer_() {</div>
-<div class="line"><a id="l00018" name="l00018"></a><span class="lineno">   18</span>  <a class="code hl_define" href="base_2logging_8h.html#ae17f8119c108cf3070bad3449c7e0006">DCHECK</a>(aggregate_time != NULL);</div>
+<div class="line"><a id="l00018" name="l00018"></a><span class="lineno">   18</span>  <a class="code hl_define" href="base_2logging_8h.html#ae17f8119c108cf3070bad3449c7e0006">DCHECK</a>(aggregate_time != <span class="keyword">nullptr</span>);</div>
 <div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span>  timer_.<a class="code hl_function" href="class_wall_timer.html#a07aaf1227e4d645f15e0a964f54ef291">Start</a>();</div>
 <div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span>}</div>
 <div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span> </div>
@@ -114,7 +114,7 @@ $(document).ready(function(){initNavTree('timer_8cc_source.html',''); initResiza
 <div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span>  timer_.<a class="code hl_function" href="class_wall_timer.html#a17a237457e57625296e6b24feb19c60a">Stop</a>();</div>
 <div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span>  *aggregate_time_ += timer_.<a class="code hl_function" href="class_wall_timer.html#aec56fe080959ecebec3feaed9dafde84">Get</a>();</div>
 <div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span>}</div>
-<div class="ttc" id="abase_2logging_8h_html_ae17f8119c108cf3070bad3449c7e0006"><div class="ttname"><a href="base_2logging_8h.html#ae17f8119c108cf3070bad3449c7e0006">DCHECK</a></div><div class="ttdeci">#define DCHECK(condition)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00889">base/logging.h:889</a></div></div>
+<div class="ttc" id="abase_2logging_8h_html_ae17f8119c108cf3070bad3449c7e0006"><div class="ttname"><a href="base_2logging_8h.html#ae17f8119c108cf3070bad3449c7e0006">DCHECK</a></div><div class="ttdeci">#define DCHECK(condition)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00890">base/logging.h:890</a></div></div>
 <div class="ttc" id="aclass_scoped_wall_time_html_a3e15f650d8ef30e58d33374eb41af5fb"><div class="ttname"><a href="class_scoped_wall_time.html#a3e15f650d8ef30e58d33374eb41af5fb">ScopedWallTime::~ScopedWallTime</a></div><div class="ttdeci">~ScopedWallTime()</div><div class="ttdef"><b>Definition:</b> <a href="timer_8cc_source.html#l00022">timer.cc:22</a></div></div>
 <div class="ttc" id="aclass_scoped_wall_time_html_aa994b3d111ae36076335e94ef03d8c4b"><div class="ttname"><a href="class_scoped_wall_time.html#aa994b3d111ae36076335e94ef03d8c4b">ScopedWallTime::ScopedWallTime</a></div><div class="ttdeci">ScopedWallTime(double *aggregate_time)</div><div class="ttdef"><b>Definition:</b> <a href="timer_8cc_source.html#l00016">timer.cc:16</a></div></div>
 <div class="ttc" id="aclass_wall_timer_html_a07aaf1227e4d645f15e0a964f54ef291"><div class="ttname"><a href="class_wall_timer.html#a07aaf1227e4d645f15e0a964f54ef291">WallTimer::Start</a></div><div class="ttdeci">void Start()</div><div class="ttdef"><b>Definition:</b> <a href="timer_8h_source.html#l00031">timer.h:31</a></div></div>

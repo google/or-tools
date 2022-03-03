@@ -1,10 +1,9 @@
 var searchData=
 [
-  ['end_5fequivalence_5fclass_0',['end_equivalence_class',['../structoperations__research_1_1_routing_model_1_1_vehicle_class.html#ac4332ba473c0913b24289e3a71522b2c',1,'operations_research::RoutingModel::VehicleClass']]],
-  ['end_5fmax_1',['end_max',['../structoperations__research_1_1_disjunctive_propagator_1_1_tasks.html#aa7b2fcbf13d5be0c8c9cadfa34424538',1,'operations_research::DisjunctivePropagator::Tasks']]],
-  ['end_5fmin_2',['end_min',['../structoperations__research_1_1_disjunctive_propagator_1_1_tasks.html#a283e17231ec4398bb14b047498785c7c',1,'operations_research::DisjunctivePropagator::Tasks']]],
-  ['evaluator_5findex_3',['evaluator_index',['../structoperations__research_1_1_routing_model_1_1_cost_class.html#a2b9e2030f3dc0eedf1e94745c2af2cba',1,'operations_research::RoutingModel::CostClass']]],
-  ['evaluator_5fstrategy_4',['EVALUATOR_STRATEGY',['../classoperations__research_1_1_first_solution_strategy.html#a59daa7e6c2d57af4e43d2db125142554',1,'operations_research::FirstSolutionStrategy']]],
-  ['event_5ftype_5',['event_type',['../structoperations__research_1_1_local_search_filter_manager_1_1_filter_event.html#afcbb97d8ff7afc40721ca14bd01b19c8',1,'operations_research::LocalSearchFilterManager::FilterEvent']]],
-  ['expression_6',['expression',['../structoperations__research_1_1_solver_1_1_integer_cast_info.html#a835c75d75486a896c255acb75d6616f3',1,'operations_research::Solver::IntegerCastInfo']]]
+  ['failures_0',['failures',['../structoperations__research_1_1_solution_collector_1_1_solution_data.html#aa28921bd2ee524558ca4aed5669f52a7',1,'operations_research::SolutionCollector::SolutionData']]],
+  ['filter_1',['filter',['../structoperations__research_1_1_local_search_filter_manager_1_1_filter_event.html#a711d428ff2c91eab3c8d7b73ddd14d45',1,'operations_research::LocalSearchFilterManager::FilterEvent']]],
+  ['first_5fnode_2',['first_node',['../structoperations__research_1_1_routing_dimension_1_1_node_precedence.html#a31f4f1be8bd8b664df306885d5e49c87',1,'operations_research::RoutingDimension::NodePrecedence']]],
+  ['fixed_5fcost_3',['fixed_cost',['../structoperations__research_1_1_routing_model_1_1_vehicle_class.html#a056f907141642096d7919e3ef79fad43',1,'operations_research::RoutingModel::VehicleClass::fixed_cost()'],['../structoperations__research_1_1_routing_model_1_1_vehicle_type_container_1_1_vehicle_class_entry.html#a056f907141642096d7919e3ef79fad43',1,'operations_research::RoutingModel::VehicleTypeContainer::VehicleClassEntry::fixed_cost()']]],
+  ['forbidden_5fintervals_4',['forbidden_intervals',['../structoperations__research_1_1_disjunctive_propagator_1_1_tasks.html#a425fd06d315549fdc6e6c482e3cdf774',1,'operations_research::DisjunctivePropagator::Tasks']]],
+  ['found_5finitial_5fsolution_5f_5',['found_initial_solution_',['../classoperations__research_1_1_optimize_var.html#a7bcea05dd62f2b212dd18322fd22b32e',1,'operations_research::OptimizeVar']]]
 ];

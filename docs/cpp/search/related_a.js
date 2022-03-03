@@ -1,11 +1,10 @@
 var searchData=
 [
-  ['linearexpr_0',['LinearExpr',['../classoperations__research_1_1sat_1_1_bool_var.html#a7678a938bf60a5c17fb47cf58995db0c',1,'operations_research::sat::BoolVar::LinearExpr()'],['../classoperations__research_1_1sat_1_1_int_var.html#a7678a938bf60a5c17fb47cf58995db0c',1,'operations_research::sat::IntVar::LinearExpr()']]],
-  ['literalwatchers_1',['LiteralWatchers',['../classoperations__research_1_1sat_1_1_sat_clause.html#a441b0302a38e88ed3a19874b76709b81',1,'operations_research::sat::SatClause']]],
-  ['loadvariables_2',['LoadVariables',['../classoperations__research_1_1sat_1_1_cp_model_mapping.html#a1a6eefe7a5bfd8bdf83407c9e6af56f5',1,'operations_research::sat::CpModelMapping']]],
-  ['localsearchprofiler_3',['LocalSearchProfiler',['../classoperations__research_1_1_solver.html#a622500a4c7e11bbc4b8a5e5de2c84f13',1,'operations_research::Solver']]],
-  ['localsearchstate_4',['LocalSearchState',['../classoperations__research_1_1_local_search_variable.html#aff1f964f65624725a91c1536c7af0320',1,'operations_research::LocalSearchVariable']]],
-  ['localsearchvariable_5',['LocalSearchVariable',['../classoperations__research_1_1_local_search_state.html#a8f5c510ca9b60acf27d2cd564c723ff7',1,'operations_research::LocalSearchState']]],
-  ['logdestination_6',['LogDestination',['../classgoogle_1_1_log_message.html#a66e198b8483e7741c0d9441669e4b0bd',1,'google::LogMessage']]],
-  ['logmessage_7',['LogMessage',['../classgoogle_1_1_log_destination.html#a5f3880ffd53f58af933af4f226389744',1,'google::LogDestination']]]
+  ['model_0',['Model',['../structoperations__research_1_1fz_1_1_variable.html#a2bf2a0e9b454c55aa5dcb5aa4698697b',1,'operations_research::fz::Variable']]],
+  ['mpconstraint_1',['MPConstraint',['../classoperations__research_1_1_m_p_solver_interface.html#a24102af97b3c7e803861e1d6983b1fea',1,'operations_research::MPSolverInterface']]],
+  ['mpobjective_2',['MPObjective',['../classoperations__research_1_1_m_p_solver_interface.html#a77dbe3a653f9c5d30e818000d92d8b17',1,'operations_research::MPSolverInterface']]],
+  ['mpsolver_3',['MPSolver',['../classoperations__research_1_1_m_p_objective.html#ac2c01b4de8f7670e37daa7d42b804dd4',1,'operations_research::MPObjective::MPSolver()'],['../classoperations__research_1_1_m_p_variable.html#ac2c01b4de8f7670e37daa7d42b804dd4',1,'operations_research::MPVariable::MPSolver()'],['../classoperations__research_1_1_m_p_constraint.html#ac2c01b4de8f7670e37daa7d42b804dd4',1,'operations_research::MPConstraint::MPSolver()'],['../classoperations__research_1_1_m_p_solver_interface.html#ac2c01b4de8f7670e37daa7d42b804dd4',1,'operations_research::MPSolverInterface::MPSolver()']]],
+  ['mpsolverinterface_4',['MPSolverInterface',['../classoperations__research_1_1_m_p_solver.html#ac0aea0786e75adbb2d24c41c15e7456c',1,'operations_research::MPSolver::MPSolverInterface()'],['../classoperations__research_1_1_m_p_objective.html#ac0aea0786e75adbb2d24c41c15e7456c',1,'operations_research::MPObjective::MPSolverInterface()'],['../classoperations__research_1_1_m_p_variable.html#ac0aea0786e75adbb2d24c41c15e7456c',1,'operations_research::MPVariable::MPSolverInterface()'],['../classoperations__research_1_1_m_p_constraint.html#ac0aea0786e75adbb2d24c41c15e7456c',1,'operations_research::MPConstraint::MPSolverInterface()']]],
+  ['mpvariablesolutionvaluetest_5',['MPVariableSolutionValueTest',['../classoperations__research_1_1_m_p_variable.html#a8844020cc1376123531cd53c831acdef',1,'operations_research::MPVariable']]],
+  ['multiplecircuitconstraint_6',['MultipleCircuitConstraint',['../classoperations__research_1_1sat_1_1_bool_var.html#afa8cb51258a0d98e6d5db2f60f8ceccc',1,'operations_research::sat::BoolVar']]]
 ];

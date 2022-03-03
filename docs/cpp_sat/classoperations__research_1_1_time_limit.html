@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 9.2</span>
+                <span id="sfml">Google OR-Tools 9.3</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -158,6 +158,12 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a312550ebabce586fb77c49e813c610f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad0cdf04d71ac4f14262eb4871041ddbd"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_time_limit.html#ad0cdf04d71ac4f14262eb4871041ddbd">MergeWithGlobalTimeLimit</a> (<a class="el" href="classoperations__research_1_1_time_limit.html">TimeLimit</a> *other)</td></tr>
 <tr class="separator:ad0cdf04d71ac4f14262eb4871041ddbd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af6b375b546e563ed7e6312123ce9c7a0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_time_limit.html#af6b375b546e563ed7e6312123ce9c7a0">ChangeDeterministicLimit</a> (double new_limit)</td></tr>
+<tr class="memdesc:af6b375b546e563ed7e6312123ce9c7a0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Overwrites the deterministic time limit with the new value.  <a href="classoperations__research_1_1_time_limit.html#af6b375b546e563ed7e6312123ce9c7a0">More...</a><br /></td></tr>
+<tr class="separator:af6b375b546e563ed7e6312123ce9c7a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a75214ecbf18d3e29566c78cac35f699b"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_time_limit.html#a75214ecbf18d3e29566c78cac35f699b">GetDeterministicLimit</a> () const</td></tr>
+<tr class="memdesc:a75214ecbf18d3e29566c78cac35f699b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Queries the deterministic time limit.  <a href="classoperations__research_1_1_time_limit.html#a75214ecbf18d3e29566c78cac35f699b">More...</a><br /></td></tr>
+<tr class="separator:a75214ecbf18d3e29566c78cac35f699b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a764be64f3029f8b8e23511061d8de355"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_time_limit.html#a764be64f3029f8b8e23511061d8de355">DebugString</a> () const</td></tr>
 <tr class="memdesc:a764be64f3029f8b8e23511061d8de355"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns information about the time limit object in a human-readable form.  <a href="classoperations__research_1_1_time_limit.html#a764be64f3029f8b8e23511061d8de355">More...</a><br /></td></tr>
 <tr class="separator:a764be64f3029f8b8e23511061d8de355"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -228,7 +234,7 @@ Static Public Attributes</h2></td></tr>
 <p >Instruction count is the number of instructions executed. It is based on PMU counters and is not very acurate.</p>
 <p >Use an infinite limit value to ignore a limit. </p>
 
-<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00473">473</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00485">485</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
 
 </div>
 </div>
@@ -359,6 +365,36 @@ Static Public Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="af6b375b546e563ed7e6312123ce9c7a0" name="af6b375b546e563ed7e6312123ce9c7a0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af6b375b546e563ed7e6312123ce9c7a0">&#9670;&nbsp;</a></span>ChangeDeterministicLimit()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ChangeDeterministicLimit </td>
+          <td>(</td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>new_limit</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Overwrites the deterministic time limit with the new value. </p>
+
+<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00297">297</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
+
+</div>
+</div>
 <a id="a764be64f3029f8b8e23511061d8de355" name="a764be64f3029f8b8e23511061d8de355"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a764be64f3029f8b8e23511061d8de355">&#9670;&nbsp;</a></span>DebugString()</h2>
 
@@ -465,6 +501,35 @@ Static Public Attributes</h2></td></tr>
 <p >This method is designed specifically to work with solver parameter protos, e.g. <code>BopParameters</code>, <code>MipParameters</code> and <code>SatParameters</code>. </p>
 
 <p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00160">160</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
+
+</div>
+</div>
+<a id="a75214ecbf18d3e29566c78cac35f699b" name="a75214ecbf18d3e29566c78cac35f699b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a75214ecbf18d3e29566c78cac35f699b">&#9670;&nbsp;</a></span>GetDeterministicLimit()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">double GetDeterministicLimit </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Queries the deterministic time limit. </p>
+
+<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00304">304</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
 
 </div>
 </div>
@@ -582,7 +647,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Returns the number of instructions left to reach the limit. </p>
 
-<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00583">583</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00595">595</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
 
 </div>
 </div>
@@ -614,7 +679,7 @@ Static Public Attributes</h2></td></tr>
 <p >If the <a class="el" href="classoperations__research_1_1_time_limit.html" title="A simple class to enforce both an elapsed time limit and a deterministic time limit in the same threa...">TimeLimit</a> was constructed with <b>infinity</b> as the limit, this will always return infinity.</p>
 <p >Note that this function is not optimized for speed as <code><a class="el" href="classoperations__research_1_1_time_limit.html#a810d5f7aaf80cc09cf5a094e20c1aaca" title="Returns true when the external limit is true, or the deterministic time is over the deterministic lim...">LimitReached()</a></code> is. </p>
 
-<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00572">572</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00584">584</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
 
 </div>
 </div>
@@ -673,7 +738,7 @@ Static Public Attributes</h2></td></tr>
 <p>Returns true when the external limit is true, or the deterministic time is over the deterministic limit or if the next time <code><a class="el" href="classoperations__research_1_1_time_limit.html#a810d5f7aaf80cc09cf5a094e20c1aaca" title="Returns true when the external limit is true, or the deterministic time is over the deterministic lim...">LimitReached()</a></code> is called is likely to be over the time limit. </p>
 <p >See toplevel comment. Once it has returned true, it is guaranteed to always return true. </p>
 
-<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00534">534</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00546">546</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
 
 </div>
 </div>
@@ -701,7 +766,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00513">513</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00525">525</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
 
 </div>
 </div>
@@ -756,7 +821,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Returns the number of instructions executed since the creation of this object. </p>
 
-<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00524">524</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00536">536</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
 
 </div>
 </div>
@@ -819,7 +884,7 @@ Static Public Attributes</h2></td></tr>
 <p>Sets new time limits. </p>
 <p >Note that this does not reset the running max nor any registered external Boolean. </p>
 
-<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00507">507</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00519">519</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
 
 </div>
 </div>

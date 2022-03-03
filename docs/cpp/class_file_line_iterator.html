@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.2</span>
+   &#160;<span id="projectnumber">9.3</span>
    </div>
   </td>
  </tr>
@@ -95,30 +95,20 @@ $(document).ready(function(){initNavTree('class_file_line_iterator.html',''); in
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="base_2filelineiter_8h_source.html#l00036">36</a> of file <a class="el" href="base_2filelineiter_8h_source.html">base/filelineiter.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="filelineiter_8h_source.html#l00036">36</a> of file <a class="el" href="filelineiter_8h_source.html">filelineiter.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:a06fc87d81c62e9abb8790b6e5713c55b"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom">{ <br />
-&#160;&#160;<a class="el" href="class_file_line_iterator.html#ace1ea5ceca73af21930eb45f54580537ad20935afa9af8d1f162c113cfbbf111d">DEFAULT</a> = 0x0000
-, <a class="el" href="class_file_line_iterator.html#ace1ea5ceca73af21930eb45f54580537a308d8b2d6c5424340438b7712936f6aa">REMOVE_LINEFEED</a> = DEFAULT
-, <a class="el" href="class_file_line_iterator.html#ace1ea5ceca73af21930eb45f54580537a1d34df1a71dd86ef7dd1ff3482cda46c">KEEP_LINEFEED</a> = 0x0001
-, <a class="el" href="class_file_line_iterator.html#ace1ea5ceca73af21930eb45f54580537af90f6ab97f2d2a6a1b0b775e702d4abe">REMOVE_INLINE_CR</a> = 0x0002
+<tr class="memitem:a726ca809ffd3d67ab4b8476646f26635"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom">{ <br />
+&#160;&#160;<a class="el" href="class_file_line_iterator.html#a726ca809ffd3d67ab4b8476646f26635a88ec7d5086d2469ba843c7fcceade8a6">DEFAULT</a> = 0x0000
+, <a class="el" href="class_file_line_iterator.html#a726ca809ffd3d67ab4b8476646f26635af3b6e7197eaaba2a5588efa32373783c">REMOVE_LINEFEED</a> = DEFAULT
+, <a class="el" href="class_file_line_iterator.html#a726ca809ffd3d67ab4b8476646f26635a3de2f8e12c8772d6ff23595910a383bc">KEEP_LINEFEED</a> = 0x0001
+, <a class="el" href="class_file_line_iterator.html#a726ca809ffd3d67ab4b8476646f26635ab221b5a5b30e0c727ce21768362b5a78">REMOVE_INLINE_CR</a> = 0x0002
 , <br />
-&#160;&#160;<a class="el" href="class_file_line_iterator.html#ace1ea5ceca73af21930eb45f54580537a1af1b850cece11e56a82104a5d0f9608">REMOVE_BLANK_LINES</a> = 0x0004
+&#160;&#160;<a class="el" href="class_file_line_iterator.html#a726ca809ffd3d67ab4b8476646f26635adc66361387806a19114d00f5062a9316">REMOVE_BLANK_LINES</a> = 0x0004
 <br />
  }</td></tr>
-<tr class="separator:a06fc87d81c62e9abb8790b6e5713c55b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ace1ea5ceca73af21930eb45f54580537"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom">{ <br />
-&#160;&#160;<a class="el" href="class_file_line_iterator.html#ace1ea5ceca73af21930eb45f54580537ad20935afa9af8d1f162c113cfbbf111d">DEFAULT</a> = 0x0000
-, <a class="el" href="class_file_line_iterator.html#ace1ea5ceca73af21930eb45f54580537a308d8b2d6c5424340438b7712936f6aa">REMOVE_LINEFEED</a> = DEFAULT
-, <a class="el" href="class_file_line_iterator.html#ace1ea5ceca73af21930eb45f54580537a1d34df1a71dd86ef7dd1ff3482cda46c">KEEP_LINEFEED</a> = 0x0001
-, <a class="el" href="class_file_line_iterator.html#ace1ea5ceca73af21930eb45f54580537af90f6ab97f2d2a6a1b0b775e702d4abe">REMOVE_INLINE_CR</a> = 0x0002
-, <br />
-&#160;&#160;<a class="el" href="class_file_line_iterator.html#ace1ea5ceca73af21930eb45f54580537a1af1b850cece11e56a82104a5d0f9608">REMOVE_BLANK_LINES</a> = 0x0004
-<br />
- }</td></tr>
-<tr class="separator:ace1ea5ceca73af21930eb45f54580537"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:a726ca809ffd3d67ab4b8476646f26635"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -130,18 +120,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a27e1ef3c35c6578807378ae853b45251"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a00f008b80917746917b874d00abd02a9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_file_line_iterator.html#a00f008b80917746917b874d00abd02a9">operator++</a> ()</td></tr>
 <tr class="separator:a00f008b80917746917b874d00abd02a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7cf75d0cda556348cd270816799f2e9e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_file_line_iterator.html#a7cf75d0cda556348cd270816799f2e9e">FileLineIterator</a> (<a class="el" href="class_file.html">File</a> *file, int options)</td></tr>
-<tr class="separator:a7cf75d0cda556348cd270816799f2e9e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0fa79854440a64027a1f6acb1566782f"><td class="memItemLeft" align="right" valign="top">const std::string &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_file_line_iterator.html#a0fa79854440a64027a1f6acb1566782f">operator*</a> () const</td></tr>
-<tr class="separator:a0fa79854440a64027a1f6acb1566782f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a27e1ef3c35c6578807378ae853b45251"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_file_line_iterator.html#a27e1ef3c35c6578807378ae853b45251">operator!=</a> (const <a class="el" href="class_file_line_iterator.html">FileLineIterator</a> &amp;other) const</td></tr>
-<tr class="separator:a27e1ef3c35c6578807378ae853b45251"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a00f008b80917746917b874d00abd02a9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_file_line_iterator.html#a00f008b80917746917b874d00abd02a9">operator++</a> ()</td></tr>
-<tr class="separator:a00f008b80917746917b874d00abd02a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Enumeration Documentation</h2>
-<a id="a06fc87d81c62e9abb8790b6e5713c55b" name="a06fc87d81c62e9abb8790b6e5713c55b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a06fc87d81c62e9abb8790b6e5713c55b">&#9670;&nbsp;</a></span>anonymous enum</h2>
+<a id="a726ca809ffd3d67ab4b8476646f26635" name="a726ca809ffd3d67ab4b8476646f26635"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a726ca809ffd3d67ab4b8476646f26635">&#9670;&nbsp;</a></span>anonymous enum</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -152,43 +134,20 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 <table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="ace1ea5ceca73af21930eb45f54580537ad20935afa9af8d1f162c113cfbbf111d" name="ace1ea5ceca73af21930eb45f54580537ad20935afa9af8d1f162c113cfbbf111d"></a>DEFAULT&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="ace1ea5ceca73af21930eb45f54580537a308d8b2d6c5424340438b7712936f6aa" name="ace1ea5ceca73af21930eb45f54580537a308d8b2d6c5424340438b7712936f6aa"></a>REMOVE_LINEFEED&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="ace1ea5ceca73af21930eb45f54580537a1d34df1a71dd86ef7dd1ff3482cda46c" name="ace1ea5ceca73af21930eb45f54580537a1d34df1a71dd86ef7dd1ff3482cda46c"></a>KEEP_LINEFEED&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="ace1ea5ceca73af21930eb45f54580537af90f6ab97f2d2a6a1b0b775e702d4abe" name="ace1ea5ceca73af21930eb45f54580537af90f6ab97f2d2a6a1b0b775e702d4abe"></a>REMOVE_INLINE_CR&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="ace1ea5ceca73af21930eb45f54580537a1af1b850cece11e56a82104a5d0f9608" name="ace1ea5ceca73af21930eb45f54580537a1af1b850cece11e56a82104a5d0f9608"></a>REMOVE_BLANK_LINES&#160;</td><td class="fielddoc"></td></tr>
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a726ca809ffd3d67ab4b8476646f26635a88ec7d5086d2469ba843c7fcceade8a6" name="a726ca809ffd3d67ab4b8476646f26635a88ec7d5086d2469ba843c7fcceade8a6"></a>DEFAULT&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a726ca809ffd3d67ab4b8476646f26635af3b6e7197eaaba2a5588efa32373783c" name="a726ca809ffd3d67ab4b8476646f26635af3b6e7197eaaba2a5588efa32373783c"></a>REMOVE_LINEFEED&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a726ca809ffd3d67ab4b8476646f26635a3de2f8e12c8772d6ff23595910a383bc" name="a726ca809ffd3d67ab4b8476646f26635a3de2f8e12c8772d6ff23595910a383bc"></a>KEEP_LINEFEED&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a726ca809ffd3d67ab4b8476646f26635ab221b5a5b30e0c727ce21768362b5a78" name="a726ca809ffd3d67ab4b8476646f26635ab221b5a5b30e0c727ce21768362b5a78"></a>REMOVE_INLINE_CR&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a726ca809ffd3d67ab4b8476646f26635adc66361387806a19114d00f5062a9316" name="a726ca809ffd3d67ab4b8476646f26635adc66361387806a19114d00f5062a9316"></a>REMOVE_BLANK_LINES&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="base_2filelineiter_8h_source.html#l00038">38</a> of file <a class="el" href="base_2filelineiter_8h_source.html">base/filelineiter.h</a>.</p>
-
-</div>
-</div>
-<a id="ace1ea5ceca73af21930eb45f54580537" name="ace1ea5ceca73af21930eb45f54580537"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ace1ea5ceca73af21930eb45f54580537">&#9670;&nbsp;</a></span>anonymous enum</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">anonymous enum</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="ace1ea5ceca73af21930eb45f54580537ad20935afa9af8d1f162c113cfbbf111d" name="ace1ea5ceca73af21930eb45f54580537ad20935afa9af8d1f162c113cfbbf111d"></a>DEFAULT&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="ace1ea5ceca73af21930eb45f54580537a308d8b2d6c5424340438b7712936f6aa" name="ace1ea5ceca73af21930eb45f54580537a308d8b2d6c5424340438b7712936f6aa"></a>REMOVE_LINEFEED&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="ace1ea5ceca73af21930eb45f54580537a1d34df1a71dd86ef7dd1ff3482cda46c" name="ace1ea5ceca73af21930eb45f54580537a1d34df1a71dd86ef7dd1ff3482cda46c"></a>KEEP_LINEFEED&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="ace1ea5ceca73af21930eb45f54580537af90f6ab97f2d2a6a1b0b775e702d4abe" name="ace1ea5ceca73af21930eb45f54580537af90f6ab97f2d2a6a1b0b775e702d4abe"></a>REMOVE_INLINE_CR&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="ace1ea5ceca73af21930eb45f54580537a1af1b850cece11e56a82104a5d0f9608" name="ace1ea5ceca73af21930eb45f54580537a1af1b850cece11e56a82104a5d0f9608"></a>REMOVE_BLANK_LINES&#160;</td><td class="fielddoc"></td></tr>
-</table>
-
-<p class="definition">Definition at line <a class="el" href="util_2filelineiter_8h_source.html#l00038">38</a> of file <a class="el" href="util_2filelineiter_8h_source.html">util/filelineiter.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="filelineiter_8h_source.html#l00038">38</a> of file <a class="el" href="filelineiter_8h_source.html">filelineiter.h</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a7cf75d0cda556348cd270816799f2e9e" name="a7cf75d0cda556348cd270816799f2e9e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7cf75d0cda556348cd270816799f2e9e">&#9670;&nbsp;</a></span>FileLineIterator() <span class="overload">[1/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a7cf75d0cda556348cd270816799f2e9e">&#9670;&nbsp;</a></span>FileLineIterator()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -221,51 +180,13 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2filelineiter_8h_source.html#l00046">46</a> of file <a class="el" href="base_2filelineiter_8h_source.html">base/filelineiter.h</a>.</p>
-
-</div>
-</div>
-<a id="a7cf75d0cda556348cd270816799f2e9e" name="a7cf75d0cda556348cd270816799f2e9e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7cf75d0cda556348cd270816799f2e9e">&#9670;&nbsp;</a></span>FileLineIterator() <span class="overload">[2/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="class_file_line_iterator.html">FileLineIterator</a> </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="class_file.html">File</a> *&#160;</td>
-          <td class="paramname"><em>file</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>options</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="util_2filelineiter_8h_source.html#l00046">46</a> of file <a class="el" href="util_2filelineiter_8h_source.html">util/filelineiter.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="filelineiter_8h_source.html#l00046">46</a> of file <a class="el" href="filelineiter_8h_source.html">filelineiter.h</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="a27e1ef3c35c6578807378ae853b45251" name="a27e1ef3c35c6578807378ae853b45251"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a27e1ef3c35c6578807378ae853b45251">&#9670;&nbsp;</a></span>operator!=() <span class="overload">[1/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a27e1ef3c35c6578807378ae853b45251">&#9670;&nbsp;</a></span>operator!=()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -288,40 +209,12 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2filelineiter_8h_source.html#l00054">54</a> of file <a class="el" href="base_2filelineiter_8h_source.html">base/filelineiter.h</a>.</p>
-
-</div>
-</div>
-<a id="a27e1ef3c35c6578807378ae853b45251" name="a27e1ef3c35c6578807378ae853b45251"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a27e1ef3c35c6578807378ae853b45251">&#9670;&nbsp;</a></span>operator!=() <span class="overload">[2/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool operator!= </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="class_file_line_iterator.html">FileLineIterator</a> &amp;&#160;</td>
-          <td class="paramname"><em>other</em></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="util_2filelineiter_8h_source.html#l00054">54</a> of file <a class="el" href="util_2filelineiter_8h_source.html">util/filelineiter.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="filelineiter_8h_source.html#l00054">54</a> of file <a class="el" href="filelineiter_8h_source.html">filelineiter.h</a>.</p>
 
 </div>
 </div>
 <a id="a0fa79854440a64027a1f6acb1566782f" name="a0fa79854440a64027a1f6acb1566782f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0fa79854440a64027a1f6acb1566782f">&#9670;&nbsp;</a></span>operator*() <span class="overload">[1/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a0fa79854440a64027a1f6acb1566782f">&#9670;&nbsp;</a></span>operator*()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -343,39 +236,12 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2filelineiter_8h_source.html#l00053">53</a> of file <a class="el" href="base_2filelineiter_8h_source.html">base/filelineiter.h</a>.</p>
-
-</div>
-</div>
-<a id="a0fa79854440a64027a1f6acb1566782f" name="a0fa79854440a64027a1f6acb1566782f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0fa79854440a64027a1f6acb1566782f">&#9670;&nbsp;</a></span>operator*() <span class="overload">[2/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">const std::string &amp; operator* </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="util_2filelineiter_8h_source.html#l00053">53</a> of file <a class="el" href="util_2filelineiter_8h_source.html">util/filelineiter.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="filelineiter_8h_source.html#l00053">53</a> of file <a class="el" href="filelineiter_8h_source.html">filelineiter.h</a>.</p>
 
 </div>
 </div>
 <a id="a00f008b80917746917b874d00abd02a9" name="a00f008b80917746917b874d00abd02a9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a00f008b80917746917b874d00abd02a9">&#9670;&nbsp;</a></span>operator++() <span class="overload">[1/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a00f008b80917746917b874d00abd02a9">&#9670;&nbsp;</a></span>operator++()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -397,40 +263,12 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2filelineiter_8h_source.html#l00057">57</a> of file <a class="el" href="base_2filelineiter_8h_source.html">base/filelineiter.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="filelineiter_8h_source.html#l00057">57</a> of file <a class="el" href="filelineiter_8h_source.html">filelineiter.h</a>.</p>
 
 </div>
 </div>
-<a id="a00f008b80917746917b874d00abd02a9" name="a00f008b80917746917b874d00abd02a9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a00f008b80917746917b874d00abd02a9">&#9670;&nbsp;</a></span>operator++() <span class="overload">[2/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void operator++ </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="util_2filelineiter_8h_source.html#l00057">57</a> of file <a class="el" href="util_2filelineiter_8h_source.html">util/filelineiter.h</a>.</p>
-
-</div>
-</div>
-<hr/>The documentation for this class was generated from the following files:<ul>
-<li><a class="el" href="base_2filelineiter_8h_source.html">base/filelineiter.h</a></li>
-<li><a class="el" href="util_2filelineiter_8h_source.html">util/filelineiter.h</a></li>
+<hr/>The documentation for this class was generated from the following file:<ul>
+<li><a class="el" href="filelineiter_8h_source.html">filelineiter.h</a></li>
 </ul>
 </div><!-- contents -->
 </div><!-- doc-content -->

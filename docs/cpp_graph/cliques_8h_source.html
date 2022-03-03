@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 9.2</span>
+                <span id="sfml">Google OR-Tools 9.3</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -116,8 +116,8 @@ $(document).ready(function(){initNavTree('cliques_8h_source.html',''); initResiz
 <div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span><span class="preprocessor">#include &lt;vector&gt;</span></div>
 <div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span> </div>
 <div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span><span class="preprocessor">#include &quot;absl/strings/str_cat.h&quot;</span></div>
-<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span><span class="preprocessor">#include &quot;ortools/base/int_type.h&quot;</span></div>
-<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span><span class="preprocessor">#include &quot;ortools/base/logging.h&quot;</span></div>
+<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span><span class="preprocessor">#include &quot;ortools/base/logging.h&quot;</span></div>
+<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span><span class="preprocessor">#include &quot;ortools/base/strong_int.h&quot;</span></div>
 <div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span><span class="preprocessor">#include &quot;ortools/base/strong_vector.h&quot;</span></div>
 <div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span><span class="preprocessor">#include &quot;ortools/util/time_limit.h&quot;</span></div>
 <div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span> </div>
@@ -293,7 +293,7 @@ $(document).ready(function(){initNavTree('cliques_8h_source.html',''); initResiz
 <div class="line"><a id="l00208" name="l00208"></a><span class="lineno">  208</span>  }</div>
 <div class="line"><a id="l00209" name="l00209"></a><span class="lineno">  209</span> </div>
 <div class="line"><a id="l00210" name="l00210"></a><span class="lineno">  210</span> <span class="keyword">private</span>:</div>
-<div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span>  DEFINE_INT_TYPE(CandidateIndex, ptrdiff_t);</div>
+<div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span>  DEFINE_STRONG_INT_TYPE(CandidateIndex, ptrdiff_t);</div>
 <div class="line"><a id="l00212" name="l00212"></a><span class="lineno">  212</span> </div>
 <div class="line"><a id="l00213" name="l00213"></a><span class="lineno">  213</span>  <span class="comment">// A data structure that maintains the variables of one &quot;iteration&quot; of the</span></div>
 <div class="line"><a id="l00214" name="l00214"></a><span class="lineno">  214</span>  <span class="comment">// search algorithm. These are the variables that would normally be allocated</span></div>

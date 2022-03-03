@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.2</span>
+   &#160;<span id="projectnumber">9.3</span>
    </div>
   </td>
  </tr>
@@ -97,7 +97,7 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1_global_v
 <div class="textblock"><p ><a class="el" href="classoperations__research_1_1_global_vehicle_breaks_constraint.html" title="GlobalVehicleBreaksConstraint ensures breaks constraints are enforced on all vehicles in the dimensio...">GlobalVehicleBreaksConstraint</a> ensures breaks constraints are enforced on all vehicles in the dimension passed to its constructor. </p>
 <p >It is intended to be used for dimensions representing time. A break constraint ensures break intervals fit on the route of a vehicle. For a given vehicle, it forces break intervals to be disjoint from visit intervals, where visit intervals start at CumulVar(node) and last for node_visit_transit[node]. Moreover, it ensures that there is enough time between two consecutive nodes of a route to do transit and vehicle breaks, i.e. if Next(nodeA) = nodeB, CumulVar(nodeA) = tA and CumulVar(nodeB) = tB, then SlackVar(nodeA) &gt;= sum_{breaks \subseteq [tA, tB)} duration(break). </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02256">2256</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02284">2284</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -185,7 +185,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__breaks_8cc_source.html#l00704">704</a> of file <a class="el" href="routing__breaks_8cc_source.html">routing_breaks.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__breaks_8cc_source.html#l00707">707</a> of file <a class="el" href="routing__breaks_8cc_source.html">routing_breaks.cc</a>.</p>
 
 </div>
 </div>
@@ -216,7 +216,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Accepts the given visitor. </p>
 
-<p>Reimplemented in <a class="el" href="classoperations__research_1_1_pack.html#aa30c84aec5e60d6b74e1e1eb15011d4a">Pack</a>, <a class="el" href="classoperations__research_1_1_if_then_else_ct.html#aa30c84aec5e60d6b74e1e1eb15011d4a">IfThenElseCt</a>, and <a class="el" href="class_swig_director___constraint.html#a8043b2f97c119b7f9281a7a5a88089f0">SwigDirector_Constraint</a>.</p>
+<p>Reimplemented in <a class="el" href="classoperations__research_1_1_pack.html#aa30c84aec5e60d6b74e1e1eb15011d4a">Pack</a>, and <a class="el" href="classoperations__research_1_1_if_then_else_ct.html#aa30c84aec5e60d6b74e1e1eb15011d4a">IfThenElseCt</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l03294">3294</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
 
@@ -247,7 +247,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns a base name for automatic naming. </p>
 
-<p>Reimplemented in <a class="el" href="class_swig_director___constraint.html#a8d3de765a37ab507b801467955dc183e">SwigDirector_Constraint</a>, and <a class="el" href="classoperations__research_1_1_boolean_var.html#adbfe3c73b9cad61f112ccb082b553c51">BooleanVar</a>.</p>
+<p>Reimplemented in <a class="el" href="classoperations__research_1_1_boolean_var.html#adbfe3c73b9cad61f112ccb082b553c51">BooleanVar</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l02521">2521</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
 
@@ -278,7 +278,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classoperations__research_1_1_constraint.html#aed804747c45a7e1caf81461f9e45dd91">Constraint</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02259">2259</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02287">2287</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -484,7 +484,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="classoperations__research_1_1_constraint.html#a9100fab5545234f60a4ce442dbb45630">Constraint</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="routing__breaks_8cc_source.html#l00741">741</a> of file <a class="el" href="routing__breaks_8cc_source.html">routing_breaks.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__breaks_8cc_source.html#l00744">744</a> of file <a class="el" href="routing__breaks_8cc_source.html">routing_breaks.cc</a>.</p>
 
 </div>
 </div>
@@ -542,7 +542,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Object naming. </p>
 
-<p>Reimplemented in <a class="el" href="class_swig_director___constraint.html#a1d89c28bd42ba9a52da008bb69367171">SwigDirector_Constraint</a>, <a class="el" href="class_swig_director___propagation_base_object.html#a1d89c28bd42ba9a52da008bb69367171">SwigDirector_PropagationBaseObject</a>, <a class="el" href="class_swig_director___constraint.html#a6a119daa8b83c3aaffdb6e11fac1f97e">SwigDirector_Constraint</a>, and <a class="el" href="classoperations__research_1_1_piecewise_linear_expr.html#aa4f4ba750a08765e64da2d0bd473944a">PiecewiseLinearExpr</a>.</p>
+<p>Reimplemented in <a class="el" href="classoperations__research_1_1_piecewise_linear_expr.html#aa4f4ba750a08765e64da2d0bd473944a">PiecewiseLinearExpr</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l02511">2511</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
 
@@ -576,7 +576,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="classoperations__research_1_1_constraint.html#af33bad3aa81a2f411224d5e471f9956f">Constraint</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="routing__breaks_8cc_source.html#l00712">712</a> of file <a class="el" href="routing__breaks_8cc_source.html">routing_breaks.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__breaks_8cc_source.html#l00715">715</a> of file <a class="el" href="routing__breaks_8cc_source.html">routing_breaks.cc</a>.</p>
 
 </div>
 </div>
@@ -807,8 +807,6 @@ Public Member Functions</h2></td></tr>
 
 <p>Creates a Boolean variable representing the status of the constraint (false = constraint is violated, true = constraint is satisfied). </p>
 <p >It returns nullptr if the constraint does not support this API. </p>
-
-<p>Reimplemented in <a class="el" href="class_swig_director___constraint.html#a0c5b651f8fe6e47bba5b073817a665c0">SwigDirector_Constraint</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l03304">3304</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
 

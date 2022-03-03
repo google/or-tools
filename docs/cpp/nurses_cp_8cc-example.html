@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.2</span>
+   &#160;<span id="projectnumber">9.3</span>
    </div>
   </td>
  </tr>
@@ -90,7 +90,7 @@ $(document).ready(function(){initNavTree('nurses_cp_8cc-example.html',''); initR
 </div><!--header-->
 <div class="contents">
 <p >List of constraint solver samples:</p>
-<div class="fragment"><div class="line"><span class="comment">// Copyright 2018 Google LLC</span></div>
+<div class="fragment"><div class="line"><span class="comment">// Copyright 2010-2021 Google LLC</span></div>
 <div class="line"><span class="comment">// Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span></div>
 <div class="line"><span class="comment">// you may not use this file except in compliance with the License.</span></div>
 <div class="line"><span class="comment">// You may obtain a copy of the License at</span></div>
@@ -105,7 +105,10 @@ $(document).ready(function(){initNavTree('nurses_cp_8cc-example.html',''); initR
 <div class="line"> </div>
 <div class="line"><span class="preprocessor">#include &lt;numeric&gt;</span>  <span class="comment">// std::iota</span></div>
 <div class="line"> </div>
+<div class="line"><span class="preprocessor">#include &quot;absl/flags/flag.h&quot;</span></div>
+<div class="line"><span class="preprocessor">#include &quot;<a class="code" href="init__google_8h.html">ortools/base/init_google.h</a>&quot;</span></div>
 <div class="line"><span class="preprocessor">#include &quot;<a class="code" href="base_2logging_8h.html">ortools/base/logging.h</a>&quot;</span></div>
+<div class="line"><span class="preprocessor">#include &quot;<a class="code" href="logging__flags_8h.html">ortools/base/logging_flags.h</a>&quot;</span></div>
 <div class="line"><span class="preprocessor">#include &quot;<a class="code" href="constraint__solver_8h.html">ortools/constraint_solver/constraint_solver.h</a>&quot;</span></div>
 <div class="line"> </div>
 <div class="line"><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceoperations__research.html">operations_research</a> {</div>
@@ -289,8 +292,8 @@ $(document).ready(function(){initNavTree('nurses_cp_8cc-example.html',''); initR
 <div class="line">}  <span class="comment">// namespace operations_research</span></div>
 <div class="line"> </div>
 <div class="line"><span class="keywordtype">int</span> <a id="a6" name="a6"></a><a class="code hl_function" href="fz_8cc.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a>(<span class="keywordtype">int</span> argc, <span class="keywordtype">char</span>** argv) {</div>
-<div class="line">  <a id="a7" name="a7"></a><a class="code hl_function" href="namespacegoogle.html#a1749056ff206ebc4f581e6bc0bae841d">google::InitGoogleLogging</a>(argv[0]);</div>
-<div class="line">  absl::SetFlag(&amp;FLAGS_logtostderr, 1);</div>
+<div class="line">  <a id="a7" name="a7"></a><a class="code hl_function" href="init__google_8h.html#a16af2bccb0196e1a9bb628559c95b7cb">InitGoogle</a>(argv[0], &amp;argc, &amp;argv, <span class="keyword">true</span>);</div>
+<div class="line">  absl::SetFlag(&amp;FLAGS_logtostderr, <span class="keyword">true</span>);</div>
 <div class="line">  operations_research::SolveNursesExample();</div>
 <div class="line">  <span class="keywordflow">return</span> EXIT_SUCCESS;</div>
 <div class="line">}</div>
@@ -300,9 +303,11 @@ $(document).ready(function(){initNavTree('nurses_cp_8cc-example.html',''); initR
 <div class="ttc" id="aclassoperations__research_1_1_solver_html_ab7ab23bc58ea40dc03a5418ddbce7601a1a148a0aaaad7f56eea42df9876e7ae9"><div class="ttname"><a href="classoperations__research_1_1_solver.html#ab7ab23bc58ea40dc03a5418ddbce7601a1a148a0aaaad7f56eea42df9876e7ae9">operations_research::Solver::CHOOSE_FIRST_UNBOUND</a></div><div class="ttdeci">@ CHOOSE_FIRST_UNBOUND</div><div class="ttdoc">Select the first unbound variable.</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solver_8h_source.html#l00276">constraint_solver.h:276</a></div></div>
 <div class="ttc" id="aconstraint__solver_8h_html"><div class="ttname"><a href="constraint__solver_8h.html">constraint_solver.h</a></div></div>
 <div class="ttc" id="aexpr__array_8cc_html_a472a99923cbe11ae7b5a5d157d9ad465"><div class="ttname"><a href="expr__array_8cc.html#a472a99923cbe11ae7b5a5d157d9ad465">var</a></div><div class="ttdeci">IntVar * var</div><div class="ttdef"><b>Definition:</b> <a href="expr__array_8cc_source.html#l01874">expr_array.cc:1874</a></div></div>
-<div class="ttc" id="afz_8cc_html_a3c04138a5bfe5d72780bb7e82a18e627"><div class="ttname"><a href="fz_8cc.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a></div><div class="ttdeci">int main(int argc, char **argv)</div><div class="ttdef"><b>Definition:</b> <a href="fz_8cc_source.html#l00180">fz.cc:180</a></div></div>
+<div class="ttc" id="afz_8cc_html_a3c04138a5bfe5d72780bb7e82a18e627"><div class="ttname"><a href="fz_8cc.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a></div><div class="ttdeci">int main(int argc, char **argv)</div><div class="ttdef"><b>Definition:</b> <a href="fz_8cc_source.html#l00179">fz.cc:179</a></div></div>
+<div class="ttc" id="ainit__google_8h_html"><div class="ttname"><a href="init__google_8h.html">init_google.h</a></div></div>
+<div class="ttc" id="ainit__google_8h_html_a16af2bccb0196e1a9bb628559c95b7cb"><div class="ttname"><a href="init__google_8h.html#a16af2bccb0196e1a9bb628559c95b7cb">InitGoogle</a></div><div class="ttdeci">void InitGoogle(const char *usage, int *argc, char ***argv, bool deprecated)</div><div class="ttdef"><b>Definition:</b> <a href="init__google_8h_source.html#l00032">init_google.h:32</a></div></div>
 <div class="ttc" id="alog__severity_8h_html_ab4a2cbab234914b320b7fae11b6e8cb9"><div class="ttname"><a href="log__severity_8h.html#ab4a2cbab234914b320b7fae11b6e8cb9">INFO</a></div><div class="ttdeci">const int INFO</div><div class="ttdef"><b>Definition:</b> <a href="log__severity_8h_source.html#l00031">log_severity.h:31</a></div></div>
-<div class="ttc" id="anamespacegoogle_html_a1749056ff206ebc4f581e6bc0bae841d"><div class="ttname"><a href="namespacegoogle.html#a1749056ff206ebc4f581e6bc0bae841d">google::InitGoogleLogging</a></div><div class="ttdeci">void InitGoogleLogging(const char *argv0)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8cc_source.html#l01873">base/logging.cc:1873</a></div></div>
+<div class="ttc" id="alogging__flags_8h_html"><div class="ttname"><a href="logging__flags_8h.html">logging_flags.h</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_html"><div class="ttname"><a href="namespaceoperations__research.html">operations_research</a></div><div class="ttdoc">Collection of objects used to extend the Constraint Solver library.</div><div class="ttdef"><b>Definition:</b> <a href="dense__doubly__linked__list_8h_source.html#l00021">dense_doubly_linked_list.h:21</a></div></div>
 <div class="ttc" id="asparse__submatrix_8cc_html_a4d53eac2ef2732c28fa9fb663e0c19a7"><div class="ttname"><a href="sparse__submatrix_8cc.html#a4d53eac2ef2732c28fa9fb663e0c19a7">end</a></div><div class="ttdeci">std::optional&lt; int64_t &gt; end</div><div class="ttdef"><b>Definition:</b> <a href="sparse__submatrix_8cc_source.html#l00036">sparse_submatrix.cc:36</a></div></div>
 </div><!-- fragment --> </div><!-- contents -->

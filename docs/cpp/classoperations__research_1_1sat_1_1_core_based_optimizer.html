@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.2</span>
+   &#160;<span id="projectnumber">9.3</span>
    </div>
   </td>
  </tr>
@@ -95,7 +95,7 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1sat_1_1_c
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="optimization_8h_source.html#l00145">145</a> of file <a class="el" href="optimization_8h_source.html">optimization.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="optimization_8h_source.html#l00148">148</a> of file <a class="el" href="optimization_8h_source.html">optimization.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -103,6 +103,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a02a9dc1603fd32ca7d13e2db95316bb2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4398d89730acb3b628a3c81d55bac96f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_sat_solver.html#a67a0db04d321a74b7e7fcfd3f1a3f70b">SatSolver::Status</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_core_based_optimizer.html#a4398d89730acb3b628a3c81d55bac96f">Optimize</a> ()</td></tr>
 <tr class="separator:a4398d89730acb3b628a3c81d55bac96f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a45856917789a7fa03d7d2bb9733c6f0c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_sat_solver.html#a67a0db04d321a74b7e7fcfd3f1a3f70b">SatSolver::Status</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_core_based_optimizer.html#a45856917789a7fa03d7d2bb9733c6f0c">OptimizeWithSatEncoding</a> (const std::vector&lt; <a class="el" href="classoperations__research_1_1sat_1_1_literal.html">Literal</a> &gt; &amp;literals, const std::vector&lt; Coefficient &gt; &amp;<a class="el" href="sat_2lp__utils_8cc.html#ab1734711414da2e668957d24a41b1ddf">coefficients</a>, Coefficient offset)</td></tr>
+<tr class="separator:a45856917789a7fa03d7d2bb9733c6f0c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a02a9dc1603fd32ca7d13e2db95316bb2" name="a02a9dc1603fd32ca7d13e2db95316bb2"></a>
@@ -149,7 +151,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="optimization_8cc_source.html#l01310">1310</a> of file <a class="el" href="optimization_8cc_source.html">optimization.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="optimization_8cc_source.html#l01294">1294</a> of file <a class="el" href="optimization_8cc_source.html">optimization.cc</a>.</p>
 
 </div>
 </div>
@@ -169,7 +171,43 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="optimization_8cc_source.html#l01540">1540</a> of file <a class="el" href="optimization_8cc_source.html">optimization.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="optimization_8cc_source.html#l01771">1771</a> of file <a class="el" href="optimization_8cc_source.html">optimization.cc</a>.</p>
+
+</div>
+</div>
+<a id="a45856917789a7fa03d7d2bb9733c6f0c" name="a45856917789a7fa03d7d2bb9733c6f0c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a45856917789a7fa03d7d2bb9733c6f0c">&#9670;&nbsp;</a></span>OptimizeWithSatEncoding()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_sat_solver.html#a67a0db04d321a74b7e7fcfd3f1a3f70b">SatSolver::Status</a> OptimizeWithSatEncoding </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; <a class="el" href="classoperations__research_1_1sat_1_1_literal.html">Literal</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>literals</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; Coefficient &gt; &amp;&#160;</td>
+          <td class="paramname"><em>coefficients</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Coefficient&#160;</td>
+          <td class="paramname"><em>offset</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="optimization_8cc_source.html#l01529">1529</a> of file <a class="el" href="optimization_8cc_source.html">optimization.cc</a>.</p>
 
 </div>
 </div>

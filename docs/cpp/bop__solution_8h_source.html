@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.2</span>
+   &#160;<span id="projectnumber">9.3</span>
    </div>
   </td>
  </tr>
@@ -110,7 +110,7 @@ $(document).ready(function(){initNavTree('bop__solution_8h_source.html',''); ini
 <div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span><span class="preprocessor">#include &quot;<a class="code" href="strong__vector_8h.html">ortools/base/strong_vector.h</a>&quot;</span></div>
 <div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span><span class="preprocessor">#include &quot;<a class="code" href="bop__types_8h.html">ortools/bop/bop_types.h</a>&quot;</span></div>
 <div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span><span class="preprocessor">#include &quot;<a class="code" href="boolean__problem_8h.html">ortools/sat/boolean_problem.h</a>&quot;</span></div>
-<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span><span class="preprocessor">#include &quot;<a class="code" href="boolean__problem_8pb_8h.html">ortools/sat/boolean_problem.pb.h</a>&quot;</span></div>
+<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span><span class="preprocessor">#include &quot;ortools/sat/boolean_problem.pb.h&quot;</span></div>
 <div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span> </div>
 <div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceoperations__research.html">operations_research</a> {</div>
 <div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span><span class="keyword">namespace </span>bop {</div>
@@ -124,7 +124,7 @@ $(document).ready(function(){initNavTree('bop__solution_8h_source.html',''); ini
 <div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span><span class="comment">// the feasibility.</span></div>
 <div class="line"><a id="l00034" name="l00034"></a><span class="lineno"><a class="line" href="classoperations__research_1_1bop_1_1_bop_solution.html">   34</a></span><span class="keyword">class </span><a class="code hl_class" href="classoperations__research_1_1bop_1_1_bop_solution.html">BopSolution</a> {</div>
 <div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span> <span class="keyword">public</span>:</div>
-<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>  <a class="code hl_function" href="classoperations__research_1_1bop_1_1_bop_solution.html#a38f5c428df44833d6a921458a0f8363a">BopSolution</a>(<span class="keyword">const</span> <a class="code hl_class" href="classoperations__research_1_1sat_1_1_linear_boolean_problem.html">sat::LinearBooleanProblem</a>&amp; problem,</div>
+<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>  <a class="code hl_function" href="classoperations__research_1_1bop_1_1_bop_solution.html#a38f5c428df44833d6a921458a0f8363a">BopSolution</a>(<span class="keyword">const</span> sat::LinearBooleanProblem&amp; problem,</div>
 <div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>              <span class="keyword">const</span> std::string&amp; <a class="code hl_function" href="classoperations__research_1_1bop_1_1_bop_solution.html#a24dcbf29c0d6cd766009a182a6484e3b">name</a>);</div>
 <div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span> </div>
 <div class="line"><a id="l00039" name="l00039"></a><span class="lineno"><a class="line" href="classoperations__research_1_1bop_1_1_bop_solution.html#a157d7e03cf5ef624646b9a0a80912abc">   39</a></span>  <span class="keywordtype">void</span> <a class="code hl_function" href="classoperations__research_1_1bop_1_1_bop_solution.html#a157d7e03cf5ef624646b9a0a80912abc">SetValue</a>(VariableIndex <a class="code hl_variable" href="expr__array_8cc.html#a472a99923cbe11ae7b5a5d157d9ad465">var</a>, <span class="keywordtype">bool</span> <a class="code hl_variable" href="demon__profiler_8cc.html#ac072af30c4ffbc834bb4c681f6ecb514">value</a>) {</div>
@@ -188,7 +188,7 @@ $(document).ready(function(){initNavTree('bop__solution_8h_source.html',''); ini
 <div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span>  <span class="keywordtype">bool</span> ComputeIsFeasible() <span class="keyword">const</span>;</div>
 <div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span>  int64_t ComputeCost() <span class="keyword">const</span>;</div>
 <div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span> </div>
-<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span>  <span class="keyword">const</span> <a class="code hl_class" href="classoperations__research_1_1sat_1_1_linear_boolean_problem.html">sat::LinearBooleanProblem</a>* problem_;</div>
+<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span>  <span class="keyword">const</span> sat::LinearBooleanProblem* problem_;</div>
 <div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span>  std::string name_;</div>
 <div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span>  <a class="code hl_class" href="classabsl_1_1_strong_vector.html">absl::StrongVector&lt;VariableIndex, bool&gt;</a> values_;</div>
 <div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span> </div>
@@ -208,7 +208,6 @@ $(document).ready(function(){initNavTree('bop__solution_8h_source.html',''); ini
 <div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span>}  <span class="comment">// namespace operations_research</span></div>
 <div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span><span class="preprocessor">#endif  </span><span class="comment">// OR_TOOLS_BOP_BOP_SOLUTION_H_</span></div>
 <div class="ttc" id="aboolean__problem_8h_html"><div class="ttname"><a href="boolean__problem_8h.html">boolean_problem.h</a></div></div>
-<div class="ttc" id="aboolean__problem_8pb_8h_html"><div class="ttname"><a href="boolean__problem_8pb_8h.html">boolean_problem.pb.h</a></div></div>
 <div class="ttc" id="abop__types_8h_html"><div class="ttname"><a href="bop__types_8h.html">bop_types.h</a></div></div>
 <div class="ttc" id="aclassabsl_1_1_strong_vector_html"><div class="ttname"><a href="classabsl_1_1_strong_vector.html">absl::StrongVector&lt; VariableIndex, bool &gt;</a></div></div>
 <div class="ttc" id="aclassabsl_1_1_strong_vector_html_a60304b65bf89363bcc3165d3cde67f86"><div class="ttname"><a href="classabsl_1_1_strong_vector.html#a60304b65bf89363bcc3165d3cde67f86">absl::StrongVector::size</a></div><div class="ttdeci">size_type size() const</div><div class="ttdef"><b>Definition:</b> <a href="strong__vector_8h_source.html#l00147">strong_vector.h:147</a></div></div>
@@ -228,7 +227,6 @@ $(document).ready(function(){initNavTree('bop__solution_8h_source.html',''); ini
 <div class="ttc" id="aclassoperations__research_1_1bop_1_1_bop_solution_html_a894d87c5fddfc463c3ca3c779ba7f997"><div class="ttname"><a href="classoperations__research_1_1bop_1_1_bop_solution.html#a894d87c5fddfc463c3ca3c779ba7f997">operations_research::bop::BopSolution::IsFeasible</a></div><div class="ttdeci">bool IsFeasible() const</div><div class="ttdef"><b>Definition:</b> <a href="bop__solution_8h_source.html#l00072">bop_solution.h:72</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1bop_1_1_bop_solution_html_a9f0494e519e93f67f62ba4b76fde1c56"><div class="ttname"><a href="classoperations__research_1_1bop_1_1_bop_solution.html#a9f0494e519e93f67f62ba4b76fde1c56">operations_research::bop::BopSolution::GetCost</a></div><div class="ttdeci">int64_t GetCost() const</div><div class="ttdef"><b>Definition:</b> <a href="bop__solution_8h_source.html#l00053">bop_solution.h:53</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1bop_1_1_bop_solution_html_ad5260b9627048b854b45d05ed34adc22"><div class="ttname"><a href="classoperations__research_1_1bop_1_1_bop_solution.html#ad5260b9627048b854b45d05ed34adc22">operations_research::bop::BopSolution::set_name</a></div><div class="ttdeci">void set_name(const std::string &amp;name)</div><div class="ttdef"><b>Definition:</b> <a href="bop__solution_8h_source.html#l00048">bop_solution.h:48</a></div></div>
-<div class="ttc" id="aclassoperations__research_1_1sat_1_1_linear_boolean_problem_html"><div class="ttname"><a href="classoperations__research_1_1sat_1_1_linear_boolean_problem.html">operations_research::sat::LinearBooleanProblem</a></div><div class="ttdef"><b>Definition:</b> <a href="boolean__problem_8pb_8h_source.html#l00711">boolean_problem.pb.h:712</a></div></div>
 <div class="ttc" id="ademon__profiler_8cc_html_ac072af30c4ffbc834bb4c681f6ecb514"><div class="ttname"><a href="demon__profiler_8cc.html#ac072af30c4ffbc834bb4c681f6ecb514">value</a></div><div class="ttdeci">int64_t value</div><div class="ttdef"><b>Definition:</b> <a href="demon__profiler_8cc_source.html#l00044">demon_profiler.cc:44</a></div></div>
 <div class="ttc" id="aexpr__array_8cc_html_a472a99923cbe11ae7b5a5d157d9ad465"><div class="ttname"><a href="expr__array_8cc.html#a472a99923cbe11ae7b5a5d157d9ad465">var</a></div><div class="ttdeci">IntVar * var</div><div class="ttdef"><b>Definition:</b> <a href="expr__array_8cc_source.html#l01874">expr_array.cc:1874</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_1_1math__opt_html_ab61209db5b13f0d424da009e414298fc"><div class="ttname"><a href="namespaceoperations__research_1_1math__opt.html#ab61209db5b13f0d424da009e414298fc">operations_research::math_opt::Coefficient</a></div><div class="ttdeci">std::tuple&lt; int64_t, int64_t, const double &gt; Coefficient</div><div class="ttdef"><b>Definition:</b> <a href="sparse__collection__matchers_8h_source.html#l00061">sparse_collection_matchers.h:61</a></div></div>

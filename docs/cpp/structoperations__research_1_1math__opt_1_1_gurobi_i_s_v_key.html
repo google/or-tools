@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.2</span>
+   &#160;<span id="projectnumber">9.3</span>
    </div>
   </td>
  </tr>
@@ -88,6 +88,7 @@ $(document).ready(function(){initNavTree('structoperations__research_1_1math__op
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pub-static-methods">Static Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="structoperations__research_1_1math__opt_1_1_gurobi_i_s_v_key-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">GurobiISVKey</div></div>
@@ -95,12 +96,17 @@ $(document).ready(function(){initNavTree('structoperations__research_1_1math__op
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="streamable__solver__init__arguments_8h_source.html#l00051">51</a> of file <a class="el" href="streamable__solver__init__arguments_8h_source.html">streamable_solver_init_arguments.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="streamable__solver__init__arguments_8h_source.html#l00052">52</a> of file <a class="el" href="streamable__solver__init__arguments_8h_source.html">streamable_solver_init_arguments.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:aa1bd3e44ccdbdb474e8a1833410bae7f"><td class="memItemLeft" align="right" valign="top">GurobiInitializerProto::ISVKey&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1math__opt_1_1_gurobi_i_s_v_key.html#aa1bd3e44ccdbdb474e8a1833410bae7f">Proto</a> () const</td></tr>
 <tr class="separator:aa1bd3e44ccdbdb474e8a1833410bae7f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
+Static Public Member Functions</h2></td></tr>
+<tr class="memitem:a8af4f951ee55df56cbd4c6f236f0697b"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="structoperations__research_1_1math__opt_1_1_gurobi_i_s_v_key.html">GurobiISVKey</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1math__opt_1_1_gurobi_i_s_v_key.html#a8af4f951ee55df56cbd4c6f236f0697b">FromProto</a> (const GurobiInitializerProto::ISVKey &amp;key_proto)</td></tr>
+<tr class="separator:a8af4f951ee55df56cbd4c6f236f0697b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
@@ -108,12 +114,40 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a9b45b3e13bd9167aab02e17e08916231"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab1ea9a750eb9004f6957e22596ab77c6"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1math__opt_1_1_gurobi_i_s_v_key.html#ab1ea9a750eb9004f6957e22596ab77c6">application_name</a></td></tr>
 <tr class="separator:ab1ea9a750eb9004f6957e22596ab77c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af486a0779a7f2e10b6602ac38df2dd77"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1math__opt_1_1_gurobi_i_s_v_key.html#af486a0779a7f2e10b6602ac38df2dd77">expiration</a> = 0</td></tr>
-<tr class="separator:af486a0779a7f2e10b6602ac38df2dd77"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a114edc52dd1889fef8487abca72da60b"><td class="memItemLeft" align="right" valign="top">int32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1math__opt_1_1_gurobi_i_s_v_key.html#a114edc52dd1889fef8487abca72da60b">expiration</a> = 0</td></tr>
+<tr class="separator:a114edc52dd1889fef8487abca72da60b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa4cdb693ee7f3d1d131bb328468184b7"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1math__opt_1_1_gurobi_i_s_v_key.html#aa4cdb693ee7f3d1d131bb328468184b7">key</a></td></tr>
 <tr class="separator:aa4cdb693ee7f3d1d131bb328468184b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="a8af4f951ee55df56cbd4c6f236f0697b" name="a8af4f951ee55df56cbd4c6f236f0697b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8af4f951ee55df56cbd4c6f236f0697b">&#9670;&nbsp;</a></span>FromProto()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structoperations__research_1_1math__opt_1_1_gurobi_i_s_v_key.html">GurobiISVKey</a> FromProto </td>
+          <td>(</td>
+          <td class="paramtype">const GurobiInitializerProto::ISVKey &amp;&#160;</td>
+          <td class="paramname"><em>key_proto</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="streamable__solver__init__arguments_8cc_source.html#l00035">35</a> of file <a class="el" href="streamable__solver__init__arguments_8cc_source.html">streamable_solver_init_arguments.cc</a>.</p>
+
+</div>
+</div>
 <a id="aa1bd3e44ccdbdb474e8a1833410bae7f" name="aa1bd3e44ccdbdb474e8a1833410bae7f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aa1bd3e44ccdbdb474e8a1833410bae7f">&#9670;&nbsp;</a></span>Proto()</h2>
 
@@ -129,7 +163,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="streamable__solver__init__arguments_8cc_source.html#l00025">25</a> of file <a class="el" href="streamable__solver__init__arguments_8cc_source.html">streamable_solver_init_arguments.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="streamable__solver__init__arguments_8cc_source.html#l00026">26</a> of file <a class="el" href="streamable__solver__init__arguments_8cc_source.html">streamable_solver_init_arguments.cc</a>.</p>
 
 </div>
 </div>
@@ -146,23 +180,23 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="streamable__solver__init__arguments_8h_source.html#l00053">53</a> of file <a class="el" href="streamable__solver__init__arguments_8h_source.html">streamable_solver_init_arguments.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="streamable__solver__init__arguments_8h_source.html#l00054">54</a> of file <a class="el" href="streamable__solver__init__arguments_8h_source.html">streamable_solver_init_arguments.h</a>.</p>
 
 </div>
 </div>
-<a id="af486a0779a7f2e10b6602ac38df2dd77" name="af486a0779a7f2e10b6602ac38df2dd77"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af486a0779a7f2e10b6602ac38df2dd77">&#9670;&nbsp;</a></span>expiration</h2>
+<a id="a114edc52dd1889fef8487abca72da60b" name="a114edc52dd1889fef8487abca72da60b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a114edc52dd1889fef8487abca72da60b">&#9670;&nbsp;</a></span>expiration</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int64_t expiration = 0</td>
+          <td class="memname">int32_t expiration = 0</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="streamable__solver__init__arguments_8h_source.html#l00054">54</a> of file <a class="el" href="streamable__solver__init__arguments_8h_source.html">streamable_solver_init_arguments.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="streamable__solver__init__arguments_8h_source.html#l00055">55</a> of file <a class="el" href="streamable__solver__init__arguments_8h_source.html">streamable_solver_init_arguments.h</a>.</p>
 
 </div>
 </div>
@@ -178,7 +212,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="streamable__solver__init__arguments_8h_source.html#l00055">55</a> of file <a class="el" href="streamable__solver__init__arguments_8h_source.html">streamable_solver_init_arguments.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="streamable__solver__init__arguments_8h_source.html#l00056">56</a> of file <a class="el" href="streamable__solver__init__arguments_8h_source.html">streamable_solver_init_arguments.h</a>.</p>
 
 </div>
 </div>
@@ -194,7 +228,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="streamable__solver__init__arguments_8h_source.html#l00052">52</a> of file <a class="el" href="streamable__solver__init__arguments_8h_source.html">streamable_solver_init_arguments.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="streamable__solver__init__arguments_8h_source.html#l00053">53</a> of file <a class="el" href="streamable__solver__init__arguments_8h_source.html">streamable_solver_init_arguments.h</a>.</p>
 
 </div>
 </div>

@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 9.2</span>
+                <span id="sfml">Google OR-Tools 9.3</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -95,7 +95,7 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1_routing_
 <p >if j == next(i), cumuls(j) = cumuls(i) + transits(i) + slacks(i) + state_dependent_transits(i)</p>
 <p >where slack is a positive slack variable (can represent waiting times for a time dimension), and state_dependent_transits is a non-purely functional version of transits_. Favour transits over state_dependent_transits when possible, because purely functional callbacks allow more optimisations and make the model faster and easier to solve. for a given vehicle, it is passed as an external vector, it would be better to have this information here. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02562">2562</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02590">2590</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Classes</h2></td></tr>
@@ -312,7 +312,7 @@ Public Member Functions</h2></td></tr>
 <p>Limits, in terms of maximum difference between the cumul variables, between the pickup and delivery alternatives belonging to a single pickup/delivery pair in the <a class="el" href="classoperations__research_1_1_routing_model.html">RoutingModel</a>. </p>
 <p >The indices passed to the function respectively correspond to the position of the pickup in the vector of pickup alternatives, and delivery position in the delivery alternatives for this pickup/delivery pair. These limits should only be set when each node index appears in at most one pickup/delivery pair, i.e. each pickup (delivery) index is in a single pickup/delivery pair.first (pair.second). </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02844">2844</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02872">2872</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -375,7 +375,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02868">2868</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02896">2896</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -403,7 +403,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02860">2860</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02888">2888</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -433,7 +433,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns true iff the transit evaluator of 'vehicle' is positive for all arcs. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02669">2669</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02697">2697</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -462,7 +462,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns the parent in the dependency tree if any or nullptr otherwise. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02815">2815</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02843">2843</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -492,7 +492,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns the callback evaluating the transit value between two node indices for a given vehicle class. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02652">2652</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02680">2680</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -521,7 +521,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Like <a class="el" href="classoperations__research_1_1_routing_dimension.html#a3a71e48b4ed287752b9d9d9f7086ec7d" title="Get the cumul, transit and slack variables for the given node (given as int64_t var index).">CumulVar()</a>, <a class="el" href="classoperations__research_1_1_routing_dimension.html#a0d499ec91ac6f8c483bc98eca4b50acf">TransitVar()</a>, <a class="el" href="classoperations__research_1_1_routing_dimension.html#a4232c22ddc9e65e726ee87cf27778072">SlackVar()</a> but return the whole variable vectors instead (indexed by int64_t var index). </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02591">2591</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02619">2619</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -551,7 +551,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Get the cumul, transit and slack variables for the given node (given as int64_t var index). </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02581">2581</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02609">2609</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -578,7 +578,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02592">2592</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02620">2620</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -606,7 +606,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02583">2583</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02611">2611</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -635,7 +635,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns forbidden intervals for each node. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02597">2597</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02625">2625</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -858,7 +858,7 @@ Public Member Functions</h2></td></tr>
 <p >min_value is in a forbidden interval.</p>
 <p >min_value is not forbidden.</p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02605">2605</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02633">2633</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -885,7 +885,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02901">2901</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02929">2929</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -928,7 +928,7 @@ Public Member Functions</h2></td></tr>
 <p >max_value is in a forbidden interval.</p>
 <p >max_value is not forbidden.</p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02624">2624</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02652">2652</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -956,7 +956,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02905">2905</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02933">2933</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -983,7 +983,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02863">2863</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02891">2891</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1012,7 +1012,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Accessors. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02830">2830</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02858">2858</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1112,7 +1112,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02946">2946</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02974">2974</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1140,7 +1140,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02926">2926</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02954">2954</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1168,7 +1168,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02881">2881</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02909">2909</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1196,7 +1196,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02885">2885</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02913">2913</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1224,7 +1224,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02873">2873</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02901">2901</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1306,7 +1306,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Same as above but taking a vehicle class of the dimension instead of a vehicle (the class of a vehicle can be obtained with <a class="el" href="classoperations__research_1_1_routing_dimension.html#aa46d01169492b00c999344e8982ddd0f">vehicle_to_class()</a>). </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02574">2574</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02602">2602</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1337,7 +1337,7 @@ Public Member Functions</h2></td></tr>
 <p>Returns the unary callback evaluating the transit value between two node indices for a given vehicle. </p>
 <p >If the corresponding callback is not unary, returns a null callback. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02662">2662</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02690">2690</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1364,7 +1364,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02897">2897</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02925">2925</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1487,7 +1487,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02943">2943</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02971">2971</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1514,7 +1514,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02923">2923</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02951">2951</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1562,7 +1562,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns the model on which the dimension was created. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02566">2566</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02594">2594</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1591,7 +1591,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns the name of the dimension. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02826">2826</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02854">2854</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1944,7 +1944,7 @@ Public Member Functions</h2></td></tr>
 
 <p>If the span of vehicle on this dimension is larger than bound, the cost will be increased by cost * (span - bound)^2. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02933">2933</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02961">2961</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1984,7 +1984,7 @@ Public Member Functions</h2></td></tr>
 
 <p>If the span of vehicle on this dimension is larger than bound, the cost will be increased by cost * (span - bound). </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02915">2915</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02943">2943</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -2115,7 +2115,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02594">2594</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02622">2622</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -2143,7 +2143,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02586">2586</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02614">2614</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -2173,7 +2173,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns the callback evaluating the transit value between two node indices for a given vehicle. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02645">2645</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02673">2673</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -2200,7 +2200,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02593">2593</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02621">2621</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -2228,7 +2228,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02582">2582</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02610">2610</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -2257,7 +2257,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns the capacities for all vehicles. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02640">2640</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02668">2668</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -2284,7 +2284,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02893">2893</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02921">2921</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -2311,7 +2311,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02877">2877</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02905">2905</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -2339,7 +2339,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02673">2673</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02701">2701</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>

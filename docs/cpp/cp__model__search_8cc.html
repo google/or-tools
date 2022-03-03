@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.2</span>
+   &#160;<span id="projectnumber">9.3</span>
    </div>
   </td>
  </tr>
@@ -111,15 +111,58 @@ Namespaces</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
+<tr class="memitem:a5254d8329101ce8f7213c759d6ad56b4"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cp__model__search_8cc.html#a5254d8329101ce8f7213c759d6ad56b4">ABSL_FLAG</a> (bool, cp_model_use_max_hs, false, &quot;Use max_hs in search portfolio.&quot;)</td></tr>
+<tr class="separator:a5254d8329101ce8f7213c759d6ad56b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a097ca8cb4e3e4c0b29c27846f578f23b"><td class="memItemLeft" align="right" valign="top">const std::function&lt; BooleanOrIntegerLiteral()&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a097ca8cb4e3e4c0b29c27846f578f23b">ConstructSearchStrategyInternal</a> (const std::vector&lt; DecisionStrategyProto &gt; &amp;strategies, Model *<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>)</td></tr>
 <tr class="separator:a097ca8cb4e3e4c0b29c27846f578f23b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aef9a9e314dd32a66b7540b0ae367eb4f"><td class="memItemLeft" align="right" valign="top">std::function&lt; BooleanOrIntegerLiteral()&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#aef9a9e314dd32a66b7540b0ae367eb4f">ConstructSearchStrategy</a> (const CpModelProto &amp;cp_model_proto, const std::vector&lt; IntegerVariable &gt; &amp;variable_mapping, IntegerVariable objective_var, Model *<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>)</td></tr>
 <tr class="separator:aef9a9e314dd32a66b7540b0ae367eb4f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afb3c98e67e212632d35259e550235d0a"><td class="memItemLeft" align="right" valign="top">std::function&lt; BooleanOrIntegerLiteral()&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#afb3c98e67e212632d35259e550235d0a">InstrumentSearchStrategy</a> (const CpModelProto &amp;cp_model_proto, const std::vector&lt; IntegerVariable &gt; &amp;variable_mapping, const std::function&lt; BooleanOrIntegerLiteral()&gt; &amp;instrumented_strategy, Model *<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>)</td></tr>
 <tr class="separator:afb3c98e67e212632d35259e550235d0a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:accb8be601562b35adeea0682f3ea560c"><td class="memItemLeft" align="right" valign="top">std::vector&lt; SatParameters &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#accb8be601562b35adeea0682f3ea560c">GetDiverseSetOfParameters</a> (const SatParameters &amp;base_params, const CpModelProto &amp;cp_model, const int num_workers)</td></tr>
-<tr class="separator:accb8be601562b35adeea0682f3ea560c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9d3cf6d279ee2825e1568058fa54d5b6"><td class="memItemLeft" align="right" valign="top">std::vector&lt; SatParameters &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a9d3cf6d279ee2825e1568058fa54d5b6">GetDiverseSetOfParameters</a> (const SatParameters &amp;base_params, const CpModelProto &amp;cp_model)</td></tr>
+<tr class="separator:a9d3cf6d279ee2825e1568058fa54d5b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<h2 class="groupheader">Function Documentation</h2>
+<a id="a5254d8329101ce8f7213c759d6ad56b4" name="a5254d8329101ce8f7213c759d6ad56b4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5254d8329101ce8f7213c759d6ad56b4">&#9670;&nbsp;</a></span>ABSL_FLAG()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">ABSL_FLAG </td>
+          <td>(</td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">cp_model_use_max_hs&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">false&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&quot;Use max_hs in search portfolio.&quot;&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 </div><!-- contents -->
 </div><!-- doc-content -->
 <!-- HTML footer for doxygen 1.8.18-->

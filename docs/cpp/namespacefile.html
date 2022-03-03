@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.2</span>
+   &#160;<span id="projectnumber">9.3</span>
    </div>
   </td>
  </tr>
@@ -124,6 +124,8 @@ Functions</h2></td></tr>
 <tr class="separator:a5cb1dcdd93aee8846abedf0f5905ba65"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9af024752012188b3269e30b0d9021c4"><td class="memItemLeft" align="right" valign="top">absl::Status&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacefile.html#a9af024752012188b3269e30b0d9021c4">SetTextProto</a> (const absl::string_view &amp;filename, const google::protobuf::Message &amp;<a class="el" href="cp__model__fz__solver_8cc.html#aed003f5eb5197bc586b7ef2c36a63da2">proto</a>, int flags)</td></tr>
 <tr class="separator:a9af024752012188b3269e30b0d9021c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a31309b397b99f387c78027e5bfd83980"><td class="memItemLeft" align="right" valign="top">absl::Status&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacefile.html#a31309b397b99f387c78027e5bfd83980">GetBinaryProto</a> (const absl::string_view filename, google::protobuf::Message *const <a class="el" href="cp__model__fz__solver_8cc.html#aed003f5eb5197bc586b7ef2c36a63da2">proto</a>, const int flags)</td></tr>
+<tr class="separator:a31309b397b99f387c78027e5bfd83980"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac100e60bbcbcf6c844ed551c96207cbb"><td class="memItemLeft" align="right" valign="top">absl::Status&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacefile.html#ac100e60bbcbcf6c844ed551c96207cbb">SetBinaryProto</a> (const absl::string_view &amp;filename, const google::protobuf::Message &amp;<a class="el" href="cp__model__fz__solver_8cc.html#aed003f5eb5197bc586b7ef2c36a63da2">proto</a>, int flags)</td></tr>
 <tr class="separator:ac100e60bbcbcf6c844ed551c96207cbb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a34f188de33adc1532e7d866bc9f1f184"><td class="memItemLeft" align="right" valign="top">absl::Status&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacefile.html#a34f188de33adc1532e7d866bc9f1f184">Delete</a> (const absl::string_view &amp;path, int flags)</td></tr>
@@ -132,6 +134,12 @@ Functions</h2></td></tr>
 <tr class="separator:ac6f3c229785a7dec92977b4f3bc4a5bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1abdf766bb120d38e7a4dfa200972681"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacefile.html#a1abdf766bb120d38e7a4dfa200972681">Defaults</a> ()</td></tr>
 <tr class="separator:a1abdf766bb120d38e7a4dfa200972681"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6df411be133420a342fc1a7e6c306149"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
+<tr class="memitem:a6df411be133420a342fc1a7e6c306149"><td class="memTemplItemLeft" align="right" valign="top">absl::StatusOr&lt; T &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacefile.html#a6df411be133420a342fc1a7e6c306149">GetTextProto</a> (absl::string_view filename, int flags)</td></tr>
+<tr class="separator:a6df411be133420a342fc1a7e6c306149"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaa315a4e71fc338d2ba80f83b8b706a6"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
+<tr class="memitem:aaa315a4e71fc338d2ba80f83b8b706a6"><td class="memTemplItemLeft" align="right" valign="top">absl::StatusOr&lt; T &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacefile.html#aaa315a4e71fc338d2ba80f83b8b706a6">GetBinaryProto</a> (absl::string_view filename, int flags)</td></tr>
+<tr class="separator:aaa315a4e71fc338d2ba80f83b8b706a6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Function Documentation</h2>
 <a id="a1abdf766bb120d38e7a4dfa200972681" name="a1abdf766bb120d38e7a4dfa200972681"></a>
@@ -157,7 +165,7 @@ Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2file_8h_source.html#l00119">119</a> of file <a class="el" href="base_2file_8h_source.html">base/file.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2file_8h_source.html#l00120">120</a> of file <a class="el" href="base_2file_8h_source.html">base/file.h</a>.</p>
 
 </div>
 </div>
@@ -187,7 +195,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2file_8cc_source.html#l00305">305</a> of file <a class="el" href="base_2file_8cc_source.html">base/file.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2file_8cc_source.html#l00318">318</a> of file <a class="el" href="base_2file_8cc_source.html">base/file.cc</a>.</p>
 
 </div>
 </div>
@@ -217,7 +225,73 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2file_8cc_source.html#l00313">313</a> of file <a class="el" href="base_2file_8cc_source.html">base/file.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2file_8cc_source.html#l00326">326</a> of file <a class="el" href="base_2file_8cc_source.html">base/file.cc</a>.</p>
+
+</div>
+</div>
+<a id="aaa315a4e71fc338d2ba80f83b8b706a6" name="aaa315a4e71fc338d2ba80f83b8b706a6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaa315a4e71fc338d2ba80f83b8b706a6">&#9670;&nbsp;</a></span>GetBinaryProto() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">absl::StatusOr&lt; T &gt; file::GetBinaryProto </td>
+          <td>(</td>
+          <td class="paramtype">absl::string_view&#160;</td>
+          <td class="paramname"><em>filename</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>flags</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="base_2file_8h_source.html#l00140">140</a> of file <a class="el" href="base_2file_8h_source.html">base/file.h</a>.</p>
+
+</div>
+</div>
+<a id="a31309b397b99f387c78027e5bfd83980" name="a31309b397b99f387c78027e5bfd83980"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a31309b397b99f387c78027e5bfd83980">&#9670;&nbsp;</a></span>GetBinaryProto() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">absl::Status GetBinaryProto </td>
+          <td>(</td>
+          <td class="paramtype">const absl::string_view&#160;</td>
+          <td class="paramname"><em>filename</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">google::protobuf::Message *const&#160;</td>
+          <td class="paramname"><em>proto</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const int&#160;</td>
+          <td class="paramname"><em>flags</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="base_2file_8cc_source.html#l00295">295</a> of file <a class="el" href="base_2file_8cc_source.html">base/file.cc</a>.</p>
 
 </div>
 </div>
@@ -257,8 +331,38 @@ Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="a6df411be133420a342fc1a7e6c306149" name="a6df411be133420a342fc1a7e6c306149"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6df411be133420a342fc1a7e6c306149">&#9670;&nbsp;</a></span>GetTextProto() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">absl::StatusOr&lt; T &gt; file::GetTextProto </td>
+          <td>(</td>
+          <td class="paramtype">absl::string_view&#160;</td>
+          <td class="paramname"><em>filename</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>flags</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="base_2file_8h_source.html#l00130">130</a> of file <a class="el" href="base_2file_8h_source.html">base/file.h</a>.</p>
+
+</div>
+</div>
 <a id="a5cb1dcdd93aee8846abedf0f5905ba65" name="a5cb1dcdd93aee8846abedf0f5905ba65"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5cb1dcdd93aee8846abedf0f5905ba65">&#9670;&nbsp;</a></span>GetTextProto()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a5cb1dcdd93aee8846abedf0f5905ba65">&#9670;&nbsp;</a></span>GetTextProto() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -493,7 +597,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2file_8cc_source.html#l00295">295</a> of file <a class="el" href="base_2file_8cc_source.html">base/file.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2file_8cc_source.html#l00308">308</a> of file <a class="el" href="base_2file_8cc_source.html">base/file.cc</a>.</p>
 
 </div>
 </div>

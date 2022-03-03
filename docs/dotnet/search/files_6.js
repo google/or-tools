@@ -1,22 +1,5 @@
 var searchData=
 [
-  ['improvementsearchlimit_2ecs_0',['ImprovementSearchLimit.cs',['../ImprovementSearchLimit_8cs.html',1,'']]],
-  ['intarrayhelper_2ecs_1',['IntArrayHelper.cs',['../IntArrayHelper_8cs.html',1,'']]],
-  ['intboolpair_2ecs_2',['IntBoolPair.cs',['../IntBoolPair_8cs.html',1,'']]],
-  ['integerexpressions_2ecs_3',['IntegerExpressions.cs',['../IntegerExpressions_8cs.html',1,'']]],
-  ['intervalvar_2ecs_4',['IntervalVar.cs',['../IntervalVar_8cs.html',1,'']]],
-  ['intervalvararrayhelper_2ecs_5',['IntervalVarArrayHelper.cs',['../IntervalVarArrayHelper_8cs.html',1,'']]],
-  ['intervalvarelement_2ecs_6',['IntervalVarElement.cs',['../IntervalVarElement_8cs.html',1,'']]],
-  ['intervalvariables_2ecs_7',['IntervalVariables.cs',['../IntervalVariables_8cs.html',1,'']]],
-  ['intervalvarvector_2ecs_8',['IntervalVarVector.cs',['../IntervalVarVector_8cs.html',1,'']]],
-  ['intexpr_2ecs_9',['IntExpr.cs',['../IntExpr_8cs.html',1,'']]],
-  ['inttupleset_2ecs_10',['IntTupleSet.cs',['../IntTupleSet_8cs.html',1,'']]],
-  ['intvar_2ecs_11',['IntVar.cs',['../IntVar_8cs.html',1,'']]],
-  ['intvararrayhelper_2ecs_12',['IntVarArrayHelper.cs',['../IntVarArrayHelper_8cs.html',1,'']]],
-  ['intvarelement_2ecs_13',['IntVarElement.cs',['../IntVarElement_8cs.html',1,'']]],
-  ['intvariterator_2ecs_14',['IntVarIterator.cs',['../IntVarIterator_8cs.html',1,'']]],
-  ['intvarlocalsearchfilter_2ecs_15',['IntVarLocalSearchFilter.cs',['../IntVarLocalSearchFilter_8cs.html',1,'']]],
-  ['intvarlocalsearchoperator_2ecs_16',['IntVarLocalSearchOperator.cs',['../IntVarLocalSearchOperator_8cs.html',1,'']]],
-  ['intvarlocalsearchoperatortemplate_2ecs_17',['IntVarLocalSearchOperatorTemplate.cs',['../IntVarLocalSearchOperatorTemplate_8cs.html',1,'']]],
-  ['intvarvector_2ecs_18',['IntVarVector.cs',['../IntVarVector_8cs.html',1,'']]]
+  ['valcstpair_2ecs_0',['ValCstPair.cs',['../ValCstPair_8cs.html',1,'']]],
+  ['variablehelper_2ecs_1',['VariableHelper.cs',['../VariableHelper_8cs.html',1,'']]]
 ];

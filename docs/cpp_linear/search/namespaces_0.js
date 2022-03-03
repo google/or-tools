@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['internal_0',['internal',['../namespaceinternal.html',1,'']]]
+  ['operations_5fresearch_0',['operations_research',['../namespaceoperations__research.html',1,'']]]
 ];

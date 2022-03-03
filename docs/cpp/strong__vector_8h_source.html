@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.2</span>
+   &#160;<span id="projectnumber">9.3</span>
    </div>
   </td>
  </tr>
@@ -105,7 +105,7 @@ $(document).ready(function(){initNavTree('strong__vector_8h_source.html',''); in
 <div class="line"><a id="l00014" name="l00014"></a><span class="lineno">   14</span><span class="comment">// This file provides the StrongVector container that wraps around the STL</span></div>
 <div class="line"><a id="l00015" name="l00015"></a><span class="lineno">   15</span><span class="comment">// std::vector.</span></div>
 <div class="line"><a id="l00016" name="l00016"></a><span class="lineno">   16</span><span class="comment">// The wrapper restricts indexing to a pre-specified type-safe integer type or</span></div>
-<div class="line"><a id="l00017" name="l00017"></a><span class="lineno">   17</span><span class="comment">// IntType (see int_type.h).  It prevents accidental indexing</span></div>
+<div class="line"><a id="l00017" name="l00017"></a><span class="lineno">   17</span><span class="comment">// IntType (see strong_int.h).  It prevents accidental indexing</span></div>
 <div class="line"><a id="l00018" name="l00018"></a><span class="lineno">   18</span><span class="comment">// by different &quot;logical&quot; integer-like types (e.g.  another IntType) or native</span></div>
 <div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span><span class="comment">// integer types.  The wrapper is useful as C++ and the standard template</span></div>
 <div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span><span class="comment">// library allows the user to mix &quot;logical&quot; integral indices that might have a</span></div>
@@ -114,11 +114,11 @@ $(document).ready(function(){initNavTree('strong__vector_8h_source.html',''); in
 <div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span><span class="comment">// The container can only be indexed by an instance of an IntType class, which</span></div>
 <div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span><span class="comment">// can be declared as:</span></div>
 <div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span><span class="comment">//</span></div>
-<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span><span class="comment">//     DEFINE_INT_TYPE(IntTypeName, IntTypeValueType);</span></div>
+<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span><span class="comment">//     DEFINE_STRONG_INT_TYPE(IntTypeName, IntTypeValueType);</span></div>
 <div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span><span class="comment">//</span></div>
 <div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span><span class="comment">// where IntTypeName is the desired name for the &quot;logical&quot; integer-like type</span></div>
 <div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span><span class="comment">// and the ValueType is a supported native integer type such as int or</span></div>
-<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span><span class="comment">// uint64_t (see int_type.h for details).</span></div>
+<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span><span class="comment">// uint64_t (see strong_int.h for details).</span></div>
 <div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span><span class="comment">//</span></div>
 <div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span><span class="comment">// The wrapper exposes all public methods of STL vector and behaves mostly as</span></div>
 <div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span><span class="comment">// pass-through.  The only method modified to ensure type-safety is the operator</span></div>
@@ -126,7 +126,7 @@ $(document).ready(function(){initNavTree('strong__vector_8h_source.html',''); in
 <div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span><span class="comment">//</span></div>
 <div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span><span class="comment">// EXAMPLES --------------------------------------------------------------------</span></div>
 <div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span><span class="comment">//</span></div>
-<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span><span class="comment">//    DEFINE_INT_TYPE(PhysicalChildIndex, int32_t);</span></div>
+<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span><span class="comment">//    DEFINE_STRONG_INT_TYPE(PhysicalChildIndex, int32_t);</span></div>
 <div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span><span class="comment">//    absl::StrongVector&lt;PhysicalChildIndex, ChildStats*&gt; vec;</span></div>
 <div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span><span class="comment">//</span></div>
 <div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span><span class="comment">//    PhysicalChildIndex physical_index;</span></div>
@@ -137,7 +137,7 @@ $(document).ready(function(){initNavTree('strong__vector_8h_source.html',''); in
 <div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span><span class="comment">//    vec[physical_index] = ...;        &lt;-- fails to compile.</span></div>
 <div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span><span class="comment">//    vec.at(physical_index) = ...;     &lt;-- fails to compile.</span></div>
 <div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span><span class="comment">//</span></div>
-<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span><span class="comment">//    DEFINE_INT_TYPE(LogicalChildIndex, int32_t);</span></div>
+<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span><span class="comment">//    DEFINE_STRONG_INT_TYPE(LogicalChildIndex, int32_t);</span></div>
 <div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span><span class="comment">//    int32_t logical_index;</span></div>
 <div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span><span class="comment">//    vec[logical_index] = ...;        &lt;-- fails to compile.</span></div>
 <div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span><span class="comment">//    vec.at(logical_index) = ...;     &lt;-- fails to compile.</span></div>
@@ -157,8 +157,8 @@ $(document).ready(function(){initNavTree('strong__vector_8h_source.html',''); in
 <div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span><span class="preprocessor">#include &lt;utility&gt;</span></div>
 <div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span><span class="preprocessor">#include &lt;vector&gt;</span></div>
 <div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span> </div>
-<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span><span class="preprocessor">#include &quot;<a class="code" href="int__type_8h.html">ortools/base/int_type.h</a>&quot;</span></div>
-<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span><span class="preprocessor">#include &quot;<a class="code" href="macros_8h.html">ortools/base/macros.h</a>&quot;</span></div>
+<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span><span class="preprocessor">#include &quot;<a class="code" href="macros_8h.html">ortools/base/macros.h</a>&quot;</span></div>
+<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span><span class="preprocessor">#include &quot;<a class="code" href="strong__int_8h.html">ortools/base/strong_int.h</a>&quot;</span></div>
 <div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span> </div>
 <div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceabsl.html">absl</a> {</div>
 <div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span> </div>
@@ -400,9 +400,9 @@ $(document).ready(function(){initNavTree('strong__vector_8h_source.html',''); in
 <div class="ttc" id="aclassabsl_1_1_strong_vector_html_afd9d0c4c51498f58f2f18b36e1566b0d"><div class="ttname"><a href="classabsl_1_1_strong_vector.html#afd9d0c4c51498f58f2f18b36e1566b0d">absl::StrongVector::pointer</a></div><div class="ttdeci">ParentType::pointer pointer</div><div class="ttdef"><b>Definition:</b> <a href="strong__vector_8h_source.html#l00087">strong_vector.h:87</a></div></div>
 <div class="ttc" id="aconstraint__solver_2table_8cc_html_acb18315d548212835cd8ed4287e6c0b6"><div class="ttname"><a href="constraint__solver_2table_8cc.html#acb18315d548212835cd8ed4287e6c0b6">a</a></div><div class="ttdeci">int64_t a</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solver_2table_8cc_source.html#l00046">constraint_solver/table.cc:46</a></div></div>
 <div class="ttc" id="ademon__profiler_8cc_html_ac072af30c4ffbc834bb4c681f6ecb514"><div class="ttname"><a href="demon__profiler_8cc.html#ac072af30c4ffbc834bb4c681f6ecb514">value</a></div><div class="ttdeci">int64_t value</div><div class="ttdef"><b>Definition:</b> <a href="demon__profiler_8cc_source.html#l00044">demon_profiler.cc:44</a></div></div>
-<div class="ttc" id="aint__type_8h_html"><div class="ttname"><a href="int__type_8h.html">int_type.h</a></div></div>
 <div class="ttc" id="amacros_8h_html"><div class="ttname"><a href="macros_8h.html">macros.h</a></div></div>
 <div class="ttc" id="anamespaceabsl_html"><div class="ttname"><a href="namespaceabsl.html">absl</a></div><div class="ttdef"><b>Definition:</b> <a href="cleanup_8h_source.html#l00022">cleanup.h:22</a></div></div>
+<div class="ttc" id="astrong__int_8h_html"><div class="ttname"><a href="strong__int_8h.html">strong_int.h</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- HTML footer for doxygen 1.8.18-->

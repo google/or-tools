@@ -23,12 +23,15 @@ var searchData=
   ['define_5fint_5ftype_20',['DEFINE_INT_TYPE',['../int__type_8h.html#a38b1a87de73c7c9bc9ff2bd0aa06536a',1,'int_type.h']]],
   ['define_5frange_5fbased_5farc_5fiteration_21',['DEFINE_RANGE_BASED_ARC_ITERATION',['../graph_8h.html#a48a8a7aa004fc40d0d1d0ba63311cece',1,'graph.h']]],
   ['define_5fstl_5fiterator_5ffunctions_22',['DEFINE_STL_ITERATOR_FUNCTIONS',['../graph_8h.html#aa560f5e55268f818d5e5f43ed31e19a0',1,'graph.h']]],
-  ['dfatal_5flevel_23',['DFATAL_LEVEL',['../log__severity_8h.html#a8e90ad21d91c634c22b7bbaaee792283',1,'log_severity.h']]],
-  ['disallow_5fcopy_5fand_5fassign_24',['DISALLOW_COPY_AND_ASSIGN',['../macros_8h.html#af8df3547bfde53a5acb93e2607b0034a',1,'macros.h']]],
-  ['dlog_25',['DLOG',['../base_2logging_8h.html#a30c3e3c313489ab5e42bb12fcfcc5968',1,'logging.h']]],
-  ['dlog_5fassert_26',['DLOG_ASSERT',['../base_2logging_8h.html#a94c6e5c8f21a9927c1a7905273bd3580',1,'logging.h']]],
-  ['dlog_5fevery_5fn_27',['DLOG_EVERY_N',['../base_2logging_8h.html#a4a177338f5a5cfbcfd42e9b23dbfb3a8',1,'logging.h']]],
-  ['dlog_5fif_28',['DLOG_IF',['../base_2logging_8h.html#a0581caafbd212149004303f517163b1f',1,'logging.h']]],
-  ['dlog_5fif_5fevery_5fn_29',['DLOG_IF_EVERY_N',['../base_2logging_8h.html#ae63d59929f859e1f99bba723bb75a9a5',1,'logging.h']]],
-  ['dvlog_30',['DVLOG',['../base_2logging_8h.html#aa8321e154105ff593fc7160e3f1a5d91',1,'logging.h']]]
+  ['define_5fstrong_5findex_5ftype_23',['DEFINE_STRONG_INDEX_TYPE',['../strong__integers_8h.html#a79edede25cc7390299371435bbd9a8d3',1,'strong_integers.h']]],
+  ['define_5fstrong_5fint64_5ftype_24',['DEFINE_STRONG_INT64_TYPE',['../strong__integers_8h.html#a43adf713fa2b8bd29c1dfdd8e7230000',1,'strong_integers.h']]],
+  ['define_5fstrong_5fint_5ftype_25',['DEFINE_STRONG_INT_TYPE',['../strong__int_8h.html#a382737ba620573d644e36820b1e2f33b',1,'strong_int.h']]],
+  ['dfatal_5flevel_26',['DFATAL_LEVEL',['../log__severity_8h.html#a8e90ad21d91c634c22b7bbaaee792283',1,'log_severity.h']]],
+  ['disallow_5fcopy_5fand_5fassign_27',['DISALLOW_COPY_AND_ASSIGN',['../macros_8h.html#af8df3547bfde53a5acb93e2607b0034a',1,'macros.h']]],
+  ['dlog_28',['DLOG',['../base_2logging_8h.html#a30c3e3c313489ab5e42bb12fcfcc5968',1,'logging.h']]],
+  ['dlog_5fassert_29',['DLOG_ASSERT',['../base_2logging_8h.html#a94c6e5c8f21a9927c1a7905273bd3580',1,'logging.h']]],
+  ['dlog_5fevery_5fn_30',['DLOG_EVERY_N',['../base_2logging_8h.html#a4a177338f5a5cfbcfd42e9b23dbfb3a8',1,'logging.h']]],
+  ['dlog_5fif_31',['DLOG_IF',['../base_2logging_8h.html#a0581caafbd212149004303f517163b1f',1,'logging.h']]],
+  ['dlog_5fif_5fevery_5fn_32',['DLOG_IF_EVERY_N',['../base_2logging_8h.html#ae63d59929f859e1f99bba723bb75a9a5',1,'logging.h']]],
+  ['dvlog_33',['DVLOG',['../base_2logging_8h.html#aa8321e154105ff593fc7160e3f1a5d91',1,'logging.h']]]
 ];

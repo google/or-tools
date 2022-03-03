@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.2</span>
+   &#160;<span id="projectnumber">9.3</span>
    </div>
   </td>
  </tr>
@@ -102,7 +102,7 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1_g_scip.h
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a63198666016f72327add694d50584c25"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_g_scip.html#a63198666016f72327add694d50584c25">~GScip</a> ()</td></tr>
 <tr class="separator:a63198666016f72327add694d50584c25"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac1263357bfc90432ab8260ec236d756c"><td class="memItemLeft" align="right" valign="top">absl::StatusOr&lt; <a class="el" href="structoperations__research_1_1_g_scip_result.html">GScipResult</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_g_scip.html#ac1263357bfc90432ab8260ec236d756c">Solve</a> (const <a class="el" href="classoperations__research_1_1_g_scip_parameters.html">GScipParameters</a> &amp;params=<a class="el" href="classoperations__research_1_1_g_scip_parameters.html">GScipParameters</a>(), const std::string &amp;legacy_params=&quot;&quot;, <a class="el" href="namespaceoperations__research.html#a2899c1afc60224e18c3d9d4a95c5064e">GScipMessageHandler</a> message_handler=nullptr)</td></tr>
+<tr class="memitem:ac1263357bfc90432ab8260ec236d756c"><td class="memItemLeft" align="right" valign="top">absl::StatusOr&lt; <a class="el" href="structoperations__research_1_1_g_scip_result.html">GScipResult</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_g_scip.html#ac1263357bfc90432ab8260ec236d756c">Solve</a> (const GScipParameters &amp;params=GScipParameters(), const std::string &amp;legacy_params=&quot;&quot;, <a class="el" href="namespaceoperations__research.html#a2899c1afc60224e18c3d9d4a95c5064e">GScipMessageHandler</a> message_handler=nullptr)</td></tr>
 <tr class="separator:ac1263357bfc90432ab8260ec236d756c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a798afe0406ce57a7bc4c07308cf1ddb6"><td class="memItemLeft" align="right" valign="top">absl::Status&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_g_scip.html#a798afe0406ce57a7bc4c07308cf1ddb6">SetMaximize</a> (bool is_maximize)</td></tr>
 <tr class="separator:a798afe0406ce57a7bc4c07308cf1ddb6"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -160,8 +160,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ab22519612d720ca9f8a498be5096b399"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a629a4ead76ebba3e3816cef7bd5b118f"><td class="memItemLeft" align="right" valign="top">absl::Status&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_g_scip.html#a629a4ead76ebba3e3816cef7bd5b118f">SetLinearConstraintUb</a> (SCIP_CONS *constraint, double ub)</td></tr>
 <tr class="separator:a629a4ead76ebba3e3816cef7bd5b118f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aab3e957e02549515bcbf5a08e57f95e5"><td class="memItemLeft" align="right" valign="top">absl::Status&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_g_scip.html#aab3e957e02549515bcbf5a08e57f95e5">SetLinearConstraintCoef</a> (SCIP_CONS *constraint, SCIP_VAR *<a class="el" href="sat__solver_8cc.html#a8392bdc4ed570e6a95c7fca35b09f83f">var</a>, double <a class="el" href="matchers_8cc.html#a0b6f3694312803de4bea1fe97896294f">value</a>)</td></tr>
+<tr class="memitem:aab3e957e02549515bcbf5a08e57f95e5"><td class="memItemLeft" align="right" valign="top">absl::Status&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_g_scip.html#aab3e957e02549515bcbf5a08e57f95e5">SetLinearConstraintCoef</a> (SCIP_CONS *constraint, SCIP_VAR *<a class="el" href="sat__solver_8cc.html#a8392bdc4ed570e6a95c7fca35b09f83f">var</a>, double <a class="el" href="primal__dual__hybrid__gradient_8cc.html#a730b1ea892f1f794d9bd5f16027acb63">value</a>)</td></tr>
 <tr class="separator:aab3e957e02549515bcbf5a08e57f95e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af88320da8ab96eb1637bcb8611fb6830"><td class="memItemLeft" align="right" valign="top">absl::Status&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_g_scip.html#af88320da8ab96eb1637bcb8611fb6830">AddLinearConstraintCoef</a> (SCIP_CONS *constraint, SCIP_VAR *<a class="el" href="sat__solver_8cc.html#a8392bdc4ed570e6a95c7fca35b09f83f">var</a>, double <a class="el" href="primal__dual__hybrid__gradient_8cc.html#a730b1ea892f1f794d9bd5f16027acb63">value</a>)</td></tr>
+<tr class="separator:af88320da8ab96eb1637bcb8611fb6830"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a55a72539d63e4b1619900907167993f5"><td class="memItemLeft" align="right" valign="top">absl::Status&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_g_scip.html#a55a72539d63e4b1619900907167993f5">DeleteConstraint</a> (SCIP_CONS *constraint)</td></tr>
 <tr class="separator:a55a72539d63e4b1619900907167993f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9991cb920857500706ba6863637ab7b6"><td class="memItemLeft" align="right" valign="top">absl::StatusOr&lt; SCIP_CONS * &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_g_scip.html#a9991cb920857500706ba6863637ab7b6">AddIndicatorConstraint</a> (const <a class="el" href="structoperations__research_1_1_g_scip_indicator_constraint.html">GScipIndicatorConstraint</a> &amp;indicator_constraint, const std::string &amp;<a class="el" href="gscip__solver_8cc.html#a82e2a7e0f28d620da677073b6b24574b">name</a>=&quot;&quot;, const <a class="el" href="structoperations__research_1_1_g_scip_constraint_options.html">GScipConstraintOptions</a> &amp;options=<a class="el" href="namespaceoperations__research.html#a20fcb412d90387bbb6ba128cf953c080">DefaultGScipConstraintOptions</a>())</td></tr>
@@ -229,7 +231,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00320">320</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00321">321</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
 
 </div>
 </div>
@@ -266,7 +268,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00451">451</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00463">463</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
 
 </div>
 </div>
@@ -302,7 +304,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00417">417</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00426">426</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
 
 </div>
 </div>
@@ -338,7 +340,43 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00357">357</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00358">358</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
+
+</div>
+</div>
+<a id="af88320da8ab96eb1637bcb8611fb6830" name="af88320da8ab96eb1637bcb8611fb6830"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af88320da8ab96eb1637bcb8611fb6830">&#9670;&nbsp;</a></span>AddLinearConstraintCoef()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">absl::Status AddLinearConstraintCoef </td>
+          <td>(</td>
+          <td class="paramtype">SCIP_CONS *&#160;</td>
+          <td class="paramname"><em>constraint</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">SCIP_VAR *&#160;</td>
+          <td class="paramname"><em>var</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>value</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00753">753</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
 
 </div>
 </div>
@@ -374,7 +412,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00476">476</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00488">488</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
 
 </div>
 </div>
@@ -410,7 +448,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00383">383</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00388">388</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
 
 </div>
 </div>
@@ -446,7 +484,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00523">523</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00535">535</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
 
 </div>
 </div>
@@ -482,7 +520,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00550">550</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00562">562</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
 
 </div>
 </div>
@@ -536,7 +574,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00325">325</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00326">326</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
 
 </div>
 </div>
@@ -556,7 +594,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00634">634</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00646">646</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
 
 </div>
 </div>
@@ -603,7 +641,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00681">681</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00693">693</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
 
 </div>
 </div>
@@ -631,7 +669,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00272">272</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00273">273</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
 
 </div>
 </div>
@@ -651,7 +689,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00934">934</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00955">955</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
 
 </div>
 </div>
@@ -671,7 +709,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00966">966</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00987">987</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
 
 </div>
 </div>
@@ -691,7 +729,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00942">942</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00963">963</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
 
 </div>
 </div>
@@ -711,7 +749,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00950">950</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00971">971</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
 
 </div>
 </div>
@@ -731,7 +769,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00958">958</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00979">979</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
 
 </div>
 </div>
@@ -751,7 +789,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00974">974</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00995">995</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
 
 </div>
 </div>
@@ -771,7 +809,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00725">725</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00737">737</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
 
 </div>
 </div>
@@ -791,7 +829,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00624">624</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00636">636</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
 
 </div>
 </div>
@@ -810,7 +848,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00296">296</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00297">297</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
 
 </div>
 </div>
@@ -830,7 +868,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00685">685</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00697">697</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
 
 </div>
 </div>
@@ -850,7 +888,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00665">665</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00677">677</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
 
 </div>
 </div>
@@ -870,7 +908,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00689">689</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00701">701</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
 
 </div>
 </div>
@@ -890,7 +928,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00701">701</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00713">713</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
 
 </div>
 </div>
@@ -910,7 +948,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00705">705</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00717">717</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
 
 </div>
 </div>
@@ -930,7 +968,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00695">695</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00707">707</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
 
 </div>
 </div>
@@ -950,7 +988,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00709">709</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00721">721</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
 
 </div>
 </div>
@@ -970,7 +1008,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00679">679</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00691">691</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
 
 </div>
 </div>
@@ -990,7 +1028,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00673">673</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00685">685</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
 
 </div>
 </div>
@@ -1009,7 +1047,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00589">589</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00601">601</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
 
 </div>
 </div>
@@ -1028,7 +1066,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00593">593</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00605">605</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
 
 </div>
 </div>
@@ -1048,7 +1086,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00645">645</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00657">657</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
 
 </div>
 </div>
@@ -1075,7 +1113,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip_8h_source.html#l00340">340</a> of file <a class="el" href="gscip_8h_source.html">gscip.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip_8h_source.html#l00343">343</a> of file <a class="el" href="gscip_8h_source.html">gscip.h</a>.</p>
 
 </div>
 </div>
@@ -1094,7 +1132,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00284">284</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00285">285</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
 
 </div>
 </div>
@@ -1121,7 +1159,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00290">290</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00291">291</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
 
 </div>
 </div>
@@ -1151,7 +1189,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00595">595</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00607">607</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
 
 </div>
 </div>
@@ -1181,7 +1219,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00600">600</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00612">612</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
 
 </div>
 </div>
@@ -1217,7 +1255,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00732">732</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00744">744</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
 
 </div>
 </div>
@@ -1247,7 +1285,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00713">713</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00725">725</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
 
 </div>
 </div>
@@ -1277,7 +1315,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00719">719</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00731">731</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
 
 </div>
 </div>
@@ -1297,7 +1335,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00576">576</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00588">588</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
 
 </div>
 </div>
@@ -1327,7 +1365,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00612">612</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00624">624</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
 
 </div>
 </div>
@@ -1347,7 +1385,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00582">582</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00594">594</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
 
 </div>
 </div>
@@ -1377,7 +1415,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00606">606</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00618">618</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
 
 </div>
 </div>
@@ -1407,7 +1445,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00617">617</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00629">629</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
 
 </div>
 </div>
@@ -1420,8 +1458,8 @@ Static Public Attributes</h2></td></tr>
         <tr>
           <td class="memname">absl::StatusOr&lt; <a class="el" href="structoperations__research_1_1_g_scip_result.html">GScipResult</a> &gt; Solve </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classoperations__research_1_1_g_scip_parameters.html">GScipParameters</a> &amp;&#160;</td>
-          <td class="paramname"><em>params</em> = <code><a class="el" href="classoperations__research_1_1_g_scip_parameters.html">GScipParameters</a>()</code>, </td>
+          <td class="paramtype">const GScipParameters &amp;&#160;</td>
+          <td class="paramname"><em>params</em> = <code>GScipParameters()</code>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -1443,7 +1481,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00778">778</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00797">797</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
 
 </div>
 </div>
@@ -1463,7 +1501,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00741">741</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00760">760</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
 
 </div>
 </div>
@@ -1483,7 +1521,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00669">669</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00681">681</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
 
 </div>
 </div>
@@ -1530,7 +1568,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00675">675</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip_8cc_source.html#l00687">687</a> of file <a class="el" href="gscip_8cc_source.html">gscip.cc</a>.</p>
 
 </div>
 </div>
@@ -1555,7 +1593,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip_8h_source.html#l00330">330</a> of file <a class="el" href="gscip_8h_source.html">gscip.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip_8h_source.html#l00333">333</a> of file <a class="el" href="gscip_8h_source.html">gscip.h</a>.</p>
 
 </div>
 </div>

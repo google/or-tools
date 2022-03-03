@@ -1,6 +1,5 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classoperations__research_1_1_assignment_element.html" title=" " alt="" coords="5,56,144,83"/>
-<area shape="rect" id="node2" href="$classoperations__research_1_1_int_var_element.html" title=" " alt="" coords="213,5,317,32"/>
-<area shape="rect" id="node3" href="$classoperations__research_1_1_interval_var_element.html" title=" " alt="" coords="199,56,331,83"/>
-<area shape="rect" id="node4" href="$classoperations__research_1_1_sequence_var_element.html" title="The SequenceVarElement stores a partial representation of ranked interval variables in the underlying..." alt="" coords="192,107,339,133"/>
+<area shape="rect" id="node1" href="$classgtl_1_1_base_deleter.html" title=" " alt="" coords="5,46,108,73"/>
+<area shape="rect" id="node2" href="$classgtl_1_1_templated_element_deleter.html" title=" " alt="" coords="156,5,348,47"/>
+<area shape="rect" id="node3" href="$classgtl_1_1_templated_value_deleter.html" title=" " alt="" coords="165,71,339,112"/>
 </map>

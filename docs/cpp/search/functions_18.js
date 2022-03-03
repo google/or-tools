@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['x_5fintervals_0',['x_intervals',['../classoperations__research_1_1sat_1_1_no_overlap2_d_constraint_proto.html#adce289128aaf4ebbf2e8a0691153c3ce',1,'operations_research::sat::NoOverlap2DConstraintProto::x_intervals(int index) const'],['../classoperations__research_1_1sat_1_1_no_overlap2_d_constraint_proto.html#a55d7ccc985684bbe6cd03deb6695f401',1,'operations_research::sat::NoOverlap2DConstraintProto::x_intervals() const']]],
-  ['x_5fintervals_5fsize_1',['x_intervals_size',['../classoperations__research_1_1sat_1_1_no_overlap2_d_constraint_proto.html#a0271bc2a197e99b91eadf1213891bab6',1,'operations_research::sat::NoOverlap2DConstraintProto']]]
+  ['zero_0',['Zero',['../namespaceoperations__research.html#a5a9881f8a07b166ef2cbde572cea27b6',1,'operations_research']]],
+  ['zvector_1',['ZVector',['../classoperations__research_1_1_z_vector.html#a7b5b213644aebe8cf8e122660e678647',1,'operations_research::ZVector::ZVector()'],['../classoperations__research_1_1_z_vector.html#a702f8ccc0794caa3dcc83656df658c71',1,'operations_research::ZVector::ZVector(int64_t min_index, int64_t max_index)']]]
 ];

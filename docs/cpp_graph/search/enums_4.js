@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['graphtostringformat_0',['GraphToStringFormat',['../namespaceutil.html#a2d1e9c029dfaa2e8dfd58862836440b9',1,'util']]]
+  ['matchingalgorithm_0',['MatchingAlgorithm',['../classoperations__research_1_1_christofides_path_solver.html#a1d4f082de5fc3eed348d65eb30b5f3e7',1,'operations_research::ChristofidesPathSolver']]]
 ];

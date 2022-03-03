@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.2</span>
+   &#160;<span id="projectnumber">9.3</span>
    </div>
   </td>
  </tr>
@@ -110,7 +110,7 @@ $(document).ready(function(){initNavTree('threadpool_8cc_source.html',''); initR
 <div class="line"><a id="l00019" name="l00019"></a><span class="lineno"><a class="line" href="namespaceoperations__research.html#a08b84c3f7aa7f7488210416a1a6530f9">   19</a></span><span class="keywordtype">void</span> <a class="code hl_function" href="namespaceoperations__research.html#a08b84c3f7aa7f7488210416a1a6530f9">RunWorker</a>(<span class="keywordtype">void</span>* data) {</div>
 <div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span>  <a class="code hl_class" href="classoperations__research_1_1_thread_pool.html">ThreadPool</a>* <span class="keyword">const</span> thread_pool = <span class="keyword">reinterpret_cast&lt;</span><a class="code hl_class" href="classoperations__research_1_1_thread_pool.html">ThreadPool</a>*<span class="keyword">&gt;</span>(data);</div>
 <div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span>  std::function&lt;void()&gt; work = thread_pool-&gt;<a class="code hl_function" href="classoperations__research_1_1_thread_pool.html#a574a58759834205c815d601debc67636">GetNextTask</a>();</div>
-<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span>  <span class="keywordflow">while</span> (work != NULL) {</div>
+<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span>  <span class="keywordflow">while</span> (work != <span class="keyword">nullptr</span>) {</div>
 <div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span>    work();</div>
 <div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span>    work = thread_pool-&gt;<a class="code hl_function" href="classoperations__research_1_1_thread_pool.html#a574a58759834205c815d601debc67636">GetNextTask</a>();</div>
 <div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span>  }</div>
@@ -181,7 +181,7 @@ $(document).ready(function(){initNavTree('threadpool_8cc_source.html',''); initR
 <div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span>}  <span class="comment">// namespace operations_research</span></div>
 <div class="ttc" id="abase_2logging_8h_html"><div class="ttname"><a href="base_2logging_8h.html">logging.h</a></div></div>
 <div class="ttc" id="abase_2logging_8h_html_a3e1cfef60e774a81f30eaddf26a3a274"><div class="ttname"><a href="base_2logging_8h.html#a3e1cfef60e774a81f30eaddf26a3a274">CHECK</a></div><div class="ttdeci">#define CHECK(condition)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00495">base/logging.h:495</a></div></div>
-<div class="ttc" id="abase_2logging_8h_html_a7e03ec13560fa94a8fea569960d7efc6"><div class="ttname"><a href="base_2logging_8h.html#a7e03ec13560fa94a8fea569960d7efc6">CHECK_GT</a></div><div class="ttdeci">#define CHECK_GT(val1, val2)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00707">base/logging.h:707</a></div></div>
+<div class="ttc" id="abase_2logging_8h_html_a7e03ec13560fa94a8fea569960d7efc6"><div class="ttname"><a href="base_2logging_8h.html#a7e03ec13560fa94a8fea569960d7efc6">CHECK_GT</a></div><div class="ttdeci">#define CHECK_GT(val1, val2)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00708">base/logging.h:708</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1_thread_pool_html"><div class="ttname"><a href="classoperations__research_1_1_thread_pool.html">operations_research::ThreadPool</a></div><div class="ttdef"><b>Definition:</b> <a href="threadpool_8h_source.html#l00026">threadpool.h:26</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1_thread_pool_html_a0c44e22f9dfc275e181be84bf4e66523"><div class="ttname"><a href="classoperations__research_1_1_thread_pool.html#a0c44e22f9dfc275e181be84bf4e66523">operations_research::ThreadPool::ThreadPool</a></div><div class="ttdeci">ThreadPool(const std::string &amp;prefix, int num_threads)</div><div class="ttdef"><b>Definition:</b> <a href="threadpool_8cc_source.html#l00028">threadpool.cc:28</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1_thread_pool_html_a176534e56452aa8789f0d4200975dc70"><div class="ttname"><a href="classoperations__research_1_1_thread_pool.html#a176534e56452aa8789f0d4200975dc70">operations_research::ThreadPool::StartWorkers</a></div><div class="ttdeci">void StartWorkers()</div><div class="ttdef"><b>Definition:</b> <a href="threadpool_8cc_source.html#l00049">threadpool.cc:49</a></div></div>

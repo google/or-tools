@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 9.2</span>
+                <span id="sfml">Google OR-Tools 9.3</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -89,7 +89,7 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1_unary_di
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l03391">3391</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l03377">3377</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Classes</h2></td></tr>
@@ -98,16 +98,16 @@ Classes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a724ec17701ed810d47eb0183a53641b9"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_unary_dimension_checker.html#a724ec17701ed810d47eb0183a53641b9">UnaryDimensionChecker</a> (const <a class="el" href="classoperations__research_1_1_path_state.html">PathState</a> *path_state, std::vector&lt; <a class="el" href="structoperations__research_1_1_unary_dimension_checker_1_1_interval.html">Interval</a> &gt; path_capacity, std::vector&lt; int &gt; path_class, std::vector&lt; std::vector&lt; <a class="el" href="structoperations__research_1_1_unary_dimension_checker_1_1_interval.html">Interval</a> &gt; &gt; demand, std::vector&lt; <a class="el" href="structoperations__research_1_1_unary_dimension_checker_1_1_interval.html">Interval</a> &gt; node_capacity)</td></tr>
-<tr class="separator:a724ec17701ed810d47eb0183a53641b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5d11a5157c9bb8b09d1f1242c5da60e5"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_unary_dimension_checker.html#a5d11a5157c9bb8b09d1f1242c5da60e5">UnaryDimensionChecker</a> (const <a class="el" href="classoperations__research_1_1_path_state.html">PathState</a> *path_state, std::vector&lt; <a class="el" href="structoperations__research_1_1_unary_dimension_checker_1_1_interval.html">Interval</a> &gt; path_capacity, std::vector&lt; int &gt; path_class, std::vector&lt; std::function&lt; <a class="el" href="structoperations__research_1_1_unary_dimension_checker_1_1_interval.html">Interval</a>(int64_t)&gt; &gt; min_max_demand_per_path_class, std::vector&lt; <a class="el" href="structoperations__research_1_1_unary_dimension_checker_1_1_interval.html">Interval</a> &gt; node_capacity)</td></tr>
+<tr class="separator:a5d11a5157c9bb8b09d1f1242c5da60e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a49b06b04b3aa7a76149ce864098a0f15"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_unary_dimension_checker.html#a49b06b04b3aa7a76149ce864098a0f15">Check</a> () const</td></tr>
 <tr class="separator:a49b06b04b3aa7a76149ce864098a0f15"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aca6f43ce4724910499fa7cadb5caa01f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_unary_dimension_checker.html#aca6f43ce4724910499fa7cadb5caa01f">Commit</a> ()</td></tr>
 <tr class="separator:aca6f43ce4724910499fa7cadb5caa01f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a724ec17701ed810d47eb0183a53641b9" name="a724ec17701ed810d47eb0183a53641b9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a724ec17701ed810d47eb0183a53641b9">&#9670;&nbsp;</a></span>UnaryDimensionChecker()</h2>
+<a id="a5d11a5157c9bb8b09d1f1242c5da60e5" name="a5d11a5157c9bb8b09d1f1242c5da60e5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5d11a5157c9bb8b09d1f1242c5da60e5">&#9670;&nbsp;</a></span>UnaryDimensionChecker()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -133,8 +133,8 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">std::vector&lt; std::vector&lt; <a class="el" href="structoperations__research_1_1_unary_dimension_checker_1_1_interval.html">Interval</a> &gt; &gt;&#160;</td>
-          <td class="paramname"><em>demand</em>, </td>
+          <td class="paramtype">std::vector&lt; std::function&lt; <a class="el" href="structoperations__research_1_1_unary_dimension_checker_1_1_interval.html">Interval</a>(int64_t)&gt; &gt;&#160;</td>
+          <td class="paramname"><em>min_max_demand_per_path_class</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>

@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.2</span>
+   &#160;<span id="projectnumber">9.3</span>
    </div>
   </td>
  </tr>
@@ -126,17 +126,17 @@ $(document).ready(function(){initNavTree('cocktail__hour_8cc_source.html',''); i
 <div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span><span class="preprocessor">#include &lt;limits&gt;</span></div>
 <div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span> </div>
 <div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span><span class="preprocessor">#include &quot;absl/container/flat_hash_set.h&quot;</span></div>
-<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span><span class="preprocessor">#include &quot;absl/flags/parse.h&quot;</span></div>
-<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span><span class="preprocessor">#include &quot;absl/flags/usage.h&quot;</span></div>
-<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span><span class="preprocessor">#include &quot;absl/status/status.h&quot;</span></div>
-<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span><span class="preprocessor">#include &quot;absl/status/statusor.h&quot;</span></div>
-<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span><span class="preprocessor">#include &quot;absl/strings/str_join.h&quot;</span></div>
-<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span><span class="preprocessor">#include &quot;absl/strings/str_replace.h&quot;</span></div>
-<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span><span class="preprocessor">#include &quot;absl/strings/string_view.h&quot;</span></div>
-<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span><span class="preprocessor">#include &quot;<a class="code" href="base_2logging_8h.html">ortools/base/logging.h</a>&quot;</span></div>
-<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span><span class="preprocessor">#include &quot;<a class="code" href="map__util_8h.html">ortools/base/map_util.h</a>&quot;</span></div>
-<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span><span class="preprocessor">#include &quot;<a class="code" href="status__macros_8h.html">ortools/base/status_macros.h</a>&quot;</span></div>
-<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span><span class="preprocessor">#include &quot;<a class="code" href="math__opt_8h.html">ortools/math_opt/cpp/math_opt.h</a>&quot;</span></div>
+<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span><span class="preprocessor">#include &quot;absl/status/status.h&quot;</span></div>
+<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span><span class="preprocessor">#include &quot;absl/status/statusor.h&quot;</span></div>
+<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span><span class="preprocessor">#include &quot;absl/strings/str_join.h&quot;</span></div>
+<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span><span class="preprocessor">#include &quot;absl/strings/str_replace.h&quot;</span></div>
+<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span><span class="preprocessor">#include &quot;absl/strings/string_view.h&quot;</span></div>
+<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span><span class="preprocessor">#include &quot;<a class="code" href="init__google_8h.html">ortools/base/init_google.h</a>&quot;</span></div>
+<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span><span class="preprocessor">#include &quot;<a class="code" href="base_2logging_8h.html">ortools/base/logging.h</a>&quot;</span></div>
+<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span><span class="preprocessor">#include &quot;<a class="code" href="map__util_8h.html">ortools/base/map_util.h</a>&quot;</span></div>
+<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span><span class="preprocessor">#include &quot;<a class="code" href="base_2status__macros_8h.html">ortools/base/status_macros.h</a>&quot;</span></div>
+<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span><span class="preprocessor">#include &quot;<a class="code" href="math__opt_8h.html">ortools/math_opt/cpp/math_opt.h</a>&quot;</span></div>
+<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span><span class="preprocessor">#include &quot;<a class="code" href="util_2status__macros_8h.html">ortools/util/status_macros.h</a>&quot;</span></div>
 <div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span> </div>
 <div class="line"><a id="l00050" name="l00050"></a><span class="lineno"><a class="line" href="cocktail__hour_8cc.html#ab581200aee157f574d87eb76c4745ca3">   50</a></span><a class="code hl_function" href="cocktail__hour_8cc.html#ab581200aee157f574d87eb76c4745ca3">ABSL_FLAG</a>(std::string, mode, <span class="stringliteral">&quot;text&quot;</span>,</div>
 <div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>          <span class="stringliteral">&quot;One of \&quot;text\&quot;, \&quot;latex\&quot;, or \&quot;analysis\&quot;.&quot;</span>);</div>
@@ -340,160 +340,164 @@ $(document).ready(function(){initNavTree('cocktail__hour_8cc_source.html',''); i
 <div class="line"><a id="l00249" name="l00249"></a><span class="lineno">  249</span>  <a class="code hl_variable" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>.Maximize(cocktails_made);</div>
 <div class="line"><a id="l00250" name="l00250"></a><span class="lineno">  250</span>  <span class="keyword">const</span> <a class="code hl_struct" href="structoperations__research_1_1math__opt_1_1_solve_arguments.html">math_opt::SolveArguments</a> args = {</div>
 <div class="line"><a id="l00251" name="l00251"></a><span class="lineno">  251</span>      .<a class="code hl_variable" href="structoperations__research_1_1math__opt_1_1_solve_arguments.html#a527ff4741dd79a20c29dc896d14c5a01">parameters</a> = {.<a class="code hl_variable" href="structoperations__research_1_1math__opt_1_1_solve_parameters.html#a2ec1cbffcca0b4f069643c74bafbb416">enable_output</a> = enable_solver_output}};</div>
-<div class="line"><a id="l00252" name="l00252"></a><span class="lineno">  252</span>  <a class="code hl_define" href="status__macros_8h.html#a600de4b8f65fe0a4b1898041634f9011">ASSIGN_OR_RETURN</a>(<span class="keyword">const</span> <a class="code hl_struct" href="structoperations__research_1_1math__opt_1_1_solve_result.html">math_opt::SolveResult</a> result,</div>
+<div class="line"><a id="l00252" name="l00252"></a><span class="lineno">  252</span>  <a class="code hl_define" href="base_2status__macros_8h.html#a600de4b8f65fe0a4b1898041634f9011">ASSIGN_OR_RETURN</a>(<span class="keyword">const</span> <a class="code hl_struct" href="structoperations__research_1_1math__opt_1_1_solve_result.html">math_opt::SolveResult</a> result,</div>
 <div class="line"><a id="l00253" name="l00253"></a><span class="lineno">  253</span>                   <a class="code hl_function" href="namespaceoperations__research_1_1math__opt.html#a5767ee23f380e72488d3c7ebf2d742b1">math_opt::Solve</a>(<a class="code hl_variable" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>, math_opt::SolverType::kGscip, args));</div>
 <div class="line"><a id="l00254" name="l00254"></a><span class="lineno">  254</span> </div>
-<div class="line"><a id="l00255" name="l00255"></a><span class="lineno">  255</span>  <span class="comment">// Check that the problem has an optimal solution.</span></div>
-<div class="line"><a id="l00256" name="l00256"></a><span class="lineno">  256</span>  <a class="code hl_define" href="base_2logging_8h.html#acdd435d10e595c91b6861a233b8e8432">QCHECK_EQ</a>(result.<a class="code hl_variable" href="structoperations__research_1_1math__opt_1_1_solve_result.html#a77d1ea96211300e9417b965981953c81">termination</a>.<a class="code hl_variable" href="structoperations__research_1_1math__opt_1_1_termination.html#a36d5365d462f57468ba3a9d8ae6bbec9">reason</a>, math_opt::TerminationReason::kOptimal)</div>
-<div class="line"><a id="l00257" name="l00257"></a><span class="lineno">  257</span>      &lt;&lt; <span class="stringliteral">&quot;Failed to find an optimal solution: &quot;</span> &lt;&lt; result.<a class="code hl_variable" href="structoperations__research_1_1math__opt_1_1_solve_result.html#a77d1ea96211300e9417b965981953c81">termination</a>;</div>
-<div class="line"><a id="l00258" name="l00258"></a><span class="lineno">  258</span> </div>
-<div class="line"><a id="l00259" name="l00259"></a><span class="lineno">  259</span>  Menu menu;</div>
-<div class="line"><a id="l00260" name="l00260"></a><span class="lineno">  260</span>  <span class="keywordflow">for</span> (<span class="keyword">const</span> absl::string_view ingredient : kIngredients) {</div>
-<div class="line"><a id="l00261" name="l00261"></a><span class="lineno">  261</span>    <span class="keywordflow">if</span> (result.<a class="code hl_function" href="structoperations__research_1_1math__opt_1_1_solve_result.html#ac4a6e078f25aa73eec5271d449a12532">variable_values</a>().at(ingredient_vars.at(ingredient)) &gt; 0.5) {</div>
-<div class="line"><a id="l00262" name="l00262"></a><span class="lineno">  262</span>      menu.ingredients.push_back(std::string(ingredient));</div>
-<div class="line"><a id="l00263" name="l00263"></a><span class="lineno">  263</span>    }</div>
-<div class="line"><a id="l00264" name="l00264"></a><span class="lineno">  264</span>  }</div>
-<div class="line"><a id="l00265" name="l00265"></a><span class="lineno">  265</span>  <span class="keywordflow">for</span> (<span class="keyword">const</span> Cocktail&amp; cocktail : all_cocktails) {</div>
-<div class="line"><a id="l00266" name="l00266"></a><span class="lineno">  266</span>    <span class="keywordflow">if</span> (result.<a class="code hl_function" href="structoperations__research_1_1math__opt_1_1_solve_result.html#ac4a6e078f25aa73eec5271d449a12532">variable_values</a>().at(cocktail_vars.at(cocktail.name)) &gt; 0.5) {</div>
-<div class="line"><a id="l00267" name="l00267"></a><span class="lineno">  267</span>      menu.cocktails.push_back(cocktail);</div>
-<div class="line"><a id="l00268" name="l00268"></a><span class="lineno">  268</span>    }</div>
-<div class="line"><a id="l00269" name="l00269"></a><span class="lineno">  269</span>  }</div>
-<div class="line"><a id="l00270" name="l00270"></a><span class="lineno">  270</span>  <span class="keywordflow">return</span> menu;</div>
-<div class="line"><a id="l00271" name="l00271"></a><span class="lineno">  271</span>}</div>
-<div class="line"><a id="l00272" name="l00272"></a><span class="lineno">  272</span> </div>
-<div class="line"><a id="l00273" name="l00273"></a><span class="lineno">  273</span>absl::flat_hash_set&lt;std::string&gt; SetFromVec(</div>
-<div class="line"><a id="l00274" name="l00274"></a><span class="lineno">  274</span>    <span class="keyword">const</span> std::vector&lt;std::string&gt;&amp; vec) {</div>
-<div class="line"><a id="l00275" name="l00275"></a><span class="lineno">  275</span>  <span class="keywordflow">return</span> {vec.begin(), vec.end()};</div>
-<div class="line"><a id="l00276" name="l00276"></a><span class="lineno">  276</span>}</div>
-<div class="line"><a id="l00277" name="l00277"></a><span class="lineno">  277</span> </div>
-<div class="line"><a id="l00278" name="l00278"></a><span class="lineno">  278</span>absl::Status AnalysisMode() {</div>
-<div class="line"><a id="l00279" name="l00279"></a><span class="lineno">  279</span>  std::cout &lt;&lt; <span class="stringliteral">&quot;Considering &quot;</span> &lt;&lt; AllCocktails().size() &lt;&lt; <span class="stringliteral">&quot; cocktails and &quot;</span></div>
-<div class="line"><a id="l00280" name="l00280"></a><span class="lineno">  280</span>            &lt;&lt; kIngredientsSize &lt;&lt; <span class="stringliteral">&quot; ingredients.&quot;</span> &lt;&lt; std::endl;</div>
-<div class="line"><a id="l00281" name="l00281"></a><span class="lineno">  281</span>  std::cout &lt;&lt; <span class="stringliteral">&quot;Solving for number of cocktails that can be made as a function &quot;</span></div>
-<div class="line"><a id="l00282" name="l00282"></a><span class="lineno">  282</span>               <span class="stringliteral">&quot;of number of ingredients&quot;</span></div>
-<div class="line"><a id="l00283" name="l00283"></a><span class="lineno">  283</span>            &lt;&lt; std::endl;</div>
-<div class="line"><a id="l00284" name="l00284"></a><span class="lineno">  284</span> </div>
-<div class="line"><a id="l00285" name="l00285"></a><span class="lineno">  285</span>  std::cout &lt;&lt; <span class="stringliteral">&quot;ingredients | cocktails&quot;</span> &lt;&lt; std::endl;</div>
-<div class="line"><a id="l00286" name="l00286"></a><span class="lineno">  286</span>  <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 1; i &lt;= kIngredientsSize; ++i) {</div>
-<div class="line"><a id="l00287" name="l00287"></a><span class="lineno">  287</span>    <span class="keyword">const</span> absl::StatusOr&lt;Menu&gt; menu = SolveForMenu(</div>
-<div class="line"><a id="l00288" name="l00288"></a><span class="lineno">  288</span>        i, <span class="keyword">false</span>, <span class="comment">/*existing_ingredients=*/</span>{}, <span class="comment">/*unavailable_ingredients=*/</span>{},</div>
-<div class="line"><a id="l00289" name="l00289"></a><span class="lineno">  289</span>        <span class="comment">/*required_cocktails=*/</span>{}, <span class="comment">/*blocked_cocktails=*/</span>{});</div>
-<div class="line"><a id="l00290" name="l00290"></a><span class="lineno">  290</span>    <a class="code hl_define" href="status__macros_8h.html#acdc223d8c59d5c591dc6b4e88257627b">RETURN_IF_ERROR</a>(menu.status())</div>
-<div class="line"><a id="l00291" name="l00291"></a><span class="lineno">  291</span>        &lt;&lt; <span class="stringliteral">&quot;Failure when solving for &quot;</span> &lt;&lt; i &lt;&lt; <span class="stringliteral">&quot; ingredients&quot;</span>;</div>
-<div class="line"><a id="l00292" name="l00292"></a><span class="lineno">  292</span>    std::cout &lt;&lt; i &lt;&lt; <span class="stringliteral">&quot; | &quot;</span> &lt;&lt; menu-&gt;cocktails.size() &lt;&lt; std::endl;</div>
-<div class="line"><a id="l00293" name="l00293"></a><span class="lineno">  293</span>  }</div>
-<div class="line"><a id="l00294" name="l00294"></a><span class="lineno">  294</span>  <span class="keywordflow">return</span> absl::OkStatus();</div>
-<div class="line"><a id="l00295" name="l00295"></a><span class="lineno">  295</span>}</div>
-<div class="line"><a id="l00296" name="l00296"></a><span class="lineno">  296</span> </div>
-<div class="line"><a id="l00297" name="l00297"></a><span class="lineno">  297</span>std::string ExportToLaTeX(<span class="keyword">const</span> std::vector&lt;Cocktail&gt;&amp; cocktails,</div>
-<div class="line"><a id="l00298" name="l00298"></a><span class="lineno">  298</span>                          <span class="keyword">const</span> std::string&amp; title = <span class="stringliteral">&quot;Cocktail Hour&quot;</span>) {</div>
-<div class="line"><a id="l00299" name="l00299"></a><span class="lineno">  299</span>  std::vector&lt;std::string&gt; lines;</div>
-<div class="line"><a id="l00300" name="l00300"></a><span class="lineno">  300</span>  lines.push_back(<span class="stringliteral">&quot;\\documentclass{article}&quot;</span>);</div>
-<div class="line"><a id="l00301" name="l00301"></a><span class="lineno">  301</span>  lines.push_back(<span class="stringliteral">&quot;\\usepackage{fullpage}&quot;</span>);</div>
-<div class="line"><a id="l00302" name="l00302"></a><span class="lineno">  302</span>  lines.push_back(<span class="stringliteral">&quot;\\linespread{2}&quot;</span>);</div>
-<div class="line"><a id="l00303" name="l00303"></a><span class="lineno">  303</span>  lines.push_back(<span class="stringliteral">&quot;\\begin{document}&quot;</span>);</div>
-<div class="line"><a id="l00304" name="l00304"></a><span class="lineno">  304</span>  lines.push_back(<span class="stringliteral">&quot;\\begin{center}&quot;</span>);</div>
-<div class="line"><a id="l00305" name="l00305"></a><span class="lineno">  305</span>  lines.push_back(absl::StrCat(<span class="stringliteral">&quot;\\begin{Huge}&quot;</span>, title, <span class="stringliteral">&quot;\\end{Huge}&quot;</span>));</div>
-<div class="line"><a id="l00306" name="l00306"></a><span class="lineno">  306</span>  lines.push_back(<span class="stringliteral">&quot;&quot;</span>);</div>
-<div class="line"><a id="l00307" name="l00307"></a><span class="lineno">  307</span>  <span class="keywordflow">for</span> (<span class="keyword">const</span> Cocktail&amp; cocktail : cocktails) {</div>
-<div class="line"><a id="l00308" name="l00308"></a><span class="lineno">  308</span>    lines.push_back(absl::StrCat(cocktail.name, <span class="stringliteral">&quot;---{\\em &quot;</span>,</div>
-<div class="line"><a id="l00309" name="l00309"></a><span class="lineno">  309</span>                                 absl::StrJoin(cocktail.ingredients, <span class="stringliteral">&quot;, &quot;</span>),</div>
-<div class="line"><a id="l00310" name="l00310"></a><span class="lineno">  310</span>                                 <span class="stringliteral">&quot;}&quot;</span>));</div>
-<div class="line"><a id="l00311" name="l00311"></a><span class="lineno">  311</span>    lines.push_back(<span class="stringliteral">&quot;&quot;</span>);</div>
-<div class="line"><a id="l00312" name="l00312"></a><span class="lineno">  312</span>  }</div>
-<div class="line"><a id="l00313" name="l00313"></a><span class="lineno">  313</span>  lines.push_back(<span class="stringliteral">&quot;\\end{center}&quot;</span>);</div>
-<div class="line"><a id="l00314" name="l00314"></a><span class="lineno">  314</span>  lines.push_back(<span class="stringliteral">&quot;\\end{document}&quot;</span>);</div>
-<div class="line"><a id="l00315" name="l00315"></a><span class="lineno">  315</span> </div>
-<div class="line"><a id="l00316" name="l00316"></a><span class="lineno">  316</span>  <span class="keywordflow">return</span> absl::StrReplaceAll(absl::StrJoin(lines, <span class="stringliteral">&quot;\n&quot;</span>), {{<span class="stringliteral">&quot;#&quot;</span>, <span class="stringliteral">&quot;\\#&quot;</span>}});</div>
-<div class="line"><a id="l00317" name="l00317"></a><span class="lineno">  317</span>}</div>
-<div class="line"><a id="l00318" name="l00318"></a><span class="lineno">  318</span> </div>
-<div class="line"><a id="l00319" name="l00319"></a><span class="lineno">  319</span><span class="keywordtype">void</span> RealMain() {</div>
-<div class="line"><a id="l00320" name="l00320"></a><span class="lineno">  320</span>  <span class="keyword">const</span> std::string mode = absl::GetFlag(FLAGS_mode);</div>
-<div class="line"><a id="l00321" name="l00321"></a><span class="lineno">  321</span>  <a class="code hl_define" href="base_2logging_8h.html#a3e1cfef60e774a81f30eaddf26a3a274">CHECK</a>(absl::flat_hash_set&lt;std::string&gt;({<span class="stringliteral">&quot;text&quot;</span>, <span class="stringliteral">&quot;latex&quot;</span>, <span class="stringliteral">&quot;analysis&quot;</span>})</div>
-<div class="line"><a id="l00322" name="l00322"></a><span class="lineno">  322</span>            .contains(mode))</div>
-<div class="line"><a id="l00323" name="l00323"></a><span class="lineno">  323</span>      &lt;&lt; <span class="stringliteral">&quot;Unexpected mode: &quot;</span> &lt;&lt; mode;</div>
-<div class="line"><a id="l00324" name="l00324"></a><span class="lineno">  324</span> </div>
-<div class="line"><a id="l00325" name="l00325"></a><span class="lineno">  325</span>  <span class="comment">// We are in analysis mode.</span></div>
-<div class="line"><a id="l00326" name="l00326"></a><span class="lineno">  326</span>  <span class="keywordflow">if</span> (mode == <span class="stringliteral">&quot;analysis&quot;</span>) {</div>
-<div class="line"><a id="l00327" name="l00327"></a><span class="lineno">  327</span>    <span class="keyword">const</span> absl::Status <a class="code hl_variable" href="g__gurobi_8cc.html#a2237393c7ae7ad7344c9885066d5ab6d">status</a> = AnalysisMode();</div>
-<div class="line"><a id="l00328" name="l00328"></a><span class="lineno">  328</span>    <span class="keywordflow">if</span> (!<a class="code hl_variable" href="g__gurobi_8cc.html#a2237393c7ae7ad7344c9885066d5ab6d">status</a>.ok()) {</div>
-<div class="line"><a id="l00329" name="l00329"></a><span class="lineno">  329</span>      <a class="code hl_define" href="base_2logging_8h.html#accad43a85d781d53381cd53a9894b6ae">LOG</a>(QFATAL) &lt;&lt; <a class="code hl_variable" href="g__gurobi_8cc.html#a2237393c7ae7ad7344c9885066d5ab6d">status</a>;</div>
-<div class="line"><a id="l00330" name="l00330"></a><span class="lineno">  330</span>    }</div>
-<div class="line"><a id="l00331" name="l00331"></a><span class="lineno">  331</span>    <span class="keywordflow">return</span>;</div>
+<div class="line"><a id="l00255" name="l00255"></a><span class="lineno">  255</span>  <span class="keywordflow">switch</span> (result.<a class="code hl_variable" href="structoperations__research_1_1math__opt_1_1_solve_result.html#a77d1ea96211300e9417b965981953c81">termination</a>.<a class="code hl_variable" href="structoperations__research_1_1math__opt_1_1_termination.html#a36d5365d462f57468ba3a9d8ae6bbec9">reason</a>) {</div>
+<div class="line"><a id="l00256" name="l00256"></a><span class="lineno">  256</span>    <span class="keywordflow">case</span> math_opt::TerminationReason::kOptimal:</div>
+<div class="line"><a id="l00257" name="l00257"></a><span class="lineno">  257</span>    <span class="keywordflow">case</span> math_opt::TerminationReason::kFeasible:</div>
+<div class="line"><a id="l00258" name="l00258"></a><span class="lineno">  258</span>      <span class="keywordflow">break</span>;</div>
+<div class="line"><a id="l00259" name="l00259"></a><span class="lineno">  259</span>    <span class="keywordflow">default</span>:</div>
+<div class="line"><a id="l00260" name="l00260"></a><span class="lineno">  260</span>      <span class="keywordflow">return</span> <a class="code hl_function" href="namespaceutil.html#a302ee4bfcb86ea9ed64a193ed0b14648">util::InternalErrorBuilder</a>()</div>
+<div class="line"><a id="l00261" name="l00261"></a><span class="lineno">  261</span>             &lt;&lt; <span class="stringliteral">&quot;failed to find a solution: &quot;</span> &lt;&lt; result.<a class="code hl_variable" href="structoperations__research_1_1math__opt_1_1_solve_result.html#a77d1ea96211300e9417b965981953c81">termination</a>;</div>
+<div class="line"><a id="l00262" name="l00262"></a><span class="lineno">  262</span>  }</div>
+<div class="line"><a id="l00263" name="l00263"></a><span class="lineno">  263</span>  Menu menu;</div>
+<div class="line"><a id="l00264" name="l00264"></a><span class="lineno">  264</span>  <span class="keywordflow">for</span> (<span class="keyword">const</span> absl::string_view ingredient : kIngredients) {</div>
+<div class="line"><a id="l00265" name="l00265"></a><span class="lineno">  265</span>    <span class="keywordflow">if</span> (result.<a class="code hl_function" href="structoperations__research_1_1math__opt_1_1_solve_result.html#ac4a6e078f25aa73eec5271d449a12532">variable_values</a>().at(ingredient_vars.at(ingredient)) &gt; 0.5) {</div>
+<div class="line"><a id="l00266" name="l00266"></a><span class="lineno">  266</span>      menu.ingredients.push_back(std::string(ingredient));</div>
+<div class="line"><a id="l00267" name="l00267"></a><span class="lineno">  267</span>    }</div>
+<div class="line"><a id="l00268" name="l00268"></a><span class="lineno">  268</span>  }</div>
+<div class="line"><a id="l00269" name="l00269"></a><span class="lineno">  269</span>  <span class="keywordflow">for</span> (<span class="keyword">const</span> Cocktail&amp; cocktail : all_cocktails) {</div>
+<div class="line"><a id="l00270" name="l00270"></a><span class="lineno">  270</span>    <span class="keywordflow">if</span> (result.<a class="code hl_function" href="structoperations__research_1_1math__opt_1_1_solve_result.html#ac4a6e078f25aa73eec5271d449a12532">variable_values</a>().at(cocktail_vars.at(cocktail.name)) &gt; 0.5) {</div>
+<div class="line"><a id="l00271" name="l00271"></a><span class="lineno">  271</span>      menu.cocktails.push_back(cocktail);</div>
+<div class="line"><a id="l00272" name="l00272"></a><span class="lineno">  272</span>    }</div>
+<div class="line"><a id="l00273" name="l00273"></a><span class="lineno">  273</span>  }</div>
+<div class="line"><a id="l00274" name="l00274"></a><span class="lineno">  274</span>  <span class="keywordflow">return</span> menu;</div>
+<div class="line"><a id="l00275" name="l00275"></a><span class="lineno">  275</span>}</div>
+<div class="line"><a id="l00276" name="l00276"></a><span class="lineno">  276</span> </div>
+<div class="line"><a id="l00277" name="l00277"></a><span class="lineno">  277</span>absl::flat_hash_set&lt;std::string&gt; SetFromVec(</div>
+<div class="line"><a id="l00278" name="l00278"></a><span class="lineno">  278</span>    <span class="keyword">const</span> std::vector&lt;std::string&gt;&amp; vec) {</div>
+<div class="line"><a id="l00279" name="l00279"></a><span class="lineno">  279</span>  <span class="keywordflow">return</span> {vec.begin(), vec.end()};</div>
+<div class="line"><a id="l00280" name="l00280"></a><span class="lineno">  280</span>}</div>
+<div class="line"><a id="l00281" name="l00281"></a><span class="lineno">  281</span> </div>
+<div class="line"><a id="l00282" name="l00282"></a><span class="lineno">  282</span>absl::Status AnalysisMode() {</div>
+<div class="line"><a id="l00283" name="l00283"></a><span class="lineno">  283</span>  std::cout &lt;&lt; <span class="stringliteral">&quot;Considering &quot;</span> &lt;&lt; AllCocktails().size() &lt;&lt; <span class="stringliteral">&quot; cocktails and &quot;</span></div>
+<div class="line"><a id="l00284" name="l00284"></a><span class="lineno">  284</span>            &lt;&lt; kIngredientsSize &lt;&lt; <span class="stringliteral">&quot; ingredients.&quot;</span> &lt;&lt; std::endl;</div>
+<div class="line"><a id="l00285" name="l00285"></a><span class="lineno">  285</span>  std::cout &lt;&lt; <span class="stringliteral">&quot;Solving for number of cocktails that can be made as a function &quot;</span></div>
+<div class="line"><a id="l00286" name="l00286"></a><span class="lineno">  286</span>               <span class="stringliteral">&quot;of number of ingredients&quot;</span></div>
+<div class="line"><a id="l00287" name="l00287"></a><span class="lineno">  287</span>            &lt;&lt; std::endl;</div>
+<div class="line"><a id="l00288" name="l00288"></a><span class="lineno">  288</span> </div>
+<div class="line"><a id="l00289" name="l00289"></a><span class="lineno">  289</span>  std::cout &lt;&lt; <span class="stringliteral">&quot;ingredients | cocktails&quot;</span> &lt;&lt; std::endl;</div>
+<div class="line"><a id="l00290" name="l00290"></a><span class="lineno">  290</span>  <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 1; i &lt;= kIngredientsSize; ++i) {</div>
+<div class="line"><a id="l00291" name="l00291"></a><span class="lineno">  291</span>    <span class="keyword">const</span> absl::StatusOr&lt;Menu&gt; menu = SolveForMenu(</div>
+<div class="line"><a id="l00292" name="l00292"></a><span class="lineno">  292</span>        i, <span class="keyword">false</span>, <span class="comment">/*existing_ingredients=*/</span>{}, <span class="comment">/*unavailable_ingredients=*/</span>{},</div>
+<div class="line"><a id="l00293" name="l00293"></a><span class="lineno">  293</span>        <span class="comment">/*required_cocktails=*/</span>{}, <span class="comment">/*blocked_cocktails=*/</span>{});</div>
+<div class="line"><a id="l00294" name="l00294"></a><span class="lineno">  294</span>    <a class="code hl_define" href="base_2status__macros_8h.html#acdc223d8c59d5c591dc6b4e88257627b">RETURN_IF_ERROR</a>(menu.status())</div>
+<div class="line"><a id="l00295" name="l00295"></a><span class="lineno">  295</span>        &lt;&lt; <span class="stringliteral">&quot;Failure when solving for &quot;</span> &lt;&lt; i &lt;&lt; <span class="stringliteral">&quot; ingredients&quot;</span>;</div>
+<div class="line"><a id="l00296" name="l00296"></a><span class="lineno">  296</span>    std::cout &lt;&lt; i &lt;&lt; <span class="stringliteral">&quot; | &quot;</span> &lt;&lt; menu-&gt;cocktails.size() &lt;&lt; std::endl;</div>
+<div class="line"><a id="l00297" name="l00297"></a><span class="lineno">  297</span>  }</div>
+<div class="line"><a id="l00298" name="l00298"></a><span class="lineno">  298</span>  <span class="keywordflow">return</span> absl::OkStatus();</div>
+<div class="line"><a id="l00299" name="l00299"></a><span class="lineno">  299</span>}</div>
+<div class="line"><a id="l00300" name="l00300"></a><span class="lineno">  300</span> </div>
+<div class="line"><a id="l00301" name="l00301"></a><span class="lineno">  301</span>std::string ExportToLaTeX(<span class="keyword">const</span> std::vector&lt;Cocktail&gt;&amp; cocktails,</div>
+<div class="line"><a id="l00302" name="l00302"></a><span class="lineno">  302</span>                          <span class="keyword">const</span> std::string&amp; title = <span class="stringliteral">&quot;Cocktail Hour&quot;</span>) {</div>
+<div class="line"><a id="l00303" name="l00303"></a><span class="lineno">  303</span>  std::vector&lt;std::string&gt; lines;</div>
+<div class="line"><a id="l00304" name="l00304"></a><span class="lineno">  304</span>  lines.push_back(<span class="stringliteral">&quot;\\documentclass{article}&quot;</span>);</div>
+<div class="line"><a id="l00305" name="l00305"></a><span class="lineno">  305</span>  lines.push_back(<span class="stringliteral">&quot;\\usepackage{fullpage}&quot;</span>);</div>
+<div class="line"><a id="l00306" name="l00306"></a><span class="lineno">  306</span>  lines.push_back(<span class="stringliteral">&quot;\\linespread{2}&quot;</span>);</div>
+<div class="line"><a id="l00307" name="l00307"></a><span class="lineno">  307</span>  lines.push_back(<span class="stringliteral">&quot;\\begin{document}&quot;</span>);</div>
+<div class="line"><a id="l00308" name="l00308"></a><span class="lineno">  308</span>  lines.push_back(<span class="stringliteral">&quot;\\begin{center}&quot;</span>);</div>
+<div class="line"><a id="l00309" name="l00309"></a><span class="lineno">  309</span>  lines.push_back(absl::StrCat(<span class="stringliteral">&quot;\\begin{Huge}&quot;</span>, title, <span class="stringliteral">&quot;\\end{Huge}&quot;</span>));</div>
+<div class="line"><a id="l00310" name="l00310"></a><span class="lineno">  310</span>  lines.push_back(<span class="stringliteral">&quot;&quot;</span>);</div>
+<div class="line"><a id="l00311" name="l00311"></a><span class="lineno">  311</span>  <span class="keywordflow">for</span> (<span class="keyword">const</span> Cocktail&amp; cocktail : cocktails) {</div>
+<div class="line"><a id="l00312" name="l00312"></a><span class="lineno">  312</span>    lines.push_back(absl::StrCat(cocktail.name, <span class="stringliteral">&quot;---{\\em &quot;</span>,</div>
+<div class="line"><a id="l00313" name="l00313"></a><span class="lineno">  313</span>                                 absl::StrJoin(cocktail.ingredients, <span class="stringliteral">&quot;, &quot;</span>),</div>
+<div class="line"><a id="l00314" name="l00314"></a><span class="lineno">  314</span>                                 <span class="stringliteral">&quot;}&quot;</span>));</div>
+<div class="line"><a id="l00315" name="l00315"></a><span class="lineno">  315</span>    lines.push_back(<span class="stringliteral">&quot;&quot;</span>);</div>
+<div class="line"><a id="l00316" name="l00316"></a><span class="lineno">  316</span>  }</div>
+<div class="line"><a id="l00317" name="l00317"></a><span class="lineno">  317</span>  lines.push_back(<span class="stringliteral">&quot;\\end{center}&quot;</span>);</div>
+<div class="line"><a id="l00318" name="l00318"></a><span class="lineno">  318</span>  lines.push_back(<span class="stringliteral">&quot;\\end{document}&quot;</span>);</div>
+<div class="line"><a id="l00319" name="l00319"></a><span class="lineno">  319</span> </div>
+<div class="line"><a id="l00320" name="l00320"></a><span class="lineno">  320</span>  <span class="keywordflow">return</span> absl::StrReplaceAll(absl::StrJoin(lines, <span class="stringliteral">&quot;\n&quot;</span>), {{<span class="stringliteral">&quot;#&quot;</span>, <span class="stringliteral">&quot;\\#&quot;</span>}});</div>
+<div class="line"><a id="l00321" name="l00321"></a><span class="lineno">  321</span>}</div>
+<div class="line"><a id="l00322" name="l00322"></a><span class="lineno">  322</span> </div>
+<div class="line"><a id="l00323" name="l00323"></a><span class="lineno">  323</span>absl::Status Main() {</div>
+<div class="line"><a id="l00324" name="l00324"></a><span class="lineno">  324</span>  <span class="keyword">const</span> std::string mode = absl::GetFlag(FLAGS_mode);</div>
+<div class="line"><a id="l00325" name="l00325"></a><span class="lineno">  325</span>  <a class="code hl_define" href="base_2logging_8h.html#a3e1cfef60e774a81f30eaddf26a3a274">CHECK</a>(absl::flat_hash_set&lt;std::string&gt;({<span class="stringliteral">&quot;text&quot;</span>, <span class="stringliteral">&quot;latex&quot;</span>, <span class="stringliteral">&quot;analysis&quot;</span>})</div>
+<div class="line"><a id="l00326" name="l00326"></a><span class="lineno">  326</span>            .contains(mode))</div>
+<div class="line"><a id="l00327" name="l00327"></a><span class="lineno">  327</span>      &lt;&lt; <span class="stringliteral">&quot;Unexpected mode: &quot;</span> &lt;&lt; mode;</div>
+<div class="line"><a id="l00328" name="l00328"></a><span class="lineno">  328</span> </div>
+<div class="line"><a id="l00329" name="l00329"></a><span class="lineno">  329</span>  <span class="comment">// We are in analysis mode.</span></div>
+<div class="line"><a id="l00330" name="l00330"></a><span class="lineno">  330</span>  <span class="keywordflow">if</span> (mode == <span class="stringliteral">&quot;analysis&quot;</span>) {</div>
+<div class="line"><a id="l00331" name="l00331"></a><span class="lineno">  331</span>    <span class="keywordflow">return</span> AnalysisMode();</div>
 <div class="line"><a id="l00332" name="l00332"></a><span class="lineno">  332</span>  }</div>
 <div class="line"><a id="l00333" name="l00333"></a><span class="lineno">  333</span> </div>
-<div class="line"><a id="l00334" name="l00334"></a><span class="lineno">  334</span>  absl::StatusOr&lt;Menu&gt; menu =</div>
-<div class="line"><a id="l00335" name="l00335"></a><span class="lineno">  335</span>      SolveForMenu(absl::GetFlag(FLAGS_num_ingredients), mode == <span class="stringliteral">&quot;text&quot;</span>,</div>
-<div class="line"><a id="l00336" name="l00336"></a><span class="lineno">  336</span>                   SetFromVec(absl::GetFlag(FLAGS_existing_ingredients)),</div>
-<div class="line"><a id="l00337" name="l00337"></a><span class="lineno">  337</span>                   SetFromVec(absl::GetFlag(FLAGS_unavailable_ingredients)),</div>
-<div class="line"><a id="l00338" name="l00338"></a><span class="lineno">  338</span>                   SetFromVec(absl::GetFlag(FLAGS_required_cocktails)),</div>
-<div class="line"><a id="l00339" name="l00339"></a><span class="lineno">  339</span>                   SetFromVec(absl::GetFlag(FLAGS_blocked_cocktails)));</div>
-<div class="line"><a id="l00340" name="l00340"></a><span class="lineno">  340</span>  <span class="keywordflow">if</span> (!menu.ok()) {</div>
-<div class="line"><a id="l00341" name="l00341"></a><span class="lineno">  341</span>    <a class="code hl_define" href="base_2logging_8h.html#accad43a85d781d53381cd53a9894b6ae">LOG</a>(QFATAL) &lt;&lt; <span class="stringliteral">&quot;Error when solving for optimal set of ingredients: &quot;</span></div>
-<div class="line"><a id="l00342" name="l00342"></a><span class="lineno">  342</span>                &lt;&lt; menu.status();</div>
-<div class="line"><a id="l00343" name="l00343"></a><span class="lineno">  343</span>  }</div>
-<div class="line"><a id="l00344" name="l00344"></a><span class="lineno">  344</span> </div>
-<div class="line"><a id="l00345" name="l00345"></a><span class="lineno">  345</span>  <span class="comment">// We are in latex mode.</span></div>
-<div class="line"><a id="l00346" name="l00346"></a><span class="lineno">  346</span>  <span class="keywordflow">if</span> (mode == <span class="stringliteral">&quot;latex&quot;</span>) {</div>
-<div class="line"><a id="l00347" name="l00347"></a><span class="lineno">  347</span>    std::cout &lt;&lt; ExportToLaTeX(menu-&gt;cocktails) &lt;&lt; std::endl;</div>
-<div class="line"><a id="l00348" name="l00348"></a><span class="lineno">  348</span>    <span class="keywordflow">return</span>;</div>
-<div class="line"><a id="l00349" name="l00349"></a><span class="lineno">  349</span>  }</div>
-<div class="line"><a id="l00350" name="l00350"></a><span class="lineno">  350</span> </div>
-<div class="line"><a id="l00351" name="l00351"></a><span class="lineno">  351</span>  <span class="comment">// We are in text mode</span></div>
-<div class="line"><a id="l00352" name="l00352"></a><span class="lineno">  352</span>  std::cout &lt;&lt; <span class="stringliteral">&quot;Considered &quot;</span> &lt;&lt; AllCocktails().size() &lt;&lt; <span class="stringliteral">&quot; cocktails and &quot;</span></div>
-<div class="line"><a id="l00353" name="l00353"></a><span class="lineno">  353</span>            &lt;&lt; kIngredientsSize &lt;&lt; <span class="stringliteral">&quot; ingredients.&quot;</span> &lt;&lt; std::endl;</div>
-<div class="line"><a id="l00354" name="l00354"></a><span class="lineno">  354</span>  std::cout &lt;&lt; <span class="stringliteral">&quot;Solution has &quot;</span> &lt;&lt; menu-&gt;ingredients.size()</div>
-<div class="line"><a id="l00355" name="l00355"></a><span class="lineno">  355</span>            &lt;&lt; <span class="stringliteral">&quot; ingredients to make &quot;</span> &lt;&lt; menu-&gt;cocktails.size()</div>
-<div class="line"><a id="l00356" name="l00356"></a><span class="lineno">  356</span>            &lt;&lt; <span class="stringliteral">&quot; cocktails.&quot;</span> &lt;&lt; std::endl</div>
-<div class="line"><a id="l00357" name="l00357"></a><span class="lineno">  357</span>            &lt;&lt; std::endl;</div>
-<div class="line"><a id="l00358" name="l00358"></a><span class="lineno">  358</span> </div>
-<div class="line"><a id="l00359" name="l00359"></a><span class="lineno">  359</span>  std::cout &lt;&lt; <span class="stringliteral">&quot;Ingredients:&quot;</span> &lt;&lt; std::endl;</div>
-<div class="line"><a id="l00360" name="l00360"></a><span class="lineno">  360</span>  <span class="keywordflow">for</span> (<span class="keyword">const</span> std::string&amp; ingredient : menu-&gt;ingredients) {</div>
-<div class="line"><a id="l00361" name="l00361"></a><span class="lineno">  361</span>    std::cout &lt;&lt; <span class="stringliteral">&quot;  &quot;</span> &lt;&lt; ingredient &lt;&lt; std::endl;</div>
-<div class="line"><a id="l00362" name="l00362"></a><span class="lineno">  362</span>  }</div>
-<div class="line"><a id="l00363" name="l00363"></a><span class="lineno">  363</span>  std::cout &lt;&lt; <span class="stringliteral">&quot;Cocktails:&quot;</span> &lt;&lt; std::endl;</div>
-<div class="line"><a id="l00364" name="l00364"></a><span class="lineno">  364</span>  <span class="keywordflow">for</span> (<span class="keyword">const</span> Cocktail&amp; cocktail : menu-&gt;cocktails) {</div>
-<div class="line"><a id="l00365" name="l00365"></a><span class="lineno">  365</span>    std::cout &lt;&lt; <span class="stringliteral">&quot;  &quot;</span> &lt;&lt; cocktail.name &lt;&lt; std::endl;</div>
-<div class="line"><a id="l00366" name="l00366"></a><span class="lineno">  366</span>  }</div>
-<div class="line"><a id="l00367" name="l00367"></a><span class="lineno">  367</span>}</div>
-<div class="line"><a id="l00368" name="l00368"></a><span class="lineno">  368</span> </div>
-<div class="line"><a id="l00369" name="l00369"></a><span class="lineno">  369</span>}  <span class="comment">// namespace</span></div>
-<div class="line"><a id="l00370" name="l00370"></a><span class="lineno">  370</span> </div>
-<div class="line"><a id="l00371" name="l00371"></a><span class="lineno"><a class="line" href="cocktail__hour_8cc.html#a3c04138a5bfe5d72780bb7e82a18e627">  371</a></span><span class="keywordtype">int</span> <a class="code hl_function" href="cocktail__hour_8cc.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a>(<span class="keywordtype">int</span> argc, <span class="keywordtype">char</span>** argv) {</div>
-<div class="line"><a id="l00372" name="l00372"></a><span class="lineno">  372</span>  <a class="code hl_function" href="namespacegoogle.html#a1749056ff206ebc4f581e6bc0bae841d">google::InitGoogleLogging</a>(argv[0]);</div>
-<div class="line"><a id="l00373" name="l00373"></a><span class="lineno">  373</span>  absl::ParseCommandLine(argc, argv);</div>
-<div class="line"><a id="l00374" name="l00374"></a><span class="lineno">  374</span>  RealMain();</div>
-<div class="line"><a id="l00375" name="l00375"></a><span class="lineno">  375</span>  <span class="keywordflow">return</span> 0;</div>
-<div class="line"><a id="l00376" name="l00376"></a><span class="lineno">  376</span>}</div>
+<div class="line"><a id="l00334" name="l00334"></a><span class="lineno">  334</span>  <a class="code hl_define" href="util_2status__macros_8h.html#a50de54834da66a6bcb7c9e37902e522b">OR_ASSIGN_OR_RETURN3</a>(</div>
+<div class="line"><a id="l00335" name="l00335"></a><span class="lineno">  335</span>      Menu menu,</div>
+<div class="line"><a id="l00336" name="l00336"></a><span class="lineno">  336</span>      SolveForMenu(absl::GetFlag(FLAGS_num_ingredients), mode == <span class="stringliteral">&quot;text&quot;</span>,</div>
+<div class="line"><a id="l00337" name="l00337"></a><span class="lineno">  337</span>                   SetFromVec(absl::GetFlag(FLAGS_existing_ingredients)),</div>
+<div class="line"><a id="l00338" name="l00338"></a><span class="lineno">  338</span>                   SetFromVec(absl::GetFlag(FLAGS_unavailable_ingredients)),</div>
+<div class="line"><a id="l00339" name="l00339"></a><span class="lineno">  339</span>                   SetFromVec(absl::GetFlag(FLAGS_required_cocktails)),</div>
+<div class="line"><a id="l00340" name="l00340"></a><span class="lineno">  340</span>                   SetFromVec(absl::GetFlag(FLAGS_blocked_cocktails))),</div>
+<div class="line"><a id="l00341" name="l00341"></a><span class="lineno">  341</span>      _ &lt;&lt; <span class="stringliteral">&quot;error when solving for optimal set of ingredients&quot;</span>);</div>
+<div class="line"><a id="l00342" name="l00342"></a><span class="lineno">  342</span> </div>
+<div class="line"><a id="l00343" name="l00343"></a><span class="lineno">  343</span>  <span class="comment">// We are in latex mode.</span></div>
+<div class="line"><a id="l00344" name="l00344"></a><span class="lineno">  344</span>  <span class="keywordflow">if</span> (mode == <span class="stringliteral">&quot;latex&quot;</span>) {</div>
+<div class="line"><a id="l00345" name="l00345"></a><span class="lineno">  345</span>    std::cout &lt;&lt; ExportToLaTeX(menu.cocktails) &lt;&lt; std::endl;</div>
+<div class="line"><a id="l00346" name="l00346"></a><span class="lineno">  346</span>    <span class="keywordflow">return</span> absl::OkStatus();</div>
+<div class="line"><a id="l00347" name="l00347"></a><span class="lineno">  347</span>  }</div>
+<div class="line"><a id="l00348" name="l00348"></a><span class="lineno">  348</span> </div>
+<div class="line"><a id="l00349" name="l00349"></a><span class="lineno">  349</span>  <span class="comment">// We are in text mode</span></div>
+<div class="line"><a id="l00350" name="l00350"></a><span class="lineno">  350</span>  std::cout &lt;&lt; <span class="stringliteral">&quot;Considered &quot;</span> &lt;&lt; AllCocktails().size() &lt;&lt; <span class="stringliteral">&quot; cocktails and &quot;</span></div>
+<div class="line"><a id="l00351" name="l00351"></a><span class="lineno">  351</span>            &lt;&lt; kIngredientsSize &lt;&lt; <span class="stringliteral">&quot; ingredients.&quot;</span> &lt;&lt; std::endl;</div>
+<div class="line"><a id="l00352" name="l00352"></a><span class="lineno">  352</span>  std::cout &lt;&lt; <span class="stringliteral">&quot;Solution has &quot;</span> &lt;&lt; menu.ingredients.size()</div>
+<div class="line"><a id="l00353" name="l00353"></a><span class="lineno">  353</span>            &lt;&lt; <span class="stringliteral">&quot; ingredients to make &quot;</span> &lt;&lt; menu.cocktails.size() &lt;&lt; <span class="stringliteral">&quot; cocktails.&quot;</span></div>
+<div class="line"><a id="l00354" name="l00354"></a><span class="lineno">  354</span>            &lt;&lt; std::endl</div>
+<div class="line"><a id="l00355" name="l00355"></a><span class="lineno">  355</span>            &lt;&lt; std::endl;</div>
+<div class="line"><a id="l00356" name="l00356"></a><span class="lineno">  356</span> </div>
+<div class="line"><a id="l00357" name="l00357"></a><span class="lineno">  357</span>  std::cout &lt;&lt; <span class="stringliteral">&quot;Ingredients:&quot;</span> &lt;&lt; std::endl;</div>
+<div class="line"><a id="l00358" name="l00358"></a><span class="lineno">  358</span>  <span class="keywordflow">for</span> (<span class="keyword">const</span> std::string&amp; ingredient : menu.ingredients) {</div>
+<div class="line"><a id="l00359" name="l00359"></a><span class="lineno">  359</span>    std::cout &lt;&lt; <span class="stringliteral">&quot;  &quot;</span> &lt;&lt; ingredient &lt;&lt; std::endl;</div>
+<div class="line"><a id="l00360" name="l00360"></a><span class="lineno">  360</span>  }</div>
+<div class="line"><a id="l00361" name="l00361"></a><span class="lineno">  361</span>  std::cout &lt;&lt; <span class="stringliteral">&quot;Cocktails:&quot;</span> &lt;&lt; std::endl;</div>
+<div class="line"><a id="l00362" name="l00362"></a><span class="lineno">  362</span>  <span class="keywordflow">for</span> (<span class="keyword">const</span> Cocktail&amp; cocktail : menu.cocktails) {</div>
+<div class="line"><a id="l00363" name="l00363"></a><span class="lineno">  363</span>    std::cout &lt;&lt; <span class="stringliteral">&quot;  &quot;</span> &lt;&lt; cocktail.name &lt;&lt; std::endl;</div>
+<div class="line"><a id="l00364" name="l00364"></a><span class="lineno">  364</span>  }</div>
+<div class="line"><a id="l00365" name="l00365"></a><span class="lineno">  365</span>  <span class="keywordflow">return</span> absl::OkStatus();</div>
+<div class="line"><a id="l00366" name="l00366"></a><span class="lineno">  366</span>}</div>
+<div class="line"><a id="l00367" name="l00367"></a><span class="lineno">  367</span> </div>
+<div class="line"><a id="l00368" name="l00368"></a><span class="lineno">  368</span>}  <span class="comment">// namespace</span></div>
+<div class="line"><a id="l00369" name="l00369"></a><span class="lineno">  369</span> </div>
+<div class="line"><a id="l00370" name="l00370"></a><span class="lineno"><a class="line" href="cocktail__hour_8cc.html#a3c04138a5bfe5d72780bb7e82a18e627">  370</a></span><span class="keywordtype">int</span> <a class="code hl_function" href="cocktail__hour_8cc.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a>(<span class="keywordtype">int</span> argc, <span class="keywordtype">char</span>** argv) {</div>
+<div class="line"><a id="l00371" name="l00371"></a><span class="lineno">  371</span>  <a class="code hl_function" href="init__google_8h.html#a16af2bccb0196e1a9bb628559c95b7cb">InitGoogle</a>(argv[0], &amp;argc, &amp;argv, <span class="keyword">true</span>);</div>
+<div class="line"><a id="l00372" name="l00372"></a><span class="lineno">  372</span>  <span class="keyword">const</span> absl::Status <a class="code hl_variable" href="g__gurobi_8cc.html#a2237393c7ae7ad7344c9885066d5ab6d">status</a> = Main();</div>
+<div class="line"><a id="l00373" name="l00373"></a><span class="lineno">  373</span>  <span class="keywordflow">if</span> (!<a class="code hl_variable" href="g__gurobi_8cc.html#a2237393c7ae7ad7344c9885066d5ab6d">status</a>.ok()) {</div>
+<div class="line"><a id="l00374" name="l00374"></a><span class="lineno">  374</span>    <a class="code hl_define" href="base_2logging_8h.html#accad43a85d781d53381cd53a9894b6ae">LOG</a>(QFATAL) &lt;&lt; <a class="code hl_variable" href="g__gurobi_8cc.html#a2237393c7ae7ad7344c9885066d5ab6d">status</a>;</div>
+<div class="line"><a id="l00375" name="l00375"></a><span class="lineno">  375</span>  }</div>
+<div class="line"><a id="l00376" name="l00376"></a><span class="lineno">  376</span>  <span class="keywordflow">return</span> 0;</div>
+<div class="line"><a id="l00377" name="l00377"></a><span class="lineno">  377</span>}</div>
 <div class="ttc" id="abase_2logging_8h_html"><div class="ttname"><a href="base_2logging_8h.html">logging.h</a></div></div>
 <div class="ttc" id="abase_2logging_8h_html_a3e1cfef60e774a81f30eaddf26a3a274"><div class="ttname"><a href="base_2logging_8h.html#a3e1cfef60e774a81f30eaddf26a3a274">CHECK</a></div><div class="ttdeci">#define CHECK(condition)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00495">base/logging.h:495</a></div></div>
 <div class="ttc" id="abase_2logging_8h_html_accad43a85d781d53381cd53a9894b6ae"><div class="ttname"><a href="base_2logging_8h.html#accad43a85d781d53381cd53a9894b6ae">LOG</a></div><div class="ttdeci">#define LOG(severity)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00420">base/logging.h:420</a></div></div>
-<div class="ttc" id="abase_2logging_8h_html_acdd435d10e595c91b6861a233b8e8432"><div class="ttname"><a href="base_2logging_8h.html#acdd435d10e595c91b6861a233b8e8432">QCHECK_EQ</a></div><div class="ttdeci">#define QCHECK_EQ</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00040">base/logging.h:40</a></div></div>
+<div class="ttc" id="abase_2status__macros_8h_html"><div class="ttname"><a href="base_2status__macros_8h.html">status_macros.h</a></div></div>
+<div class="ttc" id="abase_2status__macros_8h_html_a600de4b8f65fe0a4b1898041634f9011"><div class="ttname"><a href="base_2status__macros_8h.html#a600de4b8f65fe0a4b1898041634f9011">ASSIGN_OR_RETURN</a></div><div class="ttdeci">#define ASSIGN_OR_RETURN(lhs, rexpr)</div><div class="ttdef"><b>Definition:</b> <a href="base_2status__macros_8h_source.html#l00046">base/status_macros.h:46</a></div></div>
+<div class="ttc" id="abase_2status__macros_8h_html_acdc223d8c59d5c591dc6b4e88257627b"><div class="ttname"><a href="base_2status__macros_8h.html#acdc223d8c59d5c591dc6b4e88257627b">RETURN_IF_ERROR</a></div><div class="ttdeci">#define RETURN_IF_ERROR(expr)</div><div class="ttdef"><b>Definition:</b> <a href="base_2status__macros_8h_source.html#l00027">base/status_macros.h:27</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1math__opt_1_1_linear_expression_html"><div class="ttname"><a href="classoperations__research_1_1math__opt_1_1_linear_expression.html">operations_research::math_opt::LinearExpression</a></div><div class="ttdef"><b>Definition:</b> <a href="variable__and__expressions_8h_source.html#l00193">variable_and_expressions.h:193</a></div></div>
-<div class="ttc" id="aclassoperations__research_1_1math__opt_1_1_model_html"><div class="ttname"><a href="classoperations__research_1_1math__opt_1_1_model.html">operations_research::math_opt::Model</a></div><div class="ttdef"><b>Definition:</b> <a href="math__opt_2cpp_2model_8h_source.html#l00127">math_opt/cpp/model.h:127</a></div></div>
+<div class="ttc" id="aclassoperations__research_1_1math__opt_1_1_model_html"><div class="ttname"><a href="classoperations__research_1_1math__opt_1_1_model.html">operations_research::math_opt::Model</a></div><div class="ttdef"><b>Definition:</b> <a href="math__opt_2cpp_2model_8h_source.html#l00091">math_opt/cpp/model.h:91</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1math__opt_1_1_variable_html"><div class="ttname"><a href="classoperations__research_1_1math__opt_1_1_variable.html">operations_research::math_opt::Variable</a></div><div class="ttdef"><b>Definition:</b> <a href="variable__and__expressions_8h_source.html#l00115">variable_and_expressions.h:115</a></div></div>
-<div class="ttc" id="acocktail__hour_8cc_html_a3c04138a5bfe5d72780bb7e82a18e627"><div class="ttname"><a href="cocktail__hour_8cc.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a></div><div class="ttdeci">int main(int argc, char **argv)</div><div class="ttdef"><b>Definition:</b> <a href="cocktail__hour_8cc_source.html#l00371">cocktail_hour.cc:371</a></div></div>
+<div class="ttc" id="acocktail__hour_8cc_html_a3c04138a5bfe5d72780bb7e82a18e627"><div class="ttname"><a href="cocktail__hour_8cc.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a></div><div class="ttdeci">int main(int argc, char **argv)</div><div class="ttdef"><b>Definition:</b> <a href="cocktail__hour_8cc_source.html#l00370">cocktail_hour.cc:370</a></div></div>
 <div class="ttc" id="acocktail__hour_8cc_html_ab581200aee157f574d87eb76c4745ca3"><div class="ttname"><a href="cocktail__hour_8cc.html#ab581200aee157f574d87eb76c4745ca3">ABSL_FLAG</a></div><div class="ttdeci">ABSL_FLAG(std::string, mode, &quot;text&quot;, &quot;One of \&quot;text\&quot;, \&quot;latex\&quot;, or \&quot;analysis\&quot;.&quot;)</div></div>
 <div class="ttc" id="adefault__search_8cc_html_ac673bc430bdc3fdaa09f7becf98ef267"><div class="ttname"><a href="default__search_8cc.html#ac673bc430bdc3fdaa09f7becf98ef267">name</a></div><div class="ttdeci">const std::string name</div><div class="ttdef"><b>Definition:</b> <a href="default__search_8cc_source.html#l00813">default_search.cc:813</a></div></div>
 <div class="ttc" id="ag__gurobi_8cc_html_a2237393c7ae7ad7344c9885066d5ab6d"><div class="ttname"><a href="g__gurobi_8cc.html#a2237393c7ae7ad7344c9885066d5ab6d">status</a></div><div class="ttdeci">absl::Status status</div><div class="ttdef"><b>Definition:</b> <a href="g__gurobi_8cc_source.html#l00035">g_gurobi.cc:35</a></div></div>
 <div class="ttc" id="agurobi__interface_8cc_html_a0728f23c9a47655d38e0bf1a2f200bcf"><div class="ttname"><a href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a></div><div class="ttdeci">GRBmodel * model</div><div class="ttdef"><b>Definition:</b> <a href="gurobi__interface_8cc_source.html#l00274">gurobi_interface.cc:274</a></div></div>
+<div class="ttc" id="ainit__google_8h_html"><div class="ttname"><a href="init__google_8h.html">init_google.h</a></div></div>
+<div class="ttc" id="ainit__google_8h_html_a16af2bccb0196e1a9bb628559c95b7cb"><div class="ttname"><a href="init__google_8h.html#a16af2bccb0196e1a9bb628559c95b7cb">InitGoogle</a></div><div class="ttdeci">void InitGoogle(const char *usage, int *argc, char ***argv, bool deprecated)</div><div class="ttdef"><b>Definition:</b> <a href="init__google_8h_source.html#l00032">init_google.h:32</a></div></div>
 <div class="ttc" id="amap__util_8h_html"><div class="ttname"><a href="map__util_8h.html">map_util.h</a></div></div>
 <div class="ttc" id="amath__opt_8h_html"><div class="ttname"><a href="math__opt_8h.html">math_opt.h</a></div></div>
-<div class="ttc" id="anamespacegoogle_html_a1749056ff206ebc4f581e6bc0bae841d"><div class="ttname"><a href="namespacegoogle.html#a1749056ff206ebc4f581e6bc0bae841d">google::InitGoogleLogging</a></div><div class="ttdeci">void InitGoogleLogging(const char *argv0)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8cc_source.html#l01873">base/logging.cc:1873</a></div></div>
 <div class="ttc" id="anamespacegtl_html_a5c0d4dea208db4deaa285c06b78d8181"><div class="ttname"><a href="namespacegtl.html#a5c0d4dea208db4deaa285c06b78d8181">gtl::InsertOrDie</a></div><div class="ttdeci">void InsertOrDie(Collection *const collection, const typename Collection::value_type &amp;value)</div><div class="ttdef"><b>Definition:</b> <a href="map__util_8h_source.html#l00154">map_util.h:154</a></div></div>
 <div class="ttc" id="anamespacegtl_html_a73f41ac11336b94768fdd41594153d59"><div class="ttname"><a href="namespacegtl.html#a73f41ac11336b94768fdd41594153d59">gtl::FindOrDie</a></div><div class="ttdeci">const Collection::value_type::second_type &amp; FindOrDie(const Collection &amp;collection, const typename Collection::value_type::first_type &amp;key)</div><div class="ttdef"><b>Definition:</b> <a href="map__util_8h_source.html#l00206">map_util.h:206</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_1_1math__opt_html"><div class="ttname"><a href="namespaceoperations__research_1_1math__opt.html">operations_research::math_opt</a></div><div class="ttdef"><b>Definition:</b> <a href="arrow__operator__proxy_8h_source.html#l00020">arrow_operator_proxy.h:20</a></div></div>
-<div class="ttc" id="anamespaceoperations__research_1_1math__opt_html_a5767ee23f380e72488d3c7ebf2d742b1"><div class="ttname"><a href="namespaceoperations__research_1_1math__opt.html#a5767ee23f380e72488d3c7ebf2d742b1">operations_research::math_opt::Solve</a></div><div class="ttdeci">absl::StatusOr&lt; SolveResult &gt; Solve(const Model &amp;model, const SolverType solver_type, const SolveArguments &amp;solve_args, const SolverInitArguments &amp;init_args)</div><div class="ttdef"><b>Definition:</b> <a href="solve_8cc_source.html#l00155">solve.cc:155</a></div></div>
-<div class="ttc" id="astatus__macros_8h_html"><div class="ttname"><a href="status__macros_8h.html">status_macros.h</a></div></div>
-<div class="ttc" id="astatus__macros_8h_html_a600de4b8f65fe0a4b1898041634f9011"><div class="ttname"><a href="status__macros_8h.html#a600de4b8f65fe0a4b1898041634f9011">ASSIGN_OR_RETURN</a></div><div class="ttdeci">#define ASSIGN_OR_RETURN(lhs, rexpr)</div><div class="ttdef"><b>Definition:</b> <a href="status__macros_8h_source.html#l00048">status_macros.h:48</a></div></div>
-<div class="ttc" id="astatus__macros_8h_html_acdc223d8c59d5c591dc6b4e88257627b"><div class="ttname"><a href="status__macros_8h.html#acdc223d8c59d5c591dc6b4e88257627b">RETURN_IF_ERROR</a></div><div class="ttdeci">#define RETURN_IF_ERROR(expr)</div><div class="ttdef"><b>Definition:</b> <a href="status__macros_8h_source.html#l00029">status_macros.h:29</a></div></div>
-<div class="ttc" id="astructoperations__research_1_1math__opt_1_1_solve_arguments_html"><div class="ttname"><a href="structoperations__research_1_1math__opt_1_1_solve_arguments.html">operations_research::math_opt::SolveArguments</a></div><div class="ttdef"><b>Definition:</b> <a href="solve_8h_source.html#l00143">solve.h:143</a></div></div>
-<div class="ttc" id="astructoperations__research_1_1math__opt_1_1_solve_arguments_html_a527ff4741dd79a20c29dc896d14c5a01"><div class="ttname"><a href="structoperations__research_1_1math__opt_1_1_solve_arguments.html#a527ff4741dd79a20c29dc896d14c5a01">operations_research::math_opt::SolveArguments::parameters</a></div><div class="ttdeci">SolveParameters parameters</div><div class="ttdef"><b>Definition:</b> <a href="solve_8h_source.html#l00145">solve.h:145</a></div></div>
-<div class="ttc" id="astructoperations__research_1_1math__opt_1_1_solve_parameters_html_a2ec1cbffcca0b4f069643c74bafbb416"><div class="ttname"><a href="structoperations__research_1_1math__opt_1_1_solve_parameters.html#a2ec1cbffcca0b4f069643c74bafbb416">operations_research::math_opt::SolveParameters::enable_output</a></div><div class="ttdeci">bool enable_output</div><div class="ttdef"><b>Definition:</b> <a href="parameters_8h_source.html#l00190">parameters.h:190</a></div></div>
-<div class="ttc" id="astructoperations__research_1_1math__opt_1_1_solve_result_html"><div class="ttname"><a href="structoperations__research_1_1math__opt_1_1_solve_result.html">operations_research::math_opt::SolveResult</a></div><div class="ttdef"><b>Definition:</b> <a href="solve__result_8h_source.html#l00293">solve_result.h:293</a></div></div>
-<div class="ttc" id="astructoperations__research_1_1math__opt_1_1_solve_result_html_a77d1ea96211300e9417b965981953c81"><div class="ttname"><a href="structoperations__research_1_1math__opt_1_1_solve_result.html#a77d1ea96211300e9417b965981953c81">operations_research::math_opt::SolveResult::termination</a></div><div class="ttdeci">Termination termination</div><div class="ttdef"><b>Definition:</b> <a href="solve__result_8h_source.html#l00301">solve_result.h:301</a></div></div>
-<div class="ttc" id="astructoperations__research_1_1math__opt_1_1_solve_result_html_ac4a6e078f25aa73eec5271d449a12532"><div class="ttname"><a href="structoperations__research_1_1math__opt_1_1_solve_result.html#ac4a6e078f25aa73eec5271d449a12532">operations_research::math_opt::SolveResult::variable_values</a></div><div class="ttdeci">const VariableMap&lt; double &gt; &amp; variable_values() const</div><div class="ttdef"><b>Definition:</b> <a href="solve__result_8cc_source.html#l00359">solve_result.cc:359</a></div></div>
-<div class="ttc" id="astructoperations__research_1_1math__opt_1_1_termination_html_a36d5365d462f57468ba3a9d8ae6bbec9"><div class="ttname"><a href="structoperations__research_1_1math__opt_1_1_termination.html#a36d5365d462f57468ba3a9d8ae6bbec9">operations_research::math_opt::Termination::reason</a></div><div class="ttdeci">TerminationReason reason</div><div class="ttdef"><b>Definition:</b> <a href="solve__result_8h_source.html#l00259">solve_result.h:259</a></div></div>
+<div class="ttc" id="anamespaceoperations__research_1_1math__opt_html_a5767ee23f380e72488d3c7ebf2d742b1"><div class="ttname"><a href="namespaceoperations__research_1_1math__opt.html#a5767ee23f380e72488d3c7ebf2d742b1">operations_research::math_opt::Solve</a></div><div class="ttdeci">absl::StatusOr&lt; SolveResult &gt; Solve(const Model &amp;model, const SolverType solver_type, const SolveArguments &amp;solve_args, const SolverInitArguments &amp;init_args)</div><div class="ttdef"><b>Definition:</b> <a href="solve_8cc_source.html#l00094">solve.cc:94</a></div></div>
+<div class="ttc" id="anamespaceutil_html_a302ee4bfcb86ea9ed64a193ed0b14648"><div class="ttname"><a href="namespaceutil.html#a302ee4bfcb86ea9ed64a193ed0b14648">util::InternalErrorBuilder</a></div><div class="ttdeci">StatusBuilder InternalErrorBuilder()</div><div class="ttdef"><b>Definition:</b> <a href="status__builder_8h_source.html#l00084">status_builder.h:84</a></div></div>
+<div class="ttc" id="astructoperations__research_1_1math__opt_1_1_solve_arguments_html"><div class="ttname"><a href="structoperations__research_1_1math__opt_1_1_solve_arguments.html">operations_research::math_opt::SolveArguments</a></div><div class="ttdef"><b>Definition:</b> <a href="solve__arguments_8h_source.html#l00027">solve_arguments.h:27</a></div></div>
+<div class="ttc" id="astructoperations__research_1_1math__opt_1_1_solve_arguments_html_a527ff4741dd79a20c29dc896d14c5a01"><div class="ttname"><a href="structoperations__research_1_1math__opt_1_1_solve_arguments.html#a527ff4741dd79a20c29dc896d14c5a01">operations_research::math_opt::SolveArguments::parameters</a></div><div class="ttdeci">SolveParameters parameters</div><div class="ttdef"><b>Definition:</b> <a href="solve__arguments_8h_source.html#l00029">solve_arguments.h:29</a></div></div>
+<div class="ttc" id="astructoperations__research_1_1math__opt_1_1_solve_parameters_html_a2ec1cbffcca0b4f069643c74bafbb416"><div class="ttname"><a href="structoperations__research_1_1math__opt_1_1_solve_parameters.html#a2ec1cbffcca0b4f069643c74bafbb416">operations_research::math_opt::SolveParameters::enable_output</a></div><div class="ttdeci">bool enable_output</div><div class="ttdef"><b>Definition:</b> <a href="parameters_8h_source.html#l00182">parameters.h:182</a></div></div>
+<div class="ttc" id="astructoperations__research_1_1math__opt_1_1_solve_result_html"><div class="ttname"><a href="structoperations__research_1_1math__opt_1_1_solve_result.html">operations_research::math_opt::SolveResult</a></div><div class="ttdef"><b>Definition:</b> <a href="solve__result_8h_source.html#l00295">solve_result.h:295</a></div></div>
+<div class="ttc" id="astructoperations__research_1_1math__opt_1_1_solve_result_html_a77d1ea96211300e9417b965981953c81"><div class="ttname"><a href="structoperations__research_1_1math__opt_1_1_solve_result.html#a77d1ea96211300e9417b965981953c81">operations_research::math_opt::SolveResult::termination</a></div><div class="ttdeci">Termination termination</div><div class="ttdef"><b>Definition:</b> <a href="solve__result_8h_source.html#l00300">solve_result.h:300</a></div></div>
+<div class="ttc" id="astructoperations__research_1_1math__opt_1_1_solve_result_html_ac4a6e078f25aa73eec5271d449a12532"><div class="ttname"><a href="structoperations__research_1_1math__opt_1_1_solve_result.html#ac4a6e078f25aa73eec5271d449a12532">operations_research::math_opt::SolveResult::variable_values</a></div><div class="ttdeci">const VariableMap&lt; double &gt; &amp; variable_values() const</div><div class="ttdef"><b>Definition:</b> <a href="solve__result_8cc_source.html#l00369">solve_result.cc:369</a></div></div>
+<div class="ttc" id="astructoperations__research_1_1math__opt_1_1_termination_html_a36d5365d462f57468ba3a9d8ae6bbec9"><div class="ttname"><a href="structoperations__research_1_1math__opt_1_1_termination.html#a36d5365d462f57468ba3a9d8ae6bbec9">operations_research::math_opt::Termination::reason</a></div><div class="ttdeci">TerminationReason reason</div><div class="ttdef"><b>Definition:</b> <a href="solve__result_8h_source.html#l00261">solve_result.h:261</a></div></div>
+<div class="ttc" id="autil_2status__macros_8h_html"><div class="ttname"><a href="util_2status__macros_8h.html">status_macros.h</a></div></div>
+<div class="ttc" id="autil_2status__macros_8h_html_a50de54834da66a6bcb7c9e37902e522b"><div class="ttname"><a href="util_2status__macros_8h.html#a50de54834da66a6bcb7c9e37902e522b">OR_ASSIGN_OR_RETURN3</a></div><div class="ttdeci">#define OR_ASSIGN_OR_RETURN3(lhs, rexpr, error_expression)</div><div class="ttdef"><b>Definition:</b> <a href="util_2status__macros_8h_source.html#l00032">util/status_macros.h:32</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- HTML footer for doxygen 1.8.18-->

@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.2</span>
+   &#160;<span id="projectnumber">9.3</span>
    </div>
   </td>
  </tr>
@@ -109,8 +109,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a5aa25e6e306c7158c11d2053170379a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af7fbbd00f0e631ce361b5ce6636b2017"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_binary_implication_graph.html#af7fbbd00f0e631ce361b5ce6636b2017">Resize</a> (int num_variables)</td></tr>
 <tr class="separator:af7fbbd00f0e631ce361b5ce6636b2017"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a357657ded604ecb97b76251146f7ac75"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_binary_implication_graph.html#a357657ded604ecb97b76251146f7ac75">IsEmpty</a> ()</td></tr>
-<tr class="separator:a357657ded604ecb97b76251146f7ac75"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac8d9ce1fd42b34561f508c578f61e4ef"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_binary_implication_graph.html#ac8d9ce1fd42b34561f508c578f61e4ef">IsEmpty</a> () const final</td></tr>
+<tr class="separator:ac8d9ce1fd42b34561f508c578f61e4ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a26fc07b3630b79be6914e6387b63a073"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_binary_implication_graph.html#a26fc07b3630b79be6914e6387b63a073">AddBinaryClause</a> (<a class="el" href="classoperations__research_1_1sat_1_1_literal.html">Literal</a> <a class="el" href="constraint__solver_2table_8cc.html#acb18315d548212835cd8ed4287e6c0b6">a</a>, <a class="el" href="classoperations__research_1_1sat_1_1_literal.html">Literal</a> <a class="el" href="constraint__solver_2table_8cc.html#a9293e4d29cac928301645070dd307683">b</a>)</td></tr>
 <tr class="separator:a26fc07b3630b79be6914e6387b63a073"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a94e79ff0c0a978e876dd1d44add9bc11"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_binary_implication_graph.html#a94e79ff0c0a978e876dd1d44add9bc11">AddImplication</a> (<a class="el" href="classoperations__research_1_1sat_1_1_literal.html">Literal</a> <a class="el" href="constraint__solver_2table_8cc.html#acb18315d548212835cd8ed4287e6c0b6">a</a>, <a class="el" href="classoperations__research_1_1sat_1_1_literal.html">Literal</a> <a class="el" href="constraint__solver_2table_8cc.html#a9293e4d29cac928301645070dd307683">b</a>)</td></tr>
@@ -184,6 +184,13 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ad2d9e6c6ea7ab13e0d0002a035a6d308"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab64429b401679aee0bbd618449a9152a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_binary_implication_graph.html#ab64429b401679aee0bbd618449a9152a">CleanupAllRemovedVariables</a> ()</td></tr>
 <tr class="separator:ab64429b401679aee0bbd618449a9152a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4e5b1ce7f2938aea23cf7aaa916bfcd0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_binary_implication_graph.html#a4e5b1ce7f2938aea23cf7aaa916bfcd0">ResetWorkDone</a> ()</td></tr>
+<tr class="separator:a4e5b1ce7f2938aea23cf7aaa916bfcd0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac0e93eabba80eccf6cc0a38cd09923b6"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_binary_implication_graph.html#ac0e93eabba80eccf6cc0a38cd09923b6">WorkDone</a> () const</td></tr>
+<tr class="separator:ac0e93eabba80eccf6cc0a38cd09923b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad51633e5f8ff600c5ac6509bf9a35655"><td class="memTemplParams" colspan="2">template&lt;bool use_weight = true&gt; </td></tr>
+<tr class="memitem:ad51633e5f8ff600c5ac6509bf9a35655"><td class="memTemplItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classoperations__research_1_1sat_1_1_literal.html">Literal</a> &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_binary_implication_graph.html#ad51633e5f8ff600c5ac6509bf9a35655">ExpandAtMostOneWithWeight</a> (const absl::Span&lt; const <a class="el" href="classoperations__research_1_1sat_1_1_literal.html">Literal</a> &gt; at_most_one, const <a class="el" href="classabsl_1_1_strong_vector.html">absl::StrongVector</a>&lt; LiteralIndex, bool &gt; &amp;can_be_included, const <a class="el" href="classabsl_1_1_strong_vector.html">absl::StrongVector</a>&lt; LiteralIndex, double &gt; &amp;expanded_lp_values)</td></tr>
+<tr class="separator:ad51633e5f8ff600c5ac6509bf9a35655"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a12bf9bd5308cf2b5d67e3a7e6688aa5a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_sat_propagator.html#a12bf9bd5308cf2b5d67e3a7e6688aa5a">SetPropagatorId</a> (int id)</td></tr>
 <tr class="separator:a12bf9bd5308cf2b5d67e3a7e6688aa5a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5298758773353d79435345e19a7b3a38"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_sat_propagator.html#a5298758773353d79435345e19a7b3a38">PropagatorId</a> () const</td></tr>
@@ -277,7 +284,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="clause_8cc_source.html#l00532">532</a> of file <a class="el" href="clause_8cc_source.html">clause.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="clause_8cc_source.html#l00553">553</a> of file <a class="el" href="clause_8cc_source.html">clause.cc</a>.</p>
 
 </div>
 </div>
@@ -307,7 +314,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="clause_8cc_source.html#l00492">492</a> of file <a class="el" href="clause_8cc_source.html">clause.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="clause_8cc_source.html#l00509">509</a> of file <a class="el" href="clause_8cc_source.html">clause.cc</a>.</p>
 
 </div>
 </div>
@@ -337,7 +344,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="clause_8cc_source.html#l00509">509</a> of file <a class="el" href="clause_8cc_source.html">clause.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="clause_8cc_source.html#l00526">526</a> of file <a class="el" href="clause_8cc_source.html">clause.cc</a>.</p>
 
 </div>
 </div>
@@ -375,7 +382,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="clause_8h_source.html#l00489">489</a> of file <a class="el" href="clause_8h_source.html">clause.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="clause_8h_source.html#l00491">491</a> of file <a class="el" href="clause_8h_source.html">clause.h</a>.</p>
 
 </div>
 </div>
@@ -413,7 +420,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="clause_8h_source.html#l00676">676</a> of file <a class="el" href="clause_8h_source.html">clause.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="clause_8h_source.html#l00678">678</a> of file <a class="el" href="clause_8h_source.html">clause.h</a>.</p>
 
 </div>
 </div>
@@ -432,7 +439,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="clause_8cc_source.html#l01972">1972</a> of file <a class="el" href="clause_8cc_source.html">clause.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="clause_8cc_source.html#l02017">2017</a> of file <a class="el" href="clause_8cc_source.html">clause.cc</a>.</p>
 
 </div>
 </div>
@@ -452,7 +459,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="clause_8cc_source.html#l01342">1342</a> of file <a class="el" href="clause_8cc_source.html">clause.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="clause_8cc_source.html#l01363">1363</a> of file <a class="el" href="clause_8cc_source.html">clause.cc</a>.</p>
 
 </div>
 </div>
@@ -472,7 +479,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="clause_8cc_source.html#l01155">1155</a> of file <a class="el" href="clause_8cc_source.html">clause.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="clause_8cc_source.html#l01176">1176</a> of file <a class="el" href="clause_8cc_source.html">clause.cc</a>.</p>
 
 </div>
 </div>
@@ -492,7 +499,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="clause_8cc_source.html#l01841">1841</a> of file <a class="el" href="clause_8cc_source.html">clause.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="clause_8cc_source.html#l01886">1886</a> of file <a class="el" href="clause_8cc_source.html">clause.cc</a>.</p>
 
 </div>
 </div>
@@ -520,7 +527,43 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="clause_8h_source.html#l00695">695</a> of file <a class="el" href="clause_8h_source.html">clause.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="clause_8h_source.html#l00697">697</a> of file <a class="el" href="clause_8h_source.html">clause.h</a>.</p>
+
+</div>
+</div>
+<a id="ad51633e5f8ff600c5ac6509bf9a35655" name="ad51633e5f8ff600c5ac6509bf9a35655"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad51633e5f8ff600c5ac6509bf9a35655">&#9670;&nbsp;</a></span>ExpandAtMostOneWithWeight()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">template std::vector&lt; <a class="el" href="classoperations__research_1_1sat_1_1_literal.html">Literal</a> &gt; ExpandAtMostOneWithWeight&lt; false &gt; </td>
+          <td>(</td>
+          <td class="paramtype">const absl::Span&lt; const <a class="el" href="classoperations__research_1_1sat_1_1_literal.html">Literal</a> &gt;&#160;</td>
+          <td class="paramname"><em>at_most_one</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classabsl_1_1_strong_vector.html">absl::StrongVector</a>&lt; LiteralIndex, bool &gt; &amp;&#160;</td>
+          <td class="paramname"><em>can_be_included</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classabsl_1_1_strong_vector.html">absl::StrongVector</a>&lt; LiteralIndex, double &gt; &amp;&#160;</td>
+          <td class="paramname"><em>expanded_lp_values</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="clause_8cc_source.html#l01639">1639</a> of file <a class="el" href="clause_8cc_source.html">clause.cc</a>.</p>
 
 </div>
 </div>
@@ -548,7 +591,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="clause_8h_source.html#l00648">648</a> of file <a class="el" href="clause_8h_source.html">clause.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="clause_8h_source.html#l00650">650</a> of file <a class="el" href="clause_8h_source.html">clause.h</a>.</p>
 
 </div>
 </div>
@@ -578,7 +621,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="clause_8cc_source.html#l01884">1884</a> of file <a class="el" href="clause_8cc_source.html">clause.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="clause_8cc_source.html#l01929">1929</a> of file <a class="el" href="clause_8cc_source.html">clause.cc</a>.</p>
 
 </div>
 </div>
@@ -608,7 +651,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="clause_8cc_source.html#l01684">1684</a> of file <a class="el" href="clause_8cc_source.html">clause.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="clause_8cc_source.html#l01729">1729</a> of file <a class="el" href="clause_8cc_source.html">clause.cc</a>.</p>
 
 </div>
 </div>
@@ -636,7 +679,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="clause_8h_source.html#l00555">555</a> of file <a class="el" href="clause_8h_source.html">clause.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="clause_8h_source.html#l00557">557</a> of file <a class="el" href="clause_8h_source.html">clause.h</a>.</p>
 
 </div>
 </div>
@@ -663,12 +706,12 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="clause_8h_source.html#l00544">544</a> of file <a class="el" href="clause_8h_source.html">clause.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="clause_8h_source.html#l00546">546</a> of file <a class="el" href="clause_8h_source.html">clause.h</a>.</p>
 
 </div>
 </div>
-<a id="a357657ded604ecb97b76251146f7ac75" name="a357657ded604ecb97b76251146f7ac75"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a357657ded604ecb97b76251146f7ac75">&#9670;&nbsp;</a></span>IsEmpty()</h2>
+<a id="ac8d9ce1fd42b34561f508c578f61e4ef" name="ac8d9ce1fd42b34561f508c578f61e4ef"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac8d9ce1fd42b34561f508c578f61e4ef">&#9670;&nbsp;</a></span>IsEmpty()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -680,15 +723,17 @@ Protected Attributes</h2></td></tr>
           <td class="memname">bool IsEmpty </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
-          <td></td>
+          <td> const</td>
         </tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">final</span><span class="mlabel">virtual</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Reimplemented from <a class="el" href="classoperations__research_1_1sat_1_1_sat_propagator.html#acb7975eed5b66010d15eaeecad9774ea">SatPropagator</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="clause_8h_source.html#l00484">484</a> of file <a class="el" href="clause_8h_source.html">clause.h</a>.</p>
 
@@ -718,7 +763,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="clause_8h_source.html#l00622">622</a> of file <a class="el" href="clause_8h_source.html">clause.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="clause_8h_source.html#l00624">624</a> of file <a class="el" href="clause_8h_source.html">clause.h</a>.</p>
 
 </div>
 </div>
@@ -746,7 +791,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="clause_8h_source.html#l00710">710</a> of file <a class="el" href="clause_8h_source.html">clause.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="clause_8h_source.html#l00712">712</a> of file <a class="el" href="clause_8h_source.html">clause.h</a>.</p>
 
 </div>
 </div>
@@ -773,7 +818,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="clause_8h_source.html#l00638">638</a> of file <a class="el" href="clause_8h_source.html">clause.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="clause_8h_source.html#l00640">640</a> of file <a class="el" href="clause_8h_source.html">clause.h</a>.</p>
 
 </div>
 </div>
@@ -803,7 +848,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="clause_8cc_source.html#l00940">940</a> of file <a class="el" href="clause_8cc_source.html">clause.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="clause_8cc_source.html#l00961">961</a> of file <a class="el" href="clause_8cc_source.html">clause.cc</a>.</p>
 
 </div>
 </div>
@@ -839,7 +884,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="clause_8cc_source.html#l00860">860</a> of file <a class="el" href="clause_8cc_source.html">clause.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="clause_8cc_source.html#l00881">881</a> of file <a class="el" href="clause_8cc_source.html">clause.cc</a>.</p>
 
 </div>
 </div>
@@ -881,7 +926,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="clause_8cc_source.html#l00878">878</a> of file <a class="el" href="clause_8cc_source.html">clause.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="clause_8cc_source.html#l00899">899</a> of file <a class="el" href="clause_8cc_source.html">clause.cc</a>.</p>
 
 </div>
 </div>
@@ -901,7 +946,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="clause_8cc_source.html#l00783">783</a> of file <a class="el" href="clause_8cc_source.html">clause.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="clause_8cc_source.html#l00804">804</a> of file <a class="el" href="clause_8cc_source.html">clause.cc</a>.</p>
 
 </div>
 </div>
@@ -928,7 +973,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="clause_8h_source.html#l00637">637</a> of file <a class="el" href="clause_8h_source.html">clause.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="clause_8h_source.html#l00639">639</a> of file <a class="el" href="clause_8h_source.html">clause.h</a>.</p>
 
 </div>
 </div>
@@ -955,7 +1000,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="clause_8h_source.html#l00610">610</a> of file <a class="el" href="clause_8h_source.html">clause.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="clause_8h_source.html#l00612">612</a> of file <a class="el" href="clause_8h_source.html">clause.h</a>.</p>
 
 </div>
 </div>
@@ -982,7 +1027,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="clause_8h_source.html#l00614">614</a> of file <a class="el" href="clause_8h_source.html">clause.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="clause_8h_source.html#l00616">616</a> of file <a class="el" href="clause_8h_source.html">clause.h</a>.</p>
 
 </div>
 </div>
@@ -1009,7 +1054,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="clause_8h_source.html#l00613">613</a> of file <a class="el" href="clause_8h_source.html">clause.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="clause_8h_source.html#l00615">615</a> of file <a class="el" href="clause_8h_source.html">clause.h</a>.</p>
 
 </div>
 </div>
@@ -1036,7 +1081,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="clause_8h_source.html#l00607">607</a> of file <a class="el" href="clause_8h_source.html">clause.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="clause_8h_source.html#l00609">609</a> of file <a class="el" href="clause_8h_source.html">clause.h</a>.</p>
 
 </div>
 </div>
@@ -1063,7 +1108,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="clause_8h_source.html#l00629">629</a> of file <a class="el" href="clause_8h_source.html">clause.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="clause_8h_source.html#l00631">631</a> of file <a class="el" href="clause_8h_source.html">clause.h</a>.</p>
 
 </div>
 </div>
@@ -1090,7 +1135,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="clause_8h_source.html#l00623">623</a> of file <a class="el" href="clause_8h_source.html">clause.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="clause_8h_source.html#l00625">625</a> of file <a class="el" href="clause_8h_source.html">clause.h</a>.</p>
 
 </div>
 </div>
@@ -1110,7 +1155,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="clause_8cc_source.html#l01909">1909</a> of file <a class="el" href="clause_8cc_source.html">clause.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="clause_8cc_source.html#l01954">1954</a> of file <a class="el" href="clause_8cc_source.html">clause.cc</a>.</p>
 
 </div>
 </div>
@@ -1140,7 +1185,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classoperations__research_1_1sat_1_1_sat_propagator.html#a1973900fa40bcf4f3d07a5230b6eb854">SatPropagator</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="clause_8cc_source.html#l00759">759</a> of file <a class="el" href="clause_8cc_source.html">clause.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="clause_8cc_source.html#l00780">780</a> of file <a class="el" href="clause_8cc_source.html">clause.cc</a>.</p>
 
 </div>
 </div>
@@ -1168,7 +1213,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__base_8h_source.html#l00519">519</a> of file <a class="el" href="sat__base_8h_source.html">sat_base.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__base_8h_source.html#l00526">526</a> of file <a class="el" href="sat__base_8h_source.html">sat_base.h</a>.</p>
 
 </div>
 </div>
@@ -1196,7 +1241,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__base_8h_source.html#l00502">502</a> of file <a class="el" href="sat__base_8h_source.html">sat_base.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__base_8h_source.html#l00503">503</a> of file <a class="el" href="sat__base_8h_source.html">sat_base.h</a>.</p>
 
 </div>
 </div>
@@ -1223,7 +1268,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__base_8h_source.html#l00455">455</a> of file <a class="el" href="sat__base_8h_source.html">sat_base.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__base_8h_source.html#l00456">456</a> of file <a class="el" href="sat__base_8h_source.html">sat_base.h</a>.</p>
 
 </div>
 </div>
@@ -1263,7 +1308,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classoperations__research_1_1sat_1_1_sat_propagator.html#ae7f5475de062cd6bb8f681f132135788">SatPropagator</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="clause_8cc_source.html#l00771">771</a> of file <a class="el" href="clause_8cc_source.html">clause.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="clause_8cc_source.html#l00792">792</a> of file <a class="el" href="clause_8cc_source.html">clause.cc</a>.</p>
 
 </div>
 </div>
@@ -1293,7 +1338,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="clause_8cc_source.html#l01929">1929</a> of file <a class="el" href="clause_8cc_source.html">clause.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="clause_8cc_source.html#l01974">1974</a> of file <a class="el" href="clause_8cc_source.html">clause.cc</a>.</p>
 
 </div>
 </div>
@@ -1312,7 +1357,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="clause_8cc_source.html#l00991">991</a> of file <a class="el" href="clause_8cc_source.html">clause.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="clause_8cc_source.html#l01012">1012</a> of file <a class="el" href="clause_8cc_source.html">clause.cc</a>.</p>
 
 </div>
 </div>
@@ -1340,7 +1385,34 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="clause_8h_source.html#l00562">562</a> of file <a class="el" href="clause_8h_source.html">clause.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="clause_8h_source.html#l00564">564</a> of file <a class="el" href="clause_8h_source.html">clause.h</a>.</p>
+
+</div>
+</div>
+<a id="a4e5b1ce7f2938aea23cf7aaa916bfcd0" name="a4e5b1ce7f2938aea23cf7aaa916bfcd0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4e5b1ce7f2938aea23cf7aaa916bfcd0">&#9670;&nbsp;</a></span>ResetWorkDone()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ResetWorkDone </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="clause_8h_source.html#l00719">719</a> of file <a class="el" href="clause_8h_source.html">clause.h</a>.</p>
 
 </div>
 </div>
@@ -1360,7 +1432,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="clause_8cc_source.html#l00478">478</a> of file <a class="el" href="clause_8cc_source.html">clause.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="clause_8cc_source.html#l00495">495</a> of file <a class="el" href="clause_8cc_source.html">clause.cc</a>.</p>
 
 </div>
 </div>
@@ -1387,7 +1459,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="clause_8h_source.html#l00548">548</a> of file <a class="el" href="clause_8h_source.html">clause.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="clause_8h_source.html#l00550">550</a> of file <a class="el" href="clause_8h_source.html">clause.h</a>.</p>
 
 </div>
 </div>
@@ -1415,7 +1487,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="clause_8h_source.html#l00669">669</a> of file <a class="el" href="clause_8h_source.html">clause.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="clause_8h_source.html#l00671">671</a> of file <a class="el" href="clause_8h_source.html">clause.h</a>.</p>
 
 </div>
 </div>
@@ -1443,7 +1515,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__base_8h_source.html#l00454">454</a> of file <a class="el" href="sat__base_8h_source.html">sat_base.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__base_8h_source.html#l00455">455</a> of file <a class="el" href="sat__base_8h_source.html">sat_base.h</a>.</p>
 
 </div>
 </div>
@@ -1473,7 +1545,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="clause_8cc_source.html#l01531">1531</a> of file <a class="el" href="clause_8cc_source.html">clause.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="clause_8cc_source.html#l01552">1552</a> of file <a class="el" href="clause_8cc_source.html">clause.cc</a>.</p>
 
 </div>
 </div>
@@ -1513,7 +1585,34 @@ Protected Attributes</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classoperations__research_1_1sat_1_1_integer_trail.html#af46d3e8559a1951914b218e3ef4f34c7">IntegerTrail</a>, <a class="el" href="classoperations__research_1_1sat_1_1_generic_literal_watcher.html#af46d3e8559a1951914b218e3ef4f34c7">GenericLiteralWatcher</a>, <a class="el" href="classoperations__research_1_1sat_1_1_pb_constraints.html#ae20e3965a974e3a5fe816c033a94e568">PbConstraints</a>, <a class="el" href="classoperations__research_1_1sat_1_1_precedences_propagator.html#ae20e3965a974e3a5fe816c033a94e568">PrecedencesPropagator</a>, and <a class="el" href="classoperations__research_1_1sat_1_1_symmetry_propagator.html#ae20e3965a974e3a5fe816c033a94e568">SymmetryPropagator</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="sat__base_8h_source.html#l00477">477</a> of file <a class="el" href="sat__base_8h_source.html">sat_base.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__base_8h_source.html#l00478">478</a> of file <a class="el" href="sat__base_8h_source.html">sat_base.h</a>.</p>
+
+</div>
+</div>
+<a id="ac0e93eabba80eccf6cc0a38cd09923b6" name="ac0e93eabba80eccf6cc0a38cd09923b6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac0e93eabba80eccf6cc0a38cd09923b6">&#9670;&nbsp;</a></span>WorkDone()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int64_t WorkDone </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="clause_8h_source.html#l00720">720</a> of file <a class="el" href="clause_8h_source.html">clause.h</a>.</p>
 
 </div>
 </div>
@@ -1538,7 +1637,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__base_8h_source.html#l00507">507</a> of file <a class="el" href="sat__base_8h_source.html">sat_base.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__base_8h_source.html#l00514">514</a> of file <a class="el" href="sat__base_8h_source.html">sat_base.h</a>.</p>
 
 </div>
 </div>
@@ -1562,7 +1661,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__base_8h_source.html#l00509">509</a> of file <a class="el" href="sat__base_8h_source.html">sat_base.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__base_8h_source.html#l00516">516</a> of file <a class="el" href="sat__base_8h_source.html">sat_base.h</a>.</p>
 
 </div>
 </div>
@@ -1586,7 +1685,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__base_8h_source.html#l00508">508</a> of file <a class="el" href="sat__base_8h_source.html">sat_base.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__base_8h_source.html#l00515">515</a> of file <a class="el" href="sat__base_8h_source.html">sat_base.h</a>.</p>
 
 </div>
 </div>

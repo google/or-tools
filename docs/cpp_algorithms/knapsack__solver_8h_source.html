@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 9.2</span>
+                <span id="sfml">Google OR-Tools 9.3</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -219,8 +219,8 @@ $(document).ready(function(){initNavTree('knapsack__solver_8h_source.html',''); 
 <div class="line"><a id="l00289" name="l00289"></a><span class="lineno">  289</span><span class="comment">// TODO(user): Add a new propagator class used as a guide when the problem has</span></div>
 <div class="line"><a id="l00290" name="l00290"></a><span class="lineno">  290</span><span class="comment">// several dimensions.</span></div>
 <div class="line"><a id="l00291" name="l00291"></a><span class="lineno">  291</span> </div>
-<div class="line"><a id="l00292" name="l00292"></a><span class="lineno">  292</span><span class="comment">// ----- KnapsackAssignement -----</span></div>
-<div class="line"><a id="l00293" name="l00293"></a><span class="lineno">  293</span><span class="comment">// KnapsackAssignement is a small struct used to pair an item with its</span></div>
+<div class="line"><a id="l00292" name="l00292"></a><span class="lineno">  292</span><span class="comment">// ----- KnapsackAssignment -----</span></div>
+<div class="line"><a id="l00293" name="l00293"></a><span class="lineno">  293</span><span class="comment">// KnapsackAssignment is a small struct used to pair an item with its</span></div>
 <div class="line"><a id="l00294" name="l00294"></a><span class="lineno">  294</span><span class="comment">// assignment. It is mainly used for search nodes and updates.</span></div>
 <div class="line"><a id="l00295" name="l00295"></a><span class="lineno"><a class="line" href="structoperations__research_1_1_knapsack_assignment.html">  295</a></span><span class="keyword">struct </span><a class="code hl_struct" href="structoperations__research_1_1_knapsack_assignment.html">KnapsackAssignment</a> {</div>
 <div class="line"><a id="l00296" name="l00296"></a><span class="lineno"><a class="line" href="structoperations__research_1_1_knapsack_assignment.html#a8f85eb172a4c6bed0d042f7d269fc457">  296</a></span>  <a class="code hl_function" href="structoperations__research_1_1_knapsack_assignment.html#a8f85eb172a4c6bed0d042f7d269fc457">KnapsackAssignment</a>(<span class="keywordtype">int</span> _item_id, <span class="keywordtype">bool</span> _is_in)</div>
@@ -262,7 +262,7 @@ $(document).ready(function(){initNavTree('knapsack__solver_8h_source.html',''); 
 <div class="line"><a id="l00332" name="l00332"></a><span class="lineno">  332</span><span class="comment">// KnapsackSearchNode is a class used to describe a decision in the decision</span></div>
 <div class="line"><a id="l00333" name="l00333"></a><span class="lineno">  333</span><span class="comment">// search tree.</span></div>
 <div class="line"><a id="l00334" name="l00334"></a><span class="lineno">  334</span><span class="comment">// The node is defined by a pointer to the parent search node and an</span></div>
-<div class="line"><a id="l00335" name="l00335"></a><span class="lineno">  335</span><span class="comment">// assignment (see KnapsackAssignement).</span></div>
+<div class="line"><a id="l00335" name="l00335"></a><span class="lineno">  335</span><span class="comment">// assignment (see KnapsackAssignment).</span></div>
 <div class="line"><a id="l00336" name="l00336"></a><span class="lineno">  336</span><span class="comment">// As the current state is not explicitly stored in a search node, one should</span></div>
 <div class="line"><a id="l00337" name="l00337"></a><span class="lineno">  337</span><span class="comment">// go through the search tree to incrementally build a partial solution from</span></div>
 <div class="line"><a id="l00338" name="l00338"></a><span class="lineno">  338</span><span class="comment">// a previous search node.</span></div>

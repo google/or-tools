@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.2</span>
+   &#160;<span id="projectnumber">9.3</span>
    </div>
   </td>
  </tr>
@@ -256,7 +256,7 @@ Macros</h2></td></tr>
 <tr class="separator:a7cc25402ecd7591b4c39934dd656b1f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7e03ec13560fa94a8fea569960d7efc6"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="base_2logging_8h.html#a7e03ec13560fa94a8fea569960d7efc6">CHECK_GT</a>(val1,  val2)&#160;&#160;&#160;<a class="el" href="base_2logging_8h.html#a5e079236bd9b8ce194b290a4f4e5bbcb">CHECK_OP</a>(_GT, &gt;, val1, val2)</td></tr>
 <tr class="separator:a7e03ec13560fa94a8fea569960d7efc6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab4f4dc044a2ed1eb76fac50c769973fa"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="base_2logging_8h.html#ab4f4dc044a2ed1eb76fac50c769973fa">CHECK_NOTNULL</a>(val)&#160;&#160;&#160;  <a class="el" href="namespacegoogle.html#a417dcaff05d1784c2844b6db2043fa39">google::CheckNotNull</a>(__FILE__, __LINE__, &quot;'&quot; #val &quot;' Must be non NULL&quot;, (val))</td></tr>
+<tr class="memitem:ab4f4dc044a2ed1eb76fac50c769973fa"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="base_2logging_8h.html#ab4f4dc044a2ed1eb76fac50c769973fa">CHECK_NOTNULL</a>(val)&#160;&#160;&#160;  <a class="el" href="namespacegoogle.html#a417dcaff05d1784c2844b6db2043fa39">google::CheckNotNull</a>(__FILE__, __LINE__, &quot;'&quot; #val &quot;' Must be non null&quot;, (val))</td></tr>
 <tr class="separator:ab4f4dc044a2ed1eb76fac50c769973fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa5e68ab717cb82e0225d04d09126b47e"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="base_2logging_8h.html#aa5e68ab717cb82e0225d04d09126b47e">DECLARE_CHECK_STROP_IMPL</a>(func,  expected)</td></tr>
 <tr class="separator:aa5e68ab717cb82e0225d04d09126b47e"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -593,7 +593,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00746">746</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00747">747</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -627,7 +627,7 @@ Functions</h2></td></tr>
 <div class="line">    CHECK_GE((val1), (val2)-0.000000000000001L);   \</div>
 <div class="line">  } <span class="keywordflow">while</span> (0)</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00748">748</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00749">749</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -657,7 +657,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00702">702</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00703">703</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -678,9 +678,9 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 <b>Value:</b><div class="fragment"><div class="line">  <a class="code hl_define" href="base_2logging_8h.html#a20a0cbd13ac9ede8ee7e41a82ab7c200">PLOG_IF</a>(<a class="code hl_variable" href="log__severity_8h.html#acdd38e3c9f22f127d7776920e3079eda">FATAL</a>, <a class="code hl_define" href="base_2logging_8h.html#a09001211989f041c5f3fa7b69bf58eb2">GOOGLE_PREDICT_BRANCH_NOT_TAKEN</a>((invocation) == -1)) \</div>
 <div class="line">      &lt;&lt; #invocation</div>
-<div class="ttc" id="abase_2logging_8h_html_a20a0cbd13ac9ede8ee7e41a82ab7c200"><div class="ttname"><a href="base_2logging_8h.html#a20a0cbd13ac9ede8ee7e41a82ab7c200">PLOG_IF</a></div><div class="ttdeci">#define PLOG_IF(severity, condition)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00772">base/logging.h:772</a></div></div>
+<div class="ttc" id="abase_2logging_8h_html_a20a0cbd13ac9ede8ee7e41a82ab7c200"><div class="ttname"><a href="base_2logging_8h.html#a20a0cbd13ac9ede8ee7e41a82ab7c200">PLOG_IF</a></div><div class="ttdeci">#define PLOG_IF(severity, condition)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00773">base/logging.h:773</a></div></div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00791">791</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00792">792</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -710,7 +710,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00706">706</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00707">707</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -740,7 +740,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00707">707</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00708">708</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -770,7 +770,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00745">745</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00746">746</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -800,7 +800,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00704">704</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00705">705</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -830,7 +830,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00705">705</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00706">706</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -860,7 +860,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00703">703</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00704">704</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -900,7 +900,7 @@ Functions</h2></td></tr>
 <div class="line">    CHECK_GE((val1), (val2) - (margin)); \</div>
 <div class="line">  } <span class="keywordflow">while</span> (0)</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00754">754</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00755">755</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -915,12 +915,12 @@ Functions</h2></td></tr>
           <td>(</td>
           <td class="paramtype">&#160;</td>
           <td class="paramname">val</td><td>)</td>
-          <td>&#160;&#160;&#160;  <a class="el" href="namespacegoogle.html#a417dcaff05d1784c2844b6db2043fa39">google::CheckNotNull</a>(__FILE__, __LINE__, &quot;'&quot; #val &quot;' Must be non NULL&quot;, (val))</td>
+          <td>&#160;&#160;&#160;  <a class="el" href="namespacegoogle.html#a417dcaff05d1784c2844b6db2043fa39">google::CheckNotNull</a>(__FILE__, __LINE__, &quot;'&quot; #val &quot;' Must be non null&quot;, (val))</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00712">712</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00713">713</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -982,7 +982,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00677">677</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00678">678</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -1037,7 +1037,7 @@ Functions</h2></td></tr>
 <div class="ttc" id="anamespacegoogle_html_a3e59c23e23d629dc03cf5ac0e4a2a2d2"><div class="ttname"><a href="namespacegoogle.html#a3e59c23e23d629dc03cf5ac0e4a2a2d2">google::GetReferenceableValue</a></div><div class="ttdeci">const T &amp; GetReferenceableValue(const T &amp;t)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00515">base/logging.h:515</a></div></div>
 <div class="ttc" id="astructgoogle_1_1_check_op_string_html"><div class="ttname"><a href="structgoogle_1_1_check_op_string.html">google::CheckOpString</a></div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00501">base/logging.h:501</a></div></div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00661">661</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00662">662</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -1067,7 +1067,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00742">742</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00743">743</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -1097,7 +1097,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00743">743</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00744">744</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -1127,7 +1127,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00740">740</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00741">741</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -1157,7 +1157,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00741">741</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00742">742</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -1208,7 +1208,7 @@ Functions</h2></td></tr>
 <div class="line">             (s1), (s2), #s1 <span class="stringliteral">&quot; &quot;</span> #op <span class="stringliteral">&quot; &quot;</span> #s2))                                \</div>
 <div class="line">  LOG(<a class="code hl_variable" href="log__severity_8h.html#acdd38e3c9f22f127d7776920e3079eda">FATAL</a>) &lt;&lt; *_result.str_</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00728">728</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00729">729</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -1324,7 +1324,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00889">889</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00890">890</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -1354,7 +1354,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00890">890</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00891">891</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -1384,7 +1384,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00894">894</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00895">895</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -1414,7 +1414,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00895">895</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00896">896</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -1463,7 +1463,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00892">892</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00893">893</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -1493,7 +1493,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00893">893</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00894">894</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -1523,7 +1523,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00891">891</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00892">892</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -1543,7 +1543,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00896">896</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00897">897</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -1573,7 +1573,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00898">898</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00899">899</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -1603,7 +1603,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00900">900</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00901">901</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -1633,7 +1633,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00897">897</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00898">898</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -1663,7 +1663,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00899">899</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00900">900</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -1696,7 +1696,7 @@ Functions</h2></td></tr>
 <div class="line">      <span class="keyword">const</span> <span class="keywordtype">char</span>* s1, <span class="keyword">const</span> <span class="keywordtype">char</span>* s2, <span class="keyword">const</span> <span class="keywordtype">char</span>* names);</div>
 <div class="ttc" id="alogging__export_8h_html_a980c97856a47502c2877b93460f44f87"><div class="ttname"><a href="logging__export_8h.html#a980c97856a47502c2877b93460f44f87">GOOGLE_GLOG_DLL_DECL</a></div><div class="ttdeci">#define GOOGLE_GLOG_DLL_DECL</div><div class="ttdef"><b>Definition:</b> <a href="logging__export_8h_source.html#l00027">logging_export.h:27</a></div></div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00717">717</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00718">718</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -1729,7 +1729,7 @@ Functions</h2></td></tr>
 <div class="line">  inline std::string* <a class="code hl_variable" href="default__search_8cc.html#ac673bc430bdc3fdaa09f7becf98ef267">name</a>##Impl(<span class="keyword">const</span> T1&amp; v1, <span class="keyword">const</span> T2&amp; v2,             \</div>
 <div class="line">                                 <span class="keyword">const</span> <span class="keywordtype">char</span>* exprtext) {                 \</div>
 <div class="line">    if (<a class="code hl_define" href="base_2logging_8h.html#a38dbe94ed04eccf967ebe59e5ebe165e">GOOGLE_PREDICT_TRUE</a>(v1 op v2))                                   \</div>
-<div class="line">      return NULL;                                                       \</div>
+<div class="line">      return <span class="keyword">nullptr</span>;                                                    \</div>
 <div class="line">    else                                                                 \</div>
 <div class="line">      return <a class="code hl_function" href="namespacegoogle.html#ae9952373c089e8f138e9d53da13008b7">MakeCheckOpString</a>(v1, v2, exprtext);                        \</div>
 <div class="line">  }                                                                      \</div>
@@ -1759,7 +1759,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00880">880</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00881">881</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -1779,7 +1779,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00886">886</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00887">887</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -1809,7 +1809,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00883">883</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00884">884</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -1839,7 +1839,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00882">882</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00883">883</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -1875,7 +1875,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00884">884</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00885">885</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -1895,7 +1895,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00881">881</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00882">882</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -1955,7 +1955,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 <b>Value:</b><div class="fragment"><div class="line">  <a class="code hl_class" href="classgoogle_1_1_log_message.html">google::LogMessage</a>(__FILE__, __LINE__, <a class="code hl_define" href="log__severity_8h.html#a8e90ad21d91c634c22b7bbaaee792283">google::DFATAL_LEVEL</a>, counter, \</div>
 <div class="line">                     &amp;<a class="code hl_function" href="classgoogle_1_1_log_message.html#a09be921a693a28c291c76b71c5e030c6">google::LogMessage::SendToLog</a>)</div>
-<div class="ttc" id="aclassgoogle_1_1_log_message_html"><div class="ttname"><a href="classgoogle_1_1_log_message.html">google::LogMessage</a></div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l01017">base/logging.h:1017</a></div></div>
+<div class="ttc" id="aclassgoogle_1_1_log_message_html"><div class="ttname"><a href="classgoogle_1_1_log_message.html">google::LogMessage</a></div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l01018">base/logging.h:1018</a></div></div>
 <div class="ttc" id="aclassgoogle_1_1_log_message_html_a09be921a693a28c291c76b71c5e030c6"><div class="ttname"><a href="classgoogle_1_1_log_message.html#a09be921a693a28c291c76b71c5e030c6">google::LogMessage::SendToLog</a></div><div class="ttdeci">void SendToLog()</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8cc_source.html#l01272">base/logging.cc:1272</a></div></div>
 <div class="ttc" id="alog__severity_8h_html_a8e90ad21d91c634c22b7bbaaee792283"><div class="ttname"><a href="log__severity_8h.html#a8e90ad21d91c634c22b7bbaaee792283">DFATAL_LEVEL</a></div><div class="ttdeci">#define DFATAL_LEVEL</div><div class="ttdef"><b>Definition:</b> <a href="log__severity_8h_source.html#l00039">log_severity.h:39</a></div></div>
 </div><!-- fragment -->
@@ -2082,9 +2082,9 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 <b>Value:</b><div class="fragment"><div class="line">  <a class="code hl_class" href="classgoogle_1_1_errno_log_message.html">google::ErrnoLogMessage</a>(__FILE__, __LINE__, google::GLOG_##severity, \</div>
 <div class="line">                          counter, &amp;<a class="code hl_function" href="classgoogle_1_1_log_message.html#a09be921a693a28c291c76b71c5e030c6">google::LogMessage::SendToLog</a>)</div>
-<div class="ttc" id="aclassgoogle_1_1_errno_log_message_html"><div class="ttname"><a href="classgoogle_1_1_errno_log_message.html">google::ErrnoLogMessage</a></div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l01232">base/logging.h:1232</a></div></div>
+<div class="ttc" id="aclassgoogle_1_1_errno_log_message_html"><div class="ttname"><a href="classgoogle_1_1_errno_log_message.html">google::ErrnoLogMessage</a></div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l01233">base/logging.h:1233</a></div></div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00768">768</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00769">769</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -2222,7 +2222,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l01183">1183</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l01184">1184</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -2252,7 +2252,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00844">844</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00845">845</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -2282,7 +2282,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00797">797</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00798">798</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -2312,7 +2312,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00798">798</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00799">799</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -2342,7 +2342,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00854">854</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00855">855</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -2374,7 +2374,7 @@ Functions</h2></td></tr>
 <b>Value:</b><div class="fragment"><div class="line">  <span class="keyword">static_cast&lt;</span><span class="keywordtype">void</span><span class="keyword">&gt;</span>(0),             \</div>
 <div class="line">      !(condition) ? (void)0 : <a class="code hl_class" href="classgoogle_1_1_log_message_voidify.html">google::LogMessageVoidify</a>() &amp; <a class="code hl_define" href="base_2logging_8h.html#accad43a85d781d53381cd53a9894b6ae">LOG</a>(severity)</div>
 <div class="ttc" id="abase_2logging_8h_html_accad43a85d781d53381cd53a9894b6ae"><div class="ttname"><a href="base_2logging_8h.html#accad43a85d781d53381cd53a9894b6ae">LOG</a></div><div class="ttdeci">#define LOG(severity)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00420">base/logging.h:420</a></div></div>
-<div class="ttc" id="aclassgoogle_1_1_log_message_voidify_html"><div class="ttname"><a href="classgoogle_1_1_log_message_voidify.html">google::LogMessageVoidify</a></div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l01249">base/logging.h:1249</a></div></div>
+<div class="ttc" id="aclassgoogle_1_1_log_message_voidify_html"><div class="ttname"><a href="classgoogle_1_1_log_message_voidify.html">google::LogMessageVoidify</a></div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l01250">base/logging.h:1250</a></div></div>
 </div><!-- fragment -->
 <p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00479">479</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
@@ -2413,9 +2413,9 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 <b>Value:</b><div class="fragment"><div class="line">  <a class="code hl_define" href="base_2logging_8h.html#a7eb9b33343a474ae5b7352b5cf0686bc">SOME_KIND_OF_LOG_IF_EVERY_N</a>(severity, (condition), (n), \</div>
 <div class="line">                              <a class="code hl_function" href="classgoogle_1_1_log_message.html#a09be921a693a28c291c76b71c5e030c6">google::LogMessage::SendToLog</a>)</div>
-<div class="ttc" id="abase_2logging_8h_html_a7eb9b33343a474ae5b7352b5cf0686bc"><div class="ttname"><a href="base_2logging_8h.html#a7eb9b33343a474ae5b7352b5cf0686bc">SOME_KIND_OF_LOG_IF_EVERY_N</a></div><div class="ttdeci">#define SOME_KIND_OF_LOG_IF_EVERY_N(severity, condition, n, what_to_do)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00812">base/logging.h:812</a></div></div>
+<div class="ttc" id="abase_2logging_8h_html_a7eb9b33343a474ae5b7352b5cf0686bc"><div class="ttname"><a href="base_2logging_8h.html#a7eb9b33343a474ae5b7352b5cf0686bc">SOME_KIND_OF_LOG_IF_EVERY_N</a></div><div class="ttdeci">#define SOME_KIND_OF_LOG_IF_EVERY_N(severity, condition, n, what_to_do)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00813">base/logging.h:813</a></div></div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00857">857</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00858">858</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -2431,7 +2431,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00800">800</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00801">801</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -2447,7 +2447,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00801">801</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00802">802</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -2512,7 +2512,7 @@ Functions</h2></td></tr>
 <div class="line">                     <span class="keyword">static_cast&lt;</span><a class="code hl_class" href="classgoogle_1_1_log_sink.html">google::LogSink</a>*<span class="keyword">&gt;</span>(sink), <span class="keyword">true</span>)   \</div>
 <div class="line">      .<a class="code hl_function" href="classgoogle_1_1_log_message.html#a48387141df3f5afb48b012cc28ac244c">stream</a>()</div>
 <div class="ttc" id="aclassgoogle_1_1_log_message_html_a48387141df3f5afb48b012cc28ac244c"><div class="ttname"><a href="classgoogle_1_1_log_message.html#a48387141df3f5afb48b012cc28ac244c">google::LogMessage::stream</a></div><div class="ttdeci">std::ostream &amp; stream()</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8cc_source.html#l01197">base/logging.cc:1197</a></div></div>
-<div class="ttc" id="aclassgoogle_1_1_log_sink_html"><div class="ttname"><a href="classgoogle_1_1_log_sink.html">google::LogSink</a></div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l01288">base/logging.h:1288</a></div></div>
+<div class="ttc" id="aclassgoogle_1_1_log_sink_html"><div class="ttname"><a href="classgoogle_1_1_log_sink.html">google::LogSink</a></div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l01289">base/logging.h:1289</a></div></div>
 </div><!-- fragment -->
 <p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00445">445</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
@@ -2679,7 +2679,7 @@ Functions</h2></td></tr>
 <b>Value:</b><div class="fragment"><div class="line">  <a class="code hl_define" href="base_2logging_8h.html#a20a0cbd13ac9ede8ee7e41a82ab7c200">PLOG_IF</a>(<a class="code hl_variable" href="log__severity_8h.html#acdd38e3c9f22f127d7776920e3079eda">FATAL</a>, <a class="code hl_define" href="base_2logging_8h.html#a09001211989f041c5f3fa7b69bf58eb2">GOOGLE_PREDICT_BRANCH_NOT_TAKEN</a>(!(condition))) \</div>
 <div class="line">      &lt;&lt; <span class="stringliteral">&quot;Check failed: &quot;</span> #condition <span class="stringliteral">&quot; &quot;</span></div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00779">779</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00780">780</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -2699,7 +2699,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00766">766</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00767">767</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -2729,7 +2729,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00851">851</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00852">852</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -2760,9 +2760,9 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 <b>Value:</b><div class="fragment"><div class="line">  <span class="keyword">static_cast&lt;</span><span class="keywordtype">void</span><span class="keyword">&gt;</span>(0),              \</div>
 <div class="line">      !(condition) ? (void)0 : <a class="code hl_class" href="classgoogle_1_1_log_message_voidify.html">google::LogMessageVoidify</a>() &amp; <a class="code hl_define" href="base_2logging_8h.html#ab2a4f3825f639b85c460a0ecafab8f84">PLOG</a>(severity)</div>
-<div class="ttc" id="abase_2logging_8h_html_ab2a4f3825f639b85c460a0ecafab8f84"><div class="ttname"><a href="base_2logging_8h.html#ab2a4f3825f639b85c460a0ecafab8f84">PLOG</a></div><div class="ttdeci">#define PLOG(severity)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00766">base/logging.h:766</a></div></div>
+<div class="ttc" id="abase_2logging_8h_html_ab2a4f3825f639b85c460a0ecafab8f84"><div class="ttname"><a href="base_2logging_8h.html#ab2a4f3825f639b85c460a0ecafab8f84">PLOG</a></div><div class="ttdeci">#define PLOG(severity)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00767">base/logging.h:767</a></div></div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00772">772</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00773">773</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -2884,10 +2884,10 @@ Functions</h2></td></tr>
 <div class="line">  google::LogMessage(__FILE__, __LINE__, google::GLOG_##severity, \</div>
 <div class="line">                     <a class="code hl_define" href="base_2logging_8h.html#ad2f0f75bbbcfef5965d899e8c8058c5b">LOG_OCCURRENCES</a>, &amp;what_to_do)                \</div>
 <div class="line">      .stream()</div>
-<div class="ttc" id="abase_2logging_8h_html_ad2f0f75bbbcfef5965d899e8c8058c5b"><div class="ttname"><a href="base_2logging_8h.html#ad2f0f75bbbcfef5965d899e8c8058c5b">LOG_OCCURRENCES</a></div><div class="ttdeci">#define LOG_OCCURRENCES</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00800">base/logging.h:800</a></div></div>
-<div class="ttc" id="abase_2logging_8h_html_aee39ee903c682fc1051a229e9bbdc1c6"><div class="ttname"><a href="base_2logging_8h.html#aee39ee903c682fc1051a229e9bbdc1c6">LOG_OCCURRENCES_MOD_N</a></div><div class="ttdeci">#define LOG_OCCURRENCES_MOD_N</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00801">base/logging.h:801</a></div></div>
+<div class="ttc" id="abase_2logging_8h_html_ad2f0f75bbbcfef5965d899e8c8058c5b"><div class="ttname"><a href="base_2logging_8h.html#ad2f0f75bbbcfef5965d899e8c8058c5b">LOG_OCCURRENCES</a></div><div class="ttdeci">#define LOG_OCCURRENCES</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00801">base/logging.h:801</a></div></div>
+<div class="ttc" id="abase_2logging_8h_html_aee39ee903c682fc1051a229e9bbdc1c6"><div class="ttname"><a href="base_2logging_8h.html#aee39ee903c682fc1051a229e9bbdc1c6">LOG_OCCURRENCES_MOD_N</a></div><div class="ttdeci">#define LOG_OCCURRENCES_MOD_N</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00802">base/logging.h:802</a></div></div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00803">803</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00804">804</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -2929,7 +2929,7 @@ Functions</h2></td></tr>
 <div class="line">                     <a class="code hl_define" href="base_2logging_8h.html#ad2f0f75bbbcfef5965d899e8c8058c5b">LOG_OCCURRENCES</a>, &amp;what_to_do)                \</div>
 <div class="line">      .stream()</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00830">830</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00831">831</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -2978,7 +2978,7 @@ Functions</h2></td></tr>
 <div class="line">                     <a class="code hl_define" href="base_2logging_8h.html#ad2f0f75bbbcfef5965d899e8c8058c5b">LOG_OCCURRENCES</a>, &amp;what_to_do)                            \</div>
 <div class="line">      .stream()</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00812">812</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00813">813</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -3021,7 +3021,7 @@ Functions</h2></td></tr>
 <div class="line">                          <a class="code hl_define" href="base_2logging_8h.html#ad2f0f75bbbcfef5965d899e8c8058c5b">LOG_OCCURRENCES</a>, &amp;what_to_do)                \</div>
 <div class="line">      .stream()</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00821">821</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00822">822</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -3137,9 +3137,9 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 <b>Value:</b><div class="fragment"><div class="line">  <a class="code hl_define" href="base_2logging_8h.html#aa321a7b734f6f0c9c1905b3ab421e250">SOME_KIND_OF_LOG_EVERY_N</a>(severity, (n), \</div>
 <div class="line">                           <a class="code hl_function" href="classgoogle_1_1_log_message.html#a3ea77f17c72e61d4ca8b21433e629d43">google::LogMessage::SendToSyslogAndLog</a>)</div>
-<div class="ttc" id="abase_2logging_8h_html_aa321a7b734f6f0c9c1905b3ab421e250"><div class="ttname"><a href="base_2logging_8h.html#aa321a7b734f6f0c9c1905b3ab421e250">SOME_KIND_OF_LOG_EVERY_N</a></div><div class="ttdeci">#define SOME_KIND_OF_LOG_EVERY_N(severity, n, what_to_do)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00803">base/logging.h:803</a></div></div>
+<div class="ttc" id="abase_2logging_8h_html_aa321a7b734f6f0c9c1905b3ab421e250"><div class="ttname"><a href="base_2logging_8h.html#aa321a7b734f6f0c9c1905b3ab421e250">SOME_KIND_OF_LOG_EVERY_N</a></div><div class="ttdeci">#define SOME_KIND_OF_LOG_EVERY_N(severity, n, what_to_do)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00804">base/logging.h:804</a></div></div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00847">847</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00848">848</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -3258,7 +3258,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00983">983</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00984">984</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -3288,7 +3288,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00985">985</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00986">986</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>

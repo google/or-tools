@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.2</span>
+   &#160;<span id="projectnumber">9.3</span>
    </div>
   </td>
  </tr>
@@ -95,14 +95,16 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1math__opt
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="pdlp__bridge_8h_source.html#l00044">44</a> of file <a class="el" href="pdlp__bridge_8h_source.html">pdlp_bridge.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pdlp__bridge_8h_source.html#l00045">45</a> of file <a class="el" href="pdlp__bridge_8h_source.html">pdlp_bridge.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:af58f656a8964c411736f6d460616f633"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_pdlp_bridge.html#af58f656a8964c411736f6d460616f633">PdlpBridge</a> ()=default</td></tr>
 <tr class="separator:af58f656a8964c411736f6d460616f633"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a03d9d0d381c0ea1de6a9a8bbd98741fc"><td class="memItemLeft" align="right" valign="top">const pdlp::QuadraticProgram &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_pdlp_bridge.html#a03d9d0d381c0ea1de6a9a8bbd98741fc">pdlp_lp</a> () const</td></tr>
+<tr class="memitem:a03d9d0d381c0ea1de6a9a8bbd98741fc"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="structoperations__research_1_1pdlp_1_1_quadratic_program.html">pdlp::QuadraticProgram</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_pdlp_bridge.html#a03d9d0d381c0ea1de6a9a8bbd98741fc">pdlp_lp</a> () const</td></tr>
 <tr class="separator:a03d9d0d381c0ea1de6a9a8bbd98741fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a58e05a4aed68759363618629771a4811"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structoperations__research_1_1math__opt_1_1_inverted_bounds.html">InvertedBounds</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_pdlp_bridge.html#a58e05a4aed68759363618629771a4811">ListInvertedBounds</a> () const</td></tr>
+<tr class="separator:a58e05a4aed68759363618629771a4811"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9796b82617a61e97132b3c0dab02c421"><td class="memItemLeft" align="right" valign="top">absl::StatusOr&lt; SparseDoubleVectorProto &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_pdlp_bridge.html#a9796b82617a61e97132b3c0dab02c421">PrimalVariablesToProto</a> (const Eigen::VectorXd &amp;primal_values, const SparseVectorFilterProto &amp;variable_filter) const</td></tr>
 <tr class="separator:a9796b82617a61e97132b3c0dab02c421"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a10270e02f2bc4e3779fc3778385bd9b5"><td class="memItemLeft" align="right" valign="top">absl::StatusOr&lt; SparseDoubleVectorProto &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_pdlp_bridge.html#a10270e02f2bc4e3779fc3778385bd9b5">DualVariablesToProto</a> (const Eigen::VectorXd &amp;dual_values, const SparseVectorFilterProto &amp;linear_constraint_filter) const</td></tr>
@@ -168,7 +170,7 @@ Static Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="pdlp__bridge_8cc_source.html#l00154">154</a> of file <a class="el" href="pdlp__bridge_8cc_source.html">pdlp_bridge.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pdlp__bridge_8cc_source.html#l00178">178</a> of file <a class="el" href="pdlp__bridge_8cc_source.html">pdlp_bridge.cc</a>.</p>
 
 </div>
 </div>
@@ -196,7 +198,26 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="pdlp__bridge_8cc_source.html#l00060">60</a> of file <a class="el" href="pdlp__bridge_8cc_source.html">pdlp_bridge.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pdlp__bridge_8cc_source.html#l00061">61</a> of file <a class="el" href="pdlp__bridge_8cc_source.html">pdlp_bridge.cc</a>.</p>
+
+</div>
+</div>
+<a id="a58e05a4aed68759363618629771a4811" name="a58e05a4aed68759363618629771a4811"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a58e05a4aed68759363618629771a4811">&#9670;&nbsp;</a></span>ListInvertedBounds()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structoperations__research_1_1math__opt_1_1_inverted_bounds.html">InvertedBounds</a> ListInvertedBounds </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="pdlp__bridge_8cc_source.html#l00152">152</a> of file <a class="el" href="pdlp__bridge_8cc_source.html">pdlp_bridge.cc</a>.</p>
 
 </div>
 </div>
@@ -210,7 +231,7 @@ Static Public Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const pdlp::QuadraticProgram &amp; pdlp_lp </td>
+          <td class="memname">const <a class="el" href="structoperations__research_1_1pdlp_1_1_quadratic_program.html">pdlp::QuadraticProgram</a> &amp; pdlp_lp </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -223,7 +244,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="pdlp__bridge_8h_source.html#l00049">49</a> of file <a class="el" href="pdlp__bridge_8h_source.html">pdlp_bridge.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pdlp__bridge_8h_source.html#l00050">50</a> of file <a class="el" href="pdlp__bridge_8h_source.html">pdlp_bridge.h</a>.</p>
 
 </div>
 </div>
@@ -253,7 +274,7 @@ Static Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="pdlp__bridge_8cc_source.html#l00148">148</a> of file <a class="el" href="pdlp__bridge_8cc_source.html">pdlp_bridge.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pdlp__bridge_8cc_source.html#l00172">172</a> of file <a class="el" href="pdlp__bridge_8cc_source.html">pdlp_bridge.cc</a>.</p>
 
 </div>
 </div>
@@ -283,7 +304,7 @@ Static Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="pdlp__bridge_8cc_source.html#l00161">161</a> of file <a class="el" href="pdlp__bridge_8cc_source.html">pdlp_bridge.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pdlp__bridge_8cc_source.html#l00185">185</a> of file <a class="el" href="pdlp__bridge_8cc_source.html">pdlp_bridge.cc</a>.</p>
 
 </div>
 </div>

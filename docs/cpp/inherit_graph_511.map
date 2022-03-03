@@ -1,7 +1,4 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classoperations__research_1_1_max_flow_status_class.html" title=" " alt="" coords="5,64,152,91"/>
-<area shape="rect" id="node2" href="$classoperations__research_1_1_generic_max_flow.html" title=" " alt="" coords="200,5,403,32"/>
-<area shape="rect" id="node4" href="$classoperations__research_1_1_generic_max_flow.html" title=" " alt="" coords="211,57,391,98"/>
-<area shape="rect" id="node5" href="$classoperations__research_1_1_generic_max_flow.html" title=" " alt="" coords="212,123,391,149"/>
-<area shape="rect" id="node3" href="$classoperations__research_1_1_max_flow.html" title=" " alt="" coords="451,5,525,32"/>
+<area shape="rect" id="node1" href="$classutil_1_1_reverse_arc_mixed_graph_1_1_opposite_incoming_arc_iterator.html" title=" " alt="" coords="5,5,237,61"/>
+<area shape="rect" id="node2" href="$classutil_1_1_reverse_arc_mixed_graph_1_1_incoming_arc_iterator.html" title=" " alt="" coords="285,5,517,61"/>
 </map>

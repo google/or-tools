@@ -1,14 +1,6 @@
 var searchData=
 [
-  ['bestobjectivebound_0',['BestObjectiveBound',['../classGoogle_1_1OrTools_1_1Sat_1_1CpSolverResponse.html#a8f34ff079ecb479249803af3395f3d80',1,'Google.OrTools.Sat.CpSolverResponse.BestObjectiveBound()'],['../classGoogle_1_1OrTools_1_1Sat_1_1CpSolver.html#a8f34ff079ecb479249803af3395f3d80',1,'Google.OrTools.Sat.CpSolver.BestObjectiveBound()']]],
-  ['binaryminimizationalgorithm_1',['BinaryMinimizationAlgorithm',['../classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html#af6b5d198a4a8ea28b7f07a28d677b3b9',1,'Google::OrTools::Sat::SatParameters']]],
-  ['binarysearchnumconflicts_2',['BinarySearchNumConflicts',['../classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html#ae056b8f5b8a621eb645c1733c1f985af',1,'Google::OrTools::Sat::SatParameters']]],
-  ['blockingrestartmultiplier_3',['BlockingRestartMultiplier',['../classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html#a23004ce20adfbd5244917626d349a568',1,'Google::OrTools::Sat::SatParameters']]],
-  ['blockingrestartwindowsize_4',['BlockingRestartWindowSize',['../classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html#a6b28c41eae7d84a418b63f8eaf7b6d0f',1,'Google::OrTools::Sat::SatParameters']]],
-  ['booland_5',['BoolAnd',['../classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html#a1a064bbdab8beaeb5e0acbf8d54517f2',1,'Google::OrTools::Sat::ConstraintProto']]],
-  ['booleanencodinglevel_6',['BooleanEncodingLevel',['../classGoogle_1_1OrTools_1_1Sat_1_1SatParameters.html#abba2305bfcf88bea7cd7b1853c7009ff',1,'Google::OrTools::Sat::SatParameters']]],
-  ['boolor_7',['BoolOr',['../classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html#a13f8a96dc8af64b6512ecd2923e5600a',1,'Google::OrTools::Sat::ConstraintProto']]],
-  ['boolxor_8',['BoolXor',['../classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html#af2c0bf678897efc844cb40905edb97c9',1,'Google::OrTools::Sat::ConstraintProto']]],
-  ['boxeswithnullareacanoverlap_9',['BoxesWithNullAreaCanOverlap',['../classGoogle_1_1OrTools_1_1Sat_1_1NoOverlap2DConstraintProto.html#a9dbd2bc4b5f7baa005143e76ac77fe1b',1,'Google::OrTools::Sat::NoOverlap2DConstraintProto']]],
-  ['branches_10',['Branches',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RegularLimitParameters.html#af412e206507d0a35eed3d92a7ba8fd27',1,'Google::OrTools::ConstraintSolver::RegularLimitParameters']]]
+  ['cst_0',['Cst',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1WrappedConstraint.html#a2b5f724957e21cbbca9d5d1293523f78',1,'Google::OrTools::ConstraintSolver::WrappedConstraint']]],
+  ['cttype_1',['CtType',['../classGoogle_1_1OrTools_1_1Sat_1_1BoundedLinearExpression.html#a26c02b9644d2b715ab04fb1ba3049aae',1,'Google::OrTools::Sat::BoundedLinearExpression']]],
+  ['current_2',['Current',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarEnumerator.html#ae0cbc115a66699ead8d93fddccf271ef',1,'Google::OrTools::ConstraintSolver::IntVarEnumerator']]]
 ];

@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.2</span>
+   &#160;<span id="projectnumber">9.3</span>
    </div>
   </td>
  </tr>
@@ -148,166 +148,169 @@ $(document).ready(function(){initNavTree('model__update__merge_8h_source.html','
 <div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span><span class="comment">// have been deleted and should be removed from the merge.</span></div>
 <div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span><span class="comment">//</span></div>
 <div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span><span class="comment">// The elements should be unique in each sorted list.</span></div>
-<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span><span class="keywordtype">void</span> <a class="code hl_function" href="namespaceoperations__research_1_1math__opt_1_1internal.html#a5e96ec6d1d9277e9d24a42105047246d">MergeIntoSortedIds</a>(<span class="keyword">const</span> google::protobuf::RepeatedField&lt;int64_t&gt;&amp; from_new,</div>
-<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>                        google::protobuf::RepeatedField&lt;int64_t&gt;&amp; into_old,</div>
-<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>                        <span class="keyword">const</span> google::protobuf::RepeatedField&lt;int64_t&gt;&amp; deleted);</div>
-<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span> </div>
-<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span><span class="comment">// Merges the `from_new` sparse vector into the `into_old` one. When the two</span></div>
-<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span><span class="comment">// vectors have overlaps, the value in `from_new` is used to overwrite the one</span></div>
-<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span><span class="comment">// in `into_old`.</span></div>
-<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span><span class="comment">//</span></div>
-<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span><span class="comment">// The input `deleted` should contains a sorted list of unique ids of elements</span></div>
-<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span><span class="comment">// that have been deleted and should be removed from the merge.</span></div>
-<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span><span class="comment">//</span></div>
-<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span><span class="comment">// The SparseVector type is either SparseDoubleVectorProto or</span></div>
-<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span><span class="comment">// SparseBoolVectorProto.</span></div>
-<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span><span class="keyword">template</span> &lt;<span class="keyword">typename</span> SparseVector&gt;</div>
-<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span><span class="keywordtype">void</span> <a class="code hl_function" href="namespaceoperations__research_1_1math__opt_1_1internal.html#ae3dd1b1c310edb8cf9292aa30e3df8b2">MergeIntoSparseVector</a>(<span class="keyword">const</span> SparseVector&amp; from_new, SparseVector&amp; into_old,</div>
-<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>                           <span class="keyword">const</span> google::protobuf::RepeatedField&lt;int64_t&gt;&amp; deleted);</div>
-<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span> </div>
-<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span><span class="comment">// Merges the `from_new` sparse matrix into the `into_old` one. When the two</span></div>
-<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span><span class="comment">// matrices have overlaps, the value in `from_new` is used to overwrite the one</span></div>
-<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span><span class="comment">// in `into_old`.</span></div>
-<div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span><span class="comment">//</span></div>
-<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span><span class="comment">// The input `deleted_rows` and `deleted_columns` should contains sorted lists</span></div>
-<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span><span class="comment">// of unique ids of rows and cols that have been deleted and should be removed</span></div>
-<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span><span class="comment">// from the merge.</span></div>
-<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span><span class="keywordtype">void</span> <a class="code hl_function" href="namespaceoperations__research_1_1math__opt_1_1internal.html#a2055bc6211807e6ce6192ef8f30bc583">MergeIntoSparseDoubleMatrix</a>(</div>
-<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span>    <span class="keyword">const</span> SparseDoubleMatrixProto&amp; from_new, SparseDoubleMatrixProto&amp; into_old,</div>
-<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>    <span class="keyword">const</span> google::protobuf::RepeatedField&lt;int64_t&gt;&amp; deleted_rows,</div>
-<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>    <span class="keyword">const</span> google::protobuf::RepeatedField&lt;int64_t&gt;&amp; deleted_columns);</div>
-<div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span> </div>
-<div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span><span class="comment">// Updates a &quot;property&quot; repeated field of a ModelUpdateProto.new_variables or</span></div>
-<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span><span class="comment">// ModelUpdateProto.new_linear_constraints.</span></div>
-<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span><span class="comment">//</span></div>
-<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span><span class="comment">// The `ids` input corresponds to VariablesProto.ids (or</span></div>
-<div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span><span class="comment">// LinearConstraintsProto.ids), and the values one to one property (for example</span></div>
-<div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span><span class="comment">// VariablesProto.lower_bounds). Values corresponding to ids in `deleted` are</span></div>
-<div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span><span class="comment">// removed. For the ids that have a value in `updates`, this value is used to</span></div>
-<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span><span class="comment">// replace the existing one.</span></div>
-<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span><span class="comment">//</span></div>
-<div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span><span class="comment">// The type SparseVector can either be a sparse proto like</span></div>
-<div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span><span class="comment">// SparseDoubleVectorProto or a SparseVectorView. The type RepeatedField is</span></div>
-<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span><span class="comment">// usually a google::protobuf::RepeatedField but it can be also a</span></div>
-<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span><span class="comment">// RepeatedPtrField&lt;std::string&gt; to deal with the `names` property.</span></div>
-<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span><span class="keyword">template</span> &lt;<span class="keyword">typename</span> RepeatedField, <span class="keyword">typename</span> SparseVector&gt;</div>
-<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span><span class="keywordtype">void</span> <a class="code hl_function" href="namespaceoperations__research_1_1math__opt_1_1internal.html#a9684ef19cf2b20816cf49d2f044aaacc">UpdateNewElementProperty</a>(<span class="keyword">const</span> google::protobuf::RepeatedField&lt;int64_t&gt;&amp; ids,</div>
-<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span>                              RepeatedField&amp; values,</div>
-<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span>                              <span class="keyword">const</span> google::protobuf::RepeatedField&lt;int64_t&gt;&amp; deleted,</div>
-<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span>                              <span class="keyword">const</span> SparseVector&amp; updates);</div>
-<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span> </div>
-<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span>}  <span class="comment">// namespace internal</span></div>
+<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span><span class="keywordtype">void</span> <a class="code hl_function" href="namespaceoperations__research_1_1math__opt_1_1internal.html#a5e96ec6d1d9277e9d24a42105047246d">MergeIntoSortedIds</a>(</div>
+<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>    <span class="keyword">const</span> google::protobuf::RepeatedField&lt;int64_t&gt;&amp; from_new,</div>
+<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>    google::protobuf::RepeatedField&lt;int64_t&gt;&amp; into_old,</div>
+<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span>    <span class="keyword">const</span> google::protobuf::RepeatedField&lt;int64_t&gt;&amp; deleted);</div>
+<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span> </div>
+<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span><span class="comment">// Merges the `from_new` sparse vector into the `into_old` one. When the two</span></div>
+<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span><span class="comment">// vectors have overlaps, the value in `from_new` is used to overwrite the one</span></div>
+<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span><span class="comment">// in `into_old`.</span></div>
+<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span><span class="comment">//</span></div>
+<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span><span class="comment">// The input `deleted` should contains a sorted list of unique ids of elements</span></div>
+<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span><span class="comment">// that have been deleted and should be removed from the merge.</span></div>
+<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span><span class="comment">//</span></div>
+<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span><span class="comment">// The SparseVector type is either SparseDoubleVectorProto or</span></div>
+<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span><span class="comment">// SparseBoolVectorProto.</span></div>
+<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span><span class="keyword">template</span> &lt;<span class="keyword">typename</span> SparseVector&gt;</div>
+<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span><span class="keywordtype">void</span> <a class="code hl_function" href="namespaceoperations__research_1_1math__opt_1_1internal.html#ae3dd1b1c310edb8cf9292aa30e3df8b2">MergeIntoSparseVector</a>(</div>
+<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>    <span class="keyword">const</span> SparseVector&amp; from_new, SparseVector&amp; into_old,</div>
+<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span>    <span class="keyword">const</span> google::protobuf::RepeatedField&lt;int64_t&gt;&amp; deleted);</div>
+<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span> </div>
+<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span><span class="comment">// Merges the `from_new` sparse matrix into the `into_old` one. When the two</span></div>
+<div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span><span class="comment">// matrices have overlaps, the value in `from_new` is used to overwrite the one</span></div>
+<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span><span class="comment">// in `into_old`.</span></div>
+<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span><span class="comment">//</span></div>
+<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span><span class="comment">// The input `deleted_rows` and `deleted_columns` should contains sorted lists</span></div>
+<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span><span class="comment">// of unique ids of rows and cols that have been deleted and should be removed</span></div>
+<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span><span class="comment">// from the merge.</span></div>
+<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span><span class="keywordtype">void</span> <a class="code hl_function" href="namespaceoperations__research_1_1math__opt_1_1internal.html#a2055bc6211807e6ce6192ef8f30bc583">MergeIntoSparseDoubleMatrix</a>(</div>
+<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>    <span class="keyword">const</span> SparseDoubleMatrixProto&amp; from_new, SparseDoubleMatrixProto&amp; into_old,</div>
+<div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span>    <span class="keyword">const</span> google::protobuf::RepeatedField&lt;int64_t&gt;&amp; deleted_rows,</div>
+<div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span>    <span class="keyword">const</span> google::protobuf::RepeatedField&lt;int64_t&gt;&amp; deleted_columns);</div>
+<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span> </div>
+<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span><span class="comment">// Updates a &quot;property&quot; repeated field of a ModelUpdateProto.new_variables or</span></div>
+<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span><span class="comment">// ModelUpdateProto.new_linear_constraints.</span></div>
+<div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span><span class="comment">//</span></div>
+<div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span><span class="comment">// The `ids` input corresponds to VariablesProto.ids (or</span></div>
+<div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span><span class="comment">// LinearConstraintsProto.ids), and the values one to one property (for example</span></div>
+<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span><span class="comment">// VariablesProto.lower_bounds). Values corresponding to ids in `deleted` are</span></div>
+<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span><span class="comment">// removed. For the ids that have a value in `updates`, this value is used to</span></div>
+<div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span><span class="comment">// replace the existing one.</span></div>
+<div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span><span class="comment">//</span></div>
+<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span><span class="comment">// The type SparseVector can either be a sparse proto like</span></div>
+<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span><span class="comment">// SparseDoubleVectorProto or a SparseVectorView. The type RepeatedField is</span></div>
+<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span><span class="comment">// usually a google::protobuf::RepeatedField but it can be also a</span></div>
+<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span><span class="comment">// RepeatedPtrField&lt;std::string&gt; to deal with the `names` property.</span></div>
+<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span><span class="keyword">template</span> &lt;<span class="keyword">typename</span> RepeatedField, <span class="keyword">typename</span> SparseVector&gt;</div>
+<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span><span class="keywordtype">void</span> <a class="code hl_function" href="namespaceoperations__research_1_1math__opt_1_1internal.html#a9684ef19cf2b20816cf49d2f044aaacc">UpdateNewElementProperty</a>(</div>
+<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span>    <span class="keyword">const</span> google::protobuf::RepeatedField&lt;int64_t&gt;&amp; ids, RepeatedField&amp; values,</div>
+<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span>    <span class="keyword">const</span> google::protobuf::RepeatedField&lt;int64_t&gt;&amp; deleted,</div>
+<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span>    <span class="keyword">const</span> SparseVector&amp; updates);</div>
 <div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span> </div>
-<div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span><span class="comment">// Inline functions implementations.</span></div>
-<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span><span class="comment"></span> </div>
-<div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceinternal.html">internal</a> {</div>
-<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span> </div>
-<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span><span class="keyword">template</span> &lt;<span class="keyword">typename</span> SparseVector&gt;</div>
-<div class="line"><a id="l00117" name="l00117"></a><span class="lineno"><a class="line" href="namespaceoperations__research_1_1math__opt_1_1internal.html#ae3dd1b1c310edb8cf9292aa30e3df8b2">  117</a></span><span class="keywordtype">void</span> <a class="code hl_function" href="namespaceoperations__research_1_1math__opt_1_1internal.html#ae3dd1b1c310edb8cf9292aa30e3df8b2">MergeIntoSparseVector</a>(<span class="keyword">const</span> <a class="code hl_struct" href="structoperations__research_1_1math__opt_1_1_sparse_vector.html">SparseVector</a>&amp; from_new, <a class="code hl_struct" href="structoperations__research_1_1math__opt_1_1_sparse_vector.html">SparseVector</a>&amp; into_old,</div>
-<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span>                           <span class="keyword">const</span> google::protobuf::RepeatedField&lt;int64_t&gt;&amp; deleted) {</div>
-<div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span>  <a class="code hl_define" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(from_new.ids_size(), from_new.values_size());</div>
-<div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>  <a class="code hl_define" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(into_old.ids_size(), into_old.values_size());</div>
-<div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span> </div>
-<div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span>  <a class="code hl_struct" href="structoperations__research_1_1math__opt_1_1_sparse_vector.html">SparseVector</a> result;</div>
-<div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span>  <span class="keyword">auto</span>&amp; result_ids = *result.mutable_ids();</div>
-<div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span>  <span class="keyword">auto</span>&amp; result_values = *result.mutable_values();</div>
-<div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span> </div>
-<div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span>  <span class="keywordtype">int</span> from_new_i = 0;</div>
-<div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span>  <span class="keywordtype">int</span> into_old_i = 0;</div>
-<div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span>  <span class="keywordtype">int</span> deleted_i = 0;</div>
-<div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span> </div>
-<div class="line"><a id="l00130" name="l00130"></a><span class="lineno">  130</span>  <span class="comment">// Functions that adds the input pair (id, value) to the result if the input</span></div>
-<div class="line"><a id="l00131" name="l00131"></a><span class="lineno">  131</span>  <span class="comment">// id is not in deleted. It updates deleted_i as a side effect too.</span></div>
-<div class="line"><a id="l00132" name="l00132"></a><span class="lineno">  132</span>  <span class="keyword">const</span> <span class="keyword">auto</span> add_if_not_deleted =</div>
-<div class="line"><a id="l00133" name="l00133"></a><span class="lineno">  133</span>      [&amp;](<span class="keyword">const</span> int64_t id, <span class="keyword">const</span> <a class="code hl_typedef" href="namespaceoperations__research_1_1math__opt.html#a603dc055ec94c54d788945fa317c8fd6">sparse_value_type&lt;SparseVector&gt;</a>&amp; <a class="code hl_variable" href="demon__profiler_8cc.html#ac072af30c4ffbc834bb4c681f6ecb514">value</a>) {</div>
-<div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span>        <span class="keywordflow">while</span> (deleted_i &lt; deleted.size() &amp;&amp; deleted[deleted_i] &lt; id) {</div>
-<div class="line"><a id="l00135" name="l00135"></a><span class="lineno">  135</span>          ++deleted_i;</div>
-<div class="line"><a id="l00136" name="l00136"></a><span class="lineno">  136</span>        }</div>
-<div class="line"><a id="l00137" name="l00137"></a><span class="lineno">  137</span>        <span class="keywordflow">if</span> (deleted_i == deleted.size() || deleted[deleted_i] != id) {</div>
-<div class="line"><a id="l00138" name="l00138"></a><span class="lineno">  138</span>          result_ids.Add(<span class="keywordtype">id</span>);</div>
-<div class="line"><a id="l00139" name="l00139"></a><span class="lineno">  139</span>          result_values.Add(<a class="code hl_variable" href="demon__profiler_8cc.html#ac072af30c4ffbc834bb4c681f6ecb514">value</a>);</div>
-<div class="line"><a id="l00140" name="l00140"></a><span class="lineno">  140</span>        }</div>
-<div class="line"><a id="l00141" name="l00141"></a><span class="lineno">  141</span>      };</div>
-<div class="line"><a id="l00142" name="l00142"></a><span class="lineno">  142</span> </div>
-<div class="line"><a id="l00143" name="l00143"></a><span class="lineno">  143</span>  <span class="keywordflow">while</span> (from_new_i &lt; from_new.ids_size() &amp;&amp; into_old_i &lt; into_old.ids_size()) {</div>
-<div class="line"><a id="l00144" name="l00144"></a><span class="lineno">  144</span>    <span class="keywordflow">if</span> (from_new.<a class="code hl_variable" href="structoperations__research_1_1math__opt_1_1_sparse_vector.html#a96ca4b9a99a21af771ded6cf3e97c361">ids</a>(from_new_i) &lt; into_old.<a class="code hl_variable" href="structoperations__research_1_1math__opt_1_1_sparse_vector.html#a96ca4b9a99a21af771ded6cf3e97c361">ids</a>(into_old_i)) {</div>
-<div class="line"><a id="l00145" name="l00145"></a><span class="lineno">  145</span>      add_if_not_deleted(from_new.<a class="code hl_variable" href="structoperations__research_1_1math__opt_1_1_sparse_vector.html#a96ca4b9a99a21af771ded6cf3e97c361">ids</a>(from_new_i), from_new.<a class="code hl_variable" href="structoperations__research_1_1math__opt_1_1_sparse_vector.html#ad2ef762d52910159ce2388433f87441d">values</a>(from_new_i));</div>
-<div class="line"><a id="l00146" name="l00146"></a><span class="lineno">  146</span>      ++from_new_i;</div>
-<div class="line"><a id="l00147" name="l00147"></a><span class="lineno">  147</span>    } <span class="keywordflow">else</span> <span class="keywordflow">if</span> (from_new.<a class="code hl_variable" href="structoperations__research_1_1math__opt_1_1_sparse_vector.html#a96ca4b9a99a21af771ded6cf3e97c361">ids</a>(from_new_i) &gt; into_old.<a class="code hl_variable" href="structoperations__research_1_1math__opt_1_1_sparse_vector.html#a96ca4b9a99a21af771ded6cf3e97c361">ids</a>(into_old_i)) {</div>
-<div class="line"><a id="l00148" name="l00148"></a><span class="lineno">  148</span>      add_if_not_deleted(into_old.<a class="code hl_variable" href="structoperations__research_1_1math__opt_1_1_sparse_vector.html#a96ca4b9a99a21af771ded6cf3e97c361">ids</a>(into_old_i), into_old.<a class="code hl_variable" href="structoperations__research_1_1math__opt_1_1_sparse_vector.html#ad2ef762d52910159ce2388433f87441d">values</a>(into_old_i));</div>
-<div class="line"><a id="l00149" name="l00149"></a><span class="lineno">  149</span>      ++into_old_i;</div>
-<div class="line"><a id="l00150" name="l00150"></a><span class="lineno">  150</span>    } <span class="keywordflow">else</span> {  <span class="comment">// from_new.ids(from_new_i) == into_old.ids(into_old_i)</span></div>
-<div class="line"><a id="l00151" name="l00151"></a><span class="lineno">  151</span>      add_if_not_deleted(from_new.<a class="code hl_variable" href="structoperations__research_1_1math__opt_1_1_sparse_vector.html#a96ca4b9a99a21af771ded6cf3e97c361">ids</a>(from_new_i), from_new.<a class="code hl_variable" href="structoperations__research_1_1math__opt_1_1_sparse_vector.html#ad2ef762d52910159ce2388433f87441d">values</a>(from_new_i));</div>
-<div class="line"><a id="l00152" name="l00152"></a><span class="lineno">  152</span>      ++from_new_i;</div>
-<div class="line"><a id="l00153" name="l00153"></a><span class="lineno">  153</span>      ++into_old_i;</div>
-<div class="line"><a id="l00154" name="l00154"></a><span class="lineno">  154</span>    }</div>
-<div class="line"><a id="l00155" name="l00155"></a><span class="lineno">  155</span>  }</div>
-<div class="line"><a id="l00156" name="l00156"></a><span class="lineno">  156</span> </div>
-<div class="line"><a id="l00157" name="l00157"></a><span class="lineno">  157</span>  <span class="comment">// At this point either from_new_i == from_new.ids_size() or to_i ==</span></div>
-<div class="line"><a id="l00158" name="l00158"></a><span class="lineno">  158</span>  <span class="comment">// to.ids_size() (or both). And the one that is not empty, if it exists, has</span></div>
-<div class="line"><a id="l00159" name="l00159"></a><span class="lineno">  159</span>  <span class="comment">// elements greater than all other elements already inserted.</span></div>
-<div class="line"><a id="l00160" name="l00160"></a><span class="lineno">  160</span>  <span class="keywordflow">for</span> (; from_new_i &lt; from_new.ids_size(); ++from_new_i) {</div>
-<div class="line"><a id="l00161" name="l00161"></a><span class="lineno">  161</span>    add_if_not_deleted(from_new.<a class="code hl_variable" href="structoperations__research_1_1math__opt_1_1_sparse_vector.html#a96ca4b9a99a21af771ded6cf3e97c361">ids</a>(from_new_i), from_new.<a class="code hl_variable" href="structoperations__research_1_1math__opt_1_1_sparse_vector.html#ad2ef762d52910159ce2388433f87441d">values</a>(from_new_i));</div>
-<div class="line"><a id="l00162" name="l00162"></a><span class="lineno">  162</span>  }</div>
-<div class="line"><a id="l00163" name="l00163"></a><span class="lineno">  163</span>  <span class="keywordflow">for</span> (; into_old_i &lt; into_old.ids_size(); ++into_old_i) {</div>
-<div class="line"><a id="l00164" name="l00164"></a><span class="lineno">  164</span>    add_if_not_deleted(into_old.<a class="code hl_variable" href="structoperations__research_1_1math__opt_1_1_sparse_vector.html#a96ca4b9a99a21af771ded6cf3e97c361">ids</a>(into_old_i), into_old.<a class="code hl_variable" href="structoperations__research_1_1math__opt_1_1_sparse_vector.html#ad2ef762d52910159ce2388433f87441d">values</a>(into_old_i));</div>
+<div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span>}  <span class="comment">// namespace internal</span></div>
+<div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span> </div>
+<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span><span class="comment">// Inline functions implementations.</span></div>
+<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span><span class="comment"></span> </div>
+<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceinternal.html">internal</a> {</div>
+<div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span> </div>
+<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span><span class="keyword">template</span> &lt;<span class="keyword">typename</span> SparseVector&gt;</div>
+<div class="line"><a id="l00119" name="l00119"></a><span class="lineno"><a class="line" href="namespaceoperations__research_1_1math__opt_1_1internal.html#ae3dd1b1c310edb8cf9292aa30e3df8b2">  119</a></span><span class="keywordtype">void</span> <a class="code hl_function" href="namespaceoperations__research_1_1math__opt_1_1internal.html#ae3dd1b1c310edb8cf9292aa30e3df8b2">MergeIntoSparseVector</a>(</div>
+<div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>    <span class="keyword">const</span> <a class="code hl_struct" href="structoperations__research_1_1math__opt_1_1_sparse_vector.html">SparseVector</a>&amp; from_new, <a class="code hl_struct" href="structoperations__research_1_1math__opt_1_1_sparse_vector.html">SparseVector</a>&amp; into_old,</div>
+<div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span>    <span class="keyword">const</span> google::protobuf::RepeatedField&lt;int64_t&gt;&amp; deleted) {</div>
+<div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span>  <a class="code hl_define" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(from_new.ids_size(), from_new.values_size());</div>
+<div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span>  <a class="code hl_define" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(into_old.ids_size(), into_old.values_size());</div>
+<div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span> </div>
+<div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span>  <a class="code hl_struct" href="structoperations__research_1_1math__opt_1_1_sparse_vector.html">SparseVector</a> result;</div>
+<div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span>  <span class="keyword">auto</span>&amp; result_ids = *result.mutable_ids();</div>
+<div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span>  <span class="keyword">auto</span>&amp; result_values = *result.mutable_values();</div>
+<div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span> </div>
+<div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span>  <span class="keywordtype">int</span> from_new_i = 0;</div>
+<div class="line"><a id="l00130" name="l00130"></a><span class="lineno">  130</span>  <span class="keywordtype">int</span> into_old_i = 0;</div>
+<div class="line"><a id="l00131" name="l00131"></a><span class="lineno">  131</span>  <span class="keywordtype">int</span> deleted_i = 0;</div>
+<div class="line"><a id="l00132" name="l00132"></a><span class="lineno">  132</span> </div>
+<div class="line"><a id="l00133" name="l00133"></a><span class="lineno">  133</span>  <span class="comment">// Functions that adds the input pair (id, value) to the result if the input</span></div>
+<div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span>  <span class="comment">// id is not in deleted. It updates deleted_i as a side effect too.</span></div>
+<div class="line"><a id="l00135" name="l00135"></a><span class="lineno">  135</span>  <span class="keyword">const</span> <span class="keyword">auto</span> add_if_not_deleted =</div>
+<div class="line"><a id="l00136" name="l00136"></a><span class="lineno">  136</span>      [&amp;](<span class="keyword">const</span> int64_t id, <span class="keyword">const</span> <a class="code hl_typedef" href="namespaceoperations__research_1_1math__opt.html#a603dc055ec94c54d788945fa317c8fd6">sparse_value_type&lt;SparseVector&gt;</a>&amp; <a class="code hl_variable" href="demon__profiler_8cc.html#ac072af30c4ffbc834bb4c681f6ecb514">value</a>) {</div>
+<div class="line"><a id="l00137" name="l00137"></a><span class="lineno">  137</span>        <span class="keywordflow">while</span> (deleted_i &lt; deleted.size() &amp;&amp; deleted[deleted_i] &lt; id) {</div>
+<div class="line"><a id="l00138" name="l00138"></a><span class="lineno">  138</span>          ++deleted_i;</div>
+<div class="line"><a id="l00139" name="l00139"></a><span class="lineno">  139</span>        }</div>
+<div class="line"><a id="l00140" name="l00140"></a><span class="lineno">  140</span>        <span class="keywordflow">if</span> (deleted_i == deleted.size() || deleted[deleted_i] != id) {</div>
+<div class="line"><a id="l00141" name="l00141"></a><span class="lineno">  141</span>          result_ids.Add(<span class="keywordtype">id</span>);</div>
+<div class="line"><a id="l00142" name="l00142"></a><span class="lineno">  142</span>          result_values.Add(<a class="code hl_variable" href="demon__profiler_8cc.html#ac072af30c4ffbc834bb4c681f6ecb514">value</a>);</div>
+<div class="line"><a id="l00143" name="l00143"></a><span class="lineno">  143</span>        }</div>
+<div class="line"><a id="l00144" name="l00144"></a><span class="lineno">  144</span>      };</div>
+<div class="line"><a id="l00145" name="l00145"></a><span class="lineno">  145</span> </div>
+<div class="line"><a id="l00146" name="l00146"></a><span class="lineno">  146</span>  <span class="keywordflow">while</span> (from_new_i &lt; from_new.ids_size() &amp;&amp; into_old_i &lt; into_old.ids_size()) {</div>
+<div class="line"><a id="l00147" name="l00147"></a><span class="lineno">  147</span>    <span class="keywordflow">if</span> (from_new.<a class="code hl_variable" href="structoperations__research_1_1math__opt_1_1_sparse_vector.html#a96ca4b9a99a21af771ded6cf3e97c361">ids</a>(from_new_i) &lt; into_old.<a class="code hl_variable" href="structoperations__research_1_1math__opt_1_1_sparse_vector.html#a96ca4b9a99a21af771ded6cf3e97c361">ids</a>(into_old_i)) {</div>
+<div class="line"><a id="l00148" name="l00148"></a><span class="lineno">  148</span>      add_if_not_deleted(from_new.<a class="code hl_variable" href="structoperations__research_1_1math__opt_1_1_sparse_vector.html#a96ca4b9a99a21af771ded6cf3e97c361">ids</a>(from_new_i), from_new.<a class="code hl_variable" href="structoperations__research_1_1math__opt_1_1_sparse_vector.html#ad2ef762d52910159ce2388433f87441d">values</a>(from_new_i));</div>
+<div class="line"><a id="l00149" name="l00149"></a><span class="lineno">  149</span>      ++from_new_i;</div>
+<div class="line"><a id="l00150" name="l00150"></a><span class="lineno">  150</span>    } <span class="keywordflow">else</span> <span class="keywordflow">if</span> (from_new.<a class="code hl_variable" href="structoperations__research_1_1math__opt_1_1_sparse_vector.html#a96ca4b9a99a21af771ded6cf3e97c361">ids</a>(from_new_i) &gt; into_old.<a class="code hl_variable" href="structoperations__research_1_1math__opt_1_1_sparse_vector.html#a96ca4b9a99a21af771ded6cf3e97c361">ids</a>(into_old_i)) {</div>
+<div class="line"><a id="l00151" name="l00151"></a><span class="lineno">  151</span>      add_if_not_deleted(into_old.<a class="code hl_variable" href="structoperations__research_1_1math__opt_1_1_sparse_vector.html#a96ca4b9a99a21af771ded6cf3e97c361">ids</a>(into_old_i), into_old.<a class="code hl_variable" href="structoperations__research_1_1math__opt_1_1_sparse_vector.html#ad2ef762d52910159ce2388433f87441d">values</a>(into_old_i));</div>
+<div class="line"><a id="l00152" name="l00152"></a><span class="lineno">  152</span>      ++into_old_i;</div>
+<div class="line"><a id="l00153" name="l00153"></a><span class="lineno">  153</span>    } <span class="keywordflow">else</span> {  <span class="comment">// from_new.ids(from_new_i) == into_old.ids(into_old_i)</span></div>
+<div class="line"><a id="l00154" name="l00154"></a><span class="lineno">  154</span>      add_if_not_deleted(from_new.<a class="code hl_variable" href="structoperations__research_1_1math__opt_1_1_sparse_vector.html#a96ca4b9a99a21af771ded6cf3e97c361">ids</a>(from_new_i), from_new.<a class="code hl_variable" href="structoperations__research_1_1math__opt_1_1_sparse_vector.html#ad2ef762d52910159ce2388433f87441d">values</a>(from_new_i));</div>
+<div class="line"><a id="l00155" name="l00155"></a><span class="lineno">  155</span>      ++from_new_i;</div>
+<div class="line"><a id="l00156" name="l00156"></a><span class="lineno">  156</span>      ++into_old_i;</div>
+<div class="line"><a id="l00157" name="l00157"></a><span class="lineno">  157</span>    }</div>
+<div class="line"><a id="l00158" name="l00158"></a><span class="lineno">  158</span>  }</div>
+<div class="line"><a id="l00159" name="l00159"></a><span class="lineno">  159</span> </div>
+<div class="line"><a id="l00160" name="l00160"></a><span class="lineno">  160</span>  <span class="comment">// At this point either from_new_i == from_new.ids_size() or to_i ==</span></div>
+<div class="line"><a id="l00161" name="l00161"></a><span class="lineno">  161</span>  <span class="comment">// to.ids_size() (or both). And the one that is not empty, if it exists, has</span></div>
+<div class="line"><a id="l00162" name="l00162"></a><span class="lineno">  162</span>  <span class="comment">// elements greater than all other elements already inserted.</span></div>
+<div class="line"><a id="l00163" name="l00163"></a><span class="lineno">  163</span>  <span class="keywordflow">for</span> (; from_new_i &lt; from_new.ids_size(); ++from_new_i) {</div>
+<div class="line"><a id="l00164" name="l00164"></a><span class="lineno">  164</span>    add_if_not_deleted(from_new.<a class="code hl_variable" href="structoperations__research_1_1math__opt_1_1_sparse_vector.html#a96ca4b9a99a21af771ded6cf3e97c361">ids</a>(from_new_i), from_new.<a class="code hl_variable" href="structoperations__research_1_1math__opt_1_1_sparse_vector.html#ad2ef762d52910159ce2388433f87441d">values</a>(from_new_i));</div>
 <div class="line"><a id="l00165" name="l00165"></a><span class="lineno">  165</span>  }</div>
-<div class="line"><a id="l00166" name="l00166"></a><span class="lineno">  166</span> </div>
-<div class="line"><a id="l00167" name="l00167"></a><span class="lineno">  167</span>  into_old.Swap(&amp;result);</div>
-<div class="line"><a id="l00168" name="l00168"></a><span class="lineno">  168</span>}</div>
+<div class="line"><a id="l00166" name="l00166"></a><span class="lineno">  166</span>  <span class="keywordflow">for</span> (; into_old_i &lt; into_old.ids_size(); ++into_old_i) {</div>
+<div class="line"><a id="l00167" name="l00167"></a><span class="lineno">  167</span>    add_if_not_deleted(into_old.<a class="code hl_variable" href="structoperations__research_1_1math__opt_1_1_sparse_vector.html#a96ca4b9a99a21af771ded6cf3e97c361">ids</a>(into_old_i), into_old.<a class="code hl_variable" href="structoperations__research_1_1math__opt_1_1_sparse_vector.html#ad2ef762d52910159ce2388433f87441d">values</a>(into_old_i));</div>
+<div class="line"><a id="l00168" name="l00168"></a><span class="lineno">  168</span>  }</div>
 <div class="line"><a id="l00169" name="l00169"></a><span class="lineno">  169</span> </div>
-<div class="line"><a id="l00170" name="l00170"></a><span class="lineno">  170</span><span class="keyword">template</span> &lt;<span class="keyword">typename</span> RepeatedField, <span class="keyword">typename</span> SparseVector&gt;</div>
-<div class="line"><a id="l00171" name="l00171"></a><span class="lineno"><a class="line" href="namespaceoperations__research_1_1math__opt_1_1internal.html#a9684ef19cf2b20816cf49d2f044aaacc">  171</a></span><span class="keywordtype">void</span> <a class="code hl_function" href="namespaceoperations__research_1_1math__opt_1_1internal.html#a9684ef19cf2b20816cf49d2f044aaacc">UpdateNewElementProperty</a>(<span class="keyword">const</span> google::protobuf::RepeatedField&lt;int64_t&gt;&amp; ids,</div>
-<div class="line"><a id="l00172" name="l00172"></a><span class="lineno">  172</span>                              RepeatedField&amp; values,</div>
-<div class="line"><a id="l00173" name="l00173"></a><span class="lineno">  173</span>                              <span class="keyword">const</span> google::protobuf::RepeatedField&lt;int64_t&gt;&amp; deleted,</div>
-<div class="line"><a id="l00174" name="l00174"></a><span class="lineno">  174</span>                              <span class="keyword">const</span> <a class="code hl_struct" href="structoperations__research_1_1math__opt_1_1_sparse_vector.html">SparseVector</a>&amp; updates) {</div>
-<div class="line"><a id="l00175" name="l00175"></a><span class="lineno">  175</span>  <span class="keywordtype">int</span> next_insertion_point = 0;</div>
-<div class="line"><a id="l00176" name="l00176"></a><span class="lineno">  176</span>  <span class="keywordtype">int</span> deleted_i = 0;</div>
-<div class="line"><a id="l00177" name="l00177"></a><span class="lineno">  177</span>  <span class="keywordtype">int</span> updates_i = 0;</div>
-<div class="line"><a id="l00178" name="l00178"></a><span class="lineno">  178</span> </div>
-<div class="line"><a id="l00179" name="l00179"></a><span class="lineno">  179</span>  <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; ids.size(); ++i) {</div>
-<div class="line"><a id="l00180" name="l00180"></a><span class="lineno">  180</span>    <span class="keyword">const</span> <span class="keywordtype">int</span> <span class="keywordtype">id</span> = ids[i];</div>
+<div class="line"><a id="l00170" name="l00170"></a><span class="lineno">  170</span>  into_old.Swap(&amp;result);</div>
+<div class="line"><a id="l00171" name="l00171"></a><span class="lineno">  171</span>}</div>
+<div class="line"><a id="l00172" name="l00172"></a><span class="lineno">  172</span> </div>
+<div class="line"><a id="l00173" name="l00173"></a><span class="lineno">  173</span><span class="keyword">template</span> &lt;<span class="keyword">typename</span> RepeatedField, <span class="keyword">typename</span> SparseVector&gt;</div>
+<div class="line"><a id="l00174" name="l00174"></a><span class="lineno"><a class="line" href="namespaceoperations__research_1_1math__opt_1_1internal.html#a9684ef19cf2b20816cf49d2f044aaacc">  174</a></span><span class="keywordtype">void</span> <a class="code hl_function" href="namespaceoperations__research_1_1math__opt_1_1internal.html#a9684ef19cf2b20816cf49d2f044aaacc">UpdateNewElementProperty</a>(</div>
+<div class="line"><a id="l00175" name="l00175"></a><span class="lineno">  175</span>    <span class="keyword">const</span> google::protobuf::RepeatedField&lt;int64_t&gt;&amp; ids, RepeatedField&amp; values,</div>
+<div class="line"><a id="l00176" name="l00176"></a><span class="lineno">  176</span>    <span class="keyword">const</span> google::protobuf::RepeatedField&lt;int64_t&gt;&amp; deleted,</div>
+<div class="line"><a id="l00177" name="l00177"></a><span class="lineno">  177</span>    <span class="keyword">const</span> <a class="code hl_struct" href="structoperations__research_1_1math__opt_1_1_sparse_vector.html">SparseVector</a>&amp; updates) {</div>
+<div class="line"><a id="l00178" name="l00178"></a><span class="lineno">  178</span>  <span class="keywordtype">int</span> next_insertion_point = 0;</div>
+<div class="line"><a id="l00179" name="l00179"></a><span class="lineno">  179</span>  <span class="keywordtype">int</span> deleted_i = 0;</div>
+<div class="line"><a id="l00180" name="l00180"></a><span class="lineno">  180</span>  <span class="keywordtype">int</span> updates_i = 0;</div>
 <div class="line"><a id="l00181" name="l00181"></a><span class="lineno">  181</span> </div>
-<div class="line"><a id="l00182" name="l00182"></a><span class="lineno">  182</span>    <span class="keywordflow">while</span> (deleted_i &lt; deleted.size() &amp;&amp; deleted[deleted_i] &lt; <span class="keywordtype">id</span>) {</div>
-<div class="line"><a id="l00183" name="l00183"></a><span class="lineno">  183</span>      ++deleted_i;</div>
-<div class="line"><a id="l00184" name="l00184"></a><span class="lineno">  184</span>    }</div>
-<div class="line"><a id="l00185" name="l00185"></a><span class="lineno">  185</span>    <span class="keywordflow">if</span> (deleted_i &lt; deleted.size() &amp;&amp; deleted[deleted_i] == <span class="keywordtype">id</span>) {</div>
-<div class="line"><a id="l00186" name="l00186"></a><span class="lineno">  186</span>      <span class="keywordflow">continue</span>;</div>
+<div class="line"><a id="l00182" name="l00182"></a><span class="lineno">  182</span>  <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; ids.size(); ++i) {</div>
+<div class="line"><a id="l00183" name="l00183"></a><span class="lineno">  183</span>    <span class="keyword">const</span> int64_t <span class="keywordtype">id</span> = ids[i];</div>
+<div class="line"><a id="l00184" name="l00184"></a><span class="lineno">  184</span> </div>
+<div class="line"><a id="l00185" name="l00185"></a><span class="lineno">  185</span>    <span class="keywordflow">while</span> (deleted_i &lt; deleted.size() &amp;&amp; deleted[deleted_i] &lt; <span class="keywordtype">id</span>) {</div>
+<div class="line"><a id="l00186" name="l00186"></a><span class="lineno">  186</span>      ++deleted_i;</div>
 <div class="line"><a id="l00187" name="l00187"></a><span class="lineno">  187</span>    }</div>
-<div class="line"><a id="l00188" name="l00188"></a><span class="lineno">  188</span> </div>
-<div class="line"><a id="l00189" name="l00189"></a><span class="lineno">  189</span>    <span class="keywordflow">while</span> (updates_i &lt; updates.ids_size() &amp;&amp; updates.<a class="code hl_variable" href="structoperations__research_1_1math__opt_1_1_sparse_vector.html#a96ca4b9a99a21af771ded6cf3e97c361">ids</a>(updates_i) &lt; <span class="keywordtype">id</span>) {</div>
-<div class="line"><a id="l00190" name="l00190"></a><span class="lineno">  190</span>      ++updates_i;</div>
-<div class="line"><a id="l00191" name="l00191"></a><span class="lineno">  191</span>    }</div>
-<div class="line"><a id="l00192" name="l00192"></a><span class="lineno">  192</span>    <span class="keywordflow">if</span> (updates_i &lt; updates.ids_size() &amp;&amp; updates.<a class="code hl_variable" href="structoperations__research_1_1math__opt_1_1_sparse_vector.html#a96ca4b9a99a21af771ded6cf3e97c361">ids</a>(updates_i) == <span class="keywordtype">id</span>) {</div>
-<div class="line"><a id="l00193" name="l00193"></a><span class="lineno">  193</span>      values[next_insertion_point] = updates.<a class="code hl_variable" href="structoperations__research_1_1math__opt_1_1_sparse_vector.html#ad2ef762d52910159ce2388433f87441d">values</a>(updates_i);</div>
-<div class="line"><a id="l00194" name="l00194"></a><span class="lineno">  194</span>    } <span class="keywordflow">else</span> {</div>
-<div class="line"><a id="l00195" name="l00195"></a><span class="lineno">  195</span>      <span class="comment">// Here we use SwapElements() to prevent copies when `values` is a</span></div>
-<div class="line"><a id="l00196" name="l00196"></a><span class="lineno">  196</span>      <span class="comment">// RepeatedPtrField&lt;std::string&gt;.</span></div>
-<div class="line"><a id="l00197" name="l00197"></a><span class="lineno">  197</span>      values.SwapElements(next_insertion_point, i);</div>
-<div class="line"><a id="l00198" name="l00198"></a><span class="lineno">  198</span>    }</div>
-<div class="line"><a id="l00199" name="l00199"></a><span class="lineno">  199</span>    ++next_insertion_point;</div>
-<div class="line"><a id="l00200" name="l00200"></a><span class="lineno">  200</span>  }</div>
-<div class="line"><a id="l00201" name="l00201"></a><span class="lineno">  201</span> </div>
-<div class="line"><a id="l00202" name="l00202"></a><span class="lineno">  202</span>  <span class="comment">// We can&#39;t use value.Truncate() here since RepeatedPtrField&lt;std::string&gt; does</span></div>
-<div class="line"><a id="l00203" name="l00203"></a><span class="lineno">  203</span>  <span class="comment">// not implement it.</span></div>
-<div class="line"><a id="l00204" name="l00204"></a><span class="lineno">  204</span>  <a class="code hl_function" href="namespacegoogle_1_1protobuf_1_1util.html#afd2a6d1b791960a00ffff73870a7452c">google::protobuf::util::Truncate</a>(&amp;values, next_insertion_point);</div>
-<div class="line"><a id="l00205" name="l00205"></a><span class="lineno">  205</span>}</div>
-<div class="line"><a id="l00206" name="l00206"></a><span class="lineno">  206</span> </div>
-<div class="line"><a id="l00207" name="l00207"></a><span class="lineno">  207</span>}  <span class="comment">// namespace internal</span></div>
-<div class="line"><a id="l00208" name="l00208"></a><span class="lineno">  208</span>}  <span class="comment">// namespace math_opt</span></div>
-<div class="line"><a id="l00209" name="l00209"></a><span class="lineno">  209</span>}  <span class="comment">// namespace operations_research</span></div>
-<div class="line"><a id="l00210" name="l00210"></a><span class="lineno">  210</span> </div>
-<div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span><span class="preprocessor">#endif  </span><span class="comment">// OR_TOOLS_MATH_OPT_CORE_MODEL_UPDATE_MERGE_H_</span></div>
+<div class="line"><a id="l00188" name="l00188"></a><span class="lineno">  188</span>    <span class="keywordflow">if</span> (deleted_i &lt; deleted.size() &amp;&amp; deleted[deleted_i] == <span class="keywordtype">id</span>) {</div>
+<div class="line"><a id="l00189" name="l00189"></a><span class="lineno">  189</span>      <span class="keywordflow">continue</span>;</div>
+<div class="line"><a id="l00190" name="l00190"></a><span class="lineno">  190</span>    }</div>
+<div class="line"><a id="l00191" name="l00191"></a><span class="lineno">  191</span> </div>
+<div class="line"><a id="l00192" name="l00192"></a><span class="lineno">  192</span>    <span class="keywordflow">while</span> (updates_i &lt; updates.ids_size() &amp;&amp; updates.<a class="code hl_variable" href="structoperations__research_1_1math__opt_1_1_sparse_vector.html#a96ca4b9a99a21af771ded6cf3e97c361">ids</a>(updates_i) &lt; <span class="keywordtype">id</span>) {</div>
+<div class="line"><a id="l00193" name="l00193"></a><span class="lineno">  193</span>      ++updates_i;</div>
+<div class="line"><a id="l00194" name="l00194"></a><span class="lineno">  194</span>    }</div>
+<div class="line"><a id="l00195" name="l00195"></a><span class="lineno">  195</span>    <span class="keywordflow">if</span> (updates_i &lt; updates.ids_size() &amp;&amp; updates.<a class="code hl_variable" href="structoperations__research_1_1math__opt_1_1_sparse_vector.html#a96ca4b9a99a21af771ded6cf3e97c361">ids</a>(updates_i) == <span class="keywordtype">id</span>) {</div>
+<div class="line"><a id="l00196" name="l00196"></a><span class="lineno">  196</span>      values[next_insertion_point] = updates.<a class="code hl_variable" href="structoperations__research_1_1math__opt_1_1_sparse_vector.html#ad2ef762d52910159ce2388433f87441d">values</a>(updates_i);</div>
+<div class="line"><a id="l00197" name="l00197"></a><span class="lineno">  197</span>    } <span class="keywordflow">else</span> {</div>
+<div class="line"><a id="l00198" name="l00198"></a><span class="lineno">  198</span>      <span class="comment">// Here we use SwapElements() to prevent copies when `values` is a</span></div>
+<div class="line"><a id="l00199" name="l00199"></a><span class="lineno">  199</span>      <span class="comment">// RepeatedPtrField&lt;std::string&gt;.</span></div>
+<div class="line"><a id="l00200" name="l00200"></a><span class="lineno">  200</span>      values.SwapElements(next_insertion_point, i);</div>
+<div class="line"><a id="l00201" name="l00201"></a><span class="lineno">  201</span>    }</div>
+<div class="line"><a id="l00202" name="l00202"></a><span class="lineno">  202</span>    ++next_insertion_point;</div>
+<div class="line"><a id="l00203" name="l00203"></a><span class="lineno">  203</span>  }</div>
+<div class="line"><a id="l00204" name="l00204"></a><span class="lineno">  204</span> </div>
+<div class="line"><a id="l00205" name="l00205"></a><span class="lineno">  205</span>  <span class="comment">// We can&#39;t use value.Truncate() here since RepeatedPtrField&lt;std::string&gt; does</span></div>
+<div class="line"><a id="l00206" name="l00206"></a><span class="lineno">  206</span>  <span class="comment">// not implement it.</span></div>
+<div class="line"><a id="l00207" name="l00207"></a><span class="lineno">  207</span>  <a class="code hl_function" href="namespacegoogle_1_1protobuf_1_1util.html#afd2a6d1b791960a00ffff73870a7452c">google::protobuf::util::Truncate</a>(&amp;values, next_insertion_point);</div>
+<div class="line"><a id="l00208" name="l00208"></a><span class="lineno">  208</span>}</div>
+<div class="line"><a id="l00209" name="l00209"></a><span class="lineno">  209</span> </div>
+<div class="line"><a id="l00210" name="l00210"></a><span class="lineno">  210</span>}  <span class="comment">// namespace internal</span></div>
+<div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span>}  <span class="comment">// namespace math_opt</span></div>
+<div class="line"><a id="l00212" name="l00212"></a><span class="lineno">  212</span>}  <span class="comment">// namespace operations_research</span></div>
+<div class="line"><a id="l00213" name="l00213"></a><span class="lineno">  213</span> </div>
+<div class="line"><a id="l00214" name="l00214"></a><span class="lineno">  214</span><span class="preprocessor">#endif  </span><span class="comment">// OR_TOOLS_MATH_OPT_CORE_MODEL_UPDATE_MERGE_H_</span></div>
 <div class="ttc" id="abase_2logging_8h_html"><div class="ttname"><a href="base_2logging_8h.html">logging.h</a></div></div>
-<div class="ttc" id="abase_2logging_8h_html_a7c0ce053b28d53aa4eaf3eb7fb71663b"><div class="ttname"><a href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a></div><div class="ttdeci">#define CHECK_EQ(val1, val2)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00702">base/logging.h:702</a></div></div>
+<div class="ttc" id="abase_2logging_8h_html_a7c0ce053b28d53aa4eaf3eb7fb71663b"><div class="ttname"><a href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a></div><div class="ttdeci">#define CHECK_EQ(val1, val2)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00703">base/logging.h:703</a></div></div>
 <div class="ttc" id="ademon__profiler_8cc_html_ac072af30c4ffbc834bb4c681f6ecb514"><div class="ttname"><a href="demon__profiler_8cc.html#ac072af30c4ffbc834bb4c681f6ecb514">value</a></div><div class="ttdeci">int64_t value</div><div class="ttdef"><b>Definition:</b> <a href="demon__profiler_8cc_source.html#l00044">demon_profiler.cc:44</a></div></div>
 <div class="ttc" id="anamespacegoogle_1_1protobuf_1_1util_html_afd2a6d1b791960a00ffff73870a7452c"><div class="ttname"><a href="namespacegoogle_1_1protobuf_1_1util.html#afd2a6d1b791960a00ffff73870a7452c">google::protobuf::util::Truncate</a></div><div class="ttdeci">void Truncate(RepeatedPtrField&lt; T &gt; *array, int new_size)</div><div class="ttdef"><b>Definition:</b> <a href="protobuf__util_8h_source.html#l00028">protobuf_util.h:28</a></div></div>
-<div class="ttc" id="anamespaceinternal_html"><div class="ttname"><a href="namespaceinternal.html">internal</a></div><div class="ttdef"><b>Definition:</b> <a href="bop__parameters_8pb_8h_source.html#l00039">bop_parameters.pb.h:39</a></div></div>
-<div class="ttc" id="anamespaceoperations__research_1_1math__opt_1_1internal_html_a2055bc6211807e6ce6192ef8f30bc583"><div class="ttname"><a href="namespaceoperations__research_1_1math__opt_1_1internal.html#a2055bc6211807e6ce6192ef8f30bc583">operations_research::math_opt::internal::MergeIntoSparseDoubleMatrix</a></div><div class="ttdeci">void MergeIntoSparseDoubleMatrix(const SparseDoubleMatrixProto &amp;from_new, SparseDoubleMatrixProto &amp;into_old, const google::protobuf::RepeatedField&lt; int64_t &gt; &amp;deleted_rows, const google::protobuf::RepeatedField&lt; int64_t &gt; &amp;deleted_columns)</div><div class="ttdef"><b>Definition:</b> <a href="model__update__merge_8cc_source.html#l00263">model_update_merge.cc:263</a></div></div>
+<div class="ttc" id="anamespaceinternal_html"><div class="ttname"><a href="namespaceinternal.html">internal</a></div><div class="ttdef"><b>Definition:</b> <a href="connected__components_8h_source.html#l00138">connected_components.h:138</a></div></div>
+<div class="ttc" id="anamespaceoperations__research_1_1math__opt_1_1internal_html_a2055bc6211807e6ce6192ef8f30bc583"><div class="ttname"><a href="namespaceoperations__research_1_1math__opt_1_1internal.html#a2055bc6211807e6ce6192ef8f30bc583">operations_research::math_opt::internal::MergeIntoSparseDoubleMatrix</a></div><div class="ttdeci">void MergeIntoSparseDoubleMatrix(const SparseDoubleMatrixProto &amp;from_new, SparseDoubleMatrixProto &amp;into_old, const google::protobuf::RepeatedField&lt; int64_t &gt; &amp;deleted_rows, const google::protobuf::RepeatedField&lt; int64_t &gt; &amp;deleted_columns)</div><div class="ttdef"><b>Definition:</b> <a href="model__update__merge_8cc_source.html#l00264">model_update_merge.cc:264</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_1_1math__opt_1_1internal_html_a5e96ec6d1d9277e9d24a42105047246d"><div class="ttname"><a href="namespaceoperations__research_1_1math__opt_1_1internal.html#a5e96ec6d1d9277e9d24a42105047246d">operations_research::math_opt::internal::MergeIntoSortedIds</a></div><div class="ttdeci">void MergeIntoSortedIds(const google::protobuf::RepeatedField&lt; int64_t &gt; &amp;from_new, google::protobuf::RepeatedField&lt; int64_t &gt; &amp;into_old, const google::protobuf::RepeatedField&lt; int64_t &gt; &amp;deleted)</div><div class="ttdef"><b>Definition:</b> <a href="model__update__merge_8cc_source.html#l00216">model_update_merge.cc:216</a></div></div>
-<div class="ttc" id="anamespaceoperations__research_1_1math__opt_1_1internal_html_a9684ef19cf2b20816cf49d2f044aaacc"><div class="ttname"><a href="namespaceoperations__research_1_1math__opt_1_1internal.html#a9684ef19cf2b20816cf49d2f044aaacc">operations_research::math_opt::internal::UpdateNewElementProperty</a></div><div class="ttdeci">void UpdateNewElementProperty(const google::protobuf::RepeatedField&lt; int64_t &gt; &amp;ids, RepeatedField &amp;values, const google::protobuf::RepeatedField&lt; int64_t &gt; &amp;deleted, const SparseVector &amp;updates)</div><div class="ttdef"><b>Definition:</b> <a href="model__update__merge_8h_source.html#l00171">model_update_merge.h:171</a></div></div>
+<div class="ttc" id="anamespaceoperations__research_1_1math__opt_1_1internal_html_a9684ef19cf2b20816cf49d2f044aaacc"><div class="ttname"><a href="namespaceoperations__research_1_1math__opt_1_1internal.html#a9684ef19cf2b20816cf49d2f044aaacc">operations_research::math_opt::internal::UpdateNewElementProperty</a></div><div class="ttdeci">void UpdateNewElementProperty(const google::protobuf::RepeatedField&lt; int64_t &gt; &amp;ids, RepeatedField &amp;values, const google::protobuf::RepeatedField&lt; int64_t &gt; &amp;deleted, const SparseVector &amp;updates)</div><div class="ttdef"><b>Definition:</b> <a href="model__update__merge_8h_source.html#l00174">model_update_merge.h:174</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_1_1math__opt_1_1internal_html_ad27155291d6ddde80d87c375b39c03ad"><div class="ttname"><a href="namespaceoperations__research_1_1math__opt_1_1internal.html#ad27155291d6ddde80d87c375b39c03ad">operations_research::math_opt::internal::RemoveDeletedIds</a></div><div class="ttdeci">void RemoveDeletedIds(google::protobuf::RepeatedField&lt; int64_t &gt; &amp;ids, const google::protobuf::RepeatedField&lt; int64_t &gt; &amp;deleted)</div><div class="ttdef"><b>Definition:</b> <a href="model__update__merge_8cc_source.html#l00199">model_update_merge.cc:199</a></div></div>
-<div class="ttc" id="anamespaceoperations__research_1_1math__opt_1_1internal_html_ae3dd1b1c310edb8cf9292aa30e3df8b2"><div class="ttname"><a href="namespaceoperations__research_1_1math__opt_1_1internal.html#ae3dd1b1c310edb8cf9292aa30e3df8b2">operations_research::math_opt::internal::MergeIntoSparseVector</a></div><div class="ttdeci">void MergeIntoSparseVector(const SparseVector &amp;from_new, SparseVector &amp;into_old, const google::protobuf::RepeatedField&lt; int64_t &gt; &amp;deleted)</div><div class="ttdef"><b>Definition:</b> <a href="model__update__merge_8h_source.html#l00117">model_update_merge.h:117</a></div></div>
+<div class="ttc" id="anamespaceoperations__research_1_1math__opt_1_1internal_html_ae3dd1b1c310edb8cf9292aa30e3df8b2"><div class="ttname"><a href="namespaceoperations__research_1_1math__opt_1_1internal.html#ae3dd1b1c310edb8cf9292aa30e3df8b2">operations_research::math_opt::internal::MergeIntoSparseVector</a></div><div class="ttdeci">void MergeIntoSparseVector(const SparseVector &amp;from_new, SparseVector &amp;into_old, const google::protobuf::RepeatedField&lt; int64_t &gt; &amp;deleted)</div><div class="ttdef"><b>Definition:</b> <a href="model__update__merge_8h_source.html#l00119">model_update_merge.h:119</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_1_1math__opt_html"><div class="ttname"><a href="namespaceoperations__research_1_1math__opt.html">operations_research::math_opt</a></div><div class="ttdef"><b>Definition:</b> <a href="arrow__operator__proxy_8h_source.html#l00020">arrow_operator_proxy.h:20</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_1_1math__opt_html_a603dc055ec94c54d788945fa317c8fd6"><div class="ttname"><a href="namespaceoperations__research_1_1math__opt.html#a603dc055ec94c54d788945fa317c8fd6">operations_research::math_opt::sparse_value_type</a></div><div class="ttdeci">typename std::remove_reference&lt; decltype(SparseVector().values())&gt;::type::value_type sparse_value_type</div><div class="ttdef"><b>Definition:</b> <a href="sparse__vector__view_8h_source.html#l00070">sparse_vector_view.h:71</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_1_1math__opt_html_aa755b33432bb731690d1b9d5fd00ef06"><div class="ttname"><a href="namespaceoperations__research_1_1math__opt.html#aa755b33432bb731690d1b9d5fd00ef06">operations_research::math_opt::MergeIntoUpdate</a></div><div class="ttdeci">void MergeIntoUpdate(const ModelUpdateProto &amp;from_new, ModelUpdateProto &amp;into_old)</div><div class="ttdef"><b>Definition:</b> <a href="model__update__merge_8cc_source.html#l00033">model_update_merge.cc:33</a></div></div>

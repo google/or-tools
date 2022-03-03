@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['optimizationdirection_0',['OptimizationDirection',['../classoperations__research_1_1_solver.html#a39a89fa3de66d68071c66a936f17fd2b',1,'operations_research::Solver']]]
+  ['pickupanddeliverypolicy_0',['PickupAndDeliveryPolicy',['../classoperations__research_1_1_routing_model.html#aa5cff2ee7fbe3a9c5c701bfba7460c83',1,'operations_research::RoutingModel']]]
 ];

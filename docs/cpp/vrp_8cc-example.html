@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.2</span>
+   &#160;<span id="projectnumber">9.3</span>
    </div>
   </td>
  </tr>
@@ -108,7 +108,7 @@ $(document).ready(function(){initNavTree('vrp_8cc-example.html',''); initResizab
 <div class="line"><span class="preprocessor">#include &lt;vector&gt;</span></div>
 <div class="line"> </div>
 <div class="line"><span class="preprocessor">#include &quot;<a class="code" href="routing_8h.html">ortools/constraint_solver/routing.h</a>&quot;</span></div>
-<div class="line"><span class="preprocessor">#include &quot;<a class="code" href="routing__enums_8pb_8h.html">ortools/constraint_solver/routing_enums.pb.h</a>&quot;</span></div>
+<div class="line"><span class="preprocessor">#include &quot;ortools/constraint_solver/routing_enums.pb.h&quot;</span></div>
 <div class="line"><span class="preprocessor">#include &quot;<a class="code" href="routing__index__manager_8h.html">ortools/constraint_solver/routing_index_manager.h</a>&quot;</span></div>
 <div class="line"><span class="preprocessor">#include &quot;<a class="code" href="routing__parameters_8h.html">ortools/constraint_solver/routing_parameters.h</a>&quot;</span></div>
 <div class="line"><span class="comment">// [END import]</span></div>
@@ -163,18 +163,18 @@ $(document).ready(function(){initNavTree('vrp_8cc-example.html',''); initResizab
 <div class="line">  <a id="a1" name="a1"></a><a class="code hl_define" href="base_2logging_8h.html#accad43a85d781d53381cd53a9894b6ae">LOG</a>(<a id="a2" name="a2"></a><a class="code hl_variable" href="log__severity_8h.html#ab4a2cbab234914b320b7fae11b6e8cb9">INFO</a>) &lt;&lt; <span class="stringliteral">&quot;Objective: &quot;</span> &lt;&lt; solution.ObjectiveValue();</div>
 <div class="line">  int64_t total_distance{0};</div>
 <div class="line">  <span class="keywordflow">for</span> (<span class="keywordtype">int</span> vehicle_id = 0; vehicle_id &lt; data.num_vehicles; ++vehicle_id) {</div>
-<div class="line">    int64_t <a id="a3" name="a3"></a><a class="code hl_variable" href="pack_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a> = routing.Start(vehicle_id);</div>
+<div class="line">    int64_t <a id="a3" name="a3"></a><a class="code hl_variable" href="local__search_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a> = routing.Start(vehicle_id);</div>
 <div class="line">    <a class="code hl_define" href="base_2logging_8h.html#accad43a85d781d53381cd53a9894b6ae">LOG</a>(<a class="code hl_variable" href="log__severity_8h.html#ab4a2cbab234914b320b7fae11b6e8cb9">INFO</a>) &lt;&lt; <span class="stringliteral">&quot;Route for Vehicle &quot;</span> &lt;&lt; vehicle_id &lt;&lt; <span class="stringliteral">&quot;:&quot;</span>;</div>
 <div class="line">    int64_t <a id="a4" name="a4"></a><a class="code hl_variable" href="routing__search_8cc.html#a79b8e036dca6911e3295a47d99f21f43">distance</a>{0};</div>
 <div class="line">    std::stringstream route;</div>
-<div class="line">    <span class="keywordflow">while</span> (routing.IsEnd(<a class="code hl_variable" href="pack_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>) == <span class="keyword">false</span>) {</div>
-<div class="line">      route &lt;&lt; manager.IndexToNode(<a class="code hl_variable" href="pack_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>).value() &lt;&lt; <span class="stringliteral">&quot; -&gt; &quot;</span>;</div>
-<div class="line">      int64_t previous_index = <a class="code hl_variable" href="pack_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>;</div>
-<div class="line">      <a class="code hl_variable" href="pack_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a> = solution.Value(routing.NextVar(<a class="code hl_variable" href="pack_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>));</div>
-<div class="line">      <a class="code hl_variable" href="routing__search_8cc.html#a79b8e036dca6911e3295a47d99f21f43">distance</a> += routing.GetArcCostForVehicle(previous_index, <a class="code hl_variable" href="pack_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>,</div>
+<div class="line">    <span class="keywordflow">while</span> (routing.IsEnd(<a class="code hl_variable" href="local__search_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>) == <span class="keyword">false</span>) {</div>
+<div class="line">      route &lt;&lt; manager.IndexToNode(<a class="code hl_variable" href="local__search_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>).value() &lt;&lt; <span class="stringliteral">&quot; -&gt; &quot;</span>;</div>
+<div class="line">      int64_t previous_index = <a class="code hl_variable" href="local__search_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>;</div>
+<div class="line">      <a class="code hl_variable" href="local__search_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a> = solution.Value(routing.NextVar(<a class="code hl_variable" href="local__search_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>));</div>
+<div class="line">      <a class="code hl_variable" href="routing__search_8cc.html#a79b8e036dca6911e3295a47d99f21f43">distance</a> += routing.GetArcCostForVehicle(previous_index, <a class="code hl_variable" href="local__search_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>,</div>
 <div class="line">                                               int64_t{vehicle_id});</div>
 <div class="line">    }</div>
-<div class="line">    <a class="code hl_define" href="base_2logging_8h.html#accad43a85d781d53381cd53a9894b6ae">LOG</a>(<a class="code hl_variable" href="log__severity_8h.html#ab4a2cbab234914b320b7fae11b6e8cb9">INFO</a>) &lt;&lt; route.str() &lt;&lt; manager.IndexToNode(<a class="code hl_variable" href="pack_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>).value();</div>
+<div class="line">    <a class="code hl_define" href="base_2logging_8h.html#accad43a85d781d53381cd53a9894b6ae">LOG</a>(<a class="code hl_variable" href="log__severity_8h.html#ab4a2cbab234914b320b7fae11b6e8cb9">INFO</a>) &lt;&lt; route.str() &lt;&lt; manager.IndexToNode(<a class="code hl_variable" href="local__search_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>).value();</div>
 <div class="line">    <a class="code hl_define" href="base_2logging_8h.html#accad43a85d781d53381cd53a9894b6ae">LOG</a>(<a class="code hl_variable" href="log__severity_8h.html#ab4a2cbab234914b320b7fae11b6e8cb9">INFO</a>) &lt;&lt; <span class="stringliteral">&quot;Distance of the route: &quot;</span> &lt;&lt; <a class="code hl_variable" href="routing__search_8cc.html#a79b8e036dca6911e3295a47d99f21f43">distance</a> &lt;&lt; <span class="stringliteral">&quot;m&quot;</span>;</div>
 <div class="line">    total_distance += <a class="code hl_variable" href="routing__search_8cc.html#a79b8e036dca6911e3295a47d99f21f43">distance</a>;</div>
 <div class="line">  }</div>
@@ -222,7 +222,7 @@ $(document).ready(function(){initNavTree('vrp_8cc-example.html',''); initResizab
 <div class="line">  <span class="comment">// [START parameters]</span></div>
 <div class="line">  RoutingSearchParameters searchParameters = <a id="a6" name="a6"></a><a class="code hl_function" href="namespaceoperations__research.html#ab59d4ce2b572e1ae576d2aa181433187">DefaultRoutingSearchParameters</a>();</div>
 <div class="line">  searchParameters.set_first_solution_strategy(</div>
-<div class="line">      <a id="a7" name="a7"></a><a class="code hl_variable" href="classoperations__research_1_1_first_solution_strategy.html#af9514bec629ba99306ed93ab08252708">FirstSolutionStrategy::PATH_CHEAPEST_ARC</a>);</div>
+<div class="line">      FirstSolutionStrategy::PATH_CHEAPEST_ARC);</div>
 <div class="line">  <span class="comment">// [END parameters]</span></div>
 <div class="line"> </div>
 <div class="line">  <span class="comment">// Solve the problem.</span></div>
@@ -237,25 +237,23 @@ $(document).ready(function(){initNavTree('vrp_8cc-example.html',''); initResizab
 <div class="line">}</div>
 <div class="line">}  <span class="comment">// namespace operations_research</span></div>
 <div class="line"> </div>
-<div class="line"><span class="keywordtype">int</span> <a id="a8" name="a8"></a><a class="code hl_function" href="fz_8cc.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a>(<span class="keywordtype">int</span> argc, <span class="keywordtype">char</span>** argv) {</div>
+<div class="line"><span class="keywordtype">int</span> <a id="a7" name="a7"></a><a class="code hl_function" href="fz_8cc.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a>(<span class="keywordtype">int</span> argc, <span class="keywordtype">char</span>** argv) {</div>
 <div class="line">  operations_research::Vrp();</div>
 <div class="line">  <span class="keywordflow">return</span> EXIT_SUCCESS;</div>
 <div class="line">}</div>
 <div class="line"><span class="comment">// [END program]</span></div>
 <div class="ttc" id="abase_2logging_8h_html_accad43a85d781d53381cd53a9894b6ae"><div class="ttname"><a href="base_2logging_8h.html#accad43a85d781d53381cd53a9894b6ae">LOG</a></div><div class="ttdeci">#define LOG(severity)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00420">base/logging.h:420</a></div></div>
-<div class="ttc" id="aclassoperations__research_1_1_first_solution_strategy_html_af9514bec629ba99306ed93ab08252708"><div class="ttname"><a href="classoperations__research_1_1_first_solution_strategy.html#af9514bec629ba99306ed93ab08252708">operations_research::FirstSolutionStrategy::PATH_CHEAPEST_ARC</a></div><div class="ttdeci">static constexpr Value PATH_CHEAPEST_ARC</div><div class="ttdef"><b>Definition:</b> <a href="routing__enums_8pb_8h_source.html#l00252">routing_enums.pb.h:252</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1_routing_index_manager_html_aeb44c17e71161ec3a77d4a87e358c84b"><div class="ttname"><a href="classoperations__research_1_1_routing_index_manager.html#aeb44c17e71161ec3a77d4a87e358c84b">operations_research::RoutingIndexManager::NodeIndex</a></div><div class="ttdeci">RoutingNodeIndex NodeIndex</div><div class="ttdef"><b>Definition:</b> <a href="routing__index__manager_8h_source.html#l00051">routing_index_manager.h:51</a></div></div>
 <div class="ttc" id="ademon__profiler_8cc_html_ac072af30c4ffbc834bb4c681f6ecb514"><div class="ttname"><a href="demon__profiler_8cc.html#ac072af30c4ffbc834bb4c681f6ecb514">value</a></div><div class="ttdeci">int64_t value</div><div class="ttdef"><b>Definition:</b> <a href="demon__profiler_8cc_source.html#l00044">demon_profiler.cc:44</a></div></div>
-<div class="ttc" id="afz_8cc_html_a3c04138a5bfe5d72780bb7e82a18e627"><div class="ttname"><a href="fz_8cc.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a></div><div class="ttdeci">int main(int argc, char **argv)</div><div class="ttdef"><b>Definition:</b> <a href="fz_8cc_source.html#l00180">fz.cc:180</a></div></div>
+<div class="ttc" id="afz_8cc_html_a3c04138a5bfe5d72780bb7e82a18e627"><div class="ttname"><a href="fz_8cc.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a></div><div class="ttdeci">int main(int argc, char **argv)</div><div class="ttdef"><b>Definition:</b> <a href="fz_8cc_source.html#l00179">fz.cc:179</a></div></div>
+<div class="ttc" id="alocal__search_8cc_html_a750b5d744c39a06bfb13e6eb010e35d0"><div class="ttname"><a href="local__search_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a></div><div class="ttdeci">int index</div><div class="ttdef"><b>Definition:</b> <a href="local__search_8cc_source.html#l02750">local_search.cc:2750</a></div></div>
 <div class="ttc" id="alog__severity_8h_html_ab4a2cbab234914b320b7fae11b6e8cb9"><div class="ttname"><a href="log__severity_8h.html#ab4a2cbab234914b320b7fae11b6e8cb9">INFO</a></div><div class="ttdeci">const int INFO</div><div class="ttdef"><b>Definition:</b> <a href="log__severity_8h_source.html#l00031">log_severity.h:31</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_html"><div class="ttname"><a href="namespaceoperations__research.html">operations_research</a></div><div class="ttdoc">Collection of objects used to extend the Constraint Solver library.</div><div class="ttdef"><b>Definition:</b> <a href="dense__doubly__linked__list_8h_source.html#l00021">dense_doubly_linked_list.h:21</a></div></div>
-<div class="ttc" id="anamespaceoperations__research_html_ab59d4ce2b572e1ae576d2aa181433187"><div class="ttname"><a href="namespaceoperations__research.html#ab59d4ce2b572e1ae576d2aa181433187">operations_research::DefaultRoutingSearchParameters</a></div><div class="ttdeci">RoutingSearchParameters DefaultRoutingSearchParameters()</div><div class="ttdef"><b>Definition:</b> <a href="routing__parameters_8cc_source.html#l00047">routing_parameters.cc:47</a></div></div>
-<div class="ttc" id="apack_8cc_html_a750b5d744c39a06bfb13e6eb010e35d0"><div class="ttname"><a href="pack_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a></div><div class="ttdeci">int index</div><div class="ttdef"><b>Definition:</b> <a href="pack_8cc_source.html#l00509">pack.cc:509</a></div></div>
+<div class="ttc" id="anamespaceoperations__research_html_ab59d4ce2b572e1ae576d2aa181433187"><div class="ttname"><a href="namespaceoperations__research.html#ab59d4ce2b572e1ae576d2aa181433187">operations_research::DefaultRoutingSearchParameters</a></div><div class="ttdeci">RoutingSearchParameters DefaultRoutingSearchParameters()</div><div class="ttdef"><b>Definition:</b> <a href="routing__parameters_8cc_source.html#l00048">routing_parameters.cc:48</a></div></div>
 <div class="ttc" id="arouting_8h_html"><div class="ttname"><a href="routing_8h.html">routing.h</a></div></div>
-<div class="ttc" id="arouting__enums_8pb_8h_html"><div class="ttname"><a href="routing__enums_8pb_8h.html">routing_enums.pb.h</a></div></div>
 <div class="ttc" id="arouting__index__manager_8h_html"><div class="ttname"><a href="routing__index__manager_8h.html">routing_index_manager.h</a></div></div>
 <div class="ttc" id="arouting__parameters_8h_html"><div class="ttname"><a href="routing__parameters_8h.html">routing_parameters.h</a></div></div>
-<div class="ttc" id="arouting__search_8cc_html_a79b8e036dca6911e3295a47d99f21f43"><div class="ttname"><a href="routing__search_8cc.html#a79b8e036dca6911e3295a47d99f21f43">distance</a></div><div class="ttdeci">double distance</div><div class="ttdef"><b>Definition:</b> <a href="routing__search_8cc_source.html#l03610">routing_search.cc:3610</a></div></div>
+<div class="ttc" id="arouting__search_8cc_html_a79b8e036dca6911e3295a47d99f21f43"><div class="ttname"><a href="routing__search_8cc.html#a79b8e036dca6911e3295a47d99f21f43">distance</a></div><div class="ttdeci">double distance</div><div class="ttdef"><b>Definition:</b> <a href="routing__search_8cc_source.html#l03741">routing_search.cc:3741</a></div></div>
 </div><!-- fragment --> </div><!-- contents -->
 </div><!-- doc-content -->
 <!-- HTML footer for doxygen 1.8.18-->

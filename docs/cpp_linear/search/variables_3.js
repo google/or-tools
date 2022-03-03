@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['descriptor_5ftable_5fortools_5f2flinear_5f5fsolver_5f2flinear_5f5fsolver_5f2eproto_0',['descriptor_table_ortools_2flinear_5fsolver_2flinear_5fsolver_2eproto',['../linear__solver_8pb_8h.html#a73f97af81379c4dd1bb9082b3be9bd25',1,'linear_solver.pb.h']]]
+  ['max_5fline_5flength_0',['max_line_length',['../structoperations__research_1_1_m_p_model_export_options.html#ad0a36f27591304ab29f40ca64bf24224',1,'operations_research::MPModelExportOptions']]],
+  ['maximize_5f_1',['maximize_',['../classoperations__research_1_1_m_p_solver_interface.html#ad5d09a69c6c8c8eea9311b0513628683',1,'operations_research::MPSolverInterface']]]
 ];

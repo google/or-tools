@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.2</span>
+   &#160;<span id="projectnumber">9.3</span>
    </div>
   </td>
  </tr>
@@ -97,7 +97,7 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1sat_1_1_m
 <div class="textblock"><p >Class that owns everything related to a particular optimization model. </p>
 <p >This class is actually a fully generic wrapper that can hold any type of constraints, watchers, solvers and provide a mecanism to wire them together. </p>
 
-<p class="definition">Definition at line <a class="el" href="sat_2model_8h_source.html#l00038">38</a> of file <a class="el" href="sat_2model_8h_source.html">sat/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat_2model_8h_source.html#l00042">42</a> of file <a class="el" href="sat_2model_8h_source.html">sat/model.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -167,7 +167,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat_2model_8h_source.html#l00040">40</a> of file <a class="el" href="sat_2model_8h_source.html">sat/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat_2model_8h_source.html#l00044">44</a> of file <a class="el" href="sat_2model_8h_source.html">sat/model.h</a>.</p>
 
 </div>
 </div>
@@ -194,7 +194,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat_2model_8h_source.html#l00042">42</a> of file <a class="el" href="sat_2model_8h_source.html">sat/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat_2model_8h_source.html#l00046">46</a> of file <a class="el" href="sat_2model_8h_source.html">sat/model.h</a>.</p>
 
 </div>
 </div>
@@ -224,7 +224,7 @@ Public Member Functions</h2></td></tr>
 
 <p>When there is more than one model in an application, it makes sense to name them for debugging or logging. </p>
 
-<p class="definition">Definition at line <a class="el" href="sat_2model_8h_source.html#l00054">54</a> of file <a class="el" href="sat_2model_8h_source.html">sat/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat_2model_8h_source.html#l00058">58</a> of file <a class="el" href="sat_2model_8h_source.html">sat/model.h</a>.</p>
 
 </div>
 </div>
@@ -264,15 +264,15 @@ Public Member Functions</h2></td></tr>
 <div class="line">     ... the same code ...</div>
 <div class="line">  };</div>
 <div class="line">}</div>
-<div class="ttc" id="aclassoperations__research_1_1sat_1_1_model_html_a30c57abda5ed227c85b50007cee876db"><div class="ttname"><a href="classoperations__research_1_1sat_1_1_model.html#a30c57abda5ed227c85b50007cee876db">operations_research::sat::Model::Model</a></div><div class="ttdeci">Model()</div><div class="ttdef"><b>Definition:</b> <a href="sat_2model_8h_source.html#l00040">sat/model.h:40</a></div></div>
+<div class="ttc" id="aclassoperations__research_1_1sat_1_1_model_html_a30c57abda5ed227c85b50007cee876db"><div class="ttname"><a href="classoperations__research_1_1sat_1_1_model.html#a30c57abda5ed227c85b50007cee876db">operations_research::sat::Model::Model</a></div><div class="ttdeci">Model()</div><div class="ttdef"><b>Definition:</b> <a href="sat_2model_8h_source.html#l00044">sat/model.h:44</a></div></div>
 <div class="ttc" id="agurobi__interface_8cc_html_a0728f23c9a47655d38e0bf1a2f200bcf"><div class="ttname"><a href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a></div><div class="ttdeci">GRBmodel * model</div><div class="ttdef"><b>Definition:</b> <a href="gurobi__interface_8cc_source.html#l00274">gurobi_interface.cc:274</a></div></div>
 </div><!-- fragment --><p >We also have a templated return value for the functions that need it like </p><div class="fragment"><div class="line"><span class="keyword">const</span> BooleanVariable <a class="code hl_variable" href="constraint__solver_2table_8cc.html#a9293e4d29cac928301645070dd307683">b</a> = <a class="code hl_variable" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>.Add(<a class="code hl_function" href="namespaceoperations__research_1_1sat.html#a3cb95842130bc03177260ad20464bdbf">NewBooleanVariable</a>());</div>
 <div class="line"><span class="keyword">const</span> IntegerVariable i = <a class="code hl_variable" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>.Add(<a class="code hl_function" href="namespaceoperations__research_1_1sat.html#ad8af8f787d40f2ccb96beb5306c913c5">NewWeightedSum</a>(weights, variables));</div>
 <div class="ttc" id="aconstraint__solver_2table_8cc_html_a9293e4d29cac928301645070dd307683"><div class="ttname"><a href="constraint__solver_2table_8cc.html#a9293e4d29cac928301645070dd307683">b</a></div><div class="ttdeci">int64_t b</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solver_2table_8cc_source.html#l00047">constraint_solver/table.cc:47</a></div></div>
-<div class="ttc" id="anamespaceoperations__research_1_1sat_html_a3cb95842130bc03177260ad20464bdbf"><div class="ttname"><a href="namespaceoperations__research_1_1sat.html#a3cb95842130bc03177260ad20464bdbf">operations_research::sat::NewBooleanVariable</a></div><div class="ttdeci">std::function&lt; BooleanVariable(Model *)&gt; NewBooleanVariable()</div><div class="ttdef"><b>Definition:</b> <a href="integer_8h_source.html#l01598">integer.h:1598</a></div></div>
-<div class="ttc" id="anamespaceoperations__research_1_1sat_html_ad8af8f787d40f2ccb96beb5306c913c5"><div class="ttname"><a href="namespaceoperations__research_1_1sat.html#ad8af8f787d40f2ccb96beb5306c913c5">operations_research::sat::NewWeightedSum</a></div><div class="ttdeci">std::function&lt; IntegerVariable(Model *)&gt; NewWeightedSum(const VectorInt &amp;coefficients, const std::vector&lt; IntegerVariable &gt; &amp;vars)</div><div class="ttdef"><b>Definition:</b> <a href="integer__expr_8h_source.html#l00706">integer_expr.h:706</a></div></div>
+<div class="ttc" id="anamespaceoperations__research_1_1sat_html_a3cb95842130bc03177260ad20464bdbf"><div class="ttname"><a href="namespaceoperations__research_1_1sat.html#a3cb95842130bc03177260ad20464bdbf">operations_research::sat::NewBooleanVariable</a></div><div class="ttdeci">std::function&lt; BooleanVariable(Model *)&gt; NewBooleanVariable()</div><div class="ttdef"><b>Definition:</b> <a href="integer_8h_source.html#l01608">integer.h:1608</a></div></div>
+<div class="ttc" id="anamespaceoperations__research_1_1sat_html_ad8af8f787d40f2ccb96beb5306c913c5"><div class="ttname"><a href="namespaceoperations__research_1_1sat.html#ad8af8f787d40f2ccb96beb5306c913c5">operations_research::sat::NewWeightedSum</a></div><div class="ttdeci">std::function&lt; IntegerVariable(Model *)&gt; NewWeightedSum(const VectorInt &amp;coefficients, const std::vector&lt; IntegerVariable &gt; &amp;vars)</div><div class="ttdef"><b>Definition:</b> <a href="integer__expr_8h_source.html#l00712">integer_expr.h:712</a></div></div>
 </div><!-- fragment --> 
-<p class="definition">Definition at line <a class="el" href="sat_2model_8h_source.html#l00081">81</a> of file <a class="el" href="sat_2model_8h_source.html">sat/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat_2model_8h_source.html#l00085">85</a> of file <a class="el" href="sat_2model_8h_source.html">sat/model.h</a>.</p>
 
 </div>
 </div>
@@ -302,7 +302,7 @@ Public Member Functions</h2></td></tr>
 <p>This returns a non-singleton object owned by the model and created with the T(Model* model) constructor if it exist or the T() constructor otherwise. </p>
 <p >It is just a shortcut to new + <a class="el" href="classoperations__research_1_1sat_1_1_model.html#aee6e749f21ce871e8a4f306ba25f2c83" title="Gives ownership of a pointer to this model.">TakeOwnership()</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="sat_2model_8h_source.html#l00157">157</a> of file <a class="el" href="sat_2model_8h_source.html">sat/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat_2model_8h_source.html#l00161">161</a> of file <a class="el" href="sat_2model_8h_source.html">sat/model.h</a>.</p>
 
 </div>
 </div>
@@ -332,7 +332,7 @@ Public Member Functions</h2></td></tr>
 <p>Likes <a class="el" href="classoperations__research_1_1sat_1_1_model.html#afb0c03e2a6201677c266f8a7eb77c2dc" title="Returns an object of type T that is unique to this model (like a &quot;local&quot; singleton).">GetOrCreate()</a> but do not create the object if it is non-existing. </p>
 <p >This returns a const version of the object. </p>
 
-<p class="definition">Definition at line <a class="el" href="sat_2model_8h_source.html#l00127">127</a> of file <a class="el" href="sat_2model_8h_source.html">sat/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat_2model_8h_source.html#l00131">131</a> of file <a class="el" href="sat_2model_8h_source.html">sat/model.h</a>.</p>
 
 </div>
 </div>
@@ -362,7 +362,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Similar to <a class="el" href="classoperations__research_1_1sat_1_1_model.html#a7b8d774b566431b8932ba0f3c921ec7d" title="This makes it possible to have a nicer API on the client side, and it allows both of these forms:">Add()</a> but this is const. </p>
 
-<p class="definition">Definition at line <a class="el" href="sat_2model_8h_source.html#l00087">87</a> of file <a class="el" href="sat_2model_8h_source.html">sat/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat_2model_8h_source.html#l00091">91</a> of file <a class="el" href="sat_2model_8h_source.html">sat/model.h</a>.</p>
 
 </div>
 </div>
@@ -394,7 +394,7 @@ Public Member Functions</h2></td></tr>
 <p >This works a bit like in a dependency injection framework and allows to really easily wire all the classes that make up a solver together. For instance a constraint can depends on the LiteralTrail, or the <a class="el" href="classoperations__research_1_1sat_1_1_integer_trail.html">IntegerTrail</a> or both, it can depend on a Watcher class to register itself in order to be called when needed and so on.</p>
 <p >IMPORTANT: the Model* constructor functions shouldn't form a cycle between each other, otherwise this will crash the program. </p>
 
-<p class="definition">Definition at line <a class="el" href="sat_2model_8h_source.html#l00106">106</a> of file <a class="el" href="sat_2model_8h_source.html">sat/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat_2model_8h_source.html#l00110">110</a> of file <a class="el" href="sat_2model_8h_source.html">sat/model.h</a>.</p>
 
 </div>
 </div>
@@ -423,7 +423,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Same as <a class="el" href="classoperations__research_1_1sat_1_1_model.html#a37eb53a23cb596ef5d2e3bbc0fab70dc" title="Similar to Add() but this is const.">Get()</a>, but returns a mutable version of the object. </p>
 
-<p class="definition">Definition at line <a class="el" href="sat_2model_8h_source.html#l00136">136</a> of file <a class="el" href="sat_2model_8h_source.html">sat/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat_2model_8h_source.html#l00140">140</a> of file <a class="el" href="sat_2model_8h_source.html">sat/model.h</a>.</p>
 
 </div>
 </div>
@@ -450,7 +450,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat_2model_8h_source.html#l00175">175</a> of file <a class="el" href="sat_2model_8h_source.html">sat/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat_2model_8h_source.html#l00179">179</a> of file <a class="el" href="sat_2model_8h_source.html">sat/model.h</a>.</p>
 
 </div>
 </div>
@@ -481,7 +481,7 @@ Public Member Functions</h2></td></tr>
 <p>Register a non-owned class that will be "singleton" in the model. </p>
 <p >It is an error to call this on an already registered class. </p>
 
-<p class="definition">Definition at line <a class="el" href="sat_2model_8h_source.html#l00169">169</a> of file <a class="el" href="sat_2model_8h_source.html">sat/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat_2model_8h_source.html#l00173">173</a> of file <a class="el" href="sat_2model_8h_source.html">sat/model.h</a>.</p>
 
 </div>
 </div>
@@ -512,7 +512,7 @@ Public Member Functions</h2></td></tr>
 <p>Gives ownership of a pointer to this model. </p>
 <p >It will be destroyed when the model is. </p>
 
-<p class="definition">Definition at line <a class="el" href="sat_2model_8h_source.html#l00147">147</a> of file <a class="el" href="sat_2model_8h_source.html">sat/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat_2model_8h_source.html#l00151">151</a> of file <a class="el" href="sat_2model_8h_source.html">sat/model.h</a>.</p>
 
 </div>
 </div>

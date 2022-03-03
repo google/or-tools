@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.2</span>
+   &#160;<span id="projectnumber">9.3</span>
    </div>
   </td>
  </tr>
@@ -113,8 +113,8 @@ Functions</h2></td></tr>
 <tr class="separator:aa357501e62925d41514301a6fd211c3e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a29ff75f2188e0ac1c58fa4b0cf793a00"><td class="memItemLeft" align="right" valign="top">EncodingNode *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a29ff75f2188e0ac1c58fa4b0cf793a00">MergeAllNodesWithDeque</a> (Coefficient <a class="el" href="gscip__solver_8cc.html#a1ba5ca0f61f2fa13bd23bf0f89004f35">upper_bound</a>, const std::vector&lt; EncodingNode * &gt; &amp;<a class="el" href="routing__search_8cc.html#a6b7983ccd32c86cbbc3d4d9cda4cac17">nodes</a>, SatSolver *solver, std::deque&lt; EncodingNode &gt; *repository)</td></tr>
 <tr class="separator:a29ff75f2188e0ac1c58fa4b0cf793a00"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a58a0f80524e7d3e00ba0eb8e3ff27048"><td class="memItemLeft" align="right" valign="top">EncodingNode *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a58a0f80524e7d3e00ba0eb8e3ff27048">LazyMergeAllNodeWithPQ</a> (const std::vector&lt; EncodingNode * &gt; &amp;<a class="el" href="routing__search_8cc.html#a6b7983ccd32c86cbbc3d4d9cda4cac17">nodes</a>, SatSolver *solver, std::deque&lt; EncodingNode &gt; *repository)</td></tr>
-<tr class="separator:a58a0f80524e7d3e00ba0eb8e3ff27048"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a377e4b11a03d712029888c83b492c1cb"><td class="memItemLeft" align="right" valign="top">EncodingNode *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a377e4b11a03d712029888c83b492c1cb">LazyMergeAllNodeWithPQAndIncreaseLb</a> (Coefficient <a class="el" href="sat__solver_8cc.html#aa01147b1f07072d246c76dc85d69df7c">weight</a>, const std::vector&lt; EncodingNode * &gt; &amp;<a class="el" href="routing__search_8cc.html#a6b7983ccd32c86cbbc3d4d9cda4cac17">nodes</a>, SatSolver *solver, std::deque&lt; EncodingNode &gt; *repository)</td></tr>
+<tr class="separator:a377e4b11a03d712029888c83b492c1cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aea70549adb843d22d06bef763a0960c8"><td class="memItemLeft" align="right" valign="top">std::vector&lt; EncodingNode * &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#aea70549adb843d22d06bef763a0960c8">CreateInitialEncodingNodes</a> (const std::vector&lt; Literal &gt; &amp;literals, const std::vector&lt; Coefficient &gt; &amp;coeffs, Coefficient *offset, std::deque&lt; EncodingNode &gt; *repository)</td></tr>
 <tr class="separator:aea70549adb843d22d06bef763a0960c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a49120b088df93ff6c25f3cf357fdab0e"><td class="memItemLeft" align="right" valign="top">std::vector&lt; EncodingNode * &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a49120b088df93ff6c25f3cf357fdab0e">CreateInitialEncodingNodes</a> (const LinearObjective &amp;objective_proto, Coefficient *offset, std::deque&lt; EncodingNode &gt; *repository)</td></tr>
@@ -125,8 +125,10 @@ Functions</h2></td></tr>
 <tr class="separator:a1c9d74b9b207b6e5513334dd135a00a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad6c9cfad7e2fa7ae1bbff31720394436"><td class="memItemLeft" align="right" valign="top">Coefficient&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#ad6c9cfad7e2fa7ae1bbff31720394436">MaxNodeWeightSmallerThan</a> (const std::vector&lt; EncodingNode * &gt; &amp;<a class="el" href="routing__search_8cc.html#a6b7983ccd32c86cbbc3d4d9cda4cac17">nodes</a>, Coefficient <a class="el" href="gscip__solver_8cc.html#a1ba5ca0f61f2fa13bd23bf0f89004f35">upper_bound</a>)</td></tr>
 <tr class="separator:ad6c9cfad7e2fa7ae1bbff31720394436"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab87119f7f6691eca8af4c552828fc4c4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#ab87119f7f6691eca8af4c552828fc4c4">ProcessCore</a> (const std::vector&lt; Literal &gt; &amp;core, Coefficient min_weight, std::deque&lt; EncodingNode &gt; *repository, std::vector&lt; EncodingNode * &gt; *<a class="el" href="routing__search_8cc.html#a6b7983ccd32c86cbbc3d4d9cda4cac17">nodes</a>, SatSolver *solver)</td></tr>
-<tr class="separator:ab87119f7f6691eca8af4c552828fc4c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:accf33b62b1612d7a8abf3014a2df933c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#accf33b62b1612d7a8abf3014a2df933c">ProcessCore</a> (const std::vector&lt; Literal &gt; &amp;core, Coefficient min_weight, std::deque&lt; EncodingNode &gt; *repository, std::vector&lt; EncodingNode * &gt; *<a class="el" href="routing__search_8cc.html#a6b7983ccd32c86cbbc3d4d9cda4cac17">nodes</a>, SatSolver *solver)</td></tr>
+<tr class="separator:accf33b62b1612d7a8abf3014a2df933c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae6a6bf1bcc04b9d64b9d9f4178e34333"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#ae6a6bf1bcc04b9d64b9d9f4178e34333">ProcessCoreWithAlternativeEncoding</a> (const std::vector&lt; Literal &gt; &amp;core, Coefficient min_weight, std::deque&lt; EncodingNode &gt; *repository, std::vector&lt; EncodingNode * &gt; *<a class="el" href="routing__search_8cc.html#a6b7983ccd32c86cbbc3d4d9cda4cac17">nodes</a>, SatSolver *solver)</td></tr>
+<tr class="separator:ae6a6bf1bcc04b9d64b9d9f4178e34333"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->

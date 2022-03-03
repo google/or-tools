@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.2</span>
+   &#160;<span id="projectnumber">9.3</span>
    </div>
   </td>
  </tr>
@@ -108,6 +108,8 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_integer_search_helper.html">IntegerSearchHelper</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_continuous_prober.html">ContinuousProber</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="namespaces" name="namespaces"></a>
 Namespaces</h2></td></tr>
@@ -133,7 +135,7 @@ Functions</h2></td></tr>
 <tr class="separator:a71fa416b44768076a0e7dd7777ab433d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3f4df9da99787316bfb5029b7a6b92b7"><td class="memItemLeft" align="right" valign="top">IntegerLiteral&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a3f4df9da99787316bfb5029b7a6b92b7">GreaterOrEqualToMiddleValue</a> (IntegerVariable <a class="el" href="sat__solver_8cc.html#a8392bdc4ed570e6a95c7fca35b09f83f">var</a>, IntegerTrail *integer_trail)</td></tr>
 <tr class="separator:a3f4df9da99787316bfb5029b7a6b92b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a46cb4c07c4971a99724693260c92fd5b"><td class="memItemLeft" align="right" valign="top">IntegerLiteral&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a46cb4c07c4971a99724693260c92fd5b">SplitAroundGivenValue</a> (IntegerVariable <a class="el" href="sat__solver_8cc.html#a8392bdc4ed570e6a95c7fca35b09f83f">var</a>, IntegerValue <a class="el" href="matchers_8cc.html#a0b6f3694312803de4bea1fe97896294f">value</a>, Model *<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>)</td></tr>
+<tr class="memitem:a46cb4c07c4971a99724693260c92fd5b"><td class="memItemLeft" align="right" valign="top">IntegerLiteral&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a46cb4c07c4971a99724693260c92fd5b">SplitAroundGivenValue</a> (IntegerVariable <a class="el" href="sat__solver_8cc.html#a8392bdc4ed570e6a95c7fca35b09f83f">var</a>, IntegerValue <a class="el" href="primal__dual__hybrid__gradient_8cc.html#a730b1ea892f1f794d9bd5f16027acb63">value</a>, Model *<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>)</td></tr>
 <tr class="separator:a46cb4c07c4971a99724693260c92fd5b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac0774a1df651b83339b00fee0bde1cd8"><td class="memItemLeft" align="right" valign="top">IntegerLiteral&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#ac0774a1df651b83339b00fee0bde1cd8">SplitAroundLpValue</a> (IntegerVariable <a class="el" href="sat__solver_8cc.html#a8392bdc4ed570e6a95c7fca35b09f83f">var</a>, Model *<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>)</td></tr>
 <tr class="separator:ac0774a1df651b83339b00fee0bde1cd8"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -165,8 +167,8 @@ Functions</h2></td></tr>
 <tr class="separator:a527a6ee26b7f573def70daf9b2a9e577"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a04f971e1062428f1b552f1f6295da939"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::function&lt; BooleanOrIntegerLiteral()&gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a04f971e1062428f1b552f1f6295da939">CompleteHeuristics</a> (const std::vector&lt; std::function&lt; BooleanOrIntegerLiteral()&gt; &gt; &amp;incomplete_heuristics, const std::function&lt; BooleanOrIntegerLiteral()&gt; &amp;completion_heuristic)</td></tr>
 <tr class="separator:a04f971e1062428f1b552f1f6295da939"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abb234c348ddabb307c1170b3e4c7f2b9"><td class="memItemLeft" align="right" valign="top">SatSolver::Status&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#abb234c348ddabb307c1170b3e4c7f2b9">ContinuousProbing</a> (const std::vector&lt; BooleanVariable &gt; &amp;bool_vars, const std::vector&lt; IntegerVariable &gt; &amp;int_vars, const std::function&lt; void()&gt; &amp;feasible_solution_observer, Model *<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>)</td></tr>
-<tr class="separator:abb234c348ddabb307c1170b3e4c7f2b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aad67bfc8ef120726f03a65cdc2127b33"><td class="memItemLeft" align="right" valign="top">SatSolver::Status&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#aad67bfc8ef120726f03a65cdc2127b33">ContinuousProbing</a> (const std::vector&lt; BooleanVariable &gt; &amp;bool_vars, const std::vector&lt; IntegerVariable &gt; &amp;int_vars, Model *<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>)</td></tr>
+<tr class="separator:aad67bfc8ef120726f03a65cdc2127b33"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->

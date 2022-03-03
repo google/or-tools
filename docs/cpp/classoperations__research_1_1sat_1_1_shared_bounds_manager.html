@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.2</span>
+   &#160;<span id="projectnumber">9.3</span>
    </div>
   </td>
  </tr>
@@ -94,13 +94,13 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1sat_1_1_s
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="synchronization_8h_source.html#l00412">412</a> of file <a class="el" href="synchronization_8h_source.html">synchronization.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="synchronization_8h_source.html#l00425">425</a> of file <a class="el" href="synchronization_8h_source.html">synchronization.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a3d441656db0285860248717bb1a2b0fa"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_shared_bounds_manager.html#a3d441656db0285860248717bb1a2b0fa">SharedBoundsManager</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_cp_model_proto.html">CpModelProto</a> &amp;<a class="el" href="cp__model__solver_8cc.html#a6ac76d8a372013f67c4973012948ec84">model_proto</a>)</td></tr>
+<tr class="memitem:a3d441656db0285860248717bb1a2b0fa"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_shared_bounds_manager.html#a3d441656db0285860248717bb1a2b0fa">SharedBoundsManager</a> (const CpModelProto &amp;<a class="el" href="cp__model__solver_8cc.html#a6ac76d8a372013f67c4973012948ec84">model_proto</a>)</td></tr>
 <tr class="separator:a3d441656db0285860248717bb1a2b0fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3f15a4aecf4e250a86e70575430bd26a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_shared_bounds_manager.html#a3f15a4aecf4e250a86e70575430bd26a">ReportPotentialNewBounds</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_cp_model_proto.html">CpModelProto</a> &amp;<a class="el" href="cp__model__solver_8cc.html#a6ac76d8a372013f67c4973012948ec84">model_proto</a>, const std::string &amp;worker_name, const std::vector&lt; int &gt; &amp;variables, const std::vector&lt; int64_t &gt; &amp;new_lower_bounds, const std::vector&lt; int64_t &gt; &amp;new_upper_bounds)</td></tr>
+<tr class="memitem:a3f15a4aecf4e250a86e70575430bd26a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_shared_bounds_manager.html#a3f15a4aecf4e250a86e70575430bd26a">ReportPotentialNewBounds</a> (const CpModelProto &amp;<a class="el" href="cp__model__solver_8cc.html#a6ac76d8a372013f67c4973012948ec84">model_proto</a>, const std::string &amp;worker_name, const std::vector&lt; int &gt; &amp;variables, const std::vector&lt; int64_t &gt; &amp;new_lower_bounds, const std::vector&lt; int64_t &gt; &amp;new_upper_bounds)</td></tr>
 <tr class="separator:a3f15a4aecf4e250a86e70575430bd26a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a90862b99ea4a80e0aa1c9349394d5411"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_shared_bounds_manager.html#a90862b99ea4a80e0aa1c9349394d5411">FixVariablesFromPartialSolution</a> (const std::vector&lt; int64_t &gt; &amp;solution, const std::vector&lt; int &gt; &amp;variables_to_fix)</td></tr>
 <tr class="separator:a90862b99ea4a80e0aa1c9349394d5411"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -110,6 +110,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:afcfefe147ae58ecfb365be6edf3d1821"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9ca5b99b3550503ca7bad8418e133156"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_shared_bounds_manager.html#a9ca5b99b3550503ca7bad8418e133156">Synchronize</a> ()</td></tr>
 <tr class="separator:a9ca5b99b3550503ca7bad8418e133156"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4955aaa6092728842ec120f17232bcb2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_shared_bounds_manager.html#a4955aaa6092728842ec120f17232bcb2">LogStatistics</a> (<a class="el" href="classoperations__research_1_1_solver_logger.html">SolverLogger</a> *logger)</td></tr>
+<tr class="separator:a4955aaa6092728842ec120f17232bcb2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9dffc97760da61a60048b452f4a3e55f"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_shared_bounds_manager.html#a9dffc97760da61a60048b452f4a3e55f">NumBoundsExported</a> (const std::string &amp;worker_name)</td></tr>
+<tr class="separator:a9dffc97760da61a60048b452f4a3e55f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a3d441656db0285860248717bb1a2b0fa" name="a3d441656db0285860248717bb1a2b0fa"></a>
@@ -124,7 +128,7 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_shared_bounds_manager.html">SharedBoundsManager</a> </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_cp_model_proto.html">CpModelProto</a> &amp;&#160;</td>
+          <td class="paramtype">const CpModelProto &amp;&#160;</td>
           <td class="paramname"><em>model_proto</em></td><td>)</td>
           <td></td>
         </tr>
@@ -136,7 +140,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00703">703</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00746">746</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
 
 </div>
 </div>
@@ -167,7 +171,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00764">764</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00804">804</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
 
 </div>
 </div>
@@ -209,7 +213,47 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00827">827</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00867">867</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
+
+</div>
+</div>
+<a id="a4955aaa6092728842ec120f17232bcb2" name="a4955aaa6092728842ec120f17232bcb2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4955aaa6092728842ec120f17232bcb2">&#9670;&nbsp;</a></span>LogStatistics()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void LogStatistics </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1_solver_logger.html">SolverLogger</a> *&#160;</td>
+          <td class="paramname"><em>logger</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00883">883</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
+
+</div>
+</div>
+<a id="a9dffc97760da61a60048b452f4a3e55f" name="a9dffc97760da61a60048b452f4a3e55f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9dffc97760da61a60048b452f4a3e55f">&#9670;&nbsp;</a></span>NumBoundsExported()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int NumBoundsExported </td>
+          <td>(</td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>worker_name</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00894">894</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
 
 </div>
 </div>
@@ -228,7 +272,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00810">810</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00850">850</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
 
 </div>
 </div>
@@ -241,7 +285,7 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="memname">void ReportPotentialNewBounds </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_cp_model_proto.html">CpModelProto</a> &amp;&#160;</td>
+          <td class="paramtype">const CpModelProto &amp;&#160;</td>
           <td class="paramname"><em>model_proto</em>, </td>
         </tr>
         <tr>
@@ -276,7 +320,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00722">722</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00765">765</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
 
 </div>
 </div>
@@ -295,7 +339,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00797">797</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="synchronization_8cc_source.html#l00837">837</a> of file <a class="el" href="synchronization_8cc_source.html">synchronization.cc</a>.</p>
 
 </div>
 </div>

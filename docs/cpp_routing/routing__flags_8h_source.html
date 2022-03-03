@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 9.2</span>
+                <span id="sfml">Google OR-Tools 9.3</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -104,7 +104,7 @@ $(document).ready(function(){initNavTree('routing__flags_8h_source.html',''); in
 <div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span> </div>
 <div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span><span class="preprocessor">#include &quot;ortools/base/commandlineflags.h&quot;</span></div>
 <div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span><span class="preprocessor">#include &quot;ortools/base/integral_types.h&quot;</span></div>
-<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span><span class="preprocessor">#include &quot;<a class="code" href="routing__parameters_8pb_8h.html">ortools/constraint_solver/routing_parameters.pb.h</a>&quot;</span></div>
+<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span><span class="preprocessor">#include &quot;ortools/constraint_solver/routing_parameters.pb.h&quot;</span></div>
 <div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span> </div>
 <div class="line"><a id="l00025" name="l00025"></a><span class="lineno"><a class="line" href="routing__flags_8h.html#adf49ef78ca9408e805e49577a51eb71d">   25</a></span><a class="code hl_function" href="routing__flags_8h.html#adf49ef78ca9408e805e49577a51eb71d">ABSL_DECLARE_FLAG</a>(<span class="keywordtype">bool</span>, routing_no_lns);</div>
 <div class="line"><a id="l00026" name="l00026"></a><span class="lineno"><a class="line" href="routing__flags_8h.html#a76e2712fba725e2cd40b27262ae070b7">   26</a></span><a class="code hl_function" href="routing__flags_8h.html#adf49ef78ca9408e805e49577a51eb71d">ABSL_DECLARE_FLAG</a>(<span class="keywordtype">bool</span>, routing_no_fullpathlns);</div>
@@ -159,21 +159,18 @@ $(document).ready(function(){initNavTree('routing__flags_8h_source.html',''); in
 <div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span> </div>
 <div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceoperations__research.html">operations_research</a> {</div>
 <div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span> </div>
-<div class="line"><a id="l00086" name="l00086"></a><span class="lineno"><a class="line" href="namespaceoperations__research.html#ae39a6c4d8ba890ec5150ea91a7aad643">   86</a></span><a class="code hl_class" href="classoperations__research_1_1_routing_model_parameters.html">RoutingModelParameters</a> <a class="code hl_function" href="namespaceoperations__research.html#ae39a6c4d8ba890ec5150ea91a7aad643">BuildModelParametersFromFlags</a>();</div>
+<div class="line"><a id="l00086" name="l00086"></a><span class="lineno"><a class="line" href="namespaceoperations__research.html#ae39a6c4d8ba890ec5150ea91a7aad643">   86</a></span>RoutingModelParameters <a class="code hl_function" href="namespaceoperations__research.html#ae39a6c4d8ba890ec5150ea91a7aad643">BuildModelParametersFromFlags</a>();</div>
 <div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span> </div>
 <div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span><span class="comment">// TODO(user): Make this return a StatusOr, verifying that the flags</span></div>
-<div class="line"><a id="l00091" name="l00091"></a><span class="lineno"><a class="line" href="namespaceoperations__research.html#a95da1d3a46432afd40024f79279a48b2">   91</a></span><span class="comment"></span><a class="code hl_class" href="classoperations__research_1_1_routing_search_parameters.html">RoutingSearchParameters</a> <a class="code hl_function" href="namespaceoperations__research.html#a95da1d3a46432afd40024f79279a48b2">BuildSearchParametersFromFlags</a>();</div>
+<div class="line"><a id="l00091" name="l00091"></a><span class="lineno"><a class="line" href="namespaceoperations__research.html#a95da1d3a46432afd40024f79279a48b2">   91</a></span><span class="comment"></span>RoutingSearchParameters <a class="code hl_function" href="namespaceoperations__research.html#a95da1d3a46432afd40024f79279a48b2">BuildSearchParametersFromFlags</a>();</div>
 <div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span> </div>
 <div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span>}  <span class="comment">// namespace operations_research</span></div>
 <div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span> </div>
 <div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span><span class="preprocessor">#endif  </span><span class="comment">// OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_FLAGS_H_</span></div>
-<div class="ttc" id="aclassoperations__research_1_1_routing_model_parameters_html"><div class="ttname"><a href="classoperations__research_1_1_routing_model_parameters.html">operations_research::RoutingModelParameters</a></div><div class="ttdef"><b>Definition:</b> <a href="routing__parameters_8pb_8h_source.html#l01449">routing_parameters.pb.h:1450</a></div></div>
-<div class="ttc" id="aclassoperations__research_1_1_routing_search_parameters_html"><div class="ttname"><a href="classoperations__research_1_1_routing_search_parameters.html">operations_research::RoutingSearchParameters</a></div><div class="ttdef"><b>Definition:</b> <a href="routing__parameters_8pb_8h_source.html#l00767">routing_parameters.pb.h:768</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_html"><div class="ttname"><a href="namespaceoperations__research.html">operations_research</a></div><div class="ttdoc">Collection of objects used to extend the Constraint Solver library.</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solver_8h_source.html#l00109">constraint_solver.h:109</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_html_a95da1d3a46432afd40024f79279a48b2"><div class="ttname"><a href="namespaceoperations__research.html#a95da1d3a46432afd40024f79279a48b2">operations_research::BuildSearchParametersFromFlags</a></div><div class="ttdeci">RoutingSearchParameters BuildSearchParametersFromFlags()</div><div class="ttdoc">Builds routing search parameters from flags.</div></div>
 <div class="ttc" id="anamespaceoperations__research_html_ae39a6c4d8ba890ec5150ea91a7aad643"><div class="ttname"><a href="namespaceoperations__research.html#ae39a6c4d8ba890ec5150ea91a7aad643">operations_research::BuildModelParametersFromFlags</a></div><div class="ttdeci">RoutingModelParameters BuildModelParametersFromFlags()</div><div class="ttdoc">Builds routing search parameters from flags.</div></div>
 <div class="ttc" id="arouting__flags_8h_html_adf49ef78ca9408e805e49577a51eb71d"><div class="ttname"><a href="routing__flags_8h.html#adf49ef78ca9408e805e49577a51eb71d">ABSL_DECLARE_FLAG</a></div><div class="ttdeci">ABSL_DECLARE_FLAG(bool, routing_no_lns)</div><div class="ttdoc">Neighborhood activation/deactivation.</div></div>
-<div class="ttc" id="arouting__parameters_8pb_8h_html"><div class="ttname"><a href="routing__parameters_8pb_8h.html">routing_parameters.pb.h</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
         </div>

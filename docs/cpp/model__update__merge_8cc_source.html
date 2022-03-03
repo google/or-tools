@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.2</span>
+   &#160;<span id="projectnumber">9.3</span>
    </div>
   </td>
  </tr>
@@ -110,9 +110,9 @@ $(document).ready(function(){initNavTree('model__update__merge_8cc_source.html',
 <div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span><span class="preprocessor">#include &lt;string&gt;</span></div>
 <div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span><span class="preprocessor">#include &lt;utility&gt;</span></div>
 <div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span> </div>
-<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span><span class="preprocessor">#include &quot;<a class="code" href="integral__types_8h.html">ortools/base/integral_types.h</a>&quot;</span></div>
-<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span><span class="preprocessor">#include &quot;<a class="code" href="base_2logging_8h.html">ortools/base/logging.h</a>&quot;</span></div>
-<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span><span class="preprocessor">#include &quot;absl/container/flat_hash_set.h&quot;</span></div>
+<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span><span class="preprocessor">#include &quot;absl/container/flat_hash_set.h&quot;</span></div>
+<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span><span class="preprocessor">#include &quot;<a class="code" href="integral__types_8h.html">ortools/base/integral_types.h</a>&quot;</span></div>
+<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span><span class="preprocessor">#include &quot;<a class="code" href="base_2logging_8h.html">ortools/base/logging.h</a>&quot;</span></div>
 <div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span><span class="preprocessor">#include &quot;<a class="code" href="sparse__vector__view_8h.html">ortools/math_opt/core/sparse_vector_view.h</a>&quot;</span></div>
 <div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span><span class="preprocessor">#include &quot;ortools/math_opt/model.pb.h&quot;</span></div>
 <div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span><span class="preprocessor">#include &quot;ortools/math_opt/model_update.pb.h&quot;</span></div>
@@ -146,8 +146,8 @@ $(document).ready(function(){initNavTree('model__update__merge_8cc_source.html',
 <div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>  <span class="comment">//</span></div>
 <div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>  <span class="comment">// Thus we create here the list of indices to ignore when filtering updates</span></div>
 <div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>  <span class="comment">// for both variables and linear constraints.</span></div>
-<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>  google::protobuf::RepeatedField&lt;int64_t&gt; from_deleted_and_into_new_variable_ids =</div>
-<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>      from_new.deleted_variable_ids();</div>
+<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>  google::protobuf::RepeatedField&lt;int64_t&gt;</div>
+<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>      from_deleted_and_into_new_variable_ids = from_new.deleted_variable_ids();</div>
 <div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>  from_deleted_and_into_new_variable_ids.MergeFrom(</div>
 <div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>      into_old.new_variables().ids());</div>
 <div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span> </div>
@@ -304,164 +304,165 @@ $(document).ready(function(){initNavTree('model__update__merge_8cc_source.html',
 <div class="line"><a id="l00213" name="l00213"></a><span class="lineno">  213</span>  ids.Truncate(next_insertion_point);</div>
 <div class="line"><a id="l00214" name="l00214"></a><span class="lineno">  214</span>}</div>
 <div class="line"><a id="l00215" name="l00215"></a><span class="lineno">  215</span> </div>
-<div class="line"><a id="l00216" name="l00216"></a><span class="lineno"><a class="line" href="namespaceoperations__research_1_1math__opt_1_1internal.html#a5e96ec6d1d9277e9d24a42105047246d">  216</a></span><span class="keywordtype">void</span> <a class="code hl_function" href="namespaceoperations__research_1_1math__opt_1_1internal.html#a5e96ec6d1d9277e9d24a42105047246d">MergeIntoSortedIds</a>(<span class="keyword">const</span> google::protobuf::RepeatedField&lt;int64_t&gt;&amp; from_new,</div>
-<div class="line"><a id="l00217" name="l00217"></a><span class="lineno">  217</span>                        google::protobuf::RepeatedField&lt;int64_t&gt;&amp; into_old,</div>
-<div class="line"><a id="l00218" name="l00218"></a><span class="lineno">  218</span>                        <span class="keyword">const</span> google::protobuf::RepeatedField&lt;int64_t&gt;&amp; deleted) {</div>
-<div class="line"><a id="l00219" name="l00219"></a><span class="lineno">  219</span>  google::protobuf::RepeatedField&lt;int64_t&gt; result;</div>
-<div class="line"><a id="l00220" name="l00220"></a><span class="lineno">  220</span> </div>
-<div class="line"><a id="l00221" name="l00221"></a><span class="lineno">  221</span>  <span class="keywordtype">int</span> from_new_i = 0;</div>
-<div class="line"><a id="l00222" name="l00222"></a><span class="lineno">  222</span>  <span class="keywordtype">int</span> into_old_i = 0;</div>
-<div class="line"><a id="l00223" name="l00223"></a><span class="lineno">  223</span>  <span class="keywordtype">int</span> deleted_i = 0;</div>
-<div class="line"><a id="l00224" name="l00224"></a><span class="lineno">  224</span> </div>
-<div class="line"><a id="l00225" name="l00225"></a><span class="lineno">  225</span>  <span class="comment">// Functions that adds the input id to the result if it is not in deleted. It</span></div>
-<div class="line"><a id="l00226" name="l00226"></a><span class="lineno">  226</span>  <span class="comment">// updates deleted_i as a side effect too.</span></div>
-<div class="line"><a id="l00227" name="l00227"></a><span class="lineno">  227</span>  <span class="keyword">const</span> <span class="keyword">auto</span> add_if_not_deleted = [&amp;](<span class="keyword">const</span> int64_t id) {</div>
-<div class="line"><a id="l00228" name="l00228"></a><span class="lineno">  228</span>    <span class="keywordflow">while</span> (deleted_i &lt; deleted.size() &amp;&amp; deleted[deleted_i] &lt; id) {</div>
-<div class="line"><a id="l00229" name="l00229"></a><span class="lineno">  229</span>      ++deleted_i;</div>
-<div class="line"><a id="l00230" name="l00230"></a><span class="lineno">  230</span>    }</div>
-<div class="line"><a id="l00231" name="l00231"></a><span class="lineno">  231</span>    <span class="keywordflow">if</span> (deleted_i == deleted.size() || deleted[deleted_i] != id) {</div>
-<div class="line"><a id="l00232" name="l00232"></a><span class="lineno">  232</span>      result.Add(<span class="keywordtype">id</span>);</div>
-<div class="line"><a id="l00233" name="l00233"></a><span class="lineno">  233</span>    }</div>
-<div class="line"><a id="l00234" name="l00234"></a><span class="lineno">  234</span>  };</div>
-<div class="line"><a id="l00235" name="l00235"></a><span class="lineno">  235</span> </div>
-<div class="line"><a id="l00236" name="l00236"></a><span class="lineno">  236</span>  <span class="keywordflow">while</span> (from_new_i &lt; from_new.size() &amp;&amp; into_old_i &lt; into_old.size()) {</div>
-<div class="line"><a id="l00237" name="l00237"></a><span class="lineno">  237</span>    <span class="keywordflow">if</span> (from_new[from_new_i] &lt; into_old[into_old_i]) {</div>
-<div class="line"><a id="l00238" name="l00238"></a><span class="lineno">  238</span>      add_if_not_deleted(from_new[from_new_i]);</div>
-<div class="line"><a id="l00239" name="l00239"></a><span class="lineno">  239</span>      ++from_new_i;</div>
-<div class="line"><a id="l00240" name="l00240"></a><span class="lineno">  240</span>    } <span class="keywordflow">else</span> <span class="keywordflow">if</span> (from_new[from_new_i] &gt; into_old[into_old_i]) {</div>
-<div class="line"><a id="l00241" name="l00241"></a><span class="lineno">  241</span>      add_if_not_deleted(into_old[into_old_i]);</div>
-<div class="line"><a id="l00242" name="l00242"></a><span class="lineno">  242</span>      ++into_old_i;</div>
-<div class="line"><a id="l00243" name="l00243"></a><span class="lineno">  243</span>    } <span class="keywordflow">else</span> {  <span class="comment">// from_new[from_new_i] == into_old[into_old_i]</span></div>
-<div class="line"><a id="l00244" name="l00244"></a><span class="lineno">  244</span>      add_if_not_deleted(from_new[from_new_i]);</div>
-<div class="line"><a id="l00245" name="l00245"></a><span class="lineno">  245</span>      ++from_new_i;</div>
-<div class="line"><a id="l00246" name="l00246"></a><span class="lineno">  246</span>      ++into_old_i;</div>
-<div class="line"><a id="l00247" name="l00247"></a><span class="lineno">  247</span>    }</div>
-<div class="line"><a id="l00248" name="l00248"></a><span class="lineno">  248</span>  }</div>
-<div class="line"><a id="l00249" name="l00249"></a><span class="lineno">  249</span> </div>
-<div class="line"><a id="l00250" name="l00250"></a><span class="lineno">  250</span>  <span class="comment">// At this point either from_new_i == from_new.size() or to_i == to.size() or</span></div>
-<div class="line"><a id="l00251" name="l00251"></a><span class="lineno">  251</span>  <span class="comment">// both. And the one that is not empty, if it exists, has elements greater</span></div>
-<div class="line"><a id="l00252" name="l00252"></a><span class="lineno">  252</span>  <span class="comment">// than all other elements already inserted.</span></div>
-<div class="line"><a id="l00253" name="l00253"></a><span class="lineno">  253</span>  <span class="keywordflow">for</span> (; from_new_i &lt; from_new.size(); ++from_new_i) {</div>
-<div class="line"><a id="l00254" name="l00254"></a><span class="lineno">  254</span>    add_if_not_deleted(from_new[from_new_i]);</div>
-<div class="line"><a id="l00255" name="l00255"></a><span class="lineno">  255</span>  }</div>
-<div class="line"><a id="l00256" name="l00256"></a><span class="lineno">  256</span>  <span class="keywordflow">for</span> (; into_old_i &lt; into_old.size(); ++into_old_i) {</div>
-<div class="line"><a id="l00257" name="l00257"></a><span class="lineno">  257</span>    add_if_not_deleted(into_old[into_old_i]);</div>
-<div class="line"><a id="l00258" name="l00258"></a><span class="lineno">  258</span>  }</div>
-<div class="line"><a id="l00259" name="l00259"></a><span class="lineno">  259</span> </div>
-<div class="line"><a id="l00260" name="l00260"></a><span class="lineno">  260</span>  into_old.Swap(&amp;result);</div>
-<div class="line"><a id="l00261" name="l00261"></a><span class="lineno">  261</span>}</div>
-<div class="line"><a id="l00262" name="l00262"></a><span class="lineno">  262</span> </div>
-<div class="line"><a id="l00263" name="l00263"></a><span class="lineno"><a class="line" href="namespaceoperations__research_1_1math__opt_1_1internal.html#a2055bc6211807e6ce6192ef8f30bc583">  263</a></span><span class="keywordtype">void</span> <a class="code hl_function" href="namespaceoperations__research_1_1math__opt_1_1internal.html#a2055bc6211807e6ce6192ef8f30bc583">MergeIntoSparseDoubleMatrix</a>(</div>
-<div class="line"><a id="l00264" name="l00264"></a><span class="lineno">  264</span>    <span class="keyword">const</span> SparseDoubleMatrixProto&amp; from_new, SparseDoubleMatrixProto&amp; into_old,</div>
-<div class="line"><a id="l00265" name="l00265"></a><span class="lineno">  265</span>    <span class="keyword">const</span> google::protobuf::RepeatedField&lt;int64_t&gt;&amp; deleted_rows,</div>
-<div class="line"><a id="l00266" name="l00266"></a><span class="lineno">  266</span>    <span class="keyword">const</span> google::protobuf::RepeatedField&lt;int64_t&gt;&amp; deleted_columns) {</div>
-<div class="line"><a id="l00267" name="l00267"></a><span class="lineno">  267</span>  SparseDoubleMatrixProto result;</div>
-<div class="line"><a id="l00268" name="l00268"></a><span class="lineno">  268</span>  <span class="keyword">auto</span>&amp; result_row_ids = *result.mutable_row_ids();</div>
-<div class="line"><a id="l00269" name="l00269"></a><span class="lineno">  269</span>  <span class="keyword">auto</span>&amp; result_column_ids = *result.mutable_column_ids();</div>
-<div class="line"><a id="l00270" name="l00270"></a><span class="lineno">  270</span>  <span class="keyword">auto</span>&amp; result_coefficients = *result.mutable_coefficients();</div>
-<div class="line"><a id="l00271" name="l00271"></a><span class="lineno">  271</span> </div>
-<div class="line"><a id="l00272" name="l00272"></a><span class="lineno">  272</span>  <span class="comment">// Contrary to rows that are traversed in order (the matrix is using row-major</span></div>
-<div class="line"><a id="l00273" name="l00273"></a><span class="lineno">  273</span>  <span class="comment">// order), columns are not. Thus we would have to start the iteration on</span></div>
-<div class="line"><a id="l00274" name="l00274"></a><span class="lineno">  274</span>  <span class="comment">// deleted_columns for each new row of the matrix if we wanted to use the same</span></div>
-<div class="line"><a id="l00275" name="l00275"></a><span class="lineno">  275</span>  <span class="comment">// approach as with rows. This would be O(num_rows * num_deleted_columns).</span></div>
-<div class="line"><a id="l00276" name="l00276"></a><span class="lineno">  276</span>  <span class="comment">//</span></div>
-<div class="line"><a id="l00277" name="l00277"></a><span class="lineno">  277</span>  <span class="comment">// Here we use a hash-set to be O(num_matrix_elements +</span></div>
-<div class="line"><a id="l00278" name="l00278"></a><span class="lineno">  278</span>  <span class="comment">// num_deleted_columns). The downside is that we consumed</span></div>
-<div class="line"><a id="l00279" name="l00279"></a><span class="lineno">  279</span>  <span class="comment">// O(num_deleted_columns) additional memory.</span></div>
-<div class="line"><a id="l00280" name="l00280"></a><span class="lineno">  280</span>  <span class="comment">//</span></div>
-<div class="line"><a id="l00281" name="l00281"></a><span class="lineno">  281</span>  <span class="comment">// We could have used binary search that would be O(num_matrix_elements *</span></div>
-<div class="line"><a id="l00282" name="l00282"></a><span class="lineno">  282</span>  <span class="comment">// lg(num_deleted_columns)) but without additional memory.</span></div>
-<div class="line"><a id="l00283" name="l00283"></a><span class="lineno">  283</span>  <span class="keyword">const</span> absl::flat_hash_set&lt;int64_t&gt; deleted_columns_set(</div>
-<div class="line"><a id="l00284" name="l00284"></a><span class="lineno">  284</span>      deleted_columns.begin(), deleted_columns.end());</div>
-<div class="line"><a id="l00285" name="l00285"></a><span class="lineno">  285</span> </div>
-<div class="line"><a id="l00286" name="l00286"></a><span class="lineno">  286</span>  <span class="keywordtype">int</span> from_new_i = 0;</div>
-<div class="line"><a id="l00287" name="l00287"></a><span class="lineno">  287</span>  <span class="keywordtype">int</span> into_old_i = 0;</div>
-<div class="line"><a id="l00288" name="l00288"></a><span class="lineno">  288</span>  <span class="keywordtype">int</span> deleted_rows_i = 0;</div>
-<div class="line"><a id="l00289" name="l00289"></a><span class="lineno">  289</span> </div>
-<div class="line"><a id="l00290" name="l00290"></a><span class="lineno">  290</span>  <span class="comment">// Functions that adds the input tuple (row_id, col_id, coefficient) to the</span></div>
-<div class="line"><a id="l00291" name="l00291"></a><span class="lineno">  291</span>  <span class="comment">// result if the input row_id and col_id are not in deleted_rows or</span></div>
-<div class="line"><a id="l00292" name="l00292"></a><span class="lineno">  292</span>  <span class="comment">// deleted_columns. It updates deleted_rows_i and deleted_columns_i as a side</span></div>
-<div class="line"><a id="l00293" name="l00293"></a><span class="lineno">  293</span>  <span class="comment">// effect too.</span></div>
-<div class="line"><a id="l00294" name="l00294"></a><span class="lineno">  294</span>  <span class="keyword">const</span> <span class="keyword">auto</span> add_if_not_deleted = [&amp;](<span class="keyword">const</span> int64_t row_id,</div>
-<div class="line"><a id="l00295" name="l00295"></a><span class="lineno">  295</span>                                      <span class="keyword">const</span> int64_t col_id,</div>
-<div class="line"><a id="l00296" name="l00296"></a><span class="lineno">  296</span>                                      <span class="keyword">const</span> <span class="keywordtype">double</span> <a class="code hl_variable" href="routing__filters_8cc.html#a8e4ee19dee0e00541dbe9bbc83d806ba">coefficient</a>) {</div>
-<div class="line"><a id="l00297" name="l00297"></a><span class="lineno">  297</span>    <span class="keywordflow">while</span> (deleted_rows_i &lt; deleted_rows.size() &amp;&amp;</div>
-<div class="line"><a id="l00298" name="l00298"></a><span class="lineno">  298</span>           deleted_rows[deleted_rows_i] &lt; row_id) {</div>
-<div class="line"><a id="l00299" name="l00299"></a><span class="lineno">  299</span>      ++deleted_rows_i;</div>
-<div class="line"><a id="l00300" name="l00300"></a><span class="lineno">  300</span>    }</div>
-<div class="line"><a id="l00301" name="l00301"></a><span class="lineno">  301</span>    <span class="keywordflow">if</span> ((deleted_rows_i != deleted_rows.size() &amp;&amp;</div>
-<div class="line"><a id="l00302" name="l00302"></a><span class="lineno">  302</span>         deleted_rows[deleted_rows_i] == row_id) ||</div>
-<div class="line"><a id="l00303" name="l00303"></a><span class="lineno">  303</span>        deleted_columns_set.contains(col_id)) {</div>
-<div class="line"><a id="l00304" name="l00304"></a><span class="lineno">  304</span>      <span class="keywordflow">return</span>;</div>
-<div class="line"><a id="l00305" name="l00305"></a><span class="lineno">  305</span>    }</div>
-<div class="line"><a id="l00306" name="l00306"></a><span class="lineno">  306</span>    result_row_ids.Add(row_id);</div>
-<div class="line"><a id="l00307" name="l00307"></a><span class="lineno">  307</span>    result_column_ids.Add(col_id);</div>
-<div class="line"><a id="l00308" name="l00308"></a><span class="lineno">  308</span>    result_coefficients.Add(<a class="code hl_variable" href="routing__filters_8cc.html#a8e4ee19dee0e00541dbe9bbc83d806ba">coefficient</a>);</div>
-<div class="line"><a id="l00309" name="l00309"></a><span class="lineno">  309</span>  };</div>
-<div class="line"><a id="l00310" name="l00310"></a><span class="lineno">  310</span> </div>
-<div class="line"><a id="l00311" name="l00311"></a><span class="lineno">  311</span>  <span class="keywordflow">while</span> (from_new_i &lt; from_new.row_ids_size() &amp;&amp;</div>
-<div class="line"><a id="l00312" name="l00312"></a><span class="lineno">  312</span>         into_old_i &lt; into_old.row_ids_size()) {</div>
-<div class="line"><a id="l00313" name="l00313"></a><span class="lineno">  313</span>    <span class="comment">// Matrices are in row-major order and std::pair comparison is</span></div>
-<div class="line"><a id="l00314" name="l00314"></a><span class="lineno">  314</span>    <span class="comment">// lexicographical, thus matrices are sorted in the natural order of pairs</span></div>
-<div class="line"><a id="l00315" name="l00315"></a><span class="lineno">  315</span>    <span class="comment">// of coordinates (row, col).</span></div>
-<div class="line"><a id="l00316" name="l00316"></a><span class="lineno">  316</span>    <span class="keyword">const</span> <span class="keyword">auto</span> from_new_coordinates = std::make_pair(</div>
-<div class="line"><a id="l00317" name="l00317"></a><span class="lineno">  317</span>        from_new.row_ids(from_new_i), from_new.column_ids(from_new_i));</div>
-<div class="line"><a id="l00318" name="l00318"></a><span class="lineno">  318</span>    <span class="keyword">const</span> <span class="keyword">auto</span> into_old_coordinates = std::make_pair(</div>
-<div class="line"><a id="l00319" name="l00319"></a><span class="lineno">  319</span>        into_old.row_ids(into_old_i), into_old.column_ids(into_old_i));</div>
-<div class="line"><a id="l00320" name="l00320"></a><span class="lineno">  320</span>    <span class="keywordflow">if</span> (from_new_coordinates &lt; into_old_coordinates) {</div>
-<div class="line"><a id="l00321" name="l00321"></a><span class="lineno">  321</span>      add_if_not_deleted(from_new_coordinates.first,</div>
-<div class="line"><a id="l00322" name="l00322"></a><span class="lineno">  322</span>                         from_new_coordinates.second,</div>
-<div class="line"><a id="l00323" name="l00323"></a><span class="lineno">  323</span>                         from_new.coefficients(from_new_i));</div>
-<div class="line"><a id="l00324" name="l00324"></a><span class="lineno">  324</span>      ++from_new_i;</div>
-<div class="line"><a id="l00325" name="l00325"></a><span class="lineno">  325</span>    } <span class="keywordflow">else</span> <span class="keywordflow">if</span> (from_new_coordinates &gt; into_old_coordinates) {</div>
-<div class="line"><a id="l00326" name="l00326"></a><span class="lineno">  326</span>      add_if_not_deleted(into_old_coordinates.first,</div>
-<div class="line"><a id="l00327" name="l00327"></a><span class="lineno">  327</span>                         into_old_coordinates.second,</div>
-<div class="line"><a id="l00328" name="l00328"></a><span class="lineno">  328</span>                         into_old.coefficients(into_old_i));</div>
-<div class="line"><a id="l00329" name="l00329"></a><span class="lineno">  329</span>      ++into_old_i;</div>
-<div class="line"><a id="l00330" name="l00330"></a><span class="lineno">  330</span>    } <span class="keywordflow">else</span> {  <span class="comment">// from_new_coordinates == into_old_coordinates</span></div>
-<div class="line"><a id="l00331" name="l00331"></a><span class="lineno">  331</span>      add_if_not_deleted(from_new_coordinates.first,</div>
-<div class="line"><a id="l00332" name="l00332"></a><span class="lineno">  332</span>                         from_new_coordinates.second,</div>
-<div class="line"><a id="l00333" name="l00333"></a><span class="lineno">  333</span>                         from_new.coefficients(from_new_i));</div>
-<div class="line"><a id="l00334" name="l00334"></a><span class="lineno">  334</span>      ++from_new_i;</div>
-<div class="line"><a id="l00335" name="l00335"></a><span class="lineno">  335</span>      ++into_old_i;</div>
-<div class="line"><a id="l00336" name="l00336"></a><span class="lineno">  336</span>    }</div>
-<div class="line"><a id="l00337" name="l00337"></a><span class="lineno">  337</span>  }</div>
-<div class="line"><a id="l00338" name="l00338"></a><span class="lineno">  338</span> </div>
-<div class="line"><a id="l00339" name="l00339"></a><span class="lineno">  339</span>  <span class="comment">// At this point either from_new_i == from_new.row_ids_size() or</span></div>
-<div class="line"><a id="l00340" name="l00340"></a><span class="lineno">  340</span>  <span class="comment">// to_i == to.row_ids_size() (or both). And the one that is not empty, if it</span></div>
-<div class="line"><a id="l00341" name="l00341"></a><span class="lineno">  341</span>  <span class="comment">// exists, has elements greater than all other elements already inserted.</span></div>
-<div class="line"><a id="l00342" name="l00342"></a><span class="lineno">  342</span>  <span class="keywordflow">for</span> (; from_new_i &lt; from_new.row_ids_size(); ++from_new_i) {</div>
-<div class="line"><a id="l00343" name="l00343"></a><span class="lineno">  343</span>    add_if_not_deleted(from_new.row_ids(from_new_i),</div>
-<div class="line"><a id="l00344" name="l00344"></a><span class="lineno">  344</span>                       from_new.column_ids(from_new_i),</div>
-<div class="line"><a id="l00345" name="l00345"></a><span class="lineno">  345</span>                       from_new.coefficients(from_new_i));</div>
-<div class="line"><a id="l00346" name="l00346"></a><span class="lineno">  346</span>  }</div>
-<div class="line"><a id="l00347" name="l00347"></a><span class="lineno">  347</span>  <span class="keywordflow">for</span> (; into_old_i &lt; into_old.row_ids_size(); ++into_old_i) {</div>
-<div class="line"><a id="l00348" name="l00348"></a><span class="lineno">  348</span>    add_if_not_deleted(into_old.row_ids(into_old_i),</div>
-<div class="line"><a id="l00349" name="l00349"></a><span class="lineno">  349</span>                       into_old.column_ids(into_old_i),</div>
-<div class="line"><a id="l00350" name="l00350"></a><span class="lineno">  350</span>                       into_old.coefficients(into_old_i));</div>
-<div class="line"><a id="l00351" name="l00351"></a><span class="lineno">  351</span>  }</div>
-<div class="line"><a id="l00352" name="l00352"></a><span class="lineno">  352</span> </div>
-<div class="line"><a id="l00353" name="l00353"></a><span class="lineno">  353</span>  into_old.Swap(&amp;result);</div>
-<div class="line"><a id="l00354" name="l00354"></a><span class="lineno">  354</span>}</div>
-<div class="line"><a id="l00355" name="l00355"></a><span class="lineno">  355</span> </div>
-<div class="line"><a id="l00356" name="l00356"></a><span class="lineno">  356</span>}  <span class="comment">// namespace internal</span></div>
-<div class="line"><a id="l00357" name="l00357"></a><span class="lineno">  357</span>}  <span class="comment">// namespace math_opt</span></div>
-<div class="line"><a id="l00358" name="l00358"></a><span class="lineno">  358</span>}  <span class="comment">// namespace operations_research</span></div>
+<div class="line"><a id="l00216" name="l00216"></a><span class="lineno"><a class="line" href="namespaceoperations__research_1_1math__opt_1_1internal.html#a5e96ec6d1d9277e9d24a42105047246d">  216</a></span><span class="keywordtype">void</span> <a class="code hl_function" href="namespaceoperations__research_1_1math__opt_1_1internal.html#a5e96ec6d1d9277e9d24a42105047246d">MergeIntoSortedIds</a>(</div>
+<div class="line"><a id="l00217" name="l00217"></a><span class="lineno">  217</span>    <span class="keyword">const</span> google::protobuf::RepeatedField&lt;int64_t&gt;&amp; from_new,</div>
+<div class="line"><a id="l00218" name="l00218"></a><span class="lineno">  218</span>    google::protobuf::RepeatedField&lt;int64_t&gt;&amp; into_old,</div>
+<div class="line"><a id="l00219" name="l00219"></a><span class="lineno">  219</span>    <span class="keyword">const</span> google::protobuf::RepeatedField&lt;int64_t&gt;&amp; deleted) {</div>
+<div class="line"><a id="l00220" name="l00220"></a><span class="lineno">  220</span>  google::protobuf::RepeatedField&lt;int64_t&gt; result;</div>
+<div class="line"><a id="l00221" name="l00221"></a><span class="lineno">  221</span> </div>
+<div class="line"><a id="l00222" name="l00222"></a><span class="lineno">  222</span>  <span class="keywordtype">int</span> from_new_i = 0;</div>
+<div class="line"><a id="l00223" name="l00223"></a><span class="lineno">  223</span>  <span class="keywordtype">int</span> into_old_i = 0;</div>
+<div class="line"><a id="l00224" name="l00224"></a><span class="lineno">  224</span>  <span class="keywordtype">int</span> deleted_i = 0;</div>
+<div class="line"><a id="l00225" name="l00225"></a><span class="lineno">  225</span> </div>
+<div class="line"><a id="l00226" name="l00226"></a><span class="lineno">  226</span>  <span class="comment">// Functions that adds the input id to the result if it is not in deleted. It</span></div>
+<div class="line"><a id="l00227" name="l00227"></a><span class="lineno">  227</span>  <span class="comment">// updates deleted_i as a side effect too.</span></div>
+<div class="line"><a id="l00228" name="l00228"></a><span class="lineno">  228</span>  <span class="keyword">const</span> <span class="keyword">auto</span> add_if_not_deleted = [&amp;](<span class="keyword">const</span> int64_t id) {</div>
+<div class="line"><a id="l00229" name="l00229"></a><span class="lineno">  229</span>    <span class="keywordflow">while</span> (deleted_i &lt; deleted.size() &amp;&amp; deleted[deleted_i] &lt; id) {</div>
+<div class="line"><a id="l00230" name="l00230"></a><span class="lineno">  230</span>      ++deleted_i;</div>
+<div class="line"><a id="l00231" name="l00231"></a><span class="lineno">  231</span>    }</div>
+<div class="line"><a id="l00232" name="l00232"></a><span class="lineno">  232</span>    <span class="keywordflow">if</span> (deleted_i == deleted.size() || deleted[deleted_i] != id) {</div>
+<div class="line"><a id="l00233" name="l00233"></a><span class="lineno">  233</span>      result.Add(<span class="keywordtype">id</span>);</div>
+<div class="line"><a id="l00234" name="l00234"></a><span class="lineno">  234</span>    }</div>
+<div class="line"><a id="l00235" name="l00235"></a><span class="lineno">  235</span>  };</div>
+<div class="line"><a id="l00236" name="l00236"></a><span class="lineno">  236</span> </div>
+<div class="line"><a id="l00237" name="l00237"></a><span class="lineno">  237</span>  <span class="keywordflow">while</span> (from_new_i &lt; from_new.size() &amp;&amp; into_old_i &lt; into_old.size()) {</div>
+<div class="line"><a id="l00238" name="l00238"></a><span class="lineno">  238</span>    <span class="keywordflow">if</span> (from_new[from_new_i] &lt; into_old[into_old_i]) {</div>
+<div class="line"><a id="l00239" name="l00239"></a><span class="lineno">  239</span>      add_if_not_deleted(from_new[from_new_i]);</div>
+<div class="line"><a id="l00240" name="l00240"></a><span class="lineno">  240</span>      ++from_new_i;</div>
+<div class="line"><a id="l00241" name="l00241"></a><span class="lineno">  241</span>    } <span class="keywordflow">else</span> <span class="keywordflow">if</span> (from_new[from_new_i] &gt; into_old[into_old_i]) {</div>
+<div class="line"><a id="l00242" name="l00242"></a><span class="lineno">  242</span>      add_if_not_deleted(into_old[into_old_i]);</div>
+<div class="line"><a id="l00243" name="l00243"></a><span class="lineno">  243</span>      ++into_old_i;</div>
+<div class="line"><a id="l00244" name="l00244"></a><span class="lineno">  244</span>    } <span class="keywordflow">else</span> {  <span class="comment">// from_new[from_new_i] == into_old[into_old_i]</span></div>
+<div class="line"><a id="l00245" name="l00245"></a><span class="lineno">  245</span>      add_if_not_deleted(from_new[from_new_i]);</div>
+<div class="line"><a id="l00246" name="l00246"></a><span class="lineno">  246</span>      ++from_new_i;</div>
+<div class="line"><a id="l00247" name="l00247"></a><span class="lineno">  247</span>      ++into_old_i;</div>
+<div class="line"><a id="l00248" name="l00248"></a><span class="lineno">  248</span>    }</div>
+<div class="line"><a id="l00249" name="l00249"></a><span class="lineno">  249</span>  }</div>
+<div class="line"><a id="l00250" name="l00250"></a><span class="lineno">  250</span> </div>
+<div class="line"><a id="l00251" name="l00251"></a><span class="lineno">  251</span>  <span class="comment">// At this point either from_new_i == from_new.size() or to_i == to.size() or</span></div>
+<div class="line"><a id="l00252" name="l00252"></a><span class="lineno">  252</span>  <span class="comment">// both. And the one that is not empty, if it exists, has elements greater</span></div>
+<div class="line"><a id="l00253" name="l00253"></a><span class="lineno">  253</span>  <span class="comment">// than all other elements already inserted.</span></div>
+<div class="line"><a id="l00254" name="l00254"></a><span class="lineno">  254</span>  <span class="keywordflow">for</span> (; from_new_i &lt; from_new.size(); ++from_new_i) {</div>
+<div class="line"><a id="l00255" name="l00255"></a><span class="lineno">  255</span>    add_if_not_deleted(from_new[from_new_i]);</div>
+<div class="line"><a id="l00256" name="l00256"></a><span class="lineno">  256</span>  }</div>
+<div class="line"><a id="l00257" name="l00257"></a><span class="lineno">  257</span>  <span class="keywordflow">for</span> (; into_old_i &lt; into_old.size(); ++into_old_i) {</div>
+<div class="line"><a id="l00258" name="l00258"></a><span class="lineno">  258</span>    add_if_not_deleted(into_old[into_old_i]);</div>
+<div class="line"><a id="l00259" name="l00259"></a><span class="lineno">  259</span>  }</div>
+<div class="line"><a id="l00260" name="l00260"></a><span class="lineno">  260</span> </div>
+<div class="line"><a id="l00261" name="l00261"></a><span class="lineno">  261</span>  into_old.Swap(&amp;result);</div>
+<div class="line"><a id="l00262" name="l00262"></a><span class="lineno">  262</span>}</div>
+<div class="line"><a id="l00263" name="l00263"></a><span class="lineno">  263</span> </div>
+<div class="line"><a id="l00264" name="l00264"></a><span class="lineno"><a class="line" href="namespaceoperations__research_1_1math__opt_1_1internal.html#a2055bc6211807e6ce6192ef8f30bc583">  264</a></span><span class="keywordtype">void</span> <a class="code hl_function" href="namespaceoperations__research_1_1math__opt_1_1internal.html#a2055bc6211807e6ce6192ef8f30bc583">MergeIntoSparseDoubleMatrix</a>(</div>
+<div class="line"><a id="l00265" name="l00265"></a><span class="lineno">  265</span>    <span class="keyword">const</span> SparseDoubleMatrixProto&amp; from_new, SparseDoubleMatrixProto&amp; into_old,</div>
+<div class="line"><a id="l00266" name="l00266"></a><span class="lineno">  266</span>    <span class="keyword">const</span> google::protobuf::RepeatedField&lt;int64_t&gt;&amp; deleted_rows,</div>
+<div class="line"><a id="l00267" name="l00267"></a><span class="lineno">  267</span>    <span class="keyword">const</span> google::protobuf::RepeatedField&lt;int64_t&gt;&amp; deleted_columns) {</div>
+<div class="line"><a id="l00268" name="l00268"></a><span class="lineno">  268</span>  SparseDoubleMatrixProto result;</div>
+<div class="line"><a id="l00269" name="l00269"></a><span class="lineno">  269</span>  <span class="keyword">auto</span>&amp; result_row_ids = *result.mutable_row_ids();</div>
+<div class="line"><a id="l00270" name="l00270"></a><span class="lineno">  270</span>  <span class="keyword">auto</span>&amp; result_column_ids = *result.mutable_column_ids();</div>
+<div class="line"><a id="l00271" name="l00271"></a><span class="lineno">  271</span>  <span class="keyword">auto</span>&amp; result_coefficients = *result.mutable_coefficients();</div>
+<div class="line"><a id="l00272" name="l00272"></a><span class="lineno">  272</span> </div>
+<div class="line"><a id="l00273" name="l00273"></a><span class="lineno">  273</span>  <span class="comment">// Contrary to rows that are traversed in order (the matrix is using row-major</span></div>
+<div class="line"><a id="l00274" name="l00274"></a><span class="lineno">  274</span>  <span class="comment">// order), columns are not. Thus we would have to start the iteration on</span></div>
+<div class="line"><a id="l00275" name="l00275"></a><span class="lineno">  275</span>  <span class="comment">// deleted_columns for each new row of the matrix if we wanted to use the same</span></div>
+<div class="line"><a id="l00276" name="l00276"></a><span class="lineno">  276</span>  <span class="comment">// approach as with rows. This would be O(num_rows * num_deleted_columns).</span></div>
+<div class="line"><a id="l00277" name="l00277"></a><span class="lineno">  277</span>  <span class="comment">//</span></div>
+<div class="line"><a id="l00278" name="l00278"></a><span class="lineno">  278</span>  <span class="comment">// Here we use a hash-set to be O(num_matrix_elements +</span></div>
+<div class="line"><a id="l00279" name="l00279"></a><span class="lineno">  279</span>  <span class="comment">// num_deleted_columns). The downside is that we consumed</span></div>
+<div class="line"><a id="l00280" name="l00280"></a><span class="lineno">  280</span>  <span class="comment">// O(num_deleted_columns) additional memory.</span></div>
+<div class="line"><a id="l00281" name="l00281"></a><span class="lineno">  281</span>  <span class="comment">//</span></div>
+<div class="line"><a id="l00282" name="l00282"></a><span class="lineno">  282</span>  <span class="comment">// We could have used binary search that would be O(num_matrix_elements *</span></div>
+<div class="line"><a id="l00283" name="l00283"></a><span class="lineno">  283</span>  <span class="comment">// lg(num_deleted_columns)) but without additional memory.</span></div>
+<div class="line"><a id="l00284" name="l00284"></a><span class="lineno">  284</span>  <span class="keyword">const</span> absl::flat_hash_set&lt;int64_t&gt; deleted_columns_set(</div>
+<div class="line"><a id="l00285" name="l00285"></a><span class="lineno">  285</span>      deleted_columns.begin(), deleted_columns.end());</div>
+<div class="line"><a id="l00286" name="l00286"></a><span class="lineno">  286</span> </div>
+<div class="line"><a id="l00287" name="l00287"></a><span class="lineno">  287</span>  <span class="keywordtype">int</span> from_new_i = 0;</div>
+<div class="line"><a id="l00288" name="l00288"></a><span class="lineno">  288</span>  <span class="keywordtype">int</span> into_old_i = 0;</div>
+<div class="line"><a id="l00289" name="l00289"></a><span class="lineno">  289</span>  <span class="keywordtype">int</span> deleted_rows_i = 0;</div>
+<div class="line"><a id="l00290" name="l00290"></a><span class="lineno">  290</span> </div>
+<div class="line"><a id="l00291" name="l00291"></a><span class="lineno">  291</span>  <span class="comment">// Functions that adds the input tuple (row_id, col_id, coefficient) to the</span></div>
+<div class="line"><a id="l00292" name="l00292"></a><span class="lineno">  292</span>  <span class="comment">// result if the input row_id and col_id are not in deleted_rows or</span></div>
+<div class="line"><a id="l00293" name="l00293"></a><span class="lineno">  293</span>  <span class="comment">// deleted_columns. It updates deleted_rows_i and deleted_columns_i as a side</span></div>
+<div class="line"><a id="l00294" name="l00294"></a><span class="lineno">  294</span>  <span class="comment">// effect too.</span></div>
+<div class="line"><a id="l00295" name="l00295"></a><span class="lineno">  295</span>  <span class="keyword">const</span> <span class="keyword">auto</span> add_if_not_deleted = [&amp;](<span class="keyword">const</span> int64_t row_id,</div>
+<div class="line"><a id="l00296" name="l00296"></a><span class="lineno">  296</span>                                      <span class="keyword">const</span> int64_t col_id,</div>
+<div class="line"><a id="l00297" name="l00297"></a><span class="lineno">  297</span>                                      <span class="keyword">const</span> <span class="keywordtype">double</span> <a class="code hl_variable" href="routing__filters_8cc.html#a8e4ee19dee0e00541dbe9bbc83d806ba">coefficient</a>) {</div>
+<div class="line"><a id="l00298" name="l00298"></a><span class="lineno">  298</span>    <span class="keywordflow">while</span> (deleted_rows_i &lt; deleted_rows.size() &amp;&amp;</div>
+<div class="line"><a id="l00299" name="l00299"></a><span class="lineno">  299</span>           deleted_rows[deleted_rows_i] &lt; row_id) {</div>
+<div class="line"><a id="l00300" name="l00300"></a><span class="lineno">  300</span>      ++deleted_rows_i;</div>
+<div class="line"><a id="l00301" name="l00301"></a><span class="lineno">  301</span>    }</div>
+<div class="line"><a id="l00302" name="l00302"></a><span class="lineno">  302</span>    <span class="keywordflow">if</span> ((deleted_rows_i != deleted_rows.size() &amp;&amp;</div>
+<div class="line"><a id="l00303" name="l00303"></a><span class="lineno">  303</span>         deleted_rows[deleted_rows_i] == row_id) ||</div>
+<div class="line"><a id="l00304" name="l00304"></a><span class="lineno">  304</span>        deleted_columns_set.contains(col_id)) {</div>
+<div class="line"><a id="l00305" name="l00305"></a><span class="lineno">  305</span>      <span class="keywordflow">return</span>;</div>
+<div class="line"><a id="l00306" name="l00306"></a><span class="lineno">  306</span>    }</div>
+<div class="line"><a id="l00307" name="l00307"></a><span class="lineno">  307</span>    result_row_ids.Add(row_id);</div>
+<div class="line"><a id="l00308" name="l00308"></a><span class="lineno">  308</span>    result_column_ids.Add(col_id);</div>
+<div class="line"><a id="l00309" name="l00309"></a><span class="lineno">  309</span>    result_coefficients.Add(<a class="code hl_variable" href="routing__filters_8cc.html#a8e4ee19dee0e00541dbe9bbc83d806ba">coefficient</a>);</div>
+<div class="line"><a id="l00310" name="l00310"></a><span class="lineno">  310</span>  };</div>
+<div class="line"><a id="l00311" name="l00311"></a><span class="lineno">  311</span> </div>
+<div class="line"><a id="l00312" name="l00312"></a><span class="lineno">  312</span>  <span class="keywordflow">while</span> (from_new_i &lt; from_new.row_ids_size() &amp;&amp;</div>
+<div class="line"><a id="l00313" name="l00313"></a><span class="lineno">  313</span>         into_old_i &lt; into_old.row_ids_size()) {</div>
+<div class="line"><a id="l00314" name="l00314"></a><span class="lineno">  314</span>    <span class="comment">// Matrices are in row-major order and std::pair comparison is</span></div>
+<div class="line"><a id="l00315" name="l00315"></a><span class="lineno">  315</span>    <span class="comment">// lexicographical, thus matrices are sorted in the natural order of pairs</span></div>
+<div class="line"><a id="l00316" name="l00316"></a><span class="lineno">  316</span>    <span class="comment">// of coordinates (row, col).</span></div>
+<div class="line"><a id="l00317" name="l00317"></a><span class="lineno">  317</span>    <span class="keyword">const</span> <span class="keyword">auto</span> from_new_coordinates = std::make_pair(</div>
+<div class="line"><a id="l00318" name="l00318"></a><span class="lineno">  318</span>        from_new.row_ids(from_new_i), from_new.column_ids(from_new_i));</div>
+<div class="line"><a id="l00319" name="l00319"></a><span class="lineno">  319</span>    <span class="keyword">const</span> <span class="keyword">auto</span> into_old_coordinates = std::make_pair(</div>
+<div class="line"><a id="l00320" name="l00320"></a><span class="lineno">  320</span>        into_old.row_ids(into_old_i), into_old.column_ids(into_old_i));</div>
+<div class="line"><a id="l00321" name="l00321"></a><span class="lineno">  321</span>    <span class="keywordflow">if</span> (from_new_coordinates &lt; into_old_coordinates) {</div>
+<div class="line"><a id="l00322" name="l00322"></a><span class="lineno">  322</span>      add_if_not_deleted(from_new_coordinates.first,</div>
+<div class="line"><a id="l00323" name="l00323"></a><span class="lineno">  323</span>                         from_new_coordinates.second,</div>
+<div class="line"><a id="l00324" name="l00324"></a><span class="lineno">  324</span>                         from_new.coefficients(from_new_i));</div>
+<div class="line"><a id="l00325" name="l00325"></a><span class="lineno">  325</span>      ++from_new_i;</div>
+<div class="line"><a id="l00326" name="l00326"></a><span class="lineno">  326</span>    } <span class="keywordflow">else</span> <span class="keywordflow">if</span> (from_new_coordinates &gt; into_old_coordinates) {</div>
+<div class="line"><a id="l00327" name="l00327"></a><span class="lineno">  327</span>      add_if_not_deleted(into_old_coordinates.first,</div>
+<div class="line"><a id="l00328" name="l00328"></a><span class="lineno">  328</span>                         into_old_coordinates.second,</div>
+<div class="line"><a id="l00329" name="l00329"></a><span class="lineno">  329</span>                         into_old.coefficients(into_old_i));</div>
+<div class="line"><a id="l00330" name="l00330"></a><span class="lineno">  330</span>      ++into_old_i;</div>
+<div class="line"><a id="l00331" name="l00331"></a><span class="lineno">  331</span>    } <span class="keywordflow">else</span> {  <span class="comment">// from_new_coordinates == into_old_coordinates</span></div>
+<div class="line"><a id="l00332" name="l00332"></a><span class="lineno">  332</span>      add_if_not_deleted(from_new_coordinates.first,</div>
+<div class="line"><a id="l00333" name="l00333"></a><span class="lineno">  333</span>                         from_new_coordinates.second,</div>
+<div class="line"><a id="l00334" name="l00334"></a><span class="lineno">  334</span>                         from_new.coefficients(from_new_i));</div>
+<div class="line"><a id="l00335" name="l00335"></a><span class="lineno">  335</span>      ++from_new_i;</div>
+<div class="line"><a id="l00336" name="l00336"></a><span class="lineno">  336</span>      ++into_old_i;</div>
+<div class="line"><a id="l00337" name="l00337"></a><span class="lineno">  337</span>    }</div>
+<div class="line"><a id="l00338" name="l00338"></a><span class="lineno">  338</span>  }</div>
+<div class="line"><a id="l00339" name="l00339"></a><span class="lineno">  339</span> </div>
+<div class="line"><a id="l00340" name="l00340"></a><span class="lineno">  340</span>  <span class="comment">// At this point either from_new_i == from_new.row_ids_size() or</span></div>
+<div class="line"><a id="l00341" name="l00341"></a><span class="lineno">  341</span>  <span class="comment">// to_i == to.row_ids_size() (or both). And the one that is not empty, if it</span></div>
+<div class="line"><a id="l00342" name="l00342"></a><span class="lineno">  342</span>  <span class="comment">// exists, has elements greater than all other elements already inserted.</span></div>
+<div class="line"><a id="l00343" name="l00343"></a><span class="lineno">  343</span>  <span class="keywordflow">for</span> (; from_new_i &lt; from_new.row_ids_size(); ++from_new_i) {</div>
+<div class="line"><a id="l00344" name="l00344"></a><span class="lineno">  344</span>    add_if_not_deleted(from_new.row_ids(from_new_i),</div>
+<div class="line"><a id="l00345" name="l00345"></a><span class="lineno">  345</span>                       from_new.column_ids(from_new_i),</div>
+<div class="line"><a id="l00346" name="l00346"></a><span class="lineno">  346</span>                       from_new.coefficients(from_new_i));</div>
+<div class="line"><a id="l00347" name="l00347"></a><span class="lineno">  347</span>  }</div>
+<div class="line"><a id="l00348" name="l00348"></a><span class="lineno">  348</span>  <span class="keywordflow">for</span> (; into_old_i &lt; into_old.row_ids_size(); ++into_old_i) {</div>
+<div class="line"><a id="l00349" name="l00349"></a><span class="lineno">  349</span>    add_if_not_deleted(into_old.row_ids(into_old_i),</div>
+<div class="line"><a id="l00350" name="l00350"></a><span class="lineno">  350</span>                       into_old.column_ids(into_old_i),</div>
+<div class="line"><a id="l00351" name="l00351"></a><span class="lineno">  351</span>                       into_old.coefficients(into_old_i));</div>
+<div class="line"><a id="l00352" name="l00352"></a><span class="lineno">  352</span>  }</div>
+<div class="line"><a id="l00353" name="l00353"></a><span class="lineno">  353</span> </div>
+<div class="line"><a id="l00354" name="l00354"></a><span class="lineno">  354</span>  into_old.Swap(&amp;result);</div>
+<div class="line"><a id="l00355" name="l00355"></a><span class="lineno">  355</span>}</div>
+<div class="line"><a id="l00356" name="l00356"></a><span class="lineno">  356</span> </div>
+<div class="line"><a id="l00357" name="l00357"></a><span class="lineno">  357</span>}  <span class="comment">// namespace internal</span></div>
+<div class="line"><a id="l00358" name="l00358"></a><span class="lineno">  358</span>}  <span class="comment">// namespace math_opt</span></div>
+<div class="line"><a id="l00359" name="l00359"></a><span class="lineno">  359</span>}  <span class="comment">// namespace operations_research</span></div>
 <div class="ttc" id="abase_2logging_8h_html"><div class="ttname"><a href="base_2logging_8h.html">logging.h</a></div></div>
-<div class="ttc" id="abase_2logging_8h_html_a7e03ec13560fa94a8fea569960d7efc6"><div class="ttname"><a href="base_2logging_8h.html#a7e03ec13560fa94a8fea569960d7efc6">CHECK_GT</a></div><div class="ttdeci">#define CHECK_GT(val1, val2)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00707">base/logging.h:707</a></div></div>
+<div class="ttc" id="abase_2logging_8h_html_a7e03ec13560fa94a8fea569960d7efc6"><div class="ttname"><a href="base_2logging_8h.html#a7e03ec13560fa94a8fea569960d7efc6">CHECK_GT</a></div><div class="ttdeci">#define CHECK_GT(val1, val2)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00708">base/logging.h:708</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1math__opt_1_1_sparse_vector_view_html"><div class="ttname"><a href="classoperations__research_1_1math__opt_1_1_sparse_vector_view.html">operations_research::math_opt::SparseVectorView</a></div><div class="ttdef"><b>Definition:</b> <a href="sparse__vector__view_8h_source.html#l00088">sparse_vector_view.h:88</a></div></div>
 <div class="ttc" id="aintegral__types_8h_html"><div class="ttname"><a href="integral__types_8h.html">integral_types.h</a></div></div>
 <div class="ttc" id="amodel__update__merge_8h_html"><div class="ttname"><a href="model__update__merge_8h.html">model_update_merge.h</a></div></div>
-<div class="ttc" id="anamespaceinternal_html"><div class="ttname"><a href="namespaceinternal.html">internal</a></div><div class="ttdef"><b>Definition:</b> <a href="bop__parameters_8pb_8h_source.html#l00039">bop_parameters.pb.h:39</a></div></div>
-<div class="ttc" id="anamespaceoperations__research_1_1math__opt_1_1internal_html_a2055bc6211807e6ce6192ef8f30bc583"><div class="ttname"><a href="namespaceoperations__research_1_1math__opt_1_1internal.html#a2055bc6211807e6ce6192ef8f30bc583">operations_research::math_opt::internal::MergeIntoSparseDoubleMatrix</a></div><div class="ttdeci">void MergeIntoSparseDoubleMatrix(const SparseDoubleMatrixProto &amp;from_new, SparseDoubleMatrixProto &amp;into_old, const google::protobuf::RepeatedField&lt; int64_t &gt; &amp;deleted_rows, const google::protobuf::RepeatedField&lt; int64_t &gt; &amp;deleted_columns)</div><div class="ttdef"><b>Definition:</b> <a href="model__update__merge_8cc_source.html#l00263">model_update_merge.cc:263</a></div></div>
+<div class="ttc" id="anamespaceinternal_html"><div class="ttname"><a href="namespaceinternal.html">internal</a></div><div class="ttdef"><b>Definition:</b> <a href="connected__components_8h_source.html#l00138">connected_components.h:138</a></div></div>
+<div class="ttc" id="anamespaceoperations__research_1_1math__opt_1_1internal_html_a2055bc6211807e6ce6192ef8f30bc583"><div class="ttname"><a href="namespaceoperations__research_1_1math__opt_1_1internal.html#a2055bc6211807e6ce6192ef8f30bc583">operations_research::math_opt::internal::MergeIntoSparseDoubleMatrix</a></div><div class="ttdeci">void MergeIntoSparseDoubleMatrix(const SparseDoubleMatrixProto &amp;from_new, SparseDoubleMatrixProto &amp;into_old, const google::protobuf::RepeatedField&lt; int64_t &gt; &amp;deleted_rows, const google::protobuf::RepeatedField&lt; int64_t &gt; &amp;deleted_columns)</div><div class="ttdef"><b>Definition:</b> <a href="model__update__merge_8cc_source.html#l00264">model_update_merge.cc:264</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_1_1math__opt_1_1internal_html_a5e96ec6d1d9277e9d24a42105047246d"><div class="ttname"><a href="namespaceoperations__research_1_1math__opt_1_1internal.html#a5e96ec6d1d9277e9d24a42105047246d">operations_research::math_opt::internal::MergeIntoSortedIds</a></div><div class="ttdeci">void MergeIntoSortedIds(const google::protobuf::RepeatedField&lt; int64_t &gt; &amp;from_new, google::protobuf::RepeatedField&lt; int64_t &gt; &amp;into_old, const google::protobuf::RepeatedField&lt; int64_t &gt; &amp;deleted)</div><div class="ttdef"><b>Definition:</b> <a href="model__update__merge_8cc_source.html#l00216">model_update_merge.cc:216</a></div></div>
-<div class="ttc" id="anamespaceoperations__research_1_1math__opt_1_1internal_html_a9684ef19cf2b20816cf49d2f044aaacc"><div class="ttname"><a href="namespaceoperations__research_1_1math__opt_1_1internal.html#a9684ef19cf2b20816cf49d2f044aaacc">operations_research::math_opt::internal::UpdateNewElementProperty</a></div><div class="ttdeci">void UpdateNewElementProperty(const google::protobuf::RepeatedField&lt; int64_t &gt; &amp;ids, RepeatedField &amp;values, const google::protobuf::RepeatedField&lt; int64_t &gt; &amp;deleted, const SparseVector &amp;updates)</div><div class="ttdef"><b>Definition:</b> <a href="model__update__merge_8h_source.html#l00171">model_update_merge.h:171</a></div></div>
+<div class="ttc" id="anamespaceoperations__research_1_1math__opt_1_1internal_html_a9684ef19cf2b20816cf49d2f044aaacc"><div class="ttname"><a href="namespaceoperations__research_1_1math__opt_1_1internal.html#a9684ef19cf2b20816cf49d2f044aaacc">operations_research::math_opt::internal::UpdateNewElementProperty</a></div><div class="ttdeci">void UpdateNewElementProperty(const google::protobuf::RepeatedField&lt; int64_t &gt; &amp;ids, RepeatedField &amp;values, const google::protobuf::RepeatedField&lt; int64_t &gt; &amp;deleted, const SparseVector &amp;updates)</div><div class="ttdef"><b>Definition:</b> <a href="model__update__merge_8h_source.html#l00174">model_update_merge.h:174</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_1_1math__opt_1_1internal_html_ad27155291d6ddde80d87c375b39c03ad"><div class="ttname"><a href="namespaceoperations__research_1_1math__opt_1_1internal.html#ad27155291d6ddde80d87c375b39c03ad">operations_research::math_opt::internal::RemoveDeletedIds</a></div><div class="ttdeci">void RemoveDeletedIds(google::protobuf::RepeatedField&lt; int64_t &gt; &amp;ids, const google::protobuf::RepeatedField&lt; int64_t &gt; &amp;deleted)</div><div class="ttdef"><b>Definition:</b> <a href="model__update__merge_8cc_source.html#l00199">model_update_merge.cc:199</a></div></div>
-<div class="ttc" id="anamespaceoperations__research_1_1math__opt_1_1internal_html_ae3dd1b1c310edb8cf9292aa30e3df8b2"><div class="ttname"><a href="namespaceoperations__research_1_1math__opt_1_1internal.html#ae3dd1b1c310edb8cf9292aa30e3df8b2">operations_research::math_opt::internal::MergeIntoSparseVector</a></div><div class="ttdeci">void MergeIntoSparseVector(const SparseVector &amp;from_new, SparseVector &amp;into_old, const google::protobuf::RepeatedField&lt; int64_t &gt; &amp;deleted)</div><div class="ttdef"><b>Definition:</b> <a href="model__update__merge_8h_source.html#l00117">model_update_merge.h:117</a></div></div>
+<div class="ttc" id="anamespaceoperations__research_1_1math__opt_1_1internal_html_ae3dd1b1c310edb8cf9292aa30e3df8b2"><div class="ttname"><a href="namespaceoperations__research_1_1math__opt_1_1internal.html#ae3dd1b1c310edb8cf9292aa30e3df8b2">operations_research::math_opt::internal::MergeIntoSparseVector</a></div><div class="ttdeci">void MergeIntoSparseVector(const SparseVector &amp;from_new, SparseVector &amp;into_old, const google::protobuf::RepeatedField&lt; int64_t &gt; &amp;deleted)</div><div class="ttdef"><b>Definition:</b> <a href="model__update__merge_8h_source.html#l00119">model_update_merge.h:119</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_1_1math__opt_html"><div class="ttname"><a href="namespaceoperations__research_1_1math__opt.html">operations_research::math_opt</a></div><div class="ttdef"><b>Definition:</b> <a href="arrow__operator__proxy_8h_source.html#l00020">arrow_operator_proxy.h:20</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_1_1math__opt_html_aa755b33432bb731690d1b9d5fd00ef06"><div class="ttname"><a href="namespaceoperations__research_1_1math__opt.html#aa755b33432bb731690d1b9d5fd00ef06">operations_research::math_opt::MergeIntoUpdate</a></div><div class="ttdeci">void MergeIntoUpdate(const ModelUpdateProto &amp;from_new, ModelUpdateProto &amp;into_old)</div><div class="ttdef"><b>Definition:</b> <a href="model__update__merge_8cc_source.html#l00033">model_update_merge.cc:33</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_html"><div class="ttname"><a href="namespaceoperations__research.html">operations_research</a></div><div class="ttdoc">Collection of objects used to extend the Constraint Solver library.</div><div class="ttdef"><b>Definition:</b> <a href="dense__doubly__linked__list_8h_source.html#l00021">dense_doubly_linked_list.h:21</a></div></div>
-<div class="ttc" id="arouting__filters_8cc_html_a8e4ee19dee0e00541dbe9bbc83d806ba"><div class="ttname"><a href="routing__filters_8cc.html#a8e4ee19dee0e00541dbe9bbc83d806ba">coefficient</a></div><div class="ttdeci">int64_t coefficient</div><div class="ttdef"><b>Definition:</b> <a href="routing__filters_8cc_source.html#l00970">routing_filters.cc:970</a></div></div>
+<div class="ttc" id="arouting__filters_8cc_html_a8e4ee19dee0e00541dbe9bbc83d806ba"><div class="ttname"><a href="routing__filters_8cc.html#a8e4ee19dee0e00541dbe9bbc83d806ba">coefficient</a></div><div class="ttdeci">int64_t coefficient</div><div class="ttdef"><b>Definition:</b> <a href="routing__filters_8cc_source.html#l00969">routing_filters.cc:969</a></div></div>
 <div class="ttc" id="asparse__vector__view_8h_html"><div class="ttname"><a href="sparse__vector__view_8h.html">sparse_vector_view.h</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->

@@ -1,0 +1,14 @@
+<map id="pdlp" name="pdlp">
+<area shape="rect" id="node1" href="dir_4d3a5a688e4550f3d7725aaa5ab9c27b.html" title="linear_solver" alt="" coords="27,148,133,196"/>
+<area shape="rect" id="node2" href="dir_747248fa8ec2ebcb4d8ad85ced34db0b.html" title="glop" alt="" coords="157,148,229,196"/>
+<area shape="rect" id="node3" href="dir_8f9dc966244f4c6e9b2fa0dee1e4ef1a.html" title="base" alt="" coords="253,148,325,196"/>
+<area shape="rect" id="node4" href="dir_903a7ff076ee7f01be86992fe717fc82.html" title="lp_data" alt="" coords="349,148,421,196"/>
+<area shape="rect" id="node5" href="dir_a3328a0ea67a2aaa160c2783ffbaa5dc.html" title="util" alt="" coords="445,148,517,196"/>
+<area shape="rect" id="node6" href="dir_7cc48880791e3dd695dbfc2349101d28.html" title="pdlp" alt="" coords="253,52,325,100"/>
+<area shape="rect" id="edge1-headlabel" href="dir_000023_000017.html" title="1" alt="" coords="146,141,156,156"/>
+<area shape="rect" id="edge2-headlabel" href="dir_000023_000008.html" title="1" alt="" coords="231,134,240,149"/>
+<area shape="rect" id="edge3-headlabel" href="dir_000023_000001.html" title="42" alt="" coords="289,122,306,137"/>
+<area shape="rect" id="edge4-headlabel" href="dir_000023_000018.html" title="7" alt="" coords="350,122,359,136"/>
+<area shape="rect" id="edge5-headlabel" href="dir_000023_000033.html" title="1" alt="" coords="427,130,437,145"/>
+<area shape="rect" id="clust1" href="dir_a7cc1eeded8f693d0da6c729bc88c45a.html" title="ortools" alt="" coords="16,16,528,207"/>
+</map>

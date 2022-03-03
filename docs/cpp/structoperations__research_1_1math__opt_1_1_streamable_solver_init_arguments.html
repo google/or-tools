@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.2</span>
+   &#160;<span id="projectnumber">9.3</span>
    </div>
   </td>
  </tr>
@@ -88,6 +88,7 @@ $(document).ready(function(){initNavTree('structoperations__research_1_1math__op
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pub-static-methods">Static Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="structoperations__research_1_1math__opt_1_1_streamable_solver_init_arguments-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">StreamableSolverInitArguments</div></div>
@@ -95,12 +96,17 @@ $(document).ready(function(){initNavTree('structoperations__research_1_1math__op
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="streamable__solver__init__arguments_8h_source.html#l00076">76</a> of file <a class="el" href="streamable__solver__init__arguments_8h_source.html">streamable_solver_init_arguments.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="streamable__solver__init__arguments_8h_source.html#l00083">83</a> of file <a class="el" href="streamable__solver__init__arguments_8h_source.html">streamable_solver_init_arguments.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a1e2d0d8821424551a8462fefa4ed75c0"><td class="memItemLeft" align="right" valign="top">SolverInitializerProto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1math__opt_1_1_streamable_solver_init_arguments.html#a1e2d0d8821424551a8462fefa4ed75c0">Proto</a> () const</td></tr>
 <tr class="separator:a1e2d0d8821424551a8462fefa4ed75c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
+Static Public Member Functions</h2></td></tr>
+<tr class="memitem:ab333b04f59243aa26d9a1a0b0f93e17b"><td class="memItemLeft" align="right" valign="top">static absl::StatusOr&lt; <a class="el" href="structoperations__research_1_1math__opt_1_1_streamable_solver_init_arguments.html">StreamableSolverInitArguments</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1math__opt_1_1_streamable_solver_init_arguments.html#ab333b04f59243aa26d9a1a0b0f93e17b">FromProto</a> (const SolverInitializerProto &amp;args_proto)</td></tr>
+<tr class="separator:ab333b04f59243aa26d9a1a0b0f93e17b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
@@ -116,6 +122,34 @@ Public Attributes</h2></td></tr>
 <tr class="separator:afab99aa2264d061320e60b5d6d6f482f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="ab333b04f59243aa26d9a1a0b0f93e17b" name="ab333b04f59243aa26d9a1a0b0f93e17b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab333b04f59243aa26d9a1a0b0f93e17b">&#9670;&nbsp;</a></span>FromProto()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">absl::StatusOr&lt; <a class="el" href="structoperations__research_1_1math__opt_1_1_streamable_solver_init_arguments.html">StreamableSolverInitArguments</a> &gt; FromProto </td>
+          <td>(</td>
+          <td class="paramtype">const SolverInitializerProto &amp;&#160;</td>
+          <td class="paramname"><em>args_proto</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="streamable__solver__init__arguments_8cc_source.html#l00075">75</a> of file <a class="el" href="streamable__solver__init__arguments_8cc_source.html">streamable_solver_init_arguments.cc</a>.</p>
+
+</div>
+</div>
 <a id="a1e2d0d8821424551a8462fefa4ed75c0" name="a1e2d0d8821424551a8462fefa4ed75c0"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a1e2d0d8821424551a8462fefa4ed75c0">&#9670;&nbsp;</a></span>Proto()</h2>
 
@@ -131,7 +165,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="streamable__solver__init__arguments_8cc_source.html#l00044">44</a> of file <a class="el" href="streamable__solver__init__arguments_8cc_source.html">streamable_solver_init_arguments.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="streamable__solver__init__arguments_8cc_source.html#l00064">64</a> of file <a class="el" href="streamable__solver__init__arguments_8cc_source.html">streamable_solver_init_arguments.cc</a>.</p>
 
 </div>
 </div>
@@ -148,7 +182,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="streamable__solver__init__arguments_8h_source.html#l00077">77</a> of file <a class="el" href="streamable__solver__init__arguments_8h_source.html">streamable_solver_init_arguments.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="streamable__solver__init__arguments_8h_source.html#l00084">84</a> of file <a class="el" href="streamable__solver__init__arguments_8h_source.html">streamable_solver_init_arguments.h</a>.</p>
 
 </div>
 </div>
@@ -164,7 +198,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="streamable__solver__init__arguments_8h_source.html#l00079">79</a> of file <a class="el" href="streamable__solver__init__arguments_8h_source.html">streamable_solver_init_arguments.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="streamable__solver__init__arguments_8h_source.html#l00086">86</a> of file <a class="el" href="streamable__solver__init__arguments_8h_source.html">streamable_solver_init_arguments.h</a>.</p>
 
 </div>
 </div>
@@ -180,7 +214,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="streamable__solver__init__arguments_8h_source.html#l00080">80</a> of file <a class="el" href="streamable__solver__init__arguments_8h_source.html">streamable_solver_init_arguments.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="streamable__solver__init__arguments_8h_source.html#l00087">87</a> of file <a class="el" href="streamable__solver__init__arguments_8h_source.html">streamable_solver_init_arguments.h</a>.</p>
 
 </div>
 </div>
@@ -196,7 +230,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="streamable__solver__init__arguments_8h_source.html#l00078">78</a> of file <a class="el" href="streamable__solver__init__arguments_8h_source.html">streamable_solver_init_arguments.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="streamable__solver__init__arguments_8h_source.html#l00085">85</a> of file <a class="el" href="streamable__solver__init__arguments_8h_source.html">streamable_solver_init_arguments.h</a>.</p>
 
 </div>
 </div>
@@ -212,7 +246,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="streamable__solver__init__arguments_8h_source.html#l00081">81</a> of file <a class="el" href="streamable__solver__init__arguments_8h_source.html">streamable_solver_init_arguments.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="streamable__solver__init__arguments_8h_source.html#l00088">88</a> of file <a class="el" href="streamable__solver__init__arguments_8h_source.html">streamable_solver_init_arguments.h</a>.</p>
 
 </div>
 </div>

@@ -1,6 +1,5 @@
 var searchData=
 [
-  ['check_5finput_5f_0',['check_input_',['../classoperations__research_1_1_generic_max_flow.html#ad96578b8ab41d25a3daa9f219c168b9f',1,'operations_research::GenericMaxFlow']]],
-  ['check_5fresult_5f_1',['check_result_',['../classoperations__research_1_1_generic_max_flow.html#a876e41aaef1635d059d9d79dd08bbfc3',1,'operations_research::GenericMaxFlow']]],
-  ['const_5fcapacities_5f_2',['const_capacities_',['../classutil_1_1_base_graph.html#a8b5cdcc274a624bd9059f95d70659fb9',1,'util::BaseGraph']]]
+  ['first_5fadmissible_5farc_5f_0',['first_admissible_arc_',['../classoperations__research_1_1_generic_max_flow.html#a3702055ec6affa60e6862cd0e63f9a7b',1,'operations_research::GenericMaxFlow']]],
+  ['first_5fincident_5farc_5f_1',['first_incident_arc_',['../classoperations__research_1_1_star_graph_base.html#a58b521f62562f51a79f9c95f1902804a',1,'operations_research::StarGraphBase::first_incident_arc_()'],['../classoperations__research_1_1_ebert_graph_base.html#a58b521f62562f51a79f9c95f1902804a',1,'operations_research::EbertGraphBase::first_incident_arc_()']]]
 ];

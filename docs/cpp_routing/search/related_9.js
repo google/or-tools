@@ -1,5 +1,4 @@
 var searchData=
 [
-  ['chain_0',['Chain',['../classoperations__research_1_1_path_state_1_1_chain_1_1_iterator.html#ae1771dc54b5c19692cb157cdf256dc7e',1,'operations_research::PathState::Chain::Iterator']]],
-  ['propagationbaseobject_1',['PropagationBaseObject',['../classoperations__research_1_1_solver.html#acd6c49bd62ce1a1777a1c0e644f1186e',1,'operations_research::Solver']]]
+  ['queue_0',['Queue',['../classoperations__research_1_1_solver.html#a47dfc6f2bc0d50a6e7c92eb00d97b064',1,'operations_research::Solver::Queue()'],['../classoperations__research_1_1_demon.html#a47dfc6f2bc0d50a6e7c92eb00d97b064',1,'operations_research::Demon::Queue()']]]
 ];
