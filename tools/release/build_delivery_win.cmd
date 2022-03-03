@@ -180,7 +180,7 @@ echo DONE | tee.exe -a build.log
 REM make.exe test_dotnet WINDOWS_PATH_TO_PYTHON=c:\python39-64 || exit 1
 REM echo make test_dotnet: DONE | tee.exe -a build.log
 
-for %%i in (temp_dotnet\dotnet\packages\*nupkg*) do (
+for %%i in (temp_dotnet\dotnet\packages\*.nupkg*) do (
   echo Copy %%i to export... | tee.exe -a build.log
   copy %%i export\.
   echo Copy %%i to export...DONE | tee.exe -a build.log

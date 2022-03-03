@@ -142,9 +142,9 @@ add_custom_target(Dotnet${PROJECT_NAME}_proto DEPENDS ${PROTO_DOTNETS} ${PROJECT
 if(DEFINED ENV{DOTNET_SNK})
   add_custom_command(
     OUTPUT ${PROJECT_BINARY_DIR}/dotnet/or-tools.snk
-    COMMAND ${CMAKE_COMMAND} -E copy $ENV{DOTNET_SNK} .
+    COMMAND ${CMAKE_COMMAND} -E copy $ENV{DOTNET_SNK} ${PROJECT_BINARY_DIR}/dotnet/or-tools.snk
     COMMENT "Copy or-tools.snk from ENV:DOTNET_SNK"
-    WORKING_DIRECTORY dotnet
+    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
     VERBATIM
     )
 else()
