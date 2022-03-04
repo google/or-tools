@@ -263,6 +263,7 @@ test_archive: $(INSTALL_DIR)$(ARCHIVE_EXT)
 ifeq ($(SYSTEM),win)
 	$(UNZIP) $< -d $(TEMP_TEST_DIR)
 	cd $(TEMP_TEST_DIR)$S$(INSTALL_DIR) \
+ && $(MAKE) MAKEFLAGS= \
  && $(MAKE) MAKEFLAGS= test_cc \
  && $(MAKE) MAKEFLAGS= test_java \
  && $(MAKE) MAKEFLAGS= test_dotnet
@@ -271,6 +272,7 @@ else
 	$(RENAME) lib lib2
 	$(TAR) -xvf $< -C $(TEMP_TEST_DIR)
 	( cd $(TEMP_TEST_DIR)$S$(INSTALL_DIR) \
+ && $(MAKE) MAKEFLAGS= \
  && $(MAKE) MAKEFLAGS= test_cc \
  && $(MAKE) MAKEFLAGS= test_java \
  && $(MAKE) MAKEFLAGS= test_dotnet \

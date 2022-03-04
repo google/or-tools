@@ -105,7 +105,7 @@ if(APPLE)
   set(CMAKE_INSTALL_RPATH
     "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
 elseif(UNIX)
-  set(CMAKE_INSTALL_RPATH "$ORIGIN/../${CMAKE_INSTALL_LIBDIR}:$ORIGIN")
+  set(CMAKE_INSTALL_RPATH "$ORIGIN/../${CMAKE_INSTALL_LIBDIR}:$ORIGIN/../lib64:$ORIGIN/../lib:$ORIGIN")
 endif()
 
 

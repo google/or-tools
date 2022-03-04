@@ -319,7 +319,8 @@ function(add_cxx_sample FILE_NAME)
     set(CMAKE_INSTALL_RPATH
       "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
   elseif(UNIX)
-    set(CMAKE_INSTALL_RPATH "$ORIGIN/../${CMAKE_INSTALL_LIBDIR}:$ORIGIN")
+    set(CMAKE_INSTALL_RPATH
+      "$ORIGIN/../${CMAKE_INSTALL_LIBDIR}:$ORIGIN/../lib64:$ORIGIN/../lib:$ORIGIN")
   endif()
 
   add_executable(${SAMPLE_NAME} ${FILE_NAME})
@@ -352,7 +353,7 @@ function(add_cxx_example FILE_NAME)
     set(CMAKE_INSTALL_RPATH
       "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
   elseif(UNIX)
-    set(CMAKE_INSTALL_RPATH "$ORIGIN/../${CMAKE_INSTALL_LIBDIR}:$ORIGIN")
+    set(CMAKE_INSTALL_RPATH "$ORIGIN/../${CMAKE_INSTALL_LIBDIR}:$ORIGIN/../lib64:$ORIGIN/../lib:$ORIGIN")
   endif()
 
   add_executable(${EXAMPLE_NAME} ${FILE_NAME})
@@ -385,7 +386,7 @@ function(add_cxx_test FILE_NAME)
     set(CMAKE_INSTALL_RPATH
       "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
   elseif(UNIX)
-    set(CMAKE_INSTALL_RPATH "$ORIGIN/../${CMAKE_INSTALL_LIBDIR}:$ORIGIN")
+    set(CMAKE_INSTALL_RPATH "$ORIGIN/../${CMAKE_INSTALL_LIBDIR}:$ORIGIN/../lib64:$ORIGIN/../lib:$ORIGIN")
   endif()
 
   add_executable(${TEST_NAME} ${FILE_NAME})
