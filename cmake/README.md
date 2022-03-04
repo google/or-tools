@@ -65,7 +65,8 @@ CMake as a standalone project or it can be incorporated into an existing CMake
 ## Requirement
 You'll need:
 
-* `CMake >= 3.15` (`3.18` for python support).
+* `CMake >= 3.18`.
+* A C++20 compiler (gcc 8 or above)
 
 ## Dependencies
 

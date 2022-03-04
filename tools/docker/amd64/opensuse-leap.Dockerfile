@@ -6,11 +6,17 @@ LABEL maintainer="corentinl@google.com"
 ENV PATH=/usr/local/bin:$PATH
 RUN zypper update -y \
 && zypper install -y git gcc11 gcc11-c++ cmake \
- wget which lsb-release util-linux pkgconfig autoconf libtool zlib-devel \
+ wget which lsb-release util-linux pkgconfig autoconf libtool gzip zlib-devel \
 && zypper clean -a
 ENV CC=gcc-11 CXX=g++-11
 ENTRYPOINT ["/usr/bin/bash", "-c"]
 CMD ["/usr/bin/bash"]
+
+# Install CMake 3.21.1
+RUN wget -q "https://cmake.org/files/v3.21/cmake-3.21.1-linux-x86_64.sh" \
+&& chmod a+x cmake-3.21.1-linux-x86_64.sh \
+&& ./cmake-3.21.1-linux-x86_64.sh --prefix=/usr/local/ --skip-license \
+&& rm cmake-3.21.1-linux-x86_64.sh
 
 # Swig Install
 RUN zypper update -y \

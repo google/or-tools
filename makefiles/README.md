@@ -52,6 +52,7 @@ used on a wide range of platforms.
 You'll need:
 
 * `GNU Make >= 4.3`.
+* A C++20 compiler (gcc 10 or above)
 
 ## Dependencies
 

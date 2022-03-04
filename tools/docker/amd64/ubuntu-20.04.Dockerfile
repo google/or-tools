@@ -23,6 +23,12 @@ ENV CC=gcc-11 CXX=g++-11
 ENTRYPOINT ["/bin/bash", "-c"]
 CMD ["/bin/bash"]
 
+# Install CMake 3.21.1
+RUN wget -q "https://cmake.org/files/v3.21/cmake-3.21.1-linux-x86_64.sh" \
+&& chmod a+x cmake-3.21.1-linux-x86_64.sh \
+&& ./cmake-3.21.1-linux-x86_64.sh --prefix=/usr/local/ --skip-license \
+&& rm cmake-3.21.1-linux-x86_64.sh
+
 # Swig Install
 RUN apt-get update -qq \
 && apt-get install -yq swig \
