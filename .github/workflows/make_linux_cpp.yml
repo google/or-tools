@@ -6,6 +6,9 @@ jobs:
   # Building using the github runner environement directly.
   make:
     runs-on: ubuntu-latest
+    env:
+      CC:  gcc-10
+      CXX: g++-10
     steps:
     - uses: actions/checkout@v2
     - name: Check make
