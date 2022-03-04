@@ -265,7 +265,7 @@ function build_python() {
     command -v "python$i"
     command -v "python$i" | xargs echo "python$i: " | tee -a build.log
     "python$i" -c "import distutils.util as u; print(u.get_platform())" | tee -a build.log
-    "python$i" -m pip install --upgrade --user wheel absl-py mypy-protobuf
+    "python$i" -m pip install --upgrade --user wheel absl-py mypy-protobuf virtualenv
   done
   command -v protoc-gen-mypy | xargs echo "protoc-gen-mypy: " | tee -a build.log
   protoc-gen-mypy --version | xargs echo "protoc-gen-mypy version: " | tee -a build.log

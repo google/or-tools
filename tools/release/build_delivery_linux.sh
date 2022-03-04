@@ -266,7 +266,7 @@ function build_python() {
 
   echo -n "Build Python 3..." | tee -a build.log
   cmake -S . -B temp_python -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_PYTHON=ON
-  cmake --build temp_python build -j8
+  cmake --build temp_python -j8 -v
   echo "DONE" | tee -a build.log
   #cmake --build test_python --target test
   #echo "cmake test_python: DONE" | tee -a build.log

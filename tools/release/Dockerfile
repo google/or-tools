@@ -18,8 +18,10 @@ RUN yum -y update \
 && yum -y install devtoolset-11 \
 && yum clean all \
 && echo "source /opt/rh/devtoolset-11/enable" >> /etc/bashrc
-SHELL ["/bin/bash", "--login", "-c"]
-# RUN gcc --version
+SHELL ["/usr/bin/bash", "--login", "-c"]
+ENTRYPOINT ["/usr/bin/bash", "--login", "-c"]
+CMD ["/usr/bin/bash", "--login"]
+# RUN g++ --version
 
 # Install CMake 3.22.2
 RUN wget -q "https://cmake.org/files/v3.22/cmake-3.22.2-linux-x86_64.sh" \
