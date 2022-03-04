@@ -12,7 +12,7 @@ RUN apt update -qq \
 && apt clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 ENTRYPOINT ["/usr/bin/bash", "-c"]
-CMD ["/usr/bin/bash"]
+CMD ["/bin/bash"]
 
 # Swig Install
 RUN apt-get update -qq \
