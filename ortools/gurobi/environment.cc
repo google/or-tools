@@ -697,6 +697,9 @@ std::vector<std::string> GurobiDynamicLibraryPotentialPaths() {
 #elif defined(__APPLE__)  // OS X
     potential_paths.push_back(absl::StrCat(
         "/Library/gurobi", version, "/mac64/lib/libgurobi", lib, ".dylib"));
+    potential_paths.push_back(absl::StrCat("/Library/gurobi", version,
+                                           "/macos_universal2/lib/libgurobi",
+                                           lib, ".dylib"));
 #elif defined(__GNUC__)   // Linux
     potential_paths.push_back(absl::StrCat(
         "/opt/gurobi", version, "/linux64/lib/libgurobi", lib, ".so"));
