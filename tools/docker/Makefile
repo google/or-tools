@@ -75,7 +75,6 @@ help:
 	@echo -e "\t\t${BOLD}centos-8${RESET} (latest)"
 	@echo -e "\t\t${BOLD}centos-7${RESET} (Centos 7 LTS)"
 	@echo -e "\t\t${BOLD}debian-11${RESET} (bullseye, latest)"
-	@echo -e "\t\t${BOLD}debian-10${RESET} (buster)"
 	@echo -e "\t\t${BOLD}fedora-35${RESET} (latest)"
 	@echo -e "\t\t${BOLD}fedora-34${RESET}"
 	@echo -e "\t\t${BOLD}fedora-33${RESET}"
@@ -354,7 +353,7 @@ python: python_export
 DISTROS = \
  alpine-edge \
  centos-7 centos-8 \
- debian-10 debian-11 \
+ debian-11 \
  fedora-33 fedora-34 fedora-35 \
  opensuse-leap \
  ubuntu-18.04 ubuntu-20.04 ubuntu-21.10
