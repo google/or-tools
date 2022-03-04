@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.2</span>
+   &#160;<span id="projectnumber">9.3</span>
    </div>
   </td>
  </tr>
@@ -116,16 +116,16 @@ $(document).ready(function(){initNavTree('jniutil_8h_source.html',''); initResiz
 <div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span>  <span class="comment">// Creates a Java jstring from a null-terminated UTF-8 encoded C String.</span></div>
 <div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span>  <span class="comment">// The caller must delete the jstring reference.</span></div>
 <div class="line"><a id="l00027" name="l00027"></a><span class="lineno"><a class="line" href="class_j_n_i_util.html#afe22e1d61c504c8826aaa1dc2a58218b">   27</a></span>  <span class="keyword">static</span> jstring <a class="code hl_function" href="class_j_n_i_util.html#afe22e1d61c504c8826aaa1dc2a58218b">MakeJString</a>(JNIEnv* env, <span class="keyword">const</span> <span class="keywordtype">char</span>* cstr) {</div>
-<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span>    <span class="keywordflow">if</span> (cstr == NULL) <span class="keywordflow">return</span> NULL;</div>
+<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span>    <span class="keywordflow">if</span> (cstr == <span class="keyword">nullptr</span>) <span class="keywordflow">return</span> <span class="keyword">nullptr</span>;</div>
 <div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span>    <span class="keywordflow">return</span> env-&gt;NewStringUTF(cstr);</div>
 <div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span>  }</div>
 <div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span> </div>
 <div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span>  <span class="comment">// Creates a null-terminated UTF-8 encoded C string from a jstring.</span></div>
 <div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span>  <span class="comment">// The returned string should be &quot;delete[]&quot;-ed when no longer needed.</span></div>
 <div class="line"><a id="l00034" name="l00034"></a><span class="lineno"><a class="line" href="class_j_n_i_util.html#a561b02f53fb54e4b7e23b7675ca18927">   34</a></span>  <span class="keyword">static</span> <span class="keywordtype">char</span>* <a class="code hl_function" href="class_j_n_i_util.html#a561b02f53fb54e4b7e23b7675ca18927">MakeCString</a>(JNIEnv* env, jstring str) {</div>
-<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>    <span class="keywordflow">if</span> (str == NULL) <span class="keywordflow">return</span> NULL;</div>
+<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>    <span class="keywordflow">if</span> (str == <span class="keyword">nullptr</span>) <span class="keywordflow">return</span> <span class="keyword">nullptr</span>;</div>
 <div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>    jsize length = env-&gt;GetStringUTFLength(str);</div>
-<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>    <span class="keyword">const</span> <span class="keywordtype">char</span>* src = env-&gt;GetStringUTFChars(str, NULL);</div>
+<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>    <span class="keyword">const</span> <span class="keywordtype">char</span>* src = env-&gt;GetStringUTFChars(str, <span class="keyword">nullptr</span>);</div>
 <div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>    <span class="keywordtype">char</span>* dst = <span class="keyword">new</span> <span class="keywordtype">char</span>[length + 1];</div>
 <div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>    memcpy(dst, src, length);</div>
 <div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>    dst[length] = <span class="charliteral">&#39;\0&#39;</span>;</div>

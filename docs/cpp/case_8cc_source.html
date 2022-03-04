@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.2</span>
+   &#160;<span id="projectnumber">9.3</span>
    </div>
   </td>
  </tr>
@@ -201,12 +201,12 @@ $(document).ready(function(){initNavTree('case_8cc_source.html',''); initResizab
 <div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span>}</div>
 <div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span> </div>
 <div class="line"><a id="l00112" name="l00112"></a><span class="lineno"><a class="line" href="namespacestrings.html#ac09deedfdb5e5723eea46574ee229a01">  112</a></span><span class="keywordtype">void</span> <a class="code hl_function" href="namespacestrings.html#ac09deedfdb5e5723eea46574ee229a01">MakeAsciiTitlecase</a>(std::string* s, absl::string_view delimiters) {</div>
-<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span>  <span class="keywordtype">bool</span> upper = <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span>  <span class="keywordtype">bool</span> <a class="code hl_variable" href="glpk__solver_8cc.html#ae0e265c074f457e193b30ff0d77c750b">upper</a> = <span class="keyword">true</span>;</div>
 <div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span>  <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; ch : *s) {</div>
-<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span>    <span class="keywordflow">if</span> (upper) {</div>
+<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span>    <span class="keywordflow">if</span> (<a class="code hl_variable" href="glpk__solver_8cc.html#ae0e265c074f457e193b30ff0d77c750b">upper</a>) {</div>
 <div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span>      ch = absl::ascii_toupper(ch);</div>
 <div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span>    }</div>
-<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span>    upper = (absl::StrContains(delimiters, ch));</div>
+<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span>    <a class="code hl_variable" href="glpk__solver_8cc.html#ae0e265c074f457e193b30ff0d77c750b">upper</a> = (absl::StrContains(delimiters, ch));</div>
 <div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span>  }</div>
 <div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>}</div>
 <div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span> </div>
@@ -218,6 +218,7 @@ $(document).ready(function(){initNavTree('case_8cc_source.html',''); initResizab
 <div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span>}</div>
 <div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span>}  <span class="comment">// namespace strings</span></div>
 <div class="ttc" id="acase_8h_html"><div class="ttname"><a href="case_8h.html">case.h</a></div></div>
+<div class="ttc" id="aglpk__solver_8cc_html_ae0e265c074f457e193b30ff0d77c750b"><div class="ttname"><a href="glpk__solver_8cc.html#ae0e265c074f457e193b30ff0d77c750b">upper</a></div><div class="ttdeci">double upper</div><div class="ttdef"><b>Definition:</b> <a href="glpk__solver_8cc_source.html#l00076">glpk_solver.cc:76</a></div></div>
 <div class="ttc" id="anamespacestrings_html"><div class="ttname"><a href="namespacestrings.html">strings</a></div><div class="ttdef"><b>Definition:</b> <a href="case_8cc_source.html#l00031">case.cc:31</a></div></div>
 <div class="ttc" id="anamespacestrings_html_a3bdc886767f8dcd94a9fc1f88502c768"><div class="ttname"><a href="namespacestrings.html#a3bdc886767f8dcd94a9fc1f88502c768">strings::AsciiCaseInsensitiveCompare</a></div><div class="ttdeci">int AsciiCaseInsensitiveCompare(absl::string_view s1, absl::string_view s2)</div><div class="ttdef"><b>Definition:</b> <a href="case_8cc_source.html#l00089">case.cc:89</a></div></div>
 <div class="ttc" id="anamespacestrings_html_a54c980565812fd01837a47a58bd1096c"><div class="ttname"><a href="namespacestrings.html#a54c980565812fd01837a47a58bd1096c">strings::GetAsciiCapitalization</a></div><div class="ttdeci">AsciiCapitalizationType GetAsciiCapitalization(const absl::string_view input)</div><div class="ttdef"><b>Definition:</b> <a href="case_8cc_source.html#l00051">case.cc:51</a></div></div>

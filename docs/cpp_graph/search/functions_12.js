@@ -1,9 +1,8 @@
 var searchData=
 [
-  ['undirectedadjacencylistsofdirectedgraph_0',['UndirectedAdjacencyListsOfDirectedGraph',['../classutil_1_1_undirected_adjacency_lists_of_directed_graph.html#a0a6c3259e0f5b11ae67f15beefa1020c',1,'util::UndirectedAdjacencyListsOfDirectedGraph']]],
-  ['unit_5fcost_1',['unit_cost',['../classoperations__research_1_1_flow_arc_proto.html#a9357e2d716ea734e7b74e5ef6045ae42',1,'operations_research::FlowArcProto']]],
-  ['unitcost_2',['UnitCost',['../classoperations__research_1_1_simple_min_cost_flow.html#a1057f1a98821c9237d75967b575f3829',1,'operations_research::SimpleMinCostFlow::UnitCost()'],['../classoperations__research_1_1_generic_min_cost_flow.html#a1057f1a98821c9237d75967b575f3829',1,'operations_research::GenericMinCostFlow::UnitCost()']]],
-  ['unknown_5ffields_3',['unknown_fields',['../classoperations__research_1_1_flow_arc_proto.html#a83b4e25249e0950564e7f9e4169a094b',1,'operations_research::FlowArcProto::unknown_fields()'],['../classoperations__research_1_1_flow_node_proto.html#a83b4e25249e0950564e7f9e4169a094b',1,'operations_research::FlowNodeProto::unknown_fields()'],['../classoperations__research_1_1_flow_model_proto.html#a83b4e25249e0950564e7f9e4169a094b',1,'operations_research::FlowModelProto::unknown_fields()']]],
-  ['unsafearenaswap_4',['UnsafeArenaSwap',['../classoperations__research_1_1_flow_arc_proto.html#a2934769bdd897c935ffe64dbe4bd730e',1,'operations_research::FlowArcProto::UnsafeArenaSwap()'],['../classoperations__research_1_1_flow_node_proto.html#a31b30efc17909c2afcdb9e57a544247e',1,'operations_research::FlowNodeProto::UnsafeArenaSwap()'],['../classoperations__research_1_1_flow_model_proto.html#ac45e9e7c74efb4d19af561b5a95de608',1,'operations_research::FlowModelProto::UnsafeArenaSwap()']]],
-  ['unseen_5',['Unseen',['../classoperations__research_1_1_ebert_graph_base_1_1_cycle_handler_for_annotated_arcs.html#a620585eea46339771ef3f9eae9aef25a',1,'operations_research::EbertGraphBase::CycleHandlerForAnnotatedArcs']]]
+  ['value_0',['value',['../classoperations__research_1_1_set.html#a983cf4555b2577512febcc3aa327a3c8',1,'operations_research::Set']]],
+  ['value_1',['Value',['../classoperations__research_1_1_lattice_memory_manager.html#aab77eae51a0b3e7781df913213ff4372',1,'operations_research::LatticeMemoryManager']]],
+  ['valueatoffset_2',['ValueAtOffset',['../classoperations__research_1_1_lattice_memory_manager.html#afc715a6711310680640765eb66822f8b',1,'operations_research::LatticeMemoryManager']]],
+  ['verifiestriangleinequality_3',['VerifiesTriangleInequality',['../classoperations__research_1_1_hamiltonian_path_solver.html#a44af6c2df0188e77ceeec78a190ecf3f',1,'operations_research::HamiltonianPathSolver']]],
+  ['volgenantjonkerevaluator_4',['VolgenantJonkerEvaluator',['../classoperations__research_1_1_volgenant_jonker_evaluator.html#a24cfa064cc97e776b361abdba5488673',1,'operations_research::VolgenantJonkerEvaluator']]]
 ];

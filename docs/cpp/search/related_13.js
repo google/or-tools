@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['useunused_0',['UseUnused',['../classabsl_1_1_source_location.html#a3a07de0b11d0f02efeeee1f75d0dc29e',1,'absl::SourceLocation']]]
+  ['xpressinterface_0',['XpressInterface',['../classoperations__research_1_1_m_p_solver.html#abc935c6e0cb353e2c61d38ad8af1ed5c',1,'operations_research::MPSolver::XpressInterface()'],['../classoperations__research_1_1_m_p_objective.html#abc935c6e0cb353e2c61d38ad8af1ed5c',1,'operations_research::MPObjective::XpressInterface()'],['../classoperations__research_1_1_m_p_variable.html#abc935c6e0cb353e2c61d38ad8af1ed5c',1,'operations_research::MPVariable::XpressInterface()'],['../classoperations__research_1_1_m_p_constraint.html#abc935c6e0cb353e2c61d38ad8af1ed5c',1,'operations_research::MPConstraint::XpressInterface()']]]
 ];

@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.2</span>
+   &#160;<span id="projectnumber">9.3</span>
    </div>
   </td>
  </tr>
@@ -97,7 +97,7 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1math__opt
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="gscip__solver_8h_source.html#l00044">44</a> of file <a class="el" href="gscip__solver_8h_source.html">gscip_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip__solver_8h_source.html#l00045">45</a> of file <a class="el" href="gscip__solver_8h_source.html">gscip_solver.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
 Public Types</h2></td></tr>
@@ -121,8 +121,8 @@ Public Member Functions</h2></td></tr>
 Static Public Member Functions</h2></td></tr>
 <tr class="memitem:a61ac0bc6afed786de631c4a91faeb866"><td class="memItemLeft" align="right" valign="top">static absl::StatusOr&lt; std::unique_ptr&lt; <a class="el" href="classoperations__research_1_1math__opt_1_1_solver_interface.html">SolverInterface</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_g_scip_solver.html#a61ac0bc6afed786de631c4a91faeb866">New</a> (const ModelProto &amp;<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>, const <a class="el" href="structoperations__research_1_1math__opt_1_1_solver_interface_1_1_init_args.html">InitArgs</a> &amp;init_args)</td></tr>
 <tr class="separator:a61ac0bc6afed786de631c4a91faeb866"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aaa9dc59ba40de604d91ff68c52aa2add"><td class="memItemLeft" align="right" valign="top">static std::pair&lt; <a class="el" href="classoperations__research_1_1_g_scip_parameters.html">GScipParameters</a>, std::vector&lt; std::string &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_g_scip_solver.html#aaa9dc59ba40de604d91ff68c52aa2add">MergeParameters</a> (const SolveParametersProto &amp;solve_parameters)</td></tr>
-<tr class="separator:aaa9dc59ba40de604d91ff68c52aa2add"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a97470e4fa956b2722e897e7199fb00f3"><td class="memItemLeft" align="right" valign="top">static absl::StatusOr&lt; GScipParameters &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_g_scip_solver.html#a97470e4fa956b2722e897e7199fb00f3">MergeParameters</a> (const SolveParametersProto &amp;solve_parameters)</td></tr>
+<tr class="separator:a97470e4fa956b2722e897e7199fb00f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="ab47a61ca53ae9cdf35dd4f2dfc9ecadb" name="ab47a61ca53ae9cdf35dd4f2dfc9ecadb"></a>
@@ -224,12 +224,12 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="classoperations__research_1_1math__opt_1_1_solver_interface.html#ad8b1e514f2b213b3fd4085683d20ff54">SolverInterface</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="gscip__solver_8cc_source.html#l00873">873</a> of file <a class="el" href="gscip__solver_8cc_source.html">gscip_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip__solver_8cc_source.html#l00904">904</a> of file <a class="el" href="gscip__solver_8cc_source.html">gscip_solver.cc</a>.</p>
 
 </div>
 </div>
-<a id="aaa9dc59ba40de604d91ff68c52aa2add" name="aaa9dc59ba40de604d91ff68c52aa2add"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aaa9dc59ba40de604d91ff68c52aa2add">&#9670;&nbsp;</a></span>MergeParameters()</h2>
+<a id="a97470e4fa956b2722e897e7199fb00f3" name="a97470e4fa956b2722e897e7199fb00f3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a97470e4fa956b2722e897e7199fb00f3">&#9670;&nbsp;</a></span>MergeParameters()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -238,7 +238,7 @@ Static Public Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">std::pair&lt; <a class="el" href="classoperations__research_1_1_g_scip_parameters.html">GScipParameters</a>, std::vector&lt; std::string &gt; &gt; MergeParameters </td>
+          <td class="memname">absl::StatusOr&lt; GScipParameters &gt; MergeParameters </td>
           <td>(</td>
           <td class="paramtype">const SolveParametersProto &amp;&#160;</td>
           <td class="paramname"><em>solve_parameters</em></td><td>)</td>
@@ -252,7 +252,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip__solver_8cc_source.html#l00406">406</a> of file <a class="el" href="gscip__solver_8cc_source.html">gscip_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip__solver_8cc_source.html#l00413">413</a> of file <a class="el" href="gscip__solver_8cc_source.html">gscip_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -290,7 +290,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gscip__solver_8cc_source.html#l00763">763</a> of file <a class="el" href="gscip__solver_8cc_source.html">gscip_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip__solver_8cc_source.html#l00777">777</a> of file <a class="el" href="gscip__solver_8cc_source.html">gscip_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -354,7 +354,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="classoperations__research_1_1math__opt_1_1_solver_interface.html#a53c70cddb8675c3246019b76cb97a05b">SolverInterface</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="gscip__solver_8cc_source.html#l00787">787</a> of file <a class="el" href="gscip__solver_8cc_source.html">gscip_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip__solver_8cc_source.html#l00801">801</a> of file <a class="el" href="gscip__solver_8cc_source.html">gscip_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -384,7 +384,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="classoperations__research_1_1math__opt_1_1_solver_interface.html#a0b2421a582a4317b26d0446781119f4d">SolverInterface</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="gscip__solver_8cc_source.html#l00884">884</a> of file <a class="el" href="gscip__solver_8cc_source.html">gscip_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gscip__solver_8cc_source.html#l00915">915</a> of file <a class="el" href="gscip__solver_8cc_source.html">gscip_solver.cc</a>.</p>
 
 </div>
 </div>

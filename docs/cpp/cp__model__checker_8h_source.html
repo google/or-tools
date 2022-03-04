@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.2</span>
+   &#160;<span id="projectnumber">9.3</span>
    </div>
   </td>
  </tr>
@@ -110,45 +110,55 @@ $(document).ready(function(){initNavTree('cp__model__checker_8h_source.html','')
 <div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span><span class="preprocessor">#include &lt;vector&gt;</span></div>
 <div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span> </div>
 <div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span><span class="preprocessor">#include &quot;<a class="code" href="integral__types_8h.html">ortools/base/integral_types.h</a>&quot;</span></div>
-<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span><span class="preprocessor">#include &quot;<a class="code" href="cp__model_8pb_8h.html">ortools/sat/cp_model.pb.h</a>&quot;</span></div>
-<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span> </div>
-<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceoperations__research.html">operations_research</a> {</div>
-<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span><span class="keyword">namespace </span>sat {</div>
-<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span> </div>
-<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span><span class="comment">// Verifies that the given model satisfies all the properties described in the</span></div>
-<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span><span class="comment">// proto comments. Returns an empty string if it is the case, otherwise fails at</span></div>
-<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span><span class="comment">// the first error and returns a human-readable description of the issue.</span></div>
-<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span><span class="comment">//</span></div>
-<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span><span class="comment">// The extra parameter is internal and mainly for debugging. After the problem</span></div>
-<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span><span class="comment">// has been presolved, we have a stricter set of properties we want to enforce.</span></div>
-<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span><span class="comment">//</span></div>
-<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span><span class="comment">// TODO(user): Add any needed overflow validation because we are far from</span></div>
-<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span><span class="comment">// exhaustive. We could also run a small presolve that tighten variable bounds</span></div>
-<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span><span class="comment">// before the overflow check to facilitate the lives of our users, but it is a</span></div>
-<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span><span class="comment">// some work to put in place.</span></div>
-<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>std::string <a class="code hl_function" href="namespaceoperations__research_1_1sat.html#a7c80376e10149bbba4019a88c934d67b">ValidateCpModel</a>(<span class="keyword">const</span> CpModelProto&amp; <a class="code hl_variable" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>,</div>
-<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>                            <span class="keywordtype">bool</span> after_presolve = <span class="keyword">false</span>);</div>
-<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span> </div>
-<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span><span class="comment">// Verifies that the given variable assignment is a feasible solution of the</span></div>
-<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span><span class="comment">// given model. The values vector should be in one to one correspondence with</span></div>
-<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span><span class="comment">// the model.variables() list of variables.</span></div>
+<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span><span class="preprocessor">#include &quot;ortools/sat/cp_model.pb.h&quot;</span></div>
+<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span><span class="preprocessor">#include &quot;ortools/sat/sat_parameters.pb.h&quot;</span></div>
+<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span> </div>
+<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceoperations__research.html">operations_research</a> {</div>
+<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span><span class="keyword">namespace </span>sat {</div>
+<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span> </div>
+<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span><span class="comment">// Verifies that the given model satisfies all the properties described in the</span></div>
+<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span><span class="comment">// proto comments. Returns an empty string if it is the case, otherwise fails at</span></div>
+<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span><span class="comment">// the first error and returns a human-readable description of the issue.</span></div>
+<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span><span class="comment">//</span></div>
+<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span><span class="comment">// The extra parameter is internal and mainly for debugging. After the problem</span></div>
+<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span><span class="comment">// has been presolved, we have a stricter set of properties we want to enforce.</span></div>
+<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span><span class="comment">//</span></div>
+<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span><span class="comment">// TODO(user): Add any needed overflow validation because we are far from</span></div>
+<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span><span class="comment">// exhaustive. We could also run a small presolve that tighten variable bounds</span></div>
+<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span><span class="comment">// before the overflow check to facilitate the lives of our users, but it is a</span></div>
+<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span><span class="comment">// some work to put in place.</span></div>
+<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>std::string <a class="code hl_function" href="namespaceoperations__research_1_1sat.html#a7c80376e10149bbba4019a88c934d67b">ValidateCpModel</a>(<span class="keyword">const</span> CpModelProto&amp; <a class="code hl_variable" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>,</div>
+<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>                            <span class="keywordtype">bool</span> after_presolve = <span class="keyword">false</span>);</div>
+<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span> </div>
+<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span><span class="comment">// Some validation (in particular the floating point objective) requires to</span></div>
+<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span><span class="comment">// read parameters.</span></div>
 <div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span><span class="comment">//</span></div>
-<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span><span class="comment">// The last two arguments are optional and help debugging a failing constraint</span></div>
-<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span><span class="comment">// due to presolve.</span></div>
-<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span><span class="keywordtype">bool</span> <a class="code hl_function" href="namespaceoperations__research_1_1sat.html#ae73633094e7b161547cec3a710fc5cae">SolutionIsFeasible</a>(<span class="keyword">const</span> CpModelProto&amp; <a class="code hl_variable" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>,</div>
-<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>                        <span class="keyword">const</span> std::vector&lt;int64_t&gt;&amp; variable_values,</div>
-<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>                        <span class="keyword">const</span> CpModelProto* mapping_proto = <span class="keyword">nullptr</span>,</div>
-<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>                        <span class="keyword">const</span> std::vector&lt;int&gt;* postsolve_mapping = <span class="keyword">nullptr</span>);</div>
-<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span> </div>
-<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>}  <span class="comment">// namespace sat</span></div>
-<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>}  <span class="comment">// namespace operations_research</span></div>
-<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span> </div>
-<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span><span class="preprocessor">#endif  </span><span class="comment">// OR_TOOLS_SAT_CP_MODEL_CHECKER_H_</span></div>
-<div class="ttc" id="acp__model_8pb_8h_html"><div class="ttname"><a href="cp__model_8pb_8h.html">cp_model.pb.h</a></div></div>
+<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span><span class="comment">// TODO(user): Ideally we would have just one ValidateCpModel() function but</span></div>
+<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span><span class="comment">// this was introduced after many users already use ValidateCpModel() without</span></div>
+<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span><span class="comment">// parameters.</span></div>
+<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>std::string <a class="code hl_function" href="namespaceoperations__research_1_1sat.html#a2d21677eccfe4c93af71c0892235237e">ValidateInputCpModel</a>(<span class="keyword">const</span> SatParameters&amp; params,</div>
+<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>                                 <span class="keyword">const</span> CpModelProto&amp; <a class="code hl_variable" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>);</div>
+<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span> </div>
+<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span><span class="comment">// Verifies that the given variable assignment is a feasible solution of the</span></div>
+<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span><span class="comment">// given model. The values vector should be in one to one correspondence with</span></div>
+<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span><span class="comment">// the model.variables() list of variables.</span></div>
+<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span><span class="comment">//</span></div>
+<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span><span class="comment">// The last two arguments are optional and help debugging a failing constraint</span></div>
+<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span><span class="comment">// due to presolve.</span></div>
+<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span><span class="keywordtype">bool</span> <a class="code hl_function" href="namespaceoperations__research_1_1sat.html#ae73633094e7b161547cec3a710fc5cae">SolutionIsFeasible</a>(<span class="keyword">const</span> CpModelProto&amp; <a class="code hl_variable" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>,</div>
+<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>                        <span class="keyword">const</span> std::vector&lt;int64_t&gt;&amp; variable_values,</div>
+<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>                        <span class="keyword">const</span> CpModelProto* mapping_proto = <span class="keyword">nullptr</span>,</div>
+<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>                        <span class="keyword">const</span> std::vector&lt;int&gt;* postsolve_mapping = <span class="keyword">nullptr</span>);</div>
+<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span> </div>
+<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>}  <span class="comment">// namespace sat</span></div>
+<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span>}  <span class="comment">// namespace operations_research</span></div>
+<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span> </div>
+<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span><span class="preprocessor">#endif  </span><span class="comment">// OR_TOOLS_SAT_CP_MODEL_CHECKER_H_</span></div>
 <div class="ttc" id="agurobi__interface_8cc_html_a0728f23c9a47655d38e0bf1a2f200bcf"><div class="ttname"><a href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a></div><div class="ttdeci">GRBmodel * model</div><div class="ttdef"><b>Definition:</b> <a href="gurobi__interface_8cc_source.html#l00274">gurobi_interface.cc:274</a></div></div>
 <div class="ttc" id="aintegral__types_8h_html"><div class="ttname"><a href="integral__types_8h.html">integral_types.h</a></div></div>
-<div class="ttc" id="anamespaceoperations__research_1_1sat_html_a7c80376e10149bbba4019a88c934d67b"><div class="ttname"><a href="namespaceoperations__research_1_1sat.html#a7c80376e10149bbba4019a88c934d67b">operations_research::sat::ValidateCpModel</a></div><div class="ttdeci">std::string ValidateCpModel(const CpModelProto &amp;model, bool after_presolve)</div><div class="ttdef"><b>Definition:</b> <a href="cp__model__checker_8cc_source.html#l00846">cp_model_checker.cc:846</a></div></div>
-<div class="ttc" id="anamespaceoperations__research_1_1sat_html_ae73633094e7b161547cec3a710fc5cae"><div class="ttname"><a href="namespaceoperations__research_1_1sat.html#ae73633094e7b161547cec3a710fc5cae">operations_research::sat::SolutionIsFeasible</a></div><div class="ttdeci">bool SolutionIsFeasible(const CpModelProto &amp;model, const std::vector&lt; int64_t &gt; &amp;variable_values, const CpModelProto *mapping_proto, const std::vector&lt; int &gt; *postsolve_mapping)</div><div class="ttdef"><b>Definition:</b> <a href="cp__model__checker_8cc_source.html#l01454">cp_model_checker.cc:1454</a></div></div>
+<div class="ttc" id="anamespaceoperations__research_1_1sat_html_a2d21677eccfe4c93af71c0892235237e"><div class="ttname"><a href="namespaceoperations__research_1_1sat.html#a2d21677eccfe4c93af71c0892235237e">operations_research::sat::ValidateInputCpModel</a></div><div class="ttdeci">std::string ValidateInputCpModel(const SatParameters &amp;params, const CpModelProto &amp;model)</div><div class="ttdef"><b>Definition:</b> <a href="cp__model__checker_8cc_source.html#l01008">cp_model_checker.cc:1008</a></div></div>
+<div class="ttc" id="anamespaceoperations__research_1_1sat_html_a7c80376e10149bbba4019a88c934d67b"><div class="ttname"><a href="namespaceoperations__research_1_1sat.html#a7c80376e10149bbba4019a88c934d67b">operations_research::sat::ValidateCpModel</a></div><div class="ttdeci">std::string ValidateCpModel(const CpModelProto &amp;model, bool after_presolve)</div><div class="ttdef"><b>Definition:</b> <a href="cp__model__checker_8cc_source.html#l00862">cp_model_checker.cc:862</a></div></div>
+<div class="ttc" id="anamespaceoperations__research_1_1sat_html_ae73633094e7b161547cec3a710fc5cae"><div class="ttname"><a href="namespaceoperations__research_1_1sat.html#ae73633094e7b161547cec3a710fc5cae">operations_research::sat::SolutionIsFeasible</a></div><div class="ttdeci">bool SolutionIsFeasible(const CpModelProto &amp;model, const std::vector&lt; int64_t &gt; &amp;variable_values, const CpModelProto *mapping_proto, const std::vector&lt; int &gt; *postsolve_mapping)</div><div class="ttdef"><b>Definition:</b> <a href="cp__model__checker_8cc_source.html#l01477">cp_model_checker.cc:1477</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_html"><div class="ttname"><a href="namespaceoperations__research.html">operations_research</a></div><div class="ttdoc">Collection of objects used to extend the Constraint Solver library.</div><div class="ttdef"><b>Definition:</b> <a href="dense__doubly__linked__list_8h_source.html#l00021">dense_doubly_linked_list.h:21</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->

@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.2</span>
+   &#160;<span id="projectnumber">9.3</span>
    </div>
   </td>
  </tr>
@@ -106,14 +106,14 @@ $(document).ready(function(){initNavTree('proto__converter_8h_source.html',''); 
 <div class="line"><a id="l00015" name="l00015"></a><span class="lineno">   15</span><span class="preprocessor">#define OR_TOOLS_MATH_OPT_IO_PROTO_CONVERTER_H_</span></div>
 <div class="line"><a id="l00016" name="l00016"></a><span class="lineno">   16</span> </div>
 <div class="line"><a id="l00017" name="l00017"></a><span class="lineno">   17</span><span class="preprocessor">#include &quot;absl/status/statusor.h&quot;</span></div>
-<div class="line"><a id="l00018" name="l00018"></a><span class="lineno">   18</span><span class="preprocessor">#include &quot;<a class="code" href="linear__solver_8pb_8h.html">ortools/linear_solver/linear_solver.pb.h</a>&quot;</span></div>
+<div class="line"><a id="l00018" name="l00018"></a><span class="lineno">   18</span><span class="preprocessor">#include &quot;ortools/linear_solver/linear_solver.pb.h&quot;</span></div>
 <div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span><span class="preprocessor">#include &quot;ortools/math_opt/model.pb.h&quot;</span></div>
 <div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span> </div>
 <div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceoperations__research_1_1math__opt.html">operations_research::math_opt</a> {</div>
 <div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span> </div>
 <div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span><span class="comment">// Returns a ModelProto equivalent to the input linear_solver Model.</span></div>
 <div class="line"><a id="l00024" name="l00024"></a><span class="lineno"><a class="line" href="namespaceoperations__research_1_1math__opt.html#a08236e506a56f4978e904da900947135">   24</a></span>absl::StatusOr&lt;ModelProto&gt; <a class="code hl_function" href="namespaceoperations__research_1_1math__opt.html#ab1de4bd3fc3c67de6f6a4eebbb28db5e">MPModelProtoToMathOptModel</a>(</div>
-<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span>    <span class="keyword">const</span> <a class="code hl_class" href="classoperations__research_1_1_m_p_model_proto.html">MPModelProto</a>&amp; <a class="code hl_variable" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>);</div>
+<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span>    <span class="keyword">const</span> MPModelProto&amp; <a class="code hl_variable" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>);</div>
 <div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span> </div>
 <div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span><span class="comment">// Returns a linear_solver MPModelProto equivalent to the input math_opt Model.</span></div>
 <div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span><span class="comment">//</span></div>
@@ -126,9 +126,7 @@ $(document).ready(function(){initNavTree('proto__converter_8h_source.html',''); 
 <div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>}  <span class="comment">// namespace operations_research::math_opt</span></div>
 <div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span> </div>
 <div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span><span class="preprocessor">#endif  </span><span class="comment">// OR_TOOLS_MATH_OPT_IO_PROTO_CONVERTER_H_</span></div>
-<div class="ttc" id="aclassoperations__research_1_1_m_p_model_proto_html"><div class="ttname"><a href="classoperations__research_1_1_m_p_model_proto.html">operations_research::MPModelProto</a></div><div class="ttdef"><b>Definition:</b> <a href="linear__solver_8pb_8h_source.html#l02800">linear_solver.pb.h:2801</a></div></div>
 <div class="ttc" id="agurobi__interface_8cc_html_a0728f23c9a47655d38e0bf1a2f200bcf"><div class="ttname"><a href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a></div><div class="ttdeci">GRBmodel * model</div><div class="ttdef"><b>Definition:</b> <a href="gurobi__interface_8cc_source.html#l00274">gurobi_interface.cc:274</a></div></div>
-<div class="ttc" id="alinear__solver_8pb_8h_html"><div class="ttname"><a href="linear__solver_8pb_8h.html">linear_solver.pb.h</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_1_1math__opt_html"><div class="ttname"><a href="namespaceoperations__research_1_1math__opt.html">operations_research::math_opt</a></div><div class="ttdef"><b>Definition:</b> <a href="arrow__operator__proxy_8h_source.html#l00020">arrow_operator_proxy.h:20</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_1_1math__opt_html_a5d8c9048c51c1bc6685751a7cb8514fe"><div class="ttname"><a href="namespaceoperations__research_1_1math__opt.html#a5d8c9048c51c1bc6685751a7cb8514fe">operations_research::math_opt::MathOptModelToMPModelProto</a></div><div class="ttdeci">absl::StatusOr&lt;::operations_research::MPModelProto &gt; MathOptModelToMPModelProto(const ::operations_research::math_opt::ModelProto &amp;model)</div><div class="ttdef"><b>Definition:</b> <a href="proto__converter_8cc_source.html#l00206">proto_converter.cc:206</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_1_1math__opt_html_ab1de4bd3fc3c67de6f6a4eebbb28db5e"><div class="ttname"><a href="namespaceoperations__research_1_1math__opt.html#ab1de4bd3fc3c67de6f6a4eebbb28db5e">operations_research::math_opt::MPModelProtoToMathOptModel</a></div><div class="ttdeci">absl::StatusOr&lt;::operations_research::math_opt::ModelProto &gt; MPModelProtoToMathOptModel(const ::operations_research::MPModelProto &amp;model)</div><div class="ttdef"><b>Definition:</b> <a href="proto__converter_8cc_source.html#l00078">proto_converter.cc:78</a></div></div>

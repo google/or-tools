@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.2</span>
+   &#160;<span id="projectnumber">9.3</span>
    </div>
   </td>
  </tr>
@@ -94,7 +94,7 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1sat_1_1_p
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="probing_8h_source.html#l00029">29</a> of file <a class="el" href="probing_8h_source.html">probing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="probing_8h_source.html#l00037">37</a> of file <a class="el" href="probing_8h_source.html">probing.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -106,6 +106,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a40f6edf9f9c19c241dd7d220da9acaab"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7d6a8a15f30eb61684dbad769f7a557f"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_prober.html#a7d6a8a15f30eb61684dbad769f7a557f">ProbeOneVariable</a> (BooleanVariable <a class="el" href="constraint__solver_2table_8cc.html#a9293e4d29cac928301645070dd307683">b</a>)</td></tr>
 <tr class="separator:a7d6a8a15f30eb61684dbad769f7a557f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeb27667851805b5e52c68ff3ce0ed9cc"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_prober.html#aeb27667851805b5e52c68ff3ce0ed9cc">num_new_literals_fixed</a> () const</td></tr>
+<tr class="separator:aeb27667851805b5e52c68ff3ce0ed9cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4720b7143068320f293afff5c38e5ce6"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_prober.html#a4720b7143068320f293afff5c38e5ce6">num_new_binary_clauses</a> () const</td></tr>
+<tr class="separator:a4720b7143068320f293afff5c38e5ce6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="ab10b5a52f5a6dd0a183f208f85be1503" name="ab10b5a52f5a6dd0a183f208f85be1503"></a>
@@ -132,11 +136,65 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="probing_8cc_source.html#l00034">34</a> of file <a class="el" href="probing_8cc_source.html">probing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="probing_8cc_source.html#l00043">43</a> of file <a class="el" href="probing_8cc_source.html">probing.cc</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="a4720b7143068320f293afff5c38e5ce6" name="a4720b7143068320f293afff5c38e5ce6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4720b7143068320f293afff5c38e5ce6">&#9670;&nbsp;</a></span>num_new_binary_clauses()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int num_new_binary_clauses </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="probing_8h_source.html#l00087">87</a> of file <a class="el" href="probing_8h_source.html">probing.h</a>.</p>
+
+</div>
+</div>
+<a id="aeb27667851805b5e52c68ff3ce0ed9cc" name="aeb27667851805b5e52c68ff3ce0ed9cc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aeb27667851805b5e52c68ff3ce0ed9cc">&#9670;&nbsp;</a></span>num_new_literals_fixed()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int num_new_literals_fixed </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="probing_8h_source.html#l00086">86</a> of file <a class="el" href="probing_8h_source.html">probing.h</a>.</p>
+
+</div>
+</div>
 <a id="a85633e19f7fa9ac7f6155b23ce845fa6" name="a85633e19f7fa9ac7f6155b23ce845fa6"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a85633e19f7fa9ac7f6155b23ce845fa6">&#9670;&nbsp;</a></span>ProbeBooleanVariables() <span class="overload">[1/2]</span></h2>
 
@@ -153,7 +211,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="probing_8cc_source.html#l00044">44</a> of file <a class="el" href="probing_8cc_source.html">probing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="probing_8cc_source.html#l00053">53</a> of file <a class="el" href="probing_8cc_source.html">probing.cc</a>.</p>
 
 </div>
 </div>
@@ -183,7 +241,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="probing_8cc_source.html#l00198">198</a> of file <a class="el" href="probing_8cc_source.html">probing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="probing_8cc_source.html#l00208">208</a> of file <a class="el" href="probing_8cc_source.html">probing.cc</a>.</p>
 
 </div>
 </div>
@@ -203,7 +261,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="probing_8cc_source.html#l00181">181</a> of file <a class="el" href="probing_8cc_source.html">probing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="probing_8cc_source.html#l00190">190</a> of file <a class="el" href="probing_8cc_source.html">probing.cc</a>.</p>
 
 </div>
 </div>

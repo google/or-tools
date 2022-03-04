@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.2</span>
+   &#160;<span id="projectnumber">9.3</span>
    </div>
   </td>
  </tr>
@@ -225,8 +225,8 @@ $(document).ready(function(){initNavTree('knapsack__solver_8h_source.html',''); 
 <div class="line"><a id="l00289" name="l00289"></a><span class="lineno">  289</span><span class="comment">// TODO(user): Add a new propagator class used as a guide when the problem has</span></div>
 <div class="line"><a id="l00290" name="l00290"></a><span class="lineno">  290</span><span class="comment">// several dimensions.</span></div>
 <div class="line"><a id="l00291" name="l00291"></a><span class="lineno">  291</span> </div>
-<div class="line"><a id="l00292" name="l00292"></a><span class="lineno">  292</span><span class="comment">// ----- KnapsackAssignement -----</span></div>
-<div class="line"><a id="l00293" name="l00293"></a><span class="lineno">  293</span><span class="comment">// KnapsackAssignement is a small struct used to pair an item with its</span></div>
+<div class="line"><a id="l00292" name="l00292"></a><span class="lineno">  292</span><span class="comment">// ----- KnapsackAssignment -----</span></div>
+<div class="line"><a id="l00293" name="l00293"></a><span class="lineno">  293</span><span class="comment">// KnapsackAssignment is a small struct used to pair an item with its</span></div>
 <div class="line"><a id="l00294" name="l00294"></a><span class="lineno">  294</span><span class="comment">// assignment. It is mainly used for search nodes and updates.</span></div>
 <div class="line"><a id="l00295" name="l00295"></a><span class="lineno"><a class="line" href="structoperations__research_1_1_knapsack_assignment.html">  295</a></span><span class="keyword">struct </span><a class="code hl_struct" href="structoperations__research_1_1_knapsack_assignment.html">KnapsackAssignment</a> {</div>
 <div class="line"><a id="l00296" name="l00296"></a><span class="lineno"><a class="line" href="structoperations__research_1_1_knapsack_assignment.html#a8f85eb172a4c6bed0d042f7d269fc457">  296</a></span>  <a class="code hl_function" href="structoperations__research_1_1_knapsack_assignment.html#a8f85eb172a4c6bed0d042f7d269fc457">KnapsackAssignment</a>(<span class="keywordtype">int</span> _item_id, <span class="keywordtype">bool</span> _is_in)</div>
@@ -268,7 +268,7 @@ $(document).ready(function(){initNavTree('knapsack__solver_8h_source.html',''); 
 <div class="line"><a id="l00332" name="l00332"></a><span class="lineno">  332</span><span class="comment">// KnapsackSearchNode is a class used to describe a decision in the decision</span></div>
 <div class="line"><a id="l00333" name="l00333"></a><span class="lineno">  333</span><span class="comment">// search tree.</span></div>
 <div class="line"><a id="l00334" name="l00334"></a><span class="lineno">  334</span><span class="comment">// The node is defined by a pointer to the parent search node and an</span></div>
-<div class="line"><a id="l00335" name="l00335"></a><span class="lineno">  335</span><span class="comment">// assignment (see KnapsackAssignement).</span></div>
+<div class="line"><a id="l00335" name="l00335"></a><span class="lineno">  335</span><span class="comment">// assignment (see KnapsackAssignment).</span></div>
 <div class="line"><a id="l00336" name="l00336"></a><span class="lineno">  336</span><span class="comment">// As the current state is not explicitly stored in a search node, one should</span></div>
 <div class="line"><a id="l00337" name="l00337"></a><span class="lineno">  337</span><span class="comment">// go through the search tree to incrementally build a partial solution from</span></div>
 <div class="line"><a id="l00338" name="l00338"></a><span class="lineno">  338</span><span class="comment">// a previous search node.</span></div>
@@ -707,7 +707,7 @@ $(document).ready(function(){initNavTree('knapsack__solver_8h_source.html',''); 
 <div class="ttc" id="aclassoperations__research_1_1_knapsack_state_html_a89aa280d2321c1316aa1305106f1bb49"><div class="ttname"><a href="classoperations__research_1_1_knapsack_state.html#a89aa280d2321c1316aa1305106f1bb49">operations_research::KnapsackState::is_bound</a></div><div class="ttdeci">bool is_bound(int id) const</div><div class="ttdef"><b>Definition:</b> <a href="knapsack__solver_8h_source.html#l00426">knapsack_solver.h:426</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1_knapsack_state_html_ab771ac0e538f991b73b011ee3ba11f05"><div class="ttname"><a href="classoperations__research_1_1_knapsack_state.html#ab771ac0e538f991b73b011ee3ba11f05">operations_research::KnapsackState::UpdateState</a></div><div class="ttdeci">bool UpdateState(bool revert, const KnapsackAssignment &amp;assignment)</div><div class="ttdef"><b>Definition:</b> <a href="knapsack__solver_8cc_source.html#l00148">knapsack_solver.cc:148</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1_time_limit_html"><div class="ttname"><a href="classoperations__research_1_1_time_limit.html">operations_research::TimeLimit</a></div><div class="ttdoc">A simple class to enforce both an elapsed time limit and a deterministic time limit in the same threa...</div><div class="ttdef"><b>Definition:</b> <a href="time__limit_8h_source.html#l00106">time_limit.h:106</a></div></div>
-<div class="ttc" id="acp__model__solver_8cc_html_aec8af5c1be4e1b6d4330e1161028de21"><div class="ttname"><a href="cp__model__solver_8cc.html#aec8af5c1be4e1b6d4330e1161028de21">time_limit</a></div><div class="ttdeci">ModelSharedTimeLimit * time_limit</div><div class="ttdef"><b>Definition:</b> <a href="cp__model__solver_8cc_source.html#l01951">cp_model_solver.cc:1951</a></div></div>
+<div class="ttc" id="acp__model__solver_8cc_html_aec8af5c1be4e1b6d4330e1161028de21"><div class="ttname"><a href="cp__model__solver_8cc.html#aec8af5c1be4e1b6d4330e1161028de21">time_limit</a></div><div class="ttdeci">ModelSharedTimeLimit * time_limit</div><div class="ttdef"><b>Definition:</b> <a href="cp__model__solver_8cc_source.html#l02050">cp_model_solver.cc:2050</a></div></div>
 <div class="ttc" id="agscip__solver_8cc_html_a1ba5ca0f61f2fa13bd23bf0f89004f35"><div class="ttname"><a href="gscip__solver_8cc.html#a1ba5ca0f61f2fa13bd23bf0f89004f35">upper_bound</a></div><div class="ttdeci">double upper_bound</div><div class="ttdef"><b>Definition:</b> <a href="gscip__solver_8cc_source.html#l00137">gscip_solver.cc:137</a></div></div>
 <div class="ttc" id="agscip__solver_8cc_html_a1e2f9a2352c1d9a6cada9544898fceec"><div class="ttname"><a href="gscip__solver_8cc.html#a1e2f9a2352c1d9a6cada9544898fceec">lower_bound</a></div><div class="ttdeci">double lower_bound</div><div class="ttdef"><b>Definition:</b> <a href="gscip__solver_8cc_source.html#l00136">gscip_solver.cc:136</a></div></div>
 <div class="ttc" id="aintegral__types_8h_html"><div class="ttname"><a href="integral__types_8h.html">integral_types.h</a></div></div>

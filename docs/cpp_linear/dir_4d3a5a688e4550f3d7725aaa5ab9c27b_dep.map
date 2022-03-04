@@ -1,6 +1,4 @@
 <map id="linear_solver" name="linear_solver">
-<area shape="rect" id="node1" href="dir_b2c6d49957bf5d0c7726edb4b829cd4d.html" title="gen" alt="" coords="39,148,111,196"/>
-<area shape="rect" id="node2" href="dir_4d3a5a688e4550f3d7725aaa5ab9c27b.html" title="linear_solver" alt="" coords="27,52,122,100"/>
-<area shape="rect" id="edge1-headlabel" href="dir_000002_000000.html" title="4" alt="" coords="79,122,87,137"/>
-<area shape="rect" id="clust1" href="dir_a7cc1eeded8f693d0da6c729bc88c45a.html" title="ortools" alt="" coords="16,16,133,207"/>
+<area shape="rect" id="node1" href="dir_4d3a5a688e4550f3d7725aaa5ab9c27b.html" title="linear_solver" alt="" coords="27,52,133,100"/>
+<area shape="rect" id="clust1" href="dir_a7cc1eeded8f693d0da6c729bc88c45a.html" title="ortools" alt="" coords="16,16,144,111"/>
 </map>

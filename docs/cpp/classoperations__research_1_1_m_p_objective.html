@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.2</span>
+   &#160;<span id="projectnumber">9.3</span>
    </div>
   </td>
  </tr>
@@ -95,7 +95,7 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1_m_p_obje
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p >A class to express a linear objective. </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00959">959</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00965">965</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -111,7 +111,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:afb42f5cebaf659f1a302d5062a576af0"><td class="memItemLeft" align="right" valign="top">const absl::flat_hash_map&lt; const <a class="el" href="classoperations__research_1_1_m_p_variable.html">MPVariable</a> *, double &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_m_p_objective.html#afb42f5cebaf659f1a302d5062a576af0">terms</a> () const</td></tr>
 <tr class="memdesc:afb42f5cebaf659f1a302d5062a576af0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a map from variables to their coefficients in the objective.  <a href="classoperations__research_1_1_m_p_objective.html#afb42f5cebaf659f1a302d5062a576af0">More...</a><br /></td></tr>
 <tr class="separator:afb42f5cebaf659f1a302d5062a576af0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3d269786b0c64ba034e7e8a8a09213fc"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_m_p_objective.html#a3d269786b0c64ba034e7e8a8a09213fc">SetOffset</a> (double <a class="el" href="matchers_8cc.html#a0b6f3694312803de4bea1fe97896294f">value</a>)</td></tr>
+<tr class="memitem:a3d269786b0c64ba034e7e8a8a09213fc"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_m_p_objective.html#a3d269786b0c64ba034e7e8a8a09213fc">SetOffset</a> (double <a class="el" href="primal__dual__hybrid__gradient_8cc.html#a730b1ea892f1f794d9bd5f16027acb63">value</a>)</td></tr>
 <tr class="memdesc:a3d269786b0c64ba034e7e8a8a09213fc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the constant term in the objective.  <a href="classoperations__research_1_1_m_p_objective.html#a3d269786b0c64ba034e7e8a8a09213fc">More...</a><br /></td></tr>
 <tr class="separator:a3d269786b0c64ba034e7e8a8a09213fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a96ffc785b7b2135c7980c985883ffdd3"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_m_p_objective.html#a96ffc785b7b2135c7980c985883ffdd3">offset</a> () const</td></tr>
@@ -170,7 +170,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Adds linear_expr to the current objective, does not change the direction. </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l00224">224</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l00226">226</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -192,7 +192,7 @@ Public Member Functions</h2></td></tr>
 <p>Returns the best objective bound. </p>
 <p >In case of minimization, it is a lower bound on the objective value of the optimal integer solution. Only available for discrete problems. </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l00261">261</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l00263">263</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -213,7 +213,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Clears the offset, all variables and coefficients, and the optimization direction. </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l00232">232</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l00234">234</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -236,7 +236,7 @@ Public Member Functions</h2></td></tr>
 <p>Gets the coefficient of a given variable in the objective. </p>
 <p >It returns 0 if the variable does not appear in the objective). </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l00176">176</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l00178">178</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -257,7 +257,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Is the optimization direction set to maximize? </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l00250">250</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l00252">252</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -287,7 +287,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Resets the current objective to maximize linear_expr. </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01004">1004</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01010">1010</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -308,7 +308,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Is the optimization direction set to minimize? </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l00252">252</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l00254">254</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -338,7 +338,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Resets the current objective to minimize linear_expr. </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01008">1008</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01014">1014</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -367,7 +367,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Gets the constant term in the objective. </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00995">995</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01001">1001</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -399,7 +399,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Resets the current objective to take the value of linear_expr, and sets the objective direction to maximize if "is_maximize", otherwise minimizes. </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l00212">212</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l00214">214</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -432,7 +432,7 @@ Public Member Functions</h2></td></tr>
 <p>Sets the coefficient of the variable in the objective. </p>
 <p >If the variable does not belong to the solver, the function just returns, or crashes in non-opt mode. </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l00182">182</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l00184">184</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -461,7 +461,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Sets the optimization direction to maximize. </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01022">1022</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01028">1028</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -490,7 +490,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Sets the optimization direction to minimize. </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01019">1019</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01025">1025</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -512,7 +512,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Sets the constant term in the objective. </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l00197">197</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l00199">199</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -534,7 +534,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Sets the optimization direction (maximize: true or minimize: false). </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l00239">239</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l00241">241</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -564,7 +564,7 @@ Public Member Functions</h2></td></tr>
 <p>Returns a map from variables to their coefficients in the objective. </p>
 <p >If a variable is not present in the map, then its coefficient is zero. </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00987">987</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00993">993</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -587,7 +587,7 @@ Public Member Functions</h2></td></tr>
 <p >It is the optimal objective value if the problem has been solved to optimality.</p>
 <p >Note: the objective value may be slightly different than what you could compute yourself using <code><a class="el" href="classoperations__research_1_1_m_p_variable.html#adf1a0cc6a3736f3db9880392efe02f0e" title="Returns the value of the variable in the current solution.">MPVariable::solution_value()</a></code>; please use the &ndash;verify_solution flag to gain confidence about the numerical stability of your solution. </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l00254">254</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l00256">256</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
 
 </div>
 </div>

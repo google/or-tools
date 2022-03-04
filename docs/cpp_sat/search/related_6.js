@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['multiplecircuitconstraint_0',['MultipleCircuitConstraint',['../classoperations__research_1_1sat_1_1_bool_var.html#afa8cb51258a0d98e6d5db2f60f8ceccc',1,'operations_research::sat::BoolVar']]]
+  ['nestedtimelimit_0',['NestedTimeLimit',['../classoperations__research_1_1_time_limit.html#a80c2662c13e3bbf165ffe1603fe87433',1,'operations_research::TimeLimit']]],
+  ['nooverlap2dconstraint_1',['NoOverlap2DConstraint',['../classoperations__research_1_1sat_1_1_interval_var.html#abdbbe5d06195ef1dc4c30ad25b9017ac',1,'operations_research::sat::IntervalVar']]]
 ];

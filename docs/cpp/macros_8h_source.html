@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.2</span>
+   &#160;<span id="projectnumber">9.3</span>
    </div>
   </td>
  </tr>
@@ -118,8 +118,8 @@ $(document).ready(function(){initNavTree('macros_8h_source.html',''); initResiza
 <div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span><span class="comment">// DISALLOW_COPY_AND_ASSIGN disallows the copy and operator= functions.</span></div>
 <div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span><span class="comment">// It goes in the private: declarations in a class.</span></div>
 <div class="line"><a id="l00029" name="l00029"></a><span class="lineno"><a class="line" href="macros_8h.html#af8df3547bfde53a5acb93e2607b0034a">   29</a></span><span class="preprocessor">#define DISALLOW_COPY_AND_ASSIGN(TypeName) \</span></div>
-<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span><span class="preprocessor">  TypeName(const TypeName&amp;);               \</span></div>
-<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span><span class="preprocessor">  void operator=(const TypeName&amp;)</span></div>
+<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span><span class="preprocessor">  TypeName(const TypeName&amp;) = delete;      \</span></div>
+<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span><span class="preprocessor">  TypeName&amp; operator=(const TypeName&amp;) = delete</span></div>
 <div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span> </div>
 <div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T, <span class="keywordtype">size_t</span> N&gt;</div>
 <div class="line"><a id="l00034" name="l00034"></a><span class="lineno"><a class="line" href="macros_8h.html#a0faba242ec05ca7f82511c5679324ca4">   34</a></span>char (&amp;<a class="code hl_function" href="macros_8h.html#a0faba242ec05ca7f82511c5679324ca4">ArraySizeHelper</a>(T (&amp;array)[N]))[N];</div>

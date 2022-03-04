@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.2</span>
+   &#160;<span id="projectnumber">9.3</span>
    </div>
   </td>
  </tr>
@@ -201,23 +201,30 @@ $(document).ready(function(){initNavTree('cleanup_8h_source.html',''); initResiz
 <div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span> </div>
 <div class="line"><a id="l00111" name="l00111"></a><span class="lineno"><a class="line" href="classabsl_1_1_cleanup.html#a8a1144011919d2f5a36baa45ba8fb638">  111</a></span>  <span class="keywordtype">bool</span> <a class="code hl_function" href="classabsl_1_1_cleanup.html#a8a1144011919d2f5a36baa45ba8fb638">is_released</a>()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> !storage_.ContainsCallback(); }</div>
 <div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span> </div>
-<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span> <span class="keyword">private</span>:</div>
-<div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span>  <span class="keyword">friend</span> AccessStorage;</div>
-<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span> </div>
-<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span>  Storage storage_;</div>
-<div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span>};</div>
-<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span> </div>
-<div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span><span class="keyword">template</span> &lt;<span class="keywordtype">int</span>&amp;... PreventExplicitTemplateArguments, <span class="keyword">typename</span> <a class="code hl_typedef" href="namespaceoperations__research_1_1math__opt.html#a9d73bc1014f12f33dfaa51825ad668ee">Callback</a>&gt;</div>
-<div class="line"><a id="l00120" name="l00120"></a><span class="lineno"><a class="line" href="namespaceabsl.html#a01547ab811df98c71089487f394ec259">  120</a></span><a class="code hl_class" href="classabsl_1_1_cleanup.html">absl::Cleanup&lt;absl::decay_t&lt;Callback&gt;</a>&gt; <a class="code hl_function" href="namespaceabsl.html#a01547ab811df98c71089487f394ec259">MakeCleanup</a>(<a class="code hl_typedef" href="namespaceoperations__research_1_1math__opt.html#a9d73bc1014f12f33dfaa51825ad668ee">Callback</a>&amp;&amp; <a class="code hl_variable" href="gurobi__interface_8cc.html#a6627a3800ac768bb5528ef54c9cace36">callback</a>) {</div>
-<div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span>  <span class="keywordflow">return</span> <a class="code hl_class" href="classabsl_1_1_cleanup.html">absl::Cleanup&lt;absl::decay_t&lt;Callback&gt;</a>&gt;(</div>
-<div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span>      std::forward&lt;Callback&gt;(<a class="code hl_variable" href="gurobi__interface_8cc.html#a6627a3800ac768bb5528ef54c9cace36">callback</a>));</div>
-<div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span>}</div>
-<div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span> </div>
-<div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span>}  <span class="comment">// namespace absl</span></div>
-<div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span> </div>
-<div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span><span class="preprocessor">#endif  </span><span class="comment">// OR_TOOLS_BASE_CLEANUP_H_</span></div>
+<div class="line"><a id="l00113" name="l00113"></a><span class="lineno"><a class="line" href="classabsl_1_1_cleanup.html#a0559036920b1474be69635e7ba3d41ad">  113</a></span>  <span class="keywordtype">void</span> <a class="code hl_function" href="classabsl_1_1_cleanup.html#a0559036920b1474be69635e7ba3d41ad">Invoke</a>() &amp;&amp; {</div>
+<div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span>    <a class="code hl_define" href="base_2logging_8h.html#a3e1cfef60e774a81f30eaddf26a3a274">CHECK</a>(storage_.ContainsCallback());</div>
+<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span>    storage_.InvokeCallback();</div>
+<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span>  }</div>
+<div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span> </div>
+<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span> <span class="keyword">private</span>:</div>
+<div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span>  <span class="keyword">friend</span> AccessStorage;</div>
+<div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span> </div>
+<div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span>  Storage storage_;</div>
+<div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span>};</div>
+<div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span> </div>
+<div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span><span class="keyword">template</span> &lt;<span class="keywordtype">int</span>&amp;... PreventExplicitTemplateArguments, <span class="keyword">typename</span> <a class="code hl_typedef" href="namespaceoperations__research_1_1math__opt.html#a9d73bc1014f12f33dfaa51825ad668ee">Callback</a>&gt;</div>
+<div class="line"><a id="l00125" name="l00125"></a><span class="lineno"><a class="line" href="namespaceabsl.html#a01547ab811df98c71089487f394ec259">  125</a></span><a class="code hl_class" href="classabsl_1_1_cleanup.html">absl::Cleanup&lt;absl::decay_t&lt;Callback&gt;</a>&gt; <a class="code hl_function" href="namespaceabsl.html#a01547ab811df98c71089487f394ec259">MakeCleanup</a>(<a class="code hl_typedef" href="namespaceoperations__research_1_1math__opt.html#a9d73bc1014f12f33dfaa51825ad668ee">Callback</a>&amp;&amp; <a class="code hl_variable" href="gurobi__interface_8cc.html#a6627a3800ac768bb5528ef54c9cace36">callback</a>) {</div>
+<div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span>  <span class="keywordflow">return</span> <a class="code hl_class" href="classabsl_1_1_cleanup.html">absl::Cleanup&lt;absl::decay_t&lt;Callback&gt;</a>&gt;(</div>
+<div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span>      std::forward&lt;Callback&gt;(<a class="code hl_variable" href="gurobi__interface_8cc.html#a6627a3800ac768bb5528ef54c9cace36">callback</a>));</div>
+<div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span>}</div>
+<div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span> </div>
+<div class="line"><a id="l00130" name="l00130"></a><span class="lineno">  130</span>}  <span class="comment">// namespace absl</span></div>
+<div class="line"><a id="l00131" name="l00131"></a><span class="lineno">  131</span> </div>
+<div class="line"><a id="l00132" name="l00132"></a><span class="lineno">  132</span><span class="preprocessor">#endif  </span><span class="comment">// OR_TOOLS_BASE_CLEANUP_H_</span></div>
 <div class="ttc" id="abase_2logging_8h_html"><div class="ttname"><a href="base_2logging_8h.html">logging.h</a></div></div>
+<div class="ttc" id="abase_2logging_8h_html_a3e1cfef60e774a81f30eaddf26a3a274"><div class="ttname"><a href="base_2logging_8h.html#a3e1cfef60e774a81f30eaddf26a3a274">CHECK</a></div><div class="ttdeci">#define CHECK(condition)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00495">base/logging.h:495</a></div></div>
 <div class="ttc" id="aclassabsl_1_1_cleanup_html"><div class="ttname"><a href="classabsl_1_1_cleanup.html">absl::Cleanup</a></div><div class="ttdef"><b>Definition:</b> <a href="cleanup_8h_source.html#l00086">cleanup.h:86</a></div></div>
+<div class="ttc" id="aclassabsl_1_1_cleanup_html_a0559036920b1474be69635e7ba3d41ad"><div class="ttname"><a href="classabsl_1_1_cleanup.html#a0559036920b1474be69635e7ba3d41ad">absl::Cleanup::Invoke</a></div><div class="ttdeci">void Invoke() &amp;&amp;</div><div class="ttdef"><b>Definition:</b> <a href="cleanup_8h_source.html#l00113">cleanup.h:113</a></div></div>
 <div class="ttc" id="aclassabsl_1_1_cleanup_html_a66726cb5d85b586e40987a8188a6c8c9"><div class="ttname"><a href="classabsl_1_1_cleanup.html#a66726cb5d85b586e40987a8188a6c8c9">absl::Cleanup::~Cleanup</a></div><div class="ttdeci">~Cleanup()</div><div class="ttdef"><b>Definition:</b> <a href="cleanup_8h_source.html#l00103">cleanup.h:103</a></div></div>
 <div class="ttc" id="aclassabsl_1_1_cleanup_html_a6ed2d5b50dbfecc2d46fa4b58508d089"><div class="ttname"><a href="classabsl_1_1_cleanup.html#a6ed2d5b50dbfecc2d46fa4b58508d089">absl::Cleanup::Cleanup</a></div><div class="ttdeci">Cleanup(Cleanup&lt; OtherCallback &gt; &amp;&amp;other_cleanup)</div><div class="ttdef"><b>Definition:</b> <a href="cleanup_8h_source.html#l00100">cleanup.h:100</a></div></div>
 <div class="ttc" id="aclassabsl_1_1_cleanup_html_a7cd4e2e06938eb3af8a314cbc279e613"><div class="ttname"><a href="classabsl_1_1_cleanup.html#a7cd4e2e06938eb3af8a314cbc279e613">absl::Cleanup::Cleanup</a></div><div class="ttdeci">Cleanup(TheCallback &amp;&amp;the_callback)</div><div class="ttdef"><b>Definition:</b> <a href="cleanup_8h_source.html#l00096">cleanup.h:96</a></div></div>
@@ -238,7 +245,7 @@ $(document).ready(function(){initNavTree('cleanup_8h_source.html',''); initResiz
 <div class="ttc" id="ademon__profiler_8cc_html_ac072af30c4ffbc834bb4c681f6ecb514"><div class="ttname"><a href="demon__profiler_8cc.html#ac072af30c4ffbc834bb4c681f6ecb514">value</a></div><div class="ttdeci">int64_t value</div><div class="ttdef"><b>Definition:</b> <a href="demon__profiler_8cc_source.html#l00044">demon_profiler.cc:44</a></div></div>
 <div class="ttc" id="agurobi__interface_8cc_html_a6627a3800ac768bb5528ef54c9cace36"><div class="ttname"><a href="gurobi__interface_8cc.html#a6627a3800ac768bb5528ef54c9cace36">callback</a></div><div class="ttdeci">MPCallback * callback</div><div class="ttdef"><b>Definition:</b> <a href="gurobi__interface_8cc_source.html#l00515">gurobi_interface.cc:515</a></div></div>
 <div class="ttc" id="anamespaceabsl_html"><div class="ttname"><a href="namespaceabsl.html">absl</a></div><div class="ttdef"><b>Definition:</b> <a href="cleanup_8h_source.html#l00022">cleanup.h:22</a></div></div>
-<div class="ttc" id="anamespaceabsl_html_a01547ab811df98c71089487f394ec259"><div class="ttname"><a href="namespaceabsl.html#a01547ab811df98c71089487f394ec259">absl::MakeCleanup</a></div><div class="ttdeci">absl::Cleanup&lt; absl::decay_t&lt; Callback &gt; &gt; MakeCleanup(Callback &amp;&amp;callback)</div><div class="ttdef"><b>Definition:</b> <a href="cleanup_8h_source.html#l00120">cleanup.h:120</a></div></div>
+<div class="ttc" id="anamespaceabsl_html_a01547ab811df98c71089487f394ec259"><div class="ttname"><a href="namespaceabsl.html#a01547ab811df98c71089487f394ec259">absl::MakeCleanup</a></div><div class="ttdeci">absl::Cleanup&lt; absl::decay_t&lt; Callback &gt; &gt; MakeCleanup(Callback &amp;&amp;callback)</div><div class="ttdef"><b>Definition:</b> <a href="cleanup_8h_source.html#l00125">cleanup.h:125</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_1_1math__opt_html_a9d73bc1014f12f33dfaa51825ad668ee"><div class="ttname"><a href="namespaceoperations__research_1_1math__opt.html#a9d73bc1014f12f33dfaa51825ad668ee">operations_research::math_opt::Callback</a></div><div class="ttdeci">std::function&lt; CallbackResult(const CallbackData &amp;)&gt; Callback</div><div class="ttdef"><b>Definition:</b> <a href="callback_8h_source.html#l00089">callback.h:89</a></div></div>
 <div class="ttc" id="anamespacestd_html"><div class="ttname"><a href="namespacestd.html">std</a></div><div class="ttdoc">STL namespace.</div></div>
 <div class="ttc" id="astructabsl_1_1cleanup__internal_1_1_access_storage_html"><div class="ttname"><a href="structabsl_1_1cleanup__internal_1_1_access_storage.html">absl::cleanup_internal::AccessStorage</a></div><div class="ttdef"><b>Definition:</b> <a href="cleanup_8h_source.html#l00076">cleanup.h:76</a></div></div>

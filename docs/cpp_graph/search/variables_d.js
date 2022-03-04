@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['offsets_0',['offsets',['../struct_table_struct__ortools__2fgraph__2fflow__5fproblem__2eproto.html#add528fcf8cb575420999abb21f85d3a3',1,'TableStruct_ortools_2fgraph_2fflow_5fproblem_2eproto']]],
-  ['one_1',['One',['../classoperations__research_1_1_set.html#a7f72b10501772e497164805b53e2ec80',1,'operations_research::Set']]]
+  ['representation_5fclean_5f_0',['representation_clean_',['../classoperations__research_1_1_ebert_graph_base.html#a7844e39f2b6fad9b6a59468d63b6b503',1,'operations_research::EbertGraphBase']]],
+  ['residual_5farc_5fcapacity_5f_1',['residual_arc_capacity_',['../classoperations__research_1_1_generic_max_flow.html#ab478e83cea51fd1e9656030ea4667286',1,'operations_research::GenericMaxFlow']]]
 ];

@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.2</span>
+   &#160;<span id="projectnumber">9.3</span>
    </div>
   </td>
  </tr>
@@ -125,8 +125,8 @@ $(document).ready(function(){initNavTree('bitmap_8cc_source.html',''); initResiz
 <div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>    map_ = new_map;</div>
 <div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>  }</div>
 <div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>  <span class="comment">// TODO(user) : optimize next loop.</span></div>
-<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>  <span class="keywordflow">for</span> (uint32_t <a class="code hl_variable" href="pack_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a> = old_max_size; <a class="code hl_variable" href="pack_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a> &lt; size; ++<a class="code hl_variable" href="pack_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>) {</div>
-<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>    <a class="code hl_function" href="classoperations__research_1_1_bitmap.html#a1037652c6b6b9a3b5d2a356057285c0a">Set</a>(<a class="code hl_variable" href="pack_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>, fill);</div>
+<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>  <span class="keywordflow">for</span> (uint32_t <a class="code hl_variable" href="local__search_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a> = old_max_size; <a class="code hl_variable" href="local__search_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a> &lt; size; ++<a class="code hl_variable" href="local__search_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>) {</div>
+<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>    <a class="code hl_function" href="classoperations__research_1_1_bitmap.html#a1037652c6b6b9a3b5d2a356057285c0a">Set</a>(<a class="code hl_variable" href="local__search_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>, fill);</div>
 <div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>  }</div>
 <div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>}</div>
 <div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>}  <span class="comment">// namespace operations_research</span></div>
@@ -134,9 +134,9 @@ $(document).ready(function(){initNavTree('bitmap_8cc_source.html',''); initResiz
 <div class="ttc" id="abitmap_8h_html"><div class="ttname"><a href="bitmap_8h.html">bitmap.h</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1_bitmap_html_a1037652c6b6b9a3b5d2a356057285c0a"><div class="ttname"><a href="classoperations__research_1_1_bitmap.html#a1037652c6b6b9a3b5d2a356057285c0a">operations_research::Bitmap::Set</a></div><div class="ttdeci">void Set(uint32_t index, bool value)</div><div class="ttdef"><b>Definition:</b> <a href="bitmap_8h_source.html#l00062">bitmap.h:62</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1_bitmap_html_a88561172cf4a3f2abc9356f0954db238"><div class="ttname"><a href="classoperations__research_1_1_bitmap.html#a88561172cf4a3f2abc9356f0954db238">operations_research::Bitmap::Resize</a></div><div class="ttdeci">void Resize(uint32_t size, bool fill=false)</div><div class="ttdef"><b>Definition:</b> <a href="bitmap_8cc_source.html#l00022">bitmap.cc:22</a></div></div>
+<div class="ttc" id="alocal__search_8cc_html_a750b5d744c39a06bfb13e6eb010e35d0"><div class="ttname"><a href="local__search_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a></div><div class="ttdeci">int index</div><div class="ttdef"><b>Definition:</b> <a href="local__search_8cc_source.html#l02750">local_search.cc:2750</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_1_1internal_html_a1b41253a72594759082e0c72eaa1e284"><div class="ttname"><a href="namespaceoperations__research_1_1internal.html#a1b41253a72594759082e0c72eaa1e284">operations_research::internal::BitLength64</a></div><div class="ttdeci">uint64_t BitLength64(uint64_t size)</div><div class="ttdef"><b>Definition:</b> <a href="bitmap_8h_source.html#l00026">bitmap.h:26</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_html"><div class="ttname"><a href="namespaceoperations__research.html">operations_research</a></div><div class="ttdoc">Collection of objects used to extend the Constraint Solver library.</div><div class="ttdef"><b>Definition:</b> <a href="dense__doubly__linked__list_8h_source.html#l00021">dense_doubly_linked_list.h:21</a></div></div>
-<div class="ttc" id="apack_8cc_html_a750b5d744c39a06bfb13e6eb010e35d0"><div class="ttname"><a href="pack_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a></div><div class="ttdeci">int index</div><div class="ttdef"><b>Definition:</b> <a href="pack_8cc_source.html#l00509">pack.cc:509</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- HTML footer for doxygen 1.8.18-->

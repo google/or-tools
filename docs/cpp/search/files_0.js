@@ -14,7 +14,5 @@ var searchData=
   ['arc_5fflow_5fsolver_2eh_11',['arc_flow_solver.h',['../arc__flow__solver_8h.html',1,'']]],
   ['arrow_5foperator_5fproxy_2eh_12',['arrow_operator_proxy.h',['../arrow__operator__proxy_8h.html',1,'']]],
   ['assignment_2eh_13',['assignment.h',['../assignment_8h.html',1,'']]],
-  ['assignment_2epb_2ecc_14',['assignment.pb.cc',['../assignment_8pb_8cc.html',1,'']]],
-  ['assignment_2epb_2eh_15',['assignment.pb.h',['../assignment_8pb_8h.html',1,'']]],
-  ['astar_2ecc_16',['astar.cc',['../astar_8cc.html',1,'']]]
+  ['astar_2ecc_14',['astar.cc',['../astar_8cc.html',1,'']]]
 ];

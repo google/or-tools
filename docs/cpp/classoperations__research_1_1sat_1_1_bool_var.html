@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.2</span>
+   &#160;<span id="projectnumber">9.3</span>
    </div>
   </td>
  </tr>
@@ -94,10 +94,10 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1sat_1_1_b
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p >A Boolean variable. </p>
-<p >This class refer to an <a class="el" href="classoperations__research_1_1sat_1_1_integer_variable_proto.html">IntegerVariableProto</a> with domain [0, 1] or to its logical negation (Not). This is called a Boolean <a class="el" href="classoperations__research_1_1sat_1_1_literal.html">Literal</a> in other context.</p>
+<p >This class refer to an IntegerVariableProto with domain [0, 1] or to its logical negation (Not). This is called a Boolean <a class="el" href="classoperations__research_1_1sat_1_1_literal.html">Literal</a> in other context.</p>
 <p >This can only be constructed via <code><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a580af67c82c83176a2938fb24b3b0c98" title="Creates a Boolean variable.">CpModelBuilder.NewBoolVar()</a></code>. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00072">72</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00073">73</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -142,7 +142,7 @@ Public Member Functions</h2></td></tr>
 <p>A default constructed <a class="el" href="classoperations__research_1_1sat_1_1_bool_var.html" title="A Boolean variable.">BoolVar</a> can be used to mean not defined yet. </p>
 <p >However, it shouldn't be passed to any of the functions in this file. Doing so will crash in debug mode and will result in an invalid model in opt mode. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00031">31</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00034">34</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
 
 </div>
 </div>
@@ -162,7 +162,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00056">56</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00059">59</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
 
 </div>
 </div>
@@ -192,7 +192,7 @@ Public Member Functions</h2></td></tr>
 <p>Returns the index of the variable in the model. </p>
 <p >Warning: If the variable is the negation of another variable v, its index is -v.index() - 1. So this can be negative. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00106">106</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00107">107</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
@@ -213,7 +213,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns the name of the variable. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00045">45</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00048">48</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
 
 </div>
 </div>
@@ -242,7 +242,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns the logical negation of the current Boolean variable. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00088">88</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00089">89</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
@@ -270,7 +270,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00094">94</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00095">95</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
@@ -298,7 +298,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00090">90</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00091">91</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
@@ -321,7 +321,7 @@ Public Member Functions</h2></td></tr>
 <p>Sets the name of the variable. </p>
 <p >Note that this will always set the "positive" version of this Boolean. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00036">36</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00039">39</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
 
 </div>
 </div>

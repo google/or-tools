@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.2</span>
+   &#160;<span id="projectnumber">9.3</span>
    </div>
   </td>
  </tr>
@@ -165,7 +165,7 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:aa70fd7de7d1b6eb48564ad89ba711cbe"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3fb40176ccbc43c52d549364ad081f0d"><td class="memItemLeft" align="right" valign="top">void *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_c_l_p_interface.html#a3fb40176ccbc43c52d549364ad081f0d">underlying_solver</a> () override</td></tr>
 <tr class="separator:a3fb40176ccbc43c52d549364ad081f0d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3f882dbf64e36d7c39756e0b53a569da"><td class="memItemLeft" align="right" valign="top">virtual absl::optional&lt; <a class="el" href="classoperations__research_1_1_m_p_solution_response.html">MPSolutionResponse</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_m_p_solver_interface.html#a3f882dbf64e36d7c39756e0b53a569da">DirectlySolveProto</a> (const <a class="el" href="classoperations__research_1_1_m_p_model_request.html">MPModelRequest</a> &amp;request, std::atomic&lt; bool &gt; *interrupt)</td></tr>
+<tr class="memitem:a3f882dbf64e36d7c39756e0b53a569da"><td class="memItemLeft" align="right" valign="top">virtual absl::optional&lt; MPSolutionResponse &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_m_p_solver_interface.html#a3f882dbf64e36d7c39756e0b53a569da">DirectlySolveProto</a> (const MPModelRequest &amp;request, std::atomic&lt; bool &gt; *interrupt)</td></tr>
 <tr class="separator:a3f882dbf64e36d7c39756e0b53a569da"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a50c6e8d07ddce72da8f1234559e6e043"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_m_p_solver_interface.html#a50c6e8d07ddce72da8f1234559e6e043">Write</a> (const std::string &amp;filename)</td></tr>
 <tr class="separator:a50c6e8d07ddce72da8f1234559e6e043"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -235,9 +235,9 @@ Protected Member Functions</h2></td></tr>
 <tr class="separator:a1951547f7333b72da9e7ed9cf61ef129"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acfc10005cc5c154f193ecf163ba7a646"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_m_p_solver_interface.html#acfc10005cc5c154f193ecf163ba7a646">SetUnsupportedIntegerParam</a> (<a class="el" href="classoperations__research_1_1_m_p_solver_parameters.html#a7319655592ea63d50ef2a6645e309784">MPSolverParameters::IntegerParam</a> param)</td></tr>
 <tr class="separator:acfc10005cc5c154f193ecf163ba7a646"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae3c9feaac5534229d873d1bfdf03df24"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_m_p_solver_interface.html#ae3c9feaac5534229d873d1bfdf03df24">SetDoubleParamToUnsupportedValue</a> (<a class="el" href="classoperations__research_1_1_m_p_solver_parameters.html#a397e8c8da87415d5408e2dd5ec3e9932">MPSolverParameters::DoubleParam</a> param, double <a class="el" href="matchers_8cc.html#a0b6f3694312803de4bea1fe97896294f">value</a>)</td></tr>
+<tr class="memitem:ae3c9feaac5534229d873d1bfdf03df24"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_m_p_solver_interface.html#ae3c9feaac5534229d873d1bfdf03df24">SetDoubleParamToUnsupportedValue</a> (<a class="el" href="classoperations__research_1_1_m_p_solver_parameters.html#a397e8c8da87415d5408e2dd5ec3e9932">MPSolverParameters::DoubleParam</a> param, double <a class="el" href="primal__dual__hybrid__gradient_8cc.html#a730b1ea892f1f794d9bd5f16027acb63">value</a>)</td></tr>
 <tr class="separator:ae3c9feaac5534229d873d1bfdf03df24"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a12cee0b1a4374aaa9962daa50be5bded"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_m_p_solver_interface.html#a12cee0b1a4374aaa9962daa50be5bded">SetIntegerParamToUnsupportedValue</a> (<a class="el" href="classoperations__research_1_1_m_p_solver_parameters.html#a7319655592ea63d50ef2a6645e309784">MPSolverParameters::IntegerParam</a> param, int <a class="el" href="matchers_8cc.html#a0b6f3694312803de4bea1fe97896294f">value</a>)</td></tr>
+<tr class="memitem:a12cee0b1a4374aaa9962daa50be5bded"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_m_p_solver_interface.html#a12cee0b1a4374aaa9962daa50be5bded">SetIntegerParamToUnsupportedValue</a> (<a class="el" href="classoperations__research_1_1_m_p_solver_parameters.html#a7319655592ea63d50ef2a6645e309784">MPSolverParameters::IntegerParam</a> param, int <a class="el" href="primal__dual__hybrid__gradient_8cc.html#a730b1ea892f1f794d9bd5f16027acb63">value</a>)</td></tr>
 <tr class="separator:a12cee0b1a4374aaa9962daa50be5bded"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a849bf49baad56df58c018e8ab09456fb"><td class="memItemLeft" align="right" valign="top">virtual absl::Status&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_m_p_solver_interface.html#a849bf49baad56df58c018e8ab09456fb">SetNumThreads</a> (int num_threads)</td></tr>
 <tr class="separator:a849bf49baad56df58c018e8ab09456fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -296,7 +296,7 @@ Static Protected Attributes</h2></td></tr>
 <tr><td class="fieldname"><a id="a98638775910339c916ce033cbe60257da08f969a0303564bd857c766aeec88d2e" name="a98638775910339c916ce033cbe60257da08f969a0303564bd857c766aeec88d2e"></a>SOLUTION_SYNCHRONIZED&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01552">1552</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01561">1561</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -383,7 +383,7 @@ Static Protected Attributes</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classoperations__research_1_1_gurobi_interface.html#aeeadd101415d24d02e7ccb85844ef763">GurobiInterface</a>, <a class="el" href="classoperations__research_1_1_sat_interface.html#aeeadd101415d24d02e7ccb85844ef763">SatInterface</a>, and <a class="el" href="classoperations__research_1_1_s_c_i_p_interface.html#acf102e862da164f1dc4c7bdc8ef83031">SCIPInterface</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01621">1621</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01630">1630</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -470,7 +470,7 @@ Static Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l01881">1881</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l01886">1886</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -500,7 +500,7 @@ Static Protected Attributes</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classoperations__research_1_1_gurobi_interface.html#a0f868ea21814f5c0e34d8e99d32b1695">GurobiInterface</a>, and <a class="el" href="classoperations__research_1_1_s_c_i_p_interface.html#a0f868ea21814f5c0e34d8e99d32b1695">SCIPInterface</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01647">1647</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01656">1656</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -527,7 +527,7 @@ Static Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l01866">1866</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l01871">1871</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -554,7 +554,7 @@ Static Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l01854">1854</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l01859">1859</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -581,7 +581,7 @@ Static Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01674">1674</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01683">1683</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -699,7 +699,7 @@ Static Protected Attributes</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classoperations__research_1_1_gurobi_interface.html#a819ccbf734a334c82da1e6e819d23e84">GurobiInterface</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l01905">1905</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l01910">1910</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -727,7 +727,7 @@ Static Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01700">1700</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01709">1709</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -741,9 +741,9 @@ Static Protected Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual absl::optional&lt; <a class="el" href="classoperations__research_1_1_m_p_solution_response.html">MPSolutionResponse</a> &gt; DirectlySolveProto </td>
+          <td class="memname">virtual absl::optional&lt; MPSolutionResponse &gt; DirectlySolveProto </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classoperations__research_1_1_m_p_model_request.html">MPModelRequest</a> &amp;&#160;</td>
+          <td class="paramtype">const MPModelRequest &amp;&#160;</td>
           <td class="paramname"><em>request</em>, </td>
         </tr>
         <tr>
@@ -765,9 +765,9 @@ Static Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Reimplemented in <a class="el" href="classoperations__research_1_1_gurobi_interface.html#aa3ff809c3ba53969d98fb9c9e027083f">GurobiInterface</a>, <a class="el" href="classoperations__research_1_1_sat_interface.html#aa3ff809c3ba53969d98fb9c9e027083f">SatInterface</a>, and <a class="el" href="classoperations__research_1_1_s_c_i_p_interface.html#aa3ff809c3ba53969d98fb9c9e027083f">SCIPInterface</a>.</p>
+<p>Reimplemented in <a class="el" href="classoperations__research_1_1_gurobi_interface.html#aa3ff809c3ba53969d98fb9c9e027083f">GurobiInterface</a>, <a class="el" href="classoperations__research_1_1_pdlp_interface.html#aa3ff809c3ba53969d98fb9c9e027083f">PdlpInterface</a>, <a class="el" href="classoperations__research_1_1_sat_interface.html#aa3ff809c3ba53969d98fb9c9e027083f">SatInterface</a>, and <a class="el" href="classoperations__research_1_1_s_c_i_p_interface.html#aa3ff809c3ba53969d98fb9c9e027083f">SCIPInterface</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01588">1588</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01597">1597</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -794,7 +794,7 @@ Static Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l01818">1818</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l01823">1823</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -910,7 +910,7 @@ Static Protected Attributes</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classoperations__research_1_1_bop_interface.html#a4a29067fc2546e6cbee9b6cb77fa4a22">BopInterface</a>, <a class="el" href="classoperations__research_1_1_g_l_o_p_interface.html#a4a29067fc2546e6cbee9b6cb77fa4a22">GLOPInterface</a>, <a class="el" href="classoperations__research_1_1_gurobi_interface.html#a4a29067fc2546e6cbee9b6cb77fa4a22">GurobiInterface</a>, <a class="el" href="classoperations__research_1_1_sat_interface.html#a4a29067fc2546e6cbee9b6cb77fa4a22">SatInterface</a>, and <a class="el" href="classoperations__research_1_1_s_c_i_p_interface.html#a4a29067fc2546e6cbee9b6cb77fa4a22">SCIPInterface</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01735">1735</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01744">1744</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -937,7 +937,7 @@ Static Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l01899">1899</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l01904">1904</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -1080,7 +1080,7 @@ Static Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01692">1692</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01701">1701</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1109,7 +1109,7 @@ Static Protected Attributes</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classoperations__research_1_1_gurobi_interface.html#af09b34b07f4db68ced0239cc959ee2e2">GurobiInterface</a>, and <a class="el" href="classoperations__research_1_1_s_c_i_p_interface.html#af09b34b07f4db68ced0239cc959ee2e2">SCIPInterface</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01738">1738</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01747">1747</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1165,7 +1165,7 @@ Static Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l01876">1876</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l01881">1881</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -1192,7 +1192,7 @@ Static Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01708">1708</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01717">1717</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1248,7 +1248,7 @@ Static Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l01846">1846</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l01851">1851</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -1275,7 +1275,7 @@ Static Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01713">1713</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01722">1722</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1343,7 +1343,7 @@ Static Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01703">1703</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01712">1712</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1371,7 +1371,7 @@ Static Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01710">1710</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01719">1719</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1409,7 +1409,7 @@ Static Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01697">1697</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01706">1706</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1439,7 +1439,7 @@ Static Protected Attributes</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classoperations__research_1_1_gurobi_interface.html#a9436ed8aa5d2540af34e24ba7a8c196d">GurobiInterface</a>, and <a class="el" href="classoperations__research_1_1_s_c_i_p_interface.html#a9436ed8aa5d2540af34e24ba7a8c196d">SCIPInterface</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01741">1741</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01750">1750</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1519,7 +1519,7 @@ Static Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l01914">1914</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l01919">1919</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -1603,7 +1603,7 @@ Static Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l01950">1950</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l01955">1955</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -1641,7 +1641,7 @@ Static Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l01955">1955</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l01960">1960</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -1669,7 +1669,7 @@ Static Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l01935">1935</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l01940">1940</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -1697,9 +1697,9 @@ Static Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Reimplemented in <a class="el" href="classoperations__research_1_1_c_b_c_interface.html#ab8d7e663791146c192d1c4c3e40f6687">CBCInterface</a>, and <a class="el" href="classoperations__research_1_1_sat_interface.html#ab8d7e663791146c192d1c4c3e40f6687">SatInterface</a>.</p>
+<p>Reimplemented in <a class="el" href="classoperations__research_1_1_c_b_c_interface.html#ab8d7e663791146c192d1c4c3e40f6687">CBCInterface</a>, <a class="el" href="classoperations__research_1_1_pdlp_interface.html#ab8d7e663791146c192d1c4c3e40f6687">PdlpInterface</a>, and <a class="el" href="classoperations__research_1_1_sat_interface.html#ab8d7e663791146c192d1c4c3e40f6687">SatInterface</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l01961">1961</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l01966">1966</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -1827,9 +1827,9 @@ Static Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Reimplemented in <a class="el" href="classoperations__research_1_1_bop_interface.html#a677caae160d593c7882749cb4e684e3d">BopInterface</a>, <a class="el" href="classoperations__research_1_1_g_l_o_p_interface.html#a677caae160d593c7882749cb4e684e3d">GLOPInterface</a>, and <a class="el" href="classoperations__research_1_1_sat_interface.html#a677caae160d593c7882749cb4e684e3d">SatInterface</a>.</p>
+<p>Reimplemented in <a class="el" href="classoperations__research_1_1_bop_interface.html#a677caae160d593c7882749cb4e684e3d">BopInterface</a>, <a class="el" href="classoperations__research_1_1_g_l_o_p_interface.html#a677caae160d593c7882749cb4e684e3d">GLOPInterface</a>, <a class="el" href="classoperations__research_1_1_pdlp_interface.html#a677caae160d593c7882749cb4e684e3d">PdlpInterface</a>, and <a class="el" href="classoperations__research_1_1_sat_interface.html#a677caae160d593c7882749cb4e684e3d">SatInterface</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l01966">1966</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l01971">1971</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -1869,7 +1869,7 @@ Static Protected Attributes</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classoperations__research_1_1_g_l_o_p_interface.html#afd559288ea3b6d81c683d31abbf8026e">GLOPInterface</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01729">1729</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01738">1738</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1897,7 +1897,7 @@ Static Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l01942">1942</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l01947">1947</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -1925,7 +1925,7 @@ Static Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l01946">1946</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l01951">1951</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -2099,7 +2099,7 @@ Static Protected Attributes</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classoperations__research_1_1_gurobi_interface.html#a7161a285a13ffdffbe90d890d061ab21">GurobiInterface</a>, and <a class="el" href="classoperations__research_1_1_s_c_i_p_interface.html#a7161a285a13ffdffbe90d890d061ab21">SCIPInterface</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01745">1745</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01754">1754</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2156,7 +2156,7 @@ Static Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01694">1694</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01703">1703</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2186,7 +2186,7 @@ Static Protected Attributes</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classoperations__research_1_1_gurobi_interface.html#a2e4d86f85b2dae0286025e9bcafcddbe">GurobiInterface</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l01814">1814</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8cc_source.html#l01819">1819</a> of file <a class="el" href="linear__solver_8cc_source.html">linear_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -2211,7 +2211,7 @@ Static Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01772">1772</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01781">1781</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2235,7 +2235,7 @@ Static Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01779">1779</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01788">1788</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2259,7 +2259,7 @@ Static Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01567">1567</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01576">1576</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2283,7 +2283,7 @@ Static Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01570">1570</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01579">1579</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2307,7 +2307,7 @@ Static Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01764">1764</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01773">1773</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2331,7 +2331,7 @@ Static Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01766">1766</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01775">1775</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2355,7 +2355,7 @@ Static Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01761">1761</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01770">1770</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2379,7 +2379,7 @@ Static Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01769">1769</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01778">1778</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2403,7 +2403,7 @@ Static Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01775">1775</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01784">1784</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2427,7 +2427,7 @@ Static Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01759">1759</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01768">1768</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2451,7 +2451,7 @@ Static Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01754">1754</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01763">1763</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2475,7 +2475,7 @@ Static Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01756">1756</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01765">1765</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>

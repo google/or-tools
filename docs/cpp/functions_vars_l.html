@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.2</span>
+   &#160;<span id="projectnumber">9.3</span>
    </div>
   </td>
  </tr>
@@ -90,14 +90,19 @@ $(document).ready(function(){initNavTree('functions_vars_l.html',''); initResiza
 
 <h3><a id="index_l" name="index_l"></a>- l -</h3><ul>
 <li>l2_norm&#160;:&#160;<a class="el" href="structoperations__research_1_1sat_1_1_linear_constraint_manager_1_1_constraint_info.html#a2a897122b37c5a906205687aecdb627b">LinearConstraintManager::ConstraintInfo</a></li>
+<li>l2_norm_constraint_bounds&#160;:&#160;<a class="el" href="structoperations__research_1_1pdlp_1_1_quadratic_program_bound_norms.html#adcf372259113849bfe323c599f77f547">QuadraticProgramBoundNorms</a></li>
+<li>l2_norm_primal_linear_objective&#160;:&#160;<a class="el" href="structoperations__research_1_1pdlp_1_1_quadratic_program_bound_norms.html#ab3f4b0ebcc89ef8fce922335e0026a95">QuadraticProgramBoundNorms</a></li>
+<li>l2_norm_rescaling&#160;:&#160;<a class="el" href="structoperations__research_1_1pdlp_1_1_rescaling_options.html#a74bba1825289ddbad8bf96e840ebfeab">RescalingOptions</a></li>
+<li>l_inf_norm_constraint_bounds&#160;:&#160;<a class="el" href="structoperations__research_1_1pdlp_1_1_quadratic_program_bound_norms.html#a64e7f471ef722b483682884caf14e670">QuadraticProgramBoundNorms</a></li>
+<li>l_inf_norm_primal_linear_objective&#160;:&#160;<a class="el" href="structoperations__research_1_1pdlp_1_1_quadratic_program_bound_norms.html#adc56dab042af6eb15263a5e62aa1e7f5">QuadraticProgramBoundNorms</a></li>
+<li>l_inf_ruiz_iterations&#160;:&#160;<a class="el" href="structoperations__research_1_1pdlp_1_1_rescaling_options.html#ad3f4c83145ae0a650089a980c4c7fe60">RescalingOptions</a></li>
+<li>lagrangian_value&#160;:&#160;<a class="el" href="structoperations__research_1_1pdlp_1_1_localized_lagrangian_bounds.html#ad16c3e3b8e83fc9a72f8309bc63534b2">LocalizedLagrangianBounds</a></li>
 <li>last_constraint_index_&#160;:&#160;<a class="el" href="classoperations__research_1_1_m_p_solver_interface.html#a42d79af323cdc77e77c19ee22f9e3aa9">MPSolverInterface</a></li>
 <li>last_variable_index_&#160;:&#160;<a class="el" href="classoperations__research_1_1_m_p_solver_interface.html#aa83a7b3f61fb55d22d1aa9aac0be4a7c">MPSolverInterface</a></li>
 <li>lb&#160;:&#160;<a class="el" href="structoperations__research_1_1sat_1_1_implied_bounds_processor_1_1_slack_info.html#a0ee34e5c6fbf075def1a6c2f0c42d040">ImpliedBoundsProcessor::SlackInfo</a>, <a class="el" href="structoperations__research_1_1sat_1_1_linear_constraint.html#a0ee34e5c6fbf075def1a6c2f0c42d040">LinearConstraint</a></li>
 <li>lbd&#160;:&#160;<a class="el" href="structoperations__research_1_1sat_1_1_clause_info.html#aeae764750e16aaa4d963129a5dd92b6d">ClauseInfo</a></li>
-<li>LBD_MOVING_AVERAGE_RESTART&#160;:&#160;<a class="el" href="classoperations__research_1_1sat_1_1_sat_parameters.html#a02400e7881b1dadd52cd4f6886a30ec1">SatParameters</a></li>
 <li>left_depth&#160;:&#160;<a class="el" href="structoperations__research_1_1_state_info.html#af40da30f99ec5fe6e1659d25909a2161">StateInfo</a></li>
 <li>len&#160;:&#160;<a class="el" href="struct___g_r_bsvec.html#afed088663f8704004425cdae2120b9b3">_GRBsvec</a></li>
-<li>LET_SOLVER_DECIDE&#160;:&#160;<a class="el" href="classoperations__research_1_1glop_1_1_glop_parameters.html#a63c3eefc042fad13b269c42571d0c9e1">GlopParameters</a></li>
 <li>level&#160;:&#160;<a class="el" href="structoperations__research_1_1sat_1_1_assignment_info.html#a6a330c3b2adf87bfa27e9a9450d8bc40">AssignmentInfo</a></li>
 <li>lhs&#160;:&#160;<a class="el" href="structoperations__research_1_1math__opt_1_1internal_1_1_variables_equality.html#acff6d8a3b8db52ea99e67bab6de610fa">VariablesEquality</a></li>
 <li>lifted&#160;:&#160;<a class="el" href="structoperations__research_1_1sat_1_1_ct_event.html#a6382230ccc5d66808e87821bfcc3f6a4">CtEvent</a></li>
@@ -107,46 +112,24 @@ $(document).ready(function(){initNavTree('functions_vars_l.html',''); initResiza
 <li>line_number&#160;:&#160;<a class="el" href="structgoogle_1_1logging__internal_1_1_crash_reason.html#ada7b81cc6d5bbe25b92c0162697e0f58">CrashReason</a></li>
 <li>linear_coefficients&#160;:&#160;<a class="el" href="structoperations__research_1_1_g_scip_quadratic_range.html#aec14579470b876cfd73430466440a1aa">GScipQuadraticRange</a></li>
 <li>linear_constraint&#160;:&#160;<a class="el" href="structoperations__research_1_1math__opt_1_1_callback_result_1_1_generated_linear_constraint.html#ac9e29c31846c20153162dca604561b9c">CallbackResult::GeneratedLinearConstraint</a></li>
-<li>linear_constraints&#160;:&#160;<a class="el" href="structoperations__research_1_1math__opt_1_1_model_summary.html#a9cfc0d8ea5cf26ee3b87427b27f20fe7">ModelSummary</a>, <a class="el" href="structoperations__research_1_1sat_1_1_linear_relaxation.html#a787dea05b34122764c7fb5fd13e9a1c9">LinearRelaxation</a></li>
-<li>LINEAR_PROGRAM&#160;:&#160;<a class="el" href="classoperations__research_1_1glop_1_1_glop_parameters.html#a210d1aecb683a5dbbe8b91cd2df107c8">GlopParameters</a></li>
-<li>linear_program&#160;:&#160;<a class="el" href="struct_s_c_i_p___l_pi.html#af93d4286f24582991c2743cb707987f5">SCIP_LPi</a></li>
-<li>LINEAR_RELAXATION&#160;:&#160;<a class="el" href="classoperations__research_1_1bop_1_1_bop_optimizer_method.html#ab2594851217ca75819bc7f6a186b8b3a">BopOptimizerMethod</a></li>
-<li>LINEAR_SUM_ASSIGNMENT&#160;:&#160;<a class="el" href="classoperations__research_1_1_flow_model_proto.html#ab173c7f063ffe35c78c01320612a16fb">FlowModelProto</a></li>
+<li>linear_constraints&#160;:&#160;<a class="el" href="structoperations__research_1_1math__opt_1_1_inverted_bounds.html#afa900465f3693b8e76c083a930436be9">InvertedBounds</a>, <a class="el" href="structoperations__research_1_1math__opt_1_1_model_summary.html#a9cfc0d8ea5cf26ee3b87427b27f20fe7">ModelSummary</a>, <a class="el" href="structoperations__research_1_1sat_1_1_linear_relaxation.html#a787dea05b34122764c7fb5fd13e9a1c9">LinearRelaxation</a></li>
 <li>linear_variables&#160;:&#160;<a class="el" href="structoperations__research_1_1_g_scip_quadratic_range.html#adb9c98458c4fdee32cfc04f30f94505b">GScipQuadraticRange</a></li>
 <li>literal&#160;:&#160;<a class="el" href="structoperations__research_1_1sat_1_1_literal_with_coeff.html#af63dcc00f2023fdf498e0829e6fb8a6b">LiteralWithCoeff</a>, <a class="el" href="structoperations__research_1_1sat_1_1_sat_solver_1_1_decision.html#af63dcc00f2023fdf498e0829e6fb8a6b">SatSolver::Decision</a>, <a class="el" href="structoperations__research_1_1sat_1_1_value_literal_pair.html#af63dcc00f2023fdf498e0829e6fb8a6b">ValueLiteralPair</a></li>
 <li>literal_lp&#160;:&#160;<a class="el" href="structoperations__research_1_1sat_1_1_energy_event.html#af8dee2e03e9b51a9149bad32c7ed4958">EnergyEvent</a></li>
 <li>literal_view&#160;:&#160;<a class="el" href="structoperations__research_1_1sat_1_1_implied_bound_entry.html#aeed2f5711a316d7b21a6d36629af958f">ImpliedBoundEntry</a></li>
 <li>literals&#160;:&#160;<a class="el" href="structoperations__research_1_1sat_1_1_index_references.html#a404c06a2a9a7b2290466f5d5423093d4">IndexReferences</a></li>
-<li>LOCAL_CHEAPEST_ARC&#160;:&#160;<a class="el" href="classoperations__research_1_1_first_solution_strategy.html#a48a447de5f3e3a57cd6e0266a8b53825">FirstSolutionStrategy</a></li>
-<li>LOCAL_CHEAPEST_INSERTION&#160;:&#160;<a class="el" href="classoperations__research_1_1_first_solution_strategy.html#a8530d171da599ab97b7c85a9e07ca7fb">FirstSolutionStrategy</a></li>
-<li>LOCAL_SEARCH&#160;:&#160;<a class="el" href="classoperations__research_1_1bop_1_1_bop_optimizer_method.html#adfdadae597a7dd36f239af08a8decad0">BopOptimizerMethod</a></li>
-<li>LOCK_BASED&#160;:&#160;<a class="el" href="classoperations__research_1_1sat_1_1_sat_parameters.html#a7b4e91d6ccf881f4d31d3c1fff97f330">SatParameters</a></li>
 <li>log_info&#160;:&#160;<a class="el" href="structoperations__research_1_1sat_1_1_probing_options.html#a54320231778412ca00e50eb821c95aa6">ProbingOptions</a>, <a class="el" href="structoperations__research_1_1sat_1_1_sat_presolve_options.html#a54320231778412ca00e50eb821c95aa6">SatPresolveOptions</a></li>
 <li>log_invalid_names&#160;:&#160;<a class="el" href="structoperations__research_1_1_m_p_model_export_options.html#ae5002134fe40f95dc42499fc3ae35713">MPModelExportOptions</a></li>
 <li>log_prefix&#160;:&#160;<a class="el" href="structoperations__research_1_1_cpp_flags.html#ac9d22cd58c301875ff2e6ecfc5296bbb">CppFlags</a></li>
 <li>log_search_progress&#160;:&#160;<a class="el" href="structoperations__research_1_1fz_1_1_flatzinc_sat_parameters.html#ad5cb64f2e8b9cc681c86a1346b74308b">FlatzincSatParameters</a></li>
 <li>logtostderr&#160;:&#160;<a class="el" href="structoperations__research_1_1_cpp_flags.html#ad29da8bf95650587ab8c6fcafab37535">CppFlags</a></li>
-<li>lower_bound&#160;:&#160;<a class="el" href="structoperations__research_1_1bop_1_1_learned_info.html#a8e4368b4553131cf24b49b9de6e6189f">LearnedInfo</a>, <a class="el" href="structoperations__research_1_1glop_1_1_parsed_constraint.html#a43a86e62cda1914f2e5a9dbeb4b6d075">ParsedConstraint</a>, <a class="el" href="structoperations__research_1_1_g_scip_linear_range.html#a1e2f9a2352c1d9a6cada9544898fceec">GScipLinearRange</a>, <a class="el" href="structoperations__research_1_1_g_scip_quadratic_range.html#a1e2f9a2352c1d9a6cada9544898fceec">GScipQuadraticRange</a>, <a class="el" href="structoperations__research_1_1math__opt_1_1_bounded_linear_expression.html#a1e2f9a2352c1d9a6cada9544898fceec">BoundedLinearExpression</a>, <a class="el" href="structoperations__research_1_1math__opt_1_1_lower_bounded_linear_expression.html#a1e2f9a2352c1d9a6cada9544898fceec">LowerBoundedLinearExpression</a>, <a class="el" href="structoperations__research_1_1sat_1_1_implied_bound_entry.html#ac6420aaa41bdee5430eb0bb90df18c9e">ImpliedBoundEntry</a></li>
+<li>lower_bound&#160;:&#160;<a class="el" href="structoperations__research_1_1bop_1_1_learned_info.html#a8e4368b4553131cf24b49b9de6e6189f">LearnedInfo</a>, <a class="el" href="structoperations__research_1_1glop_1_1_parsed_constraint.html#a43a86e62cda1914f2e5a9dbeb4b6d075">ParsedConstraint</a>, <a class="el" href="structoperations__research_1_1_g_scip_linear_range.html#a1e2f9a2352c1d9a6cada9544898fceec">GScipLinearRange</a>, <a class="el" href="structoperations__research_1_1_g_scip_quadratic_range.html#a1e2f9a2352c1d9a6cada9544898fceec">GScipQuadraticRange</a>, <a class="el" href="structoperations__research_1_1math__opt_1_1_bounded_linear_expression.html#a1e2f9a2352c1d9a6cada9544898fceec">BoundedLinearExpression</a>, <a class="el" href="structoperations__research_1_1math__opt_1_1_lower_bounded_linear_expression.html#a1e2f9a2352c1d9a6cada9544898fceec">LowerBoundedLinearExpression</a>, <a class="el" href="structoperations__research_1_1pdlp_1_1_localized_lagrangian_bounds.html#a1e2f9a2352c1d9a6cada9544898fceec">LocalizedLagrangianBounds</a>, <a class="el" href="structoperations__research_1_1sat_1_1_implied_bound_entry.html#ac6420aaa41bdee5430eb0bb90df18c9e">ImpliedBoundEntry</a></li>
 <li>lower_bound_change&#160;:&#160;<a class="el" href="structoperations__research_1_1sat_1_1_pseudo_costs_1_1_variable_bound_change.html#a5fcd8a2a6dc182482852a554e9d73af9">PseudoCosts::VariableBoundChange</a></li>
 <li>lp&#160;:&#160;<a class="el" href="structoperations__research_1_1sat_1_1_l_p_variable.html#a7518b32b2f5df90266eed4eb019978aa">LPVariable</a></li>
-<li>LP_ALGO_BARRIER&#160;:&#160;<a class="el" href="classoperations__research_1_1_m_p_solver_common_parameters.html#a41e139a3f8a198d331686a50a1956f28">MPSolverCommonParameters</a></li>
-<li>LP_ALGO_DUAL&#160;:&#160;<a class="el" href="classoperations__research_1_1_m_p_solver_common_parameters.html#a5a849541bb202e240f3582927cb4a98f">MPSolverCommonParameters</a></li>
-<li>LP_ALGO_PRIMAL&#160;:&#160;<a class="el" href="classoperations__research_1_1_m_p_solver_common_parameters.html#a6c641ccb3262f78a1add6aac8d4941ca">MPSolverCommonParameters</a></li>
-<li>LP_ALGO_UNSPECIFIED&#160;:&#160;<a class="el" href="classoperations__research_1_1_m_p_solver_common_parameters.html#a236e0699462b1e184f8e54afb1e2bbec">MPSolverCommonParameters</a></li>
 <li>lp_algorithm&#160;:&#160;<a class="el" href="structoperations__research_1_1math__opt_1_1_solve_parameters.html#a60dcc868cf2c99069fcbcbdefe359f52">SolveParameters</a></li>
-<li>LP_FIRST_SOLUTION&#160;:&#160;<a class="el" href="classoperations__research_1_1bop_1_1_bop_optimizer_method.html#a25982788ccc3904e1f07f2d4de6e5899">BopOptimizerMethod</a></li>
-<li>lp_info&#160;:&#160;<a class="el" href="struct_s_c_i_p___l_pi.html#a9254926441afb9520abc119f457361e8">SCIP_LPi</a></li>
-<li>lp_modified_since_last_solve&#160;:&#160;<a class="el" href="struct_s_c_i_p___l_pi.html#aece23f6caabef4815201912a7cbf18eb">SCIP_LPi</a></li>
 <li>lp_objective&#160;:&#160;<a class="el" href="structoperations__research_1_1sat_1_1_l_p_solve_info.html#a355a72ffc20323940c5c924112cc5bc1">LPSolveInfo</a></li>
-<li>LP_SEARCH&#160;:&#160;<a class="el" href="classoperations__research_1_1sat_1_1_sat_parameters.html#aa1f93c70c349b5f740fefe5317b7f9fc">SatParameters</a></li>
-<li>lp_time_limit_was_reached&#160;:&#160;<a class="el" href="struct_s_c_i_p___l_pi.html#af66fbb0ddb3bfc7115cb76a5b5ccd4cb">SCIP_LPi</a></li>
 <li>lp_value&#160;:&#160;<a class="el" href="structoperations__research_1_1sat_1_1_implied_bounds_processor_1_1_slack_info.html#adb47ac0cff7c9dc4dc5f101d38a91185">ImpliedBoundsProcessor::SlackInfo</a></li>
 <li>lp_values&#160;:&#160;<a class="el" href="structoperations__research_1_1bop_1_1_learned_info.html#a92c51be8c0b7ed3142c363875d361967">LearnedInfo</a></li>
-<li>LPAlgorithmValues_ARRAYSIZE&#160;:&#160;<a class="el" href="classoperations__research_1_1_m_p_solver_common_parameters.html#ae904b28ec718712173aeb35d2a2afa98">MPSolverCommonParameters</a></li>
-<li>LPAlgorithmValues_MAX&#160;:&#160;<a class="el" href="classoperations__research_1_1_m_p_solver_common_parameters.html#a90fb7ee67cabd70ab45325d57ccabd72">MPSolverCommonParameters</a></li>
-<li>LPAlgorithmValues_MIN&#160;:&#160;<a class="el" href="classoperations__research_1_1_m_p_solver_common_parameters.html#afda599c2a4479825424c061c99289368">MPSolverCommonParameters</a></li>
-<li>LUBY_RESTART&#160;:&#160;<a class="el" href="classoperations__research_1_1sat_1_1_sat_parameters.html#aca24cda99f26155443145b45fa8d01ec">SatParameters</a></li>
-<li>lvalue&#160;:&#160;<a class="el" href="structswig__const__info.html#ad27f45c6331d8b6ac603e0cae235fb61">swig_const_info</a></li>
 </ul>
 </div><!-- contents -->
 </div><!-- doc-content -->

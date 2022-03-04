@@ -1,12 +1,6 @@
 var searchData=
 [
-  ['karcsfieldnumber_0',['kArcsFieldNumber',['../classoperations__research_1_1_flow_model_proto.html#a3cf8f3fa94653642c64632b03b9e889ca59be32363a6ea0b508fc1888c36960a6',1,'operations_research::FlowModelProto']]],
-  ['kcapacityfieldnumber_1',['kCapacityFieldNumber',['../classoperations__research_1_1_flow_arc_proto.html#a227c705f12e74b62d986a994aec4813ba440249ed44d37808cd265d63ddd9fa4c',1,'operations_research::FlowArcProto']]],
-  ['kheadfieldnumber_2',['kHeadFieldNumber',['../classoperations__research_1_1_flow_arc_proto.html#a227c705f12e74b62d986a994aec4813baae92dd4a59da6dfefdd7d63903ff13f5',1,'operations_research::FlowArcProto']]],
-  ['kidfieldnumber_3',['kIdFieldNumber',['../classoperations__research_1_1_flow_node_proto.html#a4029f33800c86a70c6257338ef75c3cda58b1dcbdcd83054c89252f3376d0e6ab',1,'operations_research::FlowNodeProto']]],
-  ['knodesfieldnumber_4',['kNodesFieldNumber',['../classoperations__research_1_1_flow_model_proto.html#a3cf8f3fa94653642c64632b03b9e889caf73e3c3db33d8aeccd502605b6563917',1,'operations_research::FlowModelProto']]],
-  ['kproblemtypefieldnumber_5',['kProblemTypeFieldNumber',['../classoperations__research_1_1_flow_model_proto.html#a3cf8f3fa94653642c64632b03b9e889ca747dcead3be2e4147507677cec1758b8',1,'operations_research::FlowModelProto']]],
-  ['ksupplyfieldnumber_6',['kSupplyFieldNumber',['../classoperations__research_1_1_flow_node_proto.html#a4029f33800c86a70c6257338ef75c3cda097dc723fafd4a3d3fd3271a9dd64b04',1,'operations_research::FlowNodeProto']]],
-  ['ktailfieldnumber_7',['kTailFieldNumber',['../classoperations__research_1_1_flow_arc_proto.html#a227c705f12e74b62d986a994aec4813ba246ce242dbe3367cf649ade17327073a',1,'operations_research::FlowArcProto']]],
-  ['kunitcostfieldnumber_8',['kUnitCostFieldNumber',['../classoperations__research_1_1_flow_arc_proto.html#a227c705f12e74b62d986a994aec4813bad2de5f33d6a3549d92e44fe59f40a328',1,'operations_research::FlowArcProto']]]
+  ['minimal_5fweight_5fmatching_0',['MINIMAL_WEIGHT_MATCHING',['../classoperations__research_1_1_christofides_path_solver.html#a1d4f082de5fc3eed348d65eb30b5f3e7a99c5fe202c37dcd8ed9cc60926a4f525',1,'operations_research::ChristofidesPathSolver']]],
+  ['minimum_5fweight_5fmatching_1',['MINIMUM_WEIGHT_MATCHING',['../classoperations__research_1_1_christofides_path_solver.html#a1d4f082de5fc3eed348d65eb30b5f3e7ab66d0823917c9351a4cb68dff77f445a',1,'operations_research::ChristofidesPathSolver']]],
+  ['minimum_5fweight_5fmatching_5fwith_5fmip_2',['MINIMUM_WEIGHT_MATCHING_WITH_MIP',['../classoperations__research_1_1_christofides_path_solver.html#a1d4f082de5fc3eed348d65eb30b5f3e7a201b88f6589fa1271207fe29f583dc96',1,'operations_research::ChristofidesPathSolver']]]
 ];

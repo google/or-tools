@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.2</span>
+   &#160;<span id="projectnumber">9.3</span>
    </div>
   </td>
  </tr>
@@ -94,14 +94,16 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1sat_1_1_m
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="cp__model__presolve_8h_source.html#l00226">226</a> of file <a class="el" href="cp__model__presolve_8h_source.html">cp_model_presolve.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__presolve_8h_source.html#l00269">269</a> of file <a class="el" href="cp__model__presolve_8h_source.html">cp_model_presolve.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a4dc4003514ad43b655e41524c32352f1"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_model_copy.html#a4dc4003514ad43b655e41524c32352f1">ModelCopy</a> (<a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html">PresolveContext</a> *<a class="el" href="gurobi__interface_8cc.html#a5f287b83a753915ae862fed64f8640a6">context</a>)</td></tr>
 <tr class="separator:a4dc4003514ad43b655e41524c32352f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a58490799f393198b0bf71299bc22a897"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_model_copy.html#a58490799f393198b0bf71299bc22a897">ImportAndSimplifyConstraints</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_cp_model_proto.html">CpModelProto</a> &amp;in_model, const std::vector&lt; int &gt; &amp;ignored_constraints, bool first_copy=false)</td></tr>
+<tr class="memitem:a58490799f393198b0bf71299bc22a897"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_model_copy.html#a58490799f393198b0bf71299bc22a897">ImportAndSimplifyConstraints</a> (const CpModelProto &amp;in_model, const std::vector&lt; int &gt; &amp;ignored_constraints, bool first_copy=false)</td></tr>
 <tr class="separator:a58490799f393198b0bf71299bc22a897"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae6b17e8ee2937984774a820031e0522e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_model_copy.html#ae6b17e8ee2937984774a820031e0522e">ImportVariablesAndMaybeIgnoreNames</a> (const CpModelProto &amp;in_model)</td></tr>
+<tr class="separator:ae6b17e8ee2937984774a820031e0522e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a4dc4003514ad43b655e41524c32352f1" name="a4dc4003514ad43b655e41524c32352f1"></a>
@@ -128,7 +130,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__presolve_8cc_source.html#l07108">7108</a> of file <a class="el" href="cp__model__presolve_8cc_source.html">cp_model_presolve.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__presolve_8cc_source.html#l07746">7746</a> of file <a class="el" href="cp__model__presolve_8cc_source.html">cp_model_presolve.cc</a>.</p>
 
 </div>
 </div>
@@ -142,7 +144,7 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="memname">bool ImportAndSimplifyConstraints </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_cp_model_proto.html">CpModelProto</a> &amp;&#160;</td>
+          <td class="paramtype">const CpModelProto &amp;&#160;</td>
           <td class="paramname"><em>in_model</em>, </td>
         </tr>
         <tr>
@@ -165,7 +167,27 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__presolve_8cc_source.html#l07115">7115</a> of file <a class="el" href="cp__model__presolve_8cc_source.html">cp_model_presolve.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__presolve_8cc_source.html#l07768">7768</a> of file <a class="el" href="cp__model__presolve_8cc_source.html">cp_model_presolve.cc</a>.</p>
+
+</div>
+</div>
+<a id="ae6b17e8ee2937984774a820031e0522e" name="ae6b17e8ee2937984774a820031e0522e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae6b17e8ee2937984774a820031e0522e">&#9670;&nbsp;</a></span>ImportVariablesAndMaybeIgnoreNames()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ImportVariablesAndMaybeIgnoreNames </td>
+          <td>(</td>
+          <td class="paramtype">const CpModelProto &amp;&#160;</td>
+          <td class="paramname"><em>in_model</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cp__model__presolve_8cc_source.html#l07748">7748</a> of file <a class="el" href="cp__model__presolve_8cc_source.html">cp_model_presolve.cc</a>.</p>
 
 </div>
 </div>

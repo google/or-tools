@@ -8,9 +8,8 @@ var searchData=
   ['delayedcallmethod1_5',['DelayedCallMethod1',['../classoperations__research_1_1_delayed_call_method1.html',1,'operations_research']]],
   ['delayedcallmethod2_6',['DelayedCallMethod2',['../classoperations__research_1_1_delayed_call_method2.html',1,'operations_research']]],
   ['demon_7',['Demon',['../classoperations__research_1_1_demon.html',1,'operations_research']]],
-  ['demonruns_8',['DemonRuns',['../classoperations__research_1_1_demon_runs.html',1,'operations_research']]],
-  ['dimensioncost_9',['DimensionCost',['../structoperations__research_1_1_routing_model_1_1_cost_class_1_1_dimension_cost.html',1,'operations_research::RoutingModel::CostClass']]],
-  ['dimensioncumuloptimizercore_10',['DimensionCumulOptimizerCore',['../classoperations__research_1_1_dimension_cumul_optimizer_core.html',1,'operations_research']]],
-  ['disjunctiveconstraint_11',['DisjunctiveConstraint',['../classoperations__research_1_1_disjunctive_constraint.html',1,'operations_research']]],
-  ['disjunctivepropagator_12',['DisjunctivePropagator',['../classoperations__research_1_1_disjunctive_propagator.html',1,'operations_research']]]
+  ['dimensioncost_8',['DimensionCost',['../structoperations__research_1_1_routing_model_1_1_cost_class_1_1_dimension_cost.html',1,'operations_research::RoutingModel::CostClass']]],
+  ['dimensioncumuloptimizercore_9',['DimensionCumulOptimizerCore',['../classoperations__research_1_1_dimension_cumul_optimizer_core.html',1,'operations_research']]],
+  ['disjunctiveconstraint_10',['DisjunctiveConstraint',['../classoperations__research_1_1_disjunctive_constraint.html',1,'operations_research']]],
+  ['disjunctivepropagator_11',['DisjunctivePropagator',['../classoperations__research_1_1_disjunctive_propagator.html',1,'operations_research']]]
 ];

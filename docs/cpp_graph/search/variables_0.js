@@ -1,7 +1,7 @@
 var searchData=
 [
-  ['_5fclass_5fdata_5f_0',['_class_data_',['../classoperations__research_1_1_flow_arc_proto.html#ad8bb72b1b92e94bd3667b23c8e207f08',1,'operations_research::FlowArcProto::_class_data_()'],['../classoperations__research_1_1_flow_node_proto.html#ad8bb72b1b92e94bd3667b23c8e207f08',1,'operations_research::FlowNodeProto::_class_data_()'],['../classoperations__research_1_1_flow_model_proto.html#ad8bb72b1b92e94bd3667b23c8e207f08',1,'operations_research::FlowModelProto::_class_data_()']]],
-  ['_5fflowarcproto_5fdefault_5finstance_5f_1',['_FlowArcProto_default_instance_',['../namespaceoperations__research.html#aa71e46776a31d94d7562213ebb8fdd7f',1,'operations_research']]],
-  ['_5fflowmodelproto_5fdefault_5finstance_5f_2',['_FlowModelProto_default_instance_',['../namespaceoperations__research.html#af9166a7a1b039550d63e5bc6d46bdcd9',1,'operations_research']]],
-  ['_5fflownodeproto_5fdefault_5finstance_5f_3',['_FlowNodeProto_default_instance_',['../namespaceoperations__research.html#ac33713255cd4928f5cf23c72f3654e3c',1,'operations_research']]]
+  ['active_5fnode_5fby_5fheight_5f_0',['active_node_by_height_',['../classoperations__research_1_1_generic_max_flow.html#afc300bdfdbe5ce3296bacd00acce0b3f',1,'operations_research::GenericMaxFlow']]],
+  ['active_5fnodes_5f_1',['active_nodes_',['../classoperations__research_1_1_generic_max_flow.html#a19193cb3045a42a4154d3860b92dc65b',1,'operations_research::GenericMaxFlow']]],
+  ['algorithm_2',['algorithm',['../structoperations__research_1_1_traveling_salesman_lower_bound_parameters.html#acc4ba09a6333be056db50ed15007518c',1,'operations_research::TravelingSalesmanLowerBoundParameters']]],
+  ['arc_5fcapacity_5f_3',['arc_capacity_',['../classutil_1_1_base_graph.html#a0b0fca21fab97b66c1a0a3b09af6e6e4',1,'util::BaseGraph']]]
 ];

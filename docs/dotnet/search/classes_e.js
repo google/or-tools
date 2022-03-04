@@ -1,22 +1,6 @@
 var searchData=
 [
-  ['rangeconstraint_0',['RangeConstraint',['../classGoogle_1_1OrTools_1_1LinearSolver_1_1RangeConstraint.html',1,'Google::OrTools::LinearSolver']]],
-  ['regularlimit_1',['RegularLimit',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RegularLimit.html',1,'Google::OrTools::ConstraintSolver']]],
-  ['regularlimitparameters_2',['RegularLimitParameters',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RegularLimitParameters.html',1,'Google::OrTools::ConstraintSolver']]],
-  ['reservoirconstraint_3',['ReservoirConstraint',['../classGoogle_1_1OrTools_1_1Sat_1_1ReservoirConstraint.html',1,'Google::OrTools::Sat']]],
-  ['reservoirconstraintproto_4',['ReservoirConstraintProto',['../classGoogle_1_1OrTools_1_1Sat_1_1ReservoirConstraintProto.html',1,'Google::OrTools::Sat']]],
-  ['resource_5',['Resource',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel_1_1ResourceGroup_1_1Resource.html',1,'Google::OrTools::ConstraintSolver::RoutingModel::ResourceGroup']]],
-  ['resourcegroup_6',['ResourceGroup',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel_1_1ResourceGroup.html',1,'Google::OrTools::ConstraintSolver::RoutingModel']]],
-  ['revbool_7',['RevBool',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RevBool.html',1,'Google::OrTools::ConstraintSolver']]],
-  ['revinteger_8',['RevInteger',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RevInteger.html',1,'Google::OrTools::ConstraintSolver']]],
-  ['revpartialsequence_9',['RevPartialSequence',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RevPartialSequence.html',1,'Google::OrTools::ConstraintSolver']]],
-  ['routesconstraintproto_10',['RoutesConstraintProto',['../classGoogle_1_1OrTools_1_1Sat_1_1RoutesConstraintProto.html',1,'Google::OrTools::Sat']]],
-  ['routingdimension_11',['RoutingDimension',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingDimension.html',1,'Google::OrTools::ConstraintSolver']]],
-  ['routingenumsreflection_12',['RoutingEnumsReflection',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingEnumsReflection.html',1,'Google::OrTools::ConstraintSolver']]],
-  ['routingindexmanager_13',['RoutingIndexManager',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingIndexManager.html',1,'Google::OrTools::ConstraintSolver']]],
-  ['routingmodel_14',['RoutingModel',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html',1,'Google::OrTools::ConstraintSolver']]],
-  ['routingmodelparameters_15',['RoutingModelParameters',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModelParameters.html',1,'Google::OrTools::ConstraintSolver']]],
-  ['routingmodelvisitor_16',['RoutingModelVisitor',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModelVisitor.html',1,'Google::OrTools::ConstraintSolver']]],
-  ['routingparametersreflection_17',['RoutingParametersReflection',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingParametersReflection.html',1,'Google::OrTools::ConstraintSolver']]],
-  ['routingsearchparameters_18',['RoutingSearchParameters',['../classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters.html',1,'Google::OrTools::ConstraintSolver']]]
+  ['varequality_0',['VarEquality',['../classGoogle_1_1OrTools_1_1LinearSolver_1_1VarEquality.html',1,'Google::OrTools::LinearSolver']]],
+  ['variable_1',['Variable',['../classGoogle_1_1OrTools_1_1LinearSolver_1_1Variable.html',1,'Google::OrTools::LinearSolver']]],
+  ['varwrapper_2',['VarWrapper',['../classGoogle_1_1OrTools_1_1LinearSolver_1_1VarWrapper.html',1,'Google::OrTools::LinearSolver']]]
 ];

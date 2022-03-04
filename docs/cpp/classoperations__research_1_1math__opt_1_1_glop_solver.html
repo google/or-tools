@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.2</span>
+   &#160;<span id="projectnumber">9.3</span>
    </div>
   </td>
  </tr>
@@ -96,7 +96,7 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1math__opt
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="glop__solver_8h_source.html#l00047">47</a> of file <a class="el" href="glop__solver_8h_source.html">glop_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="glop__solver_8h_source.html#l00048">48</a> of file <a class="el" href="glop__solver_8h_source.html">glop_solver.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
 Public Types</h2></td></tr>
@@ -120,8 +120,8 @@ Public Member Functions</h2></td></tr>
 Static Public Member Functions</h2></td></tr>
 <tr class="memitem:a61ac0bc6afed786de631c4a91faeb866"><td class="memItemLeft" align="right" valign="top">static absl::StatusOr&lt; std::unique_ptr&lt; <a class="el" href="classoperations__research_1_1math__opt_1_1_solver_interface.html">SolverInterface</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_glop_solver.html#a61ac0bc6afed786de631c4a91faeb866">New</a> (const ModelProto &amp;<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>, const <a class="el" href="structoperations__research_1_1math__opt_1_1_solver_interface_1_1_init_args.html">InitArgs</a> &amp;init_args)</td></tr>
 <tr class="separator:a61ac0bc6afed786de631c4a91faeb866"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a556acbe6140a8c9ce211ade2cc4e8931"><td class="memItemLeft" align="right" valign="top">static std::pair&lt; <a class="el" href="classoperations__research_1_1glop_1_1_glop_parameters.html">glop::GlopParameters</a>, std::vector&lt; std::string &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_glop_solver.html#a556acbe6140a8c9ce211ade2cc4e8931">MergeSolveParameters</a> (const SolveParametersProto &amp;solver_parameters, bool setting_initial_basis, bool has_message_callback)</td></tr>
-<tr class="separator:a556acbe6140a8c9ce211ade2cc4e8931"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aad86f7817e44f1442cbf32f2367a0c70"><td class="memItemLeft" align="right" valign="top">static absl::StatusOr&lt; glop::GlopParameters &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_glop_solver.html#aad86f7817e44f1442cbf32f2367a0c70">MergeSolveParameters</a> (const SolveParametersProto &amp;solver_parameters, bool setting_initial_basis, bool has_message_callback)</td></tr>
+<tr class="separator:aad86f7817e44f1442cbf32f2367a0c70"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="ab47a61ca53ae9cdf35dd4f2dfc9ecadb" name="ab47a61ca53ae9cdf35dd4f2dfc9ecadb"></a>
@@ -223,12 +223,12 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="classoperations__research_1_1math__opt_1_1_solver_interface.html#ad8b1e514f2b213b3fd4085683d20ff54">SolverInterface</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="glop__solver_8cc_source.html#l00392">392</a> of file <a class="el" href="glop__solver_8cc_source.html">glop_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="glop__solver_8cc_source.html#l00398">398</a> of file <a class="el" href="glop__solver_8cc_source.html">glop_solver.cc</a>.</p>
 
 </div>
 </div>
-<a id="a556acbe6140a8c9ce211ade2cc4e8931" name="a556acbe6140a8c9ce211ade2cc4e8931"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a556acbe6140a8c9ce211ade2cc4e8931">&#9670;&nbsp;</a></span>MergeSolveParameters()</h2>
+<a id="aad86f7817e44f1442cbf32f2367a0c70" name="aad86f7817e44f1442cbf32f2367a0c70"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aad86f7817e44f1442cbf32f2367a0c70">&#9670;&nbsp;</a></span>MergeSolveParameters()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -237,7 +237,7 @@ Static Public Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">std::pair&lt; <a class="el" href="classoperations__research_1_1glop_1_1_glop_parameters.html">glop::GlopParameters</a>, std::vector&lt; std::string &gt; &gt; MergeSolveParameters </td>
+          <td class="memname">absl::StatusOr&lt; glop::GlopParameters &gt; MergeSolveParameters </td>
           <td>(</td>
           <td class="paramtype">const SolveParametersProto &amp;&#160;</td>
           <td class="paramname"><em>solver_parameters</em>, </td>
@@ -305,7 +305,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="glop__solver_8cc_source.html#l00781">781</a> of file <a class="el" href="glop__solver_8cc_source.html">glop_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="glop__solver_8cc_source.html#l00844">844</a> of file <a class="el" href="glop__solver_8cc_source.html">glop_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -369,7 +369,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="classoperations__research_1_1math__opt_1_1_solver_interface.html#a53c70cddb8675c3246019b76cb97a05b">SolverInterface</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="glop__solver_8cc_source.html#l00707">707</a> of file <a class="el" href="glop__solver_8cc_source.html">glop_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="glop__solver_8cc_source.html#l00779">779</a> of file <a class="el" href="glop__solver_8cc_source.html">glop_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -399,7 +399,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="classoperations__research_1_1math__opt_1_1_solver_interface.html#a0b2421a582a4317b26d0446781119f4d">SolverInterface</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="glop__solver_8cc_source.html#l00807">807</a> of file <a class="el" href="glop__solver_8cc_source.html">glop_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="glop__solver_8cc_source.html#l00870">870</a> of file <a class="el" href="glop__solver_8cc_source.html">glop_solver.cc</a>.</p>
 
 </div>
 </div>

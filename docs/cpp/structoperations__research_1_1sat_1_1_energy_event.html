@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.2</span>
+   &#160;<span id="projectnumber">9.3</span>
    </div>
   </td>
  </tr>
@@ -95,14 +95,14 @@ $(document).ready(function(){initNavTree('structoperations__research_1_1sat_1_1_
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="scheduling__cuts_8cc_source.html#l00097">97</a> of file <a class="el" href="scheduling__cuts_8cc_source.html">scheduling_cuts.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="scheduling__cuts_8cc_source.html#l00099">99</a> of file <a class="el" href="scheduling__cuts_8cc_source.html">scheduling_cuts.cc</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a90037a849f93aa8dddc93f0e19868d24"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1sat_1_1_energy_event.html#a90037a849f93aa8dddc93f0e19868d24">IsPresent</a> () const</td></tr>
 <tr class="separator:a90037a849f93aa8dddc93f0e19868d24"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac6822fe3edb67cd39211bf3849d3332b"><td class="memItemLeft" align="right" valign="top">IntegerValue&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1sat_1_1_energy_event.html#ac6822fe3edb67cd39211bf3849d3332b">MinOverlap</a> (IntegerValue <a class="el" href="sparse__submatrix_8cc.html#a9b7656b922ea4ec96097d7380c0e61fe">start</a>, IntegerValue <a class="el" href="sparse__submatrix_8cc.html#a4d53eac2ef2732c28fa9fb663e0c19a7">end</a>) const</td></tr>
-<tr class="separator:ac6822fe3edb67cd39211bf3849d3332b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae9f7ab26b97268f5c53db090ce188428"><td class="memItemLeft" align="right" valign="top">IntegerValue&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1sat_1_1_energy_event.html#ae9f7ab26b97268f5c53db090ce188428">GetMinOverlap</a> (IntegerValue <a class="el" href="sparse__submatrix_8cc.html#a9b7656b922ea4ec96097d7380c0e61fe">start</a>, IntegerValue <a class="el" href="sparse__submatrix_8cc.html#a4d53eac2ef2732c28fa9fb663e0c19a7">end</a>) const</td></tr>
+<tr class="separator:ae9f7ab26b97268f5c53db090ce188428"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a764be64f3029f8b8e23511061d8de355"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1sat_1_1_energy_event.html#a764be64f3029f8b8e23511061d8de355">DebugString</a> () const</td></tr>
 <tr class="separator:a764be64f3029f8b8e23511061d8de355"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -126,8 +126,6 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a227a649685aa74d3dbf82f5ff410f782"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a419daefa95b40282f25dcff95c1f40e8"><td class="memItemLeft" align="right" valign="top">std::optional&lt; <a class="el" href="structoperations__research_1_1sat_1_1_linear_expression.html">LinearExpression</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1sat_1_1_energy_event.html#a419daefa95b40282f25dcff95c1f40e8">energy</a></td></tr>
 <tr class="separator:a419daefa95b40282f25dcff95c1f40e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a83f79d0fb389d59356fe4b7a7440d55a"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1sat_1_1_energy_event.html#a83f79d0fb389d59356fe4b7a7440d55a">energy_lp</a> = 0.0</td></tr>
-<tr class="separator:a83f79d0fb389d59356fe4b7a7440d55a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a318e14075dca909780636f1eb7435ea2"><td class="memItemLeft" align="right" valign="top">LiteralIndex&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1sat_1_1_energy_event.html#a318e14075dca909780636f1eb7435ea2">presence_literal_index</a> = <a class="el" href="namespaceoperations__research_1_1sat.html#a2dbcb7017d468a17bdb30252af5c6c31">kNoLiteralIndex</a></td></tr>
 <tr class="separator:a318e14075dca909780636f1eb7435ea2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab8949d991a8939f5e7f84b1bdebcd7f2"><td class="memItemLeft" align="right" valign="top">IntegerValue&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1sat_1_1_energy_event.html#ab8949d991a8939f5e7f84b1bdebcd7f2">x_size_min</a></td></tr>
@@ -136,8 +134,10 @@ Public Attributes</h2></td></tr>
 <tr class="separator:acffeeeb7712a014c78029cb130da23da"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af8dee2e03e9b51a9149bad32c7ed4958"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1sat_1_1_energy_event.html#af8dee2e03e9b51a9149bad32c7ed4958">literal_lp</a> = 1.0</td></tr>
 <tr class="separator:af8dee2e03e9b51a9149bad32c7ed4958"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2e3ce74381be12a227ac6f04a7df9054"><td class="memItemLeft" align="right" valign="top">IntegerValue&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1sat_1_1_energy_event.html#a2e3ce74381be12a227ac6f04a7df9054">y_spread</a> = IntegerValue(0)</td></tr>
-<tr class="separator:a2e3ce74381be12a227ac6f04a7df9054"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a83f79d0fb389d59356fe4b7a7440d55a"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1sat_1_1_energy_event.html#a83f79d0fb389d59356fe4b7a7440d55a">energy_lp</a> = 0.0</td></tr>
+<tr class="separator:a83f79d0fb389d59356fe4b7a7440d55a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa277e1f549852cd6f0324b278be5f552"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1sat_1_1_energy_event.html#aa277e1f549852cd6f0324b278be5f552">y_spread</a> = 0.0</td></tr>
+<tr class="separator:aa277e1f549852cd6f0324b278be5f552"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="a764be64f3029f8b8e23511061d8de355" name="a764be64f3029f8b8e23511061d8de355"></a>
@@ -163,7 +163,45 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="scheduling__cuts_8cc_source.html#l00134">134</a> of file <a class="el" href="scheduling__cuts_8cc_source.html">scheduling_cuts.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="scheduling__cuts_8cc_source.html#l00137">137</a> of file <a class="el" href="scheduling__cuts_8cc_source.html">scheduling_cuts.cc</a>.</p>
+
+</div>
+</div>
+<a id="ae9f7ab26b97268f5c53db090ce188428" name="ae9f7ab26b97268f5c53db090ce188428"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae9f7ab26b97268f5c53db090ce188428">&#9670;&nbsp;</a></span>GetMinOverlap()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">IntegerValue GetMinOverlap </td>
+          <td>(</td>
+          <td class="paramtype">IntegerValue&#160;</td>
+          <td class="paramname"><em>start</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">IntegerValue&#160;</td>
+          <td class="paramname"><em>end</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="scheduling__cuts_8cc_source.html#l00131">131</a> of file <a class="el" href="scheduling__cuts_8cc_source.html">scheduling_cuts.cc</a>.</p>
 
 </div>
 </div>
@@ -190,45 +228,7 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="scheduling__cuts_8cc_source.html#l00124">124</a> of file <a class="el" href="scheduling__cuts_8cc_source.html">scheduling_cuts.cc</a>.</p>
-
-</div>
-</div>
-<a id="ac6822fe3edb67cd39211bf3849d3332b" name="ac6822fe3edb67cd39211bf3849d3332b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac6822fe3edb67cd39211bf3849d3332b">&#9670;&nbsp;</a></span>MinOverlap()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">IntegerValue MinOverlap </td>
-          <td>(</td>
-          <td class="paramtype">IntegerValue&#160;</td>
-          <td class="paramname"><em>start</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">IntegerValue&#160;</td>
-          <td class="paramname"><em>end</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="scheduling__cuts_8cc_source.html#l00128">128</a> of file <a class="el" href="scheduling__cuts_8cc_source.html">scheduling_cuts.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="scheduling__cuts_8cc_source.html#l00127">127</a> of file <a class="el" href="scheduling__cuts_8cc_source.html">scheduling_cuts.cc</a>.</p>
 
 </div>
 </div>
@@ -245,7 +245,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="scheduling__cuts_8cc_source.html#l00108">108</a> of file <a class="el" href="scheduling__cuts_8cc_source.html">scheduling_cuts.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="scheduling__cuts_8cc_source.html#l00110">110</a> of file <a class="el" href="scheduling__cuts_8cc_source.html">scheduling_cuts.cc</a>.</p>
 
 </div>
 </div>
@@ -261,7 +261,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="scheduling__cuts_8cc_source.html#l00109">109</a> of file <a class="el" href="scheduling__cuts_8cc_source.html">scheduling_cuts.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="scheduling__cuts_8cc_source.html#l00118">118</a> of file <a class="el" href="scheduling__cuts_8cc_source.html">scheduling_cuts.cc</a>.</p>
 
 </div>
 </div>
@@ -277,7 +277,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="scheduling__cuts_8cc_source.html#l00115">115</a> of file <a class="el" href="scheduling__cuts_8cc_source.html">scheduling_cuts.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="scheduling__cuts_8cc_source.html#l00117">117</a> of file <a class="el" href="scheduling__cuts_8cc_source.html">scheduling_cuts.cc</a>.</p>
 
 </div>
 </div>
@@ -293,7 +293,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="scheduling__cuts_8cc_source.html#l00110">110</a> of file <a class="el" href="scheduling__cuts_8cc_source.html">scheduling_cuts.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="scheduling__cuts_8cc_source.html#l00111">111</a> of file <a class="el" href="scheduling__cuts_8cc_source.html">scheduling_cuts.cc</a>.</p>
 
 </div>
 </div>
@@ -309,7 +309,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="scheduling__cuts_8cc_source.html#l00101">101</a> of file <a class="el" href="scheduling__cuts_8cc_source.html">scheduling_cuts.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="scheduling__cuts_8cc_source.html#l00103">103</a> of file <a class="el" href="scheduling__cuts_8cc_source.html">scheduling_cuts.cc</a>.</p>
 
 </div>
 </div>
@@ -325,7 +325,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="scheduling__cuts_8cc_source.html#l00100">100</a> of file <a class="el" href="scheduling__cuts_8cc_source.html">scheduling_cuts.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="scheduling__cuts_8cc_source.html#l00102">102</a> of file <a class="el" href="scheduling__cuts_8cc_source.html">scheduling_cuts.cc</a>.</p>
 
 </div>
 </div>
@@ -341,7 +341,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="scheduling__cuts_8cc_source.html#l00102">102</a> of file <a class="el" href="scheduling__cuts_8cc_source.html">scheduling_cuts.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="scheduling__cuts_8cc_source.html#l00104">104</a> of file <a class="el" href="scheduling__cuts_8cc_source.html">scheduling_cuts.cc</a>.</p>
 
 </div>
 </div>
@@ -357,7 +357,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="scheduling__cuts_8cc_source.html#l00113">113</a> of file <a class="el" href="scheduling__cuts_8cc_source.html">scheduling_cuts.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="scheduling__cuts_8cc_source.html#l00115">115</a> of file <a class="el" href="scheduling__cuts_8cc_source.html">scheduling_cuts.cc</a>.</p>
 
 </div>
 </div>
@@ -373,7 +373,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="scheduling__cuts_8cc_source.html#l00099">99</a> of file <a class="el" href="scheduling__cuts_8cc_source.html">scheduling_cuts.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="scheduling__cuts_8cc_source.html#l00101">101</a> of file <a class="el" href="scheduling__cuts_8cc_source.html">scheduling_cuts.cc</a>.</p>
 
 </div>
 </div>
@@ -389,7 +389,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="scheduling__cuts_8cc_source.html#l00098">98</a> of file <a class="el" href="scheduling__cuts_8cc_source.html">scheduling_cuts.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="scheduling__cuts_8cc_source.html#l00100">100</a> of file <a class="el" href="scheduling__cuts_8cc_source.html">scheduling_cuts.cc</a>.</p>
 
 </div>
 </div>
@@ -405,7 +405,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="scheduling__cuts_8cc_source.html#l00104">104</a> of file <a class="el" href="scheduling__cuts_8cc_source.html">scheduling_cuts.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="scheduling__cuts_8cc_source.html#l00106">106</a> of file <a class="el" href="scheduling__cuts_8cc_source.html">scheduling_cuts.cc</a>.</p>
 
 </div>
 </div>
@@ -421,7 +421,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="scheduling__cuts_8cc_source.html#l00103">103</a> of file <a class="el" href="scheduling__cuts_8cc_source.html">scheduling_cuts.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="scheduling__cuts_8cc_source.html#l00105">105</a> of file <a class="el" href="scheduling__cuts_8cc_source.html">scheduling_cuts.cc</a>.</p>
 
 </div>
 </div>
@@ -437,7 +437,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="scheduling__cuts_8cc_source.html#l00105">105</a> of file <a class="el" href="scheduling__cuts_8cc_source.html">scheduling_cuts.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="scheduling__cuts_8cc_source.html#l00107">107</a> of file <a class="el" href="scheduling__cuts_8cc_source.html">scheduling_cuts.cc</a>.</p>
 
 </div>
 </div>
@@ -453,23 +453,23 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="scheduling__cuts_8cc_source.html#l00114">114</a> of file <a class="el" href="scheduling__cuts_8cc_source.html">scheduling_cuts.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="scheduling__cuts_8cc_source.html#l00116">116</a> of file <a class="el" href="scheduling__cuts_8cc_source.html">scheduling_cuts.cc</a>.</p>
 
 </div>
 </div>
-<a id="a2e3ce74381be12a227ac6f04a7df9054" name="a2e3ce74381be12a227ac6f04a7df9054"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2e3ce74381be12a227ac6f04a7df9054">&#9670;&nbsp;</a></span>y_spread</h2>
+<a id="aa277e1f549852cd6f0324b278be5f552" name="aa277e1f549852cd6f0324b278be5f552"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa277e1f549852cd6f0324b278be5f552">&#9670;&nbsp;</a></span>y_spread</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">IntegerValue y_spread = IntegerValue(0)</td>
+          <td class="memname">double y_spread = 0.0</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="scheduling__cuts_8cc_source.html#l00118">118</a> of file <a class="el" href="scheduling__cuts_8cc_source.html">scheduling_cuts.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="scheduling__cuts_8cc_source.html#l00121">121</a> of file <a class="el" href="scheduling__cuts_8cc_source.html">scheduling_cuts.cc</a>.</p>
 
 </div>
 </div>

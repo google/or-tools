@@ -1,7 +1,7 @@
 var searchData=
 [
-  ['problemtype_5farraysize_0',['ProblemType_ARRAYSIZE',['../classoperations__research_1_1_flow_model_proto.html#a78c247d476f4d6b37dc920ee286953e6',1,'operations_research::FlowModelProto']]],
-  ['problemtype_5fmax_1',['ProblemType_MAX',['../classoperations__research_1_1_flow_model_proto.html#aaccfa0d271467eead8e23e1ae0915b6d',1,'operations_research::FlowModelProto']]],
-  ['problemtype_5fmin_2',['ProblemType_MIN',['../classoperations__research_1_1_flow_model_proto.html#a66ce74386fd760ac35a2f5b2ca40918d',1,'operations_research::FlowModelProto']]],
-  ['process_5fnode_5fby_5fheight_5f_3',['process_node_by_height_',['../classoperations__research_1_1_generic_max_flow.html#a33996084cb5b29f77cc6ee673b6ece51',1,'operations_research::GenericMaxFlow']]]
+  ['sink_5f_0',['sink_',['../classoperations__research_1_1_generic_max_flow.html#aee97cd3a6def72d85d4685c134d11671',1,'operations_research::GenericMaxFlow']]],
+  ['source_5f_1',['source_',['../classoperations__research_1_1_generic_max_flow.html#aab4ab1dc9be85072322b17c1f56fe208',1,'operations_research::GenericMaxFlow']]],
+  ['stats_5f_2',['stats_',['../classoperations__research_1_1_generic_max_flow.html#a7c6fc06ca542eed0ff0b6ed4b1ecbcda',1,'operations_research::GenericMaxFlow']]],
+  ['status_5f_3',['status_',['../classoperations__research_1_1_generic_max_flow.html#abf8c6fcb7d9c9fa39e283d086f0bb345',1,'operations_research::GenericMaxFlow']]]
 ];

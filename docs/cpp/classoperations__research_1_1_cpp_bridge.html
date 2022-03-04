@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.2</span>
+   &#160;<span id="projectnumber">9.3</span>
    </div>
   </td>
  </tr>
@@ -96,7 +96,7 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1_cpp_brid
 <div class="textblock"><p >This class performs various C++ initialization. </p>
 <p >It is meant to be used once at the start of a program. </p>
 
-<p class="definition">Definition at line <a class="el" href="init_8h_source.html#l00082">82</a> of file <a class="el" href="init_8h_source.html">init.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="init_8h_source.html#l00083">83</a> of file <a class="el" href="init_8h_source.html">init.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
@@ -112,8 +112,41 @@ Static Public Member Functions</h2></td></tr>
 <tr class="memitem:a5c72fce46a300530616abdaf06de074a"><td class="memItemLeft" align="right" valign="top">static bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_cpp_bridge.html#a5c72fce46a300530616abdaf06de074a">LoadGurobiSharedLibrary</a> (const std::string &amp;full_library_path)</td></tr>
 <tr class="memdesc:a5c72fce46a300530616abdaf06de074a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Load the gurobi shared library.  <a href="classoperations__research_1_1_cpp_bridge.html#a5c72fce46a300530616abdaf06de074a">More...</a><br /></td></tr>
 <tr class="separator:a5c72fce46a300530616abdaf06de074a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa410f8320a958c852b59d872e953f247"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_cpp_bridge.html#aa410f8320a958c852b59d872e953f247">DeleteByteArray</a> (uint8_t *buffer)</td></tr>
+<tr class="memdesc:aa410f8320a958c852b59d872e953f247"><td class="mdescLeft">&#160;</td><td class="mdescRight">Delete a temporary C++ byte array.  <a href="classoperations__research_1_1_cpp_bridge.html#aa410f8320a958c852b59d872e953f247">More...</a><br /></td></tr>
+<tr class="separator:aa410f8320a958c852b59d872e953f247"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="aa410f8320a958c852b59d872e953f247" name="aa410f8320a958c852b59d872e953f247"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa410f8320a958c852b59d872e953f247">&#9670;&nbsp;</a></span>DeleteByteArray()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static void DeleteByteArray </td>
+          <td>(</td>
+          <td class="paramtype">uint8_t *&#160;</td>
+          <td class="paramname"><em>buffer</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Delete a temporary C++ byte array. </p>
+
+<p class="definition">Definition at line <a class="el" href="init_8h_source.html#l00131">131</a> of file <a class="el" href="init_8h_source.html">init.h</a>.</p>
+
+</div>
+</div>
 <a id="a0791cbe09f25845c34a6cb31e7d2684c" name="a0791cbe09f25845c34a6cb31e7d2684c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a0791cbe09f25845c34a6cb31e7d2684c">&#9670;&nbsp;</a></span>InitLogging()</h2>
 
@@ -141,7 +174,7 @@ Static Public Member Functions</h2></td></tr>
 <p>Initialize the C++ logging layer. </p>
 <p >This must be called once before any other library from OR-Tools are used. </p>
 
-<p class="definition">Definition at line <a class="el" href="init_8h_source.html#l00089">89</a> of file <a class="el" href="init_8h_source.html">init.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="init_8h_source.html#l00090">90</a> of file <a class="el" href="init_8h_source.html">init.h</a>.</p>
 
 </div>
 </div>
@@ -172,7 +205,7 @@ Static Public Member Functions</h2></td></tr>
 <p>Load the gurobi shared library. </p>
 <p >This is necessary if the library is installed in a non canonical directory, or if for any reason, it is not found. You need to pass the full path, including the shared library file. It returns true if the library was found and correctly loaded. </p>
 
-<p class="definition">Definition at line <a class="el" href="init_8h_source.html#l00123">123</a> of file <a class="el" href="init_8h_source.html">init.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="init_8h_source.html#l00124">124</a> of file <a class="el" href="init_8h_source.html">init.h</a>.</p>
 
 </div>
 </div>
@@ -202,7 +235,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Sets all the C++ flags contained in the <a class="el" href="structoperations__research_1_1_cpp_flags.html" title="Simple structure that holds useful C++ flags to setup from non-C++ languages.">CppFlags</a> structure. </p>
 
-<p class="definition">Definition at line <a class="el" href="init_8h_source.html#l00104">104</a> of file <a class="el" href="init_8h_source.html">init.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="init_8h_source.html#l00105">105</a> of file <a class="el" href="init_8h_source.html">init.h</a>.</p>
 
 </div>
 </div>
@@ -232,7 +265,7 @@ Static Public Member Functions</h2></td></tr>
 <p>Shutdown the C++ logging layer. </p>
 <p >This can be called to shutdown the C++ logging layer from OR-Tools. It should only be called once. </p>
 
-<p class="definition">Definition at line <a class="el" href="init_8h_source.html#l00099">99</a> of file <a class="el" href="init_8h_source.html">init.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="init_8h_source.html#l00100">100</a> of file <a class="el" href="init_8h_source.html">init.h</a>.</p>
 
 </div>
 </div>

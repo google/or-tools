@@ -1,6 +1,5 @@
 var searchData=
 [
-  ['intervalstrategy_0',['IntervalStrategy',['../classoperations__research_1_1_solver.html#a3a64940761b306c816e00e077906952f',1,'operations_research::Solver']]],
-  ['intvaluestrategy_1',['IntValueStrategy',['../classoperations__research_1_1_solver.html#a45c5a2dd0d47110ef5b00408854d8d84',1,'operations_research::Solver']]],
-  ['intvarstrategy_2',['IntVarStrategy',['../classoperations__research_1_1_solver.html#ab7ab23bc58ea40dc03a5418ddbce7601',1,'operations_research::Solver']]]
+  ['localsearchfilterbound_0',['LocalSearchFilterBound',['../classoperations__research_1_1_solver.html#afd2d924f019d44bc99930a1e931a735f',1,'operations_research::Solver']]],
+  ['localsearchoperators_1',['LocalSearchOperators',['../classoperations__research_1_1_solver.html#a6fc60ae040ae35c83f09736d2e682a18',1,'operations_research::Solver']]]
 ];

@@ -1,8 +1,14 @@
-com.google.ortools
 com.google.ortools.algorithms
+com.google.ortools.bop
+com.google.ortools.com.google.ortools
+com.google.ortools.com.google.ortools.constraintsolver
+com.google.ortools.com.google.ortools.sat
 com.google.ortools.constraintsolver
+com.google.ortools.glop
 com.google.ortools.graph
 com.google.ortools.init
 com.google.ortools.linearsolver
+com.google.ortools.pdlp
 com.google.ortools.sat
+com.google.ortools.sat.v1
 com.google.ortools.util

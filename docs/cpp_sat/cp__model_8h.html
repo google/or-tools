@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 9.2</span>
+                <span id="sfml">Google OR-Tools 9.3</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -94,19 +94,17 @@ $(document).ready(function(){initNavTree('cp__model_8h.html',''); initResizable(
 <div class="line">IntVar rabbits = cp_model.NewIntVar(all_animals).WithName(<span class="stringliteral">&quot;rabbits&quot;</span>);</div>
 <div class="line">IntVar pheasants = cp_model.NewIntVar(all_animals).WithName(<span class="stringliteral">&quot;pheasants&quot;</span>);</div>
 <div class="line"> </div>
-<div class="line">cp_model.AddEquality(LinearExpr::Sum({rabbits, pheasants}), 20);</div>
-<div class="line">cp_model.AddEquality(LinearExpr::WeightedSum({rabbits, pheasants}, {4, 2}),</div>
-<div class="line">56);</div>
+<div class="line">cp_model.AddEquality(rabbits + pheasants, 20);</div>
+<div class="line">cp_model.AddEquality(4 * rabbits + 2 * pheasants, 56);</div>
 <div class="line"> </div>
 <div class="line"><span class="keyword">const</span> CpSolverResponse response = <a class="code hl_function" href="namespaceoperations__research_1_1sat.html#a09d851f944ab4f305c3d9f8df99b7bf8">Solve</a>(cp_model.Build());</div>
-<div class="line"><span class="keywordflow">if</span> (response.status() == <a class="code hl_enumvalue" href="namespaceoperations__research_1_1sat.html#aedc4ddb96acc28481c09828d2e016815a03f919221217f95d21a593a7120165e1">CpSolverStatus::FEASIBLE</a>) {</div>
+<div class="line"><span class="keywordflow">if</span> (response.status() == CpSolverStatus::FEASIBLE) {</div>
 <div class="line">  LOG(INFO) &lt;&lt; <a class="code hl_function" href="namespaceoperations__research_1_1sat.html#ab6fe86bc876c281163a053a9581346c3">SolutionIntegerValue</a>(response, rabbits)</div>
 <div class="line">            &lt;&lt; <span class="stringliteral">&quot; rabbits, and &quot;</span> &lt;&lt; <a class="code hl_function" href="namespaceoperations__research_1_1sat.html#ab6fe86bc876c281163a053a9581346c3">SolutionIntegerValue</a>(response, pheasants)</div>
 <div class="line">            &lt;&lt; <span class="stringliteral">&quot; pheasants.&quot;</span>;</div>
 <div class="line">}</div>
 <div class="ttc" id="anamespaceoperations__research_1_1sat_html_a09d851f944ab4f305c3d9f8df99b7bf8"><div class="ttname"><a href="namespaceoperations__research_1_1sat.html#a09d851f944ab4f305c3d9f8df99b7bf8">operations_research::sat::Solve</a></div><div class="ttdeci">CpSolverResponse Solve(const CpModelProto &amp;model_proto)</div><div class="ttdoc">Solves the given CpModelProto and returns an instance of CpSolverResponse.</div></div>
 <div class="ttc" id="anamespaceoperations__research_1_1sat_html_ab6fe86bc876c281163a053a9581346c3"><div class="ttname"><a href="namespaceoperations__research_1_1sat.html#ab6fe86bc876c281163a053a9581346c3">operations_research::sat::SolutionIntegerValue</a></div><div class="ttdeci">int64_t SolutionIntegerValue(const CpSolverResponse &amp;r, const LinearExpr &amp;expr)</div><div class="ttdoc">Evaluates the value of an linear expression in a solver response.</div></div>
-<div class="ttc" id="anamespaceoperations__research_1_1sat_html_aedc4ddb96acc28481c09828d2e016815a03f919221217f95d21a593a7120165e1"><div class="ttname"><a href="namespaceoperations__research_1_1sat.html#aedc4ddb96acc28481c09828d2e016815a03f919221217f95d21a593a7120165e1">operations_research::sat::FEASIBLE</a></div><div class="ttdeci">@ FEASIBLE</div><div class="ttdef"><b>Definition:</b> <a href="cp__model_8pb_8h_source.html#l00245">cp_model.pb.h:245</a></div></div>
 </div><!-- fragment --> 
 <p class="definition">Definition in file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 </div>

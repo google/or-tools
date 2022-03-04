@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.2</span>
+   &#160;<span id="projectnumber">9.3</span>
    </div>
   </td>
  </tr>
@@ -96,7 +96,7 @@ $(document).ready(function(){initNavTree('structoperations__research_1_1_routing
 <div class="textblock"><p >What follows is relevant for models with time/state dependent transits. </p>
 <p >Such transits, say from node A to node B, are functions f: int64_t-&gt;int64_t of the cumuls of a dimension. The user is free to implement the abstract <a class="el" href="classoperations__research_1_1_range_int_to_int_function.html">RangeIntToIntFunction</a> interface, but it is expected that the implementation of each method is quite fast. For performance-related reasons, <a class="el" href="structoperations__research_1_1_routing_model_1_1_state_dependent_transit.html" title="What follows is relevant for models with time/state dependent transits.">StateDependentTransit</a> keeps an additional pointer to a <a class="el" href="classoperations__research_1_1_range_min_max_index_function.html">RangeMinMaxIndexFunction</a>, with similar functionality to <a class="el" href="classoperations__research_1_1_range_int_to_int_function.html">RangeIntToIntFunction</a>, for g(x) = f(x)+x, where f is the transit from A to B. In most situations the best solutions are problem-specific, but in case of doubt the user may use the MakeStateDependentTransit function from the routing library, which works out-of-the-box, with very good running time, but memory inefficient in some situations. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00261">261</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00263">263</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
@@ -119,7 +119,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00262">262</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00264">264</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -137,7 +137,7 @@ Public Attributes</h2></td></tr>
 
 <p>f(x) </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00263">263</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00265">265</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>

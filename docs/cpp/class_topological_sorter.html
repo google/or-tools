@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.2</span>
+   &#160;<span id="projectnumber">9.3</span>
    </div>
   </td>
  </tr>
@@ -95,7 +95,7 @@ $(document).ready(function(){initNavTree('class_topological_sorter.html',''); in
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><div class="compoundTemplParams">template&lt;typename T, bool stable_sort = false, typename Hash = typename absl::flat_hash_map&lt;T, int&gt;::hasher, typename KeyEqual = typename absl::flat_hash_map&lt;T, int, Hash&gt;::key_equal&gt;<br />
 class TopologicalSorter&lt; T, stable_sort, Hash, KeyEqual &gt;</div>
-<p class="definition">Definition at line <a class="el" href="topologicalsorter_8h_source.html#l00516">516</a> of file <a class="el" href="topologicalsorter_8h_source.html">topologicalsorter.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="topologicalsorter_8h_source.html#l00517">517</a> of file <a class="el" href="topologicalsorter_8h_source.html">topologicalsorter.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -103,8 +103,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:adf35867ff0932290f5456b27d1ed6bff"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a038de061979331bea01ffa96da55fac2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classutil_1_1_topological_sorter.html#a038de061979331bea01ffa96da55fac2">AddEdge</a> (const T &amp;from, const T &amp;to)</td></tr>
 <tr class="separator:a038de061979331bea01ffa96da55fac2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0f4f0594b7fb10285a7235db079abd46"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classutil_1_1_topological_sorter.html#a0f4f0594b7fb10285a7235db079abd46">GetNext</a> (T *node, bool *cyclic_ptr, std::vector&lt; T &gt; *output_cycle_nodes=NULL)</td></tr>
-<tr class="separator:a0f4f0594b7fb10285a7235db079abd46"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9bdc93c489e50312b4a2ef7e505f8922"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classutil_1_1_topological_sorter.html#a9bdc93c489e50312b4a2ef7e505f8922">GetNext</a> (T *node, bool *cyclic_ptr, std::vector&lt; T &gt; *output_cycle_nodes=nullptr)</td></tr>
+<tr class="separator:a9bdc93c489e50312b4a2ef7e505f8922"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa2b85b48ee1ab7b2e6da0ac2e8a91711"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classutil_1_1_topological_sorter.html#aa2b85b48ee1ab7b2e6da0ac2e8a91711">GetCurrentFringeSize</a> ()</td></tr>
 <tr class="separator:aa2b85b48ee1ab7b2e6da0ac2e8a91711"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad71227cf309f882f99921233186790c6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classutil_1_1_topological_sorter.html#ad71227cf309f882f99921233186790c6">StartTraversal</a> ()</td></tr>
@@ -202,12 +202,12 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="topologicalsorter_8h_source.html#l00333">333</a> of file <a class="el" href="topologicalsorter_8h_source.html">topologicalsorter.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="topologicalsorter_8h_source.html#l00334">334</a> of file <a class="el" href="topologicalsorter_8h_source.html">topologicalsorter.h</a>.</p>
 
 </div>
 </div>
-<a id="a0f4f0594b7fb10285a7235db079abd46" name="a0f4f0594b7fb10285a7235db079abd46"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0f4f0594b7fb10285a7235db079abd46">&#9670;&nbsp;</a></span>GetNext()</h2>
+<a id="a9bdc93c489e50312b4a2ef7e505f8922" name="a9bdc93c489e50312b4a2ef7e505f8922"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9bdc93c489e50312b4a2ef7e505f8922">&#9670;&nbsp;</a></span>GetNext()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -231,7 +231,7 @@ Public Member Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">std::vector&lt; T &gt; *&#160;</td>
-          <td class="paramname"><em>output_cycle_nodes</em> = <code>NULL</code>&#160;</td>
+          <td class="paramname"><em>output_cycle_nodes</em> = <code>nullptr</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -273,7 +273,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="topologicalsorter_8h_source.html#l00342">342</a> of file <a class="el" href="topologicalsorter_8h_source.html">topologicalsorter.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="topologicalsorter_8h_source.html#l00343">343</a> of file <a class="el" href="topologicalsorter_8h_source.html">topologicalsorter.h</a>.</p>
 
 </div>
 </div>
@@ -300,7 +300,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="topologicalsorter_8h_source.html#l00356">356</a> of file <a class="el" href="topologicalsorter_8h_source.html">topologicalsorter.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="topologicalsorter_8h_source.html#l00357">357</a> of file <a class="el" href="topologicalsorter_8h_source.html">topologicalsorter.h</a>.</p>
 
 </div>
 </div>

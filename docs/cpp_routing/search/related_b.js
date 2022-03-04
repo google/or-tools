@@ -1,10 +1,8 @@
 var searchData=
 [
-  ['resource_0',['Resource',['../classoperations__research_1_1_routing_model.html#a9c159d11affae2391f2faa151037e098',1,'operations_research::RoutingModel']]],
-  ['resourcegroup_1',['ResourceGroup',['../classoperations__research_1_1_routing_model_1_1_resource_group_1_1_resource.html#a3b7404d3da605d5cd9e5e6187983ca20',1,'operations_research::RoutingModel::ResourceGroup::Resource']]],
-  ['revbitmatrix_2',['RevBitMatrix',['../classoperations__research_1_1_rev_bit_set.html#ac9da3e5301f8c4c0ed8a261d0a0b2cbd',1,'operations_research::RevBitSet']]],
-  ['revimmutablemultimap_3',['RevImmutableMultiMap',['../classoperations__research_1_1_solver.html#a523b4c1786dd34b9d1fa2579b91b4c0d',1,'operations_research::Solver']]],
-  ['routingdimension_4',['RoutingDimension',['../classoperations__research_1_1_routing_model.html#a50ba9dd11704e0be7edaa9e9f24142ff',1,'operations_research::RoutingModel']]],
-  ['routingmodel_5',['RoutingModel',['../classoperations__research_1_1_solver.html#ab7aef297f0c654af26dc7108c9ee6c69',1,'operations_research::Solver::RoutingModel()'],['../classoperations__research_1_1_routing_dimension.html#ab7aef297f0c654af26dc7108c9ee6c69',1,'operations_research::RoutingDimension::RoutingModel()']]],
-  ['routingmodelinspector_6',['RoutingModelInspector',['../classoperations__research_1_1_routing_model.html#a00141bd90e555aea59a9e98cfbcda6eb',1,'operations_research::RoutingModel::RoutingModelInspector()'],['../classoperations__research_1_1_routing_dimension.html#a00141bd90e555aea59a9e98cfbcda6eb',1,'operations_research::RoutingDimension::RoutingModelInspector()']]]
+  ['searchlimit_0',['SearchLimit',['../classoperations__research_1_1_solver.html#abb737b44b0a0335d550d2a740ba00236',1,'operations_research::Solver']]],
+  ['searchmonitor_1',['SearchMonitor',['../classoperations__research_1_1_solver.html#aac32a6eabe1d316d7ff5f92fedd1ec5b',1,'operations_research::Solver']]],
+  ['sequencevarlocalsearchhandler_2',['SequenceVarLocalSearchHandler',['../classoperations__research_1_1_sequence_var_local_search_operator.html#ab80b964f556e6175e70741b63de9f94e',1,'operations_research::SequenceVarLocalSearchOperator']]],
+  ['simplerevfifo_3',['SimpleRevFIFO',['../classoperations__research_1_1_solver.html#a830db5e85473a2e0a7392ac6bbc538d1',1,'operations_research::Solver']]],
+  ['symmetrymanager_4',['SymmetryManager',['../classoperations__research_1_1_symmetry_breaker.html#aa126bb367514a24cbd6e0b2c48fda9ee',1,'operations_research::SymmetryBreaker']]]
 ];

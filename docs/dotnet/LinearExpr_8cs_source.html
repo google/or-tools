@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 9.2</span>
+                <span id="sfml">Google OR-Tools 9.3</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -313,7 +313,7 @@ $(document).ready(function(){initNavTree('LinearExpr_8cs_source.html',''); initR
 <div class="line"><a id="l00227" name="l00227"></a><span class="lineno">  227</span> </div>
 <div class="line"><a id="l00228" name="l00228"></a><span class="lineno"><a class="line" href="classGoogle_1_1OrTools_1_1LinearSolver_1_1VarWrapper.html#a012fbb0f39e57c0a44ec83dd408fcda3">  228</a></span>    <span class="keyword">public</span> <span class="keyword">override</span> String <a class="code hl_function" href="classGoogle_1_1OrTools_1_1LinearSolver_1_1VarWrapper.html#a012fbb0f39e57c0a44ec83dd408fcda3">ToString</a>()</div>
 <div class="line"><a id="l00229" name="l00229"></a><span class="lineno">  229</span>    {</div>
-<div class="line"><a id="l00230" name="l00230"></a><span class="lineno">  230</span>        <span class="keywordflow">return</span> var_.<a class="code hl_function" href="classGoogle_1_1OrTools_1_1LinearSolver_1_1Variable.html#a26f76217e5014e355033cfe094fcc168">Name</a>();</div>
+<div class="line"><a id="l00230" name="l00230"></a><span class="lineno">  230</span>        <span class="keywordflow">return</span> var_.Name();</div>
 <div class="line"><a id="l00231" name="l00231"></a><span class="lineno">  231</span>    }</div>
 <div class="line"><a id="l00232" name="l00232"></a><span class="lineno">  232</span> </div>
 <div class="line"><a id="l00233" name="l00233"></a><span class="lineno"><a class="line" href="classGoogle_1_1OrTools_1_1LinearSolver_1_1VarWrapper.html#a26fe502d425290a10e641b18607aa64c">  233</a></span>    <span class="keyword">public</span> <span class="keyword">override</span> <span class="keywordtype">double</span> <a class="code hl_function" href="classGoogle_1_1OrTools_1_1LinearSolver_1_1VarWrapper.html#a26fe502d425290a10e641b18607aa64c">DoVisit</a>(Dictionary&lt;Variable, double&gt; coefficients, <span class="keywordtype">double</span> multiplier)</div>
@@ -458,9 +458,8 @@ $(document).ready(function(){initNavTree('LinearExpr_8cs_source.html',''); initR
 <div class="ttc" id="aclassGoogle_1_1OrTools_1_1LinearSolver_1_1VarWrapper_html_a012fbb0f39e57c0a44ec83dd408fcda3"><div class="ttname"><a href="classGoogle_1_1OrTools_1_1LinearSolver_1_1VarWrapper.html#a012fbb0f39e57c0a44ec83dd408fcda3">Google.OrTools.LinearSolver.VarWrapper.ToString</a></div><div class="ttdeci">override String ToString()</div><div class="ttdef"><b>Definition:</b> <a href="LinearExpr_8cs_source.html#l00228">LinearExpr.cs:228</a></div></div>
 <div class="ttc" id="aclassGoogle_1_1OrTools_1_1LinearSolver_1_1VarWrapper_html_a26fe502d425290a10e641b18607aa64c"><div class="ttname"><a href="classGoogle_1_1OrTools_1_1LinearSolver_1_1VarWrapper.html#a26fe502d425290a10e641b18607aa64c">Google.OrTools.LinearSolver.VarWrapper.DoVisit</a></div><div class="ttdeci">override double DoVisit(Dictionary&lt; Variable, double &gt; coefficients, double multiplier)</div><div class="ttdef"><b>Definition:</b> <a href="LinearExpr_8cs_source.html#l00233">LinearExpr.cs:233</a></div></div>
 <div class="ttc" id="aclassGoogle_1_1OrTools_1_1LinearSolver_1_1VarWrapper_html_a5b60c42b6387c1c8449105007594b8ad"><div class="ttname"><a href="classGoogle_1_1OrTools_1_1LinearSolver_1_1VarWrapper.html#a5b60c42b6387c1c8449105007594b8ad">Google.OrTools.LinearSolver.VarWrapper.VarWrapper</a></div><div class="ttdeci">VarWrapper(Variable var)</div><div class="ttdef"><b>Definition:</b> <a href="LinearExpr_8cs_source.html#l00223">LinearExpr.cs:223</a></div></div>
-<div class="ttc" id="aclassGoogle_1_1OrTools_1_1LinearSolver_1_1Variable_html"><div class="ttname"><a href="classGoogle_1_1OrTools_1_1LinearSolver_1_1Variable.html">Google.OrTools.LinearSolver.Variable</a></div><div class="ttdef"><b>Definition:</b> <a href="Variable_8cs_source.html#l00013">Variable.cs:13</a></div></div>
-<div class="ttc" id="aclassGoogle_1_1OrTools_1_1LinearSolver_1_1Variable_html_a26f76217e5014e355033cfe094fcc168"><div class="ttname"><a href="classGoogle_1_1OrTools_1_1LinearSolver_1_1Variable.html#a26f76217e5014e355033cfe094fcc168">Google.OrTools.LinearSolver.Variable.Name</a></div><div class="ttdeci">string Name()</div><div class="ttdef"><b>Definition:</b> <a href="Variable_8cs_source.html#l00047">Variable.cs:47</a></div></div>
-<div class="ttc" id="anamespaceGoogle_1_1OrTools_1_1LinearSolver_html"><div class="ttname"><a href="namespaceGoogle_1_1OrTools_1_1LinearSolver.html">Google.OrTools.LinearSolver</a></div><div class="ttdef"><b>Definition:</b> <a href="linear__solver_2Constraint_8cs_source.html#l00011">linear_solver/Constraint.cs:11</a></div></div>
+<div class="ttc" id="aclassGoogle_1_1OrTools_1_1LinearSolver_1_1Variable_html"><div class="ttname"><a href="classGoogle_1_1OrTools_1_1LinearSolver_1_1Variable.html">Google.OrTools.LinearSolver.Variable</a></div><div class="ttdef"><b>Definition:</b> <a href="VariableHelper_8cs_source.html#l00020">VariableHelper.cs:21</a></div></div>
+<div class="ttc" id="anamespaceGoogle_1_1OrTools_1_1LinearSolver_html"><div class="ttname"><a href="namespaceGoogle_1_1OrTools_1_1LinearSolver.html">Google.OrTools.LinearSolver</a></div><div class="ttdef"><b>Definition:</b> <a href="LinearConstraint_8cs_source.html#l00014">LinearConstraint.cs:15</a></div></div>
 <div class="ttc" id="anamespaceSystem_1_1Collections_1_1Generic_html"><div class="ttname"><a href="namespaceSystem_1_1Collections_1_1Generic.html">System.Collections.Generic</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->

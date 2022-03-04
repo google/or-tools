@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 9.2</span>
+                <span id="sfml">Google OR-Tools 9.3</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -106,7 +106,7 @@ $(document).ready(function(){initNavTree('model__exporter_8h_source.html',''); i
 <div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span><span class="preprocessor">#include &quot;absl/strings/str_format.h&quot;</span></div>
 <div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span><span class="preprocessor">#include &quot;ortools/base/hash.h&quot;</span></div>
 <div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span><span class="preprocessor">#include &quot;ortools/base/macros.h&quot;</span></div>
-<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span><span class="preprocessor">#include &quot;<a class="code" href="linear__solver_8pb_8h.html">ortools/linear_solver/linear_solver.pb.h</a>&quot;</span></div>
+<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span><span class="preprocessor">#include &quot;ortools/linear_solver/linear_solver.pb.h&quot;</span></div>
 <div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span> </div>
 <div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceoperations__research.html">operations_research</a> {</div>
 <div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span> </div>
@@ -122,18 +122,16 @@ $(document).ready(function(){initNavTree('model__exporter_8h_source.html',''); i
 <div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>};</div>
 <div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span> </div>
 <div class="line"><a id="l00071" name="l00071"></a><span class="lineno"><a class="line" href="namespaceoperations__research.html#a2e14c987281f826f0737c14f5abc00b7">   71</a></span>absl::StatusOr&lt;std::string&gt; <a class="code hl_function" href="namespaceoperations__research.html#a2e14c987281f826f0737c14f5abc00b7">ExportModelAsLpFormat</a>(</div>
-<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>    <span class="keyword">const</span> <a class="code hl_class" href="classoperations__research_1_1_m_p_model_proto.html">MPModelProto</a>&amp; model,</div>
+<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>    <span class="keyword">const</span> MPModelProto&amp; model,</div>
 <div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>    <span class="keyword">const</span> <a class="code hl_struct" href="structoperations__research_1_1_m_p_model_export_options.html">MPModelExportOptions</a>&amp; options = <a class="code hl_struct" href="structoperations__research_1_1_m_p_model_export_options.html">MPModelExportOptions</a>());</div>
 <div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span> </div>
 <div class="line"><a id="l00100" name="l00100"></a><span class="lineno"><a class="line" href="namespaceoperations__research.html#a2c2e3f703497d288ee03330752d3a4c3">  100</a></span>absl::StatusOr&lt;std::string&gt; <a class="code hl_function" href="namespaceoperations__research.html#a2c2e3f703497d288ee03330752d3a4c3">ExportModelAsMpsFormat</a>(</div>
-<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span>    <span class="keyword">const</span> <a class="code hl_class" href="classoperations__research_1_1_m_p_model_proto.html">MPModelProto</a>&amp; model,</div>
+<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span>    <span class="keyword">const</span> MPModelProto&amp; model,</div>
 <div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span>    <span class="keyword">const</span> <a class="code hl_struct" href="structoperations__research_1_1_m_p_model_export_options.html">MPModelExportOptions</a>&amp; options = <a class="code hl_struct" href="structoperations__research_1_1_m_p_model_export_options.html">MPModelExportOptions</a>());</div>
 <div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span> </div>
 <div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span>}  <span class="comment">// namespace operations_research</span></div>
 <div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span> </div>
 <div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span><span class="preprocessor">#endif  </span><span class="comment">// OR_TOOLS_LINEAR_SOLVER_MODEL_EXPORTER_H_</span></div>
-<div class="ttc" id="aclassoperations__research_1_1_m_p_model_proto_html"><div class="ttname"><a href="classoperations__research_1_1_m_p_model_proto.html">operations_research::MPModelProto</a></div><div class="ttdef"><b>Definition:</b> <a href="linear__solver_8pb_8h_source.html#l02800">linear_solver.pb.h:2801</a></div></div>
-<div class="ttc" id="alinear__solver_8pb_8h_html"><div class="ttname"><a href="linear__solver_8pb_8h.html">linear_solver.pb.h</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_html"><div class="ttname"><a href="namespaceoperations__research.html">operations_research</a></div><div class="ttdef"><b>Definition:</b> <a href="linear__expr_8h_source.html#l00084">linear_expr.h:84</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_html_a2c2e3f703497d288ee03330752d3a4c3"><div class="ttname"><a href="namespaceoperations__research.html#a2c2e3f703497d288ee03330752d3a4c3">operations_research::ExportModelAsMpsFormat</a></div><div class="ttdeci">absl::StatusOr&lt; std::string &gt; ExportModelAsMpsFormat(const MPModelProto &amp;model, const MPModelExportOptions &amp;options=MPModelExportOptions())</div><div class="ttdoc">Outputs the current model (variables, constraints, objective) as a string encoded in MPS file format,...</div></div>
 <div class="ttc" id="anamespaceoperations__research_html_a2e14c987281f826f0737c14f5abc00b7"><div class="ttname"><a href="namespaceoperations__research.html#a2e14c987281f826f0737c14f5abc00b7">operations_research::ExportModelAsLpFormat</a></div><div class="ttdeci">absl::StatusOr&lt; std::string &gt; ExportModelAsLpFormat(const MPModelProto &amp;model, const MPModelExportOptions &amp;options=MPModelExportOptions())</div><div class="ttdoc">Outputs the current model (variables, constraints, objective) as a string encoded in the so-called &quot;C...</div></div>

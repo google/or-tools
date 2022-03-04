@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.2</span>
+   &#160;<span id="projectnumber">9.3</span>
    </div>
   </td>
  </tr>
@@ -95,7 +95,7 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1math__opt
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00127">127</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00091">91</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -121,37 +121,43 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:acb7f8ff128d9158bfb308e44ddb2b59e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a58ff87cab319d4eebeee3b00a1caf7fe"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1math__opt_1_1_variable.html">Variable</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a58ff87cab319d4eebeee3b00a1caf7fe">AddIntegerVariable</a> (double <a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a3c907bb034271af46e51c2ddc956cccc">lower_bound</a>, double <a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a9d49460227bb682d94db1eaf2e960437">upper_bound</a>, absl::string_view <a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a24dcbf29c0d6cd766009a182a6484e3b">name</a>=&quot;&quot;)</td></tr>
 <tr class="separator:a58ff87cab319d4eebeee3b00a1caf7fe"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0ad20f15fe1d077785e67f69c5093275"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a0ad20f15fe1d077785e67f69c5093275">DeleteVariable</a> (<a class="el" href="classoperations__research_1_1math__opt_1_1_variable.html">Variable</a> variable)</td></tr>
+<tr class="memitem:a0ad20f15fe1d077785e67f69c5093275"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a0ad20f15fe1d077785e67f69c5093275">DeleteVariable</a> (<a class="el" href="classoperations__research_1_1math__opt_1_1_variable.html">Variable</a> <a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a573de99e23b221b80212e64166216b1d">variable</a>)</td></tr>
 <tr class="separator:a0ad20f15fe1d077785e67f69c5093275"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a663e6fd290b30b948686c43cea697140"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a663e6fd290b30b948686c43cea697140">num_variables</a> () const</td></tr>
 <tr class="separator:a663e6fd290b30b948686c43cea697140"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab32fde20eda52599f9bb970791ac3c13"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#ab32fde20eda52599f9bb970791ac3c13">next_variable_id</a> () const</td></tr>
-<tr class="separator:ab32fde20eda52599f9bb970791ac3c13"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7e6d752574c699fa70a701b3234a9c94"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a7e6d752574c699fa70a701b3234a9c94">has_variable</a> (int id) const</td></tr>
-<tr class="separator:a7e6d752574c699fa70a701b3234a9c94"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac8f487602a02834fe7b77513f48e64c7"><td class="memItemLeft" align="right" valign="top">const std::string &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#ac8f487602a02834fe7b77513f48e64c7">name</a> (<a class="el" href="classoperations__research_1_1math__opt_1_1_variable.html">Variable</a> variable) const</td></tr>
+<tr class="memitem:a0d48e81ede7e10af7a9928fe9fe4d207"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a0d48e81ede7e10af7a9928fe9fe4d207">next_variable_id</a> () const</td></tr>
+<tr class="separator:a0d48e81ede7e10af7a9928fe9fe4d207"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7945b60ebe26a1f084ec9225b93f5aae"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a7945b60ebe26a1f084ec9225b93f5aae">has_variable</a> (int64_t id) const</td></tr>
+<tr class="separator:a7945b60ebe26a1f084ec9225b93f5aae"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac6312f744075f29a4f5739fbd98c7a73"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#ac6312f744075f29a4f5739fbd98c7a73">has_variable</a> (VariableId id) const</td></tr>
+<tr class="separator:ac6312f744075f29a4f5739fbd98c7a73"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a573de99e23b221b80212e64166216b1d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1math__opt_1_1_variable.html">Variable</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a573de99e23b221b80212e64166216b1d">variable</a> (int64_t id) const</td></tr>
+<tr class="separator:a573de99e23b221b80212e64166216b1d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af6e33f92c1c5327cb9575f809363ffdd"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1math__opt_1_1_variable.html">Variable</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#af6e33f92c1c5327cb9575f809363ffdd">variable</a> (VariableId id) const</td></tr>
+<tr class="separator:af6e33f92c1c5327cb9575f809363ffdd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac8f487602a02834fe7b77513f48e64c7"><td class="memItemLeft" align="right" valign="top">const std::string &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#ac8f487602a02834fe7b77513f48e64c7">name</a> (<a class="el" href="classoperations__research_1_1math__opt_1_1_variable.html">Variable</a> <a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a573de99e23b221b80212e64166216b1d">variable</a>) const</td></tr>
 <tr class="separator:ac8f487602a02834fe7b77513f48e64c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acdefff4db5844c3e3bfc9371c2f7affe"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#acdefff4db5844c3e3bfc9371c2f7affe">set_lower_bound</a> (<a class="el" href="classoperations__research_1_1math__opt_1_1_variable.html">Variable</a> variable, double <a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a3c907bb034271af46e51c2ddc956cccc">lower_bound</a>)</td></tr>
+<tr class="memitem:acdefff4db5844c3e3bfc9371c2f7affe"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#acdefff4db5844c3e3bfc9371c2f7affe">set_lower_bound</a> (<a class="el" href="classoperations__research_1_1math__opt_1_1_variable.html">Variable</a> <a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a573de99e23b221b80212e64166216b1d">variable</a>, double <a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a3c907bb034271af46e51c2ddc956cccc">lower_bound</a>)</td></tr>
 <tr class="separator:acdefff4db5844c3e3bfc9371c2f7affe"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3c907bb034271af46e51c2ddc956cccc"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a3c907bb034271af46e51c2ddc956cccc">lower_bound</a> (<a class="el" href="classoperations__research_1_1math__opt_1_1_variable.html">Variable</a> variable) const</td></tr>
+<tr class="memitem:a3c907bb034271af46e51c2ddc956cccc"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a3c907bb034271af46e51c2ddc956cccc">lower_bound</a> (<a class="el" href="classoperations__research_1_1math__opt_1_1_variable.html">Variable</a> <a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a573de99e23b221b80212e64166216b1d">variable</a>) const</td></tr>
 <tr class="separator:a3c907bb034271af46e51c2ddc956cccc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac89116ee994936324841bea989ba9629"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#ac89116ee994936324841bea989ba9629">set_upper_bound</a> (<a class="el" href="classoperations__research_1_1math__opt_1_1_variable.html">Variable</a> variable, double <a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a9d49460227bb682d94db1eaf2e960437">upper_bound</a>)</td></tr>
+<tr class="memitem:ac89116ee994936324841bea989ba9629"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#ac89116ee994936324841bea989ba9629">set_upper_bound</a> (<a class="el" href="classoperations__research_1_1math__opt_1_1_variable.html">Variable</a> <a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a573de99e23b221b80212e64166216b1d">variable</a>, double <a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a9d49460227bb682d94db1eaf2e960437">upper_bound</a>)</td></tr>
 <tr class="separator:ac89116ee994936324841bea989ba9629"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9d49460227bb682d94db1eaf2e960437"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a9d49460227bb682d94db1eaf2e960437">upper_bound</a> (<a class="el" href="classoperations__research_1_1math__opt_1_1_variable.html">Variable</a> variable) const</td></tr>
+<tr class="memitem:a9d49460227bb682d94db1eaf2e960437"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a9d49460227bb682d94db1eaf2e960437">upper_bound</a> (<a class="el" href="classoperations__research_1_1math__opt_1_1_variable.html">Variable</a> <a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a573de99e23b221b80212e64166216b1d">variable</a>) const</td></tr>
 <tr class="separator:a9d49460227bb682d94db1eaf2e960437"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab2c25e6eef866c943874557e303371bf"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#ab2c25e6eef866c943874557e303371bf">set_is_integer</a> (<a class="el" href="classoperations__research_1_1math__opt_1_1_variable.html">Variable</a> variable, bool <a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#aca567bf39d0add4a2ae14df0159173a1">is_integer</a>)</td></tr>
+<tr class="memitem:ab2c25e6eef866c943874557e303371bf"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#ab2c25e6eef866c943874557e303371bf">set_is_integer</a> (<a class="el" href="classoperations__research_1_1math__opt_1_1_variable.html">Variable</a> <a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a573de99e23b221b80212e64166216b1d">variable</a>, bool <a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#aca567bf39d0add4a2ae14df0159173a1">is_integer</a>)</td></tr>
 <tr class="separator:ab2c25e6eef866c943874557e303371bf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad7dbab840b927585897d0e3bc21452b1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#ad7dbab840b927585897d0e3bc21452b1">set_integer</a> (<a class="el" href="classoperations__research_1_1math__opt_1_1_variable.html">Variable</a> variable)</td></tr>
+<tr class="memitem:ad7dbab840b927585897d0e3bc21452b1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#ad7dbab840b927585897d0e3bc21452b1">set_integer</a> (<a class="el" href="classoperations__research_1_1math__opt_1_1_variable.html">Variable</a> <a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a573de99e23b221b80212e64166216b1d">variable</a>)</td></tr>
 <tr class="separator:ad7dbab840b927585897d0e3bc21452b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab890c1c1c7585be0ee777bbe9e839fdf"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#ab890c1c1c7585be0ee777bbe9e839fdf">set_continuous</a> (<a class="el" href="classoperations__research_1_1math__opt_1_1_variable.html">Variable</a> variable)</td></tr>
+<tr class="memitem:ab890c1c1c7585be0ee777bbe9e839fdf"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#ab890c1c1c7585be0ee777bbe9e839fdf">set_continuous</a> (<a class="el" href="classoperations__research_1_1math__opt_1_1_variable.html">Variable</a> <a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a573de99e23b221b80212e64166216b1d">variable</a>)</td></tr>
 <tr class="separator:ab890c1c1c7585be0ee777bbe9e839fdf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aca567bf39d0add4a2ae14df0159173a1"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#aca567bf39d0add4a2ae14df0159173a1">is_integer</a> (<a class="el" href="classoperations__research_1_1math__opt_1_1_variable.html">Variable</a> variable) const</td></tr>
+<tr class="memitem:aca567bf39d0add4a2ae14df0159173a1"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#aca567bf39d0add4a2ae14df0159173a1">is_integer</a> (<a class="el" href="classoperations__research_1_1math__opt_1_1_variable.html">Variable</a> <a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a573de99e23b221b80212e64166216b1d">variable</a>) const</td></tr>
 <tr class="separator:aca567bf39d0add4a2ae14df0159173a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac457c02a490aced8a2c1f9c9f470949d"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classoperations__research_1_1math__opt_1_1_variable.html">Variable</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#ac457c02a490aced8a2c1f9c9f470949d">Variables</a> () const</td></tr>
 <tr class="separator:ac457c02a490aced8a2c1f9c9f470949d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af7a9a5d5474c651ec1f3f608c435ec69"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classoperations__research_1_1math__opt_1_1_variable.html">Variable</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#af7a9a5d5474c651ec1f3f608c435ec69">SortedVariables</a> () const</td></tr>
 <tr class="separator:af7a9a5d5474c651ec1f3f608c435ec69"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac633b0bee7b8716fd668e03fd1b8de1e"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classoperations__research_1_1math__opt_1_1_linear_constraint.html">LinearConstraint</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#ac633b0bee7b8716fd668e03fd1b8de1e">ColumnNonzeros</a> (<a class="el" href="classoperations__research_1_1math__opt_1_1_variable.html">Variable</a> variable)</td></tr>
+<tr class="memitem:ac633b0bee7b8716fd668e03fd1b8de1e"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classoperations__research_1_1math__opt_1_1_linear_constraint.html">LinearConstraint</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#ac633b0bee7b8716fd668e03fd1b8de1e">ColumnNonzeros</a> (<a class="el" href="classoperations__research_1_1math__opt_1_1_variable.html">Variable</a> <a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a573de99e23b221b80212e64166216b1d">variable</a>)</td></tr>
 <tr class="separator:ac633b0bee7b8716fd668e03fd1b8de1e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6bb7c904b32900d54a230a3baa210222"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1math__opt_1_1_linear_constraint.html">LinearConstraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a6bb7c904b32900d54a230a3baa210222">AddLinearConstraint</a> (absl::string_view <a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a24dcbf29c0d6cd766009a182a6484e3b">name</a>=&quot;&quot;)</td></tr>
 <tr class="separator:a6bb7c904b32900d54a230a3baa210222"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -163,10 +169,16 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ac271787c20d68951a329e18f6c1b929d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2e6856997ce83e9841705b40d7fc626c"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a2e6856997ce83e9841705b40d7fc626c">num_linear_constraints</a> () const</td></tr>
 <tr class="separator:a2e6856997ce83e9841705b40d7fc626c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad3992033bec131439d8244a71db05254"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#ad3992033bec131439d8244a71db05254">next_linear_constraint_id</a> () const</td></tr>
-<tr class="separator:ad3992033bec131439d8244a71db05254"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aec3436e3e4759deb764e367c30dc0a51"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#aec3436e3e4759deb764e367c30dc0a51">has_linear_constraint</a> (int id) const</td></tr>
-<tr class="separator:aec3436e3e4759deb764e367c30dc0a51"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a36587d8782f931b898bbaa15a34c8b79"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a36587d8782f931b898bbaa15a34c8b79">next_linear_constraint_id</a> () const</td></tr>
+<tr class="separator:a36587d8782f931b898bbaa15a34c8b79"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8b90962a86cd13fae11cdf72900816aa"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a8b90962a86cd13fae11cdf72900816aa">has_linear_constraint</a> (int64_t id) const</td></tr>
+<tr class="separator:a8b90962a86cd13fae11cdf72900816aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a908e89788fc911467d3f144d838e33b0"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a908e89788fc911467d3f144d838e33b0">has_linear_constraint</a> (LinearConstraintId id) const</td></tr>
+<tr class="separator:a908e89788fc911467d3f144d838e33b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a13ac8bc2eddf0ebb1e787d81450edc63"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1math__opt_1_1_linear_constraint.html">LinearConstraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a13ac8bc2eddf0ebb1e787d81450edc63">linear_constraint</a> (int64_t id) const</td></tr>
+<tr class="separator:a13ac8bc2eddf0ebb1e787d81450edc63"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8b5b03c868101a00fa7810d835af566b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1math__opt_1_1_linear_constraint.html">LinearConstraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a8b5b03c868101a00fa7810d835af566b">linear_constraint</a> (LinearConstraintId id) const</td></tr>
+<tr class="separator:a8b5b03c868101a00fa7810d835af566b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2e3037c56f08b0e7398824b47fdffd5b"><td class="memItemLeft" align="right" valign="top">const std::string &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a2e3037c56f08b0e7398824b47fdffd5b">name</a> (<a class="el" href="classoperations__research_1_1math__opt_1_1_linear_constraint.html">LinearConstraint</a> constraint) const</td></tr>
 <tr class="separator:a2e3037c56f08b0e7398824b47fdffd5b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa9be89836d930a7f1b3ed37cf2eee224"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#aa9be89836d930a7f1b3ed37cf2eee224">set_lower_bound</a> (<a class="el" href="classoperations__research_1_1math__opt_1_1_linear_constraint.html">LinearConstraint</a> constraint, double <a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a3c907bb034271af46e51c2ddc956cccc">lower_bound</a>)</td></tr>
@@ -177,11 +189,11 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ae24af45d7bba8abfcdc222aed027be38"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a24f76eb09818eac7feac808b33a2c907"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a24f76eb09818eac7feac808b33a2c907">upper_bound</a> (<a class="el" href="classoperations__research_1_1math__opt_1_1_linear_constraint.html">LinearConstraint</a> constraint) const</td></tr>
 <tr class="separator:a24f76eb09818eac7feac808b33a2c907"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7f65ea045f09a5239015a93e0cc73f1e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a7f65ea045f09a5239015a93e0cc73f1e">set_coefficient</a> (<a class="el" href="classoperations__research_1_1math__opt_1_1_linear_constraint.html">LinearConstraint</a> constraint, <a class="el" href="classoperations__research_1_1math__opt_1_1_variable.html">Variable</a> variable, double <a class="el" href="matchers_8cc.html#a0b6f3694312803de4bea1fe97896294f">value</a>)</td></tr>
+<tr class="memitem:a7f65ea045f09a5239015a93e0cc73f1e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a7f65ea045f09a5239015a93e0cc73f1e">set_coefficient</a> (<a class="el" href="classoperations__research_1_1math__opt_1_1_linear_constraint.html">LinearConstraint</a> constraint, <a class="el" href="classoperations__research_1_1math__opt_1_1_variable.html">Variable</a> <a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a573de99e23b221b80212e64166216b1d">variable</a>, double <a class="el" href="primal__dual__hybrid__gradient_8cc.html#a730b1ea892f1f794d9bd5f16027acb63">value</a>)</td></tr>
 <tr class="separator:a7f65ea045f09a5239015a93e0cc73f1e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a309d51fbe2a03f2f53e7ef11a2dd6b6b"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a309d51fbe2a03f2f53e7ef11a2dd6b6b">coefficient</a> (<a class="el" href="classoperations__research_1_1math__opt_1_1_linear_constraint.html">LinearConstraint</a> constraint, <a class="el" href="classoperations__research_1_1math__opt_1_1_variable.html">Variable</a> variable) const</td></tr>
+<tr class="memitem:a309d51fbe2a03f2f53e7ef11a2dd6b6b"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a309d51fbe2a03f2f53e7ef11a2dd6b6b">coefficient</a> (<a class="el" href="classoperations__research_1_1math__opt_1_1_linear_constraint.html">LinearConstraint</a> constraint, <a class="el" href="classoperations__research_1_1math__opt_1_1_variable.html">Variable</a> <a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a573de99e23b221b80212e64166216b1d">variable</a>) const</td></tr>
 <tr class="separator:a309d51fbe2a03f2f53e7ef11a2dd6b6b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aad12b6c605e44b362ce8dd6aabfba57f"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#aad12b6c605e44b362ce8dd6aabfba57f">is_coefficient_nonzero</a> (<a class="el" href="classoperations__research_1_1math__opt_1_1_linear_constraint.html">LinearConstraint</a> constraint, <a class="el" href="classoperations__research_1_1math__opt_1_1_variable.html">Variable</a> variable) const</td></tr>
+<tr class="memitem:aad12b6c605e44b362ce8dd6aabfba57f"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#aad12b6c605e44b362ce8dd6aabfba57f">is_coefficient_nonzero</a> (<a class="el" href="classoperations__research_1_1math__opt_1_1_linear_constraint.html">LinearConstraint</a> constraint, <a class="el" href="classoperations__research_1_1math__opt_1_1_variable.html">Variable</a> <a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a573de99e23b221b80212e64166216b1d">variable</a>) const</td></tr>
 <tr class="separator:aad12b6c605e44b362ce8dd6aabfba57f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a204125848d0c24e3d01fec07c5b374e1"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classoperations__research_1_1math__opt_1_1_variable.html">Variable</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a204125848d0c24e3d01fec07c5b374e1">RowNonzeros</a> (<a class="el" href="classoperations__research_1_1math__opt_1_1_linear_constraint.html">LinearConstraint</a> constraint)</td></tr>
 <tr class="separator:a204125848d0c24e3d01fec07c5b374e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -235,23 +247,23 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a499fe16dd3550a9e1075cae616edcede"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abf7df57e999a0722ba15adb146815523"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1math__opt_1_1_quadratic_expression.html">QuadraticExpression</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#abf7df57e999a0722ba15adb146815523">ObjectiveAsQuadraticExpression</a> () const</td></tr>
 <tr class="separator:abf7df57e999a0722ba15adb146815523"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a11f66cfdfc4e5e4665a6e06b9e477d35"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a11f66cfdfc4e5e4665a6e06b9e477d35">objective_coefficient</a> (<a class="el" href="classoperations__research_1_1math__opt_1_1_variable.html">Variable</a> variable) const</td></tr>
+<tr class="memitem:a11f66cfdfc4e5e4665a6e06b9e477d35"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a11f66cfdfc4e5e4665a6e06b9e477d35">objective_coefficient</a> (<a class="el" href="classoperations__research_1_1math__opt_1_1_variable.html">Variable</a> <a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a573de99e23b221b80212e64166216b1d">variable</a>) const</td></tr>
 <tr class="separator:a11f66cfdfc4e5e4665a6e06b9e477d35"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8cbcf4b05b6bdfbfeafde1365adec83e"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a8cbcf4b05b6bdfbfeafde1365adec83e">objective_coefficient</a> (<a class="el" href="classoperations__research_1_1math__opt_1_1_variable.html">Variable</a> first_variable, <a class="el" href="classoperations__research_1_1math__opt_1_1_variable.html">Variable</a> second_variable) const</td></tr>
 <tr class="separator:a8cbcf4b05b6bdfbfeafde1365adec83e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae672c2274144643be87a69defe5948a3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#ae672c2274144643be87a69defe5948a3">set_objective_coefficient</a> (<a class="el" href="classoperations__research_1_1math__opt_1_1_variable.html">Variable</a> variable, double <a class="el" href="matchers_8cc.html#a0b6f3694312803de4bea1fe97896294f">value</a>)</td></tr>
+<tr class="memitem:ae672c2274144643be87a69defe5948a3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#ae672c2274144643be87a69defe5948a3">set_objective_coefficient</a> (<a class="el" href="classoperations__research_1_1math__opt_1_1_variable.html">Variable</a> <a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a573de99e23b221b80212e64166216b1d">variable</a>, double <a class="el" href="primal__dual__hybrid__gradient_8cc.html#a730b1ea892f1f794d9bd5f16027acb63">value</a>)</td></tr>
 <tr class="separator:ae672c2274144643be87a69defe5948a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad014391e6bc330e8c587bf42a02020f9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#ad014391e6bc330e8c587bf42a02020f9">set_objective_coefficient</a> (<a class="el" href="classoperations__research_1_1math__opt_1_1_variable.html">Variable</a> first_variable, <a class="el" href="classoperations__research_1_1math__opt_1_1_variable.html">Variable</a> second_variable, double <a class="el" href="matchers_8cc.html#a0b6f3694312803de4bea1fe97896294f">value</a>)</td></tr>
+<tr class="memitem:ad014391e6bc330e8c587bf42a02020f9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#ad014391e6bc330e8c587bf42a02020f9">set_objective_coefficient</a> (<a class="el" href="classoperations__research_1_1math__opt_1_1_variable.html">Variable</a> first_variable, <a class="el" href="classoperations__research_1_1math__opt_1_1_variable.html">Variable</a> second_variable, double <a class="el" href="primal__dual__hybrid__gradient_8cc.html#a730b1ea892f1f794d9bd5f16027acb63">value</a>)</td></tr>
 <tr class="separator:ad014391e6bc330e8c587bf42a02020f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad97af219ab4d62c806c052848a69dab3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#ad97af219ab4d62c806c052848a69dab3">clear_objective</a> ()</td></tr>
 <tr class="separator:ad97af219ab4d62c806c052848a69dab3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8c81421e3a44c3f816060ff7535fc9fe"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a8c81421e3a44c3f816060ff7535fc9fe">is_objective_coefficient_nonzero</a> (<a class="el" href="classoperations__research_1_1math__opt_1_1_variable.html">Variable</a> variable) const</td></tr>
+<tr class="memitem:a8c81421e3a44c3f816060ff7535fc9fe"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a8c81421e3a44c3f816060ff7535fc9fe">is_objective_coefficient_nonzero</a> (<a class="el" href="classoperations__research_1_1math__opt_1_1_variable.html">Variable</a> <a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a573de99e23b221b80212e64166216b1d">variable</a>) const</td></tr>
 <tr class="separator:a8c81421e3a44c3f816060ff7535fc9fe"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3bc02319585edfab40ef174d16cd8423"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a3bc02319585edfab40ef174d16cd8423">is_objective_coefficient_nonzero</a> (<a class="el" href="classoperations__research_1_1math__opt_1_1_variable.html">Variable</a> first_variable, <a class="el" href="classoperations__research_1_1math__opt_1_1_variable.html">Variable</a> second_variable) const</td></tr>
 <tr class="separator:a3bc02319585edfab40ef174d16cd8423"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6f3611559b9d19eb580c5768c963bd99"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a6f3611559b9d19eb580c5768c963bd99">objective_offset</a> () const</td></tr>
 <tr class="separator:a6f3611559b9d19eb580c5768c963bd99"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afe1e374f83d18136957c73fcaf399ba7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#afe1e374f83d18136957c73fcaf399ba7">set_objective_offset</a> (double <a class="el" href="matchers_8cc.html#a0b6f3694312803de4bea1fe97896294f">value</a>)</td></tr>
+<tr class="memitem:afe1e374f83d18136957c73fcaf399ba7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#afe1e374f83d18136957c73fcaf399ba7">set_objective_offset</a> (double <a class="el" href="primal__dual__hybrid__gradient_8cc.html#a730b1ea892f1f794d9bd5f16027acb63">value</a>)</td></tr>
 <tr class="separator:afe1e374f83d18136957c73fcaf399ba7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aab068699099bdffd5c834f440cdc7e51"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#aab068699099bdffd5c834f440cdc7e51">is_maximize</a> () const</td></tr>
 <tr class="separator:aab068699099bdffd5c834f440cdc7e51"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -263,8 +275,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:aafbe56ff1eada47dff1b4626d455498f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa850c403983019f6676dda010d9ac3a5"><td class="memItemLeft" align="right" valign="top">ModelProto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#aa850c403983019f6676dda010d9ac3a5">ExportModel</a> () const</td></tr>
 <tr class="separator:aa850c403983019f6676dda010d9ac3a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae5c554db03a67f46be34d323697cc336"><td class="memItemLeft" align="right" valign="top">std::unique_ptr&lt; <a class="el" href="classoperations__research_1_1math__opt_1_1_update_tracker.html">UpdateTracker</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#ae5c554db03a67f46be34d323697cc336">NewUpdateTracker</a> () const</td></tr>
-<tr class="separator:ae5c554db03a67f46be34d323697cc336"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a450c7273cad88218b638714c83f7292b"><td class="memItemLeft" align="right" valign="top">std::unique_ptr&lt; <a class="el" href="classoperations__research_1_1math__opt_1_1_update_tracker.html">UpdateTracker</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a450c7273cad88218b638714c83f7292b">NewUpdateTracker</a> ()</td></tr>
+<tr class="separator:a450c7273cad88218b638714c83f7292b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a735ce45a5a18153e276fb6199e2d99b3"><td class="memItemLeft" align="right" valign="top">absl::Status&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#a735ce45a5a18153e276fb6199e2d99b3">ApplyUpdateProto</a> (const ModelUpdateProto &amp;update_proto)</td></tr>
 <tr class="separator:a735ce45a5a18153e276fb6199e2d99b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af7b0464ca3ebd77bc51804e590e9b503"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classoperations__research_1_1math__opt_1_1_model_storage.html">ModelStorage</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_model.html#af7b0464ca3ebd77bc51804e590e9b503">storage</a> () const</td></tr>
@@ -385,7 +397,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00514">514</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00498">498</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -429,7 +441,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00518">518</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00502">502</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -473,7 +485,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00524">524</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00508">508</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -501,7 +513,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00588">588</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00585">585</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -575,7 +587,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00591">591</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00588">588</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -643,7 +655,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00710">710</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00721">721</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -671,7 +683,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00716">716</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00727">727</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -699,7 +711,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00713">713</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00724">724</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -727,7 +739,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00504">504</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00488">488</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -777,7 +789,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00507">507</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00491">491</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -844,7 +856,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00748">748</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00759">759</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -901,7 +913,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00652">652</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00663">663</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -949,7 +961,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00598">598</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00595">595</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -977,7 +989,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00530">530</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00514">514</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -1028,8 +1040,8 @@ Static Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="aec3436e3e4759deb764e367c30dc0a51" name="aec3436e3e4759deb764e367c30dc0a51"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aec3436e3e4759deb764e367c30dc0a51">&#9670;&nbsp;</a></span>has_linear_constraint()</h2>
+<a id="a8b90962a86cd13fae11cdf72900816aa" name="a8b90962a86cd13fae11cdf72900816aa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8b90962a86cd13fae11cdf72900816aa">&#9670;&nbsp;</a></span>has_linear_constraint() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1040,7 +1052,7 @@ Static Public Member Functions</h2></td></tr>
         <tr>
           <td class="memname">bool has_linear_constraint </td>
           <td>(</td>
-          <td class="paramtype">int&#160;</td>
+          <td class="paramtype">int64_t&#160;</td>
           <td class="paramname"><em>id</em></td><td>)</td>
           <td> const</td>
         </tr>
@@ -1052,12 +1064,40 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00611">611</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00608">608</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
-<a id="a7e6d752574c699fa70a701b3234a9c94" name="a7e6d752574c699fa70a701b3234a9c94"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7e6d752574c699fa70a701b3234a9c94">&#9670;&nbsp;</a></span>has_variable()</h2>
+<a id="a908e89788fc911467d3f144d838e33b0" name="a908e89788fc911467d3f144d838e33b0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a908e89788fc911467d3f144d838e33b0">&#9670;&nbsp;</a></span>has_linear_constraint() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool has_linear_constraint </td>
+          <td>(</td>
+          <td class="paramtype">LinearConstraintId&#160;</td>
+          <td class="paramname"><em>id</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00612">612</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+
+</div>
+</div>
+<a id="a7945b60ebe26a1f084ec9225b93f5aae" name="a7945b60ebe26a1f084ec9225b93f5aae"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7945b60ebe26a1f084ec9225b93f5aae">&#9670;&nbsp;</a></span>has_variable() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1068,7 +1108,7 @@ Static Public Member Functions</h2></td></tr>
         <tr>
           <td class="memname">bool has_variable </td>
           <td>(</td>
-          <td class="paramtype">int&#160;</td>
+          <td class="paramtype">int64_t&#160;</td>
           <td class="paramname"><em>id</em></td><td>)</td>
           <td> const</td>
         </tr>
@@ -1080,7 +1120,35 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00541">541</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00525">525</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+
+</div>
+</div>
+<a id="ac6312f744075f29a4f5739fbd98c7a73" name="ac6312f744075f29a4f5739fbd98c7a73"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac6312f744075f29a4f5739fbd98c7a73">&#9670;&nbsp;</a></span>has_variable() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool has_variable </td>
+          <td>(</td>
+          <td class="paramtype">VariableId&#160;</td>
+          <td class="paramname"><em>id</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00529">529</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -1118,7 +1186,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00660">660</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00671">671</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -1146,7 +1214,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00583">583</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00580">580</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -1173,7 +1241,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00770">770</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00781">781</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -1211,7 +1279,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00756">756</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00767">767</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -1239,7 +1307,63 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00750">750</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00761">761</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+
+</div>
+</div>
+<a id="a13ac8bc2eddf0ebb1e787d81450edc63" name="a13ac8bc2eddf0ebb1e787d81450edc63"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a13ac8bc2eddf0ebb1e787d81450edc63">&#9670;&nbsp;</a></span>linear_constraint() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1math__opt_1_1_linear_constraint.html">LinearConstraint</a> linear_constraint </td>
+          <td>(</td>
+          <td class="paramtype">int64_t&#160;</td>
+          <td class="paramname"><em>id</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00616">616</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+
+</div>
+</div>
+<a id="a8b5b03c868101a00fa7810d835af566b" name="a8b5b03c868101a00fa7810d835af566b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8b5b03c868101a00fa7810d835af566b">&#9670;&nbsp;</a></span>linear_constraint() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1math__opt_1_1_linear_constraint.html">LinearConstraint</a> linear_constraint </td>
+          <td>(</td>
+          <td class="paramtype">LinearConstraintId&#160;</td>
+          <td class="paramname"><em>id</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00620">620</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -1286,7 +1410,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00627">627</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00638">638</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -1314,7 +1438,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00555">555</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00552">552</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -1342,7 +1466,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00677">677</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00688">688</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -1370,7 +1494,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00680">680</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00691">691</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -1398,7 +1522,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00668">668</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00679">679</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -1426,7 +1550,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00674">674</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00685">685</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -1454,7 +1578,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00671">671</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00682">682</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -1482,7 +1606,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00693">693</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00704">704</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -1510,7 +1634,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00696">696</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00707">707</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -1538,7 +1662,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00684">684</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00695">695</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -1566,7 +1690,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00690">690</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00701">701</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -1594,7 +1718,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00687">687</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00698">698</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -1621,7 +1745,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00502">502</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00486">486</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -1649,7 +1773,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00615">615</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00626">626</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -1677,12 +1801,12 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00545">545</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00542">542</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
-<a id="ae5c554db03a67f46be34d323697cc336" name="ae5c554db03a67f46be34d323697cc336"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae5c554db03a67f46be34d323697cc336">&#9670;&nbsp;</a></span>NewUpdateTracker()</h2>
+<a id="a450c7273cad88218b638714c83f7292b" name="a450c7273cad88218b638714c83f7292b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a450c7273cad88218b638714c83f7292b">&#9670;&nbsp;</a></span>NewUpdateTracker()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1691,7 +1815,7 @@ Static Public Member Functions</h2></td></tr>
           <td class="memname">std::unique_ptr&lt; <a class="el" href="classoperations__research_1_1math__opt_1_1_update_tracker.html">UpdateTracker</a> &gt; NewUpdateTracker </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
-          <td> const</td>
+          <td></td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -1700,8 +1824,8 @@ Static Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ad3992033bec131439d8244a71db05254" name="ad3992033bec131439d8244a71db05254"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad3992033bec131439d8244a71db05254">&#9670;&nbsp;</a></span>next_linear_constraint_id()</h2>
+<a id="a36587d8782f931b898bbaa15a34c8b79" name="a36587d8782f931b898bbaa15a34c8b79"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a36587d8782f931b898bbaa15a34c8b79">&#9670;&nbsp;</a></span>next_linear_constraint_id()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1710,7 +1834,7 @@ Static Public Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">int next_linear_constraint_id </td>
+          <td class="memname">int64_t next_linear_constraint_id </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -1723,12 +1847,12 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00607">607</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00604">604</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
-<a id="ab32fde20eda52599f9bb970791ac3c13" name="ab32fde20eda52599f9bb970791ac3c13"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab32fde20eda52599f9bb970791ac3c13">&#9670;&nbsp;</a></span>next_variable_id()</h2>
+<a id="a0d48e81ede7e10af7a9928fe9fe4d207" name="a0d48e81ede7e10af7a9928fe9fe4d207"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0d48e81ede7e10af7a9928fe9fe4d207">&#9670;&nbsp;</a></span>next_variable_id()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1737,7 +1861,7 @@ Static Public Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">int next_variable_id </td>
+          <td class="memname">int64_t next_variable_id </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -1750,7 +1874,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00537">537</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00521">521</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -1777,7 +1901,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00603">603</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00600">600</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -1804,7 +1928,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00535">535</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00519">519</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -1842,7 +1966,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00725">725</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00736">736</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -1870,7 +1994,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00720">720</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00731">731</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -1897,7 +2021,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00764">764</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00775">775</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -2025,7 +2149,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00644">644</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00655">655</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -2053,7 +2177,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00579">579</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00576">576</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -2081,7 +2205,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00575">575</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00572">572</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -2119,7 +2243,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00570">570</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00567">567</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -2147,7 +2271,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00776">776</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00787">787</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -2185,7 +2309,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00620">620</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00631">631</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -2223,7 +2347,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00550">550</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00547">547</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -2250,7 +2374,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00772">772</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00783">783</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -2277,7 +2401,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00774">774</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00785">785</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -2321,7 +2445,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00739">739</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00750">750</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -2359,7 +2483,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00733">733</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00744">744</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -2387,7 +2511,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00766">766</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00777">777</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -2425,7 +2549,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00632">632</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00643">643</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -2463,7 +2587,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00560">560</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00557">557</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -2561,7 +2685,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00700">700</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00711">711</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -2599,7 +2723,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00706">706</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00717">717</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -2637,7 +2761,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00703">703</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00714">714</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -2702,7 +2826,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00475">475</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00459">459</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -2729,7 +2853,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00469">469</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00453">453</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -2757,7 +2881,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00639">639</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00650">650</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>
@@ -2785,7 +2909,63 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00565">565</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00562">562</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+
+</div>
+</div>
+<a id="a573de99e23b221b80212e64166216b1d" name="a573de99e23b221b80212e64166216b1d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a573de99e23b221b80212e64166216b1d">&#9670;&nbsp;</a></span>variable() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1math__opt_1_1_variable.html">Variable</a> variable </td>
+          <td>(</td>
+          <td class="paramtype">int64_t&#160;</td>
+          <td class="paramname"><em>id</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00533">533</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
+
+</div>
+</div>
+<a id="af6e33f92c1c5327cb9575f809363ffdd" name="af6e33f92c1c5327cb9575f809363ffdd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af6e33f92c1c5327cb9575f809363ffdd">&#9670;&nbsp;</a></span>variable() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1math__opt_1_1_variable.html">Variable</a> variable </td>
+          <td>(</td>
+          <td class="paramtype">VariableId&#160;</td>
+          <td class="paramname"><em>id</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="math__opt_2cpp_2model_8h_source.html#l00537">537</a> of file <a class="el" href="math__opt_2cpp_2model_8h_source.html">math_opt/cpp/model.h</a>.</p>
 
 </div>
 </div>

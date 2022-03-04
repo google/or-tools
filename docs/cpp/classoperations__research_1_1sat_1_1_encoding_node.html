@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.2</span>
+   &#160;<span id="projectnumber">9.3</span>
    </div>
   </td>
  </tr>
@@ -94,7 +94,7 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1sat_1_1_e
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="encoding_8h_source.html#l00054">54</a> of file <a class="el" href="encoding_8h_source.html">encoding.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="encoding_8h_source.html#l00057">57</a> of file <a class="el" href="encoding_8h_source.html">encoding.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -106,6 +106,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a6e81565ea8f030c21126024751b8d4be"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6bea440eb7f63954ecf88b597d182ecb"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_encoding_node.html#a6bea440eb7f63954ecf88b597d182ecb">InitializeLazyNode</a> (<a class="el" href="classoperations__research_1_1sat_1_1_encoding_node.html">EncodingNode</a> *<a class="el" href="constraint__solver_2table_8cc.html#acb18315d548212835cd8ed4287e6c0b6">a</a>, <a class="el" href="classoperations__research_1_1sat_1_1_encoding_node.html">EncodingNode</a> *<a class="el" href="constraint__solver_2table_8cc.html#a9293e4d29cac928301645070dd307683">b</a>, <a class="el" href="classoperations__research_1_1sat_1_1_sat_solver.html">SatSolver</a> *solver)</td></tr>
 <tr class="separator:a6bea440eb7f63954ecf88b597d182ecb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1a774190f5acacd461d1bf75be1f8af7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_encoding_node.html#a1a774190f5acacd461d1bf75be1f8af7">InitializeLazyCoreNode</a> (Coefficient <a class="el" href="classoperations__research_1_1sat_1_1_encoding_node.html#a7f57c0d3f4a1efca82d8c0721556b9d7">weight</a>, <a class="el" href="classoperations__research_1_1sat_1_1_encoding_node.html">EncodingNode</a> *<a class="el" href="constraint__solver_2table_8cc.html#acb18315d548212835cd8ed4287e6c0b6">a</a>, <a class="el" href="classoperations__research_1_1sat_1_1_encoding_node.html">EncodingNode</a> *<a class="el" href="constraint__solver_2table_8cc.html#a9293e4d29cac928301645070dd307683">b</a>)</td></tr>
+<tr class="separator:a1a774190f5acacd461d1bf75be1f8af7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad43b46262f3e4103bd59aae627925fdf"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_literal.html">Literal</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_encoding_node.html#ad43b46262f3e4103bd59aae627925fdf">GreaterThan</a> (int i) const</td></tr>
 <tr class="separator:ad43b46262f3e4103bd59aae627925fdf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af9593d4a5ff4274efaf429cb4f9e57cc"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_encoding_node.html#af9593d4a5ff4274efaf429cb4f9e57cc">size</a> () const</td></tr>
@@ -116,14 +118,22 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:afcf37f1f013451c059ca2074be226078"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a29f3df8e348017bbeaab35d77a4b3fa8"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_encoding_node.html#a29f3df8e348017bbeaab35d77a4b3fa8">IncreaseCurrentUB</a> (<a class="el" href="classoperations__research_1_1sat_1_1_sat_solver.html">SatSolver</a> *solver)</td></tr>
 <tr class="separator:a29f3df8e348017bbeaab35d77a4b3fa8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1fadb46d73a6b7e1b449e6070cfa697f"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_encoding_node.html#a1fadb46d73a6b7e1b449e6070cfa697f">Reduce</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_sat_solver.html">SatSolver</a> &amp;solver)</td></tr>
-<tr class="separator:a1fadb46d73a6b7e1b449e6070cfa697f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a59474db663a04e9b041c7683afd9bea1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_encoding_node.html#a59474db663a04e9b041c7683afd9bea1">ApplyUpperBound</a> (int64_t <a class="el" href="gscip__solver_8cc.html#a1ba5ca0f61f2fa13bd23bf0f89004f35">upper_bound</a>, <a class="el" href="classoperations__research_1_1sat_1_1_sat_solver.html">SatSolver</a> *solver)</td></tr>
-<tr class="separator:a59474db663a04e9b041c7683afd9bea1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3ca866781a37374b8defaed83b57d602"><td class="memItemLeft" align="right" valign="top">Coefficient&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_encoding_node.html#a3ca866781a37374b8defaed83b57d602">Reduce</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_sat_solver.html">SatSolver</a> &amp;solver)</td></tr>
+<tr class="separator:a3ca866781a37374b8defaed83b57d602"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2666f50fdfaf51c1d78daf2256aacfa5"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_literal.html">Literal</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_encoding_node.html#a2666f50fdfaf51c1d78daf2256aacfa5">GetAssumption</a> (<a class="el" href="classoperations__research_1_1sat_1_1_sat_solver.html">SatSolver</a> *solver)</td></tr>
+<tr class="separator:a2666f50fdfaf51c1d78daf2256aacfa5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a28af91866016be797ebb710a9b0479ff"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_encoding_node.html#a28af91866016be797ebb710a9b0479ff">HasNoWeight</a> () const</td></tr>
+<tr class="separator:a28af91866016be797ebb710a9b0479ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a345efb9c8f2a5a6fa4786ed9e25b9208"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_encoding_node.html#a345efb9c8f2a5a6fa4786ed9e25b9208">IncreaseWeightLb</a> ()</td></tr>
+<tr class="separator:a345efb9c8f2a5a6fa4786ed9e25b9208"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2e40079f184eb47ba002820b1c8d7814"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_encoding_node.html#a2e40079f184eb47ba002820b1c8d7814">ApplyWeightUpperBound</a> (Coefficient gap, <a class="el" href="classoperations__research_1_1sat_1_1_sat_solver.html">SatSolver</a> *solver)</td></tr>
+<tr class="separator:a2e40079f184eb47ba002820b1c8d7814"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac92f797a3120e43647b75cc41aa9033e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_encoding_node.html#ac92f797a3120e43647b75cc41aa9033e">set_weight</a> (Coefficient w)</td></tr>
 <tr class="separator:ac92f797a3120e43647b75cc41aa9033e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7f57c0d3f4a1efca82d8c0721556b9d7"><td class="memItemLeft" align="right" valign="top">Coefficient&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_encoding_node.html#a7f57c0d3f4a1efca82d8c0721556b9d7">weight</a> () const</td></tr>
 <tr class="separator:a7f57c0d3f4a1efca82d8c0721556b9d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad9823fa53cc58fc4444d3b2eaadb885c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_encoding_node.html#ad9823fa53cc58fc4444d3b2eaadb885c">set_depth</a> (int <a class="el" href="classoperations__research_1_1sat_1_1_encoding_node.html#a6fdd73f8011695b97659f2bea29325cb">depth</a>)</td></tr>
+<tr class="separator:ad9823fa53cc58fc4444d3b2eaadb885c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6fdd73f8011695b97659f2bea29325cb"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_encoding_node.html#a6fdd73f8011695b97659f2bea29325cb">depth</a> () const</td></tr>
 <tr class="separator:a6fdd73f8011695b97659f2bea29325cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a42fc122b08d9872df0fe327946356be9"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_encoding_node.html#a42fc122b08d9872df0fe327946356be9">lb</a> () const</td></tr>
@@ -136,6 +146,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ab4a971df4b55922bdbff74843db10dd1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4534d0c2b93a62ca6b7b08ec4c8a1365"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_encoding_node.html">EncodingNode</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_encoding_node.html#a4534d0c2b93a62ca6b7b08ec4c8a1365">child_b</a> () const</td></tr>
 <tr class="separator:a4534d0c2b93a62ca6b7b08ec4c8a1365"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a903b410531434c46abc6516983c6d4d0"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_encoding_node.html#a903b410531434c46abc6516983c6d4d0">DebugString</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_variables_assignment.html">VariablesAssignment</a> &amp;assignment) const</td></tr>
+<tr class="separator:a903b410531434c46abc6516983c6d4d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="afcc0ba7af448641ff70c751416efb4ae" name="afcc0ba7af448641ff70c751416efb4ae"></a>
@@ -161,7 +173,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="encoding_8h_source.html#l00056">56</a> of file <a class="el" href="encoding_8h_source.html">encoding.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="encoding_8h_source.html#l00059">59</a> of file <a class="el" href="encoding_8h_source.html">encoding.h</a>.</p>
 
 </div>
 </div>
@@ -189,22 +201,22 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="encoding_8cc_source.html#l00027">27</a> of file <a class="el" href="encoding_8cc_source.html">encoding.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="encoding_8cc_source.html#l00033">33</a> of file <a class="el" href="encoding_8cc_source.html">encoding.cc</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a59474db663a04e9b041c7683afd9bea1" name="a59474db663a04e9b041c7683afd9bea1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a59474db663a04e9b041c7683afd9bea1">&#9670;&nbsp;</a></span>ApplyUpperBound()</h2>
+<a id="a2e40079f184eb47ba002820b1c8d7814" name="a2e40079f184eb47ba002820b1c8d7814"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2e40079f184eb47ba002820b1c8d7814">&#9670;&nbsp;</a></span>ApplyWeightUpperBound()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void ApplyUpperBound </td>
+          <td class="memname">void ApplyWeightUpperBound </td>
           <td>(</td>
-          <td class="paramtype">int64_t&#160;</td>
-          <td class="paramname"><em>upper_bound</em>, </td>
+          <td class="paramtype">Coefficient&#160;</td>
+          <td class="paramname"><em>gap</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -220,7 +232,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="encoding_8cc_source.html#l00098">98</a> of file <a class="el" href="encoding_8cc_source.html">encoding.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="encoding_8cc_source.html#l00121">121</a> of file <a class="el" href="encoding_8cc_source.html">encoding.cc</a>.</p>
 
 </div>
 </div>
@@ -247,7 +259,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="encoding_8h_source.html#l00113">113</a> of file <a class="el" href="encoding_8h_source.html">encoding.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="encoding_8h_source.html#l00131">131</a> of file <a class="el" href="encoding_8h_source.html">encoding.h</a>.</p>
 
 </div>
 </div>
@@ -274,7 +286,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="encoding_8h_source.html#l00114">114</a> of file <a class="el" href="encoding_8h_source.html">encoding.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="encoding_8h_source.html#l00132">132</a> of file <a class="el" href="encoding_8h_source.html">encoding.h</a>.</p>
 
 </div>
 </div>
@@ -301,7 +313,27 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="encoding_8h_source.html#l00111">111</a> of file <a class="el" href="encoding_8h_source.html">encoding.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="encoding_8h_source.html#l00129">129</a> of file <a class="el" href="encoding_8h_source.html">encoding.h</a>.</p>
+
+</div>
+</div>
+<a id="a903b410531434c46abc6516983c6d4d0" name="a903b410531434c46abc6516983c6d4d0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a903b410531434c46abc6516983c6d4d0">&#9670;&nbsp;</a></span>DebugString()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::string DebugString </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_variables_assignment.html">VariablesAssignment</a> &amp;&#160;</td>
+          <td class="paramname"><em>assignment</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="encoding_8cc_source.html#l00154">154</a> of file <a class="el" href="encoding_8cc_source.html">encoding.cc</a>.</p>
 
 </div>
 </div>
@@ -328,7 +360,27 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="encoding_8h_source.html#l00109">109</a> of file <a class="el" href="encoding_8h_source.html">encoding.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="encoding_8h_source.html#l00126">126</a> of file <a class="el" href="encoding_8h_source.html">encoding.h</a>.</p>
+
+</div>
+</div>
+<a id="a2666f50fdfaf51c1d78daf2256aacfa5" name="a2666f50fdfaf51c1d78daf2256aacfa5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2666f50fdfaf51c1d78daf2256aacfa5">&#9670;&nbsp;</a></span>GetAssumption()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_literal.html">Literal</a> GetAssumption </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_sat_solver.html">SatSolver</a> *&#160;</td>
+          <td class="paramname"><em>solver</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="encoding_8cc_source.html#l00134">134</a> of file <a class="el" href="encoding_8cc_source.html">encoding.cc</a>.</p>
 
 </div>
 </div>
@@ -356,7 +408,26 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="encoding_8h_source.html#l00075">75</a> of file <a class="el" href="encoding_8h_source.html">encoding.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="encoding_8h_source.html#l00080">80</a> of file <a class="el" href="encoding_8h_source.html">encoding.h</a>.</p>
+
+</div>
+</div>
+<a id="a28af91866016be797ebb710a9b0479ff" name="a28af91866016be797ebb710a9b0479ff"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a28af91866016be797ebb710a9b0479ff">&#9670;&nbsp;</a></span>HasNoWeight()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool HasNoWeight </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="encoding_8cc_source.html#l00150">150</a> of file <a class="el" href="encoding_8cc_source.html">encoding.cc</a>.</p>
 
 </div>
 </div>
@@ -376,7 +447,26 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="encoding_8cc_source.html#l00072">72</a> of file <a class="el" href="encoding_8cc_source.html">encoding.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="encoding_8cc_source.html#l00090">90</a> of file <a class="el" href="encoding_8cc_source.html">encoding.cc</a>.</p>
+
+</div>
+</div>
+<a id="a345efb9c8f2a5a6fa4786ed9e25b9208" name="a345efb9c8f2a5a6fa4786ed9e25b9208"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a345efb9c8f2a5a6fa4786ed9e25b9208">&#9670;&nbsp;</a></span>IncreaseWeightLb()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void IncreaseWeightLb </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="encoding_8cc_source.html#l00145">145</a> of file <a class="el" href="encoding_8cc_source.html">encoding.cc</a>.</p>
 
 </div>
 </div>
@@ -418,7 +508,43 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="encoding_8cc_source.html#l00036">36</a> of file <a class="el" href="encoding_8cc_source.html">encoding.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="encoding_8cc_source.html#l00039">39</a> of file <a class="el" href="encoding_8cc_source.html">encoding.cc</a>.</p>
+
+</div>
+</div>
+<a id="a1a774190f5acacd461d1bf75be1f8af7" name="a1a774190f5acacd461d1bf75be1f8af7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1a774190f5acacd461d1bf75be1f8af7">&#9670;&nbsp;</a></span>InitializeLazyCoreNode()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void InitializeLazyCoreNode </td>
+          <td>(</td>
+          <td class="paramtype">Coefficient&#160;</td>
+          <td class="paramname"><em>weight</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_encoding_node.html">EncodingNode</a> *&#160;</td>
+          <td class="paramname"><em>a</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_encoding_node.html">EncodingNode</a> *&#160;</td>
+          <td class="paramname"><em>b</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="encoding_8cc_source.html#l00075">75</a> of file <a class="el" href="encoding_8cc_source.html">encoding.cc</a>.</p>
 
 </div>
 </div>
@@ -454,7 +580,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="encoding_8cc_source.html#l00056">56</a> of file <a class="el" href="encoding_8cc_source.html">encoding.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="encoding_8cc_source.html#l00059">59</a> of file <a class="el" href="encoding_8cc_source.html">encoding.cc</a>.</p>
 
 </div>
 </div>
@@ -481,7 +607,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="encoding_8h_source.html#l00110">110</a> of file <a class="el" href="encoding_8h_source.html">encoding.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="encoding_8h_source.html#l00128">128</a> of file <a class="el" href="encoding_8h_source.html">encoding.h</a>.</p>
 
 </div>
 </div>
@@ -509,7 +635,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="encoding_8h_source.html#l00079">79</a> of file <a class="el" href="encoding_8h_source.html">encoding.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="encoding_8h_source.html#l00084">84</a> of file <a class="el" href="encoding_8h_source.html">encoding.h</a>.</p>
 
 </div>
 </div>
@@ -537,18 +663,18 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="encoding_8h_source.html#l00087">87</a> of file <a class="el" href="encoding_8h_source.html">encoding.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="encoding_8h_source.html#l00092">92</a> of file <a class="el" href="encoding_8h_source.html">encoding.h</a>.</p>
 
 </div>
 </div>
-<a id="a1fadb46d73a6b7e1b449e6070cfa697f" name="a1fadb46d73a6b7e1b449e6070cfa697f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1fadb46d73a6b7e1b449e6070cfa697f">&#9670;&nbsp;</a></span>Reduce()</h2>
+<a id="a3ca866781a37374b8defaed83b57d602" name="a3ca866781a37374b8defaed83b57d602"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3ca866781a37374b8defaed83b57d602">&#9670;&nbsp;</a></span>Reduce()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int Reduce </td>
+          <td class="memname">Coefficient Reduce </td>
           <td>(</td>
           <td class="paramtype">const <a class="el" href="classoperations__research_1_1sat_1_1_sat_solver.html">SatSolver</a> &amp;&#160;</td>
           <td class="paramname"><em>solver</em></td><td>)</td>
@@ -557,7 +683,35 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="encoding_8cc_source.html#l00082">82</a> of file <a class="el" href="encoding_8cc_source.html">encoding.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="encoding_8cc_source.html#l00101">101</a> of file <a class="el" href="encoding_8cc_source.html">encoding.cc</a>.</p>
+
+</div>
+</div>
+<a id="ad9823fa53cc58fc4444d3b2eaadb885c" name="ad9823fa53cc58fc4444d3b2eaadb885c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad9823fa53cc58fc4444d3b2eaadb885c">&#9670;&nbsp;</a></span>set_depth()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void set_depth </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>depth</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="encoding_8h_source.html#l00125">125</a> of file <a class="el" href="encoding_8h_source.html">encoding.h</a>.</p>
 
 </div>
 </div>
@@ -585,7 +739,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="encoding_8h_source.html#l00106">106</a> of file <a class="el" href="encoding_8h_source.html">encoding.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="encoding_8h_source.html#l00117">117</a> of file <a class="el" href="encoding_8h_source.html">encoding.h</a>.</p>
 
 </div>
 </div>
@@ -612,7 +766,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="encoding_8h_source.html#l00078">78</a> of file <a class="el" href="encoding_8h_source.html">encoding.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="encoding_8h_source.html#l00083">83</a> of file <a class="el" href="encoding_8h_source.html">encoding.h</a>.</p>
 
 </div>
 </div>
@@ -639,7 +793,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="encoding_8h_source.html#l00112">112</a> of file <a class="el" href="encoding_8h_source.html">encoding.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="encoding_8h_source.html#l00130">130</a> of file <a class="el" href="encoding_8h_source.html">encoding.h</a>.</p>
 
 </div>
 </div>
@@ -666,7 +820,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="encoding_8h_source.html#l00107">107</a> of file <a class="el" href="encoding_8h_source.html">encoding.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="encoding_8h_source.html#l00121">121</a> of file <a class="el" href="encoding_8h_source.html">encoding.h</a>.</p>
 
 </div>
 </div>

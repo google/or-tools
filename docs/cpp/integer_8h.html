@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.2</span>
+   &#160;<span id="projectnumber">9.3</span>
    </div>
   </td>
  </tr>
@@ -141,13 +141,13 @@ Typedefs</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a8682ca7b4cdbbaaae17fe38c0db12cb3"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a8682ca7b4cdbbaaae17fe38c0db12cb3">DEFINE_INT_TYPE</a> (IntegerValue, int64_t)</td></tr>
-<tr class="separator:a8682ca7b4cdbbaaae17fe38c0db12cb3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2abf8d5e7d838d6348a6b5b7101a0b04"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a2abf8d5e7d838d6348a6b5b7101a0b04">DEFINE_STRONG_INT64_TYPE</a> (IntegerValue)</td></tr>
+<tr class="separator:a2abf8d5e7d838d6348a6b5b7101a0b04"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1227e67513602591fb959e35c9de66e8"><td class="memItemLeft" align="right" valign="top">constexpr IntegerValue&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a1227e67513602591fb959e35c9de66e8">kMaxIntegerValue</a> (std::numeric_limits&lt; IntegerValue::ValueType &gt;<a class="el" href="alldiff__cst_8cc.html#a26e6db9bcc64b584051ecc28171ed11f">::max</a>() - 1)</td></tr>
 <tr class="separator:a1227e67513602591fb959e35c9de66e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a355a62f25cfadeccfb164ab9fb867c81"><td class="memItemLeft" align="right" valign="top">constexpr IntegerValue&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a355a62f25cfadeccfb164ab9fb867c81">kMinIntegerValue</a> (-kMaxIntegerValue)</td></tr>
-<tr class="separator:a355a62f25cfadeccfb164ab9fb867c81"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aed77a1a7675c2f8568529a5a16247ec1"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#aed77a1a7675c2f8568529a5a16247ec1">ToDouble</a> (IntegerValue <a class="el" href="matchers_8cc.html#a0b6f3694312803de4bea1fe97896294f">value</a>)</td></tr>
+<tr class="memitem:a5316808a2d5007c3b489e844801385e5"><td class="memItemLeft" align="right" valign="top">constexpr IntegerValue&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a5316808a2d5007c3b489e844801385e5">kMinIntegerValue</a> (-<a class="el" href="primal__dual__hybrid__gradient_8cc.html#a730b1ea892f1f794d9bd5f16027acb63">kMaxIntegerValue.value</a>())</td></tr>
+<tr class="separator:a5316808a2d5007c3b489e844801385e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aed77a1a7675c2f8568529a5a16247ec1"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#aed77a1a7675c2f8568529a5a16247ec1">ToDouble</a> (IntegerValue <a class="el" href="primal__dual__hybrid__gradient_8cc.html#a730b1ea892f1f794d9bd5f16027acb63">value</a>)</td></tr>
 <tr class="separator:aed77a1a7675c2f8568529a5a16247ec1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1e30e51173c7e43a8c0b4668d5e3f050"><td class="memTemplParams" colspan="2">template&lt;class IntType &gt; </td></tr>
 <tr class="memitem:a1e30e51173c7e43a8c0b4668d5e3f050"><td class="memTemplItemLeft" align="right" valign="top">IntType&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a1e30e51173c7e43a8c0b4668d5e3f050">IntTypeAbs</a> (IntType t)</td></tr>
@@ -160,8 +160,8 @@ Functions</h2></td></tr>
 <tr class="separator:a83f714c395df7a814ed067125f567a0d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0c9e8fab437ba44c91b0493a74cde263"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a0c9e8fab437ba44c91b0493a74cde263">AddProductTo</a> (IntegerValue <a class="el" href="constraint__solver_2table_8cc.html#acb18315d548212835cd8ed4287e6c0b6">a</a>, IntegerValue <a class="el" href="constraint__solver_2table_8cc.html#a9293e4d29cac928301645070dd307683">b</a>, IntegerValue *result)</td></tr>
 <tr class="separator:a0c9e8fab437ba44c91b0493a74cde263"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a282e30a9bb115cde5ffd003b3e5eb1cd"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a282e30a9bb115cde5ffd003b3e5eb1cd">DEFINE_INT_TYPE</a> (IntegerVariable, int32_t)</td></tr>
-<tr class="separator:a282e30a9bb115cde5ffd003b3e5eb1cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adda1319282a2ed2307e06999f1e8e1f8"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#adda1319282a2ed2307e06999f1e8e1f8">DEFINE_STRONG_INDEX_TYPE</a> (IntegerVariable)</td></tr>
+<tr class="separator:adda1319282a2ed2307e06999f1e8e1f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5bd8c44473618b7eafd33ba978db2f06"><td class="memItemLeft" align="right" valign="top">const IntegerVariable&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a5bd8c44473618b7eafd33ba978db2f06">kNoIntegerVariable</a> (-1)</td></tr>
 <tr class="separator:a5bd8c44473618b7eafd33ba978db2f06"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a829dfffce41f532b7ca32665750a1ec2"><td class="memItemLeft" align="right" valign="top">IntegerVariable&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a829dfffce41f532b7ca32665750a1ec2">NegationOf</a> (IntegerVariable i)</td></tr>
@@ -170,8 +170,8 @@ Functions</h2></td></tr>
 <tr class="separator:ae2544d2a3a5ef4c78f8e5891f104ab41"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7f1ac774d4646a83631f8117f4ea03f5"><td class="memItemLeft" align="right" valign="top">IntegerVariable&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a7f1ac774d4646a83631f8117f4ea03f5">PositiveVariable</a> (IntegerVariable i)</td></tr>
 <tr class="separator:a7f1ac774d4646a83631f8117f4ea03f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aacc42a4dece8346d492c6753b96950c0"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#aacc42a4dece8346d492c6753b96950c0">DEFINE_INT_TYPE</a> (PositiveOnlyIndex, int32_t)</td></tr>
-<tr class="separator:aacc42a4dece8346d492c6753b96950c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a57ab2033e6dfb7bc18d684852cccc8fa"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a57ab2033e6dfb7bc18d684852cccc8fa">DEFINE_STRONG_INDEX_TYPE</a> (PositiveOnlyIndex)</td></tr>
+<tr class="separator:a57ab2033e6dfb7bc18d684852cccc8fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acf09b937c4d7439804c0fc61afcb7008"><td class="memItemLeft" align="right" valign="top">PositiveOnlyIndex&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#acf09b937c4d7439804c0fc61afcb7008">GetPositiveOnlyIndex</a> (IntegerVariable <a class="el" href="sat__solver_8cc.html#a8392bdc4ed570e6a95c7fca35b09f83f">var</a>)</td></tr>
 <tr class="separator:acf09b937c4d7439804c0fc61afcb7008"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a429d1fd54b5becc39e4cfbc608d7d70a"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a429d1fd54b5becc39e4cfbc608d7d70a">IntegerTermDebugString</a> (IntegerVariable <a class="el" href="sat__solver_8cc.html#a8392bdc4ed570e6a95c7fca35b09f83f">var</a>, IntegerValue <a class="el" href="variable__and__expressions_8cc.html#a2091cd7d80fdd31762020bce86138587">coeff</a>)</td></tr>
@@ -184,7 +184,7 @@ Functions</h2></td></tr>
 <tr class="separator:add3ed8a15027b96a110bbe6e17f6a4c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3cb95842130bc03177260ad20464bdbf"><td class="memItemLeft" align="right" valign="top">std::function&lt; BooleanVariable(Model *)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a3cb95842130bc03177260ad20464bdbf">NewBooleanVariable</a> ()</td></tr>
 <tr class="separator:a3cb95842130bc03177260ad20464bdbf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a64664019450638ab96732f0b59ea015b"><td class="memItemLeft" align="right" valign="top">std::function&lt; IntegerVariable(Model *)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a64664019450638ab96732f0b59ea015b">ConstantIntegerVariable</a> (int64_t <a class="el" href="matchers_8cc.html#a0b6f3694312803de4bea1fe97896294f">value</a>)</td></tr>
+<tr class="memitem:a64664019450638ab96732f0b59ea015b"><td class="memItemLeft" align="right" valign="top">std::function&lt; IntegerVariable(Model *)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a64664019450638ab96732f0b59ea015b">ConstantIntegerVariable</a> (int64_t <a class="el" href="primal__dual__hybrid__gradient_8cc.html#a730b1ea892f1f794d9bd5f16027acb63">value</a>)</td></tr>
 <tr class="separator:a64664019450638ab96732f0b59ea015b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab186c7ad5f0930615f096f56e1499d30"><td class="memItemLeft" align="right" valign="top">std::function&lt; IntegerVariable(Model *)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#ab186c7ad5f0930615f096f56e1499d30">NewIntegerVariable</a> (int64_t lb, int64_t ub)</td></tr>
 <tr class="separator:ab186c7ad5f0930615f096f56e1499d30"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -204,7 +204,7 @@ Functions</h2></td></tr>
 <tr class="separator:ab3ba1ab2a4a6cdc0ea4324d409ddbe7e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3f35d207f7fbd9abc30ced851352b069"><td class="memItemLeft" align="right" valign="top">std::function&lt; void(Model *)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a3f35d207f7fbd9abc30ced851352b069">LowerOrEqual</a> (IntegerVariable v, int64_t ub)</td></tr>
 <tr class="separator:a3f35d207f7fbd9abc30ced851352b069"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a134ba4c37e543cb80c698555b6ae89f8"><td class="memItemLeft" align="right" valign="top">std::function&lt; void(Model *)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a134ba4c37e543cb80c698555b6ae89f8">Equality</a> (IntegerVariable v, int64_t <a class="el" href="matchers_8cc.html#a0b6f3694312803de4bea1fe97896294f">value</a>)</td></tr>
+<tr class="memitem:a134ba4c37e543cb80c698555b6ae89f8"><td class="memItemLeft" align="right" valign="top">std::function&lt; void(Model *)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a134ba4c37e543cb80c698555b6ae89f8">Equality</a> (IntegerVariable v, int64_t <a class="el" href="primal__dual__hybrid__gradient_8cc.html#a730b1ea892f1f794d9bd5f16027acb63">value</a>)</td></tr>
 <tr class="separator:a134ba4c37e543cb80c698555b6ae89f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6e056f4efb99b080ae5bdb7267339f59"><td class="memItemLeft" align="right" valign="top">std::function&lt; void(Model *)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a6e056f4efb99b080ae5bdb7267339f59">Implication</a> (const std::vector&lt; Literal &gt; &amp;enforcement_literals, IntegerLiteral i)</td></tr>
 <tr class="separator:a6e056f4efb99b080ae5bdb7267339f59"><td class="memSeparator" colspan="2">&#160;</td></tr>

@@ -1,5 +1,9 @@
 var searchData=
 [
-  ['abslhashvalue_0',['AbslHashValue',['../classabsl_1_1_strong_vector.html#a08008bece07559d7b540b436f8e7e1fd',1,'absl::StrongVector::AbslHashValue()'],['../classoperations__research_1_1math__opt_1_1_linear_constraint.html#add6940f92380f287b46b42b135b1a652',1,'operations_research::math_opt::LinearConstraint::AbslHashValue()'],['../classoperations__research_1_1math__opt_1_1_variable.html#a6ac8b25db40c521a4f7bdc7c7fec40b2',1,'operations_research::math_opt::Variable::AbslHashValue()'],['../classoperations__research_1_1math__opt_1_1_quadratic_term_key.html#afd2d54432f91d4a60a661339b3e44459',1,'operations_research::math_opt::QuadraticTermKey::AbslHashValue()']]],
-  ['appenddimensioncumulfilters_1',['AppendDimensionCumulFilters',['../classoperations__research_1_1_routing_dimension.html#a0e3e4445c55d0c59ef4edbaf7acbd3a8',1,'operations_research::RoutingDimension']]]
+  ['baseintexpr_0',['BaseIntExpr',['../classoperations__research_1_1_solver.html#a7de3703a8816dad121d3fd166c07a79c',1,'operations_research::Solver']]],
+  ['bitset64_1',['Bitset64',['../classoperations__research_1_1_bitset64.html#ad1c91a5364329325587f1529b3f705b2',1,'operations_research::Bitset64']]],
+  ['boolvar_2',['BoolVar',['../classoperations__research_1_1sat_1_1_int_var.html#a94aeffd65c320be161bbf94bdc0ec13f',1,'operations_research::sat::IntVar']]],
+  ['bopinterface_3',['BopInterface',['../classoperations__research_1_1_m_p_solver.html#a7383308e6b9b63b18196798db342ce8a',1,'operations_research::MPSolver::BopInterface()'],['../classoperations__research_1_1_m_p_objective.html#a7383308e6b9b63b18196798db342ce8a',1,'operations_research::MPObjective::BopInterface()'],['../classoperations__research_1_1_m_p_variable.html#a7383308e6b9b63b18196798db342ce8a',1,'operations_research::MPVariable::BopInterface()'],['../classoperations__research_1_1_m_p_constraint.html#a7383308e6b9b63b18196798db342ce8a',1,'operations_research::MPConstraint::BopInterface()']]],
+  ['getlogger_4',['GetLogger',['../classgoogle_1_1_log_destination.html#a23a86cce53e6acd575c79014d8de7c96',1,'google::LogDestination']]],
+  ['setlogger_5',['SetLogger',['../classgoogle_1_1_log_destination.html#a276f8876567420ce2cc575bf2f6bad46',1,'google::LogDestination']]]
 ];

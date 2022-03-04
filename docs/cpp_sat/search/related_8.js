@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['operator_3c_3c_0',['operator&lt;&lt;',['../classoperations__research_1_1sat_1_1_interval_var.html#afc3577375a878b5799dacab11aaa4c3d',1,'operations_research::sat::IntervalVar']]]
+  ['paralleltimelimit_0',['ParallelTimeLimit',['../classoperations__research_1_1_time_limit.html#a4c1bbdcb2a449b42a788178d2c3d2477',1,'operations_research::TimeLimit']]]
 ];

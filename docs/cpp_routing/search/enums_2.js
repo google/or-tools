@@ -1,7 +1,10 @@
 var searchData=
 [
-  ['decisionmodification_0',['DecisionModification',['../classoperations__research_1_1_solver.html#a074172434184dde98798ed6590206d42',1,'operations_research::Solver']]],
-  ['demonpriority_1',['DemonPriority',['../classoperations__research_1_1_solver.html#a293233c46e5eaa308f65c7c2350553f7',1,'operations_research::Solver']]],
-  ['dimensionschedulingstatus_2',['DimensionSchedulingStatus',['../namespaceoperations__research.html#aa0787bf78fb09d1e30f2451b5a68d4b8',1,'operations_research']]],
-  ['displaylevel_3',['DisplayLevel',['../structoperations__research_1_1_default_phase_parameters.html#a36703c0bee7e0f1e68f64e0bb9307382',1,'operations_research::DefaultPhaseParameters']]]
+  ['evaluatorlocalsearchoperators_0',['EvaluatorLocalSearchOperators',['../classoperations__research_1_1_solver.html#afd2868244e1a645aaf41eb8a6a6c8bf4',1,'operations_research::Solver']]],
+  ['evaluatorstrategy_1',['EvaluatorStrategy',['../classoperations__research_1_1_solver.html#a8b1044e7c2b76345532f848a982a7106',1,'operations_research::Solver']]],
+  ['exprconstantexpressiontype_2',['ExprConstantExpressionType',['../classoperations__research_1_1_model_cache.html#a1fad820e7860f0b9f121927d4075082c',1,'operations_research::ModelCache']]],
+  ['exprexprconstantexpressiontype_3',['ExprExprConstantExpressionType',['../classoperations__research_1_1_model_cache.html#ab10f10ec98142e6fa7b0da4046473e44',1,'operations_research::ModelCache']]],
+  ['exprexprconstrainttype_4',['ExprExprConstraintType',['../classoperations__research_1_1_model_cache.html#a89d5f8fc282ff8c48a02102a8a5e4bbb',1,'operations_research::ModelCache']]],
+  ['exprexpressiontype_5',['ExprExpressionType',['../classoperations__research_1_1_model_cache.html#a19776f5960140d46380ae9837cf9e6dc',1,'operations_research::ModelCache']]],
+  ['exprexprexpressiontype_6',['ExprExprExpressionType',['../classoperations__research_1_1_model_cache.html#a822c2c0e59065b2fe0968370c8e26afe',1,'operations_research::ModelCache']]]
 ];

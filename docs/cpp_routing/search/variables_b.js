@@ -1,8 +1,7 @@
 var searchData=
 [
-  ['local_5fcheapest_5farc_0',['LOCAL_CHEAPEST_ARC',['../classoperations__research_1_1_first_solution_strategy.html#ad899d6cf310b26dc11f0e11da3df465d',1,'operations_research::FirstSolutionStrategy']]],
-  ['local_5fcheapest_5finsertion_1',['LOCAL_CHEAPEST_INSERTION',['../classoperations__research_1_1_first_solution_strategy.html#a88c51629eede10bb57a4694e91232f65',1,'operations_research::FirstSolutionStrategy']]],
-  ['localsearchmetaheuristic_5fvalue_5fvalue_5farraysize_2',['LocalSearchMetaheuristic_Value_Value_ARRAYSIZE',['../namespaceoperations__research.html#a2d5a774e6e23a5297b5c14bc073daa0b',1,'operations_research']]],
-  ['localsearchmetaheuristic_5fvalue_5fvalue_5fmax_3',['LocalSearchMetaheuristic_Value_Value_MAX',['../namespaceoperations__research.html#a2aa95ee300a361d3c1090d956379432c',1,'operations_research']]],
-  ['localsearchmetaheuristic_5fvalue_5fvalue_5fmin_4',['LocalSearchMetaheuristic_Value_Value_MIN',['../namespaceoperations__research.html#aad6f0fe5f7bc2ded4a3dff23f60f79a1',1,'operations_research']]]
+  ['objective_0',['objective',['../structoperations__research_1_1_solver_1_1_search_log_parameters.html#a2c9d6d70a3357d2d6841660510cd6a19',1,'operations_research::Solver::SearchLogParameters']]],
+  ['objective_5fvalue_1',['objective_value',['../structoperations__research_1_1_solution_collector_1_1_solution_data.html#a68d9c2f2465fa598096b25f65919fa1c',1,'operations_research::SolutionCollector::SolutionData']]],
+  ['offset_2',['offset',['../structoperations__research_1_1_solver_1_1_search_log_parameters.html#a129303e4bd38a8cdba722b6238ed56e9',1,'operations_research::Solver::SearchLogParameters::offset()'],['../structoperations__research_1_1_routing_dimension_1_1_node_precedence.html#ae25fb5067bd6b3b1b319efc61685a98f',1,'operations_research::RoutingDimension::NodePrecedence::offset()']]],
+  ['old_5fvalues_5f_3',['old_values_',['../classoperations__research_1_1_var_local_search_operator.html#a0aeeba03eeb9514e2946c44c733e994a',1,'operations_research::VarLocalSearchOperator']]]
 ];

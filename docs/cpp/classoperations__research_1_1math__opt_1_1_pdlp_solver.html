@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">9.2</span>
+   &#160;<span id="projectnumber">9.3</span>
    </div>
   </td>
  </tr>
@@ -120,8 +120,8 @@ Public Member Functions</h2></td></tr>
 Static Public Member Functions</h2></td></tr>
 <tr class="memitem:a61ac0bc6afed786de631c4a91faeb866"><td class="memItemLeft" align="right" valign="top">static absl::StatusOr&lt; std::unique_ptr&lt; <a class="el" href="classoperations__research_1_1math__opt_1_1_solver_interface.html">SolverInterface</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_pdlp_solver.html#a61ac0bc6afed786de631c4a91faeb866">New</a> (const ModelProto &amp;<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>, const <a class="el" href="structoperations__research_1_1math__opt_1_1_solver_interface_1_1_init_args.html">InitArgs</a> &amp;init_args)</td></tr>
 <tr class="separator:a61ac0bc6afed786de631c4a91faeb866"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab582aa5c58632da6cfbfa5c2bcd89fdc"><td class="memItemLeft" align="right" valign="top">static std::pair&lt; pdlp::PrimalDualHybridGradientParams, std::vector&lt; std::string &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_pdlp_solver.html#ab582aa5c58632da6cfbfa5c2bcd89fdc">MergeParameters</a> (const SolveParametersProto &amp;<a class="el" href="cp__model__fz__solver_8cc.html#a10a1eab179b472c030bdc2a2efef7219">parameters</a>)</td></tr>
-<tr class="separator:ab582aa5c58632da6cfbfa5c2bcd89fdc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4ece1865703c5cd7860157406b03d800"><td class="memItemLeft" align="right" valign="top">static absl::StatusOr&lt; pdlp::PrimalDualHybridGradientParams &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1math__opt_1_1_pdlp_solver.html#a4ece1865703c5cd7860157406b03d800">MergeParameters</a> (const SolveParametersProto &amp;<a class="el" href="cp__model__fz__solver_8cc.html#a10a1eab179b472c030bdc2a2efef7219">parameters</a>)</td></tr>
+<tr class="separator:a4ece1865703c5cd7860157406b03d800"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="ab47a61ca53ae9cdf35dd4f2dfc9ecadb" name="ab47a61ca53ae9cdf35dd4f2dfc9ecadb"></a>
@@ -223,12 +223,12 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="classoperations__research_1_1math__opt_1_1_solver_interface.html#ad8b1e514f2b213b3fd4085683d20ff54">SolverInterface</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="pdlp__solver_8cc_source.html#l00362">362</a> of file <a class="el" href="pdlp__solver_8cc_source.html">pdlp_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pdlp__solver_8cc_source.html#l00370">370</a> of file <a class="el" href="pdlp__solver_8cc_source.html">pdlp_solver.cc</a>.</p>
 
 </div>
 </div>
-<a id="ab582aa5c58632da6cfbfa5c2bcd89fdc" name="ab582aa5c58632da6cfbfa5c2bcd89fdc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab582aa5c58632da6cfbfa5c2bcd89fdc">&#9670;&nbsp;</a></span>MergeParameters()</h2>
+<a id="a4ece1865703c5cd7860157406b03d800" name="a4ece1865703c5cd7860157406b03d800"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4ece1865703c5cd7860157406b03d800">&#9670;&nbsp;</a></span>MergeParameters()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -237,7 +237,7 @@ Static Public Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">std::pair&lt; PrimalDualHybridGradientParams, std::vector&lt; std::string &gt; &gt; MergeParameters </td>
+          <td class="memname">absl::StatusOr&lt; PrimalDualHybridGradientParams &gt; MergeParameters </td>
           <td>(</td>
           <td class="paramtype">const SolveParametersProto &amp;&#160;</td>
           <td class="paramname"><em>parameters</em></td><td>)</td>
@@ -251,7 +251,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="pdlp__solver_8cc_source.html#l00070">70</a> of file <a class="el" href="pdlp__solver_8cc_source.html">pdlp_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pdlp__solver_8cc_source.html#l00071">71</a> of file <a class="el" href="pdlp__solver_8cc_source.html">pdlp_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -289,7 +289,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="pdlp__solver_8cc_source.html#l00062">62</a> of file <a class="el" href="pdlp__solver_8cc_source.html">pdlp_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pdlp__solver_8cc_source.html#l00064">64</a> of file <a class="el" href="pdlp__solver_8cc_source.html">pdlp_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -353,7 +353,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="classoperations__research_1_1math__opt_1_1_solver_interface.html#a53c70cddb8675c3246019b76cb97a05b">SolverInterface</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="pdlp__solver_8cc_source.html#l00325">325</a> of file <a class="el" href="pdlp__solver_8cc_source.html">pdlp_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pdlp__solver_8cc_source.html#l00337">337</a> of file <a class="el" href="pdlp__solver_8cc_source.html">pdlp_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -383,7 +383,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="classoperations__research_1_1math__opt_1_1_solver_interface.html#a0b2421a582a4317b26d0446781119f4d">SolverInterface</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="pdlp__solver_8cc_source.html#l00357">357</a> of file <a class="el" href="pdlp__solver_8cc_source.html">pdlp_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pdlp__solver_8cc_source.html#l00365">365</a> of file <a class="el" href="pdlp__solver_8cc_source.html">pdlp_solver.cc</a>.</p>
 
 </div>
 </div>
