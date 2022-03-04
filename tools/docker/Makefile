@@ -545,20 +545,24 @@ distclean: clean | export/archives
 ##########################
 MZN_TAG=or-tools-minizinc-challenge:2021v4
 
-minizinc-challenge-image:
-	docker build -f minizinc-challenge.Dockerfile -t $(MZN_TAG) .
+.PHONY: minizinc-challenge
+minizinc-challenge: minizinc-challenge.Dockerfile
+	${DOCKER_BUILD_CMD} -f minizinc-challenge.Dockerfile -t $(MZN_TAG) .
 
-minizinc-challenge-image-no-cache:
-	docker build --no-cache -f minizinc-challenge.Dockerfile -t $(MZN_TAG) .
+.PHONY: minizinc-challenge-test
+minizinc-challenge-test: minizinc-challenge
+	$(DOCKER_RUN_CMD) $(MZN_TAG) "solver /minizinc/test.mzn /minizinc/2.dzn"
+	$(DOCKER_RUN_CMD) $(MZN_TAG) "solver --free-search /minizinc/test.mzn /minizinc/2.dzn"
+	$(DOCKER_RUN_CMD) $(MZN_TAG) "solver -p 2 /minizinc/test.mzn /minizinc/2.dzn"
 
-minizinc-challenge-test:
-	docker run $(MZN_TAG) solver /minizinc/test.mzn /minizinc/2.dzn
-	docker run $(MZN_TAG) solver --free-search /minizinc/test.mzn /minizinc/2.dzn
-	docker run $(MZN_TAG) solver -p 2 /minizinc/test.mzn /minizinc/2.dzn
-
+.PHONY: minizinc-challenge-bash
 minizinc-challenge-bash:
-	docker run -it $(MZN_TAG) /bin/bash
+	$(DOCKER_RUN_CMD) \
+ -it \
+ --name minizinc_chalenge \
+ $(MZN_TAG)
 
-minizinc-challenge-export:
+.PHONY: minizinc-challenge-export
+minizinc-challenge-export: minizinc-challenge
 	docker tag $(MZN_TAG) laurentperron/$(MZN_TAG)
 	docker push laurentperron/$(MZN_TAG)
