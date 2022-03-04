@@ -9,18 +9,18 @@ RUN dnf -y update \
 && dnf -y install wget redhat-lsb-core pkgconfig autoconf libtool zlib-devel which \
 && dnf clean all \
 && rm -rf /var/cache/dnf
-ENTRYPOINT ["/usr/bin/bash", "-c"]
-CMD ["/usr/bin/bash"]
 
 # Install system build dependencies
 ENV PATH=/usr/local/bin:$PATH
 RUN dnf -y update \
 && dnf -y install gcc-toolset-11 \
 && dnf clean all \
-&& rm -rf /var/cache/dnf
-
-RUN echo "source /opt/rh/gcc-toolset-11/enable" >> /etc/bashrc
-SHELL ["/bin/bash", "--login", "-c"]
+&& rm -rf /var/cache/dnf \
+&& echo "source /opt/rh/gcc-toolset-11/enable" >> /etc/bashrc
+SHELL ["/usr/bin/bash", "--login", "-c"]
+ENTRYPOINT ["/usr/bin/bash", "--login", "-c"]
+CMD ["/usr/bin/bash", "--login"]
+# RUN g++ --version
 
 # Install CMake 3.21.1
 RUN wget -q "https://cmake.org/files/v3.21/cmake-3.21.1-linux-x86_64.sh" \

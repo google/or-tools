@@ -19,7 +19,7 @@ RUN yum -y update \
 SHELL ["/bin/bash", "--login", "-c"]
 ENTRYPOINT ["/usr/bin/bash", "--login", "-c"]
 CMD ["/usr/bin/bash", "--login"]
-# RUN gcc --version
+# RUN g++ --version
 
 # Install CMake 3.21.1
 RUN wget -q "https://cmake.org/files/v3.21/cmake-3.21.1-linux-x86_64.sh" \
