@@ -5,10 +5,10 @@ LABEL maintainer="corentinl@google.com"
 # Install system build dependencies
 ENV PATH=/usr/local/bin:$PATH
 RUN zypper update -y \
-&& zypper install -y git gcc gcc-c++ cmake \
+&& zypper install -y git gcc11 gcc11-c++ cmake \
  wget which lsb-release util-linux pkgconfig autoconf libtool zlib-devel \
 && zypper clean -a
-ENV CC=gcc CXX=g++
+ENV CC=gcc-11 CXX=g++-11
 ENTRYPOINT ["/usr/bin/bash", "-c"]
 CMD ["/usr/bin/bash"]
 

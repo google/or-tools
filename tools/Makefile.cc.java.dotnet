@@ -31,7 +31,8 @@ ifeq ($(SYSTEM),unix)
   TOUCH = touch
 # C++
   ifeq ($(OS),Linux)
-    CXX = g++
+    CC ?= gcc
+    CXX ?= g++
     LDFLAGS = \
 -Wl,-rpath,"\$$ORIGIN" \
 -Wl,-rpath,"\$$ORIGIN/../lib64" \
@@ -51,7 +52,8 @@ ifeq ($(SYSTEM),unix)
     L = .so
   endif # ifeq($(OS),Linux)
   ifeq ($(OS),Darwin) # Assume Mac Os X
-    CXX = clang++
+    CC ?= clang
+    CXX ?= clang++
     LDFLAGS = \
 -Wl,-rpath,@loader_path \
 -Wl,-rpath,@loader_path/../lib \
@@ -62,6 +64,7 @@ ifeq ($(SYSTEM),unix)
     MONO = DYLD_FALLBACK_LIBRARY_PATH=$(LIB_DIR):$(DYLD_LIBRARY_PATH) mono
     L = .dylib
   endif # ifeq($(OS),Darwin)
+  CC_BIN := $(shell command -v $(CC) 2> /dev/null)
   CXX_BIN := $(shell command -v $(CXX) 2> /dev/null)
   DEBUG = -O4 -DNDEBUG
   CXXFLAGS = -fPIC -std=c++20 $(DEBUG) \
@@ -118,9 +121,11 @@ ifeq ($(SYSTEM),win)
     PORT = VisualStudio$(VISUAL_STUDIO)-32b
     NETPLATFORM = x86
   endif
-  CXX = cl
+  CC ?= cl
+  CXX ?= cl
   # We can't use `where` since it's return all matching pathnames
   # so we ship which.exe and use it
+  CC_BIN := $(shell $(WHICH) $(CC) 2> NUL)
   CXX_BIN := $(shell $(WHICH) $(CXX) 2> NUL)
   DEBUG = /O2 -DNDEBUG
   CXXFLAGS = /std:c++20 /EHsc /MD /nologo /D_SILENCE_STDEXT_HASH_DEPRECATION_WARNINGS -nologo $(DEBUG) \
@@ -323,6 +328,8 @@ $(BIN_DIR)/%$E: $(OBJ_DIR)/%$O
 
 .PHONY: detect_cc
 detect_cc:
+	@echo CC = $(CC)
+	@echo CC_BIN = $(CC_BIN)
 	@echo CXX = $(CXX)
 	@echo CXX_BIN = $(CXX_BIN)
 	@echo CXXFLAGS = $(CXXFLAGS)
