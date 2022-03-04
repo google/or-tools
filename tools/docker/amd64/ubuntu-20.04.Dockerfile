@@ -7,11 +7,20 @@ FROM ubuntu:20.04 AS env
 #############
 RUN apt update -qq \
 && DEBIAN_FRONTEND=noninteractive apt install -yq \
- git pkg-config wget make cmake autoconf libtool zlib1g-dev gawk g++ curl subversion \
+ git pkg-config wget make cmake autoconf libtool zlib1g-dev gawk curl subversion \
  lsb-release \
 && apt clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-ENTRYPOINT ["/usr/bin/bash", "-c"]
+
+# GCC 11
+RUN apt update -qq \
+&& apt install -yq software-properties-common \
+&& add-apt-repository -y ppa:ubuntu-toolchain-r/test \
+&& apt install -yq gcc-11 g++-11 \
+&& apt clean \
+&& rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+ENV CC=gcc-11 CXX=g++-11
+ENTRYPOINT ["/bin/bash", "-c"]
 CMD ["/bin/bash"]
 
 # Swig Install

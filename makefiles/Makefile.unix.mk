@@ -88,8 +88,9 @@ DEBUG = -O4 -DNDEBUG
 JNIDEBUG = -O1 -DNDEBUG
 
 ifeq ($(PLATFORM),LINUX)
-  CCC = g++ -fPIC -std=c++20 -fwrapv
-  DYNAMIC_LD = g++ -shared
+  CXX ?= g++
+  CCC = $(CXX) -fPIC -std=c++20 -fwrapv
+  DYNAMIC_LD = $(CXX) -shared
   DYNAMIC_LDFLAGS = -Wl,-rpath,\"\\\$$\$$ORIGIN\"
 
   # This is needed to find libz.a
@@ -120,8 +121,9 @@ ifeq ($(PLATFORM),LINUX)
 endif  # ifeq ($(PLATFORM),LINUX)
 ifeq ($(PLATFORM),MACOSX)
   MAC_VERSION = -mmacosx-version-min=$(MAC_MIN_VERSION)
-  CCC = clang++ -fPIC -std=c++20  $(MAC_VERSION) -stdlib=libc++
-  DYNAMIC_LD = clang++ -dynamiclib -undefined dynamic_lookup \
+  CXX ?= clang++
+  CCC = $(CXX) -fPIC -std=c++20  $(MAC_VERSION) -stdlib=libc++
+  DYNAMIC_LD = $(CXX) -dynamiclib -undefined dynamic_lookup \
   $(MAC_VERSION) \
  -Wl,-search_paths_first \
  -Wl,-headerpad_max_install_names \
@@ -146,7 +148,7 @@ ifeq ($(PLATFORM),MACOSX)
   SET_COIN_OPT = OPT_CXXFLAGS="-O1 -DNDEBUG" OPT_CFLAGS="-O1 -DNDEBUG"
   JNI_LIB_EXT = dylib
 
-  LINK_CMD = clang++ -dynamiclib $(MAC_VERSION) \
+  LINK_CMD = $(CXX) -dynamiclib $(MAC_VERSION) \
  -Wl,-search_paths_first \
  -Wl,-headerpad_max_install_names \
  -current_version $(OR_TOOLS_MAJOR).$(OR_TOOLS_MINOR) \

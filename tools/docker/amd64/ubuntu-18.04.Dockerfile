@@ -6,12 +6,21 @@ FROM ubuntu:18.04 AS env
 #############
 RUN apt update -qq \
 && apt install -yq \
- git pkg-config wget make autoconf libtool zlib1g-dev gawk g++ curl subversion \
+ git pkg-config wget make autoconf libtool zlib1g-dev gawk curl subversion \
  lsb-release \
 && apt clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# GCC 11
+RUN apt update -qq \
+&& apt install -yq software-properties-common \
+&& add-apt-repository -y ppa:ubuntu-toolchain-r/test \
+&& apt install -yq gcc-11 g++-11 \
+&& apt clean \
+&& rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+ENV CC=gcc-11 CXX=g++-11
 ENTRYPOINT ["/bin/bash", "-c"]
-CMD ["/usr/bin/bash"]
+CMD ["/bin/bash"]
 
 # Install CMake 3.21.1
 RUN wget -q "https://cmake.org/files/v3.21/cmake-3.21.1-linux-x86_64.sh" \
