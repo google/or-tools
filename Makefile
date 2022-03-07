@@ -49,16 +49,12 @@ SUFFIXES =
 # Read version.
 include $(OR_ROOT)Version.txt
 
-# We try to detect the platform.
+# We try to detect the platform, and load system specific macros.
 include $(OR_ROOT)makefiles/Makefile.port.mk
 OR_ROOT_FULL=$(OR_TOOLS_TOP)
 
-# Change the file extensions to increase diff tool friendliness.
-# Then include specific system commands and definitions
-include $(OR_ROOT)makefiles/Makefile.$(SYSTEM).mk
-
 # Rules to fetch and build third party dependencies.
-include $(OR_ROOT)makefiles/Makefile.third_party.$(SYSTEM).mk
+include $(OR_ROOT)makefiles/Makefile.third_party.mk
 
 # Check SOURCE argument
 SOURCE_SUFFIX = $(suffix $(SOURCE))
@@ -93,7 +89,7 @@ include $(OR_ROOT)makefiles/Makefile.python.mk
 include $(OR_ROOT)makefiles/Makefile.java.mk
 include $(OR_ROOT)makefiles/Makefile.dotnet.mk
 include $(OR_ROOT)makefiles/Makefile.archive.mk
-ifeq ($(SYSTEM),unix)
+ifneq ($(PLATFORM),WIN64)
 include $(OR_ROOT)makefiles/Makefile.doc.mk
 else
 # Remove some rules on windows
@@ -110,7 +106,7 @@ help_usage:
 	@echo test, test_all:	Test OR-Tools for all available languages.
 	@echo clean, clean_all:	Clean output from previous build for all available languages \(won\'t clean third party\).
 	@echo detect, detect_all:	Show variables used to build OR-Tools for all available languages.
-ifeq ($(SYSTEM),win)
+ifeq ($(PLATFORM),WIN64)
 	@echo off & echo(
 else
 	@echo
@@ -119,8 +115,11 @@ endif
 .PHONY: help_all
 help_all: help_usage help_third_party help_cc help_python help_java help_dotnet help_archive help_doc
 
+# OR Tools unique library.
 .PHONY: build_all
-build_all: cc python java dotnet
+build_all: 
+	$(MAKE) third_party BUILD_PYTHON=ON BUILD_JAVA=ON BUILD_DOTNET=ON
+	cmake --build dependencies --target install --config $(BUILD_TYPE) -j $(JOBS) -v
 	@echo Or-tools has been built for "$(BUILT_LANGUAGES)"
 
 .PHONY: check_all
@@ -144,7 +143,7 @@ detect_all: detect_port detect_third_party detect_cc detect_python detect_java d
 	@echo SOURCE_PATH = $(SOURCE_PATH)
 	@echo SOURCE_NAME = $(SOURCE_NAME)
 	@echo SOURCE_SUFFIX = $(SOURCE_SUFFIX)
-ifeq ($(SYSTEM),win)
+ifeq ($(PLATFORM),WIN64)
 	@echo off & echo(
 else
 	@echo

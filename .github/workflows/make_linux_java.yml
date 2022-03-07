@@ -20,10 +20,8 @@ jobs:
       run: make detect_port
     - name: Check Java
       run: make detect_java
-    - name: Build third party 
-      run: make third_party BUILD_PYTHON=OFF BUILD_JAVA=ON BUILD_DOTNET=OFF
     - name: Build C++ and Java
-      run: make compile_libraries -j4
+      run: make java JOBS=4
     - name: Test Java
       run: make test_java -j4
     - name: Create maven package

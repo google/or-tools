@@ -2,7 +2,7 @@
 .PHONY: help_java # Generate list of Java targets with descriptions.
 help_java:
 	@echo Use one of the following Java targets:
-ifeq ($(SYSTEM),win)
+ifeq ($(PLATFORM),WIN64)
 	@$(GREP) "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.java.mk | $(SED) "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/"
 	@echo off & echo(
 else
@@ -11,7 +11,7 @@ else
 endif
 
 
-ifeq ($(BUILD_JAVA),OFF)
+ifeq ($(HAS_JAVA),OFF)
 java_runtime: java
 java:
 	@echo JAVA_HOME = $(JAVA_HOME)
@@ -27,7 +27,7 @@ check_java: java
 test_java: java
 package_java: java
 
-else  # BUILD_JAVA=ON
+else  # HAS_JAVA=ON
 
 JAVA_BUILD_DIR = $(BUILD_DIR)$Sjava
 TEMP_JAVA_DIR = temp_java
@@ -38,7 +38,11 @@ JAVA_ORTOOLS_PACKAGE := com.google.ortools
 .PHONY: java # Build Java OR-Tools.
 .PHONY: test_java # Test Java OR-Tools using various examples.
 .PHONY: package_java # Create jar OR-Tools Maven package.
-java: cc
+
+# OR Tools unique library.
+java:
+	$(MAKE) third_party BUILD_JAVA=ON
+	cmake --build dependencies --target install --config $(BUILD_TYPE) -j $(JOBS) -v
 
 # Detect RuntimeIDentifier
 ifeq ($(OS),Windows)
@@ -447,7 +451,7 @@ java_examples_archive: \
  | $(TEMP_JAVA_DIR)/ortools_examples/examples/java
 	$(COPY) tools$SREADME.java.md $(TEMP_JAVA_DIR)$Sortools_examples$SREADME.md
 	$(COPY) LICENSE $(TEMP_JAVA_DIR)$Sortools_examples
-ifeq ($(SYSTEM),win)
+ifeq ($(PLATFORM),WIN64)
 	cd $(TEMP_JAVA_DIR) \
  && ..\$(ZIP) \
  -r ..\or-tools_java_examples_v$(OR_TOOLS_VERSION).zip \
@@ -460,7 +464,7 @@ else
 endif
 	-$(DELREC) $(TEMP_JAVA_DIR)$Sortools_examples
 
-endif  # BUILD_JAVA=ON
+endif  # HAS_JAVA=ON
 
 ################
 ##  Cleaning  ##
@@ -479,7 +483,6 @@ clean_java:
 	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S*java_wrap*
 	-$(DEL) $(GEN_PATH)$Sortools$Sinit$S*java_wrap*
 	-$(DEL) $(OBJ_DIR)$Sswig$S*_java_wrap.$O
-	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)jni*.$(JNI_LIB_EXT)
 	-$(DEL) $(LIB_DIR)$S*.jar
 	-$(DEL) *.jar
 	-$(DELREC) $(TEMP_JAVA_DIR)
@@ -491,6 +494,7 @@ clean_java:
 detect_java:
 	@echo Relevant info for the Java build:
 	@echo BUILD_JAVA = $(BUILD_JAVA)
+	@echo HAS_JAVA = $(HAS_JAVA)
 	@echo JAVA_HOME = $(JAVA_HOME)
 	@echo JAVAC_BIN = $(JAVAC_BIN)
 	@echo CLASS_DIR = $(CLASS_DIR)
@@ -500,7 +504,7 @@ detect_java:
 	@echo JAVA_ORTOOLS_PACKAGE = $(JAVA_ORTOOLS_PACKAGE)
 	@echo JAVA_ORTOOLS_NATIVE_PROJECT = $(JAVA_ORTOOLS_NATIVE_PROJECT)
 	@echo JAVA_ORTOOLS_PROJECT = $(JAVA_ORTOOLS_PROJECT)
-ifeq ($(SYSTEM),win)
+ifeq ($(PLATFORM),WIN64)
 	@echo off & echo(
 else
 	@echo

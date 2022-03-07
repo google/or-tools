@@ -26,10 +26,8 @@ jobs:
       run: tools\make detect_port
     - name: Check .Net
       run: tools\make detect_dotnet
-    - name: Build third party
-      run: tools\make third_party BUILD_PYTHON=OFF BUILD_JAVA=OFF BUILD_DOTNET=ON
     - name: Build C++ and .NET
-      run: tools\make all JOBS=4
+      run: tools\make dotnet JOBS=4
     - name: Test .Net
       run: tools\make test_dotnet -j4
     - name: Create nuget packages

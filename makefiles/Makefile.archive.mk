@@ -2,7 +2,7 @@
 .PHONY: help_archive # Generate list of Archive targets with descriptions.
 help_archive:
 	@echo Use one of the following Archive targets:
-ifeq ($(SYSTEM),win)
+ifeq ($(PLATFORM),WIN64)
 	@$(GREP) "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.archive.mk | $(SED) "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/"
 	@echo off & echo(
 else
@@ -49,7 +49,7 @@ $(INSTALL_DIR)$(ARCHIVE_EXT): archive_cc archive_java archive_dotnet \
 	$(COPY) tools$SREADME.cc.java.dotnet $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$SREADME.md
 	$(COPY) tools$SMakefile.cc.java.dotnet $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$SMakefile
 	$(SED) -i -e 's/@PROJECT_VERSION@/$(OR_TOOLS_VERSION)/' $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$SMakefile
-ifeq ($(SYSTEM),win)
+ifeq ($(PLATFORM),WIN64)
 	-$(MKDIR_P) $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Stools$Swin
 	$(COPY) tools$Smake.exe $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Stools
 	$(COPY) $(WHICH) $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Stools$Swin
@@ -204,7 +204,7 @@ $(FZ_INSTALL_DIR)$(ARCHIVE_EXT): fz | $(TEMP_FZ_DIR)
 	-$(DELREC) $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sshare/docs
 	-$(DELREC) $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sshare/eigen3
 	-$(DELREC) $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sshare/man
-ifeq ($(SYSTEM),win)
+ifeq ($(PLATFORM),WIN64)
 	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)flatzinc.$L* $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Slib
 else
 	$(COPY) $(LIB_DIR)*$S$(LIB_PREFIX)flatzinc.$L* $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Slib
@@ -216,7 +216,7 @@ endif
 	$(COPY) ortools$Sflatzinc$Smznlib$S* $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc
 	-$(MKDIR_P) $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sexamples
 	$(COPY) $(FZ_EX_PATH)$S* $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sexamples
-ifeq ($(SYSTEM),win)
+ifeq ($(PLATFORM),WIN64)
 	cd $(TEMP_FZ_DIR) && ..$S$(ZIP) -r ..$S$(FZ_INSTALL_DIR)$(ARCHIVE_EXT) $(FZ_INSTALL_DIR)
 else
 	$(TAR) -C $(TEMP_FZ_DIR) --no-same-owner -czvf $(FZ_INSTALL_DIR)$(ARCHIVE_EXT) $(FZ_INSTALL_DIR)
@@ -249,7 +249,7 @@ $(DATA_INSTALL_DIR)$(ARCHIVE_EXT):
 --exclude *vector_packing* \
 --exclude *nsplib* \
 examples$Sdata | $(TAR) -xvm -C $(TEMP_DATA_DIR)$S$(DATA_INSTALL_DIR)
-ifeq ($(SYSTEM),win)
+ifeq ($(PLATFORM),WIN64)
 	cd $(TEMP_DATA_DIR) && ..$S$(ZIP) -r ..$S$(DATA_INSTALL_DIR)$(ARCHIVE_EXT) $(DATA_INSTALL_DIR)
 else
 	$(TAR) -C $(TEMP_DATA_DIR) --no-same-owner -czvf $(DATA_INSTALL_DIR)$(ARCHIVE_EXT) $(DATA_INSTALL_DIR)
@@ -264,7 +264,7 @@ TEMP_TEST_DIR = temp_test
 test_archive: $(INSTALL_DIR)$(ARCHIVE_EXT)
 	-$(DELREC) $(TEMP_TEST_DIR)
 	-$(MKDIR) $(TEMP_TEST_DIR)
-ifeq ($(SYSTEM),win)
+ifeq ($(PLATFORM),WIN64)
 	$(UNZIP) $< -d $(TEMP_TEST_DIR)
 	cd $(TEMP_TEST_DIR)$S$(INSTALL_DIR) \
  && $(MAKE) MAKEFLAGS= \
@@ -289,7 +289,7 @@ TEMP_FZ_TEST_DIR = temp_fz_test
 test_fz_archive: $(FZ_INSTALL_DIR)$(ARCHIVE_EXT)
 	-$(DELREC) $(TEMP_FZ_TEST_DIR)
 	-$(MKDIR) $(TEMP_FZ_TEST_DIR)
-ifeq ($(SYSTEM),win)
+ifeq ($(PLATFORM),WIN64)
 	$(UNZIP) $< -d $(TEMP_FZ_TEST_DIR)
 	cd $(TEMP_FZ_TEST_DIR)$S$(FZ_INSTALL_DIR) && .$Sbin$S$(FZ_EXE) examples$Scircuit_test.fzn
 else
@@ -311,7 +311,7 @@ detect_archive:
 	@echo TEMP_DATA_DIR = $(TEMP_DATA_DIR)
 	@echo DATA_INSTALL_DIR = $(DATA_INSTALL_DIR)
 	@echo ARCHIVE_EXT = $(ARCHIVE_EXT)
-ifeq ($(SYSTEM),win)
+ifeq ($(PLATFORM),WIN64)
 	@echo off & echo(
 else
 	@echo

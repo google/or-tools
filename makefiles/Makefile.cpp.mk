@@ -2,7 +2,7 @@
 .PHONY: help_cc # Generate list of C++ targets with descriptions.
 help_cc:
 	@echo Use one of the following C++ targets:
-ifeq ($(SYSTEM),win)
+ifeq ($(PLATFORM),WIN64)
 	@$(GREP) "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.cpp.mk | $(SED) "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/"
 	@echo off & echo(
 else
@@ -12,11 +12,42 @@ endif
 
 # Checks if the user has overwritten default install prefix.
 # cf https://www.gnu.org/prep/standards/html_node/Directory-Variables.html#index-prefix
-ifeq ($(SYSTEM),win)
+ifeq ($(PLATFORM),WIN64)
   prefix ?= C:\\Program Files\\or-tools
 else
   prefix ?= /usr/local
 endif
+
+# Checks if the user has overwritten default libraries and binaries.
+BUILD_TYPE ?= Release
+USE_COINOR ?= ON
+USE_SCIP ?= ON
+USE_GLPK ?= OFF
+USE_CPLEX ?= OFF
+USE_XPRESS ?= OFF
+PROTOC ?= $(OR_TOOLS_TOP)$Sbin$Sprotoc
+
+# Main target.
+.PHONY: third_party # Build OR-Tools Prerequisite
+
+GENERATOR ?= $(CMAKE_PLATFORM)
+
+third_party:
+	cmake -S . -B $(BUILD_DIR) -DBUILD_DEPS=ON \
+ -DBUILD_DOTNET=$(BUILD_DOTNET) \
+ -DBUILD_JAVA=$(BUILD_JAVA) \
+ -DBUILD_PYTHON=$(BUILD_PYTHON) \
+ -DBUILD_EXAMPLES=OFF \
+ -DBUILD_SAMPLES=OFF \
+ -DUSE_COINOR=$(USE_COINOR) \
+ -DUSE_SCIP=$(USE_SCIP) \
+ -DUSE_GLPK=$(USE_GLPK) \
+ -DUSE_CPLEX=$(USE_CPLEX) \
+ -DUSE_XPRESS=$(USE_XPRESS) \
+ -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
+ -DCMAKE_INSTALL_PREFIX=$(OR_ROOT_FULL) \
+ $(CMAKE_ARGS) \
+ -G $(GENERATOR)
 
 # All libraries and dependecies
 ifeq ($(PLATFORM),WIN64)
@@ -37,18 +68,10 @@ JOBS ?= 4
 .PHONY: fz # Build Flatzinc.
 .PHONY: test_fz # Run all Flatzinc test targets.
 
-ortools_libs: cc
-ortools-libs: cc
-or_tools_libs: cc
-or-tools-libs: cc
-
 # OR Tools unique library.
-$(LIB_DIR)/build_timestamp: $(THIRD_PARTY_TARGET)
+cc: 
+	$(MAKE) third_party
 	cmake --build dependencies --target install --config $(BUILD_TYPE) -j $(JOBS) -v
-	$(TOUCH) $(LIB_DIR)$Sbuild_timestamp
-
-compile_libraries: $(LIB_DIR)/build_timestamp
-cc: $(LIB_DIR)/build_timestamp
 
 test_cc: \
  cc \
@@ -63,8 +86,6 @@ test_fz: \
  cc \
  rfz_golomb \
  rfz_alpha
-
-
 
 $(GEN_DIR):
 	-$(MKDIR_P) $(GEN_PATH)
@@ -177,8 +198,6 @@ $(OBJ_DIR)/util: | $(OBJ_DIR)
 $(OBJ_DIR)/swig: | $(OBJ_DIR)
 	-$(MKDIR_P) $(OBJ_DIR)$Sswig
 
-include $(OR_ROOT)makefiles/Makefile.gen.mk
-
 ##################
 ##  Sat solver  ##
 ##################
@@ -188,7 +207,7 @@ $(OBJ_DIR)/sat_runner.$O: \
  $(CC_EX_DIR)/sat_runner.cc \
  $(CC_EX_DIR)/opb_reader.h \
  $(CC_EX_DIR)/sat_cnf_reader.h \
- $(SAT_DEPS) | $(OBJ_DIR)
+ cc | $(OBJ_DIR)
 	$(CCC) $(CFLAGS) -I$(SRC_DIR) -c $(CC_EX_PATH)$Ssat_runner.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat_runner.$O
 
 ##################
@@ -203,7 +222,7 @@ $(OBJ_DIR)/$(SOURCE_NAME).$O: $(SOURCE) cc | $(OBJ_DIR)
 $(BIN_DIR)/$(SOURCE_NAME)$E: $(OBJ_DIR)/$(SOURCE_NAME).$O cc | $(BIN_DIR)
 	$(CCC) $(CFLAGS) \
  $(OBJ_DIR)$S$(SOURCE_NAME).$O \
- $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) \
+ $(LDFLAGS) \
  $(EXE_OUT)$(BIN_DIR)$S$(SOURCE_NAME)$E
 
 .PHONY: build # Build a C++ program.
@@ -246,7 +265,7 @@ $(OBJ_DIR)/%.$O: ortools/routing/samples/%.cc cc | $(OBJ_DIR)
 	$(CCC) $(CFLAGS) -c ortools$Srouting$Ssamples$S$*.cc $(OBJ_OUT)$(OBJ_DIR)$S$*.$O
 
 $(BIN_DIR)/%$E: $(OBJ_DIR)/%.$O cc | $(BIN_DIR)
-	$(CCC) $(CFLAGS) $(OBJ_DIR)$S$*.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$S$*$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)$S$*.$O $(LDFLAGS) $(EXE_OUT)$(BIN_DIR)$S$*$E
 
 rcc_%: $(BIN_DIR)/%$E FORCE
 	$(BIN_DIR)$S$*$E $(ARGS)
@@ -276,7 +295,7 @@ $(OBJ_DIR)/course_scheduling.pb.$O: $(CC_GEN_DIR)/course_scheduling.pb.cc $(CC_G
 	$(CCC) $(CFLAGS) -c $(CC_GEN_PATH)$Scourse_scheduling.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Scourse_scheduling.pb.$O
 
 $(BIN_DIR)/course_scheduling$E: $(OBJ_DIR)/course_scheduling.$O $(OBJ_DIR)/course_scheduling_run.$O $(OBJ_DIR)/course_scheduling.pb.$O cc | $(BIN_DIR)
-	$(CCC) $(CFLAGS) $(OBJ_DIR)$Scourse_scheduling.$O $(OBJ_DIR)$Scourse_scheduling_run.$O $(OBJ_DIR)$Scourse_scheduling.pb.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Scourse_scheduling$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)$Scourse_scheduling.$O $(OBJ_DIR)$Scourse_scheduling_run.$O $(OBJ_DIR)$Scourse_scheduling.pb.$O $(LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Scourse_scheduling$E
 
 rcc_course_scheduling: $(BIN_DIR)/course_scheduling$E FORCE
 	$(BIN_DIR)$S$*$E $(ARGS)
@@ -450,7 +469,7 @@ $(TEMP_PACKAGE_CC_DIR)/$(INSTALL_DIR): | $(TEMP_PACKAGE_CC_DIR)
 	$(MKDIR) $(TEMP_PACKAGE_CC_DIR)$S$(INSTALL_DIR)
 
 package_cc: cc | $(TEMP_PACKAGE_CC_DIR)/$(INSTALL_DIR)
-ifeq ($(SYSTEM),win)
+ifeq ($(PLATFORM),WIN64)
 	cd $(TEMP_PACKAGE_CC_DIR)\$(INSTALL_DIR) && \
 		..\..\$(TAR) -C ..\.. -c -v include | ..\..\$(TAR) xvm
 	cd $(TEMP_PACKAGE_CC_DIR)\$(INSTALL_DIR) && \
@@ -465,7 +484,7 @@ else
 	cd $(TEMP_PACKAGE_CC_DIR)/$(INSTALL_DIR) && \
 		tar -C ../.. -c -v share | tar xvm
 endif
-ifeq ($(SYSTEM),win)
+ifeq ($(PLATFORM),WIN64)
 	cd $(TEMP_PACKAGE_CC_DIR) && ..$S$(ZIP) -r ..$S$(INSTALL_DIR)$(ARCHIVE_EXT) $(INSTALL_DIR)
 else
 	$(TAR) -C $(TEMP_PACKAGE_CC_DIR) --no-same-owner -czvf $(INSTALL_DIR)$(ARCHIVE_EXT) $(INSTALL_DIR)
@@ -489,7 +508,7 @@ install_dirs:
 .PHONY: install_cc
 install_cc: | install_dirs
 	$(COPY) LICENSE "$(DESTDIR)$(prefix)"
-ifeq ($(SYSTEM),win)
+ifeq ($(PLATFORM),WIN64)
 	$(COPYREC) /E /Y include "$(DESTDIR)$(prefix)"
 	$(COPY) "$(LIB_DIR)$S$(LIB_PREFIX)ortools_full.$L" "$(DESTDIR)$(prefix)$Slib$S$(LIB_PREFIX)ortools.$L"
 	$(COPYREC) /E /Y share "$(DESTDIR)$(prefix)"
@@ -535,7 +554,7 @@ cc_examples_archive: | \
 	$(COPY) ortools$Ssat$Ssamples$S*.cc $(TEMP_CC_DIR)$Sortools_examples$Sexamples$Scpp
 	$(COPY) tools$SREADME.cpp.md $(TEMP_CC_DIR)$Sortools_examples$SREADME.md
 	$(COPY) LICENSE $(TEMP_CC_DIR)$Sortools_examples
-ifeq ($(SYSTEM),win)
+ifeq ($(PLATFORM),WIN64)
 	cd $(TEMP_CC_DIR)\ortools_examples \
  && ..\..\$(TAR) -C ..\.. -c -v \
  --exclude *svn* --exclude *roadef* --exclude *vector_packing* \
@@ -559,39 +578,14 @@ endif
 ################
 ##  Cleaning  ##
 ################
-CC_SAMPLES := $(wildcard ortools/*/samples/*.cc)
-CC_SAMPLES := $(notdir $(CC_SAMPLES))
-CC_SAMPLES := $(addsuffix $E, $(addprefix $(BIN_DIR)$S, $(basename $(CC_SAMPLES))))
-
-CC_EXAMPLES := $(wildcard $(CC_EX_DIR)/*.cc)
-CC_EXAMPLES := $(notdir $(CC_EXAMPLES))
-CC_EXAMPLES := $(addsuffix $E, $(addprefix $(BIN_DIR)$S, $(basename $(CC_EXAMPLES))))
-
-CC_TESTS := $(wildcard $(TEST_DIR)/*.cc)
-CC_TESTS := $(notdir $(CC_TESTS))
-CC_TESTS := $(addsuffix $E, $(addprefix $(BIN_DIR)$S, $(basename $(CC_TESTS))))
-
 .PHONY: clean_cc # Clean C++ output from previous build.
 clean_cc:
-	-$(DEL) $(LIB_DIR)$Sbuild_timestamp
-	-$(DEL) $(LIB_DIR)*$S$(LIB_PREFIX)cvrptw_lib.$L
-	-$(DEL) $(LIB_DIR)*$S$(LIB_PREFIX)dimacs.$L
-	-$(DEL) $(LIB_DIR)*$S$(LIB_PREFIX)fap.$L
-	-$(DEL) $(LIB_DIR)*$S$(LIB_PREFIX)fz.$L
-	-$(DEL) $(LIB_DIR)*$S$(LIB_PREFIX)ortools*.$L*
-	-$(DEL) $(LIB_DIR)*$S$(LIB_PREFIX)flatzinc*.$L*
-	-$(DEL) $(LIB_DIR)*$S$(LIB_PREFIX)*.a
-	-$(DEL) $(OBJ_DIR)$S*.$O
-	-$(DELREC) $(OBJ_DIR)
-	-$(DEL) $(BIN_DIR)$Sortools.msc
-	-$(DEL) $(BIN_DIR)$Sfz$E
-	-$(DEL) $(BIN_DIR)$Sparser_main$E
-	-$(DEL) $(BIN_DIR)$Ssat_runner$E
-	-$(DEL) $(CC_SAMPLES)
-	-$(DEL) $(CC_EXAMPLES)
-	-$(DEL) $(CC_TESTS)
-	-$(DEL) $(BIN_DIR)$S*.exp
-	-$(DEL) $(BIN_DIR)$S*.lib
+	-$(DELREC) $(BUILD_DIR)
+	-$(DELREC) bin
+	-$(DELREC) include
+	-$(DELREC) share
+	-$(DELREC) lib
+	-$(DEL) cmake$Sprotobuf-*.cmake
 	-$(DELREC) $(TEMP_PACKAGE_CC_DIR)
 	-$(DELREC) $(TEMP_CC_DIR)
 
@@ -605,9 +599,6 @@ detect_cc:
 	@echo CCC = $(CCC)
 	@echo CFLAGS = $(CFLAGS)
 	@echo LDFLAGS = $(LDFLAGS)
-	@echo LINK_CMD = $(LINK_CMD)
-	@echo DEPENDENCIES_INC = $(DEPENDENCIES_INC)
-	@echo DEPENDENCIES_LNK = $(DEPENDENCIES_LNK)
 	@echo SRC_DIR = $(SRC_DIR)
 	@echo GEN_DIR = $(GEN_DIR)
 	@echo CC_EX_DIR = $(CC_EX_DIR)
@@ -615,10 +606,26 @@ detect_cc:
 	@echo LIB_DIR = $(LIB_DIR)
 	@echo BIN_DIR = $(BIN_DIR)
 	@echo prefix = $(prefix)
-	@echo OR_TOOLS_LNK = $(OR_TOOLS_LNK)
-	@echo OR_TOOLS_LDFLAGS = $(OR_TOOLS_LDFLAGS)
 	@echo OR_TOOLS_LIBS = $(OR_TOOLS_LIBS)
-ifeq ($(SYSTEM),win)
+	@echo Relevant info on third party:
+	@echo BUILD_TYPE = $(BUILD_TYPE)
+	@echo USE_GLOP = ON
+	@echo USE_PDLP = ON
+	@echo USE_COINOR = $(USE_COINOR)
+	@echo USE_SCIP = $(USE_SCIP)
+	@echo USE_GLPK = $(USE_GLPK)
+	@echo USE_CPLEX = $(USE_CPLEX)
+	@echo USE_XPRESS = $(USE_XPRESS)
+ifdef GLPK_ROOT
+	@echo GLPK_ROOT = $(GLPK_ROOT)
+endif
+ifdef CPLEX_ROOT
+	@echo CPLEX_ROOT = $(CPLEX_ROOT)
+endif
+ifdef XPRESS_ROOT
+	@echo XPRESS_ROOT = $(XPRESS_ROOT)
+endif
+ifeq ($(PLATFORM),WIN64)
 	@echo off & echo(
 else
 	@echo

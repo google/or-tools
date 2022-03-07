@@ -1,8 +1,13 @@
 .PHONY: help_third_party # Generate list of Prerequisite targets with descriptions.
 help_third_party:
 	@echo Use one of the following Prerequisite targets:
-	@grep "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.third_party.unix.mk | sed "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/" | expand -t20
+ifeq ($(PLATFORM),WIN64)
+	@$(GREP) "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.third_party.mk | $(SED) "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/"
+	@echo off & echo(
+else
+	@$(GREP) "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.third_party.mk | $(SED) "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/" | expand -t20
 	@echo
+endif
 
 # Checks if the user has overwritten default libraries and binaries.
 BUILD_TYPE ?= Release
@@ -11,18 +16,14 @@ USE_SCIP ?= ON
 USE_GLPK ?= OFF
 USE_CPLEX ?= OFF
 USE_XPRESS ?= OFF
-PROTOC ?= $(OR_TOOLS_TOP)/bin/protoc
+PROTOC ?= $(OR_TOOLS_TOP)$Sbin$Sprotoc
 
 # Main target.
 .PHONY: third_party # Build OR-Tools Prerequisite
-third_party:  $(BUILD_DIR)/Makefile
 
-THIRD_PARTY_TARGET = $(BUILD_DIR)/Makefile
+GENERATOR ?= $(CMAKE_PLATFORM)
 
-$(BUILD_DIR):
-	mkdir $(BUILD_DIR)
-
-$(BUILD_DIR)/Makefile: $(CURDIR)/makefiles/Makefile.third_party.unix.mk | $(BUILD_DIR)
+third_party:
 	cmake -S . -B $(BUILD_DIR) -DBUILD_DEPS=ON \
  -DBUILD_DOTNET=$(BUILD_DOTNET) \
  -DBUILD_JAVA=$(BUILD_JAVA) \
@@ -36,7 +37,8 @@ $(BUILD_DIR)/Makefile: $(CURDIR)/makefiles/Makefile.third_party.unix.mk | $(BUIL
  -DUSE_XPRESS=$(USE_XPRESS) \
  -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
  -DCMAKE_INSTALL_PREFIX=$(OR_ROOT_FULL) \
- $(CMAKE_ARGS)
+ $(CMAKE_ARGS) \
+ -G $(GENERATOR)
 
 .PHONY: clean_third_party # Clean everything.
 clean_third_party:
@@ -45,6 +47,7 @@ clean_third_party:
 	-$(DELREC) bin
 	-$(DELREC) include
 	-$(DELREC) share
+	-$(DEL) cmake$Sprotobuf-*.cmake
 	-$(DELREC) lib
 
 .PHONY: detect_third_party # Show variables used to find third party
@@ -67,4 +70,8 @@ endif
 ifdef XPRESS_ROOT
 	@echo XPRESS_ROOT = $(XPRESS_ROOT)
 endif
+ifeq ($(PLATFORM),WIN64)
+	@echo off & echo(
+else
 	@echo
+endif

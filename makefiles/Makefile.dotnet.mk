@@ -2,7 +2,7 @@
 .PHONY: help_dotnet # Generate list of dotnet targets with descriptions.
 help_dotnet:
 	@echo Use one of the following dotnet targets:
-ifeq ($(SYSTEM),win)
+ifeq ($(PLATFORM),WIN64)
 	@$(GREP) "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.dotnet.mk | $(SED) "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/"
 	@echo off & echo(
 else
@@ -11,7 +11,7 @@ else
 endif
 
 
-ifeq ($(BUILD_DOTNET),OFF)
+ifeq ($(HAS_DOTNET),OFF)
 dotnet:
 	$(warning Either .NET support was turned of, of the dotnet binary was not found.)
 
@@ -19,7 +19,7 @@ test_dotnet: dotnet
 package_dotnet: dotnet
 check_dotnet: dotnet
 
-else # BUILD_DOTNET=ON
+else # HAS_DOTNET=ON
 
 DOTNET_BUILD_DIR = $(BUILD_DIR)$Sdotnet
 
@@ -34,7 +34,11 @@ DOTNET_ORTOOLS_ASSEMBLY_NAME := Google.OrTools
 .PHONY: check_dotnet # Quick check only running .Net OR-Tools samples.
 .PHONY: test_dotnet # Run all .Net OR-Tools test targets.
 .PHONY: package_dotnet # Create .Net OR-Tools Nuget package.
-dotnet: cc
+
+# OR Tools unique library.
+dotnet:
+	$(MAKE) third_party BUILD_DOTNET=ON
+	cmake --build dependencies --target install --config $(BUILD_TYPE) -j $(JOBS) -v
 
 temp_dotnet:
 	mkdir temp_dotnet
@@ -534,7 +538,7 @@ dotnet_examples_archive: \
 	| $(TEMP_DOTNET_DIR)/ortools_examples/examples/dotnet
 	-$(COPY) tools$SREADME.dotnet.md $(TEMP_DOTNET_DIR)$Sortools_examples$SREADME.md
 	$(COPY) LICENSE $(TEMP_DOTNET_DIR)$Sortools_examples
-ifeq ($(SYSTEM),win)
+ifeq ($(PLATFORM),WIN64)
 	cd $(TEMP_DOTNET_DIR) \
  && ..\$(ZIP) \
  -r ..\or-tools_dotnet_examples_v$(OR_TOOLS_VERSION).zip \
@@ -569,7 +573,7 @@ nuget_upload: nuget_archive
 	@echo Uploading Nuget package for "net6.0".
 	$(warning Not Implemented)
 
-endif  # BUILD_DOTNET=ON
+endif  # HAS_DOTNET=ON
 
 ################
 ##  Cleaning  ##
@@ -624,6 +628,7 @@ clean_dotnet:
 detect_dotnet:
 	@echo Relevant info for the dotnet build:
 	@echo BUILD_DOTNET = $(BUILD_DOTNET)
+	@echo HAS_DOTNET = $(HAS_DOTNET)
 	@echo DOTNET_BIN = $(DOTNET_BIN)
 	@echo PROTOC = $(PROTOC)
 	@echo DOTNET_SNK = $(DOTNET_SNK)
@@ -633,7 +638,7 @@ detect_dotnet:
 	@echo DOTNET_ORTOOLS_RUNTIME_NUPKG = $(DOTNET_ORTOOLS_RUNTIME_NUPKG)
 	@echo DOTNET_ORTOOLS_ASSEMBLY_NAME = $(DOTNET_ORTOOLS_ASSEMBLY_NAME)
 	@echo DOTNET_ORTOOLS_NUPKG = $(DOTNET_ORTOOLS_NUPKG)
-ifeq ($(SYSTEM),win)
+ifeq ($(PLATFORM),WIN64)
 	@echo off & echo(
 else
 	@echo
